@@ -649,7 +649,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
       s->dpm = s->dpi * 10000 / 254;
     }
 
-    s->is_progressive = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
+    s->is_progressive = !!(avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT);
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGBA64BE:
         s->bit_depth = 16;

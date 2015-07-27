@@ -206,7 +206,7 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     int flags = 0;
 
     /* Affects only lossy DTS profiles. DTS-HD MA is always bitexact */
-    if (avctx->flags & CODEC_FLAG_BITEXACT)
+    if (avctx->flags & AV_CODEC_FLAG_BITEXACT)
         flags |= DCADEC_FLAG_CORE_BIT_EXACT;
 
     if (avctx->request_channel_layout > 0 && avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE) {

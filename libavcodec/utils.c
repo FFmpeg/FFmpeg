@@ -1653,7 +1653,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
-    if (   !CONFIG_GRAY && avctx->flags & CODEC_FLAG_GRAY
+    if (   !CONFIG_GRAY && avctx->flags & AV_CODEC_FLAG_GRAY
         && avctx->codec_descriptor->type == AVMEDIA_TYPE_VIDEO)
         av_log(avctx, AV_LOG_WARNING,
                "gray decoding requested but not enabled at configuration time\n");
@@ -2166,7 +2166,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
        avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
         return ff_thread_video_encode_frame(avctx, avpkt, frame, got_packet_ptr);
 
-    if ((avctx->flags&CODEC_FLAG_PASS1) && avctx->stats_out)
+    if ((avctx->flags&AV_CODEC_FLAG_PASS1) && avctx->stats_out)
         avctx->stats_out[0] = '\0';
 
     if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
@@ -2621,7 +2621,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             discard_reason = AV_RL8(side + 9);
         }
         if (avctx->internal->skip_samples && *got_frame_ptr &&
-            !(avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL)) {
+            !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
                 *got_frame_ptr = 0;
                 avctx->internal->skip_samples -= frame->nb_samples;
@@ -2651,7 +2651,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         }
 
         if (discard_padding > 0 && discard_padding <= frame->nb_samples && *got_frame_ptr &&
-            !(avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL)) {
+            !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
             if (discard_padding == frame->nb_samples) {
                 *got_frame_ptr = 0;
             } else {
@@ -2670,7 +2670,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             }
         }
 
-        if ((avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL) && *got_frame_ptr) {
+        if ((avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL) && *got_frame_ptr) {
             AVFrameSideData *fside = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
             if (fside) {
                 AV_WL32(fside->data, avctx->internal->skip_samples);
@@ -3233,10 +3233,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         return;
     }
     if (encode) {
-        if (enc->flags & CODEC_FLAG_PASS1)
+        if (enc->flags & AV_CODEC_FLAG_PASS1)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", pass 1");
-        if (enc->flags & CODEC_FLAG_PASS2)
+        if (enc->flags & AV_CODEC_FLAG_PASS2)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", pass 2");
     }

@@ -1038,7 +1038,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 decode_422_bitstream(s, width - 2);
                 lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + 2, s->temp[0],
                                                    width - 2, lefty);
-                if (!(s->flags & CODEC_FLAG_GRAY)) {
+                if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                     leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + 1, s->temp[1], width2 - 1, leftu);
                     leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + 1, s->temp[2], width2 - 1, leftv);
                 }
@@ -1071,14 +1071,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     decode_422_bitstream(s, width);
                     lefty = s->hdsp.add_hfyu_left_pred(ydst, s->temp[0],
                                                        width, lefty);
-                    if (!(s->flags & CODEC_FLAG_GRAY)) {
+                    if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                         leftu = s->hdsp.add_hfyu_left_pred(udst, s->temp[1], width2, leftu);
                         leftv = s->hdsp.add_hfyu_left_pred(vdst, s->temp[2], width2, leftv);
                     }
                     if (s->predictor == PLANE) {
                         if (cy > s->interlaced) {
                             s->hdsp.add_bytes(ydst, ydst - fake_ystride, width);
-                            if (!(s->flags & CODEC_FLAG_GRAY)) {
+                            if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                                 s->hdsp.add_bytes(udst, udst - fake_ustride, width2);
                                 s->hdsp.add_bytes(vdst, vdst - fake_vstride, width2);
                             }
@@ -1093,7 +1093,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 decode_422_bitstream(s, width - 2);
                 lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + 2, s->temp[0],
                                                    width - 2, lefty);
-                if (!(s->flags & CODEC_FLAG_GRAY)) {
+                if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                     leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + 1, s->temp[1], width2 - 1, leftu);
                     leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + 1, s->temp[2], width2 - 1, leftv);
                 }
@@ -1105,7 +1105,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     decode_422_bitstream(s, width);
                     lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + p->linesize[0],
                                                        s->temp[0], width, lefty);
-                    if (!(s->flags & CODEC_FLAG_GRAY)) {
+                    if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                         leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + p->linesize[2], s->temp[1], width2, leftu);
                         leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + p->linesize[1], s->temp[2], width2, leftv);
                     }
@@ -1117,7 +1117,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 decode_422_bitstream(s, 4);
                 lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + fake_ystride,
                                                    s->temp[0], 4, lefty);
-                if (!(s->flags & CODEC_FLAG_GRAY)) {
+                if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                     leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + fake_ustride, s->temp[1], 2, leftu);
                     leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + fake_vstride, s->temp[2], 2, leftv);
                 }
@@ -1128,7 +1128,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 s->hdsp.add_hfyu_median_pred(p->data[0] + fake_ystride + 4,
                                              p->data[0] + 4, s->temp[0],
                                              width - 4, &lefty, &lefttopy);
-                if (!(s->flags & CODEC_FLAG_GRAY)) {
+                if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                     lefttopu = p->data[1][1];
                     lefttopv = p->data[2][1];
                     s->hdsp.add_hfyu_median_pred(p->data[1] + fake_ustride + 2, p->data[1] + 2, s->temp[1], width2 - 2, &leftu, &lefttopu);
@@ -1163,7 +1163,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     s->hdsp.add_hfyu_median_pred(ydst, ydst - fake_ystride,
                                                  s->temp[0], width,
                                                  &lefty, &lefttopy);
-                    if (!(s->flags & CODEC_FLAG_GRAY)) {
+                    if (!(s->flags & AV_CODEC_FLAG_GRAY)) {
                         s->hdsp.add_hfyu_median_pred(udst, udst - fake_ustride, s->temp[1], width2, &leftu, &lefttopu);
                         s->hdsp.add_hfyu_median_pred(vdst, vdst - fake_vstride, s->temp[2], width2, &leftv, &lefttopv);
                     }

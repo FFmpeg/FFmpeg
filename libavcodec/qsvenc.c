@@ -58,7 +58,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.TargetUsage        = q->preset;
     q->param.mfx.GopPicSize         = FFMAX(0, avctx->gop_size);
     q->param.mfx.GopRefDist         = FFMAX(-1, avctx->max_b_frames) + 1;
-    q->param.mfx.GopOptFlag         = avctx->flags & CODEC_FLAG_CLOSED_GOP ?
+    q->param.mfx.GopOptFlag         = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ?
                                       MFX_GOP_CLOSED : 0;
     q->param.mfx.IdrInterval        = q->idr_interval;
     q->param.mfx.NumSlice           = avctx->slices;
@@ -78,7 +78,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.FrameInfo.BitDepthChroma = 8;
     q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, q->width_align);
 
-    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
        /* A true field layout (TFF or BFF) is not important here,
           it will specified later during frame encoding. But it is important
           to specify is frame progressive or not because allowed heigh alignment
@@ -100,7 +100,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.FrameInfo.FrameRateExtD  = avctx->time_base.num;
     }
 
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         q->param.mfx.RateControlMethod = MFX_RATECONTROL_CQP;
         ratecontrol_desc = "constant quantization parameter (CQP)";
     } else if (avctx->rc_max_rate == avctx->bit_rate) {

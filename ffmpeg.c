@@ -1119,7 +1119,7 @@ static void do_video_out(AVFormatContext *s,
         int got_packet, forced_keyframe = 0;
         double pts_time;
 
-        if (enc->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME) &&
+        if (enc->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
             ost->top_field_first >= 0)
             in_picture->top_field_first = !!ost->top_field_first;
 
@@ -1266,7 +1266,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
         fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
                 ost->quality / (float)FF_QP2LAMBDA);
 
-        if (enc->coded_frame && (enc->flags&CODEC_FLAG_PSNR))
+        if (enc->coded_frame && (enc->flags & AV_CODEC_FLAG_PSNR))
             fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
 
         fprintf(vstats_file,"f_size= %6d ", frame_size);
@@ -1416,8 +1416,8 @@ static void print_final_stats(int64_t total_size)
         }
         extra_size += ost->enc_ctx->extradata_size;
         data_size  += ost->data_size;
-        if (   (ost->enc_ctx->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))
-            != CODEC_FLAG_PASS1)
+        if (   (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))
+            != AV_CODEC_FLAG_PASS1)
             pass1_used = 0;
     }
 
@@ -1586,7 +1586,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log2(qp_histogram[j] + 1)));
             }
 
-            if ((enc->flags&CODEC_FLAG_PSNR) && (enc->coded_frame || is_last_report)) {
+            if ((enc->flags & AV_CODEC_FLAG_PSNR) && (enc->coded_frame || is_last_report)) {
                 int j;
                 double error, error_sum = 0;
                 double scale, scale_sum = 0;
@@ -2734,7 +2734,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     if (!encoder_string)
         exit_program(1);
 
-    if (!(format_flags & AVFMT_FLAG_BITEXACT) && !(codec_flags & CODEC_FLAG_BITEXACT))
+    if (!(format_flags & AVFMT_FLAG_BITEXACT) && !(codec_flags & AV_CODEC_FLAG_BITEXACT))
         av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
     else
         av_strlcpy(encoder_string, "Lavc ", encoder_string_len);

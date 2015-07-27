@@ -573,7 +573,7 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 
         c->vsad[4] = vsad_intra16_mmx;
 
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->vsad[0] = vsad16_mmx;
         }
     }
@@ -610,7 +610,7 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->vsad[4] = ff_vsad_intra16_mmxext;
         c->vsad[5] = ff_vsad_intra8_mmxext;
 
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->pix_abs[0][3] = ff_sad16_approx_xy2_mmxext;
             c->pix_abs[1][3] = ff_sad8_approx_xy2_mmxext;
 
@@ -634,7 +634,7 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
             c->pix_abs[0][2] = ff_sad16_y2_sse2;
 
             c->vsad[4]       = ff_vsad_intra16_sse2;
-            if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+            if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
                 c->pix_abs[0][3] = ff_sad16_approx_xy2_sse2;
                 c->vsad[0]       = ff_vsad16_approx_sse2;
             }

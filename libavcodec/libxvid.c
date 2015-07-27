@@ -382,13 +382,13 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
 
     /* Bring in VOP flags from ffmpeg command-line */
     x->vop_flags = XVID_VOP_HALFPEL;              /* Bare minimum quality */
-    if (xvid_flags & CODEC_FLAG_4MV)
+    if (xvid_flags & AV_CODEC_FLAG_4MV)
         x->vop_flags    |= XVID_VOP_INTER4V;      /* Level 3 */
     if (avctx->trellis)
         x->vop_flags    |= XVID_VOP_TRELLISQUANT; /* Level 5 */
-    if (xvid_flags & CODEC_FLAG_AC_PRED)
+    if (xvid_flags & AV_CODEC_FLAG_AC_PRED)
         x->vop_flags    |= XVID_VOP_HQACPRED;     /* Level 6 */
-    if (xvid_flags & CODEC_FLAG_GRAY)
+    if (xvid_flags & AV_CODEC_FLAG_GRAY)
         x->vop_flags    |= XVID_VOP_GREYSCALE;
 
     /* Decide which ME quality setting to use */
@@ -462,7 +462,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         x->vol_flags |= XVID_VOL_GMC;
         x->me_flags  |= XVID_ME_GME_REFINE;
     }
-    if (xvid_flags & CODEC_FLAG_QPEL) {
+    if (xvid_flags & AV_CODEC_FLAG_QPEL) {
         x->vol_flags |= XVID_VOL_QUARTERPEL;
         x->me_flags  |= XVID_ME_QUARTERPELREFINE16;
         if (x->vop_flags & XVID_VOP_INTER4V)
@@ -514,7 +514,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     x->old_twopassbuffer = NULL;
     x->twopassfile       = NULL;
 
-    if (xvid_flags & CODEC_FLAG_PASS1) {
+    if (xvid_flags & AV_CODEC_FLAG_PASS1) {
         rc2pass1.version     = XVID_VERSION;
         rc2pass1.context     = x;
         x->twopassbuffer     = av_malloc(BUFFER_SIZE);
@@ -530,7 +530,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         plugins[xvid_enc_create.num_plugins].func  = xvid_ff_2pass;
         plugins[xvid_enc_create.num_plugins].param = &rc2pass1;
         xvid_enc_create.num_plugins++;
-    } else if (xvid_flags & CODEC_FLAG_PASS2) {
+    } else if (xvid_flags & AV_CODEC_FLAG_PASS2) {
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
@@ -561,7 +561,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         plugins[xvid_enc_create.num_plugins].func  = xvid_plugin_2pass2;
         plugins[xvid_enc_create.num_plugins].param = &rc2pass2;
         xvid_enc_create.num_plugins++;
-    } else if (!(xvid_flags & CODEC_FLAG_QSCALE)) {
+    } else if (!(xvid_flags & AV_CODEC_FLAG_QSCALE)) {
         /* Single Pass Bitrate Control! */
         single.version = XVID_VERSION;
         single.bitrate = avctx->bit_rate;
@@ -620,7 +620,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         xvid_enc_create.max_key_interval = 240; /* Xvid's best default */
 
     /* Quants */
-    if (xvid_flags & CODEC_FLAG_QSCALE)
+    if (xvid_flags & AV_CODEC_FLAG_QSCALE)
         x->qscale = 1;
     else
         x->qscale = 0;
@@ -666,13 +666,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* Misc Settings */
     xvid_enc_create.frame_drop_ratio = 0;
     xvid_enc_create.global           = 0;
-    if (xvid_flags & CODEC_FLAG_CLOSED_GOP)
+    if (xvid_flags & AV_CODEC_FLAG_CLOSED_GOP)
         xvid_enc_create.global |= XVID_GLOBAL_CLOSED_GOP;
 
     /* Determines which codec mode we are operating in */
     avctx->extradata      = NULL;
     avctx->extradata_size = 0;
-    if (xvid_flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (xvid_flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         /* In this case, we are claiming to be MPEG4 */
         x->quicktime_format = 1;
         avctx->codec_id     = AV_CODEC_ID_MPEG4;

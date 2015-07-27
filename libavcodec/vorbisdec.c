@@ -998,7 +998,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
 
     ff_mdct_init(&vc->mdct[0], bl0, 1, -1.0);
     ff_mdct_init(&vc->mdct[1], bl1, 1, -1.0);
-    vc->fdsp = avpriv_float_dsp_alloc(vc->avctx->flags & CODEC_FLAG_BITEXACT);
+    vc->fdsp = avpriv_float_dsp_alloc(vc->avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!vc->fdsp)
         return AVERROR(ENOMEM);
 

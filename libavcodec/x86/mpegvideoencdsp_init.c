@@ -242,7 +242,7 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
 #if HAVE_INLINE_ASM
 
     if (INLINE_MMX(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->try_8x8basis = try_8x8basis_mmx;
         }
         c->add_8x8basis = add_8x8basis_mmx;
@@ -253,7 +253,7 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
     }
 
     if (INLINE_AMD3DNOW(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->try_8x8basis = try_8x8basis_3dnow;
         }
         c->add_8x8basis = add_8x8basis_3dnow;
@@ -261,7 +261,7 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
 
 #if HAVE_SSSE3_INLINE
     if (INLINE_SSSE3(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->try_8x8basis = try_8x8basis_ssse3;
         }
         c->add_8x8basis = add_8x8basis_ssse3;

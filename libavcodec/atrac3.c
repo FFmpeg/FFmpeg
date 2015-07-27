@@ -914,7 +914,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
 
     ff_atrac_init_gain_compensation(&q->gainc_ctx, 4, 3);
-    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     q->units = av_mallocz_array(avctx->channels, sizeof(*q->units));
     if (!q->units || !q->fdsp) {

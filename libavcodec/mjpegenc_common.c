@@ -135,7 +135,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
     }
 
     /* comment */
-    if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+    if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
         put_marker(p, COM);
         flush_put_bits(p);
         ptr = put_bits_ptr(p);

@@ -242,7 +242,7 @@ static av_always_inline void h264_filter_mb_fast_internal(const H264Context *h,
                                                           unsigned int uvlinesize,
                                                           int pixel_shift)
 {
-    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags&CODEC_FLAG_GRAY));
+    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags & AV_CODEC_FLAG_GRAY));
     int chroma444 = CHROMA444(h);
     int chroma422 = CHROMA422(h);
 
@@ -723,7 +723,7 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     const int mvy_limit = IS_INTERLACED(mb_type) ? 2 : 4;
     int first_vertical_edge_done = 0;
-    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags&CODEC_FLAG_GRAY));
+    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags & AV_CODEC_FLAG_GRAY));
     int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
     int a = 52 + sl->slice_alpha_c0_offset - qp_bd_offset;
     int b = 52 + sl->slice_beta_offset - qp_bd_offset;

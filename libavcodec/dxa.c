@@ -284,7 +284,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     case 5:
         if (!tmpptr) {
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
-            if (!(avctx->flags2 & CODEC_FLAG2_SHOW_ALL))
+            if (!(avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL))
                 return AVERROR_INVALIDDATA;
         }
         frame->key_frame = 0;

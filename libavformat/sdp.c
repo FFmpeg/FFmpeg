@@ -685,7 +685,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                 const char *mode;
                 uint64_t vad_option;
 
-                if (c->flags & CODEC_FLAG_QSCALE)
+                if (c->flags & AV_CODEC_FLAG_QSCALE)
                       mode = "on";
                 else if (!av_opt_get_int(c, "vad", AV_OPT_FLAG_ENCODING_PARAM, &vad_option) && vad_option)
                       mode = "vad";

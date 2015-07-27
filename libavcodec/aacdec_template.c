@@ -1129,9 +1129,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AAC_RENAME(ff_aac_sbr_init)();
 
 #if USE_FIXED
-    ac->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & CODEC_FLAG_BITEXACT);
+    ac->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 #else
-    ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 #endif /* USE_FIXED */
     if (!ac->fdsp) {
         return AVERROR(ENOMEM);

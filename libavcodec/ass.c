@@ -66,7 +66,7 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
              "\r\n"
              "[Events]\r\n"
              "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
-             !(avctx->flags & CODEC_FLAG_BITEXACT) ? AV_STRINGIFY(LIBAVCODEC_VERSION) : "",
+             !(avctx->flags & AV_CODEC_FLAG_BITEXACT) ? AV_STRINGIFY(LIBAVCODEC_VERSION) : "",
              ASS_DEFAULT_PLAYRESX, ASS_DEFAULT_PLAYRESY,
              font, font_size, color, color, back_color, back_color,
              -bold, -italic, -underline, alignment);

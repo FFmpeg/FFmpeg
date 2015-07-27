@@ -210,7 +210,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     }
     avcodec_get_chroma_sub_sample(avc_context->pix_fmt, &h->uv_hshift, &h->uv_vshift);
 
-    if (avc_context->flags & CODEC_FLAG_QSCALE) {
+    if (avc_context->flags & AV_CODEC_FLAG_QSCALE) {
         /* Clip global_quality in QP units to the [0 - 10] range
            to be consistent with the libvorbis implementation.
            Theora accepts a quality parameter which is an int value in
@@ -241,10 +241,10 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     }
 
     // need to enable 2 pass (via TH_ENCCTL_2PASS_) before encoding headers
-    if (avc_context->flags & CODEC_FLAG_PASS1) {
+    if (avc_context->flags & AV_CODEC_FLAG_PASS1) {
         if ((ret = get_stats(avc_context, 0)) < 0)
             return ret;
-    } else if (avc_context->flags & CODEC_FLAG_PASS2) {
+    } else if (avc_context->flags & AV_CODEC_FLAG_PASS2) {
         if ((ret = submit_stats(avc_context)) < 0)
             return ret;
     }
@@ -281,7 +281,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
     // EOS, finish and get 1st pass stats if applicable
     if (!frame) {
         th_encode_packetout(h->t_state, 1, &o_packet);
-        if (avc_context->flags & CODEC_FLAG_PASS1)
+        if (avc_context->flags & AV_CODEC_FLAG_PASS1)
             if ((ret = get_stats(avc_context, 1)) < 0)
                 return ret;
         return 0;
@@ -295,7 +295,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
         t_yuv_buffer[i].data   = frame->data[i];
     }
 
-    if (avc_context->flags & CODEC_FLAG_PASS2)
+    if (avc_context->flags & AV_CODEC_FLAG_PASS2)
         if ((ret = submit_stats(avc_context)) < 0)
             return ret;
 
@@ -318,7 +318,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
         return AVERROR_EXTERNAL;
     }
 
-    if (avc_context->flags & CODEC_FLAG_PASS1)
+    if (avc_context->flags & AV_CODEC_FLAG_PASS1)
         if ((ret = get_stats(avc_context, 0)) < 0)
             return ret;
 

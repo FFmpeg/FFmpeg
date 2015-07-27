@@ -477,7 +477,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
               );
 
     av_assert0(!s->avmv);
-    if (s->avctx->flags2 & CODEC_FLAG2_EXPORT_MVS) {
+    if (s->avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS) {
         s->avmv = av_malloc_array(s->b_width * s->b_height, sizeof(AVMotionVector) << (s->block_max_depth*2));
     }
     s->avmv_index = 0;

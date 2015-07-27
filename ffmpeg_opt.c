@@ -1220,7 +1220,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     MATCH_PER_STREAM_OPT(qscale, dbl, qscale, oc, st);
     if (qscale >= 0) {
-        ost->enc_ctx->flags |= CODEC_FLAG_QSCALE;
+        ost->enc_ctx->flags |= AV_CODEC_FLAG_QSCALE;
         ost->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
     }
 
@@ -1228,7 +1228,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->disposition = av_strdup(ost->disposition);
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-        ost->enc_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        ost->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     av_opt_get_int(o->g->sws_opts, "sws_flags", 0, &ost->sws_flags);
 
@@ -1450,17 +1450,17 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         video_enc->rc_override_count = i;
 
         if (do_psnr)
-            video_enc->flags|= CODEC_FLAG_PSNR;
+            video_enc->flags|= AV_CODEC_FLAG_PSNR;
 
         /* two pass mode */
         MATCH_PER_STREAM_OPT(pass, i, do_pass, oc, st);
         if (do_pass) {
             if (do_pass & 1) {
-                video_enc->flags |= CODEC_FLAG_PASS1;
+                video_enc->flags |= AV_CODEC_FLAG_PASS1;
                 av_dict_set(&ost->encoder_opts, "flags", "+pass1", AV_DICT_APPEND);
             }
             if (do_pass & 2) {
-                video_enc->flags |= CODEC_FLAG_PASS2;
+                video_enc->flags |= AV_CODEC_FLAG_PASS2;
                 av_dict_set(&ost->encoder_opts, "flags", "+pass2", AV_DICT_APPEND);
             }
         }
@@ -1481,7 +1481,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             if (!strcmp(ost->enc->name, "libx264")) {
                 av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
             } else {
-                if (video_enc->flags & CODEC_FLAG_PASS2) {
+                if (video_enc->flags & AV_CODEC_FLAG_PASS2) {
                     char  *logbuffer = read_file(logfilename);
 
                     if (!logbuffer) {
@@ -1491,7 +1491,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                     }
                     video_enc->stats_in = logbuffer;
                 }
-                if (video_enc->flags & CODEC_FLAG_PASS1) {
+                if (video_enc->flags & AV_CODEC_FLAG_PASS1) {
                     f = av_fopen_utf8(logfilename, "wb");
                     if (!f) {
                         av_log(NULL, AV_LOG_FATAL,

@@ -199,7 +199,7 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
     }
 
     if (out_format == FMT_H263 || encoding || avctx->debug_mv ||
-        (avctx->flags2 & CODEC_FLAG2_EXPORT_MVS)) {
+        (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;
 

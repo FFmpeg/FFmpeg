@@ -191,7 +191,7 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
     }
     alpha = av_clip_uint16(sd->coefs[1][6]);
 
-    for (plane = 0; plane < (CONFIG_GRAY && s->avctx->flags & CODEC_FLAG_GRAY ? 1 : 3); plane++) {
+    for (plane = 0; plane < (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY ? 1 : 3); plane++) {
         int width = v->output_width>>!!plane;
 
         for (row = 0; row < v->output_height>>!!plane; row++) {
@@ -312,7 +312,7 @@ static void vc1_sprite_flush(AVCodecContext *avctx)
        wrong but it looks better than doing nothing. */
 
     if (f && f->data[0])
-        for (plane = 0; plane < (CONFIG_GRAY && s->avctx->flags & CODEC_FLAG_GRAY ? 1 : 3); plane++)
+        for (plane = 0; plane < (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY ? 1 : 3); plane++)
             for (i = 0; i < v->sprite_height>>!!plane; i++)
                 memset(f->data[plane] + i * f->linesize[plane],
                        plane ? 128 : 0, f->linesize[plane]);
@@ -428,7 +428,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
     if (!avctx->extradata_size || !avctx->extradata)
         return -1;
-    if (!CONFIG_GRAY || !(avctx->flags & CODEC_FLAG_GRAY))
+    if (!CONFIG_GRAY || !(avctx->flags & AV_CODEC_FLAG_GRAY))
         avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
     else {
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
@@ -630,7 +630,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
     v->second_field = 0;
 
-    if(s->avctx->flags & CODEC_FLAG_LOW_DELAY)
+    if(s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;
 
     /* no supplementary picture */

@@ -562,7 +562,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
     }
 
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
-        c->flags|= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+        c->flags |= AV_CODEC_FLAG_TRUNCATED; // we do not send complete frames
 
     /* For some codecs, such as msmpeg4 and mpeg4, width and height
        MUST be initialized there because this information is not

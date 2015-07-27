@@ -170,7 +170,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!rcc->buffer_index)
         rcc->buffer_index = s->avctx->rc_buffer_size * 3 / 4;
 
-    if (s->avctx->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
         int i;
         char *p;
 
@@ -238,7 +238,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
         // FIXME maybe move to end
-        if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->rc_strategy == 1) {
+        if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == 1) {
 #if CONFIG_LIBXVID
             return ff_xvid_rate_control_init(s);
 #else
@@ -249,7 +249,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    if (!(s->avctx->flags & CODEC_FLAG_PASS2)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_PASS2)) {
         rcc->short_term_qsum   = 0.001;
         rcc->short_term_qcount = 0.001;
 
@@ -318,7 +318,7 @@ av_cold void ff_rate_control_uninit(MpegEncContext *s)
     av_freep(&rcc->entry);
 
 #if CONFIG_LIBXVID
-    if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->rc_strategy == 1)
+    if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == 1)
         ff_xvid_rate_control_uninit(s);
 #endif
 }
@@ -771,7 +771,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     emms_c();
 
 #if CONFIG_LIBXVID
-    if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->rc_strategy == 1)
+    if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == 1)
         return ff_xvid_rate_estimate_qscale(s, dry_run);
 #endif
 
@@ -790,7 +790,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
                          s->frame_bits - s->stuffing_bits);
     }
 
-    if (s->avctx->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
         av_assert0(picture_number >= 0);
         if (picture_number >= rcc->num_entries) {
             av_log(s, AV_LOG_ERROR, "Input is longer than 2-pass log file\n");
@@ -824,7 +824,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     var = pict_type == AV_PICTURE_TYPE_I ? pic->mb_var_sum : pic->mc_mb_var_sum;
 
     short_term_q = 0; /* avoid warning */
-    if (s->avctx->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
         if (pict_type != AV_PICTURE_TYPE_I)
             av_assert0(pict_type == rce->new_pict_type);
 

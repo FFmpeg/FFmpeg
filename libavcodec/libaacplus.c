@@ -63,7 +63,7 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
 
     aacplus_cfg->bitRate = avctx->bit_rate;
     aacplus_cfg->bandWidth = avctx->cutoff;
-    aacplus_cfg->outputFormat = !(avctx->flags & CODEC_FLAG_GLOBAL_HEADER);
+    aacplus_cfg->outputFormat = !(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER);
     aacplus_cfg->inputFormat = avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? AACPLUS_INPUT_FLOAT : AACPLUS_INPUT_16BIT;
     if (!aacplusEncSetConfiguration(s->aacplus_handle, aacplus_cfg)) {
         av_log(avctx, AV_LOG_ERROR, "libaacplus doesn't support this output format!\n");
@@ -74,7 +74,7 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
 
     /* Set decoder specific info */
     avctx->extradata_size = 0;
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
 
         unsigned char *buffer = NULL;
         unsigned long decoder_specific_info_size;

@@ -323,7 +323,7 @@ static av_always_inline unsigned encode_slice_data(AVCodecContext *avctx,
     *y_data_size = encode_slice_plane(avctx, mb_count, dest_y, luma_stride,
             buf, data_size, ctx->qmat_luma[qp - 1], 0);
 
-    if (!(avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(avctx->flags & AV_CODEC_FLAG_GRAY)) {
         *u_data_size = encode_slice_plane(avctx, mb_count, dest_u,
                 chroma_stride, buf + *y_data_size, data_size - *y_data_size,
                 ctx->qmat_chroma[qp - 1], 1);

@@ -207,7 +207,7 @@ static inline void dct_get(ASV1Context *a, const AVFrame *frame,
     for (i = 0; i < 4; i++)
         a->fdsp.fdct(block[i]);
 
-    if (!(a->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(a->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         a->pdsp.get_pixels(block[4], ptr_cb, frame->linesize[1]);
         a->pdsp.get_pixels(block[5], ptr_cr, frame->linesize[2]);
         for (i = 4; i < 6; i++)

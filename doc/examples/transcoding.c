@@ -161,7 +161,7 @@ static int open_output_file(const char *filename)
         }
 
         if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-            enc_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+            enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     }
     av_dump_format(ofmt_ctx, 0, filename, 1);

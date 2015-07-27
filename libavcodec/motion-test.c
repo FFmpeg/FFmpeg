@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     printf("ffmpeg motion test\n");
 
     ctx = avcodec_alloc_context3(NULL);
-    ctx->flags |= CODEC_FLAG_BITEXACT;
+    ctx->flags |= AV_CODEC_FLAG_BITEXACT;
     av_force_cpu_flags(0);
     memset(&cctx, 0, sizeof(cctx));
     ff_me_cmp_init(&cctx, ctx);

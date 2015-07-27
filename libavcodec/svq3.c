@@ -339,7 +339,7 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
              : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src, sl->linesize,
                                                        height);
 
-    if (!(h->flags & CODEC_FLAG_GRAY)) {
+    if (!(h->flags & AV_CODEC_FLAG_GRAY)) {
         mx     = mx + (mx < (int) x) >> 1;
         my     = my + (my < (int) y) >> 1;
         width  = width  >> 1;

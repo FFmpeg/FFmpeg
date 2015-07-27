@@ -250,7 +250,7 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
     if (!square)
         qpix_op[luma_xy](dest_y + delta, src_y + delta, sl->mb_linesize);
 
-    if (CONFIG_GRAY && h->flags & CODEC_FLAG_GRAY)
+    if (CONFIG_GRAY && h->flags & AV_CODEC_FLAG_GRAY)
         return;
 
     if (chroma_idc == 3 /* yuv444 */) {
@@ -425,7 +425,7 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
             int weight1 = 64 - weight0;
             luma_weight_avg(dest_y, tmp_y, sl->mb_linesize,
                             height, 5, weight0, weight1, 0);
-            if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+            if (!CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
                 chroma_weight_avg(dest_cb, tmp_cb, sl->mb_uvlinesize,
                                   chroma_height, 5, weight0, weight1, 0);
                 chroma_weight_avg(dest_cr, tmp_cr, sl->mb_uvlinesize,
@@ -438,7 +438,7 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
                             sl->luma_weight[refn1][1][0],
                             sl->luma_weight[refn0][0][1] +
                             sl->luma_weight[refn1][1][1]);
-            if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+            if (!CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
                 chroma_weight_avg(dest_cb, tmp_cb, sl->mb_uvlinesize, chroma_height,
                                   sl->chroma_log2_weight_denom,
                                   sl->chroma_weight[refn0][0][0][0],
@@ -465,7 +465,7 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
                        sl->luma_log2_weight_denom,
                        sl->luma_weight[refn][list][0],
                        sl->luma_weight[refn][list][1]);
-        if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+        if (!CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
             if (sl->use_weight_chroma) {
                 chroma_weight_op(dest_cb, sl->mb_uvlinesize, chroma_height,
                                  sl->chroma_log2_weight_denom,
@@ -566,7 +566,7 @@ static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceConte
             XCHG(sl->top_borders[top_idx][sl->mb_x + 1],
                  src_y + (17 << pixel_shift), 1);
         }
-        if (simple || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+        if (simple || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
             if (chroma444) {
                 if (deblock_topleft) {
                     XCHG(top_border_m1 + (24 << pixel_shift), src_cb - (7 << pixel_shift), 1);

@@ -1927,7 +1927,7 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
             val = AV_RB32(st->codec->extradata + 4);
             tmcd_ctx->tmcd_flags = val;
             if (val & 1)
-                st->codec->flags2 |= CODEC_FLAG2_DROP_FRAME_TIMECODE;
+                st->codec->flags2 |= AV_CODEC_FLAG2_DROP_FRAME_TIMECODE;
             st->codec->time_base.den = st->codec->extradata[16]; /* number of frame */
             st->codec->time_base.num = 1;
             /* adjust for per frame dur in counter mode */

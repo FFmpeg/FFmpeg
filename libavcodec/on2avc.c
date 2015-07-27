@@ -951,7 +951,7 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     ff_fft_init(&c->fft256,  7, 0);
     ff_fft_init(&c->fft512,  8, 1);
     ff_fft_init(&c->fft1024, 9, 1);
-    c->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    c->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!c->fdsp)
         return AVERROR(ENOMEM);
 

@@ -293,7 +293,7 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl,
     if(i>=length-1){ //no escaped 0
         *dst_length= length;
         *consumed= length+1; //+1 for the header
-        if(h->avctx->flags2 & CODEC_FLAG2_FAST){
+        if(h->avctx->flags2 & AV_CODEC_FLAG2_FAST){
             return src;
         }else{
             memcpy(dst, src, length);
@@ -1392,7 +1392,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
     if(!h->slice_context_count)
          h->slice_context_count= 1;
     h->max_contexts = h->slice_context_count;
-    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS)) {
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
         if (!h->first_field)
             h->cur_pic_ptr = NULL;
@@ -1546,8 +1546,8 @@ again:
                 // "recovered".
                 if (h->nal_unit_type == NAL_IDR_SLICE)
                     h->frame_recovered |= FRAME_RECOVERED_IDR;
-                h->frame_recovered |= 3*!!(avctx->flags2 & CODEC_FLAG2_SHOW_ALL);
-                h->frame_recovered |= 3*!!(avctx->flags & CODEC_FLAG_OUTPUT_CORRUPT);
+                h->frame_recovered |= 3*!!(avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL);
+                h->frame_recovered |= 3*!!(avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT);
 #if 1
                 h->cur_pic_ptr->recovered |= h->frame_recovered;
 #else
@@ -1555,7 +1555,7 @@ again:
 #endif
 
                 if (h->current_slice == 1) {
-                    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS))
+                    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS))
                         decode_postinit(h, nal_index >= nals_needed);
 
                     if (h->avctx->hwaccel &&
@@ -1831,7 +1831,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         goto out;
     }
 
-    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS) && !h->cur_pic_ptr) {
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) && !h->cur_pic_ptr) {
         if (avctx->skip_frame >= AVDISCARD_NONREF ||
             buf_size >= 4 && !memcmp("Q264", buf, 4))
             return buf_size;
@@ -1839,9 +1839,9 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS) ||
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) ||
         (h->mb_y >= h->mb_height && h->mb_height)) {
-        if (avctx->flags2 & CODEC_FLAG2_CHUNKS)
+        if (avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)
             decode_postinit(h, 1);
 
         ff_h264_field_end(h, &h->slice_ctx[0], 0);

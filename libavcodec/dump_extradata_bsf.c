@@ -30,7 +30,7 @@ static int dump_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx,
     int cmd= args ? *args : 0;
     /* cast to avoid warning about discarding qualifiers */
     if(avctx->extradata){
-        if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER) && cmd=='a')
+        if(  (keyframe && (avctx->flags2 & AV_CODEC_FLAG2_LOCAL_HEADER) && cmd == 'a')
            ||(keyframe && (cmd=='k' || !cmd))
            ||(cmd=='e')
             /*||(? && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_BEGIN)*/){

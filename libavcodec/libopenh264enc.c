@@ -137,7 +137,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         SFrameBSInfo fbi = { 0 };
         int i, size = 0;
         (*s->encoder)->EncodeParameterSets(s->encoder, &fbi);
@@ -192,7 +192,7 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     // frames have two layers, where the first layer contains the SPS/PPS.
     // If using global headers, don't include the SPS/PPS in the returned
     // packet - thus, only return one layer.
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)
         first_layer = fbi.iLayerNum - 1;
 
     for (layer = first_layer; layer < fbi.iLayerNum; layer++) {

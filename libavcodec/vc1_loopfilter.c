@@ -40,7 +40,7 @@ void ff_vc1_loop_filter_iblk(VC1Context *v, int pq)
         if (s->mb_x)
             v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize, s->linesize, pq);
         v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize + 8, s->linesize, pq);
-        if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY))
+        if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY))
         for (j = 0; j < 2; j++) {
             v->vc1dsp.vc1_v_loop_filter8(s->dest[j + 1], s->uvlinesize, pq);
             if (s->mb_x)
@@ -52,7 +52,7 @@ void ff_vc1_loop_filter_iblk(VC1Context *v, int pq)
     if (s->mb_y == s->end_mb_y - 1) {
         if (s->mb_x) {
             v->vc1dsp.vc1_h_loop_filter16(s->dest[0], s->linesize, pq);
-            if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
+            if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
             v->vc1dsp.vc1_h_loop_filter8(s->dest[1], s->uvlinesize, pq);
             v->vc1dsp.vc1_h_loop_filter8(s->dest[2], s->uvlinesize, pq);
             }
@@ -76,7 +76,7 @@ void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq)
                 if (s->mb_x >= 2)
                     v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 32 * s->linesize - 16, s->linesize, pq);
                 v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 32 * s->linesize - 8, s->linesize, pq);
-                if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY))
+                if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 for (j = 0; j < 2; j++) {
                     v->vc1dsp.vc1_v_loop_filter8(s->dest[j + 1] - 8 * s->uvlinesize - 8, s->uvlinesize, pq);
                     if (s->mb_x >= 2) {
@@ -94,7 +94,7 @@ void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq)
                 if (s->mb_x)
                     v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 32 * s->linesize, s->linesize, pq);
                 v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 32 * s->linesize + 8, s->linesize, pq);
-                if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY))
+                if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 for (j = 0; j < 2; j++) {
                     v->vc1dsp.vc1_v_loop_filter8(s->dest[j + 1] - 8 * s->uvlinesize, s->uvlinesize, pq);
                     if (s->mb_x >= 2) {
@@ -110,7 +110,7 @@ void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq)
                 if (s->mb_x >= 2)
                     v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize - 16, s->linesize, pq);
                 v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize - 8, s->linesize, pq);
-                if (s->mb_x >= 2 && (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY))) {
+                if (s->mb_x >= 2 && (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY))) {
                     for (j = 0; j < 2; j++) {
                         v->vc1dsp.vc1_h_loop_filter8(s->dest[j + 1] - 8 * s->uvlinesize - 8, s->uvlinesize, pq);
                     }
@@ -121,7 +121,7 @@ void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq)
                 if (s->mb_x)
                     v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize, s->linesize, pq);
                 v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize + 8, s->linesize, pq);
-                if (s->mb_x && (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY))) {
+                if (s->mb_x && (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY))) {
                     for (j = 0; j < 2; j++) {
                         v->vc1dsp.vc1_h_loop_filter8(s->dest[j + 1] - 8 * s->uvlinesize, s->uvlinesize, pq);
                     }
@@ -155,7 +155,7 @@ void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v)
                                       v->block[v->cur_blk_idx][0]);
             v->vc1dsp.vc1_h_s_overlap(v->block[v->left_blk_idx][3],
                                       v->block[v->cur_blk_idx][2]);
-            if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
+            if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                 v->vc1dsp.vc1_h_s_overlap(v->block[v->left_blk_idx][4],
                                           v->block[v->cur_blk_idx][4]);
                 v->vc1dsp.vc1_h_s_overlap(v->block[v->left_blk_idx][5],
@@ -174,7 +174,7 @@ void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v)
                                           v->block[v->cur_blk_idx][0]);
                 v->vc1dsp.vc1_v_s_overlap(v->block[v->top_blk_idx][3],
                                           v->block[v->cur_blk_idx][1]);
-                if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
+                if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                     v->vc1dsp.vc1_v_s_overlap(v->block[v->top_blk_idx][4],
                                               v->block[v->cur_blk_idx][4]);
                     v->vc1dsp.vc1_v_s_overlap(v->block[v->top_blk_idx][5],
@@ -194,7 +194,7 @@ void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v)
                                       v->block[v->left_blk_idx][0]);
             v->vc1dsp.vc1_v_s_overlap(v->block[v->topleft_blk_idx][3],
                                       v->block[v->left_blk_idx][1]);
-            if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
+            if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                 v->vc1dsp.vc1_v_s_overlap(v->block[v->topleft_blk_idx][4],
                                           v->block[v->left_blk_idx][4]);
                 v->vc1dsp.vc1_v_s_overlap(v->block[v->topleft_blk_idx][5],
@@ -336,7 +336,7 @@ void ff_vc1_apply_p_loop_filter(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     int i;
-    int block_count = CONFIG_GRAY && (s->avctx->flags & CODEC_FLAG_GRAY) ? 4 : 6;
+    int block_count = CONFIG_GRAY && (s->avctx->flags & AV_CODEC_FLAG_GRAY) ? 4 : 6;
 
     for (i = 0; i < block_count; i++) {
         vc1_apply_p_v_loop_filter(v, i);

@@ -464,7 +464,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation)
         int width  = 16 * sps->mb_width;
         int height = 16 * sps->mb_height * (2 - sps->frame_mbs_only_flag);
 
-        if (h->avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
+        if (h->avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) {
             av_log(h->avctx, AV_LOG_DEBUG, "discarding sps cropping, original "
                                            "values are l:%d r:%d t:%d b:%d\n",
                    crop_left, crop_right, crop_top, crop_bottom);
@@ -481,7 +481,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation)
             int step_y = (2 - sps->frame_mbs_only_flag) << vsub;
 
             if (crop_left & (0x1F >> (sps->bit_depth_luma > 8)) &&
-                !(h->avctx->flags & CODEC_FLAG_UNALIGNED)) {
+                !(h->avctx->flags & AV_CODEC_FLAG_UNALIGNED)) {
                 crop_left &= ~(0x1F >> (sps->bit_depth_luma > 8));
                 av_log(h->avctx, AV_LOG_WARNING,
                        "Reducing left cropping to %d "

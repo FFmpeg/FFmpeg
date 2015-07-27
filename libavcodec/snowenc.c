@@ -39,7 +39,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int i;
 
     if(avctx->prediction_method == DWT_97
-       && (avctx->flags & CODEC_FLAG_QSCALE)
+       && (avctx->flags & AV_CODEC_FLAG_QSCALE)
        && avctx->global_quality == 0){
         av_log(avctx, AV_LOG_ERROR, "The 9/7 wavelet is incompatible with lossless mode.\n");
         return -1;
@@ -47,8 +47,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
 
-    s->mv_scale       = (avctx->flags & CODEC_FLAG_QPEL) ? 2 : 4;
-    s->block_max_depth= (avctx->flags & CODEC_FLAG_4MV ) ? 1 : 0;
+    s->mv_scale       = (avctx->flags & AV_CODEC_FLAG_QPEL) ? 2 : 4;
+    s->block_max_depth= (avctx->flags & AV_CODEC_FLAG_4MV ) ? 1 : 0;
 
     for(plane_index=0; plane_index<3; plane_index++){
         s->plane[plane_index].diag_mc= 1;
@@ -83,18 +83,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->max_ref_frames = av_clip(avctx->refs, 1, MAX_REF_FRAMES);
 
-    if(avctx->flags&CODEC_FLAG_PASS1){
+    if(avctx->flags&AV_CODEC_FLAG_PASS1){
         if(!avctx->stats_out)
             avctx->stats_out = av_mallocz(256);
 
         if (!avctx->stats_out)
             return AVERROR(ENOMEM);
     }
-    if((avctx->flags&CODEC_FLAG_PASS2) || !(avctx->flags&CODEC_FLAG_QSCALE)){
+    if((avctx->flags&AV_CODEC_FLAG_PASS2) || !(avctx->flags&CODEC_FLAG_QSCALE)){
         if(ff_rate_control_init(&s->m) < 0)
             return -1;
     }
-    s->pass1_rc= !(avctx->flags & (CODEC_FLAG_QSCALE|CODEC_FLAG_PASS2));
+    s->pass1_rc= !(avctx->flags & (AV_CODEC_FLAG_QSCALE|CODEC_FLAG_PASS2));
 
     switch(avctx->pix_fmt){
     case AV_PIX_FMT_YUV444P:
@@ -241,7 +241,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
                                 s->input_picture->data[2] + ((x*block_w)>>s->chroma_h_shift) + ((y*uvstride*block_w)>>s->chroma_v_shift)};
     int P[10][2];
     int16_t last_mv[3][2];
-    int qpel= !!(s->avctx->flags & CODEC_FLAG_QPEL); //unused
+    int qpel= !!(s->avctx->flags & AV_CODEC_FLAG_QPEL); //unused
     const int shift= 1+qpel;
     MotionEstContext *c= &s->m.me;
     int ref_context= av_log2(2*left->ref) + av_log2(2*top->ref);
@@ -1578,10 +1578,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     s->new_picture = pict;
 
     s->m.picture_number= avctx->frame_number;
-    if(avctx->flags&CODEC_FLAG_PASS2){
+    if(avctx->flags&AV_CODEC_FLAG_PASS2){
         s->m.pict_type = pic->pict_type = s->m.rc_context.entry[avctx->frame_number].new_pict_type;
         s->keyframe = pic->pict_type == AV_PICTURE_TYPE_I;
-        if(!(avctx->flags&CODEC_FLAG_QSCALE)) {
+        if(!(avctx->flags&AV_CODEC_FLAG_QSCALE)) {
             pic->quality = ff_rate_estimate_qscale(&s->m, 0);
             if (pic->quality < 0)
                 return -1;
@@ -1597,7 +1597,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->qlog   = qscale2qlog(pic->quality);
         s->lambda = pic->quality * 3/2;
     }
-    if (s->qlog < 0 || (!pic->quality && (avctx->flags & CODEC_FLAG_QSCALE))) {
+    if (s->qlog < 0 || (!pic->quality && (avctx->flags & AV_CODEC_FLAG_QSCALE))) {
         s->qlog= LOSSLESS_QLOG;
         s->lambda = 0;
     }//else keep previous frame's qlog until after motion estimation
@@ -1653,7 +1653,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.me_method= s->avctx->me_method;
         s->m.me.scene_change_score=0;
         s->m.me.dia_size = avctx->dia_size;
-        s->m.quarter_sample= (s->avctx->flags & CODEC_FLAG_QPEL)!=0;
+        s->m.quarter_sample= (s->avctx->flags & AV_CODEC_FLAG_QPEL)!=0;
         s->m.out_format= FMT_H263;
         s->m.unrestricted_mv= 1;
 
@@ -1722,7 +1722,7 @@ redo_frame:
 
             if(   plane_index==0
                && pic->pict_type == AV_PICTURE_TYPE_P
-               && !(avctx->flags&CODEC_FLAG_PASS2)
+               && !(avctx->flags&AV_CODEC_FLAG_PASS2)
                && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
                 ff_init_range_encoder(c, pkt->data, pkt->size);
                 ff_build_rac_states(c, (1LL<<32)/20, 256-8);
@@ -1808,7 +1808,7 @@ redo_frame:
                 predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
             }
         }
-        if(s->avctx->flags&CODEC_FLAG_PSNR){
+        if(s->avctx->flags&AV_CODEC_FLAG_PSNR){
             int64_t error= 0;
 
             if(pict->data[plane_index]) //FIXME gray hack
@@ -1840,7 +1840,7 @@ redo_frame:
     if(s->pass1_rc)
         if (ff_rate_estimate_qscale(&s->m, 0) < 0)
             return -1;
-    if(avctx->flags&CODEC_FLAG_PASS1)
+    if(avctx->flags&AV_CODEC_FLAG_PASS1)
         ff_write_pass1_stats(&s->m);
     s->m.last_pict_type = s->m.pict_type;
     avctx->frame_bits = s->m.frame_bits;

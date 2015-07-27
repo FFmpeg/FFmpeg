@@ -559,7 +559,7 @@ static inline void idct_put(FourXContext *f, int x, int y)
         idct(block[i]);
     }
 
-    if (!(f->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(f->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         for (i = 4; i < 6; i++)
             idct(block[i]);
     }

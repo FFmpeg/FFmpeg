@@ -321,7 +321,7 @@ static int put_com(Jpeg2000EncoderContext *s, int compno)
 {
     int size = 4 + strlen(LIBAVCODEC_IDENT);
 
-    if (s->avctx->flags & CODEC_FLAG_BITEXACT)
+    if (s->avctx->flags & AV_CODEC_FLAG_BITEXACT)
         return 0;
 
     if (s->buf_end - s->buf < size + 2)

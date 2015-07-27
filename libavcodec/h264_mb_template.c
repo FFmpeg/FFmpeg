@@ -112,7 +112,7 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
                 for (j = 0; j < 16; j++)
                     tmp_y[j] = get_bits(&gb, bit_depth);
             }
-            if (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+            if (SIMPLE || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
                 if (!h->sps.chroma_format_idc) {
                     for (i = 0; i < block_h; i++) {
                         uint16_t *tmp_cb = (uint16_t *)(dest_cb + i * uvlinesize);
@@ -137,7 +137,7 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
         } else {
             for (i = 0; i < 16; i++)
                 memcpy(dest_y + i * linesize, sl->intra_pcm_ptr + i * 16, 16);
-            if (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+            if (SIMPLE || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
                 if (!h->sps.chroma_format_idc) {
                     for (i = 0; i < 8; i++) {
                         memset(dest_cb + i * uvlinesize, 1 << (bit_depth - 1), 8);
@@ -159,7 +159,7 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
                 xchg_mb_border(h, sl, dest_y, dest_cb, dest_cr, linesize,
                                uvlinesize, 1, 0, SIMPLE, PIXEL_SHIFT);
 
-            if (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+            if (SIMPLE || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
                 h->hpc.pred8x8[sl->chroma_pred_mode](dest_cb, uvlinesize);
                 h->hpc.pred8x8[sl->chroma_pred_mode](dest_cr, uvlinesize);
             }
@@ -190,7 +190,7 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
         hl_decode_mb_idct_luma(h, sl, mb_type, is_h264, SIMPLE, transform_bypass,
                                PIXEL_SHIFT, block_offset, linesize, dest_y, 0);
 
-        if ((SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) &&
+        if ((SIMPLE || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) &&
             (sl->cbp & 0x30)) {
             uint8_t *dest[2] = { dest_cb, dest_cr };
             if (transform_bypass) {
@@ -280,7 +280,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(const H264Context *h, H264SliceCo
     int i, j, p;
     const int *block_offset = &h->block_offset[0];
     const int transform_bypass = !SIMPLE && (sl->qscale == 0 && h->sps.transform_bypass);
-    const int plane_count      = (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) ? 3 : 1;
+    const int plane_count      = (SIMPLE || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) ? 3 : 1;
 
     for (p = 0; p < plane_count; p++) {
         dest[p] = h->cur_pic.f->data[p] +

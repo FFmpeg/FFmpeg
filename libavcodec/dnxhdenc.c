@@ -351,7 +351,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     ctx->m.mb_height = (avctx->height + 15) / 16;
     ctx->m.mb_width  = (avctx->width  + 15) / 16;
 
-    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         ctx->interlaced   = 1;
         ctx->m.mb_height /= 2;
     }
