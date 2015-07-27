@@ -1140,7 +1140,10 @@ skip:
                     p += 5;
                     buf_size -= 5;
                 }
-                if (pes->ts->fix_teletext_pts && pes->st->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT) {
+                if (   pes->ts->fix_teletext_pts
+                    && (   pes->st->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT
+                        || pes->st->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
+                    ) {
                     AVProgram *p = NULL;
                     while ((p = av_find_program_from_stream(pes->stream, p, pes->st->index))) {
                         if (p->pcr_pid != -1 && p->discard != AVDISCARD_ALL) {
@@ -1169,7 +1172,11 @@ skip:
                                     pes->st->pts_wrap_behavior = st->pts_wrap_behavior;
                                     if (pes->dts == AV_NOPTS_VALUE || pes->dts < pcr) {
                                         pes->pts = pes->dts = pcr;
-                                    } else if (pes->dts > pcr + 3654 + 9000) {
+                                    } else if (pes->st->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT &&
+                                               pes->dts > pcr + 3654 + 9000) {
+                                        pes->pts = pes->dts = pcr + 3654 + 9000;
+                                    } else if (pes->st->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
+                                               pes->dts > pcr + 10*90000) { //10sec
                                         pes->pts = pes->dts = pcr + 3654 + 9000;
                                     }
                                     break;
