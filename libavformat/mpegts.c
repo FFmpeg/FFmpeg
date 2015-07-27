@@ -1651,9 +1651,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
 
             if (language_count > 0) {
                 /* 4 bytes per language code (3 bytes) with comma or NUL byte should fit language buffer */
-                if (language_count > sizeof(language) / 4) {
-                    language_count = sizeof(language) / 4;
-                }
+                av_assert0(language_count <= sizeof(language) / 4);
 
                 if (st->codec->extradata == NULL) {
                     if (ff_alloc_extradata(st->codec, language_count * 2)) {
@@ -1703,9 +1701,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 uint8_t *extradata;
 
                 /* 4 bytes per language code (3 bytes) with comma or NUL byte should fit language buffer */
-                if (language_count > sizeof(language) / 4) {
-                    language_count = sizeof(language) / 4;
-                }
+                av_assert0(language_count <= sizeof(language) / 4);
 
                 if (st->codec->extradata == NULL) {
                     if (ff_alloc_extradata(st->codec, language_count * 5)) {
