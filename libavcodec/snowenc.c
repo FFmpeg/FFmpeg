@@ -1555,7 +1555,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t rc_header_bak[sizeof(s->header_state)];
     uint8_t rc_block_bak[sizeof(s->block_state)];
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, s->b_width*s->b_height*MB_SIZE*MB_SIZE*3 + FF_MIN_BUFFER_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, s->b_width*s->b_height*MB_SIZE*MB_SIZE*3 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
     ff_init_range_encoder(c, pkt->data, pkt->size);

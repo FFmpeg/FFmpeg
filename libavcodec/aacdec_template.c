@@ -3098,7 +3098,7 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     if (new_extradata && 0) {
         av_free(avctx->extradata);
         avctx->extradata = av_mallocz(new_extradata_size +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
+                                      AV_INPUT_BUFFER_PADDING_SIZE);
         if (!avctx->extradata)
             return AVERROR(ENOMEM);
         avctx->extradata_size = new_extradata_size;

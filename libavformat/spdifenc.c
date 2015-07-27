@@ -525,7 +525,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     if (ctx->extra_bswap ^ (ctx->spdif_flags & SPDIF_FLAG_BIGENDIAN)) {
         avio_write(s->pb, ctx->out_buf, ctx->out_bytes & ~1);
     } else {
-        av_fast_malloc(&ctx->buffer, &ctx->buffer_size, ctx->out_bytes + FF_INPUT_BUFFER_PADDING_SIZE);
+        av_fast_malloc(&ctx->buffer, &ctx->buffer_size, ctx->out_bytes + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!ctx->buffer)
             return AVERROR(ENOMEM);
         ff_spdif_bswap_buf16((uint16_t *)ctx->buffer, (uint16_t *)ctx->out_buf, ctx->out_bytes >> 1);

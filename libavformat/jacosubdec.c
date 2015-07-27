@@ -172,7 +172,7 @@ static int jacosub_read_header(AVFormatContext *s)
 
     jacosub->timeres = 30;
 
-    av_bprint_init(&header, 1024+FF_INPUT_BUFFER_PADDING_SIZE, 4096);
+    av_bprint_init(&header, 1024+AV_INPUT_BUFFER_PADDING_SIZE, 4096);
 
     while (!avio_feof(pb)) {
         int cmd_len;

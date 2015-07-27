@@ -138,7 +138,7 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
 
         if (!faacEncGetDecoderSpecificInfo(s->faac_handle, &buffer,
                                            &decoder_specific_info_size)) {
-            avctx->extradata = av_malloc(decoder_specific_info_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            avctx->extradata = av_malloc(decoder_specific_info_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!avctx->extradata) {
                 ret = AVERROR(ENOMEM);
                 goto error;

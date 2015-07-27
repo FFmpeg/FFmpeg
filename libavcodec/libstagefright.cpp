@@ -272,7 +272,7 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
 
     s->orig_extradata_size = avctx->extradata_size;
     s->orig_extradata = (uint8_t*) av_mallocz(avctx->extradata_size +
-                                              FF_INPUT_BUFFER_PADDING_SIZE);
+                                              AV_INPUT_BUFFER_PADDING_SIZE);
     if (!s->orig_extradata) {
         ret = AVERROR(ENOMEM);
         goto fail;

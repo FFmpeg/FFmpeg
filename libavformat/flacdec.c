@@ -58,7 +58,7 @@ static int flac_read_header(AVFormatContext *s)
         case FLAC_METADATA_TYPE_CUESHEET:
         case FLAC_METADATA_TYPE_PICTURE:
         case FLAC_METADATA_TYPE_VORBIS_COMMENT:
-            buffer = av_mallocz(metadata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            buffer = av_mallocz(metadata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer) {
                 return AVERROR(ENOMEM);
             }

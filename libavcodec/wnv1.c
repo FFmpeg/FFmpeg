@@ -73,12 +73,12 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    rbuf = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    rbuf = av_malloc(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!rbuf) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
         return AVERROR(ENOMEM);
     }
-    memset(rbuf + buf_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(rbuf + buf_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_free(rbuf);

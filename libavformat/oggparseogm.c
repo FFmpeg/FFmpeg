@@ -102,7 +102,7 @@ ogm_header(AVFormatContext *s, int idx)
                 size -= 4;
             }
             if (size > 52) {
-                av_assert0(FF_INPUT_BUFFER_PADDING_SIZE <= 52);
+                av_assert0(AV_INPUT_BUFFER_PADDING_SIZE <= 52);
                 size -= 52;
                 ff_alloc_extradata(st->codec, size);
                 bytestream2_get_buffer(&p, st->codec->extradata, st->codec->extradata_size);

@@ -33,7 +33,7 @@ int ff_startcode_find_candidate_c(const uint8_t *buf, int size)
     int i = 0;
 #if HAVE_FAST_UNALIGNED
     /* we check i < size instead of i + 3 / 7 because it is
-     * simpler and there must be FF_INPUT_BUFFER_PADDING_SIZE
+     * simpler and there must be AV_INPUT_BUFFER_PADDING_SIZE
      * bytes at the end.
      */
 #if HAVE_FAST_64BIT

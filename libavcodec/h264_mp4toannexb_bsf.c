@@ -57,7 +57,7 @@ static int alloc_and_copy(uint8_t **poutbuf, int *poutbuf_size,
 
     *poutbuf_size += sps_pps_size + in_size + nal_header_size;
     if ((err = av_reallocp(poutbuf,
-                           *poutbuf_size + FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+                           *poutbuf_size + AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
         *poutbuf_size = 0;
         return err;
     }
@@ -178,7 +178,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         if (args && strstr(args, "private_spspps_buf"))
             ctx->private_spspps = 1;
 
-        ret = h264_extradata_to_annexb(ctx, avctx, FF_INPUT_BUFFER_PADDING_SIZE);
+        ret = h264_extradata_to_annexb(ctx, avctx, AV_INPUT_BUFFER_PADDING_SIZE);
         if (ret < 0)
             return ret;
         ctx->length_size      = ret;

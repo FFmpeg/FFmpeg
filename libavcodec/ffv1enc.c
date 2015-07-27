@@ -550,7 +550,7 @@ static int write_extradata(FFV1Context *f)
 
     f->avctx->extradata_size = 10000 + 4 +
                                     (11 * 11 * 5 * 5 * 5 + 11 * 11 * 11) * 32;
-    f->avctx->extradata = av_malloc(f->avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    f->avctx->extradata = av_malloc(f->avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!f->avctx->extradata)
         return AVERROR(ENOMEM);
     ff_init_range_encoder(c, f->avctx->extradata, f->avctx->extradata_size);
@@ -1197,7 +1197,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t keystate    = 128;
     uint8_t *buf_p;
     int i, ret;
-    int64_t maxsize =   FF_MIN_BUFFER_SIZE
+    int64_t maxsize =   AV_INPUT_BUFFER_MIN_SIZE
                       + avctx->width*avctx->height*35LL*4;
 
     if(!pict) {
@@ -1246,7 +1246,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (f->version > 3)
-        maxsize = FF_MIN_BUFFER_SIZE + avctx->width*avctx->height*3LL*4;
+        maxsize = AV_INPUT_BUFFER_MIN_SIZE + avctx->width*avctx->height*3LL*4;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, maxsize, 0)) < 0)
         return ret;

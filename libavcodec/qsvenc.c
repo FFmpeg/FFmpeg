@@ -189,7 +189,7 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
     }
 
     avctx->extradata = av_malloc(extradata.SPSBufSize + need_pps * extradata.PPSBufSize +
-                                 FF_INPUT_BUFFER_PADDING_SIZE);
+                                 AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
 
@@ -197,7 +197,7 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
     if (need_pps)
         memcpy(avctx->extradata + extradata.SPSBufSize, pps_buf, extradata.PPSBufSize);
     avctx->extradata_size = extradata.SPSBufSize + need_pps * extradata.PPSBufSize;
-    memset(avctx->extradata + avctx->extradata_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(avctx->extradata + avctx->extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     return 0;
 }

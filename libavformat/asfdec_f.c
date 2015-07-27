@@ -517,7 +517,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         if (sizeX > 40) {
             st->codec->extradata_size = ffio_limit(pb, sizeX - 40);
             st->codec->extradata      = av_mallocz(st->codec->extradata_size +
-                                                   FF_INPUT_BUFFER_PADDING_SIZE);
+                                                   AV_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
             avio_read(pb, st->codec->extradata, st->codec->extradata_size);
@@ -1394,12 +1394,12 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                 } else {
                     /* packet descrambling */
                     AVBufferRef *buf = av_buffer_alloc(asf_st->pkt.size +
-                                                       FF_INPUT_BUFFER_PADDING_SIZE);
+                                                       AV_INPUT_BUFFER_PADDING_SIZE);
                     if (buf) {
                         uint8_t *newdata = buf->data;
                         int offset = 0;
                         memset(newdata + asf_st->pkt.size, 0,
-                               FF_INPUT_BUFFER_PADDING_SIZE);
+                               AV_INPUT_BUFFER_PADDING_SIZE);
                         while (offset < asf_st->pkt.size) {
                             int off = offset / asf_st->ds_chunk_size;
                             int row = off / asf_st->ds_span;

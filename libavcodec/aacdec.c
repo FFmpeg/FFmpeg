@@ -322,14 +322,14 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
 
         if (avctx->extradata_size < esize) {
             av_free(avctx->extradata);
-            avctx->extradata = av_malloc(esize + FF_INPUT_BUFFER_PADDING_SIZE);
+            avctx->extradata = av_malloc(esize + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!avctx->extradata)
                 return AVERROR(ENOMEM);
         }
 
         avctx->extradata_size = esize;
         memcpy(avctx->extradata, gb->buffer + (config_start_bit/8), esize);
-        memset(avctx->extradata+esize, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        memset(avctx->extradata+esize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
     skip_bits_long(gb, bits_consumed);
 

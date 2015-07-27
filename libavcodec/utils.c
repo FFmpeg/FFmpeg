@@ -126,25 +126,25 @@ static void *avformat_mutex;
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
     uint8_t **p = ptr;
-    if (min_size > SIZE_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+    if (min_size > SIZE_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
         av_freep(p);
         *size = 0;
         return;
     }
-    if (!ff_fast_malloc(p, size, min_size + FF_INPUT_BUFFER_PADDING_SIZE, 1))
-        memset(*p + min_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!ff_fast_malloc(p, size, min_size + AV_INPUT_BUFFER_PADDING_SIZE, 1))
+        memset(*p + min_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 }
 
 void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size)
 {
     uint8_t **p = ptr;
-    if (min_size > SIZE_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+    if (min_size > SIZE_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
         av_freep(p);
         *size = 0;
         return;
     }
-    if (!ff_fast_malloc(p, size, min_size + FF_INPUT_BUFFER_PADDING_SIZE, 1))
-        memset(*p, 0, min_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!ff_fast_malloc(p, size, min_size + AV_INPUT_BUFFER_PADDING_SIZE, 1))
+        memset(*p, 0, min_size + AV_INPUT_BUFFER_PADDING_SIZE);
 }
 
 /* encoder management */
@@ -1783,9 +1783,9 @@ int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64
         av_log(avctx, AV_LOG_ERROR, "Invalid negative user packet size %d\n", avpkt->size);
         return AVERROR(EINVAL);
     }
-    if (size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+    if (size < 0 || size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid minimum required packet size %"PRId64" (max allowed is %d)\n",
-               size, INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE);
+               size, INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
         return AVERROR(EINVAL);
     }
 
@@ -1992,7 +1992,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (!ret) {
         if (needs_realloc && avpkt->data) {
-            ret = av_buffer_realloc(&avpkt->buf, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+            ret = av_buffer_realloc(&avpkt->buf, avpkt->size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (ret >= 0)
                 avpkt->data = avpkt->buf->data;
         }
@@ -2118,7 +2118,7 @@ int attribute_align_arg avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf
     AVPacket pkt;
     int ret, got_packet = 0;
 
-    if (buf_size < FF_MIN_BUFFER_SIZE) {
+    if (buf_size < AV_INPUT_BUFFER_MIN_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "buffer smaller than minimum size\n");
         return -1;
     }
@@ -2220,7 +2220,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             avpkt->pts = avpkt->dts = frame->pts;
 
         if (needs_realloc && avpkt->data) {
-            ret = av_buffer_realloc(&avpkt->buf, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+            ret = av_buffer_realloc(&avpkt->buf, avpkt->size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (ret >= 0)
                 avpkt->data = avpkt->buf->data;
         }
@@ -2724,7 +2724,7 @@ static int recode_subtitle(AVCodecContext *avctx,
     inb = inpkt->data;
     inl = inpkt->size;
 
-    if (inl >= INT_MAX / UTF8_MAX_BYTES - FF_INPUT_BUFFER_PADDING_SIZE) {
+    if (inl >= INT_MAX / UTF8_MAX_BYTES - AV_INPUT_BUFFER_PADDING_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "Subtitles packet is too big for recoding\n");
         ret = AVERROR(ENOMEM);
         goto end;
@@ -2813,7 +2813,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
              * remaining bytes should have already been filled with zeros by the
              * original packet allocation anyway. */
             memset(tmp.data + tmp.size, 0,
-                   FFMIN(avpkt->size - tmp.size, FF_INPUT_BUFFER_PADDING_SIZE));
+                   FFMIN(avpkt->size - tmp.size, AV_INPUT_BUFFER_PADDING_SIZE));
         }
 
         pkt_recoded = tmp;
@@ -3869,7 +3869,7 @@ int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
     /* Note: the string is NUL terminated (so extradata can be read as a
      * string), but the ending character is not accounted in the size (in
      * binary formats you are likely not supposed to mux that character). When
-     * extradata is copied, it is also padded with FF_INPUT_BUFFER_PADDING_SIZE
+     * extradata is copied, it is also padded with AV_INPUT_BUFFER_PADDING_SIZE
      * zeros. */
     avctx->extradata_size = buf->len;
     return 0;

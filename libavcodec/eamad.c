@@ -312,7 +312,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
     s->bbdsp.bswap16_buf(s->bitstream_buf, (const uint16_t *)(buf + bytestream2_tell(&gb)),
                          bytestream2_get_bytes_left(&gb) / 2);
-    memset((uint8_t*)s->bitstream_buf + bytestream2_get_bytes_left(&gb), 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset((uint8_t*)s->bitstream_buf + bytestream2_get_bytes_left(&gb), 0, AV_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&s->gb, s->bitstream_buf, 8*(bytestream2_get_bytes_left(&gb)));
 
     for (s->mb_y=0; s->mb_y < (avctx->height+15)/16; s->mb_y++)

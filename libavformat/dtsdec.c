@@ -34,7 +34,7 @@ static int dts_probe(AVProbeData *p)
     int markers[4*16] = {0};
     int sum, max, i;
     int64_t diff = 0;
-    uint8_t hdr[12 + FF_INPUT_BUFFER_PADDING_SIZE] = { 0 };
+    uint8_t hdr[12 + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
 
     buf = p->buf + FFMIN(4096, p->buf_size);
 

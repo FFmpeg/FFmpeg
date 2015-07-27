@@ -73,11 +73,11 @@ static void scan_buffer(const uint8_t *buf, int buf_size,
 
 /* allocate new buffer and copy size bytes from src */
 static uint8_t *create_new_buffer(const uint8_t *src, int size) {
-    uint8_t *dst = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    uint8_t *dst = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (dst) {
         memcpy(dst, src, size);
-        memset(dst + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        memset(dst + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
     return dst;

@@ -56,7 +56,7 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     }
     mrk = AV_RB32(input);
     if (mrk != DCA_SYNCWORD_CORE_BE && mrk != DCA_SYNCWORD_SUBSTREAM) {
-        s->buffer = av_fast_realloc(s->buffer, &s->buffer_size, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+        s->buffer = av_fast_realloc(s->buffer, &s->buffer_size, avpkt->size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!s->buffer)
             return AVERROR(ENOMEM);
 

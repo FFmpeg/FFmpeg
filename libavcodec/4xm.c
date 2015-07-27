@@ -883,11 +883,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         }
         cfrm = &f->cfrm[i];
 
-        if (data_size > UINT_MAX -  cfrm->size - FF_INPUT_BUFFER_PADDING_SIZE)
+        if (data_size > UINT_MAX -  cfrm->size - AV_INPUT_BUFFER_PADDING_SIZE)
             return AVERROR_INVALIDDATA;
 
         cfrm->data = av_fast_realloc(cfrm->data, &cfrm->allocated_size,
-                                     cfrm->size + data_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                                     cfrm->size + data_size + AV_INPUT_BUFFER_PADDING_SIZE);
         // explicit check needed as memcpy below might not catch a NULL
         if (!cfrm->data) {
             av_log(f->avctx, AV_LOG_ERROR, "realloc failure\n");

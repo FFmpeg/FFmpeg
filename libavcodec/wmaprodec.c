@@ -173,7 +173,7 @@ typedef struct WMAProDecodeCtx {
     AVCodecContext*  avctx;                         ///< codec context for av_log
     AVFloatDSPContext *fdsp;
     uint8_t          frame_data[MAX_FRAMESIZE +
-                      FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
+                      AV_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
     FFTContext       mdct_ctx[WMAPRO_BLOCK_SIZES];  ///< MDCT context per block size
     DECLARE_ALIGNED(32, float, tmp)[WMAPRO_BLOCK_MAX_SIZE]; ///< IMDCT output buffer

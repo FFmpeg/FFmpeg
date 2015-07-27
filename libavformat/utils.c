@@ -2922,14 +2922,14 @@ int ff_alloc_extradata(AVCodecContext *avctx, int size)
 {
     int ret;
 
-    if (size < 0 || size >= INT32_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+    if (size < 0 || size >= INT32_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
         avctx->extradata = NULL;
         avctx->extradata_size = 0;
         return AVERROR(EINVAL);
     }
-    avctx->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (avctx->extradata) {
-        memset(avctx->extradata + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        memset(avctx->extradata + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         avctx->extradata_size = size;
         ret = 0;
     } else {

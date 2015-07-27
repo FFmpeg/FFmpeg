@@ -643,7 +643,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     int ret;
 
     if (!ost->st->codec->extradata_size && ost->enc_ctx->extradata_size) {
-        ost->st->codec->extradata = av_mallocz(ost->enc_ctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        ost->st->codec->extradata = av_mallocz(ost->enc_ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (ost->st->codec->extradata) {
             memcpy(ost->st->codec->extradata, ost->enc_ctx->extradata, ost->enc_ctx->extradata_size);
             ost->st->codec->extradata_size = ost->enc_ctx->extradata_size;
@@ -688,10 +688,10 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
         if(a == 0 && new_pkt.data != pkt->data && new_pkt.destruct) {
-            uint8_t *t = av_malloc(new_pkt.size + FF_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
+            uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
             if(t) {
                 memcpy(t, new_pkt.data, new_pkt.size);
-                memset(t + new_pkt.size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+                memset(t + new_pkt.size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
                 new_pkt.data = t;
                 new_pkt.buf = NULL;
                 a = 1;
@@ -2811,7 +2811,7 @@ static int transcode_init(void)
 
             av_assert0(ist && !ost->filter);
 
-            extra_size = (uint64_t)dec_ctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
+            extra_size = (uint64_t)dec_ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
 
             if (extra_size > INT_MAX) {
                 return AVERROR(EINVAL);

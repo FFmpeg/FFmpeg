@@ -1246,14 +1246,14 @@ static int mov_read_fiel(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_realloc_extradata(AVCodecContext *codec, MOVAtom atom)
 {
     int err = 0;
-    uint64_t size = (uint64_t)codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
+    uint64_t size = (uint64_t)codec->extradata_size + atom.size + 8 + AV_INPUT_BUFFER_PADDING_SIZE;
     if (size > INT_MAX || (uint64_t)atom.size > INT_MAX)
         return AVERROR_INVALIDDATA;
     if ((err = av_reallocp(&codec->extradata, size)) < 0) {
         codec->extradata_size = 0;
         return err;
     }
-    codec->extradata_size = size - FF_INPUT_BUFFER_PADDING_SIZE;
+    codec->extradata_size = size - AV_INPUT_BUFFER_PADDING_SIZE;
     return 0;
 }
 
@@ -1275,7 +1275,7 @@ static int64_t mov_read_atom_into_extradata(MOVContext *c, AVIOContext *pb, MOVA
         codec->extradata_size -= atom.size - err;
         result = err;
     }
-    memset(buf + 8 + err, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(buf + 8 + err, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     return result;
 }
 
@@ -1899,7 +1899,7 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
 
     av_freep(&st->codec->extradata);
     st->codec->extradata_size = 0;
-    st->codec->extradata = av_mallocz(strlen(buf) + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(strlen(buf) + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = strlen(buf);
@@ -2336,7 +2336,7 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     num_bytes = (entries*field_size+4)>>3;
 
-    buf = av_malloc(num_bytes+FF_INPUT_BUFFER_PADDING_SIZE);
+    buf = av_malloc(num_bytes+AV_INPUT_BUFFER_PADDING_SIZE);
     if (!buf) {
         av_freep(&sc->sample_sizes);
         return AVERROR(ENOMEM);

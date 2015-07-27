@@ -495,7 +495,7 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
 
     enc_row_size    = deflateBound(&s->zstream, (avctx->width * s->bits_per_pixel + 7) >> 3);
     max_packet_size =
-        FF_MIN_BUFFER_SIZE + // headers
+        AV_INPUT_BUFFER_MIN_SIZE + // headers
         avctx->height * (
             enc_row_size +
             12 * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // IDAT * ceil(enc_row_size / IOBUF_SIZE)
@@ -553,7 +553,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
 
     enc_row_size    = deflateBound(&s->zstream, (avctx->width * s->bits_per_pixel + 7) >> 3);
     max_packet_size =
-        FF_MIN_BUFFER_SIZE + // headers
+        AV_INPUT_BUFFER_MIN_SIZE + // headers
         avctx->height * (
             enc_row_size +
             (4 + 12) * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // fdAT * ceil(enc_row_size / IOBUF_SIZE)

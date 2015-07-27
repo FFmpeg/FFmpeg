@@ -132,7 +132,7 @@ static int append_extradata(AVCodecContext *s, AVIOContext *pb, int len)
         return AVERROR_INVALIDDATA;
 
     new_size = previous_size + len;
-    new_extradata = av_realloc(s->extradata, new_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    new_extradata = av_realloc(s->extradata, new_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!new_extradata)
         return AVERROR(ENOMEM);
     s->extradata = new_extradata;
@@ -178,7 +178,7 @@ static int apng_read_header(AVFormatContext *s)
         return ret;
 
     /* extradata will contain every chunk up to the first fcTL (excluded) */
-    st->codec->extradata = av_malloc(len + 12 + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_malloc(len + 12 + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = len + 12;

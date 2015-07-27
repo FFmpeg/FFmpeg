@@ -854,7 +854,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
                 *q++ = get_bits (&s->gb, 8);
                 len --;
             }
-            memset(q, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+            memset(q, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
             s->last_superframe_len += 8*buf_size - 8;
 //             s->reset_block_lengths = 1; //XXX is this needed ?
@@ -893,7 +893,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
             }
             if (len > 0)
                 *q++ = (get_bits) (&s->gb, len) << (8 - len);
-            memset(q, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+            memset(q, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
             /* XXX: bit_offset bits into last frame */
             init_get_bits(&s->gb, s->last_superframe,

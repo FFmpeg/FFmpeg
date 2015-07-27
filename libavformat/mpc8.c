@@ -154,7 +154,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
         av_log(s, AV_LOG_ERROR, "Bad seek table size\n");
         return;
     }
-    if(!(buf = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE)))
+    if(!(buf = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE)))
         return;
     ret = avio_read(s->pb, buf, size);
     if (ret != size) {
@@ -162,7 +162,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
         av_free(buf);
         return;
     }
-    memset(buf+size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(buf+size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     init_get_bits(&gb, buf, size * 8);
     size = gb_get_v(&gb);

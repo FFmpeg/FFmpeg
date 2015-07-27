@@ -453,7 +453,7 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
     int i, ret = 0;
     int line;
     uint8_t *src2 = av_malloc((unsigned)size +
-                              FF_INPUT_BUFFER_PADDING_SIZE);
+                              AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (!src2) {
         av_log(s->avctx, AV_LOG_ERROR,
@@ -471,7 +471,7 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
         for (i = 0; i < size; i++)
             src2[i] = ff_reverse[src[i]];
     }
-    memset(src2 + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(src2 + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     ret = ff_ccitt_unpack(s->avctx, src2, size, dst, lines, stride,
                           s->compr, s->fax_opts);
     if (s->bpp < 8 && s->avctx->pix_fmt == AV_PIX_FMT_PAL8)

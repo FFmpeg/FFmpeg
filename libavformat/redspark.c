@@ -67,7 +67,7 @@ static int redspark_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     codec = st->codec;
 
-    header = av_malloc(HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+    header = av_malloc(HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!header)
         return AVERROR(ENOMEM);
     pbc = header;

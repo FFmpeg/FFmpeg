@@ -105,7 +105,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = 2;
         avctx->extradata      = av_mallocz(avctx->extradata_size +
-                                           FF_INPUT_BUFFER_PADDING_SIZE);
+                                           AV_INPUT_BUFFER_PADDING_SIZE);
         if (!avctx->extradata) {
             ret = AVERROR(ENOMEM);
             goto error;

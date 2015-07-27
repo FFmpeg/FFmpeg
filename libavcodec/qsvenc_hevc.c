@@ -140,7 +140,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     }
 
     vps_size = bytestream2_tell_p(&pbc);
-    new_extradata = av_mallocz(vps_size + avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    new_extradata = av_mallocz(vps_size + avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!new_extradata)
         return AVERROR(ENOMEM);
     memcpy(new_extradata, vps_buf, vps_size);

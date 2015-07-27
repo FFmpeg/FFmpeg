@@ -486,7 +486,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             return -1;
         }
 
-        buf2  = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        buf2  = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!buf2)
             return AVERROR(ENOMEM);
 
@@ -657,7 +657,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     //for advanced profile we may need to parse and unescape data
     if (avctx->codec_id == AV_CODEC_ID_VC1 || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         int buf_size2 = 0;
-        buf2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        buf2 = av_mallocz(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!buf2)
             return AVERROR(ENOMEM);
 
@@ -686,7 +686,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     if (!tmp)
                         goto err;
                     slices = tmp;
-                    slices[n_slices].buf = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                    slices[n_slices].buf = av_mallocz(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
                     if (!slices[n_slices].buf)
                         goto err;
                     buf_size3 = vc1_unescape_buffer(start + 4, size,
@@ -711,7 +711,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     if (!tmp)
                         goto err;
                     slices = tmp;
-                    slices[n_slices].buf = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                    slices[n_slices].buf = av_mallocz(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
                     if (!slices[n_slices].buf)
                         goto err;
                     buf_size3 = vc1_unescape_buffer(start + 4, size,
@@ -740,7 +740,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 if (!tmp)
                     goto err;
                 slices = tmp;
-                slices[n_slices].buf = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                slices[n_slices].buf = av_mallocz(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!slices[n_slices].buf)
                     goto err;
                 buf_size3 = vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, slices[n_slices].buf);

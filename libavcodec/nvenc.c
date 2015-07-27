@@ -1014,7 +1014,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         }
 
         avctx->extradata_size = outSize;
-        avctx->extradata = av_mallocz(outSize + FF_INPUT_BUFFER_PADDING_SIZE);
+        avctx->extradata = av_mallocz(outSize + AV_INPUT_BUFFER_PADDING_SIZE);
 
         if (!avctx->extradata) {
             res = AVERROR(ENOMEM);

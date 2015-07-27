@@ -180,7 +180,7 @@ int ff_avc_write_annexb_extradata(const uint8_t *in, uint8_t **buf, int *size)
     if (11 + sps_size + pps_size > *size)
         return AVERROR_INVALIDDATA;
     out_size = 8 + sps_size + pps_size;
-    out = av_mallocz(out_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    out = av_mallocz(out_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!out)
         return AVERROR(ENOMEM);
     AV_WB32(&out[0], 0x00000001);

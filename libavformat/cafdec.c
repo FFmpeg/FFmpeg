@@ -101,7 +101,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
     AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
 
-    if (size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE)
+    if (size < 0 || size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         return -1;
 
     if (st->codec->codec_id == AV_CODEC_ID_AAC) {

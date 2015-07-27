@@ -245,7 +245,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     header_data = speex_header_to_packet(&s->header, &header_size);
 
     /* allocate extradata */
-    avctx->extradata = av_malloc(header_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_malloc(header_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         speex_header_free(header_data);
         speex_encoder_destroy(s->enc_state);

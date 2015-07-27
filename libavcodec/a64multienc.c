@@ -235,7 +235,7 @@ static av_cold int a64multi_encode_init(AVCodecContext *avctx)
     }
 
     /* set up extradata */
-    if (!(avctx->extradata = av_mallocz(8 * 4 + FF_INPUT_BUFFER_PADDING_SIZE))) {
+    if (!(avctx->extradata = av_mallocz(8 * 4 + AV_INPUT_BUFFER_PADDING_SIZE))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to allocate memory for extradata.\n");
         return AVERROR(ENOMEM);
     }

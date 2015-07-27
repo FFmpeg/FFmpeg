@@ -111,7 +111,7 @@ static int mxg_update_cache(AVFormatContext *s, unsigned int cache_size)
     soi_pos = mxg->soi_ptr - mxg->buffer;
     buffer = av_fast_realloc(mxg->buffer, &mxg->buffer_size,
                              current_pos + cache_size +
-                             FF_INPUT_BUFFER_PADDING_SIZE);
+                             AV_INPUT_BUFFER_PADDING_SIZE);
     if (!buffer)
         return AVERROR(ENOMEM);
     mxg->buffer = buffer;

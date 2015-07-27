@@ -30,7 +30,7 @@ static av_cold int avui_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Only 720x486 and 720x576 are supported.\n");
         return AVERROR(EINVAL);
     }
-    if (!(avctx->extradata = av_mallocz(144 + FF_INPUT_BUFFER_PADDING_SIZE)))
+    if (!(avctx->extradata = av_mallocz(144 + AV_INPUT_BUFFER_PADDING_SIZE)))
         return AVERROR(ENOMEM);
     avctx->extradata_size = 144;
     memcpy(avctx->extradata, "\0\0\0\x18""APRGAPRG0001", 16);
