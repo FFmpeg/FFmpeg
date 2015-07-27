@@ -114,7 +114,6 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
     /* process buffered data */
     while (!*got_frame) {
-        /* prepare the input data -- convert to Annex B if needed */
         if (s->input_ref.size <= 0) {
             /* no more data */
             if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
