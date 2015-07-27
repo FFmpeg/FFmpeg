@@ -3197,6 +3197,11 @@ case "$toolchain" in
         ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin -symbols"
         ar_default="lib"
+        case "$arch" in
+        arm*)
+            as_default="armasm"
+            ;;
+        esac
         target_os_default="win32"
         # Use a relative path for TMPDIR. This makes sure all the
         # ffconf temp files are written with a relative path, avoiding
