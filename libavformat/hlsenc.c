@@ -662,7 +662,7 @@ static int hls_write_header(AVFormatContext *s)
         else if (hls->vtt_avf)
             inner_st = hls->vtt_avf->streams[0];
         else {
-            /* We have subtitle stream, when user dont want */
+            /* We have a subtitle stream, when the user does not want one */
             inner_st = NULL;
             continue;
         }

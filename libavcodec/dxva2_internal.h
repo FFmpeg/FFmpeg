@@ -27,6 +27,9 @@
 
 #include "config.h"
 
+/* define the proper COM entries before forcing desktop APIs */
+#include <objbase.h>
+
 #if CONFIG_DXVA2
 #include "dxva2.h"
 #endif
@@ -35,6 +38,12 @@
 #endif
 
 #if HAVE_DXVA_H
+/* When targeting WINAPI_FAMILY_PHONE_APP or WINAPI_FAMILY_APP, dxva.h
+ * defines nothing. Force the struct definitions to be visible. */
+#undef WINAPI_FAMILY
+#define WINAPI_FAMILY WINAPI_FAMILY_DESKTOP_APP
+#undef _CRT_BUILD_DESKTOP_APP
+#define _CRT_BUILD_DESKTOP_APP 0
 #include <dxva.h>
 #endif
 

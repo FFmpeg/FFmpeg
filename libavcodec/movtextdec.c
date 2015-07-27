@@ -39,6 +39,7 @@ typedef struct {
     uint16_t style_start;
     uint16_t style_end;
     uint8_t style_flag;
+    uint8_t fontsize;
 } StyleBox;
 
 typedef struct {
@@ -120,13 +121,14 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
         // fontID = AV_RB16(tsmb);
         tsmb += 2;
         m->s_temp->style_flag = AV_RB8(tsmb);
+        tsmb++;
+        m->s_temp->fontsize = AV_RB8(tsmb);
         av_dynarray_add(&m->s, &m->count_s, m->s_temp);
         if(!m->s) {
             mov_text_cleanup(m);
             return AVERROR(ENOMEM);
         }
-        // fontsize = AV_RB8(tsmb);
-        tsmb += 2;
+        tsmb++;
         // text-color-rgba
         tsmb += 4;
     }
@@ -150,12 +152,7 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
         if (m->box_flags & STYL_BOX) {
             for (i = 0; i < m->style_entries; i++) {
                 if (m->s[i]->style_flag && text_pos == m->s[i]->style_end) {
-                    if (m->s[i]->style_flag & STYLE_FLAG_BOLD)
-                        av_bprintf(buf, "{\\b0}");
-                    if (m->s[i]->style_flag & STYLE_FLAG_ITALIC)
-                        av_bprintf(buf, "{\\i0}");
-                    if (m->s[i]->style_flag & STYLE_FLAG_UNDERLINE)
-                        av_bprintf(buf, "{\\u0}");
+                    av_bprintf(buf, "{\\r}");
                 }
             }
             for (i = 0; i < m->style_entries; i++) {
@@ -166,6 +163,7 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                         av_bprintf(buf, "{\\i1}");
                     if (m->s[i]->style_flag & STYLE_FLAG_UNDERLINE)
                         av_bprintf(buf, "{\\u1}");
+                    av_bprintf(buf, "{\\fs%d}", m->s[i]->fontsize);
                 }
             }
         }

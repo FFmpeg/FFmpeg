@@ -175,12 +175,6 @@ Notes:
 
 @itemize
 
-@item It is possible that coreutils' @code{link.exe} conflicts with MSVC's linker.
-You can find out by running @code{which link} to see which @code{link.exe} you
-are using. If it is located at @code{/bin/link.exe}, then you have the wrong one
-in your @code{PATH}. Either move or remove that copy, or make sure MSVC's
-@code{link.exe} takes precedence in your @code{PATH} over coreutils'.
-
 @item If you wish to build with zlib support, you will have to grab a compatible
 zlib binary from somewhere, with an MSVC import lib, or if you wish to link
 statically, you can follow the instructions below to build a compatible

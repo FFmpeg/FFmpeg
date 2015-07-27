@@ -316,12 +316,12 @@ static char *ctime1(char *buf2, int buf_size)
 static void http_vlog(const char *fmt, va_list vargs)
 {
     static int print_prefix = 1;
+    char buf[32];
 
     if (!logfile)
         return;
 
     if (print_prefix) {
-        char buf[32];
         ctime1(buf, sizeof(buf));
         fprintf(logfile, "%s ", buf);
     }
@@ -703,13 +703,9 @@ static void start_wait_request(HTTPContext *c, int is_rtsp)
     c->buffer_ptr = c->buffer;
     c->buffer_end = c->buffer + c->buffer_size - 1; /* leave room for '\0' */
 
-    if (is_rtsp) {
-        c->timeout = cur_time + RTSP_REQUEST_TIMEOUT;
-        c->state = RTSPSTATE_WAIT_REQUEST;
-    } else {
-        c->timeout = cur_time + HTTP_REQUEST_TIMEOUT;
-        c->state = HTTPSTATE_WAIT_REQUEST;
-    }
+    c->state = is_rtsp ? RTSPSTATE_WAIT_REQUEST : HTTPSTATE_WAIT_REQUEST;
+    c->timeout = cur_time +
+                 (is_rtsp ? RTSP_REQUEST_TIMEOUT : HTTP_REQUEST_TIMEOUT);
 }
 
 static void http_send_too_busy_reply(int fd)
@@ -2545,9 +2541,8 @@ static int http_start_receive_data(HTTPContext *c)
             http_log("Error reading write index from feed file '%s': %s\n",
                      c->stream->feed_filename, strerror(errno));
             return ret;
-        } else {
-            c->stream->feed_write_index = ret;
         }
+        c->stream->feed_write_index = ret;
     }
 
     c->stream->feed_write_index = FFMAX(ffm_read_write_index(fd),

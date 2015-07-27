@@ -3197,6 +3197,11 @@ case "$toolchain" in
         ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin -symbols"
         ar_default="lib"
+        case "$arch" in
+        arm*)
+            as_default="armasm"
+            ;;
+        esac
         target_os_default="win32"
         # Use a relative path for TMPDIR. This makes sure all the
         # ffconf temp files are written with a relative path, avoiding
@@ -3660,7 +3665,7 @@ probe_cc(){
         _flags='-nologo -Qdiag-error:4044,10157'
         # -Qvec- -Qsimd- to prevent miscompilation, -GS, fp:precise for consistency
         # with MSVC which enables it by default.
-        _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
+        _cflags='-D_USE_MATH_DEFINES -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
         disable stripping
     elif $_cc -nologo- 2>&1 | grep -q Microsoft; then
         _type=msvc
@@ -3680,7 +3685,7 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
+        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS'
         disable stripping
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
@@ -4753,6 +4758,8 @@ elif enabled alpha; then
 
 elif enabled arm; then
 
+    enabled msvc && check_cpp_condition stddef.h "defined _M_ARMT" && enable thumb
+
     check_cpp_condition stddef.h "defined __thumb__" && check_cc <<EOF && enable_weak thumb
 float func(float a, float b){ return a+b; }
 EOF
@@ -4760,6 +4767,8 @@ EOF
     enabled thumb && check_cflags -mthumb || check_cflags -marm
 
     if     check_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then
+        enable vfp_args
+    elif check_cpp_condition stddef.h "defined _M_ARM_FP && _M_ARM_FP >= 30"; then
         enable vfp_args
     elif ! check_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__"; then
         case "${cross_prefix:-$cc}" in
@@ -5098,7 +5107,7 @@ check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
-check_type "windows.h dxva.h" "DXVA_PicParams_HEVC"
+check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0600
 
@@ -5670,7 +5679,29 @@ elif enabled_any msvc icl; then
     fi
     # msvcrt10 x64 incorrectly enables log2, only msvcrt12 (MSVC 2013) onwards actually has log2.
     check_cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION >= 12" || disable log2
+    # The CRT headers contain __declspec(restrict) in a few places, but if redefining
+    # restrict, this might break. MSVC 2010 and 2012 fail with __declspec(__restrict)
+    # (as it ends up if the restrict redefine is done before including stdlib.h), while
+    # MSVC 2013 and newer can handle it fine.
+    # If this declspec fails, force including stdlib.h before the restrict redefinition
+    # happens in config.h.
+    if [ $_restrict != restrict ]; then
+        check_cc <<EOF || add_cflags -FIstdlib.h
+__declspec($_restrict) void* foo(int);
+EOF
+    fi
+    check_func strtoll || add_cflags -Dstrtoll=_strtoi64
 fi
+
+for pfx in "" host_; do
+    varname=${pfx%_}cc_type
+    eval "type=\$$varname"
+    if [ $type = "msvc" ]; then
+        check_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
+static inline int foo(int a) { return a; }
+EOF
+    fi
+done
 
 case $as_type in
     clang)

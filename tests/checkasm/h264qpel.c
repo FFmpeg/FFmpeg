@@ -75,6 +75,6 @@ void checkasm_check_h264qpel(void)
                     }
             }
         }
-        report("%s_h264_qpel", op_name);
+        report("%s", op_name);
     }
 }

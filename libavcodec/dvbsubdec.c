@@ -237,6 +237,7 @@ typedef struct DVBSubContext {
     int time_out;
     int compute_edt; /**< if 1 end display time calculated using pts
                           if 0 (Default) calculated using time out */
+    int compute_clut;
     int64_t prev_start;
     DVBSubRegion *region_list;
     DVBSubCLUT   *clut_list;
@@ -912,7 +913,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
 
             memcpy(rect->pict.data[0], region->pbuf, region->buf_size);
 
-            if (clut == &default_clut)
+            if ((clut == &default_clut && ctx->compute_clut == -1) || ctx->compute_clut == 1)
                 compute_default_clut(&rect->pict, rect->w, rect->h);
 
             i++;
@@ -1706,6 +1707,7 @@ end:
 #define DS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_SUBTITLE_PARAM
 static const AVOption options[] = {
     {"compute_edt", "compute end of time using pts or timeout", offsetof(DVBSubContext, compute_edt), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DS},
+    {"compute_clut", "compute clut when not available(-1) or always(1) or never(0)", offsetof(DVBSubContext, compute_clut), FF_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DS},
     {NULL}
 };
 static const AVClass dvbsubdec_class = {

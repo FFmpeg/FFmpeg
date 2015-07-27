@@ -195,6 +195,23 @@ without this library.
 @chapter Subtitles Decoders
 @c man begin SUBTILES DECODERS
 
+@section dvbsub
+
+@subsection Options
+
+@table @option
+@item compute_clut
+@table @option
+@item -1
+Compute clut if no matching CLUT is in the stream.
+@item 0
+Never compute CLUT
+@item 1
+Always compute CLUT and override the one provided in the stream.
+@end table
+
+@end table
+
 @section dvdsub
 
 This codec decodes the bitmap subtitles used in DVDs; the same subtitles can
