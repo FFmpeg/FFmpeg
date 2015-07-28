@@ -107,13 +107,13 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\avcodec.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_afade.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_adelay.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_aecho.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\aeval.c">
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\af_afade.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_aformat.c">
     </ClCompile>
