@@ -818,41 +818,6 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
     return ret;
 }
 
-#if FF_API_AVFRAME_LAVC
-void avcodec_get_frame_defaults(AVFrame *frame)
-{
-    if (frame->extended_data != frame->data)
-        av_freep(&frame->extended_data);
-
-    memset(frame, 0, sizeof(AVFrame));
-
-    frame->pts                 = AV_NOPTS_VALUE;
-    frame->key_frame           = 1;
-    frame->sample_aspect_ratio = (AVRational) {0, 1 };
-    frame->format              = -1; /* unknown */
-    frame->extended_data       = frame->data;
-}
-
-AVFrame *avcodec_alloc_frame(void)
-{
-    AVFrame *frame = av_mallocz(sizeof(AVFrame));
-
-    if (!frame)
-        return NULL;
-
-FF_DISABLE_DEPRECATION_WARNINGS
-    avcodec_get_frame_defaults(frame);
-FF_ENABLE_DEPRECATION_WARNINGS
-
-    return frame;
-}
-
-void avcodec_free_frame(AVFrame **frame)
-{
-    av_frame_free(frame);
-}
-#endif
-
 int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
