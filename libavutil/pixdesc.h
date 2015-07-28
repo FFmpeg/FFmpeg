@@ -137,13 +137,6 @@ typedef struct AVPixFmtDescriptor {
  */
 #define AV_PIX_FMT_FLAG_ALPHA        (1 << 7)
 
-#if FF_API_PIX_FMT_DESC
-/**
- * The array of all the pixel format descriptors.
- */
-extern attribute_deprecated const AVPixFmtDescriptor av_pix_fmt_descriptors[];
-#endif
-
 /**
  * Read a line from an image, and write the values of the
  * pixel format component c to dst.

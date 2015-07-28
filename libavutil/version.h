@@ -81,9 +81,6 @@
 #ifndef FF_API_CONTEXT_SIZE
 #define FF_API_CONTEXT_SIZE             (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
-#ifndef FF_API_PIX_FMT_DESC
-#define FF_API_PIX_FMT_DESC             (LIBAVUTIL_VERSION_MAJOR < 55)
-#endif
 #ifndef FF_API_AV_REVERSE
 #define FF_API_AV_REVERSE               (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
