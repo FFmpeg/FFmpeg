@@ -2063,16 +2063,6 @@ typedef struct AVCodecContext {
      */
     int cutoff;
 
-#if FF_API_REQUEST_CHANNELS
-    /**
-     * Decoder should decode to this many channels if it can (0 for default)
-     * - encoding: unused
-     * - decoding: Set by user.
-     * @deprecated Deprecated in favor of request_channel_layout.
-     */
-    attribute_deprecated int request_channels;
-#endif
-
     /**
      * Audio channel layout.
      * - encoding: set by user.

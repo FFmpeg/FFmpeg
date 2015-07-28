@@ -509,19 +509,6 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     s->max_channel        = max_channel;
     s->max_matrix_channel = max_matrix_channel;
 
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (m->avctx->request_channels > 0 &&
-        m->avctx->request_channels <= s->max_channel + 1 &&
-        m->max_decoded_substream > substr) {
-        av_log(m->avctx, AV_LOG_DEBUG,
-               "Extracting %d-channel downmix from substream %d. "
-               "Further substreams will be skipped.\n",
-               s->max_channel + 1, substr);
-        m->max_decoded_substream = substr;
-    } else
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (m->avctx->request_channel_layout && (s->ch_layout & m->avctx->request_channel_layout) ==
         m->avctx->request_channel_layout && m->max_decoded_substream > substr) {
         av_log(m->avctx, AV_LOG_DEBUG,
