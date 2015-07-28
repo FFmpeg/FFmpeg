@@ -2714,14 +2714,6 @@ typedef struct AVCodecContext {
      */
     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
 
-#if FF_API_THREAD_OPAQUE
-    /**
-     * @deprecated this field should not be used from outside of lavc
-     */
-    attribute_deprecated
-    void *thread_opaque;
-#endif
-
     /**
      * noise vs. sse weight for the nsse comparsion function
      * - encoding: Set by user.
@@ -2864,14 +2856,6 @@ typedef struct AVCodecContext {
      */
     attribute_deprecated
     int error_rate;
-#endif
-
-#if FF_API_CODEC_PKT
-    /**
-     * @deprecated this field is not supposed to be accessed from outside lavc
-     */
-    attribute_deprecated
-    AVPacket *pkt;
 #endif
 
     /**
