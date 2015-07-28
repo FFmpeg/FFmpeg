@@ -49,9 +49,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_AVFILTERBUFFER
-#define FF_API_AVFILTERBUFFER               (LIBAVFILTER_VERSION_MAJOR < 6)
-#endif
 #ifndef FF_API_OLD_FILTER_OPTS
 #define FF_API_OLD_FILTER_OPTS              (LIBAVFILTER_VERSION_MAJOR < 6)
 #endif

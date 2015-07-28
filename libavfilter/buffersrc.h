@@ -34,21 +34,6 @@
  * @{
  */
 
-#if FF_API_AVFILTERBUFFER
-/**
- * Add a buffer to a filtergraph.
- *
- * @param ctx an instance of the buffersrc filter
- * @param buf buffer containing frame data to be passed down the filtergraph.
- * This function will take ownership of buf, the user must not free it.
- * A NULL buf signals EOF -- i.e. no more frames will be sent to this filter.
- *
- * @deprecated use av_buffersrc_write_frame() or av_buffersrc_add_frame()
- */
-attribute_deprecated
-int av_buffersrc_buffer(AVFilterContext *ctx, AVFilterBufferRef *buf);
-#endif
-
 /**
  * Add a frame to the buffer source.
  *
