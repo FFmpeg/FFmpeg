@@ -105,6 +105,8 @@ static av_cold void vp9dsp_mc_init_msa(VP9DSPContext *dsp, int bpp)
 #undef init_fpel
 
 #define init_subpel1(idx1, idx2, idxh, idxv, sz, dir, type)  \
+    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][idxh][idxv] =   \
+        ff_##type##_bilin_##sz##dir##_msa;                   \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][idxh][idxv] =   \
         ff_##type##_8tap_smooth_##sz##dir##_msa;             \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][idxh][idxv] =   \

@@ -338,7 +338,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
 #endif /* TRACE */
     }
 
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 

@@ -351,7 +351,7 @@ static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int i, ret, out_size;
 
     out_size = (frame->nb_samples * c->code_size + 7) / 8;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size, 0)) < 0)
         return ret;
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
@@ -392,7 +392,7 @@ AVCodec ff_adpcm_g726_encoder = {
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     .encode2        = g726_encode_frame,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &g726_class,
@@ -477,7 +477,7 @@ AVCodec ff_adpcm_g726_decoder = {
     .init           = g726_decode_init,
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
@@ -490,7 +490,7 @@ AVCodec ff_adpcm_g726le_decoder = {
     .init           = g726_decode_init,
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM little-endian"),
 };
 #endif

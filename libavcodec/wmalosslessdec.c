@@ -72,7 +72,7 @@ typedef struct WmallDecodeCtx {
     AVCodecContext  *avctx;
     AVFrame         *frame;
     LLAudDSPContext dsp;                           ///< accelerated DSP functions
-    uint8_t         frame_data[MAX_FRAMESIZE + FF_INPUT_BUFFER_PADDING_SIZE];  ///< compressed frame data
+    uint8_t         frame_data[MAX_FRAMESIZE + AV_INPUT_BUFFER_PADDING_SIZE];  ///< compressed frame data
     PutBitContext   pb;                             ///< context for filling the frame_data buffer
 
     /* frame size dependent frame information (set during initialization) */
@@ -1299,7 +1299,7 @@ AVCodec ff_wmalossless_decoder = {
     .close          = decode_close,
     .decode         = decode_packet,
     .flush          = flush,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },

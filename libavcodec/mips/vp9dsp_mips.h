@@ -52,6 +52,31 @@ void ff_avg_8tap_##type##_##SIZE##hv_msa(uint8_t *dst, ptrdiff_t dststride,  \
                                          ptrdiff_t srcstride,                \
                                          int h, int mx, int my);
 
+#define VP9_BILINEAR_MIPS_MSA_FUNC(SIZE)                                   \
+void ff_put_bilin_##SIZE##h_msa(uint8_t *dst, ptrdiff_t dststride,         \
+                                const uint8_t *src, ptrdiff_t srcstride,   \
+                                int h, int mx, int my);                    \
+                                                                           \
+void ff_put_bilin_##SIZE##v_msa(uint8_t *dst, ptrdiff_t dststride,         \
+                                const uint8_t *src, ptrdiff_t srcstride,   \
+                                int h, int mx, int my);                    \
+                                                                           \
+void ff_put_bilin_##SIZE##hv_msa(uint8_t *dst, ptrdiff_t dststride,        \
+                                 const uint8_t *src, ptrdiff_t srcstride,  \
+                                 int h, int mx, int my);                   \
+                                                                           \
+void ff_avg_bilin_##SIZE##h_msa(uint8_t *dst, ptrdiff_t dststride,         \
+                                const uint8_t *src, ptrdiff_t srcstride,   \
+                                int h, int mx, int my);                    \
+                                                                           \
+void ff_avg_bilin_##SIZE##v_msa(uint8_t *dst, ptrdiff_t dststride,         \
+                                const uint8_t *src, ptrdiff_t srcstride,   \
+                                int h, int mx, int my);                    \
+                                                                           \
+void ff_avg_bilin_##SIZE##hv_msa(uint8_t *dst, ptrdiff_t dststride,        \
+                                 const uint8_t *src, ptrdiff_t srcstride,  \
+                                 int h, int mx, int my);
+
 #define VP9_COPY_AVG_MIPS_MSA_FUNC(SIZE)                           \
 void ff_copy##SIZE##_msa(uint8_t *dst, ptrdiff_t dststride,        \
                          const uint8_t *src, ptrdiff_t srcstride,  \
@@ -79,6 +104,12 @@ VP9_8TAP_MIPS_MSA_FUNC(16, smooth, FILTER_8TAP_SMOOTH);
 VP9_8TAP_MIPS_MSA_FUNC(8, smooth, FILTER_8TAP_SMOOTH);
 VP9_8TAP_MIPS_MSA_FUNC(4, smooth, FILTER_8TAP_SMOOTH);
 
+VP9_BILINEAR_MIPS_MSA_FUNC(64);
+VP9_BILINEAR_MIPS_MSA_FUNC(32);
+VP9_BILINEAR_MIPS_MSA_FUNC(16);
+VP9_BILINEAR_MIPS_MSA_FUNC(8);
+VP9_BILINEAR_MIPS_MSA_FUNC(4);
+
 VP9_COPY_AVG_MIPS_MSA_FUNC(64);
 VP9_COPY_AVG_MIPS_MSA_FUNC(32);
 VP9_COPY_AVG_MIPS_MSA_FUNC(16);
@@ -86,6 +117,7 @@ VP9_COPY_AVG_MIPS_MSA_FUNC(8);
 VP9_COPY_AVG_MIPS_MSA_FUNC(4);
 
 #undef VP9_8TAP_MIPS_MSA_FUNC
+#undef VP9_BILINEAR_MIPS_MSA_FUNC
 #undef VP9_COPY_AVG_MIPS_MSA_FUNC
 
 void ff_loop_filter_h_4_8_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,

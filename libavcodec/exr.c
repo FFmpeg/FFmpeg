@@ -1447,7 +1447,7 @@ AVCodec ff_exr_decoder = {
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .close            = decode_end,
     .decode           = decode_frame,
-    .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS |
-                        CODEC_CAP_SLICE_THREADS,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+                        AV_CODEC_CAP_SLICE_THREADS,
     .priv_class       = &exr_class,
 };

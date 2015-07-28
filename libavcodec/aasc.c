@@ -158,5 +158,5 @@ AVCodec ff_aasc_decoder = {
     .init           = aasc_decode_init,
     .close          = aasc_decode_end,
     .decode         = aasc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

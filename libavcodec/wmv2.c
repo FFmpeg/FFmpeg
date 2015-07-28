@@ -89,7 +89,7 @@ void ff_wmv2_add_mb(MpegEncContext *s, int16_t block1[6][64],
     wmv2_add_block(w, block1[2], dest_y + 8 * s->linesize,     s->linesize, 2);
     wmv2_add_block(w, block1[3], dest_y + 8 + 8 * s->linesize, s->linesize, 3);
 
-    if (s->avctx->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
     wmv2_add_block(w, block1[4], dest_cb, s->uvlinesize, 4);
@@ -141,7 +141,7 @@ void ff_mspel_motion(MpegEncContext *s, uint8_t *dest_y,
     w->wdsp.put_mspel_pixels_tab[dxy](dest_y     + 8 * linesize, ptr     + 8 * linesize, linesize);
     w->wdsp.put_mspel_pixels_tab[dxy](dest_y + 8 + 8 * linesize, ptr + 8 + 8 * linesize, linesize);
 
-    if (s->avctx->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
     dxy = 0;

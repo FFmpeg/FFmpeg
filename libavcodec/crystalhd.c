@@ -422,7 +422,7 @@ static av_cold int init(AVCodecContext *avctx)
             int dummy_int;
 
             /* Back up the extradata so it can be restored at close time. */
-            priv->orig_extradata = av_malloc(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            priv->orig_extradata = av_malloc(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!priv->orig_extradata) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Failed to allocate copy of extradata\n");
@@ -1098,7 +1098,7 @@ AVCodec ff_h264_crystalhd_decoder = {
     .init           = init,
     .close          = uninit,
     .decode         = decode,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = flush,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &h264_class,
@@ -1122,7 +1122,7 @@ AVCodec ff_mpeg2_crystalhd_decoder = {
     .init           = init,
     .close          = uninit,
     .decode         = decode,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = flush,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &mpeg2_class,
@@ -1146,7 +1146,7 @@ AVCodec ff_mpeg4_crystalhd_decoder = {
     .init           = init,
     .close          = uninit,
     .decode         = decode,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = flush,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &mpeg4_class,
@@ -1170,7 +1170,7 @@ AVCodec ff_msmpeg4_crystalhd_decoder = {
     .init           = init,
     .close          = uninit,
     .decode         = decode,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
     .flush          = flush,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &msmpeg4_class,
@@ -1194,7 +1194,7 @@ AVCodec ff_vc1_crystalhd_decoder = {
     .init           = init,
     .close          = uninit,
     .decode         = decode,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = flush,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &vc1_class,
@@ -1218,7 +1218,7 @@ AVCodec ff_wmv3_crystalhd_decoder = {
     .init           = init,
     .close          = uninit,
     .decode         = decode,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = flush,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &wmv3_class,

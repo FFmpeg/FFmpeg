@@ -200,7 +200,7 @@ int avpriv_unlock_avformat(void);
  * This value was chosen such that every bit of the buffer is
  * addressable by a 32-bit signed integer as used by get_bits.
  */
-#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - FF_INPUT_BUFFER_PADDING_SIZE)
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
 
 /**
  * Check AVPacket size and/or allocate data.
@@ -217,11 +217,15 @@ int avpriv_unlock_avformat(void);
  *                avpkt->size is set to the specified size.
  *                All other AVPacket fields will be reset with av_init_packet().
  * @param size    the minimum required packet size
+ * @param min_size the smallest the packet might be down sized to, can be set to
+ *                0, setting this roughly correctly allows the allocation code
+ *                to choose between several allocation stragies to improve
+ *                speed slightly.
  * @return        non negative on success, negative error code on failure
  */
-int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
+int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64_t min_size);
 
-int ff_alloc_packet(AVPacket *avpkt, int size);
+attribute_deprecated int ff_alloc_packet(AVPacket *avpkt, int size);
 
 /**
  * Rescale from sample rate to AVCodecContext.time_base.

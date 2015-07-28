@@ -85,7 +85,7 @@ static inline void tqi_idct_put(TqiContext *t, AVFrame *frame, int16_t (*block)[
     ff_ea_idct_put_c(dest_y              + 8, linesize, block[1]);
     ff_ea_idct_put_c(dest_y + 8*linesize    , linesize, block[2]);
     ff_ea_idct_put_c(dest_y + 8*linesize + 8, linesize, block[3]);
-    if(!(s->avctx->flags&CODEC_FLAG_GRAY)) {
+    if(!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         ff_ea_idct_put_c(dest_cb, frame->linesize[1], block[4]);
         ff_ea_idct_put_c(dest_cr, frame->linesize[2], block[5]);
     }
@@ -162,5 +162,5 @@ AVCodec ff_eatqi_decoder = {
     .init           = tqi_decode_init,
     .close          = tqi_decode_end,
     .decode         = tqi_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

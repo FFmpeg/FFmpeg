@@ -231,7 +231,7 @@ static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
     xcb_shm_get_image_reply_t *img;
     xcb_drawable_t drawable = c->screen->root;
     uint8_t *data;
-    int size = c->frame_size + FF_INPUT_BUFFER_PADDING_SIZE;
+    int size = c->frame_size + AV_INPUT_BUFFER_PADDING_SIZE;
     int id   = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777);
     xcb_generic_error_t *e = NULL;
 

@@ -268,7 +268,7 @@ static int ffm_write_header(AVFormatContext *s)
         avio_wb32(pb, codec->flags);
         avio_wb32(pb, codec->flags2);
         avio_wb32(pb, codec->debug);
-        if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
+        if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
             avio_wb32(pb, codec->extradata_size);
             avio_write(pb, codec->extradata, codec->extradata_size);
         }

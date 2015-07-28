@@ -1905,7 +1905,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
         *unescaped_buf_ptr  = s->buffer;
         *unescaped_buf_size = dst - s->buffer;
         memset(s->buffer + *unescaped_buf_size, 0,
-               FF_INPUT_BUFFER_PADDING_SIZE);
+               AV_INPUT_BUFFER_PADDING_SIZE);
 
         av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %"PTRDIFF_SPECIFIER" bytes\n",
                (buf_end - *buf_ptr) - (dst - s->buffer));
@@ -1950,7 +1950,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
         *unescaped_buf_ptr  = dst;
         *unescaped_buf_size = (bit_count + 7) >> 3;
         memset(s->buffer + *unescaped_buf_size, 0,
-               FF_INPUT_BUFFER_PADDING_SIZE);
+               AV_INPUT_BUFFER_PADDING_SIZE);
     } else {
         *unescaped_buf_ptr  = *buf_ptr;
         *unescaped_buf_size = buf_end - *buf_ptr;
@@ -2404,7 +2404,7 @@ AVCodec ff_mjpeg_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .flush          = decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
     .priv_class     = &mjpegdec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
@@ -2421,7 +2421,7 @@ AVCodec ff_thp_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .flush          = decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

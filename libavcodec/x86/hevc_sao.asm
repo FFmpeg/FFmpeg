@@ -39,7 +39,7 @@ cextern pb_2
 SECTION_TEXT
 
 %define MAX_PB_SIZE  64
-%define PADDING_SIZE 32 ; FF_INPUT_BUFFER_PADDING_SIZE
+%define PADDING_SIZE 32 ; AV_INPUT_BUFFER_PADDING_SIZE
 
 ;******************************************************************************
 ;SAO Band Filter

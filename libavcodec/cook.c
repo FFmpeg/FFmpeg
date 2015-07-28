@@ -1232,11 +1232,11 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
     /* Pad the databuffer with:
        DECODE_BYTES_PAD1 or DECODE_BYTES_PAD2 for decode_bytes(),
-       FF_INPUT_BUFFER_PADDING_SIZE, for the bitstreamreader. */
+       AV_INPUT_BUFFER_PADDING_SIZE, for the bitstreamreader. */
     q->decoded_bytes_buffer =
         av_mallocz(avctx->block_align
                    + DECODE_BYTES_PAD1(avctx->block_align)
-                   + FF_INPUT_BUFFER_PADDING_SIZE);
+                   + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!q->decoded_bytes_buffer)
         return AVERROR(ENOMEM);
 
@@ -1282,7 +1282,7 @@ AVCodec ff_cook_decoder = {
     .init           = cook_decode_init,
     .close          = cook_decode_close,
     .decode         = cook_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

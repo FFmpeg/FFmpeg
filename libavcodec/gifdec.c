@@ -553,6 +553,6 @@ AVCodec ff_gif_decoder = {
     .init           = gif_decode_init,
     .close          = gif_decode_close,
     .decode         = gif_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_class     = &decoder_class,
 };

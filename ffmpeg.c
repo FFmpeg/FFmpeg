@@ -643,7 +643,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     int ret;
 
     if (!ost->st->codec->extradata_size && ost->enc_ctx->extradata_size) {
-        ost->st->codec->extradata = av_mallocz(ost->enc_ctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        ost->st->codec->extradata = av_mallocz(ost->enc_ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (ost->st->codec->extradata) {
             memcpy(ost->st->codec->extradata, ost->enc_ctx->extradata, ost->enc_ctx->extradata_size);
             ost->st->codec->extradata_size = ost->enc_ctx->extradata_size;
@@ -669,9 +669,17 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         ost->frame_number++;
     }
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        int i;
         uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
                                               NULL);
         ost->quality = sd ? AV_RL32(sd) : -1;
+
+        for (i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
+            if (sd && i < sd[5])
+                ost->error[i] = AV_RL64(sd + 8 + 8*i);
+            else
+                ost->error[i] = -1;
+        }
     }
 
     if (bsfc)
@@ -688,10 +696,10 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
         if(a == 0 && new_pkt.data != pkt->data && new_pkt.destruct) {
-            uint8_t *t = av_malloc(new_pkt.size + FF_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
+            uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
             if(t) {
                 memcpy(t, new_pkt.data, new_pkt.size);
-                memset(t + new_pkt.size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+                memset(t + new_pkt.size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
                 new_pkt.data = t;
                 new_pkt.buf = NULL;
                 a = 1;
@@ -1119,7 +1127,7 @@ static void do_video_out(AVFormatContext *s,
         int got_packet, forced_keyframe = 0;
         double pts_time;
 
-        if (enc->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME) &&
+        if (enc->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
             ost->top_field_first >= 0)
             in_picture->top_field_first = !!ost->top_field_first;
 
@@ -1198,7 +1206,7 @@ static void do_video_out(AVFormatContext *s,
                        av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &enc->time_base));
             }
 
-            if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & CODEC_CAP_DELAY))
+            if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & AV_CODEC_CAP_DELAY))
                 pkt.pts = ost->sync_opts;
 
             av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
@@ -1266,8 +1274,8 @@ static void do_video_stats(OutputStream *ost, int frame_size)
         fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
                 ost->quality / (float)FF_QP2LAMBDA);
 
-        if (enc->coded_frame && (enc->flags&CODEC_FLAG_PSNR))
-            fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
+        if (ost->error[0]>=0 && (enc->flags & AV_CODEC_FLAG_PSNR))
+            fprintf(vstats_file, "PSNR= %6.2f ", psnr(ost->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
 
         fprintf(vstats_file,"f_size= %6d ", frame_size);
         /* compute pts value */
@@ -1377,7 +1385,7 @@ static int reap_filters(int flush)
                 do_video_out(of->ctx, ost, filtered_frame, float_pts);
                 break;
             case AVMEDIA_TYPE_AUDIO:
-                if (!(enc->codec->capabilities & CODEC_CAP_PARAM_CHANGE) &&
+                if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
                     enc->channels != av_frame_get_channels(filtered_frame)) {
                     av_log(NULL, AV_LOG_ERROR,
                            "Audio filter graph output is not normalized and encoder does not support parameter changes\n");
@@ -1416,8 +1424,8 @@ static void print_final_stats(int64_t total_size)
         }
         extra_size += ost->enc_ctx->extradata_size;
         data_size  += ost->data_size;
-        if (   (ost->enc_ctx->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))
-            != CODEC_FLAG_PASS1)
+        if (   (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))
+            != AV_CODEC_FLAG_PASS1)
             pass1_used = 0;
     }
 
@@ -1586,7 +1594,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log2(qp_histogram[j] + 1)));
             }
 
-            if ((enc->flags&CODEC_FLAG_PSNR) && (enc->coded_frame || is_last_report)) {
+            if ((enc->flags & AV_CODEC_FLAG_PSNR) && (enc->coded_frame || is_last_report)) {
                 int j;
                 double error, error_sum = 0;
                 double scale, scale_sum = 0;
@@ -1598,7 +1606,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                         error = enc->error[j];
                         scale = enc->width * enc->height * 255.0 * 255.0 * frame_number;
                     } else {
-                        error = enc->coded_frame->error[j];
+                        error = ost->error[j];
                         scale = enc->width * enc->height * 255.0 * 255.0;
                     }
                     if (j)
@@ -2297,7 +2305,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
         ist->dts = ist->next_dts;
 
         if (avpkt.size && avpkt.size != pkt->size &&
-            !(ist->dec->capabilities & CODEC_CAP_SUBFRAMES)) {
+            !(ist->dec->capabilities & AV_CODEC_CAP_SUBFRAMES)) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
                    "Multiple frames in a packet from stream %d\n", pkt->stream_index);
             ist->showed_multi_packet_warning = 1;
@@ -2592,7 +2600,7 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             return ret;
         }
         if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-            !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+            !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                             ost->enc_ctx->frame_size);
         assert_avoptions(ost->encoder_opts);
@@ -2734,7 +2742,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     if (!encoder_string)
         exit_program(1);
 
-    if (!(format_flags & AVFMT_FLAG_BITEXACT) && !(codec_flags & CODEC_FLAG_BITEXACT))
+    if (!(format_flags & AVFMT_FLAG_BITEXACT) && !(codec_flags & AV_CODEC_FLAG_BITEXACT))
         av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
     else
         av_strlcpy(encoder_string, "Lavc ", encoder_string_len);
@@ -2811,7 +2819,7 @@ static int transcode_init(void)
 
             av_assert0(ist && !ost->filter);
 
-            extra_size = (uint64_t)dec_ctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
+            extra_size = (uint64_t)dec_ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
 
             if (extra_size > INT_MAX) {
                 return AVERROR(EINVAL);

@@ -654,7 +654,7 @@ static int flv_queue_extradata(FLVContext *flv, AVIOContext *pb, int stream,
 {
     av_free(flv->new_extradata[stream]);
     flv->new_extradata[stream] = av_mallocz(size +
-                                            FF_INPUT_BUFFER_PADDING_SIZE);
+                                            AV_INPUT_BUFFER_PADDING_SIZE);
     if (!flv->new_extradata[stream])
         return AVERROR(ENOMEM);
     flv->new_extradata_size[stream] = size;

@@ -472,5 +472,5 @@ AVCodec ff_smc_decoder = {
     .init           = smc_decode_init,
     .close          = smc_decode_end,
     .decode         = smc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

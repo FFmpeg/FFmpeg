@@ -185,5 +185,5 @@ AVCodec ff_avs_decoder = {
     .init           = avs_decode_init,
     .decode         = avs_decode_frame,
     .close          = avs_decode_end,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -269,7 +269,7 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
     }
 
     header_size = 19 + (avctx->channels > 2 ? 2 + avctx->channels : 0);
-    avctx->extradata = av_malloc(header_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_malloc(header_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Failed to allocate extradata.\n");
         ret = AVERROR(ENOMEM);
@@ -335,7 +335,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     /* Maximum packet size taken from opusenc in opus-tools. 60ms packets
      * consist of 3 frames in one packet. The maximum frame size is 1275
      * bytes along with the largest possible packet header of 7 bytes. */
-    if ((ret = ff_alloc_packet2(avctx, avpkt, (1275 * 3 + 7) * opus->stream_count)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, (1275 * 3 + 7) * opus->stream_count, 0)) < 0)
         return ret;
 
     if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT)
@@ -438,7 +438,7 @@ AVCodec ff_libopus_encoder = {
     .init            = libopus_encode_init,
     .encode2         = libopus_encode,
     .close           = libopus_encode_close,
-    .capabilities    = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities    = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_FLT,
                                                       AV_SAMPLE_FMT_NONE },

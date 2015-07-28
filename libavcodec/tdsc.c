@@ -621,7 +621,7 @@ AVCodec ff_tdsc_decoder = {
     .decode         = tdsc_decode_frame,
     .close          = tdsc_close,
     .priv_data_size = sizeof(TDSCContext),
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

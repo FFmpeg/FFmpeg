@@ -574,7 +574,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     if (ret < 0)
         return ret;
 
-    if (!(avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(avctx->flags & AV_CODEC_FLAG_GRAY)) {
         ret = decode_slice_chroma(avctx, slice, (uint16_t*)dest_u, chroma_stride,
                                   buf + y_data_size, u_data_size,
                                   qmat_chroma_scaled, log2_chroma_blocks_per_mb);
@@ -686,5 +686,5 @@ AVCodec ff_prores_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
 };

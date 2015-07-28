@@ -372,5 +372,5 @@ AVCodec ff_rawvideo_decoder = {
     .close          = raw_close_decoder,
     .decode         = raw_decode,
     .priv_class     = &rawdec_class,
-    .capabilities   = CODEC_CAP_PARAM_CHANGE,
+    .capabilities   = AV_CODEC_CAP_PARAM_CHANGE,
 };

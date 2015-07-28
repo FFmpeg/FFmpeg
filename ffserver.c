@@ -3510,7 +3510,7 @@ static void extract_mpeg4_header(AVFormatContext *infile)
                 if (p[0] == 0x00 && p[1] == 0x00 &&
                     p[2] == 0x01 && p[3] == 0xb6) {
                     size = p - pkt.data;
-                    st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+                    st->codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
                     st->codec->extradata_size = size;
                     memcpy(st->codec->extradata, pkt.data, size);
                     break;

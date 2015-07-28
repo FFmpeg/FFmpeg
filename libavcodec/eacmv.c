@@ -242,5 +242,5 @@ AVCodec ff_eacmv_decoder = {
     .init           = cmv_decode_init,
     .close          = cmv_decode_end,
     .decode         = cmv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

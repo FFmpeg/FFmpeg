@@ -1275,7 +1275,7 @@ static int cinepak_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     s->lambda = frame->quality ? frame->quality - 1 : 2 * FF_LAMBDA_SCALE;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, s->frame_buf_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, s->frame_buf_size, 0)) < 0)
         return ret;
     ret = rd_frame(s, frame, (s->curframe == 0), pkt->data, s->frame_buf_size);
     pkt->size = ret;

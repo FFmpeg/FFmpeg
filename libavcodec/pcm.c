@@ -97,7 +97,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     n           = frame->nb_samples * avctx->channels;
     samples     = (const short *)frame->data[0];
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, n * sample_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, n * sample_size, 0)) < 0)
         return ret;
     dst = avpkt->data;
 
@@ -501,7 +501,7 @@ AVCodec ff_ ## name_ ## _encoder = {                                        \
     .id           = AV_CODEC_ID_ ## id_,                                    \
     .init         = pcm_encode_init,                                        \
     .encode2      = pcm_encode_frame,                                       \
-    .capabilities = CODEC_CAP_VARIABLE_FRAME_SIZE,                          \
+    .capabilities = AV_CODEC_CAP_VARIABLE_FRAME_SIZE,                       \
     .sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_,             \
                                                    AV_SAMPLE_FMT_NONE },    \
 }
@@ -523,7 +523,7 @@ AVCodec ff_ ## name_ ## _decoder = {                                        \
     .priv_data_size = sizeof(PCMDecode),                                    \
     .init           = pcm_decode_init,                                      \
     .decode         = pcm_decode_frame,                                     \
-    .capabilities   = CODEC_CAP_DR1,                                        \
+    .capabilities   = AV_CODEC_CAP_DR1,                                     \
     .sample_fmts    = (const enum AVSampleFormat[]){ sample_fmt_,           \
                                                      AV_SAMPLE_FMT_NONE },  \
 }

@@ -122,12 +122,12 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
 
     if(   !(avctx->thread_type & FF_THREAD_FRAME)
-       || !(avctx->codec->capabilities & CODEC_CAP_INTRA_ONLY))
+       || !(avctx->codec->capabilities & AV_CODEC_CAP_INTRA_ONLY))
         return 0;
 
     if(   !avctx->thread_count
        && avctx->codec_id == AV_CODEC_ID_MJPEG
-       && !(avctx->flags & CODEC_FLAG_QSCALE)) {
+       && !(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
         av_log(avctx, AV_LOG_DEBUG,
                "Forcing thread count to 1 for MJPEG encoding, use -thread_type slice "
                "or a constant quantizer if you want to use multiple cpu cores\n");
@@ -135,7 +135,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     }
     if(   avctx->thread_count > 1
        && avctx->codec_id == AV_CODEC_ID_MJPEG
-       && !(avctx->flags & CODEC_FLAG_QSCALE))
+       && !(avctx->flags & AV_CODEC_FLAG_QSCALE))
         av_log(avctx, AV_LOG_WARNING,
                "MJPEG CBR encoding works badly with frame multi-threading, consider "
                "using -threads 1, -thread_type slice or a constant quantizer.\n");
@@ -143,7 +143,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     if (avctx->codec_id == AV_CODEC_ID_HUFFYUV ||
         avctx->codec_id == AV_CODEC_ID_FFVHUFF) {
         int warn = 0;
-        if (avctx->flags & CODEC_FLAG_PASS1)
+        if (avctx->flags & AV_CODEC_FLAG_PASS1)
             warn = 1;
         else if(avctx->context_model > 0) {
             AVDictionaryEntry *t = av_dict_get(options, "non_deterministic",

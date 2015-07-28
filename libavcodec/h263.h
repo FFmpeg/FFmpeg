@@ -116,7 +116,7 @@ static inline int h263_get_motion_length(int val, int f_code){
 }
 
 static inline void ff_h263_encode_motion_vector(MpegEncContext * s, int x, int y, int f_code){
-    if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT) {
+    if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT) {
         skip_put_bits(&s->pb,
             h263_get_motion_length(x, f_code)
            +h263_get_motion_length(y, f_code));

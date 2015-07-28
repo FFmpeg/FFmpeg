@@ -339,7 +339,7 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
              : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src, sl->linesize,
                                                        height);
 
-    if (!(h->flags & CODEC_FLAG_GRAY)) {
+    if (!(h->flags & AV_CODEC_FLAG_GRAY)) {
         mx     = mx + (mx < (int) x) >> 1;
         my     = my + (my < (int) y) >> 1;
         width  = width  >> 1;
@@ -1414,9 +1414,9 @@ AVCodec ff_svq3_decoder = {
     .init           = svq3_decode_init,
     .close          = svq3_decode_end,
     .decode         = svq3_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND |
-                      CODEC_CAP_DR1             |
-                      CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND |
+                      AV_CODEC_CAP_DR1             |
+                      AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P,
                                                      AV_PIX_FMT_NONE},
 };

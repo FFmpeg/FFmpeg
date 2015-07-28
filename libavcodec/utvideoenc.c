@@ -157,7 +157,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = 16;
 
     avctx->extradata = av_mallocz(avctx->extradata_size +
-                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                                  AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (!avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata.\n");
@@ -167,7 +167,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     for (i = 0; i < c->planes; i++) {
         c->slice_buffer[i] = av_malloc(c->slice_stride * (avctx->height + 2) +
-                                       FF_INPUT_BUFFER_PADDING_SIZE);
+                                       AV_INPUT_BUFFER_PADDING_SIZE);
         if (!c->slice_buffer[i]) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
             utvideo_encode_close(avctx);
@@ -536,7 +536,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* Allocate a new packet if needed, and set it to the pointer dst */
     ret = ff_alloc_packet2(avctx, pkt, (256 + 4 * c->slices + width * height) *
-                           c->planes + 4);
+                           c->planes + 4, 0);
 
     if (ret < 0)
         return ret;
@@ -638,7 +638,7 @@ AVCodec ff_utvideo_encoder = {
     .init           = utvideo_encode_init,
     .encode2        = utvideo_encode_frame,
     .close          = utvideo_encode_close,
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_YUV422P,
                           AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE

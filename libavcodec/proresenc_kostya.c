@@ -944,7 +944,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ctx->pic = pic;
     pkt_size = ctx->frame_size_upper_bound;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
     orig_buf = pkt->data;
@@ -963,7 +963,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be16  (&buf, avctx->height);
 
     frame_flags = ctx->chroma_factor << 6;
-    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT)
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT)
         frame_flags |= pic->top_field_first ? 0x04 : 0x08;
     bytestream_put_byte  (&buf, frame_flags);
 
@@ -1122,7 +1122,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int mps;
     int i, j;
     int min_quant, max_quant;
-    int interlaced = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
+    int interlaced = !!(avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT);
 
     avctx->bits_per_raw_sample = 10;
 #if FF_API_CODED_FRAME
@@ -1347,7 +1347,7 @@ AVCodec ff_prores_ks_encoder = {
     .init           = encode_init,
     .close          = encode_close,
     .encode2        = encode_frame,
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
                           AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE

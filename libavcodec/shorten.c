@@ -431,7 +431,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
         void *tmp_ptr;
         s->max_framesize = 8192; // should hopefully be enough for the first header
         tmp_ptr = av_fast_realloc(s->bitstream, &s->allocated_bitstream_size,
-                                  s->max_framesize + FF_INPUT_BUFFER_PADDING_SIZE);
+                                  s->max_framesize + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!tmp_ptr) {
             av_log(avctx, AV_LOG_ERROR, "error allocating bitstream buffer\n");
             return AVERROR(ENOMEM);
@@ -445,7 +445,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
         buf_size       = FFMIN(buf_size, s->max_framesize - s->bitstream_size);
         input_buf_size = buf_size;
 
-        if (s->bitstream_index + s->bitstream_size + buf_size + FF_INPUT_BUFFER_PADDING_SIZE >
+        if (s->bitstream_index + s->bitstream_size + buf_size + AV_INPUT_BUFFER_PADDING_SIZE >
             s->allocated_bitstream_size) {
             memmove(s->bitstream, &s->bitstream[s->bitstream_index],
                     s->bitstream_size);
@@ -680,7 +680,7 @@ AVCodec ff_shorten_decoder = {
     .init           = shorten_decode_init,
     .close          = shorten_decode_close,
     .decode         = shorten_decode_frame,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_U8P,
                                                       AV_SAMPLE_FMT_NONE },

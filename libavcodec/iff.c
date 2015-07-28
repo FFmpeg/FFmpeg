@@ -240,7 +240,7 @@ static int extract_header(AVCodecContext *const avctx,
                 avctx->pix_fmt = AV_PIX_FMT_RGB32;
                 av_freep(&s->mask_buf);
                 av_freep(&s->mask_palbuf);
-                s->mask_buf = av_malloc((s->planesize * 32) + FF_INPUT_BUFFER_PADDING_SIZE);
+                s->mask_buf = av_malloc((s->planesize * 32) + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!s->mask_buf)
                     return AVERROR(ENOMEM);
                 if (s->bpp > 16) {
@@ -248,7 +248,7 @@ static int extract_header(AVCodecContext *const avctx,
                     av_freep(&s->mask_buf);
                     return AVERROR(ENOMEM);
                 }
-                s->mask_palbuf = av_malloc((2 << s->bpp) * sizeof(uint32_t) + FF_INPUT_BUFFER_PADDING_SIZE);
+                s->mask_palbuf = av_malloc((2 << s->bpp) * sizeof(uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!s->mask_palbuf) {
                     av_freep(&s->mask_buf);
                     return AVERROR(ENOMEM);
@@ -275,12 +275,12 @@ static int extract_header(AVCodecContext *const avctx,
             int ham_count;
             const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
 
-            s->ham_buf = av_malloc((s->planesize * 8) + FF_INPUT_BUFFER_PADDING_SIZE);
+            s->ham_buf = av_malloc((s->planesize * 8) + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!s->ham_buf)
                 return AVERROR(ENOMEM);
 
             ham_count = 8 * (1 << s->ham);
-            s->ham_palbuf = av_malloc((ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + FF_INPUT_BUFFER_PADDING_SIZE);
+            s->ham_palbuf = av_malloc((ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!s->ham_palbuf) {
                 av_freep(&s->ham_buf);
                 return AVERROR(ENOMEM);
@@ -366,7 +366,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if ((err = av_image_check_size(avctx->width, avctx->height, 0, avctx)))
         return err;
     s->planesize = FFALIGN(avctx->width, 16) >> 3; // Align plane size in bits to word-boundary
-    s->planebuf  = av_malloc(s->planesize + FF_INPUT_BUFFER_PADDING_SIZE);
+    s->planebuf  = av_malloc(s->planesize + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!s->planebuf)
         return AVERROR(ENOMEM);
 
@@ -887,7 +887,7 @@ AVCodec ff_iff_ilbm_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 #if CONFIG_IFF_BYTERUN1_DECODER
@@ -900,6 +900,6 @@ AVCodec ff_iff_byterun1_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

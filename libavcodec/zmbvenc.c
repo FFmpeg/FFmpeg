@@ -231,7 +231,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     pkt_size = c->zstream.total_out + 1 + 6*keyframe;
-    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size, 0)) < 0)
         return ret;
     buf = pkt->data;
 

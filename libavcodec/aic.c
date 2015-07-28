@@ -488,5 +488,5 @@ AVCodec ff_aic_decoder = {
     .init           = aic_decode_init,
     .close          = aic_decode_close,
     .decode         = aic_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

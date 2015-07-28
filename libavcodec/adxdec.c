@@ -183,7 +183,7 @@ AVCodec ff_adpcm_adx_decoder = {
     .init           = adx_decode_init,
     .decode         = adx_decode_frame,
     .flush          = adx_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

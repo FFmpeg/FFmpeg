@@ -62,9 +62,10 @@ static av_cold int wmv2_encode_init(AVCodecContext *avctx)
     ff_wmv2_common_init(w);
 
     avctx->extradata_size = 4;
-    avctx->extradata      = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata      = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
+
     encode_ext_header(w);
 
     return 0;
@@ -226,6 +227,7 @@ AVCodec ff_wmv2_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
+    .priv_class     = &wmv2_class,
     .init           = wmv2_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,

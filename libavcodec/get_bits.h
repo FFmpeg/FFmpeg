@@ -401,7 +401,7 @@ static inline int check_marker(GetBitContext *s, const char *msg)
 
 /**
  * Initialize GetBitContext.
- * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes
+ * @param buffer bitstream buffer, must be AV_INPUT_BUFFER_PADDING_SIZE bytes
  *        larger than the actual read bits because some optimized bitstream
  *        readers read 32 or 64 bit at once and could read over the end
  * @param bit_size the size of the buffer in bits
@@ -432,7 +432,7 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
 
 /**
  * Initialize GetBitContext.
- * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes
+ * @param buffer bitstream buffer, must be AV_INPUT_BUFFER_PADDING_SIZE bytes
  *        larger than the actual read bits because some optimized bitstream
  *        readers read 32 or 64 bit at once and could read over the end
  * @param byte_size the size of the buffer in bytes

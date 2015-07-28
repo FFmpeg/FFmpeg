@@ -425,6 +425,6 @@ AVCodec ff_tta_decoder = {
     .close          = tta_decode_close,
     .decode         = tta_decode_frame,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_class     = &tta_decoder_class,
 };

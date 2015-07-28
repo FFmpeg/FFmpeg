@@ -35,11 +35,11 @@ static int noise(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const ch
     if(amount <= 0)
         return AVERROR(EINVAL);
 
-    *poutbuf= av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    *poutbuf= av_malloc(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!*poutbuf)
         return AVERROR(ENOMEM);
 
-    memcpy(*poutbuf, buf, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    memcpy(*poutbuf, buf, buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
     for(i=0; i<buf_size; i++){
         (*state) += (*poutbuf)[i] + 1;
         if(*state % amount == 0)

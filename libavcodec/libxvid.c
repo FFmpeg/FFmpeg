@@ -77,6 +77,7 @@ struct xvid_context {
     int ssim;                      /**< SSIM information display mode */
     int ssim_acc;                  /**< SSIM accuracy. 0: accurate. 4: fast. */
     int gmc;
+    int me_quality;                /**< Motion estimation quality. 0: fast 6: best. */
 };
 
 /**
@@ -381,37 +382,56 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
 
     /* Bring in VOP flags from ffmpeg command-line */
     x->vop_flags = XVID_VOP_HALFPEL;              /* Bare minimum quality */
-    if (xvid_flags & CODEC_FLAG_4MV)
+    if (xvid_flags & AV_CODEC_FLAG_4MV)
         x->vop_flags    |= XVID_VOP_INTER4V;      /* Level 3 */
     if (avctx->trellis)
         x->vop_flags    |= XVID_VOP_TRELLISQUANT; /* Level 5 */
-    if (xvid_flags & CODEC_FLAG_AC_PRED)
+    if (xvid_flags & AV_CODEC_FLAG_AC_PRED)
         x->vop_flags    |= XVID_VOP_HQACPRED;     /* Level 6 */
-    if (xvid_flags & CODEC_FLAG_GRAY)
+    if (xvid_flags & AV_CODEC_FLAG_GRAY)
         x->vop_flags    |= XVID_VOP_GREYSCALE;
 
     /* Decide which ME quality setting to use */
     x->me_flags = 0;
-    switch (avctx->me_method) {
-    case ME_FULL:   /* Quality 6 */
+    switch (x->me_quality) {
+    case 6:
+    case 5:
         x->me_flags |= XVID_ME_EXTSEARCH16 |
                        XVID_ME_EXTSEARCH8;
-
-    case ME_EPZS:   /* Quality 4 */
+    case 4:
+    case 3:
         x->me_flags |= XVID_ME_ADVANCEDDIAMOND8 |
                        XVID_ME_HALFPELREFINE8   |
                        XVID_ME_CHROMA_PVOP      |
                        XVID_ME_CHROMA_BVOP;
-
-    case ME_LOG:    /* Quality 2 */
-    case ME_PHODS:
-    case ME_X1:
+    case 2:
+    case 1:
         x->me_flags |= XVID_ME_ADVANCEDDIAMOND16 |
                        XVID_ME_HALFPELREFINE16;
-
-    case ME_ZERO:   /* Quality 0 */
-    default:
+#if FF_API_MOTION_EST
+FF_DISABLE_DEPRECATION_WARNINGS
         break;
+    default:
+        switch (avctx->me_method) {
+        case ME_FULL:   /* Quality 6 */
+             x->me_flags |= XVID_ME_EXTSEARCH16 |
+                            XVID_ME_EXTSEARCH8;
+        case ME_EPZS:   /* Quality 4 */
+             x->me_flags |= XVID_ME_ADVANCEDDIAMOND8 |
+                            XVID_ME_HALFPELREFINE8   |
+                            XVID_ME_CHROMA_PVOP      |
+                            XVID_ME_CHROMA_BVOP;
+        case ME_LOG:    /* Quality 2 */
+        case ME_PHODS:
+        case ME_X1:
+             x->me_flags |= XVID_ME_ADVANCEDDIAMOND16 |
+                            XVID_ME_HALFPELREFINE16;
+        case ME_ZERO:   /* Quality 0 */
+        default:
+            break;
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     /* Decide how we should decide blocks */
@@ -442,7 +462,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         x->vol_flags |= XVID_VOL_GMC;
         x->me_flags  |= XVID_ME_GME_REFINE;
     }
-    if (xvid_flags & CODEC_FLAG_QPEL) {
+    if (xvid_flags & AV_CODEC_FLAG_QPEL) {
         x->vol_flags |= XVID_VOL_QUARTERPEL;
         x->me_flags  |= XVID_ME_QUARTERPELREFINE16;
         if (x->vop_flags & XVID_VOP_INTER4V)
@@ -494,7 +514,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     x->old_twopassbuffer = NULL;
     x->twopassfile       = NULL;
 
-    if (xvid_flags & CODEC_FLAG_PASS1) {
+    if (xvid_flags & AV_CODEC_FLAG_PASS1) {
         rc2pass1.version     = XVID_VERSION;
         rc2pass1.context     = x;
         x->twopassbuffer     = av_malloc(BUFFER_SIZE);
@@ -510,7 +530,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         plugins[xvid_enc_create.num_plugins].func  = xvid_ff_2pass;
         plugins[xvid_enc_create.num_plugins].param = &rc2pass1;
         xvid_enc_create.num_plugins++;
-    } else if (xvid_flags & CODEC_FLAG_PASS2) {
+    } else if (xvid_flags & AV_CODEC_FLAG_PASS2) {
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
@@ -541,7 +561,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         plugins[xvid_enc_create.num_plugins].func  = xvid_plugin_2pass2;
         plugins[xvid_enc_create.num_plugins].param = &rc2pass2;
         xvid_enc_create.num_plugins++;
-    } else if (!(xvid_flags & CODEC_FLAG_QSCALE)) {
+    } else if (!(xvid_flags & AV_CODEC_FLAG_QSCALE)) {
         /* Single Pass Bitrate Control! */
         single.version = XVID_VERSION;
         single.bitrate = avctx->bit_rate;
@@ -600,7 +620,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         xvid_enc_create.max_key_interval = 240; /* Xvid's best default */
 
     /* Quants */
-    if (xvid_flags & CODEC_FLAG_QSCALE)
+    if (xvid_flags & AV_CODEC_FLAG_QSCALE)
         x->qscale = 1;
     else
         x->qscale = 0;
@@ -646,13 +666,13 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     /* Misc Settings */
     xvid_enc_create.frame_drop_ratio = 0;
     xvid_enc_create.global           = 0;
-    if (xvid_flags & CODEC_FLAG_CLOSED_GOP)
+    if (xvid_flags & AV_CODEC_FLAG_CLOSED_GOP)
         xvid_enc_create.global |= XVID_GLOBAL_CLOSED_GOP;
 
     /* Determines which codec mode we are operating in */
     avctx->extradata      = NULL;
     avctx->extradata_size = 0;
-    if (xvid_flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (xvid_flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         /* In this case, we are claiming to be MPEG4 */
         x->quicktime_format = 1;
         avctx->codec_id     = AV_CODEC_ID_MPEG4;
@@ -696,7 +716,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     xvid_enc_frame_t xvid_enc_frame = { 0 };
     xvid_enc_stats_t xvid_enc_stats = { 0 };
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, mb_width*(int64_t)mb_height*MAX_MB_BYTES + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, mb_width*(int64_t)mb_height*MAX_MB_BYTES + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
     /* Start setting up the frame */
@@ -863,6 +883,7 @@ static const AVOption options[] = {
     { "frame",       NULL,                                                0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "ssim" },
     { "ssim_acc",    "SSIM accuracy",                   OFFSET(ssim_acc),    AV_OPT_TYPE_INT,   { .i64 = 2 },       0,       4, VE         },
     { "gmc",         "use GMC",                         OFFSET(gmc),         AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       1, VE         },
+    { "me_quality",  "Motion estimation quality",       OFFSET(me_quality),  AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       6, VE         },
     { NULL },
 };
 

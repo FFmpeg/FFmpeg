@@ -85,7 +85,7 @@ void choose_sample_fmt(AVStream *st, AVCodec *codec)
                 break;
         }
         if (*p == -1) {
-            if((codec->capabilities & CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codec->sample_fmt) > av_get_sample_fmt_name(codec->sample_fmts[0]))
+            if((codec->capabilities & AV_CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codec->sample_fmt) > av_get_sample_fmt_name(codec->sample_fmts[0]))
                 av_log(NULL, AV_LOG_ERROR, "Conversion will not be lossless.\n");
             if(av_get_sample_fmt_name(st->codec->sample_fmt))
             av_log(NULL, AV_LOG_WARNING,
@@ -732,7 +732,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
              ist->resample_height,
              ist->hwaccel_retrieve_data ? ist->hwaccel_retrieved_pix_fmt : ist->resample_pix_fmt,
              tb.num, tb.den, sar.num, sar.den,
-             SWS_BILINEAR + ((ist->dec_ctx->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
+             SWS_BILINEAR + ((ist->dec_ctx->flags&AV_CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
     if (fr.num && fr.den)
         av_bprintf(&args, ":frame_rate=%d/%d", fr.num, fr.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
@@ -1036,7 +1036,7 @@ int configure_filtergraph(FilterGraph *fg)
         OutputStream *ost = fg->outputs[i]->ost;
         if (ost &&
             ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-            !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+            !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                          ost->enc_ctx->frame_size);
     }

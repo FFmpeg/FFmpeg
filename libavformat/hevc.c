@@ -644,7 +644,7 @@ static uint8_t *nal_unit_extract_rbsp(const uint8_t *src, uint32_t src_len,
     uint8_t *dst;
     uint32_t i, len;
 
-    dst = av_malloc(src_len + FF_INPUT_BUFFER_PADDING_SIZE);
+    dst = av_malloc(src_len + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!dst)
         return NULL;
 

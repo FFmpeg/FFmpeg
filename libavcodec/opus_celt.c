@@ -2209,7 +2209,7 @@ int ff_celt_init(AVCodecContext *avctx, CeltContext **ps, int output_channels)
             goto fail;
     }
 
-    s->dsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->dsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->dsp) {
         ret = AVERROR(ENOMEM);
         goto fail;

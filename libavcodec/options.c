@@ -232,7 +232,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
             memset(((uint8_t *) dest->obj) + size, 0, pad); \
     }
     alloc_and_copy_or_fail(extradata,    src->extradata_size,
-                           FF_INPUT_BUFFER_PADDING_SIZE);
+                           AV_INPUT_BUFFER_PADDING_SIZE);
     dest->extradata_size  = src->extradata_size;
     alloc_and_copy_or_fail(intra_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(inter_matrix, 64 * sizeof(int16_t), 0);

@@ -449,7 +449,7 @@ uint8_t *ff_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
                                  int size);
 
 /**
- * Allocate extradata with additional FF_INPUT_BUFFER_PADDING_SIZE at end
+ * Allocate extradata with additional AV_INPUT_BUFFER_PADDING_SIZE at end
  * which is always set to 0.
  *
  * @param size size of extradata
@@ -458,7 +458,7 @@ uint8_t *ff_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
 int ff_alloc_extradata(AVCodecContext *avctx, int size);
 
 /**
- * Allocate extradata with additional FF_INPUT_BUFFER_PADDING_SIZE at end
+ * Allocate extradata with additional AV_INPUT_BUFFER_PADDING_SIZE at end
  * which is always set to 0 and fill it from pb.
  *
  * @param size size of extradata

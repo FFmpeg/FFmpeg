@@ -119,7 +119,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->fpsDenom        = avctx->time_base.num * avctx->ticks_per_frame;
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
-    ctx->params->bEnablePsnr     = !!(avctx->flags & CODEC_FLAG_PSNR);
+    ctx->params->bEnablePsnr     = !!(avctx->flags & AV_CODEC_FLAG_PSNR);
 
     if ((avctx->color_primaries <= AVCOL_PRI_BT2020 &&
          avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
@@ -179,7 +179,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         ctx->params->rc.rateControlMode = X265_RC_ABR;
     }
 
-    if (!(avctx->flags & CODEC_FLAG_GLOBAL_HEADER))
+    if (!(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
         ctx->params->bRepeatHeaders = 1;
 
     if (ctx->x265_opts) {
@@ -214,7 +214,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         x265_nal *nal;
         int nnal;
 
@@ -225,7 +225,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
         }
 
-        avctx->extradata = av_malloc(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        avctx->extradata = av_malloc(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!avctx->extradata) {
             av_log(avctx, AV_LOG_ERROR,
                    "Cannot allocate HEVC header of size %d.\n", avctx->extradata_size);
@@ -378,5 +378,5 @@ AVCodec ff_libx265_encoder = {
     .priv_data_size   = sizeof(libx265Context),
     .priv_class       = &class,
     .defaults         = x265_defaults,
-    .capabilities     = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
 };

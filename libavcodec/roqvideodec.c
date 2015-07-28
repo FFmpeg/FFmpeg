@@ -244,5 +244,5 @@ AVCodec ff_roq_decoder = {
     .init           = roq_decode_init,
     .close          = roq_decode_end,
     .decode         = roq_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -123,6 +123,6 @@ AVCodec ff_frwu_decoder = {
     .priv_data_size = sizeof(FRWUContext),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_class     = &frwu_class,
 };

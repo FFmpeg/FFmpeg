@@ -477,7 +477,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
     int used_rects = 0, i, implicit_rect = 0, av_uninit(wmv9_mask);
 
-    av_assert0(FF_INPUT_BUFFER_PADDING_SIZE >=
+    av_assert0(AV_INPUT_BUFFER_PADDING_SIZE >=
                ARITH2_PADDING + (MIN_CACHE_BITS + 7) / 8);
 
     if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
@@ -849,5 +849,5 @@ AVCodec ff_mss2_decoder = {
     .init           = mss2_decode_init,
     .close          = mss2_decode_end,
     .decode         = mss2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

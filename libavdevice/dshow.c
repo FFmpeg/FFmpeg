@@ -975,7 +975,7 @@ dshow_add_device(AVFormatContext *avctx,
             codec->codec_id = AV_CODEC_ID_RAWVIDEO;
             if (bih->biCompression == BI_RGB || bih->biCompression == BI_BITFIELDS) {
                 codec->bits_per_coded_sample = bih->biBitCount;
-                codec->extradata = av_malloc(9 + FF_INPUT_BUFFER_PADDING_SIZE);
+                codec->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (codec->extradata) {
                     codec->extradata_size = 9;
                     memcpy(codec->extradata, "BottomUp", 9);

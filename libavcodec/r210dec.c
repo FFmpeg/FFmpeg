@@ -103,7 +103,7 @@ AVCodec ff_r210_decoder = {
     .id             = AV_CODEC_ID_R210,
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 #if CONFIG_R10K_DECODER
@@ -114,7 +114,7 @@ AVCodec ff_r10k_decoder = {
     .id             = AV_CODEC_ID_R10K,
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 #if CONFIG_AVRP_DECODER
@@ -125,6 +125,6 @@ AVCodec ff_avrp_decoder = {
     .id             = AV_CODEC_ID_AVRP,
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

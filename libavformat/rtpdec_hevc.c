@@ -152,7 +152,7 @@ static av_cold int hevc_parse_sdp_line(AVFormatContext *ctx, int st_index,
             codec->extradata_size = hevc_data->vps_size + hevc_data->sps_size +
                                     hevc_data->pps_size + hevc_data->sei_size;
             codec->extradata = av_malloc(codec->extradata_size +
-                                         FF_INPUT_BUFFER_PADDING_SIZE);
+                                         AV_INPUT_BUFFER_PADDING_SIZE);
             if (!codec->extradata) {
                 ret = AVERROR(ENOMEM);
                 codec->extradata_size = 0;
@@ -166,7 +166,7 @@ static av_cold int hevc_parse_sdp_line(AVFormatContext *ctx, int st_index,
                 pos += hevc_data->pps_size;
                 memcpy(codec->extradata + pos, hevc_data->sei, hevc_data->sei_size);
                 pos += hevc_data->sei_size;
-                memset(codec->extradata + pos, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+                memset(codec->extradata + pos, 0, AV_INPUT_BUFFER_PADDING_SIZE);
             }
 
             av_freep(&hevc_data->vps);

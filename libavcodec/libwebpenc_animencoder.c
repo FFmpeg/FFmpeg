@@ -139,7 +139,7 @@ AVCodec ff_libwebp_anim_encoder = {
     .init           = libwebp_anim_encode_init,
     .encode2        = libwebp_anim_encode_frame,
     .close          = libwebp_anim_encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB32,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,

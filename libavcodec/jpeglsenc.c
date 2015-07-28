@@ -269,7 +269,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
         comps = 3;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width  *avctx->height * comps * 4 +
-                                FF_MIN_BUFFER_SIZE)) < 0)
+                                AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
     buf2 = av_malloc(pkt->size);
@@ -438,7 +438,7 @@ AVCodec ff_jpegls_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEGLS,
     .init           = encode_init_ls,
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .encode2        = encode_picture_ls,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,

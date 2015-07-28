@@ -189,7 +189,7 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     MovTextContext *s = avctx->priv_data;
 
     avctx->extradata_size = sizeof text_sample_entry;
-    avctx->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
 

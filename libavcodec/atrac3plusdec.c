@@ -171,7 +171,7 @@ static av_cold int atrac3p_decode_init(AVCodecContext *avctx)
     ctx->my_channel_layout = avctx->channel_layout;
 
     ctx->ch_units = av_mallocz_array(ctx->num_channel_blocks, sizeof(*ctx->ch_units));
-    ctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    ctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     if (!ctx->ch_units || !ctx->fdsp) {
         atrac3p_decode_close(avctx);
@@ -392,7 +392,7 @@ AVCodec ff_atrac3p_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ATRAC3P,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,
     .close          = atrac3p_decode_close,

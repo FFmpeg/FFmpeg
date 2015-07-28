@@ -337,7 +337,7 @@ AVCodec ff_mpc7_decoder = {
     .close          = mpc7_decode_close,
     .decode         = mpc7_decode_frame,
     .flush          = mpc7_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

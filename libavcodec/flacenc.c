@@ -1390,7 +1390,7 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame_bytes)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, frame_bytes, 0)) < 0)
         return ret;
 
     out_bytes = write_frame(s, avpkt);
@@ -1475,7 +1475,7 @@ AVCodec ff_flac_encoder = {
     .init           = flac_encode_init,
     .encode2        = flac_encode_frame,
     .close          = flac_encode_close,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_LOSSLESS,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_LOSSLESS,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },

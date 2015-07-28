@@ -1337,7 +1337,7 @@ AVCodec ff_g723_1_decoder = {
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_decode_init,
     .decode         = g723_1_decode_frame,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .priv_class     = &g723_1dec_class,
 };
 
@@ -2462,7 +2462,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     av_freep(&in_orig); in = NULL;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 24)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 24, 0)) < 0)
         return ret;
 
     *got_packet_ptr = 1;

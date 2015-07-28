@@ -262,7 +262,7 @@ static av_cold void lame_window_init(AacPsyContext *ctx, AVCodecContext *avctx)
     for (i = 0; i < avctx->channels; i++) {
         AacPsyChannel *pch = &ctx->ch[i];
 
-        if (avctx->flags & CODEC_FLAG_QSCALE)
+        if (avctx->flags & AV_CODEC_FLAG_QSCALE)
             pch->attack_threshold = psy_vbr_map[avctx->global_quality / FF_QP2LAMBDA].st_lrm;
         else
             pch->attack_threshold = lame_calc_attack_threshold(avctx->bit_rate / avctx->channels / 1000);
@@ -837,6 +837,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
     int grouping     = 0;
     int uselongblock = 1;
     int attacks[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
+    float clippings[AAC_NUM_BLOCKS_SHORT];
     int i;
     FFPsyWindowInfo wi = { { 0 } };
 
@@ -926,14 +927,35 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
 
     lame_apply_block_type(pch, &wi, uselongblock);
 
+    /* Calculate input sample maximums and evaluate clipping risk */
+    if (audio) {
+        for (i = 0; i < AAC_NUM_BLOCKS_SHORT; i++) {
+            const float *wbuf = audio + i * AAC_BLOCK_SIZE_SHORT;
+            float max = 0;
+            int j;
+            for (j = 0; j < AAC_BLOCK_SIZE_SHORT; j++)
+                max = FFMAX(max, fabsf(wbuf[j]));
+            clippings[i] = max;
+        }
+    } else {
+        for (i = 0; i < 8; i++)
+            clippings[i] = 0;
+    }
+
     wi.window_type[1] = prev_type;
     if (wi.window_type[0] != EIGHT_SHORT_SEQUENCE) {
+        float clipping = 0.0f;
+
         wi.num_windows  = 1;
         wi.grouping[0]  = 1;
         if (wi.window_type[0] == LONG_START_SEQUENCE)
             wi.window_shape = 0;
         else
             wi.window_shape = 1;
+
+        for (i = 0; i < 8; i++)
+            clipping = FFMAX(clipping, clippings[i]);
+        wi.clipping[0] = clipping;
     } else {
         int lastgrp = 0;
 
@@ -943,6 +965,14 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
             if (!((pch->next_grouping >> i) & 1))
                 lastgrp = i;
             wi.grouping[lastgrp]++;
+        }
+
+        for (i = 0; i < 8; i += wi.grouping[i]) {
+            int w;
+            float clipping = 0.0f;
+            for (w = 0; w < wi.grouping[i] && !clipping; w++)
+                clipping = FFMAX(clipping, clippings[i+w]);
+            wi.clipping[i] = clipping;
         }
     }
 

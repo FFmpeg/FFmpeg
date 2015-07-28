@@ -685,7 +685,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
             width    = FFALIGN(s->width,  16);
             height   = FFALIGN(s->height, 16);
         } else {
-            if (avctx->flags & CODEC_FLAG_GRAY)
+            if (avctx->flags & AV_CODEC_FLAG_GRAY)
                 break;
             width    = FFALIGN(s->width  / 4, 16);
             height   = FFALIGN(s->height / 4, 16);
@@ -839,7 +839,7 @@ AVCodec ff_svq1_decoder = {
     .init           = svq1_decode_init,
     .close          = svq1_decode_end,
     .decode         = svq1_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .flush          = svq1_flush,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV410P,
                                                      AV_PIX_FMT_NONE },

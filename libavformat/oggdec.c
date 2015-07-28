@@ -82,7 +82,7 @@ static int ogg_save(AVFormatContext *s)
 
     for (i = 0; i < ogg->nstreams; i++) {
         struct ogg_stream *os = ogg->streams + i;
-        os->buf = av_mallocz(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
+        os->buf = av_mallocz(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
         if (os->buf)
             memcpy(os->buf, ost->streams[i].buf, os->bufpos);
         else
@@ -263,7 +263,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     memset(os, 0, sizeof(*os));
     os->serial        = serial;
     os->bufsize       = DECODER_BUFFER_SIZE;
-    os->buf           = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
+    os->buf           = av_malloc(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
     os->header        = -1;
     os->start_granule = OGG_NOGRANULE_VALUE;
     if (!os->buf)
@@ -285,7 +285,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
 static int ogg_new_buf(struct ogg *ogg, int idx)
 {
     struct ogg_stream *os = ogg->streams + idx;
-    uint8_t *nb = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
+    uint8_t *nb = av_malloc(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
     int size = os->bufpos - os->pstart;
 
     if (!nb)
@@ -424,7 +424,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     }
 
     if (os->bufsize - os->bufpos < size) {
-        uint8_t *nb = av_malloc((os->bufsize *= 2) + FF_INPUT_BUFFER_PADDING_SIZE);
+        uint8_t *nb = av_malloc((os->bufsize *= 2) + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!nb)
             return AVERROR(ENOMEM);
         memcpy(nb, os->buf, os->bufpos);
@@ -440,7 +440,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     os->granule = gp;
     os->flags   = flags;
 
-    memset(os->buf + os->bufpos, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(os->buf + os->bufpos, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     if (sid)
         *sid = idx;
 

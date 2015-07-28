@@ -137,13 +137,13 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         SFrameBSInfo fbi = { 0 };
         int i, size = 0;
         (*s->encoder)->EncodeParameterSets(s->encoder, &fbi);
         for (i = 0; i < fbi.sLayerInfo[0].iNalCount; i++)
             size += fbi.sLayerInfo[0].pNalLengthInByte[i];
-        avctx->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+        avctx->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!avctx->extradata) {
             err = AVERROR(ENOMEM);
             goto fail;
@@ -192,7 +192,7 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     // frames have two layers, where the first layer contains the SPS/PPS.
     // If using global headers, don't include the SPS/PPS in the returned
     // packet - thus, only return one layer.
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)
         first_layer = fbi.iLayerNum - 1;
 
     for (layer = first_layer; layer < fbi.iLayerNum; layer++) {
@@ -227,7 +227,7 @@ AVCodec ff_libopenh264_encoder = {
     .init           = svc_encode_init,
     .encode2        = svc_encode_frame,
     .close          = svc_encode_close,
-    .capabilities   = CODEC_CAP_AUTO_THREADS,
+    .capabilities   = AV_CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,

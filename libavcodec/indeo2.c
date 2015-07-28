@@ -252,5 +252,5 @@ AVCodec ff_indeo2_decoder = {
     .init           = ir2_decode_init,
     .close          = ir2_decode_end,
     .decode         = ir2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

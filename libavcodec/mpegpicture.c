@@ -58,7 +58,7 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
 
-    if (avctx->hwaccel || avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+    if (avctx->hwaccel || avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
         return 0;
 
     if (linesize < 24) {
@@ -199,7 +199,7 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
     }
 
     if (out_format == FMT_H263 || encoding || avctx->debug_mv ||
-        (avctx->flags2 & CODEC_FLAG2_EXPORT_MVS)) {
+        (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;
 

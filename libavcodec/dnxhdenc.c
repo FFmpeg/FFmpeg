@@ -351,7 +351,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     ctx->m.mb_height = (avctx->height + 15) / 16;
     ctx->m.mb_width  = (avctx->width  + 15) / 16;
 
-    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         ctx->interlaced   = 1;
         ctx->m.mb_height /= 2;
     }
@@ -1060,7 +1060,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     int offset, i, ret;
     uint8_t *buf;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, ctx->cid_table->frame_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, ctx->cid_table->frame_size, 0)) < 0)
         return ret;
     buf = pkt->data;
 
@@ -1165,7 +1165,7 @@ AVCodec ff_dnxhd_encoder = {
     .init           = dnxhd_encode_init,
     .encode2        = dnxhd_encode_picture,
     .close          = dnxhd_encode_end,
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV422P10,

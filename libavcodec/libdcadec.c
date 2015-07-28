@@ -42,7 +42,7 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
 {
     DCADecContext *s = avctx->priv_data;
     AVFrame *frame = data;
-    struct dcadec_exss_info *exss;
+    av_unused struct dcadec_exss_info *exss;
     int ret, i, k;
     int **samples, nsamples, channel_mask, sample_rate, bits_per_sample, profile;
     uint32_t mrk;
@@ -56,7 +56,7 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     }
     mrk = AV_RB32(input);
     if (mrk != DCA_SYNCWORD_CORE_BE && mrk != DCA_SYNCWORD_SUBSTREAM) {
-        s->buffer = av_fast_realloc(s->buffer, &s->buffer_size, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+        s->buffer = av_fast_realloc(s->buffer, &s->buffer_size, avpkt->size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!s->buffer)
             return AVERROR(ENOMEM);
 
@@ -206,7 +206,7 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     int flags = 0;
 
     /* Affects only lossy DTS profiles. DTS-HD MA is always bitexact */
-    if (avctx->flags & CODEC_FLAG_BITEXACT)
+    if (avctx->flags & AV_CODEC_FLAG_BITEXACT)
         flags |= DCADEC_FLAG_CORE_BIT_EXACT;
 
     if (avctx->request_channel_layout > 0 && avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE) {
@@ -260,7 +260,7 @@ AVCodec ff_libdcadec_decoder = {
     .decode         = dcadec_decode_frame,
     .close          = dcadec_close,
     .flush          = dcadec_flush,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_CHANNEL_CONF,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),

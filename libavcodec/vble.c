@@ -155,7 +155,7 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     vble_restore_plane(ctx, pic, &gb, 0, offset, avctx->width, avctx->height);
 
     /* Chroma */
-    if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(ctx->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         offset += avctx->width * avctx->height;
         vble_restore_plane(ctx, pic, &gb, 1, offset, width_uv, height_uv);
 
@@ -210,5 +210,5 @@ AVCodec ff_vble_decoder = {
     .init           = vble_decode_init,
     .close          = vble_decode_close,
     .decode         = vble_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

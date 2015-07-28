@@ -674,12 +674,12 @@ static int parse_video_info(AVIOContext *pb, AVStream *st)
         int ret;
         st->codec->extradata_size  = size - BMP_HEADER_SIZE;
         if (!(st->codec->extradata = av_malloc(st->codec->extradata_size +
-                                               FF_INPUT_BUFFER_PADDING_SIZE))) {
+                                               AV_INPUT_BUFFER_PADDING_SIZE))) {
             st->codec->extradata_size = 0;
             return AVERROR(ENOMEM);
         }
         memset(st->codec->extradata + st->codec->extradata_size , 0,
-               FF_INPUT_BUFFER_PADDING_SIZE);
+               AV_INPUT_BUFFER_PADDING_SIZE);
         if ((ret = avio_read(pb, st->codec->extradata,
                              st->codec->extradata_size)) < 0)
             return ret;
@@ -928,7 +928,7 @@ static int asf_read_data(AVFormatContext *s, const GUIDParseTable *g)
                size, asf->nb_packets);
     avio_skip(pb, 2); // skip reserved field
     asf->first_packet_offset = avio_tell(pb);
-    if (pb->seekable)
+    if (pb->seekable && !(asf->b_flags & ASF_FLAG_BROADCAST))
         align_position(pb, asf->offset, asf->data_size);
 
     return 0;
@@ -1676,7 +1676,7 @@ static int asf_read_header(AVFormatContext *s)
             size = avio_rl64(pb);
             align_position(pb, asf->offset, size);
         }
-        if (asf->data_reached && !pb->seekable)
+        if (asf->data_reached && (!pb->seekable || (asf->b_flags & ASF_FLAG_BROADCAST)))
             break;
     }
 

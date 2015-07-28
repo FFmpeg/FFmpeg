@@ -85,7 +85,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     params.sampleRate = avctx->sample_rate;
     params.bitRate    = avctx->bit_rate;
     params.nChannels  = avctx->channels;
-    params.adtsUsed   = !(avctx->flags & CODEC_FLAG_GLOBAL_HEADER);
+    params.adtsUsed   = !(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER);
     if (s->codec_api.SetParam(s->handle, VO_PID_AAC_ENCPARAM, &params)
         != VO_ERR_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set encoding parameters\n");
@@ -102,10 +102,10 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         ret = AVERROR(ENOSYS);
         goto error;
     }
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = 2;
         avctx->extradata      = av_mallocz(avctx->extradata_size +
-                                           FF_INPUT_BUFFER_PADDING_SIZE);
+                                           AV_INPUT_BUFFER_PADDING_SIZE);
         if (!avctx->extradata) {
             ret = AVERROR(ENOMEM);
             goto error;
@@ -153,7 +153,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return ret;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels))) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels), 0)) < 0)
         return ret;
 
     input.Buffer  = samples;
@@ -194,7 +194,7 @@ AVCodec ff_libvo_aacenc_encoder = {
     .encode2        = aac_encode_frame,
     .close          = aac_encode_close,
     .supported_samplerates = mpeg4audio_sample_rates,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
 };

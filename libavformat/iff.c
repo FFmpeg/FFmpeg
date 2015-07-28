@@ -455,7 +455,7 @@ static int iff_read_header(AVFormatContext *s)
                  return AVERROR_INVALIDDATA;
             }
             st->codec->extradata_size = data_size + IFF_EXTRA_VIDEO_SIZE;
-            st->codec->extradata      = av_malloc(data_size + IFF_EXTRA_VIDEO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+            st->codec->extradata      = av_malloc(data_size + IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
             if (avio_read(pb, st->codec->extradata + IFF_EXTRA_VIDEO_SIZE, data_size) < 0)
@@ -682,7 +682,7 @@ static int iff_read_header(AVFormatContext *s)
 
         if (!st->codec->extradata) {
             st->codec->extradata_size = IFF_EXTRA_VIDEO_SIZE;
-            st->codec->extradata      = av_malloc(IFF_EXTRA_VIDEO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+            st->codec->extradata      = av_malloc(IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
         }

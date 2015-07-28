@@ -1262,6 +1262,6 @@ AVCodec ff_cavs_decoder = {
     .init           = ff_cavs_init,
     .close          = ff_cavs_end,
     .decode         = cavs_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = cavs_flush,
 };

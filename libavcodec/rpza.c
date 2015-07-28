@@ -280,5 +280,5 @@ AVCodec ff_rpza_decoder = {
     .init           = rpza_decode_init,
     .close          = rpza_decode_end,
     .decode         = rpza_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -203,7 +203,7 @@ typedef struct WMAVoiceContext {
                                   ///< to #wmavoice_decode_packet() (since
                                   ///< they're part of the previous superframe)
 
-    uint8_t sframe_cache[SFRAME_CACHE_MAXSIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t sframe_cache[SFRAME_CACHE_MAXSIZE + AV_INPUT_BUFFER_PADDING_SIZE];
                                   ///< cache for superframe data split over
                                   ///< multiple packets
     int sframe_cache_size;        ///< set to >0 if we have data from an
@@ -2084,6 +2084,6 @@ AVCodec ff_wmavoice_decoder = {
     .init_static_data = wmavoice_init_static_data,
     .close            = wmavoice_decode_end,
     .decode           = wmavoice_decode_packet,
-    .capabilities     = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .flush            = wmavoice_flush,
 };

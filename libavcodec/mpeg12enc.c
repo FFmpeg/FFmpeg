@@ -205,7 +205,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    s->drop_frame_timecode = s->drop_frame_timecode || !!(avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE);
+    s->drop_frame_timecode = s->drop_frame_timecode || !!(avctx->flags2 & AV_CODEC_FLAG2_DROP_FRAME_TIMECODE);
     if (s->drop_frame_timecode)
         s->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
     if (s->drop_frame_timecode && s->frame_rate_index != 4) {
@@ -384,7 +384,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_bits(&s->pb, 1, 1);
         put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
         put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
-        put_bits(&s->pb, 1, !!(s->avctx->flags & CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
+        put_bits(&s->pb, 1, !!(s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
         put_bits(&s->pb, 1, 0);                     // broken link
     }
 }
@@ -1155,7 +1155,7 @@ AVCodec ff_mpeg1video_encoder = {
     .supported_framerates = ff_mpeg12_frame_rate_tab + 1,
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_NONE },
-    .capabilities         = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
+    .capabilities         = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .priv_class           = &mpeg1_class,
 };
 
@@ -1172,6 +1172,6 @@ AVCodec ff_mpeg2video_encoder = {
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_YUV422P,
                                                            AV_PIX_FMT_NONE },
-    .capabilities         = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
+    .capabilities         = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .priv_class           = &mpeg2_class,
 };

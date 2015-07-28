@@ -193,7 +193,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
     pixels = s->frame->data[0];
     pixel_limit = s->avctx->height * s->frame->linesize[0];
-    if (buf_size < 16 || buf_size > INT_MAX - (3 * 256 + FF_INPUT_BUFFER_PADDING_SIZE))
+    if (buf_size < 16 || buf_size > INT_MAX - (3 * 256 + AV_INPUT_BUFFER_PADDING_SIZE))
         return AVERROR_INVALIDDATA;
     frame_size = bytestream2_get_le32(&g2);
     if (frame_size > buf_size)
@@ -814,5 +814,5 @@ AVCodec ff_flic_decoder = {
     .init           = flic_decode_init,
     .close          = flic_decode_end,
     .decode         = flic_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

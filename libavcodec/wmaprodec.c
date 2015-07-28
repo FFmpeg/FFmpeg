@@ -173,7 +173,7 @@ typedef struct WMAProDecodeCtx {
     AVCodecContext*  avctx;                         ///< codec context for av_log
     AVFloatDSPContext *fdsp;
     uint8_t          frame_data[MAX_FRAMESIZE +
-                      FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
+                      AV_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
     FFTContext       mdct_ctx[WMAPRO_BLOCK_SIZES];  ///< MDCT context per block size
     DECLARE_ALIGNED(32, float, tmp)[WMAPRO_BLOCK_MAX_SIZE]; ///< IMDCT output buffer
@@ -288,7 +288,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     s->avctx = avctx;
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
@@ -1666,7 +1666,7 @@ AVCodec ff_wmapro_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_packet,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .flush          = flush,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },

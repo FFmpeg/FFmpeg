@@ -116,7 +116,7 @@ static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64], AVFrame *frame,
     ff_ea_idct_put_c(dest_y                + 8, linesize, block[1]);
     ff_ea_idct_put_c(dest_y + 8 * linesize    , linesize, block[2]);
     ff_ea_idct_put_c(dest_y + 8 * linesize + 8, linesize, block[3]);
-    if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
          ff_ea_idct_put_c(dest_cb, frame->linesize[1], block[4]);
          ff_ea_idct_put_c(dest_cr, frame->linesize[2], block[5]);
     }
@@ -142,7 +142,7 @@ static void tgq_idct_put_mb_dconly(TgqContext *s, AVFrame *frame,
     tgq_dconly(s, dest_y                + 8, linesize, dc[1]);
     tgq_dconly(s, dest_y + 8 * linesize,     linesize, dc[2]);
     tgq_dconly(s, dest_y + 8 * linesize + 8, linesize, dc[3]);
-    if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         tgq_dconly(s, dest_cb, frame->linesize[1], dc[4]);
         tgq_dconly(s, dest_cr, frame->linesize[2], dc[5]);
     }
@@ -249,5 +249,5 @@ AVCodec ff_eatgq_decoder = {
     .priv_data_size = sizeof(TgqContext),
     .init           = tgq_decode_init,
     .decode         = tgq_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

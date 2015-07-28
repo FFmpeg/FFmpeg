@@ -565,7 +565,7 @@ AVCodec ff_libzvbi_teletext_decoder = {
     .init      = teletext_init_decoder,
     .close     = teletext_close_decoder,
     .decode    = teletext_decode_frame,
-    .capabilities = CODEC_CAP_DELAY,
+    .capabilities = AV_CODEC_CAP_DELAY,
     .flush     = teletext_flush,
     .priv_class= &teletext_class,
 };

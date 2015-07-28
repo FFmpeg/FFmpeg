@@ -272,7 +272,7 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
 
     if (encoding) {
         av_fast_padded_malloc(&c->new_video, &c->new_video_size,
-                              h * w + FF_INPUT_BUFFER_PADDING_SIZE);
+                              h * w + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!c->new_video)
             return AVERROR(ENOMEM);
         if (c->bpp == 8)
@@ -305,5 +305,5 @@ AVCodec ff_cdxl_decoder = {
     .init           = cdxl_decode_init,
     .close          = cdxl_decode_end,
     .decode         = cdxl_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

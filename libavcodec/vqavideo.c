@@ -650,5 +650,5 @@ AVCodec ff_vqa_decoder = {
     .init           = vqa_decode_init,
     .close          = vqa_decode_end,
     .decode         = vqa_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

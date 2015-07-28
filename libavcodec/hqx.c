@@ -536,7 +536,7 @@ AVCodec ff_hqx_decoder = {
     .init           = hqx_decode_init,
     .decode         = hqx_decode_frame,
     .close          = hqx_decode_close,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

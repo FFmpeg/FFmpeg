@@ -287,8 +287,8 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     GetBitContext gb;
     BlockInfo mb_data[5 * DV_MAX_BPM], *mb, *mb1;
     LOCAL_ALIGNED_16(int16_t, sblock, [5 * DV_MAX_BPM], [64]);
-    LOCAL_ALIGNED_16(uint8_t, mb_bit_buffer, [80     + FF_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
-    LOCAL_ALIGNED_16(uint8_t, vs_bit_buffer, [80 * 5 + FF_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
+    LOCAL_ALIGNED_16(uint8_t, mb_bit_buffer, [80     + AV_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
+    LOCAL_ALIGNED_16(uint8_t, vs_bit_buffer, [80 * 5 + AV_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
     const int log2_blocksize = 3-s->avctx->lowres;
     int is_field_mode[5];
     int vs_bit_buffer_damaged = 0;
@@ -568,6 +568,6 @@ AVCodec ff_dvvideo_decoder = {
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_decode_init,
     .decode         = dvvideo_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .max_lowres     = 3,
 };

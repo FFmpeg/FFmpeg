@@ -447,7 +447,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (ractx->last_frame)
         return 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAME_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAME_SIZE, 0)) < 0)
         return ret;
 
     /**
@@ -551,7 +551,7 @@ AVCodec ff_ra_144_encoder = {
     .init           = ra144_encode_init,
     .encode2        = ra144_encode_frame,
     .close          = ra144_encode_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .supported_samplerates = (const int[]){ 8000, 0 },

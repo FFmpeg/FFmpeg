@@ -395,7 +395,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
         ctx->idsp.idct_put(dest_y + dct_y_offset,                dct_linesize_luma, ctx->blocks[4]);
         ctx->idsp.idct_put(dest_y + dct_y_offset + dct_x_offset, dct_linesize_luma, ctx->blocks[5]);
 
-        if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
+        if (!(ctx->avctx->flags & AV_CODEC_FLAG_GRAY)) {
             dct_y_offset = dct_linesize_chroma << 3;
             ctx->idsp.idct_put(dest_u,                dct_linesize_chroma, ctx->blocks[2]);
             ctx->idsp.idct_put(dest_v,                dct_linesize_chroma, ctx->blocks[3]);
@@ -408,7 +408,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
         ctx->idsp.idct_put(dest_y + dct_y_offset,                dct_linesize_luma, ctx->blocks[6]);
         ctx->idsp.idct_put(dest_y + dct_y_offset + dct_x_offset, dct_linesize_luma, ctx->blocks[7]);
 
-        if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
+        if (!(ctx->avctx->flags & AV_CODEC_FLAG_GRAY)) {
             dct_y_offset = dct_linesize_chroma << 3;
             ctx->idsp.idct_put(dest_u,                               dct_linesize_chroma, ctx->blocks[2]);
             ctx->idsp.idct_put(dest_u + dct_x_offset,                dct_linesize_chroma, ctx->blocks[3]);
@@ -515,5 +515,5 @@ AVCodec ff_dnxhd_decoder = {
     .init           = dnxhd_decode_init,
     .close          = dnxhd_decode_close,
     .decode         = dnxhd_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

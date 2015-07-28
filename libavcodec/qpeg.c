@@ -351,5 +351,5 @@ AVCodec ff_qpeg_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .flush          = decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

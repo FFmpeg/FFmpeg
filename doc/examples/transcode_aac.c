@@ -192,7 +192,7 @@ static int open_output_file(const char *filename,
      * Mark the encoder so that it behaves accordingly.
      */
     if ((*output_format_context)->oformat->flags & AVFMT_GLOBALHEADER)
-        (*output_codec_context)->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        (*output_codec_context)->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     /** Open the encoder for the audio stream to use it later. */
     if ((error = avcodec_open2(*output_codec_context, output_codec, NULL)) < 0) {

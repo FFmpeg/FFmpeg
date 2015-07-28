@@ -30,7 +30,7 @@ static av_cold int avui_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Only 720x486 and 720x576 are supported.\n");
         return AVERROR(EINVAL);
     }
-    if (!(avctx->extradata = av_mallocz(144 + FF_INPUT_BUFFER_PADDING_SIZE)))
+    if (!(avctx->extradata = av_mallocz(144 + AV_INPUT_BUFFER_PADDING_SIZE)))
         return AVERROR(ENOMEM);
     avctx->extradata_size = 144;
     memcpy(avctx->extradata, "\0\0\0\x18""APRGAPRG0001", 16);
@@ -101,6 +101,6 @@ AVCodec ff_avui_encoder = {
     .id           = AV_CODEC_ID_AVUI,
     .init         = avui_encode_init,
     .encode2      = avui_encode_frame,
-    .capabilities = CODEC_CAP_EXPERIMENTAL,
+    .capabilities = AV_CODEC_CAP_EXPERIMENTAL,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
 };

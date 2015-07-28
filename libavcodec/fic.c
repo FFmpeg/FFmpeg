@@ -476,6 +476,6 @@ AVCodec ff_fic_decoder = {
     .init           = fic_decode_init,
     .decode         = fic_decode_frame,
     .close          = fic_decode_close,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .priv_class     = &fic_decoder_class,
 };

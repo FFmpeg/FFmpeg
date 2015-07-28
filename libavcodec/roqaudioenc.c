@@ -160,7 +160,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     else
         data_size = avctx->channels * avctx->frame_size;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, ROQ_HEADER_SIZE + data_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, ROQ_HEADER_SIZE + data_size, 0)) < 0)
         return ret;
     out = avpkt->data;
 
@@ -198,7 +198,7 @@ AVCodec ff_roq_dpcm_encoder = {
     .init           = roq_dpcm_encode_init,
     .encode2        = roq_dpcm_encode_frame,
     .close          = roq_dpcm_encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
 };

@@ -727,7 +727,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const short *samples = (const int16_t*)frame->data[0];
     uint8_t state[32];
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size * 5 + 1000)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size * 5 + 1000, 0)) < 0)
         return ret;
 
     ff_init_range_encoder(&c, avpkt->data, avpkt->size);
@@ -1081,7 +1081,7 @@ AVCodec ff_sonic_decoder = {
     .init           = sonic_decode_init,
     .close          = sonic_decode_close,
     .decode         = sonic_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
 };
 #endif /* CONFIG_SONIC_DECODER */
 
@@ -1095,7 +1095,7 @@ AVCodec ff_sonic_encoder = {
     .init           = sonic_encode_init,
     .encode2        = sonic_encode_frame,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
-    .capabilities   = CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_EXPERIMENTAL,
     .close          = sonic_encode_close,
 };
 #endif
@@ -1110,7 +1110,7 @@ AVCodec ff_sonic_ls_encoder = {
     .init           = sonic_encode_init,
     .encode2        = sonic_encode_frame,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
-    .capabilities   = CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_EXPERIMENTAL,
     .close          = sonic_encode_close,
 };
 #endif

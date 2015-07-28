@@ -722,5 +722,5 @@ AVCodec ff_g729_decoder = {
     .priv_data_size = sizeof(G729Context),
     .init           = decoder_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
 };

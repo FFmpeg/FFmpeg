@@ -477,7 +477,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
               );
 
     av_assert0(!s->avmv);
-    if (s->avctx->flags2 & CODEC_FLAG2_EXPORT_MVS) {
+    if (s->avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS) {
         s->avmv = av_malloc_array(s->b_width * s->b_height, sizeof(AVMotionVector) << (s->block_max_depth*2));
     }
     s->avmv_index = 0;
@@ -642,7 +642,7 @@ AVCodec ff_snow_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
+    .capabilities   = AV_CODEC_CAP_DR1 /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

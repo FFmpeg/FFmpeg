@@ -30,18 +30,18 @@ static int dump_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx,
     int cmd= args ? *args : 0;
     /* cast to avoid warning about discarding qualifiers */
     if(avctx->extradata){
-        if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER) && cmd=='a')
+        if(  (keyframe && (avctx->flags2 & AV_CODEC_FLAG2_LOCAL_HEADER) && cmd == 'a')
            ||(keyframe && (cmd=='k' || !cmd))
            ||(cmd=='e')
             /*||(? && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_BEGIN)*/){
             int size= buf_size + avctx->extradata_size;
             *poutbuf_size= size;
-            *poutbuf= av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            *poutbuf= av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!*poutbuf)
                 return AVERROR(ENOMEM);
 
             memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
-            memcpy((*poutbuf) + avctx->extradata_size, buf, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            memcpy((*poutbuf) + avctx->extradata_size, buf, buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
             return 1;
         }
     }

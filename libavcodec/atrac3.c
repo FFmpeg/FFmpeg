@@ -886,7 +886,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
 
     q->decoded_bytes_buffer = av_mallocz(FFALIGN(avctx->block_align, 4) +
-                                         FF_INPUT_BUFFER_PADDING_SIZE);
+                                         AV_INPUT_BUFFER_PADDING_SIZE);
     if (!q->decoded_bytes_buffer)
         return AVERROR(ENOMEM);
 
@@ -914,7 +914,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
 
     ff_atrac_init_gain_compensation(&q->gainc_ctx, 4, 3);
-    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     q->units = av_mallocz_array(avctx->channels, sizeof(*q->units));
     if (!q->units || !q->fdsp) {
@@ -934,7 +934,7 @@ AVCodec ff_atrac3_decoder = {
     .init             = atrac3_decode_init,
     .close            = atrac3_decode_close,
     .decode           = atrac3_decode_frame,
-    .capabilities     = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },
 };

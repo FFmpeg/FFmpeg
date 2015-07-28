@@ -101,7 +101,7 @@ static inline void comp_block(MadContext *t, AVFrame *frame,
              frame->linesize[0],
              t->last_frame->data[0] + offset,
              t->last_frame->linesize[0], add);
-    } else if (!(t->avctx->flags & CODEC_FLAG_GRAY)) {
+    } else if (!(t->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         int index = j - 3;
         unsigned offset = (mb_y * 8 + (mv_y/2))*t->last_frame->linesize[index] + mb_x * 8 + (mv_x/2);
         if (offset >= (t->avctx->height/2 - 7) * t->last_frame->linesize[index] - 7)
@@ -120,7 +120,7 @@ static inline void idct_put(MadContext *t, AVFrame *frame, int16_t *block,
         ff_ea_idct_put_c(
             frame->data[0] + (mb_y*16 + ((j&2)<<2))*frame->linesize[0] + mb_x*16 + ((j&1)<<3),
             frame->linesize[0], block);
-    } else if (!(t->avctx->flags & CODEC_FLAG_GRAY)) {
+    } else if (!(t->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         int index = j - 3;
         ff_ea_idct_put_c(
             frame->data[index] + (mb_y*8)*frame->linesize[index] + mb_x*8,
@@ -312,7 +312,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
     s->bbdsp.bswap16_buf(s->bitstream_buf, (const uint16_t *)(buf + bytestream2_tell(&gb)),
                          bytestream2_get_bytes_left(&gb) / 2);
-    memset((uint8_t*)s->bitstream_buf + bytestream2_get_bytes_left(&gb), 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset((uint8_t*)s->bitstream_buf + bytestream2_get_bytes_left(&gb), 0, AV_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&s->gb, s->bitstream_buf, 8*(bytestream2_get_bytes_left(&gb)));
 
     for (s->mb_y=0; s->mb_y < (avctx->height+15)/16; s->mb_y++)
@@ -348,5 +348,5 @@ AVCodec ff_eamad_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

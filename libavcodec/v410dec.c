@@ -94,5 +94,5 @@ AVCodec ff_v410_decoder = {
     .id           = AV_CODEC_ID_V410,
     .init         = v410_decode_init,
     .decode       = v410_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

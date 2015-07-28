@@ -453,7 +453,7 @@ void ff_h263_encode_mb(MpegEncContext * s,
     int16_t pred_dc;
     int16_t rec_intradc[6];
     int16_t *dc_ptr[6];
-    const int interleaved_stats = s->avctx->flags & CODEC_FLAG_PASS1;
+    const int interleaved_stats = s->avctx->flags & AV_CODEC_FLAG_PASS1;
 
     if (!s->mb_intra) {
         /* compute cbp */

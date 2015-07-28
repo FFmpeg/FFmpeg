@@ -133,7 +133,7 @@ static int read_header(AVFormatContext *s)
 
     /* color cycling and palette data */
     st->codec->extradata_size = 16*8 + 4*256;
-    st->codec->extradata      = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata      = av_mallocz(st->codec->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata) {
         return AVERROR(ENOMEM);
     }

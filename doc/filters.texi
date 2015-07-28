@@ -318,6 +318,54 @@ build.
 
 Below is a description of the currently available audio filters.
 
+@section acrossfade
+
+Apply cross fade from one input audio stream to another input audio stream.
+The cross fade is applied for specified duration near the end of first stream.
+
+The filter accepts the following options:
+
+@table @option
+@item nb_samples, ns
+Specify the number of samples for which the cross fade effect has to last.
+At the end of the cross fade effect the first input audio will be completely
+silent. Default is 44100.
+
+@item duration, d
+Specify the duration of the cross fade effect. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
+By default the duration is determined by @var{nb_samples}.
+If set this option is used instead of @var{nb_samples}.
+
+@item overlap, o
+Should first stream end overlap with second stream start. Default is enabled.
+
+@item curve1
+Set curve for cross fade transition for first stream.
+
+@item curve2
+Set curve for cross fade transition for second stream.
+
+For description of available curve types see @ref{afade} filter description.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Cross fade from one input to another:
+@example
+ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:c1=exp:c2=exp output.flac
+@end example
+
+@item
+Cross fade from one input to another but without overlapping:
+@example
+ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:o=0:c1=exp:c2=exp output.flac
+@end example
+@end itemize
+
 @section adelay
 
 Delay one or more audio channels.
@@ -469,6 +517,7 @@ aeval=val(0)|-val(1)
 @end example
 @end itemize
 
+@anchor{afade}
 @section afade
 
 Apply fade-in/out effect to input audio.

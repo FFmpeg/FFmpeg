@@ -439,7 +439,7 @@ static av_cold void libopenjpeg_static_init(AVCodec *codec)
     int major, minor;
 
     if (sscanf(version, "%d.%d", &major, &minor) == 2 && 1000*major + minor <= 1003)
-        codec->capabilities |= CODEC_CAP_EXPERIMENTAL;
+        codec->capabilities |= AV_CODEC_CAP_EXPERIMENTAL;
 }
 
 #define OFFSET(x) offsetof(LibOpenJPEGContext, x)
@@ -466,7 +466,7 @@ AVCodec ff_libopenjpeg_decoder = {
     .priv_data_size = sizeof(LibOpenJPEGContext),
     .init           = libopenjpeg_decode_init,
     .decode         = libopenjpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .max_lowres     = 31,
     .priv_class     = &openjpeg_class,
     .init_static_data = libopenjpeg_static_init,

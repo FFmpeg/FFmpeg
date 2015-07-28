@@ -204,7 +204,7 @@ static av_always_inline PutBitContext *dv_encode_ac(EncBlockInfo *bi,
 static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data,
                                               int linesize)
 {
-    if (s->avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+    if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         int ps = s->ildct_cmp(NULL, data, NULL, linesize, 8) - 400;
         if (ps > 0) {
             int is = s->ildct_cmp(NULL, data,            NULL, linesize << 1, 4) +
@@ -717,7 +717,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     DVVideoContext *s = c->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size)) < 0)
+    if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size, 0)) < 0)
         return ret;
 
     c->pix_fmt                = s->sys->pix_fmt;
@@ -751,7 +751,7 @@ AVCodec ff_dvvideo_encoder = {
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_encode_init,
     .encode2        = dvvideo_encode_frame,
-    .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE

@@ -1048,5 +1048,5 @@ AVCodec ff_interplay_video_decoder = {
     .init           = ipvideo_decode_init,
     .close          = ipvideo_decode_end,
     .decode         = ipvideo_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_PARAM_CHANGE,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,
 };

@@ -135,7 +135,7 @@ AVCodec ff_libopencore_amrnb_decoder = {
     .init           = amr_nb_decode_init,
     .close          = amr_nb_decode_close,
     .decode         = amr_nb_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif /* CONFIG_LIBOPENCORE_AMRNB_DECODER */
 
@@ -236,7 +236,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->enc_bitrate = avctx->bit_rate;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 32)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 32, 0)) < 0)
         return ret;
 
     if (frame) {
@@ -287,7 +287,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
     .init           = amr_nb_encode_init,
     .encode2        = amr_nb_encode_frame,
     .close          = amr_nb_encode_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &amrnb_class,
@@ -372,7 +372,7 @@ AVCodec ff_libopencore_amrwb_decoder = {
     .init           = amr_wb_decode_init,
     .close          = amr_wb_decode_close,
     .decode         = amr_wb_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 
 #endif /* CONFIG_LIBOPENCORE_AMRWB_DECODER */

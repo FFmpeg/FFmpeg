@@ -472,8 +472,28 @@ static void encode_spectral_coeffs(AACEncContext *s, SingleChannelElement *sce)
                                                    sce->ics.swb_sizes[i],
                                                    sce->sf_idx[w*16 + i],
                                                    sce->band_type[w*16 + i],
-                                                   s->lambda);
+                                                   s->lambda, sce->ics.window_clipping[w]);
             start += sce->ics.swb_sizes[i];
+        }
+    }
+}
+
+/**
+ * Downscale spectral coefficients for near-clipping windows to avoid artifacts
+ */
+static void avoid_clipping(AACEncContext *s, SingleChannelElement *sce)
+{
+    int start, i, j, w;
+
+    if (sce->ics.clip_avoidance_factor < 1.0f) {
+        for (w = 0; w < sce->ics.num_windows; w++) {
+            start = 0;
+            for (i = 0; i < sce->ics.max_sfb; i++) {
+                float *swb_coeffs = sce->coeffs + start + w*128;
+                for (j = 0; j < sce->ics.swb_sizes[i]; j++)
+                    swb_coeffs[j] *= sce->ics.clip_avoidance_factor;
+                start += sce->ics.swb_sizes[i];
+            }
         }
     }
 }
@@ -578,6 +598,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         for (ch = 0; ch < chans; ch++) {
             IndividualChannelStream *ics = &cpe->ch[ch].ics;
             int cur_channel = start_ch + ch;
+            float clip_avoidance_factor;
             overlap  = &samples[cur_channel][0];
             samples2 = overlap + 1024;
             la       = samples2 + (448+64);
@@ -605,25 +626,40 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->num_windows        = wi[ch].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
             ics->num_swb            = tag == TYPE_LFE ? ics->num_swb : s->psy.num_bands[ics->num_windows == 8];
+            clip_avoidance_factor = 0.0f;
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
+            for (w = 0; w < ics->num_windows; w++) {
+                if (wi[ch].clipping[w] > CLIP_AVOIDANCE_FACTOR) {
+                    ics->window_clipping[w] = 1;
+                    clip_avoidance_factor = FFMAX(clip_avoidance_factor, wi[ch].clipping[w]);
+                } else {
+                    ics->window_clipping[w] = 0;
+                }
+            }
+            if (clip_avoidance_factor > CLIP_AVOIDANCE_FACTOR) {
+                ics->clip_avoidance_factor = CLIP_AVOIDANCE_FACTOR / clip_avoidance_factor;
+            } else {
+                ics->clip_avoidance_factor = 1.0f;
+            }
 
             apply_window_and_mdct(s, &cpe->ch[ch], overlap);
             if (isnan(cpe->ch->coeffs[0])) {
                 av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
                 return AVERROR(EINVAL);
             }
+            avoid_clipping(s, &cpe->ch[ch]);
         }
         start_ch += chans;
     }
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192 * s->channels)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192 * s->channels, 0)) < 0)
         return ret;
     do {
         int frame_bits;
 
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
-        if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
+        if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & AV_CODEC_FLAG_BITEXACT))
             put_bitstream_info(s, LIBAVCODEC_IDENT);
         start_ch = 0;
         memset(chan_el_counter, 0, sizeof(chan_el_counter));
@@ -721,7 +757,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     avctx->frame_bits = put_bits_count(&s->pb);
 
     // rate control stuff
-    if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+    if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
         float ratio = avctx->bit_rate * 1024.0f / avctx->sample_rate / avctx->frame_bits;
         s->lambda *= ratio;
         s->lambda = FFMIN(s->lambda, 65536.f);
@@ -758,7 +794,7 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 {
     int ret = 0;
 
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
@@ -781,7 +817,7 @@ static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
     int ch;
     FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->buffer.samples, s->channels, 3 * 1024 * sizeof(s->buffer.samples[0]), alloc_fail);
     FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->cpe, s->chan_map[0], sizeof(ChannelElement), alloc_fail);
-    FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + FF_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
+    FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + AV_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
 
     for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
@@ -907,8 +943,8 @@ AVCodec ff_aac_encoder = {
     .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
     .supported_samplerates = mpeg4audio_sample_rates,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY |
-                      CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &aacenc_class,

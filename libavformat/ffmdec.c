@@ -326,7 +326,7 @@ static int ffm2_read_header(AVFormatContext *s)
             codec->flags = avio_rb32(pb);
             codec->flags2 = avio_rb32(pb);
             codec->debug = avio_rb32(pb);
-            if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
+            if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
                 if (ff_get_extradata(codec, pb, avio_rb32(pb)) < 0)
                     return AVERROR(ENOMEM);
             }
@@ -573,7 +573,7 @@ static int ffm_read_header(AVFormatContext *s)
         default:
             goto fail;
         }
-        if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
+        if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
             if (ff_get_extradata(codec, pb, avio_rb32(pb)) < 0)
                 return AVERROR(ENOMEM);
         }

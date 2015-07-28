@@ -951,7 +951,7 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     ff_fft_init(&c->fft256,  7, 0);
     ff_fft_init(&c->fft512,  8, 1);
     ff_fft_init(&c->fft1024, 9, 1);
-    c->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    c->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!c->fdsp)
         return AVERROR(ENOMEM);
 
@@ -1016,7 +1016,7 @@ AVCodec ff_on2avc_decoder = {
     .init           = on2avc_decode_init,
     .decode         = on2avc_decode_frame,
     .close          = on2avc_decode_close,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

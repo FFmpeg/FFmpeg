@@ -242,7 +242,7 @@ static int fixup_vorbis_headers(AVFormatContext *as,
         offset += priv->len[i];
         av_freep(&priv->packet[i]);
     }
-    if ((err = av_reallocp(buf, offset + FF_INPUT_BUFFER_PADDING_SIZE)) < 0)
+    if ((err = av_reallocp(buf, offset + AV_INPUT_BUFFER_PADDING_SIZE)) < 0)
         return err;
     return offset;
 }
