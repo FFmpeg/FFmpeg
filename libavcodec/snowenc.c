@@ -1850,6 +1850,11 @@ redo_frame:
 
     emms_c();
 
+    ff_side_data_set_encoder_stats(pkt, s->current_picture->quality,
+                                   s->current_picture->error,
+                                   (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
+                                   s->current_picture->pict_type);
+
     pkt->size = ff_rac_terminate(c);
     if (s->current_picture->key_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
