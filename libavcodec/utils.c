@@ -1329,21 +1329,11 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
 
     if (avpkt->data) {
         AVBufferRef *buf = avpkt->buf;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        void *destruct = avpkt->destruct;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         if (avpkt->size < size)
             return AVERROR(EINVAL);
 
         av_init_packet(avpkt);
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        avpkt->destruct = destruct;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         avpkt->buf      = buf;
         avpkt->size     = size;
         return 0;

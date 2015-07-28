@@ -1209,12 +1209,7 @@ typedef struct AVPacket {
      * Equals next_pts - this_pts in presentation order.
      */
     int   duration;
-#if FF_API_DESTRUCT_PACKET
-    attribute_deprecated
-    void  (*destruct)(struct AVPacket *);
-    attribute_deprecated
-    void  *priv;
-#endif
+
     int64_t pos;                            ///< byte position in stream, -1 if unknown
 
     /**
@@ -3575,15 +3570,6 @@ void avsubtitle_free(AVSubtitle *sub);
  * @addtogroup lavc_packet
  * @{
  */
-
-#if FF_API_DESTRUCT_PACKET
-/**
- * Default packet destructor.
- * @deprecated use the AVBuffer API instead
- */
-attribute_deprecated
-void av_destruct_packet(AVPacket *pkt);
-#endif
 
 /**
  * Initialize optional fields of a packet with default values.

@@ -127,11 +127,6 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
         *pkt                   =  yop->video_packet;
         yop->video_packet.data =  NULL;
         yop->video_packet.buf  =  NULL;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        yop->video_packet.destruct = NULL;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         yop->video_packet.size =  0;
         pkt->data[0]           =  yop->odd_frame;
         pkt->flags             |= AV_PKT_FLAG_KEY;

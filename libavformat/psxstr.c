@@ -203,11 +203,6 @@ static int str_read_packet(AVFormatContext *s,
                     pkt->data= NULL;
                     pkt->size= -1;
                     pkt->buf = NULL;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-                    pkt->destruct = NULL;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
                     return 0;
                 }
 
