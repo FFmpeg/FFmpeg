@@ -946,7 +946,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
             *fmt++ = AV_PIX_FMT_D3D11VA_VLD;
 #endif
 #if CONFIG_H264_VAAPI_HWACCEL
-            *fmt++ = AV_PIX_FMT_VAAPI_VLD;
+            *fmt++ = AV_PIX_FMT_VAAPI;
 #endif
 #if CONFIG_H264_VDA_HWACCEL
             *fmt++ = AV_PIX_FMT_VDA_VLD;
