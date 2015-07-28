@@ -79,16 +79,16 @@
  */
 
 #ifndef FF_API_VDPAU
-#define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_XVMC
-#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_OPT_TYPE_METADATA
-#define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_DLOG
-#define FF_API_DLOG                     (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_DLOG                     (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_CRYPTO_CONTEXT
 #define FF_API_CRYPTO_CONTEXT           (LIBAVUTIL_VERSION_MAJOR < 56)
