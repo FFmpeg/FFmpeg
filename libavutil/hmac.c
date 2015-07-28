@@ -181,28 +181,54 @@ static void test(AVHMAC *hmac, const uint8_t *key, int keylen,
 
 int main(void)
 {
-    uint8_t key1[16], key3[16], data3[50], key4[63], key5[64], key6[65];
+    uint8_t key1[20], key3[131], data3[50];
+    enum AVHMACType i = AV_HMAC_SHA224;
     const uint8_t key2[]  = "Jefe";
     const uint8_t data1[] = "Hi There";
     const uint8_t data2[] = "what do ya want for nothing?";
+    const uint8_t data4[] = "Test Using Larger Than Block-Size Key - Hash Key First";
+    const uint8_t data5[] = "Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data";
+    const uint8_t data6[] = "This is a test using a larger than block-size key and a larger "
+                            "than block-size data. The key needs to be hashed before being used"
+                            " by the HMAC algorithm.";
     AVHMAC *hmac = av_hmac_alloc(AV_HMAC_MD5);
     if (!hmac)
         return 1;
     memset(key1, 0x0b, sizeof(key1));
     memset(key3, 0xaa, sizeof(key3));
-    memset(key4, 0x44, sizeof(key4));
-    memset(key5, 0x55, sizeof(key5));
-    memset(key6, 0x66, sizeof(key6));
     memset(data3, 0xdd, sizeof(data3));
-    // RFC 2104 test vectors
+    // RFC 2202 test vectors
+    test(hmac, key1, 16, data1, sizeof(data1));
+    test(hmac, key2, sizeof(key2), data2, sizeof(data2));
+    test(hmac, key3, 16, data3, sizeof(data3));
+    test(hmac, key3, 80, data4, sizeof(data4));
+    test(hmac, key3, 80, data5, sizeof(data5));
+    av_hmac_free(hmac);
+
+    /* SHA-1 */
+    hmac = av_hmac_alloc(AV_HMAC_SHA1);
+    if (!hmac)
+        return 1;
+    // RFC 2202 test vectors
     test(hmac, key1, sizeof(key1), data1, sizeof(data1));
     test(hmac, key2, sizeof(key2), data2, sizeof(data2));
-    test(hmac, key3, sizeof(key3), data3, sizeof(data3));
-    // Additional tests, to test cases where the key is too long
-    test(hmac, key4, sizeof(key4), data1, sizeof(data1));
-    test(hmac, key5, sizeof(key5), data2, sizeof(data2));
-    test(hmac, key6, sizeof(key6), data3, sizeof(data3));
+    test(hmac, key3, 20, data3, sizeof(data3));
+    test(hmac, key3, 80, data4, sizeof(data4));
+    test(hmac, key3, 80, data5, sizeof(data5));
     av_hmac_free(hmac);
+
+    /* SHA-2 */
+    while (i <= AV_HMAC_SHA256) {
+        hmac = av_hmac_alloc(i);
+        // RFC 4231 test vectors
+        test(hmac, key1, sizeof(key1), data1, sizeof(data1));
+        test(hmac, key2, sizeof(key2), data2, sizeof(data2));
+        test(hmac, key3, 20, data3, sizeof(data3));
+        test(hmac, key3, sizeof(key3), data4, sizeof(data4));
+        test(hmac, key3, sizeof(key3), data6, sizeof(data6));
+        av_hmac_free(hmac);
+        i++;
+    }
     return 0;
 }
 #endif /* TEST */
