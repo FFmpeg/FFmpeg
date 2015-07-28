@@ -35,9 +35,9 @@ static void destroy_buffers(VADisplay display, VABufferID *buffers, unsigned int
 {
     unsigned int i;
     for (i = 0; i < n_buffers; i++) {
-        if (buffers[i]) {
+        if (buffers[i] != VA_INVALID_ID) {
             vaDestroyBuffer(display, buffers[i]);
-            buffers[i] = 0;
+            buffers[i] = VA_INVALID_ID;
         }
     }
 }
@@ -55,6 +55,11 @@ int ff_vaapi_context_init(AVCodecContext *avctx)
     vactx->display              = user_vactx->display;
     vactx->config_id            = user_vactx->config_id;
     vactx->context_id           = user_vactx->context_id;
+
+    vactx->pic_param_buf_id     = VA_INVALID_ID;
+    vactx->iq_matrix_buf_id     = VA_INVALID_ID;
+    vactx->bitplane_buf_id      = VA_INVALID_ID;
+
     return 0;
 }
 
@@ -68,18 +73,18 @@ int ff_vaapi_render_picture(FFVAContext *vactx, VASurfaceID surface)
     VABufferID va_buffers[3];
     unsigned int n_va_buffers = 0;
 
-    if (!vactx->pic_param_buf_id)
+    if (vactx->pic_param_buf_id == VA_INVALID_ID)
         return 0;
 
     vaUnmapBuffer(vactx->display, vactx->pic_param_buf_id);
     va_buffers[n_va_buffers++] = vactx->pic_param_buf_id;
 
-    if (vactx->iq_matrix_buf_id) {
+    if (vactx->iq_matrix_buf_id != VA_INVALID_ID) {
         vaUnmapBuffer(vactx->display, vactx->iq_matrix_buf_id);
         va_buffers[n_va_buffers++] = vactx->iq_matrix_buf_id;
     }
 
-    if (vactx->bitplane_buf_id) {
+    if (vactx->bitplane_buf_id != VA_INVALID_ID) {
         vaUnmapBuffer(vactx->display, vactx->bitplane_buf_id);
         va_buffers[n_va_buffers++] = vactx->bitplane_buf_id;
     }
@@ -119,7 +124,7 @@ int ff_vaapi_commit_slices(FFVAContext *vactx)
         return -1;
     vactx->slice_buf_ids = slice_buf_ids;
 
-    slice_param_buf_id = 0;
+    slice_param_buf_id = VA_INVALID_ID;
     if (vaCreateBuffer(vactx->display, vactx->context_id,
                        VASliceParameterBufferType,
                        vactx->slice_param_size,
@@ -128,7 +133,7 @@ int ff_vaapi_commit_slices(FFVAContext *vactx)
         return -1;
     vactx->slice_count = 0;
 
-    slice_data_buf_id = 0;
+    slice_data_buf_id = VA_INVALID_ID;
     if (vaCreateBuffer(vactx->display, vactx->context_id,
                        VASliceDataBufferType,
                        vactx->slice_data_size,
@@ -147,7 +152,7 @@ static void *alloc_buffer(FFVAContext *vactx, int type, unsigned int size, uint3
 {
     void *data = NULL;
 
-    *buf_id = 0;
+    *buf_id = VA_INVALID_ID;
     if (vaCreateBuffer(vactx->display, vactx->context_id,
                        type, size, 1, NULL, buf_id) == VA_STATUS_SUCCESS)
         vaMapBuffer(vactx->display, *buf_id, &data);
