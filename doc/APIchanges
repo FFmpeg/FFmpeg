@@ -16,6 +16,7 @@ API changes, most recent first:
 2015-xx-xx - lavu 54.17.0
   xxxxxxx -  Add av_blowfish_alloc().
   xxxxxxx -  Add av_rc4_alloc().
+  xxxxxxx -  Add av_xtea_alloc().
 
 2015-07-29 - 7e38340 - lavu 54.16.0 - hmac.h
   Add AV_HMAC_SHA224 and AV_HMAC_SHA256.
