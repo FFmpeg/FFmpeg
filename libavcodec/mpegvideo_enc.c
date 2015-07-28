@@ -1831,8 +1831,6 @@ vbv_retry:
             av_assert0(s->avctx->rc_max_rate);
         }
 
-        ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality, NULL, 0, s->pict_type);
-
         if (s->avctx->flags & AV_CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
 
@@ -1842,6 +1840,10 @@ vbv_retry:
                 s->current_picture.error[i];
             avctx->error[i] += s->current_picture_ptr->f->error[i];
         }
+        ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality,
+                                       s->current_picture_ptr->f->error,
+                                       (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
+                                       s->pict_type);
 
         if (s->avctx->flags & AV_CODEC_FLAG_PASS1)
             assert(avctx->header_bits + avctx->mv_bits + avctx->misc_bits +
