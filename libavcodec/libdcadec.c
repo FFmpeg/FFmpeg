@@ -42,7 +42,7 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
 {
     DCADecContext *s = avctx->priv_data;
     AVFrame *frame = data;
-    struct dcadec_exss_info *exss;
+    av_unused struct dcadec_exss_info *exss;
     int ret, i, k;
     int **samples, nsamples, channel_mask, sample_rate, bits_per_sample, profile;
     uint32_t mrk;
