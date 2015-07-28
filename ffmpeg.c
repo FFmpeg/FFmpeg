@@ -673,6 +673,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
                                               NULL);
         ost->quality = sd ? AV_RL32(sd) : -1;
+        ost->pict_type = sd ? sd[4] : AV_PICTURE_TYPE_NONE;
 
         for (i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
             if (sd && i < sd[5])
@@ -1287,7 +1288,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
         avg_bitrate = (double)(ost->data_size * 8) / ti1 / 1000.0;
         fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
                (double)ost->data_size / 1024, ti1, bitrate, avg_bitrate);
-        fprintf(vstats_file, "type= %c\n", enc->coded_frame ? av_get_picture_type_char(enc->coded_frame->pict_type) : 'I');
+        fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(ost->pict_type));
     }
 }
 
@@ -1594,7 +1595,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log2(qp_histogram[j] + 1)));
             }
 
-            if ((enc->flags & AV_CODEC_FLAG_PSNR) && (enc->coded_frame || is_last_report)) {
+            if ((enc->flags & AV_CODEC_FLAG_PSNR) && (ost->pict_type != AV_PICTURE_TYPE_NONE || is_last_report)) {
                 int j;
                 double error, error_sum = 0;
                 double scale, scale_sum = 0;
