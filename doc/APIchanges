@@ -15,6 +15,10 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-xx-xx - lavc 56.58.100 - vaapi.h
+  Deprecate old VA-API context (vaapi_context) fields that were only
+  set and used by libavcodec. They are all managed internally now.
+
 2015-xx-xx - lavu 54.31.100 - pixfmt.h
   Add a unique pixel format for VA-API (AV_PIX_FMT_VAAPI) that
   indicates the nature of the underlying storage: a VA surface. This

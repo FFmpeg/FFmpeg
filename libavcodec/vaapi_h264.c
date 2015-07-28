@@ -227,7 +227,7 @@ static int vaapi_h264_start_frame(AVCodecContext          *avctx,
                                   av_unused uint32_t       size)
 {
     H264Context * const h = avctx->priv_data;
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     VAPictureParameterBufferH264 *pic_param;
     VAIQMatrixBufferH264 *iq_matrix;
 
@@ -292,7 +292,7 @@ static int vaapi_h264_start_frame(AVCodecContext          *avctx,
 /** End a hardware decoding based frame. */
 static int vaapi_h264_end_frame(AVCodecContext *avctx)
 {
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     H264Context * const h = avctx->priv_data;
     H264SliceContext *sl = &h->slice_ctx[0];
     int ret;
@@ -318,6 +318,7 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
                                    const uint8_t  *buffer,
                                    uint32_t        size)
 {
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     H264Context * const h = avctx->priv_data;
     H264SliceContext *sl  = &h->slice_ctx[0];
     VASliceParameterBufferH264 *slice_param;
@@ -326,7 +327,7 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
             buffer, size);
 
     /* Fill in VASliceParameterBufferH264. */
-    slice_param = (VASliceParameterBufferH264 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);
+    slice_param = (VASliceParameterBufferH264 *)ff_vaapi_alloc_slice(vactx, buffer, size);
     if (!slice_param)
         return -1;
     slice_param->slice_data_bit_offset          = get_bits_count(&sl->gb) + 8; /* bit buffer started beyond nal_unit_type */
@@ -363,4 +364,7 @@ AVHWAccel ff_h264_vaapi_hwaccel = {
     .start_frame    = vaapi_h264_start_frame,
     .end_frame      = vaapi_h264_end_frame,
     .decode_slice   = vaapi_h264_decode_slice,
+    .init           = ff_vaapi_context_init,
+    .uninit         = ff_vaapi_context_fini,
+    .priv_data_size = sizeof(FFVAContext),
 };
