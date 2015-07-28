@@ -32,6 +32,8 @@
 enum AVHMACType {
     AV_HMAC_MD5,
     AV_HMAC_SHA1,
+    AV_HMAC_SHA224,
+    AV_HMAC_SHA256,
 };
 
 typedef struct AVHMAC AVHMAC;

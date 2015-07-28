@@ -26,7 +26,7 @@
 #include "sha.h"
 #include "mem.h"
 
-#define MAX_HASHLEN 20
+#define MAX_HASHLEN 32
 #define MAX_BLOCKLEN 64
 
 struct AVHMAC {
@@ -39,10 +39,15 @@ struct AVHMAC {
     int keylen;
 };
 
-static av_cold void sha1_init(void *ctx)
-{
-    av_sha_init(ctx, 160);
+#define DEFINE_SHA(bits)                           \
+static av_cold void sha ## bits ##_init(void *ctx) \
+{                                                  \
+    av_sha_init(ctx, bits);                        \
 }
+
+DEFINE_SHA(160)
+DEFINE_SHA(224)
+DEFINE_SHA(256)
 
 AVHMAC *av_hmac_alloc(enum AVHMACType type)
 {
@@ -61,7 +66,23 @@ AVHMAC *av_hmac_alloc(enum AVHMACType type)
     case AV_HMAC_SHA1:
         c->blocklen = 64;
         c->hashlen  = 20;
-        c->init     = sha1_init;
+        c->init     = sha160_init;
+        c->update   = av_sha_update;
+        c->final    = av_sha_final;
+        c->hash     = av_sha_alloc();
+        break;
+    case AV_HMAC_SHA224:
+        c->blocklen = 64;
+        c->hashlen  = 28;
+        c->init     = sha224_init;
+        c->update   = av_sha_update;
+        c->final    = av_sha_final;
+        c->hash     = av_sha_alloc();
+        break;
+    case AV_HMAC_SHA256:
+        c->blocklen = 64;
+        c->hashlen  = 32;
+        c->init     = sha256_init;
         c->update   = av_sha_update;
         c->final    = av_sha_final;
         c->hash     = av_sha_alloc();
