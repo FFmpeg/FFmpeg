@@ -948,11 +948,11 @@ typedef struct RcOverride{
  * Allow decoders to produce frames with data planes that are not aligned
  * to CPU requirements (e.g. due to cropping).
  */
-#define CODEC_FLAG_UNALIGNED 0x0001
-#define CODEC_FLAG_QSCALE 0x0002  ///< Use fixed qscale.
-#define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed / advanced prediction for H.263.
-#define CODEC_FLAG_OUTPUT_CORRUPT 0x0008 ///< Output even those frames that might be corrupted
-#define CODEC_FLAG_QPEL   0x0010  ///< Use qpel MC.
+#define CODEC_FLAG_UNALIGNED AV_CODEC_FLAG_UNALIGNED
+#define CODEC_FLAG_QSCALE AV_CODEC_FLAG_QSCALE
+#define CODEC_FLAG_4MV    AV_CODEC_FLAG_4MV
+#define CODEC_FLAG_OUTPUT_CORRUPT AV_CODEC_FLAG_OUTPUT_CORRUPT
+#define CODEC_FLAG_QPEL   AV_CODEC_FLAG_QPEL
 #if FF_API_GMC
 /**
  * @deprecated use the "gmc" private option of the libxvid encoder
@@ -973,9 +973,9 @@ typedef struct RcOverride{
  */
 #define CODEC_FLAG_INPUT_PRESERVED 0x0100
 #endif
-#define CODEC_FLAG_PASS1           0x0200   ///< Use internal 2pass ratecontrol in first pass mode.
-#define CODEC_FLAG_PASS2           0x0400   ///< Use internal 2pass ratecontrol in second pass mode.
-#define CODEC_FLAG_GRAY            0x2000   ///< Only decode/encode grayscale.
+#define CODEC_FLAG_PASS1           AV_CODEC_FLAG_PASS1
+#define CODEC_FLAG_PASS2           AV_CODEC_FLAG_PASS2
+#define CODEC_FLAG_GRAY            AV_CODEC_FLAG_GRAY
 #if FF_API_EMU_EDGE
 /**
  * @deprecated edges are not used/required anymore. I.e. this flag is now always
@@ -983,9 +983,9 @@ typedef struct RcOverride{
  */
 #define CODEC_FLAG_EMU_EDGE        0x4000
 #endif
-#define CODEC_FLAG_PSNR            0x8000   ///< error[?] variables will be set during encoding.
-#define CODEC_FLAG_TRUNCATED       0x00010000 /** Input bitstream might be truncated at a random
-                                                  location instead of only at frame boundaries. */
+#define CODEC_FLAG_PSNR            AV_CODEC_FLAG_PSNR
+#define CODEC_FLAG_TRUNCATED       AV_CODEC_FLAG_TRUNCATED
+
 #if FF_API_NORMALIZE_AQP
 /**
  * @deprecated use the flag "naq" in the "mpv_flags" private option of the
@@ -993,25 +993,24 @@ typedef struct RcOverride{
  */
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000
 #endif
-#define CODEC_FLAG_INTERLACED_DCT 0x00040000 ///< Use interlaced DCT.
-#define CODEC_FLAG_LOW_DELAY      0x00080000 ///< Force low delay.
-#define CODEC_FLAG_GLOBAL_HEADER  0x00400000 ///< Place global headers in extradata instead of every keyframe.
-#define CODEC_FLAG_BITEXACT       0x00800000 ///< Use only bitexact stuff (except (I)DCT).
-/* Fx : Flag for h263+ extra options */
-#define CODEC_FLAG_AC_PRED        0x01000000 ///< H.263 advanced intra coding / MPEG-4 AC prediction
-#define CODEC_FLAG_LOOP_FILTER    0x00000800 ///< loop filter
-#define CODEC_FLAG_INTERLACED_ME  0x20000000 ///< interlaced motion estimation
-#define CODEC_FLAG_CLOSED_GOP     0x80000000
-#define CODEC_FLAG2_FAST          0x00000001 ///< Allow non spec compliant speedup tricks.
-#define CODEC_FLAG2_NO_OUTPUT     0x00000004 ///< Skip bitstream encoding.
-#define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< Place global headers at every keyframe instead of in extradata.
-#define CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000 ///< timecode is in drop frame format. DEPRECATED!!!!
-#define CODEC_FLAG2_IGNORE_CROP   0x00010000 ///< Discard cropping information from SPS.
+#define CODEC_FLAG_INTERLACED_DCT AV_CODEC_FLAG_INTERLACED_DCT
+#define CODEC_FLAG_LOW_DELAY      AV_CODEC_FLAG_LOW_DELAY
+#define CODEC_FLAG_GLOBAL_HEADER  AV_CODEC_FLAG_GLOBAL_HEADER
+#define CODEC_FLAG_BITEXACT       AV_CODEC_FLAG_BITEXACT
+#define CODEC_FLAG_AC_PRED        AV_CODEC_FLAG_AC_PRED
+#define CODEC_FLAG_LOOP_FILTER    AV_CODEC_FLAG_LOOP_FILTER
+#define CODEC_FLAG_INTERLACED_ME  AV_CODEC_FLAG_INTERLACED_ME
+#define CODEC_FLAG_CLOSED_GOP     AV_CODEC_FLAG_CLOSED_GOP
+#define CODEC_FLAG2_FAST          AV_CODEC_FLAG2_FAST
+#define CODEC_FLAG2_NO_OUTPUT     AV_CODEC_FLAG2_NO_OUTPUT
+#define CODEC_FLAG2_LOCAL_HEADER  AV_CODEC_FLAG2_LOCAL_HEADER
+#define CODEC_FLAG2_DROP_FRAME_TIMECODE AV_CODEC_FLAG2_DROP_FRAME_TIMECODE
+#define CODEC_FLAG2_IGNORE_CROP   AV_CODEC_FLAG2_IGNORE_CROP
 
-#define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.
-#define CODEC_FLAG2_SHOW_ALL      0x00400000 ///< Show all frames before the first keyframe
-#define CODEC_FLAG2_EXPORT_MVS    0x10000000 ///< Export motion vectors through frame side data
-#define CODEC_FLAG2_SKIP_MANUAL   0x20000000 ///< Do not skip samples and export skip information as frame side data
+#define CODEC_FLAG2_CHUNKS        AV_CODEC_FLAG2_CHUNKS
+#define CODEC_FLAG2_SHOW_ALL      AV_CODEC_FLAG2_SHOW_ALL
+#define CODEC_FLAG2_EXPORT_MVS    AV_CODEC_FLAG2_EXPORT_MVS
+#define CODEC_FLAG2_SKIP_MANUAL   AV_CODEC_FLAG2_SKIP_MANUAL
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
