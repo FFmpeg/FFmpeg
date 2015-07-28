@@ -78,9 +78,6 @@
  * @{
  */
 
-#ifndef FF_API_LLS_PRIVATE
-#define FF_API_LLS_PRIVATE              (LIBAVUTIL_VERSION_MAJOR < 55)
-#endif
 #ifndef FF_API_VDPAU
 #define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif

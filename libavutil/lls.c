@@ -121,25 +121,6 @@ av_cold void avpriv_init_lls(LLSModel *m, int indep_count)
         ff_init_lls_x86(m);
 }
 
-#if FF_API_LLS_PRIVATE
-av_cold void av_init_lls(LLSModel *m, int indep_count)
-{
-    avpriv_init_lls(m, indep_count);
-}
-void av_update_lls(LLSModel *m, double *param, double decay)
-{
-    m->update_lls(m, param);
-}
-void av_solve_lls(LLSModel *m, double threshold, int min_order)
-{
-    avpriv_solve_lls(m, threshold, min_order);
-}
-double av_evaluate_lls(LLSModel *m, double *param, int order)
-{
-    return m->evaluate_lls(m, param, order);
-}
-#endif /* FF_API_LLS_PRIVATE */
-
 #ifdef TEST
 
 #include <stdio.h>
