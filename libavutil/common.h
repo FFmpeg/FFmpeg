@@ -63,10 +63,6 @@
 
 /* misc math functions */
 
-#if FF_API_AV_REVERSE
-extern attribute_deprecated const uint8_t av_reverse[256];
-#endif
-
 #ifdef HAVE_AV_CONFIG_H
 #   include "config.h"
 #   include "intmath.h"
