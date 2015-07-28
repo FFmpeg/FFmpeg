@@ -1039,18 +1039,6 @@ typedef struct AVPanScan{
 #define FF_QSCALE_TYPE_VP56  3
 #endif
 
-#if FF_API_GET_BUFFER
-#define FF_BUFFER_TYPE_INTERNAL 1
-#define FF_BUFFER_TYPE_USER     2 ///< direct rendering buffers (image is (de)allocated by user)
-#define FF_BUFFER_TYPE_SHARED   4 ///< Buffer from somewhere else; don't deallocate image (data/base), all other tables are not shared.
-#define FF_BUFFER_TYPE_COPY     8 ///< Just a (modified) copy of some other buffer, don't deallocate anything.
-
-#define FF_BUFFER_HINTS_VALID    0x01 // Buffer hints value is meaningful (if 0 ignore).
-#define FF_BUFFER_HINTS_READABLE 0x02 // Codec will read from buffer.
-#define FF_BUFFER_HINTS_PRESERVE 0x04 // User must not alter buffer content.
-#define FF_BUFFER_HINTS_REUSABLE 0x08 // Codec will reuse the buffer (update).
-#endif
-
 /**
  * The decoder will keep a reference to the frame and may reuse it later.
  */
@@ -2085,102 +2073,6 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     enum AVSampleFormat request_sample_fmt;
-
-#if FF_API_GET_BUFFER
-    /**
-     * Called at the beginning of each frame to get a buffer for it.
-     *
-     * The function will set AVFrame.data[], AVFrame.linesize[].
-     * AVFrame.extended_data[] must also be set, but it should be the same as
-     * AVFrame.data[] except for planar audio with more channels than can fit
-     * in AVFrame.data[]. In that case, AVFrame.data[] shall still contain as
-     * many data pointers as it can hold.
-     *
-     * if CODEC_CAP_DR1 is not set then get_buffer() must call
-     * avcodec_default_get_buffer() instead of providing buffers allocated by
-     * some other means.
-     *
-     * AVFrame.data[] should be 32- or 16-byte-aligned unless the CPU doesn't
-     * need it. avcodec_default_get_buffer() aligns the output buffer properly,
-     * but if get_buffer() is overridden then alignment considerations should
-     * be taken into account.
-     *
-     * @see avcodec_default_get_buffer()
-     *
-     * Video:
-     *
-     * If pic.reference is set then the frame will be read later by libavcodec.
-     * avcodec_align_dimensions2() should be used to find the required width and
-     * height, as they normally need to be rounded up to the next multiple of 16.
-     *
-     * If frame multithreading is used and thread_safe_callbacks is set,
-     * it may be called from a different thread, but not from more than one at
-     * once. Does not need to be reentrant.
-     *
-     * @see release_buffer(), reget_buffer()
-     * @see avcodec_align_dimensions2()
-     *
-     * Audio:
-     *
-     * Decoders request a buffer of a particular size by setting
-     * AVFrame.nb_samples prior to calling get_buffer(). The decoder may,
-     * however, utilize only part of the buffer by setting AVFrame.nb_samples
-     * to a smaller value in the output frame.
-     *
-     * Decoders cannot use the buffer after returning from
-     * avcodec_decode_audio4(), so they will not call release_buffer(), as it
-     * is assumed to be released immediately upon return. In some rare cases,
-     * a decoder may need to call get_buffer() more than once in a single
-     * call to avcodec_decode_audio4(). In that case, when get_buffer() is
-     * called again after it has already been called once, the previously
-     * acquired buffer is assumed to be released at that time and may not be
-     * reused by the decoder.
-     *
-     * As a convenience, av_samples_get_buffer_size() and
-     * av_samples_fill_arrays() in libavutil may be used by custom get_buffer()
-     * functions to find the required data size and to fill data pointers and
-     * linesize. In AVFrame.linesize, only linesize[0] may be set for audio
-     * since all planes must be the same size.
-     *
-     * @see av_samples_get_buffer_size(), av_samples_fill_arrays()
-     *
-     * - encoding: unused
-     * - decoding: Set by libavcodec, user can override.
-     *
-     * @deprecated use get_buffer2()
-     */
-    attribute_deprecated
-    int (*get_buffer)(struct AVCodecContext *c, AVFrame *pic);
-
-    /**
-     * Called to release buffers which were allocated with get_buffer.
-     * A released buffer can be reused in get_buffer().
-     * pic.data[*] must be set to NULL.
-     * May be called from a different thread if frame multithreading is used,
-     * but not by more than one thread at once, so does not need to be reentrant.
-     * - encoding: unused
-     * - decoding: Set by libavcodec, user can override.
-     *
-     * @deprecated custom freeing callbacks should be set from get_buffer2()
-     */
-    attribute_deprecated
-    void (*release_buffer)(struct AVCodecContext *c, AVFrame *pic);
-
-    /**
-     * Called at the beginning of a frame to get cr buffer for it.
-     * Buffer type (size, hints) must be the same. libavcodec won't check it.
-     * libavcodec will pass previous buffer in pic, function should return
-     * same buffer or new buffer with old frame "painted" into it.
-     * If pic.data[0] == NULL must behave like get_buffer().
-     * if CODEC_CAP_DR1 is not set then reget_buffer() must call
-     * avcodec_default_reget_buffer() instead of providing buffers allocated by
-     * some other means.
-     * - encoding: unused
-     * - decoding: Set by libavcodec, user can override.
-     */
-    attribute_deprecated
-    int (*reget_buffer)(struct AVCodecContext *c, AVFrame *pic);
-#endif
 
     /**
      * This callback is called at the beginning of each frame to get data
@@ -3765,12 +3657,6 @@ AVCodec *avcodec_find_decoder(enum AVCodecID id);
  * @return A decoder if one was found, NULL otherwise.
  */
 AVCodec *avcodec_find_decoder_by_name(const char *name);
-
-#if FF_API_GET_BUFFER
-attribute_deprecated int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
-attribute_deprecated void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
-attribute_deprecated int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic);
-#endif
 
 /**
  * The default callback for AVCodecContext.get_buffer2(). It is made public so
