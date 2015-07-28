@@ -34,7 +34,6 @@ HEADERS = adler32.h                                                     \
           md5.h                                                         \
           mem.h                                                         \
           dict.h                                                        \
-          old_pix_fmts.h                                                \
           opt.h                                                         \
           parseutils.h                                                  \
           pixdesc.h                                                     \
@@ -107,8 +106,6 @@ OBJS = adler32.o                                                        \
 OBJS-$(CONFIG_LZO)                      += lzo.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
-
-SKIPHEADERS          = old_pix_fmts.h
 
 SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
 SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h

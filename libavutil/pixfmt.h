@@ -218,10 +218,6 @@ enum AVPixelFormat {
     AV_PIX_FMT_D3D11VA_VLD,  ///< HW decoding through Direct3D11, Picture.data[3] contains a ID3D11VideoDecoderOutputView pointer
 
     AV_PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
-
-#if FF_API_PIX_FMT
-#include "old_pix_fmts.h"
-#endif
 };
 
 #if AV_HAVE_BIGENDIAN
@@ -276,42 +272,6 @@ enum AVPixelFormat {
 
 #define AV_PIX_FMT_XYZ12      AV_PIX_FMT_NE(XYZ12BE, XYZ12LE)
 #define AV_PIX_FMT_NV20       AV_PIX_FMT_NE(NV20BE,  NV20LE)
-
-
-#if FF_API_PIX_FMT
-#define PixelFormat AVPixelFormat
-
-#define PIX_FMT_NE(be, le) AV_PIX_FMT_NE(be, le)
-
-#define PIX_FMT_RGB32   AV_PIX_FMT_RGB32
-#define PIX_FMT_RGB32_1 AV_PIX_FMT_RGB32_1
-#define PIX_FMT_BGR32   AV_PIX_FMT_BGR32
-#define PIX_FMT_BGR32_1 AV_PIX_FMT_BGR32_1
-
-#define PIX_FMT_GRAY16 AV_PIX_FMT_GRAY16
-#define PIX_FMT_RGB48  AV_PIX_FMT_RGB48
-#define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
-#define PIX_FMT_RGB555 AV_PIX_FMT_RGB555
-#define PIX_FMT_RGB444 AV_PIX_FMT_RGB444
-#define PIX_FMT_BGR48  AV_PIX_FMT_BGR48
-#define PIX_FMT_BGR565 AV_PIX_FMT_BGR565
-#define PIX_FMT_BGR555 AV_PIX_FMT_BGR555
-#define PIX_FMT_BGR444 AV_PIX_FMT_BGR444
-
-#define PIX_FMT_YUV420P9  AV_PIX_FMT_YUV420P9
-#define PIX_FMT_YUV422P9  AV_PIX_FMT_YUV422P9
-#define PIX_FMT_YUV444P9  AV_PIX_FMT_YUV444P9
-#define PIX_FMT_YUV420P10 AV_PIX_FMT_YUV420P10
-#define PIX_FMT_YUV422P10 AV_PIX_FMT_YUV422P10
-#define PIX_FMT_YUV444P10 AV_PIX_FMT_YUV444P10
-#define PIX_FMT_YUV420P16 AV_PIX_FMT_YUV420P16
-#define PIX_FMT_YUV422P16 AV_PIX_FMT_YUV422P16
-#define PIX_FMT_YUV444P16 AV_PIX_FMT_YUV444P16
-
-#define PIX_FMT_GBRP9  AV_PIX_FMT_GBRP9
-#define PIX_FMT_GBRP10 AV_PIX_FMT_GBRP10
-#define PIX_FMT_GBRP16 AV_PIX_FMT_GBRP16
-#endif
 
 /**
   * Chromaticity coordinates of the source primaries.
