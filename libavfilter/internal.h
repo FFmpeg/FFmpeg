@@ -29,7 +29,6 @@
 #include "thread.h"
 #include "version.h"
 
-#if !FF_API_AVFILTERPAD_PUBLIC
 /**
  * A filter pad used for either input or output.
  */
@@ -126,7 +125,6 @@ struct AVFilterPad {
      */
     int needs_writable;
 };
-#endif
 
 struct AVFilterGraphInternal {
     void *thread;
