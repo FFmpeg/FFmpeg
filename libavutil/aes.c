@@ -40,10 +40,6 @@ typedef struct AVAES {
     int rounds;
 } AVAES;
 
-#if FF_API_CONTEXT_SIZE
-const int av_aes_size= sizeof(AVAES);
-#endif
-
 struct AVAES *av_aes_alloc(void)
 {
     return av_mallocz(sizeof(struct AVAES));

@@ -42,10 +42,6 @@ typedef struct AVMD5{
     uint32_t ABCD[4];
 } AVMD5;
 
-#if FF_API_CONTEXT_SIZE
-const int av_md5_size = sizeof(AVMD5);
-#endif
-
 struct AVMD5 *av_md5_alloc(void)
 {
     return av_mallocz(sizeof(struct AVMD5));

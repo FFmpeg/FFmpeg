@@ -43,9 +43,6 @@
 
 
 struct AVTreeNode;
-#if FF_API_CONTEXT_SIZE
-extern attribute_deprecated const int av_tree_node_size;
-#endif
 
 /**
  * Allocate an AVTreeNode.

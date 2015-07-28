@@ -32,10 +32,6 @@
  * @{
  */
 
-#if FF_API_CONTEXT_SIZE
-extern attribute_deprecated const int av_sha_size;
-#endif
-
 struct AVSHA;
 
 /**

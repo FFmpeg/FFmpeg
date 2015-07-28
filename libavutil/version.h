@@ -78,9 +78,6 @@
  * @{
  */
 
-#ifndef FF_API_CONTEXT_SIZE
-#define FF_API_CONTEXT_SIZE             (LIBAVUTIL_VERSION_MAJOR < 55)
-#endif
 #ifndef FF_API_LLS_PRIVATE
 #define FF_API_LLS_PRIVATE              (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif

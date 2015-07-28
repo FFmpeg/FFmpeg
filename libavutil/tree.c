@@ -29,10 +29,6 @@ typedef struct AVTreeNode {
     int state;
 } AVTreeNode;
 
-#if FF_API_CONTEXT_SIZE
-const int av_tree_node_size = sizeof(AVTreeNode);
-#endif
-
 struct AVTreeNode *av_tree_node_alloc(void)
 {
     return av_mallocz(sizeof(struct AVTreeNode));
