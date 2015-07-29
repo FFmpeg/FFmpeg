@@ -188,7 +188,7 @@ static int mjpeg_probe(AVProbeData *p)
     }
 
     if (nb_invalid*4 + 1 < nb_frames) {
-        static const char ct_jpeg[] = "\r\nContent-Type: image/jpeg\r\n\r\n";
+        static const char ct_jpeg[] = "\r\nContent-Type: image/jpeg\r\n";
         int i;
 
         for (i=0; i<FFMIN(p->buf_size - sizeof(ct_jpeg), 100); i++)
