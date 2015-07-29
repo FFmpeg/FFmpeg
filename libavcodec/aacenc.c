@@ -43,19 +43,9 @@
 #include "aactab.h"
 #include "aacenc.h"
 #include "aacenctab.h"
+#include "aacenc_utils.h"
 
 #include "psymodel.h"
-
-#define ERROR_IF(cond, ...) \
-    if (cond) { \
-        av_log(avctx, AV_LOG_ERROR, __VA_ARGS__); \
-        return AVERROR(EINVAL); \
-    }
-
-#define WARN_IF(cond, ...) \
-    if (cond) { \
-        av_log(avctx, AV_LOG_WARNING, __VA_ARGS__); \
-    }
 
 /**
  * Make AAC audio config object.
