@@ -1606,6 +1606,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
     int i;
     int ret = 0;
     int got_segment = 0;
+    int got_dds = 0;
 
     ff_dlog(avctx, "DVB sub packet:\n");
 
@@ -1668,9 +1669,15 @@ static int dvbsub_decode(AVCodecContext *avctx,
             case DVBSUB_DISPLAYDEFINITION_SEGMENT:
                 ret = dvbsub_parse_display_definition_segment(avctx, p,
                                                               segment_length);
+                got_dds = 1;
                 break;
             case DVBSUB_DISPLAY_SEGMENT:
                 ret = dvbsub_display_end_segment(avctx, p, segment_length, sub, data_size);
+                if (got_segment == 15 && !got_dds && !avctx->width && !avctx->height) {
+                    // Default from ETSI EN 300 743 V1.3.1 (7.2.1)
+                    avctx->width  = 720;
+                    avctx->height = 576;
+                }
                 got_segment |= 16;
                 break;
             default:
