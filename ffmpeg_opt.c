@@ -934,8 +934,12 @@ static int open_input_file(OptionsContext *o, const char *filename)
         }
     }
 
-    if (o->start_time_eof != AV_NOPTS_VALUE && ic->duration>0)
-        o->start_time = o->start_time_eof + ic->duration;
+    if (o->start_time_eof != AV_NOPTS_VALUE) {
+        if (ic->duration>0) {
+            o->start_time = o->start_time_eof + ic->duration;
+        } else
+            av_log(NULL, AV_LOG_WARNING, "Cannot use -sseof, duration of %s not known\n", filename);
+    }
     timestamp = (o->start_time == AV_NOPTS_VALUE) ? 0 : o->start_time;
     /* add the stream start time */
     if (!o->seek_timestamp && ic->start_time != AV_NOPTS_VALUE)
