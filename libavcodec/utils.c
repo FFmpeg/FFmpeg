@@ -2133,6 +2133,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
     if (!ret && got_packet && avctx->coded_frame) {
         avctx->coded_frame->pts       = pkt.pts;
         avctx->coded_frame->key_frame = !!(pkt.flags & AV_PKT_FLAG_KEY);
+        if (avctx->codec->capabilities & AV_CODEC_CAP_INTRA_ONLY)
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif

@@ -419,7 +419,7 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
     do {
         ret = MFXVideoENCODE_EncodeFrameAsync(q->session, NULL, surf, bs, &sync);
         if (ret == MFX_WRN_DEVICE_BUSY) {
-            av_usleep(1);
+            av_usleep(500);
             continue;
         }
         break;

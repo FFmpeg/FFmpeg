@@ -2694,7 +2694,7 @@ static void apply_channel_coupling(AACContext *ac, ChannelElement *cc,
 /**
  * Convert spectral data to samples, applying all supported tools as appropriate.
  */
-static void spectral_to_sample(AACContext *ac)
+static void spectral_to_sample(AACContext *ac, int samples)
 {
     int i, type;
     void (*imdct_and_window)(AACContext *ac, SingleChannelElement *sce);
@@ -2748,7 +2748,7 @@ static void spectral_to_sample(AACContext *ac)
                 {
                     int j;
                     /* preparation for resampler */
-                    for(j = 0; j<2048; j++){
+                    for(j = 0; j<samples; j++){
                         che->ch[0].ret[j] = (int32_t)av_clipl_int32((int64_t)che->ch[0].ret[j]<<7)+0x8000;
                         che->ch[1].ret[j] = (int32_t)av_clipl_int32((int64_t)che->ch[1].ret[j]<<7)+0x8000;
                     }
@@ -2881,7 +2881,7 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
             return err;
     }
 
-    spectral_to_sample(ac);
+    spectral_to_sample(ac, samples);
 
     ac->frame->nb_samples = samples;
     ac->frame->sample_rate = avctx->sample_rate;
@@ -3029,10 +3029,10 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         return 0;
     }
 
-    spectral_to_sample(ac);
-
     multiplier = (ac->oc[1].m4ac.sbr == 1) ? ac->oc[1].m4ac.ext_sample_rate > ac->oc[1].m4ac.sample_rate : 0;
     samples <<= multiplier;
+
+    spectral_to_sample(ac, samples);
 
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.sample_rate << multiplier;

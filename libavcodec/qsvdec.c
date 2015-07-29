@@ -316,7 +316,7 @@ int ff_qsv_decode(AVCodecContext *avctx, QSVContext *q,
                                                   insurf, &outsurf, &sync);
             if (ret != MFX_WRN_DEVICE_BUSY)
                 break;
-            av_usleep(1);
+            av_usleep(500);
         } while (1);
 
         if (MFX_WRN_VIDEO_PARAM_CHANGED==ret) {

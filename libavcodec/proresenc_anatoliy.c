@@ -590,9 +590,6 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         scale_mat(QMAT_CHROMA[avctx->profile], ctx->qmat_chroma[i - 1], i);
     }
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-
     return 0;
 }
 
