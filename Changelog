@@ -28,6 +28,7 @@ version <next>:
 - bitstream filter for converting HEVC from MP4 to Annex B
 - acrossfade audio filter
 - allyuv video source
+- atadenoise video filter
 
 
 version 2.7:

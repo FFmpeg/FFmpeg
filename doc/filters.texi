@@ -2967,6 +2967,44 @@ Slower shaper using OpenType for substitutions and positioning
 The default is @code{auto}.
 @end table
 
+@section atadenoise
+Apply an Adaptive Temporal Averaging Denoiser to the video input.
+
+The filter accepts the following options:
+
+@table @option
+@item 0a
+Set threshold A for 1st plane. Default is 0.02.
+Valid range is 0 to 0.3.
+
+@item 0b
+Set threshold B for 1st plane. Default is 0.04.
+Valid range is 0 to 5.
+
+@item 1a
+Set threshold A for 2nd plane. Default is 0.02.
+Valid range is 0 to 0.3.
+
+@item 1b
+Set threshold B for 2nd plane. Default is 0.04.
+Valid range is 0 to 5.
+
+@item 2a
+Set threshold A for 3rd plane. Default is 0.02.
+Valid range is 0 to 0.3.
+
+@item 2b
+Set threshold B for 3rd plane. Default is 0.04.
+Valid range is 0 to 5.
+
+Threshold A is designed to react on abrupt changes in the input signal and
+threshold B is designed to react on continuous changes in the input signal.
+
+@item s
+Set number of frames filter will use for averaging. Default is 33. Must be odd
+number in range [5, 129].
+@end table
+
 @section bbox
 
 Compute the bounding box for the non-black pixels in the input frame
