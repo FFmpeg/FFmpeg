@@ -29,6 +29,10 @@
 #include "libavutil/cpu.h"
 #include "libavutil/random_seed.h"
 
+#if HAVE_IO_H
+#include <io.h>
+#endif
+
 #if ARCH_X86
 #include "libavutil/x86/cpu.h"
 #endif
