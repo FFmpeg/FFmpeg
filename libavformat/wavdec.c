@@ -430,7 +430,7 @@ break_loop:
     avio_seek(pb, data_ofs, SEEK_SET);
 
     if (   data_size > 0 && sample_count && st->codec->channels
-        && data_size / sample_count / st->codec->channels > 8) {
+        && (data_size << 3) / sample_count / st->codec->channels > st->codec->bits_per_coded_sample) {
         av_log(s, AV_LOG_WARNING, "ignoring wrong sample_count %"PRId64"\n", sample_count);
         sample_count = 0;
     }
