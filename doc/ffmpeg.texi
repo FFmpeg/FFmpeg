@@ -309,7 +309,7 @@ input until the timestamps reach @var{position}.
 
 @item -sseof @var{position} (@emph{input/output})
 
-Like the -ss option but relative to the "end of file". That is negative
+Like the @code{-ss} option but relative to the "end of file". That is negative
 values are earlier in the file, 0 is at EOF.
 
 @item -itsoffset @var{offset} (@emph{input})
