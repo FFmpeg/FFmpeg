@@ -39,6 +39,7 @@
 #include "aac.h"
 #include "aacenc.h"
 #include "aactab.h"
+#include "aacenctab.h"
 #include "aac_tablegen_decl.h"
 
 /** Frequency in Hz for lower limit of noise substitution **/
@@ -56,36 +57,8 @@
 /** Frequency in Hz for lower limit of intensity stereo   **/
 #define INT_STEREO_LOW_LIMIT 6100
 
-/** Total number of usable codebooks **/
-#define CB_TOT 12
-
-/** Total number of codebooks, including special ones **/
-#define CB_TOT_ALL 15
-
-/** bits needed to code codebook run value for long windows */
-static const uint8_t run_value_bits_long[64] = {
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15
-};
-
-/** bits needed to code codebook run value for short windows */
-static const uint8_t run_value_bits_short[16] = {
-    3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
-};
-
-static const uint8_t * const run_value_bits[2] = {
-    run_value_bits_long, run_value_bits_short
-};
-
 #define ROUND_STANDARD 0.4054f
 #define ROUND_TO_ZERO 0.1054f
-
-/** Map to convert values from BandCodingPath index to a codebook index **/
-static const uint8_t aac_cb_out_map[CB_TOT_ALL]  = {0,1,2,3,4,5,6,7,8,9,10,11,13,14,15};
-/** Inverse map to convert from codebooks to BandCodingPath indices **/
-static const uint8_t aac_cb_in_map[CB_TOT_ALL+1] = {0,1,2,3,4,5,6,7,8,9,10,11,0,12,13,14};
 
 /**
  * Quantize one coefficient.
@@ -122,9 +95,6 @@ static void abs_pow34_v(float *out, const float *in, const int size)
     }
 #endif /* USE_REALLY_FULL_SEARCH */
 }
-
-static const uint8_t aac_cb_range [12] = {0, 3, 3, 3, 3, 9, 9, 8, 8, 13, 13, 17};
-static const uint8_t aac_cb_maxval[12] = {0, 1, 1, 2, 2, 4, 4, 7, 7, 12, 12, 16};
 
 /**
  * Calculate rate distortion cost for quantizing with given codebook
