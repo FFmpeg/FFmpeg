@@ -907,6 +907,7 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
         os->keyframe_seek = 1;
 
     ret = ff_seek_frame_binary(s, stream_index, timestamp, flags);
+    ogg_reset(s);
     os  = ogg->streams + stream_index;
     if (ret < 0)
         os->keyframe_seek = 0;
