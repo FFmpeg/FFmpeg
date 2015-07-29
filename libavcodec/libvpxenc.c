@@ -717,12 +717,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (cx_frame->have_sse) {
             int i;
             /* Beware of the Y/U/V/all order! */
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->coded_frame->error[0] = cx_frame->sse[1];
             avctx->coded_frame->error[1] = cx_frame->sse[2];
             avctx->coded_frame->error[2] = cx_frame->sse[3];
             avctx->coded_frame->error[3] = 0;    // alpha
-            for (i = 0; i < 4; ++i) {
-                avctx->error[i] += avctx->coded_frame->error[i];
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+            for (i = 0; i < 3; ++i) {
+                avctx->error[i] += cx_frame->sse[i + 1];
             }
             cx_frame->have_sse = 0;
         }
