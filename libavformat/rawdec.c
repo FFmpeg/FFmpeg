@@ -191,7 +191,7 @@ static int mjpeg_probe(AVProbeData *p)
         static const char ct_jpeg[] = "\r\nContent-Type: image/jpeg\r\n";
         int i;
 
-        for (i=0; i<FFMIN(p->buf_size - sizeof(ct_jpeg), 100); i++)
+        for (i=0; i<FFMIN(p->buf_size - (int)sizeof(ct_jpeg), 100); i++)
             if (!memcmp(p->buf + i, ct_jpeg, sizeof(ct_jpeg) - 1))
                 return AVPROBE_SCORE_EXTENSION;
 
