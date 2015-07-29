@@ -1177,10 +1177,10 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
                 sce->sf_idx[(w+w2)*16+g] = sce->sf_idx[w*16+g];
 }
 
-static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce,
-                           const float lambda)
+static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce)
 {
     int start = 0, w, w2, g;
+    const float lambda = s->lambda;
     const float freq_mult = avctx->sample_rate/(1024.0f/sce->ics.num_windows)/2.0f;
     const float spread_threshold = NOISE_SPREAD_THRESHOLD*(lambda/120.f);
     const float thr_mult = NOISE_LAMBDA_NUMERATOR/lambda;
@@ -1214,8 +1214,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     }
 }
 
-static void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe,
-                          const float lambda)
+static void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe)
 {
     float IS[128];
     float *L34  = s->scoefs + 128*0, *R34  = s->scoefs + 128*1;
@@ -1224,6 +1223,7 @@ static void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
     SingleChannelElement *sce1 = &cpe->ch[1];
     int start = 0, count = 0, i, w, w2, g;
     const float freq_mult = avctx->sample_rate/(1024.0f/sce0->ics.num_windows)/2.0f;
+    const float lambda = s->lambda;
 
     for (w = 0; w < 128; w++)
         if (sce1->band_type[w] >= INTENSITY_BT2)
@@ -1312,12 +1312,12 @@ static void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
     cpe->is_mode = !!count;
 }
 
-static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
-                          const float lambda)
+static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
 {
     int start = 0, i, w, w2, g;
     float M[128], S[128];
     float *L34 = s->scoefs, *R34 = s->scoefs + 128, *M34 = s->scoefs + 128*2, *S34 = s->scoefs + 128*3;
+    const float lambda = s->lambda;
     SingleChannelElement *sce0 = &cpe->ch[0];
     SingleChannelElement *sce1 = &cpe->ch[1];
     if (!cpe->common_window)

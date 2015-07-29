@@ -696,7 +696,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             if (s->options.pns && s->coder->search_for_pns) {
                 for (ch = 0; ch < chans; ch++) {
                     s->cur_channel = start_ch + ch;
-                    s->coder->search_for_pns(s, avctx, &cpe->ch[ch], s->lambda);
+                    s->coder->search_for_pns(s, avctx, &cpe->ch[ch]);
                 }
             }
             s->cur_channel = start_ch;
@@ -707,11 +707,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                         for (g = 0;  g < ics->num_swb; g++)
                             cpe->ms_mask[w*16+g] = 1;
                 } else if (s->coder->search_for_ms) {
-                    s->coder->search_for_ms(s, cpe, s->lambda);
+                    s->coder->search_for_ms(s, cpe);
                 }
             }
             if (chans > 1 && s->options.intensity_stereo && s->coder->search_for_is) {
-                s->coder->search_for_is(s, avctx, cpe, s->lambda);
+                s->coder->search_for_is(s, avctx, cpe);
                 if (cpe->is_mode) is_mode = 1;
             }
             if (s->coder->set_special_band_scalefactors)
