@@ -971,7 +971,7 @@ int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
     }
     av_hmac_final(hmac, dst, 32);
 
-    av_free(hmac);
+    av_hmac_free(hmac);
 
     return 0;
 }
