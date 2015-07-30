@@ -37,8 +37,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((ret = ff_alloc_packet2(avctx, pkt, 4 * aligned_width * avctx->height, 0)) < 0)
         return ret;
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     src_line = pic->data[0];
     dst = pkt->data;
 
@@ -77,6 +75,7 @@ AVCodec ff_r210_encoder = {
     .id             = AV_CODEC_ID_R210,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif
 #if CONFIG_R10K_ENCODER
@@ -87,6 +86,7 @@ AVCodec ff_r10k_encoder = {
     .id             = AV_CODEC_ID_R10K,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif
 #if CONFIG_AVRP_ENCODER
@@ -97,5 +97,6 @@ AVCodec ff_avrp_encoder = {
     .id             = AV_CODEC_ID_AVRP,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif
