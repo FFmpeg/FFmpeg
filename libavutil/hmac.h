@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/avconfig.h"
+#include "version.h"
 /**
  * @defgroup lavu_hmac HMAC
  * @ingroup lavu_crypto
@@ -33,13 +33,13 @@
 enum AVHMACType {
     AV_HMAC_MD5,
     AV_HMAC_SHA1,
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     AV_HMAC_SHA224,
-#else
-    AV_HMAC_SHA224 = 10,
-#endif
     AV_HMAC_SHA256,
-    AV_HMAC_SHA384,
+#if FF_API_HMAC
+    AV_HMAC_SHA224_DEPRECATED = 10,
+    AV_HMAC_SHA256_DEPRECATED,
+#endif
+    AV_HMAC_SHA384 = 12,
     AV_HMAC_SHA512,
 };
 
