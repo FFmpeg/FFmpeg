@@ -45,8 +45,6 @@ static int y41p_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 1.5, 0)) < 0)
         return ret;
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     dst = pkt->data;
 
     for (i = avctx->height - 1; i >= 0; i--) {
@@ -91,4 +89,5 @@ AVCodec ff_y41p_encoder = {
     .close        = y41p_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                  AV_PIX_FMT_NONE },
+    .capabilities = AV_CODEC_CAP_INTRA_ONLY,
 };
