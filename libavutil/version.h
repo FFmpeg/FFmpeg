@@ -122,6 +122,9 @@
 #ifndef FF_API_DLOG
 #define FF_API_DLOG                     (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
+#ifndef FF_API_HMAC
+#define FF_API_HMAC                     (LIBAVUTIL_VERSION_MAJOR < 55)
+#endif
 
 #ifndef FF_CONST_AVUTIL55
 #if LIBAVUTIL_VERSION_MAJOR >= 55

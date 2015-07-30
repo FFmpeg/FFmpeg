@@ -21,15 +21,15 @@ API changes, most recent first:
   xxxxxxxxx - Rename FF_INPUT_BUFFER_PADDING_SIZE and FF_MIN_BUFFER_SIZE
               to AV_INPUT_BUFFER_PADDING_SIZE and AV_INPUT_BUFFER_MIN_SIZE.
 
-2015-xx-xx - xxxxxxx - lavc 56.51.100 - avcodec.h
+2015-07-22 - c40ecff - lavc 56.51.100 - avcodec.h
   Add AV_PKT_DATA_QUALITY_STATS to export the quality value, PSNR, and pict_type
   of an AVPacket.
 
-2015-07-16 - xxxxxxxx - lavc 56.49.100
+2015-07-16 - 8dad213 - lavc 56.49.100
   Add av_codec_get_codec_properties(), FF_CODEC_PROPERTY_LOSSLESS
   and FF_CODEC_PROPERTY_CLOSED_CAPTIONS
 
-2015-xx-xx - xxxxxxx - lavu 56.15.0
+2015-07-03 - d563e13 / 83212943 - lavu 54.28.100 / 56.15.0
   Add av_version_info().
 
 -------- 8< --------- FFmpeg 2.7 was cut here -------- 8< ---------

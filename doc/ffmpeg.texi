@@ -307,6 +307,11 @@ input until the timestamps reach @var{position}.
 
 @var{position} may be either in seconds or in @code{hh:mm:ss[.xxx]} form.
 
+@item -sseof @var{position} (@emph{input/output})
+
+Like the @code{-ss} option but relative to the "end of file". That is negative
+values are earlier in the file, 0 is at EOF.
+
 @item -itsoffset @var{offset} (@emph{input})
 Set the input time offset.
 

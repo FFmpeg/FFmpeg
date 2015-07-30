@@ -27,12 +27,12 @@
 #include "libavcodec/bytestream.h"
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
+#include "libavutil/hmac.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/lfg.h"
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
-#include "libavutil/sha.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -956,41 +956,22 @@ static int gen_fcsubscribe_stream(URLContext *s, RTMPContext *rt,
 int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
                         const uint8_t *key, int keylen, uint8_t *dst)
 {
-    struct AVSHA *sha;
-    uint8_t hmac_buf[64+32] = {0};
-    int i;
+    AVHMAC *hmac;
 
-    sha = av_sha_alloc();
-    if (!sha)
+    hmac = av_hmac_alloc(AV_HMAC_SHA256);
+    if (!hmac)
         return AVERROR(ENOMEM);
 
-    if (keylen < 64) {
-        memcpy(hmac_buf, key, keylen);
-    } else {
-        av_sha_init(sha, 256);
-        av_sha_update(sha,key, keylen);
-        av_sha_final(sha, hmac_buf);
-    }
-    for (i = 0; i < 64; i++)
-        hmac_buf[i] ^= HMAC_IPAD_VAL;
-
-    av_sha_init(sha, 256);
-    av_sha_update(sha, hmac_buf, 64);
+    av_hmac_init(hmac, key, keylen);
     if (gap <= 0) {
-        av_sha_update(sha, src, len);
+        av_hmac_update(hmac, src, len);
     } else { //skip 32 bytes used for storing digest
-        av_sha_update(sha, src, gap);
-        av_sha_update(sha, src + gap + 32, len - gap - 32);
+        av_hmac_update(hmac, src, gap);
+        av_hmac_update(hmac, src + gap + 32, len - gap - 32);
     }
-    av_sha_final(sha, hmac_buf + 64);
+    av_hmac_final(hmac, dst, 32);
 
-    for (i = 0; i < 64; i++)
-        hmac_buf[i] ^= HMAC_IPAD_VAL ^ HMAC_OPAD_VAL; //reuse XORed key for opad
-    av_sha_init(sha, 256);
-    av_sha_update(sha, hmac_buf, 64+32);
-    av_sha_final(sha, dst);
-
-    av_free(sha);
+    av_hmac_free(hmac);
 
     return 0;
 }

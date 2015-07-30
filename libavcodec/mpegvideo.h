@@ -539,6 +539,7 @@ typedef struct MpegEncContext {
     float rc_buffer_aggressivity;
     float border_masking;
     int lmin, lmax;
+    int vbv_ignore_qmax;
 
     char *rc_eq;
 

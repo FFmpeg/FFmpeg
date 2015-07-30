@@ -42,9 +42,10 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 
-
-static const uint8_t inv_non_linear_qscale[] = {
+static const int8_t inv_non_linear_qscale[] = {
     0, 2, 4, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+   -1,17,-1,18,-1,19, -1, 20, -1, 21, -1, 22, -1,
+   23,-1,24,-1,-1,-1
 };
 
 static const uint8_t svcd_scan_offset_placeholder[] = {
@@ -402,8 +403,9 @@ static inline void encode_mb_skip_run(MpegEncContext *s, int run)
 static av_always_inline void put_qscale(MpegEncContext *s)
 {
     if (s->q_scale_type) {
-        av_assert2(s->qscale >= 1 && s->qscale <= 12);
-        put_bits(&s->pb, 5, inv_non_linear_qscale[s->qscale]);
+        int qp = inv_non_linear_qscale[s->qscale];
+        av_assert2(s->qscale >= 1 && qp > 0);
+        put_bits(&s->pb, 5, qp);
     } else {
         put_bits(&s->pb, 5, s->qscale);
     }
