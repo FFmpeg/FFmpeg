@@ -4369,7 +4369,7 @@ BI_MC_COPY(64);
 #undef BI_MC_COPY
 
 #define BI_MC(PEL, DIR, WIDTH, TAP, DIR1, FILT_DIR)                            \
-void ff_hevc_put_hevc_bi_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,          \
+void ff_hevc_put_hevc_bi_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,            \
                                                         ptrdiff_t dst_stride,  \
                                                         uint8_t *src,          \
                                                         ptrdiff_t src_stride,  \
@@ -4423,7 +4423,7 @@ BI_MC(epel, v, 32, 4, vt, my);
 #undef BI_MC
 
 #define BI_MC_HV(PEL, DIR, WIDTH, TAP, DIR1)                                   \
-void ff_hevc_put_hevc_bi_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,          \
+void ff_hevc_put_hevc_bi_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,            \
                                                         ptrdiff_t dst_stride,  \
                                                         uint8_t *src,          \
                                                         ptrdiff_t src_stride,  \

@@ -4687,7 +4687,7 @@ UNIWGT_MC_COPY(64);
 #undef UNIWGT_MC_COPY
 
 #define UNI_W_MC(PEL, DIR, WIDTH, TAP, DIR1, FILT_DIR)                        \
-void ff_hevc_put_hevc_uni_w_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,      \
+void ff_hevc_put_hevc_uni_w_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,        \
                                                            ptrdiff_t          \
                                                            dst_stride,        \
                                                            uint8_t *src,      \
@@ -4746,7 +4746,7 @@ UNI_W_MC(epel, v, 32, 4, vt, my);
 #undef UNI_W_MC
 
 #define UNI_W_MC_HV(PEL, DIR, WIDTH, TAP, DIR1)                              \
-void ff_hevc_put_hevc_uni_w_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,     \
+void ff_hevc_put_hevc_uni_w_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,       \
                                                            ptrdiff_t         \
                                                            dst_stride,       \
                                                            uint8_t *src,     \

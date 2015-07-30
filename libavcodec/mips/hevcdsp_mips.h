@@ -24,7 +24,7 @@
 #include "libavcodec/hevcdsp.h"
 
 #define MC(PEL, DIR, WIDTH)                                                 \
-void ff_hevc_put_hevc_##PEL##_##DIR####WIDTH##_8_msa(int16_t *dst,          \
+void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_msa(int16_t *dst,            \
                                                      uint8_t *src,          \
                                                      ptrdiff_t src_stride,  \
                                                      int height,            \
@@ -102,7 +102,7 @@ MC(epel, hv, 64);
 #undef MC
 
 #define UNI_MC(PEL, DIR, WIDTH)                                                \
-void ff_hevc_put_hevc_uni_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,         \
+void ff_hevc_put_hevc_uni_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,           \
                                                          ptrdiff_t dst_stride, \
                                                          uint8_t *src,         \
                                                          ptrdiff_t src_stride, \
@@ -181,7 +181,7 @@ UNI_MC(epel, hv, 64);
 #undef UNI_MC
 
 #define UNI_W_MC(PEL, DIR, WIDTH)                                         \
-void ff_hevc_put_hevc_uni_w_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,  \
+void ff_hevc_put_hevc_uni_w_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,    \
                                                            ptrdiff_t      \
                                                            dst_stride,    \
                                                            uint8_t *src,  \
@@ -265,7 +265,7 @@ UNI_W_MC(epel, hv, 64);
 #undef UNI_W_MC
 
 #define BI_MC(PEL, DIR, WIDTH)                                                 \
-void ff_hevc_put_hevc_bi_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,          \
+void ff_hevc_put_hevc_bi_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,            \
                                                         ptrdiff_t dst_stride,  \
                                                         uint8_t *src,          \
                                                         ptrdiff_t src_stride,  \
@@ -345,7 +345,7 @@ BI_MC(epel, hv, 64);
 #undef BI_MC
 
 #define BI_W_MC(PEL, DIR, WIDTH)                                               \
-void ff_hevc_put_hevc_bi_w_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,        \
+void ff_hevc_put_hevc_bi_w_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,          \
                                                           ptrdiff_t            \
                                                           dst_stride,          \
                                                           uint8_t *src,        \
