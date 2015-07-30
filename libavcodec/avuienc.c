@@ -70,9 +70,6 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         dst += avctx->width * skip;
     }
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-
     for (i = 0; i <= interlaced; i++) {
         uint8_t *src;
         if (interlaced && avctx->height == 486) {
@@ -101,6 +98,6 @@ AVCodec ff_avui_encoder = {
     .id           = AV_CODEC_ID_AVUI,
     .init         = avui_encode_init,
     .encode2      = avui_encode_frame,
-    .capabilities = AV_CODEC_CAP_EXPERIMENTAL,
+    .capabilities = AV_CODEC_CAP_EXPERIMENTAL | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
 };
