@@ -23,6 +23,7 @@
 #include "dnxhddata.h"
 #include "libavutil/common.h"
 
+/* Used in CID 1235, 1256 */
 static const uint8_t dnxhd_1235_luma_weight[] = {
      0, 32, 32, 32, 33, 35, 38, 39,
     32, 33, 32, 33, 36, 36, 39, 42,
@@ -45,6 +46,7 @@ static const uint8_t dnxhd_1235_chroma_weight[] = {
     74, 84, 75, 78, 90, 85, 73, 73
 };
 
+/* Used in CID 1237, 1253 */
 static const uint8_t dnxhd_1237_luma_weight[] = {
      0,  32,  33,  34, 34, 36, 37, 36,
     36,  37,  38,  38, 38, 39, 41, 44,
@@ -56,6 +58,7 @@ static const uint8_t dnxhd_1237_luma_weight[] = {
     97, 100, 104, 102, 98, 98, 99, 99,
 };
 
+/* Used in CID 1237, 1253 */
 static const uint8_t dnxhd_1237_chroma_weight[] = {
      0,  32,  36,  39, 39, 38, 39,  41,
     45,  51,  57,  58, 53, 48, 47,  51,
@@ -253,14 +256,17 @@ static const uint8_t dnxhd_1258_chroma_weight[] = {
     74, 74, 90, 100, 128, 125, 116, 116,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_dc_codes[12] = {
     0, 12, 13, 1, 2, 3, 4, 5, 14, 30, 62, 63,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_dc_bits[12] = {
     3, 4, 4, 3, 3, 3, 3, 3, 4, 5, 6, 6,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint16_t dnxhd_1237_ac_codes[257] = {
         0,     1,     4,     5,    12,    26,    27,    56,
        57,    58,    59,   120,   121,   244,   245,   246,
@@ -297,6 +303,7 @@ static const uint16_t dnxhd_1237_ac_codes[257] = {
     65535,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_ac_bits[257] = {
      2,  2,  3,  3,  4,  5,  5,  6,  6,  6,  6,  7,  7,  8,  8,  8,
      8,  8,  9,  9,  9,  9,  9, 10, 10, 10, 10, 10, 10, 11, 11, 11,
@@ -317,6 +324,7 @@ static const uint8_t dnxhd_1237_ac_bits[257] = {
     16,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_ac_level[257] = {
      1,  1,  2,  0,  3,  4,  2,  5,  6,  7,  3,  8,  9, 10, 11, 12,
      4,  5, 13, 14, 15, 16,  6, 17, 18, 19, 20, 21,  7, 22, 23, 24,
@@ -337,6 +345,7 @@ static const uint8_t dnxhd_1237_ac_level[257] = {
     64,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_ac_run_flag[257] = {
     0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0,
     1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0,
@@ -357,6 +366,7 @@ static const uint8_t dnxhd_1237_ac_run_flag[257] = {
     1,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_ac_index_flag[257] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -377,6 +387,7 @@ static const uint8_t dnxhd_1237_ac_index_flag[257] = {
     1,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint16_t dnxhd_1237_run_codes[62] = {
        0,    4,   10,   11,   24,   25,   26,   54,
       55,   56,   57,   58,  118,  119,  240,  482,
@@ -388,6 +399,7 @@ static const uint16_t dnxhd_1237_run_codes[62] = {
     1018, 1019, 1020, 1021, 1022, 1023,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_run_bits[62] = {
      1,  3,  4,  4,  5,  5,  5,  6,  6,  6,  6,  6,  7,  7,  8,  9,
      9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10,
@@ -395,6 +407,7 @@ static const uint8_t dnxhd_1237_run_bits[62] = {
     10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
 };
 
+/* Used in CID 1237, 1242, 1253 */
 static const uint8_t dnxhd_1237_run[62] = {
      1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 53, 57, 58, 59, 60, 61, 62, 22, 23, 24, 25,
@@ -402,14 +415,17 @@ static const uint8_t dnxhd_1237_run[62] = {
     42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 54, 55, 56,
 };
 
+/* Used in CID 1238, 1243 */
 static const uint8_t dnxhd_1238_dc_codes[12] = {
     0, 12, 13, 1, 2, 3, 4, 5, 14, 30, 62, 63,
 };
 
+/* Used in CID 1238, 1243 */
 static const uint8_t dnxhd_1238_dc_bits[12] = {
     3, 4, 4, 3, 3, 3, 3, 3, 4, 5, 6, 6,
 };
 
+/* Used in CID 1238, 1243 */
 static const uint16_t dnxhd_1238_ac_codes[257] = {
         0,     1,     4,    10,    11,    24,    25,    26,
        54,    55,    56,    57,   116,   117,   118,   119,
@@ -446,6 +462,7 @@ static const uint16_t dnxhd_1238_ac_codes[257] = {
     65535,
 };
 
+/* Used in CID 1238, 1243 */
 static const uint8_t dnxhd_1238_ac_bits[257] = {
      2,  2,  3,  4,  4,  5,  5,  5,  6,  6,  6,  6,  7,  7,  7,  7,
      8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9,  9,  9, 10, 10,
@@ -466,6 +483,7 @@ static const uint8_t dnxhd_1238_ac_bits[257] = {
     16,
 };
 
+/* Used in CID 1238, 1243 */
 static const uint8_t dnxhd_1238_ac_level[257] = {
      1,  1,  2,  3,  0,  4,  5,  2,  6,  7,  8,  3,  9, 10, 11,  4,
     12, 13, 14, 15, 16,  5, 17, 18, 19, 20, 21, 22,  6,  7, 23, 24,
@@ -486,6 +504,7 @@ static const uint8_t dnxhd_1238_ac_level[257] = {
     64,
 }; /* 0 is EOB */
 
+/* Used in CID 1238, 1243 */
 static const uint8_t dnxhd_1238_ac_run_flag[257] = {
     0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1,
     0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
@@ -506,6 +525,7 @@ static const uint8_t dnxhd_1238_ac_run_flag[257] = {
     1,
 };
 
+/* Used in CID 1238, 1243 */
 static const uint8_t dnxhd_1238_ac_index_flag[257] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -526,7 +546,7 @@ static const uint8_t dnxhd_1238_ac_index_flag[257] = {
     1,
 };
 
-/* Used in CID 1235, 1238, 1241 */
+/* Used in CID 1235, 1238, 1241, 1256 */
 static const uint16_t dnxhd_1235_run_codes[62] = {
        0,    4,   10,   11,   24,   25,   26,   27,
       56,   57,   58,   59,  120,  242,  486,  487,
@@ -538,7 +558,7 @@ static const uint16_t dnxhd_1235_run_codes[62] = {
     1018, 1019, 1020, 1021, 1022, 1023,
 };
 
-/* Used in CID 1235, 1238, 1241 */
+/* Used in CID 1235, 1238, 1241, 1243, 1256 */
 static const uint8_t dnxhd_1235_run_bits[62] = {
      1,  3,  4,  4,  5,  5,  5,  5,  6,  6,  6,  6,  7,  8,  9,  9,
      9,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
@@ -553,17 +573,17 @@ static const uint8_t dnxhd_1238_run[62] = {
     49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint8_t dnxhd_1235_dc_codes[14] = {
     10, 62, 11, 12, 13, 0, 1, 2, 3, 4, 14, 30, 126, 127,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint8_t dnxhd_1235_dc_bits[14] = {
     4, 6, 4, 4, 4, 3, 3, 3, 3, 3, 4, 5, 7, 7,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint16_t dnxhd_1235_ac_codes[257] = {
         0,     1,     4,    10,    11,    24,    25,    26,
        54,    55,    56,    57,   116,   117,   118,   119,
@@ -600,7 +620,7 @@ static const uint16_t dnxhd_1235_ac_codes[257] = {
     65535,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint8_t dnxhd_1235_ac_bits[257] = {
      2,  2,  3,  4,  4,  5,  5,  5,  6,  6,  6,  6,  7,  7,  7,  7,
      8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9,  9, 10, 10, 10,
@@ -621,7 +641,7 @@ static const uint8_t dnxhd_1235_ac_bits[257] = {
     16,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint8_t dnxhd_1235_ac_level[257] = {
      1,  1,  2,  3,  0,  4,  5,  2,  6,  7,  8,  3,  9, 10, 11,  4,
     12, 13, 14, 15, 16,  5, 17, 18, 19, 20, 21,  6,  7, 22, 23, 24,
@@ -642,7 +662,7 @@ static const uint8_t dnxhd_1235_ac_level[257] = {
     64,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint8_t dnxhd_1235_ac_run_flag[257] = {
     0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1,
     0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0,
@@ -663,7 +683,7 @@ static const uint8_t dnxhd_1235_ac_run_flag[257] = {
     1,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint8_t dnxhd_1235_ac_index_flag[257] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -684,7 +704,7 @@ static const uint8_t dnxhd_1235_ac_index_flag[257] = {
     1,
 };
 
-/* Used in CID 1235, 1241 */
+/* Used in CID 1235, 1241, 1256 */
 static const uint8_t dnxhd_1235_run[62] = {
      1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
     18, 20, 17, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
@@ -956,6 +976,7 @@ static const uint8_t dnxhd_1251_ac_index_flag[257] = {
     1,
 };
 
+/* Used in CID 1251, 1252, 1258 */
 static const uint16_t dnxhd_1251_run_codes[62] = {
        0,    4,    5,   12,   26,   27,   28,   58,
      118,  119,  120,  242,  486,  487,  976,  977,
@@ -967,6 +988,7 @@ static const uint16_t dnxhd_1251_run_codes[62] = {
     1018, 1019, 1020, 1021, 1022, 1023,
 };
 
+/* Used in CID 1251, 1252, 1258 */
 static const uint8_t dnxhd_1251_run_bits[62] = {
      1,  3,  3,  4,  5,  5,  5,  6,  7,  7,  7,  8,  9,  9, 10, 10,
     10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
@@ -974,6 +996,7 @@ static const uint8_t dnxhd_1251_run_bits[62] = {
     10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
 };
 
+/* Used in CID 1251, 1252, 1258 */
 static const uint8_t dnxhd_1251_run[62] = {
      1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
@@ -989,6 +1012,7 @@ static const uint8_t dnxhd_1252_dc_bits[12] = {
     3, 4, 4, 3, 3, 3, 3, 3, 4, 5, 6, 6,
 };
 
+/* Used in CID 1252, 1258 */
 static const uint16_t dnxhd_1252_ac_codes[257] = {
         0,     1,     4,    10,    11,    12,    26,    27,
        56,    57,    58,   118,   119,   120,   242,   243,
@@ -1025,6 +1049,7 @@ static const uint16_t dnxhd_1252_ac_codes[257] = {
     65535,
 };
 
+/* Used in CID 1252, 1258 */
 static const uint8_t dnxhd_1252_ac_bits[257] = {
      2,  2,  3,  4,  4,  4,  5,  5,  6,  6,  6,  7,  7,  7,  8,  8,
      8,  8,  8,  8,  9,  9,  9,  9,  9, 10, 10, 10, 10, 10, 10, 10,
@@ -1045,6 +1070,7 @@ static const uint8_t dnxhd_1252_ac_bits[257] = {
     16,
 };
 
+/* Used in CID 1252, 1258 */
 static const uint8_t dnxhd_1252_ac_level[257] = {
      1,  1,  2,  3,  2,  0,  4,  5,  6,  7,  3,  8,  9, 10, 11, 12,
     13, 14,  4,  5, 15, 16, 17, 18,  6, 19, 20, 21, 22, 23, 24,  7,
@@ -1065,6 +1091,7 @@ static const uint8_t dnxhd_1252_ac_level[257] = {
     64,
 };
 
+/* Used in CID 1252, 1258 */
 static const uint8_t dnxhd_1252_ac_run_flag[257] = {
     0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
     0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
@@ -1085,6 +1112,7 @@ static const uint8_t dnxhd_1252_ac_run_flag[257] = {
     1,
 };
 
+/* Used in CID 1252, 1258 */
 static const uint8_t dnxhd_1252_ac_index_flag[257] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
