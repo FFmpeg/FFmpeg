@@ -45,9 +45,6 @@ static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     dst = pkt->data;
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-
     y = pic->data[0];
     u = pic->data[1];
     v = pic->data[2];
@@ -82,4 +79,5 @@ AVCodec ff_v308_encoder = {
     .encode2      = v308_encode_frame,
     .close        = v308_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
+    .capabilities = AV_CODEC_CAP_INTRA_ONLY,
 };
