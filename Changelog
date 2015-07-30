@@ -2,6 +2,14 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.5.8
+- snow: remove an obsolete av_assert2
+- huffyuvdec: validate image size
+- vc1dec: use get_bits_long and limit the read bits to 32
+- mpegaudiodec: copy AVFloatDSPContext from first context to all contexts
+- libshine: fix support for shine 3.0
+- avidec: check for valid bit_rate range
+- avformat/nut: support WavPack
+- avcodec/diracdec: Check slices malloc and propagate error code
 - avcodec/vp8: Check buffer size in vp8_decode_frame_header()
 - avcodec/vp8: Fix null pointer dereference in ff_vp8_decode_free()
 - avcodec/diracdec: Check for hpel_base allocation failure
