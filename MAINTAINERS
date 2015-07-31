@@ -170,6 +170,7 @@ Codecs:
   dvbsubdec.c                           Anshul Maheshwari
   dxa.c                                 Kostya Shishkov
   eacmv*, eaidct*, eat*                 Peter Ross
+  evrc*                                 Paul B Mahol
   exif.c, exif.h                        Thilo Borgmann
   ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
@@ -335,6 +336,7 @@ Generic parts:
   graphdump.c                           Nicolas George
 
 Filters:
+  f_drawgraph.c                         Paul B Mahol
   af_adelay.c                           Paul B Mahol
   af_aecho.c                            Paul B Mahol
   af_afade.c                            Paul B Mahol
@@ -345,15 +347,20 @@ Filters:
   af_astreamsync.c                      Nicolas George
   af_atempo.c                           Pavel Koshevoy
   af_biquads.c                          Paul B Mahol
+  af_chorus.c                           Paul B Mahol
   af_compand.c                          Paul B Mahol
   af_ladspa.c                           Paul B Mahol
   af_pan.c                              Nicolas George
+  af_sidechaincompress.c                Paul B Mahol
   af_silenceremove.c                    Paul B Mahol
   avf_avectorscope.c                    Paul B Mahol
   avf_showcqt.c                         Muhammad Faiz
   vf_blend.c                            Paul B Mahol
+  vf_colorchannelmixer.c                Paul B Mahol
   vf_colorbalance.c                     Paul B Mahol
   vf_colorkey.c                         Timo Rothenpieler
+  vf_colorlevels.c                      Paul B Mahol
+  vf_deband.c                           Paul B Mahol
   vf_dejudder.c                         Nicholas Robbins
   vf_delogo.c                           Jean Delvare (CC <khali@linux-fr.org>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
@@ -364,12 +371,16 @@ Filters:
   vf_il.c                               Paul B Mahol
   vf_lenscorrection.c                   Daniel Oberhoff
   vf_mergeplanes.c                      Paul B Mahol
+  vf_neighbor.c                         Paul B Mahol
   vf_psnr.c                             Paul B Mahol
+  vf_random.c                           Paul B Mahol
   vf_scale.c                            Michael Niedermayer
   vf_separatefields.c                   Paul B Mahol
+  vf_ssim.c                             Paul B Mahol
   vf_stereo3d.c                         Paul B Mahol
   vf_telecine.c                         Paul B Mahol
   vf_yadif.c                            Michael Niedermayer
+  vf_zoompan.c                          Paul B Mahol
 
 Sources:
   vsrc_mandelbrot.c                     Michael Niedermayer
