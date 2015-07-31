@@ -18,6 +18,8 @@
  * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/avstring.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -414,9 +416,21 @@ static int decode_frame(AVCodecContext *avctx,
     int ret;
 
     /* check signature */
-    if (buf_size < 8 ||
-        (memcmp(buf, ff_pngsig, 8) != 0 && memcmp(buf, ff_mngsig, 8) != 0)) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid PNG signature (%d).\n", buf_size);
+    if (buf_size < 8) {
+        av_log(avctx, AV_LOG_ERROR, "Not enough data %d\n",
+               buf_size);
+        return AVERROR_INVALIDDATA;
+    }
+    if (memcmp(buf, ff_pngsig, 8) != 0 &&
+        memcmp(buf, ff_mngsig, 8) != 0) {
+        char signature[5 * 8 + 1] = { 0 };
+        int i;
+        for (i = 0; i < 8; i++) {
+            av_strlcatf(signature + i * 5, sizeof(signature) - i * 5,
+                        " 0x%02x", buf[i]);
+        }
+        av_log(avctx, AV_LOG_ERROR, "Invalid PNG signature %s\n",
+               signature);
         return AVERROR_INVALIDDATA;
     }
 
