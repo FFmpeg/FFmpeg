@@ -936,8 +936,8 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
             H22[0][e+1][b] = h22;
         }
         for (k = 0; k < NR_BANDS[is34]; k++) {
-            INTFLOAT h[2][4];
-            INTFLOAT h_step[2][4];
+            LOCAL_ALIGNED_16(INTFLOAT, h, [2], [4]);
+            LOCAL_ALIGNED_16(INTFLOAT, h_step, [2], [4]);
             int start = ps->border_position[e];
             int stop  = ps->border_position[e+1];
             INTFLOAT width = Q30(1.f) / (stop - start);

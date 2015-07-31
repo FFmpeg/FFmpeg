@@ -372,7 +372,7 @@ void term_init(void)
         struct termios tty;
         int istty = 1;
 #if HAVE_ISATTY
-        istty = isatty(0);
+        istty = isatty(0) && isatty(2);
 #endif
         if (istty && tcgetattr (0, &tty) == 0) {
             oldtty = tty;
