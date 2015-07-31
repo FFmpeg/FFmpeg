@@ -258,6 +258,7 @@ typedef struct MXFContext {
     int nb_index_tables;
     MXFIndexTable *index_tables;
     int edit_units_per_packet;      ///< how many edit units to read at a time (PCM, OPAtom)
+    AVTimecode tc;       ///< timecode context
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -1766,6 +1767,7 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
 
                 if (av_timecode_init(&tc, mxf_tc->rate, flags, start_position + mxf_tc->start_frame, mxf->fc) == 0) {
                     mxf_add_timecode_metadata(&st->metadata, "timecode", &tc);
+                    mxf->tc = tc;
                     return 0;
                 }
             }
@@ -1822,6 +1824,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             flags = mxf_tc->drop_frame == 1 ? AV_TIMECODE_FLAG_DROPFRAME : 0;
             if (av_timecode_init(&tc, mxf_tc->rate, flags, mxf_tc->start_frame, mxf->fc) == 0) {
                 mxf_add_timecode_metadata(&mxf->fc->metadata, "timecode", &tc);
+                mxf->tc = tc;
             }
         }
 
@@ -1839,6 +1842,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             flags = mxf_tc->drop_frame == 1 ? AV_TIMECODE_FLAG_DROPFRAME : 0;
             if (av_timecode_init(&tc, mxf_tc->rate, flags, mxf_tc->start_frame, mxf->fc) == 0) {
                 mxf_add_timecode_metadata(&mxf->fc->metadata, "timecode", &tc);
+                mxf->tc = tc;
                 break;
             }
         }
@@ -2672,6 +2676,7 @@ static int mxf_read_header(AVFormatContext *s)
 
     mxf->last_forward_tell = INT64_MAX;
     mxf->edit_units_per_packet = 1;
+    memset(&(mxf->tc), 0, sizeof(mxf->tc));
 
     if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
@@ -3148,6 +3153,54 @@ static int mxf_probe(AVProbeData *p) {
     return 0;
 }
 
+static int timecode_smpte_to_frame_num(uint8_t *t12m, const AVTimecode *tc) {
+	int fps = tc->fps;
+	int frame = ((t12m[0] >> 4) & 0x03) * 10 + (t12m[0] & 0xf);
+	int sec = ((t12m[1] >> 4) & 0x07) * 10 + (t12m[1] & 0xf);
+	int min = ((t12m[2] >> 4) & 0x07) * 10 + (t12m[2] & 0xf);
+	int hour = ((t12m[3] >> 4) & 0x03) * 10 + (t12m[3] & 0xf);
+
+	int frame_num = frame + sec * fps + min * fps * 60 + hour * fps * 60 * 60;
+	if (tc->flags & AV_TIMECODE_FLAG_DROPFRAME)
+		frame_num = av_timecode_adjust_ntsc_framenum2(frame_num,fps);
+	frame_num -= tc->start;
+	return FFMAX(frame_num,0);
+}
+
+static int64_t mxf_seek_adjust_by_timecode(AVFormatContext *s,int64_t sample_time, const AVTimecode *tc) {
+	int ret;
+	int64_t frame_num, last_frame_num;
+	KLVPacket klv;
+	AVPacket pkt;
+
+	last_frame_num = -1;
+	while (klv_read_packet(&klv, s->pb) == 0) {
+    	// get system item
+    	if (IS_KLV_KEY(klv.key, mxf_system_item_key)) {
+    		// check
+    	    ret = av_get_packet(s->pb, &pkt, klv.length);
+    	    if (ret != 57 || ret != klv.length)
+    	    	return -1;
+    	    if (!(pkt.data[0] & 0x10) || (pkt.data[40] != 0x81))
+    	    	return -1;
+    	    // get
+  	     	frame_num = timecode_smpte_to_frame_num(pkt.data + 41,tc);
+  	     	// check continuity
+  	     	if (frame_num <= last_frame_num)
+  	     		return -1;
+  	     	// compare
+    	    if (frame_num >= sample_time)
+    	    	return frame_num;
+    	    //
+    	    if (last_frame_num == -1)
+    			av_log(s, AV_LOG_VERBOSE, "Adjusting : req -> %ld real -> %ld \n" , sample_time,frame_num);
+    	    last_frame_num = frame_num;
+        }
+    }
+
+	return -1;
+}
+
 /* rudimentary byte seek */
 /* XXX: use MXF Index */
 static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_time, int flags)
@@ -3155,7 +3208,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     AVStream *st = s->streams[stream_index];
     int64_t seconds;
     MXFContext* mxf = s->priv_data;
-    int64_t seekpos;
+    int64_t seekpos, frame_num;
     int i, ret;
     MXFIndexTable *t;
     MXFTrack *source_track = st->priv_data;
@@ -3166,18 +3219,53 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
                                    av_inv_q(source_track->edit_rate));
 
     if (mxf->nb_index_tables <= 0) {
-    if (!s->bit_rate)
-        return AVERROR_INVALIDDATA;
-    if (sample_time < 0)
-        sample_time = 0;
-    seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
+    	if (!s->bit_rate)
+    		return AVERROR_INVALIDDATA;
+    	if (sample_time < 0)
+    		sample_time = 0;
+    	seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
 
-    seekpos = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
-    if (seekpos < 0)
-        return seekpos;
+    	seekpos = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
+    	if (seekpos < 0)
+    		return seekpos;
 
-    ff_update_cur_dts(s, st, sample_time);
-    mxf->current_edit_unit = sample_time;
+    	// fine-adjust by timecode
+    	if (mxf->tc.fps > 0) {
+    		frame_num = mxf_seek_adjust_by_timecode(s,sample_time,&(mxf->tc));
+    		if (frame_num >= 0) {
+    			// check if we need to seek again
+    			if (frame_num > sample_time) {
+    				av_log(s, AV_LOG_WARNING, "Adjustment by timecode result after 1pass : req -> %ld real -> %ld \n"
+    						, sample_time,frame_num);
+    				// seeking to desired position - 5sec for safety (TODO gop size here?)
+    				seconds = seconds - 5;
+    				seekpos = avio_seek(s->pb, (s->bit_rate * FFMAX(seconds, 0)) >> 3, SEEK_SET);
+    				if (seekpos < 0)
+    					return seekpos;
+    				// fine-adjust by timecode
+    				frame_num = mxf_seek_adjust_by_timecode(s,sample_time,&(mxf->tc));
+    				if (frame_num < 0) {
+    					// report error & rollback
+    					av_log(s, AV_LOG_ERROR, "Adjustment by timecode 2pass error - seek will be inaccurate\n");
+    					seekpos = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
+    					if (seekpos < 0)
+    						return seekpos;
+    				} else if (frame_num != sample_time) {
+    					av_log(s, AV_LOG_ERROR, "Adjustment by timecode result after 2pass : req -> %ld real -> %ld - seek will be inaccurate\n"
+    				    					, sample_time,frame_num);
+    				}
+    			}
+    		} else {
+    			// report error & rollback
+    			av_log(s, AV_LOG_ERROR, "Adjustment by timecode error - seek will be inaccurate\n");
+    			seekpos = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
+    			if (seekpos < 0)
+    				return seekpos;
+    		}
+    	}
+
+    	ff_update_cur_dts(s, st, sample_time);
+    	mxf->current_edit_unit = sample_time;
     } else {
         t = &mxf->index_tables[0];
 
