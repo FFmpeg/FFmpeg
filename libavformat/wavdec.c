@@ -440,6 +440,13 @@ break_loop:
         sample_count = 0;
     }
 
+    /* G.729 hack (for Ticket4577)
+     * FIXME: Come up with cleaner, more general solution */
+    if (st->codec->codec_id == AV_CODEC_ID_G729 && sample_count && (data_size << 3) > sample_count) {
+        av_log(s, AV_LOG_WARNING, "ignoring wrong sample_count %"PRId64"\n", sample_count);
+        sample_count = 0;
+    }
+
     if (!sample_count || av_get_exact_bits_per_sample(st->codec->codec_id) > 0)
         if (   st->codec->channels
             && data_size
