@@ -467,10 +467,6 @@ static av_cold int init(AVFilterContext *ctx)
     }
     s->tabsize *= glyph->advance;
 
-#if !HAVE_LOCALTIME_R
-    av_log(ctx, AV_LOG_WARNING, "strftime() expansion unavailable!\n");
-#endif
-
     return 0;
 }
 
@@ -818,7 +814,7 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
                        const uint8_t rgbcolor[4], const uint8_t yuvcolor[4],
                        int x, int y)
 {
-    char *text = HAVE_LOCALTIME_R ? s->expanded_text : s->text;
+    char *text = s->expanded_text;
     uint32_t code = 0;
     int i;
     uint8_t *p;
