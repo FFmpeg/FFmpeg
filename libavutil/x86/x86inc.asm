@@ -1410,15 +1410,18 @@ AVX_INSTR pfmul, 1, 0, 1
     %macro %1 4-7 %1, %2, %3
         %if cpuflag(xop)
             v%5 %1, %2, %3, %4
-        %else
+        %elifnidn %1, %4
             %6 %1, %2, %3
             %7 %1, %4
+        %else
+            %error non-xop emulation of ``%5 %1, %2, %3, %4'' is not supported
         %endif
     %endmacro
 %endmacro
 
-FMA_INSTR  pmacsdd,  pmulld, paddd
 FMA_INSTR  pmacsww,  pmullw, paddw
+FMA_INSTR  pmacsdd,  pmulld, paddd ; sse4 emulation
+FMA_INSTR pmacsdql,  pmuldq, paddq ; sse4 emulation
 FMA_INSTR pmadcswd, pmaddwd, paddd
 
 ; tzcnt is equivalent to "rep bsf" and is backwards-compatible with bsf.
