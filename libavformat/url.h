@@ -58,6 +58,8 @@ typedef struct URLProtocol {
      * for those nested protocols.
      */
     int     (*url_open2)(URLContext *h, const char *url, int flags, AVDictionary **options);
+    int     (*url_accept)(URLContext *s, URLContext **c);
+    int     (*url_handshake)(URLContext *c);
 
     /**
      * Read data from the protocol.
@@ -138,6 +140,29 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  */
 int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options);
+
+/**
+ * Accept an URLContext c on an URLContext s
+ *
+ * @param  s server context
+ * @param  c client context, must be unallocated.
+ * @return >= 0 on success, ff_neterrno() on failure.
+ */
+int ffurl_accept(URLContext *s, URLContext **c);
+
+/**
+ * Perform one step of the protocol handshake to accept a new client.
+ * See avio_handshake() for details.
+ * Implementations should try to return decreasing values.
+ * If the protocol uses an underlying protocol, the underlying handshake is
+ * usually the first step, and the return value can be:
+ * (largest value for this protocol) + (return value from other protocol)
+ *
+ * @param  c the client context
+ * @return >= 0 on success or a negative value corresponding
+ *         to an AVERROR code on failure
+ */
+int ffurl_handshake(URLContext *c);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store

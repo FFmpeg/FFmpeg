@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "libavutil/avassert.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
@@ -44,7 +45,7 @@ typedef struct TCPContext {
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "listen",          "Listen for incoming connections",  OFFSET(listen),         AV_OPT_TYPE_INT, { .i64 = 0 },     0,       1,       .flags = D|E },
+    { "listen",          "Listen for incoming connections",  OFFSET(listen),         AV_OPT_TYPE_INT, { .i64 = 0 },     0,       2,       .flags = D|E },
     { "timeout",     "set timeout (in microseconds) of socket I/O operations", OFFSET(rw_timeout),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "listen_timeout",  "Connection awaiting timeout (in milliseconds)",      OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { NULL }
@@ -125,12 +126,17 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
 
-    if (s->listen) {
-        if ((ret = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                  s->listen_timeout, h)) < 0) {
+    if (s->listen == 2) {
+        // multi-client
+        if ((ret = ff_listen(fd, cur_ai->ai_addr, cur_ai->ai_addrlen)) < 0)
+            goto fail1;
+    } else if (s->listen == 1) {
+        // single client
+        if ((fd = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                 s->listen_timeout, h)) < 0) {
+            ret = fd;
             goto fail1;
         }
-        fd = ret;
     } else {
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                      s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
@@ -161,6 +167,22 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         closesocket(fd);
     freeaddrinfo(ai);
     return ret;
+}
+
+static int tcp_accept(URLContext *s, URLContext **c)
+{
+    TCPContext *sc = s->priv_data;
+    TCPContext *cc;
+    int ret;
+    av_assert0(sc->listen);
+    if ((ret = ffurl_alloc(c, s->filename, s->flags, &s->interrupt_callback)) < 0)
+        return ret;
+    cc = (*c)->priv_data;
+    ret = ff_accept(sc->fd, sc->listen_timeout, s);
+    if (ret < 0)
+        return ff_neterrno();
+    cc->fd = ret;
+    return 0;
 }
 
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
@@ -223,6 +245,7 @@ static int tcp_get_file_handle(URLContext *h)
 URLProtocol ff_tcp_protocol = {
     .name                = "tcp",
     .url_open            = tcp_open,
+    .url_accept          = tcp_accept,
     .url_read            = tcp_read,
     .url_write           = tcp_write,
     .url_close           = tcp_close,

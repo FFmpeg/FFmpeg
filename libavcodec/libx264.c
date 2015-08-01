@@ -381,6 +381,9 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_NV12:      return X264_CSP_NV12;
     case AV_PIX_FMT_NV16:
     case AV_PIX_FMT_NV20:      return X264_CSP_NV16;
+#ifdef X264_CSP_NV21
+    case AV_PIX_FMT_NV21:      return X264_CSP_NV21;
+#endif
     };
     return 0;
 }
@@ -770,6 +773,9 @@ static const enum AVPixelFormat pix_fmts_8bit[] = {
     AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_NV16,
+#ifdef X264_CSP_NV21
+    AV_PIX_FMT_NV21,
+#endif
     AV_PIX_FMT_NONE
 };
 static const enum AVPixelFormat pix_fmts_9bit[] = {

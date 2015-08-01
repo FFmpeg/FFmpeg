@@ -1021,6 +1021,23 @@ int avio_read_to_bprint(AVIOContext *h, AVBPrint *pb, size_t max_size)
     return 0;
 }
 
+int avio_accept(AVIOContext *s, AVIOContext **c)
+{
+    int ret;
+    URLContext *sc = s->opaque;
+    URLContext *cc = NULL;
+    ret = ffurl_accept(sc, &cc);
+    if (ret < 0)
+        return ret;
+    return ffio_fdopen(c, cc);
+}
+
+int avio_handshake(AVIOContext *c)
+{
+    URLContext *cc = c->opaque;
+    return ffurl_handshake(cc);
+}
+
 /* output in a dynamic buffer */
 
 typedef struct DynBuffer {
