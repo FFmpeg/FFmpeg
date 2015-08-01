@@ -211,6 +211,26 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
     return 0;
 }
 
+int ffurl_accept(URLContext *s, URLContext **c)
+{
+    av_assert0(!*c);
+    if (s->prot->url_accept)
+        return s->prot->url_accept(s, c);
+    return AVERROR(EBADF);
+}
+
+int ffurl_handshake(URLContext *c)
+{
+    int ret;
+    if (c->prot->url_handshake) {
+        ret = c->prot->url_handshake(c);
+        if (ret)
+            return ret;
+    }
+    c->is_connected = 1;
+    return 0;
+}
+
 #define URL_SCHEME_CHARS                        \
     "abcdefghijklmnopqrstuvwxyz"                \
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"                \
