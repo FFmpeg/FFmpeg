@@ -42,6 +42,17 @@
     %define public_prefix private_prefix
 %endif
 
+%if HAVE_ALIGNED_STACK
+    %define STACK_ALIGNMENT 16
+%endif
+%ifndef STACK_ALIGNMENT
+    %if ARCH_X86_64
+        %define STACK_ALIGNMENT 16
+    %else
+        %define STACK_ALIGNMENT 4
+    %endif
+%endif
+
 %define WIN64  0
 %define UNIX64 0
 %if ARCH_X86_64
@@ -108,8 +119,9 @@
 ; %1 = number of arguments. loads them from stack if needed.
 ; %2 = number of registers used. pushes callee-saved regs if needed.
 ; %3 = number of xmm registers used. pushes callee-saved xmm regs if needed.
-; %4 = (optional) stack size to be allocated. If not aligned (x86-32 ICC 10.x,
-;      MSVC or YMM), the stack will be manually aligned (to 16 or 32 bytes),
+; %4 = (optional) stack size to be allocated. The stack will be aligned before
+;      allocating the specified stack size. If the required stack alignment is
+;      larger than the known stack alignment the stack will be manually aligned
 ;      and an extra register will be allocated to hold the original stack
 ;      pointer (to not invalidate r0m etc.). To prevent the use of an extra
 ;      register as stack pointer, request a negative stack size.
@@ -117,8 +129,10 @@
 ; PROLOGUE can also be invoked by adding the same options to cglobal
 
 ; e.g.
-; cglobal foo, 2,3,0, dst, src, tmp
-; declares a function (foo), taking two args (dst and src) and one local variable (tmp)
+; cglobal foo, 2,3,7,0x40, dst, src, tmp
+; declares a function (foo) that automatically loads two arguments (dst and
+; src) into registers, uses one additional register (tmp) plus 7 vector
+; registers (m0-m6) and allocates 0x40 bytes of stack space.
 
 ; TODO Some functions can use some args directly from the stack. If they're the
 ; last args then you can just not declare them, but if they're in the middle
@@ -319,26 +333,28 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %assign n_arg_names %0
 %endmacro
 
+%define required_stack_alignment ((mmsize + 15) & ~15)
+
 %macro ALLOC_STACK 1-2 0 ; stack_size, n_xmm_regs (for win64 only)
     %ifnum %1
         %if %1 != 0
-            %assign %%stack_alignment ((mmsize + 15) & ~15)
+            %assign %%pad 0
             %assign stack_size %1
             %if stack_size < 0
                 %assign stack_size -stack_size
             %endif
-            %assign stack_size_padded stack_size
             %if WIN64
-                %assign stack_size_padded stack_size_padded + 32 ; reserve 32 bytes for shadow space
+                %assign %%pad %%pad + 32 ; shadow space
                 %if mmsize != 8
                     %assign xmm_regs_used %2
                     %if xmm_regs_used > 8
-                        %assign stack_size_padded stack_size_padded + (xmm_regs_used-8)*16
+                        %assign %%pad %%pad + (xmm_regs_used-8)*16 ; callee-saved xmm registers
                     %endif
                 %endif
             %endif
-            %if mmsize <= 16 && HAVE_ALIGNED_STACK
-                %assign stack_size_padded stack_size_padded + %%stack_alignment - gprsize - (stack_offset & (%%stack_alignment - 1))
+            %if required_stack_alignment <= STACK_ALIGNMENT
+                ; maintain the current stack alignment
+                %assign stack_size_padded stack_size + %%pad + ((-%%pad-stack_offset-gprsize) & (STACK_ALIGNMENT-1))
                 SUB rsp, stack_size_padded
             %else
                 %assign %%reg_num (regs_used - 1)
@@ -347,17 +363,17 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
                 ; it, i.e. in [rsp+stack_size_padded], so we can restore the
                 ; stack in a single instruction (i.e. mov rsp, rstk or mov
                 ; rsp, [rsp+stack_size_padded])
-                mov  rstk, rsp
                 %if %1 < 0 ; need to store rsp on stack
-                    sub  rsp, gprsize+stack_size_padded
-                    and  rsp, ~(%%stack_alignment-1)
-                    %xdefine rstkm [rsp+stack_size_padded]
-                    mov rstkm, rstk
+                    %xdefine rstkm [rsp + stack_size + %%pad]
+                    %assign %%pad %%pad + gprsize
                 %else ; can keep rsp in rstk during whole function
-                    sub  rsp, stack_size_padded
-                    and  rsp, ~(%%stack_alignment-1)
                     %xdefine rstkm rstk
                 %endif
+                %assign stack_size_padded stack_size + ((%%pad + required_stack_alignment-1) & ~(required_stack_alignment-1))
+                mov rstk, rsp
+                and rsp, ~(required_stack_alignment-1)
+                sub rsp, stack_size_padded
+                movifnidn rstkm, rstk
             %endif
             WIN64_PUSH_XMM
         %endif
@@ -366,7 +382,7 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
 
 %macro SETUP_STACK_POINTER 1
     %ifnum %1
-        %if %1 != 0 && (HAVE_ALIGNED_STACK == 0 || mmsize == 32)
+        %if %1 != 0 && required_stack_alignment > STACK_ALIGNMENT
             %if %1 > 0
                 %assign regs_used (regs_used + 1)
             %elif ARCH_X86_64 && regs_used == num_args && num_args <= 4 + UNIX64 * 2
@@ -440,7 +456,9 @@ DECLARE_REG 14, R15, 120
     %assign xmm_regs_used %1
     ASSERT xmm_regs_used <= 16
     %if xmm_regs_used > 8
-        %assign stack_size_padded (xmm_regs_used-8)*16 + (~stack_offset&8) + 32
+        ; Allocate stack space for callee-saved xmm registers plus shadow space and align the stack.
+        %assign %%pad (xmm_regs_used-8)*16 + 32
+        %assign stack_size_padded %%pad + ((-%%pad-stack_offset-gprsize) & (STACK_ALIGNMENT-1))
         SUB rsp, stack_size_padded
     %endif
     WIN64_PUSH_XMM
@@ -456,7 +474,7 @@ DECLARE_REG 14, R15, 120
         %endrep
     %endif
     %if stack_size_padded > 0
-        %if stack_size > 0 && (mmsize == 32 || HAVE_ALIGNED_STACK == 0)
+        %if stack_size > 0 && required_stack_alignment > STACK_ALIGNMENT
             mov rsp, rstkm
         %else
             add %1, stack_size_padded
@@ -522,7 +540,7 @@ DECLARE_REG 14, R15, 72
 
 %macro RET 0
 %if stack_size_padded > 0
-%if mmsize == 32 || HAVE_ALIGNED_STACK == 0
+%if required_stack_alignment > STACK_ALIGNMENT
     mov rsp, rstkm
 %else
     add rsp, stack_size_padded
@@ -578,7 +596,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 
 %macro RET 0
 %if stack_size_padded > 0
-%if mmsize == 32 || HAVE_ALIGNED_STACK == 0
+%if required_stack_alignment > STACK_ALIGNMENT
     mov rsp, rstkm
 %else
     add rsp, stack_size_padded
