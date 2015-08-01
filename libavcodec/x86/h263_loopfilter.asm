@@ -24,7 +24,7 @@ SECTION_RODATA
 cextern pb_FC
 cextern h263_loop_filter_strength
 
-SECTION_TEXT
+SECTION .text
 
 %macro H263_LOOP_FILTER 5
     pxor         m7, m7

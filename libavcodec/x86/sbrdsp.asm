@@ -27,7 +27,7 @@ ps_mask         times 2 dd 1<<31, 0
 ps_mask2        times 2 dd 0, 1<<31
 ps_neg          times 4 dd 1<<31
 
-SECTION_TEXT
+SECTION .text
 
 INIT_XMM sse
 cglobal sbr_sum_square, 2, 3, 6

@@ -84,14 +84,6 @@
     %endif
 %endmacro
 
-%macro SECTION_TEXT 0-1 16
-    %ifidn __OUTPUT_FORMAT__,aout
-        SECTION .text
-    %else
-        SECTION .text align=%1
-    %endif
-%endmacro
-
 %if WIN64
     %define PIC
 %elif ARCH_X86_64 == 0
@@ -742,10 +734,6 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %ifidn __OUTPUT_FORMAT__,elf
 [section .note.GNU-stack noalloc noexec nowrite progbits]
 %endif
-
-; Overrides the default .text section.
-; Silences warnings when defining structures.
-%define __SECT__
 
 ; cpuflags
 

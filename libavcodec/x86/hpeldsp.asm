@@ -23,7 +23,7 @@
 SECTION_RODATA
 cextern pb_1
 
-SECTION_TEXT
+SECTION .text
 
 ; void ff_put_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro PUT_PIXELS8_X2 0
