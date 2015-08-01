@@ -102,6 +102,7 @@
     <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
     <YASM Include="..\libavcodec\x86\vp8dsp.asm" />
     <YASM Include="..\libavcodec\x86\vp8dsp_loopfilter.asm" />
+    <YASM Include="..\libavcodec\x86\aacpsdsp.asm" />
     <YASM Include="..\libavcodec\x86\sbrdsp.asm" />
     <YASM Include="..\libavcodec\x86\g722dsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
@@ -1661,6 +1662,8 @@
     <ClCompile Include="..\libavcodec\x86\vp3dsp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vp8dsp_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\aacpsdsp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\sbrdsp_init.c">
     </ClCompile>
