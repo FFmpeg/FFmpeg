@@ -300,7 +300,7 @@ Codecs:
 
 Hardware acceleration:
   crystalhd.c                           Philip Langdale
-  dxva2*                                Laurent Aimar
+  dxva2*                                Hendrik Leppkes, Laurent Aimar
   libstagefright.cpp                    Mohamed Naufal
   vaapi*                                Gwenole Beauchesne
   vda*                                  Sebastien Zwickert
@@ -550,7 +550,7 @@ Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Luca Barbato
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
 Windows Cygwin                          Victor Paesa
-Windows MSVC                            Matthew Oliver
+Windows MSVC                            Matthew Oliver, Hendrik Leppkes
 Windows ICL                             Matthew Oliver
 ADI/Blackfin DSP                        Marc Hoffman
 Sparc                                   Roman Shaposhnik
