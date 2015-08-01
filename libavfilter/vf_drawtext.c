@@ -521,28 +521,15 @@ static inline int is_newline(uint32_t c)
     return c == '\n' || c == '\r' || c == '\f' || c == '\v';
 }
 
-static int dtext_prepare_text(AVFilterContext *ctx)
+static int expand_strftime(DrawTextContext *s)
 {
-    DrawTextContext *s = ctx->priv;
-    uint32_t code = 0, prev_code = 0;
-    int x = 0, y = 0, i = 0, ret;
-    int text_height, baseline;
-    char *text = s->text;
-    uint8_t *p;
-    int str_w = 0, len;
-    int y_min = 32000, y_max = -32000;
-    FT_Vector delta;
-    Glyph *glyph = NULL, *prev_glyph = NULL;
-    Glyph dummy = { 0 };
-    int width  = ctx->inputs[0]->w;
-    int height = ctx->inputs[0]->h;
-    time_t now = time(0);
     struct tm ltime;
+    time_t now   = time(0);
     uint8_t *buf = s->expanded_text;
     int buf_size = s->expanded_text_size;
 
     if (!buf)
-        buf_size = 2*strlen(s->text)+1;
+        buf_size = 2 * strlen(s->text) + 1;
 
     localtime_r(&now, &ltime);
 
@@ -555,8 +542,33 @@ static int dtext_prepare_text(AVFilterContext *ctx)
 
     if (!buf)
         return AVERROR(ENOMEM);
-    text = s->expanded_text = buf;
+    s->expanded_text      = buf;
     s->expanded_text_size = buf_size;
+
+    return 0;
+}
+
+static int dtext_prepare_text(AVFilterContext *ctx)
+{
+    DrawTextContext *s = ctx->priv;
+    uint32_t code = 0, prev_code = 0;
+    int x = 0, y = 0, i = 0, ret;
+    int text_height, baseline;
+    char *text;
+    uint8_t *p;
+    int str_w = 0, len;
+    int y_min = 32000, y_max = -32000;
+    FT_Vector delta;
+    Glyph *glyph = NULL, *prev_glyph = NULL;
+    Glyph dummy = { 0 };
+    int width  = ctx->inputs[0]->w;
+    int height = ctx->inputs[0]->h;
+
+    ret = expand_strftime(s);
+    if (ret < 0)
+        return ret;
+
+    text = s->expanded_text ? s->expanded_text : s->text;
 
     if ((len = strlen(text)) > s->nb_positions) {
         FT_Vector *p = av_realloc(s->positions,
