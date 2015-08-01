@@ -482,7 +482,10 @@ cglobal dct32_float, 2, 3, 16, out, in, tmp
 %endif
 %endmacro
 
+%if ARCH_X86_32
 INIT_XMM sse
 DCT32_FUNC
+%endif
+
 INIT_XMM sse2
 DCT32_FUNC
