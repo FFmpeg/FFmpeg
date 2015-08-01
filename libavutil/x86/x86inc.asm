@@ -893,7 +893,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE m, %%i, ymm %+ %%i
-    CAT_XDEFINE nymm, %%i, %%i
+    CAT_XDEFINE nnymm, %%i, %%i
     %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
