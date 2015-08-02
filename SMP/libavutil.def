@@ -19,6 +19,7 @@ EXPORTS
     av_base64_decode
     av_base64_encode
     av_basename
+    av_blowfish_alloc
     av_blowfish_crypt
     av_blowfish_crypt_ecb
     av_blowfish_init
@@ -73,6 +74,7 @@ EXPORTS
     av_d2str
     av_default_get_category
     av_default_item_name
+    av_des_alloc
     av_des_crypt
     av_des_init
     av_des_mac
@@ -348,6 +350,7 @@ EXPORTS
     av_pix_fmt_swap_endianness
     av_pixelutils_get_sad_fn
     av_q2intfloat
+    av_rc4_alloc
     av_rc4_crypt
     av_rc4_init
     av_read_image_line
@@ -438,6 +441,7 @@ EXPORTS
     av_version_info
     av_vlog
     av_write_image_line
+    av_xtea_alloc
     av_xtea_crypt
     av_xtea_init
     avpriv_alloc_fixed_dsp

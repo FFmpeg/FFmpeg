@@ -98,6 +98,7 @@ EXPORTS
     avformat_seek_file
     avformat_version
     avformat_write_header
+    avio_accept
     avio_alloc_context
     avio_check
     avio_close
@@ -112,6 +113,7 @@ EXPORTS
     avio_get_str
     avio_get_str16be
     avio_get_str16le
+    avio_handshake
     avio_open
     avio_open2
     avio_open_dir
