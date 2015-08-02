@@ -49,6 +49,7 @@ AVRC4 *av_rc4_alloc(void);
  *
  * @param key_bits must be a multiple of 8
  * @param decrypt 0 for encryption, 1 for decryption, currently has no effect
+ * @return zero on success, negative value otherwise
  */
 int av_rc4_init(struct AVRC4 *d, const uint8_t *key, int key_bits, int decrypt);
 
