@@ -263,7 +263,7 @@ static int asf_read_metadata(AVFormatContext *s, const char *title, uint16_t len
     return 0;
 }
 
-static int asf_read_value(AVFormatContext *s, uint8_t *name, uint16_t name_len,
+static int asf_read_value(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
                           uint16_t val_len, int type, AVDictionary **met)
 {
     int ret;
@@ -305,8 +305,8 @@ failed:
     return ret;
 }
 
-static int asf_read_generic_value(AVFormatContext *s, uint8_t *name, uint16_t name_len,
-                                  int type, AVDictionary **met)
+static int asf_read_generic_value(AVFormatContext *s, const uint8_t *name,
+                                  uint16_t name_len, int type, AVDictionary **met)
 {
     AVIOContext *pb = s->pb;
     uint64_t value;
@@ -326,7 +326,6 @@ static int asf_read_generic_value(AVFormatContext *s, uint8_t *name, uint16_t na
         value = avio_rl16(pb);
         break;
     default:
-        av_freep(&name);
         return AVERROR_INVALIDDATA;
     }
     snprintf(buf, sizeof(buf), "%"PRIu64, value);
@@ -448,7 +447,7 @@ static void get_id3_tag(AVFormatContext *s, int len)
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 }
 
-static int process_metadata(AVFormatContext *s, uint8_t *name, uint16_t name_len,
+static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
                             uint16_t val_len, uint16_t type, AVDictionary **met)
 {
     int ret;
@@ -476,7 +475,6 @@ static int process_metadata(AVFormatContext *s, uint8_t *name, uint16_t name_len
             break;
         }
     }
-    av_freep(&name);
 
     return 0;
 }
@@ -504,7 +502,9 @@ static int asf_read_ext_content(AVFormatContext *s, const GUIDParseTable *g)
         type    = avio_rl16(pb);
         val_len = avio_rl16(pb);
 
-        if ((ret = process_metadata(s, name, name_len, val_len, type, &s->metadata)) < 0)
+        ret = process_metadata(s, name, name_len, val_len, type, &s->metadata);
+        av_freep(&name);
+        if (ret < 0)
             return ret;
     }
 
@@ -575,11 +575,13 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
         } else {
             if (st_num < ASF_MAX_STREAMS) {
                 if ((ret = process_metadata(s, name, name_len, val_len, type,
-                                            &asf->asf_sd[st_num].asf_met)) < 0)
+                                            &asf->asf_sd[st_num].asf_met)) < 0) {
+                    av_freep(&name);
                     break;
-            } else
-                av_freep(&name);
+                }
+            }
         }
+        av_freep(&name);
     }
 
     align_position(pb, asf->offset, size);
