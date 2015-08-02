@@ -127,7 +127,6 @@ typedef struct ASFContext {
     int64_t sub_dts;
     uint8_t dts_delta; // for subpayloads
     uint32_t packet_size_internal; // packet size stored inside ASFPacket, can be 0
-    int64_t dts;
     int64_t packet_offset; // offset of the current packet inside Data Object
     uint32_t pad_len; // padding after payload
     uint32_t rep_data_len;
@@ -1248,7 +1247,6 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
             if (asf->stream_index == asf->asf_st[i]->stream_index) {
                 asf_pkt               = &asf->asf_st[i]->pkt;
                 asf_pkt->stream_index = asf->asf_st[i]->index;
-                asf_pkt->dts          = asf->dts;
                 break;
             }
         }
@@ -1486,7 +1484,6 @@ static void reset_packet_state(AVFormatContext *s)
     asf->nb_sub            = 0;
     asf->prop_flags        = 0;
     asf->sub_dts           = 0;
-    asf->dts               = 0;
     for (i = 0; i < asf->nb_streams; i++) {
         ASFPacket *pkt = &asf->asf_st[i]->pkt;
         pkt->size_left = 0;
