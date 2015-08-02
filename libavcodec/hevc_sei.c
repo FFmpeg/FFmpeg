@@ -53,7 +53,7 @@ enum HEVC_SEI_TYPE {
     SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
 };
 
-static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
+static int decode_nal_sei_decoded_picture_hash(HEVCContext *s)
 {
     int cIdx, i;
     uint8_t hash_type;
@@ -75,9 +75,10 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
             skip_bits(gb, 32);
         }
     }
+    return 0;
 }
 
-static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
+static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
 
@@ -100,9 +101,10 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
         skip_bits1(gb);         // frame_packing_arrangement_persistance_flag
     }
     skip_bits1(gb);             // upsampled_aspect_ratio_flag
+    return 0;
 }
 
-static void decode_nal_sei_display_orientation(HEVCContext *s)
+static int decode_nal_sei_display_orientation(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
 
@@ -115,6 +117,8 @@ static void decode_nal_sei_display_orientation(HEVCContext *s)
         s->sei_anticlockwise_rotation = get_bits(gb, 16);
         skip_bits1(gb);     // display_orientation_persistence_flag
     }
+
+    return 0;
 }
 
 static int decode_pic_timing(HEVCContext *s)
@@ -191,30 +195,37 @@ static int decode_nal_sei_message(HEVCContext *s)
         payload_size += byte;
     }
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
-        if (payload_type == 256 /*&& s->decode_checksum_sei*/) // Mismatched value from HM 8.1
-            decode_nal_sei_decoded_picture_hash(s);
-        else if (payload_type == SEI_TYPE_FRAME_PACKING)
-            decode_nal_sei_frame_packing_arrangement(s);
-        else if (payload_type == SEI_TYPE_DISPLAY_ORIENTATION)
-            decode_nal_sei_display_orientation(s);
-        else if (payload_type == SEI_TYPE_PICTURE_TIMING){
-            int ret = decode_pic_timing(s);
-            av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-            skip_bits(gb, 8 * payload_size);
-            return ret;
-        } else if (payload_type == SEI_TYPE_ACTIVE_PARAMETER_SETS){
+        switch (payload_type) {
+        case 256:  // Mismatched value from HM 8.1
+            return decode_nal_sei_decoded_picture_hash(s);
+        case SEI_TYPE_FRAME_PACKING:
+            return decode_nal_sei_frame_packing_arrangement(s);
+        case SEI_TYPE_DISPLAY_ORIENTATION:
+            return decode_nal_sei_display_orientation(s);
+        case SEI_TYPE_PICTURE_TIMING:
+            {
+                int ret = decode_pic_timing(s);
+                av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
+                skip_bits(gb, 8 * payload_size);
+                return ret;
+            }
+        case SEI_TYPE_ACTIVE_PARAMETER_SETS:
             active_parameter_sets(s);
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-        } else {
+            return 0;
+        default:
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-            skip_bits(gb, 8*payload_size);
+            skip_bits(gb, 8 * payload_size);
+            return 0;
         }
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
-        if (payload_type == SEI_TYPE_DECODED_PICTURE_HASH /* && s->decode_checksum_sei */)
-            decode_nal_sei_decoded_picture_hash(s);
-        else {
+        switch (payload_type) {
+        case SEI_TYPE_DECODED_PICTURE_HASH:
+            return decode_nal_sei_decoded_picture_hash(s);
+        default:
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
             skip_bits(gb, 8 * payload_size);
+            return 0;
         }
     }
     return 1;
