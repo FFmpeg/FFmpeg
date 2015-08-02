@@ -79,6 +79,7 @@ struct hash_impl {
 #include "libavutil/camellia.h"
 #include "libavutil/cast5.h"
 #include "libavutil/twofish.h"
+#include "libavutil/rc4.h"
 
 #define IMPL_USE_lavu IMPL_USE
 
@@ -154,6 +155,17 @@ static void run_lavu_twofish(uint8_t *output,
     av_twofish_init(twofish, hardcoded_key, 128);
     av_twofish_crypt(twofish, output, input, size >> 4, NULL, 0);
 }
+
+static void run_lavu_rc4(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVRC4 *rc4;
+    if (!rc4 && !(rc4 = av_rc4_alloc()))
+        fatal_error("out of memory");
+    av_rc4_init(rc4, hardcoded_key, 128, 0);
+    av_rc4_crypt(rc4, output, input, size, NULL, 0);
+}
+
 /***************************************************************************
  * crypto: OpenSSL's libcrypto
  ***************************************************************************/
@@ -167,6 +179,7 @@ static void run_lavu_twofish(uint8_t *output,
 #include <openssl/blowfish.h>
 #include <openssl/camellia.h>
 #include <openssl/cast.h>
+#include <openssl/rc4.h>
 
 #define DEFINE_CRYPTO_WRAPPER(suffix, function)                              \
 static void run_crypto_ ## suffix(uint8_t *output,                           \
@@ -225,6 +238,15 @@ static void run_crypto_cast128(uint8_t *output,
     CAST_set_key(&cast, 16, hardcoded_key);
     for (i = 0; i < size; i += 8)
         CAST_ecb_encrypt(input + i, output + i, &cast, 1);
+}
+
+static void run_crypto_rc4(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    RC4_KEY rc4;
+
+    RC4_set_key(&rc4, 16, hardcoded_key);
+    RC4(&rc4, size, input, output);
 }
 
 #define IMPL_USE_crypto(...) IMPL_USE(__VA_ARGS__)
@@ -479,6 +501,8 @@ struct hash_impl implementations[] = {
     IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(gcrypt,   "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
+    IMPL(lavu,     "RC4",     rc4,     "crc:538d37b2")
+    IMPL(crypto,   "RC4",     rc4,     "crc:538d37b2")
 };
 
 int main(int argc, char **argv)
