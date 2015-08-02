@@ -198,8 +198,6 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
      * assert that this is true.
      */
     av_assert2(keyframe == true);
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
@@ -224,7 +222,7 @@ AVCodec ff_libutvideo_encoder = {
     NULL_IF_CONFIG_SMALL("Ut Video"),
     AVMEDIA_TYPE_VIDEO,
     AV_CODEC_ID_UTVIDEO,
-    AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_LOSSLESS,
+    AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_LOSSLESS | AV_CODEC_CAP_INTRA_ONLY,
     NULL, /* supported_framerates */
     (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUYV422, AV_PIX_FMT_BGR24,
