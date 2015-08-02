@@ -105,6 +105,7 @@ static void run_lavu_ ## suffix(uint8_t *output,                             \
 DEFINE_LAVU_MD(sha1,      AVSHA,    sha, 160);
 DEFINE_LAVU_MD(sha256,    AVSHA,    sha, 256);
 DEFINE_LAVU_MD(sha512,    AVSHA512, sha512, 512);
+DEFINE_LAVU_MD(ripemd128, AVRIPEMD, ripemd, 128);
 DEFINE_LAVU_MD(ripemd160, AVRIPEMD, ripemd, 160);
 
 static void run_lavu_aes128(uint8_t *output,
@@ -363,6 +364,7 @@ DEFINE_TOMCRYPT_WRAPPER(md5,       md5,    MD5)
 DEFINE_TOMCRYPT_WRAPPER(sha1,      sha1,   SHA1)
 DEFINE_TOMCRYPT_WRAPPER(sha256,    sha256, SHA256)
 DEFINE_TOMCRYPT_WRAPPER(sha512,    sha512, SHA512)
+DEFINE_TOMCRYPT_WRAPPER(ripemd128, rmd128, RIPEMD128)
 DEFINE_TOMCRYPT_WRAPPER(ripemd160, rmd160, RIPEMD160)
 
 static void run_tomcrypt_aes128(uint8_t *output,
@@ -515,6 +517,8 @@ struct hash_impl implementations[] = {
     IMPL_ALL("SHA-256",    sha256,    "14028ac673b3087e51a1d407fbf0df4deeec8f217119e13b07bf2138f93db8c5")
     IMPL_ALL("SHA-512",    sha512,    "3afdd44a80d99af15c87bd724cb717243193767835ce866dd5d58c02d674bb57"
                                       "7c25b9e118c200a189fcd5a01ef106a4e200061f3e97dbf50ba065745fd46bef")
+    IMPL(lavu,     "RIPEMD-128", ripemd128, "9ab8bfba2ddccc5d99c9d4cdfb844a5f")
+    IMPL(tomcrypt, "RIPEMD-128", ripemd128, "9ab8bfba2ddccc5d99c9d4cdfb844a5f")
     IMPL_ALL("RIPEMD-160", ripemd160, "62a5321e4fc8784903bb43ab7752c75f8b25af00")
     IMPL_ALL("AES-128",    aes128,    "crc:ff6bc888")
     IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
