@@ -176,6 +176,49 @@ static int active_parameter_sets(HEVCContext *s)
     return 0;
 }
 
+static int decode_nal_sei_prefix(HEVCContext *s, int type, int size)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+
+    switch (type) {
+    case 256:  // Mismatched value from HM 8.1
+        return decode_nal_sei_decoded_picture_hash(s);
+    case SEI_TYPE_FRAME_PACKING:
+        return decode_nal_sei_frame_packing_arrangement(s);
+    case SEI_TYPE_DISPLAY_ORIENTATION:
+        return decode_nal_sei_display_orientation(s);
+    case SEI_TYPE_PICTURE_TIMING:
+        {
+            int ret = decode_pic_timing(s);
+            av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
+            skip_bits(gb, 8 * size);
+            return ret;
+        }
+    case SEI_TYPE_ACTIVE_PARAMETER_SETS:
+        active_parameter_sets(s);
+        av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
+        return 0;
+    default:
+        av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
+        skip_bits_long(gb, 8 * size);
+        return 0;
+    }
+}
+
+static int decode_nal_sei_suffix(HEVCContext *s, int type, int size)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+
+    switch (type) {
+    case SEI_TYPE_DECODED_PICTURE_HASH:
+        return decode_nal_sei_decoded_picture_hash(s);
+    default:
+        av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", type);
+        skip_bits_long(gb, 8 * size);
+        return 0;
+    }
+}
+
 static int decode_nal_sei_message(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -195,38 +238,9 @@ static int decode_nal_sei_message(HEVCContext *s)
         payload_size += byte;
     }
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
-        switch (payload_type) {
-        case 256:  // Mismatched value from HM 8.1
-            return decode_nal_sei_decoded_picture_hash(s);
-        case SEI_TYPE_FRAME_PACKING:
-            return decode_nal_sei_frame_packing_arrangement(s);
-        case SEI_TYPE_DISPLAY_ORIENTATION:
-            return decode_nal_sei_display_orientation(s);
-        case SEI_TYPE_PICTURE_TIMING:
-            {
-                int ret = decode_pic_timing(s);
-                av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-                skip_bits(gb, 8 * payload_size);
-                return ret;
-            }
-        case SEI_TYPE_ACTIVE_PARAMETER_SETS:
-            active_parameter_sets(s);
-            av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-            return 0;
-        default:
-            av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-            skip_bits(gb, 8 * payload_size);
-            return 0;
-        }
+        return decode_nal_sei_prefix(s, payload_type, payload_size);
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
-        switch (payload_type) {
-        case SEI_TYPE_DECODED_PICTURE_HASH:
-            return decode_nal_sei_decoded_picture_hash(s);
-        default:
-            av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
-            skip_bits(gb, 8 * payload_size);
-            return 0;
-        }
+        return decode_nal_sei_suffix(s, payload_type, payload_size);
     }
     return 1;
 }
