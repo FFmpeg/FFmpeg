@@ -364,11 +364,16 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
 
 static int opus_decode_subpacket(OpusStreamContext *s,
                                  const uint8_t *buf, int buf_size,
+                                 float **out, int out_size,
                                  int nb_samples)
 {
     int output_samples = 0;
     int flush_needed   = 0;
     int i, j, ret;
+
+    s->out[0]   = out[0];
+    s->out[1]   = out[1];
+    s->out_size = out_size;
 
     /* check if we need to flush the resampler */
     if (swr_is_initialized(s->swr)) {
@@ -447,15 +452,17 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
     const uint8_t *buf  = avpkt->data;
     int buf_size        = avpkt->size;
     int coded_samples   = 0;
-    int decoded_samples = 0;
-    int i, ret;
+    int decoded_samples = INT_MAX;
     int delayed_samples = 0;
+    int i, ret;
 
+    /* calculate the number of delayed samples */
     for (i = 0; i < c->nb_streams; i++) {
         OpusStreamContext *s = &c->streams[i];
         s->out[0] =
         s->out[1] = NULL;
-        delayed_samples = FFMAX(delayed_samples, s->delayed_samples);
+        delayed_samples = FFMAX(delayed_samples,
+                                s->delayed_samples + av_audio_fifo_size(c->sync_buffers[i]));
     }
 
     /* decode the header of the first sub-packet to find out the sample count */
@@ -484,14 +491,43 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
         return ret;
     frame->nb_samples = 0;
 
+    memset(c->out, 0, c->nb_streams * 2 * sizeof(*c->out));
     for (i = 0; i < avctx->channels; i++) {
         ChannelMap *map = &c->channel_maps[i];
         if (!map->copy)
-            c->streams[map->stream_idx].out[map->channel_idx] = (float*)frame->extended_data[i];
+            c->out[2 * map->stream_idx + map->channel_idx] = (float*)frame->extended_data[i];
     }
 
-    for (i = 0; i < c->nb_streams; i++)
-        c->streams[i].out_size = frame->linesize[0];
+    /* read the data from the sync buffers */
+    for (i = 0; i < c->nb_streams; i++) {
+        float          **out = c->out + 2 * i;
+        int sync_size = av_audio_fifo_size(c->sync_buffers[i]);
+
+        float sync_dummy[32];
+        int out_dummy = (!out[0]) | ((!out[1]) << 1);
+
+        if (!out[0])
+            out[0] = sync_dummy;
+        if (!out[1])
+            out[1] = sync_dummy;
+        if (out_dummy && sync_size > FF_ARRAY_ELEMS(sync_dummy))
+            return AVERROR_BUG;
+
+        ret = av_audio_fifo_read(c->sync_buffers[i], (void**)out, sync_size);
+        if (ret < 0)
+            return ret;
+
+        if (out_dummy & 1)
+            out[0] = NULL;
+        else
+            out[0] += ret;
+        if (out_dummy & 2)
+            out[1] = NULL;
+        else
+            out[1] += ret;
+
+        c->out_size[i] = frame->linesize[0] - ret * sizeof(float);
+    }
 
     /* decode each sub-packet */
     for (i = 0; i < c->nb_streams; i++) {
@@ -512,18 +548,29 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
             s->silk_samplerate = get_silk_samplerate(s->packet.config);
         }
 
-        ret = opus_decode_subpacket(&c->streams[i], buf,
-                                    s->packet.data_size, coded_samples);
+        ret = opus_decode_subpacket(&c->streams[i], buf, s->packet.data_size,
+                                    c->out + 2 * i, c->out_size[i], coded_samples);
         if (ret < 0)
             return ret;
-        if (decoded_samples && ret != decoded_samples) {
-            av_log(avctx, AV_LOG_ERROR, "Different numbers of decoded samples "
-                   "in a multi-channel stream\n");
-            return AVERROR_INVALIDDATA;
-        }
-        decoded_samples = ret;
+        c->decoded_samples[i] = ret;
+        decoded_samples       = FFMIN(decoded_samples, ret);
+
         buf      += s->packet.packet_size;
         buf_size -= s->packet.packet_size;
+    }
+
+    /* buffer the extra samples */
+    for (i = 0; i < c->nb_streams; i++) {
+        int buffer_samples = c->decoded_samples[i] - decoded_samples;
+        if (buffer_samples) {
+            float *buf[2] = { c->out[2 * i + 0] ? c->out[2 * i + 0] : (float*)frame->extended_data[0],
+                              c->out[2 * i + 1] ? c->out[2 * i + 1] : (float*)frame->extended_data[0] };
+            buf[0] += buffer_samples;
+            buf[1] += buffer_samples;
+            ret = av_audio_fifo_write(c->sync_buffers[i], (void**)buf, buffer_samples);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     for (i = 0; i < avctx->channels; i++) {
@@ -566,6 +613,8 @@ static av_cold void opus_decode_flush(AVCodecContext *ctx)
             av_audio_fifo_drain(s->celt_delay, av_audio_fifo_size(s->celt_delay));
         swr_close(s->swr);
 
+        av_audio_fifo_drain(c->sync_buffers[i], av_audio_fifo_size(c->sync_buffers[i]));
+
         ff_silk_flush(s->silk);
         ff_celt_flush(s->celt);
     }
@@ -590,6 +639,16 @@ static av_cold int opus_decode_close(AVCodecContext *avctx)
     }
 
     av_freep(&c->streams);
+
+    if (c->sync_buffers) {
+        for (i = 0; i < c->nb_streams; i++)
+            av_audio_fifo_free(c->sync_buffers[i]);
+    }
+    av_freep(&c->sync_buffers);
+    av_freep(&c->decoded_samples);
+    av_freep(&c->out);
+    av_freep(&c->out_size);
+
     c->nb_streams = 0;
 
     av_freep(&c->channel_maps);
@@ -617,7 +676,11 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
 
     /* allocate and init each independent decoder */
     c->streams = av_mallocz_array(c->nb_streams, sizeof(*c->streams));
-    if (!c->streams) {
+    c->out             = av_mallocz_array(c->nb_streams, 2 * sizeof(*c->out));
+    c->out_size        = av_mallocz_array(c->nb_streams, sizeof(*c->out_size));
+    c->sync_buffers    = av_mallocz_array(c->nb_streams, sizeof(*c->sync_buffers));
+    c->decoded_samples = av_mallocz_array(c->nb_streams, sizeof(*c->decoded_samples));
+    if (!c->streams || !c->sync_buffers || !c->decoded_samples || !c->out || !c->out_size) {
         c->nb_streams = 0;
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -662,6 +725,13 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
         s->celt_delay = av_audio_fifo_alloc(avctx->sample_fmt,
                                             s->output_channels, 1024);
         if (!s->celt_delay) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        c->sync_buffers[i] = av_audio_fifo_alloc(avctx->sample_fmt,
+                                                 s->output_channels, 32);
+        if (!c->sync_buffers[i]) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
