@@ -75,6 +75,7 @@ struct hash_impl {
 #include "libavutil/sha512.h"
 #include "libavutil/ripemd.h"
 #include "libavutil/aes.h"
+#include "libavutil/blowfish.h"
 #include "libavutil/camellia.h"
 #include "libavutil/cast5.h"
 #include "libavutil/twofish.h"
@@ -112,6 +113,16 @@ static void run_lavu_aes128(uint8_t *output,
         fatal_error("out of memory");
     av_aes_init(aes, hardcoded_key, 128, 0);
     av_aes_crypt(aes, output, input, size >> 4, NULL, 0);
+}
+
+static void run_lavu_blowfish(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVBlowfish *blowfish;
+    if (!blowfish && !(blowfish = av_blowfish_alloc()))
+        fatal_error("out of memory");
+    av_blowfish_init(blowfish, hardcoded_key, 16);
+    av_blowfish_crypt(blowfish, output, input, size >> 3, NULL, 0);
 }
 
 static void run_lavu_camellia(uint8_t *output,
@@ -153,6 +164,7 @@ static void run_lavu_twofish(uint8_t *output,
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <openssl/aes.h>
+#include <openssl/blowfish.h>
 #include <openssl/camellia.h>
 #include <openssl/cast.h>
 
@@ -179,6 +191,17 @@ static void run_crypto_aes128(uint8_t *output,
     size -= 15;
     for (i = 0; i < size; i += 16)
         AES_encrypt(input + i, output + i, &aes);
+}
+
+static void run_crypto_blowfish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    BF_KEY blowfish;
+    unsigned i;
+
+    BF_set_key(&blowfish, 16, hardcoded_key);
+    for (i = 0; i < size; i += 8)
+        BF_ecb_encrypt(input + i, output + i, &blowfish, 1);
 }
 
 static void run_crypto_camellia(uint8_t *output,
@@ -238,6 +261,16 @@ static void run_gcrypt_aes128(uint8_t *output,
         gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_ECB, 0);
     gcry_cipher_setkey(aes, hardcoded_key, 16);
     gcry_cipher_encrypt(aes, output, size, input, size);
+}
+
+static void run_gcrypt_blowfish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    static gcry_cipher_hd_t blowfish;
+    if (!blowfish)
+        gcry_cipher_open(&blowfish, GCRY_CIPHER_BLOWFISH, GCRY_CIPHER_MODE_ECB, 0);
+    gcry_cipher_setkey(blowfish, hardcoded_key, 16);
+    gcry_cipher_encrypt(blowfish, output, size, input, size);
 }
 
 static void run_gcrypt_camellia(uint8_t *output,
@@ -309,6 +342,17 @@ static void run_tomcrypt_aes128(uint8_t *output,
     size -= 15;
     for (i = 0; i < size; i += 16)
         aes_ecb_encrypt(input + i, output + i, &aes);
+}
+
+static void run_tomcrypt_blowfish(uint8_t *output,
+                                  const uint8_t *input, unsigned size)
+{
+    symmetric_key blowfish;
+    unsigned i;
+
+    blowfish_setup(hardcoded_key, 16, 0, &blowfish);
+    for (i = 0; i < size; i += 8)
+        blowfish_ecb_encrypt(input + i, output + i, &blowfish);
 }
 
 static void run_tomcrypt_camellia(uint8_t *output,
@@ -431,6 +475,7 @@ struct hash_impl implementations[] = {
     IMPL_ALL("AES-128",    aes128,    "crc:ff6bc888")
     IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
     IMPL_ALL("CAST-128",   cast128,   "crc:456aa584")
+    IMPL_ALL("BLOWFISH",   blowfish,  "crc:33e8aa74")
     IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(gcrypt,   "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
