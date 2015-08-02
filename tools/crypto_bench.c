@@ -80,6 +80,7 @@ struct hash_impl {
 #include "libavutil/cast5.h"
 #include "libavutil/twofish.h"
 #include "libavutil/rc4.h"
+#include "libavutil/xtea.h"
 
 #define IMPL_USE_lavu IMPL_USE
 
@@ -164,6 +165,16 @@ static void run_lavu_rc4(uint8_t *output,
         fatal_error("out of memory");
     av_rc4_init(rc4, hardcoded_key, 128, 0);
     av_rc4_crypt(rc4, output, input, size, NULL, 0);
+}
+
+static void run_lavu_xtea(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVXTEA *xtea;
+    if (!xtea && !(xtea = av_xtea_alloc()))
+        fatal_error("out of memory");
+    av_xtea_init(xtea, hardcoded_key);
+    av_xtea_crypt(xtea, output, input, size >> 3, NULL, 0);
 }
 
 /***************************************************************************
@@ -412,6 +423,17 @@ static void run_tomcrypt_twofish(uint8_t *output,
         twofish_ecb_encrypt(input + i, output + i, &twofish);
 }
 
+static void run_tomcrypt_xtea(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    symmetric_key xtea;
+    unsigned i;
+
+    xtea_setup(hardcoded_key, 16, 0, &xtea);
+    for (i = 0; i < size; i += 8)
+        xtea_ecb_encrypt(input + i, output + i, &xtea);
+}
+
 
 #define IMPL_USE_tomcrypt(...) IMPL_USE(__VA_ARGS__)
 #else
@@ -503,6 +525,8 @@ struct hash_impl implementations[] = {
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(lavu,     "RC4",     rc4,     "crc:538d37b2")
     IMPL(crypto,   "RC4",     rc4,     "crc:538d37b2")
+    IMPL(lavu,     "XTEA",    xtea,    "crc:931fc270")
+    IMPL(tomcrypt, "XTEA",    xtea,    "crc:931fc270")
 };
 
 int main(int argc, char **argv)
