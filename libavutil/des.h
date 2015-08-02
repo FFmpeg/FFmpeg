@@ -49,6 +49,7 @@ AVDES *av_des_alloc(void);
  *
  * @param key_bits must be 64 or 192
  * @param decrypt 0 for encryption/CBC-MAC, 1 for decryption
+ * @return zero on success, negative value otherwise
  */
 int av_des_init(struct AVDES *d, const uint8_t *key, int key_bits, int decrypt);
 
