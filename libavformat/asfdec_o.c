@@ -127,7 +127,6 @@ typedef struct ASFContext {
     int64_t sub_dts;
     uint8_t dts_delta; // for subpayloads
     uint32_t packet_size_internal; // packet size stored inside ASFPacket, can be 0
-    int64_t dts;
     int64_t packet_offset; // offset of the current packet inside Data Object
     uint32_t pad_len; // padding after payload
     uint32_t rep_data_len;
@@ -256,13 +255,15 @@ static int asf_read_metadata(AVFormatContext *s, const char *title, uint16_t len
     AVIOContext *pb = s->pb;
 
     avio_get_str16le(pb, len, ch, buflen);
-    if (av_dict_set(&s->metadata, title, ch, 0) < 0)
-        av_log(s, AV_LOG_WARNING, "av_dict_set failed.\n");
+    if (ch[0]) {
+        if (av_dict_set(&s->metadata, title, ch, 0) < 0)
+            av_log(s, AV_LOG_WARNING, "av_dict_set failed.\n");
+    }
 
     return 0;
 }
 
-static int asf_read_value(AVFormatContext *s, uint8_t *name, uint16_t name_len,
+static int asf_read_value(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
                           uint16_t val_len, int type, AVDictionary **met)
 {
     int ret;
@@ -304,8 +305,8 @@ failed:
     return ret;
 }
 
-static int asf_read_generic_value(AVFormatContext *s, uint8_t *name, uint16_t name_len,
-                                  int type, AVDictionary **met)
+static int asf_read_generic_value(AVFormatContext *s, const uint8_t *name,
+                                  uint16_t name_len, int type, AVDictionary **met)
 {
     AVIOContext *pb = s->pb;
     uint64_t value;
@@ -325,7 +326,6 @@ static int asf_read_generic_value(AVFormatContext *s, uint8_t *name, uint16_t na
         value = avio_rl16(pb);
         break;
     default:
-        av_freep(&name);
         return AVERROR_INVALIDDATA;
     }
     snprintf(buf, sizeof(buf), "%"PRIu64, value);
@@ -447,7 +447,7 @@ static void get_id3_tag(AVFormatContext *s, int len)
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 }
 
-static int process_metadata(AVFormatContext *s, uint8_t *name, uint16_t name_len,
+static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
                             uint16_t val_len, uint16_t type, AVDictionary **met)
 {
     int ret;
@@ -475,7 +475,6 @@ static int process_metadata(AVFormatContext *s, uint8_t *name, uint16_t name_len
             break;
         }
     }
-    av_freep(&name);
 
     return 0;
 }
@@ -503,7 +502,9 @@ static int asf_read_ext_content(AVFormatContext *s, const GUIDParseTable *g)
         type    = avio_rl16(pb);
         val_len = avio_rl16(pb);
 
-        if ((ret = process_metadata(s, name, name_len, val_len, type, &s->metadata)) < 0)
+        ret = process_metadata(s, name, name_len, val_len, type, &s->metadata);
+        av_freep(&name);
+        if (ret < 0)
             return ret;
     }
 
@@ -574,11 +575,13 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
         } else {
             if (st_num < ASF_MAX_STREAMS) {
                 if ((ret = process_metadata(s, name, name_len, val_len, type,
-                                            &asf->asf_sd[st_num].asf_met)) < 0)
+                                            &asf->asf_sd[st_num].asf_met)) < 0) {
+                    av_freep(&name);
                     break;
-            } else
-                av_freep(&name);
+                }
+            }
         }
+        av_freep(&name);
     }
 
     align_position(pb, asf->offset, size);
@@ -1246,7 +1249,6 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
             if (asf->stream_index == asf->asf_st[i]->stream_index) {
                 asf_pkt               = &asf->asf_st[i]->pkt;
                 asf_pkt->stream_index = asf->asf_st[i]->index;
-                asf_pkt->dts          = asf->dts;
                 break;
             }
         }
@@ -1453,10 +1455,12 @@ static int asf_read_close(AVFormatContext *s)
     ASFContext *asf = s->priv_data;
     int i;
 
-    for (i = 0; i < asf->nb_streams; i++) {
-        av_free_packet(&asf->asf_st[i]->pkt.avpkt);
-        av_freep(&asf->asf_st[i]);
+    for (i = 0; i < ASF_MAX_STREAMS; i++) {
         av_dict_free(&asf->asf_sd[i].asf_met);
+        if (i < asf->nb_streams) {
+            av_free_packet(&asf->asf_st[i]->pkt.avpkt);
+            av_freep(&asf->asf_st[i]);
+        }
     }
 
     asf->nb_streams = 0;
@@ -1482,7 +1486,6 @@ static void reset_packet_state(AVFormatContext *s)
     asf->nb_sub            = 0;
     asf->prop_flags        = 0;
     asf->sub_dts           = 0;
-    asf->dts               = 0;
     for (i = 0; i < asf->nb_streams; i++) {
         ASFPacket *pkt = &asf->asf_st[i]->pkt;
         pkt->size_left = 0;
