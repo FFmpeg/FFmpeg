@@ -217,7 +217,7 @@ static CFDataRef videotoolbox_esds_extradata_create(AVCodecContext *avctx)
     // decoder configuration descriptor
     bytestream2_put_byteu(&pb, 0x04);     // DecoderConfigDescrTag
     videotoolbox_write_mp4_descr_length(&pb, config_size);
-    bytestream2_put_byteu(&pb, 32);       // object type indication. 32 = CODEC_ID_MPEG4
+    bytestream2_put_byteu(&pb, 32);       // object type indication. 32 = AV_CODEC_ID_MPEG4
     bytestream2_put_byteu(&pb, 0x11);     // stream type
     bytestream2_put_ne24(&pb, 0);         // buffer size
     bytestream2_put_ne32(&pb, 0);         // max bitrate
