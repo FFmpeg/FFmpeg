@@ -99,6 +99,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(TREBLE,         treble,         af);
     REGISTER_FILTER(VOLUME,         volume,         af);
     REGISTER_FILTER(VOLUMEDETECT,   volumedetect,   af);
+    REGISTER_FILTER(APAUSE,         apause,         af);
 
     REGISTER_FILTER(AEVALSRC,       aevalsrc,       asrc);
     REGISTER_FILTER(ANULLSRC,       anullsrc,       asrc);
@@ -233,6 +234,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(YADIF,          yadif,          vf);
     REGISTER_FILTER(ZMQ,            zmq,            vf);
     REGISTER_FILTER(ZOOMPAN,        zoompan,        vf);
+    REGISTER_FILTER(PAUSE,          pause,          vf);
 
     REGISTER_FILTER(CELLAUTO,       cellauto,       vsrc);
     REGISTER_FILTER(COLOR,          color,          vsrc);
