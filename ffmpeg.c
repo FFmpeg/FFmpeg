@@ -434,10 +434,6 @@ static int read_key(void)
         is_pipe = !GetConsoleMode(input_handle, &dw);
     }
 
-    if (stdin->_cnt > 0) {
-        read(0, &ch, 1);
-        return ch;
-    }
     if (is_pipe) {
         /* When running under a GUI, you will end here. */
         if (!PeekNamedPipe(input_handle, NULL, 0, NULL, &nchars, NULL)) {
