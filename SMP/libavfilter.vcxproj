@@ -210,6 +210,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_alphamerge.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_atadenoise.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\bbox.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_bbox.c">
@@ -449,9 +451,9 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_zoompan.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\vsrc_cellauto.c">
-    </ClCompile>
     <ClCompile Include="..\libavfilter\vsrc_testsrc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vsrc_cellauto.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vsrc_life.c">
     </ClCompile>

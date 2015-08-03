@@ -2587,6 +2587,9 @@
     <ClInclude Include="..\libavcodec\version.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavcodec\videotoolbox.h">
+      <Filter>Header Files\libavcodec</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavcodec\vorbis_parser.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>

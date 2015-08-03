@@ -1733,6 +1733,7 @@
     <ClInclude Include="..\libavcodec\vda.h" />
     <ClInclude Include="..\libavcodec\vdpau.h" />
     <ClInclude Include="..\libavcodec\version.h" />
+    <ClInclude Include="..\libavcodec\videotoolbox.h" />
     <ClInclude Include="..\libavcodec\vorbis_parser.h" />
     <ClInclude Include="..\libavcodec\xvmc.h" />
   </ItemGroup>
@@ -1995,6 +1996,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2069,6 +2071,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2150,6 +2153,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2234,6 +2238,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2320,6 +2325,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2404,6 +2410,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2492,6 +2499,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2574,6 +2582,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2663,6 +2672,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2750,6 +2760,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2839,6 +2850,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -2926,6 +2938,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -3008,6 +3021,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
@@ -3089,6 +3103,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\videotoolbox.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
