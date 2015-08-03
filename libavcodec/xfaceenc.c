@@ -124,13 +124,6 @@ static void encode_block(char *bitmap, int w, int h, int level, ProbRangesQueue 
     }
 }
 
-static av_cold int xface_encode_init(AVCodecContext *avctx)
-{
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-
-    return 0;
-}
-
 static void push_integer(BigInt *b, const ProbRange *prange)
 {
     uint8_t r;
@@ -218,19 +211,13 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int xface_encode_close(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 AVCodec ff_xface_encoder = {
     .name           = "xface",
     .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_XFACE,
     .priv_data_size = sizeof(XFaceContext),
-    .init           = xface_encode_init,
-    .close          = xface_encode_close,
     .encode2        = xface_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };

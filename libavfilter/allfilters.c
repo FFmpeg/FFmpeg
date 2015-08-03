@@ -113,6 +113,7 @@ void avfilter_register_all(void)
 
     REGISTER_FILTER(ALPHAEXTRACT,   alphaextract,   vf);
     REGISTER_FILTER(ALPHAMERGE,     alphamerge,     vf);
+    REGISTER_FILTER(ATADENOISE,     atadenoise,     vf);
     REGISTER_FILTER(ASS,            ass,            vf);
     REGISTER_FILTER(BBOX,           bbox,           vf);
     REGISTER_FILTER(BLACKDETECT,    blackdetect,    vf);
@@ -249,6 +250,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ZMQ,            zmq,            vf);
     REGISTER_FILTER(ZOOMPAN,        zoompan,        vf);
 
+    REGISTER_FILTER(ALLYUV,         allyuv,         vsrc);
     REGISTER_FILTER(CELLAUTO,       cellauto,       vsrc);
     REGISTER_FILTER(COLOR,          color,          vsrc);
     REGISTER_FILTER(FREI0R,         frei0r_src,     vsrc);
