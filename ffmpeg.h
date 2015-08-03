@@ -63,6 +63,7 @@ enum HWAccelID {
     HWACCEL_VDPAU,
     HWACCEL_DXVA2,
     HWACCEL_VDA,
+    HWACCEL_VIDEOTOOLBOX,
 };
 
 typedef struct HWAccel {
@@ -520,6 +521,7 @@ extern int frame_bits_per_raw_sample;
 extern AVIOContext *progress_avio;
 extern float max_error_rate;
 extern int vdpau_api_ver;
+extern char *videotoolbox_pixfmt;
 
 extern const AVIOInterruptCB int_cb;
 
@@ -554,5 +556,6 @@ int ffmpeg_parse_options(int argc, char **argv);
 int vdpau_init(AVCodecContext *s);
 int dxva2_init(AVCodecContext *s);
 int vda_init(AVCodecContext *s);
+int videotoolbox_init(AVCodecContext *s);
 
 #endif /* FFMPEG_H */
