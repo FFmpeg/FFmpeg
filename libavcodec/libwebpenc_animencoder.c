@@ -66,7 +66,7 @@ static int libwebp_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             WebPData assembled_data = { 0 };
             ret = WebPAnimEncoderAssemble(s->enc, &assembled_data);
             if (ret) {
-                ret = ff_alloc_packet(pkt, assembled_data.size);
+                ret = ff_alloc_packet2(avctx, pkt, assembled_data.size, assembled_data.size);
                 if (ret < 0)
                     return ret;
                 memcpy(pkt->data, assembled_data.bytes, assembled_data.size);
