@@ -3576,6 +3576,10 @@ static int is_incomplete(InputFile *file) {
 	if (av_gettime_relative() - incomplete_last_check_time < 500000)
 		return incomplete_last_state;
 
+	char *proto = avio_find_protocol_name(file->ctx->filename);
+	if (strcmp(proto,"file"))
+		return 0;
+
 	incomplete_last_check_time = av_gettime_relative();
 
 	ext_len = strlen(INCOMPLETE_FILENAME_SUFFIX);
