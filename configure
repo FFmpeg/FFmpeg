@@ -3551,8 +3551,8 @@ probe_cc(){
         true # no-op to avoid reading stdin in following checks
     elif $_cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
         _type=llvm_gcc
-        gcc_extra_ver=$(expr "$($_cc --version | head -n1)" : '.*\((.*)\)')
-        _ident="llvm-gcc $($_cc -dumpversion) $gcc_extra_ver"
+        gcc_extra_ver=$(expr "$($_cc --version 2>/dev/null | head -n1)" : '.*\((.*)\)')
+        _ident="llvm-gcc $($_cc -dumpversion 2>/dev/null) $gcc_extra_ver"
         _depflags='-MMD -MF $(@:.o=.d) -MT $@'
         _cflags_speed='-O3'
         _cflags_size='-Os'
@@ -3616,7 +3616,7 @@ probe_cc(){
         _flags_filter=tms470_flags
     elif $_cc -v 2>&1 | grep -q clang; then
         _type=clang
-        _ident=$($_cc --version | head -n1)
+        _ident=$($_cc --version 2>/dev/null | head -n1)
         _depflags='-MMD -MF $(@:.o=.d) -MT $@'
         _cflags_speed='-O3'
         _cflags_size='-Os'

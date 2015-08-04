@@ -25,6 +25,15 @@
 
 SECTION .text
 
+%macro PMACSDQL 5
+%if cpuflag(xop)
+    pmacsdql %1, %2, %3, %1
+%else
+    pmuldq   %2, %3
+    paddq    %1, %2
+%endif
+%endmacro
+
 %macro LPC_32 1
 INIT_XMM %1
 cglobal flac_lpc_32, 5,6,5, decoded, coeffs, pred_order, qlevel, len, j
