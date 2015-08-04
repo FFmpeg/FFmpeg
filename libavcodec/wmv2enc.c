@@ -233,5 +233,4 @@ AVCodec ff_wmv2_encoder = {
     .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
-    .priv_class     = &wmv2_class,
 };
