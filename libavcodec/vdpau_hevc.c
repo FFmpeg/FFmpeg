@@ -427,7 +427,6 @@ AVHWAccel ff_hevc_vdpau_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .pix_fmt        = AV_PIX_FMT_VDPAU,
-    .capabilities   = HWACCEL_CODEC_CAP_EXPERIMENTAL,
     .start_frame    = vdpau_hevc_start_frame,
     .end_frame      = vdpau_hevc_end_frame,
     .decode_slice   = vdpau_hevc_decode_slice,
