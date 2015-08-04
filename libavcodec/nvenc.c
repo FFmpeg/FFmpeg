@@ -789,7 +789,18 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         avctx->qmin = -1;
         avctx->qmax = -1;
     } else if (avctx->qmin >= 0 && avctx->qmax >= 0) {
-        ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR;
+        if (!ctx->twopass) {
+            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR;
+        } else if (ctx->twopass == 1 || isLL) {
+            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_2_PASS_VBR;
+
+            if (avctx->codec->id == AV_CODEC_ID_H264) {
+                ctx->encode_config.encodeCodecConfig.h264Config.adaptiveTransformMode = NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE;
+                ctx->encode_config.encodeCodecConfig.h264Config.fmoMode = NV_ENC_H264_FMO_DISABLE;
+            }
+        } else {
+            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR;
+        }
 
         ctx->encode_config.rcParams.enableMinQP = 1;
         ctx->encode_config.rcParams.enableMaxQP = 1;
@@ -1409,7 +1420,7 @@ static const AVOption options[] = {
     { "level", "Set the encoding level restriction (auto, 1.0, 1.0b, 1.1, 1.2, ..., 4.2, 5.0, 5.1)", OFFSET(level), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "tier", "Set the encoding tier (main or high)", OFFSET(tier), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "cbr", "Use cbr encoding mode", OFFSET(cbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
-    { "2pass", "Use 2pass cbr encoding mode", OFFSET(twopass), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE },
+    { "2pass", "Use 2-pass encoding mode (only applicable to CBR and VBR)", OFFSET(twopass), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE },
     { "gpu", "Selects which NVENC capable GPU to use. First GPU is 0, second is 1, and so on.", OFFSET(gpu), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "delay", "Delays frame output by the given amount of frames.", OFFSET(buffer_delay), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 0, INT_MAX, VE },
     { NULL }
