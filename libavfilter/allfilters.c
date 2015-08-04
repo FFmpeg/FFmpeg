@@ -273,6 +273,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(AVECTORSCOPE,   avectorscope,   avf);
     REGISTER_FILTER(CONCAT,         concat,         avf);
     REGISTER_FILTER(SHOWCQT,        showcqt,        avf);
+    REGISTER_FILTER(SHOWFREQS,      showfreqs,      avf);
     REGISTER_FILTER(SHOWSPECTRUM,   showspectrum,   avf);
     REGISTER_FILTER(SHOWVOLUME,     showvolume,     avf);
     REGISTER_FILTER(SHOWWAVES,      showwaves,      avf);

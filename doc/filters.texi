@@ -12704,6 +12704,121 @@ gamma=2:gamma2=2
 
 @end itemize
 
+@section showfreqs
+
+Convert input audio to video output representing the audio power spectrum.
+Audio amplitude is on Y-axis while frequency is on X-axis.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Specify size of video. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default is @code{1024x512}.
+
+@item mode
+Set display mode.
+This set how each frequency bin will be represented.
+
+It accepts the following values:
+@table @samp
+@item line
+@item bar
+@item dot
+@end table
+Default is @code{bar}.
+
+@item ascale
+Set amplitude scale.
+
+It accepts the following values:
+@table @samp
+@item lin
+Linear scale.
+
+@item sqrt
+Square root scale.
+
+@item cbrt
+Cubic root scale.
+
+@item log
+Logarithmic scale.
+@end table
+Default is @code{log}.
+
+@item fscale
+Set frequency scale.
+
+It accepts the following values:
+@table @samp
+@item lin
+Linear scale.
+
+@item log
+Logarithmic scale.
+
+@item rlog
+Reverse logarithmic scale.
+@end table
+Default is @code{lin}.
+
+@item win_size
+Set window size.
+
+It accepts the following values:
+@table @samp
+@item w16
+@item w32
+@item w64
+@item w128
+@item w256
+@item w512
+@item w1024
+@item w2048
+@item w4096
+@item w8192
+@item w16384
+@item w32768
+@item w65536
+@end table
+Default is @code{w2048}
+
+@item win_func
+Set windowing function.
+
+It accepts the following values:
+@table @samp
+@item rect
+@item bartlett
+@item hanning
+@item hamming
+@item blackman
+@item welch
+@item flattop
+@item bharris
+@item bnuttall
+@item bhann
+@item sine
+@item nuttall
+@end table
+Default is @code{hanning}.
+
+@item overlap
+Set window overlap. In range @code{[0, 1]}. Default is @code{1},
+which means optimal overlap for selected window function will be picked.
+
+@item averaging
+Set time averaging. Setting this to 0 will display current maximal peaks.
+Default is @code{1}, which means time averaging is disabled.
+
+@item color
+Specify list of colors separated by space or by '|' which will be used to
+draw channel frequencies. Unrecognized or missing colors will be replaced
+by white color.
+@end table
+
 @section showspectrum
 
 Convert input audio to a video output, representing the audio frequency

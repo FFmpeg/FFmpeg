@@ -85,6 +85,16 @@ int av_fifo_space(const AVFifoBuffer *f);
 
 /**
  * Feed data from an AVFifoBuffer to a user-supplied callback.
+ * Similar as av_fifo_gereric_read but without discarding data.
+ * @param f AVFifoBuffer to read from
+ * @param buf_size number of bytes to read
+ * @param func generic read function
+ * @param dest data destination
+ */
+int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size, void (*func)(void*, void*, int));
+
+/**
+ * Feed data from an AVFifoBuffer to a user-supplied callback.
  * @param f AVFifoBuffer to read from
  * @param buf_size number of bytes to read
  * @param func generic read function
