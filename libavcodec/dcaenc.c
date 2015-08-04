@@ -939,6 +939,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     for (i = 0; i < SUBFRAMES; i++)
         put_subframe(c, i);
 
+
+    for (i = put_bits_count(&c->pb); i < 8*c->frame_size; i++)
+        put_bits(&c->pb, 1, 0);
+
     flush_put_bits(&c->pb);
 
     avpkt->pts      = frame->pts;
