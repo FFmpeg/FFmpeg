@@ -759,14 +759,14 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         ctx->encode_config.rcParams.maxBitRate = avctx->rc_max_rate;
 
     if (lossless) {
-      ctx->encode_config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
-      ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-      ctx->encode_config.rcParams.constQP.qpInterB = 0;
-      ctx->encode_config.rcParams.constQP.qpInterP = 0;
-      ctx->encode_config.rcParams.constQP.qpIntra = 0;
+        ctx->encode_config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
+        ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
+        ctx->encode_config.rcParams.constQP.qpInterB = 0;
+        ctx->encode_config.rcParams.constQP.qpInterP = 0;
+        ctx->encode_config.rcParams.constQP.qpIntra = 0;
 
-      avctx->qmin = -1;
-      avctx->qmax = -1;
+        avctx->qmin = -1;
+        avctx->qmax = -1;
     } else if (ctx->cbr) {
         if (!ctx->twopass) {
             ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR;
