@@ -67,6 +67,10 @@ static int swf_probe(AVProbeData *p)
         && AV_RB24(p->buf) != AV_RB24("FWS"))
         return 0;
 
+    if (   AV_RB24(p->buf) == AV_RB24("CWS")
+        && p->buf[3] <= 20)
+        return AVPROBE_SCORE_MAX / 4 + 1;
+
     init_get_bits8(&gb, p->buf + 3, p->buf_size - 3);
 
     skip_bits(&gb, 40);
