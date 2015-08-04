@@ -1174,7 +1174,6 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
         if (depth == 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid clut depth 0x%x!\n", *buf);
-            return 0;
         }
 
         full_range = (*buf++) & 1;
