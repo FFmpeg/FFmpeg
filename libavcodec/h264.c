@@ -1844,7 +1844,8 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         if (avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)
             decode_postinit(h, 1);
 
-        ff_h264_field_end(h, &h->slice_ctx[0], 0);
+        if ((ret = ff_h264_field_end(h, &h->slice_ctx[0], 0)) < 0)
+            return ret;
 
         /* Wait for second field. */
         *got_frame = 0;

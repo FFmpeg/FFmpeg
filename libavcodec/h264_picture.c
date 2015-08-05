@@ -172,7 +172,8 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     }
 
     if (avctx->hwaccel) {
-        if (avctx->hwaccel->end_frame(avctx) < 0)
+        err = avctx->hwaccel->end_frame(avctx);
+        if (err < 0)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
     }
