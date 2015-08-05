@@ -70,7 +70,7 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     return 0;
 }
 
-int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession session)
+static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession session)
 {
     mfxVideoParam param = { { 0 } };
     int ret;
@@ -413,7 +413,7 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
             q->nb_ext_buffers = user_ctx->nb_ext_buffers;
         }
 
-        ret = ff_qsv_decode_init(avctx, q, session);
+        ret = qsv_decode_init(avctx, q, session);
         if (ret < 0)
             goto reinit_fail;
     }
