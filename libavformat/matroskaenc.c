@@ -2025,7 +2025,8 @@ static int mkv_write_trailer(AVFormatContext *s)
 
         // update stream durations
         if (mkv->stream_durations) {
-            for (int i = 0; i < s->nb_streams; ++i) {
+            int i;
+            for (i = 0; i < s->nb_streams; ++i) {
                 AVStream *st = s->streams[i];
                 double duration_sec = mkv->stream_durations[i] * av_q2d(st->time_base);
                 char duration_string[20] = "";
