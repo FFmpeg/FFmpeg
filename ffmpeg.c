@@ -434,10 +434,6 @@ static int read_key(void)
         is_pipe = !GetConsoleMode(input_handle, &dw);
     }
 
-    if (stdin->_cnt > 0) {
-        read(0, &ch, 1);
-        return ch;
-    }
     if (is_pipe) {
         /* When running under a GUI, you will end here. */
         if (!PeekNamedPipe(input_handle, NULL, 0, NULL, &nchars, NULL)) {
@@ -3428,9 +3424,17 @@ static int check_keyboard_interaction(int64_t cur_time)
             if(!debug) debug = 1;
             while(debug & (FF_DEBUG_DCT_COEFF|FF_DEBUG_VIS_QP|FF_DEBUG_VIS_MB_TYPE)) //unsupported, would just crash
                 debug += debug;
-        }else
-            if(scanf("%d", &debug)!=1)
+        }else{
+            char buf[32];
+            int k = 0;
+            i = 0;
+            while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf)-1)
+                if (k > 0)
+                    buf[i++] = k;
+            buf[i] = 0;
+            if (k <= 0 || sscanf(buf, "%d", &debug)!=1)
                 fprintf(stderr,"error parsing debug value\n");
+        }
         for(i=0;i<nb_input_streams;i++) {
             input_streams[i]->st->codec->debug = debug;
         }

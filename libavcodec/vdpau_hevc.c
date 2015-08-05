@@ -213,7 +213,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
         /** Corresponds to specification field, NumDeltaPocs[RefRpsIdx].
             Only applicable when short_term_ref_pic_set_sps_flag == 0.
             Implementations will ignore this value in other cases. See 7.4.8. */
-        info->NumDeltaPocsOfRefRpsIdx = sh->short_term_rps->num_delta_pocs;
+        info->NumDeltaPocsOfRefRpsIdx = sh->short_term_rps->rps_idx_num_delta_pocs;
     }
     /** Section 7.6.3.1 of the H.265/HEVC Specification defines the syntax of
         the slice_segment_header. This header contains information that
@@ -427,7 +427,6 @@ AVHWAccel ff_hevc_vdpau_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .pix_fmt        = AV_PIX_FMT_VDPAU,
-    .capabilities   = HWACCEL_CODEC_CAP_EXPERIMENTAL,
     .start_frame    = vdpau_hevc_start_frame,
     .end_frame      = vdpau_hevc_end_frame,
     .decode_slice   = vdpau_hevc_decode_slice,

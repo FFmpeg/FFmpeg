@@ -21,6 +21,7 @@ MIPSFPU-OBJS-$(CONFIG_AAC_ENCODER)        += mips/iirfilter_mips.o
 OBJS-$(CONFIG_HEVC_DECODER)               += mips/hevcdsp_init_mips.o      \
                                              mips/hevcpred_init_mips.o
 OBJS-$(CONFIG_VP9_DECODER)                += mips/vp9dsp_init_mips.o
+OBJS-$(CONFIG_VP8_DECODER)                += mips/vp8dsp_init_mips.o
 OBJS-$(CONFIG_H264DSP)                    += mips/h264dsp_init_mips.o
 OBJS-$(CONFIG_H264QPEL)                   += mips/h264qpel_init_mips.o
 OBJS-$(CONFIG_H264CHROMA)                 += mips/h264chroma_init_mips.o
@@ -47,6 +48,9 @@ MSA-OBJS-$(CONFIG_VP9_DECODER)            += mips/vp9_mc_msa.o             \
                                              mips/vp9_lpf_msa.o            \
                                              mips/vp9_idct_msa.o           \
                                              mips/vp9_intra_msa.o
+MSA-OBJS-$(CONFIG_VP8_DECODER)            += mips/vp8_mc_msa.o             \
+                                             mips/vp8_idct_msa.o           \
+                                             mips/vp8_lpf_msa.o
 MSA-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_msa.o            \
                                              mips/h264idct_msa.o
 MSA-OBJS-$(CONFIG_H264QPEL)               += mips/h264qpel_msa.o

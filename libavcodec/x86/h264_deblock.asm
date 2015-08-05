@@ -446,13 +446,13 @@ cglobal deblock_%1_luma_8, 5,5,8,2*%2
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
 INIT_MMX cpuname
-cglobal deblock_h_luma_8, 0,5,8,0x60+HAVE_ALIGNED_STACK*12
+cglobal deblock_h_luma_8, 0,5,8,0x60+12
     mov    r0, r0mp
     mov    r3, r1m
     lea    r4, [r3*3]
     sub    r0, 4
     lea    r1, [r0+r4]
-%define pix_tmp esp+12*HAVE_ALIGNED_STACK
+%define pix_tmp esp+12
 
     ; transpose 6x16 -> tmp space
     TRANSPOSE6x8_MEM  PASS8ROWS(r0, r1, r3, r4), pix_tmp
