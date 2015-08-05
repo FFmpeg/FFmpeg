@@ -38,7 +38,7 @@
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
 
-const char *filter_descr = "scale=78:24";
+const char *filter_descr = "[in] scale=78:24 [scl]; [scl] transpose=cclock";
 
 static AVFormatContext *fmt_ctx;
 static AVCodecContext *dec_ctx;
