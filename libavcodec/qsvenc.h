@@ -49,7 +49,8 @@ typedef struct QSVEncContext {
     mfxFrameAllocRequest req;
 
     mfxExtCodingOption  extco;
-    mfxExtBuffer *extparam[1];
+    mfxExtBuffer  *extparam_internal[1];
+    mfxExtBuffer **extparam;
 
     AVFifoBuffer *async_fifo;
 

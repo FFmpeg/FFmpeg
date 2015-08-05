@@ -134,10 +134,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extco.CAVLC                = avctx->coder_type == FF_CODER_TYPE_VLC ?
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
 
-        q->extparam[0] = (mfxExtBuffer *)&q->extco;
-
-        q->param.ExtParam    = q->extparam;
-        q->param.NumExtParam = FF_ARRAY_ELEMS(q->extparam);
+        q->extparam_internal[0] = (mfxExtBuffer *)&q->extco;
     }
 
     return 0;
@@ -226,6 +223,35 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error querying the encoding parameters\n");
         return ff_qsv_error(ret);
+    }
+
+    if (avctx->hwaccel_context) {
+        AVQSVContext *qsv = avctx->hwaccel_context;
+        int i, j;
+
+        q->extparam = av_mallocz_array(qsv->nb_ext_buffers + FF_ARRAY_ELEMS(q->extparam_internal),
+                                       sizeof(*q->extparam));
+        if (!q->extparam)
+            return AVERROR(ENOMEM);
+
+        q->param.ExtParam = q->extparam;
+        for (i = 0; i < qsv->nb_ext_buffers; i++)
+            q->param.ExtParam[i] = qsv->ext_buffers[i];
+        q->param.NumExtParam = qsv->nb_ext_buffers;
+
+        for (i = 0; i < FF_ARRAY_ELEMS(q->extparam_internal); i++) {
+            for (j = 0; j < qsv->nb_ext_buffers; j++) {
+                if (qsv->ext_buffers[j]->BufferId == q->extparam_internal[i]->BufferId)
+                    break;
+            }
+            if (j < qsv->nb_ext_buffers)
+                continue;
+
+            q->param.ExtParam[q->param.NumExtParam++] = q->extparam_internal[i];
+        }
+    } else {
+        q->param.ExtParam    = q->extparam_internal;
+        q->param.NumExtParam = FF_ARRAY_ELEMS(q->extparam_internal);
     }
 
     ret = MFXVideoENCODE_Init(q->session, &q->param);
@@ -511,6 +537,8 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     }
     av_fifo_free(q->async_fifo);
     q->async_fifo = NULL;
+
+    av_freep(&q->extparam);
 
     return 0;
 }
