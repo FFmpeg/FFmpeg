@@ -269,4 +269,5 @@ AVCodec ff_hevc_qsv_encoder = {
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,
     .defaults       = qsv_enc_defaults,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
