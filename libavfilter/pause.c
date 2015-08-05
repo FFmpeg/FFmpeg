@@ -45,6 +45,7 @@ typedef struct PauseContext {
     int start_paused;
     int64_t last_pts, first_pts, skipped_pts_duration;
     AVRational tb;
+    double position;
 } PauseContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -54,6 +55,7 @@ static av_cold int init(AVFilterContext *ctx)
     s->skipped_pts_duration = 0;
     s->last_pts = AV_NOPTS_VALUE;
     s->first_pts = AV_NOPTS_VALUE;
+    s->position = 0;
 
     return 0;
 }
@@ -98,8 +100,10 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
 #if CONFIG_PAUSE_FILTER
 static int pause_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
-    AVFilterContext *ctx = inlink->dst;
+	int64_t progress;
+	AVFilterContext *ctx = inlink->dst;
     PauseContext       *s = ctx->priv;
+
 
     /* init last pts */
     if (s->last_pts == AV_NOPTS_VALUE)
@@ -126,7 +130,12 @@ static int pause_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (frame->pts != AV_NOPTS_VALUE) {
     	s->last_pts = frame->pts;
     	frame->pts -= s->first_pts + s->skipped_pts_duration;
+    	s->position = ((double) av_rescale_q(frame->pts, AV_TIME_BASE_Q, s->tb)) / ((double)1000000);
+    } else {
+    	s->position += ((double)s->tb.num) / ((double)s->tb.den);
     }
+
+    fprintf(stderr,"position:%0.2f\n",s->position);
 
     return ff_filter_frame(ctx->outputs[0], frame);
 }
