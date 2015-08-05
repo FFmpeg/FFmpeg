@@ -812,7 +812,7 @@ typedef struct RcOverride{
 /**
  * timecode is in drop frame format. DEPRECATED!!!!
  */
-#define AV_CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000
+#define AV_CODEC_FLAG2_DROP_FRAME_TIMECODE (1 << 13)
 
 /**
  * Input bitstream might be truncated at a packet boundaries
@@ -827,15 +827,15 @@ typedef struct RcOverride{
 /**
  * Show all frames before the first keyframe
  */
-#define AV_CODEC_FLAG2_SHOW_ALL      0x00400000
+#define AV_CODEC_FLAG2_SHOW_ALL       (1 << 22)
 /**
  * Export motion vectors through frame side data
  */
-#define AV_CODEC_FLAG2_EXPORT_MVS    0x10000000
+#define AV_CODEC_FLAG2_EXPORT_MVS     (1 << 28)
 /**
  * Do not skip samples and export skip information as frame side data
  */
-#define AV_CODEC_FLAG2_SKIP_MANUAL   0x20000000
+#define AV_CODEC_FLAG2_SKIP_MANUAL    (1 << 29)
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
