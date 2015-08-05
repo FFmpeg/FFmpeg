@@ -1019,14 +1019,14 @@ typedef struct RcOverride{
 /* /Fx */
 /* codec capabilities */
 
-#define CODEC_CAP_DRAW_HORIZ_BAND 0x0001 ///< Decoder can use draw_horiz_band callback.
+#define CODEC_CAP_DRAW_HORIZ_BAND AV_CODEC_CAP_DRAW_HORIZ_BAND ///< Decoder can use draw_horiz_band callback.
 /**
  * Codec uses get_buffer() for allocating buffers and supports custom allocators.
  * If not set, it might not use get_buffer() at all or use operations that
  * assume the buffer was allocated by avcodec_default_get_buffer.
  */
-#define CODEC_CAP_DR1             0x0002
-#define CODEC_CAP_TRUNCATED       0x0008
+#define CODEC_CAP_DR1             AV_CODEC_CAP_DR1
+#define CODEC_CAP_TRUNCATED       AV_CODEC_CAP_TRUNCATED
 #if FF_API_XVMC
 /* Codec can export data for HW decoding. This flag indicates that
  * the codec would call get_format() with list that might contain HW accelerated
@@ -1060,17 +1060,17 @@ typedef struct RcOverride{
  *       each output packet. If this flag is not set, the pts and duration will
  *       be determined by libavcodec from the input frame.
  */
-#define CODEC_CAP_DELAY           0x0020
+#define CODEC_CAP_DELAY           AV_CODEC_CAP_DELAY
 /**
  * Codec can be fed a final frame with a smaller size.
  * This can be used to prevent truncation of the last audio samples.
  */
-#define CODEC_CAP_SMALL_LAST_FRAME 0x0040
+#define CODEC_CAP_SMALL_LAST_FRAME AV_CODEC_CAP_SMALL_LAST_FRAME
 #if FF_API_CAP_VDPAU
 /**
  * Codec can export data for HW decoding (VDPAU).
  */
-#define CODEC_CAP_HWACCEL_VDPAU    0x0080
+#define CODEC_CAP_HWACCEL_VDPAU    AV_CODEC_CAP_HWACCEL_VDPAU
 #endif
 /**
  * Codec can output multiple frames per AVPacket
@@ -1083,16 +1083,16 @@ typedef struct RcOverride{
  * prohibiting stream copy in many cases thus it should only be considered
  * as a last resort.
  */
-#define CODEC_CAP_SUBFRAMES        0x0100
+#define CODEC_CAP_SUBFRAMES        AV_CODEC_CAP_SUBFRAMES
 /**
  * Codec is experimental and is thus avoided in favor of non experimental
  * encoders
  */
-#define CODEC_CAP_EXPERIMENTAL     0x0200
+#define CODEC_CAP_EXPERIMENTAL     AV_CODEC_CAP_EXPERIMENTAL
 /**
  * Codec should fill in channel configuration and samplerate instead of container
  */
-#define CODEC_CAP_CHANNEL_CONF     0x0400
+#define CODEC_CAP_CHANNEL_CONF     AV_CODEC_CAP_CHANNEL_CONF
 #if FF_API_NEG_LINESIZES
 /**
  * @deprecated no codecs use this capability
@@ -1102,31 +1102,31 @@ typedef struct RcOverride{
 /**
  * Codec supports frame-level multithreading.
  */
-#define CODEC_CAP_FRAME_THREADS    0x1000
+#define CODEC_CAP_FRAME_THREADS    AV_CODEC_CAP_FRAME_THREADS
 /**
  * Codec supports slice-based (or partition-based) multithreading.
  */
-#define CODEC_CAP_SLICE_THREADS    0x2000
+#define CODEC_CAP_SLICE_THREADS    AV_CODEC_CAP_SLICE_THREADS
 /**
  * Codec supports changed parameters at any point.
  */
-#define CODEC_CAP_PARAM_CHANGE     0x4000
+#define CODEC_CAP_PARAM_CHANGE     AV_CODEC_CAP_PARAM_CHANGE
 /**
  * Codec supports avctx->thread_count == 0 (auto).
  */
-#define CODEC_CAP_AUTO_THREADS     0x8000
+#define CODEC_CAP_AUTO_THREADS     AV_CODEC_CAP_AUTO_THREADS
 /**
  * Audio encoder supports receiving a different number of samples in each call.
  */
-#define CODEC_CAP_VARIABLE_FRAME_SIZE 0x10000
+#define CODEC_CAP_VARIABLE_FRAME_SIZE AV_CODEC_CAP_VARIABLE_FRAME_SIZE
 /**
  * Codec is intra only.
  */
-#define CODEC_CAP_INTRA_ONLY       0x40000000
+#define CODEC_CAP_INTRA_ONLY       AV_CODEC_CAP_INTRA_ONLY
 /**
  * Codec is lossless.
  */
-#define CODEC_CAP_LOSSLESS         0x80000000
+#define CODEC_CAP_LOSSLESS         AV_CODEC_CAP_LOSSLESS
 
 /**
  * HWAccel is experimental and is thus avoided in favor of non experimental
