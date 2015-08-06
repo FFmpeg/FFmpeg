@@ -52,6 +52,12 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
     return ff_qsv_decode(avctx, &s->qsv, frame, got_frame, avpkt);
 }
 
+static void qsv_decode_flush(AVCodecContext *avctx)
+{
+    QSVVC1Context *s = avctx->priv_data;
+    ff_qsv_decode_reset(avctx, &s->qsv);
+}
+
 AVHWAccel ff_vc1_qsv_hwaccel = {
     .name           = "vc1_qsv",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -81,7 +87,7 @@ AVCodec ff_vc1_qsv_decoder = {
     .id             = AV_CODEC_ID_VC1,
     .init           = NULL,
     .decode         = qsv_decode_frame,
-    .flush          = NULL,
+    .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
     .capabilities   = AV_CODEC_CAP_DELAY,
     .priv_class     = &class,
