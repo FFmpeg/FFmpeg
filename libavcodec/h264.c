@@ -1274,11 +1274,8 @@ static int get_avc_nalsize(H264Context *h, const uint8_t *buf,
     int i, nalsize = 0;
 
     if (*buf_index >= buf_size - h->nal_length_size) {
-        av_log(h->avctx, AV_LOG_ERROR,
-               "AVC: The buffer size %d is too short to read "
-               "the nal length size %d at the offset %d.\n",
-               buf_size, h->nal_length_size, *buf_index);
-        return AVERROR_INVALIDDATA;
+        // the end of the buffer is reached, refill it.
+        return AVERROR(EAGAIN);
     }
 
     for (i = 0; i < h->nal_length_size; i++)
