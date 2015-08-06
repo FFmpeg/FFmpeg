@@ -5,7 +5,8 @@ NAME = swscale
 HEADERS = swscale.h                                                     \
           version.h                                                     \
 
-OBJS = hscale_fast_bilinear.o                           \
+OBJS = alphablend.o                                     \
+       hscale_fast_bilinear.o                           \
        input.o                                          \
        options.o                                        \
        output.o                                         \

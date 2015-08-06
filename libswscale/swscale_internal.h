@@ -75,6 +75,12 @@ typedef enum SwsDither {
     NB_SWS_DITHER,
 } SwsDither;
 
+typedef enum SwsAlphaBlend {
+    SWS_ALPHA_BLEND_NONE  = 0,
+    SWS_ALPHA_BLEND_UNIFORM,
+    SWS_ALPHA_BLEND_NB,
+} SwsAlphaBlend;
+
 typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t *src[],
                        int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t *dst[], int dstStride[]);
@@ -611,6 +617,8 @@ typedef struct SwsContext {
     int needs_hcscale; ///< Set if there are chroma planes to be converted.
 
     SwsDither dither;
+
+    SwsAlphaBlend alphablend;
 } SwsContext;
 //FIXME check init (where 0)
 
@@ -900,6 +908,10 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
 struct SwsContext *sws_alloc_set_opts(int srcW, int srcH, enum AVPixelFormat srcFormat,
                                       int dstW, int dstH, enum AVPixelFormat dstFormat,
                                       int flags, const double *param);
+
+int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
+                          int srcStride[], int srcSliceY, int srcSliceH,
+                          uint8_t *dst[], int dstStride[]);
 
 static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
                                int alpha, int bits, const int big_endian)
