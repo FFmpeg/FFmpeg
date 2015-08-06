@@ -40,3 +40,4 @@ Coding examples are available in the **doc/examples** directory.
 
 FFmpeg codebase is mainly LGPL-licensed with optional components licensed under
 GPL. Please refer to the LICENSE file for detailed information.
+
