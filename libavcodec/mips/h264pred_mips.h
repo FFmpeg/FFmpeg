@@ -21,11 +21,8 @@
 #ifndef H264_PRED_MIPS_H
 #define H264_PRED_MIPS_H
 
-#include "libavutil/attributes.h"
-#include "libavutil/avassert.h"
-#include "libavcodec/avcodec.h"
+#include "constants.h"
 #include "libavcodec/h264pred.h"
-#include "libavcodec/bit_depth_template.c"
 
 void ff_pred16x16_vertical_8_mmi(uint8_t *src, ptrdiff_t stride);
 void ff_pred16x16_horizontal_8_mmi(uint8_t *src, ptrdiff_t stride);
@@ -34,8 +31,6 @@ void ff_pred8x8l_top_dc_8_mmi(uint8_t *src, int has_topleft, int has_topright,
         ptrdiff_t stride);
 void ff_pred8x8l_dc_8_mmi(uint8_t *src, int has_topleft, int has_topright,
         ptrdiff_t stride);
-void ff_pred8x8l_horizontal_8_mmi(uint8_t *src, int has_topleft,
-        int has_topright, ptrdiff_t stride);
 void ff_pred8x8l_vertical_8_mmi(uint8_t *src, int has_topleft,
         int has_topright, ptrdiff_t stride);
 void ff_pred4x4_dc_8_mmi(uint8_t *src, const uint8_t *topright,

@@ -1723,9 +1723,11 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (s->avctx->hwaccel &&
             (s->avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD)) {
-            if (s->avctx->hwaccel->end_frame(s->avctx) < 0)
+            if ((ret = s->avctx->hwaccel->end_frame(s->avctx)) < 0) {
                 av_log(avctx, AV_LOG_ERROR,
                        "hardware accelerator failed to decode first field\n");
+                return ret;
+            }
         }
 
         for (i = 0; i < 4; i++) {
@@ -2082,9 +2084,12 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
         return 0;
 
     if (s->avctx->hwaccel) {
-        if (s->avctx->hwaccel->end_frame(s->avctx) < 0)
+        int ret = s->avctx->hwaccel->end_frame(s->avctx);
+        if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
+            return ret;
+        }
     }
 
     /* end of slice reached */

@@ -1437,9 +1437,11 @@ AVX_INSTR pfmul, 3dnow, 1, 0, 1
     %macro %1 4-7 %1, %2, %3
         %if cpuflag(xop)
             v%5 %1, %2, %3, %4
-        %else
+        %elifnidn %1, %4
             %6 %1, %2, %3
             %7 %1, %4
+        %else
+            %error non-xop emulation of ``%5 %1, %2, %3, %4'' is not supported
         %endif
     %endmacro
 %endmacro

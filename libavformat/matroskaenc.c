@@ -44,6 +44,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/rational.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/sha.h"
 #include "libavutil/stereo3d.h"
@@ -130,6 +131,9 @@ typedef struct MatroskaMuxContext {
     int wrote_chapters;
 
     int64_t last_track_timestamp[MAX_TRACKS];
+
+    int64_t* stream_durations;
+    int64_t* stream_duration_offsets;
 
     int allow_raw_vfw;
 } MatroskaMuxContext;
@@ -1151,12 +1155,12 @@ static int mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
     return 0;
 }
 
-static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int elementid,
-                         unsigned int uid, ebml_master *tags)
+static int mkv_write_tag_targets(AVFormatContext *s,
+                                 unsigned int elementid, unsigned int uid,
+                                 ebml_master *tags, ebml_master* tag)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ebml_master tag, targets;
-    AVDictionaryEntry *t = NULL;
+    ebml_master targets;
     int ret;
 
     if (!tags->pos) {
@@ -1166,11 +1170,24 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int eleme
         *tags = start_ebml_master(s->pb, MATROSKA_ID_TAGS, 0);
     }
 
-    tag     = start_ebml_master(s->pb, MATROSKA_ID_TAG,        0);
+    *tag     = start_ebml_master(s->pb, MATROSKA_ID_TAG,        0);
     targets = start_ebml_master(s->pb, MATROSKA_ID_TAGTARGETS, 0);
     if (elementid)
         put_ebml_uint(s->pb, elementid, uid);
     end_ebml_master(s->pb, targets);
+    return 0;
+}
+
+static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int elementid,
+                         unsigned int uid, ebml_master *tags)
+{
+    ebml_master tag;
+    int ret;
+    AVDictionaryEntry *t = NULL;
+
+    ret = mkv_write_tag_targets(s, elementid, uid, tags, &tag);
+    if (ret < 0)
+        return ret;
 
     while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
         if (av_strcasecmp(t->key, "title") &&
@@ -1218,6 +1235,25 @@ static int mkv_write_tags(AVFormatContext *s)
 
         ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &tags);
         if (ret < 0) return ret;
+    }
+
+    if (!mkv->is_live) {
+        for (i = 0; i < s->nb_streams; i++) {
+            ebml_master tag_target;
+            ebml_master tag;
+
+            mkv_write_tag_targets(s, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &tags, &tag_target);
+
+            tag = start_ebml_master(s->pb, MATROSKA_ID_SIMPLETAG, 0);
+            put_ebml_string(s->pb, MATROSKA_ID_TAGNAME, "DURATION");
+            mkv->stream_duration_offsets[i] = avio_tell(s->pb);
+
+            // Reserve space to write duration as a 20-byte string.
+            // 2 (ebml id) + 1 (data size) + 20 (data)
+            put_ebml_void(s->pb, 23);
+            end_ebml_master(s->pb, tag);
+            end_ebml_master(s->pb, tag_target);
+        }
     }
 
     for (i = 0; i < s->nb_chapters; i++) {
@@ -1429,6 +1465,10 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_void(pb, 11);              // assumes double-precision float to be written
     }
     end_ebml_master(pb, segment_info);
+
+    // initialize stream_duration fields
+    mkv->stream_durations = av_mallocz(s->nb_streams * sizeof(int64_t));
+    mkv->stream_duration_offsets = av_mallocz(s->nb_streams * sizeof(int64_t));
 
     ret = mkv_write_tracks(s);
     if (ret < 0)
@@ -1801,6 +1841,11 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
     }
 
     mkv->duration = FFMAX(mkv->duration, ts + duration);
+
+    if (mkv->stream_durations)
+        mkv->stream_durations[pkt->stream_index] =
+            FFMAX(mkv->stream_durations[pkt->stream_index], ts + duration);
+
     return 0;
 }
 
@@ -1978,6 +2023,29 @@ static int mkv_write_trailer(AVFormatContext *s)
         avio_seek(pb, mkv->duration_offset, SEEK_SET);
         put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
 
+        // update stream durations
+        if (mkv->stream_durations) {
+            int i;
+            for (i = 0; i < s->nb_streams; ++i) {
+                AVStream *st = s->streams[i];
+                double duration_sec = mkv->stream_durations[i] * av_q2d(st->time_base);
+                char duration_string[20] = "";
+
+                av_log(s, AV_LOG_DEBUG, "stream %d end duration = %" PRIu64 "\n", i,
+                       mkv->stream_durations[i]);
+
+                if (!mkv->is_live && mkv->stream_duration_offsets[i] > 0) {
+                    avio_seek(pb, mkv->stream_duration_offsets[i], SEEK_SET);
+
+                    snprintf(duration_string, 20, "%02d:%02d:%012.9f",
+                             (int) duration_sec / 3600, ((int) duration_sec / 60) % 60,
+                             fmod(duration_sec, 60));
+
+                    put_ebml_binary(pb, MATROSKA_ID_TAGSTRING, duration_string, 20);
+                }
+            }
+        }
+
         avio_seek(pb, currentpos, SEEK_SET);
     }
 
@@ -1987,6 +2055,8 @@ static int mkv_write_trailer(AVFormatContext *s)
     av_freep(&mkv->tracks);
     av_freep(&mkv->cues->entries);
     av_freep(&mkv->cues);
+    av_freep(&mkv->stream_durations);
+    av_freep(&mkv->stream_duration_offsets);
 
     return 0;
 }

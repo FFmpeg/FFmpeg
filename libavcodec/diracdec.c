@@ -83,6 +83,7 @@ typedef struct {
     int interpolated[3];    /* 1 if hpel[] is valid */
     uint8_t *hpel[3][4];
     uint8_t *hpel_base[3][4];
+    int reference;
 } DiracFrame;
 
 typedef struct {
@@ -1771,13 +1772,13 @@ static int dirac_decode_picture_header(DiracContext *s)
     }
 
     /* retire the reference frames that are not used anymore */
-    if (s->current_picture->avframe->reference) {
+    if (s->current_picture->reference) {
         retire = (picnum + dirac_get_se_golomb(gb)) & 0xFFFFFFFF;
         if (retire != picnum) {
             DiracFrame *retire_pic = remove_frame(s->ref_frames, retire);
 
             if (retire_pic)
-                retire_pic->avframe->reference &= DELAYED_PIC_REF;
+                retire_pic->reference &= DELAYED_PIC_REF;
             else
                 av_log(s->avctx, AV_LOG_DEBUG, "Frame to retire not found\n");
         }
@@ -1785,7 +1786,7 @@ static int dirac_decode_picture_header(DiracContext *s)
         /* if reference array is full, remove the oldest as per the spec */
         while (add_frame(s->ref_frames, MAX_REFERENCE_FRAMES, s->current_picture)) {
             av_log(s->avctx, AV_LOG_ERROR, "Reference frame overflow\n");
-            remove_frame(s->ref_frames, s->ref_frames[0]->avframe->display_picture_number)->avframe->reference &= DELAYED_PIC_REF;
+            remove_frame(s->ref_frames, s->ref_frames[0]->avframe->display_picture_number)->reference &= DELAYED_PIC_REF;
         }
     }
 
@@ -1822,7 +1823,7 @@ static int get_delayed_pic(DiracContext *s, AVFrame *picture, int *got_frame)
         s->delay_frames[i] = s->delay_frames[i+1];
 
     if (out) {
-        out->avframe->reference ^= DELAYED_PIC_REF;
+        out->reference ^= DELAYED_PIC_REF;
         *got_frame = 1;
         if((ret = av_frame_ref(picture, out->avframe)) < 0)
             return ret;
@@ -1908,7 +1909,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         s->num_refs    = tmp;
         s->is_arith    = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()      */
         s->low_delay   = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()  */
-        pic->avframe->reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
+        pic->reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
         pic->avframe->key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
         pic->avframe->pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
 
@@ -1947,7 +1948,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     /* release unused frames */
     for (i = 0; i < MAX_FRAMES; i++)
-        if (s->all_frames[i].avframe->data[0] && !s->all_frames[i].avframe->reference) {
+        if (s->all_frames[i].avframe->data[0] && !s->all_frames[i].reference) {
             av_frame_unref(s->all_frames[i].avframe);
             memset(s->all_frames[i].interpolated, 0, sizeof(s->all_frames[i].interpolated));
         }
@@ -1997,7 +1998,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (s->current_picture->avframe->display_picture_number > s->frame_number) {
         DiracFrame *delayed_frame = remove_frame(s->delay_frames, s->frame_number);
 
-        s->current_picture->avframe->reference |= DELAYED_PIC_REF;
+        s->current_picture->reference |= DELAYED_PIC_REF;
 
         if (add_frame(s->delay_frames, MAX_DELAY, s->current_picture)) {
             int min_num = s->delay_frames[0]->avframe->display_picture_number;
@@ -2013,7 +2014,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
 
         if (delayed_frame) {
-            delayed_frame->avframe->reference ^= DELAYED_PIC_REF;
+            delayed_frame->reference ^= DELAYED_PIC_REF;
             if((ret=av_frame_ref(data, delayed_frame->avframe)) < 0)
                 return ret;
             *got_frame = 1;

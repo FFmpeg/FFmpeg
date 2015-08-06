@@ -2896,9 +2896,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         return ret;
 
     if (avctx->hwaccel) {
-        if (s->ref && avctx->hwaccel->end_frame(avctx) < 0)
+        if (s->ref && (ret = avctx->hwaccel->end_frame(avctx)) < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
+            ff_hevc_unref_frame(s, s->ref, ~0);
+            return ret;
+        }
     } else {
         /* verify the SEI checksum */
         if (avctx->err_recognition & AV_EF_CRCCHECK && s->is_decoded &&

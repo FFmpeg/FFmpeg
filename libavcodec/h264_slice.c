@@ -1170,15 +1170,19 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         if (h->current_slice) {
             av_assert0(!h->setup_finished);
             if (h->cur_pic_ptr && FIELD_PICTURE(h) && h->first_field) {
-                ff_h264_field_end(h, h->slice_ctx, 1);
+                ret = ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;
+                if (ret < 0)
+                    return ret;
             } else if (h->cur_pic_ptr && !FIELD_PICTURE(h) && !h->first_field && h->nal_unit_type  == NAL_IDR_SLICE) {
                 av_log(h, AV_LOG_WARNING, "Broken frame packetizing\n");
-                ff_h264_field_end(h, h->slice_ctx, 1);
+                ret = ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;
                 ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 0);
                 ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 1);
                 h->cur_pic_ptr = NULL;
+                if (ret < 0)
+                    return ret;
             } else
                 return AVERROR_INVALIDDATA;
         }

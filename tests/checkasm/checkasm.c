@@ -33,10 +33,6 @@
 #include <io.h>
 #endif
 
-#if ARCH_X86
-#include "libavutil/x86/cpu.h"
-#endif
-
 #if HAVE_SETCONSOLETEXTATTRIBUTE
 #include <windows.h>
 #define COLOR_RED    FOREGROUND_RED
