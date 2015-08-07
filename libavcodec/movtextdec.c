@@ -107,6 +107,7 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     char *tx3g_ptr = avctx->extradata;
     int i, box_size, font_length;
 
+    m->count_f = 0;
     m->ftab_entries = 0;
     box_size = BOX_SIZE_INITIAL; /* Size till ftab_entries */
     if (avctx->extradata_size < box_size)
@@ -363,7 +364,6 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     m->style_entries = 0;
     m->box_flags = 0;
     m->count_s = 0;
-    m->count_f = 0;
     // Note that the spec recommends lines be no longer than 2048 characters.
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (text_length + 2 != avpkt->size) {
