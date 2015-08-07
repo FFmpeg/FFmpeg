@@ -34,7 +34,7 @@ $(FATE_MP3): CMP = oneoff
 $(FATE_MP3): CMP_UNIT = f32
 $(FATE_MP3): FUZZ = 18
 
-fate-mp3-float-extra_overread: FUZZ = 20
+fate-mp3-float-extra_overread: FUZZ = 23
 
 FATE_MP3-$(call DEMDEC, MP3, MP3FLOAT) += $(FATE_MP3)
 
