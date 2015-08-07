@@ -11696,13 +11696,17 @@ Set the output frame rate. Default value is @code{25}.
 @item rc
 @item gc
 @item bc
-Specify the red, green and blue contrast. Default values are @code{40}, @code{160} and @code{80}.
+@item ac
+Specify the red, green, blue and alpha contrast. Default values are @code{40},
+@code{160}, @code{80} and @code{255}.
 Allowed range is @code{[0, 255]}.
 
 @item rf
 @item gf
 @item bf
-Specify the red, green and blue fade. Default values are @code{15}, @code{10} and @code{5}.
+@item af
+Specify the red, green, blue and alpha fade. Default values are @code{15},
+@code{10}, @code{5} and @code{5}.
 Allowed range is @code{[0, 255]}.
 
 @item zoom

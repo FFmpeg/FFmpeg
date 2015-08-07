@@ -45,8 +45,8 @@ typedef struct AudioVectorScopeContext {
     int w, h;
     int hw, hh;
     int mode;
-    int contrast[3];
-    int fade[3];
+    int contrast[4];
+    int fade[4];
     double zoom;
     AVRational frame_rate;
 } AudioVectorScopeContext;
@@ -63,13 +63,15 @@ static const AVOption avectorscope_options[] = {
     { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, 0, FLAGS },
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="400x400"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="400x400"}, 0, 0, FLAGS },
-    { "rc", "set red contrast",   OFFSET(contrast[0]), AV_OPT_TYPE_INT, {.i64=40}, 0, 255, FLAGS },
+    { "rc", "set red contrast",   OFFSET(contrast[0]), AV_OPT_TYPE_INT, {.i64=40},  0, 255, FLAGS },
     { "gc", "set green contrast", OFFSET(contrast[1]), AV_OPT_TYPE_INT, {.i64=160}, 0, 255, FLAGS },
-    { "bc", "set blue contrast",  OFFSET(contrast[2]), AV_OPT_TYPE_INT, {.i64=80}, 0, 255, FLAGS },
+    { "bc", "set blue contrast",  OFFSET(contrast[2]), AV_OPT_TYPE_INT, {.i64=80},  0, 255, FLAGS },
+    { "ac", "set alpha contrast", OFFSET(contrast[3]), AV_OPT_TYPE_INT, {.i64=255}, 0, 255, FLAGS },
     { "rf", "set red fade",       OFFSET(fade[0]), AV_OPT_TYPE_INT, {.i64=15}, 0, 255, FLAGS },
     { "gf", "set green fade",     OFFSET(fade[1]), AV_OPT_TYPE_INT, {.i64=10}, 0, 255, FLAGS },
-    { "bf", "set blue fade",      OFFSET(fade[2]), AV_OPT_TYPE_INT, {.i64=5}, 0, 255, FLAGS },
-    { "zoom", "set zoom factor",  OFFSET(zoom), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 1, 10, FLAGS },
+    { "bf", "set blue fade",      OFFSET(fade[2]), AV_OPT_TYPE_INT, {.i64=5},  0, 255, FLAGS },
+    { "af", "set alpha fade",     OFFSET(fade[3]), AV_OPT_TYPE_INT, {.i64=5},  0, 255, FLAGS },
+    { "zoom", "set zoom factor",  OFFSET(zoom), AV_OPT_TYPE_DOUBLE, {.dbl=1},  1, 10, FLAGS },
     { NULL }
 };
 
@@ -92,6 +94,7 @@ static void draw_dot(AudioVectorScopeContext *s, unsigned x, unsigned y)
     dst[0] = FFMIN(dst[0] + s->contrast[0], 255);
     dst[1] = FFMIN(dst[1] + s->contrast[1], 255);
     dst[2] = FFMIN(dst[2] + s->contrast[2], 255);
+    dst[3] = FFMIN(dst[3] + s->contrast[3], 255);
 }
 
 static void fade(AudioVectorScopeContext *s)
@@ -106,6 +109,7 @@ static void fade(AudioVectorScopeContext *s)
                 d[j+0] = FFMAX(d[j+0] - s->fade[0], 0);
                 d[j+1] = FFMAX(d[j+1] - s->fade[1], 0);
                 d[j+2] = FFMAX(d[j+2] - s->fade[2], 0);
+                d[j+3] = FFMAX(d[j+3] - s->fade[3], 0);
             }
             d += linesize;
         }
