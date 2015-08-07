@@ -172,7 +172,6 @@ static int config_output(AVFilterLink *outlink)
 
     /* (re-)configuration if the video output changed (or first init) */
     if (rdft_bits != s->rdft_bits) {
-        size_t rdft_size, rdft_listsize;
         AVFrame *outpicref;
 
         av_rdft_end(s->rdft);
@@ -192,17 +191,11 @@ static int config_output(AVFilterLink *outlink)
         av_freep(&s->rdft_data);
         s->nb_display_channels = inlink->channels;
 
-        if (av_size_mult(sizeof(*s->rdft_data),
-                         s->nb_display_channels, &rdft_listsize) < 0)
-            return AVERROR(EINVAL);
-        if (av_size_mult(sizeof(**s->rdft_data),
-                         win_size, &rdft_size) < 0)
-            return AVERROR(EINVAL);
-        s->rdft_data = av_malloc(rdft_listsize);
+        s->rdft_data = av_calloc(s->nb_display_channels, sizeof(*s->rdft_data));
         if (!s->rdft_data)
             return AVERROR(ENOMEM);
         for (i = 0; i < s->nb_display_channels; i++) {
-            s->rdft_data[i] = av_malloc(rdft_size);
+            s->rdft_data[i] = av_calloc(win_size, sizeof(**s->rdft_data));
             if (!s->rdft_data[i])
                 return AVERROR(ENOMEM);
         }
