@@ -822,11 +822,11 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
         ac_val -= 16 * s->block_wrap[n];
 
     q1 = s->current_picture.qscale_table[mb_pos];
-    if ( dc_pred_dir && c_avail && mb_pos)
+    if (dc_pred_dir && c_avail && mb_pos)
         q2 = s->current_picture.qscale_table[mb_pos - 1];
     if (!dc_pred_dir && a_avail && mb_pos >= s->mb_stride)
         q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
-    if ( dc_pred_dir && n == 1)
+    if (dc_pred_dir && n == 1)
         q2 = q1;
     if (!dc_pred_dir && n == 2)
         q2 = q1;
@@ -1049,7 +1049,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
         q2 = s->current_picture.qscale_table[mb_pos - 1];
     if (!dc_pred_dir && a_avail && mb_pos >= s->mb_stride)
         q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
-    if ( dc_pred_dir && n == 1)
+    if (dc_pred_dir && n == 1)
         q2 = q1;
     if (!dc_pred_dir && n == 2)
         q2 = q1;
@@ -2783,7 +2783,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             if (v->fieldtx_is_raw)
                 v->fieldtx_plane[mb_pos] = get_bits1(&v->s.gb);
             cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
-            if ( v->acpred_is_raw)
+            if (v->acpred_is_raw)
                 v->s.ac_pred = get_bits1(&v->s.gb);
             else
                 v->s.ac_pred = v->acpred_plane[mb_pos];
