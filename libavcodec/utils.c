@@ -3275,11 +3275,13 @@ unsigned avcodec_version(void)
     av_assert0(AV_CODEC_ID_SRT==94216);
     av_assert0(LIBAVCODEC_VERSION_MICRO >= 100);
 
+#if FF_API_CODEC_ID
     av_assert0(CODEC_ID_CLLC == AV_CODEC_ID_CLLC);
     av_assert0(CODEC_ID_PCM_S8_PLANAR == AV_CODEC_ID_PCM_S8_PLANAR);
     av_assert0(CODEC_ID_ADPCM_IMA_APC == AV_CODEC_ID_ADPCM_IMA_APC);
     av_assert0(CODEC_ID_ILBC == AV_CODEC_ID_ILBC);
     av_assert0(CODEC_ID_SRT == AV_CODEC_ID_SRT);
+#endif
     return LIBAVCODEC_VERSION_INT;
 }
 
