@@ -295,7 +295,7 @@ static void sub2video_flush(InputStream *ist)
     if (ist->sub2video.end_pts < INT64_MAX)
         sub2video_update(ist, NULL);
     for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
+        av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
 }
 
 /* end of sub2video hack */
@@ -2246,11 +2246,7 @@ static int send_filter_eof(InputStream *ist)
 {
     int i, ret;
     for (i = 0; i < ist->nb_filters; i++) {
-#if 1
-        ret = av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
-#else
         ret = av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
-#endif
         if (ret < 0)
             return ret;
     }
