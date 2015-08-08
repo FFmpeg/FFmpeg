@@ -130,7 +130,7 @@ OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps_float
 OBJS-$(CONFIG_AAC_FIXED_DECODER)       += aacdec_fixed.o aactab.o aacsbr_fixed.o aacps_fixed.o \
                                           aacadtsdec.o mpeg4audio.o kbdwin.o \
                                           sbrdsp_fixed.o aacpsdsp_fixed.o
-OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
+OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacpsy.o aactab.o      \
                                           psymodel.o mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
@@ -283,7 +283,7 @@ OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o ituh263dec.o        \
                                           mpeg4video.o mpeg4videodec.o flvdec.o\
                                           intelh263dec.o h263data.o
 OBJS-$(CONFIG_H263_ENCODER)            += mpeg4videoenc.o mpeg4video.o  \
-                                          h263.o ituh263enc.o flvenc.o
+                                          h263.o h263data.o ituh263enc.o flvenc.o
 OBJS-$(CONFIG_H264_DECODER)            += h264.o h264_cabac.o h264_cavlc.o \
                                           h264_direct.o h264_loopfilter.o  \
                                           h264_mb.o h264_picture.o h264_ps.o \

@@ -1240,7 +1240,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         ost->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-    av_opt_get_int(o->g->sws_opts, "sws_flags", 0, &ost->sws_flags);
+    av_dict_copy(&ost->sws_dict, o->g->sws_dict, 0);
 
     av_dict_copy(&ost->swr_opts, o->g->swr_opts, 0);
     if (ost->enc && av_get_exact_bits_per_sample(ost->enc->id) == 24)

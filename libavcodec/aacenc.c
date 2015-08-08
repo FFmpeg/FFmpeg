@@ -42,10 +42,9 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacenc.h"
+#include "aacenctab.h"
 
 #include "psymodel.h"
-
-#define AAC_MAX_CHANNELS 6
 
 #define ERROR_IF(cond, ...) \
     if (cond) { \
@@ -57,110 +56,6 @@
     if (cond) { \
         av_log(avctx, AV_LOG_WARNING, __VA_ARGS__); \
     }
-
-
-static const uint8_t swb_size_1024_96[] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8,
-    12, 12, 12, 12, 12, 16, 16, 24, 28, 36, 44,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
-};
-
-static const uint8_t swb_size_1024_64[] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8,
-    12, 12, 12, 16, 16, 16, 20, 24, 24, 28, 36,
-    40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40
-};
-
-static const uint8_t swb_size_1024_48[] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8,
-    12, 12, 12, 12, 16, 16, 20, 20, 24, 24, 28, 28,
-    32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
-    96
-};
-
-static const uint8_t swb_size_1024_32[] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8,
-    12, 12, 12, 12, 16, 16, 20, 20, 24, 24, 28, 28,
-    32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32
-};
-
-static const uint8_t swb_size_1024_24[] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-    12, 12, 12, 12, 16, 16, 16, 20, 20, 24, 24, 28, 28,
-    32, 36, 36, 40, 44, 48, 52, 52, 64, 64, 64, 64, 64
-};
-
-static const uint8_t swb_size_1024_16[] = {
-    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16, 16, 20, 20, 20, 24, 24, 28, 28,
-    32, 36, 40, 40, 44, 48, 52, 56, 60, 64, 64, 64
-};
-
-static const uint8_t swb_size_1024_8[] = {
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    16, 16, 16, 16, 16, 16, 16, 20, 20, 20, 20, 24, 24, 24, 28, 28,
-    32, 36, 36, 40, 44, 48, 52, 56, 60, 64, 80
-};
-
-static const uint8_t *swb_size_1024[] = {
-    swb_size_1024_96, swb_size_1024_96, swb_size_1024_64,
-    swb_size_1024_48, swb_size_1024_48, swb_size_1024_32,
-    swb_size_1024_24, swb_size_1024_24, swb_size_1024_16,
-    swb_size_1024_16, swb_size_1024_16, swb_size_1024_8,
-    swb_size_1024_8
-};
-
-static const uint8_t swb_size_128_96[] = {
-    4, 4, 4, 4, 4, 4, 8, 8, 8, 16, 28, 36
-};
-
-static const uint8_t swb_size_128_48[] = {
-    4, 4, 4, 4, 4, 8, 8, 8, 12, 12, 12, 16, 16, 16
-};
-
-static const uint8_t swb_size_128_24[] = {
-    4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 12, 12, 16, 16, 20
-};
-
-static const uint8_t swb_size_128_16[] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 12, 12, 16, 20, 20
-};
-
-static const uint8_t swb_size_128_8[] = {
-    4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 12, 16, 20, 20
-};
-
-static const uint8_t *swb_size_128[] = {
-    /* the last entry on the following row is swb_size_128_64 but is a
-       duplicate of swb_size_128_96 */
-    swb_size_128_96, swb_size_128_96, swb_size_128_96,
-    swb_size_128_48, swb_size_128_48, swb_size_128_48,
-    swb_size_128_24, swb_size_128_24, swb_size_128_16,
-    swb_size_128_16, swb_size_128_16, swb_size_128_8,
-    swb_size_128_8
-};
-
-/** default channel configurations */
-static const uint8_t aac_chan_configs[6][5] = {
- {1, TYPE_SCE},                               // 1 channel  - single channel element
- {1, TYPE_CPE},                               // 2 channels - channel pair
- {2, TYPE_SCE, TYPE_CPE},                     // 3 channels - center + stereo
- {3, TYPE_SCE, TYPE_CPE, TYPE_SCE},           // 4 channels - front center + stereo + back center
- {3, TYPE_SCE, TYPE_CPE, TYPE_CPE},           // 5 channels - front center + stereo + back stereo
- {4, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE}, // 6 channels - front center + stereo + back stereo + LFE
-};
-
-/**
- * Table to remap channels from libavcodec's default order to AAC order.
- */
-static const uint8_t aac_chan_maps[AAC_MAX_CHANNELS][AAC_MAX_CHANNELS] = {
-    { 0 },
-    { 0, 1 },
-    { 2, 0, 1 },
-    { 2, 0, 1, 3 },
-    { 2, 0, 1, 3, 4 },
-    { 2, 0, 1, 4, 5, 3 },
-};
 
 /**
  * Make AAC audio config object.
@@ -843,9 +738,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     s->channels = avctx->channels;
 
-    ERROR_IF(i == 16
-                || i >= (sizeof(swb_size_1024) / sizeof(*swb_size_1024))
-                || i >= (sizeof(swb_size_128) / sizeof(*swb_size_128)),
+    ERROR_IF(i == 16 || i >= swb_size_1024_len || i >= swb_size_128_len,
              "Unsupported sample rate %d\n", avctx->sample_rate);
     ERROR_IF(s->channels > AAC_MAX_CHANNELS,
              "Unsupported number of channels: %d\n", s->channels);
@@ -924,13 +817,6 @@ static const AVClass aacenc_class = {
     av_default_item_name,
     aacenc_options,
     LIBAVUTIL_VERSION_INT,
-};
-
-/* duplicated from avpriv_mpeg4audio_sample_rates to avoid shared build
- * failures */
-static const int mpeg4audio_sample_rates[16] = {
-    96000, 88200, 64000, 48000, 44100, 32000,
-    24000, 22050, 16000, 12000, 11025, 8000, 7350
 };
 
 AVCodec ff_aac_encoder = {

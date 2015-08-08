@@ -102,7 +102,7 @@ const int program_birth_year = 2003;
 
 #define CURSOR_HIDE_DELAY 1000000
 
-static int64_t sws_flags = SWS_BICUBIC;
+static unsigned sws_flags = SWS_BICUBIC;
 
 typedef struct MyAVPacketList {
     AVPacket pkt;
@@ -1677,7 +1677,18 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
         av_picture_copy(&pict, (AVPicture *)src_frame,
                         src_frame->format, vp->width, vp->height);
 #else
-        av_opt_get_int(sws_opts, "sws_flags", 0, &sws_flags);
+        {
+            AVDictionaryEntry *e = av_dict_get(sws_dict, "sws_flags", NULL, 0);
+            if (e) {
+                const AVClass *class = sws_get_class();
+                const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
+                                                   AV_OPT_SEARCH_FAKE_OBJ);
+                int ret = av_opt_eval_flags(&class, o, e->value, &sws_flags);
+                if (ret < 0)
+                    exit(1);
+            }
+        }
+
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             vp->width, vp->height, src_frame->format, vp->width, vp->height,
             AV_PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);
@@ -1787,15 +1798,23 @@ fail:
 static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters, AVFrame *frame)
 {
     static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE };
-    char sws_flags_str[128];
+    char sws_flags_str[512] = "";
     char buffersrc_args[256];
     int ret;
     AVFilterContext *filt_src = NULL, *filt_out = NULL, *last_filter = NULL;
     AVCodecContext *codec = is->video_st->codec;
     AVRational fr = av_guess_frame_rate(is->ic, is->video_st, NULL);
+    AVDictionaryEntry *e = NULL;
 
-    av_opt_get_int(sws_opts, "sws_flags", 0, &sws_flags);
-    snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%"PRId64, sws_flags);
+    while ((e = av_dict_get(sws_dict, "", e, AV_DICT_IGNORE_SUFFIX))) {
+        if (!strcmp(e->key, "sws_flags")) {
+            av_strlcatf(sws_flags_str, sizeof(sws_flags_str), "%s=%s:", "flags", e->value);
+        } else
+            av_strlcatf(sws_flags_str, sizeof(sws_flags_str), "%s=%s:", e->key, e->value);
+    }
+    if (strlen(sws_flags_str))
+        sws_flags_str[strlen(sws_flags_str)-1] = '\0';
+
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
     snprintf(buffersrc_args, sizeof(buffersrc_args),

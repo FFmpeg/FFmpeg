@@ -118,13 +118,16 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         return AVERROR(ENOMEM);
     }
 
-    if (!strcmp(filt_name, "scale") && args && !strstr(args, "flags") &&
+    if (!strcmp(filt_name, "scale") && (!args || !strstr(args, "flags")) &&
         ctx->scale_sws_opts) {
-        tmp_args = av_asprintf("%s:%s",
-                 args, ctx->scale_sws_opts);
-        if (!tmp_args)
-            return AVERROR(ENOMEM);
-        args = tmp_args;
+        if (args) {
+            tmp_args = av_asprintf("%s:%s",
+                    args, ctx->scale_sws_opts);
+            if (!tmp_args)
+                return AVERROR(ENOMEM);
+            args = tmp_args;
+        } else
+            args = ctx->scale_sws_opts;
     }
 
     ret = avfilter_init_str(*filt_ctx, args);

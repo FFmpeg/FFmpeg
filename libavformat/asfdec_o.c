@@ -304,30 +304,41 @@ failed:
     av_freep(&value);
     return ret;
 }
-
-static int asf_read_generic_value(AVFormatContext *s, const uint8_t *name,
-                                  uint16_t name_len, int type, AVDictionary **met)
+static int asf_read_generic_value(AVIOContext *pb, int type, uint64_t *value)
 {
-    AVIOContext *pb = s->pb;
-    uint64_t value;
-    char buf[32];
 
     switch (type) {
     case ASF_BOOL:
-        value = avio_rl32(pb);
+        *value = avio_rl16(pb);
         break;
     case ASF_DWORD:
-        value = avio_rl32(pb);
+        *value = avio_rl32(pb);
         break;
     case ASF_QWORD:
-        value = avio_rl64(pb);
+        *value = avio_rl64(pb);
         break;
     case ASF_WORD:
-        value = avio_rl16(pb);
+        *value = avio_rl16(pb);
         break;
     default:
         return AVERROR_INVALIDDATA;
     }
+
+    return 0;
+}
+
+static int asf_set_metadata(AVFormatContext *s, const uint8_t *name,
+                            uint16_t name_len, int type, AVDictionary **met)
+{
+    AVIOContext *pb = s->pb;
+    uint64_t value;
+    char buf[32];
+    int ret;
+
+    ret = asf_read_generic_value(pb, type, &value);
+    if (ret < 0)
+        return ret;
+
     snprintf(buf, sizeof(buf), "%"PRIu64, value);
     if (av_dict_set(met, name, buf, 0) < 0)
         av_log(s, AV_LOG_WARNING, "av_dict_set failed.\n");
@@ -470,7 +481,7 @@ static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t na
             ff_get_guid(s->pb, &guid);
             break;
         default:
-            if ((ret = asf_read_generic_value(s, name, name_len, type, met)) < 0)
+            if ((ret = asf_set_metadata(s, name, name_len, type, met)) < 0)
                 return ret;
             break;
         }
@@ -500,6 +511,10 @@ static int asf_read_ext_content(AVFormatContext *s, const GUIDParseTable *g)
         avio_get_str16le(pb, name_len, name,
                          name_len);
         type    = avio_rl16(pb);
+        // BOOL values are 16 bits long in the Metadata Object
+        // but 32 bits long in the Extended Content Description Object
+        if (type == ASF_BOOL)
+            type = ASF_DWORD;
         val_len = avio_rl16(pb);
 
         ret = process_metadata(s, name, name_len, val_len, type, &s->metadata);
@@ -528,13 +543,16 @@ static AVStream *find_stream(AVFormatContext *s, uint16_t st_num)
     return st;
 }
 
-static void asf_store_aspect_ratio(AVFormatContext *s, uint8_t st_num, uint8_t *name)
+static int asf_store_aspect_ratio(AVFormatContext *s, uint8_t st_num, uint8_t *name, int type)
 {
     ASFContext *asf   = s->priv_data;
     AVIOContext *pb   = s->pb;
-    uint16_t value = 0;
+    uint64_t value = 0;
+    int ret;
 
-    value = avio_rl16(pb);
+    ret = asf_read_generic_value(pb, type, &value);
+    if (ret < 0)
+        return ret;
 
     if (st_num < ASF_MAX_STREAMS) {
         if (!strcmp(name, "AspectRatioX"))
@@ -542,6 +560,7 @@ static void asf_store_aspect_ratio(AVFormatContext *s, uint8_t st_num, uint8_t *
         else
             asf->asf_sd[st_num].aspect_ratio.den = value;
     }
+    return 0;
 }
 
 static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
@@ -569,9 +588,10 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
             return AVERROR(ENOMEM);
         avio_get_str16le(pb, name_len, name,
                          buflen);
-
         if (!strcmp(name, "AspectRatioX") || !strcmp(name, "AspectRatioY")) {
-            asf_store_aspect_ratio(s, st_num, name);
+            ret = asf_store_aspect_ratio(s, st_num, name, type);
+            if (ret < 0)
+                return ret;
         } else {
             if (st_num < ASF_MAX_STREAMS) {
                 if ((ret = process_metadata(s, name, name_len, val_len, type,
@@ -621,7 +641,7 @@ static int asf_read_properties(AVFormatContext *s, const GUIDParseTable *g)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    uint64_t creation_time;
+    time_t creation_time;
 
     avio_rl64(pb); // read object size
     avio_skip(pb, 16); // skip File ID
