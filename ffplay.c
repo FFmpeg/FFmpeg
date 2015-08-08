@@ -102,7 +102,7 @@ const int program_birth_year = 2003;
 
 #define CURSOR_HIDE_DELAY 1000000
 
-static int64_t sws_flags = SWS_BICUBIC;
+static unsigned sws_flags = SWS_BICUBIC;
 
 typedef struct MyAVPacketList {
     AVPacket pkt;
@@ -1677,7 +1677,18 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
         av_picture_copy(&pict, (AVPicture *)src_frame,
                         src_frame->format, vp->width, vp->height);
 #else
-        av_opt_get_int(sws_opts, "sws_flags", 0, &sws_flags);
+        {
+            AVDictionaryEntry *e = av_dict_get(sws_dict, "sws_flags", NULL, 0);
+            if (e) {
+                const AVClass *class = sws_get_class();
+                const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
+                                                   AV_OPT_SEARCH_FAKE_OBJ);
+                int ret = av_opt_eval_flags(&class, o, e->value, &sws_flags);
+                if (ret < 0)
+                    exit(1);
+            }
+        }
+
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             vp->width, vp->height, src_frame->format, vp->width, vp->height,
             AV_PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);

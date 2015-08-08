@@ -63,7 +63,6 @@
 
 static int init_report(const char *env);
 
-struct SwsContext *sws_opts;
 AVDictionary *sws_dict;
 AVDictionary *swr_opts;
 AVDictionary *format_opts, *codec_opts, *resample_opts;
@@ -74,20 +73,11 @@ int hide_banner = 0;
 
 void init_opts(void)
 {
-
-    if(CONFIG_SWSCALE)
-        sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC,
-                              NULL, NULL, NULL);
     av_dict_set(&sws_dict, "flags", "bicubic", 0);
 }
 
 void uninit_opts(void)
 {
-#if CONFIG_SWSCALE
-    sws_freeContext(sws_opts);
-    sws_opts = NULL;
-#endif
-
     av_dict_free(&swr_opts);
     av_dict_free(&sws_dict);
     av_dict_free(&format_opts);
@@ -577,11 +567,6 @@ int opt_default(void *optctx, const char *opt, const char *arg)
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;
         }
-        ret = av_opt_set(sws_opts, opt, arg, 0);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error setting option %s for sws_opts.\n", opt);
-            return ret;
-        }
 
         av_dict_set(&sws_dict, opt, arg, FLAGS);
 
@@ -658,9 +643,6 @@ static void finish_group(OptionParseContext *octx, int group_idx,
     *g             = octx->cur_group;
     g->arg         = arg;
     g->group_def   = l->group_def;
-#if CONFIG_SWSCALE
-    g->sws_opts    = sws_opts;
-#endif
     g->sws_dict    = sws_dict;
     g->swr_opts    = swr_opts;
     g->codec_opts  = codec_opts;
@@ -670,9 +652,6 @@ static void finish_group(OptionParseContext *octx, int group_idx,
     codec_opts  = NULL;
     format_opts = NULL;
     resample_opts = NULL;
-#if CONFIG_SWSCALE
-    sws_opts    = NULL;
-#endif
     sws_dict    = NULL;
     swr_opts    = NULL;
     init_opts();
@@ -729,9 +708,6 @@ void uninit_parse_context(OptionParseContext *octx)
             av_dict_free(&l->groups[j].codec_opts);
             av_dict_free(&l->groups[j].format_opts);
             av_dict_free(&l->groups[j].resample_opts);
-#if CONFIG_SWSCALE
-            sws_freeContext(l->groups[j].sws_opts);
-#endif
 
             av_dict_free(&l->groups[j].sws_dict);
             av_dict_free(&l->groups[j].swr_opts);
