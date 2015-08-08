@@ -290,7 +290,9 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->sample_rate            = src->sample_rate;
     dst->opaque                 = src->opaque;
 #if FF_API_AVFRAME_LAVC
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->type                   = src->type;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     dst->pkt_pts                = src->pkt_pts;
     dst->pkt_dts                = src->pkt_dts;
