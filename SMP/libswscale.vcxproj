@@ -64,6 +64,8 @@
     <YASM Include="..\libswscale\x86\scale.asm" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libswscale\alphablend.c">
+    </ClCompile>
     <ClCompile Include="..\libswscale\hscale_fast_bilinear.c">
     </ClCompile>
     <ClCompile Include="..\libswscale\input.c">

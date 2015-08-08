@@ -641,6 +641,9 @@
     <ClCompile Include="..\libavcodec\aaccoder.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenctab.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\aacpsy.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

@@ -2,6 +2,7 @@ EXPORTS
     sws_addVec
     sws_allocVec
     sws_alloc_context
+    sws_alloc_set_opts
     sws_cloneVec
     sws_convVec
     sws_convertPalette8ToPacked24

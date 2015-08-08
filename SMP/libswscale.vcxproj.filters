@@ -32,6 +32,9 @@
     </YASM>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libswscale\alphablend.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswscale\hscale_fast_bilinear.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
