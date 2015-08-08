@@ -2063,12 +2063,13 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         if (ist->dec_ctx->codec_id == AV_CODEC_ID_H264) {
             ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames;
         } else
-            av_log_ask_for_sample(
-                ist->dec_ctx,
-                "has_b_frames is larger in decoder than demuxer %d > %d ",
-                ist->dec_ctx->has_b_frames,
-                ist->st->codec->has_b_frames
-            );
+            av_log(ist->dec_ctx, AV_LOG_WARNING,
+                   "has_b_frames is larger in decoder than demuxer %d > %d.\n"
+                   "If you want to help, upload a sample "
+                   "of this file to ftp://upload.ffmpeg.org/incoming/ "
+                   "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)",
+                   ist->dec_ctx->has_b_frames,
+                   ist->st->codec->has_b_frames);
     }
 
     if (*got_output || ret<0)
