@@ -315,7 +315,7 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
                            cat->files[fileno - 1].start_time +
                            cat->files[fileno - 1].duration;
     file->file_start_time = (avf->start_time == AV_NOPTS_VALUE) ? 0 : avf->start_time;
-    file->file_inpoint = (file->file_inpoint == AV_NOPTS_VALUE) ? file->file_start_time : file->inpoint;
+    file->file_inpoint = (file->inpoint == AV_NOPTS_VALUE) ? file->file_start_time : file->inpoint;
     if ((ret = match_streams(avf)) < 0)
         return ret;
     if (file->inpoint != AV_NOPTS_VALUE) {
