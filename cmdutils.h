@@ -47,6 +47,7 @@ extern const int program_birth_year;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
+extern AVDictionary *sws_dict;
 extern AVDictionary *swr_opts;
 extern AVDictionary *format_opts, *codec_opts, *resample_opts;
 extern int hide_banner;
@@ -278,6 +279,7 @@ typedef struct OptionGroup {
     AVDictionary *format_opts;
     AVDictionary *resample_opts;
     struct SwsContext *sws_opts;
+    AVDictionary *sws_dict;
     AVDictionary *swr_opts;
 } OptionGroup;
 
