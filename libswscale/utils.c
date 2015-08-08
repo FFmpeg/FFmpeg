@@ -982,11 +982,11 @@ static uint16_t * alloc_gamma_tbl(double e)
 static enum AVPixelFormat alphaless_fmt(enum AVPixelFormat fmt)
 {
     switch(fmt) {
-//     case AV_PIX_FMT_ARGB:       return AV_PIX_FMT_RGB24;
-//     case AV_PIX_FMT_RGBA:       return AV_PIX_FMT_RGB24;
-//     case AV_PIX_FMT_ABGR:       return AV_PIX_FMT_BGR24;
-//     case AV_PIX_FMT_BGRA:       return AV_PIX_FMT_BGR24;
-//     case AV_PIX_FMT_YA8:        return AV_PIX_FMT_GRAY8;
+    case AV_PIX_FMT_ARGB:       return AV_PIX_FMT_RGB24;
+    case AV_PIX_FMT_RGBA:       return AV_PIX_FMT_RGB24;
+    case AV_PIX_FMT_ABGR:       return AV_PIX_FMT_BGR24;
+    case AV_PIX_FMT_BGRA:       return AV_PIX_FMT_BGR24;
+    case AV_PIX_FMT_YA8:        return AV_PIX_FMT_GRAY8;
 //
 //     case AV_PIX_FMT_YUVA420P:   return AV_PIX_FMT_YUV420P;
 //     case AV_PIX_FMT_YUVA422P:   return AV_PIX_FMT_YUV422P;
@@ -997,13 +997,13 @@ static enum AVPixelFormat alphaless_fmt(enum AVPixelFormat fmt)
     case AV_PIX_FMT_GBRAP16LE:          return AV_PIX_FMT_GBRP16;
     case AV_PIX_FMT_GBRAP16BE:          return AV_PIX_FMT_GBRP16;
 
-//     case AV_PIX_FMT_RGBA64LE:   return AV_PIX_FMT_RGB48;
-//     case AV_PIX_FMT_RGBA64BE:   return AV_PIX_FMT_RGB48;
-//     case AV_PIX_FMT_BGRA64LE:   return AV_PIX_FMT_BGR48;
-//     case AV_PIX_FMT_BGRA64BE:   return AV_PIX_FMT_BGR48;
+    case AV_PIX_FMT_RGBA64LE:   return AV_PIX_FMT_RGB48;
+    case AV_PIX_FMT_RGBA64BE:   return AV_PIX_FMT_RGB48;
+    case AV_PIX_FMT_BGRA64LE:   return AV_PIX_FMT_BGR48;
+    case AV_PIX_FMT_BGRA64BE:   return AV_PIX_FMT_BGR48;
 
-//     case AV_PIX_FMT_YA16BE:             return AV_PIX_FMT_GRAY16;
-//     case AV_PIX_FMT_YA16LE:             return AV_PIX_FMT_GRAY16;
+    case AV_PIX_FMT_YA16BE:             return AV_PIX_FMT_GRAY16;
+    case AV_PIX_FMT_YA16LE:             return AV_PIX_FMT_GRAY16;
 
 //     case AV_PIX_FMT_YUVA420P9BE:        return AV_PIX_FMT_YUV420P9;
 //     case AV_PIX_FMT_YUVA422P9BE:        return AV_PIX_FMT_YUV422P9;
