@@ -33,7 +33,7 @@ fate-ac3-fixed-2.0: CMD = pcm -c ac3_fixed -i $(TARGET_SAMPLES)/ac3/monsters_inc
 fate-ac3-fixed-2.0: REF = $(SAMPLES)/ac3/monsters_inc_2.0_192_small_v2.pcm
 
 FATE_AC3 += fate-ac3-fixed-4.0-downmix-mono
-fate-ac3-fixed-4.0-downmix-mono: CMD = pcm -c ac3_fixed -request_channels 1 -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
+fate-ac3-fixed-4.0-downmix-mono: CMD = pcm -c ac3_fixed -request_channel_layout 4 -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
 fate-ac3-fixed-4.0-downmix-mono: REF = $(SAMPLES)/ac3/millers_crossing_4.0_mono_v2.pcm
 
 FATE_EAC3 += fate-eac3-1
