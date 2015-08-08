@@ -276,4 +276,6 @@ uint64_t ff_get_channel_layout(const char *name, int compat);
 
 void ff_check_pixfmt_descriptors(void);
 
+extern const uint8_t ff_reverse[256];
+
 #endif /* AVUTIL_INTERNAL_H */
