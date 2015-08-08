@@ -508,8 +508,10 @@ int avfilter_register(AVFilter *filter)
 
     for(i=0; filter->inputs && filter->inputs[i].name; i++) {
         const AVFilterPad *input = &filter->inputs[i];
+#if FF_API_AVFILTERPAD_PUBLIC
         av_assert0(     !input->filter_frame
                     || (!input->start_frame && !input->end_frame));
+#endif
     }
 
     filter->next = NULL;
