@@ -1573,10 +1573,10 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                 *(descr_cur++) = '>';
             }
             pad = i ? filter->outputs : filter->inputs;
-            for (j = 0; pad && pad[j].name; j++) {
+            for (j = 0; pad && avfilter_pad_get_name(pad, j); j++) {
                 if (descr_cur >= descr + sizeof(descr) - 4)
                     break;
-                *(descr_cur++) = get_media_type_char(pad[j].type);
+                *(descr_cur++) = get_media_type_char(avfilter_pad_get_type(pad, j));
             }
             if (!j)
                 *(descr_cur++) = ((!i && (filter->flags & AVFILTER_FLAG_DYNAMIC_INPUTS)) ||
