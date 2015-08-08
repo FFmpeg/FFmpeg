@@ -1045,7 +1045,11 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
     pkt->buf = local_pkt.buf;
     pkt->side_data       = local_pkt.side_data;
     pkt->side_data_elems = local_pkt.side_data_elems;
+#if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct = local_pkt.destruct;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     return ret;
 }
 

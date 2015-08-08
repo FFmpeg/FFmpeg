@@ -693,7 +693,13 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                                            &new_pkt.data, &new_pkt.size,
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
-        if(a == 0 && new_pkt.data != pkt->data && new_pkt.destruct) {
+FF_DISABLE_DEPRECATION_WARNINGS
+        if(a == 0 && new_pkt.data != pkt->data
+#if FF_API_DESTRUCT_PACKET
+           && new_pkt.destruct
+#endif
+           ) {
+FF_ENABLE_DEPRECATION_WARNINGS
             uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
             if(t) {
                 memcpy(t, new_pkt.data, new_pkt.size);
