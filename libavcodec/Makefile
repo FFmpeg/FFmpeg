@@ -283,7 +283,7 @@ OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o ituh263dec.o        \
                                           mpeg4video.o mpeg4videodec.o flvdec.o\
                                           intelh263dec.o h263data.o
 OBJS-$(CONFIG_H263_ENCODER)            += mpeg4videoenc.o mpeg4video.o  \
-                                          h263.o ituh263enc.o flvenc.o
+                                          h263.o h263data.o ituh263enc.o flvenc.o
 OBJS-$(CONFIG_H264_DECODER)            += h264.o h264_cabac.o h264_cavlc.o \
                                           h264_direct.o h264_loopfilter.o  \
                                           h264_mb.o h264_picture.o h264_ps.o \
