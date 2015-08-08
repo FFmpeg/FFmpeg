@@ -1632,10 +1632,9 @@ fail: // FIXME replace things by appropriate error codes
     return -1;
 }
 
-SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
-                           int dstW, int dstH, enum AVPixelFormat dstFormat,
-                           int flags, SwsFilter *srcFilter,
-                           SwsFilter *dstFilter, const double *param)
+SwsContext *sws_alloc_set_opts(int srcW, int srcH, enum AVPixelFormat srcFormat,
+                               int dstW, int dstH, enum AVPixelFormat dstFormat,
+                               int flags, const double *param)
 {
     SwsContext *c;
 
@@ -1654,6 +1653,22 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
         c->param[0] = param[0];
         c->param[1] = param[1];
     }
+
+    return c;
+}
+
+SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
+                           int dstW, int dstH, enum AVPixelFormat dstFormat,
+                           int flags, SwsFilter *srcFilter,
+                           SwsFilter *dstFilter, const double *param)
+{
+    SwsContext *c;
+
+    c = sws_alloc_set_opts(srcW, srcH, srcFormat,
+                           dstW, dstH, dstFormat,
+                           flags, param);
+    if (!c)
+        return NULL;
 
     if (sws_init_context(c, srcFilter, dstFilter) < 0) {
         sws_freeContext(c);

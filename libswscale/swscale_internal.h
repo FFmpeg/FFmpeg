@@ -890,6 +890,17 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
                             int dstWidth, const uint8_t *src1,
                             const uint8_t *src2, int srcW, int xInc);
 
+/**
+ * Allocate and return an SwsContext.
+ * This is like sws_getContext() but does not perform the init step, allowing
+ * the user to set additional AVOptions.
+ *
+ * @see sws_getContext()
+ */
+struct SwsContext *sws_alloc_set_opts(int srcW, int srcH, enum AVPixelFormat srcFormat,
+                                      int dstW, int dstH, enum AVPixelFormat dstFormat,
+                                      int flags, const double *param);
+
 static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
                                int alpha, int bits, const int big_endian)
 {
