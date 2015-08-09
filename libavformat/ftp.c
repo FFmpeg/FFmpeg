@@ -354,10 +354,7 @@ static int ftp_current_dir(FTPContext *s)
     if (!end)
         goto fail;
 
-    if (end > res && end[-1] == '/') {
-        end[-1] = '\0';
-    } else
-        *end = '\0';
+    *end = '\0';
     s->path = av_strdup(start);
 
     av_free(res);
@@ -605,9 +602,8 @@ static int ftp_connect(URLContext *h, const char *url)
 {
     char proto[10], path[MAX_URL_SIZE], credencials[MAX_URL_SIZE], hostname[MAX_URL_SIZE];
     const char *tok_user = NULL, *tok_pass = NULL;
-    char *end = NULL;
+    char *end = NULL, *newpath = NULL;
     int err;
-    size_t pathlen;
     FTPContext *s = h->priv_data;
 
     s->state = DISCONNECTED;
@@ -642,10 +638,12 @@ static int ftp_connect(URLContext *h, const char *url)
 
     if ((err = ftp_current_dir(s)) < 0)
         return err;
-    pathlen = strlen(s->path) + strlen(path) + 1;
-    if ((err = av_reallocp(&s->path, pathlen)) < 0)
-        return err;
-    av_strlcat(s->path + strlen(s->path), path, pathlen);
+
+    newpath = av_append_path_component(s->path, path);
+    if (!newpath)
+        return AVERROR(ENOMEM);
+    av_free(s->path);
+    s->path = newpath;
 
     return 0;
 }
