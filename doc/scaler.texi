@@ -130,6 +130,9 @@ Default value is @samp{none}.
 @item uniform_color
 Blend onto a uniform background color
 
+@item checkerboard
+Blend onto a checkerboard
+
 @item none
 No blending
 
