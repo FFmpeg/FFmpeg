@@ -3242,6 +3242,9 @@ static int mov_flush_fragment(AVFormatContext *s)
         avio_write(s->pb, buf, buf_size);
         av_free(buf);
 
+        if (mov->flags & FF_MOV_FLAG_FASTSTART)
+            mov->reserved_header_pos = avio_tell(s->pb);
+
         mov->moov_written = 1;
         mov->mdat_size = 0;
         for (i = 0; i < mov->nb_streams; i++) {
