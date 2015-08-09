@@ -44,7 +44,7 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                     const uint16_t *a = src[plane_count] + srcStride[plane_count] * y;
                           uint16_t *d = dst[plane      ] + dstStride[plane] * y;
                     unsigned target = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<desc->comp[0].depth_minus1 : 0;
-                    if ((!isBE(c->dstFormat)) == !HAVE_BIGENDIAN) {
+                    if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
                         for (x = 0; x < w; x++) {
                             unsigned u = s[x]*a[x] + target*(max-a[x]) + off;
                             d[x] = av_clip((u + (u >> shift)) >> shift, 0, max);
