@@ -166,7 +166,7 @@ typedef struct MOVMuxContext {
     AVIOContext *mdat_buf;
     int first_trun;
 
-    int64_t reserved_moov_pos;
+    int64_t reserved_header_pos;
 
     char *major_brand;
 
