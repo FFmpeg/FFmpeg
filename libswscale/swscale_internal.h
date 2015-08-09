@@ -78,6 +78,7 @@ typedef enum SwsDither {
 typedef enum SwsAlphaBlend {
     SWS_ALPHA_BLEND_NONE  = 0,
     SWS_ALPHA_BLEND_UNIFORM,
+    SWS_ALPHA_BLEND_CHECKERBOARD,
     SWS_ALPHA_BLEND_NB,
 } SwsAlphaBlend;
 

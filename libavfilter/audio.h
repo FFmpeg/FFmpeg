@@ -60,24 +60,4 @@ AVFrame *ff_null_get_audio_buffer(AVFilterLink *link, int nb_samples);
  */
 AVFrame *ff_get_audio_buffer(AVFilterLink *link, int nb_samples);
 
-/**
- * Send a buffer of audio samples to the next filter.
- *
- * @param link       the output link over which the audio samples are being sent
- * @param samplesref a reference to the buffer of audio samples being sent. The
- *                   receiving filter will free this reference when it no longer
- *                   needs it or pass it on to the next filter.
- *
- * @return >= 0 on success, a negative AVERROR on error. The receiving filter
- * is responsible for unreferencing samplesref in case of error.
- */
-int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
-
-/**
- * Send a buffer of audio samples to the next link, without checking
- * min_samples.
- */
-int ff_filter_samples_framed(AVFilterLink *link,
-                             AVFilterBufferRef *samplesref);
-
 #endif /* AVFILTER_AUDIO_H */

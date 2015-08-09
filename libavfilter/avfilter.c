@@ -1024,7 +1024,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     if (dst->needs_writable && !av_frame_is_writable(frame)) {
         av_log(link->dst, AV_LOG_DEBUG, "Copying data in avfilter.\n");
 
-        /* Maybe use ff_copy_buffer_ref instead? */
         switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
             out = ff_get_video_buffer(link, link->w, link->h);

@@ -338,9 +338,6 @@ int ff_request_frame(AVFilterLink *link);
         .category   = AV_CLASS_CATEGORY_FILTER, \
     }
 
-AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
-                                      AVFilterBufferRef *ref);
-
 /**
  * Find the index of a link.
  *
@@ -349,9 +346,6 @@ AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
 #define FF_INLINK_IDX(link)  ((int)((link)->dstpad - (link)->dst->input_pads))
 #define FF_OUTLINK_IDX(link) ((int)((link)->srcpad - (link)->src->output_pads))
 
-int ff_buffersink_read_compat(AVFilterContext *ctx, AVFilterBufferRef **buf);
-int ff_buffersink_read_samples_compat(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
-                                      int nb_samples);
 /**
  * Send a frame of data to the next filter.
  *
