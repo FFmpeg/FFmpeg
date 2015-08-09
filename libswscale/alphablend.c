@@ -32,6 +32,10 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
     unsigned off    = 1<<desc->comp[0].depth_minus1;
     unsigned shift  = desc->comp[0].depth_minus1 + 1;
     unsigned max    = (1<<shift) - 1;
+    int target_table[3];
+
+    for (plane = 0; plane < plane_count; plane++)
+        target_table[plane] = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<desc->comp[0].depth_minus1 : 0;
 
     av_assert0(plane_count == nb_components - 1);
     if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
@@ -43,7 +47,7 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                     const uint16_t *s = src[plane      ] + srcStride[plane] * y;
                     const uint16_t *a = src[plane_count] + srcStride[plane_count] * y;
                           uint16_t *d = dst[plane      ] + dstStride[plane] * y;
-                    unsigned target = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<desc->comp[0].depth_minus1 : 0;
+                    unsigned target = target_table[plane];
                     if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
                         for (x = 0; x < w; x++) {
                             unsigned u = s[x]*a[x] + target*(max-a[x]) + off;
@@ -60,7 +64,7 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                     const uint8_t *s = src[plane      ] + srcStride[plane] * y;
                     const uint8_t *a = src[plane_count] + srcStride[plane_count] * y;
                           uint8_t *d = dst[plane      ] + dstStride[plane] * y;
-                    unsigned target = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 128 : 0;
+                    unsigned target = target_table[plane];
                     for (x = 0; x < w; x++) {
                         unsigned u = s[x]*a[x] + target*(255-a[x]) + 128;
                         d[x] = (257*u) >> 16;
@@ -79,19 +83,17 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                 if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
                     for (x = 0; x < w; x++) {
                         for (plane = 0; plane < plane_count; plane++) {
-                            unsigned target = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<desc->comp[0].depth_minus1 : 0;
                             int x_index = (plane_count + 1) * x;
-                            unsigned u = s[x_index + plane]*a[x_index] + target*(max-a[x_index]) + off;
+                            unsigned u = s[x_index + plane]*a[x_index] + target_table[plane]*(max-a[x_index]) + off;
                             d[plane_count*x + plane] = av_clip((u + (u >> shift)) >> shift, 0, max);
                         }
                     }
                 } else {
                     for (x = 0; x < w; x++) {
                         for (plane = 0; plane < plane_count; plane++) {
-                            unsigned target = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<desc->comp[0].depth_minus1 : 0;
                             int x_index = (plane_count + 1) * x;
                             unsigned aswap =av_bswap16(a[x_index]);
-                            unsigned u = av_bswap16(s[x_index + plane])*aswap + target*(max-aswap) + off;
+                            unsigned u = av_bswap16(s[x_index + plane])*aswap + target_table[plane]*(max-aswap) + off;
                             d[plane_count*x + plane] = av_clip((u + (u >> shift)) >> shift, 0, max);
                         }
                     }
@@ -102,9 +104,8 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                       uint8_t *d = dst[0] + dstStride[0] * y;
                 for (x = 0; x < w; x++) {
                     for (plane = 0; plane < plane_count; plane++) {
-                        unsigned target = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 128 : 0;
                         int x_index = (plane_count + 1) * x;
-                        unsigned u = s[x_index + plane]*a[x_index] + target*(255-a[x_index]) + 128;
+                        unsigned u = s[x_index + plane]*a[x_index] + target_table[plane]*(255-a[x_index]) + 128;
                         d[plane_count*x + plane] = (257*u) >> 16;
                     }
                 }
