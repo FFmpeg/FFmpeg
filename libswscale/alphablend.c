@@ -48,8 +48,54 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
     if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
         for (plane = 0; plane < plane_count; plane++) {
             int w = plane ? c->chrSrcW : c->srcW;
+            int x_subsample = plane ? desc->log2_chroma_w: 0;
             int y_subsample = plane ? desc->log2_chroma_h: 0;
             for (y = srcSliceY >> y_subsample; y < FF_CEIL_RSHIFT(srcSliceH, y_subsample); y++) {
+                if (x_subsample || y_subsample) {
+                    int alpha;
+                    unsigned u;
+                    if (sixteen_bits) {
+                        ptrdiff_t alpha_step = srcStride[plane_count] >> 1;
+                        const uint16_t *s = src[plane      ] + srcStride[plane] * y;
+                        const uint16_t *a = src[plane_count] + (srcStride[plane_count] * y << y_subsample);
+                              uint16_t *d = dst[plane      ] + dstStride[plane] * y;
+                        if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
+                            for (x = 0; x < w; x++) {
+                                if (y_subsample) {
+                                    alpha = (a[2*x]              + a[2*x + 1] + 2 +
+                                             a[2*x + alpha_step] + a[2*x + alpha_step + 1]) >> 2;
+                                } else
+                                    alpha = (a[2*x] + a[2*x + 1]) >> 1;
+                                u = s[x]*alpha + target_table[((x^y)>>5)&1][plane]*(max-alpha) + off;
+                                d[x] = av_clip((u + (u >> shift)) >> shift, 0, max);
+                            }
+                        } else {
+                            for (x = 0; x < w; x++) {
+                                if (y_subsample) {
+                                    alpha = (av_bswap16(a[2*x])              + av_bswap16(a[2*x + 1]) + 2 +
+                                             av_bswap16(a[2*x + alpha_step]) + av_bswap16(a[2*x + alpha_step + 1])) >> 2;
+                                } else
+                                    alpha = (av_bswap16(a[2*x]) + av_bswap16(a[2*x + 1])) >> 1;
+                                u = av_bswap16(s[x])*alpha + target_table[((x^y)>>5)&1][plane]*(max-alpha) + off;
+                                d[x] = av_clip((u + (u >> shift)) >> shift, 0, max);
+                            }
+                        }
+                    } else {
+                        ptrdiff_t alpha_step = srcStride[plane_count];
+                        const uint8_t *s = src[plane      ] + srcStride[plane] * y;
+                        const uint8_t *a = src[plane_count] + (srcStride[plane_count] * y << y_subsample);
+                              uint8_t *d = dst[plane      ] + dstStride[plane] * y;
+                        for (x = 0; x < w; x++) {
+                            if (y_subsample) {
+                                alpha = (a[2*x]              + a[2*x + 1] + 2 +
+                                         a[2*x + alpha_step] + a[2*x + alpha_step + 1]) >> 2;
+                            } else
+                                alpha = (a[2*x] + a[2*x + 1]) >> 1;
+                            u = s[x]*alpha + target_table[((x^y)>>5)&1][plane]*(255-alpha) + 128;
+                            d[x] = (257*u) >> 16;
+                        }
+                    }
+                } else {
                 if (sixteen_bits) {
                     const uint16_t *s = src[plane      ] + srcStride[plane] * y;
                     const uint16_t *a = src[plane_count] + srcStride[plane_count] * y;
@@ -74,6 +120,7 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                         unsigned u = s[x]*a[x] + target_table[((x^y)>>5)&1][plane]*(255-a[x]) + 128;
                         d[x] = (257*u) >> 16;
                     }
+                }
                 }
             }
         }
