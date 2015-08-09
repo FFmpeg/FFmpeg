@@ -62,6 +62,7 @@ static const AVOption options[] = {
     { "dash", "Write DASH compatible fragmented MP4", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DASH}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_discont", "Signal that the next fragment is discontinuous from earlier ones", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_DISCONT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "delay_moov", "Delay writing the initial moov until the first fragment is cut, or until the first fragment flush", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DELAY_MOOV}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "global_sidx", "Write a global sidx index at the start of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_GLOBAL_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -2836,7 +2837,7 @@ static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks,
     mov_write_moof_tag_internal(avio_buf, mov, tracks, 0);
     moof_size = ffio_close_null_buf(avio_buf);
 
-    if (mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_FASTSTART))
+    if (mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_GLOBAL_SIDX))
         mov_write_sidx_tags(pb, mov, tracks, moof_size + 8 + mdat_size);
 
     if ((ret = mov_add_tfra_entries(pb, mov, tracks, moof_size + 8 + mdat_size)) < 0)
@@ -2976,7 +2977,7 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
     else if (mov->mode == MODE_MP4)
         ffio_wfourcc(pb, "mp41");
 
-    if (mov->flags & FF_MOV_FLAG_DASH && mov->flags & FF_MOV_FLAG_FASTSTART)
+    if (mov->flags & FF_MOV_FLAG_DASH && mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
         ffio_wfourcc(pb, "dash");
 
     return update_size(pb, pos);
@@ -3228,7 +3229,7 @@ static int mov_flush_fragment(AVFormatContext *s)
         mov_write_moov_tag(s->pb, mov, s);
 
         if (mov->flags & FF_MOV_FLAG_DELAY_MOOV) {
-            if (mov->flags & FF_MOV_FLAG_FASTSTART)
+            if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
                 mov->reserved_header_pos = avio_tell(s->pb);
             avio_flush(s->pb);
             mov->moov_written = 1;
@@ -3242,7 +3243,7 @@ static int mov_flush_fragment(AVFormatContext *s)
         avio_write(s->pb, buf, buf_size);
         av_free(buf);
 
-        if (mov->flags & FF_MOV_FLAG_FASTSTART)
+        if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
             mov->reserved_header_pos = avio_tell(s->pb);
 
         mov->moov_written = 1;
@@ -3481,7 +3482,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
              * in sidx/tfrf/tfxd tags; make sure the sidx pts and duration match up with
              * the next fragment. This means the cts of the first sample must
              * be the same in all fragments. */
-            if ((mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_FASTSTART)) ||
+            if ((mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)) ||
                 mov->mode == MODE_ISM)
                 pkt->pts = pkt->dts + trk->end_pts - trk->cluster[trk->entry].dts;
         } else {
@@ -4048,7 +4049,7 @@ static int mov_write_header(AVFormatContext *s)
         !(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {
         mov_write_moov_tag(pb, mov, s);
         mov->moov_written = 1;
-        if (mov->flags & FF_MOV_FLAG_FASTSTART)
+        if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
             mov->reserved_header_pos = avio_tell(pb);
     }
 
@@ -4245,7 +4246,7 @@ static int mov_write_trailer(AVFormatContext *s)
         mov_auto_flush_fragment(s);
         for (i = 0; i < mov->nb_streams; i++)
            mov->tracks[i].data_offset = 0;
-        if (mov->flags & FF_MOV_FLAG_FASTSTART) {
+        if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX) {
             av_log(s, AV_LOG_INFO, "Starting second pass: inserting sidx atoms\n");
             res = shift_data(s);
             if (res == 0) {

@@ -192,6 +192,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_DASH                  (1 << 11)
 #define FF_MOV_FLAG_FRAG_DISCONT          (1 << 12)
 #define FF_MOV_FLAG_DELAY_MOOV            (1 << 13)
+#define FF_MOV_FLAG_GLOBAL_SIDX           (1 << 14)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
