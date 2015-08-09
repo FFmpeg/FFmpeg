@@ -801,35 +801,44 @@ AVFilter ff_vsrc_rgbtestsrc = {
 #if CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER
 
 static const uint8_t rainbow[7][4] = {
-    { 180, 128, 128, 255 },     /* gray */
-    { 168,  44, 136, 255 },     /* yellow */
-    { 145, 147,  44, 255 },     /* cyan */
-    { 133,  63,  52, 255 },     /* green */
-    {  63, 193, 204, 255 },     /* magenta */
-    {  51, 109, 212, 255 },     /* red */
-    {  28, 212, 120, 255 },     /* blue */
+    { 180, 128, 128, 255 },     /* 75% white */
+    { 161,  44, 141, 255 },     /* 75% yellow */
+    { 131, 156,  44, 255 },     /* 75% cyan */
+    { 112,  72,  57, 255 },     /* 75% green */
+    {  83, 183, 198, 255 },     /* 75% magenta */
+    {  65,  99, 212, 255 },     /* 75% red */
+    {  34, 212, 114, 255 },     /* 75% blue */
+};
+
+static const uint8_t rainbowhd[7][4] = {
+    { 180, 128, 128, 255 },     /* 75% white */
+    { 168,  44, 136, 255 },     /* 75% yellow */
+    { 145, 147,  44, 255 },     /* 75% cyan */
+    { 133,  63,  52, 255 },     /* 75% green */
+    {  63, 193, 204, 255 },     /* 75% magenta */
+    {  51, 109, 212, 255 },     /* 75% red */
+    {  28, 212, 120, 255 },     /* 75% blue */
 };
 
 static const uint8_t wobnair[7][4] = {
-    {  32, 240, 118, 255 },     /* blue */
+    {  34, 212, 114, 255 },     /* 75% blue */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    {  54, 184, 198, 255 },     /* magenta */
+    {  83, 183, 198, 255 },     /* 75% magenta */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    { 188, 154,  16, 255 },     /* cyan */
+    { 131, 156,  44, 255 },     /* 75% cyan */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    { 191, 128, 128, 255 },     /* gray */
+    { 180, 128, 128, 255 },     /* 75% white */
 };
 
 static const uint8_t white[4] = { 235, 128, 128, 255 };
-static const uint8_t black[4] = {  19, 128, 128, 255 }; /* 7.5% intensity black */
 
 /* pluge pulses */
-static const uint8_t neg4ire[4] = {  9, 128, 128, 255 }; /*  3.5% intensity black */
-static const uint8_t pos4ire[4] = { 29, 128, 128, 255 }; /* 11.5% intensity black */
+static const uint8_t neg4ire[4] = {  7, 128, 128, 255 };
+static const uint8_t pos4ire[4] = { 24, 128, 128, 255 };
 
 /* fudged Q/-I */
-static const uint8_t i_pixel[4] = { 61, 153,  99, 255 };
-static const uint8_t q_pixel[4] = { 35, 174, 152, 255 };
+static const uint8_t i_pixel[4] = { 57, 156,  97, 255 };
+static const uint8_t q_pixel[4] = { 44, 171, 147, 255 };
 
 static const uint8_t gray40[4] = { 104, 128, 128, 255 };
 static const uint8_t gray15[4] = {  49, 128, 128, 255 };
@@ -940,16 +949,16 @@ static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     draw_bar(test, q_pixel, x, r_h + w_h, p_w, p_h, picref);
     x += p_w;
     tmp = FFALIGN(5 * r_w - x,  1 << pixdesc->log2_chroma_w);
-    draw_bar(test, black, x, r_h + w_h, tmp, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
     tmp = FFALIGN(r_w / 3,  1 << pixdesc->log2_chroma_w);
     draw_bar(test, neg4ire, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
-    draw_bar(test, black, x, r_h + w_h, tmp, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
     draw_bar(test, pos4ire, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
-    draw_bar(test, black, x, r_h + w_h, test->w - x, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, test->w - x, p_h, picref);
 }
 
 static av_cold int smptebars_init(AVFilterContext *ctx)
@@ -995,7 +1004,7 @@ static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 
     r_w = FFALIGN((((test->w + 3) / 4) * 3) / 7, 1 << pixdesc->log2_chroma_w);
     for (i = 0; i < 7; i++) {
-        draw_bar(test, rainbow[i], x, 0, r_w, r_h, picref);
+        draw_bar(test, rainbowhd[i], x, 0, r_w, r_h, picref);
         x += r_w;
     }
     draw_bar(test, gray40, x, 0, test->w - x, r_h, picref);
@@ -1006,7 +1015,7 @@ static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     draw_bar(test, i_pixel, x, y, r_w, r_h, picref);
     x += r_w;
     tmp = r_w * 6;
-    draw_bar(test, rainbow[0], x, y, tmp, r_h, picref);
+    draw_bar(test, rainbowhd[0], x, y, tmp, r_h, picref);
     x += tmp;
     l_w = x;
     draw_bar(test, blue, x, y, test->w - x, r_h, picref);
