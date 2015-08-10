@@ -964,7 +964,7 @@ static int ftp_read_dir(URLContext *h, AVIODirEntry **next)
 static int ftp_close_dir(URLContext *h)
 {
     FTPContext *s = h->priv_data;
-    av_free(s->dir_buffer);
+    av_freep(&s->dir_buffer);
     ffurl_closep(&s->conn_control);
     ffurl_closep(&s->conn_data);
     return 0;
