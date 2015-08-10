@@ -843,7 +843,7 @@ static const uint8_t black4[4] = {  25, 128, 128, 255 };
 static const uint8_t   neg2[4] = {  12, 128, 128, 255 };
 
 static void draw_bar(TestSourceContext *test, const uint8_t color[4],
-                     unsigned x, unsigned y, unsigned w, unsigned h,
+                     int x, int y, int w, int h,
                      AVFrame *frame)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
@@ -865,9 +865,9 @@ static void draw_bar(TestSourceContext *test, const uint8_t color[4],
 
         if (plane == 1 || plane == 2) {
             px = x >> desc->log2_chroma_w;
-            pw = w >> desc->log2_chroma_w;
+            pw = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
             py = y >> desc->log2_chroma_h;
-            ph = h >> desc->log2_chroma_h;
+            ph = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
         } else {
             px = x;
             pw = w;
