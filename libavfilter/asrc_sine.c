@@ -22,6 +22,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
@@ -31,7 +32,8 @@ typedef struct {
     const AVClass *class;
     double frequency;
     double beep_factor;
-    int samples_per_frame;
+    char *samples_per_frame;
+    AVExpr *samples_per_frame_expr;
     int sample_rate;
     int64_t duration;
     int16_t *sin;
@@ -61,6 +63,9 @@ typedef struct {
 #define OPT_DUR(name, field, def, min, max, descr, ...) \
     OPT_GENERIC(name, field, def, min, max, descr, DURATION, str, __VA_ARGS__)
 
+#define OPT_STR(name, field, def, min, max, descr, ...) \
+    OPT_GENERIC(name, field, def, min, max, descr, STRING, str, __VA_ARGS__)
+
 static const AVOption sine_options[] = {
     OPT_DBL("frequency",         frequency,            440, 0, DBL_MAX,   "set the sine frequency"),
     OPT_DBL("f",                 frequency,            440, 0, DBL_MAX,   "set the sine frequency"),
@@ -70,7 +75,7 @@ static const AVOption sine_options[] = {
     OPT_INT("r",                 sample_rate,        44100, 1, INT_MAX,   "set the sample rate"),
     OPT_DUR("duration",          duration,               0, 0, INT64_MAX, "set the audio duration"),
     OPT_DUR("d",                 duration,               0, 0, INT64_MAX, "set the audio duration"),
-    OPT_INT("samples_per_frame", samples_per_frame,   1024, 0, INT_MAX,   "set the number of samples per frame"),
+    OPT_STR("samples_per_frame", samples_per_frame, "1024", 0, 0,         "set the number of samples per frame"),
     {NULL}
 };
 
@@ -120,8 +125,25 @@ static void make_sin_table(int16_t *sin)
         sin[i + 2 * half_pi] = -sin[i];
 }
 
+static const char *const var_names[] = {
+    "n",
+    "pts",
+    "t",
+    "TB",
+    NULL
+};
+
+enum {
+    VAR_N,
+    VAR_PTS,
+    VAR_T,
+    VAR_TB,
+    VAR_VARS_NB
+};
+
 static av_cold int init(AVFilterContext *ctx)
 {
+    int ret;
     SineContext *sine = ctx->priv;
 
     if (!(sine->sin = av_malloc(sizeof(*sine->sin) << LOG_PERIOD)))
@@ -136,6 +158,12 @@ static av_cold int init(AVFilterContext *ctx)
                           sine->sample_rate + 0.5;
     }
 
+    ret = av_expr_parse(&sine->samples_per_frame_expr,
+                        sine->samples_per_frame, var_names,
+                        NULL, NULL, NULL, NULL, 0, sine);
+    if (ret < 0)
+        return ret;
+
     return 0;
 }
 
@@ -143,6 +171,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     SineContext *sine = ctx->priv;
 
+    av_expr_free(sine->samples_per_frame_expr);
+    sine->samples_per_frame_expr = NULL;
     av_freep(&sine->sin);
 }
 
@@ -188,8 +218,20 @@ static int request_frame(AVFilterLink *outlink)
 {
     SineContext *sine = outlink->src->priv;
     AVFrame *frame;
-    int i, nb_samples = sine->samples_per_frame;
+    double values[VAR_VARS_NB] = {
+        [VAR_N]   = outlink->frame_count,
+        [VAR_PTS] = sine->pts,
+        [VAR_T]   = sine->pts * av_q2d(outlink->time_base),
+        [VAR_TB]  = av_q2d(outlink->time_base),
+    };
+    int i, nb_samples = lrint(av_expr_eval(sine->samples_per_frame_expr, values, sine));
     int16_t *samples;
+
+    if (nb_samples <= 0) {
+        av_log(sine, AV_LOG_WARNING, "nb samples expression evaluated to %d, "
+               "defaulting to 1024\n", nb_samples);
+        nb_samples = 1024;
+    }
 
     if (sine->duration) {
         nb_samples = FFMIN(nb_samples, sine->duration - sine->pts);
