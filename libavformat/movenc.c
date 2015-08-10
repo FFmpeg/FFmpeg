@@ -3680,6 +3680,8 @@ static int mov_write_sidx_tag(AVIOContext *pb,
         }
     } else {
         entries = track->nb_frag_info;
+        if (entries <= 0)
+            return 0;
         presentation_time = track->frag_info[0].time;
     }
 
