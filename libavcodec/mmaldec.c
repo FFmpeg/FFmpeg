@@ -361,10 +361,8 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
             ret = AVERROR(ENOSYS);
             goto fail;
         }
-        av_bitstream_filter_filter(ctx->bsfc, avctx, NULL, &dummy_p, &dummy_int, NULL, 0, 0);
-    }
-
-    if (avctx->extradata_size) {
+        av_bitstream_filter_filter(ctx->bsfc, avctx, "private_spspps_buf", &dummy_p, &dummy_int, NULL, 0, 0);
+    } else if (avctx->extradata_size) {
         if ((status = mmal_format_extradata_alloc(format_in, avctx->extradata_size)))
             goto fail;
         format_in->extradata_size = avctx->extradata_size;
@@ -453,7 +451,7 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt)
         if (ctx->bsfc) {
             uint8_t *tmp_data;
             int tmp_size;
-            if ((ret = av_bitstream_filter_filter(ctx->bsfc, avctx, NULL,
+            if ((ret = av_bitstream_filter_filter(ctx->bsfc, avctx, "private_spspps_buf",
                                                   &tmp_data, &tmp_size,
                                                   avpkt->data, avpkt->size,
                                                   avpkt->flags & AV_PKT_FLAG_KEY)) < 0)
