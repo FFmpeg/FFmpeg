@@ -25,6 +25,7 @@
  * Splits packets into individual blocks.
  */
 
+#include "libavutil/avassert.h"
 #include "parser.h"
 #include "g729.h"
 
@@ -44,18 +45,10 @@ static int g729_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     int next;
 
     if (!s->block_size) {
-        switch (avctx->codec_id) {
-        case AV_CODEC_ID_G729:
-            /* FIXME: replace this heuristic block_size with more precise estimate */
-            s->block_size = (avctx->bit_rate < 8000) ? G729D_6K4_BLOCK_SIZE : G729_8K_BLOCK_SIZE;
-            s->duration   = avctx->frame_size;
-            break;
-        default:
-            *poutbuf      = buf;
-            *poutbuf_size = buf_size;
-            av_log(avctx, AV_LOG_ERROR, "Invalid codec_id\n");
-            return buf_size;
-        }
+        av_assert1(avctx->codec_id == AV_CODEC_ID_G729);
+        /* FIXME: replace this heuristic block_size with more precise estimate */
+        s->block_size = (avctx->bit_rate < 8000) ? G729D_6K4_BLOCK_SIZE : G729_8K_BLOCK_SIZE;
+        s->duration   = avctx->frame_size;
     }
 
     if (!s->remaining)
