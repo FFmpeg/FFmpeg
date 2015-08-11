@@ -361,10 +361,8 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
             ret = AVERROR(ENOSYS);
             goto fail;
         }
-        av_bitstream_filter_filter(ctx->bsfc, avctx, NULL, &dummy_p, &dummy_int, NULL, 0, 0);
-    }
-
-    if (avctx->extradata_size) {
+        av_bitstream_filter_filter(ctx->bsfc, avctx, "private_spspps_buf", &dummy_p, &dummy_int, NULL, 0, 0);
+    } else if (avctx->extradata_size) {
         if ((status = mmal_format_extradata_alloc(format_in, avctx->extradata_size)))
             goto fail;
         format_in->extradata_size = avctx->extradata_size;
@@ -447,13 +445,11 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt)
     uint8_t *start;
     int ret = 0;
 
-    ctx->packets_sent++;
-
     if (avpkt->size) {
         if (ctx->bsfc) {
             uint8_t *tmp_data;
             int tmp_size;
-            if ((ret = av_bitstream_filter_filter(ctx->bsfc, avctx, NULL,
+            if ((ret = av_bitstream_filter_filter(ctx->bsfc, avctx, "private_spspps_buf",
                                                   &tmp_data, &tmp_size,
                                                   avpkt->data, avpkt->size,
                                                   avpkt->flags & AV_PKT_FLAG_KEY)) < 0)
@@ -474,6 +470,14 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt)
         }
         size = buf->size;
         data = buf->data;
+        ctx->packets_sent++;
+    } else {
+        if (!ctx->packets_sent) {
+            // Short-cut the flush logic to avoid upsetting MMAL.
+            ctx->eos_sent = 1;
+            ctx->eos_received = 1;
+            goto done;
+        }
     }
 
     start = data;
@@ -643,13 +647,23 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // excessive buffering.
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).
-        if (ctx->frames_output || ctx->packets_sent > MAX_DELAYED_FRAMES || ctx->eos_sent) {
-            buffer = mmal_queue_wait(ctx->queue_decoded_frames);
+        if (ctx->frames_output || ctx->packets_sent > MAX_DELAYED_FRAMES ||
+            (ctx->packets_sent && ctx->eos_sent)) {
+            // MMAL will ignore broken input packets, which means the frame we
+            // expect here may never arrive. Dealing with this correctly is
+            // complicated, so here's a hack to avoid that it freezes forever
+            // in this unlikely situation.
+            buffer = mmal_queue_timedwait(ctx->queue_decoded_frames, 100);
+            if (!buffer) {
+                av_log(avctx, AV_LOG_ERROR, "Did not get output frame from MMAL.\n");
+                ret = AVERROR_UNKNOWN;
+                goto done;
+            }
         } else {
             buffer = mmal_queue_get(ctx->queue_decoded_frames);
+            if (!buffer)
+                goto done;
         }
-        if (!buffer)
-            goto done;
 
         ctx->eos_received |= !!(buffer->flags & MMAL_BUFFER_HEADER_FLAG_EOS);
         if (ctx->eos_received)

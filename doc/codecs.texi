@@ -1045,7 +1045,11 @@ Possible values:
 @item color_primaries @var{integer} (@emph{decoding/encoding,video})
 @item color_trc @var{integer} (@emph{decoding/encoding,video})
 @item colorspace @var{integer} (@emph{decoding/encoding,video})
+
 @item color_range @var{integer} (@emph{decoding/encoding,video})
+If used as input parameter, it serves as a hint to the decoder, which
+color_range the input has.
+
 @item chroma_sample_location @var{integer} (@emph{decoding/encoding,video})
 
 @item log_level_offset @var{integer}

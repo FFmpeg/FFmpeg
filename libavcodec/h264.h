@@ -1192,6 +1192,7 @@ static inline int get_avc_nalsize(H264Context *h, const uint8_t *buf,
     int i, nalsize = 0;
 
     if (*buf_index >= buf_size - h->nal_length_size) {
+        // the end of the buffer is reached, refill it.
         return AVERROR(EAGAIN);
     }
 

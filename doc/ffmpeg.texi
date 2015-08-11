@@ -295,8 +295,8 @@ Set the file size limit, expressed in bytes.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
-@var{position}. Note the in most formats it is not possible to seek exactly, so
-@command{ffmpeg} will seek to the closest seek point before @var{position}.
+@var{position}. Note that in most formats it is not possible to seek exactly,
+so @command{ffmpeg} will seek to the closest seek point before @var{position}.
 When transcoding and @option{-accurate_seek} is enabled (the default), this
 extra segment between the seek point and @var{position} will be decoded and
 discarded. When doing stream copy or when @option{-noaccurate_seek} is used, it

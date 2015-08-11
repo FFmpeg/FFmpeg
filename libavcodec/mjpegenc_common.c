@@ -145,9 +145,10 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
         AV_WB16(ptr, size);
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
-        avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
-        avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
+    if (((avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
+          avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
+          avctx->pix_fmt == AV_PIX_FMT_YUV444P) && avctx->color_range != AVCOL_RANGE_JPEG)
+        || avctx->color_range == AVCOL_RANGE_MPEG) {
         put_marker(p, COM);
         flush_put_bits(p);
         ptr = put_bits_ptr(p);

@@ -3680,6 +3680,8 @@ static int mov_write_sidx_tag(AVIOContext *pb,
         }
     } else {
         entries = track->nb_frag_info;
+        if (entries <= 0)
+            return 0;
         presentation_time = track->frag_info[0].time;
     }
 
@@ -4166,7 +4168,7 @@ static int mov_flush_fragment(AVFormatContext *s)
 
         if (mov->flags & FF_MOV_FLAG_DELAY_MOOV) {
             if (mov->flags & FF_MOV_FLAG_FASTSTART)
-                mov->reserved_moov_pos = avio_tell(s->pb);
+                mov->reserved_header_pos = avio_tell(s->pb);
             avio_flush(s->pb);
             mov->moov_written = 1;
             return 0;
@@ -4178,6 +4180,9 @@ static int mov_flush_fragment(AVFormatContext *s)
         ffio_wfourcc(s->pb, "mdat");
         avio_write(s->pb, buf, buf_size);
         av_free(buf);
+
+        if (mov->flags & FF_MOV_FLAG_FASTSTART)
+            mov->reserved_header_pos = avio_tell(s->pb);
 
         mov->moov_written = 1;
         mov->mdat_size = 0;
@@ -5227,7 +5232,7 @@ static int mov_write_header(AVFormatContext *s)
 
 
     if (mov->reserved_moov_size){
-        mov->reserved_moov_pos= avio_tell(pb);
+        mov->reserved_header_pos = avio_tell(pb);
         if (mov->reserved_moov_size > 0)
             avio_skip(pb, mov->reserved_moov_size);
     }
@@ -5240,7 +5245,7 @@ static int mov_write_header(AVFormatContext *s)
             mov->flags |= FF_MOV_FLAG_FRAG_KEYFRAME;
     } else {
         if (mov->flags & FF_MOV_FLAG_FASTSTART)
-            mov->reserved_moov_pos = avio_tell(pb);
+            mov->reserved_header_pos = avio_tell(pb);
         mov_write_mdat_tag(pb, mov);
     }
 
@@ -5300,7 +5305,7 @@ static int mov_write_header(AVFormatContext *s)
             return ret;
         mov->moov_written = 1;
         if (mov->flags & FF_MOV_FLAG_FASTSTART)
-            mov->reserved_moov_pos = avio_tell(pb);
+            mov->reserved_header_pos = avio_tell(pb);
     }
 
     return 0;
@@ -5417,10 +5422,10 @@ static int shift_data(AVFormatContext *s)
     /* mark the end of the shift to up to the last data we wrote, and get ready
      * for writing */
     pos_end = avio_tell(s->pb);
-    avio_seek(s->pb, mov->reserved_moov_pos + moov_size, SEEK_SET);
+    avio_seek(s->pb, mov->reserved_header_pos + moov_size, SEEK_SET);
 
     /* start reading at where the new moov will be placed */
-    avio_seek(read_pb, mov->reserved_moov_pos, SEEK_SET);
+    avio_seek(read_pb, mov->reserved_header_pos, SEEK_SET);
     pos = avio_tell(read_pb);
 
 #define READ_BLOCK do {                                                             \
@@ -5494,13 +5499,13 @@ static int mov_write_trailer(AVFormatContext *s)
             ffio_wfourcc(pb, "mdat");
             avio_wb64(pb, mov->mdat_size + 16);
         }
-        avio_seek(pb, mov->reserved_moov_size > 0 ? mov->reserved_moov_pos : moov_pos, SEEK_SET);
+        avio_seek(pb, mov->reserved_moov_size > 0 ? mov->reserved_header_pos : moov_pos, SEEK_SET);
 
         if (mov->flags & FF_MOV_FLAG_FASTSTART) {
             av_log(s, AV_LOG_INFO, "Starting second pass: moving the moov atom to the beginning of the file\n");
             res = shift_data(s);
             if (res == 0) {
-                avio_seek(pb, mov->reserved_moov_pos, SEEK_SET);
+                avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
                 if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
                     goto error;
             }
@@ -5508,7 +5513,7 @@ static int mov_write_trailer(AVFormatContext *s)
             int64_t size;
             if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
                 goto error;
-            size = mov->reserved_moov_size - (avio_tell(pb) - mov->reserved_moov_pos);
+            size = mov->reserved_moov_size - (avio_tell(pb) - mov->reserved_header_pos);
             if (size < 8){
                 av_log(s, AV_LOG_ERROR, "reserved_moov_size is too small, needed %"PRId64" additional\n", 8-size);
                 res = AVERROR(EINVAL);
@@ -5532,7 +5537,7 @@ static int mov_write_trailer(AVFormatContext *s)
             res = shift_data(s);
             if (res == 0) {
                 int64_t end = avio_tell(pb);
-                avio_seek(pb, mov->reserved_moov_pos, SEEK_SET);
+                avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
                 mov_write_sidx_tags(pb, mov, -1, 0);
                 avio_seek(pb, end, SEEK_SET);
                 mov_write_mfra_tag(pb, mov);
