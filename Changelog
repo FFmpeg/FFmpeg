@@ -30,6 +30,7 @@ version <next>:
 - allyuv video source
 - atadenoise video filter
 - OS X VideoToolbox support
+- aphasemeter filter
 
 
 version 2.7:
