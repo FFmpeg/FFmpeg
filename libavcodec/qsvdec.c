@@ -309,6 +309,9 @@ int ff_qsv_decode_close(QSVContext *q)
 {
     QSVFrame *cur = q->work_frames;
 
+    if (q->session)
+        MFXVideoDECODE_Close(q->session);
+
     while (cur) {
         q->work_frames = cur->next;
         av_frame_free(&cur->frame);
