@@ -1,7 +1,7 @@
 ;*****************************************************************************
 ;* x86inc.asm: x264asm abstraction layer
 ;*****************************************************************************
-;* Copyright (C) 2005-2013 x264 project
+;* Copyright (C) 2005-2015 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
@@ -65,6 +65,15 @@
     %else
         %define UNIX64 1
     %endif
+%endif
+
+%define FORMAT_ELF 0
+%ifidn __OUTPUT_FORMAT__,elf
+    %define FORMAT_ELF 1
+%elifidn __OUTPUT_FORMAT__,elf32
+    %define FORMAT_ELF 1
+%elifidn __OUTPUT_FORMAT__,elf64
+    %define FORMAT_ELF 1
 %endif
 
 %ifdef PREFIX
@@ -688,7 +697,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
         CAT_XDEFINE cglobaled_, %2, 1
     %endif
     %xdefine current_function %2
-    %ifidn __OUTPUT_FORMAT__,elf
+    %if FORMAT_ELF
         global %2:function %%VISIBILITY
     %else
         global %2
@@ -714,14 +723,16 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 
 ; like cextern, but without the prefix
 %macro cextern_naked 1
-    %xdefine %1 mangle(%1)
+    %ifdef PREFIX
+        %xdefine %1 mangle(%1)
+    %endif
     CAT_XDEFINE cglobaled_, %1, 1
     extern %1
 %endmacro
 
 %macro const 1-2+
     %xdefine %1 mangle(private_prefix %+ _ %+ %1)
-    %ifidn __OUTPUT_FORMAT__,elf
+    %if FORMAT_ELF
         global %1:data hidden
     %else
         global %1
@@ -729,10 +740,9 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %1: %2
 %endmacro
 
-; This is needed for ELF, otherwise the GNU linker assumes the stack is
-; executable by default.
-%ifidn __OUTPUT_FORMAT__,elf
-[section .note.GNU-stack noalloc noexec nowrite progbits]
+; This is needed for ELF, otherwise the GNU linker assumes the stack is executable by default.
+%if FORMAT_ELF
+    [SECTION .note.GNU-stack noalloc noexec nowrite progbits]
 %endif
 
 ; cpuflags
@@ -751,8 +761,8 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %assign cpuflags_avx      (1<<11)| cpuflags_sse42
 %assign cpuflags_xop      (1<<12)| cpuflags_avx
 %assign cpuflags_fma4     (1<<13)| cpuflags_avx
-%assign cpuflags_avx2     (1<<14)| cpuflags_avx
-%assign cpuflags_fma3     (1<<15)| cpuflags_avx
+%assign cpuflags_fma3     (1<<14)| cpuflags_avx
+%assign cpuflags_avx2     (1<<15)| cpuflags_fma3
 
 %assign cpuflags_cache32  (1<<16)
 %assign cpuflags_cache64  (1<<17)
@@ -801,7 +811,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
         %endif
     %endif
 
-    %if cpuflag(sse2)
+    %if ARCH_X86_64 || cpuflag(sse2)
         CPUNOP amdnop
     %else
         CPUNOP basicnop
