@@ -839,7 +839,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
 
     /* Not touching AVSubtitles again*/
     if(sub->num_rects) {
-        avpriv_request_sample(ctx, "Different Version of Segment asked Twice\n");
+        avpriv_request_sample(ctx, "Different Version of Segment asked Twice");
         return AVERROR_PATCHWELCOME;
     }
     for (display = ctx->display_list; display; display = display->next) {
