@@ -602,6 +602,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER(DVDSUB,             dvdsub);
     REGISTER_PARSER(DVD_NAV,            dvd_nav);
     REGISTER_PARSER(FLAC,               flac);
+    REGISTER_PARSER(G729,               g729);
     REGISTER_PARSER(GSM,                gsm);
     REGISTER_PARSER(H261,               h261);
     REGISTER_PARSER(H263,               h263);
