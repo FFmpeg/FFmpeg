@@ -468,6 +468,10 @@ finish:
 
     av_frame_free(&frame);
 
+    if (decoder_ctx)
+        av_freep(&decoder_ctx->hwaccel_context);
+    avcodec_free_context(&decoder_ctx);
+
     free_surfaces(&decode);
 
     if (decode.mfx_session)
@@ -476,10 +480,6 @@ finish:
         vaTerminate(decode.va_dpy);
     if (dpy)
         XCloseDisplay(dpy);
-
-    if (decoder_ctx)
-        av_freep(&decoder_ctx->hwaccel_context);
-    avcodec_free_context(&decoder_ctx);
 
     avio_close(output_ctx);
 
