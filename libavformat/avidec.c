@@ -861,6 +861,9 @@ static int avi_read_header(AVFormatContext *s)
                     if (st->codec->codec_id == AV_CODEC_ID_AAC &&
                         st->codec->extradata_size)
                         st->need_parsing = AVSTREAM_PARSE_NONE;
+                    // The flac parser does not work with AVSTREAM_PARSE_TIMESTAMPS
+                    if (st->codec->codec_id == AV_CODEC_ID_FLAC)
+                        st->need_parsing = AVSTREAM_PARSE_NONE;
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
                     if (ast->handler == AV_RL32("Axan")) {
