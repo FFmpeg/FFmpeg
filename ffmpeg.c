@@ -193,7 +193,9 @@ static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
         return;
     }
     if (r->x < 0 || r->x + r->w > w || r->y < 0 || r->y + r->h > h) {
-        av_log(NULL, AV_LOG_WARNING, "sub2video: rectangle overflowing\n");
+        av_log(NULL, AV_LOG_WARNING, "sub2video: rectangle (%d %d %d %d) overflowing %d %d\n",
+            r->x, r->y, r->w, r->h, w, h
+        );
         return;
     }
 
