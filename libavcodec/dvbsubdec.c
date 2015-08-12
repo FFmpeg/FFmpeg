@@ -1090,7 +1090,7 @@ static int dvbsub_parse_object_segment(AVCodecContext *avctx,
         buf += 2;
 
         if (buf + top_field_len + bottom_field_len > buf_end) {
-            av_log(avctx, AV_LOG_ERROR, "Field data size too large\n");
+            av_log(avctx, AV_LOG_ERROR, "Field data size %d+%d too large\n", top_field_len, bottom_field_len);
             return AVERROR_INVALIDDATA;
         }
 
