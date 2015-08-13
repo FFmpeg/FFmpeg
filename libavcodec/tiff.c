@@ -460,7 +460,7 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
                "Error allocating temporary buffer\n");
         return AVERROR(ENOMEM);
     }
-    if (s->fax_opts & 2) {
+    if ((s->fax_opts & 2) && s->compr == TIFF_G3) {
         avpriv_request_sample(s->avctx, "Uncompressed fax mode");
         av_free(src2);
         return AVERROR_PATCHWELCOME;
