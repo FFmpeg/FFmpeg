@@ -739,19 +739,20 @@ static void extract_vke_script(int* argc_ptr,char ***argv_ptr)
 {
 	//check if it's -vke_script tag
 	if(*argc_ptr>=3&& !strcmp((*argv_ptr)[1],"-vke_script")){
-		av_log(NULL, AV_LOG_FATAL, "argv[1]: %s\n",(*argv_ptr)[1]);
 
 		char* script_location=(*argv_ptr)[2];
 		FILE *fp=fopen(script_location,"r");
 		if(fp!=NULL){
 			int c;
 			int line_count=0;
+			int char_count=0;
 
 			do{
 				do{
 					//read one line
 					c = fgetc(fp);
 					if (c != EOF&&c != '\n'){
+						char_count++;
 						continue;
 					}
 					++line_count;
@@ -759,7 +760,7 @@ static void extract_vke_script(int* argc_ptr,char ***argv_ptr)
 			} while (c != EOF);
 			--line_count;//minus EOF count
 			vke_argc=line_count+1;
-			vke_argv=av_mallocz(sizeof(char *) * vke_argc);
+			vke_argv=av_mallocz(char_count+line_count);
 			(*vke_argv)="ffmpeg";
 			int argv_index=1;
 
@@ -770,7 +771,7 @@ static void extract_vke_script(int* argc_ptr,char ***argv_ptr)
 			do{
 				int pos = 0;
 				int temp_size = buffer_size;
-				temp=malloc(sizeof(char*));
+				temp=malloc(buffer_size);
 				do{
 					//read one line
 					c = fgetc(fp);
@@ -790,10 +791,10 @@ static void extract_vke_script(int* argc_ptr,char ***argv_ptr)
 				}
 			} while (c != EOF);
 		}
-	}
 
-	*argv_ptr=vke_argv;
-	*argc_ptr=vke_argc;
+		*argv_ptr=vke_argv;
+		*argc_ptr=vke_argc;
+	}
 }
 #else
 static void extract_vke_script(int* argc_ptr,char ***argv_ptr)
