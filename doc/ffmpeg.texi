@@ -280,13 +280,15 @@ data read from the input file.
 When used as an output option (before an output filename), stop writing the
 output after its duration reaches @var{duration}.
 
-@var{duration} may be a number in seconds, or in @code{hh:mm:ss[.xxx]} form.
+@var{duration} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 -to and -t are mutually exclusive and -t has priority.
 
 @item -to @var{position} (@emph{output})
 Stop writing the output at @var{position}.
-@var{position} may be a number in seconds, or in @code{hh:mm:ss[.xxx]} form.
+@var{position} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 -to and -t are mutually exclusive and -t has priority.
 
@@ -295,8 +297,8 @@ Set the file size limit, expressed in bytes.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
-@var{position}. Note the in most formats it is not possible to seek exactly, so
-@command{ffmpeg} will seek to the closest seek point before @var{position}.
+@var{position}. Note that in most formats it is not possible to seek exactly,
+so @command{ffmpeg} will seek to the closest seek point before @var{position}.
 When transcoding and @option{-accurate_seek} is enabled (the default), this
 extra segment between the seek point and @var{position} will be decoded and
 discarded. When doing stream copy or when @option{-noaccurate_seek} is used, it
@@ -305,7 +307,8 @@ will be preserved.
 When used as an output option (before an output filename), decodes but discards
 input until the timestamps reach @var{position}.
 
-@var{position} may be either in seconds or in @code{hh:mm:ss[.xxx]} form.
+@var{position} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 @item -sseof @var{position} (@emph{input/output})
 
@@ -325,7 +328,7 @@ the time duration specified in @var{offset}.
 @item -timestamp @var{date} (@emph{output})
 Set the recording timestamp in the container.
 
-@var{date} must be a time duration specification,
+@var{date} must be a date specification,
 see @ref{date syntax,,the Date section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 @item -metadata[:metadata_specifier] @var{key}=@var{value} (@emph{output,per-metadata})

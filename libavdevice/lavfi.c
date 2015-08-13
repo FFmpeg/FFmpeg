@@ -247,7 +247,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     for (i = 0, inout = output_links; inout; i++, inout = inout->next) {
         AVFilterContext *sink;
 
-        type = inout->filter_ctx->output_pads[inout->pad_idx].type;
+        type = avfilter_pad_get_type(inout->filter_ctx->output_pads, inout->pad_idx);
 
         if (type == AVMEDIA_TYPE_VIDEO && ! buffersink ||
             type == AVMEDIA_TYPE_AUDIO && ! abuffersink) {

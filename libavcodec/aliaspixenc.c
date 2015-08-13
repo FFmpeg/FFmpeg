@@ -61,7 +61,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     length = ALIAS_HEADER_SIZE + 4 * width * height; // max possible
-    if ((ret = ff_alloc_packet(pkt, length)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, length, ALIAS_HEADER_SIZE + height*2)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", length);
         return ret;
     }

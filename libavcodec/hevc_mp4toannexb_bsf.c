@@ -56,7 +56,7 @@ static int hevc_extradata_to_annexb(HEVCBSFContext* ctx, AVCodecContext *avctx)
     int ret = 0;
 
     uint8_t *new_extradata = NULL;
-    size_t   new_extradata_size = 0;;
+    size_t   new_extradata_size = 0;
 
     bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
 

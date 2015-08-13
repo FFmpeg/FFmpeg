@@ -213,7 +213,11 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->slice_offset    = NULL;
     dest->hwaccel         = NULL;
     dest->internal        = NULL;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     dest->coded_frame     = NULL;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     /* reallocate values that should be allocated separately */
     dest->extradata       = NULL;

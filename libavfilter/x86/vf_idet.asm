@@ -23,7 +23,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_TEXT
+SECTION .text
 
 ; Implementation that does 8-bytes at a time using single-word operations.
 %macro IDET_FILTER_LINE 1

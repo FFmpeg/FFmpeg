@@ -90,7 +90,7 @@ cextern cos_ %+ i
     %1
 %endmacro
 
-SECTION_TEXT
+SECTION .text
 
 %macro T2_3DNOW 4 ; z0, z1, mem0, mem1
     mova     %1, %3

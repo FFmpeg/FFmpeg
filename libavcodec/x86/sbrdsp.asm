@@ -34,7 +34,7 @@ ps_noise13      dd  0.0,  1.0, 0.0, -1.0
 cextern         sbr_noise_table
 cextern         ps_neg
 
-SECTION_TEXT
+SECTION .text
 
 INIT_XMM sse
 cglobal sbr_sum_square, 2, 3, 6
@@ -515,42 +515,42 @@ align 16
     jl .loop
 
     movlhps m1, m1
-    mulps   m4, m1, m2
+    mulps   m2, m1
     mulps   m1, m1
-    addps   m4, m6       ; real_sum1 + x[38][0] * x[39][0], x[38][1] * x[39][1]; imag_sum1 + x[38][0] * x[39][1], x[38][1] * x[39][0];
+    addps   m2, m6       ; real_sum1 + x[38][0] * x[39][0], x[38][1] * x[39][1]; imag_sum1 + x[38][0] * x[39][1], x[38][1] * x[39][0];
     addps   m1, m7       ; real_sum0 + x[38][0] * x[38][0], x[38][1] * x[38][1];
     addps   m6, [rsp   ] ; real_sum1 + x[ 0][0] * x[ 1][0], x[ 0][1] * x[ 1][1]; imag_sum1 + x[ 0][0] * x[ 1][1], x[ 0][1] * x[ 1][0];
     addps   m7, [rsp+16] ; real_sum0 + x[ 0][0] * x[ 0][0], x[ 0][1] * x[ 0][1];
 
-    xorps   m4, [ps_mask3]
+    xorps   m2, [ps_mask3]
     xorps   m5, [ps_mask3]
     xorps   m6, [ps_mask3]
 %if cpuflag(sse3)
-    movshdup m2, m1
-    haddps  m4, m5
+    movshdup m0, m1
+    haddps  m2, m5
     haddps  m7, m6
-    addss   m1, m2
+    addss   m1, m0
 %else
-    movaps  m3, m4
-    movaps  m2, m5
-    movaps  m0, m6
+    movaps  m3, m2
+    movaps  m0, m5
+    movaps  m4, m6
     shufps  m3, m3, q0301
-    shufps  m2, m2, q0301
     shufps  m0, m0, q0301
-    addps   m4, m3
-    addps   m5, m2
-    addps   m6, m0
+    shufps  m4, m4, q0301
+    addps   m2, m3
+    addps   m5, m0
+    addps   m6, m4
 
-    movss   m2, m7
+    movss   m0, m7
     movss   m3, m1
     shufps  m7, m7, q0001
     shufps  m1, m1, q0001
-    addss   m7, m2
+    addss   m7, m0
     addss   m1, m3
-    shufps  m4, m5, q2020
+    shufps  m2, m5, q2020
     shufps  m7, m6, q2020
 %endif
-    movaps  [phiq     ], m4
+    movaps  [phiq     ], m2
     movhps  [phiq+0x18], m7
     movss   [phiq+0x28], m7
     movss   [phiq+0x10], m1

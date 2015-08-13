@@ -308,5 +308,5 @@ AVFilter ff_vf_deband = {
     .query_formats = query_formats,
     .inputs        = avfilter_vf_deband_inputs,
     .outputs       = avfilter_vf_deband_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

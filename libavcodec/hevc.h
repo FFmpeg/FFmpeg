@@ -276,6 +276,7 @@ enum ScanType {
 typedef struct ShortTermRPS {
     unsigned int num_negative_pics;
     int num_delta_pocs;
+    int rps_idx_num_delta_pocs;
     int32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;

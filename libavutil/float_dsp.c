@@ -431,7 +431,7 @@ int main(int argc, char **argv)
     fill_double_array(&lfg, dbl_src1, LEN);
 
     avpriv_float_dsp_init(&fdsp, 1);
-    av_set_cpu_flags_mask(0);
+    av_force_cpu_flags(0);
     avpriv_float_dsp_init(&cdsp, 1);
 
     if (test_vector_fmul(&fdsp, &cdsp, src0, src1))

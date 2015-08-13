@@ -23,7 +23,7 @@
 
 %include "x86util.asm"
 
-SECTION_TEXT
+SECTION .text
 
 ;-------------------------------------------------------------------------------
 ; int ff_pixelutils_sad_8x8_mmx(const uint8_t *src1, ptrdiff_t stride1,

@@ -31,15 +31,44 @@
 #define STYLE_FLAG_ITALIC       (1<<1)
 #define STYLE_FLAG_UNDERLINE    (1<<2)
 
+#define BOX_SIZE_INITIAL    40
+
 #define STYL_BOX   (1<<0)
 #define HLIT_BOX   (1<<1)
 #define HCLR_BOX   (1<<2)
+
+#define BOTTOM_LEFT     1
+#define BOTTOM_CENTER   2
+#define BOTTOM_RIGHT    3
+#define MIDDLE_LEFT     4
+#define MIDDLE_CENTER   5
+#define MIDDLE_RIGHT    6
+#define TOP_LEFT        7
+#define TOP_CENTER      8
+#define TOP_RIGHT       9
+
+typedef struct {
+    char *font;
+    int fontsize;
+    int color;
+    int back_color;
+    int bold;
+    int italic;
+    int underline;
+    int alignment;
+} MovTextDefault;
+
+typedef struct {
+    uint16_t fontID;
+    char *font;
+} FontRecord;
 
 typedef struct {
     uint16_t style_start;
     uint16_t style_end;
     uint8_t style_flag;
     uint8_t fontsize;
+    uint16_t style_fontID;
 } StyleBox;
 
 typedef struct {
@@ -56,11 +85,14 @@ typedef struct {
     StyleBox *s_temp;
     HighlightBox h;
     HilightcolorBox c;
+    FontRecord **ftab;
+    FontRecord *ftab_temp;
+    MovTextDefault d;
     uint8_t box_flags;
-    uint16_t style_entries;
+    uint16_t style_entries, ftab_entries;
     uint64_t tracksize;
     int size_var;
-    int count_s;
+    int count_s, count_f;
 } MovTextContext;
 
 typedef struct {
@@ -78,6 +110,134 @@ static void mov_text_cleanup(MovTextContext *m)
         }
         av_freep(&m->s);
     }
+}
+
+static void mov_text_cleanup_ftab(MovTextContext *m)
+{
+    int i;
+    if (m->ftab) {
+        for(i = 0; i < m->count_f; i++) {
+            av_freep(&m->ftab[i]->font);
+            av_freep(&m->ftab[i]);
+        }
+    }
+    av_freep(&m->ftab);
+}
+
+static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
+{
+    char *tx3g_ptr = avctx->extradata;
+    int i, box_size, font_length;
+    int8_t v_align, h_align;
+    int style_fontID;
+    StyleBox s_default;
+
+    m->count_f = 0;
+    m->ftab_entries = 0;
+    box_size = BOX_SIZE_INITIAL; /* Size till ftab_entries */
+    if (avctx->extradata_size < box_size)
+        return -1;
+
+    // Display Flags
+    tx3g_ptr += 4;
+    // Alignment
+    h_align = *tx3g_ptr++;
+    v_align = *tx3g_ptr++;
+    if (h_align == 0) {
+        if (v_align == 0)
+            m->d.alignment = TOP_LEFT;
+        if (v_align == 1)
+            m->d.alignment = MIDDLE_LEFT;
+        if (v_align == -1)
+            m->d.alignment = BOTTOM_LEFT;
+    }
+    if (h_align == 1) {
+        if (v_align == 0)
+            m->d.alignment = TOP_CENTER;
+        if (v_align == 1)
+            m->d.alignment = MIDDLE_CENTER;
+        if (v_align == -1)
+            m->d.alignment = BOTTOM_CENTER;
+    }
+    if (h_align == -1) {
+        if (v_align == 0)
+            m->d.alignment = TOP_RIGHT;
+        if (v_align == 1)
+            m->d.alignment = MIDDLE_RIGHT;
+        if (v_align == -1)
+            m->d.alignment = BOTTOM_RIGHT;
+    }
+    // Background Color
+    m->d.back_color = AV_RB24(tx3g_ptr);
+    tx3g_ptr += 4;
+    // BoxRecord
+    tx3g_ptr += 8;
+    // StyleRecord
+    tx3g_ptr += 4;
+    // fontID
+    style_fontID = AV_RB16(tx3g_ptr);
+    tx3g_ptr += 2;
+    // face-style-flags
+    s_default.style_flag = *tx3g_ptr++;
+    m->d.bold = s_default.style_flag & STYLE_FLAG_BOLD;
+    m->d.italic = s_default.style_flag & STYLE_FLAG_ITALIC;
+    m->d.underline = s_default.style_flag & STYLE_FLAG_UNDERLINE;
+    // fontsize
+    m->d.fontsize = *tx3g_ptr++;
+    // Primary color
+    m->d.color = AV_RB24(tx3g_ptr);
+    tx3g_ptr += 4;
+    // FontRecord
+    // FontRecord Size
+    tx3g_ptr += 4;
+    // ftab
+    tx3g_ptr += 4;
+
+    m->ftab_entries = AV_RB16(tx3g_ptr);
+    tx3g_ptr += 2;
+
+    for (i = 0; i < m->ftab_entries; i++) {
+
+        box_size += 3;
+        if (avctx->extradata_size < box_size) {
+            mov_text_cleanup_ftab(m);
+            m->ftab_entries = 0;
+            return -1;
+        }
+        m->ftab_temp = av_malloc(sizeof(*m->ftab_temp));
+        if (!m->ftab_temp) {
+            mov_text_cleanup_ftab(m);
+            return AVERROR(ENOMEM);
+        }
+        m->ftab_temp->fontID = AV_RB16(tx3g_ptr);
+        tx3g_ptr += 2;
+        font_length = *tx3g_ptr++;
+
+        box_size = box_size + font_length;
+        if (avctx->extradata_size < box_size) {
+            mov_text_cleanup_ftab(m);
+            m->ftab_entries = 0;
+            return -1;
+        }
+        m->ftab_temp->font = av_malloc(font_length + 1);
+        if (!m->ftab_temp->font) {
+            mov_text_cleanup_ftab(m);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(m->ftab_temp->font, tx3g_ptr, font_length);
+        m->ftab_temp->font[font_length] = '\0';
+        av_dynarray_add(&m->ftab, &m->count_f, m->ftab_temp);
+        if (!m->ftab) {
+            mov_text_cleanup_ftab(m);
+            return AVERROR(ENOMEM);
+        }
+        tx3g_ptr = tx3g_ptr + font_length;
+    }
+    for (i = 0; i < m->ftab_entries; i++) {
+        if (style_fontID == m->ftab[i]->fontID)
+            m->d.font = m->ftab[i]->font;
+    }
+    return 0;
 }
 
 static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
@@ -118,7 +278,7 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
         tsmb += 2;
         m->s_temp->style_end = AV_RB16(tsmb);
         tsmb += 2;
-        // fontID = AV_RB16(tsmb);
+        m->s_temp->style_fontID = AV_RB16(tsmb);
         tsmb += 2;
         m->s_temp->style_flag = AV_RB8(tsmb);
         tsmb++;
@@ -147,6 +307,7 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                         MovTextContext *m)
 {
     int i = 0;
+    int j = 0;
     int text_pos = 0;
     while (text < text_end) {
         if (m->box_flags & STYL_BOX) {
@@ -164,6 +325,10 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                     if (m->s[i]->style_flag & STYLE_FLAG_UNDERLINE)
                         av_bprintf(buf, "{\\u1}");
                     av_bprintf(buf, "{\\fs%d}", m->s[i]->fontsize);
+                    for (j = 0; j < m->ftab_entries; j++) {
+                        if (m->s[i]->style_fontID == m->ftab[j]->fontID)
+                            av_bprintf(buf, "{\\fn%s}", m->ftab[j]->font);
+                    }
                 }
             }
         }
@@ -215,7 +380,15 @@ static int mov_text_init(AVCodecContext *avctx) {
      * it's very common to find files where the default style is broken
      * and respecting it results in a worse experience than ignoring it.
      */
-    return ff_ass_subtitle_header_default(avctx);
+    int ret;
+    MovTextContext *m = avctx->priv_data;
+    ret = mov_text_tx3g(avctx, m);
+    if (ret == 0) {
+        return ff_ass_subtitle_header(avctx, m->d.font, m->d.fontsize, m->d.color,
+                                m->d.back_color, m->d.bold, m->d.italic,
+                                m->d.underline, m->d.alignment);
+    } else
+        return ff_ass_subtitle_header_default(avctx);
 }
 
 static int mov_text_decode_frame(AVCodecContext *avctx,
@@ -313,6 +486,13 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+static int mov_text_decode_close(AVCodecContext *avctx)
+{
+    MovTextContext *m = avctx->priv_data;
+    mov_text_cleanup_ftab(m);
+    return 0;
+}
+
 AVCodec ff_movtext_decoder = {
     .name         = "mov_text",
     .long_name    = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
@@ -321,4 +501,5 @@ AVCodec ff_movtext_decoder = {
     .priv_data_size = sizeof(MovTextContext),
     .init         = mov_text_init,
     .decode       = mov_text_decode_frame,
+    .close        = mov_text_decode_close,
 };

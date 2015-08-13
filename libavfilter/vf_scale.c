@@ -356,15 +356,6 @@ static int config_props(AVFilterLink *outlink)
             if (!*s)
                 return AVERROR(ENOMEM);
 
-            if (scale->opts) {
-                AVDictionaryEntry *e = NULL;
-
-                while ((e = av_dict_get(scale->opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
-                    if ((ret = av_opt_set(*s, e->key, e->value, 0)) < 0)
-                        return ret;
-                }
-            }
-
             av_opt_set_int(*s, "srcw", inlink ->w, 0);
             av_opt_set_int(*s, "srch", inlink ->h >> !!i, 0);
             av_opt_set_int(*s, "src_format", inlink->format, 0);
@@ -373,6 +364,13 @@ static int config_props(AVFilterLink *outlink)
             av_opt_set_int(*s, "dst_format", outfmt, 0);
             av_opt_set_int(*s, "sws_flags", scale->flags, 0);
 
+            if (scale->opts) {
+                AVDictionaryEntry *e = NULL;
+                while ((e = av_dict_get(scale->opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+                    if ((ret = av_opt_set(*s, e->key, e->value, 0)) < 0)
+                        return ret;
+                }
+            }
             /* Override YUV420P settings to have the correct (MPEG-2) chroma positions
              * MPEG-2 chroma positions are used by convention
              * XXX: support other 4:2:0 pixel formats */

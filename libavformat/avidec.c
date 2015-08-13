@@ -861,6 +861,9 @@ static int avi_read_header(AVFormatContext *s)
                     if (st->codec->codec_id == AV_CODEC_ID_AAC &&
                         st->codec->extradata_size)
                         st->need_parsing = AVSTREAM_PARSE_NONE;
+                    // The flac parser does not work with AVSTREAM_PARSE_TIMESTAMPS
+                    if (st->codec->codec_id == AV_CODEC_ID_FLAC)
+                        st->need_parsing = AVSTREAM_PARSE_NONE;
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
                     if (ast->handler == AV_RL32("Axan")) {
@@ -872,8 +875,9 @@ static int avi_read_header(AVFormatContext *s)
                         st->codec->codec_id    = AV_CODEC_ID_ADPCM_IMA_AMV;
                         ast->dshow_block_align = 0;
                     }
-                    if (st->codec->codec_id == AV_CODEC_ID_AAC && ast->dshow_block_align <= 4 && ast->dshow_block_align ||
-                        st->codec->codec_id == AV_CODEC_ID_MP2 && ast->dshow_block_align <= 4 && ast->dshow_block_align) {
+                    if ((st->codec->codec_id == AV_CODEC_ID_AAC  ||
+                         st->codec->codec_id == AV_CODEC_ID_FLAC ||
+                         st->codec->codec_id == AV_CODEC_ID_MP2 ) && ast->dshow_block_align <= 4 && ast->dshow_block_align) {
                         av_log(s, AV_LOG_DEBUG, "overriding invalid dshow_block_align of %d\n", ast->dshow_block_align);
                         ast->dshow_block_align = 0;
                     }

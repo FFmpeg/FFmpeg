@@ -496,7 +496,7 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out,
             push_output_configuration(&latmctx->aac_ctx);
             if ((err = decode_audio_specific_config(
                     &latmctx->aac_ctx, avctx, &latmctx->aac_ctx.oc[1].m4ac,
-                    avctx->extradata, avctx->extradata_size*8, 1)) < 0) {
+                    avctx->extradata, avctx->extradata_size*8LL, 1)) < 0) {
                 pop_output_configuration(&latmctx->aac_ctx);
                 return err;
             }

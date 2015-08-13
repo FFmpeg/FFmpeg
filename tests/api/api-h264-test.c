@@ -39,10 +39,11 @@ static int video_decode_example(const char *input_filename)
     AVFormatContext *fmt_ctx = NULL;
     int number_of_written_bytes;
     int video_stream;
-    int get_frame = 0;
+    int got_frame = 0;
     int byte_buffer_size;
     int i = 0;
     int result;
+    int end_of_stream = 0;
 
     result = avformat_open_input(&fmt_ctx, input_filename, NULL, NULL);
     if (result < 0) {
@@ -104,17 +105,24 @@ static int video_decode_example(const char *input_filename)
     printf("#tb %d: %d/%d\n", video_stream, fmt_ctx->streams[video_stream]->time_base.num, fmt_ctx->streams[video_stream]->time_base.den);
     i = 0;
     av_init_packet(&pkt);
-    while (av_read_frame(fmt_ctx, &pkt) >= 0) {
-        if (pkt.stream_index == video_stream) {
-            get_frame = 0;
+    do {
+        if (!end_of_stream)
+            if (av_read_frame(fmt_ctx, &pkt) < 0)
+                end_of_stream = 1;
+        if (end_of_stream) {
+            pkt.data = NULL;
+            pkt.size = 0;
+        }
+        if (pkt.stream_index == video_stream || end_of_stream) {
+            got_frame = 0;
             if (pkt.pts == AV_NOPTS_VALUE)
                 pkt.pts = pkt.dts = i;
-            result = avcodec_decode_video2(ctx, fr, &get_frame, &pkt);
+            result = avcodec_decode_video2(ctx, fr, &got_frame, &pkt);
             if (result < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding frame\n");
                 return result;
             }
-            if (get_frame) {
+            if (got_frame) {
                 number_of_written_bytes = av_image_copy_to_buffer(byte_buffer, byte_buffer_size,
                                         (const uint8_t* const *)fr->data, (const int*) fr->linesize,
                                         ctx->pix_fmt, ctx->width, ctx->height, 1);
@@ -130,32 +138,7 @@ static int video_decode_example(const char *input_filename)
             av_init_packet(&pkt);
         }
         i++;
-    }
-    pkt.data = NULL;
-    pkt.size = 0;
-    if (pkt.pts == AV_NOPTS_VALUE)
-        pkt.pts = pkt.dts = i;
-    do {
-        get_frame = 0;
-        result =  avcodec_decode_video2(ctx, fr, &get_frame, &pkt);
-        if (result < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error decoding frame\n");
-            return result;
-        }
-        if (get_frame) {
-            number_of_written_bytes = av_image_copy_to_buffer(byte_buffer, byte_buffer_size,
-                                    (const uint8_t* const *)fr->data, (const int*) fr->linesize,
-                                    ctx->pix_fmt, ctx->width, ctx->height, 1);
-            if (number_of_written_bytes < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
-                return number_of_written_bytes;
-            }
-            printf("%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, 0x%08lx\n", video_stream,
-                    fr->pkt_pts, fr->pkt_dts, av_frame_get_pkt_duration(fr),
-                    number_of_written_bytes, av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes));
-        }
-        i++;
-    } while (get_frame);
+    } while (!end_of_stream || got_frame);
 
     av_free_packet(&pkt);
     av_frame_free(&fr);

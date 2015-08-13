@@ -966,7 +966,7 @@ static int v4l2_read_header(AVFormatContext *ctx)
         st->codec->codec_tag =
             avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
     else if (codec_id == AV_CODEC_ID_H264) {
-        st->need_parsing = AVSTREAM_PARSE_HEADERS;
+        st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
     if (desired_format == V4L2_PIX_FMT_YVU420)
         st->codec->codec_tag = MKTAG('Y', 'V', '1', '2');

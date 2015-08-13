@@ -29,7 +29,7 @@ pb_7: times 8 db 7
 pb_zzzz3333zzzzbbbb: db -1,-1,-1,-1,3,3,3,3,-1,-1,-1,-1,11,11,11,11
 pb_zz11zz55zz99zzdd: db -1,-1,1,1,-1,-1,5,5,-1,-1,9,9,-1,-1,13,13
 
-SECTION_TEXT
+SECTION .text
 
 ; void ff_add_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
 ;                                     const uint8_t *diff, int w,

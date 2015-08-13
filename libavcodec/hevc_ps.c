@@ -136,6 +136,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             }
             rps_ridx = &sps->st_rps[sps->nb_st_rps - delta_idx];
+            rps->rps_idx_num_delta_pocs = rps_ridx->num_delta_pocs;
         } else
             rps_ridx = &sps->st_rps[rps - sps->st_rps - 1];
 

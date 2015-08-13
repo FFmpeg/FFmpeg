@@ -263,7 +263,7 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, AVFrame *frame,
     prevframe_x = x + motion_x;
 
     if (prev_palette_plane == palette_plane && FFABS(curframe_index - prevframe_index) < pixel_count) {
-         avpriv_request_sample(s->avctx, "Overlapping copy\n");
+         avpriv_request_sample(s->avctx, "Overlapping copy");
          return ;
     }
 

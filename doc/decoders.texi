@@ -209,6 +209,8 @@ Never compute CLUT
 @item 1
 Always compute CLUT and override the one provided in the stream.
 @end table
+@item dvb_substream
+Selects the dvb substream, or all substreams if -1 which is default.
 
 @end table
 

@@ -2967,6 +2967,44 @@ Slower shaper using OpenType for substitutions and positioning
 The default is @code{auto}.
 @end table
 
+@section atadenoise
+Apply an Adaptive Temporal Averaging Denoiser to the video input.
+
+The filter accepts the following options:
+
+@table @option
+@item 0a
+Set threshold A for 1st plane. Default is 0.02.
+Valid range is 0 to 0.3.
+
+@item 0b
+Set threshold B for 1st plane. Default is 0.04.
+Valid range is 0 to 5.
+
+@item 1a
+Set threshold A for 2nd plane. Default is 0.02.
+Valid range is 0 to 0.3.
+
+@item 1b
+Set threshold B for 2nd plane. Default is 0.04.
+Valid range is 0 to 5.
+
+@item 2a
+Set threshold A for 3rd plane. Default is 0.02.
+Valid range is 0 to 0.3.
+
+@item 2b
+Set threshold B for 3rd plane. Default is 0.04.
+Valid range is 0 to 5.
+
+Threshold A is designed to react on abrupt changes in the input signal and
+threshold B is designed to react on continuous changes in the input signal.
+
+@item s
+Set number of frames filter will use for averaging. Default is 33. Must be odd
+number in range [5, 129].
+@end table
+
 @section bbox
 
 Compute the bounding box for the non-black pixels in the input frame
@@ -11469,6 +11507,7 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @end example
 @end itemize
 
+@anchor{allyuv}
 @anchor{color}
 @anchor{haldclutsrc}
 @anchor{nullsrc}
@@ -11476,7 +11515,9 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{smptebars}
 @anchor{smptehdbars}
 @anchor{testsrc}
-@section color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+@section allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+
+The @code{allyuv} source returns frames of size 4096x4096 of all yuv colors.
 
 The @code{color} source provides an uniformly colored input.
 
@@ -11615,6 +11656,38 @@ tools.
 
 Below is a description of the currently available multimedia filters.
 
+@section aphasemeter
+
+Convert input audio to a video output, displaying the audio phase.
+
+The filter accepts the following options:
+
+@table @option
+@item rate, r
+Set the output frame rate. Default value is @code{25}.
+
+@item size, s
+Set the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{800x400}.
+
+@item rc
+@item gc
+@item bc
+Specify the red, green, blue contrast. Default values are @code{2},
+@code{7} and @code{1}.
+Allowed range is @code{[0, 255]}.
+
+@item mpc
+Set color which will be used for drawing median phase. If color is
+@code{none} which is default, no median phase value will be drawn.
+@end table
+
+The filter also exports the frame metadata @code{lavfi.aphasemeter.phase} which
+represents mean phase of current audio frame. Value is in range @code{[-1, 1]}.
+The @code{-1} means left and right channels are completely out of phase and
+@code{1} means channels are in phase.
+
 @section avectorscope
 
 Convert input audio to a video output, representing the audio vector
@@ -11655,13 +11728,17 @@ Set the output frame rate. Default value is @code{25}.
 @item rc
 @item gc
 @item bc
-Specify the red, green and blue contrast. Default values are @code{40}, @code{160} and @code{80}.
+@item ac
+Specify the red, green, blue and alpha contrast. Default values are @code{40},
+@code{160}, @code{80} and @code{255}.
 Allowed range is @code{[0, 255]}.
 
 @item rf
 @item gf
 @item bf
-Specify the red, green and blue fade. Default values are @code{15}, @code{10} and @code{5}.
+@item af
+Specify the red, green, blue and alpha fade. Default values are @code{15},
+@code{10}, @code{5} and @code{5}.
 Allowed range is @code{[0, 255]}.
 
 @item zoom

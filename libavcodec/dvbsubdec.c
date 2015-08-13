@@ -238,6 +238,7 @@ typedef struct DVBSubContext {
     int compute_edt; /**< if 1 end display time calculated using pts
                           if 0 (Default) calculated using time out */
     int compute_clut;
+    int substream;
     int64_t prev_start;
     DVBSubRegion *region_list;
     DVBSubCLUT   *clut_list;
@@ -368,17 +369,22 @@ static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
     int i, r, g, b, a = 0;
     DVBSubContext *ctx = avctx->priv_data;
 
-    if (!avctx->extradata || (avctx->extradata_size < 4) || ((avctx->extradata_size % 5 != 0) && (avctx->extradata_size != 4))) {
+    if (ctx->substream < 0) {
+        ctx->composition_id = -1;
+        ctx->ancillary_id   = -1;
+    } else if (!avctx->extradata || (avctx->extradata_size < 4) || ((avctx->extradata_size % 5 != 0) && (avctx->extradata_size != 4))) {
         av_log(avctx, AV_LOG_WARNING, "Invalid DVB subtitles stream extradata!\n");
         ctx->composition_id = -1;
         ctx->ancillary_id   = -1;
     } else {
-        if (avctx->extradata_size > 5) {
-            av_log(avctx, AV_LOG_WARNING, "Decoding first DVB subtitles sub-stream\n");
+        if (avctx->extradata_size > 5*ctx->substream + 2) {
+            ctx->composition_id = AV_RB16(avctx->extradata + 5*ctx->substream);
+            ctx->ancillary_id   = AV_RB16(avctx->extradata + 5*ctx->substream + 2);
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Selected DVB subtitles sub-stream %d is not available\n", ctx->substream);
+            ctx->composition_id = AV_RB16(avctx->extradata);
+            ctx->ancillary_id   = AV_RB16(avctx->extradata + 2);
         }
-
-        ctx->composition_id = AV_RB16(avctx->extradata);
-        ctx->ancillary_id   = AV_RB16(avctx->extradata + 2);
     }
 
     ctx->version = -1;
@@ -833,7 +839,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
 
     /* Not touching AVSubtitles again*/
     if(sub->num_rects) {
-        avpriv_request_sample(ctx, "Different Version of Segment asked Twice\n");
+        avpriv_request_sample(ctx, "Different Version of Segment asked Twice");
         return AVERROR_PATCHWELCOME;
     }
     for (display = ctx->display_list; display; display = display->next) {
@@ -1084,7 +1090,7 @@ static int dvbsub_parse_object_segment(AVCodecContext *avctx,
         buf += 2;
 
         if (buf + top_field_len + bottom_field_len > buf_end) {
-            av_log(avctx, AV_LOG_ERROR, "Field data size too large\n");
+            av_log(avctx, AV_LOG_ERROR, "Field data size %d+%d too large\n", top_field_len, bottom_field_len);
             return AVERROR_INVALIDDATA;
         }
 
@@ -1168,7 +1174,6 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
         if (depth == 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid clut depth 0x%x!\n", *buf);
-            return AVERROR_INVALIDDATA;
         }
 
         full_range = (*buf++) & 1;
@@ -1715,6 +1720,7 @@ end:
 static const AVOption options[] = {
     {"compute_edt", "compute end of time using pts or timeout", offsetof(DVBSubContext, compute_edt), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DS},
     {"compute_clut", "compute clut when not available(-1) or always(1) or never(0)", offsetof(DVBSubContext, compute_clut), FF_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DS},
+    {"dvb_substream", "", offsetof(DVBSubContext, substream), FF_OPT_TYPE_INT, {.i64 = -1}, -1, 63, DS},
     {NULL}
 };
 static const AVClass dvbsubdec_class = {

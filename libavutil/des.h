@@ -24,16 +24,32 @@
 
 #include <stdint.h>
 
-struct AVDES {
+/**
+ * @defgroup lavu_des DES
+ * @ingroup lavu_crypto
+ * @{
+ */
+
+#if FF_API_CRYPTO_CONTEXT
+typedef struct AVDES {
     uint64_t round_keys[3][16];
     int triple_des;
-};
+} AVDES;
+#else
+typedef struct AVDES AVDES;
+#endif
+
+/**
+ * Allocate an AVDES context.
+ */
+AVDES *av_des_alloc(void);
 
 /**
  * @brief Initializes an AVDES context.
  *
  * @param key_bits must be 64 or 192
  * @param decrypt 0 for encryption/CBC-MAC, 1 for decryption
+ * @return zero on success, negative value otherwise
  */
 int av_des_init(struct AVDES *d, const uint8_t *key, int key_bits, int decrypt);
 
@@ -57,5 +73,9 @@ void av_des_crypt(struct AVDES *d, uint8_t *dst, const uint8_t *src, int count, 
  * @param src source array, can be equal to dst, must be 8-byte aligned, may be NULL
  */
 void av_des_mac(struct AVDES *d, uint8_t *dst, const uint8_t *src, int count);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_DES_H */

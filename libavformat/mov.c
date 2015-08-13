@@ -848,9 +848,9 @@ static int mov_read_adrm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_INFO, "\n");
 
     /* verify activation data */
-    if (!activation_bytes || c->activation_bytes_size != 4) {
-        av_log(c->fc, AV_LOG_FATAL, "[aax] activation_bytes option is missing!\n");
-        ret = AVERROR(EINVAL);
+    if (!activation_bytes) {
+        av_log(c->fc, AV_LOG_WARNING, "[aax] activation_bytes option is missing!\n");
+        ret = 0;  /* allow ffprobe to continue working on .aax files */
         goto fail;
     }
     if (c->activation_bytes_size != 4) {

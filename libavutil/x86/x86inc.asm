@@ -1,7 +1,7 @@
 ;*****************************************************************************
 ;* x86inc.asm: x264asm abstraction layer
 ;*****************************************************************************
-;* Copyright (C) 2005-2013 x264 project
+;* Copyright (C) 2005-2015 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
@@ -42,6 +42,17 @@
     %define public_prefix private_prefix
 %endif
 
+%if HAVE_ALIGNED_STACK
+    %define STACK_ALIGNMENT 16
+%endif
+%ifndef STACK_ALIGNMENT
+    %if ARCH_X86_64
+        %define STACK_ALIGNMENT 16
+    %else
+        %define STACK_ALIGNMENT 4
+    %endif
+%endif
+
 %define WIN64  0
 %define UNIX64 0
 %if ARCH_X86_64
@@ -54,6 +65,15 @@
     %else
         %define UNIX64 1
     %endif
+%endif
+
+%define FORMAT_ELF 0
+%ifidn __OUTPUT_FORMAT__,elf
+    %define FORMAT_ELF 1
+%elifidn __OUTPUT_FORMAT__,elf32
+    %define FORMAT_ELF 1
+%elifidn __OUTPUT_FORMAT__,elf64
+    %define FORMAT_ELF 1
 %endif
 
 %ifdef PREFIX
@@ -70,14 +90,6 @@
         section .text
     %else
         SECTION .rodata align=%1
-    %endif
-%endmacro
-
-%macro SECTION_TEXT 0-1 16
-    %ifidn __OUTPUT_FORMAT__,aout
-        SECTION .text
-    %else
-        SECTION .text align=%1
     %endif
 %endmacro
 
@@ -108,8 +120,9 @@
 ; %1 = number of arguments. loads them from stack if needed.
 ; %2 = number of registers used. pushes callee-saved regs if needed.
 ; %3 = number of xmm registers used. pushes callee-saved xmm regs if needed.
-; %4 = (optional) stack size to be allocated. If not aligned (x86-32 ICC 10.x,
-;      MSVC or YMM), the stack will be manually aligned (to 16 or 32 bytes),
+; %4 = (optional) stack size to be allocated. The stack will be aligned before
+;      allocating the specified stack size. If the required stack alignment is
+;      larger than the known stack alignment the stack will be manually aligned
 ;      and an extra register will be allocated to hold the original stack
 ;      pointer (to not invalidate r0m etc.). To prevent the use of an extra
 ;      register as stack pointer, request a negative stack size.
@@ -117,8 +130,10 @@
 ; PROLOGUE can also be invoked by adding the same options to cglobal
 
 ; e.g.
-; cglobal foo, 2,3,0, dst, src, tmp
-; declares a function (foo), taking two args (dst and src) and one local variable (tmp)
+; cglobal foo, 2,3,7,0x40, dst, src, tmp
+; declares a function (foo) that automatically loads two arguments (dst and
+; src) into registers, uses one additional register (tmp) plus 7 vector
+; registers (m0-m6) and allocates 0x40 bytes of stack space.
 
 ; TODO Some functions can use some args directly from the stack. If they're the
 ; last args then you can just not declare them, but if they're in the middle
@@ -319,26 +334,28 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %assign n_arg_names %0
 %endmacro
 
+%define required_stack_alignment ((mmsize + 15) & ~15)
+
 %macro ALLOC_STACK 1-2 0 ; stack_size, n_xmm_regs (for win64 only)
     %ifnum %1
         %if %1 != 0
-            %assign %%stack_alignment ((mmsize + 15) & ~15)
+            %assign %%pad 0
             %assign stack_size %1
             %if stack_size < 0
                 %assign stack_size -stack_size
             %endif
-            %assign stack_size_padded stack_size
             %if WIN64
-                %assign stack_size_padded stack_size_padded + 32 ; reserve 32 bytes for shadow space
+                %assign %%pad %%pad + 32 ; shadow space
                 %if mmsize != 8
                     %assign xmm_regs_used %2
                     %if xmm_regs_used > 8
-                        %assign stack_size_padded stack_size_padded + (xmm_regs_used-8)*16
+                        %assign %%pad %%pad + (xmm_regs_used-8)*16 ; callee-saved xmm registers
                     %endif
                 %endif
             %endif
-            %if mmsize <= 16 && HAVE_ALIGNED_STACK
-                %assign stack_size_padded stack_size_padded + %%stack_alignment - gprsize - (stack_offset & (%%stack_alignment - 1))
+            %if required_stack_alignment <= STACK_ALIGNMENT
+                ; maintain the current stack alignment
+                %assign stack_size_padded stack_size + %%pad + ((-%%pad-stack_offset-gprsize) & (STACK_ALIGNMENT-1))
                 SUB rsp, stack_size_padded
             %else
                 %assign %%reg_num (regs_used - 1)
@@ -347,17 +364,17 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
                 ; it, i.e. in [rsp+stack_size_padded], so we can restore the
                 ; stack in a single instruction (i.e. mov rsp, rstk or mov
                 ; rsp, [rsp+stack_size_padded])
-                mov  rstk, rsp
                 %if %1 < 0 ; need to store rsp on stack
-                    sub  rsp, gprsize+stack_size_padded
-                    and  rsp, ~(%%stack_alignment-1)
-                    %xdefine rstkm [rsp+stack_size_padded]
-                    mov rstkm, rstk
+                    %xdefine rstkm [rsp + stack_size + %%pad]
+                    %assign %%pad %%pad + gprsize
                 %else ; can keep rsp in rstk during whole function
-                    sub  rsp, stack_size_padded
-                    and  rsp, ~(%%stack_alignment-1)
                     %xdefine rstkm rstk
                 %endif
+                %assign stack_size_padded stack_size + ((%%pad + required_stack_alignment-1) & ~(required_stack_alignment-1))
+                mov rstk, rsp
+                and rsp, ~(required_stack_alignment-1)
+                sub rsp, stack_size_padded
+                movifnidn rstkm, rstk
             %endif
             WIN64_PUSH_XMM
         %endif
@@ -366,7 +383,7 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
 
 %macro SETUP_STACK_POINTER 1
     %ifnum %1
-        %if %1 != 0 && (HAVE_ALIGNED_STACK == 0 || mmsize == 32)
+        %if %1 != 0 && required_stack_alignment > STACK_ALIGNMENT
             %if %1 > 0
                 %assign regs_used (regs_used + 1)
             %elif ARCH_X86_64 && regs_used == num_args && num_args <= 4 + UNIX64 * 2
@@ -440,7 +457,9 @@ DECLARE_REG 14, R15, 120
     %assign xmm_regs_used %1
     ASSERT xmm_regs_used <= 16
     %if xmm_regs_used > 8
-        %assign stack_size_padded (xmm_regs_used-8)*16 + (~stack_offset&8) + 32
+        ; Allocate stack space for callee-saved xmm registers plus shadow space and align the stack.
+        %assign %%pad (xmm_regs_used-8)*16 + 32
+        %assign stack_size_padded %%pad + ((-%%pad-stack_offset-gprsize) & (STACK_ALIGNMENT-1))
         SUB rsp, stack_size_padded
     %endif
     WIN64_PUSH_XMM
@@ -456,7 +475,7 @@ DECLARE_REG 14, R15, 120
         %endrep
     %endif
     %if stack_size_padded > 0
-        %if stack_size > 0 && (mmsize == 32 || HAVE_ALIGNED_STACK == 0)
+        %if stack_size > 0 && required_stack_alignment > STACK_ALIGNMENT
             mov rsp, rstkm
         %else
             add %1, stack_size_padded
@@ -522,7 +541,7 @@ DECLARE_REG 14, R15, 72
 
 %macro RET 0
 %if stack_size_padded > 0
-%if mmsize == 32 || HAVE_ALIGNED_STACK == 0
+%if required_stack_alignment > STACK_ALIGNMENT
     mov rsp, rstkm
 %else
     add rsp, stack_size_padded
@@ -578,7 +597,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 
 %macro RET 0
 %if stack_size_padded > 0
-%if mmsize == 32 || HAVE_ALIGNED_STACK == 0
+%if required_stack_alignment > STACK_ALIGNMENT
     mov rsp, rstkm
 %else
     add rsp, stack_size_padded
@@ -678,7 +697,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
         CAT_XDEFINE cglobaled_, %2, 1
     %endif
     %xdefine current_function %2
-    %ifidn __OUTPUT_FORMAT__,elf
+    %if FORMAT_ELF
         global %2:function %%VISIBILITY
     %else
         global %2
@@ -704,14 +723,16 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 
 ; like cextern, but without the prefix
 %macro cextern_naked 1
-    %xdefine %1 mangle(%1)
+    %ifdef PREFIX
+        %xdefine %1 mangle(%1)
+    %endif
     CAT_XDEFINE cglobaled_, %1, 1
     extern %1
 %endmacro
 
 %macro const 1-2+
     %xdefine %1 mangle(private_prefix %+ _ %+ %1)
-    %ifidn __OUTPUT_FORMAT__,elf
+    %if FORMAT_ELF
         global %1:data hidden
     %else
         global %1
@@ -719,15 +740,10 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %1: %2
 %endmacro
 
-; This is needed for ELF, otherwise the GNU linker assumes the stack is
-; executable by default.
-%ifidn __OUTPUT_FORMAT__,elf
-[section .note.GNU-stack noalloc noexec nowrite progbits]
+; This is needed for ELF, otherwise the GNU linker assumes the stack is executable by default.
+%if FORMAT_ELF
+    [SECTION .note.GNU-stack noalloc noexec nowrite progbits]
 %endif
-
-; Overrides the default .text section.
-; Silences warnings when defining structures.
-%define __SECT__
 
 ; cpuflags
 
@@ -745,8 +761,8 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %assign cpuflags_avx      (1<<11)| cpuflags_sse42
 %assign cpuflags_xop      (1<<12)| cpuflags_avx
 %assign cpuflags_fma4     (1<<13)| cpuflags_avx
-%assign cpuflags_avx2     (1<<14)| cpuflags_avx
-%assign cpuflags_fma3     (1<<15)| cpuflags_avx
+%assign cpuflags_fma3     (1<<14)| cpuflags_avx
+%assign cpuflags_avx2     (1<<15)| cpuflags_fma3
 
 %assign cpuflags_cache32  (1<<16)
 %assign cpuflags_cache64  (1<<17)
@@ -795,7 +811,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
         %endif
     %endif
 
-    %if cpuflag(sse2)
+    %if ARCH_X86_64 || cpuflag(sse2)
         CPUNOP amdnop
     %else
         CPUNOP basicnop
@@ -1417,6 +1433,24 @@ AVX_INSTR pfmul, 3dnow, 1, 0, 1
 %undef i
 %undef j
 
+%macro FMA_INSTR 3
+    %macro %1 4-7 %1, %2, %3
+        %if cpuflag(xop)
+            v%5 %1, %2, %3, %4
+        %elifnidn %1, %4
+            %6 %1, %2, %3
+            %7 %1, %4
+        %else
+            %error non-xop emulation of ``%5 %1, %2, %3, %4'' is not supported
+        %endif
+    %endmacro
+%endmacro
+
+FMA_INSTR  pmacsww,  pmullw, paddw
+FMA_INSTR  pmacsdd,  pmulld, paddd ; sse4 emulation
+FMA_INSTR pmacsdql,  pmuldq, paddq ; sse4 emulation
+FMA_INSTR pmadcswd, pmaddwd, paddd
+
 ; tzcnt is equivalent to "rep bsf" and is backwards-compatible with bsf.
 ; This lets us use tzcnt without bumping the yasm version requirement yet.
 %define tzcnt rep bsf
@@ -1463,13 +1497,15 @@ FMA4_INSTR fnmsubps, fnmsub132ps, fnmsub213ps, fnmsub231ps
 FMA4_INSTR fnmsubsd, fnmsub132sd, fnmsub213sd, fnmsub231sd
 FMA4_INSTR fnmsubss, fnmsub132ss, fnmsub213ss, fnmsub231ss
 
-; workaround: vpbroadcastq is broken in x86_32 due to a yasm bug
-%if ARCH_X86_64 == 0
-%macro vpbroadcastq 2
-%if sizeof%1 == 16
-    movddup %1, %2
-%else
-    vbroadcastsd %1, %2
-%endif
-%endmacro
+; workaround: vpbroadcastq is broken in x86_32 due to a yasm bug (fixed in 1.3.0)
+%ifdef __YASM_VER__
+    %if __YASM_VERSION_ID__ < 0x01030000 && ARCH_X86_64 == 0
+        %macro vpbroadcastq 2
+            %if sizeof%1 == 16
+                movddup %1, %2
+            %else
+                vbroadcastsd %1, %2
+            %endif
+        %endmacro
+    %endif
 %endif

@@ -21,7 +21,7 @@
 ; */
 %include "libavutil/x86/x86util.asm"
 
-SECTION_TEXT 32
+SECTION .text
 
 ; void ff_hevc_idctHxW_dc_{8,10}_<opt>(int16_t *coeffs)
 ; %1 = HxW

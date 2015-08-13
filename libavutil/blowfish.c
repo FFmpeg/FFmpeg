@@ -24,7 +24,17 @@
 #include "avutil.h"
 #include "common.h"
 #include "intreadwrite.h"
+#include "mem.h"
 #include "blowfish.h"
+
+#if !FF_API_CRYPTO_CONTEXT
+#define AV_BF_ROUNDS 16
+
+struct AVBlowfish {
+    uint32_t p[AV_BF_ROUNDS + 2];
+    uint32_t s[4][256];
+};
+#endif
 
 static const uint32_t orig_p[AV_BF_ROUNDS + 2] = {
     0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344,
@@ -299,6 +309,11 @@ static const uint32_t orig_s[4][256] = {
            ^ ctx->s[2][(Xl >>  8) & 0xFF])\
            + ctx->s[3][ Xl        & 0xFF])\
            ^ P;
+
+AVBlowfish *av_blowfish_alloc(void)
+{
+    return av_mallocz(sizeof(struct AVBlowfish));
+}
 
 av_cold void av_blowfish_init(AVBlowfish *ctx, const uint8_t *key, int key_len)
 {

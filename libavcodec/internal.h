@@ -217,9 +217,14 @@ int avpriv_unlock_avformat(void);
  *                avpkt->size is set to the specified size.
  *                All other AVPacket fields will be reset with av_init_packet().
  * @param size    the minimum required packet size
- * @param min_size the smallest the packet might be down sized to, can be set to
- *                0, setting this roughly correctly allows the allocation code
- *                to choose between several allocation stragies to improve
+ * @param min_size This is a hint to the allocation algorithm, which indicates
+ *                to what minimal size the caller might later shrink the packet
+ *                to. Encoders often allocate packets which are larger than the
+ *                amount of data that is written into them as the exact amount is
+ *                not known at the time of allocation. min_size represents the
+ *                size a packet might be shrunk to by the caller. Can be set to
+ *                0. setting this roughly correctly allows the allocation code
+ *                to choose between several allocation strategies to improve
  *                speed slightly.
  * @return        non negative on success, negative error code on failure
  */

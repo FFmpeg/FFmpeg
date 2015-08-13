@@ -62,7 +62,7 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         skip = 16;
     }
     size = 2 * avctx->width * (avctx->height + skip) + 8 * interlaced;
-    if ((ret = ff_alloc_packet(pkt, size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, size, size)) < 0)
         return ret;
     dst = pkt->data;
     if (!interlaced) {

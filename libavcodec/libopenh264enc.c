@@ -202,7 +202,7 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     av_log(avctx, AV_LOG_DEBUG, "%d slices\n", fbi.sLayerInfo[fbi.iLayerNum - 1].iNalCount);
 
-    if ((ret = ff_alloc_packet(avpkt, size))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, size, size))) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
         return ret;
     }

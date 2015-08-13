@@ -102,7 +102,7 @@ static int libshine_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     len = hdr.frame_size;
     if (len <= s->buffer_index) {
-        if ((ret = ff_alloc_packet2(avctx, avpkt, len)))
+        if ((ret = ff_alloc_packet2(avctx, avpkt, len, 0)))
             return ret;
         memcpy(avpkt->data, s->buffer, len);
         s->buffer_index -= len;

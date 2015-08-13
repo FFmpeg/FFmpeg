@@ -32,6 +32,8 @@
 #include "mpegvideo.h"
 #include "h263.h"
 
+#define FF_ME_ITER 50
+
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
@@ -44,6 +46,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "The 9/7 wavelet is incompatible with lossless mode.\n");
         return -1;
     }
+#if FF_API_MOTION_EST
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->me_method == ME_ITER)
+        s->motion_est = FF_ME_ITER;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
 
@@ -128,7 +136,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ff_snow_get_buffer(s, s->input_picture)) < 0)
         return ret;
 
-    if(s->avctx->me_method == ME_ITER){
+    if(s->motion_est == FF_ME_ITER){
         int size= s->b_width * s->b_height << 2*s->block_max_depth;
         for(i=0; i<s->max_ref_frames; i++){
             s->ref_mvs[i]= av_mallocz_array(size, sizeof(int16_t[2]));
@@ -1206,7 +1214,7 @@ static void encode_blocks(SnowContext *s, int search){
     int w= s->b_width;
     int h= s->b_height;
 
-    if(s->avctx->me_method == ME_ITER && !s->keyframe && search)
+    if(s->motion_est == FF_ME_ITER && !s->keyframe && search)
         iterative_me(s);
 
     for(y=0; y<h; y++){
@@ -1215,7 +1223,7 @@ static void encode_blocks(SnowContext *s, int search){
             return;
         }
         for(x=0; x<w; x++){
-            if(s->avctx->me_method == ME_ITER || !search)
+            if(s->motion_est == FF_ME_ITER || !search)
                 encode_q_branch2(s, 0, x, y);
             else
                 encode_q_branch (s, 0, x, y);
@@ -1650,7 +1658,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.b8_stride= 2*s->m.mb_width+1;
         s->m.f_code=1;
         s->m.pict_type = pic->pict_type;
+#if FF_API_MOTION_EST
         s->m.me_method= s->avctx->me_method;
+#endif
+        s->m.motion_est= s->motion_est;
         s->m.me.scene_change_score=0;
         s->m.me.dia_size = avctx->dia_size;
         s->m.quarter_sample= (s->avctx->flags & AV_CODEC_FLAG_QPEL)!=0;
@@ -1879,6 +1890,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     FF_MPV_COMMON_OPTS
+    { "iter",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ITER }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" },
     { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },

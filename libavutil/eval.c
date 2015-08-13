@@ -31,6 +31,7 @@
 #include "avutil.h"
 #include "common.h"
 #include "eval.h"
+#include "internal.h"
 #include "log.h"
 #include "mathematics.h"
 #include "time.h"
@@ -244,7 +245,7 @@ static double eval_expr(Parser *p, AVExpr *e)
             double x_max = eval_expr(p, e->param[1]);
             for(i=-1; i<1024; i++) {
                 if(i<255) {
-                    p->var[0] = av_reverse[i&255]*x_max/255;
+                    p->var[0] = ff_reverse[i&255]*x_max/255;
                 } else {
                     p->var[0] = x_max*pow(0.9, i-255);
                     if (i&1) p->var[0] *= -1;

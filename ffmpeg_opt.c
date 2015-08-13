@@ -74,7 +74,10 @@ const HWAccel hwaccels[] = {
     { "dxva2", dxva2_init, HWACCEL_DXVA2, AV_PIX_FMT_DXVA2_VLD },
 #endif
 #if CONFIG_VDA
-    { "vda",   vda_init,   HWACCEL_VDA,   AV_PIX_FMT_VDA },
+    { "vda",   videotoolbox_init,   HWACCEL_VDA,   AV_PIX_FMT_VDA },
+#endif
+#if CONFIG_VIDEOTOOLBOX
+    { "videotoolbox",   videotoolbox_init,   HWACCEL_VIDEOTOOLBOX,   AV_PIX_FMT_VIDEOTOOLBOX },
 #endif
     { 0 },
 };
@@ -1237,7 +1240,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         ost->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-    av_opt_get_int(o->g->sws_opts, "sws_flags", 0, &ost->sws_flags);
+    av_dict_copy(&ost->sws_dict, o->g->sws_dict, 0);
 
     av_dict_copy(&ost->swr_opts, o->g->swr_opts, 0);
     if (ost->enc && av_get_exact_bits_per_sample(ost->enc->id) == 24)
@@ -3232,6 +3235,9 @@ const OptionDef options[] = {
         "select a device for HW acceleration" "devicename" },
 #if HAVE_VDPAU_X11
     { "vdpau_api_ver", HAS_ARG | OPT_INT | OPT_EXPERT, { &vdpau_api_ver }, "" },
+#endif
+#if CONFIG_VDA || CONFIG_VIDEOTOOLBOX
+    { "videotoolbox_pixfmt", HAS_ARG | OPT_STRING | OPT_EXPERT, { &videotoolbox_pixfmt}, "" },
 #endif
     { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
                           OPT_EXPERT | OPT_INPUT,                                { .off = OFFSET(autorotate) },

@@ -103,7 +103,7 @@ fate-acodec-dca: tests/data/asynth-44100-2.wav
 fate-acodec-dca: SRC = tests/data/asynth-44100-2.wav
 fate-acodec-dca: CMD = md5 -i $(TARGET_PATH)/$(SRC) -c:a dca -strict -2 -f dts -flags +bitexact
 fate-acodec-dca: CMP = oneline
-fate-acodec-dca: REF = fe28cef432ed88de4ee01b87537fd2bd
+fate-acodec-dca: REF = c54ca9a13711755ef90fa143a9b38386
 
 FATE_ACODEC-$(call ENCDEC, DCA, WAV) += fate-acodec-dca2
 fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -flags +bitexact

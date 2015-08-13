@@ -110,7 +110,13 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
 
     ret = MFXVideoDECODE_Init(q->session, &param);
     if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing the MFX video decoder\n");
+        if (MFX_ERR_INVALID_VIDEO_PARAM==ret) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Error initializing the MFX video decoder, unsupported video\n");
+        } else {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Error initializing the MFX video decoder %d\n", ret);
+        }
         return ff_qsv_error(ret);
     }
 

@@ -127,7 +127,6 @@ typedef struct ASFContext {
     int64_t sub_dts;
     uint8_t dts_delta; // for subpayloads
     uint32_t packet_size_internal; // packet size stored inside ASFPacket, can be 0
-    int64_t dts;
     int64_t packet_offset; // offset of the current packet inside Data Object
     uint32_t pad_len; // padding after payload
     uint32_t rep_data_len;
@@ -256,13 +255,15 @@ static int asf_read_metadata(AVFormatContext *s, const char *title, uint16_t len
     AVIOContext *pb = s->pb;
 
     avio_get_str16le(pb, len, ch, buflen);
-    if (av_dict_set(&s->metadata, title, ch, 0) < 0)
-        av_log(s, AV_LOG_WARNING, "av_dict_set failed.\n");
+    if (ch[0]) {
+        if (av_dict_set(&s->metadata, title, ch, 0) < 0)
+            av_log(s, AV_LOG_WARNING, "av_dict_set failed.\n");
+    }
 
     return 0;
 }
 
-static int asf_read_value(AVFormatContext *s, uint8_t *name, uint16_t name_len,
+static int asf_read_value(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
                           uint16_t val_len, int type, AVDictionary **met)
 {
     int ret;
@@ -303,31 +304,41 @@ failed:
     av_freep(&value);
     return ret;
 }
+static int asf_read_generic_value(AVIOContext *pb, int type, uint64_t *value)
+{
 
-static int asf_read_generic_value(AVFormatContext *s, uint8_t *name, uint16_t name_len,
-                                  int type, AVDictionary **met)
+    switch (type) {
+    case ASF_BOOL:
+        *value = avio_rl16(pb);
+        break;
+    case ASF_DWORD:
+        *value = avio_rl32(pb);
+        break;
+    case ASF_QWORD:
+        *value = avio_rl64(pb);
+        break;
+    case ASF_WORD:
+        *value = avio_rl16(pb);
+        break;
+    default:
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
+static int asf_set_metadata(AVFormatContext *s, const uint8_t *name,
+                            uint16_t name_len, int type, AVDictionary **met)
 {
     AVIOContext *pb = s->pb;
     uint64_t value;
     char buf[32];
+    int ret;
 
-    switch (type) {
-    case ASF_BOOL:
-        value = avio_rl32(pb);
-        break;
-    case ASF_DWORD:
-        value = avio_rl32(pb);
-        break;
-    case ASF_QWORD:
-        value = avio_rl64(pb);
-        break;
-    case ASF_WORD:
-        value = avio_rl16(pb);
-        break;
-    default:
-        av_freep(&name);
-        return AVERROR_INVALIDDATA;
-    }
+    ret = asf_read_generic_value(pb, type, &value);
+    if (ret < 0)
+        return ret;
+
     snprintf(buf, sizeof(buf), "%"PRIu64, value);
     if (av_dict_set(met, name, buf, 0) < 0)
         av_log(s, AV_LOG_WARNING, "av_dict_set failed.\n");
@@ -447,7 +458,7 @@ static void get_id3_tag(AVFormatContext *s, int len)
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 }
 
-static int process_metadata(AVFormatContext *s, uint8_t *name, uint16_t name_len,
+static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
                             uint16_t val_len, uint16_t type, AVDictionary **met)
 {
     int ret;
@@ -470,12 +481,11 @@ static int process_metadata(AVFormatContext *s, uint8_t *name, uint16_t name_len
             ff_get_guid(s->pb, &guid);
             break;
         default:
-            if ((ret = asf_read_generic_value(s, name, name_len, type, met)) < 0)
+            if ((ret = asf_set_metadata(s, name, name_len, type, met)) < 0)
                 return ret;
             break;
         }
     }
-    av_freep(&name);
 
     return 0;
 }
@@ -501,9 +511,15 @@ static int asf_read_ext_content(AVFormatContext *s, const GUIDParseTable *g)
         avio_get_str16le(pb, name_len, name,
                          name_len);
         type    = avio_rl16(pb);
+        // BOOL values are 16 bits long in the Metadata Object
+        // but 32 bits long in the Extended Content Description Object
+        if (type == ASF_BOOL)
+            type = ASF_DWORD;
         val_len = avio_rl16(pb);
 
-        if ((ret = process_metadata(s, name, name_len, val_len, type, &s->metadata)) < 0)
+        ret = process_metadata(s, name, name_len, val_len, type, &s->metadata);
+        av_freep(&name);
+        if (ret < 0)
             return ret;
     }
 
@@ -527,13 +543,16 @@ static AVStream *find_stream(AVFormatContext *s, uint16_t st_num)
     return st;
 }
 
-static void asf_store_aspect_ratio(AVFormatContext *s, uint8_t st_num, uint8_t *name)
+static int asf_store_aspect_ratio(AVFormatContext *s, uint8_t st_num, uint8_t *name, int type)
 {
     ASFContext *asf   = s->priv_data;
     AVIOContext *pb   = s->pb;
-    uint16_t value = 0;
+    uint64_t value = 0;
+    int ret;
 
-    value = avio_rl16(pb);
+    ret = asf_read_generic_value(pb, type, &value);
+    if (ret < 0)
+        return ret;
 
     if (st_num < ASF_MAX_STREAMS) {
         if (!strcmp(name, "AspectRatioX"))
@@ -541,6 +560,7 @@ static void asf_store_aspect_ratio(AVFormatContext *s, uint8_t st_num, uint8_t *
         else
             asf->asf_sd[st_num].aspect_ratio.den = value;
     }
+    return 0;
 }
 
 static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
@@ -568,17 +588,20 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
             return AVERROR(ENOMEM);
         avio_get_str16le(pb, name_len, name,
                          buflen);
-
         if (!strcmp(name, "AspectRatioX") || !strcmp(name, "AspectRatioY")) {
-            asf_store_aspect_ratio(s, st_num, name);
+            ret = asf_store_aspect_ratio(s, st_num, name, type);
+            if (ret < 0)
+                return ret;
         } else {
             if (st_num < ASF_MAX_STREAMS) {
                 if ((ret = process_metadata(s, name, name_len, val_len, type,
-                                            &asf->asf_sd[st_num].asf_met)) < 0)
+                                            &asf->asf_sd[st_num].asf_met)) < 0) {
+                    av_freep(&name);
                     break;
-            } else
-                av_freep(&name);
+                }
+            }
         }
+        av_freep(&name);
     }
 
     align_position(pb, asf->offset, size);
@@ -618,7 +641,7 @@ static int asf_read_properties(AVFormatContext *s, const GUIDParseTable *g)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    uint64_t creation_time;
+    time_t creation_time;
 
     avio_rl64(pb); // read object size
     avio_skip(pb, 16); // skip File ID
@@ -1246,7 +1269,6 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
             if (asf->stream_index == asf->asf_st[i]->stream_index) {
                 asf_pkt               = &asf->asf_st[i]->pkt;
                 asf_pkt->stream_index = asf->asf_st[i]->index;
-                asf_pkt->dts          = asf->dts;
                 break;
             }
         }
@@ -1453,10 +1475,12 @@ static int asf_read_close(AVFormatContext *s)
     ASFContext *asf = s->priv_data;
     int i;
 
-    for (i = 0; i < asf->nb_streams; i++) {
-        av_free_packet(&asf->asf_st[i]->pkt.avpkt);
-        av_freep(&asf->asf_st[i]);
+    for (i = 0; i < ASF_MAX_STREAMS; i++) {
         av_dict_free(&asf->asf_sd[i].asf_met);
+        if (i < asf->nb_streams) {
+            av_free_packet(&asf->asf_st[i]->pkt.avpkt);
+            av_freep(&asf->asf_st[i]);
+        }
     }
 
     asf->nb_streams = 0;
@@ -1482,7 +1506,6 @@ static void reset_packet_state(AVFormatContext *s)
     asf->nb_sub            = 0;
     asf->prop_flags        = 0;
     asf->sub_dts           = 0;
-    asf->dts               = 0;
     for (i = 0; i < asf->nb_streams; i++) {
         ASFPacket *pkt = &asf->asf_st[i]->pkt;
         pkt->size_left = 0;

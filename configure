@@ -155,6 +155,7 @@ Hardware accelerators:
   --disable-vaapi          disable VAAPI code [autodetect]
   --disable-vda            disable VDA code [autodetect]
   --disable-vdpau          disable VDPAU code [autodetect]
+  --enable-videotoolbox    enable VideoToolbox code [autodetect]
 
 Individual component options:
   --disable-everything     disable all components listed below
@@ -1470,6 +1471,7 @@ HWACCEL_LIST="
     vaapi
     vda
     vdpau
+    videotoolbox
     xvmc
 "
 
@@ -2139,7 +2141,7 @@ me_cmp_select="fdctdsp idctdsp pixblockdsp"
 mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
-mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp videodsp"
+mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp mpeg_er videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
@@ -2213,9 +2215,9 @@ fourxm_decoder_select="blockdsp bswapdsp"
 fraps_decoder_select="bswapdsp huffman"
 g2m_decoder_select="blockdsp idctdsp jpegtables zlib"
 g729_decoder_select="audiodsp"
-h261_decoder_select="mpeg_er mpegvideo"
+h261_decoder_select="mpegvideo"
 h261_encoder_select="aandcttables mpegvideoenc"
-h263_decoder_select="error_resilience h263_parser h263dsp mpeg_er mpegvideo qpeldsp"
+h263_decoder_select="h263_parser h263dsp mpegvideo qpeldsp"
 h263_encoder_select="aandcttables h263dsp mpegvideoenc"
 h263i_decoder_select="h263_decoder"
 h263p_decoder_select="h263_decoder"
@@ -2270,10 +2272,10 @@ mpc7_decoder_select="bswapdsp mpegaudiodsp"
 mpc8_decoder_select="mpegaudiodsp"
 mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
 mpeg_xvmc_decoder_select="mpeg2video_decoder"
-mpegvideo_decoder_select="error_resilience mpeg_er mpegvideo"
-mpeg1video_decoder_select="error_resilience mpeg_er mpegvideo"
+mpegvideo_decoder_select="mpegvideo"
+mpeg1video_decoder_select="mpegvideo"
 mpeg1video_encoder_select="aandcttables mpegvideoenc h263dsp"
-mpeg2video_decoder_select="error_resilience mpeg_er mpegvideo"
+mpeg2video_decoder_select="mpegvideo"
 mpeg2video_encoder_select="aandcttables mpegvideoenc h263dsp"
 mpeg2_qsv_decoder_deps="libmfx"
 mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
@@ -2287,7 +2289,7 @@ msmpeg4v2_decoder_select="h263_decoder"
 msmpeg4v2_encoder_select="h263_encoder"
 msmpeg4v3_decoder_select="h263_decoder"
 msmpeg4v3_encoder_select="h263_encoder"
-mss2_decoder_select="error_resilience mpeg_er qpeldsp vc1_decoder"
+mss2_decoder_select="vc1_decoder"
 mts2_decoder_select="mss34dsp"
 mxpeg_decoder_select="mjpeg_decoder"
 nellymoser_decoder_select="mdct sinewin"
@@ -2307,12 +2309,12 @@ ra_144_decoder_select="audiodsp"
 ralf_decoder_select="golomb"
 rawvideo_decoder_select="bswapdsp"
 rtjpeg_decoder_select="me_cmp"
-rv10_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
+rv10_decoder_select="h263_decoder"
 rv10_encoder_select="h263_encoder"
-rv20_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
+rv20_decoder_select="h263_decoder"
 rv20_encoder_select="h263_encoder"
-rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo rv34dsp videodsp"
-rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo rv34dsp videodsp"
+rv30_decoder_select="golomb h264pred h264qpel mpegvideo rv34dsp"
+rv40_decoder_select="golomb h264pred h264qpel mpegvideo rv34dsp"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt h264qpel hpeldsp me_cmp rangecoder videodsp"
@@ -2340,7 +2342,7 @@ txd_decoder_select="texturedsp"
 utvideo_decoder_select="bswapdsp"
 utvideo_encoder_select="bswapdsp huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
-vc1_decoder_select="blockdsp error_resilience h263_decoder h264chroma h264qpel intrax8 mpeg_er qpeldsp startcode"
+vc1_decoder_select="blockdsp h263_decoder h264qpel intrax8 qpeldsp startcode"
 vc1image_decoder_select="vc1_decoder"
 vc1_qsv_decoder_deps="libmfx"
 vc1_qsv_decoder_select="qsvdec vc1_qsv_hwaccel"
@@ -2380,14 +2382,18 @@ d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
-vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
+vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore -framework CoreServices"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
+videotoolbox_deps="VideoToolbox_VideoToolbox_h pthreads"
+videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework QuartzCore -framework CoreServices"
 xvmc_deps="X11_extensions_XvMClib_h"
 
 h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
 h263_vdpau_hwaccel_deps="vdpau"
 h263_vdpau_hwaccel_select="h263_decoder"
+h263_videotoolbox_hwaccel_deps="videotoolbox"
+h263_videotoolbox_hwaccel_select="h263_decoder"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
@@ -2410,6 +2416,8 @@ h264_vdpau_decoder_deps="vdpau"
 h264_vdpau_decoder_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
+h264_videotoolbox_hwaccel_deps="videotoolbox"
+h264_videotoolbox_hwaccel_select="h264_decoder"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
@@ -2425,6 +2433,8 @@ mpeg1_vdpau_decoder_deps="vdpau"
 mpeg1_vdpau_decoder_select="mpeg1video_decoder"
 mpeg1_vdpau_hwaccel_deps="vdpau"
 mpeg1_vdpau_hwaccel_select="mpeg1video_decoder"
+mpeg1_videotoolbox_hwaccel_deps="videotoolbox"
+mpeg1_videotoolbox_hwaccel_select="mpeg1video_decoder"
 mpeg1_xvmc_hwaccel_deps="xvmc"
 mpeg1_xvmc_hwaccel_select="mpeg1video_decoder"
 mpeg2_crystalhd_decoder_select="crystalhd"
@@ -2438,6 +2448,8 @@ mpeg2_vaapi_hwaccel_deps="vaapi"
 mpeg2_vaapi_hwaccel_select="mpeg2video_decoder"
 mpeg2_vdpau_hwaccel_deps="vdpau"
 mpeg2_vdpau_hwaccel_select="mpeg2video_decoder"
+mpeg2_videotoolbox_hwaccel_deps="videotoolbox"
+mpeg2_videotoolbox_hwaccel_select="mpeg2video_decoder"
 mpeg2_xvmc_hwaccel_deps="xvmc"
 mpeg2_xvmc_hwaccel_select="mpeg2video_decoder"
 mpeg4_crystalhd_decoder_select="crystalhd"
@@ -2447,6 +2459,8 @@ mpeg4_vdpau_decoder_deps="vdpau"
 mpeg4_vdpau_decoder_select="mpeg4_decoder"
 mpeg4_vdpau_hwaccel_deps="vdpau"
 mpeg4_vdpau_hwaccel_select="mpeg4_decoder"
+mpeg4_videotoolbox_hwaccel_deps="videotoolbox"
+mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
 vc1_crystalhd_decoder_select="crystalhd"
 vc1_d3d11va_hwaccel_deps="d3d11va"
@@ -2472,7 +2486,7 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 h264_parser_select="h264_decoder"
 hevc_parser_select="golomb"
 mpegvideo_parser_select="mpegvideo"
-mpeg4video_parser_select="error_resilience h263dsp mpeg_er mpegvideo qpeldsp"
+mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
 vc1_parser_select="mpegvideo startcode vc1_decoder"
 
 # bitstream_filters
@@ -2902,7 +2916,7 @@ sws_max_filter_size_default=256
 set_default sws_max_filter_size
 
 # Enable hwaccels by default.
-enable d3d11va dxva2 vaapi vda vdpau xvmc
+enable d3d11va dxva2 vaapi vda vdpau videotoolbox xvmc
 enable xlib
 
 # build settings
@@ -3537,8 +3551,8 @@ probe_cc(){
         true # no-op to avoid reading stdin in following checks
     elif $_cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
         _type=llvm_gcc
-        gcc_extra_ver=$(expr "$($_cc --version | head -n1)" : '.*\((.*)\)')
-        _ident="llvm-gcc $($_cc -dumpversion) $gcc_extra_ver"
+        gcc_extra_ver=$(expr "$($_cc --version 2>/dev/null | head -n1)" : '.*\((.*)\)')
+        _ident="llvm-gcc $($_cc -dumpversion 2>/dev/null) $gcc_extra_ver"
         _depflags='-MMD -MF $(@:.o=.d) -MT $@'
         _cflags_speed='-O3'
         _cflags_size='-Os'
@@ -3602,7 +3616,7 @@ probe_cc(){
         _flags_filter=tms470_flags
     elif $_cc -v 2>&1 | grep -q clang; then
         _type=clang
-        _ident=$($_cc --version | head -n1)
+        _ident=$($_cc --version 2>/dev/null | head -n1)
         _depflags='-MMD -MF $(@:.o=.d) -MT $@'
         _cflags_speed='-O3'
         _cflags_size='-Os'
@@ -5108,6 +5122,7 @@ check_header valgrind/valgrind.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h
+check_header VideoToolbox/VideoToolbox.h
 check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h

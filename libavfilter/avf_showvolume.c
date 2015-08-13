@@ -52,7 +52,7 @@ static const AVOption showvolume_options[] = {
     { "w", "set channel width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=400}, 40, 1080, FLAGS },
     { "h", "set channel height", OFFSET(h), AV_OPT_TYPE_INT, {.i64=20}, 1, 100, FLAGS },
     { "f", "set fade",           OFFSET(f), AV_OPT_TYPE_INT, {.i64=20}, 1, 255, FLAGS },
-    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="if(gte(VOLUME,-2), if(gte(VOLUME,-1),0xff, 0xffff),0xff00)"}, 0, 0, FLAGS },
+    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="if(gte(VOLUME,-2), if(gte(VOLUME,-1),0xff0000ff, 0xff00ffff),0xff00ff00)"}, 0, 0, FLAGS },
     { "t", "display channel names", OFFSET(draw_text), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
@@ -194,7 +194,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     for (c = 0; c < inlink->channels; c++) {
         float *src = (float *)insamples->extended_data[c];
         float max = 0;
-        int color;
+        uint32_t color;
 
         for (i = 0; i < insamples->nb_samples; i++)
             max = FFMAX(max, src[i]);

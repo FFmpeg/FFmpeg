@@ -47,9 +47,17 @@ Disable video.
 @item -sn
 Disable subtitles.
 @item -ss @var{pos}
-Seek to a given position in seconds.
+Seek to @var{pos}. Note that in most formats it is not possible to seek
+exactly, so @command{ffplay} will seek to the nearest seek point to
+@var{pos}.
+
+@var{pos} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 @item -t @var{duration}
-play <duration> seconds of audio/video
+Play @var{duration} seconds of audio/video.
+
+@var{duration} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 @item -bytes
 Seek by bytes.
 @item -nodisp

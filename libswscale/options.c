@@ -78,6 +78,10 @@ static const AVOption swscale_options[] = {
     { "gamma",           "gamma correct scaling", OFFSET(gamma_flag),        AV_OPT_TYPE_INT,    { .i64  = 0                  }, 0,       INT_MAX,        VE, "gamma" },
     { "true",            "enable",                        0,                 AV_OPT_TYPE_CONST,  { .i64  = 1                  }, INT_MIN, INT_MAX,        VE, "gamma" },
     { "false",           "disable",                       0,                 AV_OPT_TYPE_CONST,  { .i64  = 0                  }, INT_MIN, INT_MAX,        VE, "gamma" },
+    { "alphablend",      "mode for alpha -> non alpha",   OFFSET(alphablend),AV_OPT_TYPE_INT,    { .i64  = SWS_ALPHA_BLEND_NONE}, 0,       SWS_ALPHA_BLEND_NB-1, VE, "alphablend" },
+    { "none",            "ignore alpha",                  0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_ALPHA_BLEND_NONE}, INT_MIN, INT_MAX,       VE, "alphablend" },
+    { "uniform_color",   "blend onto a uniform color",    0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_ALPHA_BLEND_UNIFORM},INT_MIN, INT_MAX,     VE, "alphablend" },
+    { "checkerboard",    "blend onto a checkerboard",     0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_ALPHA_BLEND_CHECKERBOARD},INT_MIN, INT_MAX,     VE, "alphablend" },
 
     { NULL }
 };

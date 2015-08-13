@@ -326,10 +326,12 @@ faulty commit disappear from the history.
 @section Pushing changes to remote trees
 
 @example
-git push
+git push origin master --dry-run
 @end example
 
-Will push the changes to the default remote (@var{origin}).
+Will simulate a push of the local master branch to the default remote
+(@var{origin}). And list which branches and ranges or commits would have been
+pushed.
 Git will prevent you from pushing changes if the local and remote trees are
 out of sync. Refer to @ref{Updating the source tree to the latest revision}.
 

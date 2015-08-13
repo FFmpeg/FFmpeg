@@ -114,7 +114,6 @@ static av_cold void h264_pred_init_mmi(H264PredContext *h, int codec_id,
         h->pred16x16[HOR_PRED8x8            ] = ff_pred16x16_horizontal_8_mmi;
         h->pred8x8l [TOP_DC_PRED            ] = ff_pred8x8l_top_dc_8_mmi;
         h->pred8x8l [DC_PRED                ] = ff_pred8x8l_dc_8_mmi;
-        h->pred8x8l [HOR_PRED               ] = ff_pred8x8l_horizontal_8_mmi;
 
         switch (codec_id) {
         case AV_CODEC_ID_SVQ3:

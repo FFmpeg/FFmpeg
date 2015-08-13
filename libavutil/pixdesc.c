@@ -1632,6 +1632,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_ALPHA,
     },
+    [AV_PIX_FMT_VIDEOTOOLBOX] = {
+        .name = "videotoolbox_vld",
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
     [AV_PIX_FMT_GBRP] = {
         .name = "gbrp",
         .nb_components = 3,

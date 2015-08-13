@@ -51,13 +51,13 @@ typedef struct DrawGraphContext {
 
 static const AVOption drawgraph_options[] = {
     { "m1", "set 1st metadata key", OFFSET(key[0]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg1", "set 1st foreground color expression", OFFSET(fg_str[0]), AV_OPT_TYPE_STRING, {.str="0xff0000"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fg1", "set 1st foreground color expression", OFFSET(fg_str[0]), AV_OPT_TYPE_STRING, {.str="0xffff0000"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "m2", "set 2nd metadata key", OFFSET(key[1]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg2", "set 2nd foreground color expression", OFFSET(fg_str[1]), AV_OPT_TYPE_STRING, {.str="0x00ff00"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fg2", "set 2nd foreground color expression", OFFSET(fg_str[1]), AV_OPT_TYPE_STRING, {.str="0xff00ff00"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "m3", "set 3rd metadata key", OFFSET(key[2]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg3", "set 3rd foreground color expression", OFFSET(fg_str[2]), AV_OPT_TYPE_STRING, {.str="0xff00ff"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fg3", "set 3rd foreground color expression", OFFSET(fg_str[2]), AV_OPT_TYPE_STRING, {.str="0xffff00ff"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "m4", "set 4th metadata key", OFFSET(key[3]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg4", "set 4th foreground color expression", OFFSET(fg_str[3]), AV_OPT_TYPE_STRING, {.str="0xffff00"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fg4", "set 4th foreground color expression", OFFSET(fg_str[3]), AV_OPT_TYPE_STRING, {.str="0xffffff00"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "bg", "set background color", OFFSET(bg), AV_OPT_TYPE_COLOR, {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "min", "set minimal value", OFFSET(min), AV_OPT_TYPE_FLOAT, {.dbl=-1.}, INT_MIN, INT_MAX, FLAGS },
     { "max", "set maximal value", OFFSET(max), AV_OPT_TYPE_FLOAT, {.dbl=1.}, INT_MIN, INT_MAX, FLAGS },
@@ -161,7 +161,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (i = 0; i < 4; i++) {
         double values[VAR_VARS_NB];
-        int j, y, x, fg, bg, old;
+        int j, y, x, old;
+        uint32_t fg, bg;
         float vf;
 
         e = av_dict_get(metadata, s->key[i], NULL, 0);

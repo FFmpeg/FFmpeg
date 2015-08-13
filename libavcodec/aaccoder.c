@@ -39,6 +39,8 @@
 #include "aac.h"
 #include "aacenc.h"
 #include "aactab.h"
+#include "aacenctab.h"
+#include "aacenc_utils.h"
 #include "aac_tablegen_decl.h"
 
 /** Frequency in Hz for lower limit of noise substitution **/
@@ -55,76 +57,6 @@
 
 /** Frequency in Hz for lower limit of intensity stereo   **/
 #define INT_STEREO_LOW_LIMIT 6100
-
-/** Total number of usable codebooks **/
-#define CB_TOT 12
-
-/** Total number of codebooks, including special ones **/
-#define CB_TOT_ALL 15
-
-/** bits needed to code codebook run value for long windows */
-static const uint8_t run_value_bits_long[64] = {
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15
-};
-
-/** bits needed to code codebook run value for short windows */
-static const uint8_t run_value_bits_short[16] = {
-    3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
-};
-
-static const uint8_t * const run_value_bits[2] = {
-    run_value_bits_long, run_value_bits_short
-};
-
-#define ROUND_STANDARD 0.4054f
-#define ROUND_TO_ZERO 0.1054f
-
-/** Map to convert values from BandCodingPath index to a codebook index **/
-static const uint8_t aac_cb_out_map[CB_TOT_ALL]  = {0,1,2,3,4,5,6,7,8,9,10,11,13,14,15};
-/** Inverse map to convert from codebooks to BandCodingPath indices **/
-static const uint8_t aac_cb_in_map[CB_TOT_ALL+1] = {0,1,2,3,4,5,6,7,8,9,10,11,0,12,13,14};
-
-/**
- * Quantize one coefficient.
- * @return absolute value of the quantized coefficient
- * @see 3GPP TS26.403 5.6.2 "Scalefactor determination"
- */
-static av_always_inline int quant(float coef, const float Q, const float rounding)
-{
-    float a = coef * Q;
-    return sqrtf(a * sqrtf(a)) + rounding;
-}
-
-static void quantize_bands(int *out, const float *in, const float *scaled,
-                           int size, float Q34, int is_signed, int maxval, const float rounding)
-{
-    int i;
-    double qc;
-    for (i = 0; i < size; i++) {
-        qc = scaled[i] * Q34;
-        out[i] = (int)FFMIN(qc + rounding, (double)maxval);
-        if (is_signed && in[i] < 0.0f) {
-            out[i] = -out[i];
-        }
-    }
-}
-
-static void abs_pow34_v(float *out, const float *in, const int size)
-{
-#ifndef USE_REALLY_FULL_SEARCH
-    int i;
-    for (i = 0; i < size; i++) {
-        float a = fabsf(in[i]);
-        out[i] = sqrtf(a * sqrtf(a));
-    }
-#endif /* USE_REALLY_FULL_SEARCH */
-}
-
-static const uint8_t aac_cb_range [12] = {0, 3, 3, 3, 3, 9, 9, 8, 8, 13, 13, 17};
-static const uint8_t aac_cb_maxval[12] = {0, 1, 1, 2, 2, 4, 4, 7, 7, 12, 12, 16};
 
 /**
  * Calculate rate distortion cost for quantizing with given codebook
@@ -338,32 +270,6 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
 {
     quantize_and_encode_band_cost(s, pb, in, NULL, size, scale_idx, cb, lambda,
                                   INFINITY, NULL, rtz);
-}
-
-static float find_max_val(int group_len, int swb_size, const float *scaled) {
-    float maxval = 0.0f;
-    int w2, i;
-    for (w2 = 0; w2 < group_len; w2++) {
-        for (i = 0; i < swb_size; i++) {
-            maxval = FFMAX(maxval, scaled[w2*128+i]);
-        }
-    }
-    return maxval;
-}
-
-static int find_min_book(float maxval, int sf) {
-    float Q = ff_aac_pow2sf_tab[POW_SF2_ZERO - sf + SCALE_ONE_POS - SCALE_DIV_512];
-    float Q34 = sqrtf(Q * sqrtf(Q));
-    int qmaxval, cb;
-    qmaxval = maxval * Q34 + 0.4054f;
-    if      (qmaxval ==  0) cb = 0;
-    else if (qmaxval ==  1) cb = 1;
-    else if (qmaxval ==  2) cb = 3;
-    else if (qmaxval <=  4) cb = 5;
-    else if (qmaxval <=  7) cb = 7;
-    else if (qmaxval <= 12) cb = 9;
-    else                    cb = 11;
-    return cb;
 }
 
 /**
@@ -618,16 +524,6 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
         }
         put_bits(&s->pb, run_bits, count);
     }
-}
-
-/** Return the minimum scalefactor where the quantized coef does not clip. */
-static av_always_inline uint8_t coef2minsf(float coef) {
-    return av_clip_uint8(log2f(coef)*4 - 69 + SCALE_ONE_POS - SCALE_DIV_512);
-}
-
-/** Return the maximum scalefactor where the quantized coef is not zero. */
-static av_always_inline uint8_t coef2maxsf(float coef) {
-    return av_clip_uint8(log2f(coef)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
 }
 
 typedef struct TrellisPath {

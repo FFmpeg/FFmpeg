@@ -51,7 +51,9 @@ const char *postproc_license(void);
 
 #define PP_QUALITY_MAX 6
 
-#define QP_STORE_T int8_t
+#if FF_API_QP_TYPE
+#define QP_STORE_T int8_t //deprecated
+#endif
 
 #include <inttypes.h>
 
@@ -69,7 +71,7 @@ extern const char pp_help[]; ///< a simple help text
 void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
                      uint8_t * dst[3], const int dstStride[3],
                      int horizontalSize, int verticalSize,
-                     const QP_STORE_T *QP_store,  int QP_stride,
+                     const int8_t *QP_store,  int QP_stride,
                      pp_mode *mode, pp_context *ppContext, int pict_type);
 
 

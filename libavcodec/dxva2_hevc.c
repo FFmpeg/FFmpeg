@@ -92,7 +92,7 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
     pp->init_qp_minus26                          = pps->pic_init_qp_minus26;
 
     if (h->sh.short_term_ref_pic_set_sps_flag == 0 && h->sh.short_term_rps) {
-        pp->ucNumDeltaPocsOfRefRpsIdx            = h->sh.short_term_rps->num_delta_pocs;
+        pp->ucNumDeltaPocsOfRefRpsIdx            = h->sh.short_term_rps->rps_idx_num_delta_pocs;
         pp->wNumBitsForShortTermRPSInSlice       = h->sh.short_term_ref_pic_set_size;
     }
 

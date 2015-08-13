@@ -122,6 +122,22 @@ a_dither).
 
 @end table
 
+@item alphablend
+Set the alpha blending to use when the input has alpha but the output does not.
+Default value is @samp{none}.
+
+@table @samp
+@item uniform_color
+Blend onto a uniform background color
+
+@item checkerboard
+Blend onto a checkerboard
+
+@item none
+No blending
+
+@end table
+
 @end table
 
 @c man end SCALER OPTIONS

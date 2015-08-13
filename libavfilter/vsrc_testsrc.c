@@ -30,7 +30,7 @@
  * rgbtestsrc is ported from MPlayer libmpcodecs/vf_rgbtest.c by
  * Michael Niedermayer.
  *
- * smptebars and smptehdbars are by Paul B Mahol.
+ * allyuv, smptebars and smptehdbars are by Paul B Mahol.
  */
 
 #include <float.h>
@@ -801,35 +801,44 @@ AVFilter ff_vsrc_rgbtestsrc = {
 #if CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER
 
 static const uint8_t rainbow[7][4] = {
-    { 180, 128, 128, 255 },     /* gray */
-    { 168,  44, 136, 255 },     /* yellow */
-    { 145, 147,  44, 255 },     /* cyan */
-    { 133,  63,  52, 255 },     /* green */
-    {  63, 193, 204, 255 },     /* magenta */
-    {  51, 109, 212, 255 },     /* red */
-    {  28, 212, 120, 255 },     /* blue */
+    { 180, 128, 128, 255 },     /* 75% white */
+    { 161,  44, 141, 255 },     /* 75% yellow */
+    { 131, 156,  44, 255 },     /* 75% cyan */
+    { 112,  72,  57, 255 },     /* 75% green */
+    {  83, 183, 198, 255 },     /* 75% magenta */
+    {  65,  99, 212, 255 },     /* 75% red */
+    {  34, 212, 114, 255 },     /* 75% blue */
+};
+
+static const uint8_t rainbowhd[7][4] = {
+    { 180, 128, 128, 255 },     /* 75% white */
+    { 168,  44, 136, 255 },     /* 75% yellow */
+    { 145, 147,  44, 255 },     /* 75% cyan */
+    { 133,  63,  52, 255 },     /* 75% green */
+    {  63, 193, 204, 255 },     /* 75% magenta */
+    {  51, 109, 212, 255 },     /* 75% red */
+    {  28, 212, 120, 255 },     /* 75% blue */
 };
 
 static const uint8_t wobnair[7][4] = {
-    {  32, 240, 118, 255 },     /* blue */
+    {  34, 212, 114, 255 },     /* 75% blue */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    {  54, 184, 198, 255 },     /* magenta */
+    {  83, 183, 198, 255 },     /* 75% magenta */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    { 188, 154,  16, 255 },     /* cyan */
+    { 131, 156,  44, 255 },     /* 75% cyan */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    { 191, 128, 128, 255 },     /* gray */
+    { 180, 128, 128, 255 },     /* 75% white */
 };
 
 static const uint8_t white[4] = { 235, 128, 128, 255 };
-static const uint8_t black[4] = {  19, 128, 128, 255 }; /* 7.5% intensity black */
 
 /* pluge pulses */
-static const uint8_t neg4ire[4] = {  9, 128, 128, 255 }; /*  3.5% intensity black */
-static const uint8_t pos4ire[4] = { 29, 128, 128, 255 }; /* 11.5% intensity black */
+static const uint8_t neg4ire[4] = {  7, 128, 128, 255 };
+static const uint8_t pos4ire[4] = { 24, 128, 128, 255 };
 
 /* fudged Q/-I */
-static const uint8_t i_pixel[4] = { 61, 153,  99, 255 };
-static const uint8_t q_pixel[4] = { 35, 174, 152, 255 };
+static const uint8_t i_pixel[4] = { 57, 156,  97, 255 };
+static const uint8_t q_pixel[4] = { 44, 171, 147, 255 };
 
 static const uint8_t gray40[4] = { 104, 128, 128, 255 };
 static const uint8_t gray15[4] = {  49, 128, 128, 255 };
@@ -843,7 +852,7 @@ static const uint8_t black4[4] = {  25, 128, 128, 255 };
 static const uint8_t   neg2[4] = {  12, 128, 128, 255 };
 
 static void draw_bar(TestSourceContext *test, const uint8_t color[4],
-                     unsigned x, unsigned y, unsigned w, unsigned h,
+                     int x, int y, int w, int h,
                      AVFrame *frame)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
@@ -865,9 +874,9 @@ static void draw_bar(TestSourceContext *test, const uint8_t color[4],
 
         if (plane == 1 || plane == 2) {
             px = x >> desc->log2_chroma_w;
-            pw = w >> desc->log2_chroma_w;
+            pw = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
             py = y >> desc->log2_chroma_h;
-            ph = h >> desc->log2_chroma_h;
+            ph = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
         } else {
             px = x;
             pw = w;
@@ -940,16 +949,16 @@ static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     draw_bar(test, q_pixel, x, r_h + w_h, p_w, p_h, picref);
     x += p_w;
     tmp = FFALIGN(5 * r_w - x,  1 << pixdesc->log2_chroma_w);
-    draw_bar(test, black, x, r_h + w_h, tmp, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
     tmp = FFALIGN(r_w / 3,  1 << pixdesc->log2_chroma_w);
     draw_bar(test, neg4ire, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
-    draw_bar(test, black, x, r_h + w_h, tmp, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
     draw_bar(test, pos4ire, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
-    draw_bar(test, black, x, r_h + w_h, test->w - x, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, test->w - x, p_h, picref);
 }
 
 static av_cold int smptebars_init(AVFilterContext *ctx)
@@ -995,7 +1004,7 @@ static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 
     r_w = FFALIGN((((test->w + 3) / 4) * 3) / 7, 1 << pixdesc->log2_chroma_w);
     for (i = 0; i < 7; i++) {
-        draw_bar(test, rainbow[i], x, 0, r_w, r_h, picref);
+        draw_bar(test, rainbowhd[i], x, 0, r_w, r_h, picref);
         x += r_w;
     }
     draw_bar(test, gray40, x, 0, test->w - x, r_h, picref);
@@ -1006,7 +1015,7 @@ static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     draw_bar(test, i_pixel, x, y, r_w, r_h, picref);
     x += r_w;
     tmp = r_w * 6;
-    draw_bar(test, rainbow[0], x, y, tmp, r_h, picref);
+    draw_bar(test, rainbowhd[0], x, y, tmp, r_h, picref);
     x += tmp;
     l_w = x;
     draw_bar(test, blue, x, y, test->w - x, r_h, picref);
@@ -1080,3 +1089,84 @@ AVFilter ff_vsrc_smptehdbars = {
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
 #endif  /* CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER */
+
+#if CONFIG_ALLYUV_FILTER
+
+static const AVOption allyuv_options[] = {
+    COMMON_OPTIONS_NOSIZE
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(allyuv);
+
+static void allyuv_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    const int ys = frame->linesize[0];
+    const int us = frame->linesize[1];
+    const int vs = frame->linesize[2];
+    int x, y, j;
+
+    for (y = 0; y < 4096; y++) {
+        for (x = 0; x < 2048; x++) {
+            frame->data[0][y * ys + x] = ((x / 8) % 256);
+            frame->data[0][y * ys + 4095 - x] = ((x / 8) % 256);
+        }
+
+        for (x = 0; x < 2048; x+=8) {
+            for (j = 0; j < 8; j++) {
+                frame->data[1][vs * y + x + j]        = (y%16 + (j % 8) * 16);
+                frame->data[1][vs * y + 4095 - x - j] = (128 + y%16 + (j % 8) * 16);
+            }
+        }
+
+        for (x = 0; x < 4096; x++)
+            frame->data[2][y * us + x] = 256 * y / 4096;
+    }
+}
+
+static av_cold int allyuv_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->w = test->h = 4096;
+    test->draw_once = 1;
+    test->fill_picture_fn = allyuv_fill_picture;
+    return init(ctx);
+}
+
+static int allyuv_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_allyuv = {
+    .name          = "allyuv",
+    .description   = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &allyuv_class,
+    .init          = allyuv_init,
+    .uninit        = uninit,
+    .query_formats = allyuv_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_allyuv_outputs,
+};
+
+#endif /* CONFIG_ALLYUV_FILTER */

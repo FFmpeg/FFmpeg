@@ -423,11 +423,17 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (codec->width || codec->height) {
         char args[255];
         AVFilterContext *filter;
+        AVDictionaryEntry *e = NULL;
 
-        snprintf(args, sizeof(args), "%d:%d:0x%X",
+        snprintf(args, sizeof(args), "%d:%d",
                  codec->width,
-                 codec->height,
-                 (unsigned)ost->sws_flags);
+                 codec->height);
+
+        while ((e = av_dict_get(ost->sws_dict, "", e,
+                                AV_DICT_IGNORE_SUFFIX))) {
+            av_strlcatf(args, sizeof(args), ":%s=%s", e->key, e->value);
+        }
+
         snprintf(name, sizeof(name), "scaler for output stream %d:%d",
                  ost->file_index, ost->index);
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
@@ -961,7 +967,13 @@ int configure_filtergraph(FilterGraph *fg)
         char args[512];
         AVDictionaryEntry *e = NULL;
 
-        snprintf(args, sizeof(args), "flags=0x%X", (unsigned)ost->sws_flags);
+        args[0] = 0;
+        while ((e = av_dict_get(ost->sws_dict, "", e,
+                                AV_DICT_IGNORE_SUFFIX))) {
+            av_strlcatf(args, sizeof(args), "%s=%s:", e->key, e->value);
+        }
+        if (strlen(args))
+            args[strlen(args)-1] = 0;
         fg->graph->scale_sws_opts = av_strdup(args);
 
         args[0] = 0;

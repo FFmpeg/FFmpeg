@@ -22,7 +22,7 @@
 %include "libavutil/x86/x86util.asm"
 %include "util.asm"
 
-SECTION_TEXT
+SECTION .text
 
 ;-----------------------------------------------------------------------------
 ; void ff_mix_2_to_1_fltp_flt(float **src, float **matrix, int len,

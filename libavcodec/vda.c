@@ -21,7 +21,7 @@
 #include "libavutil/mem.h"
 
 #include "vda.h"
-#include "vda_internal.h"
+#include "vda_vt_internal.h"
 
 #if CONFIG_H264_VDA_HWACCEL
 AVVDAContext *av_vda_alloc_context(void)

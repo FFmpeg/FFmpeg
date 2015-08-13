@@ -1211,6 +1211,9 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG2_VAAPI_HWACCEL
     AV_PIX_FMT_VAAPI_VLD,
 #endif
+#if CONFIG_MPEG2_VIDEOTOOLBOX_HWACCEL
+    AV_PIX_FMT_VIDEOTOOLBOX,
+#endif
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NONE
 };
@@ -1381,6 +1384,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             case 1: avctx->chroma_sample_location = AVCHROMA_LOC_LEFT; break;
             case 2:
             case 3: avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT; break;
+            default: av_assert0(0);
             }
         } // MPEG-2
 
@@ -1463,6 +1467,12 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     s->avctx->level         = get_bits(&s->gb, 4);
     s->progressive_sequence = get_bits1(&s->gb);   /* progressive_sequence */
     s->chroma_format        = get_bits(&s->gb, 2); /* chroma_format 1=420, 2=422, 3=444 */
+
+    if (!s->chroma_format) {
+        s->chroma_format = 1;
+        av_log(s->avctx, AV_LOG_WARNING, "Chroma format invalid\n");
+    }
+
     horiz_size_ext          = get_bits(&s->gb, 2);
     vert_size_ext           = get_bits(&s->gb, 2);
     s->width  |= (horiz_size_ext << 12);
@@ -1720,9 +1730,11 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (s->avctx->hwaccel &&
             (s->avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD)) {
-            if (s->avctx->hwaccel->end_frame(s->avctx) < 0)
+            if ((ret = s->avctx->hwaccel->end_frame(s->avctx)) < 0) {
                 av_log(avctx, AV_LOG_ERROR,
                        "hardware accelerator failed to decode first field\n");
+                return ret;
+            }
         }
 
         for (i = 0; i < 4; i++) {
@@ -2079,9 +2091,12 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
         return 0;
 
     if (s->avctx->hwaccel) {
-        if (s->avctx->hwaccel->end_frame(s->avctx) < 0)
+        int ret = s->avctx->hwaccel->end_frame(s->avctx);
+        if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
+            return ret;
+        }
     }
 
     /* end of slice reached */

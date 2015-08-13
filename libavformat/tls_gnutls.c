@@ -144,7 +144,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         if (ret < 0)
             av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
     }
-#if GNUTLS_VERSION_MAJOR >= 3
+#if GNUTLS_VERSION_NUMBER >= 0x030020
     else
         gnutls_certificate_set_x509_system_trust(p->cred);
 #endif
