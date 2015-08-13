@@ -730,6 +730,78 @@ void uninit_parse_context(OptionParseContext *octx)
     uninit_opts();
 }
 
+#if HAVE_COMMANDLINETOARGVW && defined(_WIN32)
+
+static const char** vke_argv=NULL;
+static int vke_argc=0;
+static char* temp;
+static void extract_vke_script(int* argc_ptr,char ***argv_ptr)
+{
+	//check if it's -vke_script tag
+	if(*argc_ptr>=3&& !strcmp((*argv_ptr)[1],"-vke_script")){
+		av_log(NULL, AV_LOG_FATAL, "argv[1]: %s\n",(*argv_ptr)[1]);
+
+		char* script_location=(*argv_ptr)[2];
+		FILE *fp=fopen(script_location,"r");
+		if(fp!=NULL){
+			int c;
+			int line_count=0;
+
+			do{
+				do{
+					//read one line
+					c = fgetc(fp);
+					if (c != EOF&&c != '\n'){
+						continue;
+					}
+					++line_count;
+				} while (c != EOF&&c != '\n');
+			} while (c != EOF);
+			--line_count;//minus EOF count
+			vke_argc=line_count+1;
+			vke_argv=av_mallocz(sizeof(char *) * vke_argc);
+			(*vke_argv)="ffmpeg";
+			int argv_index=1;
+
+			//read
+			fseek(fp,0,0);
+
+			int buffer_size = 1024;
+			do{
+				int pos = 0;
+				int temp_size = buffer_size;
+				temp=malloc(sizeof(char*));
+				do{
+					//read one line
+					c = fgetc(fp);
+					if (c != EOF&&c != '\n'){
+						temp[pos] = (char)c;
+						++pos;
+					}
+					if (pos >= temp_size - 1){
+						temp_size += buffer_size;
+						temp = (char*)realloc(temp, temp_size);
+					}
+				} while (c != EOF&&c != '\n');
+				temp[pos] = '\0';
+				if (pos > 0){
+					*(vke_argv+argv_index)=(temp);
+					argv_index++;
+				}
+			} while (c != EOF);
+		}
+	}
+
+	*argv_ptr=vke_argv;
+	*argc_ptr=vke_argc;
+}
+#else
+static void extract_vke_script(int* argc_ptr,char ***argv_ptr)
+{
+	/* do nothing */
+}
+#endif
+
 int split_commandline(OptionParseContext *octx, int argc, char *argv[],
                       const OptionDef *options,
                       const OptionGroupDef *groups, int nb_groups)
@@ -739,6 +811,7 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
 
     /* perform system-dependent conversions for arguments list */
     prepare_app_arguments(&argc, &argv);
+    extract_vke_script(&argc,&argv);
 
     init_parse_context(octx, groups, nb_groups);
     av_log(NULL, AV_LOG_DEBUG, "Splitting the commandline.\n");
