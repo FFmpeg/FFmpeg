@@ -414,13 +414,26 @@ ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 
 MPEG-2 transport stream demuxer.
 
+This demuxer accepts the following options:
 @table @option
+@item resync_size
+Set size limit for looking up a new synchronization. Default value is
+65536.
 
 @item fix_teletext_pts
 Overrides teletext packet PTS and DTS values with the timestamps calculated
 from the PCR of the first program which the teletext stream is part of and is
 not discarded. Default value is 1, set this option to 0 if you want your
 teletext packet PTS and DTS values untouched.
+
+@item ts_packetsize
+Output option carrying the raw packet size in bytes.
+Show the detected raw packet size, cannot be set by the user.
+
+@item scan_all_pmts
+Scan and combine all PMTs. The value is an integer with value from -1
+to 1 (-1 means automatic setting, 1 means enabled, 0 means
+disabled). Default value is -1.
 @end table
 
 @section rawvideo
