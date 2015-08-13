@@ -1,0 +1,19 @@
+language: c
+sudo: false
+addons:
+  apt:
+    packages:
+      - yasm
+      - bc
+compiler:
+  - clang
+  - gcc
+cache:
+  directories:
+    - libav-samples
+script:
+  - mkdir -p libav-samples
+  - ./configure --samples=libav-samples --cc=$CC
+  - make -j 8
+  - make fate-rsync
+  - make check -j 8
