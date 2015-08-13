@@ -480,6 +480,10 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     int width  = s->avctx->width;
     int height = s->avctx->height;
 
+    if (buf_size < 4) {
+        return AVERROR_INVALIDDATA;
+    }
+
     s->profile = (buf[0] >> 1) & 7;
     if (s->profile > 1) {
         avpriv_request_sample(s->avctx, "Unknown profile %d", s->profile);
@@ -492,6 +496,10 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     buf      += 4 - s->profile;
     buf_size -= 4 - s->profile;
+
+    if (buf_size < part1_size) {
+        return AVERROR_INVALIDDATA;
+    }
 
     memcpy(s->put_pixels_tab, s->vp8dsp.put_vp8_epel_pixels_tab, sizeof(s->put_pixels_tab));
 
