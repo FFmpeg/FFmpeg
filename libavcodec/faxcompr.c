@@ -211,7 +211,8 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
                 mode = !mode;
             }
         } else if (cmode == 9 || cmode == 10) {
-            avpriv_report_missing_feature(avctx, "Special modes support");
+            int xxx = get_bits(gb, 3);
+            avpriv_report_missing_feature(avctx, "Special mode %d xxx=%d support", cmode, xxx);
             return AVERROR_PATCHWELCOME;
         } else { //vertical mode
             run      = run_off - offs + (cmode - 5);
