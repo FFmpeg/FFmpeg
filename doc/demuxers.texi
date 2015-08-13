@@ -421,7 +421,7 @@ Set size limit for looking up a new synchronization. Default value is
 65536.
 
 @item fix_teletext_pts
-Overrides teletext packet PTS and DTS values with the timestamps calculated
+Override teletext packet PTS and DTS values with the timestamps calculated
 from the PCR of the first program which the teletext stream is part of and is
 not discarded. Default value is 1, set this option to 0 if you want your
 teletext packet PTS and DTS values untouched.
