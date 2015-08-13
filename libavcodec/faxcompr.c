@@ -212,8 +212,78 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             }
         } else if (cmode == 9 || cmode == 10) {
             int xxx = get_bits(gb, 3);
-            avpriv_report_missing_feature(avctx, "Special mode %d xxx=%d support", cmode, xxx);
-            return AVERROR_PATCHWELCOME;
+            if (cmode == 9 && xxx == 7) {
+                int eob = 0;
+                int newmode;
+
+                if (saved_run) {
+                    av_log(avctx, AV_LOG_ERROR, "saved run %d on entering uncompressed mode\n", saved_run);
+                    return AVERROR_INVALIDDATA;
+                }
+
+                do {
+                    int cwi, k;
+                    int cw = 0;
+                    int codes[2];
+                    do {
+                        cwi = show_bits(gb, 11);
+                        if (!cwi) {
+                            av_log(avctx, AV_LOG_ERROR, "Invalid uncompressed codeword\n");
+                            return AVERROR_INVALIDDATA;
+                        }
+                        cwi = 10 - av_log2(cwi);
+                        skip_bits(gb, cwi + 1);
+                        if (cwi > 5) {
+                            newmode = get_bits1(gb);
+                            eob = 1;
+                            cwi -= 6;
+                        }
+                        cw += cwi;
+                    } while(cwi == 5);
+
+                    codes[0] = cw;
+                    codes[1] = !eob;
+
+                    for (k = 0; k < 2; k++) {
+                        if (codes[k]) {
+                            if (mode == k) {
+                                *runs++ = saved_run;
+                                if (runs >= runend) {
+                                    av_log(avctx, AV_LOG_ERROR, "uncompressed run overrun\n");
+                                    return AVERROR_INVALIDDATA;
+                                }
+                                offs += saved_run;
+                                if (offs > width || run > width) {
+                                    av_log(avctx, AV_LOG_ERROR, "uncompressed run went out of bounds\n");
+                                    return AVERROR_INVALIDDATA;
+                                }
+                                saved_run = 0;
+                                mode = !mode;
+                            }
+                            saved_run += codes[k];
+                        }
+                    }
+                } while (!eob);
+                *runs++ = saved_run;
+                if (runs >= runend) {
+                    av_log(avctx, AV_LOG_ERROR, "uncompressed run overrun\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                offs += saved_run;
+                if (offs > width || run > width) {
+                    av_log(avctx, AV_LOG_ERROR, "uncompressed run went out of bounds\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                saved_run = 0;
+                mode = !mode;
+                if (newmode != mode) { //FIXME CHECK
+                    *runs++ = 0;
+                    mode = newmode;
+                }
+            } else {
+                avpriv_report_missing_feature(avctx, "Special mode %d xxx=%d support", cmode, xxx);
+                return AVERROR_PATCHWELCOME;
+            }
         } else { //vertical mode
             run      = run_off - offs + (cmode - 5);
             run_off -= *--ref;
