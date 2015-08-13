@@ -71,7 +71,7 @@ struct gdigrab {
     av_log(s1, AV_LOG_ERROR, str " (error %li)\n", GetLastError())
 
 #define REGION_WND_BORDER 3
-#defin DEFAULT_DPI 96
+#define DEFAULT_DPI 96
 
 /**
  * Callback to handle Windows messages for the region outline window.
