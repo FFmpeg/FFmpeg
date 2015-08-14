@@ -256,13 +256,11 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
                s->anc_buffer = av_malloc(DMX_ANC_BUFFSIZE);
                if (!s->anc_buffer) {
                    av_log(avctx, AV_LOG_ERROR, "Unable to allocate ancillary buffer for the decoder\n");
-                   ret = AVERROR(ENOMEM);
-                   goto fail;
+                   return AVERROR(ENOMEM);
                }
                if (aacDecoder_AncDataInit(s->handle, s->anc_buffer, DMX_ANC_BUFFSIZE)) {
                    av_log(avctx, AV_LOG_ERROR, "Unable to register downmix ancillary buffer in the decoder\n");
-                   ret = AVERROR_UNKNOWN;
-                   goto fail;
+                   return AVERROR_UNKNOWN;
                }
             }
         }
@@ -307,15 +305,10 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
 
     s->decoder_buffer_size = DECODER_BUFFSIZE * DECODER_MAX_CHANNELS;
     s->decoder_buffer = av_malloc(s->decoder_buffer_size);
-    if (!s->decoder_buffer) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!s->decoder_buffer)
+        return AVERROR(ENOMEM);
 
     return 0;
-fail:
-    fdk_aac_decode_close(avctx);
-    return ret;
 }
 
 static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
@@ -389,4 +382,6 @@ AVCodec ff_libfdk_aac_decoder = {
     .flush          = fdk_aac_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_class     = &fdk_aac_dec_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
