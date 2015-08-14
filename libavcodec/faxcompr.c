@@ -155,7 +155,7 @@ static int decode_uncompressed(AVCodecContext *avctx, GetBitContext *gb,
 
         for (k = 0; k < 2; k++) {
             if (codes[k]) {
-                if (*mode == k) {
+                if (*mode == !k) {
                     *(*runs)++ = saved_run;
                     if (*runs >= runend) {
                         av_log(avctx, AV_LOG_ERROR, "uncompressed run overrun\n");
