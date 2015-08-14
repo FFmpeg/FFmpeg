@@ -33,7 +33,7 @@
 
 typedef struct ListEntry {
     char  name[1024];
-    int   duration;
+    int64_t duration;     // segment duration in AV_TIME_BASE units
     struct ListEntry *next;
 } ListEntry;
 
@@ -50,9 +50,10 @@ typedef struct HLSContext {
     int  allowcache;
     int64_t recording_time;
     int has_video;
+    // The following timestamps are in AV_TIME_BASE units.
     int64_t start_pts;
     int64_t end_pts;
-    int64_t duration;      // last segment duration computed so far, in seconds
+    int64_t duration;      // last segment duration computed so far.
     int nb_entries;
     ListEntry *list;
     ListEntry *end_list;
@@ -85,7 +86,7 @@ static int hls_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int append_entry(HLSContext *hls, uint64_t duration)
+static int append_entry(HLSContext *hls, int64_t duration)
 {
     ListEntry *en = av_malloc(sizeof(*en));
 
@@ -131,7 +132,7 @@ static int hls_window(AVFormatContext *s, int last)
 {
     HLSContext *hls = s->priv_data;
     ListEntry *en;
-    int target_duration = 0;
+    int64_t target_duration = 0;
     int ret = 0;
     AVIOContext *out = NULL;
     char temp_filename[1024];
@@ -152,14 +153,16 @@ static int hls_window(AVFormatContext *s, int last)
     if (hls->allowcache == 0 || hls->allowcache == 1) {
         avio_printf(out, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
     }
-    avio_printf(out, "#EXT-X-TARGETDURATION:%d\n", target_duration);
+    avio_printf(out, "#EXT-X-TARGETDURATION:%"PRId64"\n",
+                av_rescale(target_duration, 1, AV_TIME_BASE));
     avio_printf(out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
 
     av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
            sequence);
 
     for (en = hls->list; en; en = en->next) {
-        avio_printf(out, "#EXTINF:%d,\n", en->duration);
+        avio_printf(out, "#EXTINF:%"PRId64",\n",
+                    av_rescale(en->duration, 1, AV_TIME_BASE));
         if (hls->baseurl)
             avio_printf(out, "%s", hls->baseurl);
         avio_printf(out, "%s\n", en->name);
@@ -265,11 +268,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVFormatContext *oc = hls->avf;
     AVStream *st = s->streams[pkt->stream_index];
     int64_t end_pts = hls->recording_time * hls->number;
+    int64_t pts     = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
     int ret, can_split = 1;
 
     if (hls->start_pts == AV_NOPTS_VALUE) {
-        hls->start_pts = pkt->pts;
-        hls->end_pts   = pkt->pts;
+        hls->start_pts = pts;
+        hls->end_pts   = pts;
     }
 
     if (hls->has_video) {
@@ -279,16 +283,14 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->pts == AV_NOPTS_VALUE)
         can_split = 0;
     else
-        hls->duration = av_rescale(pkt->pts - hls->end_pts,
-                                   st->time_base.num, st->time_base.den);
+        hls->duration = pts - hls->end_pts;
 
-    if (can_split && av_compare_ts(pkt->pts - hls->start_pts, st->time_base,
-                                   end_pts, AV_TIME_BASE_Q) >= 0) {
+    if (can_split && pts - hls->start_pts >= end_pts) {
         ret = append_entry(hls, hls->duration);
         if (ret)
             return ret;
 
-        hls->end_pts = pkt->pts;
+        hls->end_pts = pts;
         hls->duration = 0;
 
         av_write_frame(oc, NULL); /* Flush any buffered data */
