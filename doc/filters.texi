@@ -11713,6 +11713,9 @@ Lissajous rotated by 45 degrees.
 
 @item lissajous_xy
 Same as above but not rotated.
+
+@item polar
+Shape resembling half of circle.
 @end table
 
 Default value is @samp{lissajous}.
