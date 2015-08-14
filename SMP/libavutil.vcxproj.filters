@@ -176,6 +176,9 @@
     <ClCompile Include="..\libavutil\rational.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\reverse.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\rc4.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>

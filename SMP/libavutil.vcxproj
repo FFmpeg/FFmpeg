@@ -157,6 +157,8 @@
     </ClCompile>
     <ClCompile Include="..\libavutil\rational.c">
     </ClCompile>
+    <ClCompile Include="..\libavutil\reverse.c">
+    </ClCompile>
     <ClCompile Include="..\libavutil\rc4.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\ripemd.c">

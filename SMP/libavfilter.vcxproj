@@ -463,6 +463,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vsink_nullsink.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_aphasemeter.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_avectorscope.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_concat.c">

@@ -356,6 +356,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\log2_tab.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\reverse.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin_fixed.c">
@@ -1516,6 +1518,8 @@
     <ClCompile Include="..\libavcodec\dvdsub_parser.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\flac_parser.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\g729_parser.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\gsm_parser.c">
     </ClCompile>
