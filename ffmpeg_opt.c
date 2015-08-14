@@ -1992,12 +1992,14 @@ static int open_output_file(OptionsContext *o, const char *filename)
 
         /* audio: most channels */
         if (!o->audio_disable && av_guess_codec(oc->oformat, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO) != AV_CODEC_ID_NONE) {
-            int channels = 0, idx = -1;
+            int best_score = 0, idx = -1;
             for (i = 0; i < nb_input_streams; i++) {
+                int score;
                 ist = input_streams[i];
+                score = ist->st->codec->channels + 100000000*!!ist->st->codec_info_nb_frames;
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-                    ist->st->codec->channels > channels) {
-                    channels = ist->st->codec->channels;
+                    score > best_score) {
+                    best_score = score;
                     idx = i;
                 }
             }
