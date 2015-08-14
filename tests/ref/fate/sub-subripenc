@@ -1,14 +1,14 @@
 1
 00:00:00,970 --> 00:00:02,540
-- Test 1.
-- Test 2.
+<font face="Serif" size="18">- Test 1.
+- Test 2.</font>
 
 2
 00:00:03,050 --> 00:00:04,740
-Test 3.
+<font face="Serif" size="18">Test 3.</font>
 
 3
 00:00:05,850 --> 00:00:08,140
-- Test 4.
-- Test 5.
+<font face="Serif" size="18">- Test 4.
+- Test 5.</font>
 

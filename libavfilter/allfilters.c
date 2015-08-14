@@ -268,6 +268,7 @@ void avfilter_register_all(void)
 
     /* multimedia filters */
     REGISTER_FILTER(ADRAWGRAPH,     adrawgraph,     avf);
+    REGISTER_FILTER(APHASEMETER,    aphasemeter,    avf);
     REGISTER_FILTER(AVECTORSCOPE,   avectorscope,   avf);
     REGISTER_FILTER(CONCAT,         concat,         avf);
     REGISTER_FILTER(SHOWCQT,        showcqt,        avf);

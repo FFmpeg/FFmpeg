@@ -327,20 +327,6 @@ int ff_rm_read_mdpr_codecdata(AVFormatContext *s, AVIOContext *pb,
     codec_pos = avio_tell(pb);
     v = avio_rb32(pb);
 
-    if (v == MKBETAG('M', 'L', 'T', 'I')) {
-        int number_of_streams = avio_rb16(pb);
-        int number_of_mdpr;
-        int i;
-        for (i = 0; i<number_of_streams; i++)
-            avio_rb16(pb);
-        number_of_mdpr = avio_rb16(pb);
-        if (number_of_mdpr != 1) {
-            avpriv_request_sample(s, "MLTI with multiple MDPR");
-        }
-        avio_rb32(pb);
-        v = avio_rb32(pb);
-    }
-
     if (v == MKTAG(0xfd, 'a', 'r', '.')) {
         /* ra type header */
         if (rm_read_audio_stream_info(s, pb, st, rst, 0))
@@ -514,6 +500,8 @@ static int rm_read_header(AVFormatContext *s)
     char buf[128], mime[128];
     int flags = 0;
     int ret = -1;
+    unsigned size, v;
+    int64_t codec_pos;
 
     tag = avio_rl32(pb);
     if (tag == MKTAG('.', 'r', 'a', 0xfd)) {
@@ -584,9 +572,55 @@ static int rm_read_header(AVFormatContext *s)
             st->priv_data = ff_rm_alloc_rmstream();
             if (!st->priv_data)
                 return AVERROR(ENOMEM);
-            if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
-                                          avio_rb32(pb), mime) < 0)
-                goto fail;
+
+            size = avio_rb32(pb);
+            codec_pos = avio_tell(pb);
+
+            ffio_ensure_seekback(pb, 4);
+            v = avio_rb32(pb);
+            if (v == MKBETAG('M', 'L', 'T', 'I')) {
+                int number_of_streams = avio_rb16(pb);
+                int number_of_mdpr;
+                int i;
+                unsigned size2;
+                for (i = 0; i<number_of_streams; i++)
+                    avio_rb16(pb);
+                number_of_mdpr = avio_rb16(pb);
+                if (number_of_mdpr != 1) {
+                    avpriv_request_sample(s, "MLTI with multiple (%d) MDPR", number_of_mdpr);
+                }
+                for (i = 0; i < number_of_mdpr; i++) {
+                    AVStream *st2;
+                    if (i > 0) {
+                        st2 = avformat_new_stream(s, NULL);
+                        if (!st2) {
+                            ret = AVERROR(ENOMEM);
+                            goto fail;
+                        }
+                        st2->id = st->id + (i<<16);
+                        st2->codec->bit_rate = st->codec->bit_rate;
+                        st2->start_time = st->start_time;
+                        st2->duration   = st->duration;
+                        st2->codec->codec_type = AVMEDIA_TYPE_DATA;
+                        st2->priv_data = ff_rm_alloc_rmstream();
+                        if (!st2->priv_data)
+                            return AVERROR(ENOMEM);
+                    } else
+                        st2 = st;
+
+                    size2 = avio_rb32(pb);
+                    if (ff_rm_read_mdpr_codecdata(s, s->pb, st2, st2->priv_data,
+                                                  size2, mime) < 0)
+                        goto fail;
+                }
+                avio_seek(pb, codec_pos + size, SEEK_SET);
+            } else {
+                avio_skip(pb, -4);
+                if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
+                                              size, mime) < 0)
+                    goto fail;
+            }
+
             break;
         case MKTAG('D', 'A', 'T', 'A'):
             goto header_end;
@@ -644,9 +678,11 @@ static int rm_sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stre
 
     while(!avio_feof(pb)){
         int len, num, i;
+        int mlti_id;
         *pos= avio_tell(pb) - 3;
         if(rm->remaining_len > 0){
             num= rm->current_stream;
+            mlti_id = 0;
             len= rm->remaining_len;
             *timestamp = AV_NOPTS_VALUE;
             *flags= 0;
@@ -682,12 +718,13 @@ static int rm_sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stre
 
             num = avio_rb16(pb);
             *timestamp = avio_rb32(pb);
-            avio_r8(pb); /* reserved */
+            mlti_id = (avio_r8(pb)>>1)-1<<16;
+            mlti_id = FFMAX(mlti_id, 0);
             *flags = avio_r8(pb); /* flags */
         }
         for(i=0;i<s->nb_streams;i++) {
             st = s->streams[i];
-            if (num == st->id)
+            if (mlti_id + num == st->id)
                 break;
         }
         if (i == s->nb_streams) {

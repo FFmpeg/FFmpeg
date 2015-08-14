@@ -93,7 +93,7 @@ probeframes(){
 
 ffmpeg(){
     dec_opts="-hwaccel $hwaccel -threads $threads -thread_type $thread_type"
-    ffmpeg_args="-nostats -cpuflags $cpuflags"
+    ffmpeg_args="-nostdin -nostats -cpuflags $cpuflags"
     for arg in $@; do
         [ x${arg} = x-i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
         ffmpeg_args="${ffmpeg_args} ${arg}"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012  Justin Ruggles
+ * Copyright (c) 2015  Ganesh Ajjanagadde
  *
  * This file is part of FFmpeg.
  *
@@ -20,44 +20,35 @@
 
 /**
  * @file
- * GSM audio parser
+ * G.729 audio parser
  *
  * Splits packets into individual blocks.
  */
 
 #include "libavutil/avassert.h"
 #include "parser.h"
-#include "gsm.h"
+#include "g729.h"
 
-typedef struct GSMParseContext {
+typedef struct G729ParseContext {
     ParseContext pc;
     int block_size;
     int duration;
     int remaining;
-} GSMParseContext;
+} G729ParseContext;
 
-static int gsm_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
+static int g729_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size)
 {
-    GSMParseContext *s = s1->priv_data;
+    G729ParseContext *s = s1->priv_data;
     ParseContext *pc = &s->pc;
     int next;
 
     if (!s->block_size) {
-        switch (avctx->codec_id) {
-        case AV_CODEC_ID_GSM:
-            s->block_size = GSM_BLOCK_SIZE;
-            s->duration   = GSM_FRAME_SIZE;
-            break;
-        case AV_CODEC_ID_GSM_MS:
-            s->block_size = avctx->block_align ? avctx->block_align
-                                               : GSM_MS_BLOCK_SIZE;
-            s->duration   = GSM_FRAME_SIZE * 2;
-            break;
-        default:
-            av_assert0(0);
-        }
+        av_assert1(avctx->codec_id == AV_CODEC_ID_G729);
+        /* FIXME: replace this heuristic block_size with more precise estimate */
+        s->block_size = (avctx->bit_rate < 8000) ? G729D_6K4_BLOCK_SIZE : G729_8K_BLOCK_SIZE;
+        s->duration   = avctx->frame_size;
     }
 
     if (!s->remaining)
@@ -83,9 +74,9 @@ static int gsm_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser ff_gsm_parser = {
-    .codec_ids      = { AV_CODEC_ID_GSM, AV_CODEC_ID_GSM_MS },
-    .priv_data_size = sizeof(GSMParseContext),
-    .parser_parse   = gsm_parse,
+AVCodecParser ff_g729_parser = {
+    .codec_ids      = { AV_CODEC_ID_G729 },
+    .priv_data_size = sizeof(G729ParseContext),
+    .parser_parse   = g729_parse,
     .parser_close   = ff_parse_close,
 };

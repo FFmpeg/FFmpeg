@@ -1015,7 +1015,6 @@ typedef struct AVStream {
     /**
      * Number of packets to buffer for codec probing
      */
-#define MAX_PROBE_PACKETS 2500
     int probe_packets;
 
     /**

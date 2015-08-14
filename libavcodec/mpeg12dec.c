@@ -1384,6 +1384,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             case 1: avctx->chroma_sample_location = AVCHROMA_LOC_LEFT; break;
             case 2:
             case 3: avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT; break;
+            default: av_assert0(0);
             }
         } // MPEG-2
 
@@ -1466,6 +1467,12 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     s->avctx->level         = get_bits(&s->gb, 4);
     s->progressive_sequence = get_bits1(&s->gb);   /* progressive_sequence */
     s->chroma_format        = get_bits(&s->gb, 2); /* chroma_format 1=420, 2=422, 3=444 */
+
+    if (!s->chroma_format) {
+        s->chroma_format = 1;
+        av_log(s->avctx, AV_LOG_WARNING, "Chroma format invalid\n");
+    }
+
     horiz_size_ext          = get_bits(&s->gb, 2);
     vert_size_ext           = get_bits(&s->gb, 2);
     s->width  |= (horiz_size_ext << 12);

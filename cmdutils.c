@@ -2040,7 +2040,10 @@ double get_rotation(AVStream *st)
     theta -= 360*floor(theta/360 + 0.9/360);
 
     if (fabs(theta - 90*round(theta/90)) > 2)
-        av_log_ask_for_sample(NULL, "Odd rotation angle\n");
+        av_log(NULL, AV_LOG_WARNING, "Odd rotation angle.\n"
+               "If you want to help, upload a sample "
+               "of this file to ftp://upload.ffmpeg.org/incoming/ "
+               "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)");
 
     return theta;
 }

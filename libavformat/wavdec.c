@@ -434,8 +434,17 @@ break_loop:
         data_size = 0;
     }
 
+    if (   st->codec->bit_rate > 0 && data_size > 0
+        && st->codec->sample_rate > 0
+        && sample_count > 0 && st->codec->channels > 1
+        && sample_count % st->codec->channels == 0) {
+        if (fabs(8.0 * data_size * st->codec->channels * st->codec->sample_rate /
+            sample_count /st->codec->bit_rate - 1.0) < 0.3)
+            sample_count /= st->codec->channels;
+    }
+
     if (   data_size > 0 && sample_count && st->codec->channels
-        && (data_size << 3) / sample_count / st->codec->channels > st->codec->bits_per_coded_sample) {
+        && (data_size << 3) / sample_count / st->codec->channels > st->codec->bits_per_coded_sample  + 1) {
         av_log(s, AV_LOG_WARNING, "ignoring wrong sample_count %"PRId64"\n", sample_count);
         sample_count = 0;
     }

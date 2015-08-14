@@ -658,13 +658,13 @@ static int get_poc(Jpeg2000DecoderContext *s, int size, Jpeg2000POC *p)
     }
 
     if (elem_size > 7) {
-        avpriv_request_sample(s->avctx, "Fat POC not supported\n");
+        avpriv_request_sample(s->avctx, "Fat POC not supported");
         return AVERROR_PATCHWELCOME;
     }
 
     tmp.nb_poc = (size - 2) / elem_size;
     if (tmp.nb_poc > MAX_POCS) {
-        avpriv_request_sample(s->avctx, "Too many POCs (%d)\n", tmp.nb_poc);
+        avpriv_request_sample(s->avctx, "Too many POCs (%d)", tmp.nb_poc);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -951,14 +951,14 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 return newpasses;
             av_assert2(newpasses > 0);
             if (cblk->npasses + newpasses >= JPEG2000_MAX_PASSES) {
-                avpriv_request_sample(s->avctx, "Too many passes\n");
+                avpriv_request_sample(s->avctx, "Too many passes");
                 return AVERROR_PATCHWELCOME;
             }
             if ((llen = getlblockinc(s)) < 0)
                 return llen;
             if (cblk->lblock + llen + av_log2(newpasses) > 16) {
                 avpriv_request_sample(s->avctx,
-                                      "Block with length beyond 16 bits\n");
+                                      "Block with length beyond 16 bits");
                 return AVERROR_PATCHWELCOME;
             }
 

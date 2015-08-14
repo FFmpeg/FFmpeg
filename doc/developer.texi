@@ -637,6 +637,10 @@ not related to the comments received during review. Such patches will
 be rejected. Instead, submit significant changes or new features as
 separate patches.
 
+Everyone is welcome to review patches. Also if you are waiting for your patch
+to be reviewed, please consider helping to review other patches, that is a great
+way to get everyone's patches reviewed sooner.
+
 @anchor{Regression tests}
 @section Regression tests
 

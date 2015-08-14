@@ -75,9 +75,12 @@ struct hash_impl {
 #include "libavutil/sha512.h"
 #include "libavutil/ripemd.h"
 #include "libavutil/aes.h"
+#include "libavutil/blowfish.h"
 #include "libavutil/camellia.h"
 #include "libavutil/cast5.h"
 #include "libavutil/twofish.h"
+#include "libavutil/rc4.h"
+#include "libavutil/xtea.h"
 
 #define IMPL_USE_lavu IMPL_USE
 
@@ -102,6 +105,7 @@ static void run_lavu_ ## suffix(uint8_t *output,                             \
 DEFINE_LAVU_MD(sha1,      AVSHA,    sha, 160);
 DEFINE_LAVU_MD(sha256,    AVSHA,    sha, 256);
 DEFINE_LAVU_MD(sha512,    AVSHA512, sha512, 512);
+DEFINE_LAVU_MD(ripemd128, AVRIPEMD, ripemd, 128);
 DEFINE_LAVU_MD(ripemd160, AVRIPEMD, ripemd, 160);
 
 static void run_lavu_aes128(uint8_t *output,
@@ -112,6 +116,16 @@ static void run_lavu_aes128(uint8_t *output,
         fatal_error("out of memory");
     av_aes_init(aes, hardcoded_key, 128, 0);
     av_aes_crypt(aes, output, input, size >> 4, NULL, 0);
+}
+
+static void run_lavu_blowfish(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVBlowfish *blowfish;
+    if (!blowfish && !(blowfish = av_blowfish_alloc()))
+        fatal_error("out of memory");
+    av_blowfish_init(blowfish, hardcoded_key, 16);
+    av_blowfish_crypt(blowfish, output, input, size >> 3, NULL, 0);
 }
 
 static void run_lavu_camellia(uint8_t *output,
@@ -143,6 +157,27 @@ static void run_lavu_twofish(uint8_t *output,
     av_twofish_init(twofish, hardcoded_key, 128);
     av_twofish_crypt(twofish, output, input, size >> 4, NULL, 0);
 }
+
+static void run_lavu_rc4(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVRC4 *rc4;
+    if (!rc4 && !(rc4 = av_rc4_alloc()))
+        fatal_error("out of memory");
+    av_rc4_init(rc4, hardcoded_key, 128, 0);
+    av_rc4_crypt(rc4, output, input, size, NULL, 0);
+}
+
+static void run_lavu_xtea(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVXTEA *xtea;
+    if (!xtea && !(xtea = av_xtea_alloc()))
+        fatal_error("out of memory");
+    av_xtea_init(xtea, hardcoded_key);
+    av_xtea_crypt(xtea, output, input, size >> 3, NULL, 0);
+}
+
 /***************************************************************************
  * crypto: OpenSSL's libcrypto
  ***************************************************************************/
@@ -153,8 +188,10 @@ static void run_lavu_twofish(uint8_t *output,
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <openssl/aes.h>
+#include <openssl/blowfish.h>
 #include <openssl/camellia.h>
 #include <openssl/cast.h>
+#include <openssl/rc4.h>
 
 #define DEFINE_CRYPTO_WRAPPER(suffix, function)                              \
 static void run_crypto_ ## suffix(uint8_t *output,                           \
@@ -181,6 +218,17 @@ static void run_crypto_aes128(uint8_t *output,
         AES_encrypt(input + i, output + i, &aes);
 }
 
+static void run_crypto_blowfish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    BF_KEY blowfish;
+    unsigned i;
+
+    BF_set_key(&blowfish, 16, hardcoded_key);
+    for (i = 0; i < size; i += 8)
+        BF_ecb_encrypt(input + i, output + i, &blowfish, 1);
+}
+
 static void run_crypto_camellia(uint8_t *output,
                                 const uint8_t *input, unsigned size)
 {
@@ -202,6 +250,15 @@ static void run_crypto_cast128(uint8_t *output,
     CAST_set_key(&cast, 16, hardcoded_key);
     for (i = 0; i < size; i += 8)
         CAST_ecb_encrypt(input + i, output + i, &cast, 1);
+}
+
+static void run_crypto_rc4(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    RC4_KEY rc4;
+
+    RC4_set_key(&rc4, 16, hardcoded_key);
+    RC4(&rc4, size, input, output);
 }
 
 #define IMPL_USE_crypto(...) IMPL_USE(__VA_ARGS__)
@@ -238,6 +295,16 @@ static void run_gcrypt_aes128(uint8_t *output,
         gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_ECB, 0);
     gcry_cipher_setkey(aes, hardcoded_key, 16);
     gcry_cipher_encrypt(aes, output, size, input, size);
+}
+
+static void run_gcrypt_blowfish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    static gcry_cipher_hd_t blowfish;
+    if (!blowfish)
+        gcry_cipher_open(&blowfish, GCRY_CIPHER_BLOWFISH, GCRY_CIPHER_MODE_ECB, 0);
+    gcry_cipher_setkey(blowfish, hardcoded_key, 16);
+    gcry_cipher_encrypt(blowfish, output, size, input, size);
 }
 
 static void run_gcrypt_camellia(uint8_t *output,
@@ -297,6 +364,7 @@ DEFINE_TOMCRYPT_WRAPPER(md5,       md5,    MD5)
 DEFINE_TOMCRYPT_WRAPPER(sha1,      sha1,   SHA1)
 DEFINE_TOMCRYPT_WRAPPER(sha256,    sha256, SHA256)
 DEFINE_TOMCRYPT_WRAPPER(sha512,    sha512, SHA512)
+DEFINE_TOMCRYPT_WRAPPER(ripemd128, rmd128, RIPEMD128)
 DEFINE_TOMCRYPT_WRAPPER(ripemd160, rmd160, RIPEMD160)
 
 static void run_tomcrypt_aes128(uint8_t *output,
@@ -309,6 +377,17 @@ static void run_tomcrypt_aes128(uint8_t *output,
     size -= 15;
     for (i = 0; i < size; i += 16)
         aes_ecb_encrypt(input + i, output + i, &aes);
+}
+
+static void run_tomcrypt_blowfish(uint8_t *output,
+                                  const uint8_t *input, unsigned size)
+{
+    symmetric_key blowfish;
+    unsigned i;
+
+    blowfish_setup(hardcoded_key, 16, 0, &blowfish);
+    for (i = 0; i < size; i += 8)
+        blowfish_ecb_encrypt(input + i, output + i, &blowfish);
 }
 
 static void run_tomcrypt_camellia(uint8_t *output,
@@ -344,6 +423,17 @@ static void run_tomcrypt_twofish(uint8_t *output,
     size -= 15;
     for (i = 0; i < size; i += 16)
         twofish_ecb_encrypt(input + i, output + i, &twofish);
+}
+
+static void run_tomcrypt_xtea(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    symmetric_key xtea;
+    unsigned i;
+
+    xtea_setup(hardcoded_key, 16, 0, &xtea);
+    for (i = 0; i < size; i += 8)
+        xtea_ecb_encrypt(input + i, output + i, &xtea);
 }
 
 
@@ -427,13 +517,20 @@ struct hash_impl implementations[] = {
     IMPL_ALL("SHA-256",    sha256,    "14028ac673b3087e51a1d407fbf0df4deeec8f217119e13b07bf2138f93db8c5")
     IMPL_ALL("SHA-512",    sha512,    "3afdd44a80d99af15c87bd724cb717243193767835ce866dd5d58c02d674bb57"
                                       "7c25b9e118c200a189fcd5a01ef106a4e200061f3e97dbf50ba065745fd46bef")
+    IMPL(lavu,     "RIPEMD-128", ripemd128, "9ab8bfba2ddccc5d99c9d4cdfb844a5f")
+    IMPL(tomcrypt, "RIPEMD-128", ripemd128, "9ab8bfba2ddccc5d99c9d4cdfb844a5f")
     IMPL_ALL("RIPEMD-160", ripemd160, "62a5321e4fc8784903bb43ab7752c75f8b25af00")
     IMPL_ALL("AES-128",    aes128,    "crc:ff6bc888")
     IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
     IMPL_ALL("CAST-128",   cast128,   "crc:456aa584")
+    IMPL_ALL("BLOWFISH",   blowfish,  "crc:33e8aa74")
     IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(gcrypt,   "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
+    IMPL(lavu,     "RC4",     rc4,     "crc:538d37b2")
+    IMPL(crypto,   "RC4",     rc4,     "crc:538d37b2")
+    IMPL(lavu,     "XTEA",    xtea,    "crc:931fc270")
+    IMPL(tomcrypt, "XTEA",    xtea,    "crc:931fc270")
 };
 
 int main(int argc, char **argv)
