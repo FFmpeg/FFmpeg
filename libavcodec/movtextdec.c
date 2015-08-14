@@ -36,6 +36,7 @@
 #define STYL_BOX   (1<<0)
 #define HLIT_BOX   (1<<1)
 #define HCLR_BOX   (1<<2)
+#define TWRP_BOX   (1<<3)
 
 #define BOTTOM_LEFT     1
 #define BOTTOM_CENTER   2
@@ -81,12 +82,17 @@ typedef struct {
 } HilightcolorBox;
 
 typedef struct {
+    uint8_t wrap_flag;
+} TextWrapBox;
+
+typedef struct {
     StyleBox **s;
     StyleBox *s_temp;
     HighlightBox h;
     HilightcolorBox c;
     FontRecord **ftab;
     FontRecord *ftab_temp;
+    TextWrapBox w;
     MovTextDefault d;
     uint8_t box_flags;
     uint16_t style_entries, ftab_entries;
@@ -240,6 +246,13 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     return 0;
 }
 
+static int decode_twrp(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
+{
+    m->box_flags |= TWRP_BOX;
+    m->w.wrap_flag = *tsmb++;
+    return 0;
+}
+
 static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
 {
     m->box_flags |= HLIT_BOX;
@@ -298,7 +311,8 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
 static const Box box_types[] = {
     { MKBETAG('s','t','y','l'), 2, decode_styl },
     { MKBETAG('h','l','i','t'), 4, decode_hlit },
-    { MKBETAG('h','c','l','r'), 4, decode_hclr }
+    { MKBETAG('h','c','l','r'), 4, decode_hclr },
+    { MKBETAG('t','w','r','p'), 1, decode_twrp }
 };
 
 const static size_t box_count = FF_ARRAY_ELEMS(box_types);
@@ -309,6 +323,15 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
     int i = 0;
     int j = 0;
     int text_pos = 0;
+
+    if (text < text_end && m->box_flags & TWRP_BOX) {
+        if (m->w.wrap_flag == 1) {
+            av_bprintf(buf, "{\\q1}"); /* End of line wrap */
+        } else {
+            av_bprintf(buf, "{\\q2}"); /* No wrap */
+        }
+    }
+
     while (text < text_end) {
         if (m->box_flags & STYL_BOX) {
             for (i = 0; i < m->style_entries; i++) {
