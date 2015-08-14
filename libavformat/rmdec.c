@@ -327,20 +327,6 @@ int ff_rm_read_mdpr_codecdata(AVFormatContext *s, AVIOContext *pb,
     codec_pos = avio_tell(pb);
     v = avio_rb32(pb);
 
-    if (v == MKBETAG('M', 'L', 'T', 'I')) {
-        int number_of_streams = avio_rb16(pb);
-        int number_of_mdpr;
-        int i;
-        for (i = 0; i<number_of_streams; i++)
-            avio_rb16(pb);
-        number_of_mdpr = avio_rb16(pb);
-        if (number_of_mdpr != 1) {
-            avpriv_request_sample(s, "MLTI with multiple MDPR");
-        }
-        avio_rb32(pb);
-        v = avio_rb32(pb);
-    }
-
     if (v == MKTAG(0xfd, 'a', 'r', '.')) {
         /* ra type header */
         if (rm_read_audio_stream_info(s, pb, st, rst, 0))
@@ -514,6 +500,7 @@ static int rm_read_header(AVFormatContext *s)
     char buf[128], mime[128];
     int flags = 0;
     int ret = -1;
+    unsigned size, v;
 
     tag = avio_rl32(pb);
     if (tag == MKTAG('.', 'r', 'a', 0xfd)) {
@@ -584,8 +571,28 @@ static int rm_read_header(AVFormatContext *s)
             st->priv_data = ff_rm_alloc_rmstream();
             if (!st->priv_data)
                 return AVERROR(ENOMEM);
+
+            size = avio_rb32(pb);
+
+            ffio_ensure_seekback(pb, 4);
+            v = avio_rb32(pb);
+            if (v == MKBETAG('M', 'L', 'T', 'I')) {
+                int number_of_streams = avio_rb16(pb);
+                int number_of_mdpr;
+                int i;
+                for (i = 0; i<number_of_streams; i++)
+                    avio_rb16(pb);
+                number_of_mdpr = avio_rb16(pb);
+                if (number_of_mdpr != 1) {
+                    avpriv_request_sample(s, "MLTI with multiple (%d) MDPR", number_of_mdpr);
+                }
+                avio_rb32(pb);
+                size -= 4+2+2*number_of_streams+2+4;
+            } else
+                avio_skip(pb, -4);
+
             if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
-                                          avio_rb32(pb), mime) < 0)
+                                          size, mime) < 0)
                 goto fail;
             break;
         case MKTAG('D', 'A', 'T', 'A'):
