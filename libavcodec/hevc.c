@@ -1666,7 +1666,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     RefPicList  *refPicList = s->ref->refPicList;
     HEVCFrame *ref0, *ref1;
 
-    int tmpstride = MAX_PB_SIZE;
+    int tmpstride = MAX_PB_SIZE * sizeof(int16_t);
 
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
