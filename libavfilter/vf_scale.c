@@ -111,6 +111,8 @@ typedef struct ScaleContext {
     int force_original_aspect_ratio;
 } ScaleContext;
 
+AVFilter ff_vf_scale2ref;
+
 static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
 {
     ScaleContext *scale = ctx->priv;
@@ -234,7 +236,10 @@ static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    AVFilterLink *inlink = outlink->src->inputs[0];
+    AVFilterLink *inlink0 = outlink->src->inputs[0];
+    AVFilterLink *inlink  = ctx->filter == &ff_vf_scale2ref ?
+                            outlink->src->inputs[1] :
+                            outlink->src->inputs[0];
     enum AVPixelFormat outfmt = outlink->format;
     ScaleContext *scale = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
@@ -343,8 +348,9 @@ static int config_props(AVFilterLink *outlink)
     if (scale->isws[1])
         sws_freeContext(scale->isws[1]);
     scale->isws[0] = scale->isws[1] = scale->sws = NULL;
-    if (inlink->w == outlink->w && inlink->h == outlink->h &&
-        inlink->format == outlink->format)
+    if (inlink0->w == outlink->w &&
+        inlink0->h == outlink->h &&
+        inlink0->format == outlink->format)
         ;
     else {
         struct SwsContext **swscs[3] = {&scale->sws, &scale->isws[0], &scale->isws[1]};
@@ -356,9 +362,9 @@ static int config_props(AVFilterLink *outlink)
             if (!*s)
                 return AVERROR(ENOMEM);
 
-            av_opt_set_int(*s, "srcw", inlink ->w, 0);
-            av_opt_set_int(*s, "srch", inlink ->h >> !!i, 0);
-            av_opt_set_int(*s, "src_format", inlink->format, 0);
+            av_opt_set_int(*s, "srcw", inlink0 ->w, 0);
+            av_opt_set_int(*s, "srch", inlink0 ->h >> !!i, 0);
+            av_opt_set_int(*s, "src_format", inlink0->format, 0);
             av_opt_set_int(*s, "dstw", outlink->w, 0);
             av_opt_set_int(*s, "dsth", outlink->h >> !!i, 0);
             av_opt_set_int(*s, "dst_format", outfmt, 0);
@@ -374,7 +380,7 @@ static int config_props(AVFilterLink *outlink)
             /* Override YUV420P settings to have the correct (MPEG-2) chroma positions
              * MPEG-2 chroma positions are used by convention
              * XXX: support other 4:2:0 pixel formats */
-            if (inlink->format == AV_PIX_FMT_YUV420P) {
+            if (inlink0->format == AV_PIX_FMT_YUV420P) {
                 scale->in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
@@ -413,6 +419,17 @@ fail:
            "Maybe the expression for out_w:'%s' or for out_h:'%s' is self-referencing.\n",
            expr, scale->w_expr, scale->h_expr);
     return ret;
+}
+
+static int config_props_ref(AVFilterLink *outlink)
+{
+    AVFilterLink *inlink = outlink->src->inputs[1];
+
+    outlink->w = inlink->w;
+    outlink->h = inlink->h;
+    outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+
+    return 0;
 }
 
 static int scale_slice(AVFilterLink *link, AVFrame *out_buf, AVFrame *cur_pic, struct SwsContext *sws, int y, int h, int mul, int field)
@@ -542,6 +559,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int filter_frame_ref(AVFilterLink *link, AVFrame *in)
+{
+    AVFilterLink *outlink = link->dst->outputs[1];
+
+    return ff_filter_frame(outlink, in);
+}
+
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
@@ -641,5 +665,55 @@ AVFilter ff_vf_scale = {
     .priv_class      = &scale_class,
     .inputs          = avfilter_vf_scale_inputs,
     .outputs         = avfilter_vf_scale_outputs,
+    .process_command = process_command,
+};
+
+static const AVClass scale2ref_class = {
+    .class_name       = "scale2ref",
+    .item_name        = av_default_item_name,
+    .option           = scale_options,
+    .version          = LIBAVUTIL_VERSION_INT,
+    .category         = AV_CLASS_CATEGORY_FILTER,
+    .child_class_next = child_class_next,
+};
+
+static const AVFilterPad avfilter_vf_scale2ref_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+    },
+    {
+        .name         = "ref",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame_ref,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_scale2ref_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props,
+    },
+    {
+        .name         = "ref",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props_ref,
+    },
+    { NULL }
+};
+
+AVFilter ff_vf_scale2ref = {
+    .name            = "scale2ref",
+    .description     = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format to the given reference."),
+    .init_dict       = init_dict,
+    .uninit          = uninit,
+    .query_formats   = query_formats,
+    .priv_size       = sizeof(ScaleContext),
+    .priv_class      = &scale2ref_class,
+    .inputs          = avfilter_vf_scale2ref_inputs,
+    .outputs         = avfilter_vf_scale2ref_outputs,
     .process_command = process_command,
 };
