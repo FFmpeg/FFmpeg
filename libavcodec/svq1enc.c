@@ -515,6 +515,11 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     SVQ1EncContext *const s = avctx->priv_data;
     int ret;
 
+    if (avctx->width >= 4096 || avctx->height >= 4096) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions too large, maximum is 4095x4095\n");
+        return AVERROR(EINVAL);
+    }
+
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_me_cmp_init(&s->mecc, avctx);
     ff_mpegvideoencdsp_init(&s->m.mpvencdsp, avctx);
