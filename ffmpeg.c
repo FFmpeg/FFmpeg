@@ -227,7 +227,6 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
 
 static void sub2video_update(InputStream *ist, AVSubtitle *sub)
 {
-    int w = ist->sub2video.w, h = ist->sub2video.h;
     AVFrame *frame = ist->sub2video.frame;
     int8_t *dst;
     int     dst_linesize;
@@ -255,7 +254,7 @@ static void sub2video_update(InputStream *ist, AVSubtitle *sub)
     dst          = frame->data    [0];
     dst_linesize = frame->linesize[0];
     for (i = 0; i < num_rects; i++)
-        sub2video_copy_rect(dst, dst_linesize, w, h, sub->rects[i]);
+        sub2video_copy_rect(dst, dst_linesize, frame->width, frame->height, sub->rects[i]);
     sub2video_push_ref(ist, pts);
     ist->sub2video.end_pts = end_pts;
 }
