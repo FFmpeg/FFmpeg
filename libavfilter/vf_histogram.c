@@ -179,6 +179,7 @@ static int config_output(AVFilterLink *outlink)
         break;
     case MODE_COLOR:
     case MODE_COLOR2:
+        av_log(ctx, AV_LOG_WARNING, "This mode is deprecated, use vectorscope filter instead.");
         outlink->h = outlink->w = 256;
         break;
     default:
