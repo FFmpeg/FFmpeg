@@ -161,19 +161,19 @@ struct MpegTSContext {
 };
 
 #define MPEGTS_OPTIONS \
-    { "resync_size",   "Size limit for looking up a new synchronization.", offsetof(MpegTSContext, resync_size), AV_OPT_TYPE_INT,  { .i64 =  MAX_RESYNC_SIZE}, 0, INT_MAX,  AV_OPT_FLAG_DECODING_PARAM }
+    { "resync_size",   "set size limit for looking up a new synchronization", offsetof(MpegTSContext, resync_size), AV_OPT_TYPE_INT,  { .i64 =  MAX_RESYNC_SIZE}, 0, INT_MAX,  AV_OPT_FLAG_DECODING_PARAM }
 
 static const AVOption options[] = {
     MPEGTS_OPTIONS,
-    {"fix_teletext_pts", "Try to fix pts values of dvb teletext streams.", offsetof(MpegTSContext, fix_teletext_pts), AV_OPT_TYPE_INT,
+    {"fix_teletext_pts", "try to fix pts values of dvb teletext streams", offsetof(MpegTSContext, fix_teletext_pts), AV_OPT_TYPE_INT,
      {.i64 = 1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
-    {"ts_packetsize", "Output option carrying the raw packet size.", offsetof(MpegTSContext, raw_packet_size), AV_OPT_TYPE_INT,
+    {"ts_packetsize", "output option carrying the raw packet size", offsetof(MpegTSContext, raw_packet_size), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
-    {"scan_all_pmts",   "Scan and combine all PMTs", offsetof(MpegTSContext, scan_all_pmts), AV_OPT_TYPE_INT,
+    {"scan_all_pmts",   "scan and combine all PMTs", offsetof(MpegTSContext, scan_all_pmts), AV_OPT_TYPE_INT,
      { .i64 =  -1}, -1, 1,  AV_OPT_FLAG_DECODING_PARAM },
-    {"skip_changes", "Skip changing / adding streams / programs.", offsetof(MpegTSContext, skip_changes), AV_OPT_TYPE_INT,
+    {"skip_changes", "skip changing / adding streams / programs", offsetof(MpegTSContext, skip_changes), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 1, 0 },
-    {"skip_clear", "Skip clearing programs.", offsetof(MpegTSContext, skip_clear), AV_OPT_TYPE_INT,
+    {"skip_clear", "skip clearing programs", offsetof(MpegTSContext, skip_clear), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 1, 0 },
     { NULL },
 };
@@ -187,10 +187,10 @@ static const AVClass mpegts_class = {
 
 static const AVOption raw_options[] = {
     MPEGTS_OPTIONS,
-    { "compute_pcr",   "Compute exact PCR for each transport stream packet.",
+    { "compute_pcr",   "compute exact PCR for each transport stream packet",
           offsetof(MpegTSContext, mpeg2ts_compute_pcr), AV_OPT_TYPE_INT,
           { .i64 = 0 }, 0, 1,  AV_OPT_FLAG_DECODING_PARAM },
-    { "ts_packetsize", "Output option carrying the raw packet size.",
+    { "ts_packetsize", "output option carrying the raw packet size",
       offsetof(MpegTSContext, raw_packet_size), AV_OPT_TYPE_INT,
       { .i64 = 0 }, 0, 0,
       AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
