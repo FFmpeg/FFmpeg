@@ -413,8 +413,11 @@ attribute_deprecated const AVOption *av_set_double(void *obj, const char *name, 
 attribute_deprecated const AVOption *av_set_q(void *obj, const char *name, AVRational n);
 attribute_deprecated const AVOption *av_set_int(void *obj, const char *name, int64_t n);
 
+attribute_deprecated
 double av_get_double(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated
 AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated
 int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
 attribute_deprecated const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
 attribute_deprecated const AVOption *av_next_option(FF_CONST_AVUTIL55 void *obj, const AVOption *last);
