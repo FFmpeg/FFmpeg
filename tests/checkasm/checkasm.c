@@ -111,7 +111,7 @@ static const struct {
 
 typedef struct CheckasmFuncVersion {
     struct CheckasmFuncVersion *next;
-    intptr_t (*func)();
+    void *func;
     int ok;
     int cpu;
     int iterations;
@@ -387,10 +387,10 @@ int main(int argc, char *argv[])
 /* Decide whether or not the specified function needs to be tested and
  * allocate/initialize data structures if needed. Returns a pointer to a
  * reference function if the function should be tested, otherwise NULL */
-intptr_t (*checkasm_check_func(intptr_t (*func)(), const char *name, ...))()
+void *checkasm_check_func(void *func, const char *name, ...)
 {
     char name_buf[256];
-    intptr_t (*ref)() = func;
+    void *ref = func;
     CheckasmFuncVersion *v;
     int name_length;
     va_list arg;

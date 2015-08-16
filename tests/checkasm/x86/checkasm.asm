@@ -82,7 +82,7 @@ cglobal stack_clobber, 1,2
 %endif
 
 ;-----------------------------------------------------------------------------
-; intptr_t checkasm_checked_call(intptr_t (*func)(), ...)
+; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
 INIT_XMM
 cglobal checked_call, 2,15,16,max_args*8+8
@@ -162,7 +162,7 @@ cglobal checked_call, 2,15,16,max_args*8+8
 %define n6 dword 0x33627ba7
 
 ;-----------------------------------------------------------------------------
-; intptr_t checkasm_checked_call(intptr_t (*func)(), ...)
+; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
 cglobal checked_call, 1,7
     mov  r3, n3

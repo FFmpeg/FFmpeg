@@ -33,7 +33,7 @@ void checkasm_check_bswapdsp(void);
 void checkasm_check_h264pred(void);
 void checkasm_check_h264qpel(void);
 
-intptr_t (*checkasm_check_func(intptr_t (*func)(), const char *name, ...))() av_printf_format(2, 3);
+void *checkasm_check_func(void *func, const char *name, ...) av_printf_format(2, 3);
 int checkasm_bench_func(void);
 void checkasm_fail_func(const char *msg, ...) av_printf_format(1, 2);
 void checkasm_update_bench(int iterations, uint64_t cycles);
@@ -42,14 +42,16 @@ void checkasm_report(const char *name, ...) av_printf_format(1, 2);
 extern AVLFG checkasm_lfg;
 #define rnd() av_lfg_get(&checkasm_lfg)
 
-static av_unused intptr_t (*func_ref)();
-static av_unused intptr_t (*func_new)();
+static av_unused void *func_ref, *func_new;
 
 #define BENCH_RUNS 1000 /* Trade-off between accuracy and speed */
 
 /* Decide whether or not the specified function needs to be tested */
-#define check_func(func, ...) ((func_new = (intptr_t (*)())func) &&\
-                              (func_ref = checkasm_check_func(func_new, __VA_ARGS__)))
+#define check_func(func, ...) (func_ref = checkasm_check_func((func_new = func), __VA_ARGS__))
+
+/* Declare the function prototype. The first argument is the return value, the remaining
+ * arguments are the function parameters. Naming parameters is optional. */
+#define declare_func(ret, ...) declare_new(ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
 
 /* Indicate that the current test has failed */
 #define fail() checkasm_fail_func("%s:%d", av_basename(__FILE__), __LINE__)
@@ -58,18 +60,16 @@ static av_unused intptr_t (*func_new)();
 #define report checkasm_report
 
 /* Call the reference function */
-#define call_ref(...) func_ref(__VA_ARGS__)
+#define call_ref(...) ((func_type *)func_ref)(__VA_ARGS__)
 
 #if ARCH_X86 && HAVE_YASM
 /* Verifies that clobbered callee-saved registers are properly saved and restored */
-intptr_t checkasm_checked_call(intptr_t (*func)(), ...);
-#endif
+void checkasm_checked_call(void *func, ...);
 
-/* Call the function */
-#if ARCH_X86_64 && HAVE_YASM
+#if ARCH_X86_64
 /* Evil hack: detect incorrect assumptions that 32-bit ints are zero-extended to 64-bit.
  * This is done by clobbering the stack with junk around the stack pointer and calling the
- * assembly function through x264_checkasm_call with added dummy arguments which forces all
+ * assembly function through checked_call() with added dummy arguments which forces all
  * real arguments to be passed on the stack and not in registers. For 32-bit arguments the
  * upper half of the 64-bit register locations on the stack will now contain junk which will
  * cause misbehaving functions to either produce incorrect output or segfault. Note that
@@ -77,14 +77,20 @@ intptr_t checkasm_checked_call(intptr_t (*func)(), ...);
  * and false negatives is theoretically possible, but there can never be any false positives.
  */
 void checkasm_stack_clobber(uint64_t clobber, ...);
+#define declare_new(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__)\
+                              = (void *)checkasm_checked_call;
 #define CLOB (UINT64_C(0xdeadbeefdeadbeef))
 #define call_new(...) (checkasm_stack_clobber(CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,\
                                               CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB),\
-                      checkasm_checked_call(func_new, 0, 0, 0, 0, 0, __VA_ARGS__))
-#elif ARCH_X86_32 && HAVE_YASM
-#define call_new(...) checkasm_checked_call(func_new, __VA_ARGS__)
+                      checked_call(func_new, 0, 0, 0, 0, 0, __VA_ARGS__))
+#elif ARCH_X86_32
+#define declare_new(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call;
+#define call_new(...) checked_call(func_new, __VA_ARGS__)
+#endif
 #else
-#define call_new(...) func_new(__VA_ARGS__)
+#define declare_new(ret, ...)
+/* Call the function */
+#define call_new(...) ((func_type *)func_new)(__VA_ARGS__)
 #endif
 
 /* Benchmark the function */
@@ -92,7 +98,7 @@ void checkasm_stack_clobber(uint64_t clobber, ...);
 #define bench_new(...)\
     do {\
         if (checkasm_bench_func()) {\
-            intptr_t (*tfunc)() = func_new;\
+            func_type *tfunc = func_new;\
             uint64_t tsum = 0;\
             int ti, tcount = 0;\
             for (ti = 0; ti < BENCH_RUNS; ti++) {\
