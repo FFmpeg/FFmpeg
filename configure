@@ -1343,7 +1343,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     avio_reading_example
-    avio_list_dir_example
+    avio_dir_cmd_example
     decoding_encoding_example
     demuxing_decoding_example
     extract_mvs_example
@@ -2803,7 +2803,7 @@ zoompan_filter_deps="swscale"
 
 # examples
 avio_reading="avformat avcodec avutil"
-avio_list_dir="avformat avutil"
+avio_dir_cmd="avformat avutil"
 avcodec_example_deps="avcodec avutil"
 decoding_encoding_example_deps="avcodec avformat avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"

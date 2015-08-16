@@ -98,7 +98,7 @@ Buffer references ownership and permissions
     The AVFilterLink structure has a few AVFilterBufferRef fields. The
     cur_buf and out_buf were used with the deprecated
     start_frame/draw_slice/end_frame API and should no longer be used.
-    src_buf, cur_buf_copy and partial_buf are used by libavfilter internally
+    src_buf and partial_buf are used by libavfilter internally
     and must not be accessed by filters.
 
   Reference permissions
