@@ -119,6 +119,9 @@ Append @var{baseurl} to every entry in the playlist.
 Useful to generate playlists with absolute paths.
 @item -hls_allow_cache @var{allowcache}
 Explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments
+@item -hls_version @var{version}
+Set the protocol version. Enables or disables version-specific features
+such as the integer (version 2) or decimal EXTINF values (version 3).
 @end table
 
 @anchor{image2}

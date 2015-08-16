@@ -47,6 +47,7 @@ typedef struct HLSContext {
     float time;            // Set by a private option.
     int  size;             // Set by a private option.
     int  wrap;             // Set by a private option.
+    int  version;          // Set by a private option.
     int  allowcache;
     int64_t recording_time;
     int has_video;
@@ -149,20 +150,25 @@ static int hls_window(AVFormatContext *s, int last)
     }
 
     avio_printf(out, "#EXTM3U\n");
-    avio_printf(out, "#EXT-X-VERSION:3\n");
+    avio_printf(out, "#EXT-X-VERSION:%d\n", hls->version);
     if (hls->allowcache == 0 || hls->allowcache == 1) {
         avio_printf(out, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
     }
     avio_printf(out, "#EXT-X-TARGETDURATION:%"PRId64"\n",
-                av_rescale(target_duration, 1, AV_TIME_BASE));
+                av_rescale_rnd(target_duration, 1, AV_TIME_BASE,
+                               AV_ROUND_UP));
     avio_printf(out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
 
     av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
            sequence);
 
     for (en = hls->list; en; en = en->next) {
-        avio_printf(out, "#EXTINF:%"PRId64",\n",
-                    av_rescale(en->duration, 1, AV_TIME_BASE));
+        if (hls->version > 2)
+            avio_printf(out, "#EXTINF:%f\n",
+                        (double)en->duration / AV_TIME_BASE);
+        else
+            avio_printf(out, "#EXTINF:%"PRId64",\n",
+                        av_rescale(en->duration, 1, AV_TIME_BASE));
         if (hls->baseurl)
             avio_printf(out, "%s", hls->baseurl);
         avio_printf(out, "%s\n", en->name);
@@ -337,6 +343,7 @@ static const AVOption options[] = {
     {"hls_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
     {"hls_allow_cache", "explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments", OFFSET(allowcache), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
+    {"hls_version",   "protocol version",                        OFFSET(version), AV_OPT_TYPE_INT,    {.i64 = 3},     2, 3, E},
     { NULL },
 };
 
