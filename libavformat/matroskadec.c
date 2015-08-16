@@ -2065,7 +2065,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->codec->channels    = track->audio.channels;
             if (!st->codec->bits_per_coded_sample)
                 st->codec->bits_per_coded_sample = track->audio.bitdepth;
-            if (st->codec->codec_id != AV_CODEC_ID_AAC)
+            if (st->codec->codec_id == AV_CODEC_ID_MP3)
+                st->need_parsing = AVSTREAM_PARSE_FULL;
+            else if (st->codec->codec_id != AV_CODEC_ID_AAC)
                 st->need_parsing = AVSTREAM_PARSE_HEADERS;
             if (track->codec_delay > 0) {
                 st->codec->delay = av_rescale_q(track->codec_delay,
