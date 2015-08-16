@@ -363,6 +363,8 @@ AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx)
     return ctx->inputs[0]->frame_rate;
 }
 
+#if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 int attribute_align_arg av_buffersink_poll_frame(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
@@ -375,6 +377,8 @@ int attribute_align_arg av_buffersink_poll_frame(AVFilterContext *ctx)
 
     return av_fifo_size(buf->fifo)/FIFO_INIT_ELEMENT_SIZE + ff_poll_frame(inlink);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 static av_cold int vsink_init(AVFilterContext *ctx, void *opaque)
 {

@@ -28,10 +28,14 @@
 #include "avfilter.h"
 #include "internal.h"
 
+#if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 int avfilter_ref_get_channels(AVFilterBufferRef *ref)
 {
     return ref->audio ? ref->audio->channels : 0;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 AVFrame *ff_null_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
