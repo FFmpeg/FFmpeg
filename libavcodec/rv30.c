@@ -67,6 +67,9 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
 
         w = r->s.avctx->extradata[6 + rpr*2] << 2;
         h = r->s.avctx->extradata[7 + rpr*2] << 2;
+    } else {
+        w = r->orig_width;
+        h = r->orig_height;
     }
     si->width  = w;
     si->height = h;
@@ -258,6 +261,9 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
     int ret;
+
+    r->orig_width  = avctx->coded_width;
+    r->orig_height = avctx->coded_height;
 
     if (avctx->extradata_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
