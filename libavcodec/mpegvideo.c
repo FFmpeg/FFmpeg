@@ -1307,7 +1307,11 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return -1;
         }
 
-        if (!avctx->hwaccel && !(avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)) {
+        if (!avctx->hwaccel
+#if FF_API_CAP_VDPAU
+            && !(avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)
+#endif
+            ) {
             for(i=0; i<avctx->height; i++)
                 memset(s->last_picture_ptr->f->data[0] + s->last_picture_ptr->f->linesize[0]*i,
                        0x80, avctx->width);
@@ -1652,7 +1656,10 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
 
     /* TODO: export all the following to make them accessible for users (and filters) */
     if (avctx->hwaccel || !mbtype_table
-        || (avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU))
+#if FF_API_CAP_VDPAU
+        || (avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)
+#endif
+        )
         return;
 
 

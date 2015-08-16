@@ -1186,8 +1186,10 @@ static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG1_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
-#if CONFIG_MPEG1_VDPAU_HWACCEL
+#if CONFIG_MPEG1_VDPAU_DECODER
     AV_PIX_FMT_VDPAU_MPEG1,
+#endif
+#if CONFIG_MPEG1_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
 #endif
     AV_PIX_FMT_YUV420P,
@@ -1198,8 +1200,10 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG2_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
-#if CONFIG_MPEG2_VDPAU_HWACCEL
+#if CONFIG_MPEG_VDPAU_DECODER
     AV_PIX_FMT_VDPAU_MPEG2,
+#endif
+#if CONFIG_MPEG2_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
 #endif
 #if CONFIG_MPEG2_DXVA2_HWACCEL
@@ -1228,9 +1232,11 @@ static const enum AVPixelFormat mpeg12_pixfmt_list_444[] = {
     AV_PIX_FMT_NONE
 };
 
+#if FF_API_VDPAU
 static inline int uses_vdpau(AVCodecContext *avctx) {
     return avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG1 || avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG2;
 }
+#endif
 
 static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 {
@@ -1256,7 +1262,11 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
 {
     // until then pix_fmt may be changed right after codec init
-    if (avctx->hwaccel || uses_vdpau(avctx))
+    if (avctx->hwaccel
+#if FF_API_VDPAU
+        || uses_vdpau(avctx)
+#endif
+        )
         if (avctx->idct_algo == FF_IDCT_AUTO)
             avctx->idct_algo = FF_IDCT_SIMPLE;
 
@@ -2460,9 +2470,11 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                         s2->er.error_count += s2->thread_context[i]->er.error_count;
                 }
 
+#if FF_API_VDPAU
                 if ((CONFIG_MPEG_VDPAU_DECODER || CONFIG_MPEG1_VDPAU_DECODER)
                     && uses_vdpau(avctx))
                     ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
+#endif
 
                 ret = slice_end(avctx, picture);
                 if (ret < 0)
@@ -2711,10 +2723,12 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     return AVERROR_INVALIDDATA;
                 }
 
+#if FF_API_VDPAU
                 if (uses_vdpau(avctx)) {
                     s->slice_count++;
                     break;
                 }
+#endif
 
                 if (HAVE_THREADS &&
                     (avctx->active_thread_type & FF_THREAD_SLICE) &&

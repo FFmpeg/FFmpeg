@@ -777,7 +777,9 @@ void ff_er_frame_start(ERContext *s)
 static int er_supported(ERContext *s)
 {
     if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
+#if FF_API_CAP_VDPAU
        s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU          ||
+#endif
        !s->cur_pic.f                                                  ||
        s->cur_pic.field_picture
     )
