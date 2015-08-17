@@ -164,8 +164,8 @@ fate-vsynth%-mpeg2:              ENCOPTS = -qscale 10
 fate-vsynth%-mpeg2-422:          ENCOPTS = -b:v 1000k                   \
                                            -bf 2                        \
                                            -trellis 1                   \
-                                           -flags +mv0+ildct+ilme       \
-                                           -mpv_flags +qp_rd            \
+                                           -flags +ildct+ilme           \
+                                           -mpv_flags +qp_rd+mv0        \
                                            -intra_vlc 1                 \
                                            -mbd rd                      \
                                            -pix_fmt yuv422p
@@ -174,8 +174,7 @@ fate-vsynth%-mpeg2-ilace:        ENCOPTS = -qscale 10 -flags +ildct+ilme
 fate-vsynth%-mpeg2-ivlc-qprd:    ENCOPTS = -b:v 500k                    \
                                            -bf 2                        \
                                            -trellis 1                   \
-                                           -flags +mv0                  \
-                                           -mpv_flags +qp_rd            \
+                                           -mpv_flags +qp_rd+mv0        \
                                            -intra_vlc 1                 \
                                            -cmp 2 -subcmp 2             \
                                            -mbd rd
@@ -201,7 +200,8 @@ FATE_VCODEC-$(call ENCDEC, MPEG4, AVI)     += $(FATE_MPEG4_AVI)
 fate-vsynth%-mpeg4:              ENCOPTS = -qscale 10 -flags +mv4 -mbd bits
 fate-vsynth%-mpeg4:              FMT     = mp4
 
-fate-vsynth%-mpeg4-adap:         ENCOPTS = -b 550k -bf 2 -flags +mv4+mv0 \
+fate-vsynth%-mpeg4-adap:         ENCOPTS = -b 550k -bf 2 -flags +mv4     \
+                                           -mpv_flags +mv0               \
                                            -trellis 1 -cmp 1 -subcmp 2   \
                                            -mbd rd -scplx_mask 0.3
 
@@ -223,8 +223,9 @@ fate-vsynth%-mpeg4-qpel:         ENCOPTS = -qscale 7 -flags +mv4+qpel -mbd 2 \
                                            -bf 2 -cmp 1 -subcmp 2
 
 fate-vsynth%-mpeg4-qprd:         ENCOPTS = -b 450k -bf 2 -trellis 1          \
-                                           -flags +mv4+mv0 -mpv_flags +qp_rd \
-                                           -cmp 2 -subcmp 2 -mbd rd
+                                           -flags +mv4 -mpv_flags +qp_rd     \
+                                           -cmp 2 -subcmp 2 -mbd rd          \
+                                           -mpv_flags +mv0
 
 fate-vsynth%-mpeg4-rc:           ENCOPTS = -b 400k -bf 2
 
