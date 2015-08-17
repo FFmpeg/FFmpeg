@@ -31,12 +31,8 @@ void ff_clear_block_sse(int16_t *block);
 void ff_clear_blocks_mmx(int16_t *blocks);
 void ff_clear_blocks_sse(int16_t *blocks);
 
-#if FF_API_XVMC
 av_cold void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth,
                                   AVCodecContext *avctx)
-#else
-av_cold void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth)
-#endif /* FF_API_XVMC */
 {
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();

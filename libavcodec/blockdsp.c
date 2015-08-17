@@ -72,11 +72,7 @@ av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
     if (ARCH_PPC)
         ff_blockdsp_init_ppc(c, high_bit_depth);
     if (ARCH_X86)
-#if FF_API_XVMC
         ff_blockdsp_init_x86(c, high_bit_depth, avctx);
-#else
-        ff_blockdsp_init_x86(c, high_bit_depth);
-#endif /* FF_API_XVMC */
     if (ARCH_MIPS)
         ff_blockdsp_init_mips(c, high_bit_depth);
 }
