@@ -1996,7 +1996,7 @@ AVCodec ff_h264_decoder = {
     .priv_class            = &h264_class,
 };
 
-#if CONFIG_H264_VDPAU_DECODER
+#if CONFIG_H264_VDPAU_DECODER && FF_API_VDPAU
 static const AVClass h264_vdpau_class = {
     .class_name = "H264 VDPAU Decoder",
     .item_name  = av_default_item_name,

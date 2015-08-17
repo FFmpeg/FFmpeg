@@ -1186,7 +1186,7 @@ static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG1_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
-#if CONFIG_MPEG1_VDPAU_DECODER
+#if CONFIG_MPEG1_VDPAU_DECODER && FF_API_VDPAU
     AV_PIX_FMT_VDPAU_MPEG1,
 #endif
 #if CONFIG_MPEG1_VDPAU_HWACCEL
@@ -1200,7 +1200,7 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG2_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
-#if CONFIG_MPEG_VDPAU_DECODER
+#if CONFIG_MPEG_VDPAU_DECODER && FF_API_VDPAU
     AV_PIX_FMT_VDPAU_MPEG2,
 #endif
 #if CONFIG_MPEG2_VDPAU_HWACCEL
@@ -2954,7 +2954,7 @@ AVCodec ff_mpeg_xvmc_decoder = {
 #endif
 #endif /* FF_API_XVMC */
 
-#if CONFIG_MPEG_VDPAU_DECODER
+#if CONFIG_MPEG_VDPAU_DECODER && FF_API_VDPAU
 AVCodec ff_mpeg_vdpau_decoder = {
     .name           = "mpegvideo_vdpau",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
@@ -2970,7 +2970,7 @@ AVCodec ff_mpeg_vdpau_decoder = {
 };
 #endif
 
-#if CONFIG_MPEG1_VDPAU_DECODER
+#if CONFIG_MPEG1_VDPAU_DECODER && FF_API_VDPAU
 AVCodec ff_mpeg1_vdpau_decoder = {
     .name           = "mpeg1video_vdpau",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),

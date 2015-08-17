@@ -2789,7 +2789,7 @@ AVCodec ff_mpeg4_decoder = {
 };
 
 
-#if CONFIG_MPEG4_VDPAU_DECODER
+#if CONFIG_MPEG4_VDPAU_DECODER && FF_API_VDPAU
 static const AVClass mpeg4_vdpau_class = {
     "MPEG4 Video VDPAU Decoder",
     av_default_item_name,

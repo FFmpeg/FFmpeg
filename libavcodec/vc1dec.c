@@ -1156,7 +1156,7 @@ AVCodec ff_wmv3_decoder = {
 };
 #endif
 
-#if CONFIG_WMV3_VDPAU_DECODER
+#if CONFIG_WMV3_VDPAU_DECODER && FF_API_VDPAU
 AVCodec ff_wmv3_vdpau_decoder = {
     .name           = "wmv3_vdpau",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
@@ -1172,7 +1172,7 @@ AVCodec ff_wmv3_vdpau_decoder = {
 };
 #endif
 
-#if CONFIG_VC1_VDPAU_DECODER
+#if CONFIG_VC1_VDPAU_DECODER && FF_API_VDPAU
 AVCodec ff_vc1_vdpau_decoder = {
     .name           = "vc1_vdpau",
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
