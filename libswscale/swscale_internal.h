@@ -276,6 +276,9 @@ typedef void (*yuv2anyX_fn)(struct SwsContext *c, const int16_t *lumFilter,
                             const int16_t **alpSrc, uint8_t **dest,
                             int dstW, int y);
 
+struct SwsSlice;
+struct SwsFilterDescriptor;
+
 /* This struct should be aligned on at least a 32-byte boundary. */
 typedef struct SwsContext {
     /**
@@ -325,6 +328,12 @@ typedef struct SwsContext {
     int is_internal_gamma;
     uint16_t *gamma;
     uint16_t *inv_gamma;
+
+    int numDesc;
+    int descIndex[2];
+    int numSlice;
+    struct SwsSlice *slice;
+    struct SwsFilterDescriptor *desc;
 
     uint32_t pal_yuv[256];
     uint32_t pal_rgb[256];
@@ -933,5 +942,96 @@ static inline void fillPlane16(uint8_t *plane, int stride, int width, int height
         ptr += stride;
     }
 }
+
+#define MAX_SLICE_PLANES 4
+
+/// Slice plane
+typedef struct SwsPlane
+{
+    int available_lines;    ///< max number of lines that can be hold by this plane
+    int sliceY;             ///< index of first line
+    int sliceH;             ///< number of lines
+    uint8_t **line;         ///< line buffer
+    uint8_t **tmp;          ///< Tmp line buffer used by mmx code
+} SwsPlane;
+
+/**
+ * Struct which defines a slice of an image to be scaled or a output for
+ * a scaled slice.
+ * A slice can also be used as intermediate ring buffer for scaling steps.
+ */
+typedef struct SwsSlice
+{
+    int width;              ///< Slice line width
+    int h_chr_sub_sample;   ///< horizontal chroma subsampling factor
+    int v_chr_sub_sample;   ///< vertical chroma subsampling factor
+    int is_ring;            ///< flag to identify if this slice is a ring buffer
+    int should_free_lines;  ///< flag to identify if there are dynamic allocated lines
+    enum AVPixelFormat fmt; ///< planes pixel format
+    SwsPlane plane[MAX_SLICE_PLANES];   ///< color planes
+} SwsSlice;
+
+/**
+ * Struct which holds all necessary data for processing a slice.
+ * A processing step can be a color conversion or horizontal/vertical scaling.
+ */
+typedef struct SwsFilterDescriptor
+{
+    SwsSlice *src;  ///< Source slice
+    SwsSlice *dst;  ///< Output slice
+
+    int alpha;      ///< Flag for processing alpha channel
+    void *instance; ///< Filter instance data
+
+    /// Function for processing input slice sliceH lines starting from line sliceY
+    int (*process)(SwsContext *c, struct SwsFilterDescriptor *desc, int sliceY, int sliceH);
+} SwsFilterDescriptor;
+
+/// Color conversion instance data
+typedef struct ColorContext
+{
+    uint32_t *pal;
+} ColorContext;
+
+/// Scaler instance data
+typedef struct FilterContext
+{
+    uint16_t *filter;
+    int *filter_pos;
+    int filter_size;
+    int xInc;
+} FilterContext;
+
+// warp input lines in the form (src + width*i + j) to slice format (line[i][j])
+int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH);
+
+// Initialize scaler filter descriptor chain
+int ff_init_filters(SwsContext *c);
+
+// Free all filter data
+int ff_free_filters(SwsContext *c);
+
+/*
+ function for applying ring buffer logic into slice s
+ It checks if the slice can hold more @lum lines, if yes
+ do nothing otherwise remove @lum least used lines.
+ It applyes the same procedure for @chr lines.
+*/
+int ff_rotate_slice(SwsSlice *s, int lum, int chr);
+
+
+/// initializes lum pixel format conversion descriptor
+int ff_init_desc_fmt_convert(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst, uint32_t *pal);
+
+/// initializes lum horizontal scaling descriptor
+int ff_init_desc_hscale(SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst, uint16_t *filter, int * filter_pos, int filter_size, int xInc);
+
+/// initializes chr prixel format conversion descriptor
+int ff_init_desc_cfmt_convert(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst, uint32_t *pal);
+
+/// initializes chr horizontal scaling descriptor
+int ff_init_desc_chscale(SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst, uint16_t *filter, int * filter_pos, int filter_size, int xInc);
+
+int ff_init_desc_no_chr(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst);
 
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */
