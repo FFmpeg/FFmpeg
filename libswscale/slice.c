@@ -224,12 +224,12 @@ int ff_init_filters(SwsContext * c)
     res = alloc_slice(&c->slice[0], c->srcFormat, c->srcH, c->chrSrcH, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
     if (res < 0) goto cleanup;
     for (i = 1; i < c->numSlice-1; ++i) {
-        res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize, c->vChrFilterSize, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
+        res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
         if (res < 0) goto cleanup;
         res = alloc_lines(&c->slice[i], FFALIGN(c->srcW*2+78, 16), c->srcW);
         if (res < 0) goto cleanup;
     }
-    res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize, c->vChrFilterSize, c->chrDstHSubSample, c->chrDstVSubSample, 1);
+    res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrDstHSubSample, c->chrDstVSubSample, 1);
     if (res < 0) goto cleanup;
     res = alloc_lines(&c->slice[i], dst_stride, c->dstW);
     if (res < 0) goto cleanup;

@@ -379,6 +379,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     SwsSlice *src_slice = &c->slice[lumStart];
     SwsSlice *dst_slice = &c->slice[c->numSlice-1];
     SwsFilterDescriptor *desc = c->desc;
+    int hasLumHoles = 1;
+    int hasChrHoles = 1;
 
 
     if (!usePal(c->srcFormat)) {
@@ -487,21 +489,28 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         int lastChrSrcY  = FFMIN(c->chrSrcH, firstChrSrcY  + vChrFilterSize) - 1;
         int enough_lines;
         int i;
+        int posY, cPosY, firstPosY, lastPosY, firstCPosY, lastCPosY;
 
         // handle holes (FAST_BILINEAR & weird filters)
         if (firstLumSrcY > lastInLumBuf) {
+            hasLumHoles = lastInLumBuf != firstLumSrcY - 1;
             lastInLumBuf = firstLumSrcY - 1;
-            dst_slice->plane[0].sliceY = lastInLumBuf + 1;
-            dst_slice->plane[3].sliceY = lastInLumBuf + 1;
-            dst_slice->plane[0].sliceH =
-            dst_slice->plane[3].sliceH = 0;
+            if (hasLumHoles) {
+                dst_slice->plane[0].sliceY = lastInLumBuf + 1;
+                dst_slice->plane[3].sliceY = lastInLumBuf + 1;
+                dst_slice->plane[0].sliceH =
+                dst_slice->plane[3].sliceH = 0;
+            }
         }
         if (firstChrSrcY > lastInChrBuf) {
+            hasChrHoles = lastInChrBuf != firstChrSrcY - 1;
             lastInChrBuf = firstChrSrcY - 1;
-            dst_slice->plane[1].sliceY = lastInChrBuf + 1;
-            dst_slice->plane[2].sliceY = lastInChrBuf + 1;
-            dst_slice->plane[1].sliceH =
-            dst_slice->plane[2].sliceH = 0;
+            if (hasChrHoles) {
+                dst_slice->plane[1].sliceY = lastInChrBuf + 1;
+                dst_slice->plane[2].sliceY = lastInChrBuf + 1;
+                dst_slice->plane[1].sliceH =
+                dst_slice->plane[2].sliceH = 0;
+            }
         }
         av_assert0(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1);
         av_assert0(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
@@ -524,17 +533,39 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         }
 
 #if NEW_FILTER
-        ff_rotate_slice(dst_slice, lastLumSrcY, lastChrSrcY);
+        posY = dst_slice->plane[0].sliceY + dst_slice->plane[0].sliceH;
+        if (posY <= lastLumSrcY && !hasLumHoles) {
+            firstPosY = FFMAX(firstLumSrcY, posY);
+            lastPosY = FFMIN(lastLumSrcY + MAX_LINES_AHEAD, srcSliceY + srcSliceH - 1);
+        } else {
+            firstPosY = lastInLumBuf + 1;
+            lastPosY = lastLumSrcY;
+        }
 
-        if (lastInLumBuf < lastLumSrcY)
+        cPosY = dst_slice->plane[1].sliceY + dst_slice->plane[1].sliceH;
+        if (cPosY <= lastChrSrcY && !hasChrHoles) {
+            firstCPosY = FFMAX(firstChrSrcY, cPosY);
+            lastCPosY = FFMIN(lastChrSrcY + MAX_LINES_AHEAD, FF_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample) - 1);
+        } else {
+            firstCPosY = lastInChrBuf + 1;
+            lastCPosY = lastChrSrcY;
+        }
+
+        ff_rotate_slice(dst_slice, lastPosY, lastCPosY);
+
+        if (posY < lastLumSrcY + 1) {
             for (i = lumStart; i < lumEnd; ++i)
-                desc[i].process(c, &desc[i], lastInLumBuf + 1, lastLumSrcY - lastInLumBuf);
+                desc[i].process(c, &desc[i], firstPosY, lastPosY - firstPosY + 1);
+        }
+
         lumBufIndex += lastLumSrcY - lastInLumBuf;
         lastInLumBuf = lastLumSrcY;
 
-        if (lastInChrBuf < lastChrSrcY)
+        if (cPosY < lastChrSrcY + 1) {
             for (i = chrStart; i < chrEnd; ++i)
-                desc[i].process(c, &desc[i], lastInChrBuf + 1, lastChrSrcY - lastInChrBuf);
+                desc[i].process(c, &desc[i], firstCPosY, lastCPosY - firstCPosY + 1);
+        }
+
         chrBufIndex += lastChrSrcY - lastInChrBuf;
         lastInChrBuf = lastChrSrcY;
 

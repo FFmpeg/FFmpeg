@@ -1019,7 +1019,6 @@ int ff_free_filters(SwsContext *c);
 */
 int ff_rotate_slice(SwsSlice *s, int lum, int chr);
 
-
 /// initializes lum pixel format conversion descriptor
 int ff_init_desc_fmt_convert(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst, uint32_t *pal);
 
@@ -1033,5 +1032,8 @@ int ff_init_desc_cfmt_convert(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlic
 int ff_init_desc_chscale(SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst, uint16_t *filter, int * filter_pos, int filter_size, int xInc);
 
 int ff_init_desc_no_chr(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst);
+
+//number of extra lines to process
+#define MAX_LINES_AHEAD 4
 
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */
