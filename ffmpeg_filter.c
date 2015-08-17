@@ -544,7 +544,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
                    av_get_default_channel_layout(ost->audio_channels_mapped));
         for (i = 0; i < ost->audio_channels_mapped; i++)
             if (ost->audio_channels_map[i] != -1)
-                av_bprintf(&pan_buf, ":c%d=c%d", i, ost->audio_channels_map[i]);
+                av_bprintf(&pan_buf, "|c%d=c%d", i, ost->audio_channels_map[i]);
 
         AUTO_INSERT_FILTER("-map_channel", "pan", pan_buf.str);
         av_bprint_finalize(&pan_buf, NULL);
