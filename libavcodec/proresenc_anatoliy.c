@@ -622,16 +622,3 @@ AVCodec ff_prores_aw_encoder = {
     .profiles       = profiles
 };
 
-AVCodec ff_prores_encoder = {
-    .name           = "prores",
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PRORES,
-    .priv_data_size = sizeof(ProresContext),
-    .init           = prores_encode_init,
-    .close          = prores_encode_close,
-    .encode2        = prores_encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_NONE},
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
-    .profiles       = profiles
-};
