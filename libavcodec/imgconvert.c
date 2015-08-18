@@ -78,7 +78,7 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
         loss |= FF_LOSS_COLORSPACE;
 
     if (has_alpha && !(dst_desc->flags & AV_PIX_FMT_FLAG_ALPHA) &&
-         (dst_desc->flags & AV_PIX_FMT_FLAG_ALPHA))
+         (src_desc->flags & AV_PIX_FMT_FLAG_ALPHA))
         loss |= FF_LOSS_ALPHA;
 
     if (dst_pix_fmt == AV_PIX_FMT_PAL8 && !is_gray(src_desc))
