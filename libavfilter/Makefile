@@ -197,6 +197,7 @@ OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SEPARATEFIELDS_FILTER)         += vf_separatefields.o
 OBJS-$(CONFIG_SAB_FILTER)                    += vf_sab.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o
+OBJS-$(CONFIG_SCALE2REF_FILTER)              += vf_scale.o
 OBJS-$(CONFIG_SELECT_FILTER)                 += f_select.o
 OBJS-$(CONFIG_SENDCMD_FILTER)                += f_sendcmd.o
 OBJS-$(CONFIG_SETDAR_FILTER)                 += vf_aspect.o

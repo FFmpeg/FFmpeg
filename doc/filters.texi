@@ -9122,6 +9122,23 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@section scale2ref
+
+Scale (resize) the input video, based on a reference video.
+
+See the scale filter for available options, scale2ref supports the same but
+uses the reference video instead of the main input as basis.
+
+@subsection Examples
+
+@itemize
+@item
+Scale a subtitle stream to match the main video in size before overlaying
+@example
+'scale2ref[b][a];[a][b]overlay'
+@end example
+@end itemize
+
 @section separatefields
 
 The @code{separatefields} takes a frame-based video input and splits

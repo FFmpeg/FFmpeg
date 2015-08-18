@@ -1,0 +1,295 @@
+#include "swscale_internal.h"
+
+static void free_lines(SwsSlice *s)
+{
+    int i;
+    for (i = 0; i < 2; ++i) {
+        int n = s->plane[i].available_lines;
+        int j;
+        for (j = 0; j < n; ++j) {
+            av_freep(&s->plane[i].line[j]);
+            if (s->is_ring)
+               s->plane[i].line[j+n] = NULL;
+        }
+    }
+
+    for (i = 0; i < 4; ++i)
+        memset(s->plane[i].line, 0, sizeof(uint8_t*) * s->plane[i].available_lines * (s->is_ring ? 3 : 1));
+    s->should_free_lines = 0;
+}
+
+/*
+ slice lines contains extra bytes for vetorial code thus @size
+ is the allocated memory size and @width is the number of pixels
+*/
+static int alloc_lines(SwsSlice *s, int size, int width)
+{
+    int i;
+    int idx[2] = {3, 2};
+
+    s->should_free_lines = 1;
+    s->width = width;
+
+    for (i = 0; i < 2; ++i) {
+        int n = s->plane[i].available_lines;
+        int j;
+        int ii = idx[i];
+
+        av_assert0(n == s->plane[ii].available_lines);
+        for (j = 0; j < n; ++j) {
+            // chroma plane line U and V are expected to be contiguous in memory
+            // by mmx vertical scaler code
+            s->plane[i].line[j] = av_malloc(size * 2 + 32);
+            if (!s->plane[i].line[j]) {
+                free_lines(s);
+                return AVERROR(ENOMEM);
+            }
+            s->plane[ii].line[j] = s->plane[i].line[j] + size + 16;
+            if (s->is_ring) {
+               s->plane[i].line[j+n] = s->plane[i].line[j];
+               s->plane[ii].line[j+n] = s->plane[ii].line[j];
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int alloc_slice(SwsSlice *s, enum AVPixelFormat fmt, int lumLines, int chrLines, int h_sub_sample, int v_sub_sample, int ring)
+{
+    int i;
+    int size[4] = { lumLines,
+                    chrLines,
+                    chrLines,
+                    lumLines };
+
+    s->h_chr_sub_sample = h_sub_sample;
+    s->v_chr_sub_sample = v_sub_sample;
+    s->fmt = fmt;
+    s->is_ring = ring;
+    s->should_free_lines = 0;
+
+    for (i = 0; i < 4; ++i) {
+        int n = size[i] * ( ring == 0 ? 1 : 3);
+        s->plane[i].line = av_mallocz_array(sizeof(uint8_t*), n);
+        if (!s->plane[i].line)
+            return AVERROR(ENOMEM);
+
+        s->plane[i].tmp = ring ? s->plane[i].line + size[i] * 2 : NULL;
+        s->plane[i].available_lines = size[i];
+        s->plane[i].sliceY = 0;
+        s->plane[i].sliceH = 0;
+    }
+    return 0;
+}
+
+static void free_slice(SwsSlice *s)
+{
+    int i;
+    if (s) {
+        if (s->should_free_lines)
+            free_lines(s);
+        for (i = 0; i < 4; ++i) {
+            av_freep(&s->plane[i].line);
+            s->plane[i].tmp = NULL;
+        }
+    }
+}
+
+int ff_rotate_slice(SwsSlice *s, int lum, int chr)
+{
+    int i;
+    if (lum) {
+        for (i = 0; i < 4; i+=3) {
+            int n = s->plane[i].available_lines;
+            int l = lum - s->plane[i].sliceY;
+
+            if (l >= n * 2) {
+                s->plane[i].sliceY += n;
+                s->plane[i].sliceH -= n;
+            }
+        }
+    }
+    if (chr) {
+        for (i = 1; i < 3; ++i) {
+            int n = s->plane[i].available_lines;
+            int l = chr - s->plane[i].sliceY;
+
+            if (l >= n * 2) {
+                s->plane[i].sliceY += n;
+                s->plane[i].sliceH -= n;
+            }
+        }
+    }
+    return 0;
+}
+
+int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH)
+{
+    int i = 0;
+
+    const int start[4] = {lumY,
+                    chrY,
+                    chrY,
+                    lumY};
+
+    const int end[4] = {lumY +lumH,
+                        chrY + chrH,
+                        chrY + chrH,
+                        lumY + lumH};
+
+    s->width = srcW;
+
+    for (i = 0; i < 4; ++i) {
+        int j;
+        int lines = end[i];
+        lines = s->plane[i].available_lines < lines ? s->plane[i].available_lines : lines;
+
+        if (end[i] > s->plane[i].sliceY+s->plane[i].sliceH) {
+            if (start[i] <= s->plane[i].sliceY+1)
+                s->plane[i].sliceY = FFMIN(start[i], s->plane[i].sliceY);
+            else
+                s->plane[i].sliceY = start[i];
+            s->plane[i].sliceH = end[i] - s->plane[i].sliceY;
+        } else {
+            if (end[i] >= s->plane[i].sliceY)
+                s->plane[i].sliceH = s->plane[i].sliceY + s->plane[i].sliceH - start[i];
+            else
+                s->plane[i].sliceH = end[i] - start[i];
+            s->plane[i].sliceY = start[i];
+        }
+
+        for (j = start[i]; j < lines; j+= 1)
+            s->plane[i].line[j] = src[i] + (start[i] + j) * stride[i];
+
+    }
+
+    return 0;
+}
+
+static void fill_ones(SwsSlice *s, int n, int is16bit)
+{
+    int i;
+    for (i = 0; i < 4; ++i) {
+        int j;
+        int size = s->plane[i].available_lines;
+        for (j = 0; j < size; ++j) {
+            int k;
+            int end = is16bit ? n>>1: n;
+            // fill also one extra element
+            end += 1;
+            if (is16bit)
+                for (k = 0; k < end; ++k)
+                    ((int32_t*)(s->plane[i].line[j]))[k] = 1<<18;
+            else
+                for (k = 0; k < end; ++k)
+                    ((int16_t*)(s->plane[i].line[j]))[k] = 1<<14;
+        }
+    }
+}
+
+int ff_init_filters(SwsContext * c)
+{
+    int i;
+    int index;
+    int num_ydesc;
+    int num_cdesc;
+    int need_lum_conv = c->lumToYV12 || c->readLumPlanar || c->alpToYV12 || c->readAlpPlanar;
+    int need_chr_conv = c->chrToYV12 || c->readChrPlanar;
+    int srcIdx, dstIdx;
+    int dst_stride = FFALIGN(c->dstW * sizeof(int16_t) + 66, 16);
+
+    uint32_t * pal = usePal(c->srcFormat) ? c->pal_yuv : (uint32_t*)c->input_rgb2yuv_table;
+    int res = 0;
+
+    if (c->dstBpc == 16)
+        dst_stride <<= 1;
+
+    num_ydesc = need_lum_conv ? 2 : 1;
+    num_cdesc = need_chr_conv ? 2 : 1;
+
+    c->numSlice = FFMAX(num_ydesc, num_cdesc) + 1;
+    c->numDesc = num_ydesc + num_cdesc;
+    c->descIndex[0] = num_ydesc;
+    c->descIndex[1] = num_ydesc + num_cdesc;
+
+
+
+    c->desc = av_mallocz_array(sizeof(SwsFilterDescriptor), c->numDesc);
+    if (!c->desc)
+        return AVERROR(ENOMEM);
+    c->slice = av_mallocz_array(sizeof(SwsSlice), c->numSlice);
+
+
+    res = alloc_slice(&c->slice[0], c->srcFormat, c->srcH, c->chrSrcH, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
+    if (res < 0) goto cleanup;
+    for (i = 1; i < c->numSlice-1; ++i) {
+        res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
+        if (res < 0) goto cleanup;
+        res = alloc_lines(&c->slice[i], FFALIGN(c->srcW*2+78, 16), c->srcW);
+        if (res < 0) goto cleanup;
+    }
+    res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrDstHSubSample, c->chrDstVSubSample, 1);
+    if (res < 0) goto cleanup;
+    res = alloc_lines(&c->slice[i], dst_stride, c->dstW);
+    if (res < 0) goto cleanup;
+
+    fill_ones(&c->slice[i], dst_stride>>1, c->dstBpc == 16);
+
+    index = 0;
+    srcIdx = 0;
+    dstIdx = 1;
+
+    if (need_lum_conv) {
+        ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+        c->desc[index].alpha = c->alpPixBuf != 0;
+        ++index;
+        srcIdx = dstIdx;
+    }
+
+
+    dstIdx = FFMAX(num_ydesc, num_cdesc);
+    ff_init_desc_hscale(&c->desc[index], &c->slice[index], &c->slice[dstIdx], c->hLumFilter, c->hLumFilterPos, c->hLumFilterSize, c->lumXInc);
+    c->desc[index].alpha = c->alpPixBuf != 0;
+
+
+    ++index;
+    {
+        srcIdx = 0;
+        dstIdx = 1;
+        if (need_chr_conv) {
+            ff_init_desc_cfmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+            ++index;
+            srcIdx = dstIdx;
+        }
+
+        dstIdx = FFMAX(num_ydesc, num_cdesc);
+        if (c->needs_hcscale)
+            ff_init_desc_chscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hChrFilter, c->hChrFilterPos, c->hChrFilterSize, c->chrXInc);
+        else
+            ff_init_desc_no_chr(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx]);
+    }
+
+    return 0;
+
+cleanup:
+    ff_free_filters(c);
+    return res;
+}
+
+int ff_free_filters(SwsContext *c)
+{
+    int i;
+    if (c->desc) {
+        for (i = 0; i < c->numDesc; ++i)
+            av_freep(&c->desc[i].instance);
+        av_freep(&c->desc);
+    }
+
+    if (c->slice) {
+        for (i = 0; i < c->numSlice; ++i)
+            free_slice(&c->slice[i]);
+        av_freep(&c->slice);
+    }
+    return 0;
+}

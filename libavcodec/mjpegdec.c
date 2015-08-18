@@ -345,6 +345,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                i, h_count[i], v_count[i],
                s->component_id[i], s->quant_index[i]);
     }
+    if (   nb_components == 4
+        && s->component_id[0] == 'C' - 1
+        && s->component_id[1] == 'M' - 1
+        && s->component_id[2] == 'Y' - 1
+        && s->component_id[3] == 'K' - 1)
+        s->adobe_transform = 0;
 
     if (s->ls && (s->h_max > 1 || s->v_max > 1)) {
         avpriv_report_missing_feature(s->avctx, "Subsampling in JPEG-LS");

@@ -109,6 +109,8 @@ typedef struct RV34DecContext{
     int weight1, weight2;    ///< B frame distance fractions (0.14) used in motion compensation
     int mv_weight1, mv_weight2;
 
+    int orig_width, orig_height;
+
     uint16_t *cbp_luma;      ///< CBP values for luma subblocks
     uint8_t  *cbp_chroma;    ///< CBP values for chroma subblocks
     uint16_t *deblock_coefs; ///< deblock coefficients for each macroblock

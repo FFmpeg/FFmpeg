@@ -62,6 +62,8 @@ typedef struct BufferSinkContext {
 } BufferSinkContext;
 
 #define NB_ITEMS(list) (list ## _size / sizeof(*list))
+#define FIFO_INIT_SIZE 8
+#define FIFO_INIT_ELEMENT_SIZE sizeof(void *)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
@@ -72,7 +74,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_audio_fifo_free(sink->audio_fifo);
 
     if (sink->fifo) {
-        while (av_fifo_size(sink->fifo) >= sizeof(AVFilterBufferRef *)) {
+        while (av_fifo_size(sink->fifo) >= FIFO_INIT_ELEMENT_SIZE) {
             av_fifo_generic_read(sink->fifo, &frame, sizeof(frame), NULL);
             av_frame_free(&frame);
         }
@@ -84,7 +86,7 @@ static int add_buffer_ref(AVFilterContext *ctx, AVFrame *ref)
 {
     BufferSinkContext *buf = ctx->priv;
 
-    if (av_fifo_space(buf->fifo) < sizeof(AVFilterBufferRef *)) {
+    if (av_fifo_space(buf->fifo) < FIFO_INIT_ELEMENT_SIZE) {
         /* realloc fifo size */
         if (av_fifo_realloc2(buf->fifo, av_fifo_size(buf->fifo) * 2) < 0) {
             av_log(ctx, AV_LOG_ERROR,
@@ -95,7 +97,7 @@ static int add_buffer_ref(AVFilterContext *ctx, AVFrame *ref)
     }
 
     /* cache frame */
-    av_fifo_generic_write(buf->fifo, &ref, sizeof(AVFilterBufferRef *), NULL);
+    av_fifo_generic_write(buf->fifo, &ref, FIFO_INIT_ELEMENT_SIZE, NULL);
     return 0;
 }
 
@@ -108,7 +110,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     if ((ret = add_buffer_ref(ctx, frame)) < 0)
         return ret;
     if (buf->warning_limit &&
-        av_fifo_size(buf->fifo) / sizeof(AVFilterBufferRef *) >= buf->warning_limit) {
+        av_fifo_size(buf->fifo) / FIFO_INIT_ELEMENT_SIZE >= buf->warning_limit) {
         av_log(ctx, AV_LOG_WARNING,
                "%d buffers queued in %s, something may be wrong.\n",
                buf->warning_limit,
@@ -242,13 +244,11 @@ AVABufferSinkParams *av_abuffersink_params_alloc(void)
     return params;
 }
 
-#define FIFO_INIT_SIZE 8
-
 static av_cold int common_init(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
 
-    buf->fifo = av_fifo_alloc_array(FIFO_INIT_SIZE, sizeof(AVFilterBufferRef *));
+    buf->fifo = av_fifo_alloc_array(FIFO_INIT_SIZE, FIFO_INIT_ELEMENT_SIZE);
     if (!buf->fifo) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate fifo\n");
         return AVERROR(ENOMEM);
@@ -373,7 +373,7 @@ int attribute_align_arg av_buffersink_poll_frame(AVFilterContext *ctx)
                || !strcmp(ctx->filter->name, "ffbuffersink")
                || !strcmp(ctx->filter->name, "ffabuffersink"));
 
-    return av_fifo_size(buf->fifo)/sizeof(AVFilterBufferRef *) + ff_poll_frame(inlink);
+    return av_fifo_size(buf->fifo)/FIFO_INIT_ELEMENT_SIZE + ff_poll_frame(inlink);
 }
 
 static av_cold int vsink_init(AVFilterContext *ctx, void *opaque)

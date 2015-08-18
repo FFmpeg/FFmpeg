@@ -371,6 +371,17 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int lastInChrBuf = c->lastInChrBuf;
     int perform_gamma = c->is_internal_gamma;
 
+    int numDesc = c->numDesc;
+    int lumStart = 0;
+    int lumEnd = c->descIndex[0];
+    int chrStart = lumEnd;
+    int chrEnd = c->descIndex[1];
+    SwsSlice *src_slice = &c->slice[lumStart];
+    SwsSlice *dst_slice = &c->slice[c->numSlice-1];
+    SwsFilterDescriptor *desc = c->desc;
+    int hasLumHoles = 1;
+    int hasChrHoles = 1;
+
 
     if (!usePal(c->srcFormat)) {
         pal = c->input_rgb2yuv_table;
@@ -439,6 +450,23 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     }
     lastDstY = dstY;
 
+#define NEW_FILTER 1
+
+    ff_init_slice_from_src(src_slice, (uint8_t**)src, srcStride, c->srcW,
+            srcSliceY, srcSliceH,
+            chrSrcSliceY, chrSrcSliceH);
+
+    dst_slice->plane[0].sliceY = lastInLumBuf + 1;
+    dst_slice->plane[1].sliceY = lastInChrBuf + 1;
+    dst_slice->plane[2].sliceY = lastInChrBuf + 1;
+    dst_slice->plane[3].sliceY = lastInLumBuf + 1;
+
+    dst_slice->plane[0].sliceH =
+    dst_slice->plane[1].sliceH =
+    dst_slice->plane[2].sliceH =
+    dst_slice->plane[3].sliceH = 0;
+    dst_slice->width = dstW;
+
     for (; dstY < dstH; dstY++) {
         const int chrDstY = dstY >> c->chrDstVSubSample;
         uint8_t *dest[4]  = {
@@ -460,12 +488,30 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         int lastLumSrcY2 = FFMIN(c->srcH,    firstLumSrcY2 + vLumFilterSize) - 1;
         int lastChrSrcY  = FFMIN(c->chrSrcH, firstChrSrcY  + vChrFilterSize) - 1;
         int enough_lines;
+        int i;
+        int posY, cPosY, firstPosY, lastPosY, firstCPosY, lastCPosY;
 
         // handle holes (FAST_BILINEAR & weird filters)
-        if (firstLumSrcY > lastInLumBuf)
+        if (firstLumSrcY > lastInLumBuf) {
+            hasLumHoles = lastInLumBuf != firstLumSrcY - 1;
             lastInLumBuf = firstLumSrcY - 1;
-        if (firstChrSrcY > lastInChrBuf)
+            if (hasLumHoles) {
+                dst_slice->plane[0].sliceY = lastInLumBuf + 1;
+                dst_slice->plane[3].sliceY = lastInLumBuf + 1;
+                dst_slice->plane[0].sliceH =
+                dst_slice->plane[3].sliceH = 0;
+            }
+        }
+        if (firstChrSrcY > lastInChrBuf) {
+            hasChrHoles = lastInChrBuf != firstChrSrcY - 1;
             lastInChrBuf = firstChrSrcY - 1;
+            if (hasChrHoles) {
+                dst_slice->plane[1].sliceY = lastInChrBuf + 1;
+                dst_slice->plane[2].sliceY = lastInChrBuf + 1;
+                dst_slice->plane[1].sliceH =
+                dst_slice->plane[2].sliceH = 0;
+            }
+        }
         av_assert0(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1);
         av_assert0(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
 
@@ -486,6 +532,44 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                           lastLumSrcY, lastChrSrcY);
         }
 
+#if NEW_FILTER
+        posY = dst_slice->plane[0].sliceY + dst_slice->plane[0].sliceH;
+        if (posY <= lastLumSrcY && !hasLumHoles) {
+            firstPosY = FFMAX(firstLumSrcY, posY);
+            lastPosY = FFMIN(lastLumSrcY + MAX_LINES_AHEAD, srcSliceY + srcSliceH - 1);
+        } else {
+            firstPosY = lastInLumBuf + 1;
+            lastPosY = lastLumSrcY;
+        }
+
+        cPosY = dst_slice->plane[1].sliceY + dst_slice->plane[1].sliceH;
+        if (cPosY <= lastChrSrcY && !hasChrHoles) {
+            firstCPosY = FFMAX(firstChrSrcY, cPosY);
+            lastCPosY = FFMIN(lastChrSrcY + MAX_LINES_AHEAD, FF_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample) - 1);
+        } else {
+            firstCPosY = lastInChrBuf + 1;
+            lastCPosY = lastChrSrcY;
+        }
+
+        ff_rotate_slice(dst_slice, lastPosY, lastCPosY);
+
+        if (posY < lastLumSrcY + 1) {
+            for (i = lumStart; i < lumEnd; ++i)
+                desc[i].process(c, &desc[i], firstPosY, lastPosY - firstPosY + 1);
+        }
+
+        lumBufIndex += lastLumSrcY - lastInLumBuf;
+        lastInLumBuf = lastLumSrcY;
+
+        if (cPosY < lastChrSrcY + 1) {
+            for (i = chrStart; i < chrEnd; ++i)
+                desc[i].process(c, &desc[i], firstCPosY, lastCPosY - firstCPosY + 1);
+        }
+
+        chrBufIndex += lastChrSrcY - lastInChrBuf;
+        lastInChrBuf = lastChrSrcY;
+
+#else
         // Do horizontal scaling
         while (lastInLumBuf < lastLumSrcY) {
             const uint8_t *src1[4] = {
@@ -499,8 +583,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             av_assert0(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             av_assert0(lastInLumBuf + 1 - srcSliceY >= 0);
 
-            if (perform_gamma)
-                gamma_convert((uint8_t **)src1, srcW, c->inv_gamma);
+            //if (perform_gamma)
+            //    gamma_convert((uint8_t **)src1, srcW, c->inv_gamma);
 
             hyscale(c, lumPixBuf[lumBufIndex], dstW, src1, srcW, lumXInc,
                     hLumFilter, hLumFilterPos, hLumFilterSize,
@@ -535,6 +619,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             DEBUG_BUFFERS("\t\tchrBufIndex %d: lastInChrBuf: %d\n",
                           chrBufIndex, lastInChrBuf);
         }
+#endif
         // wrap buf index around to stay inside the ring buffer
         if (lumBufIndex >= vLumBufSize)
             lumBufIndex -= vLumBufSize;
@@ -560,11 +645,19 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         }
 
         {
+#if NEW_FILTER
+            const int16_t **lumSrcPtr  = (const int16_t **)(void*) dst_slice->plane[0].line + firstLumSrcY - dst_slice->plane[0].sliceY;
+            const int16_t **chrUSrcPtr = (const int16_t **)(void*) dst_slice->plane[1].line + firstChrSrcY - dst_slice->plane[1].sliceY;
+            const int16_t **chrVSrcPtr = (const int16_t **)(void*) dst_slice->plane[2].line + firstChrSrcY - dst_slice->plane[2].sliceY;
+            const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && alpPixBuf) ?
+                                         (const int16_t **)(void*) dst_slice->plane[3].line + firstLumSrcY - dst_slice->plane[3].sliceY : NULL;
+#else
             const int16_t **lumSrcPtr  = (const int16_t **)(void*) lumPixBuf  + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
             const int16_t **chrUSrcPtr = (const int16_t **)(void*) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **chrVSrcPtr = (const int16_t **)(void*) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && alpPixBuf) ?
                                          (const int16_t **)(void*) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
+#endif
             int16_t *vLumFilter = c->vLumFilter;
             int16_t *vChrFilter = c->vChrFilter;
 
@@ -629,8 +722,10 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                     }
                 }
             } else if (yuv2packedX) {
+#if !NEW_FILTER
                 av_assert1(lumSrcPtr  + vLumFilterSize - 1 < (const int16_t **)lumPixBuf  + vLumBufSize * 2);
                 av_assert1(chrUSrcPtr + vChrFilterSize - 1 < (const int16_t **)chrUPixBuf + vChrBufSize * 2);
+#endif
                 if (c->yuv2packed1 && vLumFilterSize == 1 &&
                     vChrFilterSize <= 2) { // unscaled RGB
                     int chrAlpha = vChrFilterSize == 1 ? 0 : vChrFilter[2 * dstY + 1];
@@ -663,8 +758,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                          chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
                          alpSrcPtr, dest, dstW, dstY);
             }
-            if (perform_gamma)
-                gamma_convert(dest, dstW, c->gamma);
+            //if (perform_gamma)
+            //    gamma_convert(dest, dstW, c->gamma);
         }
     }
     if (isPlanar(dstFormat) && isALPHA(dstFormat) && !alpPixBuf) {
@@ -1151,4 +1246,3 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     av_free(rgb0_tmp);
     return ret;
 }
-

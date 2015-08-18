@@ -15,6 +15,8 @@ OBJS = alphablend.o                                     \
        swscale_unscaled.o                               \
        utils.o                                          \
        yuv2rgb.o                                        \
+       slice.o                                          \
+       hscale.o                                         \
 
 OBJS-$(CONFIG_SHARED)        += log2_tab.o
 

@@ -1702,7 +1702,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     }
 
     c->swscale = ff_getSwsFunc(c);
-    return 0;
+    return ff_init_filters(c);
 fail: // FIXME replace things by appropriate error codes
     if (ret == RETCODE_USE_CASCADE)  {
         int tmpW = sqrt(srcW * (int64_t)dstW);
@@ -2219,6 +2219,7 @@ void sws_freeContext(SwsContext *c)
     av_freep(&c->gamma);
     av_freep(&c->inv_gamma);
 
+    ff_free_filters(c);
 
     av_free(c);
 }
