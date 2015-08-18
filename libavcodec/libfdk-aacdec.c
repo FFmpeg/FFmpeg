@@ -54,7 +54,7 @@ typedef struct FDKAACDecContext {
 
 
 #define DMX_ANC_BUFFSIZE       128
-#define DECODER_MAX_CHANNELS     6
+#define DECODER_MAX_CHANNELS     8
 #define DECODER_BUFFSIZE      2048 * sizeof(INT_PCM)
 
 #define OFFSET(x) offsetof(FDKAACDecContext, x)
