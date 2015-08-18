@@ -41,8 +41,8 @@ enum ConcealMethod {
 typedef struct FDKAACDecContext {
     const AVClass *class;
     HANDLE_AACDECODER handle;
-    int initialized;
     uint8_t *decoder_buffer;
+    int decoder_buffer_size;
     uint8_t *anc_buffer;
     int conceal_method;
     int drc_level;
@@ -305,6 +305,13 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
+    s->decoder_buffer_size = DECODER_BUFFSIZE * DECODER_MAX_CHANNELS;
+    s->decoder_buffer = av_malloc(s->decoder_buffer_size);
+    if (!s->decoder_buffer) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     return 0;
 fail:
     fdk_aac_decode_close(avctx);
@@ -319,8 +326,6 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
     AAC_DECODER_ERROR err;
     UINT valid = avpkt->size;
-    uint8_t *buf, *tmpptr = NULL;
-    int buf_size;
 
     err = aacDecoder_Fill(s->handle, &avpkt->data, &avpkt->size, &valid);
     if (err != AAC_DEC_OK) {
@@ -328,31 +333,7 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->initialized) {
-        frame->nb_samples = avctx->frame_size;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-            return ret;
-
-        if (s->anc_buffer) {
-            buf_size = DECODER_BUFFSIZE * DECODER_MAX_CHANNELS;
-            buf = s->decoder_buffer;
-        } else {
-            buf = frame->extended_data[0];
-            buf_size = avctx->channels * frame->nb_samples *
-                       av_get_bytes_per_sample(avctx->sample_fmt);
-        }
-    } else {
-        buf_size = DECODER_BUFFSIZE * DECODER_MAX_CHANNELS;
-
-        if (!s->decoder_buffer)
-            s->decoder_buffer = av_malloc(buf_size);
-        if (!s->decoder_buffer)
-            return AVERROR(ENOMEM);
-
-        buf = tmpptr = s->decoder_buffer;
-    }
-
-    err = aacDecoder_DecodeFrame(s->handle, (INT_PCM *) buf, buf_size, 0);
+    err = aacDecoder_DecodeFrame(s->handle, (INT_PCM *) s->decoder_buffer, s->decoder_buffer_size, 0);
     if (err == AAC_DEC_NOT_ENOUGH_BITS) {
         ret = avpkt->size - valid;
         goto end;
@@ -364,26 +345,16 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
         goto end;
     }
 
-    if (!s->initialized) {
-        if ((ret = get_stream_info(avctx)) < 0)
-            goto end;
-        s->initialized = 1;
-        frame->nb_samples = avctx->frame_size;
-    }
+    if ((ret = get_stream_info(avctx)) < 0)
+        goto end;
+    frame->nb_samples = avctx->frame_size;
 
-    if (tmpptr) {
-        frame->nb_samples = avctx->frame_size;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-            goto end;
-    }
-    if (s->decoder_buffer) {
-        memcpy(frame->extended_data[0], buf,
-               avctx->channels * avctx->frame_size *
-               av_get_bytes_per_sample(avctx->sample_fmt));
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        goto end;
 
-        if (!s->anc_buffer)
-            av_freep(&s->decoder_buffer);
-    }
+    memcpy(frame->extended_data[0], s->decoder_buffer,
+           avctx->channels * avctx->frame_size *
+           av_get_bytes_per_sample(avctx->sample_fmt));
 
     *got_frame_ptr = 1;
     ret = avpkt->size - valid;
