@@ -22,6 +22,7 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "error_resilience.h"
 #include "idctdsp.h"
@@ -2320,9 +2321,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         pts = ROUNDED_DIV(s->time, s->avctx->framerate.den);
     else
         pts = AV_NOPTS_VALUE;
-    if (s->avctx->debug&FF_DEBUG_PTS)
-        av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %"PRId64"\n",
-               pts);
+    ff_dlog(s->avctx, "MPEG4 PTS: %"PRId64"\n", pts);
 
     check_marker(gb, "before vop_coded");
 
