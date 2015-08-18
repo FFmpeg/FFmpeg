@@ -1151,7 +1151,7 @@ static void do_video_out(AVFormatContext *s,
             ost->forced_keyframes_expr_const_values[FKF_T] = pts_time;
             res = av_expr_eval(ost->forced_keyframes_pexpr,
                                ost->forced_keyframes_expr_const_values, NULL);
-            av_dlog(NULL, "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
+            ff_dlog(NULL, "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
                     ost->forced_keyframes_expr_const_values[FKF_N],
                     ost->forced_keyframes_expr_const_values[FKF_N_FORCED],
                     ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N],

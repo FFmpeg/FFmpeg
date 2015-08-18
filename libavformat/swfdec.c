@@ -23,6 +23,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/get_bits.h"
 #include "swf.h"
@@ -342,7 +343,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             out_len = colormapsize * colormapbpp + linesize * height;
 
-            av_dlog(s, "bitmap: ch=%d fmt=%d %dx%d (linesize=%d) len=%d->%ld pal=%d\n",
+            ff_dlog(s, "bitmap: ch=%d fmt=%d %dx%d (linesize=%d) len=%d->%ld pal=%d\n",
                     ch_id, bmp_fmt, width, height, linesize, len, out_len, colormapsize);
 
             zbuf = av_malloc(len);

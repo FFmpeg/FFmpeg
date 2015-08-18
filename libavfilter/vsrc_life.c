@@ -26,6 +26,7 @@
 /* #define DEBUG */
 
 #include "libavutil/file.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lfg.h"
 #include "libavutil/opt.h"
@@ -334,7 +335,7 @@ static void evolve(AVFilterContext *ctx)
             if (alive)     *newbuf = ALIVE_CELL; // new cell is alive
             else if (cell) *newbuf = cell - 1;   // new cell is dead and in the process of mold
             else           *newbuf = 0;          // new cell is definitely dead
-            av_dlog(ctx, "i:%d j:%d live_neighbors:%d cell:%d -> cell:%d\n", i, j, n, cell, *newbuf);
+            ff_dlog(ctx, "i:%d j:%d live_neighbors:%d cell:%d -> cell:%d\n", i, j, n, cell, *newbuf);
             newbuf++;
         }
     }

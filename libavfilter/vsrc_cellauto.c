@@ -26,6 +26,7 @@
 /* #define DEBUG */
 
 #include "libavutil/file.h"
+#include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -249,7 +250,7 @@ static void evolve(AVFilterContext *ctx)
             v|= i+1 < cellauto->w ? prev_row[i+1]    : 0;
         }
         row[i] = !!(cellauto->rule & (1<<v));
-        av_dlog(ctx, "i:%d context:%c%c%c -> cell:%d\n", i,
+        ff_dlog(ctx, "i:%d context:%c%c%c -> cell:%d\n", i,
                 v&4?'@':' ', v&2?'@':' ', v&1?'@':' ', row[i]);
     }
 

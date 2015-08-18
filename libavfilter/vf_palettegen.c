@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/qsort.h"
 #include "avfilter.h"
@@ -347,7 +348,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
         if (rr >= gr && rr >= br) longest = 0;
         if (gr >= rr && gr >= br) longest = 1; // prefer green again
 
-        av_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" ranges:[%2x %2x %2x] sort by %c (already sorted:%c) ",
+        ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" ranges:[%2x %2x %2x] sort by %c (already sorted:%c) ",
                 box_id, box->start, box->start + box->len - 1, box->len, box_weight,
                 rr, gr, br, "rgb"[longest], box->sorted_by == longest ? 'y':'n');
 
@@ -368,7 +369,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
             if (box_weight > median)
                 break;
         }
-        av_dlog(ctx, "split @ i=%-6d with w=%-6"PRIu64" (target=%6"PRIu64")\n", i, box_weight, median);
+        ff_dlog(ctx, "split @ i=%-6d with w=%-6"PRIu64" (target=%6"PRIu64")\n", i, box_weight, median);
         split_box(s, box, i);
 
         box_id = get_next_box_id_to_split(s);
