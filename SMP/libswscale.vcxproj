@@ -86,6 +86,10 @@
     </ClCompile>
     <ClCompile Include="..\libswscale\yuv2rgb.c">
     </ClCompile>
+    <ClCompile Include="..\libswscale\slice.c">
+    </ClCompile>
+    <ClCompile Include="..\libswscale\hscale.c">
+    </ClCompile>
     <ClCompile Include="..\libswscale\log2_tab.c">
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
