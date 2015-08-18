@@ -321,35 +321,45 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 {
     /* load a few things into local vars to make the code more readable?
      * and faster */
+#ifndef NEW_FILTER
     const int srcW                   = c->srcW;
+#endif
     const int dstW                   = c->dstW;
     const int dstH                   = c->dstH;
     const int chrDstW                = c->chrDstW;
+#ifndef NEW_FILTER
     const int chrSrcW                = c->chrSrcW;
     const int lumXInc                = c->lumXInc;
     const int chrXInc                = c->chrXInc;
+#endif
     const enum AVPixelFormat dstFormat = c->dstFormat;
     const int flags                  = c->flags;
     int32_t *vLumFilterPos           = c->vLumFilterPos;
     int32_t *vChrFilterPos           = c->vChrFilterPos;
+#ifndef NEW_FILTER
     int32_t *hLumFilterPos           = c->hLumFilterPos;
     int32_t *hChrFilterPos           = c->hChrFilterPos;
     int16_t *hLumFilter              = c->hLumFilter;
     int16_t *hChrFilter              = c->hChrFilter;
+#endif
     int32_t *lumMmxFilter            = c->lumMmxFilter;
     int32_t *chrMmxFilter            = c->chrMmxFilter;
     const int vLumFilterSize         = c->vLumFilterSize;
     const int vChrFilterSize         = c->vChrFilterSize;
+#ifndef NEW_FILTER
     const int hLumFilterSize         = c->hLumFilterSize;
     const int hChrFilterSize         = c->hChrFilterSize;
     int16_t **lumPixBuf              = c->lumPixBuf;
     int16_t **chrUPixBuf             = c->chrUPixBuf;
     int16_t **chrVPixBuf             = c->chrVPixBuf;
+#endif
     int16_t **alpPixBuf              = c->alpPixBuf;
     const int vLumBufSize            = c->vLumBufSize;
     const int vChrBufSize            = c->vChrBufSize;
+#ifndef NEW_FILTER
     uint8_t *formatConvBuffer        = c->formatConvBuffer;
     uint32_t *pal                    = c->pal_yuv;
+#endif
     yuv2planar1_fn yuv2plane1        = c->yuv2plane1;
     yuv2planarX_fn yuv2planeX        = c->yuv2planeX;
     yuv2interleavedX_fn yuv2nv12cX   = c->yuv2nv12cX;
@@ -369,9 +379,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int chrBufIndex  = c->chrBufIndex;
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
-    int perform_gamma = c->is_internal_gamma;
+//    int perform_gamma = c->is_internal_gamma;
 
-    int numDesc = c->numDesc;
     int lumStart = 0;
     int lumEnd = c->descIndex[0];
     int chrStart = lumEnd;
@@ -382,10 +391,11 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int hasLumHoles = 1;
     int hasChrHoles = 1;
 
-
+#ifndef NEW_FILTER
     if (!usePal(c->srcFormat)) {
         pal = c->input_rgb2yuv_table;
     }
+#endif
 
     if (isPacked(c->srcFormat)) {
         src[0] =
@@ -449,8 +459,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         c->chrDither8 = c->lumDither8 = sws_pb_64;
     }
     lastDstY = dstY;
-
-#define NEW_FILTER 1
 
     ff_init_slice_from_src(src_slice, (uint8_t**)src, srcStride, c->srcW,
             srcSliceY, srcSliceH,
@@ -532,7 +540,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                           lastLumSrcY, lastChrSrcY);
         }
 
-#if NEW_FILTER
+#ifdef NEW_FILTER
         posY = dst_slice->plane[0].sliceY + dst_slice->plane[0].sliceH;
         if (posY <= lastLumSrcY && !hasLumHoles) {
             firstPosY = FFMAX(firstLumSrcY, posY);
@@ -645,7 +653,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         }
 
         {
-#if NEW_FILTER
+#ifdef NEW_FILTER
             const int16_t **lumSrcPtr  = (const int16_t **)(void*) dst_slice->plane[0].line + firstLumSrcY - dst_slice->plane[0].sliceY;
             const int16_t **chrUSrcPtr = (const int16_t **)(void*) dst_slice->plane[1].line + firstChrSrcY - dst_slice->plane[1].sliceY;
             const int16_t **chrVSrcPtr = (const int16_t **)(void*) dst_slice->plane[2].line + firstChrSrcY - dst_slice->plane[2].sliceY;
@@ -722,7 +730,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                     }
                 }
             } else if (yuv2packedX) {
-#if !NEW_FILTER
+#ifndef NEW_FILTER
                 av_assert1(lumSrcPtr  + vLumFilterSize - 1 < (const int16_t **)lumPixBuf  + vLumBufSize * 2);
                 av_assert1(chrUSrcPtr + vChrFilterSize - 1 < (const int16_t **)chrUPixBuf + vChrBufSize * 2);
 #endif

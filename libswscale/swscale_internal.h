@@ -1036,4 +1036,6 @@ int ff_init_desc_no_chr(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst
 //number of extra lines to process
 #define MAX_LINES_AHEAD 4
 
+
+#define NEW_FILTER
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */
