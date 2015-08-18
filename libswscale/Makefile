@@ -17,6 +17,7 @@ OBJS = alphablend.o                                     \
        yuv2rgb.o                                        \
        slice.o                                          \
        hscale.o                                         \
+       vscale.o                                         \
 
 OBJS-$(CONFIG_SHARED)        += log2_tab.o
 

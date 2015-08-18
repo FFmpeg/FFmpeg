@@ -86,9 +86,9 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
     const int dstH= c->dstH;
     const int flags= c->flags;
 #ifdef NEW_FILTER
-    SwsPlane *lumPlane = &c->slice[c->numSlice-1].plane[0];
-    SwsPlane *chrUPlane = &c->slice[c->numSlice-1].plane[1];
-    SwsPlane *alpPlane = &c->slice[c->numSlice-1].plane[3];
+    SwsPlane *lumPlane = &c->slice[c->numSlice-2].plane[0];
+    SwsPlane *chrUPlane = &c->slice[c->numSlice-2].plane[1];
+    SwsPlane *alpPlane = &c->slice[c->numSlice-2].plane[3];
 #else
     int16_t **lumPixBuf= c->lumPixBuf;
     int16_t **chrUPixBuf= c->chrUPixBuf;
