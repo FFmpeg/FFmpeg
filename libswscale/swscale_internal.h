@@ -1015,7 +1015,7 @@ int ff_free_filters(SwsContext *c);
  function for applying ring buffer logic into slice s
  It checks if the slice can hold more @lum lines, if yes
  do nothing otherwise remove @lum least used lines.
- It applyes the same procedure for @chr lines.
+ It applies the same procedure for @chr lines.
 */
 int ff_rotate_slice(SwsSlice *s, int lum, int chr);
 
@@ -1025,7 +1025,7 @@ int ff_init_desc_fmt_convert(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice
 /// initializes lum horizontal scaling descriptor
 int ff_init_desc_hscale(SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst, uint16_t *filter, int * filter_pos, int filter_size, int xInc);
 
-/// initializes chr prixel format conversion descriptor
+/// initializes chr pixel format conversion descriptor
 int ff_init_desc_cfmt_convert(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst, uint32_t *pal);
 
 /// initializes chr horizontal scaling descriptor
