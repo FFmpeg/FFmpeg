@@ -433,6 +433,16 @@ static int config_props_ref(AVFilterLink *outlink)
     return 0;
 }
 
+static int request_frame(AVFilterLink *outlink)
+{
+    return ff_request_frame(outlink->src->inputs[0]);
+}
+
+static int request_frame_ref(AVFilterLink *outlink)
+{
+    return ff_request_frame(outlink->src->inputs[1]);
+}
+
 static int scale_slice(AVFilterLink *link, AVFrame *out_buf, AVFrame *cur_pic, struct SwsContext *sws, int y, int h, int mul, int field)
 {
     ScaleContext *scale = link->dst->priv;
@@ -697,11 +707,13 @@ static const AVFilterPad avfilter_vf_scale2ref_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_props,
+        .request_frame= request_frame,
     },
     {
         .name         = "ref",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_props_ref,
+        .request_frame= request_frame_ref,
     },
     { NULL }
 };
