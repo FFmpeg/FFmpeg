@@ -5376,6 +5376,9 @@ if ! disabled sdl; then
             disable sdl
         fi
     fi
+    if test $target_os = "mingw32"; then
+        sdl_libs="$sdl_libs -mconsole"
+    fi
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
