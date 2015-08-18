@@ -444,12 +444,12 @@ Documentation/fb/framebuffer.txt included in the Linux source tree.
 To record from the framebuffer device @file{/dev/fb0} with
 @command{ffmpeg}:
 @example
-ffmpeg -f fbdev -r 10 -i /dev/fb0 out.avi
+ffmpeg -f fbdev -framerate 10 -i /dev/fb0 out.avi
 @end example
 
 You can take a single screenshot image with the command:
 @example
-ffmpeg -f fbdev -frames:v 1 -r 1 -i /dev/fb0 screenshot.jpeg
+ffmpeg -f fbdev -framerate 1 -i /dev/fb0 -frames:v 1 screenshot.jpeg
 @end example
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
