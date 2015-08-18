@@ -230,9 +230,9 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
     /* compute default parameters */
     switch(av->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        if (!av_dict_get(recommended, "ab", NULL, 0)) {
+        if (!av_dict_get(recommended, "b", NULL, 0)) {
             av->bit_rate = 64000;
-            av_dict_set_int(&recommended, "ab", av->bit_rate, 0);
+            av_dict_set_int(&recommended, "b", av->bit_rate, 0);
             WARNING("Setting default value for audio bit rate = %d. "
                     "Use NoDefaults to disable it.\n",
                     av->bit_rate);
@@ -923,7 +923,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_set_float_param(&f, arg, 1000, -FLT_MAX, FLT_MAX, config,
                 "Invalid %s: '%s'\n", cmd, arg);
-        if (ffserver_save_avoption_int("ab", (int64_t)lrintf(f),
+        if (ffserver_save_avoption_int("b", (int64_t)lrintf(f),
                                        AV_OPT_FLAG_AUDIO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AudioChannels")) {
