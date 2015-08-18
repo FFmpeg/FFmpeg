@@ -2604,6 +2604,11 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
             av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
         av_dict_set(&ost->encoder_opts, "side_data_only_packets", "1", 0);
+        if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
+            !codec->defaults &&
+            !av_dict_get(ost->encoder_opts, "b", NULL, 0) &&
+            !av_dict_get(ost->encoder_opts, "ab", NULL, 0))
+            av_dict_set(&ost->encoder_opts, "b", "128000", 0);
 
         if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
             if (ret == AVERROR_EXPERIMENTAL)
