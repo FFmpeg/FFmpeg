@@ -85,6 +85,7 @@ void projectGenerator::buildInterDependencies( const string & sProjectName, Stat
         buildInterDependenciesHelper( { "showspectrum_filter" }, { "avcodec" }, vLibs );
         buildInterDependenciesHelper( { "smartblur_filter" }, { "swscale" }, vLibs );
         buildInterDependenciesHelper( { "subtitles_filter" }, { "avformat", "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "scale2ref_filter" }, { "swscale" }, vLibs );
     }
     else if( sProjectName.compare( "libavdevice" ) == 0 )
     {
