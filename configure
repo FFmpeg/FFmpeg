@@ -2381,10 +2381,10 @@ crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 vaapi_deps="va_va_h"
-vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
+vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads CoreServices_CoreServices_h"
 vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore -framework CoreServices"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
-videotoolbox_deps="VideoToolbox_VideoToolbox_h pthreads"
+videotoolbox_deps="VideoToolbox_VideoToolbox_h pthreads CoreServices_CoreServices_h"
 videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework QuartzCore -framework CoreServices"
 xvmc_deps="X11_extensions_XvMClib_h"
 
@@ -5102,6 +5102,7 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
+check_header CoreServices/CoreServices.h
 check_header direct.h
 check_header dlfcn.h
 check_header d3d11.h
