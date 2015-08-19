@@ -50,6 +50,7 @@ typedef struct HistogramContext {
     int            display_mode;
     int            levels_mode;
     const AVPixFmtDescriptor *desc;
+    int            components;
 } HistogramContext;
 
 #define OFFSET(x) offsetof(HistogramContext, x)
@@ -74,6 +75,7 @@ static const AVOption histogram_options[] = {
     { "levels_mode", "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "levels_mode"},
     { "linear",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "levels_mode" },
     { "logarithmic", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "levels_mode" },
+    { "components", "set color components to display", OFFSET(components), AV_OPT_TYPE_INT, {.i64=7}, 1, 15, FLAGS},
     { NULL }
 };
 
@@ -158,11 +160,16 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     HistogramContext *h = ctx->priv;
+    int ncomp = 0, i;
 
     switch (h->mode) {
     case MODE_LEVELS:
+        for (i = 0; i < h->ncomp; i++) {
+            if ((1 << i) & h->components)
+                ncomp++;
+        }
         outlink->w = 256;
-        outlink->h = (h->level_height + h->scale_height) * FFMAX(h->ncomp * h->display_mode, 1);
+        outlink->h = (h->level_height + h->scale_height) * FFMAX(ncomp * h->display_mode, 1);
         break;
     case MODE_WAVEFORM:
         if (h->waveform_mode)
@@ -238,7 +245,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     const uint8_t *src;
     uint8_t *dst;
-    int i, j, k, l;
+    int i, j, k, l, m;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -260,11 +267,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     switch (h->mode) {
     case MODE_LEVELS:
-        for (k = 0; k < h->ncomp; k++) {
+        for (m = 0, k = 0; k < h->ncomp; k++) {
             const int p = h->desc->comp[k].plane;
-            const int start = k * (h->level_height + h->scale_height) * h->display_mode;
+            int start;
             double max_hval_log;
             unsigned max_hval = 0;
+
+            if (!((1 << k) & h->components))
+                continue;
+            start = m++ * (h->level_height + h->scale_height) * h->display_mode;
 
             for (i = 0; i < in->height; i++) {
                 src = in->data[p] + i * in->linesize[p];

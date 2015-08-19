@@ -6530,6 +6530,10 @@ Default is @code{parade}.
 @item levels_mode
 Set mode for @code{levels}. Can be either @code{linear}, or @code{logarithmic}.
 Default is @code{linear}.
+
+@item components
+Set what color components to display for mode @code{levels}.
+Default is @code{7}.
 @end table
 
 @subsection Examples
