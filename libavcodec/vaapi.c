@@ -22,7 +22,6 @@
  */
 
 #include "libavutil/log.h"
-#include "h264.h"
 #include "vaapi_internal.h"
 
 /**
