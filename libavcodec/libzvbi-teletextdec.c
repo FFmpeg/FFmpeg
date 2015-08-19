@@ -22,6 +22,7 @@
 #include "libavcodec/ass.h"
 #include "libavutil/opt.h"
 #include "libavutil/bprint.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 
@@ -274,7 +275,7 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
         b = VBI_B(page->color_map[ci]);
         a = VBI_A(page->color_map[ci]);
         ((uint32_t *)sub_rect->pict.data[1])[ci] = RGBA(r, g, b, a);
-        av_dlog(ctx, "palette %0x\n", ((uint32_t *)sub_rect->pict.data[1])[ci]);
+        ff_dlog(ctx, "palette %0x\n", ((uint32_t *)sub_rect->pict.data[1])[ci]);
     }
     ((uint32_t *)sub_rect->pict.data[1])[cmax] = RGBA(0, 0, 0, 0);
     sub_rect->type = SUBTITLE_BITMAP;
@@ -427,7 +428,7 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
         if (data_identifier_is_teletext(*pkt->data)) {
             if ((lines = slice_to_vbi_lines(ctx, pkt->data + 1, pkt->size - 1)) < 0)
                 return lines;
-            av_dlog(avctx, "ctx=%p buf_size=%d lines=%u pkt_pts=%7.3f\n",
+            ff_dlog(avctx, "ctx=%p buf_size=%d lines=%u pkt_pts=%7.3f\n",
                     ctx, pkt->size, lines, (double)pkt->pts/90000.0);
             if (lines > 0) {
 #ifdef DEBUG
@@ -517,7 +518,7 @@ static int teletext_close_decoder(AVCodecContext *avctx)
 {
     TeletextContext *ctx = avctx->priv_data;
 
-    av_dlog(avctx, "lines_total=%u\n", ctx->lines_processed);
+    ff_dlog(avctx, "lines_total=%u\n", ctx->lines_processed);
     while (ctx->nb_pages)
         subtitle_rect_free(&ctx->pages[--ctx->nb_pages].sub_rect);
     av_freep(&ctx->pages);

@@ -160,7 +160,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
 #define V210DEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption v210dec_options[] = {
-    {"custom_stride", "Custom V210 stride", offsetof(V210DecContext, custom_stride), FF_OPT_TYPE_INT,
+    {"custom_stride", "Custom V210 stride", offsetof(V210DecContext, custom_stride), AV_OPT_TYPE_INT,
      {.i64 = 0}, INT_MIN, INT_MAX, V210DEC_FLAGS},
     {NULL}
 };

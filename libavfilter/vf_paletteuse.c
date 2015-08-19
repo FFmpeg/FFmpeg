@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/bprint.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/qsort.h"
 #include "dualinput.h"
@@ -875,7 +876,7 @@ static AVFrame *apply_palette(AVFilterLink *inlink, AVFrame *in)
         return NULL;
     }
 
-    av_dlog(ctx, "%dx%d rect: (%d;%d) -> (%d,%d) [area:%dx%d]\n",
+    ff_dlog(ctx, "%dx%d rect: (%d;%d) -> (%d,%d) [area:%dx%d]\n",
             w, h, x, y, x+w, y+h, in->width, in->height);
 
     if (s->set_frame(s, out, in, x, y, w, h) < 0) {

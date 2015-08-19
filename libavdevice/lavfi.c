@@ -30,6 +30,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/file.h"
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -406,13 +407,13 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         ret = av_buffersink_get_frame_flags(lavfi->sinks[i], frame,
                                             AV_BUFFERSINK_FLAG_PEEK);
         if (ret == AVERROR_EOF) {
-            av_dlog(avctx, "EOF sink_idx:%d\n", i);
+            ff_dlog(avctx, "EOF sink_idx:%d\n", i);
             lavfi->sink_eof[i] = 1;
             continue;
         } else if (ret < 0)
             return ret;
         d = av_rescale_q_rnd(frame->pts, tb, AV_TIME_BASE_Q, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-        av_dlog(avctx, "sink_idx:%d time:%f\n", i, d);
+        ff_dlog(avctx, "sink_idx:%d time:%f\n", i, d);
         av_frame_unref(frame);
 
         if (d < min_pts) {
@@ -423,7 +424,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     if (min_pts == DBL_MAX)
         return AVERROR_EOF;
 
-    av_dlog(avctx, "min_pts_sink_idx:%i\n", min_pts_sink_idx);
+    ff_dlog(avctx, "min_pts_sink_idx:%i\n", min_pts_sink_idx);
 
     av_buffersink_get_frame_flags(lavfi->sinks[min_pts_sink_idx], frame, 0);
     stream_idx = lavfi->sink_stream_map[min_pts_sink_idx];

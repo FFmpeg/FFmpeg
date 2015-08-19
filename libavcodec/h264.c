@@ -1561,9 +1561,11 @@ again:
                     if (h->avctx->hwaccel &&
                         (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
                         goto end;
+#if FF_API_CAP_VDPAU
                     if (CONFIG_H264_VDPAU_DECODER &&
                         h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
                         ff_vdpau_h264_picture_start(h);
+#endif
                 }
 
                 if (sl->redundant_pic_count == 0) {
@@ -1573,6 +1575,7 @@ again:
                                                            consumed);
                         if (ret < 0)
                             goto end;
+#if FF_API_CAP_VDPAU
                     } else if (CONFIG_H264_VDPAU_DECODER &&
                                h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
                         ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
@@ -1581,6 +1584,7 @@ again:
                         ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
                                                 &buf[buf_index - consumed],
                                                 consumed);
+#endif
                     } else
                         context_count++;
                 }
@@ -1943,8 +1947,8 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(H264Context, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption h264_options[] = {
-    {"is_avc", "is avc", offsetof(H264Context, is_avc), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
-    {"nal_length_size", "nal_length_size", offsetof(H264Context, nal_length_size), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 4, 0},
+    {"is_avc", "is avc", offsetof(H264Context, is_avc), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
+    {"nal_length_size", "nal_length_size", offsetof(H264Context, nal_length_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, 0},
     { "enable_er", "Enable error resilience on damaged frames (unsafe)", OFFSET(enable_er), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VD },
     { NULL },
 };
@@ -1992,7 +1996,7 @@ AVCodec ff_h264_decoder = {
     .priv_class            = &h264_class,
 };
 
-#if CONFIG_H264_VDPAU_DECODER
+#if CONFIG_H264_VDPAU_DECODER && FF_API_VDPAU
 static const AVClass h264_vdpau_class = {
     .class_name = "H264 VDPAU Decoder",
     .item_name  = av_default_item_name,

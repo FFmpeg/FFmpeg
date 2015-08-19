@@ -21,6 +21,7 @@
 
 #include "libavutil/buffer.h"
 #include "libavutil/crc.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/dict.h"
@@ -2458,7 +2459,7 @@ static int mpegts_probe(AVProbeData *p)
     sumscore = sumscore * CHECK_COUNT / check_count;
     maxscore = maxscore * CHECK_COUNT / CHECK_BLOCK;
 
-    av_dlog(0, "TS score: %d %d\n", sumscore, maxscore);
+    ff_dlog(0, "TS score: %d %d\n", sumscore, maxscore);
 
     if      (sumscore > 6) return AVPROBE_SCORE_MAX   + sumscore - CHECK_COUNT;
     else if (maxscore > 6) return AVPROBE_SCORE_MAX/2 + sumscore - CHECK_COUNT;

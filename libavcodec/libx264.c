@@ -82,6 +82,7 @@ typedef struct X264Context {
     int nal_hrd;
     int avcintra_class;
     int motion_est;
+    int forced_idr;
     char *x264_params;
 } X264Context;
 
@@ -270,7 +271,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
         x4->pic.i_pts  = frame->pts;
         x4->pic.i_type =
-            frame->pict_type == AV_PICTURE_TYPE_I ? X264_TYPE_KEYFRAME :
+            frame->pict_type == AV_PICTURE_TYPE_I ?
+                                (x4->forced_idr >= 0 ? X264_TYPE_IDR : X264_TYPE_KEYFRAME) :
             frame->pict_type == AV_PICTURE_TYPE_P ? X264_TYPE_P :
             frame->pict_type == AV_PICTURE_TYPE_B ? X264_TYPE_B :
                                             X264_TYPE_AUTO;
@@ -875,6 +877,7 @@ static const AVOption options[] = {
     { "umh",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_UMH },  INT_MIN, INT_MAX, VE, "motion-est" },
     { "esa",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_ESA },  INT_MIN, INT_MAX, VE, "motion-est" },
     { "tesa",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_TESA }, INT_MIN, INT_MAX, VE, "motion-est" },
+    { "forced-idr",   "If forcing keyframes, force them as IDR frames.",                                  OFFSET(forced_idr),  AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 1, VE },
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
 };

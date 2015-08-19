@@ -80,9 +80,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AResampleContext *aresample = ctx->priv;
-    int out_rate                   = av_get_int(aresample->swr, "osr", NULL);
-    uint64_t out_layout            = av_get_int(aresample->swr, "ocl", NULL);
-    enum AVSampleFormat out_format = av_get_int(aresample->swr, "osf", NULL);
+    enum AVSampleFormat out_format;
+    int64_t out_rate, out_layout;
 
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
@@ -91,6 +90,9 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats        *in_samplerates, *out_samplerates;
     AVFilterChannelLayouts *in_layouts, *out_layouts;
 
+    av_opt_get_sample_fmt(aresample->swr, "osf", 0, &out_format);
+    av_opt_get_int(aresample->swr, "osr", 0, &out_rate);
+    av_opt_get_int(aresample->swr, "ocl", 0, &out_layout);
 
     in_formats      = ff_all_formats(AVMEDIA_TYPE_AUDIO);
     if (!in_formats)
@@ -144,8 +146,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     AResampleContext *aresample = ctx->priv;
-    int out_rate;
-    uint64_t out_layout;
+    int64_t out_rate, out_layout;
     enum AVSampleFormat out_format;
     char inchl_buf[128], outchl_buf[128];
 
@@ -164,9 +165,9 @@ static int config_output(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    out_rate   = av_get_int(aresample->swr, "osr", NULL);
-    out_layout = av_get_int(aresample->swr, "ocl", NULL);
-    out_format = av_get_int(aresample->swr, "osf", NULL);
+    av_opt_get_int(aresample->swr, "osr", 0, &out_rate);
+    av_opt_get_int(aresample->swr, "ocl", 0, &out_layout);
+    av_opt_get_sample_fmt(aresample->swr, "osf", 0, &out_format);
     outlink->time_base = (AVRational) {1, out_rate};
 
     av_assert0(outlink->sample_rate == out_rate);

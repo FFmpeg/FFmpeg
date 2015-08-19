@@ -22,6 +22,7 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "error_resilience.h"
 #include "idctdsp.h"
@@ -2320,9 +2321,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         pts = ROUNDED_DIV(s->time, s->avctx->framerate.den);
     else
         pts = AV_NOPTS_VALUE;
-    if (s->avctx->debug&FF_DEBUG_PTS)
-        av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %"PRId64"\n",
-               pts);
+    ff_dlog(s->avctx, "MPEG4 PTS: %"PRId64"\n", pts);
 
     check_marker(gb, "before vop_coded");
 
@@ -2757,8 +2756,8 @@ static const AVProfile mpeg4_video_profiles[] = {
 };
 
 static const AVOption mpeg4_options[] = {
-    {"quarter_sample", "1/4 subpel MC", offsetof(MpegEncContext, quarter_sample), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
-    {"divx_packed", "divx style packed b frames", offsetof(MpegEncContext, divx_packed), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
+    {"quarter_sample", "1/4 subpel MC", offsetof(MpegEncContext, quarter_sample), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
+    {"divx_packed", "divx style packed b frames", offsetof(MpegEncContext, divx_packed), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
     {NULL}
 };
 
@@ -2790,7 +2789,7 @@ AVCodec ff_mpeg4_decoder = {
 };
 
 
-#if CONFIG_MPEG4_VDPAU_DECODER
+#if CONFIG_MPEG4_VDPAU_DECODER && FF_API_VDPAU
 static const AVClass mpeg4_vdpau_class = {
     "MPEG4 Video VDPAU Decoder",
     av_default_item_name,

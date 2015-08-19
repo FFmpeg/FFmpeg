@@ -85,8 +85,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
 {
     const int dstH= c->dstH;
     const int flags= c->flags;
-#define NEW_FILTER 1
-#if NEW_FILTER
+#ifdef NEW_FILTER
     SwsPlane *lumPlane = &c->slice[c->numSlice-1].plane[0];
     SwsPlane *chrUPlane = &c->slice[c->numSlice-1].plane[1];
     SwsPlane *alpPlane = &c->slice[c->numSlice-1].plane[3];
@@ -94,10 +93,10 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
     int16_t **lumPixBuf= c->lumPixBuf;
     int16_t **chrUPixBuf= c->chrUPixBuf;
     int16_t **alpPixBuf= c->alpPixBuf;
-#endif
-    int hasAlpha = c->alpPixBuf != NULL;
     const int vLumBufSize= c->vLumBufSize;
     const int vChrBufSize= c->vChrBufSize;
+#endif
+    int hasAlpha = c->alpPixBuf != NULL;
     int32_t *vLumFilterPos= c->vLumFilterPos;
     int32_t *vChrFilterPos= c->vChrFilterPos;
     int16_t *vLumFilter= c->vLumFilter;
@@ -118,7 +117,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
         c->greenDither= ff_dither4[dstY&1];
     c->redDither= ff_dither8[(dstY+1)&1];
     if (dstY < dstH - 2) {
-#if NEW_FILTER
+#ifdef NEW_FILTER
         const int16_t **lumSrcPtr  = (const int16_t **)(void*) lumPlane->line + firstLumSrcY - lumPlane->sliceY;
         const int16_t **chrUSrcPtr = (const int16_t **)(void*) chrUPlane->line + firstChrSrcY - chrUPlane->sliceY;
         const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) ? (const int16_t **)(void*) alpPlane->line + firstLumSrcY - alpPlane->sliceY : NULL;
@@ -129,7 +128,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
 #endif
         int i;
         if (firstLumSrcY < 0 || firstLumSrcY + vLumFilterSize > c->srcH) {
-#if NEW_FILTER
+#ifdef NEW_FILTER
             const int16_t **tmpY = (const int16_t **) lumPlane->tmp;
 #else
             const int16_t **tmpY = (const int16_t **) lumPixBuf + 2 * vLumBufSize;
@@ -144,7 +143,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
             lumSrcPtr = tmpY;
 
             if (alpSrcPtr) {
-#if NEW_FILTER
+#ifdef NEW_FILTER
                 const int16_t **tmpA = (const int16_t **) alpPlane->tmp;
 #else
                 const int16_t **tmpA = (const int16_t **) alpPixBuf + 2 * vLumBufSize;
@@ -159,7 +158,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
             }
         }
         if (firstChrSrcY < 0 || firstChrSrcY + vChrFilterSize > c->chrSrcH) {
-#if NEW_FILTER
+#ifdef NEW_FILTER
             const int16_t **tmpU = (const int16_t **) chrUPlane->tmp;
 #else
             const int16_t **tmpU = (const int16_t **) chrUPixBuf + 2 * vChrBufSize;

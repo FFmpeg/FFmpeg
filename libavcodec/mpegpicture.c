@@ -58,7 +58,11 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
 
-    if (avctx->hwaccel || avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+    if (avctx->hwaccel
+#if FF_API_CAP_VDPAU
+        || avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU
+#endif
+        )
         return 0;
 
     if (linesize < 24) {

@@ -1243,8 +1243,10 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
+#if FF_API_CAP_VDPAU
         if (avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)
             break;
+#endif
 
         if (!setup_hwaccel(avctx, ret, desc->name))
             break;

@@ -590,8 +590,10 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
                          buflen);
         if (!strcmp(name, "AspectRatioX") || !strcmp(name, "AspectRatioY")) {
             ret = asf_store_aspect_ratio(s, st_num, name, type);
-            if (ret < 0)
-                return ret;
+            if (ret < 0) {
+                av_freep(&name);
+                break;
+            }
         } else {
             if (st_num < ASF_MAX_STREAMS) {
                 if ((ret = process_metadata(s, name, name_len, val_len, type,

@@ -612,8 +612,11 @@ static int h264_frame_start(H264Context *h)
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
-    if(!h->frame_recovered && !h->avctx->hwaccel &&
-       !(h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU))
+    if(!h->frame_recovered && !h->avctx->hwaccel
+#if FF_API_CAP_VDPAU
+       && !(h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+#endif
+       )
         avpriv_color_frame(pic->f, c);
 
     h->cur_pic_ptr = pic;
@@ -1048,6 +1051,7 @@ static int h264_slice_header_init(H264Context *h)
         goto fail;
     }
 
+#if FF_API_CAP_VDPAU
     if (h->avctx->codec &&
         h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU &&
         (h->sps.bit_depth_luma != 8 || h->sps.chroma_format_idc > 1)) {
@@ -1056,6 +1060,7 @@ static int h264_slice_header_init(H264Context *h)
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
+#endif
 
     if (h->sps.bit_depth_luma < 8 || h->sps.bit_depth_luma > 14 ||
         h->sps.bit_depth_luma == 11 || h->sps.bit_depth_luma == 13
@@ -2533,8 +2538,11 @@ int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
 
     h->slice_ctx[0].next_slice_idx = INT_MAX;
 
-    if (h->avctx->hwaccel ||
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+    if (h->avctx->hwaccel
+#if FF_API_CAP_VDPAU
+        || h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU
+#endif
+        )
         return 0;
     if (context_count == 1) {
         int ret;

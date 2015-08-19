@@ -43,12 +43,8 @@ void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx);
 void ff_blockdsp_init_alpha(BlockDSPContext *c, unsigned high_bit_depth);
 void ff_blockdsp_init_arm(BlockDSPContext *c, unsigned high_bit_depth);
 void ff_blockdsp_init_ppc(BlockDSPContext *c, unsigned high_bit_depth);
-#if FF_API_XVMC
 void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth,
                           AVCodecContext *avctx);
-#else
-void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth);
-#endif /* FF_API_XVMC */
 void ff_blockdsp_init_mips(BlockDSPContext *c, unsigned high_bit_depth);
 
 #endif /* AVCODEC_BLOCKDSP_H */
