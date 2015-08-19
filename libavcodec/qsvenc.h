@@ -61,6 +61,7 @@ typedef struct QSVEncContext {
     int preset;
     int avbr_accuracy;
     int avbr_convergence;
+    int pic_timing_sei;
 
     char *load_plugins;
 } QSVEncContext;

@@ -146,6 +146,9 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extco.CAVLC                = avctx->coder_type == FF_CODER_TYPE_VLC ?
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
 
+        q->extco.PicTimingSEI         = q->pic_timing_sei ?
+                                        MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
+
         q->extparam[0] = (mfxExtBuffer *)&q->extco;
 
         q->param.ExtParam    = q->extparam;
