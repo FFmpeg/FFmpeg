@@ -714,7 +714,7 @@ static int process_line(URLContext *h, char *line, int line_count,
         if (s->is_connected_server) {
             // HTTP method
             method = p;
-            while (!av_isspace(*p))
+            while (*p && !av_isspace(*p))
                 p++;
             *(p++) = '\0';
             av_log(h, AV_LOG_TRACE, "Received method: %s\n", method);
@@ -751,7 +751,7 @@ static int process_line(URLContext *h, char *line, int line_count,
             while (av_isspace(*p))
                 p++;
             version = p;
-            while (!av_isspace(*p))
+            while (*p && !av_isspace(*p))
                 p++;
             *p = '\0';
             if (av_strncasecmp(version, "HTTP/", 5)) {
