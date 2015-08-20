@@ -471,6 +471,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showcqt.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showfreqs.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showspectrum.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showvolume.c">

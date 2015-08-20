@@ -10,6 +10,7 @@ EXPORTS
     av_audio_fifo_alloc
     av_audio_fifo_drain
     av_audio_fifo_free
+    av_audio_fifo_peek
     av_audio_fifo_read
     av_audio_fifo_realloc
     av_audio_fifo_reset
@@ -107,6 +108,7 @@ EXPORTS
     av_fifo_drain
     av_fifo_free
     av_fifo_freep
+    av_fifo_generic_peek
     av_fifo_generic_read
     av_fifo_generic_write
     av_fifo_grow
