@@ -69,10 +69,10 @@ typedef struct AspectContext {
 
 static av_cold int init(AVFilterContext *ctx)
 {
+#if FF_API_OLD_FILTER_OPTS
     AspectContext *s = ctx->priv;
     int ret;
 
-#if FF_API_OLD_FILTER_OPTS
     if (s->ratio_expr && s->aspect_den > 0) {
         double num;
         av_log(ctx, AV_LOG_WARNING,

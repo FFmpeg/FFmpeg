@@ -976,8 +976,9 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
 
             if (ret < 0)
                 goto fail;
+        } else
 #endif
-        } else {
+        {
             ret = process_options(filter, &options, args);
             if (ret < 0)
                 goto fail;

@@ -54,6 +54,9 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
     mfxVideoParam param = { { 0 } };
     mfxBitstream bs   = { { { 0 } } };
     int ret;
+    enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_QSV,
+                                       AV_PIX_FMT_NV12,
+                                       AV_PIX_FMT_NONE };
 
     q->iopattern  = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
     if (!q->session) {
@@ -120,7 +123,11 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
         return ff_qsv_error(ret);
     }
 
-    avctx->pix_fmt      = AV_PIX_FMT_NV12;
+    ret = ff_get_format(avctx, pix_fmts);
+    if (ret < 0)
+        return ret;
+
+    avctx->pix_fmt      = ret;
     avctx->profile      = param.mfx.CodecProfile;
     avctx->level        = param.mfx.CodecLevel;
     avctx->coded_width  = param.mfx.FrameInfo.Width;

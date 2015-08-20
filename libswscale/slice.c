@@ -214,6 +214,7 @@ int ff_init_filters(SwsContext * c)
     int index;
     int num_ydesc;
     int num_cdesc;
+    int num_vdesc = isPlanarYUV(c->dstFormat) && !isGray(c->dstFormat) ? 2 : 1;
     int need_lum_conv = c->lumToYV12 || c->readLumPlanar || c->alpToYV12 || c->readAlpPlanar;
     int need_chr_conv = c->chrToYV12 || c->readChrPlanar;
     int srcIdx, dstIdx;
@@ -228,8 +229,8 @@ int ff_init_filters(SwsContext * c)
     num_ydesc = need_lum_conv ? 2 : 1;
     num_cdesc = need_chr_conv ? 2 : 1;
 
-    c->numSlice = FFMAX(num_ydesc, num_cdesc) + 1;
-    c->numDesc = num_ydesc + num_cdesc;
+    c->numSlice = FFMAX(num_ydesc, num_cdesc) + 2;
+    c->numDesc = num_ydesc + num_cdesc + num_vdesc;
     c->descIndex[0] = num_ydesc;
     c->descIndex[1] = num_ydesc + num_cdesc;
 
@@ -243,18 +244,24 @@ int ff_init_filters(SwsContext * c)
 
     res = alloc_slice(&c->slice[0], c->srcFormat, c->srcH, c->chrSrcH, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
     if (res < 0) goto cleanup;
-    for (i = 1; i < c->numSlice-1; ++i) {
+    for (i = 1; i < c->numSlice-2; ++i) {
         res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
         if (res < 0) goto cleanup;
         res = alloc_lines(&c->slice[i], FFALIGN(c->srcW*2+78, 16), c->srcW);
         if (res < 0) goto cleanup;
     }
+    // horizontal scaler output
     res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrDstHSubSample, c->chrDstVSubSample, 1);
     if (res < 0) goto cleanup;
     res = alloc_lines(&c->slice[i], dst_stride, c->dstW);
     if (res < 0) goto cleanup;
 
     fill_ones(&c->slice[i], dst_stride>>1, c->dstBpc == 16);
+
+    // vertical scaler output
+    ++i;
+    res = alloc_slice(&c->slice[i], c->dstFormat, c->dstH, c->chrDstH, c->chrDstHSubSample, c->chrDstVSubSample, 0);
+    if (res < 0) goto cleanup;
 
     index = 0;
     srcIdx = 0;
@@ -288,6 +295,13 @@ int ff_init_filters(SwsContext * c)
             ff_init_desc_chscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hChrFilter, c->hChrFilterPos, c->hChrFilterSize, c->chrXInc);
         else
             ff_init_desc_no_chr(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx]);
+    }
+
+    ++index;
+    {
+        srcIdx = c->numSlice - 2;
+        dstIdx = c->numSlice - 1;
+        ff_init_vscale(c, c->desc + index, c->slice + srcIdx, c->slice + dstIdx);
     }
 
     return 0;

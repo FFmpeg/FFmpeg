@@ -51,6 +51,18 @@ ffmpeg -f alsa -i hw:0 alsaout.wav
 For more information see:
 @url{http://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html}
 
+@subsection Options
+
+@table @option
+
+@item sample_rate
+Set the sample rate in Hz. Default is 48000.
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
+
 @section avfoundation
 
 AVFoundation input device.
@@ -114,6 +126,19 @@ und the first one in this list is used instead. Available pixel formats are:
  bgr48be, uyvy422, yuva444p, yuva444p16le, yuv444p, yuv422p16, yuv422p10, yuv444p10,
  yuv420p, nv12, yuyv422, gray}
 
+@item -framerate
+Set the grabbing frame rate. Default is @code{ntsc}, corresponding to a
+frame rate of @code{30000/1001}.
+
+@item -video_size
+Set the video frame size.
+
+@item -capture_cursor
+Capture the mouse pointer. Default is 0.
+
+@item -capture_mouse_clicks
+Capture the screen mouse clicks. Default is 0.
+
 @end table
 
 @subsection Examples
@@ -149,6 +174,36 @@ $ ffmpeg -f avfoundation -pixel_format bgr0 -i "default:none" out.avi
 @section bktr
 
 BSD video input device.
+
+@subsection Options
+
+@table @option
+
+@item framerate
+Set the frame rate.
+
+@item video_size
+Set the video frame size. Default is @code{vga}.
+
+@item standard
+
+Available values are:
+@table @samp
+@item pal
+
+@item ntsc
+
+@item secam
+
+@item paln
+
+@item palm
+
+@item ntscj
+
+@end table
+
+@end table
 
 @section decklink
 
@@ -275,11 +330,11 @@ If set to @option{true}, print a list of selected device's options
 and exit.
 
 @item video_device_number
-Set video device number for devices with same name (starts at 0,
+Set video device number for devices with the same name (starts at 0,
 defaults to 0).
 
 @item audio_device_number
-Set audio device number for devices with same name (starts at 0,
+Set audio device number for devices with the same name (starts at 0,
 defaults to 0).
 
 @item pixel_format
@@ -429,6 +484,27 @@ $ ffmpeg -f dshow -show_video_device_dialog true -crossbar_video_input_pin_numbe
 
 Linux DV 1394 input device.
 
+@subsection Options
+
+@table @option
+
+@item framerate
+Set the frame rate. Default is 25.
+
+@item standard
+
+Available values are:
+@table @samp
+@item pal
+
+@item ntsc
+
+@end table
+
+Default value is @code{ntsc}.
+
+@end table
+
 @section fbdev
 
 Linux framebuffer input device.
@@ -441,6 +517,8 @@ console. It is accessed through a file device node, usually
 For more detailed information read the file
 Documentation/fb/framebuffer.txt included in the Linux source tree.
 
+See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+
 To record from the framebuffer device @file{/dev/fb0} with
 @command{ffmpeg}:
 @example
@@ -452,7 +530,14 @@ You can take a single screenshot image with the command:
 ffmpeg -f fbdev -framerate 1 -i /dev/fb0 -frames:v 1 screenshot.jpeg
 @end example
 
-See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+@subsection Options
+
+@table @option
+
+@item framerate
+Set the frame rate. Default is 25.
+
+@end table
 
 @section gdigrab
 
@@ -638,6 +723,15 @@ $ jack_connect metro:120_bpm ffmpeg:input_1
 For more information read:
 @url{http://jackaudio.org/}
 
+@subsection Options
+
+@table @option
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
+
 @section lavfi
 
 Libavfilter input virtual device.
@@ -677,6 +771,9 @@ device.
 Set the filename of the filtergraph to be read and sent to the other
 filters. Syntax of the filtergraph is the same as the one specified by
 the option @var{graph}.
+
+@item dumpgraph
+Dump graph to stderr.
 
 @end table
 
@@ -879,6 +976,19 @@ ffmpeg -f oss -i /dev/dsp /tmp/oss.wav
 For more information about OSS see:
 @url{http://manuals.opensound.com/usersguide/dsp.html}
 
+@subsection Options
+
+@table @option
+
+@item sample_rate
+Set the sample rate in Hz. Default is 48000.
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
+
+
 @section pulse
 
 PulseAudio input device.
@@ -919,6 +1029,10 @@ Specify the number of bytes per frame, by default it is set to 1024.
 @item fragment_size
 Specify the minimal buffering fragment in PulseAudio, it will affect the
 audio latency. By default it is unset.
+
+@item wallclock
+Set the initial PTS using the current time. Default is 1.
+
 @end table
 
 @subsection Examples
@@ -954,6 +1068,22 @@ ffmpeg -f qtkit -i "default" out.mpg
 ffmpeg -f qtkit -list_devices true -i ""
 @end example
 
+@subsection Options
+
+@table @option
+
+@item frame_rate
+Set frame rate. Default is 30.
+
+@item list_devices
+If set to @code{true}, print a list of devices and exit. Default is
+@code{false}.
+
+@item video_device_index
+Select the video device by index for devices with the same name (starts at 0).
+
+@end table
+
 @section sndio
 
 sndio input device.
@@ -970,6 +1100,18 @@ command:
 @example
 ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
 @end example
+
+@subsection Options
+
+@table @option
+
+@item sample_rate
+Set the sample rate in Hz. Default is 48000.
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
 
 @section video4linux2, v4l2
 
@@ -1093,6 +1235,10 @@ Force conversion from monotonic to absolute timestamps.
 @end table
 
 Default value is @code{default}.
+
+@item use_libv4l2
+Use libv4l2 (v4l-utils) conversion functions. Default is 0.
+
 @end table
 
 @section vfwcap
@@ -1102,6 +1248,19 @@ VfW (Video for Windows) capture input device.
 The filename passed as input is the capture driver number, ranging from
 0 to 9. You may use "list" as filename to print a list of drivers. Any
 other filename will be interpreted as device number 0.
+
+@subsection Options
+
+@table @option
+
+@item video_size
+Set the video frame size.
+
+@item framerate
+Set the grabbing frame rate. Default value is @code{ntsc},
+corresponding to a frame rate of @code{30000/1001}.
+
+@end table
 
 @section x11grab
 

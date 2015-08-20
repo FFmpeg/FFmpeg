@@ -45,7 +45,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
 {
     Mpeg4DecContext *ctx = avctx->priv_data;
     MpegEncContext * const s = &ctx->m;
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     VAPictureParameterBufferMPEG4 *pic_param;
     VAIQMatrixBufferMPEG4 *iq_matrix;
     int i;
@@ -121,12 +121,13 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
 static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext * const s = avctx->priv_data;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     VASliceParameterBufferMPEG4 *slice_param;
 
     ff_dlog(avctx, "vaapi_mpeg4_decode_slice(): buffer %p, size %d\n", buffer, size);
 
     /* Fill in VASliceParameterBufferMPEG4 */
-    slice_param = (VASliceParameterBufferMPEG4 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);
+    slice_param = (VASliceParameterBufferMPEG4 *)ff_vaapi_alloc_slice(vactx, buffer, size);
     if (!slice_param)
         return -1;
     slice_param->macroblock_offset      = get_bits_count(&s->gb) % 8;
@@ -141,10 +142,13 @@ AVHWAccel ff_mpeg4_vaapi_hwaccel = {
     .name           = "mpeg4_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,
-    .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
+    .pix_fmt        = AV_PIX_FMT_VAAPI,
     .start_frame    = vaapi_mpeg4_start_frame,
     .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_mpeg4_decode_slice,
+    .init           = ff_vaapi_context_init,
+    .uninit         = ff_vaapi_context_fini,
+    .priv_data_size = sizeof(FFVAContext),
 };
 #endif
 
@@ -153,9 +157,12 @@ AVHWAccel ff_h263_vaapi_hwaccel = {
     .name           = "h263_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H263,
-    .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
+    .pix_fmt        = AV_PIX_FMT_VAAPI,
     .start_frame    = vaapi_mpeg4_start_frame,
     .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_mpeg4_decode_slice,
+    .init           = ff_vaapi_context_init,
+    .uninit         = ff_vaapi_context_fini,
+    .priv_data_size = sizeof(FFVAContext),
 };
 #endif

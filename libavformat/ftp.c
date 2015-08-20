@@ -1038,6 +1038,65 @@ static int ftp_close_dir(URLContext *h)
     return 0;
 }
 
+static int ftp_delete(URLContext *h)
+{
+    FTPContext *s = h->priv_data;
+    char command[MAX_URL_SIZE];
+    static const int del_codes[] = {250, 421, 450, 500, 501, 502, 530, 550, 0};
+    static const int rmd_codes[] = {250, 421, 500, 501, 502, 530, 550, 0};
+    int ret;
+
+    if ((ret = ftp_connect(h, h->filename)) < 0)
+        goto cleanup;
+
+    snprintf(command, sizeof(command), "DELE %s\r\n", s->path);
+    if (ftp_send_command(s, command, del_codes, NULL) == 250) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    snprintf(command, sizeof(command), "RMD %s\r\n", s->path);
+    if (ftp_send_command(s, command, rmd_codes, NULL) == 250)
+        ret = 0;
+    else
+        ret = AVERROR(EIO);
+
+cleanup:
+    ftp_close(h);
+    return ret;
+}
+
+static int ftp_move(URLContext *h_src, URLContext *h_dst)
+{
+    FTPContext *s = h_src->priv_data;
+    char command[MAX_URL_SIZE], path[MAX_URL_SIZE];
+    static const int rnfr_codes[] = {350, 421, 450, 500, 501, 502, 503, 530, 0};
+    static const int rnto_codes[] = {250, 421, 500, 501, 502, 503, 530, 532, 553, 0};
+    int ret;
+
+    if ((ret = ftp_connect(h_src, h_src->filename)) < 0)
+        goto cleanup;
+
+    snprintf(command, sizeof(command), "RNFR %s\r\n", s->path);
+    if (ftp_send_command(s, command, rnfr_codes, NULL) != 350) {
+        ret = AVERROR(EIO);
+        goto cleanup;
+    }
+
+    av_url_split(0, 0, 0, 0, 0, 0, 0,
+                 path, sizeof(path),
+                 h_dst->filename);
+    snprintf(command, sizeof(command), "RNTO %s\r\n", path);
+    if (ftp_send_command(s, command, rnto_codes, NULL) == 250)
+        ret = 0;
+    else
+        ret = AVERROR(EIO);
+
+cleanup:
+    ftp_close(h_src);
+    return ret;
+}
+
 URLProtocol ff_ftp_protocol = {
     .name                = "ftp",
     .url_open            = ftp_open,
@@ -1052,5 +1111,7 @@ URLProtocol ff_ftp_protocol = {
     .url_open_dir        = ftp_open_dir,
     .url_read_dir        = ftp_read_dir,
     .url_close_dir       = ftp_close_dir,
+    .url_delete          = ftp_delete,
+    .url_move            = ftp_move,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };

@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "h264.h"
+#include "libavutil/log.h"
 #include "vaapi_internal.h"
 
 /**
@@ -34,30 +34,56 @@ static void destroy_buffers(VADisplay display, VABufferID *buffers, unsigned int
 {
     unsigned int i;
     for (i = 0; i < n_buffers; i++) {
-        if (buffers[i]) {
+        if (buffers[i] != VA_INVALID_ID) {
             vaDestroyBuffer(display, buffers[i]);
-            buffers[i] = 0;
+            buffers[i] = VA_INVALID_ID;
         }
     }
 }
 
-int ff_vaapi_render_picture(struct vaapi_context *vactx, VASurfaceID surface)
+int ff_vaapi_context_init(AVCodecContext *avctx)
+{
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
+    const struct vaapi_context * const user_vactx = avctx->hwaccel_context;
+
+    if (!user_vactx) {
+        av_log(avctx, AV_LOG_ERROR, "Hardware acceleration context (hwaccel_context) does not exist.\n");
+        return AVERROR(ENOSYS);
+    }
+
+    vactx->display              = user_vactx->display;
+    vactx->config_id            = user_vactx->config_id;
+    vactx->context_id           = user_vactx->context_id;
+
+    vactx->pic_param_buf_id     = VA_INVALID_ID;
+    vactx->iq_matrix_buf_id     = VA_INVALID_ID;
+    vactx->bitplane_buf_id      = VA_INVALID_ID;
+
+    return 0;
+}
+
+int ff_vaapi_context_fini(AVCodecContext *avctx)
+{
+    return 0;
+}
+
+int ff_vaapi_render_picture(FFVAContext *vactx, VASurfaceID surface)
 {
     VABufferID va_buffers[3];
     unsigned int n_va_buffers = 0;
 
-    if (!vactx->pic_param_buf_id)
+    if (vactx->pic_param_buf_id == VA_INVALID_ID)
         return 0;
 
     vaUnmapBuffer(vactx->display, vactx->pic_param_buf_id);
     va_buffers[n_va_buffers++] = vactx->pic_param_buf_id;
 
-    if (vactx->iq_matrix_buf_id) {
+    if (vactx->iq_matrix_buf_id != VA_INVALID_ID) {
         vaUnmapBuffer(vactx->display, vactx->iq_matrix_buf_id);
         va_buffers[n_va_buffers++] = vactx->iq_matrix_buf_id;
     }
 
-    if (vactx->bitplane_buf_id) {
+    if (vactx->bitplane_buf_id != VA_INVALID_ID) {
         vaUnmapBuffer(vactx->display, vactx->bitplane_buf_id);
         va_buffers[n_va_buffers++] = vactx->bitplane_buf_id;
     }
@@ -81,7 +107,7 @@ int ff_vaapi_render_picture(struct vaapi_context *vactx, VASurfaceID surface)
     return 0;
 }
 
-int ff_vaapi_commit_slices(struct vaapi_context *vactx)
+int ff_vaapi_commit_slices(FFVAContext *vactx)
 {
     VABufferID *slice_buf_ids;
     VABufferID slice_param_buf_id, slice_data_buf_id;
@@ -97,7 +123,7 @@ int ff_vaapi_commit_slices(struct vaapi_context *vactx)
         return -1;
     vactx->slice_buf_ids = slice_buf_ids;
 
-    slice_param_buf_id = 0;
+    slice_param_buf_id = VA_INVALID_ID;
     if (vaCreateBuffer(vactx->display, vactx->context_id,
                        VASliceParameterBufferType,
                        vactx->slice_param_size,
@@ -106,7 +132,7 @@ int ff_vaapi_commit_slices(struct vaapi_context *vactx)
         return -1;
     vactx->slice_count = 0;
 
-    slice_data_buf_id = 0;
+    slice_data_buf_id = VA_INVALID_ID;
     if (vaCreateBuffer(vactx->display, vactx->context_id,
                        VASliceDataBufferType,
                        vactx->slice_data_size,
@@ -121,11 +147,11 @@ int ff_vaapi_commit_slices(struct vaapi_context *vactx)
     return 0;
 }
 
-static void *alloc_buffer(struct vaapi_context *vactx, int type, unsigned int size, uint32_t *buf_id)
+static void *alloc_buffer(FFVAContext *vactx, int type, unsigned int size, uint32_t *buf_id)
 {
     void *data = NULL;
 
-    *buf_id = 0;
+    *buf_id = VA_INVALID_ID;
     if (vaCreateBuffer(vactx->display, vactx->context_id,
                        type, size, 1, NULL, buf_id) == VA_STATUS_SUCCESS)
         vaMapBuffer(vactx->display, *buf_id, &data);
@@ -133,22 +159,22 @@ static void *alloc_buffer(struct vaapi_context *vactx, int type, unsigned int si
     return data;
 }
 
-void *ff_vaapi_alloc_pic_param(struct vaapi_context *vactx, unsigned int size)
+void *ff_vaapi_alloc_pic_param(FFVAContext *vactx, unsigned int size)
 {
     return alloc_buffer(vactx, VAPictureParameterBufferType, size, &vactx->pic_param_buf_id);
 }
 
-void *ff_vaapi_alloc_iq_matrix(struct vaapi_context *vactx, unsigned int size)
+void *ff_vaapi_alloc_iq_matrix(FFVAContext *vactx, unsigned int size)
 {
     return alloc_buffer(vactx, VAIQMatrixBufferType, size, &vactx->iq_matrix_buf_id);
 }
 
-uint8_t *ff_vaapi_alloc_bitplane(struct vaapi_context *vactx, uint32_t size)
+uint8_t *ff_vaapi_alloc_bitplane(FFVAContext *vactx, uint32_t size)
 {
     return alloc_buffer(vactx, VABitPlaneBufferType, size, &vactx->bitplane_buf_id);
 }
 
-VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, const uint8_t *buffer, uint32_t size)
+VASliceParameterBufferBase *ff_vaapi_alloc_slice(FFVAContext *vactx, const uint8_t *buffer, uint32_t size)
 {
     uint8_t *slice_params;
     VASliceParameterBufferBase *slice_param;
@@ -181,7 +207,7 @@ VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, co
 
 void ff_vaapi_common_end_frame(AVCodecContext *avctx)
 {
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
 
     ff_dlog(avctx, "ff_vaapi_common_end_frame()\n");
 
@@ -202,7 +228,7 @@ void ff_vaapi_common_end_frame(AVCodecContext *avctx)
     CONFIG_VC1_VAAPI_HWACCEL   || CONFIG_WMV3_VAAPI_HWACCEL
 int ff_vaapi_mpeg_end_frame(AVCodecContext *avctx)
 {
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     MpegEncContext *s = avctx->priv_data;
     int ret;
 

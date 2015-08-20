@@ -1115,7 +1115,7 @@ static const enum AVPixelFormat vc1_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_D3D11VA_VLD,
 #endif
 #if CONFIG_VC1_VAAPI_HWACCEL
-    AV_PIX_FMT_VAAPI_VLD,
+    AV_PIX_FMT_VAAPI,
 #endif
 #if CONFIG_VC1_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,

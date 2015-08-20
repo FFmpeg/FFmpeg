@@ -1043,6 +1043,8 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
     if (interleave) ret = av_interleaved_write_frame(dst, &local_pkt);
     else            ret = av_write_frame(dst, &local_pkt);
     pkt->buf = local_pkt.buf;
+    pkt->side_data       = local_pkt.side_data;
+    pkt->side_data_elems = local_pkt.side_data_elems;
     pkt->destruct = local_pkt.destruct;
     return ret;
 }

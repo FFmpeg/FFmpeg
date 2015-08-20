@@ -56,7 +56,7 @@
  */
 
 #define LIBAVUTIL_VERSION_MAJOR  54
-#define LIBAVUTIL_VERSION_MINOR  30
+#define LIBAVUTIL_VERSION_MINOR  31
 #define LIBAVUTIL_VERSION_MICRO 100
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
@@ -76,6 +76,10 @@
  * FF_API_* defines may be placed below to indicate public API that will be
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
+ *
+ * @note, when bumping the major version it is recommandeded to manually
+ * disable each FF_API_* in its own commit instead of disabling them all
+ * at once through the bump. This improves the git bissect-ability of the change.
  *
  * @{
  */
@@ -127,6 +131,9 @@
 #endif
 #ifndef FF_API_CRYPTO_CONTEXT
 #define FF_API_CRYPTO_CONTEXT           (LIBAVUTIL_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_VAAPI
+#define FF_API_VAAPI                    (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 
 #ifndef FF_CONST_AVUTIL55

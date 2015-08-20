@@ -40,7 +40,7 @@ static inline int mpeg2_get_is_frame_start(MpegEncContext *s)
 static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
 {
     struct MpegEncContext * const s = avctx->priv_data;
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     VAPictureParameterBufferMPEG2 *pic_param;
     VAIQMatrixBufferMPEG2 *iq_matrix;
     int i;
@@ -103,6 +103,7 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
 static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext * const s = avctx->priv_data;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     VASliceParameterBufferMPEG2 *slice_param;
     GetBitContext gb;
     uint32_t quantiser_scale_code, intra_slice_flag, macroblock_offset;
@@ -123,7 +124,7 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     macroblock_offset = get_bits_count(&gb);
 
     /* Fill in VASliceParameterBufferMPEG2 */
-    slice_param = (VASliceParameterBufferMPEG2 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);
+    slice_param = (VASliceParameterBufferMPEG2 *)ff_vaapi_alloc_slice(vactx, buffer, size);
     if (!slice_param)
         return -1;
     slice_param->macroblock_offset              = macroblock_offset;
@@ -138,8 +139,11 @@ AVHWAccel ff_mpeg2_vaapi_hwaccel = {
     .name           = "mpeg2_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
+    .pix_fmt        = AV_PIX_FMT_VAAPI,
     .start_frame    = vaapi_mpeg2_start_frame,
     .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_mpeg2_decode_slice,
+    .init           = ff_vaapi_context_init,
+    .uninit         = ff_vaapi_context_fini,
+    .priv_data_size = sizeof(FFVAContext),
 };

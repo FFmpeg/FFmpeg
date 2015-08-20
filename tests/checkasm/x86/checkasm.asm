@@ -82,7 +82,7 @@ cglobal stack_clobber, 1,2
 %endif
 
 ;-----------------------------------------------------------------------------
-; intptr_t checkasm_checked_call(intptr_t (*func)(), ...)
+; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
 INIT_XMM
 cglobal checked_call, 2,15,16,max_args*8+8
@@ -145,10 +145,15 @@ cglobal checked_call, 2,15,16,max_args*8+8
     or  r14, r5
 %endif
 
+    ; Call fail_func() with a descriptive message to mark it as a failure
+    ; if the called function didn't preserve all callee-saved registers.
+    ; Save the return value located in rdx:rax first to prevent clobbering.
     jz .ok
     mov  r9, rax
+    mov r10, rdx
     lea  r0, [error_message]
     call fail_func
+    mov rdx, r10
     mov rax, r9
 .ok:
     RET
@@ -162,7 +167,7 @@ cglobal checked_call, 2,15,16,max_args*8+8
 %define n6 dword 0x33627ba7
 
 ;-----------------------------------------------------------------------------
-; intptr_t checkasm_checked_call(intptr_t (*func)(), ...)
+; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
 cglobal checked_call, 1,7
     mov  r3, n3
@@ -182,9 +187,11 @@ cglobal checked_call, 1,7
     or   r3, r5
     jz .ok
     mov  r3, eax
+    mov  r4, edx
     lea  r0, [error_message]
     mov [esp], r0
     call fail_func
+    mov  edx, r4
     mov  eax, r3
 .ok:
     add  esp, max_args*4
