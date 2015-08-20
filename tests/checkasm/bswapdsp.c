@@ -43,6 +43,8 @@
 #define check_bswap(type)                                                                  \
     do {                                                                                   \
         int w;                                                                             \
+        declare_func(void, type *dst, const type *src, int w);                             \
+                                                                                           \
         for (w = 0; w < BUF_SIZE / sizeof(type); w++) {                                    \
             int offset = (BUF_SIZE / sizeof(type) - w) & 15; /* Test various alignments */ \
             randomize_buffers();                                                           \
