@@ -164,6 +164,16 @@ typedef struct ChannelMap {
 
 typedef struct OpusContext {
     OpusStreamContext *streams;
+
+    /* current output buffers for each streams */
+    float **out;
+    int   *out_size;
+    /* Buffers for synchronizing the streams when they have different
+     * resampling delays */
+    AVAudioFifo **sync_buffers;
+    /* number of decoded samples for each stream */
+    int         *decoded_samples;
+
     int             nb_streams;
     int      nb_stereo_streams;
 
