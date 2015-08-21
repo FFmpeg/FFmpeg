@@ -789,7 +789,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     } else if (avctx->profile == FF_PROFILE_AAC_LOW && s->options.pred) {
         s->profile = 0; /* Main */
         WARN_IF(1, "Prediction requested, changing profile to AAC-Main\n");
-    } else if (avctx->profile == FF_PROFILE_AAC_LOW) {
+    } else if (avctx->profile == FF_PROFILE_AAC_LOW ||
+        avctx->profile == FF_PROFILE_UNKNOWN) {
         s->profile = 1; /* Low */
     } else {
         ERROR_IF(1, "Unsupported profile %d\n", avctx->profile);
