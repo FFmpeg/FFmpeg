@@ -355,11 +355,14 @@ static void encode_spectral_coeffs(AACEncContext *s, SingleChannelElement *sce)
                 continue;
             }
             for (w2 = w; w2 < w + sce->ics.group_len[w]; w2++)
-                s->coder->quantize_and_encode_band(s, &s->pb, sce->coeffs + start + w2*128,
+                s->coder->quantize_and_encode_band(s, &s->pb,
+                                                   &sce->coeffs[start + w2*128],
+                                                   &sce->pqcoeffs[start + w2*128],
                                                    sce->ics.swb_sizes[i],
                                                    sce->sf_idx[w*16 + i],
                                                    sce->band_type[w*16 + i],
-                                                   s->lambda, sce->ics.window_clipping[w]);
+                                                   s->lambda,
+                                                   sce->ics.window_clipping[w]);
             start += sce->ics.swb_sizes[i];
         }
     }

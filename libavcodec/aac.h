@@ -254,6 +254,7 @@ typedef struct SingleChannelElement {
     DECLARE_ALIGNED(32, INTFLOAT, saved)[1536];     ///< overlap
     DECLARE_ALIGNED(32, INTFLOAT, ret_buf)[2048];   ///< PCM output buffer
     DECLARE_ALIGNED(16, INTFLOAT, ltp_state)[3072]; ///< time signal for LTP
+    DECLARE_ALIGNED(32, AAC_FLOAT, pqcoeffs)[1024]; ///< quantization error of coefs (used by encoder)
     PredictorState predictor_state[MAX_PREDICTORS];
     INTFLOAT *ret;                                  ///< PCM output
 } SingleChannelElement;

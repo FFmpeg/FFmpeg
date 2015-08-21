@@ -55,7 +55,7 @@ typedef struct AACCoefficientsEncoder {
                                   SingleChannelElement *sce, const float lambda);
     void (*encode_window_bands_info)(struct AACEncContext *s, SingleChannelElement *sce,
                                      int win, int group_len, const float lambda);
-    void (*quantize_and_encode_band)(struct AACEncContext *s, PutBitContext *pb, const float *in, int size,
+    void (*quantize_and_encode_band)(struct AACEncContext *s, PutBitContext *pb, const float *in, float *out, int size,
                                      int scale_idx, int cb, const float lambda, int rtz);
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
