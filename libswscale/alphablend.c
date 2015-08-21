@@ -56,9 +56,9 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                     unsigned u;
                     if (sixteen_bits) {
                         ptrdiff_t alpha_step = srcStride[plane_count] >> 1;
-                        const uint16_t *s = src[plane      ] + srcStride[plane] * y;
-                        const uint16_t *a = src[plane_count] + (srcStride[plane_count] * y << y_subsample);
-                              uint16_t *d = dst[plane      ] + dstStride[plane] * y;
+                        const uint16_t *s = (const uint16_t *)(src[plane      ] +  srcStride[plane      ] * y);
+                        const uint16_t *a = (const uint16_t *)(src[plane_count] + (srcStride[plane_count] * y << y_subsample));
+                              uint16_t *d = (      uint16_t *)(dst[plane      ] +  dstStride[plane      ] * y);
                         if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
                             for (x = 0; x < w; x++) {
                                 if (y_subsample) {
@@ -97,9 +97,9 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                     }
                 } else {
                 if (sixteen_bits) {
-                    const uint16_t *s = src[plane      ] + srcStride[plane] * y;
-                    const uint16_t *a = src[plane_count] + srcStride[plane_count] * y;
-                          uint16_t *d = dst[plane      ] + dstStride[plane] * y;
+                    const uint16_t *s = (const uint16_t *)(src[plane      ] + srcStride[plane      ] * y);
+                    const uint16_t *a = (const uint16_t *)(src[plane_count] + srcStride[plane_count] * y);
+                          uint16_t *d = (      uint16_t *)(dst[plane      ] + dstStride[plane      ] * y);
                     if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
                         for (x = 0; x < w; x++) {
                             unsigned u = s[x]*a[x] + target_table[((x^y)>>5)&1][plane]*(max-a[x]) + off;
@@ -129,9 +129,9 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
         int w = c->srcW;
         for (y = srcSliceY; y < srcSliceH; y++) {
             if (sixteen_bits) {
-                const uint16_t *s = src[0] + srcStride[0] * y + 2*!alpha_pos;
-                const uint16_t *a = src[0] + srcStride[0] * y + alpha_pos;
-                        uint16_t *d = dst[0] + dstStride[0] * y;
+                const uint16_t *s = (const uint16_t *)(src[0] + srcStride[0] * y + 2*!alpha_pos);
+                const uint16_t *a = (const uint16_t *)(src[0] + srcStride[0] * y +    alpha_pos);
+                      uint16_t *d = (const uint16_t *)(dst[0] + dstStride[0] * y);
                 if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
                     for (x = 0; x < w; x++) {
                         for (plane = 0; plane < plane_count; plane++) {
