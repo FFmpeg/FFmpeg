@@ -49,12 +49,16 @@ static inline void conv_to_float(float *arr, int32_t *cof, int num)
 /* Input: quantized 4 bit coef, output: 1 if first (MSB) 2 bits are the same */
 static inline int coef_test_compression(int coef)
 {
-    int res = 0;
-    /*coef = coef >> 3;
-    res += ffs(coef);
-    coef = coef >> 1;
-    res += ffs(coef);*/
-    return 0;
+    int tmp = coef >> 2;
+    int res = ff_ctz(tmp);
+    if (res > 1)
+        return 1;       /* ...00 ->  compressable    */
+    else if (res == 1)
+        return 0;       /* ...10 ->  uncompressable  */
+    else if (ff_ctz(tmp >> 1) > 0)
+        return 0;       /* ...0 1 -> uncompressable  */
+    else
+        return 1;       /* ...1 1 -> compressable    */
 }
 
 static inline int compress_coef(int *coefs, int num)
@@ -62,7 +66,7 @@ static inline int compress_coef(int *coefs, int num)
     int i, res = 0;
     for (i = 0; i < num; i++)
         res += coef_test_compression(coefs[i]);
-    return 0;
+    return res == num ? 1 : 0;
 }
 
 /**
