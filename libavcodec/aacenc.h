@@ -45,6 +45,7 @@ typedef struct AACEncOptions {
     int stereo_mode;
     int aac_coder;
     int pns;
+    int pred;
     int intensity_stereo;
 } AACEncOptions;
 
@@ -77,6 +78,7 @@ typedef struct AACEncContext {
     AVFloatDSPContext *fdsp;
     float *planar_samples[6];                    ///< saved preprocessed input
 
+    int profile;                                 ///< copied from avctx
     LPCContext lpc;                              ///< used by TNS
     int samplerate_index;                        ///< MPEG-4 samplerate index
     int channels;                                ///< channel count

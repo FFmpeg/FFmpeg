@@ -57,7 +57,7 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     AACEncContext *s = avctx->priv_data;
 
     init_put_bits(&pb, avctx->extradata, avctx->extradata_size);
-    put_bits(&pb, 5, 2); //object type - AAC-LC
+    put_bits(&pb, 5, s->profile+1); //profile
     put_bits(&pb, 4, s->samplerate_index); //sample rate index
     put_bits(&pb, 4, s->channels);
     //GASpecificConfig
@@ -748,10 +748,18 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
              "Unsupported sample rate %d\n", avctx->sample_rate);
     ERROR_IF(s->channels > AAC_MAX_CHANNELS,
              "Unsupported number of channels: %d\n", s->channels);
-    ERROR_IF(avctx->profile != FF_PROFILE_UNKNOWN && avctx->profile != FF_PROFILE_AAC_LOW,
-             "Unsupported profile %d\n", avctx->profile);
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
              "Too many bits per frame requested, clamping to max\n");
+    if (avctx->profile == FF_PROFILE_AAC_MAIN) {
+        s->options.pred = 1;
+    } else if (avctx->profile == FF_PROFILE_AAC_LOW && s->options.pred) {
+        s->profile = 0; /* Main */
+        WARN_IF(1, "Prediction requested, changing profile to AAC-Main\n");
+    } else if (avctx->profile == FF_PROFILE_AAC_LOW) {
+        s->profile = 1; /* Low */
+    } else {
+        ERROR_IF(1, "Unsupported profile %d\n", avctx->profile);
+    }
 
     avctx->bit_rate = (int)FFMIN(
         6144 * s->channels / 1024.0 * avctx->sample_rate,
