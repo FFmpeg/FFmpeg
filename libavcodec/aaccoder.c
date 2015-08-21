@@ -330,8 +330,8 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
                 }
                 for (w = 0; w < group_len; w++) {
                     FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(win+w)*16+swb];
-                    rd += quantize_band_cost(s, sce->coeffs + start + w*128,
-                                             s->scoefs + start + w*128, size,
+                    rd += quantize_band_cost(s, &sce->coeffs[start + w*128],
+                                             &s->scoefs[start + w*128], size,
                                              sce->sf_idx[(win+w)*16+swb], aac_cb_out_map[cb],
                                              lambda / band->threshold, INFINITY, NULL, 0);
                 }
@@ -461,8 +461,8 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
                     continue;
                 }
                 for (w = 0; w < group_len; w++) {
-                    bits += quantize_band_cost(s, sce->coeffs + start + w*128,
-                                               s->scoefs + start + w*128, size,
+                    bits += quantize_band_cost(s, &sce->coeffs[start + w*128],
+                                               &s->scoefs[start + w*128], size,
                                                sce->sf_idx[win*16+swb],
                                                aac_cb_out_map[cb],
                                                0, INFINITY, NULL, 0);
@@ -636,7 +636,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = w*128;
         for (g = 0; g < sce->ics.num_swb; g++) {
-            const float *coefs = sce->coeffs + start;
+            const float *coefs = &sce->coeffs[start];
             float qmin, qmax;
             int nz = 0;
 
@@ -800,8 +800,8 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
                 start = w*128;
                 for (g = 0;  g < sce->ics.num_swb; g++) {
-                    const float *coefs = sce->coeffs + start;
-                    const float *scaled = s->scoefs + start;
+                    const float *coefs = &sce->coeffs[start];
+                    const float *scaled = &s->scoefs[start];
                     int bits = 0;
                     int cb;
                     float dist = 0.0f;
@@ -896,7 +896,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
         }
     } else {
         for (w = 0; w < 8; w++) {
-            const float *coeffs = sce->coeffs + w*128;
+            const float *coeffs = &sce->coeffs[w*128];
             curband = start = 0;
             for (i = 0; i < 128; i++) {
                 if (i - start >= sce->ics.swb_sizes[curband]) {
@@ -921,7 +921,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = w*128;
         for (g = 0; g < sce->ics.num_swb; g++) {
-            float *coefs   = sce->coeffs + start;
+            float *coefs   = &sce->coeffs[start];
             const int size = sce->ics.swb_sizes[g];
             int start2 = start, end2 = start + size, peakpos = start;
             float maxval = -1, thr = 0.0f, t;
@@ -962,8 +962,8 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = w*128;
         for (g = 0;  g < sce->ics.num_swb; g++) {
-            const float *coefs  = sce->coeffs + start;
-            const float *scaled = s->scoefs   + start;
+            const float *coefs  = &sce->coeffs[start];
+            const float *scaled = &s->scoefs[start];
             const int size      = sce->ics.swb_sizes[g];
             int scf, prev_scf, step;
             int min_scf = -1, max_scf = 256;
@@ -1229,22 +1229,22 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
                     float minthr = FFMIN(band0->threshold, band1->threshold);
                     float maxthr = FFMAX(band0->threshold, band1->threshold);
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
-                        M[i] = (sce0->pcoeffs[start+(w+w2)*128+i]
-                              + sce1->pcoeffs[start+(w+w2)*128+i]) * 0.5;
+                        M[i] = (sce0->coeffs[start+(w+w2)*128+i]
+                              + sce1->coeffs[start+(w+w2)*128+i]) * 0.5;
                         S[i] =  M[i]
-                              - sce1->pcoeffs[start+(w+w2)*128+i];
+                              - sce1->coeffs[start+(w+w2)*128+i];
                     }
                     abs_pow34_v(L34, sce0->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
                     abs_pow34_v(R34, sce1->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
                     abs_pow34_v(M34, M,                         sce0->ics.swb_sizes[g]);
                     abs_pow34_v(S34, S,                         sce0->ics.swb_sizes[g]);
-                    dist1 += quantize_band_cost(s, sce0->coeffs + start + (w+w2)*128,
+                    dist1 += quantize_band_cost(s, &sce0->coeffs[start + (w+w2)*128],
                                                 L34,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
                                                 lambda / band0->threshold, INFINITY, NULL, 0);
-                    dist1 += quantize_band_cost(s, sce1->coeffs + start + (w+w2)*128,
+                    dist1 += quantize_band_cost(s, &sce1->coeffs[start + (w+w2)*128],
                                                 R34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],

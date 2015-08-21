@@ -149,7 +149,7 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
         s->mdct1024.mdct_calc(&s->mdct1024, sce->coeffs, output);
     else
         for (i = 0; i < 1024; i += 128)
-            s->mdct128.mdct_calc(&s->mdct128, sce->coeffs + i, output + i*2);
+            s->mdct128.mdct_calc(&s->mdct128, &sce->coeffs[i], output + i*2);
     memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
     memcpy(sce->pcoeffs, sce->coeffs, sizeof(sce->pcoeffs));
 }
@@ -210,15 +210,17 @@ static void adjust_frame_information(ChannelElement *cpe, int chans)
                         int p = -1 + 2 * (cpe->ch[1].band_type[w*16+g] - 14);
                         float scale = cpe->ch[0].is_ener[w*16+g];
                         for (i = 0; i < ics->swb_sizes[g]; i++) {
-                            cpe->ch[0].coeffs[start+i] = (cpe->ch[0].pcoeffs[start+i] + p*cpe->ch[1].pcoeffs[start+i]) * scale;
+                            cpe->ch[0].coeffs[start+i] = (cpe->ch[0].coeffs[start+i] + p*cpe->ch[1].coeffs[start+i]) * scale;
                             cpe->ch[1].coeffs[start+i] = 0.0f;
                         }
                     } else if (cpe->ms_mask[w*16 + g] &&
                                cpe->ch[0].band_type[w*16 + g] < NOISE_BT &&
                                cpe->ch[1].band_type[w*16 + g] < NOISE_BT) {
                         for (i = 0; i < ics->swb_sizes[g]; i++) {
-                            cpe->ch[0].coeffs[start+i] = (cpe->ch[0].pcoeffs[start+i] + cpe->ch[1].pcoeffs[start+i]) * 0.5f;
-                            cpe->ch[1].coeffs[start+i] = cpe->ch[0].coeffs[start+i] - cpe->ch[1].pcoeffs[start+i];
+                            float L = (cpe->ch[0].coeffs[start+i] + cpe->ch[1].coeffs[start+i]) * 0.5f;
+                            float R = L - cpe->ch[1].coeffs[start+i];
+                            cpe->ch[0].coeffs[start+i] = L;
+                            cpe->ch[1].coeffs[start+i] = R;
                         }
                     }
                     start += ics->swb_sizes[g];
@@ -374,7 +376,7 @@ static void avoid_clipping(AACEncContext *s, SingleChannelElement *sce)
         for (w = 0; w < sce->ics.num_windows; w++) {
             start = 0;
             for (i = 0; i < sce->ics.max_sfb; i++) {
-                float *swb_coeffs = sce->coeffs + start + w*128;
+                float *swb_coeffs = &sce->coeffs[start + w*128];
                 for (j = 0; j < sce->ics.swb_sizes[i]; j++)
                     swb_coeffs[j] *= sce->ics.clip_avoidance_factor;
                 start += sce->ics.swb_sizes[i];
