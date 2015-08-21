@@ -195,6 +195,7 @@ typedef struct TemporalNoiseShaping {
     int length[8][4];
     int direction[8][4];
     int order[8][4];
+    int coef_idx[8][4][TNS_MAX_ORDER];
     INTFLOAT coef[8][4][TNS_MAX_ORDER];
 } TemporalNoiseShaping;
 

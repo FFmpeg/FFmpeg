@@ -45,6 +45,7 @@
 #include "aac_tablegen_decl.h"
 
 #include "aacenc_is.h"
+#include "aacenc_tns.h"
 
 /** Frequency in Hz for lower limit of noise substitution **/
 #define NOISE_LOW_LIMIT 4500
@@ -958,8 +959,10 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         search_for_quantizers_faac,
         encode_window_bands_info,
         quantize_and_encode_band,
+        encode_tns_info,
         set_special_band_scalefactors,
         search_for_pns,
+        search_for_tns,
         search_for_ms,
         search_for_is,
     },
@@ -967,8 +970,10 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         search_for_quantizers_anmr,
         encode_window_bands_info,
         quantize_and_encode_band,
+        encode_tns_info,
         set_special_band_scalefactors,
         search_for_pns,
+        search_for_tns,
         search_for_ms,
         search_for_is,
     },
@@ -976,8 +981,10 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         search_for_quantizers_twoloop,
         codebook_trellis_rate,
         quantize_and_encode_band,
+        encode_tns_info,
         set_special_band_scalefactors,
         search_for_pns,
+        search_for_tns,
         search_for_ms,
         search_for_is,
     },
@@ -985,8 +992,10 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         search_for_quantizers_fast,
         encode_window_bands_info,
         quantize_and_encode_band,
+        encode_tns_info,
         set_special_band_scalefactors,
         search_for_pns,
+        search_for_tns,
         search_for_ms,
         search_for_is,
     },

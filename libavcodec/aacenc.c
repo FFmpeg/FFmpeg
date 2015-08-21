@@ -401,7 +401,10 @@ static int encode_individual_channel(AVCodecContext *avctx, AACEncContext *s,
     encode_band_info(s, sce);
     encode_scale_factors(avctx, s, sce);
     encode_pulses(s, &sce->pulse);
-    put_bits(&s->pb, 1, 0); //tns
+    if (s->coder->encode_tns_info)
+        s->coder->encode_tns_info(s, sce);
+    else
+        put_bits(&s->pb, 1, 0);
     put_bits(&s->pb, 1, 0); //ssr
     encode_spectral_coeffs(s, sce);
     return 0;
@@ -571,6 +574,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (ch = 0; ch < chans; ch++) {
                 sce = &cpe->ch[ch];
                 coeffs[ch] = sce->coeffs;
+                memset(&sce->tns, 0, sizeof(TemporalNoiseShaping));
                 for (w = 0; w < 128; w++)
                     if (sce->band_type[w] > RESERVED_BT)
                         sce->band_type[w] = 0;
@@ -593,11 +597,15 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     }
                 }
             }
-            if (s->options.pns && s->coder->search_for_pns) {
-                for (ch = 0; ch < chans; ch++) {
-                    s->cur_channel = start_ch + ch;
-                    s->coder->search_for_pns(s, avctx, &cpe->ch[ch]);
-                }
+            for (ch = 0; ch < chans; ch++) {
+                sce = &cpe->ch[ch];
+                s->cur_channel = start_ch + ch;
+                if (s->options.pns && s->coder->search_for_pns)
+                    s->coder->search_for_pns(s, avctx, sce);
+                if (s->options.tns && s->coder->search_for_tns)
+                    s->coder->search_for_tns(s, sce);
+                if (sce->tns.present)
+                    tns_mode = 1;
             }
             s->cur_channel = start_ch;
             if (s->options.stereo_mode && cpe->common_window) {
@@ -824,6 +832,9 @@ static const AVOption aacenc_options[] = {
     {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "intensity_stereo"},
         {"disable",  "Disable intensity stereo coding", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "intensity_stereo"},
         {"enable",   "Enable intensity stereo coding", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "intensity_stereo"},
+    {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "aac_tns"},
+        {"disable",  "Disable temporal noise shaping", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_tns"},
+        {"enable",   "Enable temporal noise shaping", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_tns"},
     {NULL}
 };
 
