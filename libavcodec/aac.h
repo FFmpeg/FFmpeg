@@ -139,6 +139,8 @@ typedef struct PredictorState {
     AAC_FLOAT var1;
     AAC_FLOAT r0;
     AAC_FLOAT r1;
+    AAC_FLOAT k1;
+    AAC_FLOAT x_est;
 } PredictorState;
 
 #define MAX_PREDICTORS 672
@@ -181,6 +183,7 @@ typedef struct IndividualChannelStream {
     int predictor_present;
     int predictor_initialized;
     int predictor_reset_group;
+    int predictor_reset_count[31];  ///< used by encoder to count prediction resets
     uint8_t prediction_used[41];
     uint8_t window_clipping[8]; ///< set if a certain window is near clipping
     float clip_avoidance_factor; ///< set if any window is near clipping to the necessary atennuation factor to avoid it
@@ -244,6 +247,7 @@ typedef struct SingleChannelElement {
     TemporalNoiseShaping tns;
     Pulse pulse;
     enum BandType band_type[128];                   ///< band types
+    enum BandType orig_band_type[128];              ///< band type backups for undoing prediction
     int band_type_run_end[120];                     ///< band type run end points
     INTFLOAT sf[120];                               ///< scalefactors
     int sf_idx[128];                                ///< scalefactor indices (used by encoder)
@@ -256,6 +260,7 @@ typedef struct SingleChannelElement {
     DECLARE_ALIGNED(32, INTFLOAT, ret_buf)[2048];   ///< PCM output buffer
     DECLARE_ALIGNED(16, INTFLOAT, ltp_state)[3072]; ///< time signal for LTP
     DECLARE_ALIGNED(32, AAC_FLOAT, pqcoeffs)[1024]; ///< quantization error of coefs (used by encoder)
+    DECLARE_ALIGNED(32, AAC_FLOAT, prcoeffs)[1024]; ///< Main prediction coefs (used by encoder)
     PredictorState predictor_state[MAX_PREDICTORS];
     INTFLOAT *ret;                                  ///< PCM output
 } SingleChannelElement;

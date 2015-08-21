@@ -167,7 +167,7 @@ static void put_ics_info(AACEncContext *s, IndividualChannelStream *info)
     put_bits(&s->pb, 1, info->use_kb_window[0]);
     if (info->window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
         put_bits(&s->pb, 6, info->max_sfb);
-        put_bits(&s->pb, 1, 0);            // no prediction
+        put_bits(&s->pb, 1, !!info->predictor_present);
     } else {
         put_bits(&s->pb, 4, info->max_sfb);
         for (w = 1; w < 8; w++)
@@ -396,8 +396,11 @@ static int encode_individual_channel(AVCodecContext *avctx, AACEncContext *s,
                                      int common_window)
 {
     put_bits(&s->pb, 8, sce->sf_idx[0]);
-    if (!common_window)
+    if (!common_window) {
         put_ics_info(s, &sce->ics);
+        if (s->coder->encode_main_pred)
+            s->coder->encode_main_pred(s, sce);
+    }
     encode_band_info(s, sce);
     encode_scale_factors(avctx, s, sce);
     encode_pulses(s, &sce->pulse);
@@ -574,6 +577,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (ch = 0; ch < chans; ch++) {
                 sce = &cpe->ch[ch];
                 coeffs[ch] = sce->coeffs;
+                sce->ics.predictor_present = 0;
+                memset(&sce->ics.prediction_used, 0, sizeof(sce->ics.prediction_used));
                 memset(&sce->tns, 0, sizeof(TemporalNoiseShaping));
                 for (w = 0; w < 128; w++)
                     if (sce->band_type[w] > RESERVED_BT)
@@ -604,8 +609,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     s->coder->search_for_pns(s, avctx, sce);
                 if (s->options.tns && s->coder->search_for_tns)
                     s->coder->search_for_tns(s, sce);
+                if (s->options.pred && s->coder->search_for_pred)
+                    s->coder->search_for_pred(s, sce);
                 if (sce->tns.present)
                     tns_mode = 1;
+                if (sce->ics.predictor_present)
+                    pred_mode = 1;
             }
             s->cur_channel = start_ch;
             if (s->options.stereo_mode && cpe->common_window) {
@@ -622,14 +631,21 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->coder->search_for_is(s, avctx, cpe);
                 if (cpe->is_mode) is_mode = 1;
             }
+            if (s->options.pred && s->coder->adjust_common_prediction)
+                s->coder->adjust_common_prediction(s, cpe);
             if (s->coder->set_special_band_scalefactors)
                 for (ch = 0; ch < chans; ch++)
                     s->coder->set_special_band_scalefactors(s, &cpe->ch[ch]);
+            if (s->options.pred && s->coder->apply_main_pred)
+                for (ch = 0; ch < chans; ch++)
+                    s->coder->apply_main_pred(s, &cpe->ch[ch]);
             adjust_frame_information(cpe, chans);
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);
                 if (cpe->common_window) {
                     put_ics_info(s, &cpe->ch[0].ics);
+                    if (s->coder->encode_main_pred)
+                        s->coder->encode_main_pred(s, &cpe->ch[0]);
                     encode_ms_info(&s->pb, cpe);
                     if (cpe->ms_mode) ms_mode = 1;
                 }
@@ -659,6 +675,16 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->lambda *= avctx->bit_rate * 1024.0f / avctx->sample_rate / frame_bits;
 
     } while (1);
+
+    // update predictor state
+    if (s->options.pred && s->coder->update_main_pred) {
+        for (i = 0; i < s->chan_map[0]; i++) {
+            cpe = &s->cpe[i];
+            for (ch = 0; ch < chans; ch++)
+                s->coder->update_main_pred(s, &cpe->ch[ch],
+                                           (cpe->common_window && !ch) ? cpe : NULL);
+        }
+    }
 
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
@@ -835,6 +861,9 @@ static const AVOption aacenc_options[] = {
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "aac_tns"},
         {"disable",  "Disable temporal noise shaping", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_tns"},
         {"enable",   "Enable temporal noise shaping", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_tns"},
+    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "aac_pred"},
+        {"disable",  "Disable AAC-Main prediction", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pred"},
+        {"enable",   "Enable AAC-Main prediction", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pred"},
     {NULL}
 };
 

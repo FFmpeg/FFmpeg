@@ -60,11 +60,16 @@ typedef struct AACCoefficientsEncoder {
     void (*quantize_and_encode_band)(struct AACEncContext *s, PutBitContext *pb, const float *in, float *out, int size,
                                      int scale_idx, int cb, const float lambda, int rtz);
     void (*encode_tns_info)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*encode_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*adjust_common_prediction)(struct AACEncContext *s, ChannelElement *cpe);
+    void (*apply_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*update_main_pred)(struct AACEncContext *s, SingleChannelElement *sce, ChannelElement *cpe);
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
     void (*search_for_tns)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe);
     void (*search_for_is)(struct AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
+    void (*search_for_pred)(struct AACEncContext *s, SingleChannelElement *sce);
 } AACCoefficientsEncoder;
 
 extern AACCoefficientsEncoder ff_aac_coders[];
