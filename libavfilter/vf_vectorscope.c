@@ -300,7 +300,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     VectorscopeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
-    uint8_t **dst;;
+    uint8_t **dst;
     int i, k;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
