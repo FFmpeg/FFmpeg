@@ -97,6 +97,7 @@ static const struct {
     { "7.1(wide)",   8,  AV_CH_LAYOUT_7POINT1_WIDE },
     { "7.1(wide)",   8,  AV_CH_LAYOUT_7POINT1_WIDE_BACK },
     { "octagonal",   8,  AV_CH_LAYOUT_OCTAGONAL },
+    { "hexadecagonal", 16, AV_CH_LAYOUT_HEXADECAGONAL },
     { "downmix",     2,  AV_CH_LAYOUT_STEREO_DOWNMIX, },
     { 0 }
 };
@@ -193,6 +194,7 @@ uint64_t av_get_default_channel_layout(int nb_channels)
     case 6: return AV_CH_LAYOUT_5POINT1;
     case 7: return AV_CH_LAYOUT_6POINT1;
     case 8: return AV_CH_LAYOUT_7POINT1;
+    case 16: return AV_CH_LAYOUT_HEXADECAGONAL;
     default: return 0;
     }
 }
