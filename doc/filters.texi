@@ -10497,6 +10497,44 @@ Force a constant quantization parameter. If not set, the filter will use the QP
 from the video stream (if available).
 @end table
 
+@section vectorscope
+
+Display 2 color component values in the two dimensional graph (which is called
+a vectorscope).
+
+This filter accepts the following options:
+
+@table @option
+@item mode
+Set vectorscope mode.
+
+It accepts the following values:
+@table @samp
+@item gray
+Gray values are displayed on graph, higher brightness means more pixels have
+same component color value on location in graph. This is the default mode.
+
+@item color
+Gray values are displayed on graph. Surrounding pixels values which are not
+present in video frame are drawn in gradient of 2 color components which are
+set by option @code{x} and @code{y}.
+
+@item color2
+Actual color components values present in video frame are displayed on graph.
+
+@item color3
+Similar as color2 but higher frequency of same values @code{x} and @code{y}
+on graph increases value of another color component, which is luminance by
+default values of @code{x} and @code{y}.
+@end table
+
+@item x
+Set which color component will be represented on X-axis. Default is @code{1}.
+
+@item y
+Set which color component will be represented on Y-axis. Default is @code{2}.
+@end table
+
 @anchor{vidstabdetect}
 @section vidstabdetect
 

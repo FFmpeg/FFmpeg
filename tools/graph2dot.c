@@ -79,7 +79,8 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
 
                 fprintf(outfile, "\"%s\" -> \"%s\" [ label= \"inpad:%s -> outpad:%s\\n",
                         filter_ctx_label, dst_filter_ctx_label,
-                        link->srcpad->name, link->dstpad->name);
+                        avfilter_pad_get_name(link->srcpad, 0),
+                        avfilter_pad_get_name(link->dstpad, 0));
 
                 if (link->type == AVMEDIA_TYPE_VIDEO) {
                     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);

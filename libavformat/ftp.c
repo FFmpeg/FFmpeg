@@ -651,7 +651,7 @@ static int ftp_connect(URLContext *h, const char *url)
     FTPContext *s = h->priv_data;
 
     s->state = DISCONNECTED;
-    s->listing_method = UNKNOWN;
+    s->listing_method = UNKNOWN_METHOD;
     s->filesize = -1;
     s->position = 0;
     s->features = NULL;

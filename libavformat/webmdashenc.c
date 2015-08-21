@@ -392,10 +392,10 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
         if (w->is_live) {
             AVDictionaryEntry *filename =
                 av_dict_get(s->streams[as->streams[i]]->metadata, FILENAME, NULL, 0);
-            if (!filename ||
-                (ret = parse_filename(filename->value, &representation_id, NULL, NULL))) {
+            if (!filename)
+                return AVERROR(EINVAL);
+            if (ret = parse_filename(filename->value, &representation_id, NULL, NULL))
                 return ret;
-            }
         } else {
             representation_id = av_asprintf("%d", w->representation_id++);
             if (!representation_id) return AVERROR(ENOMEM);

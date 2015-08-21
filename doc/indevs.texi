@@ -266,18 +266,6 @@ Capture video clip at 1080i50 10 bit:
 ffmpeg -bm_v210 1 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
 @end example
 
-@item
-Capture video clip at 720p50 with 32bit audio:
-@example
-ffmpeg -bm_audiodepth 32 -f decklink -i 'UltraStudio Mini Recorder@@14' -acodec copy -vcodec copy output.avi
-@end example
-
-@item
-Capture video clip at 576i50 with 8 audio channels:
-@example
-ffmpeg -bm_channels 8 -f decklink -i 'UltraStudio Mini Recorder@@3' -acodec copy -vcodec copy output.avi
-@end example
-
 @end itemize
 
 @section dshow

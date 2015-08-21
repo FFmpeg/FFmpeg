@@ -76,7 +76,6 @@ static VLC vlc_sbr[10];
 static void aacsbr_func_ptr_init(AACSBRContext *c);
 static const int CONST_LN2       = Q31(0.6931471806/256);  // ln(2)/256
 static const int CONST_RECIP_LN2 = Q31(0.7213475204);      // 0.5/ln(2)
-static const int CONST_SQRT2     = Q30(0.7071067812);      // sqrt(2)/2
 static const int CONST_076923    = Q31(0.76923076923076923077f);
 
 int fixed_log_table[10] =

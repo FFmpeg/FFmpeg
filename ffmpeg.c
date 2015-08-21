@@ -1859,17 +1859,21 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
     opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
     opkt.flags    = pkt->flags;
-
     // FIXME remove the following 2 lines they shall be replaced by the bitstream filters
-    if (  ost->enc_ctx->codec_id != AV_CODEC_ID_H264
-       && ost->enc_ctx->codec_id != AV_CODEC_ID_MPEG1VIDEO
-       && ost->enc_ctx->codec_id != AV_CODEC_ID_MPEG2VIDEO
-       && ost->enc_ctx->codec_id != AV_CODEC_ID_VC1
+    if (  ost->st->codec->codec_id != AV_CODEC_ID_H264
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG1VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG2VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_VC1
        ) {
-        if (av_parser_change(ost->parser, ost->st->codec,
+        int ret = av_parser_change(ost->parser, ost->st->codec,
                              &opkt.data, &opkt.size,
                              pkt->data, pkt->size,
-                             pkt->flags & AV_PKT_FLAG_KEY)) {
+                             pkt->flags & AV_PKT_FLAG_KEY);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "av_parser_change failed\n");
+            exit_program(1);
+        }
+        if (ret) {
             opkt.buf = av_buffer_create(opkt.data, opkt.size, av_buffer_default_free, NULL, 0);
             if (!opkt.buf)
                 exit_program(1);
@@ -1880,9 +1884,15 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
     av_copy_packet_side_data(&opkt, pkt);
 
-    if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (of->ctx->oformat->flags & AVFMT_RAWPICTURE)) {
+    if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+        ost->st->codec->codec_id == AV_CODEC_ID_RAWVIDEO &&
+        (of->ctx->oformat->flags & AVFMT_RAWPICTURE)) {
         /* store AVPicture in AVPacket, as expected by the output format */
-        avpicture_fill(&pict, opkt.data, ost->st->codec->pix_fmt, ost->st->codec->width, ost->st->codec->height);
+        int ret = avpicture_fill(&pict, opkt.data, ost->st->codec->pix_fmt, ost->st->codec->width, ost->st->codec->height);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "avpicture_fill failed\n");
+            exit_program(1);
+        }
         opkt.data = (uint8_t *)&pict;
         opkt.size = sizeof(AVPicture);
         opkt.flags |= AV_PKT_FLAG_KEY;
