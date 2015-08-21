@@ -107,8 +107,16 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.RateControlMethod = MFX_RATECONTROL_CBR;
         ratecontrol_desc = "constant bitrate (CBR)";
     } else if (!avctx->rc_max_rate) {
-        q->param.mfx.RateControlMethod = MFX_RATECONTROL_AVBR;
-        ratecontrol_desc = "average variable bitrate (AVBR)";
+#if QSV_VERSION_ATLEAST(1,7)
+        if (q->look_ahead) {
+            q->param.mfx.RateControlMethod = MFX_RATECONTROL_LA;
+            ratecontrol_desc = "lookahead (LA)";
+        } else
+#endif
+        {
+            q->param.mfx.RateControlMethod = MFX_RATECONTROL_AVBR;
+            ratecontrol_desc = "average variable bitrate (AVBR)";
+        }
     } else {
         q->param.mfx.RateControlMethod = MFX_RATECONTROL_VBR;
         ratecontrol_desc = "variable bitrate (VBR)";
@@ -132,6 +140,9 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
         break;
     case MFX_RATECONTROL_AVBR:
+#if QSV_VERSION_ATLEAST(1,7)
+    case MFX_RATECONTROL_LA:
+#endif
         q->param.mfx.TargetKbps  = avctx->bit_rate / 1000;
         q->param.mfx.Convergence = q->avbr_convergence;
         q->param.mfx.Accuracy    = q->avbr_accuracy;
@@ -151,6 +162,22 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
         q->extparam[0] = (mfxExtBuffer *)&q->extco;
 
+#if QSV_VERSION_ATLEAST(1,6)
+        q->extco2.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION2;
+        q->extco2.Header.BufferSz      = sizeof(q->extco2);
+
+#if QSV_VERSION_ATLEAST(1,7)
+        // valid value range is from 10 to 100 inclusive
+        // to instruct the encoder to use the default value this should be set to zero
+        q->extco2.LookAheadDepth        = q->look_ahead_depth != 0 ? FFMAX(10, q->look_ahead_depth) : 0;
+#endif
+#if QSV_VERSION_ATLEAST(1,8)
+        q->extco2.LookAheadDS           = q->look_ahead_downsampling;
+#endif
+
+        q->extparam[1] = (mfxExtBuffer *)&q->extco2;
+
+#endif
         q->param.ExtParam    = q->extparam;
         q->param.NumExtParam = FF_ARRAY_ELEMS(q->extparam);
     }
