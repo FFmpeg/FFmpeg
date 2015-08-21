@@ -438,6 +438,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_uspp.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_vectorscope.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_vflip.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_vignette.c">

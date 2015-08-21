@@ -593,6 +593,9 @@
     <ClCompile Include="..\libavfilter\vf_uspp.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_vectorscope.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_vflip.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
