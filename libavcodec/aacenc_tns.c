@@ -50,11 +50,11 @@ static inline void conv_to_float(float *arr, int32_t *cof, int num)
 static inline int coef_test_compression(int coef)
 {
     int res = 0;
-    coef = coef >> 3;
+    /*coef = coef >> 3;
     res += ffs(coef);
     coef = coef >> 1;
-    res += ffs(coef);
-    return res == 1 ? 0 : 1;
+    res += ffs(coef);*/
+    return 0;
 }
 
 static inline int compress_coef(int *coefs, int num)
@@ -62,7 +62,7 @@ static inline int compress_coef(int *coefs, int num)
     int i, res = 0;
     for (i = 0; i < num; i++)
         res += coef_test_compression(coefs[i]);
-    return res != num ? 0 : 1;
+    return 0;
 }
 
 /**
