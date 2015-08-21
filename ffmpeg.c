@@ -1743,10 +1743,15 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
        && ost->enc_ctx->codec_id != AV_CODEC_ID_MPEG2VIDEO
        && ost->enc_ctx->codec_id != AV_CODEC_ID_VC1
        ) {
-        if (av_parser_change(ost->parser, ost->st->codec,
+        int ret = av_parser_change(ost->parser, ost->st->codec,
                              &opkt.data, &opkt.size,
                              pkt->data, pkt->size,
-                             pkt->flags & AV_PKT_FLAG_KEY)) {
+                             pkt->flags & AV_PKT_FLAG_KEY);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "av_parser_change failed\n");
+            exit_program(1);
+        }
+        if (ret) {
             opkt.buf = av_buffer_create(opkt.data, opkt.size, av_buffer_default_free, NULL, 0);
             if (!opkt.buf)
                 exit_program(1);
