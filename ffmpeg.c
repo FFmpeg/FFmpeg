@@ -1736,12 +1736,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
     opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
     opkt.flags    = pkt->flags;
-
     // FIXME remove the following 2 lines they shall be replaced by the bitstream filters
-    if (  ost->enc_ctx->codec_id != AV_CODEC_ID_H264
-       && ost->enc_ctx->codec_id != AV_CODEC_ID_MPEG1VIDEO
-       && ost->enc_ctx->codec_id != AV_CODEC_ID_MPEG2VIDEO
-       && ost->enc_ctx->codec_id != AV_CODEC_ID_VC1
+    if (  ost->st->codec->codec_id != AV_CODEC_ID_H264
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG1VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG2VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_VC1
        ) {
         int ret = av_parser_change(ost->parser, ost->st->codec,
                              &opkt.data, &opkt.size,
