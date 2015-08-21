@@ -44,6 +44,8 @@
 #include "aacenc_quantization.h"
 #include "aac_tablegen_decl.h"
 
+#include "aacenc_is.h"
+
 /** Frequency in Hz for lower limit of noise substitution **/
 #define NOISE_LOW_LIMIT 4500
 
@@ -889,104 +891,6 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     }
 }
 
-static void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe)
-{
-    float IS[128];
-    float *L34  = s->scoefs + 128*0, *R34  = s->scoefs + 128*1;
-    float *I34  = s->scoefs + 128*2;
-    SingleChannelElement *sce0 = &cpe->ch[0];
-    SingleChannelElement *sce1 = &cpe->ch[1];
-    int start = 0, count = 0, i, w, w2, g;
-    const float freq_mult = avctx->sample_rate/(1024.0f/sce0->ics.num_windows)/2.0f;
-    const float lambda = s->lambda;
-
-    for (w = 0; w < 128; w++)
-        if (sce1->band_type[w] >= INTENSITY_BT2)
-            sce1->band_type[w] = 0;
-
-    if (!cpe->common_window)
-        return;
-    for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
-        start = 0;
-        for (g = 0;  g < sce0->ics.num_swb; g++) {
-            if (start*freq_mult > INT_STEREO_LOW_LIMIT*(lambda/170.0f) &&
-                cpe->ch[0].band_type[w*16+g] != NOISE_BT && !cpe->ch[0].zeroes[w*16+g] &&
-                cpe->ch[1].band_type[w*16+g] != NOISE_BT && !cpe->ch[1].zeroes[w*16+g]) {
-                int phase = 0;
-                float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f;
-                float dist1 = 0.0f, dist2 = 0.0f;
-                for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
-                    for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
-                        float coef0 = sce0->pcoeffs[start+(w+w2)*128+i];
-                        float coef1 = sce1->pcoeffs[start+(w+w2)*128+i];
-                        phase += coef0*coef1 >= 0.0f ? 1 : -1;
-                        ener0 += coef0*coef0;
-                        ener1 += coef1*coef1;
-                        ener01 += (coef0 + coef1)*(coef0 + coef1);
-                    }
-                }
-                if (!phase) { /* Too much phase difference between channels */
-                    start += sce0->ics.swb_sizes[g];
-                    continue;
-                }
-                phase = av_clip(phase, -1, 1);
-                for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
-                    FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
-                    FFPsyBand *band1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
-                    int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[(w+w2)*16+g]-4);
-                    float e01_34 = phase*pow(sqrt(ener1/ener0), 3.0/4.0);
-                    float maxval, dist_spec_err = 0.0f;
-                    float minthr = FFMIN(band0->threshold, band1->threshold);
-                    for (i = 0; i < sce0->ics.swb_sizes[g]; i++)
-                        IS[i] = (sce0->pcoeffs[start+(w+w2)*128+i] + phase*sce1->pcoeffs[start+(w+w2)*128+i]) * sqrt(ener0/ener01);
-                    abs_pow34_v(L34, sce0->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
-                    abs_pow34_v(R34, sce1->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
-                    abs_pow34_v(I34, IS,                            sce0->ics.swb_sizes[g]);
-                    maxval = find_max_val(1, sce0->ics.swb_sizes[g], I34);
-                    is_band_type = find_min_book(maxval, is_sf_idx);
-                    dist1 += quantize_band_cost(s, sce0->coeffs + start + (w+w2)*128,
-                                                L34,
-                                                sce0->ics.swb_sizes[g],
-                                                sce0->sf_idx[(w+w2)*16+g],
-                                                sce0->band_type[(w+w2)*16+g],
-                                                lambda / band0->threshold, INFINITY, NULL, 0);
-                    dist1 += quantize_band_cost(s, sce1->coeffs + start + (w+w2)*128,
-                                                R34,
-                                                sce1->ics.swb_sizes[g],
-                                                sce1->sf_idx[(w+w2)*16+g],
-                                                sce1->band_type[(w+w2)*16+g],
-                                                lambda / band1->threshold, INFINITY, NULL, 0);
-                    dist2 += quantize_band_cost(s, IS,
-                                                I34,
-                                                sce0->ics.swb_sizes[g],
-                                                is_sf_idx,
-                                                is_band_type,
-                                                lambda / minthr, INFINITY, NULL, 0);
-                    for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
-                        dist_spec_err += (L34[i] - I34[i])*(L34[i] - I34[i]);
-                        dist_spec_err += (R34[i] - I34[i]*e01_34)*(R34[i] - I34[i]*e01_34);
-                    }
-                    dist_spec_err *= lambda / minthr;
-                    dist2 += dist_spec_err;
-                }
-                if (dist2 <= dist1) {
-                    cpe->is_mask[w*16+g] = 1;
-                    cpe->ms_mask[w*16+g] = 0;
-                    cpe->ch[0].is_ener[w*16+g] = sqrt(ener0/ener01);
-                    cpe->ch[1].is_ener[w*16+g] = ener0/ener1;
-                    if (phase)
-                        cpe->ch[1].band_type[w*16+g] = INTENSITY_BT;
-                    else
-                        cpe->ch[1].band_type[w*16+g] = INTENSITY_BT2;
-                    count++;
-                }
-            }
-            start += sce0->ics.swb_sizes[g];
-        }
-    }
-    cpe->is_mode = !!count;
-}
-
 static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
 {
     int start = 0, i, w, w2, g;
@@ -1000,7 +904,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
     for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
         start = 0;
         for (g = 0;  g < sce0->ics.num_swb; g++) {
-            if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g] && !cpe->is_mask[w*16+g]) {
+            if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g]) {
                 float dist1 = 0.0f, dist2 = 0.0f;
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];

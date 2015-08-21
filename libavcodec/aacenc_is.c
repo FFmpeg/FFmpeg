@@ -1,0 +1,136 @@
+/*
+ * AAC encoder intensity stereo
+ * Copyright (C) 2015 Rostislav Pehlivanov
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * @file
+ * AAC encoder Intensity Stereo
+ * @author Rostislav Pehlivanov ( atomnuker gmail com )
+ */
+
+#include "aacenc.h"
+#include "aacenc_utils.h"
+#include "aacenc_is.h"
+#include "aacenc_quantization.h"
+
+struct is_error calc_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
+                                     int start, int w, int g, float ener0,
+                                     float ener1, float ener01, int phase)
+{
+    int i, w2;
+    float *L34 = &s->scoefs[256*0], *R34 = &s->scoefs[256*1];
+    float *IS  = &s->scoefs[256*2], *I34 = &s->scoefs[256*3];
+    float dist1 = 0.0f, dist2 = 0.0f;
+    struct is_error is_error = {0};
+    SingleChannelElement *sce0 = &cpe->ch[0];
+    SingleChannelElement *sce1 = &cpe->ch[1];
+
+    for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
+        FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+        FFPsyBand *band1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
+        int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[(w+w2)*16+g]-4);
+        float e01_34 = phase*pow(sqrt(ener1/ener0), 3.0/4.0);
+        float maxval, dist_spec_err = 0.0f;
+        float minthr = FFMIN(band0->threshold, band1->threshold);
+        for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
+            IS[i] = (sce0->pcoeffs[start+(w+w2)*128+i]+
+                     phase*sce1->pcoeffs[start+(w+w2)*128+i])*
+                     sqrt(ener0/ener01);
+        }
+        abs_pow34_v(L34, &sce0->coeffs[start+(w+w2)*128], sce0->ics.swb_sizes[g]);
+        abs_pow34_v(R34, &sce1->coeffs[start+(w+w2)*128], sce0->ics.swb_sizes[g]);
+        abs_pow34_v(I34, IS,                            sce0->ics.swb_sizes[g]);
+        maxval = find_max_val(1, sce0->ics.swb_sizes[g], I34);
+        is_band_type = find_min_book(maxval, is_sf_idx);
+        dist1 += quantize_band_cost(s, &sce0->coeffs[start + (w+w2)*128], L34,
+                                    sce0->ics.swb_sizes[g],
+                                    sce0->sf_idx[(w+w2)*16+g],
+                                    sce0->band_type[(w+w2)*16+g],
+                                    s->lambda / band0->threshold, INFINITY, NULL, 0);
+        dist1 += quantize_band_cost(s, &sce1->coeffs[start + (w+w2)*128], R34,
+                                    sce1->ics.swb_sizes[g],
+                                    sce1->sf_idx[(w+w2)*16+g],
+                                    sce1->band_type[(w+w2)*16+g],
+                                    s->lambda / band1->threshold, INFINITY, NULL, 0);
+        dist2 += quantize_band_cost(s, IS, I34, sce0->ics.swb_sizes[g],
+                                    is_sf_idx, is_band_type,
+                                    s->lambda / minthr, INFINITY, NULL, 0);
+        for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
+            dist_spec_err += (L34[i] - I34[i])*(L34[i] - I34[i]);
+            dist_spec_err += (R34[i] - I34[i]*e01_34)*(R34[i] - I34[i]*e01_34);
+        }
+        dist_spec_err *= s->lambda / minthr;
+        dist2 += dist_spec_err;
+    }
+
+    is_error.pass = dist2 <= dist1;
+    is_error.phase = phase;
+    is_error.error = fabsf(dist1 - dist2);
+    is_error.dist1 = dist1;
+    is_error.dist2 = dist2;
+
+    return is_error;
+}
+
+void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe)
+{
+    SingleChannelElement *sce0 = &cpe->ch[0];
+    SingleChannelElement *sce1 = &cpe->ch[1];
+    int start = 0, count = 0, w, w2, g, i;
+    const float freq_mult = avctx->sample_rate/(1024.0f/sce0->ics.num_windows)/2.0f;
+
+    if (!cpe->common_window)
+        return;
+
+    for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
+        start = 0;
+        for (g = 0;  g < sce0->ics.num_swb; g++) {
+            if (start*freq_mult > INT_STEREO_LOW_LIMIT*(s->lambda/170.0f) &&
+                cpe->ch[0].band_type[w*16+g] != NOISE_BT && !cpe->ch[0].zeroes[w*16+g] &&
+                cpe->ch[1].band_type[w*16+g] != NOISE_BT && !cpe->ch[1].zeroes[w*16+g]) {
+                float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f;
+                struct is_error ph_err1, ph_err2, *erf;
+                for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
+                    for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
+                        float coef0 = sce0->pcoeffs[start+(w+w2)*128+i];
+                        float coef1 = sce1->pcoeffs[start+(w+w2)*128+i];
+                        ener0 += coef0*coef0;
+                        ener1 += coef1*coef1;
+                        ener01 += (coef0 + coef1)*(coef0 + coef1);
+                    }
+                }
+                ph_err1 = calc_is_encoding_err(s, cpe, start, w, g,
+                                               ener0, ener1, ener01, -1);
+                ph_err2 = calc_is_encoding_err(s, cpe, start, w, g,
+                                               ener0, ener1, ener01, +1);
+                erf = ph_err1.error < ph_err2.error ? &ph_err1 : &ph_err2;
+                if (erf->pass) {
+                    cpe->is_mask[w*16+g] = 1;
+                    cpe->ch[0].is_ener[w*16+g] = sqrt(ener0/ener01);
+                    cpe->ch[1].is_ener[w*16+g] = ener0/ener1;
+                    cpe->ch[1].band_type[w*16+g] = erf->phase ? INTENSITY_BT : INTENSITY_BT2;
+                    count++;
+                }
+            }
+            start += sce0->ics.swb_sizes[g];
+        }
+    }
+    cpe->is_mode = !!count;
+}

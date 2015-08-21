@@ -459,7 +459,9 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     AACEncContext *s = avctx->priv_data;
     float **samples = s->planar_samples, *samples2, *la, *overlap;
     ChannelElement *cpe;
-    int i, ch, w, g, chans, tag, start_ch, ret, ms_mode = 0, is_mode = 0;
+    SingleChannelElement *sce;
+    int i, ch, w, g, chans, tag, start_ch, ret;
+    int ms_mode = 0, is_mode = 0, tns_mode = 0, pred_mode = 0;
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
@@ -608,7 +610,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     s->coder->search_for_ms(s, cpe);
                 }
             }
-            if (chans > 1 && s->options.intensity_stereo && s->coder->search_for_is) {
+            if (s->options.intensity_stereo && s->coder->search_for_is) {
                 s->coder->search_for_is(s, avctx, cpe);
                 if (cpe->is_mode) is_mode = 1;
             }
@@ -636,7 +638,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             s->psy.bitres.bits = frame_bits / s->channels;
             break;
         }
-        if (is_mode || ms_mode) {
+        if (is_mode || ms_mode || tns_mode || pred_mode) {
             for (i = 0; i < s->chan_map[0]; i++) {
                 // Must restore coeffs
                 chans = tag == TYPE_CPE ? 2 : 1;
