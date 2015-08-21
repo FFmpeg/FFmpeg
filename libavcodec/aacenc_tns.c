@@ -25,7 +25,6 @@
  * @author Rostislav Pehlivanov ( atomnuker gmail com )
  */
 
-#include <strings.h>
 #include "aacenc.h"
 #include "aacenc_tns.h"
 #include "aactab.h"
