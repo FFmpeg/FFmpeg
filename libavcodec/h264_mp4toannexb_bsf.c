@@ -150,7 +150,7 @@ pps:
         buf += ctx->length_size;
         unit_type = *buf & 0x1f;
 
-        if (buf + nal_size > buf_end || nal_size < 0)
+        if (nal_size > buf_end - buf || nal_size < 0)
             goto fail;
 
         /* prepend only to the first type 5 NAL unit of an IDR picture */
