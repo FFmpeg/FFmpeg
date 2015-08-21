@@ -137,6 +137,7 @@ Codecs:
   4xm.c                                 Michael Niedermayer
   8bps.c                                Roberto Togni
   8svx.c                                Jaikrishnan Menon
+  aacenc*, aaccoder.c                   Rostislav Pehlivanov
   aasc.c                                Kostya Shishkov
   ac3*                                  Justin Ruggles
   alacenc.c                             Jaikrishnan Menon
