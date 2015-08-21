@@ -301,10 +301,10 @@ IDCT_DC(32)
 #undef SCALE
 #undef ADD_AND_SCALE
 
-static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                    int16_t *sao_offset_val, int sao_left_class,
-                                    int width, int height)
+static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
+                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                  int16_t *sao_offset_val, int sao_left_class,
+                                  int width, int height)
 {
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
