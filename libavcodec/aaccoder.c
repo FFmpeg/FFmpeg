@@ -1081,11 +1081,6 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     const float spread_threshold = NOISE_SPREAD_THRESHOLD*(lambda/120.f);
     const float thr_mult = NOISE_LAMBDA_NUMERATOR/lambda;
 
-    /* Coders !twoloop don't reset the band_types */
-    for (w = 0; w < 128; w++)
-        if (sce->band_type[w] == NOISE_BT)
-            sce->band_type[w] = 0;
-
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = 0;
         for (g = 0;  g < sce->ics.num_swb; g++) {

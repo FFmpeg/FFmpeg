@@ -560,8 +560,13 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             memset(cpe->ms_mask, 0, sizeof(cpe->ms_mask));
             put_bits(&s->pb, 3, tag);
             put_bits(&s->pb, 4, chan_el_counter[tag]++);
-            for (ch = 0; ch < chans; ch++)
-                coeffs[ch] = cpe->ch[ch].coeffs;
+            for (ch = 0; ch < chans; ch++) {
+                sce = &cpe->ch[ch];
+                coeffs[ch] = sce->coeffs;
+                for (w = 0; w < 128; w++)
+                    if (sce->band_type[w] > RESERVED_BT)
+                        sce->band_type[w] = 0;
+            }
             s->psy.model->analyze(&s->psy, start_ch, coeffs, wi);
             for (ch = 0; ch < chans; ch++) {
                 s->cur_channel = start_ch + ch;
