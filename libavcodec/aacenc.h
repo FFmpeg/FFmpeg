@@ -30,6 +30,8 @@
 #include "audio_frame_queue.h"
 #include "psymodel.h"
 
+#include "lpc.h"
+
 typedef enum AACCoder {
     AAC_CODER_FAAC = 0,
     AAC_CODER_ANMR,
@@ -75,6 +77,7 @@ typedef struct AACEncContext {
     AVFloatDSPContext *fdsp;
     float *planar_samples[6];                    ///< saved preprocessed input
 
+    LPCContext lpc;                              ///< used by TNS
     int samplerate_index;                        ///< MPEG-4 samplerate index
     int channels;                                ///< channel count
     const uint8_t *chan_map;                     ///< channel configuration map

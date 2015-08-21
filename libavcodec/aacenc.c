@@ -676,6 +676,7 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
     ff_mdct_end(&s->mdct1024);
     ff_mdct_end(&s->mdct128);
     ff_psy_end(&s->psy);
+    ff_lpc_end(&s->lpc);
     if (s->psypp)
         ff_psy_preprocess_end(s->psypp);
     av_freep(&s->buffer.samples);
@@ -775,6 +776,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto fail;
     s->psypp = ff_psy_preprocess_init(avctx);
     s->coder = &ff_aac_coders[s->options.aac_coder];
+    ff_lpc_init(&s->lpc, avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
 
     if (HAVE_MIPSDSPR1)
         ff_aac_coder_init_mips(s);
