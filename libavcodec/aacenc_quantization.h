@@ -110,7 +110,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                 }
                 di = t - quantized;
                 if (out)
-                    out[i+j] = copysignf(quantized, in[i+j]);
+                    out[i+j] = in[i+j] >= 0 ? quantized : -quantized;
                 if (vec[j] != 0.0f)
                     curbits++;
                 rd += di*di;
