@@ -430,6 +430,12 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacpsy.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_is.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_tns.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_pred.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\psymodel.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\aasc.c">

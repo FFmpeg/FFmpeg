@@ -163,6 +163,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\rawenc.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\aadec.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\aacdec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\apetag.c">

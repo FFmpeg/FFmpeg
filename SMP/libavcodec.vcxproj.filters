@@ -650,6 +650,15 @@
     <ClCompile Include="..\libavcodec\aacpsy.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_is.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_tns.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_pred.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\psymodel.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
