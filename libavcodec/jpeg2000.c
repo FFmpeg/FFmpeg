@@ -189,7 +189,7 @@ void ff_jpeg2000_set_significance(Jpeg2000T1Context *t1, int x, int y,
     t1->flags[(y - 1) * t1->stride + x - 1] |= JPEG2000_T1_SIG_SE;
 }
 
-static const uint8_t lut_gain[2][4] = { { 0, 0, 0, 0 }, { 0, 1, 1, 2 } };
+// static const uint8_t lut_gain[2][4] = { { 0, 0, 0, 0 }, { 0, 1, 1, 2 } }; (unused)
 
 int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                                Jpeg2000CodingStyle *codsty,

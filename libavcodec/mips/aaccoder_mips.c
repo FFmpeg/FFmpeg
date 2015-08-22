@@ -144,6 +144,9 @@ static const uint8_t esc_sign_bits[289] = {
     1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 };
 
+#define ROUND_STANDARD 0.4054f
+#define ROUND_TO_ZERO 0.1054f
+
 static void abs_pow34_v(float *out, const float *in, const int size) {
 #ifndef USE_REALLY_FULL_SEARCH
     int i;
@@ -204,10 +207,10 @@ static int find_min_book(float maxval, int sf) {
  * Functions developed from template function and optimized for quantizing and encoding band
  */
 static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
-                                                     PutBitContext *pb, const float *in,
+                                                     PutBitContext *pb, const float *in, float *out,
                                                      const float *scaled, int size, int scale_idx,
                                                      int cb, const float lambda, const float uplim,
-                                                     int *bits)
+                                                     int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     int i;
@@ -223,10 +226,10 @@ static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
         int *in_int = (int *)&in[i];
         int t0, t1, t2, t3, t4, t5, t6, t7;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                      \n\t"
@@ -277,10 +280,10 @@ static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
 }
 
 static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
-                                                     PutBitContext *pb, const float *in,
+                                                     PutBitContext *pb, const float *in, float *out,
                                                      const float *scaled, int size, int scale_idx,
                                                      int cb, const float lambda, const float uplim,
-                                                     int *bits)
+                                                     int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     int i;
@@ -298,10 +301,10 @@ static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
         unsigned int v_codes;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                              \n\t"
@@ -369,10 +372,10 @@ static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
 }
 
 static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
-                                                     PutBitContext *pb, const float *in,
+                                                     PutBitContext *pb, const float *in, float *out,
                                                      const float *scaled, int size, int scale_idx,
                                                      int cb, const float lambda, const float uplim,
-                                                     int *bits)
+                                                     int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     int i;
@@ -390,10 +393,10 @@ static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
         unsigned int v_codes;
         int t0, t1, t2, t3, t4, t5, t6, t7;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                      \n\t"
@@ -448,10 +451,10 @@ static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
 }
 
 static void quantize_and_encode_band_cost_UPAIR7_mips(struct AACEncContext *s,
-                                                      PutBitContext *pb, const float *in,
+                                                      PutBitContext *pb, const float *in, float *out,
                                                       const float *scaled, int size, int scale_idx,
                                                       int cb, const float lambda, const float uplim,
-                                                      int *bits)
+                                                      int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     int i;
@@ -469,10 +472,10 @@ static void quantize_and_encode_band_cost_UPAIR7_mips(struct AACEncContext *s,
         unsigned int v_codes;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                              \n\t"
@@ -542,10 +545,10 @@ static void quantize_and_encode_band_cost_UPAIR7_mips(struct AACEncContext *s,
 }
 
 static void quantize_and_encode_band_cost_UPAIR12_mips(struct AACEncContext *s,
-                                                       PutBitContext *pb, const float *in,
+                                                       PutBitContext *pb, const float *in, float *out,
                                                        const float *scaled, int size, int scale_idx,
                                                        int cb, const float lambda, const float uplim,
-                                                       int *bits)
+                                                       int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     int i;
@@ -563,10 +566,10 @@ static void quantize_and_encode_band_cost_UPAIR12_mips(struct AACEncContext *s,
         unsigned int v_codes;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                              \n\t"
@@ -635,10 +638,10 @@ static void quantize_and_encode_band_cost_UPAIR12_mips(struct AACEncContext *s,
 }
 
 static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
-                                                   PutBitContext *pb, const float *in,
+                                                   PutBitContext *pb, const float *in, float *out,
                                                    const float *scaled, int size, int scale_idx,
                                                    int cb, const float lambda, const float uplim,
-                                                   int *bits)
+                                                   int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     int i;
@@ -659,10 +662,10 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             unsigned int v_codes;
             int t0, t1, t2, t3, t4;
 
-            qc1 = scaled[i  ] * Q34 + 0.4054f;
-            qc2 = scaled[i+1] * Q34 + 0.4054f;
-            qc3 = scaled[i+2] * Q34 + 0.4054f;
-            qc4 = scaled[i+3] * Q34 + 0.4054f;
+            qc1 = scaled[i  ] * Q34 + ROUNDING;
+            qc2 = scaled[i+1] * Q34 + ROUNDING;
+            qc3 = scaled[i+2] * Q34 + ROUNDING;
+            qc4 = scaled[i+3] * Q34 + ROUNDING;
 
             __asm__ volatile (
                 ".set push                                  \n\t"
@@ -736,10 +739,10 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             int c1, c2, c3, c4;
             int t0, t1, t2, t3, t4;
 
-            qc1 = scaled[i  ] * Q34 + 0.4054f;
-            qc2 = scaled[i+1] * Q34 + 0.4054f;
-            qc3 = scaled[i+2] * Q34 + 0.4054f;
-            qc4 = scaled[i+3] * Q34 + 0.4054f;
+            qc1 = scaled[i  ] * Q34 + ROUNDING;
+            qc2 = scaled[i+1] * Q34 + ROUNDING;
+            qc3 = scaled[i+2] * Q34 + ROUNDING;
+            qc4 = scaled[i+3] * Q34 + ROUNDING;
 
             __asm__ volatile (
                 ".set push                                  \n\t"
@@ -841,10 +844,10 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
 }
 
 static void (*const quantize_and_encode_band_cost_arr[])(struct AACEncContext *s,
-                                                         PutBitContext *pb, const float *in,
+                                                         PutBitContext *pb, const float *in, float *out,
                                                          const float *scaled, int size, int scale_idx,
                                                          int cb, const float lambda, const float uplim,
-                                                         int *bits) = {
+                                                         int *bits, const float ROUNDING) = {
     NULL,
     quantize_and_encode_band_cost_SQUAD_mips,
     quantize_and_encode_band_cost_SQUAD_mips,
@@ -859,19 +862,19 @@ static void (*const quantize_and_encode_band_cost_arr[])(struct AACEncContext *s
     quantize_and_encode_band_cost_ESC_mips,
 };
 
-#define quantize_and_encode_band_cost(                                  \
-                                s, pb, in, scaled, size, scale_idx, cb, \
-                                lambda, uplim, bits)                    \
-    quantize_and_encode_band_cost_arr[cb](                              \
-                                s, pb, in, scaled, size, scale_idx, cb, \
-                                lambda, uplim, bits)
+#define quantize_and_encode_band_cost(                                       \
+                                s, pb, in, out, scaled, size, scale_idx, cb, \
+                                lambda, uplim, bits, ROUNDING)               \
+    quantize_and_encode_band_cost_arr[cb](                                   \
+                                s, pb, in, out, scaled, size, scale_idx, cb, \
+                                lambda, uplim, bits, ROUNDING)
 
 static void quantize_and_encode_band_mips(struct AACEncContext *s, PutBitContext *pb,
-                                          const float *in, int size, int scale_idx,
-                                          int cb, const float lambda)
+                                          const float *in, float *out, int size, int scale_idx,
+                                          int cb, const float lambda, int rtz)
 {
-    quantize_and_encode_band_cost(s, pb, in, NULL, size, scale_idx, cb, lambda,
-                                  INFINITY, NULL);
+    quantize_and_encode_band_cost(s, pb, in, out, NULL, size, scale_idx, cb, lambda,
+                                  INFINITY, NULL, (rtz) ? ROUND_TO_ZERO : ROUND_STANDARD);
 }
 
 /**
@@ -904,10 +907,10 @@ static float get_band_numbits_SQUAD_mips(struct AACEncContext *s,
         int *in_int = (int *)&in[i];
         int t0, t1, t2, t3, t4, t5, t6, t7;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                      \n\t"
@@ -975,10 +978,10 @@ static float get_band_numbits_UQUAD_mips(struct AACEncContext *s,
         int curidx;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                      \n\t"
@@ -1034,10 +1037,10 @@ static float get_band_numbits_SPAIR_mips(struct AACEncContext *s,
         int *in_int = (int *)&in[i];
         int t0, t1, t2, t3, t4, t5, t6, t7;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                      \n\t"
@@ -1107,10 +1110,10 @@ static float get_band_numbits_UPAIR7_mips(struct AACEncContext *s,
         int curidx, curidx2;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                      \n\t"
@@ -1165,10 +1168,10 @@ static float get_band_numbits_UPAIR12_mips(struct AACEncContext *s,
         int curidx, curidx2;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                      \n\t"
@@ -1225,10 +1228,10 @@ static float get_band_numbits_ESC_mips(struct AACEncContext *s,
         int c1, c2, c3, c4;
         int t4, t5;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                                  \n\t"
@@ -1390,10 +1393,10 @@ static float get_band_cost_SQUAD_mips(struct AACEncContext *s,
         float di0, di1, di2, di3;
         int t0, t1, t2, t3, t4, t5, t6, t7;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                                  \n\t"
@@ -1502,10 +1505,10 @@ static float get_band_cost_UQUAD_mips(struct AACEncContext *s,
         float di0, di1, di2, di3;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                                  \n\t"
@@ -1605,10 +1608,10 @@ static float get_band_cost_SPAIR_mips(struct AACEncContext *s,
         float di0, di1, di2, di3;
         int t0, t1, t2, t3, t4, t5, t6, t7;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                                  \n\t"
@@ -1723,10 +1726,10 @@ static float get_band_cost_UPAIR7_mips(struct AACEncContext *s,
         float di0, di1, di2, di3;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                                          \n\t"
@@ -1857,10 +1860,10 @@ static float get_band_cost_UPAIR12_mips(struct AACEncContext *s,
         float di0, di1, di2, di3;
         int t0, t1, t2, t3, t4;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                                          \n\t"
@@ -1991,10 +1994,10 @@ static float get_band_cost_ESC_mips(struct AACEncContext *s,
         int c1, c2, c3, c4;
         int t6, t7;
 
-        qc1 = scaled[i  ] * Q34 + 0.4054f;
-        qc2 = scaled[i+1] * Q34 + 0.4054f;
-        qc3 = scaled[i+2] * Q34 + 0.4054f;
-        qc4 = scaled[i+3] * Q34 + 0.4054f;
+        qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
+        qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
+        qc3 = scaled[i+2] * Q34 + ROUND_STANDARD;
+        qc4 = scaled[i+3] * Q34 + ROUND_STANDARD;
 
         __asm__ volatile (
             ".set push                                  \n\t"
@@ -2309,8 +2312,7 @@ static void search_for_quantizers_twoloop_mips(AVCodecContext *avctx,
     } while (fflag && its < 10);
 }
 
-static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe,
-                               const float lambda)
+static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
 {
     int start = 0, i, w, w2, g;
     float M[128], S[128];
@@ -2356,25 +2358,25 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
-                                                lambda / band0->threshold, INFINITY, NULL);
+                                                s->lambda / band0->threshold, INFINITY, NULL);
                     dist1 += quantize_band_cost(s, sce1->coeffs + start + w2*128,
                                                 R34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],
                                                 sce1->band_type[(w+w2)*16+g],
-                                                lambda / band1->threshold, INFINITY, NULL);
+                                                s->lambda / band1->threshold, INFINITY, NULL);
                     dist2 += quantize_band_cost(s, M,
                                                 M34,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
-                                                lambda / maxthr, INFINITY, NULL);
+                                                s->lambda / maxthr, INFINITY, NULL);
                     dist2 += quantize_band_cost(s, S,
                                                 S34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],
                                                 sce1->band_type[(w+w2)*16+g],
-                                                lambda / minthr, INFINITY, NULL);
+                                                s->lambda / minthr, INFINITY, NULL);
                 }
                 cpe->ms_mask[w*16+g] = dist2 < dist1;
             }

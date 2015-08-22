@@ -30,6 +30,8 @@
 #include "audio_frame_queue.h"
 #include "psymodel.h"
 
+#include "lpc.h"
+
 typedef enum AACCoder {
     AAC_CODER_FAAC = 0,
     AAC_CODER_ANMR,
@@ -43,6 +45,8 @@ typedef struct AACEncOptions {
     int stereo_mode;
     int aac_coder;
     int pns;
+    int tns;
+    int pred;
     int intensity_stereo;
 } AACEncOptions;
 
@@ -53,12 +57,19 @@ typedef struct AACCoefficientsEncoder {
                                   SingleChannelElement *sce, const float lambda);
     void (*encode_window_bands_info)(struct AACEncContext *s, SingleChannelElement *sce,
                                      int win, int group_len, const float lambda);
-    void (*quantize_and_encode_band)(struct AACEncContext *s, PutBitContext *pb, const float *in, int size,
+    void (*quantize_and_encode_band)(struct AACEncContext *s, PutBitContext *pb, const float *in, float *out, int size,
                                      int scale_idx, int cb, const float lambda, int rtz);
+    void (*encode_tns_info)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*encode_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*adjust_common_prediction)(struct AACEncContext *s, ChannelElement *cpe);
+    void (*apply_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*update_main_pred)(struct AACEncContext *s, SingleChannelElement *sce, ChannelElement *cpe);
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
+    void (*search_for_tns)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe);
     void (*search_for_is)(struct AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
+    void (*search_for_pred)(struct AACEncContext *s, SingleChannelElement *sce);
 } AACCoefficientsEncoder;
 
 extern AACCoefficientsEncoder ff_aac_coders[];
@@ -75,6 +86,8 @@ typedef struct AACEncContext {
     AVFloatDSPContext *fdsp;
     float *planar_samples[6];                    ///< saved preprocessed input
 
+    int profile;                                 ///< copied from avctx
+    LPCContext lpc;                              ///< used by TNS
     int samplerate_index;                        ///< MPEG-4 samplerate index
     int channels;                                ///< channel count
     const uint8_t *chan_map;                     ///< channel configuration map

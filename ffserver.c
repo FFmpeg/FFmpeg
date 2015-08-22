@@ -1936,7 +1936,7 @@ static void compute_status(HTTPContext *c)
 
         avio_printf(pb, "<h2>Feed %s</h2>", stream->filename);
         if (stream->pid) {
-            avio_printf(pb, "Running as pid %d.\n", stream->pid);
+            avio_printf(pb, "Running as pid %"PRId64".\n", (int64_t) stream->pid);
 
 #if defined(linux)
             {
@@ -1945,8 +1945,8 @@ static void compute_status(HTTPContext *c)
 
                 /* This is somewhat linux specific I guess */
                 snprintf(ps_cmd, sizeof(ps_cmd),
-                         "ps -o \"%%cpu,cputime\" --no-headers %d",
-                         stream->pid);
+                         "ps -o \"%%cpu,cputime\" --no-headers %"PRId64"",
+                         (int64_t) stream->pid);
 
                  pid_stat = popen(ps_cmd, "r");
                  if (pid_stat) {
@@ -3778,8 +3778,8 @@ static void handle_child_exit(int sig)
             uptime = time(0) - feed->pid_start;
             feed->pid = 0;
             fprintf(stderr,
-                    "%s: Pid %d exited with status %d after %d seconds\n",
-                    feed->filename, pid, status, uptime);
+                    "%s: Pid %"PRId64" exited with status %d after %d seconds\n",
+                    feed->filename, (int64_t) pid, status, uptime);
 
             if (uptime < 30)
                 /* Turn off any more restarts */

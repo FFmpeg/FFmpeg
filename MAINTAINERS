@@ -137,6 +137,7 @@ Codecs:
   4xm.c                                 Michael Niedermayer
   8bps.c                                Roberto Togni
   8svx.c                                Jaikrishnan Menon
+  aacenc*, aaccoder.c                   Rostislav Pehlivanov
   aasc.c                                Kostya Shishkov
   ac3*                                  Justin Ruggles
   alacenc.c                             Jaikrishnan Menon
@@ -399,6 +400,7 @@ Generic parts:
 
 Muxers/Demuxers:
   4xm.c                                 Mike Melanson
+  aadec.c                               Vesselin Bontchev (vesselin.bontchev at yandex dot com)
   adtsenc.c                             Robert Swain
   afc.c                                 Paul B Mahol
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron

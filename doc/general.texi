@@ -228,6 +228,8 @@ library:
 @item 8088flex TMV              @tab   @tab X
 @item AAX                       @tab   @tab X
     @tab Audible Enhanced Audio format, used in audiobooks.
+@item AA                        @tab   @tab X
+    @tab Audible Format 2, 3, and 4, used in audiobooks.
 @item ACT Voice                 @tab   @tab X
     @tab contains G.729 audio
 @item Adobe Filmstrip           @tab X @tab X

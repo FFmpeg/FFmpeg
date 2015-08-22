@@ -1743,7 +1743,9 @@ static void flush_encoders(void)
                 ret = encode(enc, &pkt, NULL, &got_packet);
                 update_benchmark("flush %s %d.%d", desc, ost->file_index, ost->index);
                 if (ret < 0) {
-                    av_log(NULL, AV_LOG_FATAL, "%s encoding failed\n", desc);
+                    av_log(NULL, AV_LOG_FATAL, "%s encoding failed: %s\n",
+                           desc,
+                           av_err2str(ret));
                     exit_program(1);
                 }
                 if (ost->logfile && enc->stats_out) {
@@ -1870,7 +1872,8 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
                              pkt->data, pkt->size,
                              pkt->flags & AV_PKT_FLAG_KEY);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "av_parser_change failed\n");
+            av_log(NULL, AV_LOG_FATAL, "av_parser_change failed: %s\n",
+                   av_err2str(ret));
             exit_program(1);
         }
         if (ret) {
@@ -1890,7 +1893,8 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         /* store AVPicture in AVPacket, as expected by the output format */
         int ret = avpicture_fill(&pict, opkt.data, ost->st->codec->pix_fmt, ost->st->codec->width, ost->st->codec->height);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "avpicture_fill failed\n");
+            av_log(NULL, AV_LOG_FATAL, "avpicture_fill failed: %s\n",
+                   av_err2str(ret));
             exit_program(1);
         }
         opkt.data = (uint8_t *)&pict;

@@ -18,6 +18,12 @@ enabled demuxers.
 
 The description of some of the currently available demuxers follows.
 
+@section aa
+
+Audible Format 2, 3, and 4 demuxer.
+
+This demuxer is used to demux Audible Format 2, 3, and 4 (.aa) files.
+
 @section applehttp
 
 Apple HTTP Live Streaming demuxer.

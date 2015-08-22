@@ -39,6 +39,8 @@ typedef struct VectorscopeContext {
     const AVClass *class;
     int mode;
     const uint8_t *bg_color;
+    int planewidth[4];
+    int planeheight[4];
     int x, y, pd;
     int is_yuv;
 } VectorscopeContext;
@@ -59,7 +61,25 @@ static const AVOption vectorscope_options[] = {
 
 AVFILTER_DEFINE_CLASS(vectorscope);
 
-static const enum AVPixelFormat pix_fmts[] = {
+static const enum AVPixelFormat out_yuv_pix_fmts[] = {
+    AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_rgb_pix_fmts[] = {
+    AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat in1_pix_fmts[] = {
+    AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat in2_pix_fmts[] = {
+    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV410P,
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_NONE
@@ -67,12 +87,43 @@ static const enum AVPixelFormat pix_fmts[] = {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *fmts_list;
+    VectorscopeContext *s = ctx->priv;
+    const enum AVPixelFormat *out_pix_fmts;
+    const AVPixFmtDescriptor *desc;
+    AVFilterFormats *avff;
+    int rgb, i;
 
-    fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    if (!ctx->inputs[0]->in_formats ||
+        !ctx->inputs[0]->in_formats->nb_formats) {
+        return AVERROR(EAGAIN);
+    }
+
+    if (!ctx->inputs[0]->out_formats) {
+        const enum AVPixelFormat *in_pix_fmts;
+
+        if ((s->x == 1 && s->y == 2) || (s->x == 2 && s->y == 1))
+            in_pix_fmts = in2_pix_fmts;
+        else
+            in_pix_fmts = in1_pix_fmts;
+        ff_formats_ref(ff_make_format_list(in_pix_fmts), &ctx->inputs[0]->out_formats);
+    }
+
+    avff = ctx->inputs[0]->in_formats;
+    desc = av_pix_fmt_desc_get(avff->formats[0]);
+    rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
+    for (i = 1; i < avff->nb_formats; i++) {
+        desc = av_pix_fmt_desc_get(avff->formats[i]);
+        if (rgb != desc->flags & AV_PIX_FMT_FLAG_RGB)
+            return AVERROR(EAGAIN);
+    }
+
+    if (rgb)
+        out_pix_fmts = out_rgb_pix_fmts;
+    else
+        out_pix_fmts = out_yuv_pix_fmts;
+    ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats);
+
+    return 0;
 }
 
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 0 };
@@ -80,6 +131,7 @@ static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 0 };
 
 static int config_input(AVFilterLink *inlink)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     VectorscopeContext *s = inlink->dst->priv;
 
     if (s->mode == GRAY)
@@ -101,6 +153,11 @@ static int config_input(AVFilterLink *inlink)
     default:
         s->bg_color = black_yuva_color;
     }
+
+    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
     return 0;
 }
@@ -124,6 +181,8 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     const int slinesizey = in->linesize[s->y];
     const int dlinesize = out->linesize[0];
     int i, j, px = s->x, py = s->y;
+    const int h = s->planeheight[py];
+    const int w = s->planewidth[px];
     const uint8_t *spx = src[px];
     const uint8_t *spy = src[py];
     uint8_t **dst = out->data;
@@ -135,10 +194,10 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     case COLOR:
     case GRAY:
         if (s->is_yuv) {
-            for (i = 0; i < in->height; i++) {
+            for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
                 const int iwy = i * slinesizey;
-                for (j = 0; j < in->width; j++) {
+                for (j = 0; j < w; j++) {
                     const int x = spx[iwx + j];
                     const int y = spy[iwy + j];
                     const int pos = y * dlinesize + x;
@@ -149,10 +208,10 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
                 }
             }
         } else {
-            for (i = 0; i < in->height; i++) {
+            for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
                 const int iwy = i * slinesizey;
-                for (j = 0; j < in->width; j++) {
+                for (j = 0; j < w; j++) {
                     const int x = spx[iwx + j];
                     const int y = spy[iwy + j];
                     const int pos = y * dlinesize + x;
@@ -178,10 +237,10 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
         break;
     case COLOR2:
         if (s->is_yuv) {
-            for (i = 0; i < in->height; i++) {
+            for (i = 0; i < h; i++) {
                 const int iw1 = i * slinesizex;
                 const int iw2 = i * slinesizey;
-                for (j = 0; j < in->width; j++) {
+                for (j = 0; j < w; j++) {
                     const int x = spx[iw1 + j];
                     const int y = spy[iw2 + j];
                     const int pos = y * dlinesize + x;
@@ -195,10 +254,10 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
                 }
             }
         } else {
-            for (i = 0; i < in->height; i++) {
+            for (i = 0; i < h; i++) {
                 const int iw1 = i * slinesizex;
                 const int iw2 = i * slinesizey;
-                for (j = 0; j < in->width; j++) {
+                for (j = 0; j < w; j++) {
                     const int x = spx[iw1 + j];
                     const int y = spy[iw2 + j];
                     const int pos = y * dlinesize + x;
@@ -214,10 +273,10 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
         }
         break;
     case COLOR3:
-        for (i = 0; i < in->height; i++) {
+        for (i = 0; i < h; i++) {
             const int iw1 = i * slinesizex;
             const int iw2 = i * slinesizey;
-            for (j = 0; j < in->width; j++) {
+            for (j = 0; j < w; j++) {
                 const int x = spx[iw1 + j];
                 const int y = spy[iw2 + j];
                 const int pos = y * dlinesize + x;
@@ -241,7 +300,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     VectorscopeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
-    uint8_t **dst;;
+    uint8_t **dst;
     int i, k;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);

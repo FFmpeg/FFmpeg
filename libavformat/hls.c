@@ -482,7 +482,9 @@ static void handle_rendition_args(struct rendition_info *info, const char *key,
 /* used by parse_playlist to allocate a new variant+playlist when the
  * playlist is detected to be a Media Playlist (not Master Playlist)
  * and we have no parent Master Playlist (parsing of which would have
- * allocated the variant and playlist already) */
+ * allocated the variant and playlist already)
+ * *pls == NULL  => Master Playlist or parentless Media Playlist
+ * *pls != NULL => parented Media Playlist, playlist+variant allocated */
 static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url)
 {
     if (*pls)
@@ -493,8 +495,6 @@ static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url
     return 0;
 }
 
-/* pls = NULL  => Master Playlist or parentless Media Playlist
- * pls = !NULL => parented Media Playlist, playlist+variant allocated */
 static int open_in(HLSContext *c, AVIOContext **in, const char *url)
 {
     AVDictionary *tmp = NULL;
