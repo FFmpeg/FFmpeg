@@ -104,5 +104,5 @@ const uint8_t *swb_size_1024[] = {
     swb_size_1024_8
 };
 
-const int swb_size_128_len  = sizeof(swb_size_128)/sizeof(*swb_size_128);
-const int swb_size_1024_len = sizeof(swb_size_1024)/sizeof(*swb_size_1024);
+const int swb_size_128_len  = FF_ARRAY_ELEMS(swb_size_128);
+const int swb_size_1024_len = FF_ARRAY_ELEMS(swb_size_1024);
