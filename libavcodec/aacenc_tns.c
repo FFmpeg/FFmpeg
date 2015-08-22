@@ -185,6 +185,9 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
     const float freq_mult = mpeg4audio_sample_rates[s->samplerate_index]/(1024.0f/sce->ics.num_windows)/2.0f;
     float max_coef = 0.0f;
 
+    sce->tns.present = 0;
+    return;
+
     for (coef_start = 0; coef_start < 1024; coef_start++)
         max_coef = FFMAX(max_coef, sce->pcoeffs[coef_start]);
 
