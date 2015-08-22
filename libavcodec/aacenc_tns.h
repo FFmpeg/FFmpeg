@@ -39,7 +39,7 @@
 #define TNS_LPC_PASSES     2
 #define MAX_LPC_SHIFT      4
 
-void encode_tns_info(AACEncContext *s, SingleChannelElement *sce);
-void search_for_tns(AACEncContext *s, SingleChannelElement *sce);
+void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce);
+void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce);
 
 #endif /* AVCODEC_AACENC_TNS_H */

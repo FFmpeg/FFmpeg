@@ -72,7 +72,7 @@ static inline int compress_coef(int *coefs, int num)
  * Encode TNS data.
  * Coefficient compression saves a single bit.
  */
-void encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
+void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
 {
     int i, w, filt, coef_len, coef_compress;
     const int coef_res = MAX_LPC_PRECISION == 4 ? 1 : 0;
@@ -149,7 +149,8 @@ static int process_tns_coeffs(TemporalNoiseShaping *tns, float *tns_coefs_raw,
 }
 
 static void apply_tns_filter(float *out, float *in, int order, int direction,
-                             float *tns_coefs, int ltp_used, int w, int filt, int start_i, int len)
+                             float *tns_coefs, int ltp_used, int w, int filt,
+                             int start_i, int len)
 {
     int i, j, inc, start = start_i;
     float tmp[TNS_MAX_ORDER+1];
@@ -175,7 +176,7 @@ static void apply_tns_filter(float *out, float *in, int order, int direction,
     }
 }
 
-void search_for_tns(AACEncContext *s, SingleChannelElement *sce)
+void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 {
     TemporalNoiseShaping *tns = &sce->tns;
     int w, g, order, sfb_start, sfb_len, coef_start, shift[MAX_LPC_ORDER], count = 0;
