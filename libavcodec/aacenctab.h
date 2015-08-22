@@ -38,10 +38,10 @@
 
 #define AAC_MAX_CHANNELS 6
 
-extern const uint8_t *swb_size_1024[];
-extern const int      swb_size_1024_len;
-extern const uint8_t *swb_size_128[];
-extern const int      swb_size_128_len;
+extern const uint8_t *ff_aac_swb_size_1024[];
+extern const int      ff_aac_swb_size_1024_len;
+extern const uint8_t *ff_aac_swb_size_128[];
+extern const int      ff_aac_swb_size_128_len;
 
 /** default channel configurations */
 static const uint8_t aac_chan_configs[6][5] = {
