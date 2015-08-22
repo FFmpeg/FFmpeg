@@ -131,7 +131,7 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
             if (sixteen_bits) {
                 const uint16_t *s = (const uint16_t *)(src[0] + srcStride[0] * y + 2*!alpha_pos);
                 const uint16_t *a = (const uint16_t *)(src[0] + srcStride[0] * y +    alpha_pos);
-                      uint16_t *d = (const uint16_t *)(dst[0] + dstStride[0] * y);
+                      uint16_t *d = (      uint16_t *)(dst[0] + dstStride[0] * y);
                 if ((!isBE(c->srcFormat)) == !HAVE_BIGENDIAN) {
                     for (x = 0; x < w; x++) {
                         for (plane = 0; plane < plane_count; plane++) {
