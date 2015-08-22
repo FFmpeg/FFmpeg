@@ -402,17 +402,17 @@ static int decode_slice(AVCodecContext *c, void *arg)
     fs->slice_rct_ry_coef = 1;
 
     if (f->version > 2) {
-        if (ffv1_init_slice_state(f, fs) < 0)
+        if (ff_ffv1_init_slice_state(f, fs) < 0)
             return AVERROR(ENOMEM);
         if (decode_slice_header(f, fs) < 0) {
             fs->slice_damaged = 1;
             return AVERROR_INVALIDDATA;
         }
     }
-    if ((ret = ffv1_init_slice_state(f, fs)) < 0)
+    if ((ret = ff_ffv1_init_slice_state(f, fs)) < 0)
         return ret;
     if (f->cur->key_frame || fs->slice_reset_contexts)
-        ffv1_clear_slice_state(f, fs);
+        ff_ffv1_clear_slice_state(f, fs);
 
     width  = fs->slice_width;
     height = fs->slice_height;
@@ -571,7 +571,7 @@ static int read_extra_header(FFV1Context *f)
             return AVERROR_INVALIDDATA;
         }
     }
-    if ((ret = ffv1_allocate_initial_states(f)) < 0)
+    if ((ret = ff_ffv1_allocate_initial_states(f)) < 0)
         return ret;
 
     for (i = 0; i < f->quant_table_count; i++)
@@ -852,13 +852,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     FFV1Context *f = avctx->priv_data;
     int ret;
 
-    if ((ret = ffv1_common_init(avctx)) < 0)
+    if ((ret = ff_ffv1_common_init(avctx)) < 0)
         return ret;
 
     if (avctx->extradata && (ret = read_extra_header(f)) < 0)
         return ret;
 
-    if ((ret = ffv1_init_slice_contexts(f)) < 0)
+    if ((ret = ff_ffv1_init_slice_contexts(f)) < 0)
         return ret;
 
     avctx->internal->allocate_progress = 1;
@@ -1021,7 +1021,7 @@ static int init_thread_copy(AVCodecContext *avctx)
     f->picture.f      = av_frame_alloc();
     f->last_picture.f = av_frame_alloc();
 
-    if ((ret = ffv1_init_slice_contexts(f)) < 0)
+    if ((ret = ff_ffv1_init_slice_contexts(f)) < 0)
         return ret;
 
     return 0;
@@ -1106,7 +1106,7 @@ AVCodec ff_ffv1_decoder = {
     .id             = AV_CODEC_ID_FFV1,
     .priv_data_size = sizeof(FFV1Context),
     .init           = decode_init,
-    .close          = ffv1_close,
+    .close          = ff_ffv1_close,
     .decode         = decode_frame,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),

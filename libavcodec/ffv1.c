@@ -39,7 +39,7 @@
 #include "mathops.h"
 #include "ffv1.h"
 
-av_cold int ffv1_common_init(AVCodecContext *avctx)
+av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
 
@@ -64,7 +64,7 @@ av_cold int ffv1_common_init(AVCodecContext *avctx)
     return 0;
 }
 
-av_cold int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
+av_cold int ff_ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
 {
     int j;
 
@@ -98,18 +98,18 @@ av_cold int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
     return 0;
 }
 
-av_cold int ffv1_init_slices_state(FFV1Context *f)
+av_cold int ff_ffv1_init_slices_state(FFV1Context *f)
 {
     int i, ret;
     for (i = 0; i < f->slice_count; i++) {
         FFV1Context *fs = f->slice_context[i];
-        if ((ret = ffv1_init_slice_state(f, fs)) < 0)
+        if ((ret = ff_ffv1_init_slice_state(f, fs)) < 0)
             return AVERROR(ENOMEM);
     }
     return 0;
 }
 
-av_cold int ffv1_init_slice_contexts(FFV1Context *f)
+av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 {
     int i;
 
@@ -154,7 +154,7 @@ memfail:
     return AVERROR(ENOMEM);
 }
 
-int ffv1_allocate_initial_states(FFV1Context *f)
+int ff_ffv1_allocate_initial_states(FFV1Context *f)
 {
     int i;
 
@@ -169,7 +169,7 @@ int ffv1_allocate_initial_states(FFV1Context *f)
     return 0;
 }
 
-void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
+void ff_ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
 {
     int i, j;
 
@@ -197,7 +197,7 @@ void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
 }
 
 
-av_cold int ffv1_close(AVCodecContext *avctx)
+av_cold int ff_ffv1_close(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
     int i, j;
