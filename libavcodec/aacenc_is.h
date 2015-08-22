@@ -28,6 +28,8 @@
 #ifndef AVCODEC_AACENC_IS_H
 #define AVCODEC_AACENC_IS_H
 
+#include "aacenc.h"
+
 /** Frequency in Hz for lower limit of intensity stereo **/
 #define INT_STEREO_LOW_LIMIT 6100
 

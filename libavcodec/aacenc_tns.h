@@ -28,7 +28,7 @@
 #ifndef AVCODEC_AACENC_TNS_H
 #define AVCODEC_AACENC_TNS_H
 
-#include "aac.h"
+#include "aacenc.h"
 
 /** Frequency in Hz for lower limit of TNS **/
 #define TNS_LOW_LIMIT 2150
