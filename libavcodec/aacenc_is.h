@@ -25,8 +25,8 @@
  * @author Rostislav Pehlivanov ( atomnuker gmail com )
  */
 
-#ifndef AVCODEC_AACENC_INTENSITY_STEREO_H
-#define AVCODEC_AACENC_INTENSITY_STEREO_H
+#ifndef AVCODEC_AACENC_IS_H
+#define AVCODEC_AACENC_IS_H
 
 /** Frequency in Hz for lower limit of intensity stereo **/
 #define INT_STEREO_LOW_LIMIT 6100
@@ -44,4 +44,4 @@ struct is_error calc_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
                                      float ener1, float ener01, int phase);
 void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
 
-#endif /* AVCODEC_AACENC_INTENSITY_STEREO_H */
+#endif /* AVCODEC_AACENC_IS_H */
