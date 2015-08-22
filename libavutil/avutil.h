@@ -138,14 +138,6 @@
  *
  * @{
  *
- * @defgroup lavu_internal Internal
- *
- * Not exported functions, for internal usage only
- *
- * @{
- *
- * @}
- *
  * @defgroup preproc_misc Preprocessor String Macros
  *
  * @{
