@@ -1276,7 +1276,9 @@ static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
 
         s->pack_pblocks = 1;
 #if FF_API_XVMC
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->xvmc_acceleration = 2;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
     }
 }
@@ -2919,6 +2921,7 @@ AVCodec ff_mpegvideo_decoder = {
 
 #if FF_API_XVMC
 #if CONFIG_MPEG_XVMC_DECODER
+FF_DISABLE_DEPRECATION_WARNINGS
 static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx)
 {
     if (avctx->active_thread_type & FF_THREAD_SLICE)
@@ -2950,7 +2953,7 @@ AVCodec ff_mpeg_xvmc_decoder = {
                       AV_CODEC_CAP_DELAY,
     .flush          = flush,
 };
-
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 #endif /* FF_API_XVMC */
 

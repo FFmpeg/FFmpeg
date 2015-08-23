@@ -61,7 +61,7 @@
  * @param num must be >= 0
  * @param den must be >= 1
  */
-static void frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
+static void frac_init(FFFrac *f, int64_t val, int64_t num, int64_t den)
 {
     num += (den >> 1);
     if (num >= den) {
@@ -79,7 +79,7 @@ static void frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
  * @param f fractional number
  * @param incr increment, can be positive or negative
  */
-static void frac_add(AVFrac *f, int64_t incr)
+static void frac_add(FFFrac *f, int64_t incr)
 {
     int64_t num, den;
 
@@ -414,11 +414,17 @@ static int init_pts(AVFormatContext *s)
         default:
             break;
         }
+
+        if (!st->priv_pts)
+            st->priv_pts = av_mallocz(sizeof(*st->priv_pts));
+        if (!st->priv_pts)
+            return AVERROR(ENOMEM);
+
         if (den != AV_NOPTS_VALUE) {
             if (den <= 0)
                 return AVERROR_INVALIDDATA;
 
-            frac_init(&st->pts, 0, 0, den);
+            frac_init(st->priv_pts, 0, 0, den);
         }
     }
 
@@ -502,7 +508,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         }
         pkt->dts =
 //        pkt->pts= st->cur_dts;
-            pkt->pts = st->pts.val;
+            pkt->pts = st->priv_pts->val;
     }
 
     //calculate dts from pts
@@ -538,7 +544,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
             av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 
     st->cur_dts = pkt->dts;
-    st->pts.val = pkt->dts;
+    st->priv_pts->val = pkt->dts;
 
     /* update pts */
     switch (st->codec->codec_type) {
@@ -550,12 +556,12 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         /* HACK/FIXME, we skip the initial 0 size packets as they are most
          * likely equal to the encoder delay, but it would be better if we
          * had the real timestamps from the encoder */
-        if (frame_size >= 0 && (pkt->size || st->pts.num != st->pts.den >> 1 || st->pts.val)) {
-            frac_add(&st->pts, (int64_t)st->time_base.den * frame_size);
+        if (frame_size >= 0 && (pkt->size || st->priv_pts->num != st->priv_pts->den >> 1 || st->priv_pts->val)) {
+            frac_add(st->priv_pts, (int64_t)st->time_base.den * frame_size);
         }
         break;
     case AVMEDIA_TYPE_VIDEO:
-        frac_add(&st->pts, (int64_t)st->time_base.den * st->codec->time_base.num);
+        frac_add(st->priv_pts, (int64_t)st->time_base.den * st->codec->time_base.num);
         break;
     }
     return 0;
@@ -1045,7 +1051,11 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
     pkt->buf = local_pkt.buf;
     pkt->side_data       = local_pkt.side_data;
     pkt->side_data_elems = local_pkt.side_data_elems;
+#if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct = local_pkt.destruct;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     return ret;
 }
 

@@ -72,7 +72,7 @@ static inline int compress_coef(int *coefs, int num)
  * Encode TNS data.
  * Coefficient compression saves a single bit.
  */
-void encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
+void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
 {
     int i, w, filt, coef_len, coef_compress;
     const int coef_res = MAX_LPC_PRECISION == 4 ? 1 : 0;
@@ -149,7 +149,8 @@ static int process_tns_coeffs(TemporalNoiseShaping *tns, float *tns_coefs_raw,
 }
 
 static void apply_tns_filter(float *out, float *in, int order, int direction,
-                             float *tns_coefs, int ltp_used, int w, int filt, int start_i, int len)
+                             float *tns_coefs, int ltp_used, int w, int filt,
+                             int start_i, int len)
 {
     int i, j, inc, start = start_i;
     float tmp[TNS_MAX_ORDER+1];
@@ -175,7 +176,7 @@ static void apply_tns_filter(float *out, float *in, int order, int direction,
     }
 }
 
-void search_for_tns(AACEncContext *s, SingleChannelElement *sce)
+void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 {
     TemporalNoiseShaping *tns = &sce->tns;
     int w, g, order, sfb_start, sfb_len, coef_start, shift[MAX_LPC_ORDER], count = 0;
@@ -183,6 +184,9 @@ void search_for_tns(AACEncContext *s, SingleChannelElement *sce)
     const int tns_max_order = is8 ? 7 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
     const float freq_mult = mpeg4audio_sample_rates[s->samplerate_index]/(1024.0f/sce->ics.num_windows)/2.0f;
     float max_coef = 0.0f;
+
+    sce->tns.present = 0;
+    return;
 
     for (coef_start = 0; coef_start < 1024; coef_start++)
         max_coef = FFMAX(max_coef, sce->pcoeffs[coef_start]);

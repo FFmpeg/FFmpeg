@@ -42,10 +42,10 @@
 /* Offset for the number of bits to encode normal coefficients */
 #define PRICE_OFFSET 440
 
-void apply_main_pred(AACEncContext *s, SingleChannelElement *sce);
-void update_main_pred(AACEncContext *s, SingleChannelElement *sce, ChannelElement *cpe);
-void adjust_common_prediction(AACEncContext *s, ChannelElement *cpe);
-void search_for_pred(AACEncContext *s, SingleChannelElement *sce);
-void encode_main_pred(AACEncContext *s, SingleChannelElement *sce);
+void ff_aac_apply_main_pred(AACEncContext *s, SingleChannelElement *sce);
+void ff_aac_update_main_pred(AACEncContext *s, SingleChannelElement *sce, ChannelElement *cpe);
+void ff_aac_adjust_common_prediction(AACEncContext *s, ChannelElement *cpe);
+void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce);
+void ff_aac_encode_main_pred(AACEncContext *s, SingleChannelElement *sce);
 
 #endif /* AVCODEC_AACENC_PRED_H */

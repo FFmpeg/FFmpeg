@@ -1170,6 +1170,8 @@ typedef struct AVStream {
      * - decoding: Set by libavformat to calculate sample_aspect_ratio internally
      */
     AVRational display_aspect_ratio;
+
+    struct FFFrac *priv_pts;
 } AVStream;
 
 AVRational av_stream_get_r_frame_rate(const AVStream *s);

@@ -116,7 +116,10 @@ MAKE_ACCESSORS(AVFormatContext, format, AVOpenCallback, open_cb)
 
 int64_t av_stream_get_end_pts(const AVStream *st)
 {
-    return st->pts.val;
+    if (st->priv_pts) {
+        return st->priv_pts->val;
+    } else
+        return AV_NOPTS_VALUE;
 }
 
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *st)
@@ -3668,6 +3671,7 @@ void ff_free_stream(AVFormatContext *s, AVStream *st) {
         av_freep(&st->info->duration_error);
     av_freep(&st->info);
     av_freep(&st->recommended_encoder_configuration);
+    av_freep(&st->priv_pts);
     av_freep(&s->streams[ --s->nb_streams ]);
 }
 

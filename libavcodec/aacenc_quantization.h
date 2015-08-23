@@ -25,6 +25,9 @@
  * @author Rostislav Pehlivanov ( atomnuker gmail com )
  */
 
+#ifndef AVCODEC_AACENC_QUANTIZATION_H
+#define AVCODEC_AACENC_QUANTIZATION_H
+
 #include "aactab.h"
 #include "aacenc.h"
 #include "aacenctab.h"
@@ -107,7 +110,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                 }
                 di = t - quantized;
                 if (out)
-                    out[i+j] = copysignf(quantized, in[i+j]);
+                    out[i+j] = in[i+j] >= 0 ? quantized : -quantized;
                 if (vec[j] != 0.0f)
                     curbits++;
                 rd += di*di;
@@ -253,3 +256,5 @@ static inline void quantize_and_encode_band(struct AACEncContext *s, PutBitConte
     quantize_and_encode_band_cost(s, pb, in, out, NULL, size, scale_idx, cb, lambda,
                                   INFINITY, NULL, rtz);
 }
+
+#endif /* AVCODEC_AACENC_QUANTIZATION_H */

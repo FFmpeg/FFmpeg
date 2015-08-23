@@ -51,34 +51,3 @@ av_cold void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx)
     if (ARCH_X86) ff_fmt_convert_init_x86(c, avctx);
     if (HAVE_MIPSFPU) ff_fmt_convert_init_mips(c);
 }
-
-/* ffdshow custom code */
-void float_interleave(float *dst, const float **src, long len, int channels)
-{
-    int i,j,c;
-    if(channels==2){
-        for(i=0; i<len; i++){
-            dst[2*i]   = src[0][i] / 32768.0f;
-            dst[2*i+1] = src[1][i] / 32768.0f;
-        }
-    }else{
-        for(c=0; c<channels; c++)
-            for(i=0, j=c; i<len; i++, j+=channels)
-                dst[j] = src[c][i] / 32768.0f;
-    }
-}
-
-void float_interleave_noscale(float *dst, const float **src, long len, int channels)
-{
-    int i,j,c;
-    if(channels==2){
-        for(i=0; i<len; i++){
-            dst[2*i]   = src[0][i];
-            dst[2*i+1] = src[1][i];
-        }
-    }else{
-        for(c=0; c<channels; c++)
-            for(i=0, j=c; i<len; i++, j+=channels)
-                dst[j] = src[c][i];
-    }
-}

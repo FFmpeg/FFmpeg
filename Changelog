@@ -33,6 +33,7 @@ version <next>:
 - aphasemeter filter
 - showfreqs filter
 - vectorscope filter
+- waveform filter
 
 
 version 2.7:

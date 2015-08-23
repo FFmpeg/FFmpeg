@@ -81,6 +81,7 @@ AVFrame *ff_get_audio_buffer(AVFilterLink *link, int nb_samples)
 }
 
 #if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays_channels(uint8_t **data,
                                                                       int linesize,int perms,
                                                                       int nb_samples,
@@ -167,4 +168,5 @@ AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
                                                               nb_samples, sample_fmt,
                                                               channels, channel_layout);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif

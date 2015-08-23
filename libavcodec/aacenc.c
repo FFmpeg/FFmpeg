@@ -778,7 +778,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     s->channels = avctx->channels;
 
-    ERROR_IF(i == 16 || i >= swb_size_1024_len || i >= swb_size_128_len,
+    ERROR_IF(i == 16 || i >= ff_aac_swb_size_1024_len || i >= ff_aac_swb_size_128_len,
              "Unsupported sample rate %d\n", avctx->sample_rate);
     ERROR_IF(s->channels > AAC_MAX_CHANNELS,
              "Unsupported number of channels: %d\n", s->channels);
@@ -813,8 +813,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = 5;
     put_audio_specific_config(avctx);
 
-    sizes[0]   = swb_size_1024[i];
-    sizes[1]   = swb_size_128[i];
+    sizes[0]   = ff_aac_swb_size_1024[i];
+    sizes[1]   = ff_aac_swb_size_128[i];
     lengths[0] = ff_aac_num_swb_1024[i];
     lengths[1] = ff_aac_num_swb_128[i];
     for (i = 0; i < s->chan_map[0]; i++)

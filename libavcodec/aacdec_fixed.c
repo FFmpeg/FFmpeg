@@ -101,7 +101,7 @@ static av_always_inline void reset_predict_state(PredictorState *ps)
     ps->var1.exp = 1;
 }
 
-int exp2tab[4] = { Q31(1.0000000000/2), Q31(1.1892071150/2), Q31(1.4142135624/2), Q31(1.6817928305/2) };  // 2^0, 2^0.25, 2^0.5, 2^0.75
+static const int exp2tab[4] = { Q31(1.0000000000/2), Q31(1.1892071150/2), Q31(1.4142135624/2), Q31(1.6817928305/2) };  // 2^0, 2^0.25, 2^0.5, 2^0.75
 
 static inline int *DEC_SPAIR(int *dst, unsigned idx)
 {

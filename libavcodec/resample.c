@@ -33,6 +33,7 @@
 #include "libavutil/samplefmt.h"
 
 #if FF_API_AVCODEC_RESAMPLE
+FF_DISABLE_DEPRECATION_WARNINGS
 
 #define MAX_CHANNELS 8
 
@@ -440,4 +441,5 @@ void audio_resample_close(ReSampleContext *s)
     av_free(s);
 }
 
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif

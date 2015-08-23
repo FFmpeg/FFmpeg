@@ -125,7 +125,7 @@ static inline void reset_predictor_group(SingleChannelElement *sce, int group_nu
         reset_predict_state(&ps[i]);
 }
 
-void apply_main_pred(AACEncContext *s, SingleChannelElement *sce)
+void ff_aac_apply_main_pred(AACEncContext *s, SingleChannelElement *sce)
 {
     int sfb, k;
 
@@ -185,7 +185,7 @@ static inline void prepare_predictors(SingleChannelElement *sce)
         predict(&sce->predictor_state[k], &sce->coeffs[k], &sce->prcoeffs[k], 0);
 }
 
-void update_main_pred(AACEncContext *s, SingleChannelElement *sce, ChannelElement *cpe)
+void ff_aac_update_main_pred(AACEncContext *s, SingleChannelElement *sce, ChannelElement *cpe)
 {
     int k;
 
@@ -218,7 +218,7 @@ static inline int update_counters(IndividualChannelStream *ics, int inc)
     return rg;
 }
 
-void adjust_common_prediction(AACEncContext *s, ChannelElement *cpe)
+void ff_aac_adjust_common_prediction(AACEncContext *s, ChannelElement *cpe)
 {
     int start, w, g, count = 0;
     SingleChannelElement *sce0 = &cpe->ch[0];
@@ -289,7 +289,7 @@ static void update_pred_resets(SingleChannelElement *sce)
     }
 }
 
-void search_for_pred(AACEncContext *s, SingleChannelElement *sce)
+void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
 {
     int sfb, i, count = 0;
     float *O34  = &s->scoefs[256*0], *P34  = &s->scoefs[256*1];
@@ -349,7 +349,7 @@ void search_for_pred(AACEncContext *s, SingleChannelElement *sce)
 /**
  * Encoder predictors data.
  */
-void encode_main_pred(AACEncContext *s, SingleChannelElement *sce)
+void ff_aac_encode_main_pred(AACEncContext *s, SingleChannelElement *sce)
 {
     int sfb;
 

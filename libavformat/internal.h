@@ -49,6 +49,18 @@ typedef struct CodecMime{
     enum AVCodecID id;
 } CodecMime;
 
+/*************************************************/
+/* fractional numbers for exact pts handling */
+
+/**
+ * The exact value of the fractional number is: 'val + num / den'.
+ * num is assumed to be 0 <= num < den.
+ */
+typedef struct FFFrac {
+    int64_t val, num, den;
+} FFFrac;
+
+
 struct AVFormatInternal {
     /**
      * Number of streams relevant for interleaving.

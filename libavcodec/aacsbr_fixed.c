@@ -78,7 +78,7 @@ static const int CONST_LN2       = Q31(0.6931471806/256);  // ln(2)/256
 static const int CONST_RECIP_LN2 = Q31(0.7213475204);      // 0.5/ln(2)
 static const int CONST_076923    = Q31(0.76923076923076923077f);
 
-int fixed_log_table[10] =
+static const int fixed_log_table[10] =
 {
     Q31(1.0/2), Q31(1.0/3), Q31(1.0/4), Q31(1.0/5), Q31(1.0/6),
     Q31(1.0/7), Q31(1.0/8), Q31(1.0/9), Q31(1.0/10), Q31(1.0/11)
@@ -103,7 +103,7 @@ static int fixed_log(int x)
     return ret;
 }
 
-int fixed_exp_table[7] =
+static const int fixed_exp_table[7] =
 {
     Q31(1.0/2), Q31(1.0/6), Q31(1.0/24), Q31(1.0/120),
     Q31(1.0/720), Q31(1.0/5040), Q31(1.0/40320)

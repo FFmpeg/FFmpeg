@@ -151,8 +151,10 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
         if (fctx->die) break;
 
+FF_DISABLE_DEPRECATION_WARNINGS
         if (!codec->update_thread_context && THREAD_SAFE_CALLBACKS(avctx))
             ff_thread_finish_setup(avctx);
+FF_ENABLE_DEPRECATION_WARNINGS
 
         av_frame_unref(p->frame);
         p->got_frame = 0;
@@ -771,8 +773,10 @@ void ff_thread_flush(AVCodecContext *avctx)
 int ff_thread_can_start_frame(AVCodecContext *avctx)
 {
     PerThreadContext *p = avctx->internal->thread_ctx;
+FF_DISABLE_DEPRECATION_WARNINGS
     if ((avctx->active_thread_type&FF_THREAD_FRAME) && p->state != STATE_SETTING_UP &&
         (avctx->codec->update_thread_context || !THREAD_SAFE_CALLBACKS(avctx))) {
+FF_ENABLE_DEPRECATION_WARNINGS
         return 0;
     }
     return 1;
@@ -790,8 +794,10 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
     if (!(avctx->active_thread_type & FF_THREAD_FRAME))
         return ff_get_buffer(avctx, f->f, flags);
 
+FF_DISABLE_DEPRECATION_WARNINGS
     if (p->state != STATE_SETTING_UP &&
         (avctx->codec->update_thread_context || !THREAD_SAFE_CALLBACKS(avctx))) {
+FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "get_buffer() cannot be called after ff_thread_finish_setup()\n");
         return -1;
     }
@@ -831,9 +837,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         pthread_mutex_unlock(&p->progress_mutex);
 
     }
+FF_DISABLE_DEPRECATION_WARNINGS
     if (!THREAD_SAFE_CALLBACKS(avctx) && !avctx->codec->update_thread_context)
         ff_thread_finish_setup(avctx);
-
+FF_ENABLE_DEPRECATION_WARNINGS
     if (err)
         av_buffer_unref(&f->progress);
 

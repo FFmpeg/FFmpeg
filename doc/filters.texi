@@ -10927,6 +10927,82 @@ Only deinterlace frames marked as interlaced.
 Default value is @samp{all}.
 @end table
 
+@section waveform
+Video waveform monitor.
+
+The waveform monitor plots color component intensity. By default luminance
+only. Each column of the waveform corresponds to a column of pixels in the
+source video.
+
+It accepts the following options:
+
+@table @option
+@item mode, m
+Can be either @code{row}, or @code{column}. Default is @code{column}.
+In row mode, the graph on the left side represents color component value 0 and
+the right side represents value = 255. In column mode, the top side represents
+color component value = 0 and bottom side represents value = 255.
+
+@item intensity, i
+Set intensity. Smaller values are useful to find out how many values of the same
+luminance are distributed across input rows/columns.
+Default value is @code{10}. Allowed range is [1, 255].
+
+@item mirror, r
+Set mirroring mode. @code{0} means unmirrored, @code{1} means mirrored.
+In mirrored mode, higher values will be represented on the left
+side for @code{row} mode and at the top for @code{column} mode. Default is
+@code{1} (mirrored).
+
+@item display, d
+Set display mode.
+It accepts the following values:
+@table @samp
+@item overlay
+Presents information identical to that in the @code{parade}, except
+that the graphs representing color components are superimposed directly
+over one another.
+
+This display mode makes it easier to spot relative differences or similarities
+in overlapping areas of the color components that are supposed to be identical,
+such as neutral whites, grays, or blacks.
+
+@item parade
+Display separate graph for the color components side by side in
+@code{row} mode or one below the other in @code{column} mode.
+
+Using this display mode makes it easy to spot color casts in the highlights
+and shadows of an image, by comparing the contours of the top and the bottom
+graphs of each waveform. Since whites, grays, and blacks are characterized
+by exactly equal amounts of red, green, and blue, neutral areas of the picture
+should display three waveforms of roughly equal width/height. If not, the
+correction is easy to perform by making level adjustments the three waveforms.
+@end table
+Default is @code{parade}.
+
+@item components, c
+Set which color components to display. Default is 1, which means only luminance
+or red color component if input is in RGB colorspace. If is set for example to
+7 it will display all 3 (if) available color components.
+
+@item envelope, e
+@table @samp
+@item none
+No envelope, this is default.
+
+@item instant
+Instant envelope, minimum and maximum values presented in graph will be easily
+visible even with small @code{step} value.
+
+@item peak
+Hold minimum and maximum values presented in graph across time. This way you
+can still spot out of range values without constantly looking at waveforms.
+
+@item peak+instant
+Peak and instant envelope combined together.
+@end table
+@end table
+
 @section xbr
 Apply the xBR high-quality magnification filter which is designed for pixel
 art. It follows a set of edge-detection rules, see

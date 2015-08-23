@@ -172,6 +172,7 @@ static int config_output(AVFilterLink *outlink)
         outlink->h = (h->level_height + h->scale_height) * FFMAX(ncomp * h->display_mode, 1);
         break;
     case MODE_WAVEFORM:
+        av_log(ctx, AV_LOG_WARNING, "This mode is deprecated, please use waveform filter instead.\n");
         if (h->waveform_mode)
             outlink->h = 256 * FFMAX(h->ncomp * h->display_mode, 1);
         else

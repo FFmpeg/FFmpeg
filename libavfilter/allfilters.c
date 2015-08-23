@@ -247,6 +247,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(VIDSTABTRANSFORM, vidstabtransform, vf);
     REGISTER_FILTER(VIGNETTE,       vignette,       vf);
     REGISTER_FILTER(W3FDIF,         w3fdif,         vf);
+    REGISTER_FILTER(WAVEFORM,       waveform,       vf);
     REGISTER_FILTER(XBR,            xbr,            vf);
     REGISTER_FILTER(YADIF,          yadif,          vf);
     REGISTER_FILTER(ZMQ,            zmq,            vf);

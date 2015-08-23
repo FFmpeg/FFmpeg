@@ -30,15 +30,15 @@
 #include "aacenc_is.h"
 #include "aacenc_quantization.h"
 
-struct is_error calc_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
-                                     int start, int w, int g, float ener0,
-                                     float ener1, float ener01, int phase)
+struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
+                                         int start, int w, int g, float ener0,
+                                         float ener1, float ener01, int phase)
 {
     int i, w2;
     float *L34 = &s->scoefs[256*0], *R34 = &s->scoefs[256*1];
     float *IS  = &s->scoefs[256*2], *I34 = &s->scoefs[256*3];
     float dist1 = 0.0f, dist2 = 0.0f;
-    struct is_error is_error = {0};
+    struct AACISError is_error = {0};
     SingleChannelElement *sce0 = &cpe->ch[0];
     SingleChannelElement *sce1 = &cpe->ch[1];
 
@@ -89,7 +89,7 @@ struct is_error calc_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
     return is_error;
 }
 
-void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe)
+void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe)
 {
     SingleChannelElement *sce0 = &cpe->ch[0];
     SingleChannelElement *sce1 = &cpe->ch[1];
@@ -106,7 +106,7 @@ void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe)
                 cpe->ch[0].band_type[w*16+g] != NOISE_BT && !cpe->ch[0].zeroes[w*16+g] &&
                 cpe->ch[1].band_type[w*16+g] != NOISE_BT && !cpe->ch[1].zeroes[w*16+g]) {
                 float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f;
-                struct is_error ph_err1, ph_err2, *erf;
+                struct AACISError ph_err1, ph_err2, *erf;
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
                         float coef0 = sce0->pcoeffs[start+(w+w2)*128+i];
@@ -116,10 +116,10 @@ void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe)
                         ener01 += (coef0 + coef1)*(coef0 + coef1);
                     }
                 }
-                ph_err1 = calc_is_encoding_err(s, cpe, start, w, g,
-                                               ener0, ener1, ener01, -1);
-                ph_err2 = calc_is_encoding_err(s, cpe, start, w, g,
-                                               ener0, ener1, ener01, +1);
+                ph_err1 = ff_aac_is_encoding_err(s, cpe, start, w, g,
+                                                 ener0, ener1, ener01, -1);
+                ph_err2 = ff_aac_is_encoding_err(s, cpe, start, w, g,
+                                                 ener0, ener1, ener01, +1);
                 erf = ph_err1.error < ph_err2.error ? &ph_err1 : &ph_err2;
                 if (erf->pass) {
                     cpe->is_mask[w*16+g] = 1;

@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 
 #if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms)
 {
@@ -134,4 +135,5 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
 
     return 0;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
