@@ -26,7 +26,6 @@
 #include <limits.h>
 #include <stdint.h>
 
-#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "version.h"
@@ -42,7 +41,6 @@
 
 #define AV_CODEC_DEFAULT_BITRATE 200*1000
 
-FF_DISABLE_DEPRECATION_WARNINGS
 static const AVOption avcodec_options[] = {
 {"b", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT, {.i64 = AV_CODEC_DEFAULT_BITRATE }, 0, INT_MAX, A|V|E},
 {"ab", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT, {.i64 = 128*1000 }, 0, INT_MAX, A|E},
@@ -506,7 +504,6 @@ static const AVOption avcodec_options[] = {
 {"video_size", "set video size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str=NULL}, 0, INT_MAX, 0 },
 {NULL},
 };
-FF_ENABLE_DEPRECATION_WARNINGS
 
 #undef A
 #undef V
