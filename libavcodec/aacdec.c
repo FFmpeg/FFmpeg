@@ -2834,8 +2834,10 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     while ((elem_type = get_bits(gb, 3)) != TYPE_END) {
         elem_id = get_bits(gb, 4);
 
-        if (!avctx->channels && elem_type != TYPE_PCE)
+        if (!avctx->channels && elem_type != TYPE_PCE) {
+            err = AVERROR_INVALIDDATA;
             goto fail;
+        }
 
         if (elem_type < TYPE_DSE) {
             if (!(che=get_che(ac, elem_type, elem_id))) {
