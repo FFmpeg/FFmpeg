@@ -38,6 +38,7 @@ enum VectorscopeMode {
 typedef struct VectorscopeContext {
     const AVClass *class;
     int mode;
+    int intensity;
     const uint8_t *bg_color;
     int planewidth[4];
     int planeheight[4];
@@ -56,6 +57,7 @@ static const AVOption vectorscope_options[] = {
     { "color3", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR3}, 0, 0, FLAGS, "mode" },
     { "x", "set color component on X axis", OFFSET(x), AV_OPT_TYPE_INT, {.i64=1}, 0, 2, FLAGS},
     { "y", "set color component on Y axis", OFFSET(y), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS},
+    { "intensity", "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=1}, 1, 255, FLAGS},
     { NULL }
 };
 
@@ -182,6 +184,7 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     const int slinesizex = in->linesize[s->x];
     const int slinesizey = in->linesize[s->y];
     const int dlinesize = out->linesize[0];
+    const int intensity = s->intensity;
     int i, j, px = s->x, py = s->y;
     const int h = s->planeheight[py];
     const int w = s->planewidth[px];
@@ -204,7 +207,7 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
                     const int y = spy[iwy + j];
                     const int pos = y * dlinesize + x;
 
-                    dpd[pos] = FFMIN(dpd[pos] + 1, 255);
+                    dpd[pos] = FFMIN(dpd[pos] + intensity, 255);
                     if (dst[3])
                         dst[3][pos] = 255;
                 }
@@ -218,9 +221,9 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
                     const int y = spy[iwy + j];
                     const int pos = y * dlinesize + x;
 
-                    dst[0][pos] = FFMIN(dst[0][pos] + 1, 255);
-                    dst[1][pos] = FFMIN(dst[1][pos] + 1, 255);
-                    dst[2][pos] = FFMIN(dst[2][pos] + 1, 255);
+                    dst[0][pos] = FFMIN(dst[0][pos] + intensity, 255);
+                    dst[1][pos] = FFMIN(dst[1][pos] + intensity, 255);
+                    dst[2][pos] = FFMIN(dst[2][pos] + intensity, 255);
                     if (dst[3])
                         dst[3][pos] = 255;
                 }
@@ -283,7 +286,7 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
                 const int y = spy[iw2 + j];
                 const int pos = y * dlinesize + x;
 
-                dpd[pos] = FFMIN(255, dpd[pos] + 1);
+                dpd[pos] = FFMIN(255, dpd[pos] + intensity);
                 dpx[pos] = x;
                 dpy[pos] = y;
                 if (dst[3])
