@@ -446,6 +446,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_w3fdif.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_waveform.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_xbr.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_yadif.c">
