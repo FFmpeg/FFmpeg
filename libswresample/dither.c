@@ -109,7 +109,7 @@ av_cold int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AV
     memset(s->dither.ns_errors, 0, sizeof(s->dither.ns_errors));
     for (i=0; filters[i].coefs; i++) {
         const filter_t *f = &filters[i];
-        if (fabs(s->out_sample_rate - f->rate) / f->rate <= .05 && f->name == s->dither.method) {
+        if (llabs(s->out_sample_rate - f->rate)*20 <= f->rate && f->name == s->dither.method) {
             int j;
             s->dither.ns_taps = f->len;
             for (j=0; j<f->len; j++)
