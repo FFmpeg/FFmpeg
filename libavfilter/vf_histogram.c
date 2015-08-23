@@ -49,8 +49,10 @@ typedef struct HistogramContext {
     int            waveform_mirror;
     int            display_mode;
     int            levels_mode;
-    const AVPixFmtDescriptor *desc;
+    const AVPixFmtDescriptor *desc, *odesc;
     int            components;
+    int            planewidth[4];
+    int            planeheight[4];
 } HistogramContext;
 
 #define OFFSET(x) offsetof(HistogramContext, x)
@@ -86,9 +88,25 @@ static const enum AVPixelFormat color_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static const enum AVPixelFormat levels_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVJ444P,
-    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
+static const enum AVPixelFormat levels_in_pix_fmts[] = {
+    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
+    AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
+    AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUVJ411P,
+    AV_PIX_FMT_YUV440P,  AV_PIX_FMT_YUV410P,
+    AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat levels_out_yuv_pix_fmts[] = {
+    AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat levels_out_rgb_pix_fmts[] = {
+    AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat waveform_pix_fmts[] = {
@@ -114,7 +132,36 @@ static int query_formats(AVFilterContext *ctx)
         pix_fmts = waveform_pix_fmts;
         break;
     case MODE_LEVELS:
-        pix_fmts = levels_pix_fmts;
+    {
+        AVFilterFormats *avff;
+        const AVPixFmtDescriptor *desc;
+        const enum AVPixelFormat *out_pix_fmts;
+        int rgb, i;
+
+        if (!ctx->inputs[0]->in_formats ||
+            !ctx->inputs[0]->in_formats->nb_formats) {
+            return AVERROR(EAGAIN);
+        }
+
+        if (!ctx->inputs[0]->out_formats)
+            ff_formats_ref(ff_make_format_list(levels_in_pix_fmts), &ctx->inputs[0]->out_formats);
+        avff = ctx->inputs[0]->in_formats;
+        desc = av_pix_fmt_desc_get(avff->formats[0]);
+        rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
+        for (i = 1; i < avff->nb_formats; i++) {
+            desc = av_pix_fmt_desc_get(avff->formats[i]);
+            if (rgb != desc->flags & AV_PIX_FMT_FLAG_RGB)
+                return AVERROR(EAGAIN);
+        }
+
+        if (rgb)
+            out_pix_fmts = levels_out_rgb_pix_fmts;
+        else
+            out_pix_fmts = levels_out_yuv_pix_fmts;
+        ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats);
+
+        return 0;
+    }
         break;
     case MODE_COLOR:
     case MODE_COLOR2:
@@ -153,6 +200,11 @@ static int config_input(AVFilterLink *inlink)
         h->fg_color = white_yuva_color;
     }
 
+    h->planeheight[1] = h->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, h->desc->log2_chroma_h);
+    h->planeheight[0] = h->planeheight[3] = inlink->h;
+    h->planewidth[1]  = h->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, h->desc->log2_chroma_w);
+    h->planewidth[0]  = h->planewidth[3]  = inlink->w;
+
     return 0;
 }
 
@@ -187,6 +239,7 @@ static int config_output(AVFilterLink *outlink)
         av_assert0(0);
     }
 
+    h->odesc = av_pix_fmt_desc_get(outlink->format);
     outlink->sample_aspect_ratio = (AVRational){1,1};
 
     return 0;
@@ -257,13 +310,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     out->pts = in->pts;
 
-    for (k = 0; k < h->ncomp; k++) {
+    for (k = 0; k < 4 && out->data[k]; k++) {
         const int is_chroma = (k == 1 || k == 2);
-        const int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? h->desc->log2_chroma_h : 0));
-        const int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? h->desc->log2_chroma_w : 0));
+        const int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? h->odesc->log2_chroma_h : 0));
+        const int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? h->odesc->log2_chroma_w : 0));
         for (i = 0; i < dst_h ; i++)
-            memset(out->data[h->desc->comp[k].plane] +
-                   i * out->linesize[h->desc->comp[k].plane],
+            memset(out->data[h->odesc->comp[k].plane] +
+                   i * out->linesize[h->odesc->comp[k].plane],
                    h->bg_color[k], dst_w);
     }
 
@@ -271,6 +324,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     case MODE_LEVELS:
         for (m = 0, k = 0; k < h->ncomp; k++) {
             const int p = h->desc->comp[k].plane;
+            const int height = h->planeheight[p];
+            const int width = h->planewidth[p];
             int start;
             double max_hval_log;
             unsigned max_hval = 0;
@@ -279,9 +334,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 continue;
             start = m++ * (h->level_height + h->scale_height) * h->display_mode;
 
-            for (i = 0; i < in->height; i++) {
+            for (i = 0; i < height; i++) {
                 src = in->data[p] + i * in->linesize[p];
-                for (j = 0; j < in->width; j++)
+                for (j = 0; j < width; j++)
                     h->histogram[src[j]]++;
             }
 
