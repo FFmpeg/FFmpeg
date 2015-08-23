@@ -356,8 +356,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->level > 0)
         x4->params.i_level_idc = avctx->level;
 
-    x4->params.rc.f_rate_tolerance =
-        (float)avctx->bit_rate_tolerance/avctx->bit_rate;
+    if (avctx->bit_rate > 0)
+        x4->params.rc.f_rate_tolerance =
+            (float)avctx->bit_rate_tolerance / avctx->bit_rate;
 
     if ((avctx->rc_buffer_size) &&
         (avctx->rc_initial_buffer_occupancy <= avctx->rc_buffer_size)) {
