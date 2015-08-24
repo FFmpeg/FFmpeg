@@ -3566,9 +3566,9 @@ probe_cc(){
         gcc_pkg_ver=$(expr "$gcc_version" : '[^ ]* \(([^)]*)\)')
         gcc_ext_ver=$(expr "$gcc_version" : ".*$gcc_pkg_ver $gcc_basever \\(.*\\)")
         _ident=$(cleanws "gcc $gcc_basever $gcc_pkg_ver $gcc_ext_ver")
-        if ! $_cc -dumpversion | grep -q '^2\.'; then
-            _depflags='-MMD -MF $(@:.o=.d) -MT $@'
-        fi
+        case $gcc_basever in
+            2*) _depflags='-MMD -MF $(@:.o=.d) -MT $@' ;;
+        esac
         _cflags_speed='-O3'
         _cflags_size='-Os'
     elif $_cc --version 2>/dev/null | grep -q ^icc; then
