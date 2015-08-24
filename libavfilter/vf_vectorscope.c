@@ -51,6 +51,7 @@ typedef struct VectorscopeContext {
 
 static const AVOption vectorscope_options[] = {
     { "mode", "set vectorscope mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, MODE_NB-1, FLAGS, "mode"},
+    { "m",    "set vectorscope mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, MODE_NB-1, FLAGS, "mode"},
     { "gray",   0, 0, AV_OPT_TYPE_CONST, {.i64=GRAY},   0, 0, FLAGS, "mode" },
     { "color",  0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},  0, 0, FLAGS, "mode" },
     { "color2", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR2}, 0, 0, FLAGS, "mode" },
@@ -58,6 +59,7 @@ static const AVOption vectorscope_options[] = {
     { "x", "set color component on X axis", OFFSET(x), AV_OPT_TYPE_INT, {.i64=1}, 0, 2, FLAGS},
     { "y", "set color component on Y axis", OFFSET(y), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS},
     { "intensity", "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=1}, 1, 255, FLAGS},
+    { "i",         "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=1}, 1, 255, FLAGS},
     { NULL }
 };
 
