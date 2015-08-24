@@ -103,16 +103,20 @@ cglobal checked_call, 2,15,16,max_args*8+8
         mov  [rsp+(i-6)*8], r9
         %assign i i+1
     %endrep
-%else
+%else ; WIN64
     %assign i 4
     %rep max_args-4
         mov  r9, [rsp+stack_offset+(i+7)*8]
         mov  [rsp+i*8], r9
         %assign i i+1
     %endrep
-%endif
 
-%if WIN64
+    ; Move possible floating-point arguments to the correct registers
+    movq m0, r0
+    movq m1, r1
+    movq m2, r2
+    movq m3, r3
+
     %assign i 6
     %rep 16-6
         mova m %+ i, [x %+ i]
