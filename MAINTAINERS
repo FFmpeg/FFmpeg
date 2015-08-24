@@ -47,6 +47,7 @@ project server                          Árpád Gereöffy, Michael Niedermayer, 
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
+API tests                               Ludmila Glinskih
 
 
 Communication
