@@ -566,6 +566,8 @@ static int hvcc_parse_sps(GetBitContext *gb,
 
     if (get_bits1(gb)) {                               // long_term_ref_pics_present_flag
         unsigned num_long_term_ref_pics_sps = get_ue_golomb_long(gb);
+        if (num_long_term_ref_pics_sps > 31U)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < num_long_term_ref_pics_sps; i++) { // num_long_term_ref_pics_sps
             int len = FFMIN(log2_max_pic_order_cnt_lsb_minus4 + 4, 16);
             skip_bits (gb, len); // lt_ref_pic_poc_lsb_sps[i]
