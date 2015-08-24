@@ -123,6 +123,21 @@ fate-filter-waveform_envelope: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf waveform
 FATE_FILTER_VSYNTH-$(CONFIG_WAVEFORM_FILTER) += fate-filter-waveform_uv
 fate-filter-waveform_uv: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf waveform=c=6 -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
+FATE_FILTER_VSYNTH-$(CONFIG_VECTORSCOPE_FILTER) += fate-filter-vectorscope_gray
+fate-filter-vectorscope_gray: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf vectorscope=gray -sws_flags +accurate_rnd+bitexact -vframes 3
+
+FATE_FILTER_VSYNTH-$(CONFIG_VECTORSCOPE_FILTER) += fate-filter-vectorscope_color
+fate-filter-vectorscope_color: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf vectorscope=color -sws_flags +accurate_rnd+bitexact -vframes 3
+
+FATE_FILTER_VSYNTH-$(CONFIG_VECTORSCOPE_FILTER) += fate-filter-vectorscope_color2
+fate-filter-vectorscope_color2: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf vectorscope=color2 -sws_flags +accurate_rnd+bitexact -vframes 3
+
+FATE_FILTER_VSYNTH-$(CONFIG_VECTORSCOPE_FILTER) += fate-filter-vectorscope_color3
+fate-filter-vectorscope_color3: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf vectorscope=color3 -sws_flags +accurate_rnd+bitexact -vframes 3
+
+FATE_FILTER_VSYNTH-$(CONFIG_VECTORSCOPE_FILTER) += fate-filter-vectorscope_xy
+fate-filter-vectorscope_xy: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf vectorscope=x=0:y=1 -sws_flags +accurate_rnd+bitexact -vframes 3
+
 FATE_FILTER_VSYNTH-$(CONFIG_MERGEPLANES_FILTER) += fate-filter-mergeplanes
 fate-filter-mergeplanes: tests/data/filtergraphs/mergeplanes
 fate-filter-mergeplanes: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/mergeplanes
