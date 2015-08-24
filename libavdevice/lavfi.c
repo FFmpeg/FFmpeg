@@ -337,7 +337,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     }
 
     if ((ret = create_subcc_streams(avctx)) < 0)
-        FAIL(ret);
+        goto end;
 
     if (!(lavfi->decoded_frame = av_frame_alloc()))
         FAIL(AVERROR(ENOMEM));
