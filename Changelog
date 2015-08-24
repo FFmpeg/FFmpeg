@@ -34,6 +34,7 @@ version <next>:
 - showfreqs filter
 - vectorscope filter
 - waveform filter
+- hstack and vstack filter
 
 
 version 2.7:
