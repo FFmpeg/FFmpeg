@@ -288,9 +288,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     height = get_bits(&s->gb, 16);
     width  = get_bits(&s->gb, 16);
 
-    if (s->avctx->codec_id == AV_CODEC_ID_AMV && (height&15))
-        avpriv_request_sample(s->avctx, "non mod 16 height AMV");
-
     // HACK for odd_height.mov
     if (s->interlaced && s->width == width && s->height == height + 1)
         height= s->height;
