@@ -133,7 +133,7 @@ int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFr
     AVFrame *cur_frame;
 
     /* no picref available, fetch it from the filterchain */
-    if (!av_fifo_size(buf->fifo)) {
+    while (!av_fifo_size(buf->fifo)) {
         if (inlink->closed)
             return AVERROR_EOF;
         if (flags & AV_BUFFERSINK_FLAG_NO_REQUEST)
@@ -141,9 +141,6 @@ int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFr
         if ((ret = ff_request_frame(inlink)) < 0)
             return ret;
     }
-
-    if (!av_fifo_size(buf->fifo))
-        return AVERROR(EINVAL);
 
     if (flags & AV_BUFFERSINK_FLAG_PEEK) {
         cur_frame = *((AVFrame **)av_fifo_peek2(buf->fifo, 0));
