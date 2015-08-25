@@ -2,6 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.4.11:
+- avformat/hevc: Check num_long_term_ref_pics_sps to avoid potentially long loops
+- avformat/hevc: Fix parsing errors
+- ffmpeg: Use correct codec_id for av_parser_change() check
+- ffmpeg: Check av_parser_change() for failure
+- avcodec/h264_mp4toannexb_bsf: Reorder operations in nal_size check
+- ffmpeg: Check for RAWVIDEO and do not relay only on AVFMT_RAWPICTURE
+- ffmpeg: check avpicture_fill() return value
 - avformat/mux: Update sidedata in ff_write_chained()
 - avcodec/flashsvenc: Correct max dimension in error message
 - avcodec/svq1enc: Check dimensions
