@@ -232,7 +232,8 @@ Frame scheduling
     one of its inputs, repeatedly until at least one frame has been pushed.
 
     Return values:
-    if request_frame could produce a frame, it should return 0;
+    if request_frame could produce a frame, or at least make progress
+    towards producing a frame, it should return 0;
     if it could not for temporary reasons, it should return AVERROR(EAGAIN);
     if it could not because there are no more frames, it should return
     AVERROR_EOF.
@@ -244,20 +245,18 @@ Frame scheduling
             push_one_frame();
             return 0;
         }
-        while (!frame_pushed) {
-            input = input_where_a_frame_is_most_needed();
-            ret = ff_request_frame(input);
-            if (ret == AVERROR_EOF) {
-                process_eof_on_input();
-            } else if (ret < 0) {
-                return ret;
-            }
+        input = input_where_a_frame_is_most_needed();
+        ret = ff_request_frame(input);
+        if (ret == AVERROR_EOF) {
+            process_eof_on_input();
+        } else if (ret < 0) {
+            return ret;
         }
         return 0;
 
     Note that, except for filters that can have queued frames, request_frame
     does not push frames: it requests them to its input, and as a reaction,
-    the filter_frame method will be called and do the work.
+    the filter_frame method possibly will be called and do the work.
 
 Legacy API
 ==========

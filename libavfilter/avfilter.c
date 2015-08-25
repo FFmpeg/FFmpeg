@@ -347,9 +347,7 @@ int ff_request_frame(AVFilterLink *link)
 
     if (link->closed)
         return AVERROR_EOF;
-    av_assert0(!link->frame_requested);
-    link->frame_requested = 1;
-    while (link->frame_requested) {
+    // TODO reindent
         if (link->srcpad->request_frame)
             ret = link->srcpad->request_frame(link);
         else if (link->src->inputs[0])
@@ -360,14 +358,9 @@ int ff_request_frame(AVFilterLink *link)
             ret = ff_filter_frame_framed(link, pbuf);
         }
         if (ret < 0) {
-            link->frame_requested = 0;
             if (ret == AVERROR_EOF)
                 link->closed = 1;
-        } else {
-            av_assert0(!link->frame_requested ||
-                       link->flags & FF_LINK_FLAG_REQUEST_LOOP);
         }
-    }
     return ret;
 }
 
@@ -1088,7 +1081,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     }
     ret = filter_frame(link, out);
     link->frame_count++;
-    link->frame_requested = 0;
     ff_update_link_current_pts(link, pts);
     return ret;
 
