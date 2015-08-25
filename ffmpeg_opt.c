@@ -3234,7 +3234,7 @@ const OptionDef options[] = {
         "use HW accelerated decoding", "hwaccel name" },
     { "hwaccel_device",   OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT |
                           OPT_SPEC | OPT_INPUT,                                  { .off = OFFSET(hwaccel_devices) },
-        "select a device for HW acceleration" "devicename" },
+        "select a device for HW acceleration", "devicename" },
 #if HAVE_VDPAU_X11
     { "vdpau_api_ver", HAS_ARG | OPT_INT | OPT_EXPERT, { &vdpau_api_ver }, "" },
 #endif
