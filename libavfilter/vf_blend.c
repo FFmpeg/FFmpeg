@@ -352,7 +352,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
                             const AVFrame *bottom_buf)
 {
-    BlendContext *b = ctx->priv;
+    BlendContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *dst_buf;
@@ -363,12 +363,12 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
         return top_buf;
     av_frame_copy_props(dst_buf, top_buf);
 
-    for (plane = 0; plane < b->nb_planes; plane++) {
-        int hsub = plane == 1 || plane == 2 ? b->hsub : 0;
-        int vsub = plane == 1 || plane == 2 ? b->vsub : 0;
+    for (plane = 0; plane < s->nb_planes; plane++) {
+        int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
+        int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
         int outw = FF_CEIL_RSHIFT(dst_buf->width,  hsub);
         int outh = FF_CEIL_RSHIFT(dst_buf->height, vsub);
-        FilterParams *param = &b->params[plane];
+        FilterParams *param = &s->params[plane];
         ThreadData td = { .top = top_buf, .bottom = bottom_buf, .dst = dst_buf,
                           .w = outw, .h = outh, .param = param, .plane = plane,
                           .inlink = inlink };
@@ -376,7 +376,7 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
         ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ctx->graph->nb_threads));
     }
 
-    if (!b->tblend)
+    if (!s->tblend)
         av_frame_free(&top_buf);
 
     return dst_buf;
@@ -384,11 +384,11 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    BlendContext *b = ctx->priv;
+    BlendContext *s = ctx->priv;
 
-    b->tblend = !strcmp(ctx->filter->name, "tblend");
+    s->tblend = !strcmp(ctx->filter->name, "tblend");
 
-    b->dinput.process = blend_frame;
+    s->dinput.process = blend_frame;
     return 0;
 }
 
@@ -413,25 +413,25 @@ static int query_formats(AVFilterContext *ctx)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    BlendContext *b = ctx->priv;
+    BlendContext *s = ctx->priv;
     int i;
 
-    ff_dualinput_uninit(&b->dinput);
-    av_frame_free(&b->prev_frame);
+    ff_dualinput_uninit(&s->dinput);
+    av_frame_free(&s->prev_frame);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(b->params); i++)
-        av_expr_free(b->params[i].e);
+    for (i = 0; i < FF_ARRAY_ELEMS(s->params); i++)
+        av_expr_free(s->params[i].e);
 }
 
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *toplink = ctx->inputs[TOP];
-    BlendContext *b = ctx->priv;
+    BlendContext *s = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(toplink->format);
     int ret, plane, is_16bit;
 
-    if (!b->tblend) {
+    if (!s->tblend) {
         AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
 
         if (toplink->format != bottomlink->format) {
@@ -461,24 +461,24 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = toplink->sample_aspect_ratio;
     outlink->frame_rate = toplink->frame_rate;
 
-    b->hsub = pix_desc->log2_chroma_w;
-    b->vsub = pix_desc->log2_chroma_h;
+    s->hsub = pix_desc->log2_chroma_w;
+    s->vsub = pix_desc->log2_chroma_h;
 
     is_16bit = pix_desc->comp[0].depth_minus1 == 15;
-    b->nb_planes = av_pix_fmt_count_planes(toplink->format);
+    s->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
-    if (b->tblend)
+    if (s->tblend)
         outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    else if ((ret = ff_dualinput_init(ctx, &b->dinput)) < 0)
+    else if ((ret = ff_dualinput_init(ctx, &s->dinput)) < 0)
             return ret;
 
-    for (plane = 0; plane < FF_ARRAY_ELEMS(b->params); plane++) {
-        FilterParams *param = &b->params[plane];
+    for (plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {
+        FilterParams *param = &s->params[plane];
 
-        if (b->all_mode >= 0)
-            param->mode = b->all_mode;
-        if (b->all_opacity < 1)
-            param->opacity = b->all_opacity;
+        if (s->all_mode >= 0)
+            param->mode = s->all_mode;
+        if (s->all_opacity < 1)
+            param->opacity = s->all_opacity;
 
         switch (param->mode) {
         case BLEND_ADDITION:   param->blend = is_16bit ? blend_addition_16bit   : blend_addition_8bit;   break;
@@ -511,8 +511,8 @@ static int config_output(AVFilterLink *outlink)
         case BLEND_XOR:        param->blend = is_16bit ? blend_xor_16bit        : blend_xor_8bit;        break;
         }
 
-        if (b->all_expr && !param->expr_str) {
-            param->expr_str = av_strdup(b->all_expr);
+        if (s->all_expr && !param->expr_str) {
+            param->expr_str = av_strdup(s->all_expr);
             if (!param->expr_str)
                 return AVERROR(ENOMEM);
         }
@@ -532,14 +532,14 @@ static int config_output(AVFilterLink *outlink)
 
 static int request_frame(AVFilterLink *outlink)
 {
-    BlendContext *b = outlink->src->priv;
-    return ff_dualinput_request_frame(&b->dinput, outlink);
+    BlendContext *s = outlink->src->priv;
+    return ff_dualinput_request_frame(&s->dinput, outlink);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
-    BlendContext *b = inlink->dst->priv;
-    return ff_dualinput_filter_frame(&b->dinput, inlink, buf);
+    BlendContext *s = inlink->dst->priv;
+    return ff_dualinput_filter_frame(&s->dinput, inlink, buf);
 }
 
 static const AVFilterPad blend_inputs[] = {
@@ -584,16 +584,16 @@ AVFilter ff_vf_blend = {
 
 static int tblend_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
-    BlendContext *b = inlink->dst->priv;
+    BlendContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
-    if (b->prev_frame) {
-        AVFrame *out = blend_frame(inlink->dst, frame, b->prev_frame);
-        av_frame_free(&b->prev_frame);
-        b->prev_frame = frame;
+    if (s->prev_frame) {
+        AVFrame *out = blend_frame(inlink->dst, frame, s->prev_frame);
+        av_frame_free(&s->prev_frame);
+        s->prev_frame = frame;
         return ff_filter_frame(outlink, out);
     }
-    b->prev_frame = frame;
+    s->prev_frame = frame;
     return 0;
 }
 
