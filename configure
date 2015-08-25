@@ -1788,6 +1788,7 @@ SYSTEM_FUNCS="
     jack_port_get_latency_range
     kbhit
     localtime_r
+    lstat
     lzo1x_999_compress
     mach_absolute_time
     MapViewOfFile
@@ -5087,6 +5088,7 @@ check_func_headers conio.h kbhit
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_func_headers stdlib.h getenv
+check_func_headers sys/stat.h lstat
 
 check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
