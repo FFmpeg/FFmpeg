@@ -166,6 +166,18 @@ static void init_options(OptionsContext *o)
     o->accurate_seek  = 1;
 }
 
+static int show_hwaccels(void *optctx, const char *opt, const char *arg)
+{
+    int i;
+
+    printf("Hardware acceleration methods:\n");
+    for (i = 0; i < FF_ARRAY_ELEMS(hwaccels) - 1; i++) {
+        printf("%s\n", hwaccels[i].name);
+    }
+    printf("\n");
+    return 0;
+}
+
 /* return a copy of the input with the stream specifiers removed from the keys */
 static AVDictionary *strip_specifiers(AVDictionary *dict)
 {
@@ -3241,6 +3253,8 @@ const OptionDef options[] = {
 #if CONFIG_VDA || CONFIG_VIDEOTOOLBOX
     { "videotoolbox_pixfmt", HAS_ARG | OPT_STRING | OPT_EXPERT, { &videotoolbox_pixfmt}, "" },
 #endif
+    { "hwaccels",         OPT_EXIT,                                              { .func_arg = show_hwaccels },
+        "show available HW acceleration methods" },
     { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
                           OPT_EXPERT | OPT_INPUT,                                { .off = OFFSET(autorotate) },
         "automatically insert correct rotate filters" },
