@@ -1842,26 +1842,26 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
             if (ret < 0) return ret;
         }
     } else {
-    if (codec->codec_id == AV_CODEC_ID_WEBVTT) {
-        duration = mkv_write_vtt_blocks(s, pb, pkt);
-    } else {
-        ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
-                                                   mkv_blockgroup_size(pkt->size));
-        /* For backward compatibility, prefer convergence_duration. */
-        if (pkt->convergence_duration > 0) {
-            duration = pkt->convergence_duration;
+        if (codec->codec_id == AV_CODEC_ID_WEBVTT) {
+            duration = mkv_write_vtt_blocks(s, pb, pkt);
+        } else {
+            ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
+                                                       mkv_blockgroup_size(pkt->size));
+            /* For backward compatibility, prefer convergence_duration. */
+            if (pkt->convergence_duration > 0) {
+                duration = pkt->convergence_duration;
+            }
+            /* All subtitle blocks are considered to be keyframes. */
+            mkv_write_block(s, pb, MATROSKA_ID_BLOCK, pkt, 1);
+            put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
+            end_ebml_master(pb, blockgroup);
         }
-        /* All subtitle blocks are considered to be keyframes. */
-        mkv_write_block(s, pb, MATROSKA_ID_BLOCK, pkt, 1);
-        put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
-        end_ebml_master(pb, blockgroup);
-    }
 
-    if (s->pb->seekable) {
-        ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, dash_tracknum, ts,
-                               mkv->cluster_pos, relative_packet_pos, duration);
-        if (ret < 0)
-            return ret;
+        if (s->pb->seekable) {
+            ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, dash_tracknum, ts,
+                                   mkv->cluster_pos, relative_packet_pos, duration);
+            if (ret < 0)
+                return ret;
         }
     }
 
