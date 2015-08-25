@@ -314,7 +314,7 @@ static int request_frame(AVFilterLink *link)
     AVFilterContext *ctx = link->src;
     IDETContext *idet = ctx->priv;
 
-    do {
+    // TODO reindent
         int ret;
 
         if (idet->eof)
@@ -328,14 +328,11 @@ static int request_frame(AVFilterLink *link)
             if (!next)
                 return AVERROR(ENOMEM);
 
-            filter_frame(link->src->inputs[0], next);
+            ret = filter_frame(link->src->inputs[0], next);
             idet->eof = 1;
-        } else if (ret < 0) {
-            return ret;
         }
-    } while (link->frame_requested);
 
-    return 0;
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
