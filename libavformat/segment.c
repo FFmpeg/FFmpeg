@@ -876,6 +876,7 @@ fail:
     av_opt_free(seg);
     av_freep(&seg->times);
     av_freep(&seg->frames);
+    av_freep(&seg->cur_entry.filename);
 
     cur = seg->segment_list_entries;
     while (cur) {
