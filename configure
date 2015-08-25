@@ -1692,6 +1692,7 @@ HEADERS_LIST="
     dev_video_bktr_ioctl_bt848_h
     dev_video_meteor_ioctl_meteor_h
     direct_h
+    dirent_h
     dlfcn_h
     d3d11_h
     dxva_h
@@ -3566,9 +3567,9 @@ probe_cc(){
         gcc_pkg_ver=$(expr "$gcc_version" : '[^ ]* \(([^)]*)\)')
         gcc_ext_ver=$(expr "$gcc_version" : ".*$gcc_pkg_ver $gcc_basever \\(.*\\)")
         _ident=$(cleanws "gcc $gcc_basever $gcc_pkg_ver $gcc_ext_ver")
-        if ! $_cc -dumpversion | grep -q '^2\.'; then
-            _depflags='-MMD -MF $(@:.o=.d) -MT $@'
-        fi
+        case $gcc_basever in
+            2*) _depflags='-MMD -MF $(@:.o=.d) -MT $@' ;;
+        esac
         _cflags_speed='-O3'
         _cflags_size='-Os'
     elif $_cc --version 2>/dev/null | grep -q ^icc; then
@@ -5104,6 +5105,7 @@ enabled xlib &&
 
 check_header CoreServices/CoreServices.h
 check_header direct.h
+check_header dirent.h
 check_header dlfcn.h
 check_header d3d11.h
 check_header dxva.h

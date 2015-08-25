@@ -10533,6 +10533,10 @@ Set which color component will be represented on X-axis. Default is @code{1}.
 
 @item y
 Set which color component will be represented on Y-axis. Default is @code{2}.
+
+@item intensity
+Set intensity, used by modes: gray, color and color3 for increasing brightness
+of color component which represents frequency of (X, Y) location in graph.
 @end table
 
 @anchor{vidstabdetect}

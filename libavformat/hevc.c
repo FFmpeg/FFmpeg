@@ -565,7 +565,10 @@ static int hvcc_parse_sps(GetBitContext *gb,
     }
 
     if (get_bits1(gb)) {                               // long_term_ref_pics_present_flag
-        for (i = 0; i < get_ue_golomb_long(gb); i++) { // num_long_term_ref_pics_sps
+        unsigned num_long_term_ref_pics_sps = get_ue_golomb_long(gb);
+        if (num_long_term_ref_pics_sps > 31U)
+            return AVERROR_INVALIDDATA;
+        for (i = 0; i < num_long_term_ref_pics_sps; i++) { // num_long_term_ref_pics_sps
             int len = FFMIN(log2_max_pic_order_cnt_lsb_minus4 + 4, 16);
             skip_bits (gb, len); // lt_ref_pic_poc_lsb_sps[i]
             skip_bits1(gb);      // used_by_curr_pic_lt_sps_flag[i]
@@ -616,11 +619,12 @@ static int hvcc_parse_pps(GetBitContext *gb,
     get_se_golomb_long(gb); // pps_cr_qp_offset
 
     /*
+     * pps_slice_chroma_qp_offsets_present_flag u(1)
      * weighted_pred_flag               u(1)
      * weighted_bipred_flag             u(1)
      * transquant_bypass_enabled_flag   u(1)
      */
-    skip_bits(gb, 3);
+    skip_bits(gb, 4);
 
     tiles_enabled_flag               = get_bits1(gb);
     entropy_coding_sync_enabled_flag = get_bits1(gb);
