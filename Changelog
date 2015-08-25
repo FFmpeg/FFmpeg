@@ -45,6 +45,7 @@ version <next>:
 - DXV decoding
 - Screenpresso SPV1 decoding
 - zero-copy Intel QSV transcoding in avconv
+- libkvazaar HEVC encoder
 
 
 version 11:

@@ -131,6 +131,14 @@ x265 is under the GNU Public License Version 2 or later
 details), you must upgrade Libav's license to GPL in order to use it.
 @end float
 
+@section kvazaar
+
+Libav can make use of the kvazaar library for HEVC encoding.
+
+Go to @url{https://github.com/ultravideo/kvazaar} and follow the
+instructions for installing the library. Then pass
+@code{--enable-libkvazaar} to configure to enable it.
+
 @section libilbc
 
 iLBC is a narrowband speech codec that has been made freely available
@@ -630,7 +638,7 @@ following image formats are supported:
 @item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
     @tab encoding supported through external library libx264 and OpenH264
 @item HEVC                   @tab  X  @tab  X
-    @tab encoding supported through the external library libx265
+    @tab encoding supported through external library libx265 and libkvazaar
 @item HNM version 4          @tab     @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item HuffYUV FFmpeg variant @tab  X  @tab  X
