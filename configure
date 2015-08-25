@@ -2151,7 +2151,7 @@ qsvenc_select="qsv"
 # decoders / encoders
 aac_decoder_select="imdct15 mdct sinewin"
 aac_fixed_decoder_select="mdct sinewin"
-aac_encoder_select="audio_frame_queue iirfilter mdct sinewin"
+aac_encoder_select="audio_frame_queue iirfilter lpc mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="ac3_parser ac3dsp bswapdsp fmtconvert mdct"
 ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
