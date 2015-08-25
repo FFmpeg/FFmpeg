@@ -626,6 +626,10 @@ is not specified, the value of the @var{DISPLAY} environment variable is used
 For DXVA2, this option should contain the number of the display adapter to use.
 If this option is not specified, the default adapter is used.
 @end table
+
+@item -hwaccels
+List all hardware acceleration methods supported in this build of avconv.
+
 @end table
 
 @section Audio Options

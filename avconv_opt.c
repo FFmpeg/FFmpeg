@@ -177,6 +177,18 @@ static double parse_frame_aspect_ratio(const char *arg)
     return ar;
 }
 
+static int show_hwaccels(void *optctx, const char *opt, const char *arg)
+{
+    int i;
+
+    printf("Supported hardware acceleration:\n");
+    for (i = 0; i < FF_ARRAY_ELEMS(hwaccels) - 1; i++) {
+        printf("%s\n", hwaccels[i].name);
+    }
+    printf("\n");
+    return 0;
+}
+
 static int opt_audio_codec(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -2446,6 +2458,8 @@ const OptionDef options[] = {
     { "hwaccel_device",   OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT |
                           OPT_SPEC | OPT_INPUT,                                  { .off = OFFSET(hwaccel_devices) },
         "select a device for HW acceleration", "devicename" },
+    { "hwaccels",         OPT_EXIT,                                              { .func_arg = show_hwaccels },
+        "show available HW acceleration methods" },
     { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
                           OPT_EXPERT | OPT_INPUT,                                { .off = OFFSET(autorotate) },
         "automatically insert correct rotate filters" },
