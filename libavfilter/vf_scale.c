@@ -79,6 +79,7 @@ typedef struct ScaleContext {
      */
     int w, h;
     unsigned int flags;         ///sws flags
+    double param[2];            // sws params
 
     int hsub, vsub;             ///< chroma subsampling
     int slice_y;                ///< top of current output slice
@@ -238,7 +239,7 @@ static int config_props(AVFilterLink *outlink)
     else {
         scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
                                     outlink->w, outlink->h, outlink->format,
-                                    scale->flags, NULL, NULL, NULL);
+                                    scale->flags, NULL, NULL, scale->param);
         if (!scale->sws)
             return AVERROR(EINVAL);
     }
@@ -300,6 +301,8 @@ static const AVOption options[] = {
     { "w",     "Output video width",          OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "iw" },       .flags = FLAGS },
     { "h",     "Output video height",         OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "ih" },       .flags = FLAGS },
     { "flags", "Flags to pass to libswscale", OFFSET(flags_str), AV_OPT_TYPE_STRING, { .str = "bilinear" }, .flags = FLAGS },
+    { "param0", "Scaler param 0",             OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
+    { "param1", "Scaler param 1",             OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { NULL },
 };
 
