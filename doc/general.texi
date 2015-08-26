@@ -399,6 +399,7 @@ library:
 @item RealMedia                 @tab X @tab X
 @item Redirector                @tab   @tab X
 @item Renderware TeXture Dictionary @tab   @tab X
+@item Resolume DXV              @tab   @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RPL/ARMovie               @tab   @tab X

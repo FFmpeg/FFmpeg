@@ -42,6 +42,7 @@ version <next>:
 - bitstream filter for converting HEVC from MP4 to Annex B
 - Intel QSV-accelerated MPEG-2 video and HEVC decoding
 - Support DNx100 (1440x1080@8)
+- DXV decoding
 
 
 version 11:
