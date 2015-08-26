@@ -119,7 +119,7 @@ static int query_formats(AVFilterContext *ctx)
     rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
     for (i = 1; i < avff->nb_formats; i++) {
         desc = av_pix_fmt_desc_get(avff->formats[i]);
-        if (rgb != desc->flags & AV_PIX_FMT_FLAG_RGB)
+        if (rgb != (desc->flags & AV_PIX_FMT_FLAG_RGB))
             return AVERROR(EAGAIN);
     }
 
