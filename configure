@@ -2419,6 +2419,8 @@ hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
 hevc_dxva2_hwaccel_select="hevc_decoder"
 hevc_qsv_hwaccel_deps="libmfx"
+hevc_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferHEVC"
+hevc_vaapi_hwaccel_select="hevc_decoder"
 hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
 hevc_vdpau_hwaccel_select="hevc_decoder"
 mpeg_vdpau_decoder_deps="vdpau"
@@ -5147,6 +5149,8 @@ check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
+
+check_type "va/va.h" "VAPictureParameterBufferHEVC"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
