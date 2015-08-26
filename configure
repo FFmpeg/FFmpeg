@@ -2974,8 +2974,9 @@ if test -f configure; then
     source_path=.
 else
     source_path=$(cd $(dirname "$0"); pwd)
-    echo "$source_path" | grep -q '[[:blank:]]' &&
-        die "Out of tree builds are impossible with whitespace in source path."
+    case "$source_path" in
+        *[[:blank:]]*) die "Out of tree builds are impossible with whitespace in source path." ;;
+    esac
     test -e "$source_path/config.h" &&
         die "Out of tree builds are impossible with config.h in source dir."
 fi
