@@ -113,7 +113,6 @@ static int config_out_props(AVFilterLink *outlink)
     // half framerate
     outlink->time_base.num *= 2;
     outlink->frame_rate.den *= 2;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
 
     if (s->lowpass) {

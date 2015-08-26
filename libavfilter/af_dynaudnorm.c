@@ -305,12 +305,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    return 0;
-}
-
 static inline double fade(double prev, double next, int pos,
                           double *fade_factors[2])
 {
@@ -721,7 +715,6 @@ static const AVFilterPad avfilter_af_dynaudnorm_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_output,
         .request_frame = request_frame,
     },
     { NULL }

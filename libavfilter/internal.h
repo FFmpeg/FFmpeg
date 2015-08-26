@@ -336,20 +336,6 @@ int ff_request_frame(AVFilterLink *link);
 int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
 
 /**
- * Flags for AVFilterLink.flags.
- */
-enum {
-
-    /**
-     * Frame requests may need to loop in order to be fulfilled.
-     * A filter must set this flags on an output link if it may return 0 in
-     * request_frame() without filtering a frame.
-     */
-    FF_LINK_FLAG_REQUEST_LOOP = 1,
-
-};
-
-/**
  * Allocate a new filter context and return it.
  *
  * @param filter what filter to create an instance of

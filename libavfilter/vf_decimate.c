@@ -372,7 +372,6 @@ static int config_output(AVFilterLink *outlink)
     fps = av_mul_q(fps, (AVRational){dm->cycle - 1, dm->cycle});
     av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> %d/%d\n",
            inlink->frame_rate.num, inlink->frame_rate.den, fps.num, fps.den);
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->time_base  = inlink->time_base;
     outlink->frame_rate = fps;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;

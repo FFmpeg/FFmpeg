@@ -400,12 +400,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    return 0;
-}
-
 static av_cold int init(AVFilterContext *ctx)
 {
     IDETContext *idet = ctx->priv;
@@ -440,7 +434,6 @@ static const AVFilterPad idet_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
         .request_frame = request_frame
     },
     { NULL }

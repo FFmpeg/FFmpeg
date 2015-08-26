@@ -639,7 +639,6 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->frame_rate = s->dest_frame_rate;
     outlink->time_base = s->dest_time_base;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     ff_dlog(ctx,
            "config_output() output time base:%u/%u (%f) w:%d h:%d\n",

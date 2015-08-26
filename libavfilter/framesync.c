@@ -322,7 +322,6 @@ int ff_framesync_request_frame(FFFrameSync *fs, AVFilterLink *outlink)
         return 0;
     if (fs->eof)
         return AVERROR_EOF;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     input = fs->in_request;
     ret = ff_request_frame(ctx->inputs[input]);
     if (ret == AVERROR_EOF) {

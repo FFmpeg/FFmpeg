@@ -337,8 +337,6 @@ static int config_video_output(AVFilterLink *outlink)
     DRAW_RECT(ebur128->graph);
     DRAW_RECT(ebur128->gauge);
 
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-
     return 0;
 }
 
@@ -397,8 +395,6 @@ static int config_audio_output(AVFilterLink *outlink)
         if (!ebur128->i400.cache[i] || !ebur128->i3000.cache[i])
             return AVERROR(ENOMEM);
     }
-
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
 #if CONFIG_SWRESAMPLE
     if (ebur128->peak_mode & PEAK_MODE_TRUE_PEAKS) {

@@ -467,9 +467,8 @@ static int config_output(AVFilterLink *outlink)
     is_16bit = pix_desc->comp[0].depth == 16;
     s->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
-    if (s->tblend)
-        outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    else if ((ret = ff_dualinput_init(ctx, &s->dinput)) < 0)
+    if (!s->tblend)
+        if ((ret = ff_dualinput_init(ctx, &s->dinput)) < 0)
             return ret;
 
     for (plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {

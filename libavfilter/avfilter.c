@@ -1097,7 +1097,6 @@ static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
     int nb_channels = av_frame_get_channels(frame);
     int ret = 0;
 
-    link->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     /* Handle framing (min_samples, max_samples) */
     while (insamples) {
         if (!pbuf) {

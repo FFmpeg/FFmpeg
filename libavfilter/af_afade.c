@@ -611,7 +611,6 @@ static int acrossfade_config_output(AVFilterLink *outlink)
     outlink->time_base   = ctx->inputs[0]->time_base;
     outlink->channel_layout = ctx->inputs[0]->channel_layout;
     outlink->channels = ctx->inputs[0]->channels;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     switch (outlink->format) {
     case AV_SAMPLE_FMT_DBL:  s->crossfade_samples = crossfade_samples_dbl;  break;
