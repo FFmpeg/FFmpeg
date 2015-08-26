@@ -490,12 +490,14 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
     for (; dstY < dstH; dstY++) {
         const int chrDstY = dstY >> c->chrDstVSubSample;
+#ifndef NEW_FILTER
         uint8_t *dest[4]  = {
             dst[0] + dstStride[0] * dstY,
             dst[1] + dstStride[1] * chrDstY,
             dst[2] + dstStride[2] * chrDstY,
             (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? dst[3] + dstStride[3] * dstY : NULL,
         };
+#endif
         int use_mmx_vfilter= c->use_mmx_vfilter;
 
         // First line needed as input
@@ -747,10 +749,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                     }
                 }
             } else if (yuv2packedX) {
-#ifndef NEW_FILTER
                 av_assert1(lumSrcPtr  + vLumFilterSize - 1 < (const int16_t **)lumPixBuf  + vLumBufSize * 2);
                 av_assert1(chrUSrcPtr + vChrFilterSize - 1 < (const int16_t **)chrUPixBuf + vChrBufSize * 2);
-#endif
                 if (c->yuv2packed1 && vLumFilterSize == 1 &&
                     vChrFilterSize <= 2) { // unscaled RGB
                     int chrAlpha = vChrFilterSize == 1 ? 0 : vChrFilter[2 * dstY + 1];

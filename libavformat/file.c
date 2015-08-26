@@ -251,7 +251,7 @@ static int file_close(URLContext *h)
 
 static int file_open_dir(URLContext *h)
 {
-#if HAVE_DIRENT_H
+#if HAVE_LSTAT
     FileContext *c = h->priv_data;
 
     c->dir = opendir(h->filename);
@@ -261,12 +261,12 @@ static int file_open_dir(URLContext *h)
     return 0;
 #else
     return AVERROR(ENOSYS);
-#endif /* HAVE_DIRENT_H */
+#endif /* HAVE_LSTAT */
 }
 
 static int file_read_dir(URLContext *h, AVIODirEntry **next)
 {
-#if HAVE_DIRENT_H
+#if HAVE_LSTAT
     FileContext *c = h->priv_data;
     struct dirent *dir;
     char *fullpath = NULL;
@@ -319,18 +319,18 @@ static int file_read_dir(URLContext *h, AVIODirEntry **next)
     return 0;
 #else
     return AVERROR(ENOSYS);
-#endif /* HAVE_DIRENT_H */
+#endif /* HAVE_LSTAT */
 }
 
 static int file_close_dir(URLContext *h)
 {
-#if HAVE_DIRENT_H
+#if HAVE_LSTAT
     FileContext *c = h->priv_data;
     closedir(c->dir);
     return 0;
 #else
     return AVERROR(ENOSYS);
-#endif /* HAVE_DIRENT_H */
+#endif /* HAVE_LSTAT */
 }
 
 URLProtocol ff_file_protocol = {

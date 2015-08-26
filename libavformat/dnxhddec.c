@@ -37,7 +37,7 @@ static int dnxhd_probe(AVProbeData *p)
     if (!w || !h)
         return 0;
     compression_id = AV_RB32(p->buf + 0x28);
-    if (compression_id < 1235 || compression_id > 1258)
+    if (compression_id < 1235 || compression_id > 1260)
         return 0;
     return AVPROBE_SCORE_MAX;
 }
