@@ -376,12 +376,10 @@ ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL 
 SIXEL output device.
 
 This output device allows one to show a video stream in SIXEL terminals.
-Only one SIXEL window is allowed per application, so you can
-have only one instance of this output device in an application.
 
 To enable this output device you need to configure FFmpeg with
 @code{--enable-libsixel}.
-libsixel is a graphics library that outputs SIXEL control sequences.
+libsixel is a codec library that outputs SIXEL control sequences.
 
 For more information about libsixel, check:
 @url{http://saitoha.github.io/libsixel/}
@@ -390,11 +388,11 @@ For more information about libsixel, check:
 
 @table @option
 
-@item col
-Set the left position in cells to display @command{ffmpeg} output. The default value is 1.
+@item left
+Set the left position in cells to display @command{ffmpeg} output.
 
-@item row
-Set the top position in cells to display @command{ffmpeg} output. The default value is 1.
+@item top
+Set the top position in cells to display @command{ffmpeg} output.
 
 @item reqcolors
 Set the limit number of colors.
