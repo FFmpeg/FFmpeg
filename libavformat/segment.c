@@ -348,6 +348,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
 
             /* append new element */
             memcpy(entry, &seg->cur_entry, sizeof(*entry));
+            entry->filename = av_strdup(entry->filename);
             if (!seg->segment_list_entries)
                 seg->segment_list_entries = seg->segment_list_entries_end = entry;
             else
