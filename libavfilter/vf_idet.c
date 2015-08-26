@@ -313,24 +313,22 @@ static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     IDETContext *idet = ctx->priv;
+    int ret;
 
-    // TODO reindent
-        int ret;
+    if (idet->eof)
+        return AVERROR_EOF;
 
-        if (idet->eof)
-            return AVERROR_EOF;
+    ret = ff_request_frame(link->src->inputs[0]);
 
-        ret = ff_request_frame(link->src->inputs[0]);
+    if (ret == AVERROR_EOF && idet->cur && !idet->analyze_interlaced_flag_done) {
+        AVFrame *next = av_frame_clone(idet->next);
 
-        if (ret == AVERROR_EOF && idet->cur && !idet->analyze_interlaced_flag_done) {
-            AVFrame *next = av_frame_clone(idet->next);
+        if (!next)
+            return AVERROR(ENOMEM);
 
-            if (!next)
-                return AVERROR(ENOMEM);
-
-            ret = filter_frame(link->src->inputs[0], next);
-            idet->eof = 1;
-        }
+        ret = filter_frame(link->src->inputs[0], next);
+        idet->eof = 1;
+    }
 
     return ret;
 }
