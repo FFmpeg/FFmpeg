@@ -30,14 +30,22 @@
 #include "avdevice.h"
 #include "libavutil/time.h"
 
+#if !defined(SIXELAPI)
+#  define LIBSIXEL_LEGACY_API
+#  define SIXEL_OK    (0)
+#  define SIXEL_FALSE (-1)
+#  define SIXEL_SUCCEEDED(status) (((status) & 0x1000) == 0)
+#  define SIXEL_FAILED(status)    (((status) & 0x1000) != 0)
+typedef int SIXELSTATUS;
+#endif
 
 typedef struct SIXELContext {
     AVClass *class;
     AVRational time_base;   /* time base */
     int64_t    time_frame;  /* current time */
     AVRational framerate;
-    int row;
-    int col;
+    int top;
+    int left;
     int reqcolors;
     sixel_output_t *output;
     sixel_dither_t *dither;
@@ -106,28 +114,30 @@ detected:
     return 1;
 }
 
-static int prepare_static_palette(SIXELContext *const c,
-                                  AVCodecContext *const codec)
+static SIXELSTATUS prepare_static_palette(SIXELContext *const c,
+                                          AVCodecContext *const codec)
 {
     if (c->dither) {
         sixel_dither_set_body_only(c->dither, 1);
     } else {
         c->dither = sixel_dither_get(BUILTIN_XTERM256);
         if (c->dither == NULL)
-            return (-1);
+            return SIXEL_FALSE;
         sixel_dither_set_diffusion_type(c->dither, c->diffuse);
     }
-    return 0;
+    return SIXEL_OK;
 }
 
 
-static void scroll_on_demand(int pixelheight)
+static void scroll_on_demand(int pixelheight,
+                             int specified_top,
+                             int specified_left)
 {
     struct winsize size = {0, 0, 0, 0};
     struct termios old_termios;
     struct termios new_termios;
-    int row = 0;
-    int col = 0;
+    int top = 0;
+    int left = 0;
     int cellheight;
     int scroll;
     fd_set rfds;
@@ -156,15 +166,28 @@ static void scroll_on_demand(int pixelheight)
     FD_SET(STDIN_FILENO, &rfds);
     ret = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &tv);
     if (ret != (-1)) {
-        if (scanf("\033[%d;%dR", &row, &col) == 2) {
+        if (scanf("\033[%d;%dR", &top, &left) == 2) {
+            if (specified_top > 0)
+                top = specified_top;
+            if (specified_left > 0)
+                left = specified_left;
+            fprintf(sixel_output_file, "\033[%d;%dH", top, left);
             cellheight = pixelheight * size.ws_row / size.ws_ypixel + 1;
-            scroll = cellheight + row - size.ws_row + 1;
+            scroll = cellheight + top - size.ws_row + 1;
             if (scroll > 0) {
                 fprintf(sixel_output_file, "\033[%dS\033[%dA", scroll, scroll);
             }
             fprintf(sixel_output_file, "\0337");
         } else {
-            fprintf(sixel_output_file, "\033[H\0337");
+            if (specified_top > 0)
+                top = specified_top;
+            if (specified_left > 0)
+                left = specified_left;
+            if (top < 1)
+                top = 1;
+            if (left < 1)
+                left = 1;
+            fprintf(sixel_output_file, "\033[%d;%dH\0337", top, left);
         }
     }
 
@@ -172,20 +195,20 @@ static void scroll_on_demand(int pixelheight)
 }
 
 
-static int prepare_dynamic_palette(SIXELContext *const c,
-                                   AVCodecContext *const codec,
-                                   AVPacket *const pkt)
+static SIXELSTATUS prepare_dynamic_palette(SIXELContext *const c,
+                                           AVCodecContext *const codec,
+                                           AVPacket *const pkt)
 {
-    int ret;
+    SIXELSTATUS status = SIXEL_FALSE;
 
     /* create histgram and construct color palette
      * with median cut algorithm. */
-    ret = sixel_dither_initialize(c->testdither, pkt->data,
-                                  codec->width, codec->height, 3,
-                                  LARGE_NORM, REP_CENTER_BOX,
-                                  QUALITY_LOW);
-    if (ret != 0)
-        return (-1);
+    status = sixel_dither_initialize(c->testdither, pkt->data,
+                                     codec->width, codec->height, 3,
+                                     LARGE_NORM, REP_CENTER_BOX,
+                                     QUALITY_LOW);
+    if (SIXEL_FAILED(status))
+        return status;
 
     /* check whether the scence is changed. use old palette
      * if scene is not changed. */
@@ -193,12 +216,21 @@ static int prepare_dynamic_palette(SIXELContext *const c,
         if (c->dither)
             sixel_dither_unref(c->dither);
         c->dither = c->testdither;
+#if defined(LIBSIXEL_LEGACY_API)
         c->testdither = sixel_dither_create(c->reqcolors);
+        if (c->testdither == NULL)
+            return SIXEL_FALSE;
+#else
+        status = sixel_dither_new(&c->testdither, c->reqcolors, NULL);
+        if (SIXEL_FAILED(status))
+            return status;
+#endif
         sixel_dither_set_diffusion_type(c->dither, c->diffuse);
     } else {
         sixel_dither_set_body_only(c->dither, 1);
     }
-    return 0;
+
+    return status;
 }
 
 static int sixel_write(char *data, int size, void *priv)
@@ -210,7 +242,7 @@ static int sixel_write_header(AVFormatContext *s)
 {
     SIXELContext *c = s->priv_data;
     AVCodecContext *codec = s->streams[0]->codec;
-    int ret = 0;
+    SIXELSTATUS status = SIXEL_FALSE;
 
     if (s->nb_streams > 1
         || codec->codec_type != AVMEDIA_TYPE_VIDEO
@@ -225,13 +257,32 @@ static int sixel_write_header(AVFormatContext *s)
                av_get_pix_fmt_name(codec->pix_fmt));
         return AVERROR(EINVAL);
     }
+
     if (!s->filename || strcmp(s->filename, "pipe:") == 0) {
         sixel_output_file = stdout;
+#if defined(LIBSIXEL_LEGACY_API)
         c->output = sixel_output_create(sixel_write, stdout);
+        status = c->output == NULL ? SIXEL_FALSE: SIXEL_OK;
+#else
+        status = sixel_output_new(&c->output, sixel_write, stdout, NULL);
+#endif
     } else {
         sixel_output_file = fopen(s->filename, "w");
+#if defined(LIBSIXEL_LEGACY_API)
         c->output = sixel_output_create(sixel_write, sixel_output_file);
+        status = c->output == NULL ? SIXEL_FALSE: SIXEL_OK;
+#else
+        status = sixel_output_new(&c->output, sixel_write, sixel_output_file, NULL);
+#endif
     }
+
+    if (SIXEL_FAILED(status)) {
+#if !defined(LIBSIXEL_LEGACY_API)
+        av_log(s, AV_LOG_ERROR, "%s\n", sixel_helper_format_error(status));
+#endif
+        return AVERROR_EXTERNAL;
+    }
+
     if (isatty(fileno(sixel_output_file))) {
         fprintf(sixel_output_file, "\033[?25l");      /* hide cursor */
     } else {
@@ -242,23 +293,35 @@ static int sixel_write_header(AVFormatContext *s)
     fprintf(sixel_output_file, "\033[?1070l");
 
     c->dither = NULL;
+#if defined(LIBSIXEL_LEGACY_API)
     c->testdither = sixel_dither_create(c->reqcolors);
+    status = c->testdither == NULL ? SIXEL_FALSE: SIXEL_OK;
+#else
+    status = sixel_dither_new(&c->testdither, c->reqcolors, NULL);
+#endif
+
+    if (SIXEL_FAILED(status)) {
+#if !defined(LIBSIXEL_LEGACY_API)
+        av_log(s, AV_LOG_ERROR, "%s\n", sixel_helper_format_error(status));
+#endif
+        return AVERROR_EXTERNAL;
+    }
 
     c->time_base = s->streams[0]->codec->time_base;
     c->time_frame = av_gettime() / av_q2d(c->time_base);
 
-    return ret;
+    return 0;
 }
 
 static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SIXELContext * const c = s->priv_data;
     AVCodecContext * const codec = s->streams[0]->codec;
-    int ret = 0;
     int64_t curtime, delay;
     struct timespec ts;
     int late_threshold;
     static int dirty = 0;
+    SIXELSTATUS status = SIXEL_FALSE;
 
     if (!c->ignoredelay) {
         /* calculate the time of the next frame */
@@ -280,27 +343,31 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (dirty == 0) {
-        if (c->row <= 1 && c->col <= 1)
-            scroll_on_demand(codec->height);
-        else
-            fprintf(sixel_output_file, "\033[%d;%dH\0337", c->row, c->col);
+        scroll_on_demand(codec->height, c->top, c->left);
         dirty = 1;
     }
     fprintf(sixel_output_file, "\0338");
 
     if (c->fixedpal) {
-        ret = prepare_static_palette(c, codec);
-        if (ret != 0)
-            return ret;
+        status = prepare_static_palette(c, codec);
     } else {
-        ret = prepare_dynamic_palette(c, codec, pkt);
-        if (ret != 0)
-            return ret;
+        status = prepare_dynamic_palette(c, codec, pkt);
     }
-    ret = sixel_encode(pkt->data, codec->width, codec->height,
-                      /* pixel depth */ 3, c->dither, c->output);
-    if (ret != 0)
-        return AVERROR(ret);
+    if (SIXEL_FAILED(status)) {
+#if !defined(LIBSIXEL_LEGACY_API)
+        av_log(s, AV_LOG_ERROR, "%s\n", sixel_helper_format_error(status));
+#endif
+        return AVERROR_EXTERNAL;
+    }
+    status = sixel_encode(pkt->data, codec->width, codec->height,
+                          PIXELFORMAT_RGB888,
+                          c->dither, c->output);
+    if (SIXEL_FAILED(status)) {
+#if !defined(LIBSIXEL_LEGACY_API)
+        av_log(s, AV_LOG_ERROR, "%s\n", sixel_helper_format_error(status));
+#endif
+        return AVERROR_EXTERNAL;
+    }
     fflush(sixel_output_file);
     return 0;
 }
@@ -339,8 +406,8 @@ static int sixel_write_trailer(AVFormatContext *s)
 #define OFFSET(x) offsetof(SIXELContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "col",             "left position",          OFFSET(col),         AV_OPT_TYPE_INT,    {.i64 = 1},                1, 256,  ENC },
-    { "row",             "top position",           OFFSET(row),         AV_OPT_TYPE_INT,    {.i64 = 1},                1, 256,  ENC },
+    { "left",            "left position",          OFFSET(left),        AV_OPT_TYPE_INT,    {.i64 = 0},                0, 256,  ENC },
+    { "top",             "top position",           OFFSET(top),         AV_OPT_TYPE_INT,    {.i64 = 0},                0, 256,  ENC },
     { "reqcolors",       "number of colors",       OFFSET(reqcolors),   AV_OPT_TYPE_INT,    {.i64 = 16},               2, 256,  ENC },
     { "fixedpal",        "use fixed palette",      OFFSET(fixedpal),    AV_OPT_TYPE_INT,    {.i64 = 0},                0, 1,    ENC, "fixedpal" },
     { "true",            NULL,                     0,                   AV_OPT_TYPE_CONST,  {.i64 = 1},                0, 0,    ENC, "fixedpal" },
@@ -352,6 +419,7 @@ static const AVOption options[] = {
     { "jajuni",          NULL,                     0,                   AV_OPT_TYPE_CONST,  {.i64 = DIFFUSE_JAJUNI},   0, 0,    ENC, "diffuse" },
     { "stucki",          NULL,                     0,                   AV_OPT_TYPE_CONST,  {.i64 = DIFFUSE_STUCKI},   0, 0,    ENC, "diffuse" },
     { "burkes",          NULL,                     0,                   AV_OPT_TYPE_CONST,  {.i64 = DIFFUSE_BURKES},   0, 0,    ENC, "diffuse" },
+#if 0  /* for debugging */
     { "scene-threshold", "scene change threshold", OFFSET(threshold),   AV_OPT_TYPE_INT,    {.i64 = 500},              0, 10000,ENC },
     { "dropframe",       "drop late frames",       OFFSET(dropframe),   AV_OPT_TYPE_INT,    {.i64 = 1},                0, 1,    ENC, "dropframe" },
     { "true",            NULL,                     0,                   AV_OPT_TYPE_CONST,  {.i64 = 1},                0, 0,    ENC, "dropframe" },
@@ -359,6 +427,7 @@ static const AVOption options[] = {
     { "ignoredelay",     "ignore frame timestamp", OFFSET(ignoredelay), AV_OPT_TYPE_INT,    {.i64 = 0},                0, 1,    ENC, "ignoredelay" },
     { "true",            NULL,                     0,                   AV_OPT_TYPE_CONST,  {.i64 = 1},                0, 0,    ENC, "ignoredelay" },
     { "false",           NULL,                     0,                   AV_OPT_TYPE_CONST,  {.i64 = 0},                0, 0,    ENC, "ignoredelay" },
+#endif
     { NULL },
 };
 
