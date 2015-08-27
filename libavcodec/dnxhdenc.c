@@ -48,7 +48,7 @@ static const AVOption options[] = {
         offsetof(DNXHDEncContext, nitris_compat), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "ibias", "intra quant bias",
         offsetof(DNXHDEncContext, intra_quant_bias), AV_OPT_TYPE_INT,
-        { .i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, VE },
+        { .i64 = 0 }, INT_MIN, INT_MAX, VE },
     { NULL }
 };
 
