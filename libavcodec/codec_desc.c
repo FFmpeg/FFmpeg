@@ -2670,6 +2670,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_SUBTITLE,
         .name      = "eia_608",
         .long_name = NULL_IF_CONFIG_SMALL("EIA-608 closed captions"),
+        .props     = AV_CODEC_PROP_TEXT_SUB,
     },
     {
         .id        = AV_CODEC_ID_JACOSUB,

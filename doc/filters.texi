@@ -6015,6 +6015,51 @@ ffmpeg -i LEFT -i RIGHT -filter_complex framepack=frameseq OUTPUT
 ffmpeg -i LEFT -i RIGHT -filter_complex [0:v]scale=w=iw/2[left],[1:v]scale=w=iw/2[right],[left][right]framepack=sbs OUTPUT
 @end example
 
+@section framerate
+
+Change the frame rate by interpolating new video output frames from the source
+frames.
+
+This filter is not designed to function correctly with interlaced media. If
+you wish to change the frame rate of interlaced media then you are required
+to deinterlace before this filter and re-interlace after this filter.
+
+A description of the accepted options follows.
+
+@table @option
+@item fps
+Specify the output frames per second. This option can also be specified
+as a value alone. The default is @code{50}.
+
+@item interp_start
+Specify the start of a range where the output frame will be created as a
+linear interpolation of two frames. The range is [@code{0}-@code{255}],
+the default is @code{15}.
+
+@item interp_end
+Specify the end of a range where the output frame will be created as a
+linear interpolation of two frames. The range is [@code{0}-@code{255}],
+the default is @code{240}.
+
+@item scene
+Specify the level at which a scene change is detected as a value between
+0 and 100 to indicate a new scene; a low value reflects a low
+probability for the current frame to introduce a new scene, while a higher
+value means the current frame is more likely to be one.
+The default is @code{7}.
+
+@item flags
+Specify flags influencing the filter process.
+
+Available value for @var{flags} is:
+
+@table @option
+@item scene_change_detect, scd
+Enable scene change detection using the value of the option @var{scene}.
+This flag is enabled by default.
+@end table
+@end table
+
 @section framestep
 
 Select one frame every N-th frame.

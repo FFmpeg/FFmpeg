@@ -60,27 +60,27 @@ AVFILTER_DEFINE_CLASS(amerge);
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    AMergeContext *am = ctx->priv;
+    AMergeContext *s = ctx->priv;
     int i;
 
-    for (i = 0; i < am->nb_inputs; i++) {
-        if (am->in)
-            ff_bufqueue_discard_all(&am->in[i].queue);
+    for (i = 0; i < s->nb_inputs; i++) {
+        if (s->in)
+            ff_bufqueue_discard_all(&s->in[i].queue);
         if (ctx->input_pads)
             av_freep(&ctx->input_pads[i].name);
     }
-    av_freep(&am->in);
+    av_freep(&s->in);
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AMergeContext *am = ctx->priv;
+    AMergeContext *s = ctx->priv;
     int64_t inlayout[SWR_CH_MAX], outlayout = 0;
     AVFilterFormats *formats;
     AVFilterChannelLayouts *layouts;
     int i, overlap = 0, nb_ch = 0;
 
-    for (i = 0; i < am->nb_inputs; i++) {
+    for (i = 0; i < s->nb_inputs; i++) {
         if (!ctx->inputs[i]->in_channel_layouts ||
             !ctx->inputs[i]->in_channel_layouts->nb_channel_layouts) {
             av_log(ctx, AV_LOG_WARNING,
@@ -93,11 +93,11 @@ static int query_formats(AVFilterContext *ctx)
             av_get_channel_layout_string(buf, sizeof(buf), 0, inlayout[i]);
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
         }
-        am->in[i].nb_ch = av_get_channel_layout_nb_channels(inlayout[i]);
+        s->in[i].nb_ch = av_get_channel_layout_nb_channels(inlayout[i]);
         if (outlayout & inlayout[i])
             overlap++;
         outlayout |= inlayout[i];
-        nb_ch += am->in[i].nb_ch;
+        nb_ch += s->in[i].nb_ch;
     }
     if (nb_ch > SWR_CH_MAX) {
         av_log(ctx, AV_LOG_ERROR, "Too many channels (max %d)\n", SWR_CH_MAX);
@@ -108,7 +108,7 @@ static int query_formats(AVFilterContext *ctx)
                "Input channel layouts overlap: "
                "output layout will be determined by the number of distinct input channels\n");
         for (i = 0; i < nb_ch; i++)
-            am->route[i] = i;
+            s->route[i] = i;
         outlayout = av_get_default_channel_layout(nb_ch);
         if (!outlayout)
             outlayout = ((int64_t)1 << nb_ch) - 1;
@@ -116,17 +116,17 @@ static int query_formats(AVFilterContext *ctx)
         int *route[SWR_CH_MAX];
         int c, out_ch_number = 0;
 
-        route[0] = am->route;
-        for (i = 1; i < am->nb_inputs; i++)
-            route[i] = route[i - 1] + am->in[i - 1].nb_ch;
+        route[0] = s->route;
+        for (i = 1; i < s->nb_inputs; i++)
+            route[i] = route[i - 1] + s->in[i - 1].nb_ch;
         for (c = 0; c < 64; c++)
-            for (i = 0; i < am->nb_inputs; i++)
+            for (i = 0; i < s->nb_inputs; i++)
                 if ((inlayout[i] >> c) & 1)
                     *(route[i]++) = out_ch_number++;
     }
     formats = ff_make_format_list(ff_packed_sample_fmts_array);
     ff_set_common_formats(ctx, formats);
-    for (i = 0; i < am->nb_inputs; i++) {
+    for (i = 0; i < s->nb_inputs; i++) {
         layouts = NULL;
         ff_add_channel_layout(&layouts, inlayout[i]);
         ff_channel_layouts_ref(layouts, &ctx->inputs[i]->out_channel_layouts);
@@ -141,11 +141,11 @@ static int query_formats(AVFilterContext *ctx)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    AMergeContext *am = ctx->priv;
+    AMergeContext *s = ctx->priv;
     AVBPrint bp;
     int i;
 
-    for (i = 1; i < am->nb_inputs; i++) {
+    for (i = 1; i < s->nb_inputs; i++) {
         if (ctx->inputs[i]->sample_rate != ctx->inputs[0]->sample_rate) {
             av_log(ctx, AV_LOG_ERROR,
                    "Inputs must have the same sample rate "
@@ -154,12 +154,12 @@ static int config_output(AVFilterLink *outlink)
             return AVERROR(EINVAL);
         }
     }
-    am->bps = av_get_bytes_per_sample(ctx->outputs[0]->format);
+    s->bps = av_get_bytes_per_sample(ctx->outputs[0]->format);
     outlink->sample_rate = ctx->inputs[0]->sample_rate;
     outlink->time_base   = ctx->inputs[0]->time_base;
 
     av_bprint_init(&bp, 0, 1);
-    for (i = 0; i < am->nb_inputs; i++) {
+    for (i = 0; i < s->nb_inputs; i++) {
         av_bprintf(&bp, "%sin%d:", i ? " + " : "", i);
         av_bprint_channel_layout(&bp, -1, ctx->inputs[i]->channel_layout);
     }
@@ -173,11 +173,11 @@ static int config_output(AVFilterLink *outlink)
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    AMergeContext *am = ctx->priv;
+    AMergeContext *s = ctx->priv;
     int i, ret;
 
-    for (i = 0; i < am->nb_inputs; i++)
-        if (!am->in[i].nb_samples)
+    for (i = 0; i < s->nb_inputs; i++)
+        if (!s->in[i].nb_samples)
             if ((ret = ff_request_frame(ctx->inputs[i])) < 0)
                 return ret;
     return 0;
@@ -223,27 +223,27 @@ static inline void copy_samples(int nb_inputs, struct amerge_input in[],
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
-    AMergeContext *am = ctx->priv;
+    AMergeContext *s = ctx->priv;
     AVFilterLink *const outlink = ctx->outputs[0];
     int input_number;
     int nb_samples, ns, i;
     AVFrame *outbuf, *inbuf[SWR_CH_MAX];
     uint8_t *ins[SWR_CH_MAX], *outs;
 
-    for (input_number = 0; input_number < am->nb_inputs; input_number++)
+    for (input_number = 0; input_number < s->nb_inputs; input_number++)
         if (inlink == ctx->inputs[input_number])
             break;
-    av_assert1(input_number < am->nb_inputs);
-    if (ff_bufqueue_is_full(&am->in[input_number].queue)) {
+    av_assert1(input_number < s->nb_inputs);
+    if (ff_bufqueue_is_full(&s->in[input_number].queue)) {
         av_frame_free(&insamples);
         return AVERROR(ENOMEM);
     }
-    ff_bufqueue_add(ctx, &am->in[input_number].queue, av_frame_clone(insamples));
-    am->in[input_number].nb_samples += insamples->nb_samples;
+    ff_bufqueue_add(ctx, &s->in[input_number].queue, av_frame_clone(insamples));
+    s->in[input_number].nb_samples += insamples->nb_samples;
     av_frame_free(&insamples);
-    nb_samples = am->in[0].nb_samples;
-    for (i = 1; i < am->nb_inputs; i++)
-        nb_samples = FFMIN(nb_samples, am->in[i].nb_samples);
+    nb_samples = s->in[0].nb_samples;
+    for (i = 1; i < s->nb_inputs; i++)
+        nb_samples = FFMIN(nb_samples, s->in[i].nb_samples);
     if (!nb_samples)
         return 0;
 
@@ -251,15 +251,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     if (!outbuf)
         return AVERROR(ENOMEM);
     outs = outbuf->data[0];
-    for (i = 0; i < am->nb_inputs; i++) {
-        inbuf[i] = ff_bufqueue_peek(&am->in[i].queue, 0);
+    for (i = 0; i < s->nb_inputs; i++) {
+        inbuf[i] = ff_bufqueue_peek(&s->in[i].queue, 0);
         ins[i] = inbuf[i]->data[0] +
-                 am->in[i].pos * am->in[i].nb_ch * am->bps;
+                 s->in[i].pos * s->in[i].nb_ch * s->bps;
     }
     av_frame_copy_props(outbuf, inbuf[0]);
     outbuf->pts = inbuf[0]->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
                   inbuf[0]->pts +
-                  av_rescale_q(am->in[0].pos,
+                  av_rescale_q(s->in[0].pos,
                                av_make_q(1, ctx->inputs[0]->sample_rate),
                                ctx->outputs[0]->time_base);
 
@@ -269,34 +269,34 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
     while (nb_samples) {
         ns = nb_samples;
-        for (i = 0; i < am->nb_inputs; i++)
-            ns = FFMIN(ns, inbuf[i]->nb_samples - am->in[i].pos);
+        for (i = 0; i < s->nb_inputs; i++)
+            ns = FFMIN(ns, inbuf[i]->nb_samples - s->in[i].pos);
         /* Unroll the most common sample formats: speed +~350% for the loop,
            +~13% overall (including two common decoders) */
-        switch (am->bps) {
+        switch (s->bps) {
             case 1:
-                copy_samples(am->nb_inputs, am->in, am->route, ins, &outs, ns, 1);
+                copy_samples(s->nb_inputs, s->in, s->route, ins, &outs, ns, 1);
                 break;
             case 2:
-                copy_samples(am->nb_inputs, am->in, am->route, ins, &outs, ns, 2);
+                copy_samples(s->nb_inputs, s->in, s->route, ins, &outs, ns, 2);
                 break;
             case 4:
-                copy_samples(am->nb_inputs, am->in, am->route, ins, &outs, ns, 4);
+                copy_samples(s->nb_inputs, s->in, s->route, ins, &outs, ns, 4);
                 break;
             default:
-                copy_samples(am->nb_inputs, am->in, am->route, ins, &outs, ns, am->bps);
+                copy_samples(s->nb_inputs, s->in, s->route, ins, &outs, ns, s->bps);
                 break;
         }
 
         nb_samples -= ns;
-        for (i = 0; i < am->nb_inputs; i++) {
-            am->in[i].nb_samples -= ns;
-            am->in[i].pos += ns;
-            if (am->in[i].pos == inbuf[i]->nb_samples) {
-                am->in[i].pos = 0;
+        for (i = 0; i < s->nb_inputs; i++) {
+            s->in[i].nb_samples -= ns;
+            s->in[i].pos += ns;
+            if (s->in[i].pos == inbuf[i]->nb_samples) {
+                s->in[i].pos = 0;
                 av_frame_free(&inbuf[i]);
-                ff_bufqueue_get(&am->in[i].queue);
-                inbuf[i] = ff_bufqueue_peek(&am->in[i].queue, 0);
+                ff_bufqueue_get(&s->in[i].queue);
+                inbuf[i] = ff_bufqueue_peek(&s->in[i].queue, 0);
                 ins[i] = inbuf[i] ? inbuf[i]->data[0] : NULL;
             }
         }
@@ -306,13 +306,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    AMergeContext *am = ctx->priv;
+    AMergeContext *s = ctx->priv;
     int i;
 
-    am->in = av_calloc(am->nb_inputs, sizeof(*am->in));
-    if (!am->in)
+    s->in = av_calloc(s->nb_inputs, sizeof(*s->in));
+    if (!s->in)
         return AVERROR(ENOMEM);
-    for (i = 0; i < am->nb_inputs; i++) {
+    for (i = 0; i < s->nb_inputs; i++) {
         char *name = av_asprintf("in%d", i);
         AVFilterPad pad = {
             .name             = name,

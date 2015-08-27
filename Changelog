@@ -36,6 +36,8 @@ version <next>:
 - waveform filter
 - hstack and vstack filter
 - Support DNx100 (1440x1080@8)
+- VAAPI hevc hwaccel
+- framerate filter
 
 
 version 2.7:
