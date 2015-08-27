@@ -477,6 +477,10 @@ void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & 
         vForceEnable.push_back( "gcrypt" );
         vForceEnable.push_back( "gmp" );
     }
+    else if( sOptionLower.compare( "dcadec" ) == 0 )
+    {
+        vForceEnable.push_back( "struct_dcadec_exss_info_matrix_encoding" );
+    }
 }
 
 void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
