@@ -59,13 +59,15 @@ static const AVClass file_class = {
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
-    return read(c->fd, buf, size);
+    int ret = read(c->fd, buf, size);
+    return (ret == -1) ? AVERROR(errno) : ret;
 }
 
 static int file_write(URLContext *h, const unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
-    return write(c->fd, buf, size);
+    int ret = write(c->fd, buf, size);
+    return (ret == -1) ? AVERROR(errno) : ret;
 }
 
 static int file_get_handle(URLContext *h)
