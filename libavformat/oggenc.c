@@ -260,7 +260,7 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
         if (i == total_segments)
             page->granule = granule;
 
-        if (!header) {
+        {
             AVStream *st = s->streams[page->stream_index];
 
             int64_t start = av_rescale_q(page->start_granule, st->time_base,
@@ -268,10 +268,13 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
             int64_t next  = av_rescale_q(page->granule, st->time_base,
                                          AV_TIME_BASE_Q);
 
-            if (page->segments_count == 255 ||
-                (ogg->pref_size     > 0 && page->size   >= ogg->pref_size) ||
-                (ogg->pref_duration > 0 && next - start >= ogg->pref_duration)) {
+            if (page->segments_count == 255) {
                 ogg_buffer_page(s, oggstream);
+            } else if (!header) {
+                if ((ogg->pref_size     > 0 && page->size   >= ogg->pref_size) ||
+                    (ogg->pref_duration > 0 && next - start >= ogg->pref_duration)) {
+                    ogg_buffer_page(s, oggstream);
+                }
             }
         }
     }
