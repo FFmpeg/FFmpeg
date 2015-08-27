@@ -1312,12 +1312,6 @@ check_host_cpp_condition(){
 EOF
 }
 
-apply(){
-    file=$1
-    shift
-    "$@" < "$file" > "$file.tmp" && mv "$file.tmp" "$file" || rm "$file.tmp"
-}
-
 cp_if_changed(){
     cmp -s "$1" "$2" && echo "$2 is unchanged" && return
     mkdir -p "$(dirname $2)"
@@ -2630,6 +2624,7 @@ w64_muxer_select="wav_muxer"
 wav_demuxer_select="riffdec"
 wav_muxer_select="riffenc"
 webm_muxer_select="riffenc"
+webm_muxer_suggest="libopus_encoder libvorbis_encoder libvpx_vp8_encoder libvpx_vp9_encoder"
 wtv_demuxer_select="riffdec"
 wtv_muxer_select="riffenc"
 xmv_demuxer_select="riffdec"
@@ -2974,8 +2969,9 @@ if test -f configure; then
     source_path=.
 else
     source_path=$(cd $(dirname "$0"); pwd)
-    echo "$source_path" | grep -q '[[:blank:]]' &&
-        die "Out of tree builds are impossible with whitespace in source path."
+    case "$source_path" in
+        *[[:blank:]]*) die "Out of tree builds are impossible with whitespace in source path." ;;
+    esac
     test -e "$source_path/config.h" &&
         die "Out of tree builds are impossible with config.h in source dir."
 fi

@@ -6589,6 +6589,21 @@ Set the scaling dimension: @code{2} for @code{hq2x}, @code{3} for
 Default is @code{3}.
 @end table
 
+@section hstack
+Stack input videos horizontally.
+
+All streams must be of same pixel format and of same height.
+
+Note that this filter is faster than using @ref{overlay} and @ref{pad} filter
+to create same output.
+
+The filter accept the following option:
+
+@table @option
+@item nb_inputs
+Set number of input streams. Default is 2.
+@end table
+
 @section hue
 
 Modify the hue and/or the saturation of the input.
@@ -7736,6 +7751,7 @@ Set chroma strength.
 Must be a double value in the range 0-1000, default is @code{1.0}.
 @end table
 
+@anchor{pad}
 @section pad
 
 Add paddings to the input image, and place the original input at the
@@ -10891,6 +10907,21 @@ vignette='PI/4+random(1)*PI/50':eval=frame
 @end example
 
 @end itemize
+
+@section vstack
+Stack input videos vertically.
+
+All streams must be of same pixel format and of same width.
+
+Note that this filter is faster than using @ref{overlay} and @ref{pad} filter
+to create same output.
+
+The filter accept the following option:
+
+@table @option
+@item nb_inputs
+Set number of input streams. Default is 2.
+@end table
 
 @section w3fdif
 

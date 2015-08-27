@@ -31,7 +31,6 @@
 
 typedef struct {
     FFFrameSync fs;
-    FFFrameSyncIn second_input; /* must be immediately after fs */
 
     AVFrame *(*process)(AVFilterContext *ctx, AVFrame *main, const AVFrame *second);
     int shortest;               ///< terminate stream when the second input terminates
