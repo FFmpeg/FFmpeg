@@ -428,6 +428,9 @@
     <ClCompile Include="..\libavfilter\vf_hqx.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_stack.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_hue.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

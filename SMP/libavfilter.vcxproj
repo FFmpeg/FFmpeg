@@ -321,6 +321,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_hqx.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_stack.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_hue.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_idet.c">
