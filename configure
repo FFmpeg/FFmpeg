@@ -5958,6 +5958,10 @@ test -n "$random_seed" &&
     echo "random seed               ${random_seed}"
 echo
 
+echo "Enabled programs:"
+print_enabled '' $PROGRAM_LIST | print_3_columns
+echo
+
 echo "External libraries:"
 print_enabled '' $EXTERNAL_LIBRARY_LIST | print_3_columns
 echo
