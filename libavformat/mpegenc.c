@@ -410,7 +410,9 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             stream->max_buffer_size = 16 * 1024;
             break;
         default:
-            return -1;
+            av_log(ctx, AV_LOG_ERROR, "Invalid media type %s for output stream #%d\n",
+                   av_get_media_type_string(st->codec->codec_type), i);
+            return AVERROR(EINVAL);
         }
         stream->fifo = av_fifo_alloc(16);
         if (!stream->fifo)
