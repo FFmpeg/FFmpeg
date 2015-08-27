@@ -5,6 +5,7 @@ HEADERS = avformat.h                                                    \
           avio.h                                                        \
           version.h                                                     \
           avc.h                                                         \
+          url.h                                                         \
 
 OBJS = allformats.o         \
        avio.o               \
