@@ -35,6 +35,7 @@ version <next>:
 - vectorscope filter
 - waveform filter
 - hstack and vstack filter
+- Support DNx100 (1440x1080@8)
 
 
 version 2.7:
