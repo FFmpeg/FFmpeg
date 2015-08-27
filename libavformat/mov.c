@@ -1436,6 +1436,32 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (ret < 0)
             return ret;
     } else if (atom.size > 8) { /* to read frma, esds atoms */
+        if (st->codec->codec_id == AV_CODEC_ID_ALAC && atom.size >= 24) {
+            uint64_t buffer;
+            ret = ffio_ensure_seekback(pb, 8);
+            if (ret < 0)
+                return ret;
+            buffer = avio_rb64(pb);
+            atom.size -= 8;
+            if (  (buffer & 0xFFFFFFFF) == MKBETAG('f','r','m','a')
+                && buffer >> 32 <= atom.size
+                && buffer >> 32 >= 8) {
+                avio_skip(pb, -8);
+                atom.size += 8;
+            } else if (!st->codec->extradata_size) {
+#define ALAC_EXTRADATA_SIZE 36
+                st->codec->extradata = av_mallocz(ALAC_EXTRADATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!st->codec->extradata)
+                    return AVERROR(ENOMEM);
+                st->codec->extradata_size = ALAC_EXTRADATA_SIZE;
+                AV_WB32(st->codec->extradata    , ALAC_EXTRADATA_SIZE);
+                AV_WB32(st->codec->extradata + 4, MKTAG('a','l','a','c'));
+                AV_WB64(st->codec->extradata + 12, buffer);
+                avio_read(pb, st->codec->extradata + 20, 16);
+                avio_skip(pb, atom.size - 24);
+                return 0;
+            }
+        }
         if ((ret = mov_read_default(c, pb, atom)) < 0)
             return ret;
     } else
