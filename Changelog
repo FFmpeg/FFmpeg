@@ -8,7 +8,7 @@ version <next>:
 - Hap decoder and encoder
 - DirectDraw Surface image/texture decoder
 - ssim filter
-- rewritten ASF demuxer
+- optional new ASF demuxer
 - showvolume filter
 - Many improvements to the JPEG 2000 decoder
 - Go2Meeting decoding support
