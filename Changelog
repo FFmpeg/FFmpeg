@@ -37,6 +37,7 @@ version <next>:
 - hstack and vstack filter
 - Support DNx100 (1440x1080@8)
 - VAAPI hevc hwaccel
+- VDPAU hevc hwaccel
 - framerate filter
 - Switched default encoders for webm to VP9 and Opus
 
