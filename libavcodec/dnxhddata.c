@@ -1103,7 +1103,7 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1237_ac_flags,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
       { 63, 84, 100, 110 } },
-    { 1260, 1440, 1080, 1, 417792, 417792, 4, 8, 3,
+    { 1260, 1440, 1080, 1, 835584, 417792, 4, 8, 3,
       dnxhd_1260_luma_weight, dnxhd_1260_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
