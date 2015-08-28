@@ -11102,6 +11102,27 @@ can still spot out of range values without constantly looking at waveforms.
 @item peak+instant
 Peak and instant envelope combined together.
 @end table
+
+@item filter, f
+@table @samp
+@item lowpass
+No filtering, this is default.
+
+@item flat
+Luma and chroma combined together.
+
+@item aflat
+Similar as above, but shows difference between blue and red chroma.
+
+@item chroma
+Displays only chroma.
+
+@item achroma
+Similar as above, but shows difference between blue and red chroma.
+
+@item color
+Displays actual color value on waveform.
+@end table
 @end table
 
 @section xbr
