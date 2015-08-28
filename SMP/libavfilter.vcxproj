@@ -298,6 +298,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_framepack.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_framerate.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_framestep.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fspp.c">
