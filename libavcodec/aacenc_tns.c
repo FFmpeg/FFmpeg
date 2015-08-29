@@ -97,6 +97,10 @@ static void process_tns_coeffs(TemporalNoiseShaping *tns, double *coef_raw,
             break;
         }
     }
+    order = av_clip(order, 0, TNS_MAX_ORDER - 1);
+    *order_p = order;
+    if (!order)
+        return;
 
     /* Step up procedure, convert to LPC coeffs */
     out[0] = 1.0f;
@@ -109,7 +113,6 @@ static void process_tns_coeffs(TemporalNoiseShaping *tns, double *coef_raw,
         }
         out[i] = lpc[i-1];
     }
-    *order_p = order;
     memcpy(lpc, out, TNS_MAX_ORDER*sizeof(float));
 }
 
