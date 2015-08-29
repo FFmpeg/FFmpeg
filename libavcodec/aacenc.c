@@ -27,7 +27,6 @@
 /***********************************
  *              TODOs:
  * add sane pulse detection
- * add temporal noise shaping
  ***********************************/
 
 #include "libavutil/float_dsp.h"
