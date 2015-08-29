@@ -31,54 +31,22 @@
 #include "aacenc_utils.h"
 #include "aacenc_quantization.h"
 
-static inline void conv_to_int32(int32_t *loc, float *samples, int num, float norm)
-{
-    int i;
-    for (i = 0; i < num; i++)
-        loc[i] = ceilf((samples[i]/norm)*INT32_MAX);
-}
-
-static inline void conv_to_float(float *arr, int32_t *cof, int num)
-{
-    int i;
-    for (i = 0; i < num; i++)
-        arr[i] = (float)cof[i]/INT32_MAX;
-}
-
-/* Input: quantized 4 bit coef, output: 1 if first (MSB) 2 bits are the same */
-static inline int coef_test_compression(int coef)
-{
-    int tmp = coef >> 2;
-    int res = ff_ctz(tmp);
-    if (res > 1)
-        return 1;       /* ...00 ->  compressable    */
-    else if (res == 1)
-        return 0;       /* ...10 ->  uncompressable  */
-    else if (ff_ctz(tmp >> 1) > 0)
-        return 0;       /* ...0 1 -> uncompressable  */
-    else
-        return 1;       /* ...1 1 -> compressable    */
-}
-
 static inline int compress_coef(int *coefs, int num)
 {
-    int i, res = 0;
+    int i, c = 0;
     for (i = 0; i < num; i++)
-        res += coef_test_compression(coefs[i]);
-    return res == num ? 1 : 0;
+        c += coefs[i] < 4 || coefs[i] > 11;
+    return c == num;
 }
 
 /**
  * Encode TNS data.
- * Coefficient compression saves a single bit.
+ * Coefficient compression saves a single bit per coefficient.
  */
 void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
 {
     int i, w, filt, coef_len, coef_compress;
-    const int coef_res = MAX_LPC_PRECISION == 4 ? 1 : 0;
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
-
-    put_bits(&s->pb, 1, !!sce->tns.present);
 
     if (!sce->tns.present)
         return;
@@ -86,7 +54,7 @@ void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
     for (i = 0; i < sce->ics.num_windows; i++) {
         put_bits(&s->pb, 2 - is8, sce->tns.n_filt[i]);
         if (sce->tns.n_filt[i]) {
-            put_bits(&s->pb, 1, !!coef_res);
+            put_bits(&s->pb, 1, 1);
             for (filt = 0; filt < sce->tns.n_filt[i]; filt++) {
                 put_bits(&s->pb, 6 - 2 * is8, sce->tns.length[i][filt]);
                 put_bits(&s->pb, 5 - 2 * is8, sce->tns.order[i][filt]);
@@ -95,7 +63,7 @@ void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
                                                   sce->tns.order[i][filt]);
                     put_bits(&s->pb, 1, !!sce->tns.direction[i][filt]);
                     put_bits(&s->pb, 1, !!coef_compress);
-                    coef_len = coef_res + 3 - coef_compress;
+                    coef_len = 4 - coef_compress;
                     for (w = 0; w < sce->tns.order[i][filt]; w++)
                         put_bits(&s->pb, coef_len, sce->tns.coef_idx[i][filt][w]);
                 }
@@ -104,33 +72,31 @@ void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
     }
 }
 
-static int process_tns_coeffs(TemporalNoiseShaping *tns, float *tns_coefs_raw,
-                              int order, int w, int filt)
+static void process_tns_coeffs(TemporalNoiseShaping *tns, double *coef_raw,
+                               int *order_p, int w, int filt)
 {
-    int i, j;
+    int i, j, order = *order_p;
     int *idx = tns->coef_idx[w][filt];
     float *lpc = tns->coef[w][filt];
-    const int iqfac_p = ((1 << (MAX_LPC_PRECISION-1)) - 0.5)/(M_PI/2.0);
-    const int iqfac_m = ((1 << (MAX_LPC_PRECISION-1)) + 0.5)/(M_PI/2.0);
     float temp[TNS_MAX_ORDER] = {0.0f}, out[TNS_MAX_ORDER] = {0.0f};
 
-    /* Quantization */
+    if (!order)
+        return;
+
+    /* Not what the specs say, but it's better */
     for (i = 0; i < order; i++) {
-        idx[i] = ceilf(asin(tns_coefs_raw[i])*((tns_coefs_raw[i] >= 0) ? iqfac_p : iqfac_m));
-        lpc[i] = 2*sin(idx[i]/((idx[i] >= 0) ? iqfac_p : iqfac_m));
+        idx[i] = quant_array_idx(coef_raw[i], tns_tmp2_map_0_4, 16);
+        lpc[i] = tns_tmp2_map_0_4[idx[i]];
     }
 
     /* Trim any coeff less than 0.1f from the end */
-    for (i = order; i > -1; i--) {
+    for (i = order-1; i > -1; i--) {
         lpc[i] = (fabs(lpc[i]) > 0.1f) ? lpc[i] : 0.0f;
         if (lpc[i] != 0.0 ) {
             order = i;
             break;
         }
     }
-
-    if (!order)
-        return 0;
 
     /* Step up procedure, convert to LPC coeffs */
     out[0] = 1.0f;
@@ -143,35 +109,59 @@ static int process_tns_coeffs(TemporalNoiseShaping *tns, float *tns_coefs_raw,
         }
         out[i] = lpc[i-1];
     }
+    *order_p = order;
     memcpy(lpc, out, TNS_MAX_ORDER*sizeof(float));
-
-    return order;
 }
 
-static void apply_tns_filter(float *out, float *in, int order, int direction,
-                             float *tns_coefs, int ltp_used, int w, int filt,
-                             int start_i, int len)
+/* Apply TNS filter */
+void ff_aac_apply_tns(SingleChannelElement *sce)
 {
-    int i, j, inc, start = start_i;
-    float tmp[TNS_MAX_ORDER+1];
-    if (direction) {
-        inc = -1;
-        start = (start + len) - 1;
-    } else {
-        inc = 1;
-    }
-    if (!ltp_used) {    /* AR filter */
-        for (i = 0; i < len; i++, start += inc)
-            out[i] = in[start];
-            for (j = 1; j <= FFMIN(i, order); j++)
-                out[i] += tns_coefs[j]*in[start - j*inc];
-    } else {            /* MA filter */
-        for (i = 0; i < len; i++, start += inc) {
-            tmp[0] = out[i] = in[start];
-            for (j = 1; j <= FFMIN(i, order); j++)
-                out[i] += tmp[j]*tns_coefs[j];
-            for (j = order; j > 0; j--)
-                tmp[j] = tmp[j - 1];
+    const int mmm = FFMIN(sce->ics.tns_max_bands, sce->ics.max_sfb);
+    float *coef = sce->pcoeffs;
+    TemporalNoiseShaping *tns = &sce->tns;
+    int w, filt, m, i;
+    int bottom, top, order, start, end, size, inc;
+    float *lpc, tmp[TNS_MAX_ORDER+1];
+
+    return;
+
+    for (w = 0; w < sce->ics.num_windows; w++) {
+        bottom = sce->ics.num_swb;
+        for (filt = 0; filt < tns->n_filt[w]; filt++) {
+            top    = bottom;
+            bottom = FFMAX(0, top - tns->length[w][filt]);
+            order  = tns->order[w][filt];
+            lpc    = tns->coef[w][filt];
+            if (!order)
+                continue;
+
+            start = sce->ics.swb_offset[FFMIN(bottom, mmm)];
+            end   = sce->ics.swb_offset[FFMIN(   top, mmm)];
+            if ((size = end - start) <= 0)
+                continue;
+            if (tns->direction[w][filt]) {
+                inc = -1;
+                start = end - 1;
+            } else {
+                inc = 1;
+            }
+            start += w * 128;
+
+            if (!sce->ics.ltp.present) {
+                // ar filter
+                for (m = 0; m < size; m++, start += inc)
+                    for (i = 1; i <= FFMIN(m, order); i++)
+                        coef[start] += coef[start - i * inc]*lpc[i - 1];
+            } else {
+                // ma filter
+                for (m = 0; m < size; m++, start += inc) {
+                    tmp[0] = coef[start];
+                    for (i = 1; i <= FFMIN(m, order); i++)
+                        coef[start] += tmp[i]*lpc[i - 1];
+                    for (i = order; i > 0; i--)
+                        tmp[i] = tmp[i - 1];
+                }
+            }
         }
     }
 }
@@ -179,57 +169,54 @@ static void apply_tns_filter(float *out, float *in, int order, int direction,
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 {
     TemporalNoiseShaping *tns = &sce->tns;
-    int w, g, order, sfb_start, sfb_len, coef_start, shift[MAX_LPC_ORDER], count = 0;
+    int w, g, w2, prev_end_sfb = 0, count = 0;
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
     const int tns_max_order = is8 ? 7 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
-    const float freq_mult = mpeg4audio_sample_rates[s->samplerate_index]/(1024.0f/sce->ics.num_windows)/2.0f;
-    float max_coef = 0.0f;
 
-    sce->tns.present = 0;
-    return;
-
-    for (coef_start = 0; coef_start < 1024; coef_start++)
-        max_coef = FFMAX(max_coef, sce->pcoeffs[coef_start]);
-
-    for (w = 0; w < sce->ics.num_windows; w++) {
-        int filters = 1, start = 0, coef_len = 0;
-        int32_t conv_coeff[1024] = {0};
-        int32_t coefs_t[MAX_LPC_ORDER][MAX_LPC_ORDER] = {{0}};
-
-        /* Determine start sfb + coef - excludes anything below threshold */
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+        int order = 0, filters = 1;
+        int sfb_start = 0, sfb_len = 0;
+        int coef_start = 0, coef_len = 0;
+        float energy = 0.0f, threshold = 0.0f;
+        double coefs[MAX_LPC_ORDER][MAX_LPC_ORDER] = {{0}};
         for (g = 0;  g < sce->ics.num_swb; g++) {
-            if (start*freq_mult > TNS_LOW_LIMIT) {
+            if (!sfb_start && w*16+g > TNS_LOW_LIMIT && w*16+g > prev_end_sfb) {
                 sfb_start = w*16+g;
-                sfb_len   = (w+1)*16 + g - sfb_start;
-                coef_start = sce->ics.swb_offset[sfb_start];
-                coef_len  = sce->ics.swb_offset[sfb_start + sfb_len] - coef_start;
-                break;
+                coef_start =  sce->ics.swb_offset[sfb_start];
             }
-            start += sce->ics.swb_sizes[g];
+            if (sfb_start) {
+                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                    FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
+                    if (!sfb_len && band->energy < band->threshold*1.3f) {
+                        sfb_len = (w+w2)*16+g - sfb_start;
+                        prev_end_sfb = sfb_start + sfb_len;
+                        coef_len = sce->ics.swb_offset[sfb_start + sfb_len] - coef_start;
+                        break;
+                    }
+                    energy += band->energy;
+                    threshold += band->threshold;
+                }
+                if (!sfb_len) {
+                    sfb_len = (w+sce->ics.group_len[w])*16+g - sfb_start;
+                    coef_len = sce->ics.swb_offset[sfb_start + sfb_len] - coef_start;
+                }
+            }
         }
 
-        if (coef_len <= 0)
+        if (sfb_len <= 0 || coef_len <= 0)
             continue;
-
-        conv_to_int32(conv_coeff, &sce->pcoeffs[coef_start], coef_len, max_coef);
+        if (coef_start + coef_len > 1024)
+            coef_len = 1024 - coef_start;
 
         /* LPC */
-        order = ff_lpc_calc_coefs(&s->lpc, conv_coeff, coef_len,
-                                  TNS_MIN_PRED_ORDER, tns_max_order,
-                                  32, coefs_t, shift,
-                                  FF_LPC_TYPE_LEVINSON, 10,
-                                  ORDER_METHOD_EST, MAX_LPC_SHIFT, 0) - 1;
+        order = ff_lpc_calc_levinsion(&s->lpc, &sce->coeffs[coef_start], coef_len,
+                                      coefs, 0, tns_max_order, ORDER_METHOD_LOG);
 
-        /* Works surprisingly well, remember to tweak MAX_LPC_SHIFT if you want to play around with this */
-        if (shift[order] > 3) {
+        if (energy > threshold) {
             int direction = 0;
-            float tns_coefs_raw[TNS_MAX_ORDER];
             tns->n_filt[w] = filters++;
-            conv_to_float(tns_coefs_raw, coefs_t[order], order);
             for (g = 0; g < tns->n_filt[w]; g++) {
-                process_tns_coeffs(tns, tns_coefs_raw, order, w, g);
-                apply_tns_filter(&sce->coeffs[coef_start], sce->pcoeffs, order, direction, tns->coef[w][g],
-                                 sce->ics.ltp.present, w, g, coef_start, coef_len);
+                process_tns_coeffs(tns, coefs[order], &order, w, g);
                 tns->order[w][g]     = order;
                 tns->length[w][g]    = sfb_len;
                 tns->direction[w][g] = direction;

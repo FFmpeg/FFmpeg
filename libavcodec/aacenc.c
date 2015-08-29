@@ -404,10 +404,9 @@ static int encode_individual_channel(AVCodecContext *avctx, AACEncContext *s,
     encode_band_info(s, sce);
     encode_scale_factors(avctx, s, sce);
     encode_pulses(s, &sce->pulse);
+    put_bits(&s->pb, 1, !!sce->tns.present);
     if (s->coder->encode_tns_info)
         s->coder->encode_tns_info(s, sce);
-    else
-        put_bits(&s->pb, 1, 0);
     put_bits(&s->pb, 1, 0); //ssr
     encode_spectral_coeffs(s, sce);
     return 0;
@@ -609,6 +608,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     s->coder->search_for_pns(s, avctx, sce);
                 if (s->options.tns && s->coder->search_for_tns)
                     s->coder->search_for_tns(s, sce);
+                if (s->options.tns && s->coder->apply_tns_filt)
+                    s->coder->apply_tns_filt(sce);
                 if (sce->tns.present)
                     tns_mode = 1;
             }

@@ -30,16 +30,11 @@
 
 #include "aacenc.h"
 
-/** Frequency in Hz for lower limit of TNS **/
-#define TNS_LOW_LIMIT 2150
-
-/** LPC settings */
-#define TNS_MIN_PRED_ORDER 0
-#define MAX_LPC_PRECISION  4   /* 4 bits ltp coeff precision */
-#define TNS_LPC_PASSES     2
-#define MAX_LPC_SHIFT      4
+/** Lower limit of TNS in SFBs **/
+#define TNS_LOW_LIMIT 24
 
 void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce);
+void ff_aac_apply_tns(SingleChannelElement *sce);
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce);
 
 #endif /* AVCODEC_AACENC_TNS_H */
