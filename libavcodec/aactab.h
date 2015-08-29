@@ -41,6 +41,41 @@
  * encoder.
  */
 
+/* @name tns_tmp2_map
+ * Tables of the tmp2[] arrays of LPC coefficients used for TNS.
+ * The suffix _M_N[] indicate the values of coef_compress and coef_res
+ * respectively.
+ * @{
+ */
+static const INTFLOAT tns_tmp2_map_1_3[4] = {
+    Q31(0.00000000f), Q31(-0.43388373f),  Q31(0.64278758f),  Q31(0.34202015f),
+};
+
+static const INTFLOAT tns_tmp2_map_0_3[8] = {
+    Q31(0.00000000f), Q31(-0.43388373f), Q31(-0.78183150f), Q31(-0.97492790f),
+    Q31(0.98480773f), Q31( 0.86602539f), Q31( 0.64278758f), Q31( 0.34202015f),
+};
+
+static const INTFLOAT tns_tmp2_map_1_4[8] = {
+    Q31(0.00000000f), Q31(-0.20791170f), Q31(-0.40673664f), Q31(-0.58778524f),
+    Q31(0.67369562f), Q31( 0.52643216f), Q31( 0.36124167f), Q31( 0.18374951f),
+};
+
+static const INTFLOAT tns_tmp2_map_0_4[16] = {
+    Q31( 0.00000000f), Q31(-0.20791170f), Q31(-0.40673664f), Q31(-0.58778524f),
+    Q31(-0.74314481f), Q31(-0.86602539f), Q31(-0.95105654f), Q31(-0.99452192f),
+    Q31( 0.99573416f), Q31( 0.96182561f), Q31( 0.89516330f), Q31( 0.79801720f),
+    Q31( 0.67369562f), Q31( 0.52643216f), Q31( 0.36124167f), Q31( 0.18374951f),
+};
+
+static const INTFLOAT * const tns_tmp2_map[4] = {
+    tns_tmp2_map_0_3,
+    tns_tmp2_map_0_4,
+    tns_tmp2_map_1_3,
+    tns_tmp2_map_1_4
+};
+// @}
+
 /* @name window coefficients
  * @{
  */
