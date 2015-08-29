@@ -123,8 +123,6 @@ void ff_aac_apply_tns(SingleChannelElement *sce)
     int bottom, top, order, start, end, size, inc;
     float *lpc, tmp[TNS_MAX_ORDER+1];
 
-    return;
-
     for (w = 0; w < sce->ics.num_windows; w++) {
         bottom = sce->ics.num_swb;
         for (filt = 0; filt < tns->n_filt[w]; filt++) {
