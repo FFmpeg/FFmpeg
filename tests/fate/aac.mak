@@ -172,6 +172,7 @@ fate-aac-tns-encode: CMP = stddev
 fate-aac-tns-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-tns-encode: CMP_SHIFT = -4096
 fate-aac-tns-encode: CMP_TARGET = 646.19
+fate-aac-tns-encode: FUZZ = 1.8
 fate-aac-tns-encode: SIZE_TOLERANCE = 3560
 
 FATE_AAC_ENCODE += fate-aac-is-encode
