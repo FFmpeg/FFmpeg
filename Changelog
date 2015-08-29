@@ -8,7 +8,7 @@ version <next>:
 - Hap decoder and encoder
 - DirectDraw Surface image/texture decoder
 - ssim filter
-- rewritten ASF demuxer
+- optional new ASF demuxer
 - showvolume filter
 - Many improvements to the JPEG 2000 decoder
 - Go2Meeting decoding support
@@ -37,7 +37,9 @@ version <next>:
 - hstack and vstack filter
 - Support DNx100 (1440x1080@8)
 - VAAPI hevc hwaccel
+- VDPAU hevc hwaccel
 - framerate filter
+- Switched default encoders for webm to VP9 and Opus
 
 
 version 2.7:
