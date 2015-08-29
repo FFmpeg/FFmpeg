@@ -786,11 +786,12 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
              "Too many bits per frame requested, clamping to max\n");
     if (avctx->profile == FF_PROFILE_AAC_MAIN) {
         s->options.pred = 1;
-    } else if (avctx->profile == FF_PROFILE_AAC_LOW && s->options.pred) {
+    } else if ((avctx->profile == FF_PROFILE_AAC_LOW ||
+                avctx->profile == FF_PROFILE_UNKNOWN) && s->options.pred) {
         s->profile = 0; /* Main */
         WARN_IF(1, "Prediction requested, changing profile to AAC-Main\n");
     } else if (avctx->profile == FF_PROFILE_AAC_LOW ||
-        avctx->profile == FF_PROFILE_UNKNOWN) {
+               avctx->profile == FF_PROFILE_UNKNOWN) {
         s->profile = 1; /* Low */
     } else {
         ERROR_IF(1, "Unsupported profile %d\n", avctx->profile);
