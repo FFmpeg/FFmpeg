@@ -205,7 +205,7 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 
         if (sfb_len <= 0 || coef_len <= 0)
             continue;
-        if (coef_start + coef_len > 1024)
+        if (coef_start + coef_len >= 1024)
             coef_len = 1024 - coef_start;
 
         /* LPC */
