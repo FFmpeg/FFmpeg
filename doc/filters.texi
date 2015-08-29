@@ -10603,6 +10603,22 @@ Set which color component will be represented on Y-axis. Default is @code{2}.
 @item intensity
 Set intensity, used by modes: gray, color and color3 for increasing brightness
 of color component which represents frequency of (X, Y) location in graph.
+
+@item envelope, e
+@table @samp
+@item none
+No envelope, this is default.
+
+@item instant
+Instant envelope, even darkest single pixel will be clearly highlighted.
+
+@item peak
+Hold maximum and minimum values presented in graph over time. This way you
+can still spot out of range values without constantly looking at vectorscope.
+
+@item peak+instant
+Peak and instant envelope combined together.
+@end table
 @end table
 
 @anchor{vidstabdetect}
