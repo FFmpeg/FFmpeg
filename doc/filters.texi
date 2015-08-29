@@ -10587,6 +10587,11 @@ Actual color components values present in video frame are displayed on graph.
 Similar as color2 but higher frequency of same values @code{x} and @code{y}
 on graph increases value of another color component, which is luminance by
 default values of @code{x} and @code{y}.
+
+@item color4
+Actual colors present in video frame are displayed on graph. If two different
+colors map to same position on graph then color with higher value of component
+not present in graph is picked.
 @end table
 
 @item x
