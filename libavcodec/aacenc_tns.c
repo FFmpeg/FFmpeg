@@ -173,7 +173,7 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
     const int tns_max_order = is8 ? 7 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
 
-    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+    for (w = 0; w < sce->ics.num_windows; w++) {
         int order = 0, filters = 1;
         int sfb_start = 0, sfb_len = 0;
         int coef_start = 0, coef_len = 0;
@@ -197,7 +197,7 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
                     threshold += band->threshold;
                 }
                 if (!sfb_len) {
-                    sfb_len = (w+sce->ics.group_len[w])*16+g - sfb_start;
+                    sfb_len = (w+1)*16+g - sfb_start - 1;
                     coef_len = sce->ics.swb_offset[sfb_start + sfb_len] - coef_start;
                 }
             }
