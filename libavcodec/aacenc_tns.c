@@ -210,8 +210,8 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
             coef_len = 1024 - coef_start;
 
         /* LPC */
-        order = ff_lpc_calc_levinsion(&s->lpc, &sce->coeffs[coef_start], coef_len,
-                                      coefs, 0, tns_max_order, ORDER_METHOD_LOG);
+        order = ff_lpc_calc_levinson(&s->lpc, &sce->coeffs[coef_start], coef_len,
+                                     coefs, 0, tns_max_order, ORDER_METHOD_LOG);
 
         if (energy > threshold) {
             int direction = 0;

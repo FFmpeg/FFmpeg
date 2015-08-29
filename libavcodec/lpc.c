@@ -277,9 +277,9 @@ int ff_lpc_calc_coefs(LPCContext *s,
  * @param lpc_type LPC method for determining coefficients,
  *                 see #FFLPCType for details
  */
-int ff_lpc_calc_levinsion(LPCContext *s, const float *samples, int len,
-                          double lpc[][MAX_LPC_ORDER], int min_order,
-                          int max_order, int omethod)
+int ff_lpc_calc_levinson(LPCContext *s, const float *samples, int len,
+                         double lpc[][MAX_LPC_ORDER], int min_order,
+                         int max_order, int omethod)
 {
     double ref[MAX_LPC_ORDER] = { 0 };
     double autoc[MAX_LPC_ORDER+1];
