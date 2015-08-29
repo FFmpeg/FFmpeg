@@ -119,7 +119,6 @@ static void process_tns_coeffs(TemporalNoiseShaping *tns, double *coef_raw,
 /* Apply TNS filter */
 void ff_aac_apply_tns(SingleChannelElement *sce)
 {
-    const int mmm = FFMIN(sce->ics.tns_max_bands, sce->ics.max_sfb);
     float *coef = sce->pcoeffs;
     TemporalNoiseShaping *tns = &sce->tns;
     int w, filt, m, i;
@@ -136,8 +135,8 @@ void ff_aac_apply_tns(SingleChannelElement *sce)
             if (!order)
                 continue;
 
-            start = sce->ics.swb_offset[FFMIN(bottom, mmm)];
-            end   = sce->ics.swb_offset[FFMIN(   top, mmm)];
+            start = sce->ics.swb_offset[bottom];
+            end   = sce->ics.swb_offset[top];
             if ((size = end - start) <= 0)
                 continue;
             if (tns->direction[w][filt]) {
