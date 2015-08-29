@@ -247,7 +247,7 @@ typedef struct SingleChannelElement {
     TemporalNoiseShaping tns;
     Pulse pulse;
     enum BandType band_type[128];                   ///< band types
-    enum BandType orig_band_type[128];              ///< band type backups for undoing prediction
+    enum BandType band_alt[128];                    ///< alternative band type (used by encoder)
     int band_type_run_end[120];                     ///< band type run end points
     INTFLOAT sf[120];                               ///< scalefactors
     int sf_idx[128];                                ///< scalefactor indices (used by encoder)
