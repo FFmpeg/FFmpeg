@@ -100,6 +100,10 @@ int ff_lpc_calc_coefs(LPCContext *s,
 int ff_lpc_calc_ref_coefs(LPCContext *s,
                           const int32_t *samples, int order, double *ref);
 
+int ff_lpc_calc_levinsion(LPCContext *s, const float *samples, int len,
+                          double lpc[][MAX_LPC_ORDER], int min_order,
+                          int max_order, int omethod);
+
 /**
  * Initialize LPCContext.
  */

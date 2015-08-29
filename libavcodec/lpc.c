@@ -271,6 +271,62 @@ int ff_lpc_calc_coefs(LPCContext *s,
     return opt_order;
 }
 
+/**
+ * Simplified Levinson LPC accepting float samples
+ *
+ * @param lpc_type LPC method for determining coefficients,
+ *                 see #FFLPCType for details
+ */
+int ff_lpc_calc_levinsion(LPCContext *s, const float *samples, int len,
+                          double lpc[][MAX_LPC_ORDER], int min_order,
+                          int max_order, int omethod)
+{
+    double ref[MAX_LPC_ORDER] = { 0 };
+    double autoc[MAX_LPC_ORDER+1];
+    double *w_data = s->windowed_samples;
+    int i, n2 = (len >> 1);
+    double w, c = 2.0 / (len - 1.0);
+
+    av_assert2(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER);
+
+    /* reinit LPC context if parameters have changed */
+    if (len > s->blocksize || max_order > s->max_order) {
+        ff_lpc_end(s);
+        ff_lpc_init(s, len, max_order, FF_LPC_TYPE_LEVINSON);
+    }
+
+    /* Apply welch window */
+    if (len & 1) {
+        for(i=0; i<n2; i++) {
+            w = c - i - 1.0;
+            w = 1.0 - (w * w);
+            w_data[i] = samples[i] * w;
+            w_data[len-1-i] = samples[len-1-i] * w;
+        }
+    } else {
+        w_data+=n2;
+        samples+=n2;
+        for(i=0; i<n2; i++) {
+            w = c - n2 + i;
+            w = 1.0 - (w * w);
+            w_data[-i-1] = samples[-i-1] * w;
+            w_data[+i  ] = samples[+i  ] * w;
+        }
+    }
+
+    s->lpc_compute_autocorr(w_data, len, max_order, autoc);
+
+    compute_lpc_coefs(autoc, max_order, &lpc[0][0], max_order, 0, 1);
+
+    if(omethod == ORDER_METHOD_EST) {
+        for(i=0; i<max_order; i++)
+            ref[i] = fabs(lpc[i][i]);
+        return estimate_best_order(ref, min_order, max_order);
+    }
+
+    return max_order;
+}
+
 av_cold int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
                         enum FFLPCType lpc_type)
 {
