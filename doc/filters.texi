@@ -10566,7 +10566,7 @@ a vectorscope).
 This filter accepts the following options:
 
 @table @option
-@item mode
+@item mode, m
 Set vectorscope mode.
 
 It accepts the following values:
@@ -10600,7 +10600,7 @@ Set which color component will be represented on X-axis. Default is @code{1}.
 @item y
 Set which color component will be represented on Y-axis. Default is @code{2}.
 
-@item intensity
+@item intensity, i
 Set intensity, used by modes: gray, color and color3 for increasing brightness
 of color component which represents frequency of (X, Y) location in graph.
 
