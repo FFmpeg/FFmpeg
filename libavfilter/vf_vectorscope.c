@@ -305,16 +305,6 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
                 }
             }
         }
-        if (s->mode == COLOR) {
-            for (i = 0; i < out->height; i++) {
-                for (j = 0; j < out->width; j++) {
-                    if (!dpd[i * out->linesize[pd] + j]) {
-                        dpx[i * out->linesize[px] + j] = j;
-                        dpy[i * out->linesize[py] + j] = i;
-                    }
-                }
-            }
-        }
         break;
     case COLOR2:
         if (s->is_yuv) {
@@ -393,6 +383,18 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     }
 
     envelope(s, out);
+
+    if (s->mode == COLOR) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                if (!dpd[i * out->linesize[pd] + j]) {
+                    dpx[i * out->linesize[px] + j] = j;
+                    dpy[i * out->linesize[py] + j] = i;
+                    dpd[i * out->linesize[pd] + j] = 128;
+                }
+            }
+        }
+    }
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
