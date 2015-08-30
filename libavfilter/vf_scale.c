@@ -350,6 +350,7 @@ static int config_props(AVFilterLink *outlink)
     scale->isws[0] = scale->isws[1] = scale->sws = NULL;
     if (inlink0->w == outlink->w &&
         inlink0->h == outlink->h &&
+        !scale->out_color_matrix &&
         scale->in_range == scale->out_range &&
         inlink0->format == outlink->format)
         ;
