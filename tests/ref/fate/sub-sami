@@ -10,12 +10,12 @@ Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.00,0:00:00.01,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\N
-Dialogue: 0,0:00:00.01,0:00:08.80,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\NLet the word go forth, from this time and place to friend and foe alike that the torch 
-Dialogue: 0,0:00:08.80,0:00:19.50,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\Nhas been passed to a new generation of Americans, born in this century, tempered by war, 
-Dialogue: 0,0:00:19.50,0:00:28.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\Ndisciplined by a hard and bitter peace, proud of our ancient heritage, and unwilling to witness 
-Dialogue: 0,0:00:28.00,0:00:38.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\Nor permit the slow undoing of those human rights to which this nation has always 
-Dialogue: 0,0:00:38.00,0:00:46.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\Nbeen committed and to which we are committed today at home and around the world. 
-Dialogue: 0,0:00:46.00,0:01:01.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\NLet every nation know, whether it wishes us well or ill, that we shall pay any price, bear any burden, 
-Dialogue: 0,0:01:01.00,0:01:13.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy {\i0}\Nmeet any hardship, support any friend, oppose any foe, to ensure the survival and success of liberty. 
-Dialogue: 0,0:01:13.00,9:59:59.99,Default,,0,0,0,,{\i1}End of: {\i0}\NPresident John F. Kennedy Speech 
+Dialogue: 0,0:00:00.00,0:00:00.01,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\N
+Dialogue: 0,0:00:00.01,0:00:08.80,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\NLet the word go forth, from this time and place to friend and foe alike that the torch
+Dialogue: 0,0:00:08.80,0:00:19.50,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\Nhas been passed to a new generation of Americans, born in this century, tempered by war,
+Dialogue: 0,0:00:19.50,0:00:28.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\Ndisciplined by a hard and bitter peace, proud of our ancient heritage, and unwilling to witness
+Dialogue: 0,0:00:28.00,0:00:38.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\Nor permit the slow undoing of those human rights to which this nation has always
+Dialogue: 0,0:00:38.00,0:00:46.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\Nbeen committed and to which we are committed today at home and around the world.
+Dialogue: 0,0:00:46.00,0:01:01.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\NLet every nation know, whether it wishes us well or ill, that we shall pay any price, bear any burden,
+Dialogue: 0,0:01:01.00,0:01:13.00,Default,,0,0,0,,{\i1}Pres. John F. Kennedy{\i0}\Nmeet any hardship, support any friend, oppose any foe, to ensure the survival and success of liberty.
+Dialogue: 0,0:01:13.00,9:59:59.99,Default,,0,0,0,,{\i1}End of:{\i0}\NPresident John F. Kennedy Speech
