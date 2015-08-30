@@ -855,6 +855,12 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     if (need_reinit && (c->srcBpc == 8 || !isYUV(c->srcFormat)))
         ff_sws_init_range_convert(c);
 
+    c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
+    c->srcFormatBpp = av_get_bits_per_pixel(desc_src);
+
+    if (c->cascaded_context[0])
+        return sws_setColorspaceDetails(c->cascaded_context[0],inv_table, srcRange,table, dstRange, brightness,  contrast, saturation);
+
     if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat))) {
         if (!c->cascaded_context[0] &&
             memcmp(c->dstColorspaceTable, c->srcColorspaceTable, sizeof(int) * 4) &&
@@ -922,9 +928,6 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
         }
         return -1;
     }
-
-    c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
-    c->srcFormatBpp = av_get_bits_per_pixel(desc_src);
 
     if (!isYUV(c->dstFormat) && !isGray(c->dstFormat)) {
         ff_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness,
