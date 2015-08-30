@@ -46,6 +46,9 @@ fate-sub-realtext: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/RealText_capabil
 FATE_SUBTITLES_ASS-$(call DEMDEC, SAMI, SAMI) += fate-sub-sami
 fate-sub-sami: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SAMI_capability_tester.smi
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, SAMI, SAMI) += fate-sub-sami2
+fate-sub-sami2: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SAMI_multilang_tweak_tester.smi
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt
 fate-sub-srt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
