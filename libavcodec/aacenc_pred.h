@@ -34,16 +34,12 @@
 #define PRED_RESET_FRAME_MIN 240
 
 /* Any frame with less than this amount of frames since last reset is ok */
-#define PRED_RESET_MIN 128
+#define PRED_RESET_MIN 64
 
 /* Raise to filter any low frequency artifacts due to prediction */
 #define PRED_SFB_START 10
 
-/* Offset for the number of bits to encode normal coefficients */
-#define PRICE_OFFSET 440
-
 void ff_aac_apply_main_pred(AACEncContext *s, SingleChannelElement *sce);
-void ff_aac_update_main_pred(AACEncContext *s, SingleChannelElement *sce, ChannelElement *cpe);
 void ff_aac_adjust_common_prediction(AACEncContext *s, ChannelElement *cpe);
 void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce);
 void ff_aac_encode_main_pred(AACEncContext *s, SingleChannelElement *sce);

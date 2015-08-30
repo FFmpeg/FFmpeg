@@ -27,7 +27,6 @@
 /***********************************
  *              TODOs:
  * add sane pulse detection
- * add temporal noise shaping
  ***********************************/
 
 #include "libavutil/float_dsp.h"
@@ -354,15 +353,15 @@ static void encode_spectral_coeffs(AACEncContext *s, SingleChannelElement *sce)
                 start += sce->ics.swb_sizes[i];
                 continue;
             }
-            for (w2 = w; w2 < w + sce->ics.group_len[w]; w2++)
+            for (w2 = w; w2 < w + sce->ics.group_len[w]; w2++) {
                 s->coder->quantize_and_encode_band(s, &s->pb,
                                                    &sce->coeffs[start + w2*128],
-                                                   &sce->pqcoeffs[start + w2*128],
-                                                   sce->ics.swb_sizes[i],
+                                                   NULL, sce->ics.swb_sizes[i],
                                                    sce->sf_idx[w*16 + i],
                                                    sce->band_type[w*16 + i],
                                                    s->lambda,
                                                    sce->ics.window_clipping[w]);
+            }
             start += sce->ics.swb_sizes[i];
         }
     }
@@ -404,10 +403,9 @@ static int encode_individual_channel(AVCodecContext *avctx, AACEncContext *s,
     encode_band_info(s, sce);
     encode_scale_factors(avctx, s, sce);
     encode_pulses(s, &sce->pulse);
+    put_bits(&s->pb, 1, !!sce->tns.present);
     if (s->coder->encode_tns_info)
         s->coder->encode_tns_info(s, sce);
-    else
-        put_bits(&s->pb, 1, 0);
     put_bits(&s->pb, 1, 0); //ssr
     encode_spectral_coeffs(s, sce);
     return 0;
@@ -609,12 +607,10 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     s->coder->search_for_pns(s, avctx, sce);
                 if (s->options.tns && s->coder->search_for_tns)
                     s->coder->search_for_tns(s, sce);
-                if (s->options.pred && s->coder->search_for_pred)
-                    s->coder->search_for_pred(s, sce);
+                if (s->options.tns && s->coder->apply_tns_filt)
+                    s->coder->apply_tns_filt(sce);
                 if (sce->tns.present)
                     tns_mode = 1;
-                if (sce->ics.predictor_present)
-                    pred_mode = 1;
             }
             s->cur_channel = start_ch;
             if (s->options.stereo_mode && cpe->common_window) {
@@ -631,15 +627,26 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->coder->search_for_is(s, avctx, cpe);
                 if (cpe->is_mode) is_mode = 1;
             }
-            if (s->options.pred && s->coder->adjust_common_prediction)
-                s->coder->adjust_common_prediction(s, cpe);
             if (s->coder->set_special_band_scalefactors)
                 for (ch = 0; ch < chans; ch++)
                     s->coder->set_special_band_scalefactors(s, &cpe->ch[ch]);
-            if (s->options.pred && s->coder->apply_main_pred)
-                for (ch = 0; ch < chans; ch++)
-                    s->coder->apply_main_pred(s, &cpe->ch[ch]);
             adjust_frame_information(cpe, chans);
+            for (ch = 0; ch < chans; ch++) {
+                sce = &cpe->ch[ch];
+                s->cur_channel = start_ch + ch;
+                if (s->options.pred && s->coder->search_for_pred)
+                    s->coder->search_for_pred(s, sce);
+                if (cpe->ch[ch].ics.predictor_present) pred_mode = 1;
+            }
+            if (s->options.pred && s->coder->adjust_common_prediction)
+                s->coder->adjust_common_prediction(s, cpe);
+            for (ch = 0; ch < chans; ch++) {
+                sce = &cpe->ch[ch];
+                s->cur_channel = start_ch + ch;
+                if (s->options.pred && s->coder->apply_main_pred)
+                    s->coder->apply_main_pred(s, sce);
+            }
+            s->cur_channel = start_ch;
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);
                 if (cpe->common_window) {
@@ -675,16 +682,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->lambda *= avctx->bit_rate * 1024.0f / avctx->sample_rate / frame_bits;
 
     } while (1);
-
-    // update predictor state
-    if (s->options.pred && s->coder->update_main_pred) {
-        for (i = 0; i < s->chan_map[0]; i++) {
-            cpe = &s->cpe[i];
-            for (ch = 0; ch < chans; ch++)
-                s->coder->update_main_pred(s, &cpe->ch[ch],
-                                           (cpe->common_window && !ch) ? cpe : NULL);
-        }
-    }
 
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
@@ -786,11 +783,12 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
              "Too many bits per frame requested, clamping to max\n");
     if (avctx->profile == FF_PROFILE_AAC_MAIN) {
         s->options.pred = 1;
-    } else if (avctx->profile == FF_PROFILE_AAC_LOW && s->options.pred) {
+    } else if ((avctx->profile == FF_PROFILE_AAC_LOW ||
+                avctx->profile == FF_PROFILE_UNKNOWN) && s->options.pred) {
         s->profile = 0; /* Main */
         WARN_IF(1, "Prediction requested, changing profile to AAC-Main\n");
     } else if (avctx->profile == FF_PROFILE_AAC_LOW ||
-        avctx->profile == FF_PROFILE_UNKNOWN) {
+               avctx->profile == FF_PROFILE_UNKNOWN) {
         s->profile = 1; /* Low */
     } else {
         ERROR_IF(1, "Unsupported profile %d\n", avctx->profile);
@@ -824,7 +822,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto fail;
     s->psypp = ff_psy_preprocess_init(avctx);
     s->coder = &ff_aac_coders[s->options.aac_coder];
-    ff_lpc_init(&s->lpc, avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
+    ff_lpc_init(&s->lpc, avctx->frame_size, MAX_LPC_ORDER, FF_LPC_TYPE_LEVINSON);
 
     if (HAVE_MIPSDSPR1)
         ff_aac_coder_init_mips(s);

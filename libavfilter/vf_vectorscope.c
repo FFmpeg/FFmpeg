@@ -32,6 +32,7 @@ enum VectorscopeMode {
     COLOR,
     COLOR2,
     COLOR3,
+    COLOR4,
     MODE_NB
 };
 
@@ -56,6 +57,7 @@ static const AVOption vectorscope_options[] = {
     { "color",  0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},  0, 0, FLAGS, "mode" },
     { "color2", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR2}, 0, 0, FLAGS, "mode" },
     { "color3", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR3}, 0, 0, FLAGS, "mode" },
+    { "color4", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR4}, 0, 0, FLAGS, "mode" },
     { "x", "set color component on X axis", OFFSET(x), AV_OPT_TYPE_INT, {.i64=1}, 0, 2, FLAGS},
     { "y", "set color component on Y axis", OFFSET(y), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS},
     { "intensity", "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=1}, 1, 255, FLAGS},
@@ -107,7 +109,8 @@ static int query_formats(AVFilterContext *ctx)
     if (!ctx->inputs[0]->out_formats) {
         const enum AVPixelFormat *in_pix_fmts;
 
-        if ((s->x == 1 && s->y == 2) || (s->x == 2 && s->y == 1))
+        if (((s->x == 1 && s->y == 2) || (s->x == 2 && s->y == 1)) &&
+            (s->mode != COLOR4))
             in_pix_fmts = in2_pix_fmts;
         else
             in_pix_fmts = in1_pix_fmts;
@@ -185,6 +188,7 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     const uint8_t * const *src = (const uint8_t * const *)in->data;
     const int slinesizex = in->linesize[s->x];
     const int slinesizey = in->linesize[s->y];
+    const int slinesized = in->linesize[pd];
     const int dlinesize = out->linesize[0];
     const int intensity = s->intensity;
     int i, j, px = s->x, py = s->y;
@@ -192,6 +196,7 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     const int w = s->planewidth[px];
     const uint8_t *spx = src[px];
     const uint8_t *spy = src[py];
+    const uint8_t *spd = src[pd];
     uint8_t **dst = out->data;
     uint8_t *dpx = dst[px];
     uint8_t *dpy = dst[py];
@@ -289,6 +294,24 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
                 const int pos = y * dlinesize + x;
 
                 dpd[pos] = FFMIN(255, dpd[pos] + intensity);
+                dpx[pos] = x;
+                dpy[pos] = y;
+                if (dst[3])
+                    dst[3][pos] = 255;
+            }
+        }
+        break;
+    case COLOR4:
+        for (i = 0; i < h; i++) {
+            const int iwx = i * slinesizex;
+            const int iwy = i * slinesizey;
+            const int iwd = i * slinesized;
+            for (j = 0; j < w; j++) {
+                const int x = spx[iwx + j];
+                const int y = spy[iwy + j];
+                const int pos = y * dlinesize + x;
+
+                dpd[pos] = FFMAX(spd[iwd + j], dpd[pos]);
                 dpx[pos] = x;
                 dpy[pos] = y;
                 if (dst[3])

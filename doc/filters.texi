@@ -10587,6 +10587,11 @@ Actual color components values present in video frame are displayed on graph.
 Similar as color2 but higher frequency of same values @code{x} and @code{y}
 on graph increases value of another color component, which is luminance by
 default values of @code{x} and @code{y}.
+
+@item color4
+Actual colors present in video frame are displayed on graph. If two different
+colors map to same position on graph then color with higher value of component
+not present in graph is picked.
 @end table
 
 @item x
@@ -11722,6 +11727,7 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @end example
 @end itemize
 
+@anchor{allrgb}
 @anchor{allyuv}
 @anchor{color}
 @anchor{haldclutsrc}
@@ -11730,7 +11736,9 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{smptebars}
 @anchor{smptehdbars}
 @anchor{testsrc}
-@section allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+@section allrgb, allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+
+The @code{allrgb} source returns frames of size 4096x4096 of all rgb colors.
 
 The @code{allyuv} source returns frames of size 4096x4096 of all yuv colors.
 

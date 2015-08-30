@@ -177,6 +177,7 @@ typedef struct SnowContext{
     int no_bitstream;
     int intra_penalty;
     int motion_est;
+    int iterative_dia_size;
 
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 

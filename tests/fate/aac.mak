@@ -166,13 +166,14 @@ fate-aac-pns-encode: CMP_SHIFT = -4096
 fate-aac-pns-encode: CMP_TARGET = 646.89
 fate-aac-pns-encode: SIZE_TOLERANCE = 3560
 
-#FATE_AAC_ENCODE += fate-aac-tns-encode
-#fate-aac-tns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_tns 1 -b:a 128k
-#fate-aac-tns-encode: CMP = stddev
-#fate-aac-tns-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
-#fate-aac-tns-encode: CMP_SHIFT = -4096
-#fate-aac-tns-encode: CMP_TARGET = 648.02
-#fate-aac-tns-encode: SIZE_TOLERANCE = 3560
+FATE_AAC_ENCODE += fate-aac-tns-encode
+fate-aac-tns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_tns 1 -b:a 128k
+fate-aac-tns-encode: CMP = stddev
+fate-aac-tns-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
+fate-aac-tns-encode: CMP_SHIFT = -4096
+fate-aac-tns-encode: CMP_TARGET = 646.19
+fate-aac-tns-encode: FUZZ = 1.8
+fate-aac-tns-encode: SIZE_TOLERANCE = 3560
 
 FATE_AAC_ENCODE += fate-aac-is-encode
 fate-aac-is-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_is 1 -b:a 128k
@@ -181,6 +182,14 @@ fate-aac-is-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wa
 fate-aac-is-encode: CMP_SHIFT = -4096
 fate-aac-is-encode: CMP_TARGET = 613.26
 fate-aac-is-encode: SIZE_TOLERANCE = 3560
+
+FATE_AAC_ENCODE += fate-aac-pred-encode
+fate-aac-pred-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -profile:a aac_main -c:a aac -aac_pred 1 -b:a 128k
+fate-aac-pred-encode: CMP = stddev
+fate-aac-pred-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
+fate-aac-pred-encode: CMP_SHIFT = -4096
+fate-aac-pred-encode: CMP_TARGET = 652.60
+fate-aac-pred-encode: SIZE_TOLERANCE = 3560
 
 FATE_AAC_LATM += fate-aac-latm_000000001180bc60
 fate-aac-latm_000000001180bc60: CMD = pcm -i $(TARGET_SAMPLES)/aac/latm_000000001180bc60.mpg

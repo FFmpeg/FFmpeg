@@ -1357,6 +1357,15 @@ allows to store non-rgb pix_fmts.
 
 @end table
 
+@section snow
+
+@subsection Options
+
+@table @option
+@item iterative_dia_size
+dia size for the iterative motion estimation
+@end table
+
 @section libtheora
 
 libtheora Theora encoder wrapper.

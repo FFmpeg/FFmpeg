@@ -27,7 +27,7 @@ version <next>:
 - sidechaincompress audio filter
 - bitstream filter for converting HEVC from MP4 to Annex B
 - acrossfade audio filter
-- allyuv video source
+- allyuv and allrgb video sources
 - atadenoise video filter
 - OS X VideoToolbox support
 - aphasemeter filter
