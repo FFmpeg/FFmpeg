@@ -30,10 +30,10 @@ typedef struct {
 static int config_props_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    SeparateFieldsContext *sf = ctx->priv;
+    SeparateFieldsContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
 
-    sf->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if (inlink->h & 1) {
         av_log(ctx, AV_LOG_ERROR, "height must be even\n");
@@ -64,19 +64,19 @@ static void extract_field(AVFrame *frame, int nb_planes, int type)
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
-    SeparateFieldsContext *sf = ctx->priv;
+    SeparateFieldsContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     int ret;
 
     inpicref->height = outlink->h;
     inpicref->interlaced_frame = 0;
 
-    if (!sf->second) {
+    if (!s->second) {
         goto clone;
     } else {
-        AVFrame *second = sf->second;
+        AVFrame *second = s->second;
 
-        extract_field(second, sf->nb_planes, second->top_field_first);
+        extract_field(second, s->nb_planes, second->top_field_first);
 
         if (second->pts != AV_NOPTS_VALUE &&
             inpicref->pts != AV_NOPTS_VALUE)
@@ -88,12 +88,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         if (ret < 0)
             return ret;
 clone:
-        sf->second = av_frame_clone(inpicref);
-        if (!sf->second)
+        s->second = av_frame_clone(inpicref);
+        if (!s->second)
             return AVERROR(ENOMEM);
     }
 
-    extract_field(inpicref, sf->nb_planes, !inpicref->top_field_first);
+    extract_field(inpicref, s->nb_planes, !inpicref->top_field_first);
 
     if (inpicref->pts != AV_NOPTS_VALUE)
         inpicref->pts *= 2;
@@ -104,15 +104,15 @@ clone:
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    SeparateFieldsContext *sf = ctx->priv;
+    SeparateFieldsContext *s = ctx->priv;
     int ret;
 
     ret = ff_request_frame(ctx->inputs[0]);
-    if (ret == AVERROR_EOF && sf->second) {
-        sf->second->pts *= 2;
-        extract_field(sf->second, sf->nb_planes, sf->second->top_field_first);
-        ret = ff_filter_frame(outlink, sf->second);
-        sf->second = 0;
+    if (ret == AVERROR_EOF && s->second) {
+        s->second->pts *= 2;
+        extract_field(s->second, s->nb_planes, s->second->top_field_first);
+        ret = ff_filter_frame(outlink, s->second);
+        s->second = 0;
     }
 
     return ret;
