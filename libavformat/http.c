@@ -125,6 +125,7 @@ typedef struct HTTPContext {
     int is_multi_client;
     HandshakeState handshake_step;
     int is_connected_server;
+    char *tcp_hook;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -167,6 +168,7 @@ static const AVOption options[] = {
     { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, D | E },
     { "resource", "The resource requested by a client", OFFSET(resource), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reply_code", "The http status code to return to a client", OFFSET(reply_code), AV_OPT_TYPE_INT, { .i64 = 200}, INT_MIN, 599, E},
+    { "http-tcp-hook", "hook protocol on tcp", OFFSET(tcp_hook), AV_OPT_TYPE_STRING, { .str = "tcp" }, 0, 0, D | E },
     { NULL }
 };
 
@@ -195,6 +197,8 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     char buf[1024], urlbuf[MAX_URL_SIZE];
     int port, use_proxy, err, location_changed = 0;
     HTTPContext *s = h->priv_data;
+
+    lower_proto = s->tcp_hook;
 
     av_url_split(proto, sizeof(proto), auth, sizeof(auth),
                  hostname, sizeof(hostname), &port,
@@ -1825,7 +1829,7 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     if (*path == '/')
         path++;
 
-    ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
+    ff_url_join(lower_url, sizeof(lower_url), s->tcp_hook, NULL, hostname, port,
                 NULL);
 redo:
     ret = ffurl_open_whitelist(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
