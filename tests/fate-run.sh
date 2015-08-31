@@ -102,11 +102,11 @@ ffmpeg(){
 }
 
 framecrc(){
-    ffmpeg "$@" -flags +bitexact -f framecrc -
+    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framecrc -
 }
 
 framemd5(){
-    ffmpeg "$@" -flags +bitexact -f framemd5 -
+    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framemd5 -
 }
 
 crc(){
@@ -124,7 +124,7 @@ pcm(){
 fmtstdout(){
     fmt=$1
     shift 1
-    ffmpeg -flags +bitexact "$@" -f $fmt -
+    ffmpeg -flags +bitexact -fflags +bitexact "$@" -f $fmt -
 }
 
 enc_dec_pcm(){
@@ -137,7 +137,7 @@ enc_dec_pcm(){
     cleanfiles=$encfile
     encfile=$(target_path ${encfile})
     ffmpeg -i $src_file "$@" -f $out_fmt -y ${encfile} || return
-    ffmpeg -flags +bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -f ${dec_fmt} -
+    ffmpeg -flags +bitexact -fflags +bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -f ${dec_fmt} -
 }
 
 FLAGS="-flags +bitexact -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
@@ -231,16 +231,16 @@ gapless(){
     cleanfiles="$cleanfiles $decfile1 $decfile2 $decfile3"
 
     # test packet data
-    ffmpeg $extra_args -i "$sample" -flags +bitexact -c:a copy -f framecrc -y $decfile1
+    ffmpeg $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile1
     do_md5sum $decfile1
     # test decoded (and cut) data
-    ffmpeg $extra_args -i "$sample" -flags +bitexact -f wav md5:
+    ffmpeg $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
     # the same as above again, with seeking to the start
-    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -c:a copy -f framecrc -y $decfile2
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile2
     do_md5sum $decfile2
-    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -f wav md5:
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
     # test packet data, with seeking to a specific position
-    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -flags +bitexact -c:a copy -f framecrc -y $decfile3
+    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile3
     do_md5sum $decfile3
 }
 

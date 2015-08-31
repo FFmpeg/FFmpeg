@@ -350,6 +350,8 @@ static int config_props(AVFilterLink *outlink)
     scale->isws[0] = scale->isws[1] = scale->sws = NULL;
     if (inlink0->w == outlink->w &&
         inlink0->h == outlink->h &&
+        !scale->out_color_matrix &&
+        scale->in_range == scale->out_range &&
         inlink0->format == outlink->format)
         ;
     else {
@@ -533,6 +535,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             inv_table = parse_yuv_type(scale->in_color_matrix, av_frame_get_colorspace(in));
         if (scale->out_color_matrix)
             table     = parse_yuv_type(scale->out_color_matrix, AVCOL_SPC_UNSPECIFIED);
+        else if (scale->in_color_matrix)
+            table = inv_table;
 
         if (scale-> in_range != AVCOL_RANGE_UNSPECIFIED)
             in_full  = (scale-> in_range == AVCOL_RANGE_JPEG);

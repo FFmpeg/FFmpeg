@@ -855,11 +855,79 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     if (need_reinit && (c->srcBpc == 8 || !isYUV(c->srcFormat)))
         ff_sws_init_range_convert(c);
 
-    if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat)))
-        return -1;
-
     c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
     c->srcFormatBpp = av_get_bits_per_pixel(desc_src);
+
+    if (c->cascaded_context[0])
+        return sws_setColorspaceDetails(c->cascaded_context[0],inv_table, srcRange,table, dstRange, brightness,  contrast, saturation);
+
+    if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat))) {
+        if (!c->cascaded_context[0] &&
+            memcmp(c->dstColorspaceTable, c->srcColorspaceTable, sizeof(int) * 4) &&
+            c->srcW && c->srcH && c->dstW && c->dstH) {
+            enum AVPixelFormat tmp_format;
+            int tmp_width, tmp_height;
+            int srcW = c->srcW;
+            int srcH = c->srcH;
+            int dstW = c->dstW;
+            int dstH = c->dstH;
+            int ret;
+            av_log(c, AV_LOG_VERBOSE, "YUV color matrix differs for YUV->YUV, using intermediate RGB to convert\n");
+
+            if (isNBPS(c->dstFormat) || is16BPS(c->dstFormat)) {
+                if (isALPHA(c->srcFormat) && isALPHA(c->dstFormat)) {
+                    tmp_format = AV_PIX_FMT_BGRA64;
+                } else {
+                    tmp_format = AV_PIX_FMT_BGR48;
+                }
+            } else {
+                if (isALPHA(c->srcFormat) && isALPHA(c->dstFormat)) {
+                    tmp_format = AV_PIX_FMT_BGRA;
+                } else {
+                    tmp_format = AV_PIX_FMT_BGR24;
+                }
+            }
+
+            if (srcW*srcH > dstW*dstH) {
+                tmp_width  = dstW;
+                tmp_height = dstH;
+            } else {
+                tmp_width  = srcW;
+                tmp_height = srcH;
+            }
+
+            ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
+                                tmp_width, tmp_height, tmp_format, 64);
+            if (ret < 0)
+                return ret;
+
+            c->cascaded_context[0] = sws_alloc_set_opts(srcW, srcH, c->srcFormat,
+                                                        tmp_width, tmp_height, tmp_format,
+                                                        c->flags, c->param);
+            if (!c->cascaded_context[0])
+                return -1;
+
+            c->cascaded_context[0]->alphablend = c->alphablend;
+            ret = sws_init_context(c->cascaded_context[0], NULL , NULL);
+            if (ret < 0)
+                return ret;
+            //we set both src and dst depending on that the RGB side will be ignored
+            sws_setColorspaceDetails(c->cascaded_context[0], inv_table,
+                                     srcRange, table, dstRange,
+                                     brightness, contrast, saturation);
+
+            c->cascaded_context[1] = sws_getContext(tmp_width, tmp_height, tmp_format,
+                                                    dstW, dstH, c->dstFormat,
+                                                    c->flags, NULL, NULL, c->param);
+            if (!c->cascaded_context[1])
+                return -1;
+            sws_setColorspaceDetails(c->cascaded_context[1], inv_table,
+                                     srcRange, table, dstRange,
+                                     0, 1 << 16, 1 << 16);
+            return 0;
+        }
+        return -1;
+    }
 
     if (!isYUV(c->dstFormat) && !isGray(c->dstFormat)) {
         ff_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness,

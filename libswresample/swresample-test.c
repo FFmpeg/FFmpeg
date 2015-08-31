@@ -108,7 +108,7 @@ static const int rates[] = {
     48000,
 };
 
-uint64_t layouts[]={
+static const uint64_t layouts[]={
     AV_CH_LAYOUT_MONO                    ,
     AV_CH_LAYOUT_STEREO                  ,
     AV_CH_LAYOUT_2_1                     ,

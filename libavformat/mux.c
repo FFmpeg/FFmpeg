@@ -250,10 +250,23 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         (ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
         goto fail;
 
+    if (s->nb_streams && s->streams[0]->codec->flags & AV_CODEC_FLAG_BITEXACT) {
+        if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
 #if FF_API_LAVF_BITEXACT
-    if (s->nb_streams && s->streams[0]->codec->flags & AV_CODEC_FLAG_BITEXACT)
-        s->flags |= AVFMT_FLAG_BITEXACT;
+            av_log(s, AV_LOG_WARNING,
+                   "Setting the AVFormatContext to bitexact mode, because "
+                   "the AVCodecContext is in that mode. This behavior will "
+                   "change in the future. To keep the current behavior, set "
+                   "AVFormatContext.flags |= AVFMT_FLAG_BITEXACT.\n");
+            s->flags |= AVFMT_FLAG_BITEXACT;
+#else
+            av_log(s, AV_LOG_WARNING,
+                   "The AVFormatContext is not in set to bitexact mode, only "
+                   "the AVCodecContext. If this is not intended, set "
+                   "AVFormatContext.flags |= AVFMT_FLAG_BITEXACT.\n");
 #endif
+        }
+    }
 
     // some sanity checks
     if (s->nb_streams == 0 && !(of->flags & AVFMT_NOSTREAMS)) {

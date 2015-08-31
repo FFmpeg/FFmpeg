@@ -71,7 +71,7 @@ typedef struct dc1394_data {
     AVPacket packet;
 } dc1394_data;
 
-struct dc1394_frame_format {
+static const struct dc1394_frame_format {
     int width;
     int height;
     enum AVPixelFormat pix_fmt;
@@ -84,7 +84,7 @@ struct dc1394_frame_format {
     { 0, 0, 0, 0 } /* gotta be the last one */
 };
 
-struct dc1394_frame_rate {
+static const struct dc1394_frame_rate {
     int frame_rate;
     int frame_rate_id;
 } dc1394_frame_rates[] = {
