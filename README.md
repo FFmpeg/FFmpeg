@@ -1,6 +1,8 @@
 Libav
 =====
 
+[![Build Status](https://travis-ci.org/libav/libav.svg)](https://travis-ci.org/libav/libav)
+
 Libav is a collection of libraries and tools to process multimedia content
 such as audio, video, subtitles and related metadata.
 
