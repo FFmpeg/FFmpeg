@@ -5279,6 +5279,10 @@ computation time. Default value is 1.
 Set a random seed, must be an integer included between 0 and
 UINT32_MAX. If not specified, or if explicitly set to -1, the filter
 will try to use a good random seed on a best effort basis.
+
+@item pal8
+Set pal8 output pixel format. This option does not work with codebook
+length greater than 256.
 @end table
 
 @section fade
