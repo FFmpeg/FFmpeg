@@ -86,6 +86,7 @@ typedef struct ScaleContext {
     int w, h;
     char *size_str;
     unsigned int flags;         ///sws flags
+    double param[2];            // sws params
 
     int hsub, vsub;             ///< chroma subsampling
     int slice_y;                ///< top of current output slice
@@ -371,6 +372,8 @@ static int config_props(AVFilterLink *outlink)
             av_opt_set_int(*s, "dsth", outlink->h >> !!i, 0);
             av_opt_set_int(*s, "dst_format", outfmt, 0);
             av_opt_set_int(*s, "sws_flags", scale->flags, 0);
+            av_opt_set_int(*s, "param0", scale->param[0], 0);
+            av_opt_set_int(*s, "param1", scale->param[1], 0);
 
             if (scale->opts) {
                 AVDictionaryEntry *e = NULL;
@@ -640,6 +643,8 @@ static const AVOption scale_options[] = {
     { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
     { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "force_oar" },
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
+    { "param0", "Scaler param 0",             OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
+    { "param1", "Scaler param 1",             OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { NULL }
 };
 
