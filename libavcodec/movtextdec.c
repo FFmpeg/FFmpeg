@@ -132,7 +132,7 @@ static void mov_text_cleanup_ftab(MovTextContext *m)
 
 static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
 {
-    char *tx3g_ptr = avctx->extradata;
+    uint8_t *tx3g_ptr = avctx->extradata;
     int i, box_size, font_length;
     int8_t v_align, h_align;
     int style_fontID;
