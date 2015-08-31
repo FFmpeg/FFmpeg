@@ -50,8 +50,8 @@ typedef struct WaveformContext {
     int            envelope;
     int            estart[4];
     int            eend[4];
-    int            *emax[4];
-    int            *emin[4];
+    int            *emax[4][4];
+    int            *emin[4][4];
     int            *peak;
     int            filter;
     int            size;
@@ -139,11 +139,11 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static void envelope_instant(WaveformContext *s, AVFrame *out, int plane)
+static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int component)
 {
-    const int dst_linesize = out->linesize[plane];
-    const uint8_t bg = s->bg_color[plane];
-    const int is_chroma = (plane == 1 || plane == 2);
+    const int dst_linesize = out->linesize[component];
+    const uint8_t bg = s->bg_color[component];
+    const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
     const int dst_h = FF_CEIL_RSHIFT(out->height, shift_h);
@@ -156,14 +156,14 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane)
     if (s->mode) {
         for (x = 0; x < dst_w; x++) {
             for (y = start; y < end; y++) {
-                dst = out->data[plane] + y * dst_linesize + x;
+                dst = out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
                     dst[0] = 255;
                     break;
                 }
             }
             for (y = end - 1; y >= start; y--) {
-                dst = out->data[plane] + y * dst_linesize + x;
+                dst = out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
                     dst[0] = 255;
                     break;
@@ -172,7 +172,7 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane)
         }
     } else {
         for (y = 0; y < dst_h; y++) {
-            dst = out->data[plane] + y * dst_linesize;
+            dst = out->data[component] + y * dst_linesize;
             for (x = start; x < end; x++) {
                 if (dst[x] != bg) {
                     dst[x] = 255;
@@ -189,33 +189,33 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane)
     }
 }
 
-static void envelope_peak(WaveformContext *s, AVFrame *out, int plane)
+static void envelope_peak(WaveformContext *s, AVFrame *out, int plane, int component)
 {
-    const int dst_linesize = out->linesize[plane];
-    const uint8_t bg = s->bg_color[plane];
-    const int is_chroma = (plane == 1 || plane == 2);
+    const int dst_linesize = out->linesize[component];
+    const uint8_t bg = s->bg_color[component];
+    const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
     const int dst_h = FF_CEIL_RSHIFT(out->height, shift_h);
     const int dst_w = FF_CEIL_RSHIFT(out->width, shift_w);
     const int start = s->estart[plane];
     const int end = s->eend[plane];
-    int *emax = s->emax[plane];
-    int *emin = s->emin[plane];
+    int *emax = s->emax[plane][component];
+    int *emin = s->emin[plane][component];
     uint8_t *dst;
     int x, y;
 
     if (s->mode) {
         for (x = 0; x < dst_w; x++) {
             for (y = start; y < end && y < emin[x]; y++) {
-                dst = out->data[plane] + y * dst_linesize + x;
+                dst = out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
                     emin[x] = y;
                     break;
                 }
             }
             for (y = end - 1; y >= start && y >= emax[x]; y--) {
-                dst = out->data[plane] + y * dst_linesize + x;
+                dst = out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
                     emax[x] = y;
                     break;
@@ -224,17 +224,17 @@ static void envelope_peak(WaveformContext *s, AVFrame *out, int plane)
         }
 
         if (s->envelope == 3)
-            envelope_instant(s, out, plane);
+            envelope_instant(s, out, plane, component);
 
         for (x = 0; x < dst_w; x++) {
-            dst = out->data[plane] + emin[x] * dst_linesize + x;
+            dst = out->data[component] + emin[x] * dst_linesize + x;
             dst[0] = 255;
-            dst = out->data[plane] + emax[x] * dst_linesize + x;
+            dst = out->data[component] + emax[x] * dst_linesize + x;
             dst[0] = 255;
         }
     } else {
         for (y = 0; y < dst_h; y++) {
-            dst = out->data[plane] + y * dst_linesize;
+            dst = out->data[component] + y * dst_linesize;
             for (x = start; x < end && x < emin[y]; x++) {
                 if (dst[x] != bg) {
                     emin[y] = x;
@@ -250,25 +250,25 @@ static void envelope_peak(WaveformContext *s, AVFrame *out, int plane)
         }
 
         if (s->envelope == 3)
-            envelope_instant(s, out, plane);
+            envelope_instant(s, out, plane, component);
 
         for (y = 0; y < dst_h; y++) {
-            dst = out->data[plane] + y * dst_linesize + emin[y];
+            dst = out->data[component] + y * dst_linesize + emin[y];
             dst[0] = 255;
-            dst = out->data[plane] + y * dst_linesize + emax[y];
+            dst = out->data[component] + y * dst_linesize + emax[y];
             dst[0] = 255;
         }
     }
 }
 
-static void envelope(WaveformContext *s, AVFrame *out, int plane)
+static void envelope(WaveformContext *s, AVFrame *out, int plane, int component)
 {
     if (s->envelope == 0) {
         return;
     } else if (s->envelope == 1) {
-        envelope_instant(s, out, plane);
+        envelope_instant(s, out, plane, component);
     } else {
-        envelope_peak(s, out, plane);
+        envelope_peak(s, out, plane, component);
     }
 }
 
@@ -324,7 +324,7 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
         dst_data += dst_linesize;
     }
 
-    envelope(s, out, plane);
+    envelope(s, out, plane, plane);
 }
 
 static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -420,6 +420,9 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
             d1_data += d1_linesize;
         }
     }
+
+    envelope(s, out, plane, plane);
+    envelope(s, out, plane, (plane + 1) % s->ncomp);
 }
 
 static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -569,6 +572,10 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
             d2_data += d2_linesize;
         }
     }
+
+    envelope(s, out, plane, (plane + 0) % s->ncomp);
+    envelope(s, out, plane, (plane + 1) % s->ncomp);
+    envelope(s, out, plane, (plane + 2) % s->ncomp);
 }
 
 static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -638,6 +645,8 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             dst_data += dst_linesize;
         }
     }
+
+    envelope(s, out, plane, (plane + 0) % s->ncomp);
 }
 
 static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -763,6 +772,9 @@ static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             d2_data += d2_linesize;
         }
     }
+
+    envelope(s, out, plane, (plane + 1) % s->ncomp);
+    envelope(s, out, plane, (plane + 2) % s->ncomp);
 }
 
 static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -851,6 +863,8 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
             d2_data += d2_linesize;
         }
     }
+
+    envelope(s, out, plane, plane);
 }
 
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
@@ -902,7 +916,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     WaveformContext *s = ctx->priv;
-    int comp = 0, i, j = 0, p, size, shift;
+    int comp = 0, i, j = 0, k, p, size, shift;
 
     for (i = 0; i < s->ncomp; i++) {
         if ((1 << i) & s->pcomp)
@@ -919,7 +933,7 @@ static int config_output(AVFilterLink *outlink)
         size = inlink->h;
     }
 
-    s->peak = av_malloc_array(size, 8 * sizeof(*s->peak));
+    s->peak = av_malloc_array(size, 32 * sizeof(*s->peak));
     if (!s->peak)
         return AVERROR(ENOMEM);
 
@@ -935,18 +949,19 @@ static int config_output(AVFilterLink *outlink)
 
         shift = s->mode ? shift_h : shift_w;
 
-        s->emax[plane] = s->peak + size * (p + 0);
-        s->emin[plane] = s->peak + size * (p + 4);
-
-        if (!s->emin[plane] || !s->emax[plane])
-            return AVERROR(ENOMEM);
+        for (k = 0; k < 4; k++) {
+            s->emax[plane][k] = s->peak + size * (plane * 4 + k + 0);
+            s->emin[plane][k] = s->peak + size * (plane * 4 + k + 16);
+        }
 
         offset = j++ * s->size * s->display;
         s->estart[plane] = offset >> shift;
         s->eend[plane]   = (offset + s->size - 1) >> shift;
         for (i = 0; i < size; i++) {
-            s->emax[plane][i] = s->estart[plane];
-            s->emin[plane][i] = s->eend[plane];
+            for (k = 0; k < 4; k++) {
+                s->emax[plane][k][i] = s->estart[plane];
+                s->emin[plane][k][i] = s->eend[plane];
+            }
         }
     }
 
