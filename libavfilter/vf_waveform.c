@@ -52,6 +52,7 @@ typedef struct WaveformContext {
     int            eend[4];
     int            *emax[4];
     int            *emin[4];
+    int            *peak;
     int            filter;
     int            size;
     void (*waveform)(struct WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -908,18 +909,19 @@ static int config_output(AVFilterLink *outlink)
             comp++;
     }
 
-    for (p = 0; p < 4; p++) {
-        av_freep(&s->emax[p]);
-        av_freep(&s->emin[p]);
-    }
+    av_freep(&s->peak);
 
     if (s->mode) {
         outlink->h = s->size * FFMAX(comp * s->display, 1);
-        size = inlink->w * sizeof(int);
+        size = inlink->w;
     } else {
         outlink->w = s->size * FFMAX(comp * s->display, 1);
-        size = inlink->h * sizeof(int);
+        size = inlink->h;
     }
+
+    s->peak = av_malloc_array(size, 8 * sizeof(*s->peak));
+    if (!s->peak)
+        return AVERROR(ENOMEM);
 
     for (p = 0; p < 4; p++) {
         const int is_chroma = (p == 1 || p == 2);
@@ -933,8 +935,8 @@ static int config_output(AVFilterLink *outlink)
 
         shift = s->mode ? shift_h : shift_w;
 
-        s->emax[plane] = av_malloc(size);
-        s->emin[plane] = av_malloc(size);
+        s->emax[plane] = s->peak + size * (p + 0);
+        s->emin[plane] = s->peak + size * (p + 4);
 
         if (!s->emin[plane] || !s->emax[plane])
             return AVERROR(ENOMEM);
@@ -942,7 +944,7 @@ static int config_output(AVFilterLink *outlink)
         offset = j++ * s->size * s->display;
         s->estart[plane] = offset >> shift;
         s->eend[plane]   = (offset + s->size - 1) >> shift;
-        for (i = 0; i < size / sizeof(int); i++) {
+        for (i = 0; i < size; i++) {
             s->emax[plane][i] = s->estart[plane];
             s->emin[plane][i] = s->eend[plane];
         }
@@ -992,12 +994,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     WaveformContext *s = ctx->priv;
-    int p;
 
-    for (p = 0; p < 4; p++) {
-        av_freep(&s->emax[p]);
-        av_freep(&s->emin[p]);
-    }
+    av_freep(&s->peak);
 }
 
 static const AVFilterPad inputs[] = {
