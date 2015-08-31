@@ -4107,6 +4107,9 @@ forward predicted MVs of B-frames
 @item bb
 backward predicted MVs of B-frames
 @end table
+
+@item qp
+Display quantization parameters using the chroma planes
 @end table
 
 @subsection Examples
