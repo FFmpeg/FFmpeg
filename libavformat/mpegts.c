@@ -1054,6 +1054,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                             pes->st->request_probe = 1;
                         }
                     } else {
+                        pes->pes_header_size = 6;
                         pes->state      = MPEGTS_PAYLOAD;
                         pes->data_index = 0;
                     }
