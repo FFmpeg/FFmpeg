@@ -571,6 +571,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             tag      = s->chan_map[i+1];
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
+            cpe->common_window = 0;
             memset(cpe->is_mask, 0, sizeof(cpe->is_mask));
             memset(cpe->ms_mask, 0, sizeof(cpe->ms_mask));
             put_bits(&s->pb, 3, tag);
@@ -590,7 +591,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->cur_channel = start_ch + ch;
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
             }
-            cpe->common_window = 0;
             if (chans > 1
                 && wi[0].window_type[0] == wi[1].window_type[0]
                 && wi[0].window_shape   == wi[1].window_shape) {
