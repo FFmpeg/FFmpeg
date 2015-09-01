@@ -1309,6 +1309,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->apply_trc_type != AVCOL_TRC_UNSPECIFIED)
+        avctx->color_trc = s->apply_trc_type;
+
     switch (s->compression) {
     case EXR_RAW:
     case EXR_RLE:
