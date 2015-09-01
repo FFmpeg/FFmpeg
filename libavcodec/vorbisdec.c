@@ -1739,7 +1739,9 @@ static int vorbis_decode_frame(AVCodecContext *avctx, void *data,
     ff_dlog(NULL, "packet length %d \n", buf_size);
 
     if (*buf == 1 && buf_size > 7) {
-        init_get_bits(gb, buf+1, buf_size*8 - 8);
+        if ((ret = init_get_bits8(gb, buf + 1, buf_size - 1)) < 0)
+            return ret;
+
         vorbis_free(vc);
         if ((ret = vorbis_parse_id_hdr(vc))) {
             av_log(avctx, AV_LOG_ERROR, "Id header corrupt.\n");
@@ -1763,7 +1765,9 @@ static int vorbis_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (*buf == 5 && buf_size > 7 && vc->channel_residues && !vc->modes) {
-        init_get_bits(gb, buf+1, buf_size*8 - 8);
+        if ((ret = init_get_bits8(gb, buf + 1, buf_size - 1)) < 0)
+            return ret;
+
         if ((ret = vorbis_parse_setup_hdr(vc))) {
             av_log(avctx, AV_LOG_ERROR, "Setup header corrupt.\n");
             vorbis_free(vc);
@@ -1792,7 +1796,8 @@ static int vorbis_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    init_get_bits(gb, buf, buf_size*8);
+    if ((ret = init_get_bits8(gb, buf, buf_size)) < 0)
+        return ret;
 
     if ((len = vorbis_parse_audio_packet(vc, channel_ptrs)) <= 0)
         return len;
