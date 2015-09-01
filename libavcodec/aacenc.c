@@ -797,6 +797,11 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         ERROR_IF(1, "Unsupported profile %d\n", avctx->profile);
     }
 
+    if (s->options.aac_coder != AAC_CODER_TWOLOOP) {
+        s->options.intensity_stereo = 0;
+        s->options.pns = 0;
+    }
+
     avctx->bit_rate = (int)FFMIN(
         6144 * s->channels / 1024.0 * avctx->sample_rate,
         avctx->bit_rate);
