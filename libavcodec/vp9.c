@@ -707,6 +707,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         s->lf_delta.ref[3] = -1;
         s->lf_delta.mode[0] = 0;
         s->lf_delta.mode[1] = 0;
+        memset(s->segmentation.feat, 0, sizeof(s->segmentation.feat));
     }
     s->filter.level = get_bits(&s->gb, 6);
     sharp = get_bits(&s->gb, 3);
