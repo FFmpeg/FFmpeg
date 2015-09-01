@@ -65,6 +65,9 @@
 #ifndef FF_API_URL_FEOF
 #define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
+#ifndef FF_API_PROBESIZE_32
+#define FF_API_PROBESIZE_32             (LIBAVFORMAT_VERSION_MAJOR < 57)
+#endif
 
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
