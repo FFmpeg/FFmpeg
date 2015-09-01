@@ -1308,6 +1308,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "Missing channel list.\n");
         return AVERROR_INVALIDDATA;
     }
+    
+    if (s->apply_trc_type != AVCOL_TRC_UNSPECIFIED)
+        avctx->color_trc = s->apply_trc_type;
 
     switch (s->compression) {
     case EXR_RAW:
