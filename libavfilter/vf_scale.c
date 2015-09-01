@@ -374,6 +374,12 @@ static int config_props(AVFilterLink *outlink)
             av_opt_set_int(*s, "sws_flags", scale->flags, 0);
             av_opt_set_int(*s, "param0", scale->param[0], 0);
             av_opt_set_int(*s, "param1", scale->param[1], 0);
+            if (scale->in_range != AVCOL_RANGE_UNSPECIFIED)
+                av_opt_set_int(*s, "src_range",
+                               scale->in_range == AVCOL_RANGE_JPEG, 0);
+            if (scale->out_range != AVCOL_RANGE_UNSPECIFIED)
+                av_opt_set_int(*s, "dst_range",
+                               scale->out_range == AVCOL_RANGE_JPEG, 0);
 
             if (scale->opts) {
                 AVDictionaryEntry *e = NULL;
