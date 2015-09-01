@@ -525,6 +525,9 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->swb_offset         = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
                                         ff_swb_offset_128 [s->samplerate_index]:
                                         ff_swb_offset_1024[s->samplerate_index];
+            ics->tns_max_bands      = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
+                                        ff_tns_max_bands_128 [s->samplerate_index]:
+                                        ff_tns_max_bands_1024[s->samplerate_index];
             clip_avoidance_factor = 0.0f;
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
