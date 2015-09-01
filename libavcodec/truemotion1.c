@@ -402,6 +402,10 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         new_pix_fmt = AV_PIX_FMT_RGB555; // RGB565 is supported as well
 
     s->w >>= width_shift;
+    if (s->w & 1) {
+        avpriv_request_sample(s->avctx, "Frame with odd width");
+        return AVERROR_PATCHWELCOME;
+    }
 
     if (s->w != s->avctx->width || s->h != s->avctx->height ||
         new_pix_fmt != s->avctx->pix_fmt) {
