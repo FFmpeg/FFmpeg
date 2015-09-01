@@ -611,7 +611,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 if (s->options.tns && s->coder->search_for_tns)
                     s->coder->search_for_tns(s, sce);
                 if (s->options.tns && s->coder->apply_tns_filt)
-                    s->coder->apply_tns_filt(sce);
+                    s->coder->apply_tns_filt(s, sce);
                 if (sce->tns.present)
                     tns_mode = 1;
             }
