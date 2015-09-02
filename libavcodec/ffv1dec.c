@@ -594,7 +594,7 @@ static int read_extra_header(FFV1Context *f)
         unsigned v;
         v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0,
                    f->avctx->extradata, f->avctx->extradata_size);
-        if (v) {
+        if (v || f->avctx->extradata_size < 4) {
             av_log(f->avctx, AV_LOG_ERROR, "CRC mismatch %X!\n", v);
             return AVERROR_INVALIDDATA;
         }
