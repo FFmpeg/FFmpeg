@@ -756,7 +756,7 @@ static int decode_frame_header(AVCodecContext *ctx,
             av_log(ctx, AV_LOG_WARNING,
                    "Reference segmap (temp=%d,update=%d) enabled on size-change!\n",
                    s->segmentation.temporal, s->segmentation.update_map);
-                s->segmentation.ignore_refmap = 1;
+            s->segmentation.ignore_refmap = 1;
             //return AVERROR_INVALIDDATA;
         }
 
