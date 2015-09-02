@@ -215,7 +215,7 @@ static int make_cdt16_entry(int p1, int p2, int16_t *cdt)
     b = cdt[p2];
     r = cdt[p1] << 11;
     lo = b + r;
-    return (lo + (lo << 16)) << 1;
+    return (lo + (lo * (1 << 16))) * 2;
 }
 
 static int make_ydt24_entry(int p1, int p2, int16_t *ydt)
@@ -224,7 +224,7 @@ static int make_ydt24_entry(int p1, int p2, int16_t *ydt)
 
     lo = ydt[p1];
     hi = ydt[p2];
-    return (lo + (hi << 8) + (hi << 16)) << 1;
+    return (lo + (hi * (1 << 8)) + (hi * (1 << 16))) * 2;
 }
 
 static int make_cdt24_entry(int p1, int p2, int16_t *cdt)
@@ -232,8 +232,8 @@ static int make_cdt24_entry(int p1, int p2, int16_t *cdt)
     int r, b;
 
     b = cdt[p2];
-    r = cdt[p1]<<16;
-    return (b+r) << 1;
+    r = cdt[p1] * (1 << 16);
+    return (b+r) * 2;
 }
 
 static void gen_vector_table15(TrueMotion1Context *s, const uint8_t *sel_vector_table)
