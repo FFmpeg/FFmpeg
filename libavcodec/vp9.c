@@ -503,6 +503,10 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
             s->ss_h = s->ss_v = 1;
             res = pix_fmt_rgb[bits];
             ctx->color_range = AVCOL_RANGE_JPEG;
+            if (get_bits1(&s->gb)) {
+                av_log(ctx, AV_LOG_ERROR, "Reserved bit set in RGB\n");
+                return AVERROR_INVALIDDATA;
+            }
         } else {
             av_log(ctx, AV_LOG_ERROR, "RGB not supported in profile %d\n",
                    ctx->profile);
