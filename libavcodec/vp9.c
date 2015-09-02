@@ -289,6 +289,7 @@ static void vp9_unref_frame(AVCodecContext *ctx, VP9Frame *f)
 {
     ff_thread_release_buffer(ctx, &f->tf);
     av_buffer_unref(&f->extradata);
+    f->segmentation_map = NULL;
 }
 
 static int vp9_ref_frame(AVCodecContext *ctx, VP9Frame *dst, VP9Frame *src)
@@ -4002,8 +4003,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     VP9Context *s = ctx->priv_data;
     int res, tile_row, tile_col, i, ref, row, col;
     int retain_segmap_ref = s->frames[REF_FRAME_SEGMAP].segmentation_map &&
-                            !(s->segmentation.enabled &&
-                              (s->segmentation.update_map || s->keyframe || s->intraonly));
+                            (!s->segmentation.enabled || !s->segmentation.update_map);
     ptrdiff_t yoff, uvoff, ls_y, ls_uv;
     AVFrame *f;
     int bytesperpixel;
@@ -4032,7 +4032,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     data += res;
     size -= res;
 
-    if (!retain_segmap_ref) {
+    if (!retain_segmap_ref || s->keyframe || s->intraonly) {
         if (s->frames[REF_FRAME_SEGMAP].tf.f->data[0])
             vp9_unref_frame(ctx, &s->frames[REF_FRAME_SEGMAP]);
         if (!s->keyframe && !s->intraonly && !s->errorres && s->frames[CUR_FRAME].tf.f->data[0] &&
