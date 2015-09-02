@@ -1479,7 +1479,8 @@ static void decode_mode(AVCodecContext *ctx)
     if (!s->segmentation.enabled) {
         b->seg_id = 0;
     } else if (s->keyframe || s->intraonly) {
-        b->seg_id = vp8_rac_get_tree(&s->c, vp9_segmentation_tree, s->prob.seg);
+        b->seg_id = !s->segmentation.update_map ? 0 :
+                    vp8_rac_get_tree(&s->c, vp9_segmentation_tree, s->prob.seg);
     } else if (!s->segmentation.update_map ||
                (s->segmentation.temporal &&
                 vp56_rac_get_prob_branchy(&s->c,
