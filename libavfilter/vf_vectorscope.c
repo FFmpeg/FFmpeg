@@ -186,7 +186,7 @@ static int config_input(AVFilterLink *inlink)
 static int config_output(AVFilterLink *outlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
-    int depth = desc->comp[0].depth_minus1 + 1;
+    const int depth = desc->comp[0].depth_minus1 + 1;
 
     outlink->h = outlink->w = 1 << depth;
     outlink->sample_aspect_ratio = (AVRational){1,1};
@@ -201,9 +201,9 @@ static void envelope_instant(VectorscopeContext *s, AVFrame *out)
 
     for (i = 0; i < out->height; i++) {
         for (j = 0; j < out->width; j++) {
-            int pos = i * dlinesize + j;
-            int poa = (i - 1) * dlinesize + j;
-            int pob = (i + 1) * dlinesize + j;
+            const int pos = i * dlinesize + j;
+            const int poa = (i - 1) * dlinesize + j;
+            const int pob = (i + 1) * dlinesize + j;
 
             if (dpd[pos] && (((!j || !dpd[pos - 1]) || ((j == (out->width - 1)) || !dpd[pos + 1]))
                          || ((!i || !dpd[poa]) || ((i == (out->height - 1)) || !dpd[pob])))) {
@@ -221,7 +221,7 @@ static void envelope_peak(VectorscopeContext *s, AVFrame *out)
 
     for (i = 0; i < out->height; i++) {
         for (j = 0; j < out->width; j++) {
-            int pos = i * dlinesize + j;
+            const int pos = i * dlinesize + j;
 
             if (dpd[pos])
                 s->peak[i][j] = 255;
@@ -233,7 +233,7 @@ static void envelope_peak(VectorscopeContext *s, AVFrame *out)
 
     for (i = 0; i < out->height; i++) {
         for (j = 0; j < out->width; j++) {
-            int pos = i * dlinesize + j;
+            const int pos = i * dlinesize + j;
 
             if (s->peak[i][j] && (((!j || !s->peak[i][j-1]) || ((j == (out->width - 1)) || !s->peak[i][j + 1]))
                               || ((!i || !s->peak[i-1][j]) || ((i == (out->height - 1)) || !s->peak[i + 1][j])))) {
@@ -262,7 +262,7 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     const int slinesized = in->linesize[pd];
     const int dlinesize = out->linesize[0];
     const int intensity = s->intensity;
-    int i, j, px = s->x, py = s->y;
+    const int px = s->x, py = s->y;
     const int h = s->planeheight[py];
     const int w = s->planewidth[px];
     const uint8_t *spx = src[px];
@@ -274,6 +274,7 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     uint8_t *dpx = dst[px];
     uint8_t *dpy = dst[py];
     uint8_t *dpd = dst[pd];
+    int i, j;
 
     switch (s->mode) {
     case COLOR:
