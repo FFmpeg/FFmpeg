@@ -785,9 +785,9 @@ static int decode_frame_header(AVCodecContext *ctx,
 
         if (s->segmentation.feat[i].q_enabled) {
             if (s->segmentation.absolute_vals)
-                qyac = s->segmentation.feat[i].q_val;
+                qyac = av_clip_uintp2(s->segmentation.feat[i].q_val, 8);
             else
-                qyac = s->yac_qi + s->segmentation.feat[i].q_val;
+                qyac = av_clip_uintp2(s->yac_qi + s->segmentation.feat[i].q_val, 8);
         } else {
             qyac  = s->yac_qi;
         }
