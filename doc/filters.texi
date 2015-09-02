@@ -4496,6 +4496,9 @@ Replace old columns with new ones.
 
 @item scroll
 Scroll from right to left.
+
+@item rscroll
+Scroll from left to right.
 @end table
 
 Default is @code{frame}.

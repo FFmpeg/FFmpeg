@@ -65,10 +65,11 @@ static const AVOption drawgraph_options[] = {
         {"bar", "draw bars", OFFSET(mode), AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mode"},
         {"dot", "draw dots", OFFSET(mode), AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode"},
         {"line", "draw lines", OFFSET(mode), AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "mode"},
-    { "slide", "set slide mode", OFFSET(slide), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "slide" },
+    { "slide", "set slide mode", OFFSET(slide), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS, "slide" },
         {"frame", "draw new frames", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "slide"},
         {"replace", "replace old columns with new", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "slide"},
         {"scroll", "scroll from right to left", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "slide"},
+        {"rscroll", "scroll from left to right", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, "slide"},
     { "size", "set graph size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="900x256"}, 0, 0, FLAGS },
     { "s", "set graph size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="900x256"}, 0, 0, FLAGS },
     { NULL }
@@ -181,7 +182,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         fg = av_expr_eval(s->fg_expr[i], values, NULL);
         bg = AV_RN32(s->bg);
 
-        if (i == 0 && s->x >= outlink->w) {
+        if (i == 0 && (s->x >= outlink->w || s->slide == 3)) {
             if (s->slide == 0 || s->slide == 1)
                 s->x = 0;
 
@@ -190,6 +191,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 for (j = 0; j < outlink->h; j++) {
                     memmove(out->data[0] + j * out->linesize[0] ,
                             out->data[0] + j * out->linesize[0] + 4,
+                            (outlink->w - 1) * 4);
+                }
+            } else if (s->slide == 3) {
+                s->x = 0;
+                for (j = 0; j < outlink->h; j++) {
+                    memmove(out->data[0] + j * out->linesize[0] + 4,
+                            out->data[0] + j * out->linesize[0],
                             (outlink->w - 1) * 4);
                 }
             } else if (s->slide == 0) {
@@ -202,7 +210,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         switch (s->mode) {
         case 0:
-            if (i == 0 && (s->slide == 1 || s->slide == 2))
+            if (i == 0 && (s->slide > 0))
                 for (j = 0; j < outlink->h; j++)
                     draw_dot(bg, x, j, out);
 
@@ -218,7 +226,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
             break;
         case 1:
-            if (i == 0 && (s->slide == 1 || s->slide == 2))
+            if (i == 0 && (s->slide > 0))
                 for (j = 0; j < outlink->h; j++)
                     draw_dot(bg, x, j, out);
             draw_dot(fg, x, y, out);
@@ -229,7 +237,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 s->prev_y[i] = y;
             }
 
-            if (i == 0 && (s->slide == 1 || s->slide == 2)) {
+            if (i == 0 && (s->slide > 0)) {
                 for (j = 0; j < y; j++)
                     draw_dot(bg, x, j, out);
                 for (j = outlink->h - 1; j > y; j--)
