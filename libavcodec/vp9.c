@@ -500,7 +500,7 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
             AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12
         };
         if (ctx->profile & 1) {
-            s->ss_h = s->ss_v = 1;
+            s->ss_h = s->ss_v = 0;
             res = pix_fmt_rgb[bits];
             ctx->color_range = AVCOL_RANGE_JPEG;
             if (get_bits1(&s->gb)) {
