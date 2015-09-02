@@ -43,6 +43,7 @@ typedef struct VectorscopeContext {
     const uint8_t *bg_color;
     int planewidth[4];
     int planeheight[4];
+    int hsub, vsub;
     int x, y, pd;
     int is_yuv;
     int envelope;
@@ -117,8 +118,7 @@ static int query_formats(AVFilterContext *ctx)
     if (!ctx->inputs[0]->out_formats) {
         const enum AVPixelFormat *in_pix_fmts;
 
-        if (((s->x == 1 && s->y == 2) || (s->x == 2 && s->y == 1)) &&
-            (s->mode != COLOR4))
+        if ((s->x == 1 && s->y == 2) || (s->x == 2 && s->y == 1))
             in_pix_fmts = in2_pix_fmts;
         else
             in_pix_fmts = in1_pix_fmts;
@@ -173,6 +173,8 @@ static int config_input(AVFilterLink *inlink)
         s->bg_color = black_yuva_color;
     }
 
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
@@ -266,6 +268,8 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
     const uint8_t *spx = src[px];
     const uint8_t *spy = src[py];
     const uint8_t *spd = src[pd];
+    const int hsub = s->hsub;
+    const int vsub = s->vsub;
     uint8_t **dst = out->data;
     uint8_t *dpx = dst[px];
     uint8_t *dpy = dst[py];
@@ -361,13 +365,13 @@ static void vectorscope(VectorscopeContext *s, AVFrame *in, AVFrame *out, int pd
         }
         break;
     case COLOR4:
-        for (i = 0; i < h; i++) {
-            const int iwx = i * slinesizex;
-            const int iwy = i * slinesizey;
+        for (i = 0; i < in->height; i++) {
+            const int iwx = (i >> vsub) * slinesizex;
+            const int iwy = (i >> vsub) * slinesizey;
             const int iwd = i * slinesized;
-            for (j = 0; j < w; j++) {
-                const int x = spx[iwx + j];
-                const int y = spy[iwy + j];
+            for (j = 0; j < in->width; j++) {
+                const int x = spx[iwx + (j >> hsub)];
+                const int y = spy[iwy + (j >> hsub)];
                 const int pos = y * dlinesize + x;
 
                 dpd[pos] = FFMAX(spd[iwd + j], dpd[pos]);
