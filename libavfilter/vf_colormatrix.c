@@ -94,6 +94,7 @@ static const AVOption colormatrix_options[] = {
     { "fcc",       "set FCC colorspace   ",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_FCC},         .flags=FLAGS, .unit="color_mode" },
     { "bt601",     "set BT.601 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
     { "bt470",     "set BT.470 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
+    { "bt470bg",   "set BT.470 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
     { "smpte170m", "set SMTPE-170M colorspace",  0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
     { "smpte240m", "set SMPTE-240M colorspace",  0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_SMPTE240M},   .flags=FLAGS, .unit="color_mode" },
     { NULL }
