@@ -112,7 +112,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for (j = 0; j < h; j++) {
         for (i = 0; i < w*step; i += step) {
-            dst[i] = get_vlc2(&gb, vlc.table, 9, 3);
+            dst[i] = get_vlc2(&gb, vlc.table, FF_HUFFMAN_BITS, 3);
             /* lines are stored as deltas between previous lines
              * and we need to add 0x80 to the first lines of chroma planes
              */
