@@ -856,7 +856,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         }
     }
 
-    if (s->keyframe || s->errorres || s->intraonly) {
+    if (s->keyframe || s->errorres || (s->intraonly && s->resetctx == 3)) {
         s->prob_ctx[0].p = s->prob_ctx[1].p = s->prob_ctx[2].p =
                            s->prob_ctx[3].p = vp9_default_probs;
         memcpy(s->prob_ctx[0].coef, vp9_default_coef_probs,
@@ -866,6 +866,10 @@ static int decode_frame_header(AVCodecContext *ctx,
         memcpy(s->prob_ctx[2].coef, vp9_default_coef_probs,
                sizeof(vp9_default_coef_probs));
         memcpy(s->prob_ctx[3].coef, vp9_default_coef_probs,
+               sizeof(vp9_default_coef_probs));
+    } else if (s->intraonly && s->resetctx == 2) {
+        s->prob_ctx[c].p = vp9_default_probs;
+        memcpy(s->prob_ctx[c].coef, vp9_default_coef_probs,
                sizeof(vp9_default_coef_probs));
     }
 
