@@ -87,7 +87,11 @@ typedef struct AVPixFmtDescriptor {
      * This value only refers to the chroma components.
      */
     uint8_t log2_chroma_h;
-    uint8_t flags;
+
+    /**
+     * Combination of AV_PIX_FMT_FLAG_... flags.
+     */
+    uint64_t flags;
 
     /**
      * Parameters that describe how pixels are packed. If the format
