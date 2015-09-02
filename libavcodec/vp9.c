@@ -3997,8 +3997,9 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     int size = pkt->size;
     VP9Context *s = ctx->priv_data;
     int res, tile_row, tile_col, i, ref, row, col;
-    int retain_segmap_ref = s->segmentation.enabled && !s->segmentation.update_map
-                            && s->frames[REF_FRAME_SEGMAP].segmentation_map;
+    int retain_segmap_ref = s->frames[REF_FRAME_SEGMAP].segmentation_map &&
+                            !(s->segmentation.enabled &&
+                              (s->segmentation.update_map || s->keyframe || s->intraonly));
     ptrdiff_t yoff, uvoff, ls_y, ls_uv;
     AVFrame *f;
     int bytesperpixel;
@@ -4330,6 +4331,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 
     s->invisible = ssrc->invisible;
     s->keyframe = ssrc->keyframe;
+    s->intraonly = ssrc->intraonly;
     s->ss_v = ssrc->ss_v;
     s->ss_h = ssrc->ss_h;
     s->segmentation.enabled = ssrc->segmentation.enabled;
