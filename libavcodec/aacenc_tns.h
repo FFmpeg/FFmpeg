@@ -30,11 +30,21 @@
 
 #include "aacenc.h"
 
-/** Lower limit of TNS in SFBs **/
-#define TNS_LOW_LIMIT 24
+/* Could be set to 3 to save an additional bit at the cost of little quality */
+#define TNS_Q_BITS 4
+
+/* TNS will only be used if the LPC gain is within these margins */
+#define TNS_GAIN_THRESHOLD_LOW  1.395f
+#define TNS_GAIN_THRESHOLD_HIGH 11.19f
+
+/* Do not use TNS if the psy band spread is below this value */
+#define TNS_SPREAD_THRESHOLD 20.081512f
+
+/* Allows to reverse the filter direction if the band energy is uneven */
+#define TNS_DIRECTION_VARY 1
 
 void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce);
-void ff_aac_apply_tns(SingleChannelElement *sce);
+void ff_aac_apply_tns(AACEncContext *s, SingleChannelElement *sce);
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce);
 
 #endif /* AVCODEC_AACENC_TNS_H */

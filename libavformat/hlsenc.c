@@ -32,6 +32,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
+#include "libavutil/time_internal.h"
 
 #include "avformat.h"
 #include "internal.h"
@@ -79,6 +80,7 @@ typedef struct HLSContext {
     uint32_t flags;        // enum HLSFlags
     char *segment_filename;
 
+    int use_localtime;      ///< flag to expand filename with localtime
     int allowcache;
     int64_t recording_time;
     int has_video;
@@ -479,9 +481,18 @@ static int hls_start(AVFormatContext *s)
             av_strlcpy(vtt_oc->filename, c->vtt_basename,
                   sizeof(vtt_oc->filename));
     } else {
-        if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
+        if (c->use_localtime) {
+            time_t now0;
+            struct tm *tm, tmpbuf;
+            time(&now0);
+            tm = localtime_r(&now0, &tmpbuf);
+            if (!strftime(oc->filename, sizeof(oc->filename), c->basename, tm)) {
+                av_log(oc, AV_LOG_ERROR, "Could not get segment filename with use_localtime\n");
+                return AVERROR(EINVAL);
+            }
+       } else if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
                                   c->basename, c->wrap ? c->sequence % c->wrap : c->sequence) < 0) {
-            av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", c->basename);
+            av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try use -use_localtime 1 with it\n", c->basename);
             return AVERROR(EINVAL);
         }
         if( c->vtt_basename) {
@@ -542,6 +553,7 @@ static int hls_write_header(AVFormatContext *s)
     int ret, i;
     char *p;
     const char *pattern = "%d.ts";
+    const char *pattern_localtime_fmt = "-%s.ts";
     const char *vtt_pattern = "%d.vtt";
     AVDictionary *options = NULL;
     int basename_size;
@@ -596,7 +608,11 @@ static int hls_write_header(AVFormatContext *s)
         if (hls->flags & HLS_SINGLE_FILE)
             pattern = ".ts";
 
-        basename_size = strlen(s->filename) + strlen(pattern) + 1;
+        if (hls->use_localtime) {
+            basename_size = strlen(s->filename) + strlen(pattern_localtime_fmt) + 1;
+        } else {
+            basename_size = strlen(s->filename) + strlen(pattern) + 1;
+        }
         hls->basename = av_malloc(basename_size);
         if (!hls->basename) {
             ret = AVERROR(ENOMEM);
@@ -608,7 +624,11 @@ static int hls_write_header(AVFormatContext *s)
         p = strrchr(hls->basename, '.');
         if (p)
             *p = '\0';
-        av_strlcat(hls->basename, pattern, basename_size);
+        if (hls->use_localtime) {
+            av_strlcat(hls->basename, pattern_localtime_fmt, basename_size);
+        } else {
+            av_strlcat(hls->basename, pattern, basename_size);
+        }
     }
 
     if(hls->has_subtitle) {
@@ -817,6 +837,7 @@ static const AVOption options[] = {
     {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
     {"discont_start", "start the playlist with a discontinuity tag", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DISCONT_START }, 0, UINT_MAX,   E, "flags"},
     {"omit_endlist", "Do not append an endlist when ending stream", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_OMIT_ENDLIST }, 0, UINT_MAX,   E, "flags"},
+    { "use_localtime",          "set filename expansion with strftime at segment creation", OFFSET(use_localtime), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, E },
 
     { NULL },
 };

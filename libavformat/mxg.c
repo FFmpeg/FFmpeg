@@ -182,7 +182,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
                 if (mxg->soi_ptr - mxg->buffer > mxg->cache_size) {
                     if (mxg->cache_size > 0) {
-                        memcpy(mxg->buffer, mxg->buffer_ptr, mxg->cache_size);
+                        memmove(mxg->buffer, mxg->buffer_ptr, mxg->cache_size);
                     }
 
                     mxg->buffer_ptr = mxg->buffer;

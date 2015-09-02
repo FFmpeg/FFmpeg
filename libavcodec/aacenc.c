@@ -525,6 +525,9 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->swb_offset         = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
                                         ff_swb_offset_128 [s->samplerate_index]:
                                         ff_swb_offset_1024[s->samplerate_index];
+            ics->tns_max_bands      = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
+                                        ff_tns_max_bands_128 [s->samplerate_index]:
+                                        ff_tns_max_bands_1024[s->samplerate_index];
             clip_avoidance_factor = 0.0f;
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
@@ -568,6 +571,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             tag      = s->chan_map[i+1];
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
+            cpe->common_window = 0;
             memset(cpe->is_mask, 0, sizeof(cpe->is_mask));
             memset(cpe->ms_mask, 0, sizeof(cpe->ms_mask));
             put_bits(&s->pb, 3, tag);
@@ -587,7 +591,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->cur_channel = start_ch + ch;
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
             }
-            cpe->common_window = 0;
             if (chans > 1
                 && wi[0].window_type[0] == wi[1].window_type[0]
                 && wi[0].window_shape   == wi[1].window_shape) {
@@ -608,7 +611,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 if (s->options.tns && s->coder->search_for_tns)
                     s->coder->search_for_tns(s, sce);
                 if (s->options.tns && s->coder->apply_tns_filt)
-                    s->coder->apply_tns_filt(sce);
+                    s->coder->apply_tns_filt(s, sce);
                 if (sce->tns.present)
                     tns_mode = 1;
             }
@@ -794,6 +797,11 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         ERROR_IF(1, "Unsupported profile %d\n", avctx->profile);
     }
 
+    if (s->options.aac_coder != AAC_CODER_TWOLOOP) {
+        s->options.intensity_stereo = 0;
+        s->options.pns = 0;
+    }
+
     avctx->bit_rate = (int)FFMIN(
         6144 * s->channels / 1024.0 * avctx->sample_rate,
         avctx->bit_rate);
@@ -822,7 +830,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto fail;
     s->psypp = ff_psy_preprocess_init(avctx);
     s->coder = &ff_aac_coders[s->options.aac_coder];
-    ff_lpc_init(&s->lpc, avctx->frame_size, MAX_LPC_ORDER, FF_LPC_TYPE_LEVINSON);
+    ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
 
     if (HAVE_MIPSDSPR1)
         ff_aac_coder_init_mips(s);
@@ -851,10 +859,10 @@ static const AVOption aacenc_options[] = {
         {"anmr",     "ANMR method",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_ANMR},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
         {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
         {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
-    {"aac_pns", "Perceptual Noise Substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "aac_pns"},
+    {"aac_pns", "Perceptual Noise Substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AACENC_FLAGS, "aac_pns"},
         {"disable",  "Disable perceptual noise substitution", 0, AV_OPT_TYPE_CONST, {.i64 =  0 }, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pns"},
         {"enable",   "Enable perceptual noise substitution",  0, AV_OPT_TYPE_CONST, {.i64 =  1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pns"},
-    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "intensity_stereo"},
+    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AACENC_FLAGS, "intensity_stereo"},
         {"disable",  "Disable intensity stereo coding", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "intensity_stereo"},
         {"enable",   "Enable intensity stereo coding", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "intensity_stereo"},
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "aac_tns"},

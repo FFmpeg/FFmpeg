@@ -718,6 +718,7 @@ static const StreamType HDMV_types[] = {
     { 0xa1, AVMEDIA_TYPE_AUDIO,    AV_CODEC_ID_EAC3              }, /* E-AC3 Secondary Audio */
     { 0xa2, AVMEDIA_TYPE_AUDIO,    AV_CODEC_ID_DTS               }, /* DTS Express Secondary Audio */
     { 0x90, AVMEDIA_TYPE_SUBTITLE, AV_CODEC_ID_HDMV_PGS_SUBTITLE },
+    { 0x92, AVMEDIA_TYPE_SUBTITLE, AV_CODEC_ID_HDMV_TEXT_SUBTITLE },
     { 0 },
 };
 
@@ -1054,6 +1055,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                             pes->st->request_probe = 1;
                         }
                     } else {
+                        pes->pes_header_size = 6;
                         pes->state      = MPEGTS_PAYLOAD;
                         pes->data_index = 0;
                     }
@@ -2510,7 +2512,12 @@ static int mpegts_read_header(AVFormatContext *s)
     AVIOContext *pb   = s->pb;
     uint8_t buf[8 * 1024] = {0};
     int len;
-    int64_t pos, probesize = s->probesize ? s->probesize : s->probesize2;
+    int64_t pos, probesize =
+#if FF_API_PROBESIZE_32
+                             s->probesize ? s->probesize : s->probesize2;
+#else
+                             s->probesize;
+#endif
 
     if (ffio_ensure_seekback(pb, probesize) < 0)
         av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");

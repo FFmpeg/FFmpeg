@@ -9939,6 +9939,10 @@ was composed. For the syntax of this option, check the
 Due to a misdesign in ASS aspect ratio arithmetic, this is necessary to
 correctly scale the fonts if the aspect ratio has been changed.
 
+@item fontsdir
+Set a directory path containing fonts that can be used by the filter.
+These fonts will be used in addition to whatever the font provider uses.
+
 @item charenc
 Set subtitles input character encoding. @code{subtitles} filter only. Only
 useful if not UTF-8.
@@ -11101,6 +11105,27 @@ can still spot out of range values without constantly looking at waveforms.
 
 @item peak+instant
 Peak and instant envelope combined together.
+@end table
+
+@item filter, f
+@table @samp
+@item lowpass
+No filtering, this is default.
+
+@item flat
+Luma and chroma combined together.
+
+@item aflat
+Similar as above, but shows difference between blue and red chroma.
+
+@item chroma
+Displays only chroma.
+
+@item achroma
+Similar as above, but shows difference between blue and red chroma.
+
+@item color
+Displays actual color value on waveform.
 @end table
 @end table
 

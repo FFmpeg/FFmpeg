@@ -513,6 +513,7 @@ static int read_extra_header(FFV1Context *f)
     uint8_t state[CONTEXT_SIZE];
     int i, j, k, ret;
     uint8_t state2[32][CONTEXT_SIZE];
+    unsigned crc = 0;
 
     memset(state2, 128, sizeof(state2));
     memset(state, 128, sizeof(state));
@@ -594,15 +595,16 @@ static int read_extra_header(FFV1Context *f)
         unsigned v;
         v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0,
                    f->avctx->extradata, f->avctx->extradata_size);
-        if (v) {
+        if (v || f->avctx->extradata_size < 4) {
             av_log(f->avctx, AV_LOG_ERROR, "CRC mismatch %X!\n", v);
             return AVERROR_INVALIDDATA;
         }
+        crc = AV_RB32(f->avctx->extradata + f->avctx->extradata_size - 4);
     }
 
     if (f->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(f->avctx, AV_LOG_DEBUG,
-               "global: ver:%d.%d, coder:%d, colorspace: %d bpr:%d chroma:%d(%d:%d), alpha:%d slices:%dx%d qtabs:%d ec:%d intra:%d\n",
+               "global: ver:%d.%d, coder:%d, colorspace: %d bpr:%d chroma:%d(%d:%d), alpha:%d slices:%dx%d qtabs:%d ec:%d intra:%d CRC:0x%08X\n",
                f->version, f->micro_version,
                f->ac,
                f->colorspace,
@@ -612,7 +614,8 @@ static int read_extra_header(FFV1Context *f)
                f->num_h_slices, f->num_v_slices,
                f->quant_table_count,
                f->ec,
-               f->intra
+               f->intra,
+               crc
               );
     return 0;
 }
@@ -946,6 +949,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                     av_log(f->avctx, AV_LOG_ERROR, "\n");
                 }
                 fs->slice_damaged = 1;
+            }
+            if (avctx->debug & FF_DEBUG_PICT_INFO) {
+                av_log(avctx, AV_LOG_DEBUG, "slice %d, CRC: 0x%08X\n", i, AV_RB32(buf_p + v - 4));
             }
         }
 

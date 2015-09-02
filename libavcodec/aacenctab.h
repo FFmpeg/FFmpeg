@@ -85,6 +85,19 @@ static const uint8_t run_value_bits_short[16] = {
     3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
 };
 
+/* TNS starting SFBs for long and short windows */
+static const uint8_t tns_min_sfb_short[16] = {
+    2, 2, 2, 3, 3, 4, 6, 6, 8, 10, 10, 12, 12, 12, 12, 12
+};
+
+static const uint8_t tns_min_sfb_long[16] = {
+    12, 13, 15, 16, 17, 20, 25, 26, 24, 28, 30, 31, 31, 31, 31, 31
+};
+
+static const uint8_t * const tns_min_sfb[2] = {
+    tns_min_sfb_long, tns_min_sfb_short
+};
+
 static const uint8_t * const run_value_bits[2] = {
     run_value_bits_long, run_value_bits_short
 };
