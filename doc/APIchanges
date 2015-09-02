@@ -15,6 +15,8 @@ API changes, most recent first:
 
 2015-xx-xx - lavu 55.0.0
   xxxxxxx - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
+  xxxxxxx - Change type of AVComponentDescriptor fields from uint16_t to int
+            and drop bit packing.
 
 2015-xx-xx - lavu 54.17.0
   xxxxxxx -  Add av_blowfish_alloc().
