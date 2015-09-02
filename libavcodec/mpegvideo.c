@@ -1068,9 +1068,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         if (&s->picture[i] != s->last_picture_ptr &&
             &s->picture[i] != s->next_picture_ptr &&
             s->picture[i].reference && !s->picture[i].needs_realloc) {
-            if (!(avctx->active_thread_type & FF_THREAD_FRAME))
-                av_log(avctx, AV_LOG_ERROR,
-                       "releasing zombie picture\n");
             ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
         }
     }
