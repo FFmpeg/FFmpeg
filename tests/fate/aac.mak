@@ -189,7 +189,7 @@ fate-aac-pred-encode: CMP = stddev
 fate-aac-pred-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-pred-encode: CMP_SHIFT = -4096
 fate-aac-pred-encode: CMP_TARGET = 652.60
-fate-aac-pred-encode: FUZZ = 2.2
+fate-aac-pred-encode: FUZZ = 2.8
 fate-aac-pred-encode: SIZE_TOLERANCE = 3560
 
 FATE_AAC_LATM += fate-aac-latm_000000001180bc60
