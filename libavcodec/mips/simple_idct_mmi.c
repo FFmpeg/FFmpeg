@@ -54,7 +54,7 @@ DECLARE_ALIGNED(8, static const int16_t, coeffs)[]= {
                   C3, -C1,               C3, -C1
 };
 
-static void simple_idct_mmi(int16_t *block)
+void ff_simple_idct_mmi(int16_t *block)
 {
         DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
         int16_t * const temp= (int16_t*)align_tmp;
@@ -813,21 +813,4 @@ static void simple_idct_mmi(int16_t *block)
         ::"r"(block),"r"(temp),"r"(coeffs),"m"(ff_wm1010),"m"(ff_d40000)
         : "$10","$11"
     );
-}
-
-void ff_simple_idct_mmi(int16_t *block)
-{
-    simple_idct_mmi(block);
-}
-
-void ff_simple_idct_put_mmi(uint8_t *dest, int32_t line_size, int16_t *block)
-{
-    simple_idct_mmi(block);
-    ff_put_pixels_clamped_mmi(block, dest, line_size);
-}
-
-void ff_simple_idct_add_mmi(uint8_t *dest, int32_t line_size, int16_t *block)
-{
-    simple_idct_mmi(block);
-    ff_add_pixels_clamped_mmi(block, dest, line_size);
 }
