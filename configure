@@ -268,6 +268,7 @@ Toolchain options:
 
 Advanced options (experts only):
   --malloc-prefix=PREFIX   prefix malloc and related names with PREFIX
+  --custom-allocator=NAME  use a supported custom allocator
   --disable-symver         disable symbol versioning
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --disable-safe-bitstream-reader
@@ -1691,6 +1692,7 @@ CMDLINE_SET="
     cc
     cpu
     cross_prefix
+    custom_allocator
     dep_cc
     env
     extra_version
@@ -4244,6 +4246,17 @@ check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic
 check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
+
+case "$custom_allocator" in
+    jemalloc)
+        # jemalloc by default does not use a prefix
+        require libjemalloc jemalloc/jemalloc.h malloc -ljemalloc
+    ;;
+    tcmalloc)
+        require_pkg_config libtcmalloc gperftools/tcmalloc.h tc_malloc
+        malloc_prefix=tc_
+    ;;
+esac
 
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
