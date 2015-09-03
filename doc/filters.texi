@@ -9891,6 +9891,12 @@ mono output (left eye only)
 
 @item mr
 mono output (right eye only)
+
+@item chl
+checkerboard, left eye first
+
+@item chr
+checkerboard, right eye first
 @end table
 
 Default value is @samp{arcd}.

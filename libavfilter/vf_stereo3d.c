@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010 Gordon Schmidt <gordon.schmidt <at> s2000.tu-chemnitz.de>
- * Copyright (c) 2013 Paul B Mahol
+ * Copyright (c) 2013-2015 Paul B Mahol
  *
  * This file is part of FFmpeg.
  *
@@ -21,6 +21,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
@@ -59,6 +60,8 @@ enum StereoCode {
     ABOVE_BELOW_2_RL,   // above-below with half height resolution
     ALTERNATING_LR,     // alternating frames (left eye first, right eye second)
     ALTERNATING_RL,     // alternating frames (right eye first, left eye second)
+    CHECKERBOARD_LR,    // checkerboard pattern (left eye first, right eye second)
+    CHECKERBOARD_RL,    // checkerboard pattern (right eye first, left eye second)
     STEREO_CODE_COUNT   // TODO: needs autodetection
 };
 
@@ -189,6 +192,8 @@ static const AVOption stereo3d_options[] = {
     { "sbs2r", "side by side half width right first", 0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_2_RL},  0, 0, FLAGS, "out" },
     { "sbsl",  "side by side left first",             0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_LR},    0, 0, FLAGS, "out" },
     { "sbsr",  "side by side right first",            0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_RL},    0, 0, FLAGS, "out" },
+    { "chl",   "checkerboard left first",             0, AV_OPT_TYPE_CONST, {.i64=CHECKERBOARD_LR},    0, 0, FLAGS, "out" },
+    { "chr",   "checkerboard right first",            0, AV_OPT_TYPE_CONST, {.i64=CHECKERBOARD_RL},    0, 0, FLAGS, "out" },
     { NULL }
 };
 
@@ -451,6 +456,10 @@ static int config_output(AVFilterLink *outlink)
         fps.num         *= 2;
         tb.den          *= 2;
         break;
+    case CHECKERBOARD_LR:
+    case CHECKERBOARD_RL:
+        s->out.width     = s->width * 2;
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "output format %d is not supported\n", s->out.format);
         return AVERROR(EINVAL);
@@ -633,6 +642,60 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                                FFMIN(s->out.height, ctx->graph->nb_threads));
         break;
     }
+    case CHECKERBOARD_RL:
+    case CHECKERBOARD_LR:
+        for (i = 0; i < s->nb_planes; i++) {
+            int x, y;
+
+            for (y = 0; y < s->pheight[i]; y++) {
+                uint8_t *dst = out->data[i] + out->linesize[i] * y;
+                uint8_t *left = ileft->data[i] + ileft->linesize[i] * y + s->in_off_left[i];
+                uint8_t *right = iright->data[i] + iright->linesize[i] * y + s->in_off_right[i];
+                int p, b;
+
+                if (s->out.format == CHECKERBOARD_RL)
+                    FFSWAP(uint8_t*, left, right);
+                switch (s->pixstep[i]) {
+                case 1:
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=2, p++, b++) {
+                        dst[x  ] = (b&1) == (y&1) ? left[p] : right[p];
+                        dst[x+1] = (b&1) != (y&1) ? left[p] : right[p];
+                    }
+                    break;
+                case 2:
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=4, p+=2, b++) {
+                        AV_WN16(&dst[x  ], (b&1) == (y&1) ? AV_RN16(&left[p]) : AV_RN16(&right[p]));
+                        AV_WN16(&dst[x+2], (b&1) != (y&1) ? AV_RN16(&left[p]) : AV_RN16(&right[p]));
+                    }
+                    break;
+                case 3:
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=6, p+=3, b++) {
+                        AV_WB24(&dst[x  ], (b&1) == (y&1) ? AV_RB24(&left[p]) : AV_RB24(&right[p]));
+                        AV_WB24(&dst[x+3], (b&1) != (y&1) ? AV_RB24(&left[p]) : AV_RB24(&right[p]));
+                    }
+                    break;
+                case 4:
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=8, p+=4, b++) {
+                        AV_WN32(&dst[x  ], (b&1) == (y&1) ? AV_RN32(&left[p]) : AV_RN32(&right[p]));
+                        AV_WN32(&dst[x+4], (b&1) != (y&1) ? AV_RN32(&left[p]) : AV_RN32(&right[p]));
+                    }
+                    break;
+                case 6:
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=12, p+=6, b++) {
+                        AV_WB48(&dst[x  ], (b&1) == (y&1) ? AV_RB48(&left[p]) : AV_RB48(&right[p]));
+                        AV_WB48(&dst[x+6], (b&1) != (y&1) ? AV_RB48(&left[p]) : AV_RB48(&right[p]));
+                    }
+                    break;
+                case 8:
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=16, p+=8, b++) {
+                        AV_WN64(&dst[x  ], (b&1) == (y&1) ? AV_RN64(&left[p]) : AV_RN64(&right[p]));
+                        AV_WN64(&dst[x+8], (b&1) != (y&1) ? AV_RN64(&left[p]) : AV_RN64(&right[p]));
+                    }
+                    break;
+                }
+            }
+        }
+        break;
     default:
         av_assert0(0);
     }
