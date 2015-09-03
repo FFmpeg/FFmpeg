@@ -1710,7 +1710,7 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     if ((color_depth == 2) || (color_depth == 4) || (color_depth == 8)) {
         /* for palette traversal */
         unsigned int color_start, color_count, color_end;
-        unsigned char a, r, g, b;
+        unsigned int a, r, g, b;
 
         if (color_greyscale) {
             int color_index, color_dec;
