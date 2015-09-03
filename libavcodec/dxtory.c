@@ -233,7 +233,7 @@ static int load_buffer(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!*nslices || avctx->height % *nslices) {
+    if (!*nslices) {
         avpriv_request_sample(avctx, "%d slices for %dx%d", *nslices,
                               avctx->width, avctx->height);
         return AVERROR_PATCHWELCOME;
@@ -260,18 +260,71 @@ static inline uint8_t decode_sym_565(GetBitContext *gb, uint8_t lru[8],
     return val;
 }
 
-static int dx2_decode_slice_565(GetBitContext *gb, int width, int height,
-                                uint8_t *dst, int stride, int is_565)
+typedef int (*decode_slice_func)(GetBitContext *gb, AVFrame *frame,
+                                 int line, int height, uint8_t lru[3][8]);
+
+typedef void (*setup_lru_func)(uint8_t lru[3][8]);
+
+static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
+                            const uint8_t *src, int src_size,
+                            decode_slice_func decode_slice,
+                            setup_lru_func setup_lru,
+                            enum AVPixelFormat fmt)
+{
+    GetByteContext gb;
+    GetBitContext  gb2;
+    int nslices, slice, line = 0;
+    uint32_t off, slice_size;
+    uint8_t lru[3][8];
+    int ret;
+
+    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
+    if (ret < 0)
+        return ret;
+
+    avctx->pix_fmt = fmt;
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
+
+    for (slice = 0; slice < nslices; slice++) {
+        slice_size = bytestream2_get_le32(&gb);
+
+        setup_lru(lru);
+
+        ret = check_slice_size(avctx, src, src_size, slice_size, off);
+        if (ret < 0)
+            return ret;
+
+        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
+
+        line += decode_slice(&gb2, pic, line, avctx->height - line, lru);
+
+        off += slice_size;
+    }
+
+    if (avctx->height - line) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "Not enough slice data available, "
+               "cropping the frame by %d pixels\n",
+                avctx->height - line);
+        avctx->height = line;
+    }
+
+    return 0;
+}
+
+av_always_inline
+static int dx2_decode_slice_5x5(GetBitContext *gb, AVFrame *frame,
+                                int line, int left, uint8_t lru[3][8],
+                                int is_565)
 {
     int x, y;
     int r, g, b;
-    uint8_t lru[3][8];
+    int width    = frame->width;
+    int stride   = frame->linesize[0];
+    uint8_t *dst = frame->data[0] + stride * line;
 
-    memcpy(lru[0], def_lru_555, 8 * sizeof(*def_lru));
-    memcpy(lru[1], is_565 ? def_lru_565 : def_lru_555, 8 * sizeof(*def_lru));
-    memcpy(lru[2], def_lru_555, 8 * sizeof(*def_lru));
-
-    for (y = 0; y < height; y++) {
+    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
         for (x = 0; x < width; x++) {
             b = decode_sym_565(gb, lru[0], 5);
             g = decode_sym_565(gb, lru[1], is_565 ? 6 : 5);
@@ -284,57 +337,60 @@ static int dx2_decode_slice_565(GetBitContext *gb, int width, int height,
         dst += stride;
     }
 
-    return 0;
+    return y;
+}
+
+static void setup_lru_555(uint8_t lru[3][8])
+{
+    memcpy(lru[0], def_lru_555, 8 * sizeof(*def_lru));
+    memcpy(lru[1], def_lru_555, 8 * sizeof(*def_lru));
+    memcpy(lru[2], def_lru_555, 8 * sizeof(*def_lru));
+}
+
+static void setup_lru_565(uint8_t lru[3][8])
+{
+    memcpy(lru[0], def_lru_555, 8 * sizeof(*def_lru));
+    memcpy(lru[1], def_lru_565, 8 * sizeof(*def_lru));
+    memcpy(lru[2], def_lru_555, 8 * sizeof(*def_lru));
+}
+
+static int dx2_decode_slice_555(GetBitContext *gb, AVFrame *frame,
+                                int line, int left, uint8_t lru[3][8])
+{
+    return dx2_decode_slice_5x5(gb, frame, line, left, lru, 0);
+}
+
+static int dx2_decode_slice_565(GetBitContext *gb, AVFrame *frame,
+                                int line, int left, uint8_t lru[3][8])
+{
+    return dx2_decode_slice_5x5(gb, frame, line, left, lru, 1);
 }
 
 static int dxtory_decode_v2_565(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size, int is_565)
 {
-    GetByteContext gb;
-    GetBitContext  gb2;
-    int nslices, slice, slice_height;
-    uint32_t off, slice_size;
-    uint8_t *dst;
-    int ret;
-
-    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
-    if (ret < 0)
-        return ret;
-
-    slice_height = avctx->height / nslices;
-    avctx->pix_fmt = AV_PIX_FMT_RGB24;
-    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
-        return ret;
-
-    dst = pic->data[0];
-    for (slice = 0; slice < nslices; slice++) {
-        slice_size = bytestream2_get_le32(&gb);
-
-        ret = check_slice_size(avctx, src, src_size, slice_size, off);
-        if (ret < 0)
-            return ret;
-
-        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
-        dx2_decode_slice_565(&gb2, avctx->width, slice_height, dst,
-                             pic->linesize[0], is_565);
-
-        dst += pic->linesize[0] * slice_height;
-        off += slice_size;
-    }
-
-    return 0;
+    enum AVPixelFormat fmt = AV_PIX_FMT_RGB24;
+    if (is_565)
+        return dxtory_decode_v2(avctx, pic, src, src_size,
+                                dx2_decode_slice_565,
+                                setup_lru_565,
+                                fmt);
+    else
+        return dxtory_decode_v2(avctx, pic, src, src_size,
+                                dx2_decode_slice_555,
+                                setup_lru_555,
+                                fmt);
 }
 
-static int dx2_decode_slice_rgb(GetBitContext *gb, int width, int height,
-                                uint8_t *dst, int stride)
+static int dx2_decode_slice_rgb(GetBitContext *gb, AVFrame *frame,
+                                int line, int left, uint8_t lru[3][8])
 {
-    int x, y, i;
-    uint8_t lru[3][8];
+    int x, y;
+    int width    = frame->width;
+    int stride   = frame->linesize[0];
+    uint8_t *dst = frame->data[0] + stride * line;
 
-    for (i = 0; i < 3; i++)
-        memcpy(lru[i], def_lru, 8 * sizeof(*def_lru));
-
-    for (y = 0; y < height; y++) {
+    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
         for (x = 0; x < width; x++) {
             dst[x * 3 + 0] = decode_sym(gb, lru[0]);
             dst[x * 3 + 1] = decode_sym(gb, lru[1]);
@@ -344,58 +400,42 @@ static int dx2_decode_slice_rgb(GetBitContext *gb, int width, int height,
         dst += stride;
     }
 
-    return 0;
+    return y;
+}
+
+static void default_setup_lru(uint8_t lru[3][8])
+{
+    int i;
+
+    for (i = 0; i < 3; i++)
+        memcpy(lru[i], def_lru, 8 * sizeof(*def_lru));
 }
 
 static int dxtory_decode_v2_rgb(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size)
 {
-    GetByteContext gb;
-    GetBitContext  gb2;
-    int nslices, slice, slice_height;
-    uint32_t off, slice_size;
-    uint8_t *dst;
-    int ret;
-
-    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
-    if (ret < 0)
-        return ret;
-
-    slice_height = avctx->height / nslices;
-    avctx->pix_fmt = AV_PIX_FMT_BGR24;
-    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
-        return ret;
-
-    dst = pic->data[0];
-    for (slice = 0; slice < nslices; slice++) {
-        slice_size = bytestream2_get_le32(&gb);
-
-        ret = check_slice_size(avctx, src, src_size, slice_size, off);
-        if (ret < 0)
-            return ret;
-
-        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
-        dx2_decode_slice_rgb(&gb2, avctx->width, slice_height, dst,
-                             pic->linesize[0]);
-
-        dst += pic->linesize[0] * slice_height;
-        off += slice_size;
-    }
-
-    return 0;
+    return dxtory_decode_v2(avctx, pic, src, src_size,
+                            dx2_decode_slice_rgb,
+                            default_setup_lru,
+                            AV_PIX_FMT_BGR24);
 }
 
-static int dx2_decode_slice_410(GetBitContext *gb, int width, int height,
-                                uint8_t *Y, uint8_t *U, uint8_t *V,
-                                int ystride, int ustride, int vstride)
+static int dx2_decode_slice_410(GetBitContext *gb, AVFrame *frame,
+                                int line, int left,
+                                uint8_t lru[3][8])
 {
     int x, y, i, j;
-    uint8_t lru[3][8];
+    int width   = frame->width;
 
-    for (i = 0; i < 3; i++)
-        memcpy(lru[i], def_lru, 8 * sizeof(*def_lru));
+    int ystride = frame->linesize[0];
+    int ustride = frame->linesize[1];
+    int vstride = frame->linesize[2];
 
-    for (y = 0; y < height; y += 4) {
+    uint8_t *Y  = frame->data[0] + ystride * line;
+    uint8_t *U  = frame->data[1] + (ustride >> 2) * line;
+    uint8_t *V  = frame->data[2] + (vstride >> 2) * line;
+
+    for (y = 0; y < left - 3 && get_bits_left(gb) > 16; y += 4) {
         for (x = 0; x < width; x += 4) {
             for (j = 0; j < 4; j++)
                 for (i = 0; i < 4; i++)
@@ -409,75 +449,37 @@ static int dx2_decode_slice_410(GetBitContext *gb, int width, int height,
         V += vstride;
     }
 
-    return 0;
+    return y;
 }
+
 
 static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size)
 {
-    GetByteContext gb;
-    GetBitContext  gb2;
-    int nslices, slice, slice_height, ref_slice_height;
-    int cur_y, next_y;
-    uint32_t off, slice_size;
-    uint8_t *Y, *U, *V;
-    int ret;
-
-    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
-    if (ret < 0)
-        return ret;
-
-    ref_slice_height = avctx->height / nslices;
-    if ((avctx->width & 3) || (avctx->height & 3)) {
-        avpriv_request_sample(avctx, "Frame dimensions %dx%d",
-                              avctx->width, avctx->height);
-    }
-
-    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
-    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
-        return ret;
-
-    Y = pic->data[0];
-    U = pic->data[1];
-    V = pic->data[2];
-
-    cur_y  = 0;
-    next_y = ref_slice_height;
-    for (slice = 0; slice < nslices; slice++) {
-        slice_size   = bytestream2_get_le32(&gb);
-        slice_height = (next_y & ~3) - (cur_y & ~3);
-
-        ret = check_slice_size(avctx, src, src_size, slice_size, off);
-        if (ret < 0)
-            return ret;
-
-        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
-        dx2_decode_slice_410(&gb2, avctx->width, slice_height, Y, U, V,
-                             pic->linesize[0], pic->linesize[1],
-                             pic->linesize[2]);
-
-        Y += pic->linesize[0] *  slice_height;
-        U += pic->linesize[1] * (slice_height >> 2);
-        V += pic->linesize[2] * (slice_height >> 2);
-        off += slice_size;
-        cur_y   = next_y;
-        next_y += ref_slice_height;
-    }
-
-    return 0;
+    return dxtory_decode_v2(avctx, pic, src, src_size,
+                            dx2_decode_slice_410,
+                            default_setup_lru,
+                            AV_PIX_FMT_YUV410P);
 }
 
-static int dx2_decode_slice_420(GetBitContext *gb, int width, int height,
-                                uint8_t *Y, uint8_t *U, uint8_t *V,
-                                int ystride, int ustride, int vstride)
+static int dx2_decode_slice_420(GetBitContext *gb, AVFrame *frame,
+                                int line, int left,
+                                uint8_t lru[3][8])
 {
-    int x, y, i;
-    uint8_t lru[3][8];
+    int x, y;
 
-    for (i = 0; i < 3; i++)
-        memcpy(lru[i], def_lru, 8 * sizeof(*def_lru));
+    int width    = frame->width;
 
-    for (y = 0; y < height; y+=2) {
+    int ystride = frame->linesize[0];
+    int ustride = frame->linesize[1];
+    int vstride = frame->linesize[2];
+
+    uint8_t *Y  = frame->data[0] + ystride * line;
+    uint8_t *U  = frame->data[1] + (ustride >> 1) * line;
+    uint8_t *V  = frame->data[2] + (vstride >> 1) * line;
+
+
+    for (y = 0; y < left - 1 && get_bits_left(gb) > 16; y += 2) {
         for (x = 0; x < width; x += 2) {
             Y[x + 0 + 0 * ystride] = decode_sym(gb, lru[0]);
             Y[x + 1 + 0 * ystride] = decode_sym(gb, lru[0]);
@@ -492,75 +494,35 @@ static int dx2_decode_slice_420(GetBitContext *gb, int width, int height,
         V += vstride;
     }
 
-    return 0;
+    return y;
 }
 
 static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size)
 {
-    GetByteContext gb;
-    GetBitContext  gb2;
-    int nslices, slice, slice_height, ref_slice_height;
-    int cur_y, next_y;
-    uint32_t off, slice_size;
-    uint8_t *Y, *U, *V;
-    int ret;
-
-    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
-    if (ret < 0)
-        return ret;
-
-    ref_slice_height = avctx->height / nslices;
-    if ((avctx->width & 1) || (avctx->height & 1)) {
-        avpriv_request_sample(avctx, "Frame dimensions %dx%d",
-                              avctx->width, avctx->height);
-    }
-
-    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
-        return ret;
-
-    Y = pic->data[0];
-    U = pic->data[1];
-    V = pic->data[2];
-
-    cur_y  = 0;
-    next_y = ref_slice_height;
-    for (slice = 0; slice < nslices; slice++) {
-        slice_size   = bytestream2_get_le32(&gb);
-        slice_height = (next_y & ~1) - (cur_y & ~1);
-
-        ret = check_slice_size(avctx, src, src_size, slice_size, off);
-        if (ret < 0)
-            return ret;
-
-        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
-        dx2_decode_slice_420(&gb2, avctx->width, slice_height, Y, U, V,
-                             pic->linesize[0], pic->linesize[1],
-                             pic->linesize[2]);
-
-        Y += pic->linesize[0] *  slice_height;
-        U += pic->linesize[1] * (slice_height >> 1);
-        V += pic->linesize[2] * (slice_height >> 1);
-        off += slice_size;
-        cur_y   = next_y;
-        next_y += ref_slice_height;
-    }
-
-    return 0;
+    return dxtory_decode_v2(avctx, pic, src, src_size,
+                            dx2_decode_slice_420,
+                            default_setup_lru,
+                            AV_PIX_FMT_YUV420P);
 }
 
-static int dx2_decode_slice_444(GetBitContext *gb, int width, int height,
-                                uint8_t *Y, uint8_t *U, uint8_t *V,
-                                int ystride, int ustride, int vstride)
+static int dx2_decode_slice_444(GetBitContext *gb, AVFrame *frame,
+                                int line, int left,
+                                uint8_t lru[3][8])
 {
-    int x, y, i;
-    uint8_t lru[3][8];
+    int x, y;
 
-    for (i = 0; i < 3; i++)
-        memcpy(lru[i], def_lru, 8 * sizeof(*def_lru));
+    int width   = frame->width;
 
-    for (y = 0; y < height; y++) {
+    int ystride = frame->linesize[0];
+    int ustride = frame->linesize[1];
+    int vstride = frame->linesize[2];
+
+    uint8_t *Y  = frame->data[0] + ystride * line;
+    uint8_t *U  = frame->data[1] + ustride * line;
+    uint8_t *V  = frame->data[2] + vstride * line;
+
+    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
         for (x = 0; x < width; x++) {
             Y[x] = decode_sym(gb, lru[0]);
             U[x] = decode_sym(gb, lru[1]) ^ 0x80;
@@ -572,52 +534,16 @@ static int dx2_decode_slice_444(GetBitContext *gb, int width, int height,
         V += vstride;
     }
 
-    return 0;
+    return y;
 }
 
 static int dxtory_decode_v2_444(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size)
 {
-    GetByteContext gb;
-    GetBitContext  gb2;
-    int nslices, slice, slice_height;
-    uint32_t off, slice_size;
-    uint8_t *Y, *U, *V;
-    int ret;
-
-    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
-    if (ret < 0)
-        return ret;
-
-    slice_height = avctx->height / nslices;
-
-    avctx->pix_fmt = AV_PIX_FMT_YUV444P;
-    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
-        return ret;
-
-    Y = pic->data[0];
-    U = pic->data[1];
-    V = pic->data[2];
-
-    for (slice = 0; slice < nslices; slice++) {
-        slice_size = bytestream2_get_le32(&gb);
-
-        ret = check_slice_size(avctx, src, src_size, slice_size, off);
-        if (ret < 0)
-            return ret;
-
-        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
-        dx2_decode_slice_444(&gb2, avctx->width, slice_height, Y, U, V,
-                             pic->linesize[0], pic->linesize[1],
-                             pic->linesize[2]);
-
-        Y += pic->linesize[0] * slice_height;
-        U += pic->linesize[1] * slice_height;
-        V += pic->linesize[2] * slice_height;
-        off += slice_size;
-    }
-
-    return 0;
+    return dxtory_decode_v2(avctx, pic, src, src_size,
+                            dx2_decode_slice_444,
+                            default_setup_lru,
+                            AV_PIX_FMT_YUV444P);
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
