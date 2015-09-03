@@ -394,6 +394,11 @@ static int concat_read_header(AVFormatContext *avf)
                 av_log(avf, AV_LOG_ERROR, "Line %d: packet metadata required\n", line);
                 FAIL(AVERROR_INVALIDDATA);
             }
+            if (!file) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: %s without file\n",
+                       line, keyword);
+                FAIL(AVERROR_INVALIDDATA);
+            }
             if ((ret = av_dict_parse_string(&file->metadata, metadata, "=", "", 0)) < 0) {
                 av_log(avf, AV_LOG_ERROR, "Line %d: failed to parse metadata string\n", line);
                 av_freep(&metadata);
