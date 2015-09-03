@@ -2473,6 +2473,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     const uint8_t *header_start[3];
     int header_len[3];
     int i;
+    int ret;
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
@@ -2492,7 +2493,9 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     for (i = 0; i < 3; i++) {
         if (header_len[i] <= 0)
             continue;
-        init_get_bits8(&gb, header_start[i], header_len[i]);
+        ret = init_get_bits8(&gb, header_start[i], header_len[i]);
+        if (ret < 0)
+            return ret;
 
         ptype = get_bits(&gb, 8);
 
