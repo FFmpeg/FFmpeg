@@ -5483,8 +5483,9 @@ which @code{fieldmatch} is based on. While the semantic and usage are very
 close, some behaviour and options names can differ.
 
 The @ref{decimate} filter currently only works for constant frame rate input.
-Do not use @code{fieldmatch} and @ref{decimate} if your input has mixed
-telecined and progressive content with changing framerate.
+If your input has mixed telecined (30fps) and progressive content with a lower
+framerate like 24fps use the following filterchain to produce the necessary cfr
+stream: @code{dejudder,fps=30000/1001,fieldmatch,decimate}.
 
 The filter accepts the following options:
 
