@@ -120,7 +120,8 @@ static int hls_delete_old_segments(HLSContext *hls) {
     HLSSegment *segment, *previous_segment = NULL;
     float playlist_duration = 0.0f;
     int ret = 0, path_size, sub_path_size;
-    char *dirname = NULL, *p, *path, *sub_path;
+    char *dirname = NULL, *p, *sub_path;
+    char *path = NULL;
 
     segment = hls->segments;
     while (segment) {
@@ -182,7 +183,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
             av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
                                      sub_path, strerror(errno));
         }
-        av_free(path);
+        av_freep(&path);
         av_free(sub_path);
         previous_segment = segment;
         segment = previous_segment->next;
@@ -190,6 +191,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
     }
 
 fail:
+    av_free(path);
     av_free(dirname);
 
     return ret;
