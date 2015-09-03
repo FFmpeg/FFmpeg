@@ -2514,8 +2514,9 @@ void ff_aac_coder_init_mips(AACEncContext *c) {
     int option = c->options.aac_coder;
 
     if (option == 2) {
-        e->quantize_and_encode_band = quantize_and_encode_band_mips;
-        e->encode_window_bands_info = codebook_trellis_rate_mips;
+// Disabled due to failure with fate-aac-pns-encode
+//         e->quantize_and_encode_band = quantize_and_encode_band_mips;
+//         e->encode_window_bands_info = codebook_trellis_rate_mips;
 #if HAVE_MIPSFPU
         e->search_for_quantizers    = search_for_quantizers_twoloop_mips;
         e->search_for_ms            = search_for_ms_mips;

@@ -36,8 +36,10 @@ Possible forms of stream specifiers are:
 Matches the stream with this index. E.g. @code{-threads:1 4} would set the
 thread count for the second stream to 4.
 @item @var{stream_type}[:@var{stream_index}]
-@var{stream_type} is one of following: 'v' for video, 'a' for audio, 's' for subtitle,
-'d' for data, and 't' for attachments. If @var{stream_index} is given, then it matches
+@var{stream_type} is one of following: 'v' or 'V' for video, 'a' for audio, 's'
+for subtitle, 'd' for data, and 't' for attachments. 'v' matches all video
+streams, 'V' only matches video streams which are not attached pictures, video
+thumbnails or cover arts.  If @var{stream_index} is given, then it matches
 stream number @var{stream_index} of this type. Otherwise, it matches all
 streams of this type.
 @item p:@var{program_id}[:@var{stream_index}]

@@ -4312,8 +4312,9 @@ int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
     if (*spec <= '9' && *spec >= '0') /* opt:index */
         return strtol(spec, NULL, 0) == st->index;
     else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
-             *spec == 't') { /* opt:[vasdt] */
+             *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
         enum AVMediaType type;
+        int nopic = 0;
 
         switch (*spec++) {
         case 'v': type = AVMEDIA_TYPE_VIDEO;      break;
@@ -4321,15 +4322,20 @@ int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
         case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
         case 'd': type = AVMEDIA_TYPE_DATA;       break;
         case 't': type = AVMEDIA_TYPE_ATTACHMENT; break;
+        case 'V': type = AVMEDIA_TYPE_VIDEO; nopic = 1; break;
         default:  av_assert0(0);
         }
         if (type != st->codec->codec_type)
             return 0;
+        if (nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+            return 0;
         if (*spec++ == ':') { /* possibly followed by :index */
             int i, index = strtol(spec, NULL, 0);
             for (i = 0; i < s->nb_streams; i++)
-                if (s->streams[i]->codec->codec_type == type && index-- == 0)
-                   return i == st->index;
+                if (s->streams[i]->codec->codec_type == type &&
+                    !(nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC)) &&
+                    index-- == 0)
+                    return i == st->index;
             return 0;
         }
         return 1;

@@ -159,11 +159,11 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         av_log(avctx, AV_LOG_ERROR, "Failed to set dimensions\n");
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && bit_rate) {
-        avctx->rc_max_rate = 400*bit_rate;
+        avctx->rc_max_rate = 400LL*bit_rate;
     }
     if (bit_rate &&
         ((avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && bit_rate != 0x3FFFF) || vbv_delay != 0xFFFF)) {
-        avctx->bit_rate = 400*bit_rate;
+        avctx->bit_rate = 400LL*bit_rate;
     }
 
     if (pix_fmt != AV_PIX_FMT_NONE) {

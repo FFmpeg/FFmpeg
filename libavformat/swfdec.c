@@ -72,7 +72,8 @@ static int swf_probe(AVProbeData *p)
         && p->buf[3] <= 20)
         return AVPROBE_SCORE_MAX / 4 + 1;
 
-    init_get_bits8(&gb, p->buf + 3, p->buf_size - 3);
+    if (init_get_bits8(&gb, p->buf + 3, p->buf_size - 3) < 0)
+        return 0;
 
     skip_bits(&gb, 40);
     len = get_bits(&gb, 5);

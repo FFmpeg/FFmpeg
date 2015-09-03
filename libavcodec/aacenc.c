@@ -196,37 +196,6 @@ static void adjust_frame_information(ChannelElement *cpe, int chans)
 {
     int i, w, w2, g, ch;
     int maxsfb, cmaxsfb;
-    IndividualChannelStream *ics;
-
-    if (cpe->common_window) {
-        ics = &cpe->ch[0].ics;
-        for (w = 0; w < ics->num_windows; w += ics->group_len[w]) {
-            for (w2 =  0; w2 < ics->group_len[w]; w2++) {
-                int start = (w+w2) * 128;
-                for (g = 0; g < ics->num_swb; g++) {
-                    //apply Intensity stereo coeffs transformation
-                    if (cpe->is_mask[w*16 + g]) {
-                        int p = -1 + 2 * (cpe->ch[1].band_type[w*16+g] - 14);
-                        float scale = cpe->ch[0].is_ener[w*16+g];
-                        for (i = 0; i < ics->swb_sizes[g]; i++) {
-                            cpe->ch[0].coeffs[start+i] = (cpe->ch[0].coeffs[start+i] + p*cpe->ch[1].coeffs[start+i]) * scale;
-                            cpe->ch[1].coeffs[start+i] = 0.0f;
-                        }
-                    } else if (cpe->ms_mask[w*16 + g] &&
-                               cpe->ch[0].band_type[w*16 + g] < NOISE_BT &&
-                               cpe->ch[1].band_type[w*16 + g] < NOISE_BT) {
-                        for (i = 0; i < ics->swb_sizes[g]; i++) {
-                            float L = (cpe->ch[0].coeffs[start+i] + cpe->ch[1].coeffs[start+i]) * 0.5f;
-                            float R = L - cpe->ch[1].coeffs[start+i];
-                            cpe->ch[0].coeffs[start+i] = L;
-                            cpe->ch[1].coeffs[start+i] = R;
-                        }
-                    }
-                    start += ics->swb_sizes[g];
-                }
-            }
-        }
-    }
 
     for (ch = 0; ch < chans; ch++) {
         IndividualChannelStream *ics = &cpe->ch[ch].ics;
@@ -273,12 +242,68 @@ static void adjust_frame_information(ChannelElement *cpe, int chans)
     }
 }
 
+static void apply_intensity_stereo(ChannelElement *cpe)
+{
+    int w, w2, g, i;
+    IndividualChannelStream *ics = &cpe->ch[0].ics;
+    if (!cpe->common_window)
+        return;
+    for (w = 0; w < ics->num_windows; w += ics->group_len[w]) {
+        for (w2 =  0; w2 < ics->group_len[w]; w2++) {
+            int start = (w+w2) * 128;
+            for (g = 0; g < ics->num_swb; g++) {
+                int p  = -1 + 2 * (cpe->ch[1].band_type[w*16+g] - 14);
+                float scale = cpe->ch[0].is_ener[w*16+g];
+                if (!cpe->is_mask[w*16 + g]) {
+                    start += ics->swb_sizes[g];
+                    continue;
+                }
+                for (i = 0; i < ics->swb_sizes[g]; i++) {
+                    float sum = (cpe->ch[0].coeffs[start+i] + p*cpe->ch[1].coeffs[start+i])*scale;
+                    cpe->ch[0].coeffs[start+i] = sum;
+                    cpe->ch[1].coeffs[start+i] = 0.0f;
+                }
+                start += ics->swb_sizes[g];
+            }
+        }
+    }
+}
+
+static void apply_mid_side_stereo(ChannelElement *cpe)
+{
+    int w, w2, g, i;
+    IndividualChannelStream *ics = &cpe->ch[0].ics;
+    if (!cpe->common_window)
+        return;
+    for (w = 0; w < ics->num_windows; w += ics->group_len[w]) {
+        for (w2 =  0; w2 < ics->group_len[w]; w2++) {
+            int start = (w+w2) * 128;
+            for (g = 0; g < ics->num_swb; g++) {
+                if (!cpe->ms_mask[w*16 + g]) {
+                    start += ics->swb_sizes[g];
+                    continue;
+                }
+                for (i = 0; i < ics->swb_sizes[g]; i++) {
+                    float L = (cpe->ch[0].coeffs[start+i] + cpe->ch[1].coeffs[start+i]) * 0.5f;
+                    float R = L - cpe->ch[1].coeffs[start+i];
+                    cpe->ch[0].coeffs[start+i] = L;
+                    cpe->ch[1].coeffs[start+i] = R;
+                }
+                start += ics->swb_sizes[g];
+            }
+        }
+    }
+}
+
 /**
  * Encode scalefactor band coding type.
  */
 static void encode_band_info(AACEncContext *s, SingleChannelElement *sce)
 {
     int w;
+
+    if (s->coder->set_special_band_scalefactors)
+        s->coder->set_special_band_scalefactors(s, sce);
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w])
         s->coder->encode_window_bands_info(s, sce, w, sce->ics.group_len[w], s->lambda);
@@ -464,7 +489,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     float **samples = s->planar_samples, *samples2, *la, *overlap;
     ChannelElement *cpe;
     SingleChannelElement *sce;
-    int i, ch, w, g, chans, tag, start_ch, ret;
+    int i, ch, w, chans, tag, start_ch, ret;
     int ms_mode = 0, is_mode = 0, tns_mode = 0, pred_mode = 0;
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
@@ -603,7 +628,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     }
                 }
             }
-            for (ch = 0; ch < chans; ch++) {
+            for (ch = 0; ch < chans; ch++) { /* TNS and PNS */
                 sce = &cpe->ch[ch];
                 s->cur_channel = start_ch + ch;
                 if (s->options.pns && s->coder->search_for_pns)
@@ -616,40 +641,40 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     tns_mode = 1;
             }
             s->cur_channel = start_ch;
-            if (s->options.stereo_mode && cpe->common_window) {
-                if (s->options.stereo_mode > 0) {
-                    IndividualChannelStream *ics = &cpe->ch[0].ics;
-                    for (w = 0; w < ics->num_windows; w += ics->group_len[w])
-                        for (g = 0;  g < ics->num_swb; g++)
-                            cpe->ms_mask[w*16+g] = 1;
-                } else if (s->coder->search_for_ms) {
-                    s->coder->search_for_ms(s, cpe);
-                }
-            }
-            if (s->options.intensity_stereo && s->coder->search_for_is) {
-                s->coder->search_for_is(s, avctx, cpe);
+            if (s->options.intensity_stereo) { /* Intensity Stereo */
+                if (s->coder->search_for_is)
+                    s->coder->search_for_is(s, avctx, cpe);
                 if (cpe->is_mode) is_mode = 1;
+                apply_intensity_stereo(cpe);
             }
-            if (s->coder->set_special_band_scalefactors)
-                for (ch = 0; ch < chans; ch++)
-                    s->coder->set_special_band_scalefactors(s, &cpe->ch[ch]);
+            if (s->options.pred) { /* Prediction */
+                for (ch = 0; ch < chans; ch++) {
+                    sce = &cpe->ch[ch];
+                    s->cur_channel = start_ch + ch;
+                    if (s->options.pred && s->coder->search_for_pred)
+                        s->coder->search_for_pred(s, sce);
+                    if (cpe->ch[ch].ics.predictor_present) pred_mode = 1;
+                }
+                if (s->coder->adjust_common_prediction)
+                    s->coder->adjust_common_prediction(s, cpe);
+                for (ch = 0; ch < chans; ch++) {
+                    sce = &cpe->ch[ch];
+                    s->cur_channel = start_ch + ch;
+                    if (s->options.pred && s->coder->apply_main_pred)
+                        s->coder->apply_main_pred(s, sce);
+                }
+                s->cur_channel = start_ch;
+            }
+            if (s->options.stereo_mode) { /* Mid/Side stereo */
+                if (s->options.stereo_mode == -1 && s->coder->search_for_ms)
+                    s->coder->search_for_ms(s, cpe);
+                else if (cpe->common_window)
+                    memset(cpe->ms_mask, 1, sizeof(cpe->ms_mask));
+                for (w = 0; w < 128; w++)
+                    cpe->ms_mask[w] = cpe->is_mask[w] ? 0 : cpe->ms_mask[w];
+                apply_mid_side_stereo(cpe);
+            }
             adjust_frame_information(cpe, chans);
-            for (ch = 0; ch < chans; ch++) {
-                sce = &cpe->ch[ch];
-                s->cur_channel = start_ch + ch;
-                if (s->options.pred && s->coder->search_for_pred)
-                    s->coder->search_for_pred(s, sce);
-                if (cpe->ch[ch].ics.predictor_present) pred_mode = 1;
-            }
-            if (s->options.pred && s->coder->adjust_common_prediction)
-                s->coder->adjust_common_prediction(s, cpe);
-            for (ch = 0; ch < chans; ch++) {
-                sce = &cpe->ch[ch];
-                s->cur_channel = start_ch + ch;
-                if (s->options.pred && s->coder->apply_main_pred)
-                    s->coder->apply_main_pred(s, sce);
-            }
-            s->cur_channel = start_ch;
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);
                 if (cpe->common_window) {

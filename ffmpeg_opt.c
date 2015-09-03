@@ -3085,8 +3085,8 @@ const OptionDef options[] = {
                         OPT_INPUT,                                   { .off = OFFSET(rate_emu) },
         "read input at native frame rate", "" },
     { "target",         HAS_ARG | OPT_PERFILE | OPT_OUTPUT,          { .func_arg = opt_target },
-        "specify target file type (\"vcd\", \"svcd\", \"dvd\","
-        " \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
+        "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" "
+        "with optional prefixes \"pal-\", \"ntsc-\" or \"film-\")", "type" },
     { "vsync",          HAS_ARG | OPT_EXPERT,                        { opt_vsync },
         "video sync method", "" },
     { "frame_drop_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT,      { &frame_drop_threshold },

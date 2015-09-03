@@ -107,7 +107,7 @@ typedef struct MpegEncContext {
     int width, height;///< picture size. must be a multiple of 16
     int gop_size;
     int intra_only;   ///< if true, only intra pictures are generated
-    int bit_rate;     ///< wanted bit rate
+    int64_t bit_rate; ///< wanted bit rate
     enum OutputFormat out_format; ///< output format
     int h263_pred;    ///< use mpeg4/h263 ac/dc predictions
     int pb_frame;     ///< PB frame mode (0 = none, 1 = base, 2 = improved)

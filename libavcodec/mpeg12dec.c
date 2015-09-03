@@ -1490,7 +1490,7 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     s->width  |= (horiz_size_ext << 12);
     s->height |= (vert_size_ext  << 12);
     bit_rate_ext = get_bits(&s->gb, 12);  /* XXX: handle it */
-    s->bit_rate += (bit_rate_ext << 18) * 400;
+    s->bit_rate += (bit_rate_ext << 18) * 400LL;
     check_marker(&s->gb, "after bit rate extension");
     s->avctx->rc_buffer_size += get_bits(&s->gb, 8) * 1024 * 16 << 10;
 
@@ -1506,7 +1506,7 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG,
-               "profile: %d, level: %d ps: %d cf:%d vbv buffer: %d, bitrate:%d\n",
+               "profile: %d, level: %d ps: %d cf:%d vbv buffer: %d, bitrate:%"PRId64"\n",
                s->avctx->profile, s->avctx->level, s->progressive_sequence, s->chroma_format,
                s->avctx->rc_buffer_size, s->bit_rate);
 }
@@ -2175,7 +2175,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
                "frame_rate_index %d is invalid\n", s->frame_rate_index);
         s->frame_rate_index = 1;
     }
-    s->bit_rate = get_bits(&s->gb, 18) * 400;
+    s->bit_rate = get_bits(&s->gb, 18) * 400LL;
     if (check_marker(&s->gb, "in sequence header") == 0) {
         return AVERROR_INVALIDDATA;
     }
@@ -2228,7 +2228,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         s->low_delay = 1;
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_DEBUG, "vbv buffer: %d, bitrate:%d, aspect_ratio_info: %d \n",
+        av_log(s->avctx, AV_LOG_DEBUG, "vbv buffer: %d, bitrate:%"PRId64", aspect_ratio_info: %d \n",
                s->avctx->rc_buffer_size, s->bit_rate, s->aspect_ratio_info);
 
     return 0;

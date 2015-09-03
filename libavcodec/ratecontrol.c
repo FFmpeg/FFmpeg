@@ -890,7 +890,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     if (s->avctx->debug & FF_DEBUG_RC) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f "
-               "size:%d var:%"PRId64"/%"PRId64" br:%d fps:%d\n",
+               "size:%d var:%"PRId64"/%"PRId64" br:%"PRId64" fps:%d\n",
                av_get_picture_type_char(pict_type),
                qmin, q, qmax, picture_number,
                (int)wanted_bits / 1000, (int)s->total_bits / 1000,
@@ -1057,9 +1057,9 @@ static int init_pass2(MpegEncContext *s)
     }
     av_assert0(toobig <= 40);
     av_log(s->avctx, AV_LOG_DEBUG,
-           "[lavc rc] requested bitrate: %d bps  expected bitrate: %d bps\n",
+           "[lavc rc] requested bitrate: %"PRId64" bps  expected bitrate: %"PRId64" bps\n",
            s->bit_rate,
-           (int)(expected_bits / ((double)all_available_bits / s->bit_rate)));
+           (int64_t)(expected_bits / ((double)all_available_bits / s->bit_rate)));
     av_log(s->avctx, AV_LOG_DEBUG,
            "[lavc rc] estimated target average qp: %.3f\n",
            (float)qscale_sum / rcc->num_entries);
