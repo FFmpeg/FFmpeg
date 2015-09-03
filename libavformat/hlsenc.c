@@ -253,7 +253,7 @@ static int hls_mux_init(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     AVFormatContext *oc;
-    AVFormatContext *vtt_oc;
+    AVFormatContext *vtt_oc = NULL;
     int i, ret;
 
     ret = avformat_alloc_output_context2(&hls->avf, hls->oformat, NULL, NULL);
