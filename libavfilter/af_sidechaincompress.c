@@ -161,7 +161,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     for (i = 0; i < 2; i++)
         if (link == ctx->inputs[i])
             break;
-    av_assert0(!s->input_frame[i]);
+    av_assert0(i < 2 && !s->input_frame[i]);
     s->input_frame[i] = frame;
 
     if (!s->input_frame[0] || !s->input_frame[1])
