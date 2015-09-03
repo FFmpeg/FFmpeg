@@ -302,6 +302,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if (s->q.available != s->size) {
         if (s->q.available < s->mid) {
             out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+            if (!out)
+                return AVERROR(ENOMEM);
+
             for (i = 0; i < s->mid; i++)
                 ff_bufqueue_add(ctx, &s->q, av_frame_clone(out));
             av_frame_free(&out);
