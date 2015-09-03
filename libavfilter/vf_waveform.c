@@ -588,7 +588,7 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
 
         if (mirror) {
             d0_data += s->size - 1;
-            d1_data += s->size;
+            d1_data += s->size - 1;
         }
 
         for (y = 0; y < src_h; y++) {
@@ -607,7 +607,7 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
 
                 for (p = c0 - c1; p < c0 + c1; p++) {
                     if (mirror)
-                        target = d1_data - p - 1;
+                        target = d1_data - p;
                     else
                         target = d1_data + p;
 
