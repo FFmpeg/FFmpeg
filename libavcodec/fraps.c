@@ -105,7 +105,9 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     s->bdsp.bswap_buf((uint32_t *) s->tmpbuf,
                       (const uint32_t *) src, size >> 2);
 
-    init_get_bits(&gb, s->tmpbuf, size * 8);
+    if ((ret = init_get_bits8(&gb, s->tmpbuf, size)) < 0)
+        return ret;
+
     for (j = 0; j < h; j++) {
         for (i = 0; i < w*step; i += step) {
             dst[i] = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
