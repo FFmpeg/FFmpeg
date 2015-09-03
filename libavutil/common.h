@@ -58,6 +58,12 @@
                                                        : ((a) + (1<<(b)) - 1) >> (b))
 #define FFUDIV(a,b) (((a)>0 ?(a):(a)-(b)+1) / (b))
 #define FFUMOD(a,b) ((a)-(b)*FFUDIV(a,b))
+
+/**
+ * Absolute value, Note, INT_MIN / INT64_MIN result in undefined behavior as they
+ * are not representable as absolute values of their type. This is the same
+ * as with *abs()
+ */
 #define FFABS(a) ((a) >= 0 ? (a) : (-(a)))
 #define FFSIGN(a) ((a) > 0 ? 1 : -1)
 
