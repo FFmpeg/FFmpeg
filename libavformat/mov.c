@@ -2297,7 +2297,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_dlog(c->fc, "count=%d, duration=%d\n",
                 count, duration);
 
-        if (FFABS(duration) > (1<<28) && i+2<entries) {
+        if (FFNABS(duration) < -(1<<28) && i+2<entries) {
             av_log(c->fc, AV_LOG_WARNING, "CTTS invalid\n");
             av_freep(&sc->ctts_data);
             sc->ctts_count = 0;
