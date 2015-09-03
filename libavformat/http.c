@@ -399,7 +399,7 @@ static int http_handshake(URLContext *c)
     switch (ch->handshake_step) {
     case LOWER_PROTO:
         av_log(c, AV_LOG_TRACE, "Lower protocol\n");
-        if ((ret = ffurl_handshake(cl) > 0))
+        if ((ret = ffurl_handshake(cl)) > 0)
             return 2 + ret;
         if ((ret < 0))
             return ret;
