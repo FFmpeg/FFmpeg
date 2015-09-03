@@ -777,18 +777,13 @@ static int decode_frame_header(AVCodecContext *ctx,
                 s->segmentation.feat[i].skip_enabled = get_bits1(&s->gb);
             }
         }
-    } else {
-        s->segmentation.feat[0].q_enabled    = 0;
-        s->segmentation.feat[0].lf_enabled   = 0;
-        s->segmentation.feat[0].skip_enabled = 0;
-        s->segmentation.feat[0].ref_enabled  = 0;
     }
 
     // set qmul[] based on Y/UV, AC/DC and segmentation Q idx deltas
     for (i = 0; i < (s->segmentation.enabled ? 8 : 1); i++) {
         int qyac, qydc, quvac, quvdc, lflvl, sh;
 
-        if (s->segmentation.feat[i].q_enabled) {
+        if (s->segmentation.enabled && s->segmentation.feat[i].q_enabled) {
             if (s->segmentation.absolute_vals)
                 qyac = av_clip_uintp2(s->segmentation.feat[i].q_val, 8);
             else
@@ -807,7 +802,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         s->segmentation.feat[i].qmul[1][1] = vp9_ac_qlookup[s->bpp_index][quvac];
 
         sh = s->filter.level >= 32;
-        if (s->segmentation.feat[i].lf_enabled) {
+        if (s->segmentation.enabled && s->segmentation.feat[i].lf_enabled) {
             if (s->segmentation.absolute_vals)
                 lflvl = av_clip_uintp2(s->segmentation.feat[i].lf_val, 6);
             else
@@ -1537,7 +1532,7 @@ static void decode_mode(AVCodecContext *ctx)
 
     if (s->keyframe || s->intraonly) {
         b->intra = 1;
-    } else if (s->segmentation.feat[b->seg_id].ref_enabled) {
+    } else if (s->segmentation.enabled && s->segmentation.feat[b->seg_id].ref_enabled) {
         b->intra = !s->segmentation.feat[b->seg_id].ref_val;
     } else {
         int c, bit;
@@ -1702,7 +1697,7 @@ static void decode_mode(AVCodecContext *ctx)
             { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 3, 3, 4 },
         };
 
-        if (s->segmentation.feat[b->seg_id].ref_enabled) {
+        if (s->segmentation.enabled && s->segmentation.feat[b->seg_id].ref_enabled) {
             av_assert2(s->segmentation.feat[b->seg_id].ref_val != 0);
             b->comp = 0;
             b->ref[0] = s->segmentation.feat[b->seg_id].ref_val - 1;
@@ -1947,7 +1942,7 @@ static void decode_mode(AVCodecContext *ctx)
         }
 
         if (b->bs <= BS_8x8) {
-            if (s->segmentation.feat[b->seg_id].skip_enabled) {
+            if (s->segmentation.enabled && s->segmentation.feat[b->seg_id].skip_enabled) {
                 b->mode[0] = b->mode[1] = b->mode[2] = b->mode[3] = ZEROMV;
             } else {
                 static const uint8_t off[10] = {
