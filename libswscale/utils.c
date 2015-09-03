@@ -1039,10 +1039,10 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         }
     }
 
-    c->srcBpc = 1 + desc_src->comp[0].depth_minus1;
+    c->srcBpc = desc_src->comp[0].depth;
     if (c->srcBpc < 8)
         c->srcBpc = 8;
-    c->dstBpc = 1 + desc_dst->comp[0].depth_minus1;
+    c->dstBpc = desc_dst->comp[0].depth;
     if (c->dstBpc < 8)
         c->dstBpc = 8;
     if (c->dstBpc == 16)

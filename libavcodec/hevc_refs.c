@@ -198,7 +198,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             if (!desc)
                 return AVERROR_BUG;
 
-            pixel_shift = desc->comp[0].depth_minus1 > 7;
+            pixel_shift = desc->comp[0].depth > 8;
 
             ret = av_frame_ref(out, frame->frame);
             ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT);

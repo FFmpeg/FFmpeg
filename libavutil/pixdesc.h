@@ -34,16 +34,16 @@ typedef struct AVComponentDescriptor {
     int plane;
 
     /**
-     * Number of elements between 2 horizontally consecutive pixels minus 1.
+     * Number of elements between 2 horizontally consecutive pixels.
      * Elements are bits for bitstream formats, bytes otherwise.
      */
-    int step_minus1;
+    int step;
 
     /**
-     * Number of elements before the component of the first pixel plus 1.
+     * Number of elements before the component of the first pixel.
      * Elements are bits for bitstream formats, bytes otherwise.
      */
-    int offset_plus1;
+    int offset;
 
     /**
      * Number of least significant bits that must be shifted away
@@ -52,9 +52,20 @@ typedef struct AVComponentDescriptor {
     int shift;
 
     /**
-     * Number of bits in the component minus 1.
+     * Number of bits in the component.
      */
-    int depth_minus1;
+    int depth;
+
+#if FF_API_PLUS1_MINUS1
+    /** deprecated, use step instead */
+    attribute_deprecated int step_minus1;
+
+    /** deprecated, use depth instead */
+    attribute_deprecated int depth_minus1;
+
+    /** deprecated, use offset instead */
+    attribute_deprecated int offset_plus1;
+#endif
 } AVComponentDescriptor;
 
 /**

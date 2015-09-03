@@ -40,8 +40,8 @@ void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
 
     for (i = 0; i < 4; i++) {
         const AVComponentDescriptor *comp = &(pixdesc->comp[i]);
-        if ((comp->step_minus1+1) > max_pixsteps[comp->plane]) {
-            max_pixsteps[comp->plane] = comp->step_minus1+1;
+        if (comp->step > max_pixsteps[comp->plane]) {
+            max_pixsteps[comp->plane] = comp->step;
             if (max_pixstep_comps)
                 max_pixstep_comps[comp->plane] = i;
         }
@@ -59,7 +59,7 @@ int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane)
         return AVERROR(EINVAL);
 
     if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM)
-        return (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
+        return (width * desc->comp[0].step + 7) >> 3;
 
     av_image_fill_max_pixsteps(max_step, max_step_comp, desc);
     s = (max_step_comp[plane] == 1 || max_step_comp[plane] == 2) ? desc->log2_chroma_w : 0;
@@ -79,9 +79,9 @@ int av_image_fill_linesizes(int linesizes[4], enum AVPixelFormat pix_fmt, int wi
         return AVERROR(EINVAL);
 
     if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM) {
-        if (width > (INT_MAX -7) / (desc->comp[0].step_minus1+1))
+        if (width > (INT_MAX - 7) / desc->comp[0].step)
             return AVERROR(EINVAL);
-        linesizes[0] = (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
+        linesizes[0] = (width * desc->comp[0].step + 7) >> 3;
         return 0;
     }
 

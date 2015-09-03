@@ -67,7 +67,7 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
         return 0;
 
     for (i = 0; i < nb_components; i++)
-        if (src_desc->comp[i].depth_minus1 > dst_desc->comp[i].depth_minus1)
+        if (src_desc->comp[i].depth > dst_desc->comp[i].depth)
             loss |= FF_LOSS_DEPTH;
 
     if (dst_desc->log2_chroma_w > src_desc->log2_chroma_w ||

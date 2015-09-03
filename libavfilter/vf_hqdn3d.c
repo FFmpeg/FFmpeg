@@ -269,7 +269,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->hsub  = desc->log2_chroma_w;
     s->vsub  = desc->log2_chroma_h;
-    s->depth = desc->comp[0].depth_minus1+1;
+    s->depth = desc->comp[0].depth;
 
     s->line = av_malloc(inlink->w * sizeof(*s->line));
     if (!s->line)

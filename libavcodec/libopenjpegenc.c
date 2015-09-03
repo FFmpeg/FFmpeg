@@ -131,8 +131,8 @@ static opj_image_t *libopenjpeg_create_image(AVCodecContext *avctx,
     }
 
     for (i = 0; i < numcomps; i++) {
-        cmptparm[i].prec = desc->comp[i].depth_minus1 + 1;
-        cmptparm[i].bpp  = desc->comp[i].depth_minus1 + 1;
+        cmptparm[i].prec = desc->comp[i].depth;
+        cmptparm[i].bpp  = desc->comp[i].depth;
         cmptparm[i].sgnd = 0;
         cmptparm[i].dx   = sub_dx[i];
         cmptparm[i].dy   = sub_dy[i];

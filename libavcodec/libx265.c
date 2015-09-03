@@ -78,7 +78,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
 
-    ctx->api = x265_api_get(av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth_minus1 + 1);
+    ctx->api = x265_api_get(av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth);
     if (!ctx->api)
         ctx->api = x265_api_get(0);
 
@@ -261,7 +261,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
 
         x265pic.pts      = pic->pts;
-        x265pic.bitDepth = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth_minus1 + 1;
+        x265pic.bitDepth = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth;
 
         x265pic.sliceType = pic->pict_type == AV_PICTURE_TYPE_I ? X265_TYPE_I :
                             pic->pict_type == AV_PICTURE_TYPE_P ? X265_TYPE_P :

@@ -816,15 +816,15 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
             if (is9_OR_10BPS(c->dstFormat)) {
                 fill_plane9or10(dst[plane], dstStride[plane],
                                 length, height, y, val,
-                                desc_dst->comp[plane].depth_minus1 + 1,
+                                desc_dst->comp[plane].depth,
                                 isBE(c->dstFormat));
             } else
                 fillPlane(dst[plane], dstStride[plane], length, height, y,
                           val);
         } else {
             if (is9_OR_10BPS(c->srcFormat)) {
-                const int src_depth = desc_src->comp[plane].depth_minus1 + 1;
-                const int dst_depth = desc_dst->comp[plane].depth_minus1 + 1;
+                const int src_depth = desc_src->comp[plane].depth;
+                const int dst_depth = desc_dst->comp[plane].depth;
                 const uint16_t *srcPtr2 = (const uint16_t *) srcPtr;
 
                 if (is16BPS(c->dstFormat)) {
@@ -915,7 +915,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                     }
                 }
             } else if (is9_OR_10BPS(c->dstFormat)) {
-                const int dst_depth = desc_dst->comp[plane].depth_minus1 + 1;
+                const int dst_depth = desc_dst->comp[plane].depth;
                 uint16_t *dstPtr2 = (uint16_t *) dstPtr;
 
                 if (is16BPS(c->srcFormat)) {
@@ -1006,7 +1006,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
             } else {
                 if (is16BPS(c->srcFormat) && is16BPS(c->dstFormat))
                     length *= 2;
-                else if (!desc_src->comp[0].depth_minus1)
+                else if (desc_src->comp[0].depth == 1)
                     length >>= 3; // monowhite/black
                 for (i = 0; i < height; i++) {
                     memcpy(dstPtr, srcPtr, length);
@@ -1087,7 +1087,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
     if (srcFormat == AV_PIX_FMT_GBRP && isPlanar(srcFormat) && isByteRGB(dstFormat))
         c->swscale = planarRgbToRgbWrapper;
 
-    if (av_pix_fmt_desc_get(srcFormat)->comp[0].depth_minus1 == 7 &&
+    if (av_pix_fmt_desc_get(srcFormat)->comp[0].depth == 8 &&
         isPackedRGB(srcFormat) && dstFormat == AV_PIX_FMT_GBRP)
         c->swscale = rgbToPlanarRgbWrapper;
 
