@@ -40,6 +40,7 @@ version <next>:
 - VDPAU hevc hwaccel
 - framerate filter
 - Switched default encoders for webm to VP9 and Opus
+- Removed experimental flag from the JPEG 2000 encoder
 
 
 version 2.7:
