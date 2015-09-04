@@ -203,6 +203,11 @@ static int push_single_pic(AVFilterLink *outlink)
     int col = 0;
     int64_t *sum = showwaves->sum;
 
+    if (max_samples == 0) {
+        av_log(ctx, AV_LOG_ERROR, "Too few samples\n");
+        return AVERROR(EINVAL);
+    }
+
     av_log(ctx, AV_LOG_DEBUG, "Create frame averaging %"PRId64" samples per column\n", max_samples);
 
     memset(sum, 0, nb_channels);

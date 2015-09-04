@@ -4496,6 +4496,9 @@ Replace old columns with new ones.
 
 @item scroll
 Scroll from right to left.
+
+@item rscroll
+Scroll from left to right.
 @end table
 
 Default is @code{frame}.
@@ -5279,6 +5282,10 @@ computation time. Default value is 1.
 Set a random seed, must be an integer included between 0 and
 UINT32_MAX. If not specified, or if explicitly set to -1, the filter
 will try to use a good random seed on a best effort basis.
+
+@item pal8
+Set pal8 output pixel format. This option does not work with codebook
+length greater than 256.
 @end table
 
 @section fade
@@ -5476,8 +5483,9 @@ which @code{fieldmatch} is based on. While the semantic and usage are very
 close, some behaviour and options names can differ.
 
 The @ref{decimate} filter currently only works for constant frame rate input.
-Do not use @code{fieldmatch} and @ref{decimate} if your input has mixed
-telecined and progressive content with changing framerate.
+If your input has mixed telecined (30fps) and progressive content with a lower
+framerate like 24fps use the following filterchain to produce the necessary cfr
+stream: @code{dejudder,fps=30000/1001,fieldmatch,decimate}.
 
 The filter accepts the following options:
 

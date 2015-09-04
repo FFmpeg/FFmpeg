@@ -843,12 +843,38 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
     }
 }
 
+static void quantize_and_encode_band_cost_NONE_mips(struct AACEncContext *s,
+                                                         PutBitContext *pb, const float *in, float *out,
+                                                         const float *scaled, int size, int scale_idx,
+                                                         int cb, const float lambda, const float uplim,
+                                                         int *bits, const float ROUNDING) {
+    av_assert0(0);
+}
+
+static void quantize_and_encode_band_cost_ZERO_mips(struct AACEncContext *s,
+                                                         PutBitContext *pb, const float *in, float *out,
+                                                         const float *scaled, int size, int scale_idx,
+                                                         int cb, const float lambda, const float uplim,
+                                                         int *bits, const float ROUNDING) {
+    int i;
+    if (bits)
+        *bits = 0;
+    if (out) {
+        for (i = 0; i < size; i += 4) {
+           out[i  ] = 0.0f;
+           out[i+1] = 0.0f;
+           out[i+2] = 0.0f;
+           out[i+3] = 0.0f;
+        }
+    }
+}
+
 static void (*const quantize_and_encode_band_cost_arr[])(struct AACEncContext *s,
                                                          PutBitContext *pb, const float *in, float *out,
                                                          const float *scaled, int size, int scale_idx,
                                                          int cb, const float lambda, const float uplim,
                                                          int *bits, const float ROUNDING) = {
-    NULL,
+    quantize_and_encode_band_cost_ZERO_mips,
     quantize_and_encode_band_cost_SQUAD_mips,
     quantize_and_encode_band_cost_SQUAD_mips,
     quantize_and_encode_band_cost_UQUAD_mips,
@@ -860,6 +886,10 @@ static void (*const quantize_and_encode_band_cost_arr[])(struct AACEncContext *s
     quantize_and_encode_band_cost_UPAIR12_mips,
     quantize_and_encode_band_cost_UPAIR12_mips,
     quantize_and_encode_band_cost_ESC_mips,
+    quantize_and_encode_band_cost_NONE_mips, /* cb 12 doesn't exist */
+    quantize_and_encode_band_cost_ZERO_mips,
+    quantize_and_encode_band_cost_ZERO_mips,
+    quantize_and_encode_band_cost_ZERO_mips,
 };
 
 #define quantize_and_encode_band_cost(                                       \
@@ -886,6 +916,16 @@ static float get_band_numbits_ZERO_mips(struct AACEncContext *s,
                                         int cb, const float lambda, const float uplim,
                                         int *bits)
 {
+    return 0;
+}
+
+static float get_band_numbits_NONE_mips(struct AACEncContext *s,
+                                        PutBitContext *pb, const float *in,
+                                        const float *scaled, int size, int scale_idx,
+                                        int cb, const float lambda, const float uplim,
+                                        int *bits)
+{
+    av_assert0(0);
     return 0;
 }
 
@@ -1328,6 +1368,10 @@ static float (*const get_band_numbits_arr[])(struct AACEncContext *s,
     get_band_numbits_UPAIR12_mips,
     get_band_numbits_UPAIR12_mips,
     get_band_numbits_ESC_mips,
+    get_band_numbits_NONE_mips, /* cb 12 doesn't exist */
+    get_band_numbits_ZERO_mips,
+    get_band_numbits_ZERO_mips,
+    get_band_numbits_ZERO_mips,
 };
 
 #define get_band_numbits(                                  \
@@ -1367,6 +1411,16 @@ static float get_band_cost_ZERO_mips(struct AACEncContext *s,
     if (bits)
         *bits = 0;
     return cost * lambda;
+}
+
+static float get_band_cost_NONE_mips(struct AACEncContext *s,
+                                     PutBitContext *pb, const float *in,
+                                     const float *scaled, int size, int scale_idx,
+                                     int cb, const float lambda, const float uplim,
+                                     int *bits)
+{
+    av_assert0(0);
+    return 0;
 }
 
 static float get_band_cost_SQUAD_mips(struct AACEncContext *s,
@@ -2119,6 +2173,10 @@ static float (*const get_band_cost_arr[])(struct AACEncContext *s,
     get_band_cost_UPAIR12_mips,
     get_band_cost_UPAIR12_mips,
     get_band_cost_ESC_mips,
+    get_band_cost_NONE_mips, /* cb 12 doesn't exist */
+    get_band_cost_ZERO_mips,
+    get_band_cost_ZERO_mips,
+    get_band_cost_ZERO_mips,
 };
 
 #define get_band_cost(                                  \
