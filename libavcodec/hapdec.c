@@ -61,7 +61,7 @@ static int parse_section_header(GetByteContext *gbc, int *section_size,
         *section_size = bytestream2_get_le32(gbc);
     }
 
-    if (*section_size > bytestream2_get_bytes_left(gbc))
+    if (*section_size > bytestream2_get_bytes_left(gbc) || *section_size < 0)
         return AVERROR_INVALIDDATA;
     else
         return 0;
