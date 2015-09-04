@@ -40,6 +40,7 @@ typedef struct VectorscopeContext {
     const AVClass *class;
     int mode;
     int intensity;
+    float fintensity;
     const uint8_t *bg_color;
     int planewidth[4];
     int planeheight[4];
@@ -63,8 +64,8 @@ static const AVOption vectorscope_options[] = {
     {   "color4", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR4}, 0, 0, FLAGS, "mode" },
     { "x", "set color component on X axis", OFFSET(x), AV_OPT_TYPE_INT, {.i64=1}, 0, 2, FLAGS},
     { "y", "set color component on Y axis", OFFSET(y), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS},
-    { "intensity", "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=1}, 1, 255, FLAGS},
-    { "i",         "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=1}, 1, 255, FLAGS},
+    { "intensity", "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.004}, 0, 1, FLAGS},
+    { "i",         "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.004}, 0, 1, FLAGS},
     { "envelope",  "set envelope", OFFSET(envelope), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS, "envelope"},
     { "e",         "set envelope", OFFSET(envelope), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS, "envelope"},
     {   "none",         0, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "envelope" },
@@ -187,7 +188,9 @@ static int config_output(AVFilterLink *outlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     const int depth = desc->comp[0].depth_minus1 + 1;
+    VectorscopeContext *s = outlink->src->priv;
 
+    s->intensity = s->fintensity * ((1 << depth) - 1);
     outlink->h = outlink->w = 1 << depth;
     outlink->sample_aspect_ratio = (AVRational){1,1};
     return 0;
