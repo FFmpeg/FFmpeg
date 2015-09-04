@@ -3353,9 +3353,9 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
 
             av_assert2(n <= 4);
             if (w & bw) {
-                s->dsp.mc[n][0][0][0][0](f->data[0] + yoff + o, f->linesize[0],
-                                         s->tmp_y + o, 128, h, 0, 0);
-                o += bw * bytesperpixel;
+                s->dsp.mc[n][0][0][0][0](f->data[0] + yoff + o * bytesperpixel, f->linesize[0],
+                                         s->tmp_y + o * bytesperpixel, 128, h, 0, 0);
+                o += bw;
             }
         }
     }
@@ -3368,11 +3368,11 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
 
             av_assert2(n <= 4);
             if (w & bw) {
-                s->dsp.mc[n][0][0][0][0](f->data[1] + uvoff + o, f->linesize[1],
-                                         s->tmp_uv[0] + o, 128, h, 0, 0);
-                s->dsp.mc[n][0][0][0][0](f->data[2] + uvoff + o, f->linesize[2],
-                                         s->tmp_uv[1] + o, 128, h, 0, 0);
-                o += bw * bytesperpixel;
+                s->dsp.mc[n][0][0][0][0](f->data[1] + uvoff + o * bytesperpixel, f->linesize[1],
+                                         s->tmp_uv[0] + o * bytesperpixel, 128, h, 0, 0);
+                s->dsp.mc[n][0][0][0][0](f->data[2] + uvoff + o * bytesperpixel, f->linesize[2],
+                                         s->tmp_uv[1] + o * bytesperpixel, 128, h, 0, 0);
+                o += bw;
             }
         }
     }
