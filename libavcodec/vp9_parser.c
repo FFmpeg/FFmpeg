@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/get_bits.h"
 #include "parser.h"
 
 typedef struct VP9ParseContext {
@@ -30,11 +31,28 @@ typedef struct VP9ParseContext {
     int64_t pts;
 } VP9ParseContext;
 
-static void parse_frame(AVCodecParserContext *ctx, const uint8_t *buf, int size)
+static int parse_frame(AVCodecParserContext *ctx, const uint8_t *buf, int size)
 {
     VP9ParseContext *s = ctx->priv_data;
+    GetBitContext gb;
+    int res, profile, keyframe, invisible;
 
-    if (buf[0] & 0x4) {
+    if ((res = init_get_bits8(&gb, buf, size)) < 0)
+        return res;
+    get_bits(&gb, 2); // frame marker
+    profile  = get_bits1(&gb);
+    profile |= get_bits1(&gb) << 1;
+    if (profile == 3) profile += get_bits1(&gb);
+
+    if (get_bits1(&gb)) {
+        keyframe = 0;
+        invisible = 0;
+    } else {
+        keyframe  = !get_bits1(&gb);
+        invisible = !get_bits1(&gb);
+    }
+
+    if (!keyframe) {
         ctx->pict_type = AV_PICTURE_TYPE_P;
         ctx->key_frame = 0;
     } else {
@@ -42,7 +60,7 @@ static void parse_frame(AVCodecParserContext *ctx, const uint8_t *buf, int size)
         ctx->key_frame = 1;
     }
 
-    if (buf[0] & 0x2) {
+    if (!invisible) {
         if (ctx->pts == AV_NOPTS_VALUE)
             ctx->pts = s->pts;
         s->pts = AV_NOPTS_VALUE;
@@ -50,6 +68,8 @@ static void parse_frame(AVCodecParserContext *ctx, const uint8_t *buf, int size)
         s->pts = ctx->pts;
         ctx->pts = AV_NOPTS_VALUE;
     }
+
+    return 0;
 }
 
 static int parse(AVCodecParserContext *ctx,
