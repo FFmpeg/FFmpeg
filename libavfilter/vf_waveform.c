@@ -56,6 +56,7 @@ typedef struct WaveformContext {
     int            *peak;
     int            filter;
     int            bits;
+    int            max;
     int            size;
     void (*waveform)(struct WaveformContext *s, AVFrame *in, AVFrame *out,
                      int component, int intensity, int offset, int column);
@@ -152,8 +153,8 @@ static int query_formats(AVFilterContext *ctx)
 static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int component)
 {
     const int dst_linesize = out->linesize[component] / 2;
-    const int bg = s->bg_color[component] * (s->size / 256);
-    const int limit = s->size - 1;
+    const int bg = s->bg_color[component] * (s->max / 256);
+    const int limit = s->max - 1;
     const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
@@ -253,8 +254,8 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int co
 static void envelope_peak16(WaveformContext *s, AVFrame *out, int plane, int component)
 {
     const int dst_linesize = out->linesize[component] / 2;
-    const int bg = s->bg_color[component] * (s->size / 256);
-    const int limit = s->size - 1;
+    const int bg = s->bg_color[component] * (s->max / 256);
+    const int limit = s->max - 1;
     const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
@@ -444,7 +445,7 @@ static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int src_linesize = in->linesize[plane] / 2;
     const int dst_linesize = out->linesize[plane] / 2;
     const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
-    const int limit = s->size - 1;
+    const int limit = s->max - 1;
     const int max = limit - intensity;
     const int src_h = FF_CEIL_RSHIFT(in->height, shift_h);
     const int src_w = FF_CEIL_RSHIFT(in->width, shift_w);
@@ -985,7 +986,7 @@ static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
-    const int limit = s->size - 1;
+    const int limit = s->max - 1;
     const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0];
     const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp];
     const uint16_t *c2_data = (const uint16_t *)in->data[(plane + 2) % s->ncomp];
@@ -1172,7 +1173,8 @@ static int config_input(AVFilterLink *inlink)
     s->desc  = av_pix_fmt_desc_get(inlink->format);
     s->ncomp = s->desc->nb_components;
     s->bits = s->desc->comp[0].depth_minus1 + 1;
-    s->intensity = s->fintensity * ((1 << s->bits) - 1);
+    s->max = 1 << s->bits;
+    s->intensity = s->fintensity * (s->max - 1);
 
     switch (s->filter) {
     case LOWPASS:
