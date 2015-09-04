@@ -4335,6 +4335,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->ss_h = ssrc->ss_h;
     s->segmentation.enabled = ssrc->segmentation.enabled;
     s->segmentation.update_map = ssrc->segmentation.update_map;
+    s->segmentation.absolute_vals = ssrc->segmentation.absolute_vals;
     s->bytesperpixel = ssrc->bytesperpixel;
     s->bpp = ssrc->bpp;
     s->bpp_index = ssrc->bpp_index;
