@@ -4340,10 +4340,8 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->bpp_index = ssrc->bpp_index;
     memcpy(&s->prob_ctx, &ssrc->prob_ctx, sizeof(s->prob_ctx));
     memcpy(&s->lf_delta, &ssrc->lf_delta, sizeof(s->lf_delta));
-    if (ssrc->segmentation.enabled) {
-        memcpy(&s->segmentation.feat, &ssrc->segmentation.feat,
-               sizeof(s->segmentation.feat));
-    }
+    memcpy(&s->segmentation.feat, &ssrc->segmentation.feat,
+           sizeof(s->segmentation.feat));
 
     return 0;
 }
