@@ -268,7 +268,8 @@ int ff_init_filters(SwsContext * c)
     dstIdx = 1;
 
     if (need_lum_conv) {
-        ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+        res = ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+        if (res < 0) goto cleanup;
         c->desc[index].alpha = c->alpPixBuf != 0;
         ++index;
         srcIdx = dstIdx;
@@ -276,7 +277,8 @@ int ff_init_filters(SwsContext * c)
 
 
     dstIdx = FFMAX(num_ydesc, num_cdesc);
-    ff_init_desc_hscale(&c->desc[index], &c->slice[index], &c->slice[dstIdx], c->hLumFilter, c->hLumFilterPos, c->hLumFilterSize, c->lumXInc);
+    res = ff_init_desc_hscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hLumFilter, c->hLumFilterPos, c->hLumFilterSize, c->lumXInc);
+    if (res < 0) goto cleanup;
     c->desc[index].alpha = c->alpPixBuf != 0;
 
 
@@ -285,23 +287,26 @@ int ff_init_filters(SwsContext * c)
         srcIdx = 0;
         dstIdx = 1;
         if (need_chr_conv) {
-            ff_init_desc_cfmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+            res = ff_init_desc_cfmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+            if (res < 0) goto cleanup;
             ++index;
             srcIdx = dstIdx;
         }
 
         dstIdx = FFMAX(num_ydesc, num_cdesc);
         if (c->needs_hcscale)
-            ff_init_desc_chscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hChrFilter, c->hChrFilterPos, c->hChrFilterSize, c->chrXInc);
+            res = ff_init_desc_chscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hChrFilter, c->hChrFilterPos, c->hChrFilterSize, c->chrXInc);
         else
-            ff_init_desc_no_chr(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx]);
+            res = ff_init_desc_no_chr(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx]);
+        if (res < 0) goto cleanup;
     }
 
     ++index;
     {
         srcIdx = c->numSlice - 2;
         dstIdx = c->numSlice - 1;
-        ff_init_vscale(c, c->desc + index, c->slice + srcIdx, c->slice + dstIdx);
+        res = ff_init_vscale(c, c->desc + index, c->slice + srcIdx, c->slice + dstIdx);
+        if (res < 0) goto cleanup;
     }
 
     return 0;
