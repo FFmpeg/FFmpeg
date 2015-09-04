@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 end:
     avio_close(server);
     if (ret < 0 && ret != AVERROR_EOF) {
-        fprintf(stderr, "Some errors occured: %s\n", av_err2str(ret));
+        fprintf(stderr, "Some errors occurred: %s\n", av_err2str(ret));
         return 1;
     }
     return 0;
