@@ -225,6 +225,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
     for (;;) {
         int src_length, consumed;
+        int ret;
         buf = avpriv_find_start_code(buf, buf_end, &state);
         if (--buf + 2 >= buf_end)
             break;
@@ -242,7 +243,10 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         if (consumed < 0)
             return consumed;
 
-        init_get_bits8(gb, nal->data + 2, nal->size);
+        ret = init_get_bits8(gb, nal->data + 2, nal->size);
+        if (ret < 0)
+            return ret;
+
         switch (h->nal_unit_type) {
         case NAL_VPS:
             ff_hevc_decode_nal_vps(gb, avctx, ps);
