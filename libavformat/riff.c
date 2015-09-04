@@ -316,6 +316,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'C') },
     { AV_CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'K') },
     { AV_CODEC_ID_JPEG2000,     MKTAG('I', 'P', 'J', '2') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('A', 'V', 'j', '2') }, /* Avid jpeg2000 */
     { AV_CODEC_ID_VMNC,         MKTAG('V', 'M', 'n', 'c') },
     { AV_CODEC_ID_TARGA,        MKTAG('t', 'g', 'a', ' ') },
     { AV_CODEC_ID_PNG,          MKTAG('M', 'P', 'N', 'G') },
