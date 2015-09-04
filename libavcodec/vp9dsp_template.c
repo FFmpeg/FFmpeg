@@ -1131,8 +1131,8 @@ static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *_dst, \
 \
     stride /= sizeof(pixel); \
     if (has_dconly && eob == 1) { \
-        const int t  = (((block[0] * 11585 + (1 << 13)) >> 14) \
-                                   * 11585 + (1 << 13)) >> 14; \
+        const int t  = ((((dctint) block[0] * 11585 + (1 << 13)) >> 14) \
+                                            * 11585 + (1 << 13)) >> 14; \
         block[0] = 0; \
         for (i = 0; i < sz; i++) { \
             for (j = 0; j < sz; j++) \
