@@ -1303,7 +1303,8 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
 
 static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
-    int ret, i;
+    int ret = AVERROR_BUG;
+    int i;
     int tp_index = 0;
 
     s->bit_index = 8;
