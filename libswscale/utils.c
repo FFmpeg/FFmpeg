@@ -1419,6 +1419,15 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         if (!c2->gamma || !c2->inv_gamma)
             return AVERROR(ENOMEM);
 
+        // is_internal_flag is set after creating the context
+        // to properly create the gamma convert FilterDescriptor
+        // we have to re-initialize it
+        ff_free_filters(c2);
+        if (ff_init_filters(c2) < 0) {
+            sws_freeContext(c2);
+            return -1;
+        }
+
         c->cascaded_context[2] = NULL;
         if (dstFormat != tmpFmt) {
             ret = av_image_alloc(c->cascaded1_tmp, c->cascaded1_tmpStride,

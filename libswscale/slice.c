@@ -217,6 +217,7 @@ int ff_init_filters(SwsContext * c)
     int num_vdesc = isPlanarYUV(c->dstFormat) && !isGray(c->dstFormat) ? 2 : 1;
     int need_lum_conv = c->lumToYV12 || c->readLumPlanar || c->alpToYV12 || c->readAlpPlanar;
     int need_chr_conv = c->chrToYV12 || c->readChrPlanar;
+    int need_gamma = c->is_internal_gamma;
     int srcIdx, dstIdx;
     int dst_stride = FFALIGN(c->dstW * sizeof(int16_t) + 66, 16);
 
@@ -230,9 +231,9 @@ int ff_init_filters(SwsContext * c)
     num_cdesc = need_chr_conv ? 2 : 1;
 
     c->numSlice = FFMAX(num_ydesc, num_cdesc) + 2;
-    c->numDesc = num_ydesc + num_cdesc + num_vdesc;
-    c->descIndex[0] = num_ydesc;
-    c->descIndex[1] = num_ydesc + num_cdesc;
+    c->numDesc = num_ydesc + num_cdesc + num_vdesc + (need_gamma ? 2 : 0);
+    c->descIndex[0] = num_ydesc + (need_gamma ? 1 : 0);
+    c->descIndex[1] = num_ydesc + num_cdesc + (need_gamma ? 1 : 0);
 
 
 
@@ -266,6 +267,12 @@ int ff_init_filters(SwsContext * c)
     index = 0;
     srcIdx = 0;
     dstIdx = 1;
+
+    if (need_gamma) {
+        res = ff_init_gamma_convert(c->desc + index, c->slice + srcIdx, c->inv_gamma);
+        if (res < 0) goto cleanup;
+        ++index;
+    }
 
     if (need_lum_conv) {
         res = ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
@@ -306,6 +313,12 @@ int ff_init_filters(SwsContext * c)
         srcIdx = c->numSlice - 2;
         dstIdx = c->numSlice - 1;
         res = ff_init_vscale(c, c->desc + index, c->slice + srcIdx, c->slice + dstIdx);
+        if (res < 0) goto cleanup;
+    }
+
+    ++index;
+    if (need_gamma) {
+        res = ff_init_gamma_convert(c->desc + index, c->slice + dstIdx, c->gamma);
         if (res < 0) goto cleanup;
     }
 
