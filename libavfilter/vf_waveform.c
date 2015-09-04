@@ -44,6 +44,7 @@ typedef struct WaveformContext {
     int            ncomp;
     int            pcomp;
     const uint8_t  *bg_color;
+    float          fintensity;
     int            intensity;
     int            mirror;
     int            display;
@@ -69,8 +70,8 @@ static const AVOption waveform_options[] = {
     { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "mode" },
         { "row",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mode" },
         { "column", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode" },
-    { "intensity", "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=10}, 1, 1023, FLAGS },
-    { "i",         "set intensity", OFFSET(intensity), AV_OPT_TYPE_INT, {.i64=10}, 1, 1023, FLAGS },
+    { "intensity", "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 1, FLAGS },
+    { "i",         "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 1, FLAGS },
     { "mirror", "set mirroring", OFFSET(mirror), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
     { "r",      "set mirroring", OFFSET(mirror), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
     { "display", "set display mode", OFFSET(display), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display" },
@@ -1171,6 +1172,7 @@ static int config_input(AVFilterLink *inlink)
     s->desc  = av_pix_fmt_desc_get(inlink->format);
     s->ncomp = s->desc->nb_components;
     s->bits = s->desc->comp[0].depth_minus1 + 1;
+    s->intensity = s->fintensity * ((1 << s->bits) - 1);
 
     switch (s->filter) {
     case LOWPASS:
