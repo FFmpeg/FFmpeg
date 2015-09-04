@@ -1186,7 +1186,7 @@ static av_always_inline void idct4_1d(const dctcoef *in, ptrdiff_t stride,
 static av_always_inline void iadst4_1d(const dctcoef *in, ptrdiff_t stride,
                                        dctcoef *out, int pass)
 {
-    int t0, t1, t2, t3;
+    dctint t0, t1, t2, t3;
 
     t0 =  5283 * IN(0) + 15212 * IN(2) +  9929 * IN(3);
     t1 =  9929 * IN(0) -  5283 * IN(2) - 15212 * IN(3);
