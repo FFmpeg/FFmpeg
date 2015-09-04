@@ -1156,11 +1156,6 @@ static const MXFCodecUL mxf_data_essence_container_uls[] = {
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0, AV_CODEC_ID_NONE },
 };
 
-static const MXFCodecUL mxf_codec_uls[] = {
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x07,0x04,0x01,0x02,0x02,0x03,0x01,0x01,0x00 }, 14,   AV_CODEC_ID_JPEG2000 },
-    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,      AV_CODEC_ID_NONE },
-};
-
 static const char* const mxf_data_essence_descriptor[] = {
     "vbi_vanc_smpte_436M",
 };
@@ -1974,7 +1969,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = (enum AVCodecID)codec_ul->id;
         if (st->codec->codec_id == AV_CODEC_ID_NONE) {
-            codec_ul = mxf_get_codec_ul(mxf_codec_uls, &descriptor->codec_ul);
+            codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->codec_ul);
             st->codec->codec_id = (enum AVCodecID)codec_ul->id;
         }
 
