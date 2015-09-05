@@ -88,19 +88,19 @@
 #define FF_API_OLD_AVOPTIONS            (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
 #ifndef FF_API_VDPAU
-#define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_GET_CHANNEL_LAYOUT_COMPAT
 #define FF_API_GET_CHANNEL_LAYOUT_COMPAT (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
 #ifndef FF_API_XVMC
-#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_OPT_TYPE_METADATA
-#define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_DLOG
-#define FF_API_DLOG                     (LIBAVUTIL_VERSION_MAJOR < 55)
+#define FF_API_DLOG                     (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_HMAC
 #define FF_API_HMAC                     (LIBAVUTIL_VERSION_MAJOR < 55)
