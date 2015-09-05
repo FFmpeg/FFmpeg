@@ -17,27 +17,27 @@ API changes, most recent first:
 
 -------- 8< --------- FFmpeg 2.8 was cut here -------- 8< ---------
 
-2015-xx-xx - lavc 56.58.100 - vaapi.h
+2015-08-27 - 1dd854e1 - lavc 56.58.100 - vaapi.h
   Deprecate old VA-API context (vaapi_context) fields that were only
   set and used by libavcodec. They are all managed internally now.
 
-2015-xx-xx - lavu 54.31.100 - pixfmt.h
+2015-08-19 - 9f8e57ef - lavu 54.31.100 - pixfmt.h
   Add a unique pixel format for VA-API (AV_PIX_FMT_VAAPI) that
   indicates the nature of the underlying storage: a VA surface. This
   yields the same value as AV_PIX_FMT_VAAPI_VLD.
   Deprecate old VA-API related pixel formats: AV_PIX_FMT_VAAPI_MOCO,
   AV_PIX_FMT_VAAPI_IDCT, AV_PIX_FMT_VAAPI_VLD.
 
-2015-xx-xx - lavu 54.30.0
-  xxxxxxx -  Add av_blowfish_alloc().
-  xxxxxxx -  Add av_rc4_alloc().
-  xxxxxxx -  Add av_xtea_alloc().
-  xxxxxxx -  Add av_des_alloc().
+2015-08-02 - lavu 54.30.100 / 54.17.0
+  9ed59f1 / 7a7df34c -  Add av_blowfish_alloc().
+  a130ec9 / ae365453 -  Add av_rc4_alloc().
+  9ca1997 / 5d8bea3b -  Add av_xtea_alloc().
+  3cf08e9 / d9e8b47e -  Add av_des_alloc().
 
-2015-xx-xx - lavc 56.35.0 - avcodec.h
-  xxxxxxxxx - Rename CODEC_FLAG* defines to AV_CODEC_FLAG*.
-  xxxxxxxxx - Rename CODEC_CAP_* defines to AV_CODEC_CAP_*.
-  xxxxxxxxx - Rename FF_INPUT_BUFFER_PADDING_SIZE and FF_MIN_BUFFER_SIZE
+2015-07-27 - lavc 56.56.100 / 56.35.0 - avcodec.h
+  94d68a4 / 7c6eb0a1 - Rename CODEC_FLAG* defines to AV_CODEC_FLAG*.
+  444e987 / def97856 - Rename CODEC_CAP_* defines to AV_CODEC_CAP_*.
+  29d147c / 059a9348 - Rename FF_INPUT_BUFFER_PADDING_SIZE and FF_MIN_BUFFER_SIZE
               to AV_INPUT_BUFFER_PADDING_SIZE and AV_INPUT_BUFFER_MIN_SIZE.
 
 2015-07-22 - c40ecff - lavc 56.51.100 - avcodec.h
