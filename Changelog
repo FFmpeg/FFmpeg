@@ -5,6 +5,7 @@ version <next>:
 - DXV decoding
 - extrastereo filter
 - ocr filter
+- alimiter filter
 
 
 version 2.8:

@@ -641,6 +641,41 @@ Force the output to either unsigned 8-bit or signed 16-bit stereo
 aformat=sample_fmts=u8|s16:channel_layouts=stereo
 @end example
 
+@section alimiter
+
+The limiter prevents input signal from raising over a desired threshold.
+This limiter uses lookahead technology to prevent your signal from distorting.
+It means that there is a small delay after signal is processed. Keep in mind
+that the delay it produces is the attack time you set.
+
+The filter accepts the following options:
+
+@table @option
+@item limit
+Don't let signals above this level pass the limiter. The removed amplitude is
+added automatically. Default is 1.
+
+@item attack
+The limiter will reach its attenuation level in this amount of time in
+milliseconds. Default is 5 milliseconds.
+
+@item release
+Come back from limiting to attenuation 1.0 in this amount of milliseconds.
+Default is 50 milliseconds.
+
+@item asc
+When gain reduction is always needed ASC takes care of releasing to an
+average reduction level rather than reaching a reduction of 0 in the release
+time.
+
+@item asc_level
+Select how much the release time is affected by ASC, 0 means nearly no changes
+in release time while 1 produces higher release times.
+@end table
+
+Depending on picked setting it is recommended to upsample input 2x or 4x times
+with @ref{aresample} before applying this filter.
+
 @section allpass
 
 Apply a two-pole all-pass filter with central frequency (in Hz)
