@@ -7,7 +7,6 @@ HEADERS = avcodec.h                                                     \
           dv_profile.h                                                  \
           d3d11va.h                                                     \
           dxva2.h                                                       \
-          old_codec_ids.h                                               \
           qsv.h                                                         \
           vaapi.h                                                       \
           vda.h                                                         \
