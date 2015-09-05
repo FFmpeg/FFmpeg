@@ -15,6 +15,8 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+-------- 8< --------- FFmpeg 2.8 was cut here -------- 8< ---------
+
 2015-xx-xx - lavc 56.58.100 - vaapi.h
   Deprecate old VA-API context (vaapi_context) fields that were only
   set and used by libavcodec. They are all managed internally now.
