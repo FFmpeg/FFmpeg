@@ -484,7 +484,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     ShowFreqsContext *s = ctx->priv;
     AVFrame *fin = NULL;
-    int ret;
+    int ret = 0;
 
     av_audio_fifo_write(s->fifo, (void **)in->extended_data, in->nb_samples);
     while (av_audio_fifo_size(s->fifo) >= s->win_size) {
