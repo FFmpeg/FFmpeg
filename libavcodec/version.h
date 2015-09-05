@@ -161,9 +161,6 @@
 /* XXX: don't forget to drop the -vismv documentation */
 #define FF_API_VISMV             (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif
-#ifndef FF_API_DV_FRAME_PROFILE
-#define FF_API_DV_FRAME_PROFILE  (LIBAVCODEC_VERSION_MAJOR < 57)
-#endif
 #ifndef FF_API_AUDIOENC_DELAY
 #define FF_API_AUDIOENC_DELAY    (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
