@@ -501,6 +501,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             goto fail;
 
         ret = plot_freqs(inlink, fin);
+        av_frame_free(&fin);
         av_audio_fifo_drain(s->fifo, s->skip_samples);
         if (ret < 0)
             goto fail;
