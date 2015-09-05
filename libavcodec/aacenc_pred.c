@@ -179,15 +179,15 @@ void ff_aac_adjust_common_prediction(AACEncContext *s, ChannelElement *cpe)
                 for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
                     float coef0 = sce0->pcoeffs[start+(w+w2)*128+i];
                     float coef1 = sce1->pcoeffs[start+(w+w2)*128+i];
-                    ener0 += coef0*coef0;
-                    ener1 += coef1*coef1;
+                    ener0  += coef0*coef0;
+                    ener1  += coef1*coef1;
                     ener01 += (coef0 + coef1)*(coef0 + coef1);
                 }
             }
             ph_err1 = ff_aac_is_encoding_err(s, cpe, start, w, g,
-                                             ener0, ener1, ener01, -1);
+                                             ener0, ener1, ener01, 1, -1);
             ph_err2 = ff_aac_is_encoding_err(s, cpe, start, w, g,
-                                             ener0, ener1, ener01, +1);
+                                             ener0, ener1, ener01, 1, +1);
             erf = ph_err1.error < ph_err2.error ? &ph_err1 : &ph_err2;
             if (erf->pass) {
                 sce0->ics.prediction_used[sfb] = 1;
