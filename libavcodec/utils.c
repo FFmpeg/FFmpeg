@@ -1807,11 +1807,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (avpkt->data) {
         AVBufferRef *buf = avpkt->buf;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        void *destruct = avpkt->destruct;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         if (avpkt->size < size) {
             av_log(avctx, AV_LOG_ERROR, "User packet is too small (%d < %"PRId64")\n", avpkt->size, size);
@@ -1819,11 +1814,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
         av_init_packet(avpkt);
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        avpkt->destruct = destruct;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         avpkt->buf      = buf;
         avpkt->size     = size;
         return 0;
