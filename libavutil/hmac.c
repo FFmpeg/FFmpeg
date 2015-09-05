@@ -81,9 +81,6 @@ AVHMAC *av_hmac_alloc(enum AVHMACType type)
         c->hash     = av_sha_alloc();
         break;
     case AV_HMAC_SHA224:
-#if FF_API_HMAC
-    case AV_HMAC_SHA224_DEPRECATED:
-#endif
         c->blocklen = 64;
         c->hashlen  = 28;
         c->init     = sha224_init;
@@ -92,9 +89,6 @@ AVHMAC *av_hmac_alloc(enum AVHMACType type)
         c->hash     = av_sha_alloc();
         break;
     case AV_HMAC_SHA256:
-#if FF_API_HMAC
-    case AV_HMAC_SHA256_DEPRECATED:
-#endif
         c->blocklen = 64;
         c->hashlen  = 32;
         c->init     = sha256_init;
