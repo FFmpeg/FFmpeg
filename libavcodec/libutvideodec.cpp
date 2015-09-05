@@ -145,7 +145,6 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
     int w = avctx->width, h = avctx->height;
 
     /* Set flags */
-    pic->reference = 0;
     pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
 
