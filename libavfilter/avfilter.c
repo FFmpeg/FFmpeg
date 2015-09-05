@@ -662,12 +662,6 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         if (!ret->outputs)
             goto err;
     }
-#if FF_API_FOO_COUNT
-FF_DISABLE_DEPRECATION_WARNINGS
-    ret->output_count = ret->nb_outputs;
-    ret->input_count  = ret->nb_inputs;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     return ret;
 

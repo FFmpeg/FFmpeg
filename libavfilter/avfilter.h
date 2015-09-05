@@ -486,16 +486,10 @@ struct AVFilterContext {
 
     AVFilterPad   *input_pads;      ///< array of input pads
     AVFilterLink **inputs;          ///< array of pointers to input links
-#if FF_API_FOO_COUNT
-    attribute_deprecated unsigned input_count; ///< @deprecated use nb_inputs
-#endif
     unsigned    nb_inputs;          ///< number of input pads
 
     AVFilterPad   *output_pads;     ///< array of output pads
     AVFilterLink **outputs;         ///< array of pointers to output links
-#if FF_API_FOO_COUNT
-    attribute_deprecated unsigned output_count; ///< @deprecated use nb_outputs
-#endif
     unsigned    nb_outputs;         ///< number of output pads
 
     void *priv;                     ///< private data for use by the filter
@@ -1017,20 +1011,11 @@ typedef int (avfilter_execute_func)(AVFilterContext *ctx, avfilter_action_func *
 
 typedef struct AVFilterGraph {
     const AVClass *av_class;
-#if FF_API_FOO_COUNT
-    attribute_deprecated
-    unsigned filter_count_unused;
-#endif
     AVFilterContext **filters;
-#if !FF_API_FOO_COUNT
     unsigned nb_filters;
-#endif
 
     char *scale_sws_opts; ///< sws options to use for the auto-inserted scale filters
     char *resample_lavr_opts;   ///< libavresample options to use for the auto-inserted resample filters
-#if FF_API_FOO_COUNT
-    unsigned nb_filters;
-#endif
 
     /**
      * Type of multithreading allowed for filters in this graph. A combination
