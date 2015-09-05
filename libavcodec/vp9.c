@@ -4250,7 +4250,9 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     for (i = 0; i < 8; i++) {
         if (s->refs[i].f->data[0])
             ff_thread_release_buffer(ctx, &s->refs[i]);
-        ff_thread_ref_frame(&s->refs[i], &s->next_refs[i]);
+        if (s->next_refs[i].f->data[0] &&
+            (res = ff_thread_ref_frame(&s->refs[i], &s->next_refs[i])) < 0)
+            return res;
     }
 
     if (!s->invisible) {
