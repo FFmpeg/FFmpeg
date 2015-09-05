@@ -46,11 +46,7 @@
 #define AV_CPU_FLAG_AVXSLOW   0x8000000 ///< AVX supported, but slow when using YMM registers (e.g. Bulldozer)
 #define AV_CPU_FLAG_XOP          0x0400 ///< Bulldozer XOP functions
 #define AV_CPU_FLAG_FMA4         0x0800 ///< Bulldozer FMA4 functions
-// #if LIBAVUTIL_VERSION_MAJOR <52
-#define AV_CPU_FLAG_CMOV      0x1001000 ///< supports cmov instruction
-// #else
-// #define AV_CPU_FLAG_CMOV         0x1000 ///< supports cmov instruction
-// #endif
+#define AV_CPU_FLAG_CMOV         0x1000 ///< supports cmov instruction
 #define AV_CPU_FLAG_AVX2         0x8000 ///< AVX2 functions: requires OS support even if YMM registers aren't used
 #define AV_CPU_FLAG_FMA3        0x10000 ///< Haswell FMA3 functions
 #define AV_CPU_FLAG_BMI1        0x20000 ///< Bit Manipulation Instruction Set 1
