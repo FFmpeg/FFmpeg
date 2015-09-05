@@ -112,7 +112,7 @@ static int aiff_write_header(AVFormatContext *s)
         if (aiff->audio_stream_idx < 0 && st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             aiff->audio_stream_idx = i;
         } else if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
-            av_log(s, AV_LOG_ERROR, "Only audio streams and pictures are allowed in AIFF.\n");
+            av_log(s, AV_LOG_ERROR, "AIFF allows only one audio stream and a picture.\n");
             return AVERROR(EINVAL);
         }
     }

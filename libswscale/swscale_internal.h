@@ -1028,6 +1028,9 @@ int ff_free_filters(SwsContext *c);
 */
 int ff_rotate_slice(SwsSlice *s, int lum, int chr);
 
+/// initializes gamma conversion descriptor
+int ff_init_gamma_convert(SwsFilterDescriptor *desc, SwsSlice * src, uint16_t *table);
+
 /// initializes lum pixel format conversion descriptor
 int ff_init_desc_fmt_convert(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst, uint32_t *pal);
 

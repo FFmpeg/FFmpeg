@@ -1161,8 +1161,11 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 
     /* Consistency checks */
     if (link->type == AVMEDIA_TYPE_VIDEO) {
-        if (strcmp(link->dst->filter->name, "scale") &&
-            strcmp(link->dst->filter->name, "idet")) {
+        if (strcmp(link->dst->filter->name, "buffersink") &&
+            strcmp(link->dst->filter->name, "format") &&
+            strcmp(link->dst->filter->name, "idet") &&
+            strcmp(link->dst->filter->name, "null") &&
+            strcmp(link->dst->filter->name, "scale")) {
             av_assert1(frame->format                 == link->format);
             av_assert1(frame->width               == link->w);
             av_assert1(frame->height               == link->h);

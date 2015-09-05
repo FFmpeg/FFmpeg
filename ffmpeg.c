@@ -2914,7 +2914,7 @@ static int transcode_init(void)
                 enc_ctx->time_base = dec_ctx->time_base;
             }
 
-            if (ist && !ost->frame_rate.num)
+            if (!ost->frame_rate.num)
                 ost->frame_rate = ist->framerate;
             if(ost->frame_rate.num)
                 enc_ctx->time_base = av_inv_q(ost->frame_rate);

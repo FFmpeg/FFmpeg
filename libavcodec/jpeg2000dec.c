@@ -1111,6 +1111,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                 step_x = FFMIN(step_x, rlevel->log2_prec_width  + reducedresno);
                 step_y = FFMIN(step_y, rlevel->log2_prec_height + reducedresno);
             }
+            av_assert0(step_x < 32 && step_y < 32);
             step_x = 1<<step_x;
             step_y = 1<<step_y;
 
@@ -1302,7 +1303,8 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
 
 static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
-    int ret, i;
+    int ret = AVERROR_BUG;
+    int i;
     int tp_index = 0;
 
     s->bit_index = 8;

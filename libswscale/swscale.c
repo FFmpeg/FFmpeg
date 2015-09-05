@@ -379,7 +379,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int chrBufIndex  = c->chrBufIndex;
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
-//    int perform_gamma = c->is_internal_gamma;
+    int perform_gamma = c->is_internal_gamma;
 
 #ifdef NEW_FILTER
     int lumStart = 0;
@@ -392,9 +392,10 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     SwsSlice *hout_slice = &c->slice[c->numSlice-2];
     SwsSlice *vout_slice = &c->slice[c->numSlice-1];
     SwsFilterDescriptor *desc = c->desc;
-#endif
+
     int hasLumHoles = 1;
     int hasChrHoles = 1;
+#endif
 
 #ifndef NEW_FILTER
     if (!usePal(c->srcFormat)) {
@@ -612,8 +613,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             av_assert0(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             av_assert0(lastInLumBuf + 1 - srcSliceY >= 0);
 
-            //if (perform_gamma)
-            //    gamma_convert((uint8_t **)src1, srcW, c->inv_gamma);
+            if (perform_gamma)
+                gamma_convert((uint8_t **)src1, srcW, c->inv_gamma);
 
             hyscale(c, lumPixBuf[lumBufIndex], dstW, src1, srcW, lumXInc,
                     hLumFilter, hLumFilterPos, hLumFilterSize,
@@ -783,9 +784,9 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                          chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
                          alpSrcPtr, dest, dstW, dstY);
             }
+            if (perform_gamma)
+                gamma_convert(dest, dstW, c->gamma);
 #endif
-            //if (perform_gamma)
-            //    gamma_convert(dest, dstW, c->gamma);
         }
     }
     if (isPlanar(dstFormat) && isALPHA(dstFormat) && !alpPixBuf) {

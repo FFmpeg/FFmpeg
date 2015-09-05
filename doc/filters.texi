@@ -11059,7 +11059,7 @@ color component value = 0 and bottom side represents value = 255.
 @item intensity, i
 Set intensity. Smaller values are useful to find out how many values of the same
 luminance are distributed across input rows/columns.
-Default value is @code{10}. Allowed range is [1, 255].
+Default value is @code{0.04}. Allowed range is [0, 1].
 
 @item mirror, r
 Set mirroring mode. @code{0} means unmirrored, @code{1} means mirrored.

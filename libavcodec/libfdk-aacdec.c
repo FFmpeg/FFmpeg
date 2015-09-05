@@ -209,7 +209,6 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
 {
     FDKAACDecContext *s = avctx->priv_data;
     AAC_DECODER_ERROR err;
-    int ret;
 
     s->handle = aacDecoder_Open(avctx->extradata_size ? TT_MP4_RAW : TT_MP4_ADTS, 1);
     if (!s->handle) {
