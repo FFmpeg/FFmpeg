@@ -63,10 +63,10 @@
 #define FF_API_LAVF_CODEC_TB            (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_URL_FEOF
-#define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 57)
+#define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_PROBESIZE_32
-#define FF_API_PROBESIZE_32             (LIBAVFORMAT_VERSION_MAJOR < 57)
+#define FF_API_PROBESIZE_32             (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
 
 #ifndef FF_API_R_FRAME_RATE
