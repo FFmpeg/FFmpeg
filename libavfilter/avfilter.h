@@ -937,7 +937,6 @@ AVFilterInOut *avfilter_inout_alloc(void);
  */
 void avfilter_inout_free(AVFilterInOut **inout);
 
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI || !FF_API_OLD_GRAPH_PARSE
 /**
  * Add a graph described by a string to a graph.
  *
@@ -959,26 +958,6 @@ void avfilter_inout_free(AVFilterInOut **inout);
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut *inputs, AVFilterInOut *outputs,
                          void *log_ctx);
-#else
-/**
- * Add a graph described by a string to a graph.
- *
- * @param graph   the filter graph where to link the parsed graph context
- * @param filters string to be parsed
- * @param inputs  pointer to a linked list to the inputs of the graph, may be NULL.
- *                If non-NULL, *inputs is updated to contain the list of open inputs
- *                after the parsing, should be freed with avfilter_inout_free().
- * @param outputs pointer to a linked list to the outputs of the graph, may be NULL.
- *                If non-NULL, *outputs is updated to contain the list of open outputs
- *                after the parsing, should be freed with avfilter_inout_free().
- * @return non negative on success, a negative AVERROR code on error
- * @deprecated Use avfilter_graph_parse_ptr() instead.
- */
-attribute_deprecated
-int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut **inputs, AVFilterInOut **outputs,
-                         void *log_ctx);
-#endif
 
 /**
  * Add a graph described by a string to a graph.
