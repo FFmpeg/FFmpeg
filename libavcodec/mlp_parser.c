@@ -357,15 +357,6 @@ static int mlp_parse(AVCodecParserContext *s,
         if(!avctx->channels || !avctx->channel_layout) {
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-            if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
-                mh.num_substreams > 1) {
-                avctx->channels       = 2;
-                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-FF_ENABLE_DEPRECATION_WARNINGS
-            } else
-#endif
             if (avctx->request_channel_layout &&
                 (avctx->request_channel_layout & AV_CH_LAYOUT_STEREO) ==
                 avctx->request_channel_layout &&
@@ -378,20 +369,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-            if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
-                mh.num_substreams > 1) {
-                avctx->channels       = 2;
-                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else if (avctx->request_channels > 0 &&
-                       avctx->request_channels <= mh.channels_thd_stream1) {
-                avctx->channels       = mh.channels_thd_stream1;
-                avctx->channel_layout = mh.channel_layout_thd_stream1;
-FF_ENABLE_DEPRECATION_WARNINGS
-            } else
-#endif
-                if (avctx->request_channel_layout &&
+            if (avctx->request_channel_layout &&
                     (avctx->request_channel_layout & AV_CH_LAYOUT_STEREO) ==
                     avctx->request_channel_layout &&
                     mh.num_substreams > 1) {
