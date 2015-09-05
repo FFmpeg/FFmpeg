@@ -92,6 +92,8 @@
     </ClCompile>
     <ClCompile Include="..\libswscale\vscale.c">
     </ClCompile>
+    <ClCompile Include="..\libswscale\gamma.c">
+    </ClCompile>
     <ClCompile Include="..\libswscale\log2_tab.c">
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">

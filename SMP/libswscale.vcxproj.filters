@@ -71,6 +71,9 @@
     <ClCompile Include="..\libswscale\vscale.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
+    <ClCompile Include="..\libswscale\gamma.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswscale\log2_tab.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
