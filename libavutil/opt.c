@@ -395,11 +395,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         if (!val || !strcmp(val, "none")) {
             *(int64_t *)dst = 0;
         } else {
-#if FF_API_GET_CHANNEL_LAYOUT_COMPAT
-            int64_t cl = ff_get_channel_layout(val, 0);
-#else
             int64_t cl = av_get_channel_layout(val);
-#endif
             if (!cl) {
                 av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as channel layout\n", val);
                 ret = AVERROR(EINVAL);
