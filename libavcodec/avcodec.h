@@ -4977,16 +4977,6 @@ int avpicture_layout(const AVPicture *src, enum AVPixelFormat pix_fmt,
  */
 int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height);
 
-#if FF_API_DEINTERLACE
-/**
- *  deinterlace - if not supported return -1
- *
- * @deprecated - use yadif (in libavfilter) instead
- */
-attribute_deprecated
-int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
-                          enum AVPixelFormat pix_fmt, int width, int height);
-#endif
 /**
  * Copy image src to dst. Wraps av_image_copy().
  */
