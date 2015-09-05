@@ -30,14 +30,10 @@
  * @{
  */
 
-#if FF_API_CRYPTO_CONTEXT
 typedef struct AVRC4 {
     uint8_t state[256];
     int x, y;
 } AVRC4;
-#else
-typedef struct AVRC4 AVRC4;
-#endif
 
 /**
  * Allocate an AVRC4 context.

@@ -33,13 +33,9 @@
  * @{
  */
 
-#if FF_API_CRYPTO_CONTEXT
 typedef struct AVXTEA {
     uint32_t key[16];
 } AVXTEA;
-#else
-typedef struct AVXTEA AVXTEA;
-#endif
 
 /**
  * Allocate an AVXTEA context.

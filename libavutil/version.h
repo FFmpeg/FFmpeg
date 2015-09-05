@@ -129,9 +129,6 @@
 #ifndef FF_API_HMAC
 #define FF_API_HMAC                     (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
-#ifndef FF_API_CRYPTO_CONTEXT
-#define FF_API_CRYPTO_CONTEXT           (LIBAVUTIL_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_VAAPI
 #define FF_API_VAAPI                    (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif

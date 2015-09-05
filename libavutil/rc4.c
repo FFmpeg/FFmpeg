@@ -25,13 +25,6 @@
 #include "mem.h"
 #include "rc4.h"
 
-#if !FF_API_CRYPTO_CONTEXT
-struct AVRC4 {
-    uint8_t state[256];
-    int x, y;
-};
-#endif
-
 AVRC4 *av_rc4_alloc(void)
 {
     return av_mallocz(sizeof(struct AVRC4));
