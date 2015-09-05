@@ -452,8 +452,10 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
 #define M(a, b) (sqrt((a) * (a) + (b) * (b)))
 
     colors = av_strdup(s->colors);
-    if (!colors)
+    if (!colors) {
+        av_frame_free(&out);
         return AVERROR(ENOMEM);
+    }
 
     for (ch = 0; ch < s->nb_channels; ch++) {
         uint8_t fg[4] = { 0xff, 0xff, 0xff, 0xff };
