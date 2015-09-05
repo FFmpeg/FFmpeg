@@ -49,21 +49,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *frame, int *got_packet)
 {
-    int ret = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    int ret = avpicture_get_size(frame->format, frame->width, frame->height);
 
     if (ret < 0)
         return ret;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, ret, ret)) < 0)
         return ret;
-    if ((ret = avpicture_layout((const AVPicture *)frame, avctx->pix_fmt, avctx->width,
-                                avctx->height, pkt->data, pkt->size)) < 0)
+    if ((ret = avpicture_layout((const AVPicture *)frame, frame->format, frame->width,
+                                frame->height, pkt->data, pkt->size)) < 0)
         return ret;
 
     if(avctx->codec_tag == AV_RL32("yuv2") && ret > 0 &&
-       avctx->pix_fmt   == AV_PIX_FMT_YUYV422) {
+       frame->format   == AV_PIX_FMT_YUYV422) {
         int x;
-        for(x = 1; x < avctx->height*avctx->width*2; x += 2)
+        for(x = 1; x < frame->height*frame->width*2; x += 2)
             pkt->data[x] ^= 0x80;
     }
     pkt->flags |= AV_PKT_FLAG_KEY;
