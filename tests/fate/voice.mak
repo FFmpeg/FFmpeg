@@ -4,7 +4,7 @@ fate-g722dec-1: CMD = framecrc -i $(TARGET_SAMPLES)/g722/conf-adminmenu-162.g722
 FATE_G722-$(call ENCMUX, ADPCM_G722, WAV) += fate-g722-encode
 fate-g722-encode: tests/data/asynth-16000-1.wav
 fate-g722-encode: SRC = tests/data/asynth-16000-1.wav
-fate-g722-encode: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g722
+fate-g722-encode: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g722
 
 FATE_VOICE-yes += $(FATE_G722-yes)
 fate-g722: $(FATE_G722)
@@ -38,16 +38,16 @@ FATE_SAMPLES_AVCONV += $(FATE_G723_1-yes)
 fate-g723_1: $(FATE_G723_1)
 
 FATE_G726 += fate-g726-encode-2bit
-fate-g726-encode-2bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 16k
+fate-g726-encode-2bit: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g726 -b:a 16k
 
 FATE_G726 += fate-g726-encode-3bit
-fate-g726-encode-3bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 24k
+fate-g726-encode-3bit: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g726 -b:a 24k
 
 FATE_G726 += fate-g726-encode-4bit
-fate-g726-encode-4bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 32k
+fate-g726-encode-4bit: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g726 -b:a 32k
 
 FATE_G726 += fate-g726-encode-5bit
-fate-g726-encode-5bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 40k
+fate-g726-encode-5bit: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g726 -b:a 40k
 
 $(FATE_G726): tests/data/asynth-8000-1.wav
 $(FATE_G726): SRC = tests/data/asynth-8000-1.wav
