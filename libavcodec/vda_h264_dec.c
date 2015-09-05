@@ -62,9 +62,6 @@ typedef struct {
     void *hwaccel_context;
     enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
     int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
-#if FF_API_GET_BUFFER
-    int (*get_buffer)(struct AVCodecContext *c, AVFrame *pic);
-#endif
 } VDADecoderContext;
 
 static enum AVPixelFormat get_format(struct AVCodecContext *avctx,
@@ -108,10 +105,6 @@ static inline void set_context(AVCodecContext *avctx)
     avctx->get_format = get_format;
     ctx->get_buffer2 = avctx->get_buffer2;
     avctx->get_buffer2 = get_buffer2;
-#if FF_API_GET_BUFFER
-    ctx->get_buffer = avctx->get_buffer;
-    avctx->get_buffer = NULL;
-#endif
 }
 
 static inline void restore_context(AVCodecContext *avctx)
@@ -120,9 +113,6 @@ static inline void restore_context(AVCodecContext *avctx)
     avctx->hwaccel_context = ctx->hwaccel_context;
     avctx->get_format = ctx->get_format;
     avctx->get_buffer2 = ctx->get_buffer2;
-#if FF_API_GET_BUFFER
-    avctx->get_buffer = ctx->get_buffer;
-#endif
 }
 
 static int vdadec_decode(AVCodecContext *avctx,
