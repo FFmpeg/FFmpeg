@@ -1817,6 +1817,23 @@ equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g
 @end example
 @end itemize
 
+@section extrastereo
+
+Linearly increases the difference between left and right channels which
+adds some sort of "live" effect to playback.
+
+The filter accepts the following option:
+
+@table @option
+@item m
+Sets the difference coefficient (default: 2.5). 0.0 means mono sound
+(average of both channels), with 1.0 sound will be unchanged, with
+-1.0 left and right channels will be swapped.
+
+@item c
+Enable clipping. By default is enabled.
+@end table
+
 @section flanger
 Apply a flanging effect to the audio.
 

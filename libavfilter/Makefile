@@ -67,6 +67,7 @@ OBJS-$(CONFIG_DYNAUDNORM_FILTER)             += af_dynaudnorm.o
 OBJS-$(CONFIG_EARWAX_FILTER)                 += af_earwax.o
 OBJS-$(CONFIG_EBUR128_FILTER)                += f_ebur128.o
 OBJS-$(CONFIG_EQUALIZER_FILTER)              += af_biquads.o
+OBJS-$(CONFIG_EXTRASTEREO_FILTER)            += af_extrastereo.o
 OBJS-$(CONFIG_FLANGER_FILTER)                += af_flanger.o generate_wave_table.o
 OBJS-$(CONFIG_HIGHPASS_FILTER)               += af_biquads.o
 OBJS-$(CONFIG_JOIN_FILTER)                   += af_join.o
