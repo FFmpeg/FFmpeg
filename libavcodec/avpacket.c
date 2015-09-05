@@ -208,13 +208,7 @@ int av_dup_packet(AVPacket *pkt)
 {
     AVPacket tmp_pkt;
 
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!pkt->buf && pkt->data
-#if FF_API_DESTRUCT_PACKET
-        && !pkt->destruct
-#endif
-        ) {
-FF_ENABLE_DEPRECATION_WARNINGS
+    if (!pkt->buf && pkt->data) {
         tmp_pkt = *pkt;
         return copy_packet_data(pkt, &tmp_pkt, 1);
     }
@@ -330,11 +324,6 @@ int av_packet_merge_side_data(AVPacket *pkt){
             return AVERROR(ENOMEM);
         pkt->buf = buf;
         pkt->data = p = buf->data;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        pkt->destruct = dummy_destruct_packet;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         pkt->size = size - AV_INPUT_BUFFER_PADDING_SIZE;
         bytestream_put_buffer(&p, old.data, old.size);
         for (i=old.side_data_elems-1; i>=0; i--) {
