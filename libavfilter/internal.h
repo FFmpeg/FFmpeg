@@ -56,7 +56,6 @@ typedef struct AVFilterCommand {
  */
 void ff_avfilter_graph_update_heap(AVFilterGraph *graph, AVFilterLink *link);
 
-#if !FF_API_AVFILTERPAD_PUBLIC
 /**
  * A filter pad used for either input or output.
  */
@@ -153,7 +152,6 @@ struct AVFilterPad {
      */
     int needs_writable;
 };
-#endif
 
 struct AVFilterGraphInternal {
     void *thread;
