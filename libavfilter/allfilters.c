@@ -289,11 +289,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER(AMOVIE,         amovie,         avsrc);
     REGISTER_FILTER(MOVIE,          movie,          avsrc);
 
-#if FF_API_AVFILTERBUFFER
-    REGISTER_FILTER_UNCONDITIONAL(vsink_ffbuffersink);
-    REGISTER_FILTER_UNCONDITIONAL(asink_ffabuffersink);
-#endif
-
     /* those filters are part of public or internal API => registered
      * unconditionally */
     REGISTER_FILTER_UNCONDITIONAL(asrc_abuffer);

@@ -33,16 +33,6 @@
 #include "video.h"
 #include "libavcodec/avcodec.h"
 
-#if FF_API_AVFILTERBUFFER
-#define POOL_SIZE 32
-typedef struct AVFilterPool {
-    AVFilterBufferRef *pic[POOL_SIZE];
-    int count;
-    int refcount;
-    int draining;
-} AVFilterPool;
-#endif
-
 typedef struct AVFilterCommand {
     double time;                ///< time expressed in seconds
     char *command;              ///< command

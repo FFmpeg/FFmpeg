@@ -428,10 +428,6 @@ struct AVFilterLink {
         AVLINK_INIT             ///< complete
     } init_state;
 
-#if FF_API_AVFILTERBUFFER
-    struct AVFilterPool *pool;
-#endif
-
     /**
      * Graph the filter belongs to.
      */
@@ -485,17 +481,6 @@ struct AVFilterLink {
      * called with more samples, it will split them.
      */
     int max_samples;
-
-#if FF_API_AVFILTERBUFFER
-    /**
-     * The buffer reference currently being received across the link by the
-     * destination filter. This is used internally by the filter system to
-     * allow automatic copying of buffers which do not have sufficient
-     * permissions for the destination. This should not be accessed directly
-     * by the filters.
-     */
-    AVFilterBufferRef *cur_buf_copy;
-#endif
 
     /**
      * True if the link is closed.

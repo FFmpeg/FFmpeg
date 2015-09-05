@@ -39,7 +39,6 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-#include "avcodec.h"
 
 typedef struct BufferSourceContext {
     const AVClass    *class;

@@ -64,7 +64,6 @@
 #include "libavcodec/mathops.h"
 #include "libavformat/os_support.h"
 
-# include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/buffersrc.h"
 # include "libavfilter/buffersink.h"
