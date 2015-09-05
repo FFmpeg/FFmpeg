@@ -117,6 +117,9 @@
 #ifndef FF_API_VAAPI
 #define FF_API_VAAPI                    (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_FRAME_QP
+#define FF_API_FRAME_QP                 (LIBAVUTIL_VERSION_MAJOR < 56)
+#endif
 
 #ifndef FF_CONST_AVUTIL55
 #if LIBAVUTIL_VERSION_MAJOR >= 55

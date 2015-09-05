@@ -477,6 +477,7 @@ typedef struct AVFrame {
      */
     int pkt_size;
 
+#if FF_API_FRAME_QP
     /**
      * QP table
      * Not to be accessed directly from outside libavutil
@@ -497,6 +498,7 @@ typedef struct AVFrame {
      * Not to be accessed directly from outside libavutil
      */
     AVBufferRef *qp_table_buf;
+#endif
 } AVFrame;
 
 /**
@@ -523,8 +525,10 @@ void    av_frame_set_decode_error_flags   (AVFrame *frame, int     val);
 int     av_frame_get_pkt_size(const AVFrame *frame);
 void    av_frame_set_pkt_size(AVFrame *frame, int val);
 AVDictionary **avpriv_frame_get_metadatap(AVFrame *frame);
+#if FF_API_FRAME_QP
 int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type);
 int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int type);
+#endif
 enum AVColorSpace av_frame_get_colorspace(const AVFrame *frame);
 void    av_frame_set_colorspace(AVFrame *frame, enum AVColorSpace val);
 enum AVColorRange av_frame_get_color_range(const AVFrame *frame);
