@@ -114,14 +114,6 @@ typedef struct AVCodecInternal {
      */
     int allocate_progress;
 
-#if FF_API_OLD_ENCODE_AUDIO
-    /**
-     * Internal sample count used by avcodec_encode_audio() to fabricate pts.
-     * Can be removed along with avcodec_encode_audio().
-     */
-    int64_t sample_count;
-#endif
-
     /**
      * An audio frame with less than required samples has been submitted and
      * padded with silence. Reject all subsequent frames.
