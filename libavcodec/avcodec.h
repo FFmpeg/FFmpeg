@@ -3780,39 +3780,6 @@ const AVClass *avcodec_get_subtitle_rect_class(void);
  */
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
 
-#if FF_API_AVFRAME_LAVC
-/**
- * @deprecated use av_frame_alloc()
- */
-attribute_deprecated
-AVFrame *avcodec_alloc_frame(void);
-
-/**
- * Set the fields of the given AVFrame to default values.
- *
- * @param frame The AVFrame of which the fields should be set to default values.
- *
- * @deprecated use av_frame_unref()
- */
-attribute_deprecated
-void avcodec_get_frame_defaults(AVFrame *frame);
-
-/**
- * Free the frame and any dynamically allocated objects in it,
- * e.g. extended_data.
- *
- * @param frame frame to be freed. The pointer will be set to NULL.
- *
- * @warning this function does NOT free the data buffers themselves
- * (it does not know how, since they might have been allocated with
- *  a custom get_buffer()).
- *
- * @deprecated use av_frame_free()
- */
-attribute_deprecated
-void avcodec_free_frame(AVFrame **frame);
-#endif
-
 /**
  * Initialize the AVCodecContext to use the given AVCodec. Prior to using this
  * function the context has to be allocated with avcodec_alloc_context3().

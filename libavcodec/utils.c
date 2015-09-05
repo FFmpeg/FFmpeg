@@ -1096,31 +1096,6 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
     return ret;
 }
 
-#if FF_API_AVFRAME_LAVC
-void avcodec_get_frame_defaults(AVFrame *frame)
-{
-#if LIBAVCODEC_VERSION_MAJOR >= 55
-     // extended_data should explicitly be freed when needed, this code is unsafe currently
-     // also this is not compatible to the <55 ABI/API
-    if (frame->extended_data != frame->data && 0)
-        av_freep(&frame->extended_data);
-#endif
-
-    memset(frame, 0, sizeof(AVFrame));
-    av_frame_unref(frame);
-}
-
-AVFrame *avcodec_alloc_frame(void)
-{
-    return av_frame_alloc();
-}
-
-void avcodec_free_frame(AVFrame **frame)
-{
-    av_frame_free(frame);
-}
-#endif
-
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
 MAKE_ACCESSORS(AVCodecContext, codec, int, lowres)
