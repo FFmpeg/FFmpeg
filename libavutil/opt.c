@@ -42,13 +42,13 @@
 #include <float.h>
 
 #if FF_API_OLD_AVOPTIONS
-const AVOption *av_next_option(FF_CONST_AVUTIL55 void *obj, const AVOption *last)
+const AVOption *av_next_option(const void *obj, const AVOption *last)
 {
     return av_opt_next(obj, last);
 }
 #endif
 
-const AVOption *av_opt_next(FF_CONST_AVUTIL55 void *obj, const AVOption *last)
+const AVOption *av_opt_next(const void *obj, const AVOption *last)
 {
     const AVClass *class;
     if (!obj)
@@ -1573,7 +1573,7 @@ static int opt_size(enum AVOptionType type)
     return 0;
 }
 
-int av_opt_copy(void *dst, FF_CONST_AVUTIL55 void *src)
+int av_opt_copy(void *dst, const void *src)
 {
     const AVOption *o = NULL;
     const AVClass *c;
