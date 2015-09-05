@@ -172,7 +172,7 @@ double ff_lpc_calc_ref_coefs_f(LPCContext *s, const float *samples, int len,
 {
     int i;
     double signal = 0.0f, avg_err = 0.0f;
-    double autoc[MAX_LPC_ORDER+1] = {0}, error[MAX_LPC_ORDER] = {0};
+    double autoc[MAX_LPC_ORDER+1] = {0}, error[MAX_LPC_ORDER+1] = {0};
     const double c = (len - 1)/2.0f;
 
     /* Welch window */
