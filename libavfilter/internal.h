@@ -162,11 +162,6 @@ struct AVFilterInternal {
     avfilter_execute_func *execute;
 };
 
-#if FF_API_AVFILTERBUFFER
-/** default handler for freeing audio/video buffer when there are no references left */
-void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);
-#endif
-
 /** Tell is a format is contained in the provided list terminated by -1. */
 int ff_fmt_is_in(int fmt, const int *fmts);
 
