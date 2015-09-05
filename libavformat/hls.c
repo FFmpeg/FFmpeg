@@ -516,13 +516,15 @@ static int url_connect(struct playlist *pls, AVDictionary *opts, AVDictionary *o
     av_dict_copy(&tmp, opts, 0);
     av_dict_copy(&tmp, opts2, 0);
 
-    av_opt_set_dict(pls->input, &tmp);
+    if ((ret = av_opt_set_dict(pls->input, &tmp)) < 0)
+        goto fail;
 
     if ((ret = ffurl_connect(pls->input, NULL)) < 0) {
         ffurl_close(pls->input);
         pls->input = NULL;
     }
 
+fail:
     av_dict_free(&tmp);
     return ret;
 }
