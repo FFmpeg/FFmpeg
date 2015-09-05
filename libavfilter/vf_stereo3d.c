@@ -62,6 +62,7 @@ enum StereoCode {
     ALTERNATING_RL,     // alternating frames (right eye first, left eye second)
     CHECKERBOARD_LR,    // checkerboard pattern (left eye first, right eye second)
     CHECKERBOARD_RL,    // checkerboard pattern (right eye first, left eye second)
+    HDMI,               // HDMI frame pack (left eye first, right eye second)
     STEREO_CODE_COUNT   // TODO: needs autodetection
 };
 
@@ -145,6 +146,7 @@ typedef struct Stereo3DContext {
     int pixstep[4];
     AVFrame *prev;
     double ts_unit;
+    int blanks;
     int in_off_left[4], in_off_right[4];
 } Stereo3DContext;
 
@@ -196,6 +198,7 @@ static const AVOption stereo3d_options[] = {
     { "sbsr",  "side by side right first",            0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_RL},    0, 0, FLAGS, "out" },
     { "chl",   "checkerboard left first",             0, AV_OPT_TYPE_CONST, {.i64=CHECKERBOARD_LR},    0, 0, FLAGS, "out" },
     { "chr",   "checkerboard right first",            0, AV_OPT_TYPE_CONST, {.i64=CHECKERBOARD_RL},    0, 0, FLAGS, "out" },
+    { "hdmi",  "HDMI frame pack",                     0, AV_OPT_TYPE_CONST, {.i64=HDMI},               0, 0, FLAGS, "out" },
     { NULL }
 };
 
@@ -446,6 +449,14 @@ static int config_output(AVFilterLink *outlink)
         s->out.height    = s->height * 2;
         s->out.row_right = s->height;
         break;
+    case HDMI:
+        if (s->in.height <= 720)
+            s->blanks = 30;
+        else
+            s->blanks = 45;
+        s->out.height    = s->height * 2 + s->blanks;
+        s->out.row_right = s->height + s->blanks;
+        break;
     case ABOVE_BELOW_2_RL:
         aspect.num      *= 2;
     case ABOVE_BELOW_RL:
@@ -614,6 +625,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
 
     switch (s->out.format) {
+    case HDMI:
+        for (i = 0; i < s->nb_planes; i++) {
+            int j, h = s->height >> ((i == 1 || i == 2) ? s->vsub : 0);
+            int b = (s->blanks) >> ((i == 1 || i == 2) ? s->vsub : 0);
+
+            for (j = h; j < h + b; j++)
+                memset(oleft->data[i] + j * s->linesize[i], 0, s->linesize[i]);
+        }
     case ALTERNATING_LR:
     case ALTERNATING_RL:
     case SIDE_BY_SIDE_LR:
