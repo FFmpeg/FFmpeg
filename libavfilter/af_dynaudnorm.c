@@ -82,9 +82,9 @@ static const AVOption dynaudnorm_options[] = {
     { "p", "set the peak value",               OFFSET(peak_value),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.95}, 0.0,   1.0, FLAGS },
     { "m", "set the max amplification",        OFFSET(max_amplification), AV_OPT_TYPE_DOUBLE, {.dbl = 10.0}, 1.0, 100.0, FLAGS },
     { "r", "set the target RMS",               OFFSET(target_rms),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
-    { "n", "enable channel coupling",          OFFSET(channels_coupled),  AV_OPT_TYPE_INT,    {.i64 = 1},      0,     1, FLAGS },
-    { "c", "enable DC correction",             OFFSET(dc_correction),     AV_OPT_TYPE_INT,    {.i64 = 0},      0,     1, FLAGS },
-    { "b", "enable alternative boundary mode", OFFSET(alt_boundary_mode), AV_OPT_TYPE_INT,    {.i64 = 0},      0,     1, FLAGS },
+    { "n", "set channel coupling",             OFFSET(channels_coupled),  AV_OPT_TYPE_BOOL,   {.i64 = 1},      0,     1, FLAGS },
+    { "c", "set DC correction",                OFFSET(dc_correction),     AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
+    { "b", "set alternative boundary mode",    OFFSET(alt_boundary_mode), AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
     { "s", "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
     { NULL }
 };
