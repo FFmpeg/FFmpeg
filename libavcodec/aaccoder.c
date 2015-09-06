@@ -49,16 +49,15 @@
 #include "aacenc_pred.h"
 
 /** Frequency in Hz for lower limit of noise substitution **/
-#define NOISE_LOW_LIMIT 4500
+#define NOISE_LOW_LIMIT 4000
 
-/* Energy spread threshold value below which no PNS is used, this corresponds to
- * typically around 17Khz, after which PNS usage decays ending at 19Khz */
-#define NOISE_SPREAD_THRESHOLD 0.5f
+/* Parameter of f(x) = a*(lambda/100), defines the maximum fourier spread
+ * beyond which no PNS is used (since the SFBs contain tone rather than noise) */
+#define NOISE_SPREAD_THRESHOLD 0.9673f
 
-/* This constant gets divided by lambda to return ~1.65 which when multiplied
- * by the band->threshold and compared to band->energy is the boundary between
- * excessive PNS and little PNS usage. */
-#define NOISE_LAMBDA_NUMERATOR 252.1f
+/* Parameter of f(x) = a*(100/lambda), defines how much PNS is allowed to
+ * replace low energy non zero bands */
+#define NOISE_LAMBDA_REPLACE 1.948f
 
 /**
  * structure used in optimal codebook search
@@ -863,30 +862,82 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
 
 static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce)
 {
-    int start = 0, w, w2, g;
+    FFPsyBand *band;
+    int w, g, w2, i, start, count = 0;
+    float *PNS = &s->scoefs[0*128], *PNS34 = &s->scoefs[1*128];
+    float *NOR34 = &s->scoefs[3*128];
     const float lambda = s->lambda;
     const float freq_mult = avctx->sample_rate/(1024.0f/sce->ics.num_windows)/2.0f;
-    const float spread_threshold = NOISE_SPREAD_THRESHOLD*(lambda/120.f);
-    const float thr_mult = NOISE_LAMBDA_NUMERATOR/lambda;
+    const float thr_mult = NOISE_LAMBDA_REPLACE*(100.0f/lambda);
+    const float spread_threshold = NOISE_SPREAD_THRESHOLD*(lambda/100.f);
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = 0;
         for (g = 0;  g < sce->ics.num_swb; g++) {
-            if (start*freq_mult > NOISE_LOW_LIMIT*(lambda/170.0f)) {
-                float energy = 0.0f, threshold = 0.0f, spread = 0.0f;
-                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
-                    FFPsyBand *band = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
-                    energy += band->energy;
-                    threshold += band->threshold;
-                    spread += band->spread;
+            int noise_sfi, try_pns = 0;
+            float dist1 = 0.0f, dist2 = 0.0f, noise_amp;
+            float energy = 0.0f, threshold = 0.0f, spread = 0.0f;
+            if (start*freq_mult < NOISE_LOW_LIMIT) {
+                start += sce->ics.swb_sizes[g];
+                continue;
+            }
+            for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
+                energy    += band->energy;
+                spread    += band->spread;
+                threshold += band->threshold;
+            }
+            sce->pns_ener[w*16+g] = energy;
+
+            if (sce->zeroes[w*16+g]) {
+                try_pns = 1;
+            } else if (energy < threshold) {
+                try_pns = 1;
+            } else if (spread > spread_threshold) {
+                try_pns = 0;
+            } else if (energy < threshold*thr_mult) {
+                try_pns = 1;
+            }
+
+            if (!try_pns || !energy) {
+                start += sce->ics.swb_sizes[g];
+                continue;
+            }
+
+            noise_sfi = av_clip(roundf(log2f(energy)*2), -100, 155);  /* Quantize */
+            noise_amp = -ff_aac_pow2sf_tab[noise_sfi + POW_SF2_ZERO]; /* Dequantize */
+            for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                float band_energy, scale;
+                band = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+                for (i = 0; i < sce->ics.swb_sizes[g]; i++)
+                    PNS[i] = s->random_state = lcg_random(s->random_state);
+                band_energy = s->fdsp->scalarproduct_float(PNS, PNS, sce->ics.swb_sizes[g]);
+                scale = noise_amp/sqrtf(band_energy);
+                s->fdsp->vector_fmul_scalar(PNS, PNS, scale, sce->ics.swb_sizes[g]);
+                abs_pow34_v(NOR34, &sce->coeffs[start+(w+w2)*128], sce->ics.swb_sizes[g]);
+                abs_pow34_v(PNS34, PNS, sce->ics.swb_sizes[g]);
+                dist1 += quantize_band_cost(s, &sce->coeffs[start + (w+w2)*128],
+                                            NOR34,
+                                            sce->ics.swb_sizes[g],
+                                            sce->sf_idx[(w+w2)*16+g],
+                                            sce->band_alt[(w+w2)*16+g],
+                                            lambda/band->threshold, INFINITY, NULL, 0);
+                dist2 += quantize_band_cost(s, PNS,
+                                            PNS34,
+                                            sce->ics.swb_sizes[g],
+                                            noise_sfi,
+                                            NOISE_BT,
+                                            lambda/band->threshold, INFINITY, NULL, 0);
+            }
+            if (dist2 < dist1) {
+                sce->band_type[w*16+g] = NOISE_BT;
+                sce->zeroes[w*16+g] = 0;
+                if (sce->band_type[w*16+g-1] != NOISE_BT && /* Prevent holes */
+                    sce->band_type[w*16+g-2] == NOISE_BT) {
+                    sce->band_type[w*16+g-1] = NOISE_BT;
+                    sce->zeroes[w*16+g-1] = 0;
                 }
-                if (spread > spread_threshold*sce->ics.group_len[w] &&
-                    ((sce->zeroes[w*16+g] && energy >= threshold) ||
-                    energy < threshold*thr_mult*sce->ics.group_len[w])) {
-                    sce->band_type[w*16+g] = NOISE_BT;
-                    sce->pns_ener[w*16+g] = energy / sce->ics.group_len[w];
-                    sce->zeroes[w*16+g] = 0;
-                }
+                count++;
             }
             start += sce->ics.swb_sizes[g];
         }
