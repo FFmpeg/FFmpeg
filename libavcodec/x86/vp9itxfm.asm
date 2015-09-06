@@ -66,7 +66,8 @@ pw_15212_m13377: times 4 dw 15212, -13377
 pw_15212_9929: times 4 dw 15212, 9929
 pw_m5283_m15212: times 4 dw -5283, -15212
 pw_13377x2: times 8 dw 13377*2
-pw_13377_m13377: times 4 dw 13377, -13377
+pw_m13377_13377: times 4 dw -13377, 13377
+pw_13377_0: times 4 dw 13377, 0
 
 pd_8192: times 4 dd 8192
 
@@ -356,21 +357,24 @@ IDCT_4x4_FN ssse3
     movq2dq           xmm3, m3
 %if cpuflag(ssse3)
     paddw               m3, m0
-%else
-    paddw             xmm6, xmm3, xmm0
-    punpcklwd         xmm6, xmm2
 %endif
     punpcklwd         xmm0, xmm1
     punpcklwd         xmm2, xmm3
     pmaddwd           xmm1, xmm0, [pw_5283_13377]
     pmaddwd           xmm4, xmm0, [pw_9929_13377]
+%if notcpuflag(ssse3)
+    pmaddwd           xmm6, xmm0, [pw_13377_0]
+%endif
     pmaddwd           xmm0, [pw_15212_m13377]
     pmaddwd           xmm3, xmm2, [pw_15212_9929]
+%if notcpuflag(ssse3)
+    pmaddwd           xmm7, xmm2, [pw_m13377_13377]
+%endif
     pmaddwd           xmm2, [pw_m5283_m15212]
 %if cpuflag(ssse3)
     psubw               m3, m2
 %else
-    pmaddwd           xmm6, [pw_13377_m13377]
+    paddd             xmm6, xmm7
 %endif
     paddd             xmm0, xmm2
     paddd             xmm3, xmm5
@@ -406,9 +410,9 @@ IDCT_4x4_FN ssse3
 
 %macro IADST4_FN 5
 INIT_MMX %5
-cglobal vp9_%1_%3_4x4_add, 3, 3, 6 + notcpuflag(ssse3), dst, stride, block, eob
+cglobal vp9_%1_%3_4x4_add, 3, 3, 0, dst, stride, block, eob
 %if WIN64 && notcpuflag(ssse3)
-WIN64_SPILL_XMM 7
+    WIN64_SPILL_XMM 8
 %endif
     movdqa            xmm5, [pd_8192]
     mova                m0, [blockq+ 0]
