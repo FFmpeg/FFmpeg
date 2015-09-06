@@ -327,13 +327,6 @@ static int config_output(AVFilterLink *outlink)
     case ABOVE_BELOW_LR:
     case ABOVE_BELOW_2_RL:
     case ABOVE_BELOW_RL:
-        if (s->out.format == INTERLEAVE_ROWS_LR ||
-            s->out.format == INTERLEAVE_ROWS_RL) {
-            if (inlink->h & 3) {
-                av_log(ctx, AV_LOG_ERROR, "height must be multiple of 4\n");
-                return AVERROR_INVALIDDATA;
-            }
-        }
         if (inlink->h & 1) {
             av_log(ctx, AV_LOG_ERROR, "height must be even\n");
             return AVERROR_INVALIDDATA;
@@ -391,9 +384,7 @@ static int config_output(AVFilterLink *outlink)
             s->in.off_lstep = 1;
         else
             s->in.off_rstep = 1;
-        if (s->out.format != INTERLEAVE_ROWS_LR &&
-            s->out.format != INTERLEAVE_ROWS_RL &&
-            s->out.format != CHECKERBOARD_LR &&
+        if (s->out.format != CHECKERBOARD_LR &&
             s->out.format != CHECKERBOARD_RL)
             s->height   = inlink->h / 2;
         break;
@@ -468,16 +459,16 @@ static int config_output(AVFilterLink *outlink)
         s->out.row_left  = s->height;
         break;
     case INTERLEAVE_ROWS_LR:
-        s->in.row_step   = 2;
+        s->in.row_step   = 1 + (s->in.format == INTERLEAVE_ROWS_RL);
         s->out.row_step  = 2;
-        s->height        = s->height / 2;
+        s->out.height    = s->height * 2;
         s->out.off_rstep = 1;
         s->in.off_rstep  = s->in.format != INTERLEAVE_ROWS_RL;
         break;
     case INTERLEAVE_ROWS_RL:
-        s->in.row_step   = 2;
+        s->in.row_step   = 1 + (s->in.format == INTERLEAVE_ROWS_LR);
         s->out.row_step  = 2;
-        s->height        = s->height / 2;
+        s->out.height    = s->height * 2;
         s->out.off_lstep = 1;
         s->in.off_lstep  = s->in.format != INTERLEAVE_ROWS_LR;
         break;
