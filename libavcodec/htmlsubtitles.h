@@ -23,7 +23,6 @@
 
 #include "libavutil/bprint.h"
 
-void ff_htmlmarkup_to_ass(AVCodecContext *avctx, AVBPrint *dst, const char *in);
-
+void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in);
 
 #endif /* AVCODEC_HTMLSUBTITLES_H */

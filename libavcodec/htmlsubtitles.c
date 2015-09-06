@@ -21,13 +21,12 @@
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/parseutils.h"
-#include "avcodec.h"
 #include "htmlsubtitles.h"
 
-static int html_color_parse(AVCodecContext *avctx, const char *str)
+static int html_color_parse(void *log_ctx, const char *str)
 {
     uint8_t rgba[4];
-    if (av_parse_color(rgba, str, strcspn(str, "\" >"), avctx) < 0)
+    if (av_parse_color(rgba, str, strcspn(str, "\" >"), log_ctx) < 0)
         return -1;
     return rgba[0] | rgba[1] << 8 | rgba[2] << 16;
 }
@@ -51,7 +50,7 @@ static void rstrip_spaces_buf(AVBPrint *buf)
         buf->str[--buf->len] = 0;
 }
 
-void ff_htmlmarkup_to_ass(AVCodecContext *avctx, AVBPrint *dst, const char *in)
+void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 {
     char *param, buffer[128], tmp[128];
     int len, tag_close, sptr = 1, line_start = 1, an = 0, end = 0;
@@ -125,7 +124,7 @@ void ff_htmlmarkup_to_ass(AVCodecContext *avctx, AVBPrint *dst, const char *in)
                                     snprintf(stack[sptr].param[PARAM_COLOR],
                                          sizeof(stack[0].param[PARAM_COLOR]),
                                          "{\\c&H%X&}",
-                                         html_color_parse(avctx, param));
+                                         html_color_parse(log_ctx, param));
                                 } else if (!strncmp(param, "face=", 5)) {
                                     param += 5 + (param[5] == '"');
                                     len = strcspn(param,
