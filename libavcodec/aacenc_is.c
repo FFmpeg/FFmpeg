@@ -107,6 +107,11 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                 cpe->ch[1].band_type[w*16+g] != NOISE_BT && !cpe->ch[1].zeroes[w*16+g]) {
                 float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f;
                 struct AACISError ph_err1, ph_err2, *erf;
+                if (sce0->band_type[w*16+g] == NOISE_BT ||
+                    sce1->band_type[w*16+g] == NOISE_BT) {
+                    start += sce0->ics.swb_sizes[g];
+                    continue;
+                }
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
                         float coef0 = sce0->pcoeffs[start+(w+w2)*128+i];
