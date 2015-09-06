@@ -30,6 +30,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "img2.h"
 
 typedef struct VideoMuxData {
     const AVClass *class;  /**< Class for private options. */
@@ -172,6 +173,17 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int query_codec(enum AVCodecID id, int std_compliance)
+{
+    int i;
+    for (i = 0; ff_img_tags[i].id != AV_CODEC_ID_NONE; i++)
+        if (ff_img_tags[i].id == id)
+            return 1;
+
+    // Anything really can be stored in img2
+    return std_compliance < FF_COMPLIANCE_NORMAL;
+}
+
 #define OFFSET(x) offsetof(VideoMuxData, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
@@ -200,6 +212,7 @@ AVOutputFormat ff_image2_muxer = {
     .video_codec    = AV_CODEC_ID_MJPEG,
     .write_header   = write_header,
     .write_packet   = write_packet,
+    .query_codec    = query_codec,
     .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE,
     .priv_class     = &img2mux_class,
 };
@@ -212,6 +225,7 @@ AVOutputFormat ff_image2pipe_muxer = {
     .video_codec    = AV_CODEC_ID_MJPEG,
     .write_header   = write_header,
     .write_packet   = write_packet,
+    .query_codec    = query_codec,
     .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS
 };
 #endif
