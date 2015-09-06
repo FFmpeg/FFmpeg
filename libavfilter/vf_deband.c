@@ -58,7 +58,7 @@ static const AVOption deband_options[] = {
     { "r",         "set range",               OFFSET(range),        AV_OPT_TYPE_INT,   {.i64=16},    INT_MIN, INT_MAX, FLAGS },
     { "direction", "set direction",           OFFSET(direction),    AV_OPT_TYPE_FLOAT, {.dbl=2*M_PI},-2*M_PI,  2*M_PI, FLAGS },
     { "d",         "set direction",           OFFSET(direction),    AV_OPT_TYPE_FLOAT, {.dbl=2*M_PI},-2*M_PI,  2*M_PI, FLAGS },
-    { "blur",      "enable blur",             OFFSET(blur),         AV_OPT_TYPE_INT,   {.i64=1},           0,       1, FLAGS },
+    { "blur",      "set blur",                OFFSET(blur),         AV_OPT_TYPE_BOOL,  {.i64=1},           0,       1, FLAGS },
     { NULL }
 };
 
