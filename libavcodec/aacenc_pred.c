@@ -262,7 +262,9 @@ void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
         const int num_coeffs = sce->ics.swb_offset[sfb + 1] - start_coef;
         const FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[sfb];
 
-        if (start_coef + num_coeffs > MAX_PREDICTORS)
+        if (start_coef + num_coeffs > MAX_PREDICTORS ||
+            (s->cur_channel && sce->band_type[sfb] >= INTENSITY_BT2) ||
+            sce->band_type[sfb] == NOISE_BT)
             continue;
 
         /* Normal coefficients */
