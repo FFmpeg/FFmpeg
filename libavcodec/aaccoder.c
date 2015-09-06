@@ -332,11 +332,11 @@ static void set_special_band_scalefactors(AACEncContext *s, SingleChannelElement
         start = 0;
         for (g = 0;  g < sce->ics.num_swb; g++) {
             if (sce->band_type[w*16+g] == INTENSITY_BT || sce->band_type[w*16+g] == INTENSITY_BT2) {
-                sce->sf_idx[w*16+g] = av_clip(ceilf(log2f(sce->is_ener[w*16+g])*2), -155, 100);
+                sce->sf_idx[w*16+g] = av_clip(roundf(log2f(sce->is_ener[w*16+g])*2), -155, 100);
                 minscaler_i = FFMIN(minscaler_i, sce->sf_idx[w*16+g]);
                 bands++;
             } else if (sce->band_type[w*16+g] == NOISE_BT) {
-                sce->sf_idx[w*16+g] = av_clip(4+log2f(sce->pns_ener[w*16+g])*2, -100, 155);
+                sce->sf_idx[w*16+g] = av_clip(roundf(log2f(sce->pns_ener[w*16+g])*2), -100, 155);
                 minscaler_n = FFMIN(minscaler_n, sce->sf_idx[w*16+g]);
                 bands++;
             }
