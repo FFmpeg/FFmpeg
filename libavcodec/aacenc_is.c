@@ -114,8 +114,8 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                 }
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
-                        float coef0 = sce0->pcoeffs[start+(w+w2)*128+i];
-                        float coef1 = sce1->pcoeffs[start+(w+w2)*128+i];
+                        float coef0 = fabsf(sce0->pcoeffs[start+(w+w2)*128+i]);
+                        float coef1 = fabsf(sce1->pcoeffs[start+(w+w2)*128+i]);
                         ener0  += coef0*coef0;
                         ener1  += coef1*coef1;
                         ener01 += (coef0 + coef1)*(coef0 + coef1);
