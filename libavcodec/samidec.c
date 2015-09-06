@@ -91,7 +91,7 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
                     break;
             }
             if (!av_strncasecmp(p, "<BR", 3)) {
-                    av_bprintf(dst, "\\N");
+                av_bprintf(dst, "\\N");
                 p++;
                 while (*p && *p != '>')
                     p++;
