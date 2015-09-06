@@ -205,7 +205,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     delta    = pts - s->pts - get_delay(s);
     out_size = avresample_available(s->avr);
 
-    if (labs(delta) > s->min_delta ||
+    if (llabs(delta) > s->min_delta ||
         (s->first_frame && delta && s->first_pts != AV_NOPTS_VALUE)) {
         av_log(ctx, AV_LOG_VERBOSE, "Discontinuity - %"PRId64" samples.\n", delta);
         out_size = av_clipl_int32((int64_t)out_size + delta);
