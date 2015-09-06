@@ -885,18 +885,10 @@ static const AVOption aacenc_options[] = {
         {"anmr",     "ANMR method",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_ANMR},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
         {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
         {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
-    {"aac_pns", "Perceptual Noise Substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AACENC_FLAGS, "aac_pns"},
-        {"disable",  "Disable perceptual noise substitution", 0, AV_OPT_TYPE_CONST, {.i64 =  0 }, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pns"},
-        {"enable",   "Enable perceptual noise substitution",  0, AV_OPT_TYPE_CONST, {.i64 =  1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pns"},
-    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AACENC_FLAGS, "intensity_stereo"},
-        {"disable",  "Disable intensity stereo coding", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "intensity_stereo"},
-        {"enable",   "Enable intensity stereo coding", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "intensity_stereo"},
-    {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "aac_tns"},
-        {"disable",  "Disable temporal noise shaping", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_tns"},
-        {"enable",   "Enable temporal noise shaping", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_tns"},
-    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, "aac_pred"},
-        {"disable",  "Disable AAC-Main prediction", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pred"},
-        {"enable",   "Enable AAC-Main prediction", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_pred"},
+    {"aac_pns", "Perceptual Noise Substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AACENC_FLAGS},
+    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AACENC_FLAGS},
+    {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AACENC_FLAGS},
+    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AACENC_FLAGS},
     {NULL}
 };
 
