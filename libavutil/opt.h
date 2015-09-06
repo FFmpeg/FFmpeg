@@ -236,6 +236,7 @@ enum AVOptionType{
     AV_OPT_TYPE_DURATION   = MKBETAG('D','U','R',' '),
     AV_OPT_TYPE_COLOR      = MKBETAG('C','O','L','R'),
     AV_OPT_TYPE_CHANNEL_LAYOUT = MKBETAG('C','H','L','A'),
+    AV_OPT_TYPE_BOOL           = MKBETAG('B','O','O','L'),
 };
 
 /**
