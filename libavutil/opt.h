@@ -236,17 +236,6 @@ enum AVOptionType{
     AV_OPT_TYPE_DURATION   = MKBETAG('D','U','R',' '),
     AV_OPT_TYPE_COLOR      = MKBETAG('C','O','L','R'),
     AV_OPT_TYPE_CHANNEL_LAYOUT = MKBETAG('C','H','L','A'),
-#if FF_API_OLD_AVOPTIONS
-    FF_OPT_TYPE_FLAGS = 0,
-    FF_OPT_TYPE_INT,
-    FF_OPT_TYPE_INT64,
-    FF_OPT_TYPE_DOUBLE,
-    FF_OPT_TYPE_FLOAT,
-    FF_OPT_TYPE_STRING,
-    FF_OPT_TYPE_RATIONAL,
-    FF_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
-    FF_OPT_TYPE_CONST=128,
-#endif
 };
 
 /**
@@ -377,51 +366,6 @@ typedef struct AVOptionRanges {
      */
     int nb_components;
 } AVOptionRanges;
-
-
-#if FF_API_OLD_AVOPTIONS
-/**
- * Set the field of obj with the given name to value.
- *
- * @param[in] obj A struct whose first element is a pointer to an
- * AVClass.
- * @param[in] name the name of the field to set
- * @param[in] val The value to set. If the field is not of a string
- * type, then the given string is parsed.
- * SI postfixes and some named scalars are supported.
- * If the field is of a numeric type, it has to be a numeric or named
- * scalar. Behavior with more than one scalar and +- infix operators
- * is undefined.
- * If the field is of a flags type, it has to be a sequence of numeric
- * scalars or named flags separated by '+' or '-'. Prefixing a flag
- * with '+' causes it to be set without affecting the other flags;
- * similarly, '-' unsets a flag.
- * @param[out] o_out if non-NULL put here a pointer to the AVOption
- * found
- * @param alloc this parameter is currently ignored
- * @return 0 if the value has been set, or an AVERROR code in case of
- * error:
- * AVERROR_OPTION_NOT_FOUND if no matching option exists
- * AVERROR(ERANGE) if the value is out of range
- * AVERROR(EINVAL) if the value is not valid
- * @deprecated use av_opt_set()
- */
-attribute_deprecated
-int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out);
-
-attribute_deprecated const AVOption *av_set_double(void *obj, const char *name, double n);
-attribute_deprecated const AVOption *av_set_q(void *obj, const char *name, AVRational n);
-attribute_deprecated const AVOption *av_set_int(void *obj, const char *name, int64_t n);
-
-attribute_deprecated
-double av_get_double(void *obj, const char *name, const AVOption **o_out);
-attribute_deprecated
-AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
-attribute_deprecated
-int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
-attribute_deprecated const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
-attribute_deprecated const AVOption *av_next_option(FF_CONST_AVUTIL55 void *obj, const AVOption *last);
-#endif
 
 /**
  * Show the obj options.
@@ -683,7 +627,7 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
  *             or NULL
  * @return next AVOption or NULL
  */
-const AVOption *av_opt_next(FF_CONST_AVUTIL55 void *obj, const AVOption *prev);
+const AVOption *av_opt_next(const void *obj, const AVOption *prev);
 
 /**
  * Iterate over AVOptions-enabled children of obj.
@@ -835,7 +779,7 @@ int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags
  * @param src  Object to copy into
  * @return 0 on success, negative on error
  */
-int av_opt_copy(void *dest, FF_CONST_AVUTIL55 void *src);
+int av_opt_copy(void *dest, const void *src);
 
 /**
  * Get a default list of allowed ranges for the given option.

@@ -42,13 +42,6 @@ enum {
      */
     AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT = 1,
 
-#if FF_API_AVFILTERBUFFER
-    /**
-     * Ignored
-     */
-    AV_BUFFERSRC_FLAG_NO_COPY = 2,
-#endif
-
     /**
      * Immediately push the frame to the output.
      */
@@ -63,21 +56,6 @@ enum {
 
 };
 
-#if FF_API_AVFILTERBUFFER
-/**
- * Add buffer data in picref to buffer_src.
- *
- * @param buffer_src  pointer to a buffer source context
- * @param picref      a buffer reference, or NULL to mark EOF
- * @param flags       a combination of AV_BUFFERSRC_FLAG_*
- * @return            >= 0 in case of success, a negative AVERROR code
- *                    in case of failure
- */
-attribute_deprecated
-int av_buffersrc_add_ref(AVFilterContext *buffer_src,
-                         AVFilterBufferRef *picref, int flags);
-#endif
-
 /**
  * Get the number of failed requests.
  *
@@ -86,21 +64,6 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_src,
  * The number is reset when a frame is added.
  */
 unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
-
-#if FF_API_AVFILTERBUFFER
-/**
- * Add a buffer to a filtergraph.
- *
- * @param ctx an instance of the buffersrc filter
- * @param buf buffer containing frame data to be passed down the filtergraph.
- * This function will take ownership of buf, the user must not free it.
- * A NULL buf signals EOF -- i.e. no more frames will be sent to this filter.
- *
- * @deprecated use av_buffersrc_write_frame() or av_buffersrc_add_frame()
- */
-attribute_deprecated
-int av_buffersrc_buffer(AVFilterContext *ctx, AVFilterBufferRef *buf);
-#endif
 
 /**
  * Add a frame to the buffer source.

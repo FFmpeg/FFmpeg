@@ -1669,17 +1669,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     /* If we have XXCH then the channel layout is managed differently */
     /* note that XLL will also have another way to do things */
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!(s->core_ext_mask & DCA_EXT_XXCH)
-        || (s->core_ext_mask & DCA_EXT_XXCH && avctx->request_channels > 0
-            && avctx->request_channels
-            < num_core_channels + !!s->lfe + s->xxch_chset_nch[0]))
-    {
-FF_ENABLE_DEPRECATION_WARNINGS
-#else
     if (!(s->core_ext_mask & DCA_EXT_XXCH)) {
-#endif
         /* xxx should also do MA extensions */
         if (s->amode < 16) {
             avctx->channel_layout = ff_dca_core_channel_layout[s->amode];
@@ -1694,15 +1684,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 s->xch_disable = 1;
             }
 
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-            if (s->xch_present && !s->xch_disable &&
-                (!avctx->request_channels ||
-                 avctx->request_channels > num_core_channels + !!s->lfe)) {
-FF_ENABLE_DEPRECATION_WARNINGS
-#else
             if (s->xch_present && !s->xch_disable) {
-#endif
                 if (avctx->channel_layout & AV_CH_BACK_CENTER) {
                     avpriv_request_sample(avctx, "XCh with Back center channel");
                     return AVERROR_INVALIDDATA;
@@ -1757,19 +1739,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         /* we only get here if an XXCH channel set can be added to the mix */
         channel_mask = s->xxch_core_spkmask;
 
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (avctx->request_channels > 0
-            && avctx->request_channels < s->prim_channels) {
-            channels = num_core_channels + !!s->lfe;
-            for (i = 0; i < s->xxch_chset && channels + s->xxch_chset_nch[i]
-                                              <= avctx->request_channels; i++) {
-                channels += s->xxch_chset_nch[i];
-                channel_mask |= s->xxch_spk_masks[i];
-            }
-FF_ENABLE_DEPRECATION_WARNINGS
-        } else
-#endif
         {
             channels = s->prim_channels + !!s->lfe;
             for (i = 0; i < s->xxch_chset; i++) {
@@ -2012,12 +1981,6 @@ static av_cold int dca_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     /* allow downmixing to stereo */
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->request_channels == 2)
-        avctx->request_channel_layout = AV_CH_LAYOUT_STEREO;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (avctx->channels > 2 &&
         avctx->request_channel_layout == AV_CH_LAYOUT_STEREO)
         avctx->channels = 2;

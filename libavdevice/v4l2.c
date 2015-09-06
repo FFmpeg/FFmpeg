@@ -394,13 +394,6 @@ static int mmap_init(AVFormatContext *ctx)
     return 0;
 }
 
-#if FF_API_DESTRUCT_PACKET
-static void dummy_release_buffer(AVPacket *pkt)
-{
-    av_assert0(0);
-}
-#endif
-
 static int enqueue_buffer(struct video_data *s, struct v4l2_buffer *buf)
 {
     int res = 0;
@@ -565,11 +558,6 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
         pkt->data     = s->buf_start[buf.index];
         pkt->size     = buf.bytesused;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        pkt->destruct = dummy_release_buffer;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         buf_descriptor = av_malloc(sizeof(struct buff_data));
         if (!buf_descriptor) {

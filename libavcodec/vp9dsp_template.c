@@ -1131,8 +1131,8 @@ static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *_dst, \
 \
     stride /= sizeof(pixel); \
     if (has_dconly && eob == 1) { \
-        const int t  = (((block[0] * 11585 + (1 << 13)) >> 14) \
-                                   * 11585 + (1 << 13)) >> 14; \
+        const int t  = ((((dctint) block[0] * 11585 + (1 << 13)) >> 14) \
+                                            * 11585 + (1 << 13)) >> 14; \
         block[0] = 0; \
         for (i = 0; i < sz; i++) { \
             for (j = 0; j < sz; j++) \
@@ -1186,7 +1186,7 @@ static av_always_inline void idct4_1d(const dctcoef *in, ptrdiff_t stride,
 static av_always_inline void iadst4_1d(const dctcoef *in, ptrdiff_t stride,
                                        dctcoef *out, int pass)
 {
-    int t0, t1, t2, t3;
+    dctint t0, t1, t2, t3;
 
     t0 =  5283 * IN(0) + 15212 * IN(2) +  9929 * IN(3);
     t1 =  9929 * IN(0) -  5283 * IN(2) - 15212 * IN(3);

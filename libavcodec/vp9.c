@@ -2766,146 +2766,6 @@ static void intra_recon_16bpp(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv
     intra_recon(ctx, y_off, uv_off, 2);
 }
 
-static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
-                                            uint8_t *dst, ptrdiff_t dst_stride,
-                                            const uint8_t *ref, ptrdiff_t ref_stride,
-                                            ThreadFrame *ref_frame,
-                                            ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
-                                            int px, int py, int pw, int ph,
-                                            int bw, int bh, int w, int h, int bytesperpixel,
-                                            const uint16_t *scale, const uint8_t *step)
-{
-#define scale_mv(n, dim) (((int64_t)(n) * scale[dim]) >> 14)
-    int mx, my;
-    int refbw_m1, refbh_m1;
-    int th;
-    VP56mv mv;
-
-    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
-    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
-    // BUG libvpx seems to scale the two components separately. This introduces
-    // rounding errors but we have to reproduce them to be exactly compatible
-    // with the output from libvpx...
-    mx = scale_mv(mv.x * 2, 0) + scale_mv(x * 16, 0);
-    my = scale_mv(mv.y * 2, 1) + scale_mv(y * 16, 1);
-
-    y = my >> 4;
-    x = mx >> 4;
-    ref += y * ref_stride + x * bytesperpixel;
-    mx &= 15;
-    my &= 15;
-    refbw_m1 = ((bw - 1) * step[0] + mx) >> 4;
-    refbh_m1 = ((bh - 1) * step[1] + my) >> 4;
-    // FIXME bilinear filter only needs 0/1 pixels, not 3/4
-    // we use +7 because the last 7 pixels of each sbrow can be changed in
-    // the longest loopfilter of the next sbrow
-    th = (y + refbh_m1 + 4 + 7) >> 6;
-    ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
-    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
-                                 ref - 3 * ref_stride - 3 * bytesperpixel,
-                                 288, ref_stride,
-                                 refbw_m1 + 8, refbh_m1 + 8,
-                                 x - 3, y - 3, w, h);
-        ref = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
-        ref_stride = 288;
-    }
-    smc(dst, dst_stride, ref, ref_stride, bh, mx, my, step[0], step[1]);
-}
-
-static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
-                                              uint8_t *dst_u, uint8_t *dst_v,
-                                              ptrdiff_t dst_stride,
-                                              const uint8_t *ref_u, ptrdiff_t src_stride_u,
-                                              const uint8_t *ref_v, ptrdiff_t src_stride_v,
-                                              ThreadFrame *ref_frame,
-                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
-                                              int px, int py, int pw, int ph,
-                                              int bw, int bh, int w, int h, int bytesperpixel,
-                                              const uint16_t *scale, const uint8_t *step)
-{
-    int mx, my;
-    int refbw_m1, refbh_m1;
-    int th;
-    VP56mv mv;
-
-    if (s->ss_h) {
-        // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 4, (s->cols * 4 - x + px + 3) << 4);
-        mx = scale_mv(mv.x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
-    } else {
-        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
-        mx = scale_mv(mv.x << 1, 0) + scale_mv(x * 16, 0);
-    }
-    if (s->ss_v) {
-        // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 4, (s->rows * 4 - y + py + 3) << 4);
-        my = scale_mv(mv.y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
-    } else {
-        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
-        my = scale_mv(mv.y << 1, 1) + scale_mv(y * 16, 1);
-    }
-#undef scale_mv
-    y = my >> 4;
-    x = mx >> 4;
-    ref_u += y * src_stride_u + x * bytesperpixel;
-    ref_v += y * src_stride_v + x * bytesperpixel;
-    mx &= 15;
-    my &= 15;
-    refbw_m1 = ((bw - 1) * step[0] + mx) >> 4;
-    refbh_m1 = ((bh - 1) * step[1] + my) >> 4;
-    // FIXME bilinear filter only needs 0/1 pixels, not 3/4
-    // we use +7 because the last 7 pixels of each sbrow can be changed in
-    // the longest loopfilter of the next sbrow
-    th = (y + refbh_m1 + 4 + 7) >> (6 - s->ss_v);
-    ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
-    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
-                                 ref_u - 3 * src_stride_u - 3 * bytesperpixel,
-                                 288, src_stride_u,
-                                 refbw_m1 + 8, refbh_m1 + 8,
-                                 x - 3, y - 3, w, h);
-        ref_u = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
-        smc(dst_u, dst_stride, ref_u, 288, bh, mx, my, step[0], step[1]);
-
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
-                                 ref_v - 3 * src_stride_v - 3 * bytesperpixel,
-                                 288, src_stride_v,
-                                 refbw_m1 + 8, refbh_m1 + 8,
-                                 x - 3, y - 3, w, h);
-        ref_v = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
-        smc(dst_v, dst_stride, ref_v, 288, bh, mx, my, step[0], step[1]);
-    } else {
-        smc(dst_u, dst_stride, ref_u, src_stride_u, bh, mx, my, step[0], step[1]);
-        smc(dst_v, dst_stride, ref_v, src_stride_v, bh, mx, my, step[0], step[1]);
-    }
-}
-
-#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
-                    px, py, pw, ph, bw, bh, w, h, i) \
-    mc_luma_scaled(s, s->dsp.s##mc, dst, dst_ls, src, src_ls, tref, row, col, \
-                   mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
-                   s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
-#define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                      row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
-    mc_chroma_scaled(s, s->dsp.s##mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                     row, col, mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
-                     s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
-#define SCALED 1
-#define FN(x) x##_scaled_8bpp
-#define BYTES_PER_PIXEL 1
-#include "vp9_mc_template.c"
-#undef FN
-#undef BYTES_PER_PIXEL
-#define FN(x) x##_scaled_16bpp
-#define BYTES_PER_PIXEL 2
-#include "vp9_mc_template.c"
-#undef mc_luma_dir
-#undef mc_chroma_dir
-#undef FN
-#undef BYTES_PER_PIXEL
-#undef SCALED
-
 static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
                                               uint8_t *dst, ptrdiff_t dst_stride,
                                               const uint8_t *ref, ptrdiff_t ref_stride,
@@ -3000,8 +2860,163 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
 #define FN(x) x##_16bpp
 #define BYTES_PER_PIXEL 2
 #include "vp9_mc_template.c"
-#undef mc_luma_dir_dir
-#undef mc_chroma_dir_dir
+#undef mc_luma_dir
+#undef mc_chroma_dir
+#undef FN
+#undef BYTES_PER_PIXEL
+#undef SCALED
+
+static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
+                                            vp9_mc_func (*mc)[2],
+                                            uint8_t *dst, ptrdiff_t dst_stride,
+                                            const uint8_t *ref, ptrdiff_t ref_stride,
+                                            ThreadFrame *ref_frame,
+                                            ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                            int px, int py, int pw, int ph,
+                                            int bw, int bh, int w, int h, int bytesperpixel,
+                                            const uint16_t *scale, const uint8_t *step)
+{
+    if (s->frames[CUR_FRAME].tf.f->width == ref_frame->f->width &&
+        s->frames[CUR_FRAME].tf.f->height == ref_frame->f->height) {
+        mc_luma_unscaled(s, mc, dst, dst_stride, ref, ref_stride, ref_frame,
+                         y, x, in_mv, bw, bh, w, h, bytesperpixel);
+    } else {
+#define scale_mv(n, dim) (((int64_t)(n) * scale[dim]) >> 14)
+    int mx, my;
+    int refbw_m1, refbh_m1;
+    int th;
+    VP56mv mv;
+
+    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
+    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
+    // BUG libvpx seems to scale the two components separately. This introduces
+    // rounding errors but we have to reproduce them to be exactly compatible
+    // with the output from libvpx...
+    mx = scale_mv(mv.x * 2, 0) + scale_mv(x * 16, 0);
+    my = scale_mv(mv.y * 2, 1) + scale_mv(y * 16, 1);
+
+    y = my >> 4;
+    x = mx >> 4;
+    ref += y * ref_stride + x * bytesperpixel;
+    mx &= 15;
+    my &= 15;
+    refbw_m1 = ((bw - 1) * step[0] + mx) >> 4;
+    refbh_m1 = ((bh - 1) * step[1] + my) >> 4;
+    // FIXME bilinear filter only needs 0/1 pixels, not 3/4
+    // we use +7 because the last 7 pixels of each sbrow can be changed in
+    // the longest loopfilter of the next sbrow
+    th = (y + refbh_m1 + 4 + 7) >> 6;
+    ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
+    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref - 3 * ref_stride - 3 * bytesperpixel,
+                                 288, ref_stride,
+                                 refbw_m1 + 8, refbh_m1 + 8,
+                                 x - 3, y - 3, w, h);
+        ref = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
+        ref_stride = 288;
+    }
+    smc(dst, dst_stride, ref, ref_stride, bh, mx, my, step[0], step[1]);
+    }
+}
+
+static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
+                                              vp9_mc_func (*mc)[2],
+                                              uint8_t *dst_u, uint8_t *dst_v,
+                                              ptrdiff_t dst_stride,
+                                              const uint8_t *ref_u, ptrdiff_t src_stride_u,
+                                              const uint8_t *ref_v, ptrdiff_t src_stride_v,
+                                              ThreadFrame *ref_frame,
+                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                              int px, int py, int pw, int ph,
+                                              int bw, int bh, int w, int h, int bytesperpixel,
+                                              const uint16_t *scale, const uint8_t *step)
+{
+    if (s->frames[CUR_FRAME].tf.f->width == ref_frame->f->width &&
+        s->frames[CUR_FRAME].tf.f->height == ref_frame->f->height) {
+        mc_chroma_unscaled(s, mc, dst_u, dst_v, dst_stride, ref_u, src_stride_u,
+                           ref_v, src_stride_v, ref_frame,
+                           y, x, in_mv, bw, bh, w, h, bytesperpixel);
+    } else {
+    int mx, my;
+    int refbw_m1, refbh_m1;
+    int th;
+    VP56mv mv;
+
+    if (s->ss_h) {
+        // BUG https://code.google.com/p/webm/issues/detail?id=820
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 4, (s->cols * 4 - x + px + 3) << 4);
+        mx = scale_mv(mv.x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
+    } else {
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
+        mx = scale_mv(mv.x << 1, 0) + scale_mv(x * 16, 0);
+    }
+    if (s->ss_v) {
+        // BUG https://code.google.com/p/webm/issues/detail?id=820
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 4, (s->rows * 4 - y + py + 3) << 4);
+        my = scale_mv(mv.y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
+    } else {
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
+        my = scale_mv(mv.y << 1, 1) + scale_mv(y * 16, 1);
+    }
+#undef scale_mv
+    y = my >> 4;
+    x = mx >> 4;
+    ref_u += y * src_stride_u + x * bytesperpixel;
+    ref_v += y * src_stride_v + x * bytesperpixel;
+    mx &= 15;
+    my &= 15;
+    refbw_m1 = ((bw - 1) * step[0] + mx) >> 4;
+    refbh_m1 = ((bh - 1) * step[1] + my) >> 4;
+    // FIXME bilinear filter only needs 0/1 pixels, not 3/4
+    // we use +7 because the last 7 pixels of each sbrow can be changed in
+    // the longest loopfilter of the next sbrow
+    th = (y + refbh_m1 + 4 + 7) >> (6 - s->ss_v);
+    ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
+    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref_u - 3 * src_stride_u - 3 * bytesperpixel,
+                                 288, src_stride_u,
+                                 refbw_m1 + 8, refbh_m1 + 8,
+                                 x - 3, y - 3, w, h);
+        ref_u = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
+        smc(dst_u, dst_stride, ref_u, 288, bh, mx, my, step[0], step[1]);
+
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref_v - 3 * src_stride_v - 3 * bytesperpixel,
+                                 288, src_stride_v,
+                                 refbw_m1 + 8, refbh_m1 + 8,
+                                 x - 3, y - 3, w, h);
+        ref_v = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
+        smc(dst_v, dst_stride, ref_v, 288, bh, mx, my, step[0], step[1]);
+    } else {
+        smc(dst_u, dst_stride, ref_u, src_stride_u, bh, mx, my, step[0], step[1]);
+        smc(dst_v, dst_stride, ref_v, src_stride_v, bh, mx, my, step[0], step[1]);
+    }
+    }
+}
+
+#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
+                    px, py, pw, ph, bw, bh, w, h, i) \
+    mc_luma_scaled(s, s->dsp.s##mc, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
+                   mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
+                   s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
+#define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+                      row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
+    mc_chroma_scaled(s, s->dsp.s##mc, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+                     row, col, mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
+                     s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
+#define SCALED 1
+#define FN(x) x##_scaled_8bpp
+#define BYTES_PER_PIXEL 1
+#include "vp9_mc_template.c"
+#undef FN
+#undef BYTES_PER_PIXEL
+#define FN(x) x##_scaled_16bpp
+#define BYTES_PER_PIXEL 2
+#include "vp9_mc_template.c"
+#undef mc_luma_dir
+#undef mc_chroma_dir
 #undef FN
 #undef BYTES_PER_PIXEL
 #undef SCALED
@@ -3338,9 +3353,9 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
 
             av_assert2(n <= 4);
             if (w & bw) {
-                s->dsp.mc[n][0][0][0][0](f->data[0] + yoff + o, f->linesize[0],
-                                         s->tmp_y + o, 128, h, 0, 0);
-                o += bw * bytesperpixel;
+                s->dsp.mc[n][0][0][0][0](f->data[0] + yoff + o * bytesperpixel, f->linesize[0],
+                                         s->tmp_y + o * bytesperpixel, 128, h, 0, 0);
+                o += bw;
             }
         }
     }
@@ -3353,11 +3368,11 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
 
             av_assert2(n <= 4);
             if (w & bw) {
-                s->dsp.mc[n][0][0][0][0](f->data[1] + uvoff + o, f->linesize[1],
-                                         s->tmp_uv[0] + o, 128, h, 0, 0);
-                s->dsp.mc[n][0][0][0][0](f->data[2] + uvoff + o, f->linesize[2],
-                                         s->tmp_uv[1] + o, 128, h, 0, 0);
-                o += bw * bytesperpixel;
+                s->dsp.mc[n][0][0][0][0](f->data[1] + uvoff + o * bytesperpixel, f->linesize[1],
+                                         s->tmp_uv[0] + o * bytesperpixel, 128, h, 0, 0);
+                s->dsp.mc[n][0][0][0][0](f->data[2] + uvoff + o * bytesperpixel, f->linesize[2],
+                                         s->tmp_uv[1] + o * bytesperpixel, 128, h, 0, 0);
+                o += bw;
             }
         }
     }
@@ -4235,7 +4250,9 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     for (i = 0; i < 8; i++) {
         if (s->refs[i].f->data[0])
             ff_thread_release_buffer(ctx, &s->refs[i]);
-        ff_thread_ref_frame(&s->refs[i], &s->next_refs[i]);
+        if (s->next_refs[i].f->data[0] &&
+            (res = ff_thread_ref_frame(&s->refs[i], &s->next_refs[i])) < 0)
+            return res;
     }
 
     if (!s->invisible) {
@@ -4335,15 +4352,14 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->ss_h = ssrc->ss_h;
     s->segmentation.enabled = ssrc->segmentation.enabled;
     s->segmentation.update_map = ssrc->segmentation.update_map;
+    s->segmentation.absolute_vals = ssrc->segmentation.absolute_vals;
     s->bytesperpixel = ssrc->bytesperpixel;
     s->bpp = ssrc->bpp;
     s->bpp_index = ssrc->bpp_index;
     memcpy(&s->prob_ctx, &ssrc->prob_ctx, sizeof(s->prob_ctx));
     memcpy(&s->lf_delta, &ssrc->lf_delta, sizeof(s->lf_delta));
-    if (ssrc->segmentation.enabled) {
-        memcpy(&s->segmentation.feat, &ssrc->segmentation.feat,
-               sizeof(s->segmentation.feat));
-    }
+    memcpy(&s->segmentation.feat, &ssrc->segmentation.feat,
+           sizeof(s->segmentation.feat));
 
     return 0;
 }

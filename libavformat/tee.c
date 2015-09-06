@@ -396,13 +396,7 @@ static int filter_packet(void *log_ctx, AVPacket *pkt,
                                              &new_pkt.data, &new_pkt.size,
                                              pkt->data, pkt->size,
                                              pkt->flags & AV_PKT_FLAG_KEY);
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (ret == 0 && new_pkt.data != pkt->data
-#if FF_API_DESTRUCT_PACKET
-            && new_pkt.destruct
-#endif
-            ) {
-FF_ENABLE_DEPRECATION_WARNINGS
+        if (ret == 0 && new_pkt.data != pkt->data) {
             if ((ret = av_copy_packet(&new_pkt, pkt)) < 0)
                 break;
             ret = 1;

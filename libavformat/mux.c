@@ -736,11 +736,6 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     if (!this_pktl)
         return AVERROR(ENOMEM);
     this_pktl->pkt = *pkt;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-    pkt->destruct  = NULL;           // do not free original but only the copy
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     pkt->buf       = NULL;
     pkt->side_data = NULL;
     pkt->side_data_elems = 0;
@@ -1064,11 +1059,6 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
     pkt->buf = local_pkt.buf;
     pkt->side_data       = local_pkt.side_data;
     pkt->side_data_elems = local_pkt.side_data_elems;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-    pkt->destruct = local_pkt.destruct;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     return ret;
 }
 

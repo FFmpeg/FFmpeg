@@ -155,27 +155,6 @@ typedef struct AVPixFmtDescriptor {
  */
 #define AV_PIX_FMT_FLAG_ALPHA        (1 << 7)
 
-#if FF_API_PIX_FMT
-/**
- * @deprecated use the AV_PIX_FMT_FLAG_* flags
- */
-#define PIX_FMT_BE        AV_PIX_FMT_FLAG_BE
-#define PIX_FMT_PAL       AV_PIX_FMT_FLAG_PAL
-#define PIX_FMT_BITSTREAM AV_PIX_FMT_FLAG_BITSTREAM
-#define PIX_FMT_HWACCEL   AV_PIX_FMT_FLAG_HWACCEL
-#define PIX_FMT_PLANAR    AV_PIX_FMT_FLAG_PLANAR
-#define PIX_FMT_RGB       AV_PIX_FMT_FLAG_RGB
-#define PIX_FMT_PSEUDOPAL AV_PIX_FMT_FLAG_PSEUDOPAL
-#define PIX_FMT_ALPHA     AV_PIX_FMT_FLAG_ALPHA
-#endif
-
-#if FF_API_PIX_FMT_DESC
-/**
- * The array of all the pixel format descriptors.
- */
-extern attribute_deprecated const AVPixFmtDescriptor av_pix_fmt_descriptors[];
-#endif
-
 /**
  * Read a line from an image, and write the values of the
  * pixel format component c to dst.

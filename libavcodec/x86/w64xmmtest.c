@@ -65,13 +65,6 @@ wrap(avcodec_encode_audio2(AVCodecContext *avctx,
                     got_packet_ptr);
 }
 
-wrap(avcodec_encode_video(AVCodecContext *avctx,
-                          uint8_t *buf, int buf_size,
-                          const AVFrame *pict))
-{
-    testxmmclobbers(avcodec_encode_video, avctx, buf, buf_size, pict);
-}
-
 wrap(avcodec_encode_subtitle(AVCodecContext *avctx,
                              uint8_t *buf, int buf_size,
                              const AVSubtitle *sub))

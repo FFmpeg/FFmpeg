@@ -87,13 +87,6 @@
 
 /* misc math functions */
 
-/**
- * Reverse the order of the bits of an 8-bits unsigned integer.
- */
-#if FF_API_AV_REVERSE
-extern attribute_deprecated const uint8_t av_reverse[256];
-#endif
-
 #ifdef HAVE_AV_CONFIG_H
 #   include "config.h"
 #   include "intmath.h"

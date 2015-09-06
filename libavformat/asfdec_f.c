@@ -1420,11 +1420,6 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             }
             asf_st->frag_offset         = 0;
             *pkt                        = asf_st->pkt;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-            asf_st->pkt.destruct        = NULL;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             asf_st->pkt.buf             = 0;
             asf_st->pkt.size            = 0;
             asf_st->pkt.data            = 0;

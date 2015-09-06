@@ -67,11 +67,11 @@ quad(side)
 8 channels (FL+FR+LFE+BC+SL+SR+DL+DR)
 8 channels (FL+FR+FC+BC+SL+SR+DL+DR)
 -1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, blah);
-0 = ff_parse_channel_layout(0000000000000004,  1, 1);
-0 = ff_parse_channel_layout(0000000000000003,  2, 2);
+0 = ff_parse_channel_layout(0000000000000001,  1, 1);
+0 = ff_parse_channel_layout(0000000000000002,  1, 2);
 -1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, -1);
-0 = ff_parse_channel_layout(0000000000000000, 60, 60);
--1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, 65);
+0 = ff_parse_channel_layout(000000000000003C,  4, 60);
+0 = ff_parse_channel_layout(0000000000000041,  2, 65);
 0 = ff_parse_channel_layout(0000000000000004,  1, 1c);
 0 = ff_parse_channel_layout(0000000000000003,  2, 2c);
 -1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, -1c);
@@ -79,7 +79,7 @@ quad(side)
 -1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, 65c);
 0 = ff_parse_channel_layout(000000000000003F,  6, 5.1);
 0 = ff_parse_channel_layout(0000000000000003,  2, stereo);
-0 = ff_parse_channel_layout(0000000000000004,  1, 1+1+1+1);
+0 = ff_parse_channel_layout(0000000000000001,  1, 1+1+1+1);
 0 = ff_parse_channel_layout(0000000000000004,  1, 1c+1c+1c+1c);
 0 = ff_parse_channel_layout(0000000000000007,  3, 2c+1c);
 0 = ff_parse_channel_layout(0000000000000003,  2, 0x3);

@@ -127,10 +127,7 @@ void av_write_image_line(const uint16_t *src,
     }
 }
 
-#if !FF_API_PIX_FMT_DESC
-static
-#endif
-const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
+static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_YUV420P] = {
         .name = "yuv420p",
         .nb_components = 3,

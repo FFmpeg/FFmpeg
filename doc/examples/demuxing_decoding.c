@@ -60,12 +60,11 @@ static int audio_frame_count = 0;
  * appropriate to your needs. Look for the use of api_mode in this example to
  * see what are the differences of API usage between them */
 enum {
-    API_MODE_OLD                  = 0, /* old method, deprecated */
     API_MODE_NEW_API_REF_COUNT    = 1, /* new method, using the frame reference counting */
     API_MODE_NEW_API_NO_REF_COUNT = 2, /* new method, without reference counting */
 };
 
-static int api_mode = API_MODE_OLD;
+static int api_mode = API_MODE_NEW_API_NO_REF_COUNT;
 
 static int decode_packet(int *got_frame, int cached)
 {
@@ -243,8 +242,7 @@ int main (int argc, char **argv)
     }
     if (argc == 5) {
         const char *mode = argv[1] + strlen("-refcount=");
-        if      (!strcmp(mode, "old"))            api_mode = API_MODE_OLD;
-        else if (!strcmp(mode, "new_norefcount")) api_mode = API_MODE_NEW_API_NO_REF_COUNT;
+        if      (!strcmp(mode, "new_norefcount")) api_mode = API_MODE_NEW_API_NO_REF_COUNT;
         else if (!strcmp(mode, "new_refcount"))   api_mode = API_MODE_NEW_API_REF_COUNT;
         else {
             fprintf(stderr, "unknow mode '%s'\n", mode);
@@ -315,12 +313,7 @@ int main (int argc, char **argv)
         goto end;
     }
 
-    /* When using the new API, you need to use the libavutil/frame.h API, while
-     * the classic frame management is available in libavcodec */
-    if (api_mode == API_MODE_OLD)
-        frame = avcodec_alloc_frame();
-    else
-        frame = av_frame_alloc();
+    frame = av_frame_alloc();
     if (!frame) {
         fprintf(stderr, "Could not allocate frame\n");
         ret = AVERROR(ENOMEM);
@@ -397,10 +390,7 @@ end:
         fclose(video_dst_file);
     if (audio_dst_file)
         fclose(audio_dst_file);
-    if (api_mode == API_MODE_OLD)
-        avcodec_free_frame(&frame);
-    else
-        av_frame_free(&frame);
+    av_frame_free(&frame);
     av_free(video_dst_data[0]);
 
     return ret < 0;

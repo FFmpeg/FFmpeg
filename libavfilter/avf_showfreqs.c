@@ -452,8 +452,10 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
 #define M(a, b) (sqrt((a) * (a) + (b) * (b)))
 
     colors = av_strdup(s->colors);
-    if (!colors)
+    if (!colors) {
+        av_frame_free(&out);
         return AVERROR(ENOMEM);
+    }
 
     for (ch = 0; ch < s->nb_channels; ch++) {
         uint8_t fg[4] = { 0xff, 0xff, 0xff, 0xff };
@@ -484,7 +486,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     ShowFreqsContext *s = ctx->priv;
     AVFrame *fin = NULL;
-    int ret;
+    int ret = 0;
 
     av_audio_fifo_write(s->fifo, (void **)in->extended_data, in->nb_samples);
     while (av_audio_fifo_size(s->fifo) >= s->win_size) {
@@ -501,6 +503,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             goto fail;
 
         ret = plot_freqs(inlink, fin);
+        av_frame_free(&fin);
         av_audio_fifo_drain(s->fifo, s->skip_samples);
         if (ret < 0)
             goto fail;

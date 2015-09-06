@@ -7,7 +7,6 @@ HEADERS = avcodec.h                                                     \
           dv_profile.h                                                  \
           d3d11va.h                                                     \
           dxva2.h                                                       \
-          old_codec_ids.h                                               \
           qsv.h                                                         \
           vaapi.h                                                       \
           vda.h                                                         \
@@ -909,7 +908,6 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
                                           aac_tablegen_decl.h           \
                                           fft-internal.h                \
-                                          old_codec_ids.h               \
                                           tableprint.h                  \
                                           tableprint_vlc.h              \
                                           $(ARCH)/vp56_arith.h          \

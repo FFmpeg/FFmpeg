@@ -110,8 +110,8 @@ static int query_formats(AVFilterContext *ctx)
         for (i = 0; i < nb_ch; i++)
             s->route[i] = i;
         outlayout = av_get_default_channel_layout(nb_ch);
-        if (!outlayout)
-            outlayout = ((int64_t)1 << nb_ch) - 1;
+        if (!outlayout && nb_ch)
+            outlayout = 0xFFFFFFFFFFFFFFFFULL >> (64 - nb_ch);
     } else {
         int *route[SWR_CH_MAX];
         int c, out_ch_number = 0;

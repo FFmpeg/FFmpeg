@@ -501,18 +501,9 @@ AVFilter *avfilter_get_by_name(const char *name)
 int avfilter_register(AVFilter *filter)
 {
     AVFilter **f = last_filter;
-    int i;
 
     /* the filter must select generic or internal exclusively */
     av_assert0((filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE) != AVFILTER_FLAG_SUPPORT_TIMELINE);
-
-    for(i=0; filter->inputs && filter->inputs[i].name; i++) {
-        const AVFilterPad *input = &filter->inputs[i];
-#if FF_API_AVFILTERPAD_PUBLIC
-        av_assert0(     !input->filter_frame
-                    || (!input->start_frame && !input->end_frame));
-#endif
-    }
 
     filter->next = NULL;
 
@@ -671,12 +662,6 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         if (!ret->outputs)
             goto err;
     }
-#if FF_API_FOO_COUNT
-FF_DISABLE_DEPRECATION_WARNINGS
-    ret->output_count = ret->nb_outputs;
-    ret->input_count  = ret->nb_inputs;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     return ret;
 

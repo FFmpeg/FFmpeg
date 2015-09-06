@@ -527,10 +527,9 @@ IADST4_FN iadst, IADST4, iadst, IADST4, ssse3
     pmulhrsw            m2, [pw_6270x2]                     ; m2=t2a
     pmulhrsw            m7, m1, [pw_16069x2]                ; m7=t7a
     pmulhrsw            m1, [pw_3196x2]                     ; m1=t4a
-    pmulhrsw            m5, m3, [pw_9102x2]                 ; m5=-t5a
+    pmulhrsw            m5, m3, [pw_m9102x2]                ; m5=t5a
     pmulhrsw            m3, [pw_13623x2]                    ; m3=t6a
     SUMSUB_BA            w,  5,  1, 4                       ; m1=t4a+t5a (t4), m5=t4a-t5a (t5a)
-    SWAP                 1,  5
     SUMSUB_BA            w,  3,  7, 4                       ; m3=t7a+t6a (t7), m7=t7a-t6a (t6a)
     SUMSUB_BA            w,  1,  7, 4                       ; m1=t6a+t5a (t6), m7=t6a-t5a (t5)
     pmulhrsw            m1, W_11585x2_REG                   ; m1=t6

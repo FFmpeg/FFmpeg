@@ -6,7 +6,6 @@ HEADERS = adler32.h                                                     \
           aes.h                                                         \
           attributes.h                                                  \
           audio_fifo.h                                                  \
-          audioconvert.h                                                \
           avassert.h                                                    \
           avstring.h                                                    \
           avutil.h                                                      \
@@ -42,7 +41,6 @@ HEADERS = adler32.h                                                     \
           motion_vector.h                                               \
           murmur3.h                                                     \
           dict.h                                                        \
-          old_pix_fmts.h                                                \
           opt.h                                                         \
           parseutils.h                                                  \
           pixdesc.h                                                     \
@@ -147,8 +145,6 @@ OBJS += $(COMPAT_OBJS:%=../compat/%)
 
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)            += avutilres.o
-
-SKIPHEADERS          = old_pix_fmts.h
 
 SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
 SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h

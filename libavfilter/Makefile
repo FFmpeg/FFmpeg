@@ -2,9 +2,7 @@ include $(SUBDIR)../config.mak
 
 NAME = avfilter
 
-HEADERS = asrc_abuffer.h                                                \
-          avcodec.h                                                     \
-          avfilter.h                                                    \
+HEADERS = avfilter.h                                                    \
           avfiltergraph.h                                               \
           buffersink.h                                                  \
           buffersrc.h                                                   \
@@ -14,7 +12,6 @@ OBJS = allfilters.o                                                     \
        audio.o                                                          \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
-       buffer.o                                                         \
        buffersink.o                                                     \
        buffersrc.o                                                      \
        drawutils.o                                                      \
@@ -25,9 +22,6 @@ OBJS = allfilters.o                                                     \
        opencl_allkernels.o                                              \
        transform.o                                                      \
        video.o                                                          \
-
-
-OBJS-$(CONFIG_AVCODEC)                       += avcodec.o
 
 OBJS-$(CONFIG_ACROSSFADE_FILTER)             += af_afade.o
 OBJS-$(CONFIG_ADELAY_FILTER)                 += af_adelay.o
