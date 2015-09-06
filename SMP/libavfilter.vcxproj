@@ -83,8 +83,6 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\avfiltergraph.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\buffer.c">
-    </ClCompile>
     <ClCompile Include="..\libavfilter\buffersink.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\buffersrc.c">
@@ -104,8 +102,6 @@
     <ClCompile Include="..\libavfilter\transform.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\video.c">
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\avcodec.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_afade.c">
     </ClCompile>
@@ -530,8 +526,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\libavfilter\asrc_abuffer.h" />
-    <ClInclude Include="..\libavfilter\avcodec.h" />
     <ClInclude Include="..\libavfilter\avfilter.h" />
     <ClInclude Include="..\libavfilter\avfiltergraph.h" />
     <ClInclude Include="..\libavfilter\buffersink.h" />
@@ -786,8 +780,6 @@
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -854,8 +846,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -929,8 +919,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1007,8 +995,6 @@ echo            These errors are the result of dead code elimination not being p
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1087,8 +1073,6 @@ echo            These errors are the result of dead code elimination not being p
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1165,8 +1149,6 @@ echo            These errors are the result of dead code elimination not being p
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1247,8 +1229,6 @@ echo            These errors are the result of dead code elimination not being p
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1323,8 +1303,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1406,8 +1384,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1487,8 +1463,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1570,8 +1544,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1651,8 +1623,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1727,8 +1697,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
@@ -1802,8 +1770,6 @@ cd $(ProjectDir)
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\asrc_abuffer.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avcodec.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
 copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter

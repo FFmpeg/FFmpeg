@@ -21,9 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="..\libavcodec\x86\deinterlace.asm">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </YASM>
     <YASM Include="..\libavcodec\x86\ac3dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -2585,9 +2582,6 @@
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\dxva2.h">
-      <Filter>Header Files\libavcodec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libavcodec\old_codec_ids.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\qsv.h">

@@ -77,9 +77,6 @@
     <ClCompile Include="..\libavfilter\avfiltergraph.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\buffer.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\buffersink.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -108,9 +105,6 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\video.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\avcodec.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_afade.c">
@@ -724,12 +718,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\libavfilter\asrc_abuffer.h">
-      <Filter>Header Files\libavfilter</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libavfilter\avcodec.h">
-      <Filter>Header Files\libavfilter</Filter>
-    </ClInclude>
     <ClInclude Include="..\libavfilter\avfilter.h">
       <Filter>Header Files\libavfilter</Filter>
     </ClInclude>

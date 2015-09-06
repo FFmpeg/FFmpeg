@@ -216,7 +216,6 @@
     <ClInclude Include="..\libavutil\aes.h" />
     <ClInclude Include="..\libavutil\attributes.h" />
     <ClInclude Include="..\libavutil\audio_fifo.h" />
-    <ClInclude Include="..\libavutil\audioconvert.h" />
     <ClInclude Include="..\libavutil\avassert.h" />
     <ClInclude Include="..\libavutil\avstring.h" />
     <ClInclude Include="..\libavutil\avutil.h" />
@@ -252,7 +251,6 @@
     <ClInclude Include="..\libavutil\motion_vector.h" />
     <ClInclude Include="..\libavutil\murmur3.h" />
     <ClInclude Include="..\libavutil\dict.h" />
-    <ClInclude Include="..\libavutil\old_pix_fmts.h" />
     <ClInclude Include="..\libavutil\opt.h" />
     <ClInclude Include="..\libavutil\parseutils.h" />
     <ClInclude Include="..\libavutil\pixdesc.h" />
@@ -529,7 +527,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -565,7 +562,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -654,7 +650,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -690,7 +685,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -786,7 +780,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -822,7 +815,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -921,7 +913,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -957,7 +948,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1058,7 +1048,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -1094,7 +1083,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1193,7 +1181,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -1229,7 +1216,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1332,7 +1318,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -1368,7 +1353,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1465,7 +1449,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -1501,7 +1484,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1605,7 +1587,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -1641,7 +1622,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1743,7 +1723,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -1779,7 +1758,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1883,7 +1861,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -1919,7 +1896,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -2021,7 +1997,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -2057,7 +2032,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -2154,7 +2128,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -2190,7 +2163,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -2286,7 +2258,6 @@ copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
-copy ..\libavutil\audioconvert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
 copy ..\libavutil\avstring.h $(OutDir)\include\libavutil
 copy ..\libavutil\avutil.h $(OutDir)\include\libavutil
@@ -2322,7 +2293,6 @@ copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
-copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil

@@ -1,38 +1,23 @@
 EXPORTS
     av_abuffersink_params_alloc
-    av_buffersink_get_buffer_ref
     av_buffersink_get_frame
     av_buffersink_get_frame_flags
     av_buffersink_get_frame_rate
     av_buffersink_get_samples
     av_buffersink_params_alloc
-    av_buffersink_poll_frame
-    av_buffersink_read
-    av_buffersink_read_samples
     av_buffersink_set_frame_size
     av_buffersrc_add_frame
     av_buffersrc_add_frame_flags
-    av_buffersrc_add_ref
-    av_buffersrc_buffer
     av_buffersrc_get_nb_failed_requests
     av_buffersrc_write_frame
     av_filter_next
     avfilter_add_matrix
     avfilter_config_links
     avfilter_configuration
-    avfilter_copy_buf_props
-    avfilter_copy_buffer_ref_props
-    avfilter_copy_frame_props
     avfilter_free
-    avfilter_get_audio_buffer_ref_from_arrays
-    avfilter_get_audio_buffer_ref_from_arrays_channels
-    avfilter_get_audio_buffer_ref_from_frame
-    avfilter_get_buffer_ref_from_frame
     avfilter_get_by_name
     avfilter_get_class
     avfilter_get_matrix
-    avfilter_get_video_buffer_ref_from_arrays
-    avfilter_get_video_buffer_ref_from_frame
     avfilter_graph_add_filter
     avfilter_graph_alloc
     avfilter_graph_alloc_filter
@@ -67,15 +52,11 @@ EXPORTS
     avfilter_pad_get_name
     avfilter_pad_get_type
     avfilter_process_command
-    avfilter_ref_buffer
-    avfilter_ref_get_channels
     avfilter_register
     avfilter_register_all
     avfilter_sub_matrix
     avfilter_transform
     avfilter_uninit
-    avfilter_unref_buffer
-    avfilter_unref_bufferp
     avfilter_version
     av_filter_ffversion DATA
     avfilter_all_channel_layouts DATA

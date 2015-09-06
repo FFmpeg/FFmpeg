@@ -29,7 +29,6 @@ EXPORTS
     av_dct_calc
     av_dct_end
     av_dct_init
-    av_destruct_packet
     av_dup_packet
     av_dv_codec_profile
     av_dv_codec_profile2
@@ -104,7 +103,6 @@ EXPORTS
     avcodec_align_dimensions
     avcodec_align_dimensions2
     avcodec_alloc_context3
-    avcodec_alloc_frame
     avcodec_chroma_pos_to_enum
     avcodec_close
     avcodec_configuration
@@ -112,24 +110,18 @@ EXPORTS
     avcodec_dct_alloc
     avcodec_dct_get_class
     avcodec_dct_init
-    avcodec_decode_audio3
     avcodec_decode_audio4
     avcodec_decode_subtitle2
     avcodec_decode_video2
     avcodec_default_execute
     avcodec_default_execute2
-    avcodec_default_get_buffer
     avcodec_default_get_buffer2
     avcodec_default_get_format
-    avcodec_default_reget_buffer
-    avcodec_default_release_buffer
     avcodec_descriptor_get
     avcodec_descriptor_get_by_name
     avcodec_descriptor_next
-    avcodec_encode_audio
     avcodec_encode_audio2
     avcodec_encode_subtitle
-    avcodec_encode_video
     avcodec_encode_video2
     avcodec_enum_to_chroma_pos
     avcodec_fill_audio_frame
@@ -142,13 +134,11 @@ EXPORTS
     avcodec_find_encoder_by_name
     avcodec_flush_buffers
     avcodec_free_context
-    avcodec_free_frame
     avcodec_get_chroma_sub_sample
     avcodec_get_class
     avcodec_get_context_defaults3
     avcodec_get_edge_width
     avcodec_get_frame_class
-    avcodec_get_frame_defaults
     avcodec_get_name
     avcodec_get_pix_fmt_loss
     avcodec_get_subtitle_rect_class
@@ -163,7 +153,6 @@ EXPORTS
     avcodec_string
     avcodec_version
     avpicture_alloc
-    avpicture_deinterlace
     avpicture_fill
     avpicture_free
     avpicture_get_size
@@ -181,12 +170,9 @@ EXPORTS
     avpriv_dnxhd_get_frame_size
     avpriv_dnxhd_get_interlaced
     avpriv_do_elbg
-    avpriv_dv_frame_profile2
     avpriv_exif_decode_ifd
     avpriv_find_pix_fmt
     avpriv_find_start_code
-    avpriv_flac_is_extradata_valid
-    avpriv_flac_parse_streaminfo
     avpriv_get_raw_pix_fmt_tags
     avpriv_h264_has_num_reorder_frames
     avpriv_init_elbg
@@ -200,10 +186,6 @@ EXPORTS
     avpriv_tak_parse_streaminfo
     avpriv_toupper4
     avpriv_unlock_avformat
-    avpriv_vorbis_parse_extradata
-    avpriv_vorbis_parse_frame
-    avpriv_vorbis_parse_frame_flags
-    avpriv_vorbis_parse_reset
     avsubtitle_free
     av_codec_ffversion DATA
     avpriv_ac3_channel_layout_tab DATA

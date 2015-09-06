@@ -178,8 +178,6 @@ EXPORTS
     av_get_colorspace_name
     av_get_cpu_flags
     av_get_default_channel_layout
-    av_get_double
-    av_get_int
     av_get_known_color_name
     av_get_media_type_string
     av_get_packed_sample_fmt
@@ -190,13 +188,11 @@ EXPORTS
     av_get_pix_fmt_name
     av_get_pix_fmt_string
     av_get_planar_sample_fmt
-    av_get_q
     av_get_random_seed
     av_get_sample_fmt
     av_get_sample_fmt_name
     av_get_sample_fmt_string
     av_get_standard_channel_layout
-    av_get_string
     av_get_time_base_q
     av_get_token
     av_gettime
@@ -267,7 +263,6 @@ EXPORTS
     av_murmur3_init_seeded
     av_murmur3_update
     av_nearer_q
-    av_next_option
     av_opencl_alloc_external_env
     av_opencl_benchmark
     av_opencl_buffer_create
@@ -379,11 +374,7 @@ EXPORTS
     av_samples_get_buffer_size
     av_samples_set_silence
     av_set_cpu_flags_mask
-    av_set_double
-    av_set_int
     av_set_options_string
-    av_set_q
-    av_set_string3
     av_sha512_alloc
     av_sha512_final
     av_sha512_init
@@ -469,8 +460,6 @@ EXPORTS
     av_camellia_size DATA
     av_cast5_size DATA
     av_md5_size DATA
-    av_pix_fmt_descriptors DATA
-    av_reverse DATA
     av_ripemd_size DATA
     av_sha512_size DATA
     av_sha_size DATA
