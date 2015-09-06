@@ -98,6 +98,7 @@ typedef struct AACEncContext {
     AACCoefficientsEncoder *coder;
     int cur_channel;
     int last_frame;
+    int random_state;
     float lambda;
     AudioFrameQueue afq;
     DECLARE_ALIGNED(16, int,   qcoefs)[96];      ///< quantized coefficients
