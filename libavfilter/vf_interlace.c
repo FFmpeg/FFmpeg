@@ -46,8 +46,8 @@ static const AVOption interlace_options[] = {
         AV_OPT_TYPE_CONST, {.i64 = MODE_TFF }, INT_MIN, INT_MAX, .flags = V, .unit = "scan" },
     { "bff", "bottom field first", 0,
         AV_OPT_TYPE_CONST, {.i64 = MODE_BFF }, INT_MIN, INT_MAX, .flags = V, .unit = "scan" },
-    { "lowpass", "enable vertical low-pass filter", OFFSET(lowpass),
-        AV_OPT_TYPE_INT,   {.i64 = 1 },        0, 1, .flags = V },
+    { "lowpass", "set vertical low-pass filter", OFFSET(lowpass),
+        AV_OPT_TYPE_BOOL,  {.i64 = 1 },        0, 1, .flags = V },
     { NULL }
 };
 
