@@ -2546,26 +2546,6 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
     switch(id){
         //This is for future deprecatec codec ids, its empty since
         //last major bump but will fill up again over time, please don't remove it
-//         case AV_CODEC_ID_UTVIDEO_DEPRECATED: return AV_CODEC_ID_UTVIDEO;
-        case AV_CODEC_ID_BRENDER_PIX_DEPRECATED         : return AV_CODEC_ID_BRENDER_PIX;
-        case AV_CODEC_ID_OPUS_DEPRECATED                : return AV_CODEC_ID_OPUS;
-        case AV_CODEC_ID_TAK_DEPRECATED                 : return AV_CODEC_ID_TAK;
-        case AV_CODEC_ID_PAF_AUDIO_DEPRECATED           : return AV_CODEC_ID_PAF_AUDIO;
-        case AV_CODEC_ID_PCM_S16BE_PLANAR_DEPRECATED    : return AV_CODEC_ID_PCM_S16BE_PLANAR;
-        case AV_CODEC_ID_PCM_S24LE_PLANAR_DEPRECATED    : return AV_CODEC_ID_PCM_S24LE_PLANAR;
-        case AV_CODEC_ID_PCM_S32LE_PLANAR_DEPRECATED    : return AV_CODEC_ID_PCM_S32LE_PLANAR;
-        case AV_CODEC_ID_ADPCM_VIMA_DEPRECATED          : return AV_CODEC_ID_ADPCM_VIMA;
-        case AV_CODEC_ID_ESCAPE130_DEPRECATED           : return AV_CODEC_ID_ESCAPE130;
-        case AV_CODEC_ID_EXR_DEPRECATED                 : return AV_CODEC_ID_EXR;
-        case AV_CODEC_ID_G2M_DEPRECATED                 : return AV_CODEC_ID_G2M;
-        case AV_CODEC_ID_PAF_VIDEO_DEPRECATED           : return AV_CODEC_ID_PAF_VIDEO;
-        case AV_CODEC_ID_WEBP_DEPRECATED                : return AV_CODEC_ID_WEBP;
-        case AV_CODEC_ID_HEVC_DEPRECATED                : return AV_CODEC_ID_HEVC;
-        case AV_CODEC_ID_MVC1_DEPRECATED                : return AV_CODEC_ID_MVC1;
-        case AV_CODEC_ID_MVC2_DEPRECATED                : return AV_CODEC_ID_MVC2;
-        case AV_CODEC_ID_SANM_DEPRECATED                : return AV_CODEC_ID_SANM;
-        case AV_CODEC_ID_SGIRLE_DEPRECATED              : return AV_CODEC_ID_SGIRLE;
-        case AV_CODEC_ID_VP7_DEPRECATED                 : return AV_CODEC_ID_VP7;
         default                                         : return id;
     }
 }
