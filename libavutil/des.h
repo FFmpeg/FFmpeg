@@ -23,6 +23,7 @@
 #define AVUTIL_DES_H
 
 #include <stdint.h>
+#include "version.h"
 
 /**
  * @defgroup lavu_des DES
