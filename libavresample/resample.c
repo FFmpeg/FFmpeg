@@ -256,7 +256,6 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
     }
     return 0;
 
-reinit_fail:
     ff_audio_data_free(&fifo_buf);
     return ret;
 }
