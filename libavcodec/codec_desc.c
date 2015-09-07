@@ -2806,15 +2806,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
     },
 
     /* deprecated codec ids */
-#if FF_API_VIMA_DECODER
-    {
-        .id        = AV_CODEC_ID_VIMA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "vima",
-        .long_name = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio (deprecated id)"),
-        .props     = AV_CODEC_PROP_LOSSY,
-    },
-#endif
 };
 
 const AVCodecDescriptor *avcodec_descriptor_get(enum AVCodecID id)

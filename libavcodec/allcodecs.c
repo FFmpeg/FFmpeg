@@ -517,9 +517,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER(ADPCM_VIMA,        adpcm_vima);
     REGISTER_DECODER(ADPCM_XA,          adpcm_xa);
     REGISTER_ENCDEC (ADPCM_YAMAHA,      adpcm_yamaha);
-#if FF_API_VIMA_DECODER
-    REGISTER_DECODER(VIMA,              vima);
-#endif
 
     /* subtitles */
     REGISTER_ENCDEC (SSA,               ssa);
