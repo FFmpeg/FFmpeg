@@ -916,6 +916,7 @@ SKIPHEADERS-$(CONFIG_D3D11VA)          += d3d11va.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_LIBUTVIDEO)       += libutvideo.h
+SKIPHEADERS-$(CONFIG_LIBVPX)           += libvpx.h
 SKIPHEADERS-$(CONFIG_LIBWEBP_ENCODER)  += libwebpenc_common.h
 SKIPHEADERS-$(CONFIG_QSV)              += qsv.h qsv_internal.h
 SKIPHEADERS-$(CONFIG_QSVDEC)           += qsvdec.h
