@@ -1145,6 +1145,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\samidec.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\htmlsubtitles.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\s302m.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\s302menc.c">
