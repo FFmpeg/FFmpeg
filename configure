@@ -1928,6 +1928,7 @@ CONFIG_EXTRA="
     llauddsp
     llviddsp
     lpc
+    lzf
     me_cmp
     mpeg_er
     mpegaudio
