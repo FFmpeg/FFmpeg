@@ -1242,7 +1242,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
 #endif /* CONFIG_ZLIB */
     read_ret = http_buf_read(h, buf, size);
     if (read_ret < 0 && s->reconnect && !h->is_streamed && s->filesize > 0 && s->off < s->filesize) {
-        av_log(h, AV_LOG_INFO, "Will reconnect at %"PRId64".\n", s->off);
+        av_log(h, AV_LOG_INFO, "Will reconnect at %"PRId64" error=%s.\n", s->off, av_err2str(read_ret));
         seek_ret = http_seek_internal(h, s->off, SEEK_SET, 1);
         if (seek_ret != s->off) {
             av_log(h, AV_LOG_ERROR, "Failed to reconnect at %"PRId64".\n", s->off);
@@ -1427,7 +1427,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
              ((whence == SEEK_CUR && off == 0) ||
               (whence == SEEK_SET && off == s->off)))
         return s->off;
-    else if ((s->filesize == -1 && whence == SEEK_END) || h->is_streamed)
+    else if ((s->filesize == -1 && whence == SEEK_END))
         return AVERROR(ENOSYS);
 
     if (whence == SEEK_CUR)
@@ -1439,6 +1439,9 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     if (off < 0)
         return AVERROR(EINVAL);
     s->off = off;
+
+    if (s->off && h->is_streamed)
+        return AVERROR(ENOSYS);
 
     /* we save the old context in case the seek fails */
     old_buf_size = s->buf_end - s->buf_ptr;

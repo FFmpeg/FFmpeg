@@ -2857,7 +2857,26 @@ Specify the sample rate, default is 44100.
 Specify the duration of the generated audio stream.
 
 @item samples_per_frame
-Set the number of samples per output frame, default is 1024.
+Set the number of samples per output frame.
+
+The expression can contain the following constants:
+
+@table @option
+@item n
+The (sequential) number of the output audio frame, starting from 0.
+
+@item pts
+The PTS (Presentation TimeStamp) of the output audio frame,
+expressed in @var{TB} units.
+
+@item t
+The PTS of the output audio frame, expressed in seconds.
+
+@item TB
+The timebase of the output audio frames.
+@end table
+
+Default is @code{1024}.
 @end table
 
 @subsection Examples
@@ -2878,6 +2897,12 @@ sine=f=220:b=4:d=5
 sine=frequency=220:beep_factor=4:duration=5
 @end example
 
+@item
+Generate a 1 kHz sine wave following @code{1602,1601,1602,1601,1602} NTSC
+pattern:
+@example
+sine=1000:samples_per_frame='st(0,mod(n,5)); 1602-not(not(eq(ld(0),1)+eq(ld(0),3)))'
+@end example
 @end itemize
 
 @c man end AUDIO SOURCES

@@ -55,16 +55,11 @@ static AVPacket pkt;
 static int video_frame_count = 0;
 static int audio_frame_count = 0;
 
-/* The different ways of decoding and managing data memory. You are not
- * supposed to support all the modes in your application but pick the one most
- * appropriate to your needs. Look for the use of api_mode in this example to
- * see what are the differences of API usage between them */
-enum {
-    API_MODE_NEW_API_REF_COUNT    = 1, /* new method, using the frame reference counting */
-    API_MODE_NEW_API_NO_REF_COUNT = 2, /* new method, without reference counting */
-};
-
-static int api_mode = API_MODE_NEW_API_NO_REF_COUNT;
+/* Enable or disable frame reference counting. You are not supposed to support
+ * both paths in your application but pick the one most appropriate to your
+ * needs. Look for the use of refcount in this example to see what are the
+ * differences of API usage between them. */
+static int refcount = 0;
 
 static int decode_packet(int *got_frame, int cached)
 {
@@ -144,9 +139,9 @@ static int decode_packet(int *got_frame, int cached)
         }
     }
 
-    /* If we use the new API with reference counting, we own the data and need
+    /* If we use frame reference counting, we own the data and need
      * to de-reference it when we don't use it anymore */
-    if (*got_frame && api_mode == API_MODE_NEW_API_REF_COUNT)
+    if (*got_frame && refcount)
         av_frame_unref(frame);
 
     return decoded;
@@ -180,8 +175,7 @@ static int open_codec_context(int *stream_idx,
         }
 
         /* Init the decoders, with or without reference counting */
-        if (api_mode == API_MODE_NEW_API_REF_COUNT)
-            av_dict_set(&opts, "refcounted_frames", "1", 0);
+        av_dict_set(&opts, "refcounted_frames", refcount ? "1" : "0", 0);
         if ((ret = avcodec_open2(dec_ctx, dec, &opts)) < 0) {
             fprintf(stderr, "Failed to open %s codec\n",
                     av_get_media_type_string(type));
@@ -227,27 +221,19 @@ int main (int argc, char **argv)
     int ret = 0, got_frame;
 
     if (argc != 4 && argc != 5) {
-        fprintf(stderr, "usage: %s [-refcount=<old|new_norefcount|new_refcount>] "
-                "input_file video_output_file audio_output_file\n"
+        fprintf(stderr, "usage: %s [-refcount] input_file video_output_file audio_output_file\n"
                 "API example program to show how to read frames from an input file.\n"
                 "This program reads frames from a file, decodes them, and writes decoded\n"
                 "video frames to a rawvideo file named video_output_file, and decoded\n"
                 "audio frames to a rawaudio file named audio_output_file.\n\n"
                 "If the -refcount option is specified, the program use the\n"
                 "reference counting frame system which allows keeping a copy of\n"
-                "the data for longer than one decode call. If unset, it's using\n"
-                "the classic old method.\n"
+                "the data for longer than one decode call.\n"
                 "\n", argv[0]);
         exit(1);
     }
-    if (argc == 5) {
-        const char *mode = argv[1] + strlen("-refcount=");
-        if      (!strcmp(mode, "new_norefcount")) api_mode = API_MODE_NEW_API_NO_REF_COUNT;
-        else if (!strcmp(mode, "new_refcount"))   api_mode = API_MODE_NEW_API_REF_COUNT;
-        else {
-            fprintf(stderr, "unknow mode '%s'\n", mode);
-            exit(1);
-        }
+    if (argc == 5 && !strcmp(argv[1], "-refcount")) {
+        refcount = 1;
         argv++;
     }
     src_filename = argv[1];

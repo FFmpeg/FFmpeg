@@ -861,6 +861,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         ff_aac_coder_init_mips(s);
 
     s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
+    s->random_state = 0x1f2e3d4c;
 
     ff_aac_tableinit();
 

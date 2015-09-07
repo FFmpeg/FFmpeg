@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+
+version 2.8:
 - colorkey video filter
 - BFSTM/BCSTM demuxer
 - little-endian ADPCM_THP decoder
