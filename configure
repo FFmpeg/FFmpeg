@@ -5271,7 +5271,7 @@ enabled libshine          && require_pkg_config shine shine/layer3.h shine_encod
 enabled libsmbclient      && { use_pkg_config smbclient libsmbclient.h smbc_init ||
                                require smbclient libsmbclient.h smbc_init -lsmbclient; }
 enabled libsnappy         && require snappy snappy-c.h snappy_compress -lsnappy
-enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
+enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr && LIBSOXR="-lsoxr"
 enabled libssh            && require_pkg_config libssh libssh/sftp.h sftp_init
 enabled libspeex          && require_pkg_config speex speex/speex.h speex_decoder_init -lspeex
 enabled libstagefright_h264 && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
@@ -6273,4 +6273,4 @@ pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVF
 pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""
 pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$LIBM"
 pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"
-pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM"
+pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM $LIBSOXR"
