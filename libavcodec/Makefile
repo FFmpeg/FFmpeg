@@ -695,7 +695,6 @@ OBJS-$(CONFIG_ADPCM_VIMA_DECODER)         += vima.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_XA_DECODER)           += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)       += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
-OBJS-$(CONFIG_VIMA_DECODER)               += vima.o adpcm_data.o
 
 # hardware accelerators
 OBJS-$(CONFIG_D3D11VA)                    += dxva2.o
