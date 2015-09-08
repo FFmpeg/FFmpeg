@@ -447,8 +447,6 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt)
     uint8_t *start;
     int ret = 0;
 
-    ctx->packets_sent++;
-
     if (avpkt->size) {
         if (ctx->bsfc) {
             uint8_t *tmp_data;
@@ -474,6 +472,14 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt)
         }
         size = buf->size;
         data = buf->data;
+        ctx->packets_sent++;
+    } else {
+        if (!ctx->packets_sent) {
+            // Short-cut the flush logic to avoid upsetting MMAL.
+            ctx->eos_sent = 1;
+            ctx->eos_received = 1;
+            goto done;
+        }
     }
 
     start = data;
@@ -643,7 +649,8 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // excessive buffering.
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).
-        if (ctx->frames_output || ctx->packets_sent > MAX_DELAYED_FRAMES || ctx->eos_sent) {
+        if (ctx->frames_output || ctx->packets_sent > MAX_DELAYED_FRAMES ||
+            (ctx->packets_sent && ctx->eos_sent)) {
             // MMAL will ignore broken input packets, which means the frame we
             // expect here may never arrive. Dealing with this correctly is
             // complicated, so here's a hack to avoid that it freezes forever
