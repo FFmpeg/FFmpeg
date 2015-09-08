@@ -58,7 +58,7 @@ static const AVOption elbg_options[] = {
     { "n",        "set max number of steps used to compute the mapping", OFFSET(max_steps_nb), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
     { "seed", "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { "s",    "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT32_MAX, FLAGS },
-    { "pal8", "set the pal8 output", OFFSET(pal8), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+    { "pal8", "set the pal8 output", OFFSET(pal8), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 
