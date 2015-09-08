@@ -82,7 +82,7 @@ static const AVOption volume_options[] = {
     { "replaygain_preamp", "Apply replaygain pre-amplification",
             OFFSET(replaygain_preamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, -15.0, 15.0, A },
     { "replaygain_noclip", "Apply replaygain clipping prevention",
-            OFFSET(replaygain_noclip), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, A },
+            OFFSET(replaygain_noclip), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, A },
     { NULL },
 };
 
