@@ -261,7 +261,7 @@ operation. By default it is set to -1, which means that the timeout is
 not specified.
 
 @item reconnect_at_eof
-If set then eof is treated like an error and causes reconnection, this is usefull
+If set then eof is treated like an error and causes reconnection, this is useful
 for live / endless streams.
 
 @item reconnect_streamed
