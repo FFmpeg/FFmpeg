@@ -220,6 +220,28 @@ static int check_slice_size(AVCodecContext *avctx,
     return 0;
 }
 
+static int load_buffer(AVCodecContext *avctx,
+                       const uint8_t *src, int src_size,
+                       GetByteContext *gb,
+                       int *nslices, int *off)
+{
+    bytestream2_init(gb, src, src_size);
+    *nslices = bytestream2_get_le16(gb);
+    *off = FFALIGN(*nslices * 4 + 2, 16);
+    if (src_size < *off) {
+        av_log(avctx, AV_LOG_ERROR, "no slice data\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!*nslices) {
+        avpriv_request_sample(avctx, "%d slices for %dx%d", *nslices,
+                              avctx->width, avctx->height);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    return 0;
+}
+
 static inline uint8_t decode_sym_565(GetBitContext *gb, uint8_t lru[8],
                                      int bits)
 {
@@ -275,19 +297,9 @@ static int dxtory_decode_v2_565(AVCodecContext *avctx, AVFrame *pic,
     uint8_t *dst;
     int ret;
 
-    bytestream2_init(&gb, src, src_size);
-    nslices = bytestream2_get_le16(&gb);
-    off = FFALIGN(nslices * 4 + 2, 16);
-    if (src_size < off) {
-        av_log(avctx, AV_LOG_ERROR, "no slice data\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!nslices || avctx->height % nslices) {
-        avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
-                              avctx->width, avctx->height);
-        return AVERROR_PATCHWELCOME;
-    }
+    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
+    if (ret < 0)
+        return ret;
 
     slice_height = avctx->height / nslices;
     avctx->pix_fmt = AV_PIX_FMT_RGB24;
@@ -346,19 +358,9 @@ static int dxtory_decode_v2_rgb(AVCodecContext *avctx, AVFrame *pic,
     uint8_t *dst;
     int ret;
 
-    bytestream2_init(&gb, src, src_size);
-    nslices = bytestream2_get_le16(&gb);
-    off = FFALIGN(nslices * 4 + 2, 16);
-    if (src_size < off) {
-        av_log(avctx, AV_LOG_ERROR, "no slice data\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!nslices || avctx->height % nslices) {
-        avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
-                              avctx->width, avctx->height);
-        return AVERROR_PATCHWELCOME;
-    }
+    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
+    if (ret < 0)
+        return ret;
 
     slice_height = avctx->height / nslices;
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
@@ -423,19 +425,9 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
     uint8_t *Y, *U, *V;
     int ret;
 
-    bytestream2_init(&gb, src, src_size);
-    nslices = bytestream2_get_le16(&gb);
-    off = FFALIGN(nslices * 4 + 2, 16);
-    if (src_size < off) {
-        av_log(avctx, AV_LOG_ERROR, "no slice data\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!nslices) {
-        avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
-                              avctx->width, avctx->height);
-        return AVERROR_PATCHWELCOME;
-    }
+    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
+    if (ret < 0)
+        return ret;
 
     if ((avctx->width & 3) || (avctx->height & 3)) {
         avpriv_request_sample(avctx, "Frame dimensions %dx%d",
@@ -516,19 +508,9 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
     uint8_t *Y, *U, *V;
     int ret;
 
-    bytestream2_init(&gb, src, src_size);
-    nslices = bytestream2_get_le16(&gb);
-    off = FFALIGN(nslices * 4 + 2, 16);
-    if (src_size < off) {
-        av_log(avctx, AV_LOG_ERROR, "no slice data\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!nslices) {
-        avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
-                              avctx->width, avctx->height);
-        return AVERROR_PATCHWELCOME;
-    }
+    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
+    if (ret < 0)
+        return ret;
 
     if ((avctx->width & 1) || (avctx->height & 1)) {
         avpriv_request_sample(avctx, "Frame dimensions %dx%d",
@@ -604,19 +586,9 @@ static int dxtory_decode_v2_444(AVCodecContext *avctx, AVFrame *pic,
     uint8_t *Y, *U, *V;
     int ret;
 
-    bytestream2_init(&gb, src, src_size);
-    nslices = bytestream2_get_le16(&gb);
-    off = FFALIGN(nslices * 4 + 2, 16);
-    if (src_size < off) {
-        av_log(avctx, AV_LOG_ERROR, "no slice data\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!nslices || avctx->height % nslices) {
-        avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
-                              avctx->width, avctx->height);
-        return AVERROR_PATCHWELCOME;
-    }
+    ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
+    if (ret < 0)
+        return ret;
 
     slice_height = avctx->height / nslices;
 
