@@ -817,12 +817,16 @@ for codecs that support it. See also @file{doc/examples/export_mvs.c}.
 Deprecated, use mpegvideo private options instead.
 
 @item threads @var{integer} (@emph{decoding/encoding,video})
+Set the number of threads to be used, in case the selected codec
+implementation supports multi-threading.
 
 Possible values:
 @table @samp
-@item auto
-detect a good number of threads
+@item auto, 0
+automatically select the number of threads to set
 @end table
+
+Default value is @samp{auto}.
 
 @item me_threshold @var{integer} (@emph{encoding,video})
 Set motion estimation threshold.
