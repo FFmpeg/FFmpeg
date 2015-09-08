@@ -35,7 +35,7 @@ typedef struct ExtraStereoContext {
 
 static const AVOption extrastereo_options[] = {
     { "m", "set the difference coefficient", OFFSET(mult), AV_OPT_TYPE_FLOAT, {.dbl=2.5}, -10, 10, A },
-    { "c", "enable clipping",                OFFSET(clip), AV_OPT_TYPE_INT,   {.i64=1},     0,  1, A },
+    { "c", "enable clipping",                OFFSET(clip), AV_OPT_TYPE_BOOL,  {.i64=1},     0,  1, A },
     { NULL }
 };
 
