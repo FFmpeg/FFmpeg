@@ -83,7 +83,7 @@ static const AVOption volume_options[] = {
             OFFSET(replaygain_preamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, -15.0, 15.0, A|F },
     { "replaygain_noclip", "Apply replaygain clipping prevention",
             OFFSET(replaygain_noclip), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(volume);
