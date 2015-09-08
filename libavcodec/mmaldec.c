@@ -621,10 +621,8 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
         }
     }
 
-    if (buffer->pts != MMAL_TIME_UNKNOWN) {
-        frame->pkt_pts = buffer->pts;
-        frame->pts = buffer->pts;
-    }
+    frame->pkt_pts = buffer->pts == MMAL_TIME_UNKNOWN ? AV_NOPTS_VALUE : buffer->pts;
+    frame->pkt_dts = AV_NOPTS_VALUE;
 
 done:
     return ret;
