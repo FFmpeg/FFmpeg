@@ -280,6 +280,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\lsp.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\lzf.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mdct_fixed.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mdct_float.c">
@@ -685,6 +687,8 @@
     <ClCompile Include="..\libavcodec\dxa.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\dxtory.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dxv.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\eac3_data.c">
     </ClCompile>
