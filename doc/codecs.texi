@@ -129,7 +129,7 @@ should be @code{1 / frame_rate} and timestamp increments should be
 identically 1.
 
 @item g @var{integer} (@emph{encoding,video})
-Set the group of picture size. Default value is 12.
+Set the group of picture (GOP) size. Default value is 12.
 
 @item ar @var{integer} (@emph{decoding/encoding,audio})
 Set audio sampling rate (in Hz).
