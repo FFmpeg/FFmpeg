@@ -416,14 +416,6 @@ EOF
 }
 
 quotes='""'
-if test -t 1; then
-    ncolors=$(tput colors)
-    if test -n "$ncolors" && test $ncolors -ge 8; then
-        bold_color=$(tput bold)
-        warn_color=$(tput setaf 3)
-        reset_color=$(tput sgr0)
-    fi
-fi
 
 log(){
     echo "$@" >> $logfile
@@ -6209,7 +6201,7 @@ echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 cp_if_changed $TMPH libavutil/avconfig.h
 
 if test -n "$WARNINGS"; then
-    printf "\n%s%s$WARNINGS%s" "$warn_color" "$bold_color" "$reset_color"
+    printf "\n$WARNINGS"
     enabled fatal_warnings && exit 1
 fi
 
