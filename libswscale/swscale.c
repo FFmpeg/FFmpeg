@@ -87,7 +87,7 @@ static void hScale16To19_c(SwsContext *c, int16_t *_dst, int dstW,
     int i;
     int32_t *dst        = (int32_t *) _dst;
     const uint16_t *src = (const uint16_t *) _src;
-    int bits            = desc->comp[0].depth_minus1;
+    int bits            = desc->comp[0].depth - 1;
     int sh              = bits - 4;
 
     if((isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8) && desc->comp[0].depth_minus1<15)
@@ -113,7 +113,7 @@ static void hScale16To15_c(SwsContext *c, int16_t *dst, int dstW,
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
     int i;
     const uint16_t *src = (const uint16_t *) _src;
-    int sh              = desc->comp[0].depth_minus1;
+    int sh              = desc->comp[0].depth - 1;
 
     if(sh<15)
         sh= isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 : desc->comp[0].depth_minus1;
@@ -796,7 +796,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         if (is16BPS(dstFormat) || isNBPS(dstFormat)) {
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
             fillPlane16(dst[3], dstStride[3], length, height, lastDstY,
-                    1, desc->comp[3].depth_minus1,
+                    1, desc->comp[3].depth,
                     isBE(dstFormat));
         } else
             fillPlane(dst[3], dstStride[3], length, height, lastDstY, 255);

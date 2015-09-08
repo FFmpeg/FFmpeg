@@ -651,14 +651,14 @@ static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
-    return desc->comp[0].depth_minus1 == 15;
+    return desc->comp[0].depth == 16;
 }
 
 static av_always_inline int is9_OR_10BPS(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
-    return desc->comp[0].depth_minus1 >= 8 && desc->comp[0].depth_minus1 <= 13;
+    return desc->comp[0].depth >= 9 && desc->comp[0].depth <= 14;
 }
 
 #define isNBPS(x) is9_OR_10BPS(x)
@@ -928,7 +928,7 @@ static inline void fillPlane16(uint8_t *plane, int stride, int width, int height
 {
     int i, j;
     uint8_t *ptr = plane + stride * y;
-    int v = alpha ? 0xFFFF>>(15-bits) : (1<<bits);
+    int v = alpha ? 0xFFFF>>(16-bits) : (1<<(bits-1));
     for (i = 0; i < height; i++) {
 #define FILL(wfunc) \
         for (j = 0; j < width; j++) {\

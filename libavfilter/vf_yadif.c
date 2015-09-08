@@ -186,7 +186,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     YADIFContext *s = ctx->priv;
     ThreadData *td  = arg;
     int refs = s->cur->linesize[td->plane];
-    int df = (s->csp->comp[td->plane].depth_minus1 + 8) / 8;
+    int df = (s->csp->comp[td->plane].depth + 7) / 8;
     int pix_3 = 3 * df;
     int slice_start = (td->h *  jobnr   ) / nb_jobs;
     int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
@@ -486,7 +486,7 @@ static int config_props(AVFilterLink *link)
     }
 
     s->csp = av_pix_fmt_desc_get(link->format);
-    if (s->csp->comp[0].depth_minus1 / 8 == 1) {
+    if (s->csp->comp[0].depth > 8) {
         s->filter_line  = filter_line_c_16bit;
         s->filter_edges = filter_edges_16bit;
     } else {
