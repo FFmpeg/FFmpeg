@@ -96,9 +96,9 @@ static const AVOption vidstabtransform_options[] = {
                    AV_OPT_TYPE_CONST,  {.i64 = VS_BiCubic },0, 0,  FLAGS, "interpol"},
 
     {"tripod",    "enable virtual tripod mode (same as relative=0:smoothing=0)", OFFSET(tripod),
-                   AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
+                   AV_OPT_TYPE_BOOL,   {.i64 = 0},        0, 1,    FLAGS},
     {"debug",     "enable debug mode and writer global motions information to file", OFFSET(debug),
-                   AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
+                   AV_OPT_TYPE_BOOL,   {.i64 = 0},        0, 1,    FLAGS},
     {NULL}
 };
 
