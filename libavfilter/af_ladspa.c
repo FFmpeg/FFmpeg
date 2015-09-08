@@ -303,6 +303,10 @@ static int config_output(AVFilterLink *outlink)
 
         outlink->format      = inlink->format;
         outlink->sample_rate = inlink->sample_rate;
+        if (ctx->nb_inputs == ctx->nb_outputs) {
+            outlink->channel_layout = inlink->channel_layout;
+            outlink->channels = inlink->channels;
+        }
 
         ret = 0;
     } else {
@@ -612,6 +616,10 @@ static int query_formats(AVFilterContext *ctx)
         if (!layouts)
             return AVERROR(ENOMEM);
 
+        ff_set_common_channel_layouts(ctx, layouts);
+    } else if (s->nb_inputs == 2 && s->nb_outputs == 2) {
+        layouts = NULL;
+        ff_add_channel_layout(&layouts, AV_CH_LAYOUT_STEREO);
         ff_set_common_channel_layouts(ctx, layouts);
     } else {
         AVFilterLink *outlink = ctx->outputs[0];
