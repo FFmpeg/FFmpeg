@@ -1126,8 +1126,10 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_INT64:
             case AV_OPT_TYPE_DURATION:
             case AV_OPT_TYPE_CHANNEL_LAYOUT:
+            case AV_OPT_TYPE_PIXEL_FMT:
+            case AV_OPT_TYPE_SAMPLE_FMT:
                 write_number(s, opt, dst, 1, 1, opt->default_val.i64);
-            break;
+                break;
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT: {
                 double val;
@@ -1152,12 +1154,6 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 break;
             case AV_OPT_TYPE_VIDEO_RATE:
                 set_string_video_rate(s, opt, opt->default_val.str, dst);
-                break;
-            case AV_OPT_TYPE_PIXEL_FMT:
-                write_number(s, opt, dst, 1, 1, opt->default_val.i64);
-                break;
-            case AV_OPT_TYPE_SAMPLE_FMT:
-                write_number(s, opt, dst, 1, 1, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_BINARY:
                 set_string_binary(s, opt, opt->default_val.str, dst);
