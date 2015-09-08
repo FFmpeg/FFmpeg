@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
 
 #include "avformat.h"
 #include "http.h"
@@ -105,6 +106,9 @@ typedef struct HTTPContext {
     int send_expect_100;
     char *method;
     int reconnect;
+    int reconnect_at_eof;
+    int reconnect_streamed;
+    int reconnect_delay;
     int listen;
     char *resource;
     int reply_code;
@@ -142,6 +146,8 @@ static const AVOption options[] = {
     { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "method", "Override the HTTP method or set the expected HTTP method from a client", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "reconnect", "auto reconnect after disconnect before EOF", OFFSET(reconnect), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
+    { "reconnect_at_eof", "auto reconnect at EOF", OFFSET(reconnect_at_eof), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
+    { "reconnect_streamed", "auto reconnect streamed / non seekable streams", OFFSET(reconnect_streamed), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
     { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, D | E },
     { "resource", "The resource requested by a client", OFFSET(resource), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reply_code", "The http status code to return to a client", OFFSET(reply_code), AV_OPT_TYPE_INT, { .i64 = 200}, INT_MIN, 599, E},
@@ -1241,16 +1247,21 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
         return http_buf_read_compressed(h, buf, size);
 #endif /* CONFIG_ZLIB */
     read_ret = http_buf_read(h, buf, size);
-    if (read_ret < 0 && s->reconnect && !h->is_streamed && s->filesize > 0 && s->off < s->filesize) {
+    if (   (read_ret  < 0 && s->reconnect        && (!h->is_streamed || s->reconnect_streamed) && s->filesize > 0 && s->off < s->filesize)
+        || (read_ret == 0 && s->reconnect_at_eof && (!h->is_streamed || s->reconnect_streamed))) {
+        int64_t target = h->is_streamed ? 0 : s->off;
         av_log(h, AV_LOG_INFO, "Will reconnect at %"PRId64" error=%s.\n", s->off, av_err2str(read_ret));
-        seek_ret = http_seek_internal(h, s->off, SEEK_SET, 1);
-        if (seek_ret != s->off) {
-            av_log(h, AV_LOG_ERROR, "Failed to reconnect at %"PRId64".\n", s->off);
+        av_usleep(1000U*1000*s->reconnect_delay);
+        s->reconnect_delay = 1 + 2*s->reconnect_delay;
+        seek_ret = http_seek_internal(h, target, SEEK_SET, 1);
+        if (seek_ret != target) {
+            av_log(h, AV_LOG_ERROR, "Failed to reconnect at %"PRId64".\n", target);
             return read_ret;
         }
 
         read_ret = http_buf_read(h, buf, size);
-    }
+    } else
+        s->reconnect_delay = 0;
 
     return read_ret;
 }

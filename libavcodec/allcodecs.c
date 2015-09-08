@@ -159,6 +159,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (DVVIDEO,           dvvideo);
     REGISTER_DECODER(DXA,               dxa);
     REGISTER_DECODER(DXTORY,            dxtory);
+    REGISTER_DECODER(DXV,               dxv);
     REGISTER_DECODER(EACMV,             eacmv);
     REGISTER_DECODER(EAMAD,             eamad);
     REGISTER_DECODER(EATGQ,             eatgq);
@@ -516,9 +517,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER(ADPCM_VIMA,        adpcm_vima);
     REGISTER_DECODER(ADPCM_XA,          adpcm_xa);
     REGISTER_ENCDEC (ADPCM_YAMAHA,      adpcm_yamaha);
-#if FF_API_VIMA_DECODER
-    REGISTER_DECODER(VIMA,              vima);
-#endif
 
     /* subtitles */
     REGISTER_ENCDEC (SSA,               ssa);

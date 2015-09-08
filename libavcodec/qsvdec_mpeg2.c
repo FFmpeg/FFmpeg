@@ -57,6 +57,8 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
 static void qsv_decode_flush(AVCodecContext *avctx)
 {
+    QSVMPEG2Context *s = avctx->priv_data;
+    ff_qsv_decode_reset(avctx, &s->qsv);
 }
 
 AVHWAccel ff_mpeg2_qsv_hwaccel = {

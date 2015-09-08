@@ -50,7 +50,7 @@ typedef struct Context {
     URLContext     *inner;
 
     int             seek_request;
-    size_t          seek_pos;
+    int64_t         seek_pos;
     int             seek_whence;
     int             seek_completed;
     int64_t         seek_ret;
@@ -58,8 +58,8 @@ typedef struct Context {
     int             io_error;
     int             io_eof_reached;
 
-    size_t          logical_pos;
-    size_t          logical_size;
+    int64_t         logical_pos;
+    int64_t         logical_size;
     AVFifoBuffer   *fifo;
 
     pthread_cond_t  cond_wakeup_main;
@@ -91,6 +91,7 @@ static void *async_buffer_task(void *arg)
     Context      *c    = h->priv_data;
     AVFifoBuffer *fifo = c->fifo;
     int           ret  = 0;
+    int64_t       seek_ret;
 
     while (1) {
         int fifo_space, to_copy;
@@ -105,17 +106,17 @@ static void *async_buffer_task(void *arg)
         }
 
         if (c->seek_request) {
-            ret = ffurl_seek(c->inner, c->seek_pos, c->seek_whence);
-            if (ret < 0) {
+            seek_ret = ffurl_seek(c->inner, c->seek_pos, c->seek_whence);
+            if (seek_ret < 0) {
                 c->io_eof_reached = 1;
-                c->io_error       = ret;
+                c->io_error       = (int)seek_ret;
             } else {
                 c->io_eof_reached = 0;
                 c->io_error       = 0;
             }
 
             c->seek_completed = 1;
-            c->seek_ret       = ret;
+            c->seek_ret       = seek_ret;
             c->seek_request   = 0;
 
             av_fifo_reset(fifo);
@@ -325,7 +326,7 @@ static int64_t async_seek(URLContext *h, int64_t pos, int whence)
         av_log(h, AV_LOG_TRACE, "async_seek: fask_seek %"PRId64" from %d dist:%d/%d\n",
                 new_logical_pos, (int)c->logical_pos,
                 (int)(new_logical_pos - c->logical_pos), fifo_size);
-        async_read_internal(h, NULL, new_logical_pos - c->logical_pos, 1, fifo_do_not_copy_func);
+        async_read_internal(h, NULL, (int)(new_logical_pos - c->logical_pos), 1, fifo_do_not_copy_func);
         return c->logical_pos;
     } else if (c->logical_size <= 0) {
         /* can not seek */
@@ -394,8 +395,8 @@ URLProtocol ff_async_protocol = {
 
 typedef struct TestContext {
     AVClass        *class;
-    size_t          logical_pos;
-    size_t          logical_size;
+    int64_t         logical_pos;
+    int64_t         logical_size;
 } TestContext;
 
 static int async_test_open(URLContext *h, const char *arg, int flags, AVDictionary **options)

@@ -9816,6 +9816,12 @@ alternating frames (left eye first, right eye second)
 @item ar
 alternating frames (right eye first, left eye second)
 
+@item irl
+interleaved rows (left eye has top row, right eye starts on next row)
+
+@item irr
+interleaved rows (right eye has top row, left eye starts on next row)
+
 Default value is @samp{sbsl}.
 @end table
 
@@ -9880,17 +9886,23 @@ anaglyph yellow/blue colored
 anaglyph yellow/blue color optimized with the least squares projection of dubois
 (yellow filter on left eye, blue filter on right eye)
 
-@item irl
-interleaved rows (left eye has top row, right eye starts on next row)
-
-@item irr
-interleaved rows (right eye has top row, left eye starts on next row)
-
 @item ml
 mono output (left eye only)
 
 @item mr
 mono output (right eye only)
+
+@item chl
+checkerboard, left eye first
+
+@item chr
+checkerboard, right eye first
+
+@item icl
+interleaved columns, left eye first
+
+@item icr
+interleaved columns, right eye first
 @end table
 
 Default value is @samp{arcd}.
