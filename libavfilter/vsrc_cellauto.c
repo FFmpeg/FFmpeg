@@ -74,10 +74,10 @@ static const AVOption cellauto_options[] = {
     { "ratio",             "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl = 1/M_PHI}, 0, 1, FLAGS },
     { "random_seed", "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { "seed",        "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
-    { "scroll",      "scroll pattern downward", OFFSET(scroll), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, FLAGS },
-    { "start_full",  "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
-    { "full",        "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, FLAGS },
-    { "stitch",      "stitch boundaries", OFFSET(stitch), AV_OPT_TYPE_INT,    {.i64 = 1},   0, 1, FLAGS },
+    { "scroll",      "scroll pattern downward", OFFSET(scroll), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
+    { "start_full",  "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
+    { "full",        "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
+    { "stitch",      "stitch boundaries", OFFSET(stitch), AV_OPT_TYPE_BOOL,    {.i64 = 1},   0, 1, FLAGS },
     { NULL }
 };
 
