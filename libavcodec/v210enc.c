@@ -82,6 +82,15 @@ static void v210_planar_pack_10_c(const uint16_t *y, const uint16_t *u,
     }
 }
 
+av_cold void ff_v210enc_init(V210EncContext *s)
+{
+    s->pack_line_8  = v210_planar_pack_8_c;
+    s->pack_line_10 = v210_planar_pack_10_c;
+
+    if (ARCH_X86)
+        ff_v210enc_init_x86(s);
+}
+
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     V210EncContext *s = avctx->priv_data;
@@ -97,11 +106,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    s->pack_line_8  = v210_planar_pack_8_c;
-    s->pack_line_10 = v210_planar_pack_10_c;
-
-    if (ARCH_X86)
-        ff_v210enc_init_x86(s);
+    ff_v210enc_init(s);
 
     return 0;
 }
