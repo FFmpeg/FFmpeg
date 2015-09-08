@@ -644,12 +644,21 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).
         if (ctx->frames_output || ctx->packets_sent > MAX_DELAYED_FRAMES || ctx->eos_sent) {
-            buffer = mmal_queue_wait(ctx->queue_decoded_frames);
+            // MMAL will ignore broken input packets, which means the frame we
+            // expect here may never arrive. Dealing with this correctly is
+            // complicated, so here's a hack to avoid that it freezes forever
+            // in this unlikely situation.
+            buffer = mmal_queue_timedwait(ctx->queue_decoded_frames, 100);
+            if (!buffer) {
+                av_log(avctx, AV_LOG_ERROR, "Did not get output frame from MMAL.\n");
+                ret = AVERROR_UNKNOWN;
+                goto done;
+            }
         } else {
             buffer = mmal_queue_get(ctx->queue_decoded_frames);
+            if (!buffer)
+                goto done;
         }
-        if (!buffer)
-            goto done;
 
         ctx->eos_received |= !!(buffer->flags & MMAL_BUFFER_HEADER_FLAG_EOS);
         if (ctx->eos_received)
