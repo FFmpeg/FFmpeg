@@ -182,8 +182,6 @@ static int decode_registered_user_data_closed_caption(H264Context *h, int size)
         }
     } else {
         int i;
-        avpriv_request_sample(h->avctx, "Subtitles with data type 0x%02x",
-                              user_data_type_code);
         for (i = 0; i < size - 1; i++)
             skip_bits(&h->gb, 8);
     }
