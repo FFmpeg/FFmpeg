@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-xx-xx - lavu 55.0.100 / lavu 55.0.0
+  xxxxxxx - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
+
 -------- 8< --------- FFmpeg 2.8 was cut here -------- 8< ---------
 
 2015-08-27 - 1dd854e1 - lavc 56.58.100 - vaapi.h
