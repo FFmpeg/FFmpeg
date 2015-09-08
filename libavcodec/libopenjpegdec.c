@@ -204,7 +204,7 @@ static inline void libopenjpeg_copy_to_packed16(AVFrame *picture, opj_image_t *i
     int index, x, y, c;
     int adjust[4];
     for (x = 0; x < image->numcomps; x++)
-        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth_minus1 + 1 - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
+        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
 
     for (y = 0; y < picture->height; y++) {
         index   = y * picture->width;
@@ -241,7 +241,7 @@ static inline void libopenjpeg_copyto16(AVFrame *picture, opj_image_t *image) {
     int index, x, y;
     int adjust[4];
     for (x = 0; x < image->numcomps; x++)
-        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth_minus1 + 1 - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
+        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
 
     for (index = 0; index < image->numcomps; index++) {
         comp_data = image->comps[index].data;

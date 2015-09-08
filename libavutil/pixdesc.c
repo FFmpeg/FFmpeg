@@ -2103,7 +2103,7 @@ int av_get_padded_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
     for (c = 0; c < pixdesc->nb_components; c++) {
         const AVComponentDescriptor *comp = &pixdesc->comp[c];
         int s = c == 1 || c == 2 ? 0 : log2_pixels;
-        steps[comp->plane] = (comp->step_minus1 + 1) << s;
+        steps[comp->plane] = comp->step << s;
     }
     for (c = 0; c < 4; c++)
         bits += steps[c];
@@ -2207,19 +2207,19 @@ void ff_check_pixfmt_descriptors(void){
         for (j=0; j<FF_ARRAY_ELEMS(d->comp); j++) {
             const AVComponentDescriptor *c = &d->comp[j];
             if(j>=d->nb_components) {
-                av_assert0(!c->plane && !c->step_minus1 && !c->offset_plus1 && !c->shift && !c->depth_minus1);
+                av_assert0(!c->plane && !c->step && !c->offset && !c->shift && !c->depth);
                 continue;
             }
             if (d->flags & AV_PIX_FMT_FLAG_BITSTREAM) {
-                av_assert0(c->step_minus1 >= c->depth_minus1);
+                av_assert0(c->step >= c->depth);
             } else {
-                av_assert0(8*(c->step_minus1+1) >= c->depth_minus1+1);
+                av_assert0(8*c->step >= c->depth);
             }
             if (!strncmp(d->name, "bayer_", 6))
                 continue;
             av_read_image_line(tmp, (void*)data, linesize, d, 0, 0, j, 2, 0);
             av_assert0(tmp[0] == 0 && tmp[1] == 0);
-            tmp[0] = tmp[1] = (1<<(c->depth_minus1 + 1)) - 1;
+            tmp[0] = tmp[1] = (1<<c->depth) - 1;
             av_write_image_line(tmp, data, linesize, d, 0, 0, j, 2);
         }
     }
@@ -2286,8 +2286,8 @@ static int get_pix_fmt_depth(int *min, int *max, enum AVPixelFormat pix_fmt)
 
     *min = INT_MAX, *max = -INT_MAX;
     for (i = 0; i < desc->nb_components; i++) {
-        *min = FFMIN(desc->comp[i].depth_minus1+1, *min);
-        *max = FFMAX(desc->comp[i].depth_minus1+1, *max);
+        *min = FFMIN(desc->comp[i].depth, *min);
+        *max = FFMAX(desc->comp[i].depth, *max);
     }
     return 0;
 }
@@ -2325,8 +2325,8 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
         nb_components = FFMIN(src_desc->nb_components, dst_desc->nb_components);
 
     for (i = 0; i < nb_components; i++) {
-        int depth_minus1 = (dst_pix_fmt == AV_PIX_FMT_PAL8) ? 7/nb_components : dst_desc->comp[i].depth_minus1;
-        if (src_desc->comp[i].depth_minus1 > depth_minus1 && (consider & FF_LOSS_DEPTH)) {
+        int depth_minus1 = (dst_pix_fmt == AV_PIX_FMT_PAL8) ? 7/nb_components : (dst_desc->comp[i].depth - 1);
+        if (src_desc->comp[i].depth - 1 > depth_minus1 && (consider & FF_LOSS_DEPTH)) {
             loss |= FF_LOSS_DEPTH;
             score -= 65536 >> depth_minus1;
         }
@@ -2376,7 +2376,7 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
         break;
     }
     if(loss & FF_LOSS_COLORSPACE)
-        score -= (nb_components * 65536) >> FFMIN(dst_desc->comp[0].depth_minus1, src_desc->comp[0].depth_minus1);
+        score -= (nb_components * 65536) >> FFMIN(dst_desc->comp[0].depth - 1, src_desc->comp[0].depth - 1);
 
     if (dst_color == FF_COLOR_GRAY &&
         src_color != FF_COLOR_GRAY && (consider & FF_LOSS_CHROMA)) {

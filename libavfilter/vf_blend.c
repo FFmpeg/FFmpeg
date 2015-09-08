@@ -464,7 +464,7 @@ static int config_output(AVFilterLink *outlink)
     s->hsub = pix_desc->log2_chroma_w;
     s->vsub = pix_desc->log2_chroma_h;
 
-    is_16bit = pix_desc->comp[0].depth_minus1 == 15;
+    is_16bit = pix_desc->comp[0].depth == 16;
     s->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
     if (s->tblend)

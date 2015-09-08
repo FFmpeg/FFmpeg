@@ -1172,7 +1172,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->desc  = av_pix_fmt_desc_get(inlink->format);
     s->ncomp = s->desc->nb_components;
-    s->bits = s->desc->comp[0].depth_minus1 + 1;
+    s->bits = s->desc->comp[0].depth;
     s->max = 1 << s->bits;
     s->intensity = s->fintensity * (s->max - 1);
 

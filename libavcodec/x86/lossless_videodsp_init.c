@@ -42,7 +42,7 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
         c->diff_int16 = ff_diff_int16_mmx;
     }
 
-    if (EXTERNAL_MMXEXT(cpu_flags) && pix_desc->comp[0].depth_minus1<15) {
+    if (EXTERNAL_MMXEXT(cpu_flags) && pix_desc->comp[0].depth<16) {
         c->add_hfyu_median_pred_int16 = ff_add_hfyu_median_pred_int16_mmxext;
         c->sub_hfyu_median_pred_int16 = ff_sub_hfyu_median_pred_int16_mmxext;
     }

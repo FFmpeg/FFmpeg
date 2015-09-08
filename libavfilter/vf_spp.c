@@ -331,7 +331,7 @@ static int config_input(AVFilterLink *inlink)
     SPPContext *s = inlink->dst->priv;
     const int h = FFALIGN(inlink->h + 16, 16);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const int bps = desc->comp[0].depth_minus1 + 1;
+    const int bps = desc->comp[0].depth;
 
     av_opt_set_int(s->dct, "bits_per_sample", bps, 0);
     avcodec_dct_init(s->dct);
@@ -359,7 +359,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int qp_stride = 0;
     const int8_t *qp_table = NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const int depth = desc->comp[0].depth_minus1 + 1;
+    const int depth = desc->comp[0].depth;
 
     /* if we are not in a constant user quantizer mode and we don't want to use
      * the quantizers from the B-frames (B-frames often have a higher QP), we

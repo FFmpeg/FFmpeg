@@ -187,7 +187,7 @@ static int config_input(AVFilterLink *inlink)
 static int config_output(AVFilterLink *outlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
-    const int depth = desc->comp[0].depth_minus1 + 1;
+    const int depth = desc->comp[0].depth;
     VectorscopeContext *s = outlink->src->priv;
 
     s->intensity = s->fintensity * ((1 << depth) - 1);

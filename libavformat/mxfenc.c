@@ -2058,7 +2058,7 @@ static int mxf_write_header(AVFormatContext *s)
             sc->color_siting = 0xFF;
 
             if (pix_desc) {
-                sc->component_depth     = pix_desc->comp[0].depth_minus1 + 1;
+                sc->component_depth     = pix_desc->comp[0].depth;
                 sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
             }
             switch (ff_choose_chroma_location(s, st)) {

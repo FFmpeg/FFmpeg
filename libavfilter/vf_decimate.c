@@ -239,7 +239,7 @@ static int config_input(AVFilterLink *inlink)
 
     dm->hsub      = pix_desc->log2_chroma_w;
     dm->vsub      = pix_desc->log2_chroma_h;
-    dm->depth     = pix_desc->comp[0].depth_minus1 + 1;
+    dm->depth     = pix_desc->comp[0].depth;
     max_value     = (1 << dm->depth) - 1;
     dm->scthresh  = (int64_t)(((int64_t)max_value *          w * h          * dm->scthresh_flt)  / 100);
     dm->dupthresh = (int64_t)(((int64_t)max_value * dm->blockx * dm->blocky * dm->dupthresh_flt) / 100);

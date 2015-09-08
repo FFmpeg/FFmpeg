@@ -700,7 +700,7 @@ void avpriv_color_frame(AVFrame *frame, const int c[4])
         int bytes  = is_chroma ? FF_CEIL_RSHIFT(frame->width,  desc->log2_chroma_w) : frame->width;
         int height = is_chroma ? FF_CEIL_RSHIFT(frame->height, desc->log2_chroma_h) : frame->height;
         for (y = 0; y < height; y++) {
-            if (desc->comp[0].depth_minus1 >= 8) {
+            if (desc->comp[0].depth >= 9) {
                 for (x = 0; x<bytes; x++)
                     ((uint16_t*)dst)[x] = c[p];
             }else
@@ -2705,7 +2705,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                  "%s", enc->pix_fmt == AV_PIX_FMT_NONE ? "none" :
                      av_get_pix_fmt_name(enc->pix_fmt));
             if (enc->bits_per_raw_sample && enc->pix_fmt != AV_PIX_FMT_NONE &&
-                enc->bits_per_raw_sample <= av_pix_fmt_desc_get(enc->pix_fmt)->comp[0].depth_minus1)
+                enc->bits_per_raw_sample < av_pix_fmt_desc_get(enc->pix_fmt)->comp[0].depth)
                 av_strlcatf(detail, sizeof(detail), "%d bpc, ", enc->bits_per_raw_sample);
             if (enc->color_range != AVCOL_RANGE_UNSPECIFIED)
                 av_strlcatf(detail, sizeof(detail), "%s, ",
