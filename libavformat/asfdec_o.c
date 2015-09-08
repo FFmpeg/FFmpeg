@@ -583,7 +583,7 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
             break;
         type     = avio_rl16(pb);
         val_len  = avio_rl32(pb);
-        name     = av_malloc(name_len);
+        name     = av_malloc(buflen);
         if (!name)
             return AVERROR(ENOMEM);
         avio_get_str16le(pb, name_len, name,
