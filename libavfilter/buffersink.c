@@ -404,7 +404,7 @@ static const AVOption abuffersink_options[] = {
     { "sample_rates",    "set the supported sample rates",    OFFSET(sample_rates),    AV_OPT_TYPE_BINARY, .flags = FLAGS },
     { "channel_layouts", "set the supported channel layouts", OFFSET(channel_layouts), AV_OPT_TYPE_BINARY, .flags = FLAGS },
     { "channel_counts",  "set the supported channel counts",  OFFSET(channel_counts),  AV_OPT_TYPE_BINARY, .flags = FLAGS },
-    { "all_channel_counts", "accept all channel counts", OFFSET(all_channel_counts), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
+    { "all_channel_counts", "accept all channel counts", OFFSET(all_channel_counts), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { NULL },
 };
 #undef FLAGS
