@@ -175,6 +175,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\f_ebur128.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_extrastereo.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_flanger.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_join.c">
