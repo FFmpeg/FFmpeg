@@ -269,7 +269,7 @@ static int config_input(AVFilterLink *inlink)
     s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
-    depth = desc->comp[0].depth_minus1 + 1;
+    depth = desc->comp[0].depth;
     if (depth == 8)
         s->filter_slice = filter_slice8;
     else

@@ -81,7 +81,7 @@ static const AVOption silenceremove_options[] = {
     { "stop_periods",    NULL, OFFSET(stop_periods),    AV_OPT_TYPE_INT,      {.i64=0}, -9000,    9000, FLAGS },
     { "stop_duration",   NULL, OFFSET(stop_duration),   AV_OPT_TYPE_DURATION, {.i64=0},     0,    9000, FLAGS },
     { "stop_threshold",  NULL, OFFSET(stop_threshold),  AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0, DBL_MAX, FLAGS },
-    { "leave_silence",   NULL, OFFSET(leave_silence),   AV_OPT_TYPE_INT,      {.i64=0},     0,       1, FLAGS },
+    { "leave_silence",   NULL, OFFSET(leave_silence),   AV_OPT_TYPE_BOOL,     {.i64=0},     0,       1, FLAGS },
     { NULL }
 };
 

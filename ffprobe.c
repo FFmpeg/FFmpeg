@@ -2722,7 +2722,7 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
             for (i = 0; i < pixdesc->nb_components; i++) {
                 writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT_COMPONENT);
                 print_int("index", i + 1);
-                print_int("bit_depth", pixdesc->comp[i].depth_minus1 + 1);
+                print_int("bit_depth", pixdesc->comp[i].depth);
                 writer_print_section_footer(w);
             }
             writer_print_section_footer(w);

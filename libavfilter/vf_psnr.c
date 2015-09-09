@@ -251,10 +251,10 @@ static int config_input_ref(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    s->max[0] = (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
-    s->max[1] = (1 << (desc->comp[1].depth_minus1 + 1)) - 1;
-    s->max[2] = (1 << (desc->comp[2].depth_minus1 + 1)) - 1;
-    s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
+    s->max[0] = (1 << desc->comp[0].depth) - 1;
+    s->max[1] = (1 << desc->comp[1].depth) - 1;
+    s->max[2] = (1 << desc->comp[2].depth) - 1;
+    s->max[3] = (1 << desc->comp[3].depth) - 1;
 
     s->is_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
     s->comps[0] = s->is_rgb ? 'r' : 'y' ;
@@ -274,9 +274,9 @@ static int config_input_ref(AVFilterLink *inlink)
         s->average_max += s->max[j] * s->planeweight[j];
     }
 
-    s->dsp.sse_line = desc->comp[0].depth_minus1 > 7 ? sse_line_16bit : sse_line_8bit;
+    s->dsp.sse_line = desc->comp[0].depth > 8 ? sse_line_16bit : sse_line_8bit;
     if (ARCH_X86)
-        ff_psnr_init_x86(&s->dsp, desc->comp[0].depth_minus1 + 1);
+        ff_psnr_init_x86(&s->dsp, desc->comp[0].depth);
 
     return 0;
 }

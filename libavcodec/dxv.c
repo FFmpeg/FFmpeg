@@ -356,7 +356,7 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_DEBUG, "LZF compression and DXT5 texture ");
             ctx->tex_funct = ctx->texdsp.dxt5_block;
             ctx->tex_step  = 16;
-        } else if (old_type & 0x20) {
+        } else if (old_type & 0x20 || old_type & 0x2) {
             av_log(avctx, AV_LOG_DEBUG, "LZF compression and DXT1 texture ");
             ctx->tex_funct = ctx->texdsp.dxt1_block;
             ctx->tex_step  = 8;
@@ -397,7 +397,8 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
     ret = ff_thread_get_buffer(avctx, &tframe, 0);
     if (ret < 0)
         return ret;
-    ff_thread_finish_setup(avctx);
+    if (avctx->codec->update_thread_context)
+        ff_thread_finish_setup(avctx);
 
     /* Now decompress the texture with the standard functions. */
     avctx->execute2(avctx, decompress_texture_thread,

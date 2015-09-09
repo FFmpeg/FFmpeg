@@ -311,7 +311,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     for (i = 0; i < s->bpp_tab_size; i++)
-        bpp_tab[i] = desc->comp[i].depth_minus1 + 1;
+        bpp_tab[i] = desc->comp[i].depth;
 
     if (s->compr == TIFF_DEFLATE       ||
         s->compr == TIFF_ADOBE_DEFLATE ||

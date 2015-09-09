@@ -63,7 +63,7 @@ static const AVOption spp_options[] = {
     { "mode", "set thresholding mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = MODE_HARD}, 0, NB_MODES - 1, FLAGS, "mode" },
         { "hard", "hard thresholding", 0, AV_OPT_TYPE_CONST, {.i64 = MODE_HARD}, INT_MIN, INT_MAX, FLAGS, "mode" },
         { "soft", "soft thresholding", 0, AV_OPT_TYPE_CONST, {.i64 = MODE_SOFT}, INT_MIN, INT_MAX, FLAGS, "mode" },
-    { "use_bframe_qp", "use B-frames' QP", OFFSET(use_bframe_qp), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
+    { "use_bframe_qp", "use B-frames' QP", OFFSET(use_bframe_qp), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -331,7 +331,7 @@ static int config_input(AVFilterLink *inlink)
     SPPContext *s = inlink->dst->priv;
     const int h = FFALIGN(inlink->h + 16, 16);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const int bps = desc->comp[0].depth_minus1 + 1;
+    const int bps = desc->comp[0].depth;
 
     av_opt_set_int(s->dct, "bits_per_sample", bps, 0);
     avcodec_dct_init(s->dct);
@@ -359,7 +359,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int qp_stride = 0;
     const int8_t *qp_table = NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const int depth = desc->comp[0].depth_minus1 + 1;
+    const int depth = desc->comp[0].depth;
 
     /* if we are not in a constant user quantizer mode and we don't want to use
      * the quantizers from the B-frames (B-frames often have a higher QP), we

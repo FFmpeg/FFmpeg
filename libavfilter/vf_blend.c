@@ -153,8 +153,8 @@ typedef struct {
 
 static const AVOption blend_options[] = {
     COMMON_OPTIONS,
-    { "shortest",    "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
-    { "repeatlast",  "repeat last bottom frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
+    { "shortest",    "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "repeatlast",  "repeat last bottom frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -464,7 +464,7 @@ static int config_output(AVFilterLink *outlink)
     s->hsub = pix_desc->log2_chroma_w;
     s->vsub = pix_desc->log2_chroma_h;
 
-    is_16bit = pix_desc->comp[0].depth_minus1 == 15;
+    is_16bit = pix_desc->comp[0].depth == 16;
     s->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
     if (s->tblend)

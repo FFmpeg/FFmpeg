@@ -109,6 +109,7 @@ typedef struct HTTPContext {
     int reconnect_at_eof;
     int reconnect_streamed;
     int reconnect_delay;
+    int reconnect_delay_max;
     int listen;
     char *resource;
     int reply_code;
@@ -148,6 +149,7 @@ static const AVOption options[] = {
     { "reconnect", "auto reconnect after disconnect before EOF", OFFSET(reconnect), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
     { "reconnect_at_eof", "auto reconnect at EOF", OFFSET(reconnect_at_eof), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
     { "reconnect_streamed", "auto reconnect streamed / non seekable streams", OFFSET(reconnect_streamed), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
+    { "reconnect_delay_max", "max reconnect delay in seconds after which to give up", OFFSET(reconnect_delay_max), AV_OPT_TYPE_INT, { .i64 = 120 }, 0, UINT_MAX/1000/1000, D },
     { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, D | E },
     { "resource", "The resource requested by a client", OFFSET(resource), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reply_code", "The http status code to return to a client", OFFSET(reply_code), AV_OPT_TYPE_INT, { .i64 = 200}, INT_MIN, 599, E},
@@ -1250,6 +1252,10 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     if (   (read_ret  < 0 && s->reconnect        && (!h->is_streamed || s->reconnect_streamed) && s->filesize > 0 && s->off < s->filesize)
         || (read_ret == 0 && s->reconnect_at_eof && (!h->is_streamed || s->reconnect_streamed))) {
         int64_t target = h->is_streamed ? 0 : s->off;
+
+        if (s->reconnect_delay > s->reconnect_delay_max)
+            return AVERROR(EIO);
+
         av_log(h, AV_LOG_INFO, "Will reconnect at %"PRId64" error=%s.\n", s->off, av_err2str(read_ret));
         av_usleep(1000U*1000*s->reconnect_delay);
         s->reconnect_delay = 1 + 2*s->reconnect_delay;

@@ -28,20 +28,20 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
     int nb_components = desc->nb_components;
     int plane, x, y;
     int plane_count = isGray(c->srcFormat) ? 1 : 3;
-    int sixteen_bits = desc->comp[0].depth_minus1 >= 8;
-    unsigned off    = 1<<desc->comp[0].depth_minus1;
-    unsigned shift  = desc->comp[0].depth_minus1 + 1;
+    int sixteen_bits = desc->comp[0].depth >= 9;
+    unsigned off    = 1<<(desc->comp[0].depth - 1);
+    unsigned shift  = desc->comp[0].depth;
     unsigned max    = (1<<shift) - 1;
     int target_table[2][3];
 
     for (plane = 0; plane < plane_count; plane++) {
         int a = 0, b = 0;
         if (c->alphablend == SWS_ALPHA_BLEND_CHECKERBOARD) {
-            a = (1<<desc->comp[0].depth_minus1)/2;
-            b = 3*(1<<desc->comp[0].depth_minus1)/2;
+            a = (1<<(desc->comp[0].depth - 1))/2;
+            b = 3*(1<<(desc->comp[0].depth-1))/2;
         }
-        target_table[0][plane] = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<desc->comp[0].depth_minus1 : a;
-        target_table[1][plane] = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<desc->comp[0].depth_minus1 : b;
+        target_table[0][plane] = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<(desc->comp[0].depth - 1) : a;
+        target_table[1][plane] = plane && !(desc->flags & AV_PIX_FMT_FLAG_RGB) ? 1<<(desc->comp[0].depth - 1) : b;
     }
 
     av_assert0(plane_count == nb_components - 1);
@@ -125,7 +125,7 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
             }
         }
     } else {
-        int alpha_pos = desc->comp[plane_count].offset_plus1 - 1;
+        int alpha_pos = desc->comp[plane_count].offset;
         int w = c->srcW;
         for (y = srcSliceY; y < srcSliceH; y++) {
             if (sixteen_bits) {

@@ -73,8 +73,8 @@ static const AVOption waveform_options[] = {
         { "column", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode" },
     { "intensity", "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 1, FLAGS },
     { "i",         "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 1, FLAGS },
-    { "mirror", "set mirroring", OFFSET(mirror), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
-    { "r",      "set mirroring", OFFSET(mirror), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
+    { "mirror", "set mirroring", OFFSET(mirror), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "r",      "set mirroring", OFFSET(mirror), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "display", "set display mode", OFFSET(display), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display" },
     { "d",       "set display mode", OFFSET(display), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display" },
         { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "display" },
@@ -1172,7 +1172,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->desc  = av_pix_fmt_desc_get(inlink->format);
     s->ncomp = s->desc->nb_components;
-    s->bits = s->desc->comp[0].depth_minus1 + 1;
+    s->bits = s->desc->comp[0].depth;
     s->max = 1 << s->bits;
     s->intensity = s->fintensity * (s->max - 1);
 

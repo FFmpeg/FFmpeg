@@ -103,7 +103,7 @@ static av_cold int config_output(AVFilterLink *outlink)
     outlink->time_base = avctx->inputs[0]->time_base;
 
     for (i = 0; i < 4; ++i)
-        ctx->co[i] = desc->comp[i].offset_plus1 - 1;
+        ctx->co[i] = desc->comp[i].offset;
 
     return 0;
 }

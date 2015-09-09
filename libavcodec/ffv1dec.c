@@ -359,7 +359,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     FFV1Context *fs   = *(void **)arg;
     FFV1Context *f    = fs->avctx->priv_data;
     int width, height, x, y, ret;
-    const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step_minus1 + 1;
+    const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     AVFrame * const p = f->cur;
     int i, si;
 

@@ -1335,10 +1335,10 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     FF_ALLOCZ_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
 
-    c->srcBpc = 1 + desc_src->comp[0].depth_minus1;
+    c->srcBpc = desc_src->comp[0].depth;
     if (c->srcBpc < 8)
         c->srcBpc = 8;
-    c->dstBpc = 1 + desc_dst->comp[0].depth_minus1;
+    c->dstBpc = desc_dst->comp[0].depth;
     if (c->dstBpc < 8)
         c->dstBpc = 8;
     if (isAnyRGB(srcFormat) || srcFormat == AV_PIX_FMT_PAL8)
@@ -1691,7 +1691,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     // try to avoid drawing green stuff between the right end and the stride end
     for (i = 0; i < c->vChrBufSize; i++)
-        if(desc_dst->comp[0].depth_minus1 == 15){
+        if(desc_dst->comp[0].depth == 16){
             av_assert0(c->dstBpc > 14);
             for(j=0; j<dst_stride/2+1; j++)
                 ((int32_t*)(c->chrUPixBuf[i]))[j] = 1<<18;

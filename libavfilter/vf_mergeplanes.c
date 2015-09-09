@@ -121,7 +121,7 @@ static int query_formats(AVFilterContext *ctx)
     s->outdesc = av_pix_fmt_desc_get(s->out_fmt);
     for (i = 0; av_pix_fmt_desc_get(i); i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
-        if (desc->comp[0].depth_minus1 == s->outdesc->comp[0].depth_minus1 &&
+        if (desc->comp[0].depth == s->outdesc->comp[0].depth &&
             av_pix_fmt_count_planes(i) == desc->nb_components)
             ff_add_format(&formats, i);
     }
@@ -227,7 +227,7 @@ static int config_output(AVFilterLink *outlink)
         inputp->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
         for (j = 0; j < inputp->nb_planes; j++)
-            inputp->depth[j] = indesc->comp[j].depth_minus1 + 1;
+            inputp->depth[j] = indesc->comp[j].depth;
 
         in[i].time_base = inlink->time_base;
         in[i].sync   = 1;
@@ -245,10 +245,10 @@ static int config_output(AVFilterLink *outlink)
                                       input, plane);
             goto fail;
         }
-        if (s->outdesc->comp[i].depth_minus1 + 1 != inputp->depth[plane]) {
+        if (s->outdesc->comp[i].depth != inputp->depth[plane]) {
             av_log(ctx, AV_LOG_ERROR, "output plane %d depth %d does not "
                                       "match input %d plane %d depth %d\n",
-                                      i, s->outdesc->comp[i].depth_minus1 + 1,
+                                      i, s->outdesc->comp[i].depth,
                                       input, plane, inputp->depth[plane]);
             goto fail;
         }

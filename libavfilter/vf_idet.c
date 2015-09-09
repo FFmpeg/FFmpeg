@@ -275,7 +275,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
 
     if (!idet->csp)
         idet->csp = av_pix_fmt_desc_get(link->format);
-    if (idet->csp->comp[0].depth_minus1 / 8 == 1){
+    if (idet->csp->comp[0].depth > 8){
         idet->filter_line = (ff_idet_filter_func)ff_idet_filter_line_c_16bit;
         if (ARCH_X86)
             ff_idet_init_x86(idet, 1);
