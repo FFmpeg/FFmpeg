@@ -56,16 +56,16 @@ static const AVOption options[] = {
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    PermsContext *perms = ctx->priv;
+    PermsContext *s = ctx->priv;
 
-    if (perms->mode == MODE_RANDOM) {
+    if (s->mode == MODE_RANDOM) {
         uint32_t seed;
 
-        if (perms->random_seed == -1)
-            perms->random_seed = av_get_random_seed();
-        seed = perms->random_seed;
+        if (s->random_seed == -1)
+            s->random_seed = av_get_random_seed();
+        seed = s->random_seed;
         av_log(ctx, AV_LOG_INFO, "random seed: 0x%08x\n", seed);
-        av_lfg_init(&perms->lfg, seed);
+        av_lfg_init(&s->lfg, seed);
     }
 
     return 0;
@@ -78,14 +78,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     int ret;
     AVFilterContext *ctx = inlink->dst;
-    PermsContext *perms = ctx->priv;
+    PermsContext *s = ctx->priv;
     AVFrame *out = frame;
     enum perm in_perm = av_frame_is_writable(frame) ? RW : RO;
     enum perm out_perm;
 
-    switch (perms->mode) {
+    switch (s->mode) {
     case MODE_TOGGLE:   out_perm = in_perm == RO ? RW : RO;                 break;
-    case MODE_RANDOM:   out_perm = av_lfg_get(&perms->lfg) & 1 ? RW : RO;   break;
+    case MODE_RANDOM:   out_perm = av_lfg_get(&s->lfg) & 1 ? RW : RO;       break;
     case MODE_RO:       out_perm = RO;                                      break;
     case MODE_RW:       out_perm = RW;                                      break;
     default:            out_perm = in_perm;                                 break;
