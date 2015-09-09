@@ -144,7 +144,7 @@ void *av_buffer_get_opaque(const AVBufferRef *buf)
 
 int av_buffer_get_ref_count(const AVBufferRef *buf)
 {
-    return buf->buffer->refcount;
+    return avpriv_atomic_int_get(&buf->buffer->refcount);
 }
 
 int av_buffer_make_writable(AVBufferRef **pbuf)
