@@ -51,9 +51,12 @@
 /** Frequency in Hz for lower limit of noise substitution **/
 #define NOISE_LOW_LIMIT 4000
 
+/** Pointless to substitute very high short lived inaudiable frequencies **/
+#define NOISE_HIGH_LIMIT 18120
+
 /* Parameter of f(x) = a*(lambda/100), defines the maximum fourier spread
  * beyond which no PNS is used (since the SFBs contain tone rather than noise) */
-#define NOISE_SPREAD_THRESHOLD 0.9673f
+#define NOISE_SPREAD_THRESHOLD 0.5073f
 
 /* Parameter of f(x) = a*(100/lambda), defines how much PNS is allowed to
  * replace low energy non zero bands */
@@ -335,7 +338,7 @@ static void set_special_band_scalefactors(AACEncContext *s, SingleChannelElement
                 minscaler_i = FFMIN(minscaler_i, sce->sf_idx[w*16+g]);
                 bands++;
             } else if (sce->band_type[w*16+g] == NOISE_BT) {
-                sce->sf_idx[w*16+g] = av_clip(roundf(log2f(sce->pns_ener[w*16+g])*2), -100, 155);
+                sce->sf_idx[w*16+g] = av_clip(3+ceilf(log2f(sce->pns_ener[w*16+g])*2), -100, 155);
                 minscaler_n = FFMIN(minscaler_n, sce->sf_idx[w*16+g]);
                 bands++;
             }
@@ -863,7 +866,7 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
 static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce)
 {
     FFPsyBand *band;
-    int w, g, w2, i, start, count = 0;
+    int w, g, w2, i;
     float *PNS = &s->scoefs[0*128], *PNS34 = &s->scoefs[1*128];
     float *NOR34 = &s->scoefs[3*128];
     const float lambda = s->lambda;
@@ -871,20 +874,20 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     const float thr_mult = NOISE_LAMBDA_REPLACE*(100.0f/lambda);
     const float spread_threshold = NOISE_SPREAD_THRESHOLD*(lambda/100.f);
 
+    if (sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE)
+        return;
+
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        start = 0;
         for (g = 0;  g < sce->ics.num_swb; g++) {
-            int noise_sfi, try_pns = 0;
+            int noise_sfi;
             float dist1 = 0.0f, dist2 = 0.0f, noise_amp;
             float pns_energy = 0.0f, energy_ratio, dist_thresh;
             float sfb_energy = 0.0f, threshold = 0.0f, spread = 0.0f;
-            float freq_boost = FFMAX(0.88f*start*freq_mult/NOISE_LOW_LIMIT, 1.0f);
-            if (start*freq_mult < NOISE_LOW_LIMIT) {
-                start += sce->ics.swb_sizes[g];
+            const int start = sce->ics.swb_offset[w*16+g];
+            const float freq = start*freq_mult;
+            const float freq_boost = FFMAX(0.88f*freq/NOISE_LOW_LIMIT, 1.0f);
+            if (freq < NOISE_LOW_LIMIT)
                 continue;
-            } else {
-                dist_thresh = FFMIN(0.008f*(NOISE_LOW_LIMIT/start*freq_mult), 1.11f);
-            }
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 sfb_energy += band->energy;
@@ -892,18 +895,12 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
                 threshold  += band->threshold;
             }
 
-            if (sce->zeroes[w*16+g]) {
-                try_pns = 1;
-            } else if (sfb_energy < threshold*freq_boost) {
-                try_pns = 1;
-            } else if (spread > spread_threshold) {
-                try_pns = 0;
-            } else if (sfb_energy < threshold*thr_mult*freq_boost) {
-                try_pns = 1;
-            }
+            /* Ramps down at ~8000Hz and loosens the dist threshold */
+            dist_thresh = FFMIN(2.5f*NOISE_LOW_LIMIT/freq, 1.27f);
 
-            if (!try_pns || !sfb_energy) {
-                start += sce->ics.swb_sizes[g];
+            if (sce->zeroes[w*16+g] || spread < spread_threshold ||
+                sfb_energy > threshold*thr_mult*freq_boost || !sfb_energy) {
+                sce->pns_ener[w*16+g] = sfb_energy;
                 continue;
             }
 
@@ -911,16 +908,17 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             noise_amp = -ff_aac_pow2sf_tab[noise_sfi + POW_SF2_ZERO];    /* Dequantize */
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 float band_energy, scale;
-                band = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+                const int start_c = sce->ics.swb_offset[(w+w2)*16+g];
+                band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 for (i = 0; i < sce->ics.swb_sizes[g]; i++)
                     PNS[i] = s->random_state = lcg_random(s->random_state);
                 band_energy = s->fdsp->scalarproduct_float(PNS, PNS, sce->ics.swb_sizes[g]);
                 scale = noise_amp/sqrtf(band_energy);
                 s->fdsp->vector_fmul_scalar(PNS, PNS, scale, sce->ics.swb_sizes[g]);
                 pns_energy += s->fdsp->scalarproduct_float(PNS, PNS, sce->ics.swb_sizes[g]);
-                abs_pow34_v(NOR34, &sce->coeffs[start+(w+w2)*128], sce->ics.swb_sizes[g]);
+                abs_pow34_v(NOR34, &sce->coeffs[start_c], sce->ics.swb_sizes[g]);
                 abs_pow34_v(PNS34, PNS, sce->ics.swb_sizes[g]);
-                dist1 += quantize_band_cost(s, &sce->coeffs[start + (w+w2)*128],
+                dist1 += quantize_band_cost(s, &sce->coeffs[start_c],
                                             NOR34,
                                             sce->ics.swb_sizes[g],
                                             sce->sf_idx[(w+w2)*16+g],
@@ -935,7 +933,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             }
             energy_ratio = sfb_energy/pns_energy; /* Compensates for quantization error */
             sce->pns_ener[w*16+g] = energy_ratio*sfb_energy;
-            if (energy_ratio > 0.80f && energy_ratio < 1.20f && dist1/dist2 > dist_thresh) {
+            if (energy_ratio > 0.85f && energy_ratio < 1.25f && dist1/dist2 > dist_thresh) {
                 sce->band_type[w*16+g] = NOISE_BT;
                 sce->zeroes[w*16+g] = 0;
                 if (sce->band_type[w*16+g-1] != NOISE_BT && /* Prevent holes */
@@ -943,9 +941,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
                     sce->band_type[w*16+g-1] = NOISE_BT;
                     sce->zeroes[w*16+g-1] = 0;
                 }
-                count++;
             }
-            start += sce->ics.swb_sizes[g];
         }
     }
 }
