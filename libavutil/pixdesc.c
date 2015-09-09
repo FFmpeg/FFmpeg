@@ -588,7 +588,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 2, 2, 0, 0, 9, 1, 8, 1 },        /* V */
             { 3, 2, 0, 0, 9, 1, 8, 1 },        /* A */
         },
-        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_ALPHA,
     },
     [AV_PIX_FMT_YUVA420P9LE] = {
         .name = "yuva420p9le",
