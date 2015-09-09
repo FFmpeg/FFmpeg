@@ -307,7 +307,7 @@ ipred_func(32, tm, avx2);
 
 #endif /* HAVE_YASM */
 
-av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp)
+av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
 {
 #if HAVE_YASM
     int cpu_flags;
@@ -388,10 +388,12 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp)
     if (EXTERNAL_MMX(cpu_flags)) {
         init_fpel(4, 0,  4, put, mmx);
         init_fpel(3, 0,  8, put, mmx);
-        dsp->itxfm_add[4 /* lossless */][DCT_DCT] =
-        dsp->itxfm_add[4 /* lossless */][ADST_DCT] =
-        dsp->itxfm_add[4 /* lossless */][DCT_ADST] =
-        dsp->itxfm_add[4 /* lossless */][ADST_ADST] = ff_vp9_iwht_iwht_4x4_add_mmx;
+        if (!bitexact) {
+            dsp->itxfm_add[4 /* lossless */][DCT_DCT] =
+            dsp->itxfm_add[4 /* lossless */][ADST_DCT] =
+            dsp->itxfm_add[4 /* lossless */][DCT_ADST] =
+            dsp->itxfm_add[4 /* lossless */][ADST_ADST] = ff_vp9_iwht_iwht_4x4_add_mmx;
+        }
         init_ipred(8, mmx, v, VERT);
     }
 

@@ -360,7 +360,7 @@ static int update_size(AVCodecContext *ctx, int w, int h, enum AVPixelFormat fmt
     av_freep(&s->block_base);
 
     if (s->bpp != s->last_bpp) {
-        ff_vp9dsp_init(&s->dsp, s->bpp);
+        ff_vp9dsp_init(&s->dsp, s->bpp, ctx->flags & AV_CODEC_FLAG_BITEXACT);
         ff_videodsp_init(&s->vdsp, s->bpp);
         s->last_bpp = s->bpp;
     }
