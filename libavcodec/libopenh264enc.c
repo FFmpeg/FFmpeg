@@ -59,6 +59,72 @@ static const AVClass class = {
     "libopenh264enc", av_default_item_name, options, LIBAVUTIL_VERSION_INT
 };
 
+// Convert ffmpeg log level to equivalent libopenh264 log level.  Given the
+// conversions below, you must set the ffmpeg log level to something greater
+// than AV_LOG_DEBUG if you want to see WELS_LOG_DETAIL messages.
+static int ffmpeg_to_libopenh264_log_level  (
+    int ffmpeg_log_level
+    )
+{
+    int equiv_libopenh264_log_level;
+    if  ( ffmpeg_log_level > AV_LOG_DEBUG )
+        equiv_libopenh264_log_level = WELS_LOG_DETAIL;   // > AV_LOG_DEBUG; this is EXTREMELY detailed
+    else if  ( ffmpeg_log_level >= AV_LOG_DEBUG )
+        equiv_libopenh264_log_level = WELS_LOG_DEBUG;    // AV_LOG_DEBUG
+    else if  ( ffmpeg_log_level >= AV_LOG_INFO )
+        equiv_libopenh264_log_level = WELS_LOG_INFO;     // AV_LOG_INFO, AV_LOG_VERBOSE
+    else if  ( ffmpeg_log_level >= AV_LOG_WARNING )
+        equiv_libopenh264_log_level = WELS_LOG_WARNING;  // AV_LOG_WARNING
+    else if  ( ffmpeg_log_level >= AV_LOG_ERROR )
+        equiv_libopenh264_log_level = WELS_LOG_ERROR;    // AV_LOG_ERROR
+    else
+        equiv_libopenh264_log_level = WELS_LOG_QUIET;    // AV_LOG_QUIET, AV_LOG_PANIC, AV_LOG_FATAL
+    return equiv_libopenh264_log_level;
+}
+
+// Convert libopenh264 log level to equivalent ffmpeg log level.
+static int libopenh264_to_ffmpeg_log_level  (
+    int libopenh264_log_level
+    )
+{
+    int equiv_ffmpeg_log_level;
+    if  ( libopenh264_log_level >= WELS_LOG_DETAIL )
+        equiv_ffmpeg_log_level = AV_LOG_DEBUG + 1;           // WELS_LOG_DETAIL
+    else if  ( libopenh264_log_level >= WELS_LOG_DEBUG )
+        equiv_ffmpeg_log_level = AV_LOG_DEBUG;               // WELS_LOG_DEBUG
+    else if  ( libopenh264_log_level >= WELS_LOG_INFO )
+        equiv_ffmpeg_log_level = AV_LOG_INFO;                // WELS_LOG_INFO
+    else if  ( libopenh264_log_level >= WELS_LOG_WARNING )
+        equiv_ffmpeg_log_level = AV_LOG_WARNING;             // WELS_LOG_WARNING
+    else if  ( libopenh264_log_level >= WELS_LOG_ERROR )
+        equiv_ffmpeg_log_level = AV_LOG_ERROR;               // WELS_LOG_ERROR
+    else
+        equiv_ffmpeg_log_level = AV_LOG_QUIET;               // WELS_LOG_QUIET
+    return equiv_ffmpeg_log_level;
+}
+
+// This function will be provided to the libopenh264 library.  The function will be called
+// when libopenh264 wants to log a message (error, warning, info, etc.).  The signature for
+// this function (defined in .../codec/api/svc/codec_api.h) is:
+//
+//        typedef void (*WelsTraceCallback) (void* ctx, int level, const char* string);
+
+static void libopenh264_trace_callback  (
+    void *          ctx,
+    int             level,
+    char const *    msg
+    )
+{
+    // The message will be logged only if the requested EQUIVALENT ffmpeg log level is
+    // less than or equal to the current ffmpeg log level.  Note, however, that before
+    // this function is called, welsCodecTrace::CodecTrace() will have already discarded
+    // the message (and this function will not be called) if the requested libopenh264
+    // log level "level" is greater than the current libopenh264 log level.
+    int equiv_ffmpeg_log_level = libopenh264_to_ffmpeg_log_level(level);
+    if  ( equiv_ffmpeg_log_level <= av_log_get_level() )
+        av_log((AVCodecContext *) ctx, equiv_ffmpeg_log_level, "%s\n", msg);
+}
+
 static av_cold int svc_encode_close(AVCodecContext *avctx)
 {
     SVCContext *s = avctx->priv_data;
@@ -73,6 +139,8 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     SVCContext *s = avctx->priv_data;
     SEncParamExt param = { 0 };
     int err = AVERROR_UNKNOWN;
+    int equiv_libopenh264_log_level;
+    WelsTraceCallback callback_function;
 
     // Mingw GCC < 4.7 on x86_32 uses an incorrect/buggy ABI for the WelsGetCodecVersion
     // function (for functions returning larger structs), thus skip the check in those
@@ -89,6 +157,28 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unable to create encoder\n");
         return AVERROR_UNKNOWN;
     }
+
+    // Set libopenh264 message logging level for this instance of the encoder using
+    // the current ffmpeg log level converted to the equivalent libopenh264 level.
+    //
+    // The client should have the ffmpeg level set to the desired value before creating
+    // the libopenh264 encoder.  Once the encoder has been created, the libopenh264
+    // log level is fixed for that encoder.  Changing the ffmpeg log level to a LOWER
+    // value, in the expectation that higher level libopenh264 messages will no longer
+    // be logged, WILL have the expected effect.  However, changing the ffmpeg log level
+    // to a HIGHER value, in the expectation that higher level libopenh264 messages will
+    // now be logged, WILL NOT have the expected effect.  This is because the higher
+    // level messages will be discarded by the libopenh264 logging system before our
+    // message logging callback function can be invoked.
+    equiv_libopenh264_log_level = ffmpeg_to_libopenh264_log_level(av_log_get_level());
+    (*s->encoder)->SetOption(s->encoder,ENCODER_OPTION_TRACE_LEVEL,&equiv_libopenh264_log_level);
+
+    // Set the logging callback function to one that uses av_log() (see implementation above).
+    callback_function = (WelsTraceCallback) libopenh264_trace_callback;
+    (*s->encoder)->SetOption(s->encoder,ENCODER_OPTION_TRACE_CALLBACK,(void *)&callback_function);
+
+    // Set the AVCodecContext as the libopenh264 callback context so that it can be passed to av_log().
+    (*s->encoder)->SetOption(s->encoder,ENCODER_OPTION_TRACE_CALLBACK_CONTEXT,(void *)&avctx);
 
     (*s->encoder)->GetDefaultParams(s->encoder, &param);
 
