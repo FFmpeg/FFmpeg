@@ -109,7 +109,9 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { "coder",     "ac"    },
 
     { "flags",     "+cgop" },
+#if FF_API_PRIVATE_OPT
     { "b_strategy", "-1"   },
+#endif
     { NULL },
 };
 

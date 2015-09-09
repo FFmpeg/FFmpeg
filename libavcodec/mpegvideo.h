@@ -525,6 +525,8 @@ typedef struct MpegEncContext {
 
     /* temporary frames used by b_frame_strategy = 2 */
     AVFrame *tmp_frames[MAX_B_FRAMES + 2];
+    int b_frame_strategy;
+    int b_sensitivity;
 } MpegEncContext;
 
 /* mpegvideo_enc common options */
@@ -573,6 +575,8 @@ typedef struct MpegEncContext {
 { "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
 { "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
 { "xone", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_XONE }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
+{"b_strategy", "Strategy to choose between I/P/B-frames",           FF_MPV_OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, FF_MPV_OPT_FLAGS }, \
+{"b_sensitivity", "Adjust sensitivity of b_frame_strategy 1",       FF_MPV_OFFSET(b_sensitivity), AV_OPT_TYPE_INT, {.i64 = 40 }, 1, INT_MAX, FF_MPV_OPT_FLAGS }, \
 
 extern const AVOption ff_mpv_generic_options[];
 

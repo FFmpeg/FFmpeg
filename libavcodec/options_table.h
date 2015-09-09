@@ -119,7 +119,9 @@ static const AVOption avcodec_options[] = {
 #if FF_API_RC_STRATEGY
 {"rc_strategy", "ratecontrol method", OFFSET(rc_strategy), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 #endif
+#if FF_API_PRIVATE_OPT
 {"b_strategy", "strategy to choose between I/P/B-frames", OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, V|E},
+#endif
 {"ps", "RTP payload size in bytes", OFFSET(rtp_payload_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 #if FF_API_STAT_BITS
 {"mv_bits", NULL, OFFSET(mv_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
@@ -390,7 +392,9 @@ static const AVOption avcodec_options[] = {
 {"sc_factor", "multiplied by qscale for each frame and added to scene_change_score", OFFSET(scenechange_factor), AV_OPT_TYPE_INT, {.i64 = 6 }, 0, INT_MAX, V|E},
 #endif /* FF_API_UNUSED_MEMBERS */
 {"mv0_threshold", NULL, OFFSET(mv0_threshold), AV_OPT_TYPE_INT, {.i64 = 256 }, 0, INT_MAX, V|E},
+#if FF_API_PRIVATE_OPT
 {"b_sensitivity", "adjust sensitivity of b_frame_strategy 1", OFFSET(b_sensitivity), AV_OPT_TYPE_INT, {.i64 = 40 }, 1, INT_MAX, V|E},
+#endif
 {"compression_level", NULL, OFFSET(compression_level), AV_OPT_TYPE_INT, {.i64 = FF_COMPRESSION_DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"min_prediction_order", NULL, OFFSET(min_prediction_order), AV_OPT_TYPE_INT, {.i64 = -1 }, INT_MIN, INT_MAX, A|E},
 {"max_prediction_order", NULL, OFFSET(max_prediction_order), AV_OPT_TYPE_INT, {.i64 = -1 }, INT_MIN, INT_MAX, A|E},
