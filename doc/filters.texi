@@ -7485,6 +7485,30 @@ noise=alls=20:allf=t+u
 
 Pass the video source unchanged to the output.
 
+@section ocr
+Optical Character Recognition
+
+This filter uses Tesseract for optical character recognition.
+
+It accepts the following options:
+
+@table @option
+@item datapath
+Set datapath to tesseract data. Default is to use whatever was
+set at installation.
+
+@item language
+Set language, default is "eng".
+
+@item whitelist
+Set character whitelist.
+
+@item blacklist
+Set character blacklist.
+@end table
+
+The filter exports recognized text as the frame metadata @code{lavfi.ocr.text}.
+
 @section ocv
 
 Apply a video transform using libopencv.
