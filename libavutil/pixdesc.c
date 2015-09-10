@@ -2016,7 +2016,7 @@ static const char *color_range_names[AVCOL_RANGE_NB] = {
 static const char *color_primaries_names[AVCOL_PRI_NB] = {
     "reserved", "bt709", "unknown", "reserved", "bt470m",
     "bt470bg", "smpte170m", "smpte240m", "film", "bt2020",
-    "smpte428_1",
+    "smpte428-1",
 };
 
 static const char *color_transfer_names[AVCOL_TRC_NB] = {
