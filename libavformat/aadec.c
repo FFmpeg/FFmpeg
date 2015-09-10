@@ -65,7 +65,7 @@ static int get_second_size(char *codec_name)
 static int aa_read_header(AVFormatContext *s)
 {
     int i, j, idx, largest_idx = -1;
-    uint32_t nkey, nval, toc_size, npairs, header_seed, start;
+    uint32_t nkey, nval, toc_size, npairs, header_seed = 0, start;
     char key[128], val[128], codec_name[64] = {0};
     uint8_t output[24], dst[8], src[8];
     int64_t largest_size = -1, current_size = -1;
@@ -74,7 +74,7 @@ static int aa_read_header(AVFormatContext *s)
         uint32_t size;
     } TOC[MAX_TOC_ENTRIES];
     uint32_t header_key_part[4];
-    uint8_t header_key[16];
+    uint8_t header_key[16] = {0};
     AADemuxContext *c = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
