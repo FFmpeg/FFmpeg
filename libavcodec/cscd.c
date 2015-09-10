@@ -127,7 +127,7 @@ static av_cold int decode_init(AVCodecContext *avctx) {
     switch (avctx->bits_per_coded_sample) {
         case 16: avctx->pix_fmt = AV_PIX_FMT_RGB555LE; break;
         case 24: avctx->pix_fmt = AV_PIX_FMT_BGR24; break;
-        case 32: avctx->pix_fmt = AV_PIX_FMT_BGRA; break;
+        case 32: avctx->pix_fmt = AV_PIX_FMT_BGR0; break;
         default:
             av_log(avctx, AV_LOG_ERROR,
                    "CamStudio codec error: invalid depth %i bpp\n",
