@@ -1500,11 +1500,18 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             if (ret < 0)
                 return ret;
 
-            c->cascaded_context[1] = sws_getContext(srcW, srcH, tmpFormat,
-                                                    dstW, dstH, dstFormat,
-                                                    flags, srcFilter, dstFilter, c->param);
+            c->cascaded_context[1] = sws_alloc_set_opts(srcW, srcH, tmpFormat,
+                                                        dstW, dstH, dstFormat,
+                                                        flags, c->param);
             if (!c->cascaded_context[1])
                 return -1;
+
+            c->cascaded_context[1]->srcRange = c->srcRange;
+            c->cascaded_context[1]->dstRange = c->dstRange;
+            ret = sws_init_context(c->cascaded_context[1], srcFilter , dstFilter);
+            if (ret < 0)
+                return ret;
+
             return 0;
         }
     }
