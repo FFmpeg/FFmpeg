@@ -1144,6 +1144,10 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     desc_src = av_pix_fmt_desc_get(srcFormat);
     desc_dst = av_pix_fmt_desc_get(dstFormat);
 
+    // If the source has no alpha then disable alpha blendaway
+    if (c->src0Alpha)
+        c->alphablend = SWS_ALPHA_BLEND_NONE;
+
     if (!(unscaled && sws_isSupportedEndiannessConversion(srcFormat) &&
           av_pix_fmt_swap_endianness(srcFormat) == dstFormat)) {
     if (!sws_isSupportedInput(srcFormat)) {
