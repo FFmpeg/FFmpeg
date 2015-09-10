@@ -67,15 +67,15 @@ static int ffmpeg_to_libopenh264_log_level  (
     )
 {
     int equiv_libopenh264_log_level;
-    if  ( ffmpeg_log_level > AV_LOG_DEBUG )
+    if      (ffmpeg_log_level > AV_LOG_DEBUG)
         equiv_libopenh264_log_level = WELS_LOG_DETAIL;   // > AV_LOG_DEBUG; this is EXTREMELY detailed
-    else if  ( ffmpeg_log_level >= AV_LOG_DEBUG )
+    else if (ffmpeg_log_level >= AV_LOG_DEBUG)
         equiv_libopenh264_log_level = WELS_LOG_DEBUG;    // AV_LOG_DEBUG
-    else if  ( ffmpeg_log_level >= AV_LOG_INFO )
+    else if (ffmpeg_log_level >= AV_LOG_INFO)
         equiv_libopenh264_log_level = WELS_LOG_INFO;     // AV_LOG_INFO, AV_LOG_VERBOSE
-    else if  ( ffmpeg_log_level >= AV_LOG_WARNING )
+    else if (ffmpeg_log_level >= AV_LOG_WARNING)
         equiv_libopenh264_log_level = WELS_LOG_WARNING;  // AV_LOG_WARNING
-    else if  ( ffmpeg_log_level >= AV_LOG_ERROR )
+    else if (ffmpeg_log_level >= AV_LOG_ERROR)
         equiv_libopenh264_log_level = WELS_LOG_ERROR;    // AV_LOG_ERROR
     else
         equiv_libopenh264_log_level = WELS_LOG_QUIET;    // AV_LOG_QUIET, AV_LOG_PANIC, AV_LOG_FATAL
@@ -88,15 +88,15 @@ static int libopenh264_to_ffmpeg_log_level  (
     )
 {
     int equiv_ffmpeg_log_level;
-    if  ( libopenh264_log_level >= WELS_LOG_DETAIL )
+    if      (libopenh264_log_level >= WELS_LOG_DETAIL)
         equiv_ffmpeg_log_level = AV_LOG_DEBUG + 1;           // WELS_LOG_DETAIL
-    else if  ( libopenh264_log_level >= WELS_LOG_DEBUG )
+    else if (libopenh264_log_level >= WELS_LOG_DEBUG)
         equiv_ffmpeg_log_level = AV_LOG_DEBUG;               // WELS_LOG_DEBUG
-    else if  ( libopenh264_log_level >= WELS_LOG_INFO )
+    else if (libopenh264_log_level >= WELS_LOG_INFO)
         equiv_ffmpeg_log_level = AV_LOG_INFO;                // WELS_LOG_INFO
-    else if  ( libopenh264_log_level >= WELS_LOG_WARNING )
+    else if (libopenh264_log_level >= WELS_LOG_WARNING)
         equiv_ffmpeg_log_level = AV_LOG_WARNING;             // WELS_LOG_WARNING
-    else if  ( libopenh264_log_level >= WELS_LOG_ERROR )
+    else if (libopenh264_log_level >= WELS_LOG_ERROR)
         equiv_ffmpeg_log_level = AV_LOG_ERROR;               // WELS_LOG_ERROR
     else
         equiv_ffmpeg_log_level = AV_LOG_QUIET;               // WELS_LOG_QUIET
@@ -121,7 +121,7 @@ static void libopenh264_trace_callback  (
     // the message (and this function will not be called) if the requested libopenh264
     // log level "level" is greater than the current libopenh264 log level.
     int equiv_ffmpeg_log_level = libopenh264_to_ffmpeg_log_level(level);
-    if  ( equiv_ffmpeg_log_level <= av_log_get_level() )
+    if (equiv_ffmpeg_log_level <= av_log_get_level())
         av_log(ctx, equiv_ffmpeg_log_level, "%s\n", msg);
 }
 
