@@ -322,6 +322,7 @@ typedef struct SwsContext {
     uint8_t *cascaded_tmp[4];
     int cascaded1_tmpStride[4];
     uint8_t *cascaded1_tmp[4];
+    int cascaded_mainindex;
 
     double gamma_value;
     int gamma_flag;

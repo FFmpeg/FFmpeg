@@ -858,8 +858,8 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
     c->srcFormatBpp = av_get_bits_per_pixel(desc_src);
 
-    if (c->cascaded_context[0])
-        return sws_setColorspaceDetails(c->cascaded_context[0],inv_table, srcRange,table, dstRange, brightness,  contrast, saturation);
+    if (c->cascaded_context[c->cascaded_mainindex])
+        return sws_setColorspaceDetails(c->cascaded_context[c->cascaded_mainindex],inv_table, srcRange,table, dstRange, brightness,  contrast, saturation);
 
     if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat))) {
         if (!c->cascaded_context[0] &&
@@ -1485,6 +1485,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             usesHFilter || usesVFilter ||
             c->srcRange != c->dstRange
         ) {
+            c->cascaded_mainindex = 1;
             ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
                                 srcW, srcH, tmpFormat, 64);
             if (ret < 0)
