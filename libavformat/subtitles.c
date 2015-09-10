@@ -176,6 +176,7 @@ static void drop_dups(FFDemuxSubtitlesQueue *q)
 
         if (q->subs[i].pts        == last->pts &&
             q->subs[i].duration   == last->duration &&
+            q->subs[i].stream_index == last->stream_index &&
             !strcmp(q->subs[i].data, last->data)) {
 
             av_free_packet(&q->subs[i]);
