@@ -421,6 +421,7 @@ if test -t 1 && which tput >/dev/null; then
     if test -n "$ncolors" && test $ncolors -ge 8; then
         bold_color=$(tput bold)
         warn_color=$(tput setaf 3)
+        error_color=$(tput setaf 1)
         reset_color=$(tput sgr0)
     fi
 fi
@@ -435,18 +436,14 @@ log_file(){
     log END $1
 }
 
-echolog(){
-    log "$@"
-    echo "$@"
-}
-
 warn(){
     log "WARNING: $*"
     WARNINGS="${WARNINGS}WARNING: $*\n"
 }
 
 die(){
-    echolog "$@"
+    log "$@"
+    echo "$error_color$bold_color$@$reset_color"
     cat <<EOF
 
 If you think configure made a mistake, make sure you are using the latest
