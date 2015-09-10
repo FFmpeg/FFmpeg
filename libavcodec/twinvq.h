@@ -200,4 +200,4 @@ int ff_twinvq_decode_frame(AVCodecContext *avctx, void *data,
 int ff_twinvq_decode_close(AVCodecContext *avctx);
 int ff_twinvq_decode_init(AVCodecContext *avctx);
 
-#endif /* AVCODEC_TWINVQ_DATA_H */
+#endif /* AVCODEC_TWINVQ_H */

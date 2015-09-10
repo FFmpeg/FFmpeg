@@ -37,4 +37,4 @@ typedef struct PNGDSPContext {
 void ff_pngdsp_init(PNGDSPContext *dsp);
 void ff_pngdsp_init_x86(PNGDSPContext *dsp);
 
-#endif /* AVCDODEC_PNGDSP_H */
+#endif /* AVCODEC_PNGDSP_H */
