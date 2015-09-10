@@ -503,7 +503,7 @@ DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input vid
 #if CONFIG_NEGATE_FILTER
 
 static const AVOption negate_options[] = {
-    { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+    { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 

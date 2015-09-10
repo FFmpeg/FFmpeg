@@ -1045,7 +1045,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 static const AVOption options[] = {
     { "non_deterministic", "Allow multithreading for e.g. context=1 at the expense of determinism",
-      offsetof(HYuvContext, non_determ), AV_OPT_TYPE_INT, { .i64 = 1 },
+      offsetof(HYuvContext, non_determ), AV_OPT_TYPE_BOOL, { .i64 = 1 },
       0, 1, AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
