@@ -99,7 +99,8 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
     while (bytestream2_get_bytes_left(&s->gb) > 0) {
         int run_length, color;
 
-        if (y >= s->avctx->height)
+        // writes one more line when half_vert is true
+        if (y >= s->avctx->height + !!half_vert)
             return 0;
 
         color = bytestream2_get_byte(&s->gb);
@@ -112,6 +113,9 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
 
         if (half_horiz)
             run_length *=2;
+
+        if (s->avctx->width - x < run_length)
+            return AVERROR_INVALIDDATA;
 
         if (color) {
             memset(s->frame->data[0] + y*s->frame->linesize[0] + x, color, run_length);
