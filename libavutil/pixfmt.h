@@ -381,7 +381,7 @@ enum AVColorPrimaries {
     AVCOL_PRI_SMPTE240M   = 7,  ///< functionally identical to above
     AVCOL_PRI_FILM        = 8,  ///< colour filters using Illuminant C
     AVCOL_PRI_BT2020      = 9,  ///< ITU-R BT2020
-    AVCOL_PRI_SMPTE428_1  = 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
+    AVCOL_PRI_SMPTEST428_1= 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
     AVCOL_PRI_NB,               ///< Not part of ABI
 };
 
