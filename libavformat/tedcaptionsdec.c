@@ -287,7 +287,7 @@ static av_cold int tedcaptions_read_header(AVFormatContext *avf)
         ff_subtitles_queue_clean(&tc->subs);
         return ret;
     }
-    ff_subtitles_queue_finalize(&tc->subs);
+    ff_subtitles_queue_finalize(avf, &tc->subs);
     for (i = 0; i < tc->subs.nb_subs; i++)
         tc->subs.subs[i].pts += tc->start_time;
 

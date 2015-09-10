@@ -857,7 +857,7 @@ static int vobsub_read_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         vobsub->q[i].sort = SUB_SORT_POS_TS;
-        ff_subtitles_queue_finalize(&vobsub->q[i]);
+        ff_subtitles_queue_finalize(s, &vobsub->q[i]);
     }
 
     if (!av_bprint_is_complete(&header)) {

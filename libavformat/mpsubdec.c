@@ -103,7 +103,7 @@ static int mpsub_read_header(AVFormatContext *s)
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codec->codec_id   = AV_CODEC_ID_TEXT;
 
-    ff_subtitles_queue_finalize(&mpsub->q);
+    ff_subtitles_queue_finalize(s, &mpsub->q);
 
 end:
     av_bprint_finalize(&buf, NULL);

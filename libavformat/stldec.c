@@ -104,7 +104,7 @@ static int stl_read_header(AVFormatContext *s)
             sub->duration = duration;
         }
     }
-    ff_subtitles_queue_finalize(&stl->q);
+    ff_subtitles_queue_finalize(s, &stl->q);
     return 0;
 }
 static int stl_read_packet(AVFormatContext *s, AVPacket *pkt)

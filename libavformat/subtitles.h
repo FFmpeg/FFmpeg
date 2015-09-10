@@ -121,7 +121,7 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
 /**
  * Set missing durations and sort subtitles by PTS, and then byte position.
  */
-void ff_subtitles_queue_finalize(FFDemuxSubtitlesQueue *q);
+void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q);
 
 /**
  * Generic read_packet() callback for subtitles demuxers using this queue

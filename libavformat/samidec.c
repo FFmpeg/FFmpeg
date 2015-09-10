@@ -105,7 +105,7 @@ static int sami_read_header(AVFormatContext *s)
     if (res < 0)
         goto end;
 
-    ff_subtitles_queue_finalize(&sami->q);
+    ff_subtitles_queue_finalize(s, &sami->q);
 
 end:
     av_bprint_finalize(&buf, NULL);

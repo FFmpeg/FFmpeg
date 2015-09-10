@@ -166,7 +166,7 @@ static int cmp_pkt_sub_pos_ts(const void *a, const void *b)
     return s1->pos > s2->pos ? 1 : -1;
 }
 
-static void drop_dups(FFDemuxSubtitlesQueue *q)
+static void drop_dups(void *log_ctx, FFDemuxSubtitlesQueue *q)
 {
     int i, drop = 0;
 
@@ -189,13 +189,11 @@ static void drop_dups(FFDemuxSubtitlesQueue *q)
 
     if (drop) {
         q->nb_subs -= drop;
-
-        // TODO: forward log context down here
-        av_log(NULL, AV_LOG_WARNING, "Dropping %d duplicated subtitle events\n", drop);
+        av_log(log_ctx, AV_LOG_WARNING, "Dropping %d duplicated subtitle events\n", drop);
     }
 }
 
-void ff_subtitles_queue_finalize(FFDemuxSubtitlesQueue *q)
+void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q)
 {
     int i;
 
@@ -205,7 +203,8 @@ void ff_subtitles_queue_finalize(FFDemuxSubtitlesQueue *q)
     for (i = 0; i < q->nb_subs; i++)
         if (q->subs[i].duration == -1 && i < q->nb_subs - 1)
             q->subs[i].duration = q->subs[i + 1].pts - q->subs[i].pts;
-    drop_dups(q);
+
+    drop_dups(log_ctx, q);
 }
 
 int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)

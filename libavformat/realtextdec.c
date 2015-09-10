@@ -115,7 +115,7 @@ static int realtext_read_header(AVFormatContext *s)
         }
         av_bprint_clear(&buf);
     }
-    ff_subtitles_queue_finalize(&rt->q);
+    ff_subtitles_queue_finalize(s, &rt->q);
 
 end:
     av_bprint_finalize(&buf, NULL);

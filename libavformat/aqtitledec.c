@@ -95,7 +95,7 @@ static int aqt_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&aqt->q);
+    ff_subtitles_queue_finalize(s, &aqt->q);
     return 0;
 }
 
