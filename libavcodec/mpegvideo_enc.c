@@ -876,6 +876,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if FF_API_PRIVATE_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->brd_scale)
+        s->brd_scale = avctx->brd_scale;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (s->b_frame_strategy == 2) {
         for (i = 0; i < s->max_b_frames + 2; i++) {
             s->tmp_frames[i] = av_frame_alloc();
@@ -883,8 +890,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return AVERROR(ENOMEM);
 
             s->tmp_frames[i]->format = AV_PIX_FMT_YUV420P;
-            s->tmp_frames[i]->width  = s->width  >> avctx->brd_scale;
-            s->tmp_frames[i]->height = s->height >> avctx->brd_scale;
+            s->tmp_frames[i]->width  = s->width  >> s->brd_scale;
+            s->tmp_frames[i]->height = s->height >> s->brd_scale;
 
             ret = av_frame_get_buffer(s->tmp_frames[i], 32);
             if (ret < 0)
@@ -1182,7 +1189,7 @@ static int estimate_best_b_count(MpegEncContext *s)
 {
     AVCodec *codec    = avcodec_find_encoder(s->avctx->codec_id);
     AVCodecContext *c = avcodec_alloc_context3(NULL);
-    const int scale = s->avctx->brd_scale;
+    const int scale = s->brd_scale;
     int i, j, out_size, p_lambda, b_lambda, lambda2;
     int64_t best_rd  = INT64_MAX;
     int best_b_count = -1;
