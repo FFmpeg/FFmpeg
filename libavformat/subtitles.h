@@ -119,7 +119,8 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
                                     const uint8_t *event, size_t len, int merge);
 
 /**
- * Set missing durations and sort subtitles by PTS, and then byte position.
+ * Set missing durations, sort subtitles by PTS (and then byte position), and
+ * drop duplicated events.
  */
 void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q);
 
