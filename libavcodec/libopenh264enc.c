@@ -122,7 +122,7 @@ static void libopenh264_trace_callback  (
     // log level "level" is greater than the current libopenh264 log level.
     int equiv_ffmpeg_log_level = libopenh264_to_ffmpeg_log_level(level);
     if  ( equiv_ffmpeg_log_level <= av_log_get_level() )
-        av_log((AVCodecContext *) ctx, equiv_ffmpeg_log_level, "%s\n", msg);
+        av_log(ctx, equiv_ffmpeg_log_level, "%s\n", msg);
 }
 
 static av_cold int svc_encode_close(AVCodecContext *avctx)
