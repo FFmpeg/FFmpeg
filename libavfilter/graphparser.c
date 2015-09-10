@@ -81,6 +81,41 @@ static char *parse_link_name(const char **buf, void *log_ctx)
     return name;
 }
 
+#define TMP_ARGS_SIZE 256
+
+static void append_sws_flags(const char **args, const char *sws_opts, char *tmp)
+{
+    int nb_opts = 0;
+    const char *separator  = ":";
+    const char *opt        = *args;
+
+    if (strstr(*args, "flags"))
+        return;
+
+    if (strstr(*args, "="))
+        separator = ":flags=";
+
+    while ((opt = strstr(opt, ":")) && *opt) {
+        av_log(NULL, AV_LOG_INFO, "opts '%s' \n", opt);
+        if (nb_opts > 2) {
+            return;
+        }
+        nb_opts++;
+        opt++;
+    }
+
+    opt = strstr(sws_opts, "flags=");
+    if (opt && strlen(opt) > 6)
+        opt += 6;
+    else
+        opt = sws_opts;
+
+    snprintf(tmp, TMP_ARGS_SIZE, "%s%s%s",
+             *args, separator, opt);
+
+    *args = tmp;
+}
+
 /**
  * Create an instance of a filter, initialize and insert it in the
  * filtergraph in *ctx.
@@ -98,7 +133,7 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
 {
     AVFilter *filt;
     char inst_name[30];
-    char tmp_args[256];
+    char tmp_args[TMP_ARGS_SIZE];
     int ret;
 
     snprintf(inst_name, sizeof(inst_name), "Parsed filter %d %s", index, filt_name);
@@ -118,11 +153,9 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         return AVERROR(ENOMEM);
     }
 
-    if (!strcmp(filt_name, "scale") && args && !strstr(args, "flags") &&
+    if (!strcmp(filt_name, "scale") && args &&
         ctx->scale_sws_opts) {
-        snprintf(tmp_args, sizeof(tmp_args), "%s:%s",
-                 args, ctx->scale_sws_opts);
-        args = tmp_args;
+        append_sws_flags(&args, ctx->scale_sws_opts, tmp_args);
     }
 
     ret = avfilter_init_str(*filt_ctx, args);
