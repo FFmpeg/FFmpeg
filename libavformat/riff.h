@@ -53,6 +53,11 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *t
 #define FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX    0x00000001
 
 /**
+ * Tell ff_put_wav_header() to write an empty channel mask.
+ */
+#define FF_PUT_WAV_HEADER_SKIP_CHANNELMASK      0x00000002
+
+/**
  * Write WAVEFORMAT header structure.
  *
  * @param flags a combination of FF_PUT_WAV_HEADER_* constants
