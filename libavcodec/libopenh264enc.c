@@ -79,7 +79,7 @@ static int libopenh264_to_ffmpeg_log_level  (
     int libopenh264_log_level
     )
 {
-    if      (libopenh264_log_level >= WELS_LOG_DETAIL)  return AV_LOG_DEBUG + 1;
+    if      (libopenh264_log_level >= WELS_LOG_DETAIL)  return AV_LOG_TRACE;
     else if (libopenh264_log_level >= WELS_LOG_DEBUG)   return AV_LOG_DEBUG;
     else if (libopenh264_log_level >= WELS_LOG_INFO)    return AV_LOG_INFO;
     else if (libopenh264_log_level >= WELS_LOG_WARNING) return AV_LOG_WARNING;
