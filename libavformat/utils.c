@@ -3113,7 +3113,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         max_analyze_duration        = 5*AV_TIME_BASE;
         max_subtitle_analyze_duration = 30*AV_TIME_BASE;
         if (!strcmp(ic->iformat->name, "flv"))
-            max_stream_analyze_duration = 30*AV_TIME_BASE;
+            max_stream_analyze_duration = 90*AV_TIME_BASE;
     }
 
     if (ic->pb)
