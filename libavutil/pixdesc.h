@@ -108,6 +108,13 @@ typedef struct AVPixFmtDescriptor {
      * Parameters that describe how pixels are packed. If the format
      * has chroma components, they must be stored in comp[1] and
      * comp[2].
+     * If the format is RGB-like, the first component is R, followed
+     * by G and B.
+     *
+     * If the format is YUV-like, the first component is Y, followed
+     * by U and V.
+     *
+     * If present, the Alpha channel is always the last component.
      */
     AVComponentDescriptor comp[4];
 
