@@ -804,52 +804,42 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         avctx->qmin = -1;
         avctx->qmax = -1;
-    } else if (avctx->qmin >= 0 && avctx->qmax >= 0) {
-        if (ctx->twopass) {
-            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_2_PASS_VBR;
+    } else {
+        if (avctx->qmin >= 0 && avctx->qmax >= 0) {
+            ctx->encode_config.rcParams.enableMinQP = 1;
+            ctx->encode_config.rcParams.enableMaxQP = 1;
 
-            if (avctx->codec->id == AV_CODEC_ID_H264) {
-                ctx->encode_config.encodeCodecConfig.h264Config.adaptiveTransformMode = NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE;
-                ctx->encode_config.encodeCodecConfig.h264Config.fmoMode = NV_ENC_H264_FMO_DISABLE;
+            ctx->encode_config.rcParams.minQP.qpInterB = avctx->qmin;
+            ctx->encode_config.rcParams.minQP.qpInterP = avctx->qmin;
+            ctx->encode_config.rcParams.minQP.qpIntra = avctx->qmin;
+
+            ctx->encode_config.rcParams.maxQP.qpInterB = avctx->qmax;
+            ctx->encode_config.rcParams.maxQP.qpInterP = avctx->qmax;
+            ctx->encode_config.rcParams.maxQP.qpIntra = avctx->qmax;
+
+            qp_inter_p = (avctx->qmax + 3 * avctx->qmin) / 4; // biased towards Qmin
+
+            if (ctx->twopass) {
+                ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_2_PASS_VBR;
+                if (avctx->codec->id == AV_CODEC_ID_H264) {
+                    ctx->encode_config.encodeCodecConfig.h264Config.adaptiveTransformMode = NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE;
+                    ctx->encode_config.encodeCodecConfig.h264Config.fmoMode = NV_ENC_H264_FMO_DISABLE;
+                }
+            } else {
+                ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR_MINQP;
             }
         } else {
-            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR_MINQP;
-        }
+            qp_inter_p = 26; // default to 26
 
-        ctx->encode_config.rcParams.enableMinQP = 1;
-        ctx->encode_config.rcParams.enableMaxQP = 1;
-
-        ctx->encode_config.rcParams.minQP.qpInterB = avctx->qmin; // * fabs(avctx->b_quant_factor);
-        ctx->encode_config.rcParams.minQP.qpInterP = avctx->qmin; // * fabs(avctx->i_quant_factor);
-        ctx->encode_config.rcParams.minQP.qpIntra = avctx->qmin;
-
-        ctx->encode_config.rcParams.maxQP.qpInterB = avctx->qmax; // / fabs(avctx->b_quant_factor);
-        ctx->encode_config.rcParams.maxQP.qpInterP = avctx->qmax; // / fabs(avctx->i_quant_factor);
-        ctx->encode_config.rcParams.maxQP.qpIntra = avctx->qmax;
-
-        qp_inter_p = (avctx->qmax + 3 * avctx->qmin) / 4; // biased towards Qmin
-        ctx->encode_config.rcParams.initialRCQP.qpInterP  = qp_inter_p;
-
-        if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
-            ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p * fabs(avctx->i_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpIntra += qp_inter_p * avctx->i_quant_offset;
-            ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p * fabs(avctx->b_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpInterB += qp_inter_p * avctx->b_quant_offset;
-        } else {
-            ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p;
-            ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p;
+            if (ctx->twopass) {
+                ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_2_PASS_VBR;
+            } else {
+                ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR;
+            }
         }
 
         ctx->encode_config.rcParams.enableInitialRCQP = 1;
-    } else {
-        if (!ctx->twopass) {
-            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR;
-        } else {
-            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_2_PASS_VBR;
-        }
-
-        qp_inter_p = 26; // default to 26
-        ctx->encode_config.rcParams.initialRCQP.qpInterP = qp_inter_p;
+        ctx->encode_config.rcParams.initialRCQP.qpInterP  = qp_inter_p;
 
         if(avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
             ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p * fabs(avctx->i_quant_factor);
@@ -860,8 +850,6 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
             ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p;
             ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p;
         }
-
-        ctx->encode_config.rcParams.enableInitialRCQP = 1;
     }
 
     if (avctx->rc_buffer_size > 0)
