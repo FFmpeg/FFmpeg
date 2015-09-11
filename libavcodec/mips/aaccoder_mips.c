@@ -61,6 +61,7 @@
 #include "libavcodec/put_bits.h"
 #include "libavcodec/aac.h"
 #include "libavcodec/aacenc.h"
+#include "libavcodec/aacenctab.h"
 #include "libavcodec/aactab.h"
 
 #if HAVE_INLINE_ASM
@@ -69,21 +70,6 @@ typedef struct BandCodingPath {
     float cost;
     int run;
 } BandCodingPath;
-
-static const uint8_t run_value_bits_long[64] = {
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15
-};
-
-static const uint8_t run_value_bits_short[16] = {
-    3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
-};
-
-static const uint8_t * const run_value_bits[2] = {
-    run_value_bits_long, run_value_bits_short
-};
 
 static const uint8_t uquad_sign_bits[81] = {
     0, 1, 1, 1, 2, 2, 1, 2, 2,
@@ -2200,22 +2186,27 @@ static void search_for_quantizers_twoloop_mips(AVCodecContext *avctx,
                                                const float lambda)
 {
     int start = 0, i, w, w2, g;
-    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels;
-    float dists[128] = { 0 }, uplims[128];
+    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels * (lambda / 120.f);
+    float dists[128] = { 0 }, uplims[128] = { 0 };
     float maxvals[128];
     int fflag, minscaler;
     int its  = 0;
     int allz = 0;
     float minthr = INFINITY;
 
+    // for values above this the decoder might end up in an endless loop
+    // due to always having more bits than what can be encoded.
     destbits = FFMIN(destbits, 5800);
+    //XXX: some heuristic to determine initial quantizers will reduce search time
+    //determine zero bands and upper limits
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         for (g = 0;  g < sce->ics.num_swb; g++) {
             int nz = 0;
-            float uplim = 0.0f;
+            float uplim = 0.0f, energy = 0.0f;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                uplim += band->threshold;
+                uplim  += band->threshold;
+                energy += band->energy;
                 if (band->energy <= band->threshold || band->threshold == 0.0f) {
                     sce->zeroes[(w+w2)*16+g] = 1;
                     continue;
@@ -2252,9 +2243,12 @@ static void search_for_quantizers_twoloop_mips(AVCodecContext *avctx,
         }
     }
 
+    //perform two-loop search
+    //outer loop - improve quality
     do {
         int tbits, qstep;
         minscaler = sce->sf_idx[0];
+        //inner loop - quantize spectrum to fit into given number of bits
         qstep = its ? 1 : 32;
         do {
             int prev = -1;
@@ -2350,13 +2344,14 @@ static void search_for_quantizers_twoloop_mips(AVCodecContext *avctx,
 
         fflag = 0;
         minscaler = av_clip(minscaler, 60, 255 - SCALE_MAX_DIFF);
+
         for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
             for (g = 0; g < sce->ics.num_swb; g++) {
                 int prevsc = sce->sf_idx[w*16+g];
                 if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
                     if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
                         sce->sf_idx[w*16+g]--;
-                    else
+                    else //Try to make sure there is some energy in every band
                         sce->sf_idx[w*16+g]-=2;
                 }
                 sce->sf_idx[w*16+g] = av_clip(sce->sf_idx[w*16+g], minscaler, minscaler + SCALE_MAX_DIFF);
@@ -2375,11 +2370,13 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
     int start = 0, i, w, w2, g;
     float M[128], S[128];
     float *L34 = s->scoefs, *R34 = s->scoefs + 128, *M34 = s->scoefs + 128*2, *S34 = s->scoefs + 128*3;
+    const float lambda = s->lambda;
     SingleChannelElement *sce0 = &cpe->ch[0];
     SingleChannelElement *sce1 = &cpe->ch[1];
     if (!cpe->common_window)
         return;
     for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
+        start = 0;
         for (g = 0;  g < sce0->ics.num_swb; g++) {
             if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g]) {
                 float dist1 = 0.0f, dist2 = 0.0f;
@@ -2407,34 +2404,34 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
                         S[i+3] =  M[i+3]
                                 - sce1->coeffs[start+w2*128+i+3];
                    }
-                    abs_pow34_v(L34, sce0->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);
-                    abs_pow34_v(R34, sce1->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(L34, sce0->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(R34, sce1->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
                     abs_pow34_v(M34, M,                         sce0->ics.swb_sizes[g]);
                     abs_pow34_v(S34, S,                         sce0->ics.swb_sizes[g]);
-                    dist1 += quantize_band_cost(s, sce0->coeffs + start + w2*128,
+                    dist1 += quantize_band_cost(s, &sce0->coeffs[start + (w+w2)*128],
                                                 L34,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
-                                                s->lambda / band0->threshold, INFINITY, NULL);
-                    dist1 += quantize_band_cost(s, sce1->coeffs + start + w2*128,
+                                                lambda / band0->threshold, INFINITY, NULL);
+                    dist1 += quantize_band_cost(s, &sce1->coeffs[start + (w+w2)*128],
                                                 R34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],
                                                 sce1->band_type[(w+w2)*16+g],
-                                                s->lambda / band1->threshold, INFINITY, NULL);
+                                                lambda / band1->threshold, INFINITY, NULL);
                     dist2 += quantize_band_cost(s, M,
                                                 M34,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
-                                                s->lambda / maxthr, INFINITY, NULL);
+                                                lambda / maxthr, INFINITY, NULL);
                     dist2 += quantize_band_cost(s, S,
                                                 S34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],
                                                 sce1->band_type[(w+w2)*16+g],
-                                                s->lambda / minthr, INFINITY, NULL);
+                                                lambda / minthr, INFINITY, NULL);
                 }
                 cpe->ms_mask[w*16+g] = dist2 < dist1;
             }
@@ -2447,7 +2444,7 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
 static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *sce,
                                        int win, int group_len, const float lambda)
 {
-    BandCodingPath path[120][12];
+    BandCodingPath path[120][CB_TOT_ALL];
     int w, swb, cb, start, size;
     int i, j;
     const int max_sfb  = sce->ics.max_sfb;
@@ -2460,7 +2457,7 @@ static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *s
 
     abs_pow34_v(s->scoefs, sce->coeffs, 1024);
     start = win*128;
-    for (cb = 0; cb < 12; cb++) {
+    for (cb = 0; cb < CB_TOT_ALL; cb++) {
         path[0][cb].cost     = run_bits+4;
         path[0][cb].prev_idx = -1;
         path[0][cb].run      = 0;
@@ -2484,7 +2481,7 @@ static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *s
             }
             next_minbits = path[swb+1][0].cost;
             next_mincb = 0;
-            for (cb = 1; cb < 12; cb++) {
+            for (cb = 1; cb < CB_TOT_ALL; cb++) {
                 path[swb+1][cb].cost = 61450;
                 path[swb+1][cb].prev_idx = -1;
                 path[swb+1][cb].run = 0;
@@ -2493,6 +2490,7 @@ static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *s
             float minbits = next_minbits;
             int mincb = next_mincb;
             int startcb = sce->band_type[win*16+swb];
+            startcb = aac_cb_in_map[startcb];
             next_minbits = INFINITY;
             next_mincb = 0;
             for (cb = 0; cb < startcb; cb++) {
@@ -2500,13 +2498,20 @@ static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *s
                 path[swb+1][cb].prev_idx = -1;
                 path[swb+1][cb].run = 0;
             }
-            for (cb = startcb; cb < 12; cb++) {
+            for (cb = startcb; cb < CB_TOT_ALL; cb++) {
                 float cost_stay_here, cost_get_here;
                 float bits = 0.0f;
+                if (cb >= 12 && sce->band_type[win*16+swb] != aac_cb_out_map[cb]) {
+                    path[swb+1][cb].cost = 61450;
+                    path[swb+1][cb].prev_idx = -1;
+                    path[swb+1][cb].run = 0;
+                    continue;
+                }
                 for (w = 0; w < group_len; w++) {
                     bits += quantize_band_cost_bits(s, sce->coeffs + start + w*128,
                                                     s->scoefs + start + w*128, size,
-                                                    sce->sf_idx[(win+w)*16+swb], cb,
+                                                    sce->sf_idx[(win+w)*16+swb],
+                                                    aac_cb_out_map[cb],
                                                     0, INFINITY, NULL);
                 }
                 cost_stay_here = path[swb][cb].cost + bits;
@@ -2532,9 +2537,10 @@ static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *s
         start += sce->ics.swb_sizes[swb];
     }
 
+    //convert resulting path from backward-linked list
     stack_len = 0;
     idx       = 0;
-    for (cb = 1; cb < 12; cb++)
+    for (cb = 1; cb < CB_TOT_ALL; cb++)
         if (path[max_sfb][cb].cost < path[max_sfb][idx].cost)
             idx = cb;
     ppos = max_sfb;
@@ -2547,14 +2553,16 @@ static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *s
         ppos -= path[ppos][cb].run;
         stack_len++;
     }
-
+    //perform actual band info encoding
     start = 0;
     for (i = stack_len - 1; i >= 0; i--) {
-        put_bits(&s->pb, 4, stackcb[i]);
+        cb = aac_cb_out_map[stackcb[i]];
+        put_bits(&s->pb, 4, cb);
         count = stackrun[i];
-        memset(sce->zeroes + win*16 + start, !stackcb[i], count);
+        memset(sce->zeroes + win*16 + start, !cb, count);
+        //XXX: memset when band_type is also uint8_t
         for (j = 0; j < count; j++) {
-            sce->band_type[win*16 + start] =  stackcb[i];
+            sce->band_type[win*16 + start] = cb;
             start++;
         }
         while (count >= run_esc) {
@@ -2572,9 +2580,8 @@ void ff_aac_coder_init_mips(AACEncContext *c) {
     int option = c->options.aac_coder;
 
     if (option == 2) {
-// Disabled due to failure with fate-aac-pns-encode
-//         e->quantize_and_encode_band = quantize_and_encode_band_mips;
-//         e->encode_window_bands_info = codebook_trellis_rate_mips;
+         e->quantize_and_encode_band = quantize_and_encode_band_mips;
+         e->encode_window_bands_info = codebook_trellis_rate_mips;
 #if HAVE_MIPSFPU
         e->search_for_quantizers    = search_for_quantizers_twoloop_mips;
         e->search_for_ms            = search_for_ms_mips;
