@@ -1482,7 +1482,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         else {
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                                        avpkt);
-            picture->pkt_dts = avpkt->dts;
+            if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
+                picture->pkt_dts = avpkt->dts;
             /* get_buffer is supposed to set frame parameters */
             if (!(avctx->codec->capabilities & AV_CODEC_CAP_DR1)) {
                 picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
