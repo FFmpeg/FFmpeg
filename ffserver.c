@@ -470,20 +470,22 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
         snprintf(bindmsg, sizeof(bindmsg), "bind(port %d)",
                  ntohs(my_addr->sin_port));
         perror (bindmsg);
-        closesocket(server_fd);
-        return -1;
+        goto fail;
     }
 
     if (listen (server_fd, 5) < 0) {
         perror ("listen");
-        closesocket(server_fd);
-        return -1;
+        goto fail;
     }
 
     if (ff_socket_nonblock(server_fd, 1) < 0)
         av_log(NULL, AV_LOG_WARNING, "ff_socket_nonblock failed\n");
 
     return server_fd;
+
+fail:
+    closesocket(server_fd);
+    return -1;
 }
 
 /* start all multicast streams */
