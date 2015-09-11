@@ -443,6 +443,7 @@ EXPORTS
     avpriv_float_dsp_init
     avpriv_frame_get_metadatap
     avpriv_get_gamma_from_trc
+    avpriv_get_trc_function_from_trc
     avpriv_init_lls
     avpriv_opencl_set_parameter
     avpriv_report_missing_feature
