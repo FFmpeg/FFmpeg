@@ -780,8 +780,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     s->quant_precision = 5;
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->frame_skip_threshold)
+        s->frame_skip_threshold = avctx->frame_skip_threshold;
+    if (avctx->frame_skip_factor)
+        s->frame_skip_factor = avctx->frame_skip_factor;
+    if (avctx->frame_skip_exp)
+        s->frame_skip_exp = avctx->frame_skip_exp;
+    if (avctx->frame_skip_cmp != FF_CMP_DCTMAX)
+        s->frame_skip_cmp = avctx->frame_skip_cmp;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      s->avctx->ildct_cmp);
-    ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->avctx->frame_skip_cmp);
+    ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
 
     if (CONFIG_H261_ENCODER && s->out_format == FMT_H261)
         ff_h261_encode_init(s);
@@ -1149,7 +1162,7 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
                 uint8_t *rptr = ref->f->data[plane] + 8 * (x + y * stride);
                 int v = s->mecc.frame_skip_cmp[1](s, dptr, rptr, stride, 8);
 
-                switch (s->avctx->frame_skip_exp) {
+                switch (s->frame_skip_exp) {
                 case 0: score    =  FFMAX(score, v);          break;
                 case 1: score   += FFABS(v);                  break;
                 case 2: score   += v * v;                     break;
@@ -1163,9 +1176,9 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
     if (score)
         score64 = score;
 
-    if (score64 < s->avctx->frame_skip_threshold)
+    if (score64 < s->frame_skip_threshold)
         return 1;
-    if (score64 < ((s->avctx->frame_skip_factor * (int64_t)s->lambda) >> 8))
+    if (score64 < ((s->frame_skip_factor * (int64_t) s->lambda) >> 8))
         return 1;
     return 0;
 }
@@ -1320,7 +1333,7 @@ static int select_input_picture(MpegEncContext *s)
         } else {
             int b_frames = 0;
 
-            if (s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor) {
+            if (s->frame_skip_threshold || s->frame_skip_factor) {
                 if (s->picture_in_gop_number < s->gop_size &&
                     skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
                     // FIXME check that te gop check above is +-1 correct

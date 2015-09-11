@@ -363,10 +363,12 @@ static const AVOption avcodec_options[] = {
 {"dts_hd_ma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_DTS_HD_MA }, INT_MIN, INT_MAX, A|E, "profile"},
 {"level", NULL, OFFSET(level), AV_OPT_TYPE_INT, {.i64 = FF_LEVEL_UNKNOWN }, INT_MIN, INT_MAX, V|A|E, "level"},
 {"unknown", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LEVEL_UNKNOWN }, INT_MIN, INT_MAX, V|A|E, "level"},
+#if FF_API_PRIVATE_OPT
 {"skip_threshold", "frame skip threshold", OFFSET(frame_skip_threshold), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"skip_factor", "frame skip factor", OFFSET(frame_skip_factor), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"skip_exp", "frame skip exponent", OFFSET(frame_skip_exp), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"skipcmp", "frame skip compare function", OFFSET(frame_skip_cmp), AV_OPT_TYPE_INT, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+#endif
 #if FF_API_MPV_OPT
 {"border_mask", "deprecated, use encoder private options instead", OFFSET(border_masking), AV_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, -FLT_MAX, FLT_MAX, V|E},
 #endif

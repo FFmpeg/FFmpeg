@@ -67,6 +67,7 @@ typedef struct VP8EncoderContext {
     int error_resilient;
     int crf;
     int static_thresh;
+    int drop_threshold;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -257,7 +258,14 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         enccfg.rc_min_quantizer = avctx->qmin;
     if (avctx->qmax > 0)
         enccfg.rc_max_quantizer = avctx->qmax;
-    enccfg.rc_dropframe_thresh = avctx->frame_skip_threshold;
+
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->frame_skip_threshold)
+        ctx->drop_threshold = avctx->frame_skip_threshold;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    enccfg.rc_dropframe_thresh = ctx->drop_threshold;
 
     //0-100 (0 => CBR, 100 => VBR)
     enccfg.rc_2pass_vbr_bias_pct           = round(avctx->qcompress * 100);
@@ -594,6 +602,7 @@ static const AVOption options[] = {
 #endif
     { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE },
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "drop-threshold",   "Frame drop threshold", offsetof(VP8Context, drop_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE },
     { NULL }
 };
 

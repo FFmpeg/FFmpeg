@@ -2369,33 +2369,23 @@ typedef struct AVCodecContext {
     int lmax;
 #endif
 
-    /**
-     * frame skip threshold
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_threshold;
 
-    /**
-     * frame skip factor
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_factor;
 
-    /**
-     * frame skip exponent
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_exp;
 
-    /**
-     * frame skip comparison function
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_cmp;
+#endif /* FF_API_PRIVATE_OPT */
 
     /**
      * trellis RD quantization
