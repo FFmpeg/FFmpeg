@@ -73,7 +73,7 @@ static void list_drivers(CACAContext *c)
 }
 
 #define DEFINE_LIST_DITHER(thing, thing_str)                                 \
-static void list_dither_## thing(CACAContext *c)                         \
+static void list_dither_## thing(CACAContext *c)                             \
 {                                                                            \
     const char *const *thing = caca_get_dither_## thing ##_list(c->dither);  \
     int i;                                                                   \
@@ -150,13 +150,15 @@ static int caca_write_header(AVFormatContext *s)
         goto fail;
     }
 
-#define CHECK_DITHER_OPT(opt)                                           \
-    if (caca_set_dither_##opt(c->dither, c->opt) < 0)  {                \
-        ret = AVERROR(errno);                                           \
-        av_log(s, AV_LOG_ERROR, "Failed to set value '%s' for option '%s'\n", \
-               c->opt, #opt);                                           \
-        goto fail;                                                      \
-    }
+#define CHECK_DITHER_OPT(opt) do {                                              \
+    if (caca_set_dither_##opt(c->dither, c->opt) < 0)  {                        \
+        ret = AVERROR(errno);                                                   \
+        av_log(s, AV_LOG_ERROR, "Failed to set value '%s' for option '%s'\n",   \
+               c->opt, #opt);                                                   \
+        goto fail;                                                              \
+    }                                                                           \
+} while (0)
+
     CHECK_DITHER_OPT(algorithm);
     CHECK_DITHER_OPT(antialias);
     CHECK_DITHER_OPT(charset);
