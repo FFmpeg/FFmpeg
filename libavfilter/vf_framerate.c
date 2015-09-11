@@ -666,9 +666,12 @@ static int request_frame(AVFilterLink *outlink)
     // if there is no "next" frame AND we are not in flush then get one from our input filter
     if (!s->srce[s->frst] && !s->flush) {
         ff_dlog(ctx, "request_frame() call source's request_frame()\n");
-        if ((val = ff_request_frame(outlink->src->inputs[0])) < 0) {
+        val = ff_request_frame(outlink->src->inputs[0]);
+        if (val < 0 && (val != AVERROR_EOF)) {
             ff_dlog(ctx, "request_frame() source's request_frame() returned error:%d\n", val);
             return val;
+        } else if (val == AVERROR_EOF) {
+            s->flush = 1;
         }
         ff_dlog(ctx, "request_frame() source's request_frame() returned:%d\n", val);
         return 0;
