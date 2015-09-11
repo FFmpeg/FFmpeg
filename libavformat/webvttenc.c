@@ -46,7 +46,13 @@ static void webvtt_write_time(AVIOContext *pb, int64_t millisec)
 static int webvtt_write_header(AVFormatContext *ctx)
 {
     AVStream     *s = ctx->streams[0];
+    AVCodecContext *avctx = ctx->streams[0]->codec;
     AVIOContext *pb = ctx->pb;
+
+    if (ctx->nb_streams != 1 || avctx->codec_id != AV_CODEC_ID_WEBVTT) {
+        av_log(ctx, AV_LOG_ERROR, "Exactly one WebVTT stream is needed.\n");
+        return AVERROR(EINVAL);
+    }
 
     avpriv_set_pts_info(s, 64, 1, 1000);
 
