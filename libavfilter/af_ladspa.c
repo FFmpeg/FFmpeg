@@ -612,7 +612,7 @@ static int query_formats(AVFilterContext *ctx)
 
     if (s->nb_inputs == 1 && s->nb_outputs == 1) {
         // We will instantiate multiple LADSPA_Handle, one over each channel
-        layouts = ff_all_channel_layouts();
+        layouts = ff_all_channel_counts();
         if (!layouts)
             return AVERROR(ENOMEM);
 
