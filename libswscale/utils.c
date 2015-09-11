@@ -858,8 +858,8 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
     c->srcFormatBpp = av_get_bits_per_pixel(desc_src);
 
-    if (c->cascaded_context[0])
-        return sws_setColorspaceDetails(c->cascaded_context[0],inv_table, srcRange,table, dstRange, brightness,  contrast, saturation);
+    if (c->cascaded_context[c->cascaded_mainindex])
+        return sws_setColorspaceDetails(c->cascaded_context[c->cascaded_mainindex],inv_table, srcRange,table, dstRange, brightness,  contrast, saturation);
 
     if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat))) {
         if (!c->cascaded_context[0] &&
@@ -981,8 +981,11 @@ static int handle_jpeg(enum AVPixelFormat *format)
         *format = AV_PIX_FMT_YUV440P;
         return 1;
     case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_YA8:
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_GRAY16BE:
+    case AV_PIX_FMT_YA16BE:
+    case AV_PIX_FMT_YA16LE:
         return 1;
     default:
         return 0;
@@ -1143,6 +1146,10 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     dstFormat = c->dstFormat;
     desc_src = av_pix_fmt_desc_get(srcFormat);
     desc_dst = av_pix_fmt_desc_get(dstFormat);
+
+    // If the source has no alpha then disable alpha blendaway
+    if (c->src0Alpha)
+        c->alphablend = SWS_ALPHA_BLEND_NONE;
 
     if (!(unscaled && sws_isSupportedEndiannessConversion(srcFormat) &&
           av_pix_fmt_swap_endianness(srcFormat) == dstFormat)) {
@@ -1478,6 +1485,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             usesHFilter || usesVFilter ||
             c->srcRange != c->dstRange
         ) {
+            c->cascaded_mainindex = 1;
             ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
                                 srcW, srcH, tmpFormat, 64);
             if (ret < 0)
@@ -1493,11 +1501,18 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             if (ret < 0)
                 return ret;
 
-            c->cascaded_context[1] = sws_getContext(srcW, srcH, tmpFormat,
-                                                    dstW, dstH, dstFormat,
-                                                    flags, srcFilter, dstFilter, c->param);
+            c->cascaded_context[1] = sws_alloc_set_opts(srcW, srcH, tmpFormat,
+                                                        dstW, dstH, dstFormat,
+                                                        flags, c->param);
             if (!c->cascaded_context[1])
                 return -1;
+
+            c->cascaded_context[1]->srcRange = c->srcRange;
+            c->cascaded_context[1]->dstRange = c->dstRange;
+            ret = sws_init_context(c->cascaded_context[1], srcFilter , dstFilter);
+            if (ret < 0)
+                return ret;
+
             return 0;
         }
     }

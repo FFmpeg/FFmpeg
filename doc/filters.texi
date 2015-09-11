@@ -3953,7 +3953,7 @@ Can be used in addition to the other key points component
 options. In this case, the unset component(s) will fallback on this
 @option{all} setting.
 @item psfile
-Specify a Photoshop curves file (@code{.asv}) to import the settings from.
+Specify a Photoshop curves file (@code{.acv}) to import the settings from.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
@@ -3998,7 +3998,7 @@ curves=vintage
 @item
 Use a Photoshop preset and redefine the points of the green component:
 @example
-curves=psfile='MyCurvesPresets/purple.asv':green='0.45/0.53'
+curves=psfile='MyCurvesPresets/purple.acv':green='0.45/0.53'
 @end example
 @end itemize
 

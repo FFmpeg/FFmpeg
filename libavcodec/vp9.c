@@ -153,7 +153,6 @@ typedef struct VP9Context {
         uint8_t temporal;
         uint8_t absolute_vals;
         uint8_t update_map;
-        uint8_t ignore_refmap;
         struct {
             uint8_t q_enabled;
             uint8_t lf_enabled;
@@ -361,7 +360,7 @@ static int update_size(AVCodecContext *ctx, int w, int h, enum AVPixelFormat fmt
     av_freep(&s->block_base);
 
     if (s->bpp != s->last_bpp) {
-        ff_vp9dsp_init(&s->dsp, s->bpp);
+        ff_vp9dsp_init(&s->dsp, s->bpp, ctx->flags & AV_CODEC_FLAG_BITEXACT);
         ff_videodsp_init(&s->vdsp, s->bpp);
         s->last_bpp = s->bpp;
     }
@@ -743,7 +742,6 @@ static int decode_frame_header(AVCodecContext *ctx,
         ctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
 
     /* segmentation header info */
-    s->segmentation.ignore_refmap = 0;
     if ((s->segmentation.enabled = get_bits1(&s->gb))) {
         if ((s->segmentation.update_map = get_bits1(&s->gb))) {
             for (i = 0; i < 7; i++)
@@ -754,15 +752,6 @@ static int decode_frame_header(AVCodecContext *ctx,
                     s->prob.segpred[i] = get_bits1(&s->gb) ?
                                          get_bits(&s->gb, 8) : 255;
             }
-        }
-        if ((!s->segmentation.update_map || s->segmentation.temporal) &&
-            (w != s->frames[CUR_FRAME].tf.f->width ||
-             h != s->frames[CUR_FRAME].tf.f->height)) {
-            av_log(ctx, AV_LOG_WARNING,
-                   "Reference segmap (temp=%d,update=%d) enabled on size-change!\n",
-                   s->segmentation.temporal, s->segmentation.update_map);
-            s->segmentation.ignore_refmap = 1;
-            //return AVERROR_INVALIDDATA;
         }
 
         if (get_bits1(&s->gb)) {
@@ -1490,7 +1479,7 @@ static void decode_mode(AVCodecContext *ctx)
                 vp56_rac_get_prob_branchy(&s->c,
                     s->prob.segpred[s->above_segpred_ctx[col] +
                                     s->left_segpred_ctx[row7]]))) {
-        if (!s->errorres && !s->segmentation.ignore_refmap) {
+        if (!s->errorres && s->frames[REF_FRAME_SEGMAP].segmentation_map) {
             int pred = 8, x;
             uint8_t *refsegmap = s->frames[REF_FRAME_SEGMAP].segmentation_map;
 
@@ -4063,6 +4052,12 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     f->pict_type = (s->keyframe || s->intraonly) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     ls_y = f->linesize[0];
     ls_uv =f->linesize[1];
+
+    if (s->frames[REF_FRAME_SEGMAP].tf.f->data[0] &&
+        (s->frames[REF_FRAME_MVPAIR].tf.f->width  != s->frames[CUR_FRAME].tf.f->width ||
+         s->frames[REF_FRAME_MVPAIR].tf.f->height != s->frames[CUR_FRAME].tf.f->height)) {
+        vp9_unref_frame(ctx, &s->frames[REF_FRAME_SEGMAP]);
+    }
 
     // ref frame setup
     for (i = 0; i < 8; i++) {

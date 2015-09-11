@@ -81,32 +81,32 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    TransContext *trans = ctx->priv;
+    TransContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const AVPixFmtDescriptor *desc_out = av_pix_fmt_desc_get(outlink->format);
     const AVPixFmtDescriptor *desc_in  = av_pix_fmt_desc_get(inlink->format);
 
-    if (trans->dir&4) {
+    if (s->dir&4) {
         av_log(ctx, AV_LOG_WARNING,
                "dir values greater than 3 are deprecated, use the passthrough option instead\n");
-        trans->dir &= 3;
-        trans->passthrough = TRANSPOSE_PT_TYPE_LANDSCAPE;
+        s->dir &= 3;
+        s->passthrough = TRANSPOSE_PT_TYPE_LANDSCAPE;
     }
 
-    if ((inlink->w >= inlink->h && trans->passthrough == TRANSPOSE_PT_TYPE_LANDSCAPE) ||
-        (inlink->w <= inlink->h && trans->passthrough == TRANSPOSE_PT_TYPE_PORTRAIT)) {
+    if ((inlink->w >= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_LANDSCAPE) ||
+        (inlink->w <= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_PORTRAIT)) {
         av_log(ctx, AV_LOG_VERBOSE,
                "w:%d h:%d -> w:%d h:%d (passthrough mode)\n",
                inlink->w, inlink->h, inlink->w, inlink->h);
         return 0;
     } else {
-        trans->passthrough = TRANSPOSE_PT_TYPE_NONE;
+        s->passthrough = TRANSPOSE_PT_TYPE_NONE;
     }
 
-    trans->hsub = desc_in->log2_chroma_w;
-    trans->vsub = desc_in->log2_chroma_h;
+    s->hsub = desc_in->log2_chroma_w;
+    s->vsub = desc_in->log2_chroma_h;
 
-    av_image_fill_max_pixsteps(trans->pixsteps, NULL, desc_out);
+    av_image_fill_max_pixsteps(s->pixsteps, NULL, desc_out);
 
     outlink->w = inlink->h;
     outlink->h = inlink->w;
@@ -119,17 +119,17 @@ static int config_props_output(AVFilterLink *outlink)
 
     av_log(ctx, AV_LOG_VERBOSE,
            "w:%d h:%d dir:%d -> w:%d h:%d rotation:%s vflip:%d\n",
-           inlink->w, inlink->h, trans->dir, outlink->w, outlink->h,
-           trans->dir == 1 || trans->dir == 3 ? "clockwise" : "counterclockwise",
-           trans->dir == 0 || trans->dir == 3);
+           inlink->w, inlink->h, s->dir, outlink->w, outlink->h,
+           s->dir == 1 || s->dir == 3 ? "clockwise" : "counterclockwise",
+           s->dir == 0 || s->dir == 3);
     return 0;
 }
 
 static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
-    TransContext *trans = inlink->dst->priv;
+    TransContext *s = inlink->dst->priv;
 
-    return trans->passthrough ?
+    return s->passthrough ?
         ff_null_get_video_buffer   (inlink, w, h) :
         ff_default_get_video_buffer(inlink, w, h);
 }
@@ -141,16 +141,16 @@ typedef struct ThreadData {
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
                         int nb_jobs)
 {
-    TransContext *trans = ctx->priv;
+    TransContext *s = ctx->priv;
     ThreadData *td = arg;
     AVFrame *out = td->out;
     AVFrame *in = td->in;
     int plane;
 
     for (plane = 0; out->data[plane]; plane++) {
-        int hsub    = plane == 1 || plane == 2 ? trans->hsub : 0;
-        int vsub    = plane == 1 || plane == 2 ? trans->vsub : 0;
-        int pixstep = trans->pixsteps[plane];
+        int hsub    = plane == 1 || plane == 2 ? s->hsub : 0;
+        int vsub    = plane == 1 || plane == 2 ? s->vsub : 0;
+        int pixstep = s->pixsteps[plane];
         int inh     = FF_CEIL_RSHIFT(in->height, vsub);
         int outw    = FF_CEIL_RSHIFT(out->width,  hsub);
         int outh    = FF_CEIL_RSHIFT(out->height, vsub);
@@ -165,12 +165,12 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
         src         = in->data[plane];
         srclinesize = in->linesize[plane];
 
-        if (trans->dir & 1) {
+        if (s->dir & 1) {
             src         += in->linesize[plane] * (inh - 1);
             srclinesize *= -1;
         }
 
-        if (trans->dir & 2) {
+        if (s->dir & 2) {
             dst          = out->data[plane] + dstlinesize * (outh - start - 1);
             dstlinesize *= -1;
         }
@@ -226,12 +226,12 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
-    TransContext *trans = ctx->priv;
+    TransContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     ThreadData td;
     AVFrame *out;
 
-    if (trans->passthrough)
+    if (s->passthrough)
         return ff_filter_frame(outlink, in);
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);

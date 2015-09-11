@@ -86,7 +86,7 @@ static int subviewer1_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&subviewer1->q);
+    ff_subtitles_queue_finalize(s, &subviewer1->q);
     return 0;
 }
 

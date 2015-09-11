@@ -2016,13 +2016,14 @@ static const char *color_range_names[AVCOL_RANGE_NB] = {
 static const char *color_primaries_names[AVCOL_PRI_NB] = {
     "reserved", "bt709", "unknown", "reserved", "bt470m",
     "bt470bg", "smpte170m", "smpte240m", "film", "bt2020",
+    "smpte428-1",
 };
 
 static const char *color_transfer_names[AVCOL_TRC_NB] = {
     "reserved", "bt709", "unknown", "reserved", "bt470m",
     "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
     "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1",
-    "bt2020-10", "bt2020-20",
+    "bt2020-10", "bt2020-20", "smpte2084", "smpte428-1",
 };
 
 static const char *color_space_names[AVCOL_SPC_NB] = {

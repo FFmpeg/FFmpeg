@@ -210,7 +210,7 @@ static int lrc_read_header(AVFormatContext *s)
             }
         }
     }
-    ff_subtitles_queue_finalize(&lrc->q);
+    ff_subtitles_queue_finalize(s, &lrc->q);
     ff_metadata_conv_ctx(s, NULL, ff_lrc_metadata_conv);
     return 0;
 }

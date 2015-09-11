@@ -153,7 +153,7 @@ static int subviewer_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&subviewer->q);
+    ff_subtitles_queue_finalize(s, &subviewer->q);
 
 end:
     av_bprint_finalize(&header, NULL);

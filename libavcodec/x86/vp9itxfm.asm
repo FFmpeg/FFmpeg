@@ -1127,10 +1127,14 @@ IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
     pmulhrsw            m7, m4, [pw_16069x2]        ; t6-7
     pmulhrsw            m4, [pw_3196x2]             ; t4-5
 
+%if 0 ; overflows :(
     paddw               m6, m7, m4
     psubw               m5, m7, m4
     pmulhrsw            m5, [pw_11585x2]            ; t5
     pmulhrsw            m6, [pw_11585x2]            ; t6
+%else
+    VP9_UNPACK_MULSUB_2W_4X  5, 6, 7, 4, 11585, 11585, [pd_8192], 0, 1 ; t5,  t6
+%endif
 
     psubw               m0, m3, m7
     paddw               m7, m3
