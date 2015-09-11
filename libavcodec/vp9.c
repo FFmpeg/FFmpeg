@@ -4319,7 +4319,8 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 
     // detect size changes in other threads
     if (s->intra_pred_data[0] &&
-        (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols || s->rows != ssrc->rows)) {
+        (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols ||
+         s->rows != ssrc->rows || s->bpp != ssrc->bpp)) {
         free_buffers(s);
     }
 
