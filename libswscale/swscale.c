@@ -359,6 +359,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 #ifndef NEW_FILTER
     uint8_t *formatConvBuffer        = c->formatConvBuffer;
     uint32_t *pal                    = c->pal_yuv;
+    int perform_gamma = c->is_internal_gamma;
 #endif
     yuv2planar1_fn yuv2plane1        = c->yuv2plane1;
     yuv2planarX_fn yuv2planeX        = c->yuv2planeX;
@@ -379,7 +380,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int chrBufIndex  = c->chrBufIndex;
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
-    int perform_gamma = c->is_internal_gamma;
 
 #ifdef NEW_FILTER
     int lumStart = 0;
