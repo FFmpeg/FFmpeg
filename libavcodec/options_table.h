@@ -473,7 +473,9 @@ static const AVOption avcodec_options[] = {
 {"fltp", "32-bit float planar",           0, AV_OPT_TYPE_CONST, {.i64 = AV_SAMPLE_FMT_FLTP }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
 {"dblp", "64-bit double planar",          0, AV_OPT_TYPE_CONST, {.i64 = AV_SAMPLE_FMT_DBLP }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
 {"refcounted_frames", NULL, OFFSET(refcounted_frames), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, A|V|D },
-{"side_data_only_packets", NULL, OFFSET(side_data_only_packets), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, A|V|E },
+#if FF_API_SIDEDATA_ONLY_PKT
+{"side_data_only_packets", NULL, OFFSET(side_data_only_packets), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, A|V|E },
+#endif
 {NULL},
 };
 
