@@ -69,7 +69,7 @@ static void list_drivers(CACAContext *c)
 
     av_log(c->ctx, AV_LOG_INFO, "Available drivers:\n");
     for (i = 0; drivers[i]; i += 2)
-        av_log(c->ctx, AV_LOG_INFO, "%s : %s\n", drivers[i], drivers[i + 1]);
+        av_log(c->ctx, AV_LOG_INFO, "%s: %s\n", drivers[i], drivers[i + 1]);
 }
 
 #define DEFINE_LIST_DITHER(thing, thing_str)                                 \
@@ -80,7 +80,7 @@ static void list_dither_## thing(CACAContext *c)                         \
                                                                              \
     av_log(c->ctx, AV_LOG_INFO, "Available %s:\n", thing_str);               \
     for (i = 0; thing[i]; i += 2)                                            \
-        av_log(c->ctx, AV_LOG_INFO, "%s : %s\n", thing[i], thing[i + 1]);    \
+        av_log(c->ctx, AV_LOG_INFO, "%s: %s\n", thing[i], thing[i + 1]);     \
 }
 
 DEFINE_LIST_DITHER(color, "colors");
