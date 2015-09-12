@@ -385,6 +385,7 @@ void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalD
     mAdditionalDependencies["jack_jack_h"] = false;
     mAdditionalDependencies["IBaseFilter"] = true;
     mAdditionalDependencies["ID3D11VideoDecoder"] = true;
+    mAdditionalDependencies["ID3D11VideoContext"] = true;
     mAdditionalDependencies["libcrystalhd_libcrystalhd_if_h"] = false;
     mAdditionalDependencies["linux_fb_h"] = false;
     mAdditionalDependencies["linux_videodev_h"] = false;
