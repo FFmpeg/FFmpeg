@@ -454,60 +454,42 @@ void configGenerator::buildOptimisedDisables( OptimisedConfigList & mOptimisedDi
     mOptimisedDisables["OPUS_DECODER"].push_back( "LIBOPUS_DECODER" );//??? Not sure which is better
 }
 
+#define CHECKFORCEDENABLES( Opt ) { if( getConfigOption( Opt ) != m_vConfigValues.end( ) ){ vForceEnable.push_back( Opt ); } }
+
 void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & vForceEnable )
 {
     if( sOptionLower.compare( "fontconfig" ) == 0 )
     {
-        vForceEnable.push_back( "libfontconfig" );
+        CHECKFORCEDENABLES( "libfontconfig" );
     }
     else if( sOptionLower.compare( "dxva2" ) == 0 )
     {
-        vForceEnable.push_back( "dxva2_lib" );
+        CHECKFORCEDENABLES( "dxva2_lib" );
     }
     else if( sOptionLower.compare( "libcdio" ) == 0 )
     {
-        vForceEnable.push_back( "cdio_paranoia_paranoia_h" );
+        CHECKFORCEDENABLES( "cdio_paranoia_paranoia_h" );
     }
     else if( sOptionLower.compare( "libmfx" ) == 0 )
     {
-        vForceEnable.push_back( "qsv" );
+        CHECKFORCEDENABLES( "qsv" );
     }
     else if( sOptionLower.compare( "gnutls" ) == 0 )
     {
-        vForceEnable.push_back( "nettle" );//deprecated
-        vForceEnable.push_back( "gcrypt" );
-        vForceEnable.push_back( "gmp" );
+        CHECKFORCEDENABLES( "nettle" );//deprecated
+        CHECKFORCEDENABLES( "gcrypt" );
+        CHECKFORCEDENABLES( "gmp" );
     }
     else if( sOptionLower.compare( "dcadec" ) == 0 )
     {
-        vForceEnable.push_back( "struct_dcadec_exss_info_matrix_encoding" );
+        CHECKFORCEDENABLES( "struct_dcadec_exss_info_matrix_encoding" );
     }
 }
 
 void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
 {
-    if( sOptionLower.compare( "fontconfig" ) == 0 )
-    {
-        vForceDisable.push_back( "libfontconfig" );
-    }
-    else if( sOptionLower.compare( "dxva2" ) == 0 )
-    {
-        vForceDisable.push_back( "dxva2_lib" );
-    }
-    else if( sOptionLower.compare( "libcdio" ) == 0 )
-    {
-        vForceDisable.push_back( "cdio_paranoia_paranoia_h" );
-    }
-    else if( sOptionLower.compare( "libmfx" ) == 0 )
-    {
-        vForceDisable.push_back( "qsv" );
-    }
-    else if( sOptionLower.compare( "gnutls" ) == 0 )
-    {
-        vForceDisable.push_back( "nettle" );//deprecated
-        vForceDisable.push_back( "gcrypt" );
-        vForceDisable.push_back( "gmp" );
-    }
+    // Currently disable values are exact opposite of the corresponding enable ones
+    buildForcedEnables( sOptionLower, vForceDisable );
 }
 
 void configGenerator::buildObjects( const string & sTag, vector<string> & vObjects )
