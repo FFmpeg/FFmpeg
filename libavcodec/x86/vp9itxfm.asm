@@ -973,18 +973,15 @@ cglobal vp9_%1_%3_8x8_add, 3, 3, %6, dst, stride, block, eob
 
 %endmacro
 
-%define PSIGNW PSIGNW_MMX
 IADST8_FN idct,  IDCT8,  iadst, IADST8, sse2, 15
 IADST8_FN iadst, IADST8, idct,  IDCT8,  sse2, 15
 IADST8_FN iadst, IADST8, iadst, IADST8, sse2, 15
-%define PSIGNW PSIGNW_SSSE3
 IADST8_FN idct,  IDCT8,  iadst, IADST8, ssse3, 16
 IADST8_FN idct,  IDCT8,  iadst, IADST8, avx, 16
 IADST8_FN iadst, IADST8, idct,  IDCT8,  ssse3, 16
 IADST8_FN iadst, IADST8, idct,  IDCT8,  avx, 16
 IADST8_FN iadst, IADST8, iadst, IADST8, ssse3, 16
 IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
-%undef PSIGNW
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_16x16_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
@@ -1889,18 +1886,15 @@ cglobal vp9_%1_%3_16x16_add, 3, 6, 16, 512, dst, stride, block, cnt, dst_bak, tm
     RET
 %endmacro
 
-%define PSIGNW PSIGNW_MMX
 IADST16_FN idct,  IDCT16,  iadst, IADST16, sse2
 IADST16_FN iadst, IADST16, idct,  IDCT16,  sse2
 IADST16_FN iadst, IADST16, iadst, IADST16, sse2
-%define PSIGNW PSIGNW_SSSE3
 IADST16_FN idct,  IDCT16,  iadst, IADST16, ssse3
 IADST16_FN iadst, IADST16, idct,  IDCT16,  ssse3
 IADST16_FN iadst, IADST16, iadst, IADST16, ssse3
 IADST16_FN idct,  IDCT16,  iadst, IADST16, avx
 IADST16_FN iadst, IADST16, idct,  IDCT16,  avx
 IADST16_FN iadst, IADST16, iadst, IADST16, avx
-%undef PSIGNW
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_32x32_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
