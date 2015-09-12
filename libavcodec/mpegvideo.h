@@ -56,19 +56,9 @@
 
 #include "libavutil/opt.h"
 
-#define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
-
-#define MAX_FCODE 7
-
 #define MAX_THREADS 16
 
 #define MAX_B_FRAMES 16
-
-#define ME_MAP_SIZE 64
-
-#define MAX_MB_BYTES (30*16*16*3/8 + 120)
-
-#define INPLACE_OFFSET 16
 
 /* Start codes. */
 #define SEQ_END_CODE            0x000001b7
