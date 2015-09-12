@@ -47,7 +47,6 @@
 #endif
 
 #include "avcodec.h"
-#include "mpegvideo.h"
 
 typedef void DECODER_BUFFER_DESC;
 
