@@ -1285,7 +1285,6 @@ static void compute_real_filename(char *filename, int max_size)
     char *p;
     FFServerStream *stream;
 
-    /* compute filename by matching without the file extensions */
     av_strlcpy(file1, filename, sizeof(file1));
     p = strrchr(file1, '.');
     if (p)
@@ -1448,7 +1447,7 @@ static int http_parse_request(HTTPContext *c)
     if (c->post == 0 && stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth += stream->bandwidth;
 
-    /* If already streaming this feed, do not let start another feeder. */
+    /* If already streaming this feed, do not let another feeder start */
     if (stream->feed_opened) {
         snprintf(msg, sizeof(msg), "This feed is already being received.");
         http_log("Feed '%s' already being received\n", stream->feed_filename);
