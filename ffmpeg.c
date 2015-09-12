@@ -2596,7 +2596,6 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         }
         if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
             av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
-        av_dict_set(&ost->encoder_opts, "side_data_only_packets", "1", 0);
         if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
             !codec->defaults &&
             !av_dict_get(ost->encoder_opts, "b", NULL, 0) &&
