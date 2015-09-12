@@ -67,20 +67,6 @@ void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
     }
 }
 
-static inline void quantize_coefs(double *coef, int *idx, float *lpc, int order)
-{
-    int i;
-    uint8_t u_coef;
-    const float *quant_arr = tns_tmp2_map[TNS_Q_BITS == 4];
-    const double iqfac_p = ((1 << (TNS_Q_BITS-1)) - 0.5)/(M_PI/2.0);
-    const double iqfac_m = ((1 << (TNS_Q_BITS-1)) + 0.5)/(M_PI/2.0);
-    for (i = 0; i < order; i++) {
-        idx[i] = ceilf(asin(coef[i])*((coef[i] >= 0) ? iqfac_p : iqfac_m));
-        u_coef = (idx[i])&(~(~0<<TNS_Q_BITS));
-        lpc[i] = quant_arr[u_coef];
-    }
-}
-
 /* Apply TNS filter */
 void ff_aac_apply_tns(AACEncContext *s, SingleChannelElement *sce)
 {
@@ -122,22 +108,41 @@ void ff_aac_apply_tns(AACEncContext *s, SingleChannelElement *sce)
     }
 }
 
+/*
+ * c_bits - 1 if 4 bit coefficients, 0 if 3 bit coefficients
+ */
+static inline void quantize_coefs(double *coef, int *idx, float *lpc, int order,
+                                  int c_bits)
+{
+    int i;
+    const float *quant_arr = tns_tmp2_map[c_bits];
+    for (i = 0; i < order; i++) {
+        idx[i] = quant_array_idx((float)coef[i], quant_arr, c_bits ? 16 : 8);
+        lpc[i] = quant_arr[idx[i]];
+    }
+}
+
+/*
+ * 3 bits per coefficient with 8 short windows
+ */
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 {
     TemporalNoiseShaping *tns = &sce->tns;
     int w, w2, g, count = 0;
     const int mmm = FFMIN(sce->ics.tns_max_bands, sce->ics.max_sfb);
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
-    const int order = is8 ? 7 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
+    const int c_bits = is8 ? TNS_Q_BITS_SHORT == 4 : TNS_Q_BITS == 4;
 
     int sfb_start = av_clip(tns_min_sfb[is8][s->samplerate_index], 0, mmm);
     int sfb_end   = av_clip(sce->ics.num_swb, 0, mmm);
 
     for (w = 0; w < sce->ics.num_windows; w++) {
-        float e_ratio = 0.0f, threshold = 0.0f, spread = 0.0f, en[2] = {0.0, 0.0f};
-        double gain = 0.0f, coefs[MAX_LPC_ORDER] = {0};
+        int use_tns;
+        int order = is8 ? 5 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
         int coef_start = w*sce->ics.num_swb + sce->ics.swb_offset[sfb_start];
         int coef_len = sce->ics.swb_offset[sfb_end] - sce->ics.swb_offset[sfb_start];
+        float e_ratio = 0.0f, threshold = 0.0f, spread = 0.0f, en[2] = {0.0, 0.0f};
+        double gain = 0.0f, coefs[MAX_LPC_ORDER] = {0};
 
         for (g = 0;  g < sce->ics.num_swb; g++) {
             if (w*16+g < sfb_start || w*16+g > sfb_end)
@@ -149,22 +154,26 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
                 else
                     en[0] += band->energy;
                 threshold += band->threshold;
-                spread += band->spread;
+                spread    += band->spread;
             }
         }
 
         if (coef_len <= 0 || (sfb_end - sfb_start) <= 0)
             continue;
-        else
-            e_ratio = en[0]/en[1];
 
         /* LPC */
         gain = ff_lpc_calc_ref_coefs_f(&s->lpc, &sce->coeffs[coef_start],
                                        coef_len, order, coefs);
 
-        if (gain > TNS_GAIN_THRESHOLD_LOW && gain < TNS_GAIN_THRESHOLD_HIGH &&
-            (en[0]+en[1]) > TNS_GAIN_THRESHOLD_LOW*threshold &&
-            spread < TNS_SPREAD_THRESHOLD && order) {
+        if (!order || gain < TNS_GAIN_THRESHOLD_LOW || gain > TNS_GAIN_THRESHOLD_HIGH)
+            use_tns = 0;
+        else if ((en[0]+en[1]) < TNS_GAIN_THRESHOLD_LOW*threshold || spread < TNS_SPREAD_THRESHOLD)
+            use_tns = 0;
+        else
+            use_tns = 1;
+
+        if (use_tns) {
+            e_ratio = en[0]/en[1];
             if (is8 || order < 2 || (e_ratio > TNS_E_RATIO_LOW && e_ratio < TNS_E_RATIO_HIGH)) {
                 tns->n_filt[w] = 1;
                 for (g = 0; g < tns->n_filt[w]; g++) {
@@ -172,7 +181,7 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
                     tns->direction[w][g] = en[0] < en[1];
                     tns->order[w][g] = order;
                     quantize_coefs(coefs, tns->coef_idx[w][g], tns->coef[w][g],
-                                   order);
+                                   order, c_bits);
                 }
             } else {  /* 2 filters due to energy disbalance */
                 tns->n_filt[w] = 2;
@@ -183,12 +192,11 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
                                     (sfb_end - sfb_start) - tns->length[w][g-1];
                     quantize_coefs(&coefs[!g ? 0 : order - tns->order[w][g-1]],
                                    tns->coef_idx[w][g], tns->coef[w][g],
-                                   tns->order[w][g]);
+                                   tns->order[w][g], c_bits);
                 }
             }
             count++;
         }
     }
-
     sce->tns.present = !!count;
 }

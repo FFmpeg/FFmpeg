@@ -33,6 +33,9 @@
 /* Could be set to 3 to save an additional bit at the cost of little quality */
 #define TNS_Q_BITS 4
 
+/* Coefficient resolution in short windows */
+#define TNS_Q_BITS_SHORT 3
+
 /* TNS will only be used if the LPC gain is within these margins */
 #define TNS_GAIN_THRESHOLD_LOW  1.395f
 #define TNS_GAIN_THRESHOLD_HIGH 11.19f
