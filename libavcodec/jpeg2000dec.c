@@ -1896,6 +1896,8 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
                 properties = s->tile[s->curtileno].properties;
             }
             break;
+        case JPEG2000_PLM:
+            // the PLM marker is ignored
         case JPEG2000_COM:
             // the comment is ignored
             bytestream2_skip(&s->g, len - 2);
