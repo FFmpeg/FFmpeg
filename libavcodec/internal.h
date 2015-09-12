@@ -46,7 +46,13 @@
  * all.
  */
 #define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
-
+/**
+ * Decoders marked with FF_CODEC_CAP_SETS_PKT_DTS want to set
+ * AVFrame.pkt_dts manually. If the flag is set, utils.c won't overwrite
+ * this field. If it's unset, utils.c tries to guess the pkt_dts field
+ * from the input AVPacket.
+ */
+#define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)

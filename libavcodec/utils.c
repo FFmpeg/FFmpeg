@@ -2095,7 +2095,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         else {
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                                        &tmp);
-            picture->pkt_dts = avpkt->dts;
+            if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
+                picture->pkt_dts = avpkt->dts;
 
             if(!avctx->has_b_frames){
                 av_frame_set_pkt_pos(picture, avpkt->pos);

@@ -790,6 +790,7 @@ AVCodec ff_h264_mmal_decoder = {
     .flush          = ffmmal_flush,
     .priv_class     = &ffmmaldec_class,
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL,
                                                      AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE},
