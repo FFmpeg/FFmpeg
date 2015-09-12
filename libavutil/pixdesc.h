@@ -107,11 +107,12 @@ typedef struct AVPixFmtDescriptor {
 
     /**
      * Parameters that describe how pixels are packed.
-     * If the format has 2 or 4 components, then alpha is last.
      * If the format has 1 or 2 components, then luma is 0.
      * If the format has 3 or 4 components:
      *   if the RGB flag is set then 0 is red, 1 is green and 2 is blue;
      *   otherwise 0 is luma, 1 is chroma-U and 2 is chroma-V.
+     *
+     * If present, the Alpha channel is always the last component.
      */
     AVComponentDescriptor comp[4];
 
