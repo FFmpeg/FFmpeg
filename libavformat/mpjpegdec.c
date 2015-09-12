@@ -40,6 +40,19 @@ static int get_line(AVIOContext *pb, char *line, int line_size)
     return 0;
 }
 
+
+static void trim_right(char* p)
+{
+    char* end;
+    if (!p || !*p)
+        return;
+    end=p+strlen(p)-1;
+    while (end!=p && av_isspace(*end)) {
+        *end='\0';
+        end--;
+    }
+}
+
 static int split_tag_value(char **tag, char **value, char *line)
 {
     char *p = line;
@@ -51,6 +64,7 @@ static int split_tag_value(char **tag, char **value, char *line)
 
     *p   = '\0';
     *tag = line;
+    trim_right(*tag);
 
     p++;
 
@@ -58,6 +72,7 @@ static int split_tag_value(char **tag, char **value, char *line)
         p++;
 
     *value = p;
+    trim_right(*value);
 
     return 0;
 }
