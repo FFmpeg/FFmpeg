@@ -26,6 +26,7 @@
 
 #include <bcm_host.h>
 #include <interface/mmal/mmal.h>
+#include <interface/mmal/mmal_parameters_video.h>
 #include <interface/mmal/util/mmal_util.h>
 #include <interface/mmal/util/mmal_util_params.h>
 #include <interface/mmal/util/mmal_default_components.h>
@@ -275,6 +276,9 @@ static int ffmal_update_format(AVCodecContext *avctx)
         goto fail;
 
     if ((status = mmal_port_parameter_set_uint32(decoder->output[0], MMAL_PARAMETER_EXTRA_BUFFERS, ctx->extra_buffers)))
+        goto fail;
+
+    if ((status = mmal_port_parameter_set_boolean(decoder->output[0], MMAL_PARAMETER_VIDEO_INTERPOLATE_TIMESTAMPS, 0)))
         goto fail;
 
     if (avctx->pix_fmt == AV_PIX_FMT_MMAL) {
