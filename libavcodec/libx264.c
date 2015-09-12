@@ -81,6 +81,7 @@ typedef struct X264Context {
     int coder;
     int b_frame_strategy;
     int chroma_offset;
+    int scenechange_threshold;
 
     char *x264_params;
 } X264Context;
@@ -427,8 +428,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         x4->params.i_keyint_max         = avctx->gop_size;
     if (avctx->max_b_frames >= 0)
         x4->params.i_bframe             = avctx->max_b_frames;
-    if (avctx->scenechange_threshold >= 0)
-        x4->params.i_scenecut_threshold = avctx->scenechange_threshold;
+
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->scenechange_threshold)
+        x4->scenechange_threshold = avctx->scenechange_threshold;
+    if (x4->scenechange_threshold >= 0)
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    x4->params.i_scenecut_threshold = x4->scenechange_threshold;
+
     if (avctx->qmin >= 0)
         x4->params.rc.i_qp_min          = avctx->qmin;
     if (avctx->qmax >= 0)
@@ -749,6 +758,7 @@ static const AVOption options[] = {
     { "cabac",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "coder" },
     { "b_strategy",   "Strategy to choose between I/P/B-frames",          OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 2, VE },
     { "chromaoffset", "QP difference between chroma and luma",           OFFSET(chroma_offset), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, VE },
+    { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
 
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
@@ -765,7 +775,9 @@ static const AVCodecDefault x264_defaults[] = {
     { "qblur",            "-1" },
     { "qcomp",            "-1" },
     { "refs",             "-1" },
+#if FF_API_PRIVATE_OPT
     { "sc_threshold",     "-1" },
+#endif
     { "trellis",          "-1" },
     { "nr",               "-1" },
     { "me_range",         "-1" },

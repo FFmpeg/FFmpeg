@@ -323,7 +323,9 @@ static const AVOption avcodec_options[] = {
 #if FF_API_STREAM_CODEC_TAG
 {"stream_codec_tag", NULL, OFFSET(stream_codec_tag), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
 #endif
+#if FF_API_PRIVATE_OPT
 {"sc_threshold", "scene change threshold", OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 #if FF_API_MPV_OPT
 {"lmin", "deprecated, use encoder private options instead", OFFSET(lmin), AV_OPT_TYPE_INT, {.i64 =  0 }, 0, INT_MAX, V|E},
 {"lmax", "deprecated, use encoder private options instead", OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 =  0 }, 0, INT_MAX, V|E},

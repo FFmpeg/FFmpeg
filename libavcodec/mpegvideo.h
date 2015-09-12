@@ -534,6 +534,8 @@ typedef struct MpegEncContext {
     int frame_skip_factor;
     int frame_skip_exp;
     int frame_skip_cmp;
+
+    int scenechange_threshold;
 } MpegEncContext;
 
 /* mpegvideo_enc common options */
@@ -606,6 +608,7 @@ FF_MPV_OPT_CMP_FUNC, \
 {"skip_factor", "Frame skip factor",                                FF_MPV_OFFSET(frame_skip_factor), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"skip_exp", "Frame skip exponent",                                 FF_MPV_OFFSET(frame_skip_exp), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"skip_cmp", "Frame skip compare function",                         FF_MPV_OFFSET(frame_skip_cmp), AV_OPT_TYPE_INT, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{"sc_threshold", "Scene change threshold",                          FF_MPV_OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 
 extern const AVOption ff_mpv_generic_options[];
 
