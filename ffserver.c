@@ -470,20 +470,22 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
         snprintf(bindmsg, sizeof(bindmsg), "bind(port %d)",
                  ntohs(my_addr->sin_port));
         perror (bindmsg);
-        closesocket(server_fd);
-        return -1;
+        goto fail;
     }
 
     if (listen (server_fd, 5) < 0) {
         perror ("listen");
-        closesocket(server_fd);
-        return -1;
+        goto fail;
     }
 
     if (ff_socket_nonblock(server_fd, 1) < 0)
         av_log(NULL, AV_LOG_WARNING, "ff_socket_nonblock failed\n");
 
     return server_fd;
+
+fail:
+    closesocket(server_fd);
+    return -1;
 }
 
 /* start all multicast streams */
@@ -564,25 +566,21 @@ static int http_server(void)
 
     if (config.http_addr.sin_port) {
         server_fd = socket_open_listen(&config.http_addr);
-        if (server_fd < 0) {
-            av_free(poll_table);
-            return -1;
-        }
+        if (server_fd < 0)
+            goto quit;
     }
 
     if (config.rtsp_addr.sin_port) {
         rtsp_server_fd = socket_open_listen(&config.rtsp_addr);
         if (rtsp_server_fd < 0) {
-            av_free(poll_table);
             closesocket(server_fd);
-            return -1;
+            goto quit;
         }
     }
 
     if (!rtsp_server_fd && !server_fd) {
         http_log("HTTP and RTSP disabled.\n");
-        av_free(poll_table);
-        return -1;
+        goto quit;
     }
 
     http_log("FFserver started.\n");
@@ -660,8 +658,7 @@ static int http_server(void)
             ret = poll(poll_table, poll_entry - poll_table, delay);
             if (ret < 0 && ff_neterrno() != AVERROR(EAGAIN) &&
                 ff_neterrno() != AVERROR(EINTR)) {
-                av_free(poll_table);
-                return -1;
+                goto quit;
             }
         } while (ret < 0);
 
@@ -695,6 +692,10 @@ static int http_server(void)
                 new_connection(rtsp_server_fd, 1);
         }
     }
+
+quit:
+    av_free(poll_table);
+    return -1;
 }
 
 /* start waiting for a new HTTP/RTSP request */
@@ -1284,7 +1285,6 @@ static void compute_real_filename(char *filename, int max_size)
     char *p;
     FFServerStream *stream;
 
-    /* compute filename by matching without the file extensions */
     av_strlcpy(file1, filename, sizeof(file1));
     p = strrchr(file1, '.');
     if (p)
@@ -1447,7 +1447,7 @@ static int http_parse_request(HTTPContext *c)
     if (c->post == 0 && stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth += stream->bandwidth;
 
-    /* If already streaming this feed, do not let start another feeder. */
+    /* If already streaming this feed, do not let another feeder start */
     if (stream->feed_opened) {
         snprintf(msg, sizeof(msg), "This feed is already being received.");
         http_log("Feed '%s' already being received\n", stream->feed_filename);

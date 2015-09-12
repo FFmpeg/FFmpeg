@@ -132,11 +132,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             goto fail1;
     } else if (s->listen == 1) {
         // single client
-        if ((fd = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                 s->listen_timeout, h)) < 0) {
-            ret = fd;
+        if ((ret = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                  s->listen_timeout, h)) < 0)
             goto fail1;
-        }
+        // Socket descriptor already closed here. Safe to overwrite to client one.
+        fd = ret;
     } else {
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                      s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {

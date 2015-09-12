@@ -51,9 +51,6 @@
 /** Frequency in Hz for lower limit of noise substitution **/
 #define NOISE_LOW_LIMIT 4000
 
-/** Pointless to substitute very high short lived inaudiable frequencies **/
-#define NOISE_HIGH_LIMIT 18120
-
 /* Parameter of f(x) = a*(lambda/100), defines the maximum fourier spread
  * beyond which no PNS is used (since the SFBs contain tone rather than noise) */
 #define NOISE_SPREAD_THRESHOLD 0.5073f
@@ -886,7 +883,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             const int start = sce->ics.swb_offset[w*16+g];
             const float freq = start*freq_mult;
             const float freq_boost = FFMAX(0.88f*freq/NOISE_LOW_LIMIT, 1.0f);
-            if (freq < NOISE_LOW_LIMIT)
+            if (freq < NOISE_LOW_LIMIT || avctx->cutoff && freq >= avctx->cutoff)
                 continue;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
@@ -899,7 +896,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             dist_thresh = FFMIN(2.5f*NOISE_LOW_LIMIT/freq, 1.27f);
 
             if (sce->zeroes[w*16+g] || spread < spread_threshold ||
-                sfb_energy > threshold*thr_mult*freq_boost || !sfb_energy) {
+                sfb_energy > threshold*thr_mult*freq_boost) {
                 sce->pns_ener[w*16+g] = sfb_energy;
                 continue;
             }

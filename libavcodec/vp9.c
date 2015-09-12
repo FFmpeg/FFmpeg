@@ -3301,9 +3301,9 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
     // emulated overhangs if the stride of the target buffer can't hold. This
     // makes it possible to support emu-edge and so on even if we have large block
     // overhangs
-    emu[0] = (col + w4) * 8 > f->linesize[0] ||
+    emu[0] = (col + w4) * 8 * bytesperpixel > f->linesize[0] ||
              (row + h4) > s->rows;
-    emu[1] = (col + w4) * 4 > f->linesize[1] ||
+    emu[1] = ((col + w4) * 8 >> s->ss_h) * bytesperpixel > f->linesize[1] ||
              (row + h4) > s->rows;
     if (emu[0]) {
         s->dst[0] = s->tmp_y;
@@ -4319,7 +4319,8 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 
     // detect size changes in other threads
     if (s->intra_pred_data[0] &&
-        (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols || s->rows != ssrc->rows)) {
+        (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols ||
+         s->rows != ssrc->rows || s->bpp != ssrc->bpp)) {
         free_buffers(s);
     }
 

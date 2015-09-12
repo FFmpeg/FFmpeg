@@ -1616,17 +1616,11 @@ static inline void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
     s->dsp.mct_decode[tile->codsty[0].transform](src[0], src[1], src[2], csize);
 }
 
-static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
-                                AVFrame *picture)
+static void tile_codeblocks(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
-    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
-    int compno, reslevelno, bandno;
-    int x, y;
-    int planar    = !!(pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR);
-    int pixelsize = planar ? 1 : pixdesc->nb_components;
-
-    uint8_t *line;
     Jpeg2000T1Context t1;
+
+    int compno, reslevelno, bandno;
 
     /* Loop on tile components */
     for (compno = 0; compno < s->ncomponents; compno++) {
@@ -1681,6 +1675,21 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         /* inverse DWT */
         ff_dwt_decode(&comp->dwt, codsty->transform == FF_DWT97 ? (void*)comp->f_data : (void*)comp->i_data);
     } /*end comp */
+}
+
+static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
+                                AVFrame *picture)
+{
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+    int planar    = !!(pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR);
+    int pixelsize = planar ? 1 : pixdesc->nb_components;
+
+    int compno;
+    int x, y;
+
+    uint8_t *line;
+
+    tile_codeblocks(s, tile);
 
     /* inverse MCT transformation */
     if (tile->codsty[0].mct)
@@ -1896,6 +1905,8 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
                 properties = s->tile[s->curtileno].properties;
             }
             break;
+        case JPEG2000_PLM:
+            // the PLM marker is ignored
         case JPEG2000_COM:
             // the comment is ignored
             bytestream2_skip(&s->g, len - 2);

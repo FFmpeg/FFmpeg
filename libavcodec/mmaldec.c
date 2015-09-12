@@ -26,6 +26,7 @@
 
 #include <bcm_host.h>
 #include <interface/mmal/mmal.h>
+#include <interface/mmal/mmal_parameters_video.h>
 #include <interface/mmal/util/mmal_util.h>
 #include <interface/mmal/util/mmal_util_params.h>
 #include <interface/mmal/util/mmal_default_components.h>
@@ -275,6 +276,9 @@ static int ffmal_update_format(AVCodecContext *avctx)
         goto fail;
 
     if ((status = mmal_port_parameter_set_uint32(decoder->output[0], MMAL_PARAMETER_EXTRA_BUFFERS, ctx->extra_buffers)))
+        goto fail;
+
+    if ((status = mmal_port_parameter_set_boolean(decoder->output[0], MMAL_PARAMETER_VIDEO_INTERPOLATE_TIMESTAMPS, 0)))
         goto fail;
 
     if (avctx->pix_fmt == AV_PIX_FMT_MMAL) {
@@ -615,10 +619,8 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
         }
     }
 
-    if (buffer->pts != MMAL_TIME_UNKNOWN) {
-        frame->pkt_pts = buffer->pts;
-        frame->pts = buffer->pts;
-    }
+    frame->pkt_pts = buffer->pts == MMAL_TIME_UNKNOWN ? AV_NOPTS_VALUE : buffer->pts;
+    frame->pkt_dts = AV_NOPTS_VALUE;
 
 done:
     return ret;
@@ -786,6 +788,7 @@ AVCodec ff_h264_mmal_decoder = {
     .flush          = ffmmal_flush,
     .priv_class     = &ffmmaldec_class,
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL,
                                                      AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE},
