@@ -396,7 +396,7 @@ static av_cold int init(AVFilterContext *ctx)
     AVFilterPad pad = { NULL };
     char *p, *arg, *saveptr = NULL;
     unsigned long nb_ports;
-    int i;
+    int i, j = 0;
 
     if (!s->dl_name) {
         av_log(ctx, AV_LOG_ERROR, "No plugin name provided\n");
@@ -543,8 +543,11 @@ static av_cold int init(AVFilterContext *ctx)
         p = NULL;
 
         if (sscanf(arg, "c%d=%f", &i, &val) != 2) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid syntax.\n");
-            return AVERROR(EINVAL);
+            if (sscanf(arg, "%f", &val) != 1) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid syntax.\n");
+                return AVERROR(EINVAL);
+            }
+            i = j++;
         }
 
         if ((ret = set_control(ctx, i, val)) < 0)

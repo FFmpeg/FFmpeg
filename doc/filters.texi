@@ -1970,6 +1970,9 @@ threshold or gain).
 Controls need to be defined using the following syntax:
 c0=@var{value0}|c1=@var{value1}|c2=@var{value2}|..., where
 @var{valuei} is the value set on the @var{i}-th control.
+Alternatively they can be also defined using the following syntax:
+@var{value0}|@var{value1}|@var{value2}|..., where
+@var{valuei} is the value set on the @var{i}-th control.
 If @option{controls} is set to @code{help}, all available controls and
 their valid ranges are printed.
 
