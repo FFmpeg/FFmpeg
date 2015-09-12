@@ -57,6 +57,7 @@ typedef struct XavsContext {
     int mbtree;
     int mixed_refs;
     int b_frame_strategy;
+    int chroma_offset;
 
     int64_t *pts_buffer;
     int out_frame_count;
@@ -379,7 +380,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* what is the RC method we are now using? Default NO */
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
-    x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
+
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->chromaoffset)
+        x4->chroma_offset = avctx->chromaoffset;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    x4->params.analyse.i_chroma_qp_offset = x4->chroma_offset;
 
     x4->params.analyse.b_psnr = avctx->flags & AV_CODEC_FLAG_PSNR;
     x4->params.i_log_level    = XAVS_LOG_DEBUG;
@@ -448,6 +457,7 @@ static const AVOption options[] = {
     { "esa",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_ESA },               INT_MIN, INT_MAX, VE, "motion-est" },
     { "tesa",          NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_TESA },              INT_MIN, INT_MAX, VE, "motion-est" },
     { "b_strategy",    "Strategy to choose between I/P/B-frames",         OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, VE},
+    { "chromaoffset", "QP difference between chroma and luma",           OFFSET(chroma_offset), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE},
 
     { NULL },
 };
