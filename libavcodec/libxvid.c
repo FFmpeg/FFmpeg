@@ -74,6 +74,7 @@ struct xvid_context {
     int ssim_acc;                  /**< SSIM accuracy. 0: accurate. 4: fast. */
     int gmc;
     int me_quality;                /**< Motion estimation quality. 0: fast 6: best. */
+    int mpeg_quant;                /**< Quantization type. 0: H263, 1: MPEG */
 };
 
 /**
@@ -613,7 +614,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* Quant Matrices */
     x->intra_matrix =
     x->inter_matrix = NULL;
+
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->mpeg_quant)
+        x->mpeg_quant = avctx->mpeg_quant;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (x->mpeg_quant)
         x->vol_flags |= XVID_VOL_MPEGQUANT;
     if ((avctx->intra_matrix || avctx->inter_matrix)) {
         x->vol_flags |= XVID_VOL_MPEGQUANT;
@@ -854,6 +863,7 @@ static const AVOption options[] = {
     { "ssim_acc",    "SSIM accuracy",                   OFFSET(ssim_acc),    AV_OPT_TYPE_INT,   { .i64 = 2 },       0,       4, VE         },
     { "gmc",         "use GMC",                         OFFSET(gmc),         AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       1, VE         },
     { "me_quality",  "Motion estimation quality",       OFFSET(me_quality),  AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       6, VE         },
+    { "mpeg_quant",  "Use MPEG quantizers instead of H.263", OFFSET(mpeg_quant), AV_OPT_TYPE_INT, { .i64 = 0 },     0,       1, VE         },
     { NULL },
 };
 
