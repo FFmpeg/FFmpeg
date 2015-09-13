@@ -2398,12 +2398,11 @@ typedef struct AVCodecContext {
      */
     int max_prediction_order;
 
-    /**
-     * GOP timecode frame start number, in non drop frame format
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int64_t timecode_frame_start;
+#endif
 
 #if FF_API_RTP_CALLBACK
     /**
