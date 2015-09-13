@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "put_bits.h"
 #include "internal.h"
@@ -57,6 +59,7 @@ typedef struct AlacLPCContext {
 } AlacLPCContext;
 
 typedef struct AlacEncodeContext {
+    AVCodecContext *avctx;
     int frame_size;                     /**< current frame size               */
     int verbatim;                       /**< current frame verbatim mode flag */
     int compression_level;
@@ -73,7 +76,6 @@ typedef struct AlacEncodeContext {
     RiceContext rc;
     AlacLPCContext lpc[2];
     LPCContext lpc_ctx;
-    AVCodecContext *avctx;
 } AlacEncodeContext;
 
 
@@ -544,7 +546,8 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         AV_WB8(alac_extradata+20, s->rc.k_modifier);
     }
 
-    s->min_prediction_order = DEFAULT_MIN_PRED_ORDER;
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->min_prediction_order >= 0) {
         if (avctx->min_prediction_order < MIN_LPC_ORDER ||
            avctx->min_prediction_order > ALAC_MAX_LPC_ORDER) {
@@ -557,7 +560,6 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         s->min_prediction_order = avctx->min_prediction_order;
     }
 
-    s->max_prediction_order = DEFAULT_MAX_PRED_ORDER;
     if (avctx->max_prediction_order >= 0) {
         if (avctx->max_prediction_order < MIN_LPC_ORDER ||
             avctx->max_prediction_order > ALAC_MAX_LPC_ORDER) {
@@ -569,6 +571,8 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
 
         s->max_prediction_order = avctx->max_prediction_order;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (s->max_prediction_order < s->min_prediction_order) {
         av_log(avctx, AV_LOG_ERROR,
@@ -634,12 +638,29 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
+#define OFFSET(x) offsetof(AlacEncodeContext, x)
+#define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "min_prediction_order", NULL, OFFSET(min_prediction_order), AV_OPT_TYPE_INT, { .i64 = DEFAULT_MIN_PRED_ORDER }, MIN_LPC_ORDER, ALAC_MAX_LPC_ORDER, AE },
+    { "max_prediction_order", NULL, OFFSET(max_prediction_order), AV_OPT_TYPE_INT, { .i64 = DEFAULT_MAX_PRED_ORDER }, MIN_LPC_ORDER, ALAC_MAX_LPC_ORDER, AE },
+
+    { NULL },
+};
+
+static const AVClass alacenc_class = {
+    .class_name = "alacenc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_alac_encoder = {
     .name           = "alac",
     .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ALAC,
     .priv_data_size = sizeof(AlacEncodeContext),
+    .priv_class     = &alacenc_class,
     .init           = alac_encode_init,
     .encode2        = alac_encode_frame,
     .close          = alac_encode_close,
