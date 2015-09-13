@@ -801,15 +801,16 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int av_uninit(channels);
     int av_uninit(sample_rate);
     AVStream *st    = NULL;
+    int last = -1;
 
     /* pkt size is repeated at end. skip it */
-    for (;; avio_skip(s->pb, 4)) {
+    for (;; last = avio_rb32(s->pb)) {
         pos  = avio_tell(s->pb);
         type = (avio_r8(s->pb) & 0x1F);
         size = avio_rb24(s->pb);
         dts  = avio_rb24(s->pb);
         dts |= avio_r8(s->pb) << 24;
-        av_log(s, AV_LOG_TRACE, "type:%d, size:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, dts, avio_tell(s->pb));
+        av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
         if (avio_feof(s->pb))
             return AVERROR_EOF;
         avio_skip(s->pb, 3); /* stream id, always 0 */
