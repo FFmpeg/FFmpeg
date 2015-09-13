@@ -854,6 +854,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 meta_pos = avio_tell(s->pb);
                 type = flv_read_metabody(s, next);
                 if (type == 0 && dts == 0 || type < 0 || type == TYPE_UNKNOWN) {
+                    if (type < 0 && flv->validate_count &&
+                        flv->validate_index[0].pos     > next &&
+                        flv->validate_index[0].pos - 4 < next
+                    ) {
+                        av_log(s, AV_LOG_WARNING, "Adjusting next position due to index mismatch\n");
+                        next = flv->validate_index[0].pos - 4;
+                    }
                     goto skip;
                 } else if (type == TYPE_ONTEXTDATA) {
                     avpriv_request_sample(s, "OnTextData packet");
