@@ -433,6 +433,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     case AMF_DATA_TYPE_UNSUPPORTED:
         break;     // these take up no additional space
     case AMF_DATA_TYPE_MIXEDARRAY:
+    {
+        unsigned v;
         avio_skip(ioc, 4);     // skip 32-bit max array index
         while (avio_tell(ioc) < max_pos - 2 &&
                amf_get_string(ioc, str_val, sizeof(str_val)) > 0)
@@ -441,11 +443,13 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             if (amf_parse_object(s, astream, vstream, str_val, max_pos,
                                  depth + 1) < 0)
                 return -1;
-        if (avio_r8(ioc) != AMF_END_OF_OBJECT) {
-            av_log(s, AV_LOG_ERROR, "Missing AMF_END_OF_OBJECT in AMF_DATA_TYPE_MIXEDARRAY\n");
+        v = avio_r8(ioc);
+        if (v != AMF_END_OF_OBJECT) {
+            av_log(s, AV_LOG_ERROR, "Missing AMF_END_OF_OBJECT in AMF_DATA_TYPE_MIXEDARRAY, found %d\n", v);
             return -1;
         }
         break;
+    }
     case AMF_DATA_TYPE_ARRAY:
     {
         unsigned int arraylen, i;
