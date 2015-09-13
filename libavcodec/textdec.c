@@ -37,7 +37,7 @@ typedef struct {
 #define OFFSET(x) offsetof(TextContext, x)
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "keep_ass_markup", "Set if ASS tags must be escaped", OFFSET(keep_ass_markup), AV_OPT_TYPE_INT,    {.i64=0}, 0, 1, .flags=SD },
+    { "keep_ass_markup", "Set if ASS tags must be escaped", OFFSET(keep_ass_markup), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags=SD },
     { NULL }
 };
 

@@ -164,8 +164,11 @@ static int parse_multipart_header(AVFormatContext *s)
         char *tag, *value;
 
         ret = get_line(s->pb, line, sizeof(line));
-        if (ret < 0)
+        if (ret < 0) {
+            if (ret==AVERROR_EOF)
+                break;
             return ret;
+        }
 
         if (line[0] == '\0')
             break;

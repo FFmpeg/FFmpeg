@@ -257,7 +257,7 @@ static int query_formats(AVFilterContext *ctx)
     ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts);
 
     for (i = 0; i < 2; i++) {
-        layouts = ff_all_channel_layouts();
+        layouts = ff_all_channel_counts();
         if (!layouts)
             return AVERROR(ENOMEM);
         ff_channel_layouts_ref(layouts, &ctx->inputs[i]->out_channel_layouts);
