@@ -1876,14 +1876,11 @@ typedef struct AVCodecContext {
     /** @deprecated use encoder private options instead */
     attribute_deprecated
     int scenechange_threshold;
-#endif
 
-    /**
-     * noise reduction strength
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int noise_reduction;
+#endif
 
 #if FF_API_MPV_OPT
     /**

@@ -68,6 +68,7 @@ typedef struct VP8EncoderContext {
     int crf;
     int static_thresh;
     int drop_threshold;
+    int noise_sensitivity;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -352,7 +353,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         codecctl_int(avctx, VP8E_SET_ARNR_TYPE,        ctx->arnr_type);
 
     if (CONFIG_LIBVPX_VP8_ENCODER && iface == &vpx_codec_vp8_cx_algo) {
-        codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (avctx->noise_reduction)
+            ctx->noise_sensitivity = avctx->noise_reduction;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, ctx->noise_sensitivity);
         codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     }
 #if FF_API_MPV_OPT
@@ -603,6 +610,7 @@ static const AVOption options[] = {
     { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE },
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "drop-threshold",   "Frame drop threshold", offsetof(VP8Context, drop_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE },
+    { "noise-sensitivity", "Noise sensitivity", OFFSET(noise_sensitivity), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 4, VE},
     { NULL }
 };
 

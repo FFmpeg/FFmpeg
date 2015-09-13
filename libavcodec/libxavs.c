@@ -59,6 +59,7 @@ typedef struct XavsContext {
     int b_frame_strategy;
     int chroma_offset;
     int scenechange_threshold;
+    int noise_reduction;
 
     int64_t *pts_buffer;
     int out_frame_count;
@@ -368,7 +369,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     x4->params.analyse.b_transform_8x8    = 1; //avctx->flags2 & AV_CODEC_FLAG2_8X8DCT;
 
     x4->params.analyse.i_trellis          = avctx->trellis;
-    x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
+
+#if FF_API_PRIVATE_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->noise_reduction >= 0)
+        x4->noise_reduction = avctx->noise_reduction;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    x4->params.analyse.i_noise_reduction  = x4->noise_reduction;
 
     if (avctx->level > 0)
         x4->params.i_level_idc = avctx->level;
@@ -467,6 +476,7 @@ static const AVOption options[] = {
     { "b_strategy",    "Strategy to choose between I/P/B-frames",         OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, VE},
     { "chromaoffset", "QP difference between chroma and luma",           OFFSET(chroma_offset), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE},
     { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, VE},
+    { "noise_reduction", "Noise reduction",                               OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, VE},
 
     { NULL },
 };

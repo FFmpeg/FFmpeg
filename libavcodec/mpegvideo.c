@@ -342,7 +342,7 @@ static int init_duplicate_context(MpegEncContext *s)
                           ME_MAP_SIZE * sizeof(uint32_t), fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->me.score_map,
                           ME_MAP_SIZE * sizeof(uint32_t), fail)
-        if (s->avctx->noise_reduction) {
+        if (s->noise_reduction) {
             FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_error_sum,
                               2 * 64 * sizeof(int), fail)
         }
