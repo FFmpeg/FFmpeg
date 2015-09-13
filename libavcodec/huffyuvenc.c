@@ -26,6 +26,8 @@
  * huffyuv encoder
  */
 
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "huffyuv.h"
 #include "huffman.h"
@@ -163,6 +165,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->context_model == 1)
+        s->context = avctx->context_model;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
@@ -187,15 +195,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     s->decorrelate = s->bitstream_bpp >= 24;
     s->predictor = avctx->prediction_method;
     s->interlaced = avctx->flags & AV_CODEC_FLAG_INTERLACED_ME ? 1 : 0;
-    if (avctx->context_model == 1) {
-        s->context = avctx->context_model;
+    if (s->context) {
         if (s->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {
             av_log(avctx, AV_LOG_ERROR,
                    "context=1 is not compatible with "
                    "2 pass huffyuv encoding\n");
             return -1;
         }
-    }else s->context= 0;
+    }
 
     if (avctx->codec->id == AV_CODEC_ID_HUFFYUV) {
         if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
@@ -204,12 +211,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    "vcodec=ffvhuff or format=422p\n");
             return -1;
         }
-        if (avctx->context_model) {
+#if FF_API_PRIVATE_OPT
+        if (s->context) {
             av_log(avctx, AV_LOG_ERROR,
                    "Error: per-frame huffman tables are not supported "
                    "by huffyuv; use vcodec=ffvhuff\n");
             return -1;
         }
+#endif
         if (s->interlaced != ( s->height > 288 ))
             av_log(avctx, AV_LOG_INFO,
                    "using huffyuv 2.2.0 or newer interlacing flag\n");
@@ -686,6 +695,9 @@ static av_cold int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(HYuvContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+
 AVCodec ff_huffyuv_encoder = {
     .name           = "huffyuv",
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
@@ -704,12 +716,25 @@ AVCodec ff_huffyuv_encoder = {
 };
 
 #if CONFIG_FFVHUFF_ENCODER
+static const AVOption ffhuffyuv_options[] = {
+    { "context", "Set per-frame huffman tables", OFFSET(context), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { NULL }
+};
+
+static const AVClass ffhuffyuv_class = {
+    .class_name = "ffhuffyuv encoder",
+    .item_name  = av_default_item_name,
+    .option     = ffhuffyuv_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_ffvhuff_encoder = {
     .name           = "ffvhuff",
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FFVHUFF,
     .priv_data_size = sizeof(HYuvContext),
+    .priv_class     = &ffhuffyuv_class,
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,

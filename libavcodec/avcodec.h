@@ -2341,12 +2341,11 @@ typedef struct AVCodecContext {
     int coder_type;
 #endif /* FF_API_CODER_TYPE */
 
-    /**
-     * context model
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int context_model;
+#endif
 
 #if FF_API_MPV_OPT
     /**
