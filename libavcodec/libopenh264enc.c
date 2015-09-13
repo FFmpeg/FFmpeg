@@ -203,14 +203,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             param.uiMaxNalSize = s->max_nal_size;
             param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
         } else {
-            if (avctx->rtp_payload_size) {
-                av_log(avctx,AV_LOG_DEBUG,"Using RTP Payload size for uiMaxNalSize");
-                param.uiMaxNalSize = avctx->rtp_payload_size;
-                param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = avctx->rtp_payload_size;
-            } else {
-                av_log(avctx,AV_LOG_ERROR,"Invalid -max_nal_size, specify a valid max_nal_size to use -slice_mode dyn\n");
-                goto fail;
-            }
+            av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, "
+                   "specify a valid max_nal_size to use -slice_mode dyn\n");
+            goto fail;
         }
     }
 

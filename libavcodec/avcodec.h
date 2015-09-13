@@ -2418,12 +2418,16 @@ typedef struct AVCodecContext {
     void (*rtp_callback)(struct AVCodecContext *avctx, void *data, int size, int mb_nb);
 #endif
 
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int rtp_payload_size;   /* The size of the RTP payload: the coder will  */
                             /* do its best to deliver a chunk with size     */
                             /* below rtp_payload_size, the chunk will start */
                             /* with a start code on some codecs like H.263. */
                             /* This doesn't take account of any particular  */
                             /* headers inside the transmitted RTP payload.  */
+#endif
 
 #if FF_API_STAT_BITS
     /* statistics, used for 2-pass encoding */

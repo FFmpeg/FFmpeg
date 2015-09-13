@@ -294,6 +294,13 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         break;
     }
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->rtp_payload_size)
+        s->rtp_payload_size = avctx->rtp_payload_size;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     s->bit_rate = avctx->bit_rate;
     s->width    = avctx->width;
     s->height   = avctx->height;
@@ -313,7 +320,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     s->codec_id     = avctx->codec->id;
     s->strict_std_compliance = avctx->strict_std_compliance;
     s->quarter_sample     = (avctx->flags & AV_CODEC_FLAG_QPEL) != 0;
-    s->rtp_mode           = !!avctx->rtp_payload_size;
+    s->rtp_mode           = !!s->rtp_payload_size;
     s->intra_dc_precision = avctx->intra_dc_precision;
     s->user_specified_pts = AV_NOPTS_VALUE;
 
@@ -2766,7 +2773,9 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 current_packet_size= ((put_bits_count(&s->pb)+7)>>3) - (s->ptr_lastgob - s->pb.buf);
 
-                is_gob_start= s->avctx->rtp_payload_size && current_packet_size >= s->avctx->rtp_payload_size && mb_y + mb_x>0;
+                is_gob_start = s->rtp_payload_size &&
+                               current_packet_size >= s->rtp_payload_size &&
+                               mb_y + mb_x > 0;
 
                 if(s->start_mb_y == mb_y && mb_y > 0 && mb_x==0) is_gob_start=1;
 
