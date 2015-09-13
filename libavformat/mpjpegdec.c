@@ -77,6 +77,8 @@ static int check_content_type(char *line)
     return 0;
 }
 
+static int parse_multipart_header(AVIOContext *pb, void *log_ctx);
+
 static int mpjpeg_read_probe(AVProbeData *p)
 {
     AVIOContext *pb;
@@ -90,17 +92,7 @@ static int mpjpeg_read_probe(AVProbeData *p)
     if (!pb)
         return AVERROR(ENOMEM);
 
-    while (!pb->eof_reached) {
-        ret = get_line(pb, line, sizeof(line));
-        if (ret < 0)
-            break;
-
-        ret = check_content_type(line);
-        if (!ret) {
-            ret = AVPROBE_SCORE_MAX;
-            break;
-        }
-    }
+    ret = (parse_multipart_header(pb, NULL)>0)?AVPROBE_SCORE_MAX:0;
 
     av_free(pb);
 
@@ -147,23 +139,23 @@ static int parse_content_length(const char *value)
     return val;
 }
 
-static int parse_multipart_header(AVFormatContext *s)
+static int parse_multipart_header(AVIOContext *pb, void *log_ctx)
 {
     char line[128];
     int found_content_type = 0;
     int ret, size = -1;
 
-    ret = get_line(s->pb, line, sizeof(line));
+    ret = get_line(pb, line, sizeof(line));
     if (ret < 0)
         return ret;
 
     if (strncmp(line, "--", 2))
         return AVERROR_INVALIDDATA;
 
-    while (!s->pb->eof_reached) {
+    while (!pb->eof_reached) {
         char *tag, *value;
 
-        ret = get_line(s->pb, line, sizeof(line));
+        ret = get_line(pb, line, sizeof(line));
         if (ret < 0) {
             if (ret==AVERROR_EOF)
                 break;
@@ -179,9 +171,12 @@ static int parse_multipart_header(AVFormatContext *s)
 
         if (!av_strcasecmp(tag, "Content-type")) {
             if (av_strcasecmp(value, "image/jpeg")) {
-                av_log(s, AV_LOG_ERROR,
-                       "Unexpected %s : %s\n",
-                       tag, value);
+                if (log_ctx) {
+                    av_log(log_ctx, AV_LOG_ERROR,
+                           "Unexpected %s : %s\n",
+                           tag, value);
+                }
+
                 return AVERROR_INVALIDDATA;
             } else
                 found_content_type = 1;
@@ -202,7 +197,7 @@ static int parse_multipart_header(AVFormatContext *s)
 static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
-    int size = parse_multipart_header(s);
+    int size = parse_multipart_header(s->pb, s);
 
     if (size < 0)
         return size;
