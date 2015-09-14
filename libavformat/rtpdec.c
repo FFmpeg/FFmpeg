@@ -520,6 +520,10 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
     s->ic                  = s1;
     s->st                  = st;
     s->queue_size          = queue_size;
+
+    av_log(s->st ? s->st->codec : NULL, AV_LOG_VERBOSE,
+            "setting jitter buffer size to %d\n", s->queue_size);
+
     rtp_init_statistics(&s->statistics, 0);
     if (st) {
         switch (st->codec->codec_id) {
