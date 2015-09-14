@@ -433,6 +433,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     case AMF_DATA_TYPE_UNSUPPORTED:
         break;     // these take up no additional space
     case AMF_DATA_TYPE_MIXEDARRAY:
+    {
+        unsigned v;
         avio_skip(ioc, 4);     // skip 32-bit max array index
         while (avio_tell(ioc) < max_pos - 2 &&
                amf_get_string(ioc, str_val, sizeof(str_val)) > 0)
@@ -441,11 +443,13 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             if (amf_parse_object(s, astream, vstream, str_val, max_pos,
                                  depth + 1) < 0)
                 return -1;
-        if (avio_r8(ioc) != AMF_END_OF_OBJECT) {
-            av_log(s, AV_LOG_ERROR, "Missing AMF_END_OF_OBJECT in AMF_DATA_TYPE_MIXEDARRAY\n");
+        v = avio_r8(ioc);
+        if (v != AMF_END_OF_OBJECT) {
+            av_log(s, AV_LOG_ERROR, "Missing AMF_END_OF_OBJECT in AMF_DATA_TYPE_MIXEDARRAY, found %d\n", v);
             return -1;
         }
         break;
+    }
     case AMF_DATA_TYPE_ARRAY:
     {
         unsigned int arraylen, i;
@@ -797,15 +801,16 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int av_uninit(channels);
     int av_uninit(sample_rate);
     AVStream *st    = NULL;
+    int last = -1;
 
     /* pkt size is repeated at end. skip it */
-    for (;; avio_skip(s->pb, 4)) {
+    for (;; last = avio_rb32(s->pb)) {
         pos  = avio_tell(s->pb);
         type = (avio_r8(s->pb) & 0x1F);
         size = avio_rb24(s->pb);
         dts  = avio_rb24(s->pb);
         dts |= avio_r8(s->pb) << 24;
-        av_log(s, AV_LOG_TRACE, "type:%d, size:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, dts, avio_tell(s->pb));
+        av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
         if (avio_feof(s->pb))
             return AVERROR_EOF;
         avio_skip(s->pb, 3); /* stream id, always 0 */
@@ -849,6 +854,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 meta_pos = avio_tell(s->pb);
                 type = flv_read_metabody(s, next);
                 if (type == 0 && dts == 0 || type < 0 || type == TYPE_UNKNOWN) {
+                    if (type < 0 && flv->validate_count &&
+                        flv->validate_index[0].pos     > next &&
+                        flv->validate_index[0].pos - 4 < next
+                    ) {
+                        av_log(s, AV_LOG_WARNING, "Adjusting next position due to index mismatch\n");
+                        next = flv->validate_index[0].pos - 4;
+                    }
                     goto skip;
                 } else if (type == TYPE_ONTEXTDATA) {
                     avpriv_request_sample(s, "OnTextData packet");
