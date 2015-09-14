@@ -823,7 +823,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         return res;
     }
     for (s->tiling.log2_tile_cols = 0;
-         (s->sb_cols >> s->tiling.log2_tile_cols) > 64;
+         s->sb_cols > (64 << s->tiling.log2_tile_cols);
          s->tiling.log2_tile_cols++) ;
     for (max = 0; (s->sb_cols >> max) >= 4; max++) ;
     max = FFMAX(0, max - 1);
