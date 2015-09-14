@@ -43,12 +43,12 @@ static int get_line(AVIOContext *pb, char *line, int line_size)
 
 static void trim_right(char* p)
 {
-    char* end;
+    char *end;
     if (!p || !*p)
         return;
-    end=p+strlen(p)-1;
-    while (end!=p && av_isspace(*end)) {
-        *end='\0';
+    end = p + strlen(p) - 1;
+    while (end != p && av_isspace(*end)) {
+        *end = '\0';
         end--;
     }
 }
@@ -172,7 +172,7 @@ static int parse_multipart_header(AVIOContext *pb, void *log_ctx)
 
         ret = get_line(pb, line, sizeof(line));
         if (ret < 0) {
-            if (ret==AVERROR_EOF)
+            if (ret == AVERROR_EOF)
                 break;
             return ret;
         }
