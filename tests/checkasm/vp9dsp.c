@@ -26,8 +26,74 @@
 #include "libavutil/intreadwrite.h"
 
 static const uint32_t pixel_mask[3] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
-
 #define SIZEOF_PIXEL ((bit_depth + 7) / 8)
+
+#define randomize_buffers()                                        \
+    do {                                                           \
+        uint32_t mask = pixel_mask[(bit_depth - 8) >> 1];          \
+        int k;                                                     \
+        for (k = -4;  k < SIZEOF_PIXEL * FFMAX(8, size); k += 4) { \
+            uint32_t r = rnd() & mask;                             \
+            AV_WN32A(a + k, r);                                    \
+        }                                                          \
+        for (k = 0; k < size * SIZEOF_PIXEL; k += 4) {             \
+            uint32_t r = rnd() & mask;                             \
+            AV_WN32A(l + k, r);                                    \
+        }                                                          \
+    } while (0)
+
+static void check_ipred(void)
+{
+    LOCAL_ALIGNED_32(uint8_t, a_buf, [64 * 2]);
+    uint8_t *a = &a_buf[32 * 2];
+    LOCAL_ALIGNED_32(uint8_t, l, [32 * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
+    VP9DSPContext dsp;
+    int tx, mode, bit_depth;
+    declare_func(void, uint8_t *dst, ptrdiff_t stride,
+                 const uint8_t *left, const uint8_t *top);
+    static const char *const mode_names[N_INTRA_PRED_MODES] = {
+        [VERT_PRED] = "vert",
+        [HOR_PRED] = "hor",
+        [DC_PRED] = "dc",
+        [DIAG_DOWN_LEFT_PRED] = "diag_downleft",
+        [DIAG_DOWN_RIGHT_PRED] = "diag_downright",
+        [VERT_RIGHT_PRED] = "vert_right",
+        [HOR_DOWN_PRED] = "hor_down",
+        [VERT_LEFT_PRED] = "vert_left",
+        [HOR_UP_PRED] = "hor_up",
+        [TM_VP8_PRED] = "tm",
+        [LEFT_DC_PRED] = "dc_left",
+        [TOP_DC_PRED] = "dc_top",
+        [DC_128_PRED] = "dc_128",
+        [DC_127_PRED] = "dc_127",
+        [DC_129_PRED] = "dc_129",
+    };
+
+    for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
+        ff_vp9dsp_init(&dsp, bit_depth, 0);
+        for (tx = 0; tx < 4; tx++) {
+            int size = 4 << tx;
+
+            for (mode = 0; mode < N_INTRA_PRED_MODES; mode++) {
+                if (check_func(dsp.intra_pred[tx][mode], "vp9_%s_%dx%d_%dbpp",
+                               mode_names[mode], size, size, bit_depth)) {
+                    randomize_buffers();
+                    call_ref(dst0, size * SIZEOF_PIXEL, l, a);
+                    call_new(dst1, size * SIZEOF_PIXEL, l, a);
+                    if (memcmp(dst0, dst1, size * size * SIZEOF_PIXEL))
+                        fail();
+                    bench_new(dst1, size * SIZEOF_PIXEL,l, a);
+                }
+            }
+        }
+    }
+    report("ipred");
+}
+
+#undef randomize_buffers
+
 #define DST_BUF_SIZE (size * size * SIZEOF_PIXEL)
 #define SRC_BUF_STRIDE 72
 #define SRC_BUF_SIZE ((size + 7) * SRC_BUF_STRIDE * SIZEOF_PIXEL)
@@ -118,5 +184,6 @@ static void check_mc(void)
 
 void checkasm_check_vp9dsp(void)
 {
+    check_ipred();
     check_mc();
 }
