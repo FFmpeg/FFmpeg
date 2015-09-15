@@ -125,6 +125,9 @@
     <ClCompile Include="..\libavfilter\f_interleave.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_alimiter.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_biquads.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
