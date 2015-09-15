@@ -736,6 +736,7 @@ OBJS-$(CONFIG_VC1_VDPAU_HWACCEL)          += vdpau_vc1.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
+OBJS-$(CONFIG_AVI_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o  \
                                           ac3tab.o
 OBJS-$(CONFIG_FLAC_DEMUXER)            += flac.o flacdata.o vorbis_data.o
