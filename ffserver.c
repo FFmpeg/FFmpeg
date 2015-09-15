@@ -1787,9 +1787,9 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
             abort();
         }
 
-        avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%d"
+        avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%"PRId64
                         "<td>%s<td>%s\n",
-                    i, type, st->codec->bit_rate/1000,
+                    i, type, (int64_t)st->codec->bit_rate/1000,
                     codec ? codec->name : "", parameters);
      }
 

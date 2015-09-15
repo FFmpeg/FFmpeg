@@ -1028,7 +1028,7 @@ static void dump_cook_context(COOKContext *q)
     }
     ff_dlog(q->avctx, "COOKContext\n");
     PRINT("nb_channels", q->avctx->channels);
-    PRINT("bit_rate", q->avctx->bit_rate);
+    PRINT("bit_rate", (int)q->avctx->bit_rate);
     PRINT("sample_rate", q->avctx->sample_rate);
     PRINT("samples_per_channel", q->subpacket[0].samples_per_channel);
     PRINT("subbands", q->subpacket[0].subbands);

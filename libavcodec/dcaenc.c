@@ -145,7 +145,7 @@ static int encode_init(AVCodecContext *avctx)
     c->samplerate_index = i;
 
     if (avctx->bit_rate < 32000 || avctx->bit_rate > 3840000) {
-        av_log(avctx, AV_LOG_ERROR, "Bit rate %i not supported.", avctx->bit_rate);
+        av_log(avctx, AV_LOG_ERROR, "Bit rate %"PRId64" not supported.", (int64_t)avctx->bit_rate);
         return AVERROR(EINVAL);
     }
     for (i = 0; ff_dca_bit_rates[i] < avctx->bit_rate; i++)

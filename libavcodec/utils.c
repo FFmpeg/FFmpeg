@@ -1450,7 +1450,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (   (avctx->codec_type == AVMEDIA_TYPE_VIDEO || avctx->codec_type == AVMEDIA_TYPE_AUDIO)
             && avctx->bit_rate>0 && avctx->bit_rate<1000) {
-            av_log(avctx, AV_LOG_WARNING, "Bitrate %d is extremely low, maybe you mean %dk\n", avctx->bit_rate, avctx->bit_rate);
+            av_log(avctx, AV_LOG_WARNING, "Bitrate %"PRId64" is extremely low, maybe you mean %"PRId64"k\n", (int64_t)avctx->bit_rate, (int64_t)avctx->bit_rate);
         }
 
         if (!avctx->rc_initial_buffer_occupancy)
@@ -2828,7 +2828,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                  ", %d kb/s", bitrate / 1000);
     } else if (enc->rc_max_rate > 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                 ", max. %d kb/s", enc->rc_max_rate / 1000);
+                 ", max. %"PRId64" kb/s", (int64_t)enc->rc_max_rate / 1000);
     }
 }
 

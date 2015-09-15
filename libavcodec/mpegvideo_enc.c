@@ -486,7 +486,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->bit_rate * av_q2d(avctx->time_base) >
             avctx->bit_rate_tolerance) {
         av_log(avctx, AV_LOG_WARNING,
-               "bitrate tolerance %d too small for bitrate %d, overriding\n", avctx->bit_rate_tolerance, avctx->bit_rate);
+               "bitrate tolerance %d too small for bitrate %"PRId64", overriding\n", avctx->bit_rate_tolerance, (int64_t)avctx->bit_rate);
         avctx->bit_rate_tolerance = 5 * avctx->bit_rate * av_q2d(avctx->time_base);
     }
 

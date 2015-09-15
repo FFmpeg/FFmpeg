@@ -3296,8 +3296,8 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
         } else {
             continue;
         }
-        avio_printf(pb, "<%s systemBitrate=\"%d\">\n", type,
-                                                       track->enc->bit_rate);
+        avio_printf(pb, "<%s systemBitrate=\"%"PRId64"\">\n", type,
+                    (int64_t)track->enc->bit_rate);
         param_write_int(pb, "systemBitrate", track->enc->bit_rate);
         param_write_int(pb, "trackID", track_id);
         if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
