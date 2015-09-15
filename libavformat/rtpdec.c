@@ -804,8 +804,11 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
             *bufptr = NULL;
             /* Return the first enqueued packet if the queue is full,
              * even if we're missing something */
-            if (s->queue_len >= s->queue_size)
+            if (s->queue_len >= s->queue_size) {
+                av_log(s->st ? s->st->codec : NULL, AV_LOG_WARNING,
+                       "jitter buffer full\n");
                 return rtp_parse_queued_packet(s, pkt);
+            }
             return -1;
         }
     }
