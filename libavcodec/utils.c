@@ -1118,9 +1118,9 @@ static void get_subtitle_defaults(AVSubtitle *sub)
     sub->pts = AV_NOPTS_VALUE;
 }
 
-static int get_bit_rate(AVCodecContext *ctx)
+static int64_t get_bit_rate(AVCodecContext *ctx)
 {
-    int bit_rate;
+    int64_t bit_rate;
     int bits_per_sample;
 
     switch (ctx->codec_type) {
@@ -2653,7 +2653,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *codec_name;
     const char *profile = NULL;
     const AVCodec *p;
-    int bitrate;
+    int64_t bitrate;
     int new_line = 0;
     AVRational display_aspect_ratio;
     const char *separator = enc->dump_separator ? (const char *)enc->dump_separator : ", ";
@@ -2825,7 +2825,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     bitrate = get_bit_rate(enc);
     if (bitrate != 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                 ", %d kb/s", bitrate / 1000);
+                 ", %"PRId64" kb/s", bitrate / 1000);
     } else if (enc->rc_max_rate > 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf),
                  ", max. %"PRId64" kb/s", (int64_t)enc->rc_max_rate / 1000);
