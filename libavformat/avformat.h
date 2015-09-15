@@ -1358,7 +1358,11 @@ typedef struct AVFormatContext {
      * available. Never set it directly if the file_size and the
      * duration are known as FFmpeg can compute it automatically.
      */
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     int bit_rate;
+#else
+    int64_t bit_rate;
+#endif
 
     unsigned int packet_size;
     int max_delay;

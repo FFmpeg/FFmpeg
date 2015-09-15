@@ -2369,7 +2369,7 @@ static void update_stream_timings(AVFormatContext *ic)
         /* compute the bitrate */
         double bitrate = (double) filesize * 8.0 * AV_TIME_BASE /
                          (double) ic->duration;
-        if (bitrate >= 0 && bitrate <= INT_MAX)
+        if (bitrate >= 0 && (!AV_HAVE_INCOMPATIBLE_LIBAV_ABI || bitrate <= INT_MAX))
             ic->bit_rate = bitrate;
     }
 }
@@ -2614,10 +2614,10 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
                     (double) st->duration   / AV_TIME_BASE);
         }
         av_log(ic, AV_LOG_TRACE,
-                "stream: start_time: %0.3f duration: %0.3f bitrate=%d kb/s\n",
+                "stream: start_time: %0.3f duration: %0.3f bitrate=%"PRId64" kb/s\n",
                 (double) ic->start_time / AV_TIME_BASE,
                 (double) ic->duration   / AV_TIME_BASE,
-                ic->bit_rate / 1000);
+                (int64_t)ic->bit_rate / 1000);
     }
 }
 

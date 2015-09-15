@@ -57,7 +57,7 @@ static int g729_read_header(AVFormatContext *s)
     } else if (s->bit_rate == 8000) {
         st->codec->block_align = 10;
     } else {
-        av_log(s, AV_LOG_ERROR, "Only 8000 b/s and 6400 b/s bitrates are supported. Provided: %d b/s\n", s->bit_rate);
+        av_log(s, AV_LOG_ERROR, "Only 8000 b/s and 6400 b/s bitrates are supported. Provided: %"PRId64" b/s\n", (int64_t)s->bit_rate);
         return AVERROR_INVALIDDATA;
     }
 
