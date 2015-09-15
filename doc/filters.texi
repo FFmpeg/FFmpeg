@@ -13196,6 +13196,8 @@ It accepts the following values:
 @item bhann
 @item sine
 @item nuttall
+@item lanczos
+@item gauss
 @end table
 Default is @code{hanning}.
 
