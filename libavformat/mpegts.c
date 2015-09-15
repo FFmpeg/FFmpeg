@@ -2513,7 +2513,7 @@ static int mpegts_read_header(AVFormatContext *s)
     uint8_t buf[8 * 1024] = {0};
     int len;
     int64_t pos, probesize =
-#if FF_API_PROBESIZE_32
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
                              s->probesize ? s->probesize : s->probesize2;
 #else
                              s->probesize;

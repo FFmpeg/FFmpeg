@@ -3085,14 +3085,14 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     // new streams might appear, no options for those
     int orig_nb_streams = ic->nb_streams;
     int flush_codecs;
-#if FF_API_PROBESIZE_32
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     int64_t max_analyze_duration = ic->max_analyze_duration2;
 #else
     int64_t max_analyze_duration = ic->max_analyze_duration;
 #endif
     int64_t max_stream_analyze_duration;
     int64_t max_subtitle_analyze_duration;
-#if FF_API_PROBESIZE_32
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     int64_t probesize = ic->probesize2;
 #else
     int64_t probesize = ic->probesize;
