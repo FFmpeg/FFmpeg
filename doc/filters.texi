@@ -2079,6 +2079,20 @@ Apply @code{C* Eq10X2 - Stereo 10-band equaliser} effect:
 @example
 ladspa=caps:Eq10X2:c=c0=-48|c9=-24|c3=12|c4=2
 @end example
+
+@item
+Increase volume by 20dB using fast lookahead limiter from Steve Harris
+@code{SWH Plugins} collection:
+@example
+ladspa=fast_lookahead_limiter_1913:fastLookaheadLimiter:20|0|2
+@end example
+
+@item
+Attenuate low frequencies using Multiband EQ from Steve Harris
+@code{SWH Plugins} collection:
+@example
+ladspa=mbeq_1197:mbeq:-24|-24|-24|0|0|0|0|0|0|0|0|0|0|0|0
+@end example
 @end itemize
 
 @subsection Commands
