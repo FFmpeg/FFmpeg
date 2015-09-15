@@ -832,8 +832,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-        if (size == 0)
-            continue;
+        if (size == 0) {
+            ret = AVERROR(EAGAIN);
+            goto leave;
+        }
 
         next = size + avio_tell(s->pb);
 
@@ -876,12 +878,15 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                    type, size, flags);
 skip:
             avio_seek(s->pb, next, SEEK_SET);
-            continue;
+            ret = AVERROR(EAGAIN);
+            goto leave;
         }
 
         /* skip empty data packets */
-        if (!size)
-            continue;
+        if (!size) {
+            ret = AVERROR(EAGAIN);
+            goto leave;
+        }
 
         /* now find stream */
         for (i = 0; i < s->nb_streams; i++) {
@@ -919,7 +924,8 @@ skip:
             || st->discard >= AVDISCARD_ALL
         ) {
             avio_seek(s->pb, next, SEEK_SET);
-            continue;
+            ret = AVERROR(EAGAIN);
+            goto leave;
         }
         break;
     }
