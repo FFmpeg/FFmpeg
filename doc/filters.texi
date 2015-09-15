@@ -2408,6 +2408,103 @@ silenceremove=1:5:0.02
 @end example
 @end itemize
 
+@section stereotools
+
+This filter has some handy utilities to manage stereo signals, for converting
+M/S stereo recordings to L/R signal while having control over the parameters
+or spreading the stereo image of master track.
+
+The filter accepts the following options:
+
+@table @option
+@table level_in
+Set input level before filtering for both channels. Defaults is 1.
+Allowed range is from 0.015625 to 64.
+
+@table level_out
+Set output level after filtering for both channels. Defaults is 1.
+Allowed range is from 0.015625 to 64.
+
+@item balance_in
+Set input balance between both channels. Default is 0.
+Allowed range is from -1 to 1.
+
+@item balance_out
+Set output balance between both channels. Default is 0.
+Allowed range is from -1 to 1.
+
+@item softclip
+Enable softclipping. Results in analog distortion instead of harsh digital 0dB
+clipping. Disabled by default.
+
+@item mutel
+Mute the left channel. Disabled by default.
+
+@item muter
+Mute the right channel. Disabled by default.
+
+@item phasel
+Change the phase of the left channel. Disabled by default.
+
+@item phaser
+Change the phase of the right channel. Disabled by default.
+
+@item mode
+Set stereo mode. Available values are:
+
+@table @samp
+@item lr>lr
+Left/Right to Left/Right, this is default.
+
+@item lr>ms
+Left/Right to Mid/Side.
+
+@item ms>lr
+Mid/Side to Left/Right.
+
+@item lr>ll
+Left/Right to Left/Left.
+
+@item lr>rr
+Left/Right to Right/Right.
+
+@item lr>l+r
+Left/Right to Left + Right.
+
+@item lr>rl
+Left/Right to Right/Left.
+@end table
+
+@item slev
+Set level of side signal. Default is 1.
+Allowed range is from 0.015625 to 64.
+
+@item sbal
+Set balance of side signal. Default is 0.
+Allowed range is from -1 to 1.
+
+@item mlev
+Set level of the middle signal. Default is 1.
+Allowed range is from 0.015625 to 64.
+
+@item mpan
+Set middle signal pan. Default is 0. Allowed range is from -1 to 1.
+
+@item base
+Set stereo base between mono and inversed channels. Default is 0.
+Allowed range is from -1 to 1.
+
+@item delay
+Set delay in milliseconds how much to delay left from right channel and
+vice versa. Default is 0. Allowed range is from -20 to 20.
+
+@item sclevel
+Set S/C level. Default is 1. Allowed range is from 1 to 100.
+
+@item phase
+Set the stereo phase in degrees. Default is 0. Allowed range is from 0 to 360.
+@end table
+
 @section stereowiden
 
 This filter enhance the stereo effect by suppressing signal common to both
