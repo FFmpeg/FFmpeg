@@ -1142,60 +1142,10 @@ static float dca_dmix_code(unsigned code)
     return ((ff_dca_dmixtable[code] ^ sign) - sign) * (1.0 / (1U << 15));
 }
 
-/**
- * Main frame decoding function
- * FIXME add arguments
- */
-static int dca_decode_frame(AVCodecContext *avctx, void *data,
-                            int *got_frame_ptr, AVPacket *avpkt)
+static int scan_for_extensions(AVCodecContext *avctx)
 {
-    AVFrame *frame     = data;
-    const uint8_t *buf = avpkt->data;
-    int buf_size       = avpkt->size;
-
-    int lfe_samples;
-    int num_core_channels = 0;
-    int i, ret;
-    float  **samples_flt;
     DCAContext *s = avctx->priv_data;
-    int channels, full_channels;
-    int core_ss_end;
-    int upsample = 0;
-
-    s->exss_ext_mask = 0;
-    s->xch_present   = 0;
-
-    s->dca_buffer_size = ff_dca_convert_bitstream(buf, buf_size, s->dca_buffer,
-                                                  DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE);
-    if (s->dca_buffer_size == AVERROR_INVALIDDATA) {
-        av_log(avctx, AV_LOG_ERROR, "Not a valid DCA frame\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if ((ret = dca_parse_frame_header(s)) < 0) {
-        // seems like the frame is corrupt, try with the next one
-        return ret;
-    }
-    // set AVCodec values with parsed data
-    avctx->sample_rate = s->sample_rate;
-    avctx->bit_rate    = s->bit_rate;
-
-    s->profile = FF_PROFILE_DTS;
-
-    for (i = 0; i < (s->sample_blocks / 8); i++) {
-        if ((ret = dca_decode_block(s, 0, i))) {
-            av_log(avctx, AV_LOG_ERROR, "error decoding block\n");
-            return ret;
-        }
-    }
-
-    /* record number of core channels incase less than max channels are requested */
-    num_core_channels = s->prim_channels;
-
-    if (s->ext_coding)
-        s->core_ext_mask = dca_ext_audio_descr_mask[s->ext_descr];
-    else
-        s->core_ext_mask = 0;
+    int core_ss_end, ret;
 
     core_ss_end = FFMIN(s->frame_size, s->dca_buffer_size) * 8;
 
@@ -1211,6 +1161,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
         while (core_ss_end - get_bits_count(&s->gb) >= 32) {
             uint32_t bits = get_bits_long(&s->gb, 32);
+            int i;
 
             switch (bits) {
             case DCA_SYNCWORD_XCH: {
@@ -1289,6 +1240,65 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     if (s->dca_buffer_size - s->frame_size > 32 &&
         get_bits_long(&s->gb, 32) == DCA_SYNCWORD_SUBSTREAM)
         ff_dca_exss_parse_header(s);
+
+    return ret;
+}
+
+/**
+ * Main frame decoding function
+ * FIXME add arguments
+ */
+static int dca_decode_frame(AVCodecContext *avctx, void *data,
+                            int *got_frame_ptr, AVPacket *avpkt)
+{
+    AVFrame *frame     = data;
+    const uint8_t *buf = avpkt->data;
+    int buf_size       = avpkt->size;
+
+    int lfe_samples;
+    int num_core_channels = 0;
+    int i, ret;
+    float  **samples_flt;
+    DCAContext *s = avctx->priv_data;
+    int channels, full_channels;
+    int upsample = 0;
+
+    s->exss_ext_mask = 0;
+    s->xch_present   = 0;
+
+    s->dca_buffer_size = ff_dca_convert_bitstream(buf, buf_size, s->dca_buffer,
+                                                  DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE);
+    if (s->dca_buffer_size == AVERROR_INVALIDDATA) {
+        av_log(avctx, AV_LOG_ERROR, "Not a valid DCA frame\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if ((ret = dca_parse_frame_header(s)) < 0) {
+        // seems like the frame is corrupt, try with the next one
+        return ret;
+    }
+    // set AVCodec values with parsed data
+    avctx->sample_rate = s->sample_rate;
+    avctx->bit_rate    = s->bit_rate;
+
+    s->profile = FF_PROFILE_DTS;
+
+    for (i = 0; i < (s->sample_blocks / 8); i++) {
+        if ((ret = dca_decode_block(s, 0, i))) {
+            av_log(avctx, AV_LOG_ERROR, "error decoding block\n");
+            return ret;
+        }
+    }
+
+    /* record number of core channels incase less than max channels are requested */
+    num_core_channels = s->prim_channels;
+
+    if (s->ext_coding)
+        s->core_ext_mask = dca_ext_audio_descr_mask[s->ext_descr];
+    else
+        s->core_ext_mask = 0;
+
+    ret = scan_for_extensions(avctx);
 
     avctx->profile = s->profile;
 
