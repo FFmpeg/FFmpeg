@@ -249,6 +249,20 @@ static inline float quantize_band_cost(struct AACEncContext *s, const float *in,
                                          cb, lambda, uplim, bits, rtz);
 }
 
+static inline int quantize_band_cost_bits(struct AACEncContext *s, const float *in,
+                                const float *scaled, int size, int scale_idx,
+                                int cb, const float lambda, const float uplim,
+                                int *bits, int rtz)
+{
+    int _bits;
+    quantize_and_encode_band_cost(s, NULL, in, NULL, scaled, size, scale_idx,
+                                         cb, 0.0f, uplim, &_bits, rtz);
+    if (bits) {
+        *bits = _bits;
+    }
+    return _bits;
+}
+
 static inline void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
                                             const float *in, float *out, int size, int scale_idx,
                                             int cb, const float lambda, int rtz)

@@ -158,6 +158,15 @@ fate-aac-ln-encode: CMP_SHIFT = -4096
 fate-aac-ln-encode: CMP_TARGET = 68
 fate-aac-ln-encode: SIZE_TOLERANCE = 3560
 
+FATE_AAC_ENCODE += fate-aac-ln-encode-128k
+fate-aac-ln-encode-128k: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_is 0 -aac_pns 0 -b:a 128k
+fate-aac-ln-encode-128k: CMP = stddev
+fate-aac-ln-encode-128k: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
+fate-aac-ln-encode-128k: CMP_SHIFT = -4096
+fate-aac-ln-encode-128k: CMP_TARGET = 638
+fate-aac-ln-encode-128k: SIZE_TOLERANCE = 3560
+fate-aac-ln-encode-128k: FUZZ = 5
+
 FATE_AAC_ENCODE += fate-aac-pns-encode
 fate-aac-pns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 1 -aac_is 0 -b:a 128k
 fate-aac-pns-encode: CMP = stddev
@@ -165,7 +174,7 @@ fate-aac-pns-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.w
 fate-aac-pns-encode: CMP_SHIFT = -4096
 fate-aac-pns-encode: CMP_TARGET = 633.77
 fate-aac-pns-encode: SIZE_TOLERANCE = 3560
-fate-aac-pns-encode: FUZZ = 5
+fate-aac-pns-encode: FUZZ = 1
 
 FATE_AAC_ENCODE += fate-aac-tns-encode
 fate-aac-tns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_tns 1 -aac_is 0 -aac_pns 0 -b:a 128k
@@ -183,7 +192,7 @@ fate-aac-is-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wa
 fate-aac-is-encode: CMP_SHIFT = -4096
 fate-aac-is-encode: CMP_TARGET = 616.75
 fate-aac-is-encode: SIZE_TOLERANCE = 3560
-fate-aac-is-encode: FUZZ = 35
+fate-aac-is-encode: FUZZ = 1
 
 FATE_AAC_ENCODE += fate-aac-pred-encode
 fate-aac-pred-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -profile:a aac_main -c:a aac -aac_is 0 -aac_pns 0 -b:a 128k
@@ -191,7 +200,7 @@ fate-aac-pred-encode: CMP = stddev
 fate-aac-pred-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-pred-encode: CMP_SHIFT = -4096
 fate-aac-pred-encode: CMP_TARGET = 652.60
-fate-aac-pred-encode: FUZZ = 10
+fate-aac-pred-encode: FUZZ = 5
 fate-aac-pred-encode: SIZE_TOLERANCE = 3560
 
 FATE_AAC_LATM += fate-aac-latm_000000001180bc60
