@@ -30,6 +30,7 @@
 struct MpegEncContext;
 
 #define MAX_MV 4096
+#define ME_MAP_SIZE 64
 
 #define FF_ME_ZERO 0
 #define FF_ME_EPZS 1
