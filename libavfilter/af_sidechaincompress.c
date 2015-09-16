@@ -90,14 +90,14 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static inline float hermite_interpolation(float x, float x0, float x1,
-                                          float p0, float p1,
-                                          float m0, float m1)
+static inline double hermite_interpolation(double x, double x0, double x1,
+                                           double p0, double p1,
+                                           double m0, double m1)
 {
-    float width = x1 - x0;
-    float t = (x - x0) / width;
-    float t2, t3;
-    float ct0, ct1, ct2, ct3;
+    double width = x1 - x0;
+    double t = (x - x0) / width;
+    double t2, t3;
+    double ct0, ct1, ct2, ct3;
 
     m0 *= width;
     m1 *= width;
