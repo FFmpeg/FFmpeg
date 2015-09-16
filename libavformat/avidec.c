@@ -817,6 +817,8 @@ static int avi_read_header(AVFormatContext *s)
 
                     if (st->codec->codec_tag == MKTAG('V', 'S', 'S', 'H'))
                         st->need_parsing = AVSTREAM_PARSE_FULL;
+                    if (st->codec->codec_id == AV_CODEC_ID_RV40)
+                        st->need_parsing = AVSTREAM_PARSE_NONE;
 
                     if (st->codec->codec_tag == 0 && st->codec->height > 0 &&
                         st->codec->extradata_size < 1U << 30) {
