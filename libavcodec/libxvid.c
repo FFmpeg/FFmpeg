@@ -35,6 +35,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "libxvid.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 
 #if HAVE_UNISTD_H
