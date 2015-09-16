@@ -23,16 +23,16 @@
 #ifndef AVCODEC_X86_VP9DSP_INIT_H
 #define AVCODEC_X86_VP9DSP_INIT_H
 
-#define decl_fpel_func(avg, sz, opt) \
-void ff_vp9_##avg##sz##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
-                              const uint8_t *src, ptrdiff_t src_stride, \
-                              int h, int mx, int my)
+#define decl_fpel_func(avg, sz, bpp, opt) \
+void ff_vp9_##avg##sz##bpp##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
+                                   const uint8_t *src, ptrdiff_t src_stride, \
+                                   int h, int mx, int my)
 
-#define init_fpel_func(idx1, idx2, sz, type, opt) \
+#define init_fpel_func(idx1, idx2, sz, type, bpp, opt) \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] = \
     dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] = \
-    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_vp9_##type##sz##_##opt
+    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_vp9_##type##sz##bpp##_##opt
 
 void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp, int bpp);
 

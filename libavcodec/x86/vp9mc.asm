@@ -553,7 +553,7 @@ filter_vx2_fn avg
 
 %endif ; ARCH_X86_64
 
-%macro fpel_fn 6-7 4
+%macro fpel_fn 6-8 0, 4
 %if %2 == 4
 %define %%srcfn movh
 %define %%dstfn movh
@@ -562,12 +562,22 @@ filter_vx2_fn avg
 %define %%dstfn mova
 %endif
 
+%if %7 == 8
+%define %%pavg pavgb
+%define %%szsuf _8
+%elif %7 == 16
+%define %%pavg pavgw
+%define %%szsuf _16
+%else
+%define %%szsuf
+%endif
+
 %if %2 <= mmsize
-cglobal vp9_%1%2, 5, 7, 4, dst, dstride, src, sstride, h, dstride3, sstride3
+cglobal vp9_%1%2%%szsuf, 5, 7, 4, dst, dstride, src, sstride, h, dstride3, sstride3
     lea  sstride3q, [sstrideq*3]
     lea  dstride3q, [dstrideq*3]
 %else
-cglobal vp9_%1%2, 5, 5, %7, dst, dstride, src, sstride, h
+cglobal vp9_%1%2%%szsuf, 5, 5, %8, dst, dstride, src, sstride, h
 %endif
 .loop:
     %%srcfn     m0, [srcq]
@@ -582,10 +592,16 @@ cglobal vp9_%1%2, 5, 5, %7, dst, dstride, src, sstride, h
 %endif
     lea       srcq, [srcq+sstrideq*%6]
 %ifidn %1, avg
-    pavgb       m0, [dstq]
-    pavgb       m1, [dstq+d%3]
-    pavgb       m2, [dstq+d%4]
-    pavgb       m3, [dstq+d%5]
+    %%pavg      m0, [dstq]
+    %%pavg      m1, [dstq+d%3]
+    %%pavg      m2, [dstq+d%4]
+    %%pavg      m3, [dstq+d%5]
+%if %2/mmsize == 8
+    %%pavg      m4, [dstq+mmsize*4]
+    %%pavg      m5, [dstq+mmsize*5]
+    %%pavg      m6, [dstq+mmsize*6]
+    %%pavg      m7, [dstq+mmsize*7]
+%endif
 %endif
     %%dstfn [dstq], m0
     %%dstfn [dstq+d%3], m1
@@ -611,25 +627,38 @@ INIT_MMX mmx
 fpel_fn put, 4,  strideq, strideq*2, stride3q, 4
 fpel_fn put, 8,  strideq, strideq*2, stride3q, 4
 INIT_MMX mmxext
-fpel_fn avg, 4,  strideq, strideq*2, stride3q, 4
-fpel_fn avg, 8,  strideq, strideq*2, stride3q, 4
+fpel_fn avg, 4,  strideq, strideq*2, stride3q, 4, 8
+fpel_fn avg, 8,  strideq, strideq*2, stride3q, 4, 8
 INIT_XMM sse
 fpel_fn put, 16, strideq, strideq*2, stride3q, 4
 fpel_fn put, 32, mmsize,  strideq,   strideq+mmsize, 2
 fpel_fn put, 64, mmsize,  mmsize*2,  mmsize*3, 1
-fpel_fn put, 128, mmsize, mmsize*2,  mmsize*3, 1, 8
+fpel_fn put, 128, mmsize, mmsize*2,  mmsize*3, 1, 0, 8
 INIT_XMM sse2
-fpel_fn avg, 16, strideq, strideq*2, stride3q, 4
-fpel_fn avg, 32, mmsize,  strideq,   strideq+mmsize, 2
-fpel_fn avg, 64, mmsize,  mmsize*2,  mmsize*3, 1
+fpel_fn avg, 16, strideq, strideq*2, stride3q, 4, 8
+fpel_fn avg, 32, mmsize,  strideq,   strideq+mmsize, 2, 8
+fpel_fn avg, 64, mmsize,  mmsize*2,  mmsize*3, 1, 8
 INIT_YMM avx
 fpel_fn put, 32, strideq, strideq*2, stride3q, 4
 fpel_fn put, 64, mmsize,  strideq,   strideq+mmsize, 2
 fpel_fn put, 128, mmsize, mmsize*2,     mmsize*3, 1
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
-fpel_fn avg, 32, strideq, strideq*2, stride3q, 4
-fpel_fn avg, 64, mmsize,  strideq,   strideq+mmsize, 2
+fpel_fn avg, 32, strideq, strideq*2, stride3q, 4, 8
+fpel_fn avg, 64, mmsize,  strideq,   strideq+mmsize, 2, 8
+%endif
+INIT_MMX mmxext
+fpel_fn avg,  8,  strideq, strideq*2, stride3q, 4, 16
+INIT_XMM sse2
+fpel_fn avg,  16, strideq, strideq*2, stride3q, 4, 16
+fpel_fn avg,  32, mmsize,  strideq,   strideq+mmsize, 2, 16
+fpel_fn avg,  64, mmsize,  mmsize*2,  mmsize*3, 1, 16
+fpel_fn avg, 128, mmsize,  mmsize*2,  mmsize*3, 1, 16, 8
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+fpel_fn avg,  32, strideq, strideq*2, stride3q, 4, 16
+fpel_fn avg,  64, mmsize,  strideq,   strideq+mmsize, 2, 16
+fpel_fn avg, 128, mmsize,  mmsize*2,  mmsize*3, 1, 16
 %endif
 %undef s16
 %undef d16
