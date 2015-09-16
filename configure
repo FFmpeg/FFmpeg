@@ -622,12 +622,12 @@ enable_deep_weak(){
 }
 
 enabled(){
-    test "${1#!}" = "$1" && op== || op=!=
+    test "${1#!}" = "$1" && op='=' || op=!=
     eval test "x\$${1#!}" $op "xyes"
 }
 
 disabled(){
-    test "${1#!}" = "$1" && op== || op=!=
+    test "${1#!}" = "$1" && op='=' || op=!=
     eval test "x\$${1#!}" $op "xno"
 }
 

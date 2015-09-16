@@ -445,10 +445,12 @@ static int config_output(AVFilterLink *outlink)
         s->out.row_right = s->height;
         break;
     case HDMI:
-        if (s->in.height <= 720)
-            s->blanks = 30;
-        else
-            s->blanks = 45;
+        if (s->height != 720 && s->height != 1080) {
+            av_log(ctx, AV_LOG_ERROR, "Only 720 and 1080 height supported\n");
+            return AVERROR(EINVAL);
+        }
+
+        s->blanks = s->height / 24;
         s->out.height    = s->height * 2 + s->blanks;
         s->out.row_right = s->height + s->blanks;
         break;

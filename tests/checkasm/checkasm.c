@@ -69,6 +69,9 @@ static const struct {
 #if CONFIG_V210_ENCODER
     { "v210enc", checkasm_check_v210enc },
 #endif
+#if CONFIG_VP9_DECODER
+    { "vp9dsp", checkasm_check_vp9dsp },
+#endif
     { NULL }
 };
 

@@ -15,6 +15,18 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-09-15 - lavf 57.2.100 - avformat.h
+  probesize and max_analyze_duration switched to 64bit, both
+  are only accessible through AVOptions
+
+2015-09-15 - lavf 57.1.100 - avformat.h
+  bit_rate was changed to 64bit, make sure you update any
+  printf() or other type sensitive code
+
+2015-09-15 - lavc 57.2.100 - avcodec.h
+  bit_rate/rc_max_rate/rc_min_rate were changed to 64bit, make sure you update
+  any printf() or other type sensitive code
+
 2015-xx-xx - lavu 55.0.100 / lavu 55.0.0
   xxxxxxx - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
   xxxxxxx - Change type of AVComponentDescriptor fields from uint16_t to int

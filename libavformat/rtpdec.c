@@ -520,6 +520,10 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
     s->ic                  = s1;
     s->st                  = st;
     s->queue_size          = queue_size;
+
+    av_log(s->st ? s->st->codec : NULL, AV_LOG_VERBOSE,
+            "setting jitter buffer size to %d\n", s->queue_size);
+
     rtp_init_statistics(&s->statistics, 0);
     if (st) {
         switch (st->codec->codec_id) {
@@ -811,8 +815,11 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
             *bufptr = NULL;
             /* Return the first enqueued packet if the queue is full,
              * even if we're missing something */
-            if (s->queue_len >= s->queue_size)
+            if (s->queue_len >= s->queue_size) {
+                av_log(s->st ? s->st->codec : NULL, AV_LOG_ERROR,
+                        "jitter buffer full\n");
                 return rtp_parse_queued_packet(s, pkt);
+            }
             return -1;
         }
     }

@@ -1526,8 +1526,9 @@ static int avi_read_idx1(AVFormatContext *s, int size)
     int nb_index_entries, i;
     AVStream *st;
     AVIStream *ast;
-    unsigned int index, tag, flags, pos, len, first_packet = 1;
-    unsigned last_pos = -1;
+    int64_t pos;
+    unsigned int index, tag, flags, len, first_packet = 1;
+    int64_t last_pos = -1;
     unsigned last_idx = -1;
     int64_t idx1_pos, first_packet_pos = 0, data_offset = 0;
     int anykey = 0;
@@ -1557,7 +1558,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         flags = avio_rl32(pb);
         pos   = avio_rl32(pb);
         len   = avio_rl32(pb);
-        av_log(s, AV_LOG_TRACE, "%d: tag=0x%x flags=0x%x pos=0x%x len=%d/",
+        av_log(s, AV_LOG_TRACE, "%d: tag=0x%x flags=0x%x pos=0x%"PRIx64" len=%d/",
                 i, tag, flags, pos, len);
 
         index  = ((tag      & 0xff) - '0') * 10;
@@ -1568,7 +1569,8 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         ast = st->priv_data;
 
         if (first_packet && first_packet_pos) {
-            data_offset  = first_packet_pos - pos;
+            if (avi->movi_list + 4 != pos || pos + 500 > first_packet_pos)
+                data_offset  = first_packet_pos - pos;
             first_packet = 0;
         }
         pos += data_offset;

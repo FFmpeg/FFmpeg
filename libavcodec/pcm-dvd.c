@@ -140,9 +140,9 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         ff_dlog(avctx,
-                "pcm_dvd_parse_header: %d channels, %d bits per sample, %d Hz, %d bit/s\n",
+                "pcm_dvd_parse_header: %d channels, %d bits per sample, %d Hz, %"PRId64" bit/s\n",
                 avctx->channels, avctx->bits_per_coded_sample,
-                avctx->sample_rate, avctx->bit_rate);
+                avctx->sample_rate, (int64_t)avctx->bit_rate);
 
     s->last_header = header_int;
 

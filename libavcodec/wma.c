@@ -185,8 +185,8 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
             high_freq = high_freq * 0.5;
     }
     ff_dlog(s->avctx, "flags2=0x%x\n", flags2);
-    ff_dlog(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
-            s->version, avctx->channels, avctx->sample_rate, avctx->bit_rate,
+    ff_dlog(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%"PRId64" block_align=%d\n",
+            s->version, avctx->channels, avctx->sample_rate, (int64_t)avctx->bit_rate,
             avctx->block_align);
     ff_dlog(s->avctx, "bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
             bps, bps1, high_freq, s->byte_offset_bits);

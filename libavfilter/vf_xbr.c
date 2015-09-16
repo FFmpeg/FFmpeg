@@ -328,11 +328,11 @@ XBR_FUNC(4)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    XBRContext *xbr = ctx->priv;
+    XBRContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
 
-    outlink->w = inlink->w * xbr->n;
-    outlink->h = inlink->h * xbr->n;
+    outlink->w = inlink->w * s->n;
+    outlink->h = inlink->h * s->n;
     return 0;
 }
 
@@ -352,7 +352,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    XBRContext *xbr = ctx->priv;
+    XBRContext *s = ctx->priv;
     ThreadData td;
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -365,8 +365,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in = in;
     td.out = out;
-    td.rgbtoyuv = xbr->rgbtoyuv;
-    ctx->internal->execute(ctx, xbr->func, &td, NULL, FFMIN(inlink->h, ctx->graph->nb_threads));
+    td.rgbtoyuv = s->rgbtoyuv;
+    ctx->internal->execute(ctx, s->func, &td, NULL, FFMIN(inlink->h, ctx->graph->nb_threads));
 
     out->width  = outlink->w;
     out->height = outlink->h;
@@ -377,7 +377,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static int init(AVFilterContext *ctx)
 {
-    XBRContext *xbr = ctx->priv;
+    XBRContext *s = ctx->priv;
     static const xbrfunc_t xbrfuncs[] = {xbr2x, xbr3x, xbr4x};
 
     uint32_t c;
@@ -392,13 +392,13 @@ static int init(AVFilterContext *ctx)
             uint32_t y = (uint32_t)(( 299*rg + 1000*startg + 114*bg)/1000);
             c = bg + (rg<<16) + 0x010101 * startg;
             for (g = startg; g <= endg; g++) {
-                xbr->rgbtoyuv[c] = ((y++) << 16) + (u << 8) + v;
+                s->rgbtoyuv[c] = ((y++) << 16) + (u << 8) + v;
                 c+= 0x010101;
             }
         }
     }
 
-    xbr->func = xbrfuncs[xbr->n - 2];
+    s->func = xbrfuncs[s->n - 2];
     return 0;
 }
 

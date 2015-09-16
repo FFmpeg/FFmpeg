@@ -92,6 +92,7 @@ typedef struct {
     float gamma2;       /* gamma of bargraph */
     int fps;            /* the required fps is so strict, so it's enough to be int, but 24000/1001 etc cannot be encoded */
     int count;          /* fps * count = transform rate */
+    int draw_text;
 } ShowCQTContext;
 
 #define OFFSET(x) offsetof(ShowCQTContext, x)
@@ -109,6 +110,7 @@ static const AVOption showcqt_options[] = {
     { "count", "set number of transform per frame", OFFSET(count), AV_OPT_TYPE_INT, { .i64 = 6 }, 1, 30, FLAGS },
     { "fontfile", "set font file", OFFSET(fontfile), AV_OPT_TYPE_STRING, { .str = NULL }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "fontcolor", "set font color", OFFSET(fontcolor), AV_OPT_TYPE_STRING, { .str = FONTCOLOR_DEFAULT }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "text", "draw text", OFFSET(draw_text), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -651,7 +653,7 @@ static int plot_cqt(AVFilterLink *inlink)
         }
 
         /* drawing font */
-        if (s->font_alpha) {
+        if (s->font_alpha && s->draw_text) {
             for (y = 0; y < font_height; y++) {
                 uint8_t *lineptr = data + (spectogram_height + y) * linesize;
                 uint8_t *spectogram_src = s->spectogram + s->spectogram_index * linesize;
@@ -664,7 +666,7 @@ static int plot_cqt(AVFilterLink *inlink)
                     fontcolor_value += 3;
                 }
             }
-        } else {
+        } else if (s->draw_text) {
             for (y = 0; y < font_height; y++) {
                 uint8_t *lineptr = data + (spectogram_height + y) * linesize;
                 memcpy(lineptr, s->spectogram + s->spectogram_index * linesize, video_width*3);
@@ -697,6 +699,16 @@ static int plot_cqt(AVFilterLink *inlink)
                             ux += video_scale;
                         }
                     }
+                }
+            }
+        } else {
+            for (y = 0; y < font_height; y++) {
+                uint8_t *lineptr = data + (spectogram_height + y) * linesize;
+                uint8_t *spectogram_src = s->spectogram + s->spectogram_index * linesize;
+                for (x = 0; x < video_width; x++) {
+                    lineptr[3*x] = spectogram_src[3*x];
+                    lineptr[3*x+1] = spectogram_src[3*x+1];
+                    lineptr[3*x+2] = spectogram_src[3*x+2];
                 }
             }
         }

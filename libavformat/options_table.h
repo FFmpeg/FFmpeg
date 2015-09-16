@@ -36,7 +36,7 @@
 static const AVOption avformat_options[] = {
 {"avioflags", NULL, OFFSET(avio_flags), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "avioflags"},
 {"direct", "reduce buffering", 0, AV_OPT_TYPE_CONST, {.i64 = AVIO_FLAG_DIRECT }, INT_MIN, INT_MAX, D|E, "avioflags"},
-#if FF_API_PROBESIZE_32
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
 {"probesize", "set probing size", OFFSET(probesize2), AV_OPT_TYPE_INT64, {.i64 = 5000000 }, 32, INT64_MAX, D},
 #else
 {"probesize", "set probing size", OFFSET(probesize), AV_OPT_TYPE_INT64, {.i64 = 5000000 }, 32, INT64_MAX, D},
@@ -58,7 +58,7 @@ static const AVOption avformat_options[] = {
 {"nobuffer", "reduce the latency introduced by optional buffering", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_NOBUFFER }, 0, INT_MAX, D, "fflags"},
 {"seek2any", "allow seeking to non-keyframes on demuxer level when supported", OFFSET(seek2any), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, D},
 {"bitexact", "do not write random/volatile data", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_BITEXACT }, 0, 0, E, "fflags" },
-#if FF_API_PROBESIZE_32
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
 {"analyzeduration", "specify how many microseconds are analyzed to probe the input", OFFSET(max_analyze_duration2), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, D},
 #else
 {"analyzeduration", "specify how many microseconds are analyzed to probe the input", OFFSET(max_analyze_duration), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, D},
