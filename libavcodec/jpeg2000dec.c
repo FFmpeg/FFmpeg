@@ -1650,7 +1650,9 @@ static void tile_codeblocks(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                     Jpeg2000Prec *prec = band->prec + precno;
 
                     /* Loop on codeblocks */
-                    for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
+                    for (cblkno = 0;
+                         cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height;
+                         cblkno++) {
                         int x, y;
                         Jpeg2000Cblk *cblk = prec->cblk + cblkno;
                         decode_cblk(s, codsty, &t1, cblk,
