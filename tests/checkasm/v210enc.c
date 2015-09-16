@@ -43,7 +43,7 @@
             AV_WN32A(v0 + i, r);                       \
             AV_WN32A(v1 + i, r);                       \
         }                                              \
-        for (i = 0; i < BUF_SIZE * 8 / 3; i += 4) {    \
+        for (i = 0; i < width * 8 / 3; i += 4) {       \
             uint32_t r = rnd();                        \
             AV_WN32A(dst0 + i, r);                     \
             AV_WN32A(dst1 + i, r);                     \
