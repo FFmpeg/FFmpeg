@@ -143,11 +143,13 @@ static void check_mc(void)
                     for (dx = 0; dx < 2; dx++) {
                         for (dy = 0; dy < 2; dy++) {
                             if (dx || dy) {
-                                sprintf(str, "%s_%s_%d%s", op_names[op],
-                                        filter_names[filter], size,
-                                        subpel_names[dy][dx]);
+                                snprintf(str, sizeof(str),
+                                         "%s_%s_%d%s", op_names[op],
+                                         filter_names[filter], size,
+                                         subpel_names[dy][dx]);
                             } else {
-                                sprintf(str, "%s%d", op_names[op], size);
+                                snprintf(str, sizeof(str),
+                                         "%s%d", op_names[op], size);
                             }
                             if (check_func(dsp.mc[hsize][filter][op][dx][dy],
                                            "vp9_%s_%dbpp", str, bit_depth)) {
