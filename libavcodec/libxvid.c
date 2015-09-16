@@ -29,6 +29,7 @@
 #include <string.h>
 #include <xvid.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/file.h"
 #include "libavutil/internal.h"
