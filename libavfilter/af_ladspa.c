@@ -142,7 +142,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     LADSPAContext *s = ctx->priv;
     AVFrame *out;
-    int i, h;
+    int i, h, p;
 
     if (!s->nb_outputs ||
         (av_frame_is_writable(in) && s->nb_inputs == s->nb_outputs &&
@@ -159,13 +159,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (h = 0; h < s->nb_handles; h++) {
         for (i = 0; i < s->nb_inputs; i++) {
+            p = s->nb_handles > 1 ? h : i;
             s->desc->connect_port(s->handles[h], s->ipmap[i],
-                                  (LADSPA_Data*)in->extended_data[i]);
+                                  (LADSPA_Data*)in->extended_data[p]);
         }
 
         for (i = 0; i < s->nb_outputs; i++) {
+            p = s->nb_handles > 1 ? h : i;
             s->desc->connect_port(s->handles[h], s->opmap[i],
-                                  (LADSPA_Data*)out->extended_data[i]);
+                                  (LADSPA_Data*)out->extended_data[p]);
         }
 
         s->desc->run(s->handles[h], in->nb_samples);
