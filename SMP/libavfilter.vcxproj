@@ -193,6 +193,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_silenceremove.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_stereowiden.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_volume.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
     </ClCompile>
