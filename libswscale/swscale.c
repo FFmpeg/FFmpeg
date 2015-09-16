@@ -52,6 +52,7 @@ DECLARE_ALIGNED(8, static const uint8_t, sws_pb_64)[8] = {
     64, 64, 64, 64, 64, 64, 64, 64
 };
 
+#ifndef NEW_FILTER
 static void gamma_convert(uint8_t * src[], int width, uint16_t *gamma)
 {
     int i;
@@ -67,6 +68,7 @@ static void gamma_convert(uint8_t * src[], int width, uint16_t *gamma)
         AV_WL16(src1 + i*4 + 2, gamma[b]);
     }
 }
+#endif
 
 static av_always_inline void fillPlane(uint8_t *plane, int stride, int width,
                                        int height, int y, uint8_t val)
