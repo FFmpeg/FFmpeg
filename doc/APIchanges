@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavc 57.2.0 - d3d11va.h
+  Add av_d3d11va_alloc_context(). This function must from now on be used for
+  allocating AVD3D11VAContext.
+
 2015-xx-xx - lavu 55.0.0
   xxxxxxx - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
   xxxxxxx - Change type of AVComponentDescriptor fields from uint16_t to int
