@@ -23,31 +23,26 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/vp9dsp.h"
+#include "libavcodec/x86/vp9dsp_init.h"
 
 #if HAVE_YASM
 
-#define fpel_func(avg, sz, opt) \
-void ff_vp9_##avg##sz##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
-                              const uint8_t *src, ptrdiff_t src_stride, \
-                              int h, int mx, int my)
-fpel_func(put,  4, mmx);
-fpel_func(put,  8, mmx);
-fpel_func(put, 16, sse);
-fpel_func(put, 32, sse);
-fpel_func(put, 64, sse);
-fpel_func(avg,  4, mmxext);
-fpel_func(avg,  8, mmxext);
-fpel_func(avg, 16, sse2);
-fpel_func(avg, 32, sse2);
-fpel_func(avg, 64, sse2);
-fpel_func(put, 32, avx);
-fpel_func(put, 64, avx);
-fpel_func(avg, 32, avx2);
-fpel_func(avg, 64, avx2);
-#undef fpel_func
+decl_fpel_func(put,  4, mmx);
+decl_fpel_func(put,  8, mmx);
+decl_fpel_func(put, 16, sse);
+decl_fpel_func(put, 32, sse);
+decl_fpel_func(put, 64, sse);
+decl_fpel_func(avg,  4, mmxext);
+decl_fpel_func(avg,  8, mmxext);
+decl_fpel_func(avg, 16, sse2);
+decl_fpel_func(avg, 32, sse2);
+decl_fpel_func(avg, 64, sse2);
+decl_fpel_func(put, 32, avx);
+decl_fpel_func(put, 64, avx);
+decl_fpel_func(avg, 32, avx2);
+decl_fpel_func(avg, 64, avx2);
 
 #define mc_func(avg, sz, dir, opt, type, f_sz) \
 void ff_vp9_##avg##_8tap_1d_##dir##_##sz##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
@@ -311,15 +306,12 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
 {
 #if HAVE_YASM
     int cpu_flags;
-    if (bpp != 8) return;
+    if (bpp != 8) {
+        ff_vp9dsp_init_16bpp_x86(dsp, bpp);
+        return;
+    }
 
     cpu_flags = av_get_cpu_flags();
-
-#define init_fpel(idx1, idx2, sz, type, opt) \
-    dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = \
-    dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] = \
-    dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] = \
-    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_vp9_##type##sz##_##opt
 
 #define init_subpel1(idx1, idx2, idxh, idxv, sz, dir, type, opt) \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][idxh][idxv] = type##_8tap_smooth_##sz##dir##_##opt; \
@@ -386,8 +378,8 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
 } while (0)
 
     if (EXTERNAL_MMX(cpu_flags)) {
-        init_fpel(4, 0,  4, put, mmx);
-        init_fpel(3, 0,  8, put, mmx);
+        init_fpel_func(4, 0,  4, put, mmx);
+        init_fpel_func(3, 0,  8, put, mmx);
         if (!bitexact) {
             dsp->itxfm_add[4 /* lossless */][DCT_DCT] =
             dsp->itxfm_add[4 /* lossless */][ADST_DCT] =
@@ -400,8 +392,8 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         init_subpel2(4, 0, 4, put, mmxext);
         init_subpel2(4, 1, 4, avg, mmxext);
-        init_fpel(4, 1,  4, avg, mmxext);
-        init_fpel(3, 1,  8, avg, mmxext);
+        init_fpel_func(4, 1,  4, avg, mmxext);
+        init_fpel_func(3, 1,  8, avg, mmxext);
         dsp->itxfm_add[TX_4X4][DCT_DCT] = ff_vp9_idct_idct_4x4_add_mmxext;
         init_dc_ipred(4, mmxext);
         init_dc_ipred(8, mmxext);
@@ -409,9 +401,9 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
-        init_fpel(2, 0, 16, put, sse);
-        init_fpel(1, 0, 32, put, sse);
-        init_fpel(0, 0, 64, put, sse);
+        init_fpel_func(2, 0, 16, put, sse);
+        init_fpel_func(1, 0, 32, put, sse);
+        init_fpel_func(0, 0, 64, put, sse);
         init_ipred(16, sse, v, VERT);
         init_ipred(32, sse, v, VERT);
     }
@@ -419,9 +411,9 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
     if (EXTERNAL_SSE2(cpu_flags)) {
         init_subpel3_8to64(0, put, sse2);
         init_subpel3_8to64(1, avg, sse2);
-        init_fpel(2, 1, 16, avg, sse2);
-        init_fpel(1, 1, 32, avg, sse2);
-        init_fpel(0, 1, 64, avg, sse2);
+        init_fpel_func(2, 1, 16, avg, sse2);
+        init_fpel_func(1, 1, 32, avg, sse2);
+        init_fpel_func(0, 1, 64, avg, sse2);
         init_lpf(sse2);
         dsp->itxfm_add[TX_4X4][ADST_DCT]  = ff_vp9_idct_iadst_4x4_add_sse2;
         dsp->itxfm_add[TX_4X4][DCT_ADST]  = ff_vp9_iadst_idct_4x4_add_sse2;
@@ -491,14 +483,14 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_dir_tm_h_ipred(32, avx);
     }
     if (EXTERNAL_AVX_FAST(cpu_flags)) {
-        init_fpel(1, 0, 32, put, avx);
-        init_fpel(0, 0, 64, put, avx);
+        init_fpel_func(1, 0, 32, put, avx);
+        init_fpel_func(0, 0, 64, put, avx);
         init_ipred(32, avx, v, VERT);
     }
 
     if (EXTERNAL_AVX2(cpu_flags)) {
-        init_fpel(1, 1, 32, avg, avx2);
-        init_fpel(0, 1, 64, avg, avx2);
+        init_fpel_func(1, 1, 32, avg, avx2);
+        init_fpel_func(0, 1, 64, avg, avx2);
         if (ARCH_X86_64) {
 #if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
             init_subpel3_32_64(0, put, avx2);
