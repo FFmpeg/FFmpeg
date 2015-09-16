@@ -191,21 +191,13 @@ void ff_jpeg2000_set_significance(Jpeg2000T1Context *t1, int x, int y,
 
 // static const uint8_t lut_gain[2][4] = { { 0, 0, 0, 0 }, { 0, 1, 1, 2 } }; (unused)
 
-static int init_band(AVCodecContext *avctx,
-                     Jpeg2000ResLevel *reslevel,
-                     Jpeg2000Component *comp,
-                     Jpeg2000CodingStyle *codsty,
-                     Jpeg2000QuantStyle *qntsty,
-                     int bandno, int gbandno, int reslevelno,
-                     int cbps, int dx, int dy)
+static void init_band_stepsize(AVCodecContext *avctx,
+                               Jpeg2000Band *band,
+                               Jpeg2000CodingStyle *codsty,
+                               Jpeg2000QuantStyle *qntsty,
+                               int bandno, int gbandno, int reslevelno,
+                               int cbps)
 {
-    Jpeg2000Band *band = reslevel->band + bandno;
-    uint8_t log2_band_prec_width, log2_band_prec_height;
-    int declvl = codsty->nreslevels - reslevelno;    // N_L -r see  ISO/IEC 15444-1:2002 B.5
-    int cblkno, precno;
-    int nb_precincts;
-    int i, j;
-
     /* TODO: Implementation of quantization step not finished,
      * see ISO/IEC 15444-1:2002 E.1 and A.6.4. */
     switch (qntsty->quantsty) {
@@ -259,6 +251,24 @@ static int init_band(AVCodecContext *avctx,
      * If not set output of entropic decoder is not correct. */
     if (!av_codec_is_encoder(avctx->codec))
         band->f_stepsize *= 0.5;
+}
+
+static int init_band(AVCodecContext *avctx,
+                     Jpeg2000ResLevel *reslevel,
+                     Jpeg2000Component *comp,
+                     Jpeg2000CodingStyle *codsty,
+                     Jpeg2000QuantStyle *qntsty,
+                     int bandno, int gbandno, int reslevelno,
+                     int cbps, int dx, int dy)
+{
+    Jpeg2000Band *band = reslevel->band + bandno;
+    uint8_t log2_band_prec_width, log2_band_prec_height;
+    int declvl = codsty->nreslevels - reslevelno;    // N_L -r see  ISO/IEC 15444-1:2002 B.5
+    int cblkno, precno;
+    int nb_precincts;
+    int i, j;
+
+    init_band_stepsize(avctx, band, codsty, qntsty, bandno, gbandno, reslevelno, cbps);
 
     /* computation of tbx_0, tbx_1, tby_0, tby_1
      * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
