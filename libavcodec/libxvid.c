@@ -25,18 +25,21 @@
  * @author Adam Thayer (krevnik@comcast.net)
  */
 
+#include <stdio.h>
+#include <string.h>
 #include <xvid.h>
 
 #include "libavutil/cpu.h"
 #include "libavutil/file.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "internal.h"
 #include "libxvid.h"
 #include "mpegutils.h"
-#include "mpegvideo.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>

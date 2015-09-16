@@ -32,7 +32,6 @@
 #include "cavs.h"
 #include "internal.h"
 #include "mpeg12data.h"
-#include "mpegvideo.h"
 
 static const uint8_t mv_scan[4] = {
     MV_FWD_X0, MV_FWD_X1,

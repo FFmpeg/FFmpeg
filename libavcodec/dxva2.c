@@ -27,7 +27,6 @@
 #include "libavutil/time.h"
 
 #include "avcodec.h"
-#include "mpegvideo.h"
 #include "dxva2_internal.h"
 
 void *ff_dxva2_get_surface(const AVFrame *frame)
