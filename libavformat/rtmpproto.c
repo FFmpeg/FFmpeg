@@ -2218,7 +2218,7 @@ static int append_flv_data(RTMPContext *rt, RTMPPacket *pkt, int skip)
     bytestream2_put_byte(&pbc, ts >> 24);
     bytestream2_put_be24(&pbc, 0);
     bytestream2_put_buffer(&pbc, data, size);
-    bytestream2_put_be32(&pbc, 0);
+    bytestream2_put_be32(&pbc, size + 11);
 
     return 0;
 }
