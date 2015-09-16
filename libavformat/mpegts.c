@@ -2512,12 +2512,7 @@ static int mpegts_read_header(AVFormatContext *s)
     AVIOContext *pb   = s->pb;
     uint8_t buf[8 * 1024] = {0};
     int len;
-    int64_t pos, probesize =
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-                             s->probesize ? s->probesize : s->probesize2;
-#else
-                             s->probesize;
-#endif
+    int64_t pos, probesize = s->probesize;
 
     if (ffio_ensure_seekback(pb, probesize) < 0)
         av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");
