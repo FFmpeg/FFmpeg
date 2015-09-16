@@ -48,7 +48,7 @@ decl_fpel_func(avg, 128, _16, avx2);
 
 #endif /* HAVE_YASM */
 
-av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp, int bpp)
+av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
 {
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
