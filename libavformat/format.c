@@ -172,7 +172,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
     int score, nodat = 0, score_max = 0;
-    static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
+    const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
 
     if (!lpd.buf)
         lpd.buf = zerobuffer;
