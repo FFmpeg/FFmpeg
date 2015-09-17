@@ -1561,6 +1561,139 @@ static int scan_for_extensions(AVCodecContext *avctx)
     return ret;
 }
 
+static int set_channel_layout(AVCodecContext *avctx, int *channels, int num_core_channels)
+{
+    DCAContext *s = avctx->priv_data;
+    int i, j, chset, mask;
+    int channel_layout, channel_mask;
+    int posn, lavc;
+
+    /* If we have XXCH then the channel layout is managed differently */
+    /* note that XLL will also have another way to do things */
+    if (!(s->core_ext_mask & DCA_EXT_XXCH)) {
+        /* xxx should also do MA extensions */
+        if (s->amode < 16) {
+            avctx->channel_layout = ff_dca_core_channel_layout[s->amode];
+
+            if (s->prim_channels + !!s->lfe > 2 &&
+                avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
+                /*
+                 * Neither the core's auxiliary data nor our default tables contain
+                 * downmix coefficients for the additional channel coded in the XCh
+                 * extension, so when we're doing a Stereo downmix, don't decode it.
+                 */
+                s->xch_disable = 1;
+            }
+
+            if (s->xch_present && !s->xch_disable) {
+                if (avctx->channel_layout & AV_CH_BACK_CENTER) {
+                    avpriv_request_sample(avctx, "XCh with Back center channel");
+                    return AVERROR_INVALIDDATA;
+                }
+                avctx->channel_layout |= AV_CH_BACK_CENTER;
+                if (s->lfe) {
+                    avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
+                    s->channel_order_tab = ff_dca_channel_reorder_lfe_xch[s->amode];
+                } else {
+                    s->channel_order_tab = ff_dca_channel_reorder_nolfe_xch[s->amode];
+                }
+                if (s->channel_order_tab[s->xch_base_channel] < 0)
+                    return AVERROR_INVALIDDATA;
+            } else {
+                *channels       = num_core_channels + !!s->lfe;
+                s->xch_present = 0; /* disable further xch processing */
+                if (s->lfe) {
+                    avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
+                    s->channel_order_tab = ff_dca_channel_reorder_lfe[s->amode];
+                } else
+                    s->channel_order_tab = ff_dca_channel_reorder_nolfe[s->amode];
+            }
+
+            if (*channels > !!s->lfe &&
+                s->channel_order_tab[*channels - 1 - !!s->lfe] < 0)
+                return AVERROR_INVALIDDATA;
+
+            if (av_get_channel_layout_nb_channels(avctx->channel_layout) != *channels) {
+                av_log(avctx, AV_LOG_ERROR, "Number of channels %d mismatches layout %d\n", *channels, av_get_channel_layout_nb_channels(avctx->channel_layout));
+                return AVERROR_INVALIDDATA;
+            }
+
+            if (num_core_channels + !!s->lfe > 2 &&
+                avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
+                *channels              = 2;
+                s->output             = s->prim_channels == 2 ? s->amode : DCA_STEREO;
+                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+            }
+            else if (avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE) {
+                static const int8_t dca_channel_order_native[9] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+                s->channel_order_tab = dca_channel_order_native;
+            }
+            s->lfe_index = ff_dca_lfe_index[s->amode];
+        } else {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Non standard configuration %d !\n", s->amode);
+            return AVERROR_INVALIDDATA;
+        }
+
+        s->xxch_dmix_embedded = 0;
+    } else {
+        /* we only get here if an XXCH channel set can be added to the mix */
+        channel_mask = s->xxch_core_spkmask;
+
+        {
+            *channels = s->prim_channels + !!s->lfe;
+            for (i = 0; i < s->xxch_chset; i++) {
+                channel_mask |= s->xxch_spk_masks[i];
+            }
+        }
+
+        /* Given the DTS spec'ed channel mask, generate an avcodec version */
+        channel_layout = 0;
+        for (i = 0; i < s->xxch_nbits_spk_mask; ++i) {
+            if (channel_mask & (1 << i)) {
+                channel_layout |= ff_dca_map_xxch_to_native[i];
+            }
+        }
+
+        /* make sure that we have managed to get equivalent dts/avcodec channel
+         * masks in some sense -- unfortunately some channels could overlap */
+        if (av_popcount(channel_mask) != av_popcount(channel_layout)) {
+            av_log(avctx, AV_LOG_DEBUG,
+                   "DTS-XXCH: Inconsistent avcodec/dts channel layouts\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        avctx->channel_layout = channel_layout;
+
+        if (!(avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE)) {
+            /* Estimate DTS --> avcodec ordering table */
+            for (chset = -1, j = 0; chset < s->xxch_chset; ++chset) {
+                mask = chset >= 0 ? s->xxch_spk_masks[chset]
+                                  : s->xxch_core_spkmask;
+                for (i = 0; i < s->xxch_nbits_spk_mask; i++) {
+                    if (mask & ~(DCA_XXCH_LFE1 | DCA_XXCH_LFE2) & (1 << i)) {
+                        lavc = ff_dca_map_xxch_to_native[i];
+                        posn = av_popcount(channel_layout & (lavc - 1));
+                        s->xxch_order_tab[j++] = posn;
+                    }
+                }
+
+            }
+
+            s->lfe_index = av_popcount(channel_layout & (AV_CH_LOW_FREQUENCY-1));
+        } else { /* native ordering */
+            for (i = 0; i < *channels; i++)
+                s->xxch_order_tab[i] = i;
+
+            s->lfe_index = *channels - 1;
+        }
+
+        s->channel_order_tab = s->xxch_order_tab;
+    }
+
+    return 0;
+}
+
 /**
  * Main frame decoding function
  * FIXME add arguments
@@ -1571,8 +1704,6 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    int channel_mask;
-    int channel_layout;
     int lfe_samples;
     int num_core_channels = 0;
     int i, ret;
@@ -1585,8 +1716,6 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     int achan;
     int chset;
     int mask;
-    int lavc;
-    int posn;
     int j, k;
     int endch;
     int upsample = 0;
@@ -1677,128 +1806,9 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     full_channels = channels = s->prim_channels + !!s->lfe;
 
-    /* If we have XXCH then the channel layout is managed differently */
-    /* note that XLL will also have another way to do things */
-    if (!(s->core_ext_mask & DCA_EXT_XXCH)) {
-        /* xxx should also do MA extensions */
-        if (s->amode < 16) {
-            avctx->channel_layout = ff_dca_core_channel_layout[s->amode];
-
-            if (s->prim_channels + !!s->lfe > 2 &&
-                avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
-                /*
-                 * Neither the core's auxiliary data nor our default tables contain
-                 * downmix coefficients for the additional channel coded in the XCh
-                 * extension, so when we're doing a Stereo downmix, don't decode it.
-                 */
-                s->xch_disable = 1;
-            }
-
-            if (s->xch_present && !s->xch_disable) {
-                if (avctx->channel_layout & AV_CH_BACK_CENTER) {
-                    avpriv_request_sample(avctx, "XCh with Back center channel");
-                    return AVERROR_INVALIDDATA;
-                }
-                avctx->channel_layout |= AV_CH_BACK_CENTER;
-                if (s->lfe) {
-                    avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
-                    s->channel_order_tab = ff_dca_channel_reorder_lfe_xch[s->amode];
-                } else {
-                    s->channel_order_tab = ff_dca_channel_reorder_nolfe_xch[s->amode];
-                }
-                if (s->channel_order_tab[s->xch_base_channel] < 0)
-                    return AVERROR_INVALIDDATA;
-            } else {
-                channels       = num_core_channels + !!s->lfe;
-                s->xch_present = 0; /* disable further xch processing */
-                if (s->lfe) {
-                    avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
-                    s->channel_order_tab = ff_dca_channel_reorder_lfe[s->amode];
-                } else
-                    s->channel_order_tab = ff_dca_channel_reorder_nolfe[s->amode];
-            }
-
-            if (channels > !!s->lfe &&
-                s->channel_order_tab[channels - 1 - !!s->lfe] < 0)
-                return AVERROR_INVALIDDATA;
-
-            if (av_get_channel_layout_nb_channels(avctx->channel_layout) != channels) {
-                av_log(avctx, AV_LOG_ERROR, "Number of channels %d mismatches layout %d\n", channels, av_get_channel_layout_nb_channels(avctx->channel_layout));
-                return AVERROR_INVALIDDATA;
-            }
-
-            if (num_core_channels + !!s->lfe > 2 &&
-                avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
-                channels              = 2;
-                s->output             = s->prim_channels == 2 ? s->amode : DCA_STEREO;
-                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            }
-            else if (avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE) {
-                static const int8_t dca_channel_order_native[9] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-                s->channel_order_tab = dca_channel_order_native;
-            }
-            s->lfe_index = ff_dca_lfe_index[s->amode];
-        } else {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Non standard configuration %d !\n", s->amode);
-            return AVERROR_INVALIDDATA;
-        }
-
-        s->xxch_dmix_embedded = 0;
-    } else {
-        /* we only get here if an XXCH channel set can be added to the mix */
-        channel_mask = s->xxch_core_spkmask;
-
-        {
-            channels = s->prim_channels + !!s->lfe;
-            for (i = 0; i < s->xxch_chset; i++) {
-                channel_mask |= s->xxch_spk_masks[i];
-            }
-        }
-
-        /* Given the DTS spec'ed channel mask, generate an avcodec version */
-        channel_layout = 0;
-        for (i = 0; i < s->xxch_nbits_spk_mask; ++i) {
-            if (channel_mask & (1 << i)) {
-                channel_layout |= ff_dca_map_xxch_to_native[i];
-            }
-        }
-
-        /* make sure that we have managed to get equivalent dts/avcodec channel
-         * masks in some sense -- unfortunately some channels could overlap */
-        if (av_popcount(channel_mask) != av_popcount(channel_layout)) {
-            av_log(avctx, AV_LOG_DEBUG,
-                   "DTS-XXCH: Inconsistent avcodec/dts channel layouts\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        avctx->channel_layout = channel_layout;
-
-        if (!(avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE)) {
-            /* Estimate DTS --> avcodec ordering table */
-            for (chset = -1, j = 0; chset < s->xxch_chset; ++chset) {
-                mask = chset >= 0 ? s->xxch_spk_masks[chset]
-                                  : s->xxch_core_spkmask;
-                for (i = 0; i < s->xxch_nbits_spk_mask; i++) {
-                    if (mask & ~(DCA_XXCH_LFE1 | DCA_XXCH_LFE2) & (1 << i)) {
-                        lavc = ff_dca_map_xxch_to_native[i];
-                        posn = av_popcount(channel_layout & (lavc - 1));
-                        s->xxch_order_tab[j++] = posn;
-                    }
-                }
-
-            }
-
-            s->lfe_index = av_popcount(channel_layout & (AV_CH_LOW_FREQUENCY-1));
-        } else { /* native ordering */
-            for (i = 0; i < channels; i++)
-                s->xxch_order_tab[i] = i;
-
-            s->lfe_index = channels - 1;
-        }
-
-        s->channel_order_tab = s->xxch_order_tab;
-    }
+    ret = set_channel_layout(avctx, &channels, num_core_channels);
+    if (ret < 0)
+        return ret;
 
     /* get output buffer */
     frame->nb_samples = 256 * (s->sample_blocks / 8);
