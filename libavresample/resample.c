@@ -235,7 +235,6 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
 {
     ResampleContext *c;
     AudioData *fifo_buf = NULL;
-    int ret = 0;
 
     if (compensation_distance < 0)
         return AVERROR(EINVAL);
@@ -254,10 +253,8 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
     } else {
         c->dst_incr = c->ideal_dst_incr;
     }
-    return 0;
 
-    ff_audio_data_free(&fifo_buf);
-    return ret;
+    return 0;
 }
 
 static int resample(ResampleContext *c, void *dst, const void *src,

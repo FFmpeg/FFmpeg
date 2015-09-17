@@ -69,6 +69,8 @@ static void parse_waveformatex(AVIOContext *pb, AVCodecContext *c)
 
     ff_get_guid(pb, &subformat);
     if (!memcmp(subformat + 4,
+                (const uint8_t[]){ FF_AMBISONIC_BASE_GUID }, 12) ||
+        !memcmp(subformat + 4,
                 (const uint8_t[]){ FF_MEDIASUBTYPE_BASE_GUID }, 12)) {
         c->codec_tag = AV_RL32(subformat);
         c->codec_id  = ff_wav_codec_get_id(c->codec_tag,

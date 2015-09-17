@@ -28,6 +28,10 @@
 #include "avcodec.h"
 #include "version.h"
 
+/**
+ * Return value for header parsers if frame is not coded.
+ * */
+#define FRAME_SKIPPED 100
 
 /* picture type */
 #define PICT_TOP_FIELD     1
@@ -40,6 +44,8 @@
  */
 #define DELAYED_PIC_REF 4
 
+#define MAX_MB_BYTES    (30 * 16 * 16 * 3 / 8 + 120)
+#define MAX_FCODE        7
 
 /* MB types */
 #if !FF_API_MB_TYPE
@@ -114,6 +120,7 @@
 
 #define CANDIDATE_MB_TYPE_DIRECT0    (1 << 12)
 
+#define INPLACE_OFFSET 16
 
 enum OutputFormat {
     FMT_MPEG1,

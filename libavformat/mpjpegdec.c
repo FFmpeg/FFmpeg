@@ -77,27 +77,11 @@ static int split_tag_value(char **tag, char **value, char *line)
     return 0;
 }
 
-static int check_content_type(char *line)
-{
-    char *tag, *value;
-    int ret = split_tag_value(&tag, &value, line);
-
-    if (ret < 0)
-        return ret;
-
-    if (av_strcasecmp(tag, "Content-type") ||
-        av_strcasecmp(value, "image/jpeg"))
-        return AVERROR_INVALIDDATA;
-
-    return 0;
-}
-
 static int parse_multipart_header(AVIOContext *pb, void *log_ctx);
 
 static int mpjpeg_read_probe(AVProbeData *p)
 {
     AVIOContext *pb;
-    char line[128] = { 0 };
     int ret = 0;
 
     if (p->buf_size < 2 || p->buf[0] != '-' || p->buf[1] != '-')

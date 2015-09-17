@@ -425,7 +425,10 @@ if test -t 1 && which tput >/dev/null; then
         error_color=$(tput setaf 1)
         reset_color=$(tput sgr0)
     fi
+    # 72 used instead of 80 since that's the default of pr
+    ncols=$(tput cols)
 fi
+: ${ncols:=72}
 
 log(){
     echo "$@" >> $logfile
@@ -3041,14 +3044,15 @@ die_unknown(){
     exit 1
 }
 
-print_3_columns() {
-    cat | tr ' ' '\n' | sort | pr -r -3 -t
+print_in_columns() {
+    cols=$(expr $ncols / 24)
+    cat | tr ' ' '\n' | sort | pr -r "-$cols" -w $ncols -t
 }
 
 show_list() {
     suffix=_$1
     shift
-    echo $* | sed s/$suffix//g | print_3_columns
+    echo $* | sed s/$suffix//g | print_in_columns
     exit 0
 }
 
@@ -5969,17 +5973,17 @@ test -n "$random_seed" &&
 echo
 
 echo "Enabled programs:"
-print_enabled '' $PROGRAM_LIST | print_3_columns
+print_enabled '' $PROGRAM_LIST | print_in_columns
 echo
 
 echo "External libraries:"
-print_enabled '' $EXTERNAL_LIBRARY_LIST | print_3_columns
+print_enabled '' $EXTERNAL_LIBRARY_LIST | print_in_columns
 echo
 
 for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
     echo "Enabled ${type}s:"
     eval list=\$$(toupper $type)_LIST
-    print_enabled '_*' $list | print_3_columns
+    print_enabled '_*' $list | print_in_columns
     echo
 done
 
