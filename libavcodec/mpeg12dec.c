@@ -96,13 +96,6 @@ static const uint32_t btype2mb_type[11] = {
     MB_TYPE_QUANT | MB_TYPE_L0L1 | MB_TYPE_CBP,
 };
 
-static const uint8_t non_linear_qscale[32] = {
-     0,  1,  2,  3,  4,  5,   6,   7,
-     8, 10, 12, 14, 16, 18,  20,  22,
-    24, 28, 32, 36, 40, 44,  48,  52,
-    56, 64, 72, 80, 88, 96, 104, 112,
-};
-
 /* as H.263, but only 17 codes */
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
 {
@@ -719,7 +712,7 @@ static inline int get_qscale(MpegEncContext *s)
 {
     int qscale = get_bits(&s->gb, 5);
     if (s->q_scale_type)
-        return non_linear_qscale[qscale];
+        return ff_mpeg2_non_linear_qscale[qscale];
     else
         return qscale << 1;
 }
