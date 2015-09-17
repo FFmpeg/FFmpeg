@@ -172,7 +172,7 @@ static inline void update_qscale(MpegEncContext *s)
         int bestdiff=INT_MAX;
         int best = 1;
         static const uint8_t non_linear_qscale[] = {
-            1,2,3,4,5,6,7,8,9,10,11,12,14,16,18,20,24,26,28
+            1,2,3,4,5,6,7,8,9,10,11,12,14,16,18,20,22,24,26,28
         };
 
         for (i = 0 ; i<FF_ARRAY_ELEMS(non_linear_qscale); i++) {
