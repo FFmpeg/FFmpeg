@@ -2417,11 +2417,11 @@ or spreading the stereo image of master track.
 The filter accepts the following options:
 
 @table @option
-@table level_in
+@item level_in
 Set input level before filtering for both channels. Defaults is 1.
 Allowed range is from 0.015625 to 64.
 
-@table level_out
+@item level_out
 Set output level after filtering for both channels. Defaults is 1.
 Allowed range is from 0.015625 to 64.
 
