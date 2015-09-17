@@ -174,10 +174,11 @@ static int encode_init(AVCodecContext *avctx)
             cb_to_level[i] = (int32_t)(0x7fffffff * pow(10, -0.005 * i));
         }
 
-        /* FIXME: probably incorrect */
-        for (i = 0; i < 256; i++) {
-            lfe_fir_64i[i] = (int32_t)(0x01ffffff * ff_dca_lfe_fir_64[i]);
-            lfe_fir_64i[511 - i] = (int32_t)(0x01ffffff * ff_dca_lfe_fir_64[i]);
+        for (k = 0; k < 32; k++) {
+            for (j = 0; j < 8; j++) {
+                lfe_fir_64i[64 * j + k] = (int32_t)(0xffffff800000ULL * ff_dca_lfe_fir_64[8 * k + j]);
+                lfe_fir_64i[64 * (7-j) + (63 - k)] = (int32_t)(0xffffff800000ULL * ff_dca_lfe_fir_64[8 * k + j]);
+            }
         }
 
         for (i = 0; i < 512; i++) {
