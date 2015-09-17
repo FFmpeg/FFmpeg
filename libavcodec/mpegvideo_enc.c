@@ -97,6 +97,11 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
 
     for (qscale = qmin; qscale <= qmax; qscale++) {
         int i;
+        int qscale2;
+
+        if (s->q_scale_type) qscale2 = ff_mpeg2_non_linear_qscale[qscale];
+        else                 qscale2 = qscale << 1;
+
         if (fdsp->fdct == ff_jpeg_fdct_islow_8  ||
 #if CONFIG_FAANDCT
             fdsp->fdct == ff_faandct            ||
@@ -104,40 +109,40 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             fdsp->fdct == ff_jpeg_fdct_islow_10) {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
-                int64_t den = (int64_t) qscale * quant_matrix[j];
+                int64_t den = (int64_t) qscale2 * quant_matrix[j];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
                  * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
                  *             19952 <=              x  <= 249205026
                  * (1 << 36) / 19952 >= (1 << 36) / (x) >= (1 << 36) / 249205026
                  *           3444240 >= (1 << 36) / (x) >= 275 */
 
-                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) / den);
+                qmat[qscale][i] = (int)((UINT64_C(2) << QMAT_SHIFT) / den);
             }
         } else if (fdsp->fdct == ff_fdct_ifast) {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
-                int64_t den = ff_aanscales[i] * (int64_t) qscale * quant_matrix[j];
+                int64_t den = ff_aanscales[i] * (int64_t) qscale2 * quant_matrix[j];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
                  * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
                  *             19952 <=              x  <= 249205026
                  * (1 << 36) / 19952 >= (1 << 36) / (x) >= (1 << 36) / 249205026
                  *           3444240 >= (1 << 36) / (x) >= 275 */
 
-                qmat[qscale][i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) / den);
+                qmat[qscale][i] = (int)((UINT64_C(2) << (QMAT_SHIFT + 14)) / den);
             }
         } else {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
-                int64_t den = (int64_t) qscale * quant_matrix[j];
+                int64_t den = (int64_t) qscale2 * quant_matrix[j];
                 /* We can safely suppose that 16 <= quant_matrix[i] <= 255
                  * Assume x = qscale * quant_matrix[i]
                  * So             16 <=              x  <= 7905
                  * so (1 << 19) / 16 >= (1 << 19) / (x) >= (1 << 19) / 7905
                  * so          32768 >= (1 << 19) / (x) >= 67 */
-                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) / den);
+                qmat[qscale][i] = (int)((UINT64_C(2) << QMAT_SHIFT) / den);
                 //qmat  [qscale][i] = (1 << QMAT_SHIFT_MMX) /
                 //                    (qscale * quant_matrix[i]);
-                qmat16[qscale][0][i] = (1 << QMAT_SHIFT_MMX) / den;
+                qmat16[qscale][0][i] = (2 << QMAT_SHIFT_MMX) / den;
 
                 if (qmat16[qscale][0][i] == 0 ||
                     qmat16[qscale][0][i] == 128 * 256)
@@ -167,22 +172,19 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
 
 static inline void update_qscale(MpegEncContext *s)
 {
-    if (s->q_scale_type == 1) {
+    if (s->q_scale_type == 1 && 0) {
         int i;
         int bestdiff=INT_MAX;
         int best = 1;
-        static const uint8_t non_linear_qscale[] = {
-            1,2,3,4,5,6,7,8,9,10,11,12,14,16,18,20,22,24,26,28
-        };
 
-        for (i = 0 ; i<FF_ARRAY_ELEMS(non_linear_qscale); i++) {
-            int diff = FFABS((non_linear_qscale[i]<<(FF_LAMBDA_SHIFT + 7)) - (int)s->lambda * 139);
-            if (non_linear_qscale[i] < s->avctx->qmin ||
-                (non_linear_qscale[i] > s->avctx->qmax && !s->vbv_ignore_qmax))
+        for (i = 0 ; i<FF_ARRAY_ELEMS(ff_mpeg2_non_linear_qscale); i++) {
+            int diff = FFABS((ff_mpeg2_non_linear_qscale[i]<<(FF_LAMBDA_SHIFT + 6)) - (int)s->lambda * 139);
+            if (ff_mpeg2_non_linear_qscale[i] < s->avctx->qmin ||
+                (ff_mpeg2_non_linear_qscale[i] > s->avctx->qmax && !s->vbv_ignore_qmax))
                 continue;
             if (diff < bestdiff) {
                 bestdiff = diff;
-                best = non_linear_qscale[i];
+                best = i;
             }
         }
         s->qscale = best;
@@ -3854,6 +3856,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     uint8_t * length;
     uint8_t * last_length;
     const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
+    int mpeg2_qscale;
 
     s->fdsp.fdct(block);
 
@@ -3861,6 +3864,9 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         s->denoise_dct(s, block);
     qmul= qscale*16;
     qadd= ((qscale-1)|1)*8;
+
+    if (s->q_scale_type) mpeg2_qscale = ff_mpeg2_non_linear_qscale[qscale];
+    else                 mpeg2_qscale = qscale << 1;
 
     if (s->mb_intra) {
         int q;
@@ -3978,10 +3984,10 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             }else{ //MPEG1
                 j = s->idsp.idct_permutation[scantable[i]]; // FIXME: optimize
                 if(s->mb_intra){
-                        unquant_coeff = (int)(  alevel  * qscale * matrix[j]) >> 3;
+                        unquant_coeff = (int)(  alevel  * mpeg2_qscale * matrix[j]) >> 4;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
                 }else{
-                        unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) matrix[j])) >> 4;
+                        unquant_coeff = (((  alevel  << 1) + 1) * mpeg2_qscale * ((int) matrix[j])) >> 5;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
                 }
                 unquant_coeff<<= 3;
@@ -4097,7 +4103,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
                     unquant_coeff= (alevel*qmul + qadd)>>3;
             }else{ //MPEG1
-                    unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) matrix[0])) >> 4;
+                    unquant_coeff = (((  alevel  << 1) + 1) * mpeg2_qscale * ((int) matrix[0])) >> 5;
                     unquant_coeff =   (unquant_coeff - 1) | 1;
             }
             unquant_coeff = (unquant_coeff + 4) >> 3;

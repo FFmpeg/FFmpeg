@@ -25,6 +25,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideo.h"
+#include "libavcodec/mpegvideodata.h"
 
 #if HAVE_MMX_INLINE
 
@@ -308,7 +309,8 @@ static void dct_unquantize_mpeg2_intra_mmx(MpegEncContext *s,
 
     av_assert2(s->block_last_index[n]>=0);
 
-    qscale <<= 1;
+    if (s->q_scale_type) qscale = ff_mpeg2_non_linear_qscale[qscale];
+    else                 qscale <<= 1;
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
     else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
@@ -375,7 +377,8 @@ static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,
 
     av_assert2(s->block_last_index[n]>=0);
 
-    qscale <<= 1;
+    if (s->q_scale_type) qscale = ff_mpeg2_non_linear_qscale[qscale];
+    else                 qscale <<= 1;
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
     else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
