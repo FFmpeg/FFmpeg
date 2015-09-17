@@ -13320,7 +13320,7 @@ which means optimal overlap for selected window function will be picked.
 Set time averaging. Setting this to 0 will display current maximal peaks.
 Default is @code{1}, which means time averaging is disabled.
 
-@item color
+@item colors
 Specify list of colors separated by space or by '|' which will be used to
 draw channel frequencies. Unrecognized or missing colors will be replaced
 by white color.
