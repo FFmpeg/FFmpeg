@@ -3090,10 +3090,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int64_t max_subtitle_analyze_duration;
     int64_t probesize = ic->probesize;
 
-    if (!max_analyze_duration)
-        max_analyze_duration = ic->max_analyze_duration;
-    if (ic->probesize)
-        probesize = ic->probesize;
     flush_codecs = probesize > 0;
 
     av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);
