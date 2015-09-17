@@ -29,6 +29,7 @@ OBJS-$(CONFIG_AECHO_FILTER)                  += af_aecho.o
 OBJS-$(CONFIG_AEVAL_FILTER)                  += aeval.o
 OBJS-$(CONFIG_AFADE_FILTER)                  += af_afade.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
+OBJS-$(CONFIG_AGATE_FILTER)                  += af_agate.o
 OBJS-$(CONFIG_AINTERLEAVE_FILTER)            += f_interleave.o
 OBJS-$(CONFIG_ALIMITER_FILTER)               += af_alimiter.o
 OBJS-$(CONFIG_ALLPASS_FILTER)                += af_biquads.o
