@@ -114,6 +114,8 @@ static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
     int i, level, nCoeffs;
     const uint16_t *quant_matrix;
 
+    qscale <<= 1;
+
     if(s->alternate_scan) nCoeffs= 63;
     else nCoeffs= s->block_last_index[n];
 
@@ -125,10 +127,10 @@ static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
         if (level) {
             if (level < 0) {
                 level = -level;
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (int)(level * qscale * quant_matrix[j]) >> 4;
                 level = -level;
             } else {
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (int)(level * qscale * quant_matrix[j]) >> 4;
             }
             block[j] = level;
         }
@@ -142,6 +144,8 @@ static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
     const uint16_t *quant_matrix;
     int sum=-1;
 
+    qscale <<= 1;
+
     if(s->alternate_scan) nCoeffs= 63;
     else nCoeffs= s->block_last_index[n];
 
@@ -154,10 +158,10 @@ static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
         if (level) {
             if (level < 0) {
                 level = -level;
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (int)(level * qscale * quant_matrix[j]) >> 4;
                 level = -level;
             } else {
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (int)(level * qscale * quant_matrix[j]) >> 4;
             }
             block[j] = level;
             sum+=level;
@@ -173,6 +177,8 @@ static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s,
     const uint16_t *quant_matrix;
     int sum=-1;
 
+    qscale <<= 1;
+
     if(s->alternate_scan) nCoeffs= 63;
     else nCoeffs= s->block_last_index[n];
 
@@ -184,11 +190,11 @@ static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s,
             if (level < 0) {
                 level = -level;
                 level = (((level << 1) + 1) * qscale *
-                         ((int) (quant_matrix[j]))) >> 4;
+                         ((int) (quant_matrix[j]))) >> 5;
                 level = -level;
             } else {
                 level = (((level << 1) + 1) * qscale *
-                         ((int) (quant_matrix[j]))) >> 4;
+                         ((int) (quant_matrix[j]))) >> 5;
             }
             block[j] = level;
             sum+=level;
