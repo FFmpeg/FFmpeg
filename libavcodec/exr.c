@@ -1426,6 +1426,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
 static int decode_init_thread_copy(AVCodecContext *avctx)
 {    EXRContext *s = avctx->priv_data;
 
@@ -1436,6 +1437,7 @@ static int decode_init_thread_copy(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
 static av_cold int decode_end(AVCodecContext *avctx)
 {

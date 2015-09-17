@@ -4307,6 +4307,7 @@ static av_cold int vp9_decode_init(AVCodecContext *ctx)
     return init_frames(ctx);
 }
 
+#if HAVE_THREADS
 static av_cold int vp9_decode_init_thread_copy(AVCodecContext *avctx)
 {
     return init_frames(avctx);
@@ -4359,6 +4360,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 
     return 0;
 }
+#endif
 
 static const AVProfile profiles[] = {
     { FF_PROFILE_VP9_0, "Profile 0" },

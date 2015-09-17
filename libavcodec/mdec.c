@@ -233,6 +233,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
 static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 {
     MDECContext * const a = avctx->priv_data;
@@ -241,6 +242,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
 static av_cold int decode_end(AVCodecContext *avctx)
 {

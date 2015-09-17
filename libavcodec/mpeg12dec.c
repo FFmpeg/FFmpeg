@@ -1139,6 +1139,7 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
 static int mpeg_decode_update_thread_context(AVCodecContext *avctx,
                                              const AVCodecContext *avctx_from)
 {
@@ -1163,6 +1164,7 @@ static int mpeg_decode_update_thread_context(AVCodecContext *avctx,
 
     return 0;
 }
+#endif
 
 static void quant_matrix_rebuild(uint16_t *matrix, const uint8_t *old_perm,
                                  const uint8_t *new_perm)

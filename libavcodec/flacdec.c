@@ -623,6 +623,7 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     return bytes_read;
 }
 
+#if HAVE_THREADS
 static int init_thread_copy(AVCodecContext *avctx)
 {
     FLACContext *s = avctx->priv_data;
@@ -633,6 +634,7 @@ static int init_thread_copy(AVCodecContext *avctx)
         return allocate_buffers(s);
     return 0;
 }
+#endif
 
 static av_cold int flac_decode_close(AVCodecContext *avctx)
 {

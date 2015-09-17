@@ -2769,6 +2769,7 @@ av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
 }
 
 #if CONFIG_VP8_DECODER
+#if HAVE_THREADS
 static av_cold int vp8_decode_init_thread_copy(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
@@ -2819,6 +2820,7 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 
     return 0;
 }
+#endif /* HAVE_THREADS */
 #endif /* CONFIG_VP8_DECODER */
 
 #if CONFIG_VP7_DECODER

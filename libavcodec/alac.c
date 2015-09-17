@@ -609,12 +609,14 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
+#if HAVE_THREADS
 static int init_thread_copy(AVCodecContext *avctx)
 {
     ALACContext *alac = avctx->priv_data;
     alac->avctx = avctx;
     return allocate_buffers(alac);
 }
+#endif
 
 static const AVOption options[] = {
     { "extra_bits_bug", "Force non-standard decoding process",
