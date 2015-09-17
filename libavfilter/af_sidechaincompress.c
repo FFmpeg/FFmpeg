@@ -294,8 +294,8 @@ static int config_output(AVFilterLink *outlink)
     outlink->channel_layout = ctx->inputs[0]->channel_layout;
     outlink->channels = ctx->inputs[0]->channels;
 
-    s->attack_coeff = FFMIN(1.f, 1.f / (s->attack * outlink->sample_rate / 4000.f));
-    s->release_coeff = FFMIN(1.f, 1.f / (s->release * outlink->sample_rate / 4000.f));
+    s->attack_coeff = FFMIN(1., 1. / (s->attack * outlink->sample_rate / 4000.));
+    s->release_coeff = FFMIN(1., 1. / (s->release * outlink->sample_rate / 4000.));
 
     return 0;
 }
