@@ -912,6 +912,8 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           fft-internal.h                \
                                           tableprint.h                  \
                                           tableprint_vlc.h              \
+                                          aaccoder_twoloop.h            \
+                                          aaccoder_trellis.h            \
                                           $(ARCH)/vp56_arith.h          \
 
 SKIPHEADERS-$(CONFIG_D3D11VA)          += d3d11va.h dxva2_internal.h
