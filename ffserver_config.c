@@ -116,6 +116,8 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
 {
     char arg[1024];
     FFServerIPAddressACL acl;
+    FFServerIPAddressACL *nacl;
+    FFServerIPAddressACL **naclp;
     int errors = 0;
 
     ffserver_get_arg(arg, sizeof(arg), &p);
@@ -150,33 +152,35 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
         }
     }
 
-    if (!errors) {
-        FFServerIPAddressACL *nacl = av_mallocz(sizeof(*nacl));
-        FFServerIPAddressACL **naclp = 0;
+    if (errors)
+        return;
 
-        acl.next = 0;
-        *nacl = acl;
+    nacl = av_mallocz(sizeof(*nacl));
+    naclp = 0;
 
-        if (stream)
-            naclp = &stream->acl;
-        else if (feed)
-            naclp = &feed->acl;
-        else if (ext_acl)
-            naclp = &ext_acl;
-        else {
-            fprintf(stderr, "%s:%d: ACL found not in <Stream> or <Feed>\n",
-                    filename, line_num);
-            errors++;
-        }
+    acl.next = 0;
+    *nacl = acl;
 
-        if (naclp) {
-            while (*naclp)
-                naclp = &(*naclp)->next;
-
-            *naclp = nacl;
-        } else
-            av_free(nacl);
+    if (stream)
+        naclp = &stream->acl;
+    else if (feed)
+        naclp = &feed->acl;
+    else if (ext_acl)
+        naclp = &ext_acl;
+    else {
+        fprintf(stderr, "%s:%d: ACL found not in <Stream> or <Feed>\n",
+                filename, line_num);
+        errors++; /* FIXME: No effect whatsoever */
     }
+
+    if (naclp) {
+        while (*naclp)
+            naclp = &(*naclp)->next;
+
+        *naclp = nacl;
+    } else
+        av_free(nacl);
+
 }
 
 /* add a codec and set the default parameters */
