@@ -167,11 +167,9 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
         naclp = &feed->acl;
     else if (ext_acl)
         naclp = &ext_acl;
-    else {
+    else
         fprintf(stderr, "%s:%d: ACL found not in <Stream> or <Feed>\n",
                 filename, line_num);
-        errors++; /* FIXME: No effect whatsoever */
-    }
 
     if (naclp) {
         while (*naclp)
