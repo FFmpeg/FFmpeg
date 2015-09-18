@@ -240,6 +240,7 @@ static void lumRangeFromJpeg16_c(int16_t *_dst, int width)
         dst[i] = (dst[i]*(14071/4) + (33561947<<4)/4)>>12;
 }
 
+#ifndef NEW_FILTER
 // *** horizontal scale Y line to temp buffer
 static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
                                      const uint8_t *src_in[4],
@@ -311,6 +312,7 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1,
     if (c->chrConvertRange)
         c->chrConvertRange(dst1, dst2, dstWidth);
 }
+#endif /* NEW_FILTER */
 
 #define DEBUG_SWSCALE_BUFFERS 0
 #define DEBUG_BUFFERS(...)                      \
