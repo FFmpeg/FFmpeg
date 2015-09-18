@@ -2369,7 +2369,7 @@ static void update_stream_timings(AVFormatContext *ic)
         /* compute the bitrate */
         double bitrate = (double) filesize * 8.0 * AV_TIME_BASE /
                          (double) ic->duration;
-        if (bitrate >= 0 && (!AV_HAVE_INCOMPATIBLE_LIBAV_ABI || bitrate <= INT_MAX))
+        if (bitrate >= 0 && bitrate <= INT64_MAX)
             ic->bit_rate = bitrate;
     }
 }
@@ -3085,23 +3085,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     // new streams might appear, no options for those
     int orig_nb_streams = ic->nb_streams;
     int flush_codecs;
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int64_t max_analyze_duration = ic->max_analyze_duration2;
-#else
     int64_t max_analyze_duration = ic->max_analyze_duration;
-#endif
     int64_t max_stream_analyze_duration;
     int64_t max_subtitle_analyze_duration;
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int64_t probesize = ic->probesize2;
-#else
     int64_t probesize = ic->probesize;
-#endif
 
-    if (!max_analyze_duration)
-        max_analyze_duration = ic->max_analyze_duration;
-    if (ic->probesize)
-        probesize = ic->probesize;
     flush_codecs = probesize > 0;
 
     av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);

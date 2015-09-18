@@ -1358,11 +1358,7 @@ typedef struct AVFormatContext {
      * available. Never set it directly if the file_size and the
      * duration are known as FFmpeg can compute it automatically.
      */
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int bit_rate;
-#else
     int64_t bit_rate;
-#endif
 
     unsigned int packet_size;
     int max_delay;
@@ -1395,18 +1391,20 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Don't merge side data but keep it separate.
 #define AVFMT_FLAG_FAST_SEEK   0x80000 ///< Enable fast, but inaccurate seeks for some formats
 
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     /**
-     * @deprecated deprecated in favor of probesize2
+     * Maximum size of the data read from input for determining
+     * the input container format.
+     * Demuxing only, set by the caller before avformat_open_input().
      */
-    unsigned int probesize;
+    int64_t probesize;
 
     /**
-     * @deprecated deprecated in favor of max_analyze_duration2
+     * Maximum duration (in AV_TIME_BASE units) of the data read
+     * from input in avformat_find_stream_info().
+     * Demuxing only, set by the caller before avformat_find_stream_info().
+     * Can be set to 0 to let avformat choose using a heuristic.
      */
-    attribute_deprecated
-    int max_analyze_duration;
-#endif
+    int64_t max_analyze_duration;
 
     const uint8_t *key;
     int keylen;
@@ -1751,31 +1749,6 @@ typedef struct AVFormatContext {
      * Muxing: set by user via AVOptions (NO direct access)
      */
     int64_t output_ts_offset;
-
-    /**
-     * Maximum duration (in AV_TIME_BASE units) of the data read
-     * from input in avformat_find_stream_info().
-     * Demuxing only, set by the caller before avformat_find_stream_info()
-     * via AVOptions (NO direct access).
-     * Can be set to 0 to let avformat choose using a heuristic.
-     */
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int64_t max_analyze_duration2;
-#else
-    int64_t max_analyze_duration;
-#endif
-
-    /**
-     * Maximum size of the data read from input for determining
-     * the input container format.
-     * Demuxing only, set by the caller before avformat_open_input()
-     * via AVOptions (NO direct access).
-     */
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int64_t probesize2;
-#else
-    int64_t probesize;
-#endif
 
     /**
      * dump format separator.

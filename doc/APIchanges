@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-09-17 - xxxxxxx - lavc 57.3.100 / lavc 57.2.0 - d3d11va.h
+  Add av_d3d11va_alloc_context(). This function must from now on be used for
+  allocating AVD3D11VAContext.
+
 2015-09-15 - lavf 57.2.100 - avformat.h
   probesize and max_analyze_duration switched to 64bit, both
   are only accessible through AVOptions

@@ -1532,11 +1532,7 @@ typedef struct AVCodecContext {
      * - decoding: Set by user, may be overwritten by libavcodec
      *             if this info is available in the stream
      */
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int bit_rate;
-#else
     int64_t bit_rate;
-#endif
 
     /**
      * number of bits the bitstream is allowed to diverge from the reference.
@@ -2467,22 +2463,14 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: Set by user, may be overwritten by libavcodec.
      */
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int rc_max_rate;
-#else
     int64_t rc_max_rate;
-#endif
 
     /**
      * minimum bitrate
      * - encoding: Set by user.
      * - decoding: unused
      */
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int rc_min_rate;
-#else
     int64_t rc_min_rate;
-#endif
 
 #if FF_API_MPV_OPT
     /**

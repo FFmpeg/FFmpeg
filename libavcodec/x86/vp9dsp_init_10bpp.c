@@ -1,4 +1,8 @@
 /*
+ * VP9 SIMD optimizations
+ *
+ * Copyright (c) 2013 Ronald S. Bultje <rsbultje gmail com>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_MPEGVIDEODATA_H
-#define AVCODEC_MPEGVIDEODATA_H
-
-#include <stdint.h>
-
-/* encoding scans */
-extern const uint8_t ff_alternate_horizontal_scan[64];
-extern const uint8_t ff_alternate_vertical_scan[64];
-
-extern const uint8_t ff_mpeg1_dc_scale_table[128];
-extern const uint8_t * const ff_mpeg2_dc_scale_table[4];
-
-extern const uint8_t ff_mpeg2_non_linear_qscale[32];
-
-extern const uint8_t ff_default_chroma_qscale_table[32];
-
-#endif /* AVCODEC_MPEGVIDEODATA_H */
+#define BPC 10
+#define INIT_FUNC ff_vp9dsp_init_10bpp_x86
+#include "vp9dsp_init_16bpp_template.c"

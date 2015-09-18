@@ -42,13 +42,8 @@
 #define AV_CODEC_DEFAULT_BITRATE 200*1000
 
 static const AVOption avcodec_options[] = {
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-{"b", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT, {.i64 = AV_CODEC_DEFAULT_BITRATE }, 0, INT_MAX, A|V|E},
-{"ab", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT, {.i64 = 128*1000 }, 0, INT_MAX, A|E},
-#else
 {"b", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT64, {.i64 = AV_CODEC_DEFAULT_BITRATE }, 0, INT_MAX, A|V|E},
 {"ab", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT64, {.i64 = 128*1000 }, 0, INT_MAX, A|E},
-#endif
 {"bt", "Set video bitrate tolerance (in bits/s). In 1-pass mode, bitrate tolerance specifies how far "
        "ratecontrol is willing to deviate from the target average bitrate value. This is not related "
        "to minimum/maximum bitrate. Lowering tolerance too much has an adverse effect on quality.",
@@ -191,15 +186,9 @@ static const AVOption avcodec_options[] = {
 #if FF_API_MPV_OPT
 {"rc_eq", "deprecated, use encoder private options instead", OFFSET(rc_eq), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, V|E},
 #endif
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-{"maxrate", "maximum bitrate (in bits/s). Used for VBV together with bufsize.", OFFSET(rc_max_rate), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, V|A|E},
-{"minrate", "minimum bitrate (in bits/s). Most useful in setting up a CBR encode. It is of little use otherwise.",
-            OFFSET(rc_min_rate), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
-#else
 {"maxrate", "maximum bitrate (in bits/s). Used for VBV together with bufsize.", OFFSET(rc_max_rate), AV_OPT_TYPE_INT64, {.i64 = DEFAULT }, 0, INT_MAX, V|A|E},
 {"minrate", "minimum bitrate (in bits/s). Most useful in setting up a CBR encode. It is of little use otherwise.",
             OFFSET(rc_min_rate), AV_OPT_TYPE_INT64, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
-#endif
 {"bufsize", "set ratecontrol buffer size (in bits)", OFFSET(rc_buffer_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, A|V|E},
 #if FF_API_MPV_OPT
 {"rc_buf_aggressivity", "deprecated, use encoder private options instead", OFFSET(rc_buffer_aggressivity), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, -FLT_MAX, FLT_MAX, V|E},
