@@ -225,6 +225,9 @@
     <YASM Include="..\libavcodec\x86\vp9mc.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\vp9mc_16bpp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libavcodec\allcodecs.c">
@@ -2165,6 +2168,9 @@
     <ClCompile Include="..\libavcodec\vima.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\d3d11va.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2556,6 +2562,15 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\vp9dsp_init_10bpp.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\vp9dsp_init_12bpp.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\vp9dsp_init_16bpp.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dirac_dwt.c">

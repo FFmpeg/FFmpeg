@@ -242,6 +242,9 @@
     <ClCompile Include="..\libavfilter\af_silenceremove.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_stereotools.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_stereowiden.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

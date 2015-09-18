@@ -26,6 +26,7 @@ EXPORTS
     av_codec_set_seek_preroll
     av_copy_packet
     av_copy_packet_side_data
+    av_d3d11va_alloc_context
     av_dct_calc
     av_dct_end
     av_dct_init
