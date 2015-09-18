@@ -69,6 +69,9 @@ static const struct {
 #if CONFIG_H264QPEL
     { "h264qpel", checkasm_check_h264qpel },
 #endif
+#if CONFIG_JPEG2000_DECODER
+    { "jpeg2000dsp", checkasm_check_jpeg2000dsp },
+#endif
 #if CONFIG_V210_ENCODER
     { "v210enc", checkasm_check_v210enc },
 #endif
