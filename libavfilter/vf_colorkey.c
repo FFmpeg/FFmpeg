@@ -159,7 +159,7 @@ AVFILTER_DEFINE_CLASS(colorkey);
 
 AVFilter ff_vf_colorkey = {
     .name          = "colorkey",
-    .description   = NULL_IF_CONFIG_SMALL("colorkey filter"),
+    .description   = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
     .priv_size     = sizeof(ColorkeyContext),
     .priv_class    = &colorkey_class,
     .query_formats = query_formats,
