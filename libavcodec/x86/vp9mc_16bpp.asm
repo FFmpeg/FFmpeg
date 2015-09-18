@@ -201,6 +201,9 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _12, 6, 6, %2, dst, dstride, src, sstride, 
 INIT_XMM sse2
 filter_h_fn put
 filter_h_fn avg
+INIT_YMM avx2
+filter_h_fn put
+filter_h_fn avg
 
 %macro filter_v4_fn 1-2 12
 %if ARCH_X86_64
@@ -417,5 +420,8 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _12, 4, 7, %2, dst, dstride, src, sstride, 
 %endmacro
 
 INIT_XMM sse2
+filter_v_fn put
+filter_v_fn avg
+INIT_YMM avx2
 filter_v_fn put
 filter_v_fn avg
