@@ -236,6 +236,7 @@ External library support:
   --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
   --enable-libopus         enable Opus de/encoding via libopus [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
+  --enable-librubberband   enable rubberband needed for rubberband filter [no]
   --enable-libquvi         enable quvi input via libquvi [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
@@ -1405,6 +1406,7 @@ EXTERNAL_LIBRARY_LIST="
     libpulse
     libquvi
     librtmp
+    librubberband
     libschroedinger
     libshine
     libsmbclient
@@ -2789,6 +2791,7 @@ pullup_filter_deps="gpl"
 removelogo_filter_deps="avcodec avformat swscale"
 repeatfields_filter_deps="gpl"
 resample_filter_deps="avresample"
+rubberband_filter_deps="librubberband"
 sab_filter_deps="gpl swscale"
 scale_filter_deps="swscale"
 scale2ref_filter_deps="swscale"
@@ -4661,6 +4664,7 @@ die_license_disabled_gpl() {
 
 die_license_disabled gpl frei0r
 die_license_disabled gpl libcdio
+die_license_disabled gpl librubberband
 die_license_disabled gpl libsmbclient
 die_license_disabled gpl libutvideo
 die_license_disabled gpl libvidstab
@@ -5271,6 +5275,7 @@ enabled libopus           && require_pkg_config opus opus_multistream.h opus_mul
 enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
 enabled libquvi           && require_pkg_config libquvi quvi/quvi.h quvi_init
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
+enabled librubberband     && require_pkg_config rubberband rubberband/rubberband-c.h rubberband_new
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libshine          && require_pkg_config shine shine/layer3.h shine_encode_buffer
 enabled libsmbclient      && { use_pkg_config smbclient libsmbclient.h smbc_init ||

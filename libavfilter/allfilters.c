@@ -99,6 +99,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(PAN,            pan,            af);
     REGISTER_FILTER(REPLAYGAIN,     replaygain,     af);
     REGISTER_FILTER(RESAMPLE,       resample,       af);
+    REGISTER_FILTER(RUBBERBAND,     rubberband,     af);
     REGISTER_FILTER(SIDECHAINCOMPRESS, sidechaincompress, af);
     REGISTER_FILTER(SILENCEDETECT,  silencedetect,  af);
     REGISTER_FILTER(SILENCEREMOVE,  silenceremove,  af);
