@@ -3860,6 +3860,7 @@ int main(int argc, char **argv)
     if ((ret = ffserver_parse_ffconfig(config.filename, &config)) < 0) {
         fprintf(stderr, "Error reading configuration file '%s': %s\n",
                 config.filename, av_err2str(ret));
+        av_freep(&config.filename);
         exit(1);
     }
     av_freep(&config.filename);
