@@ -533,7 +533,12 @@ int opt_default(void *optctx, const char *opt, const char *arg)
 #if CONFIG_AVRESAMPLE
     const AVClass *rc = avresample_get_class();
 #endif
-    const AVClass *sc, *swr_class;
+#if CONFIG_SWSCALE
+    const AVClass *sc = sws_get_class();
+#endif
+#if CONFIG_SWRESAMPLE
+    const AVClass *swr_class = swr_get_class();
+#endif
 
     if (!strcmp(opt, "debug") || !strcmp(opt, "fdebug"))
         av_log_set_level(AV_LOG_DEBUG);
@@ -557,7 +562,6 @@ int opt_default(void *optctx, const char *opt, const char *arg)
         consumed = 1;
     }
 #if CONFIG_SWSCALE
-    sc = sws_get_class();
     if (!consumed && (o = opt_find(&sc, opt, NULL, 0,
                          AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         struct SwsContext *sws = sws_alloc_context();
@@ -585,7 +589,6 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     }
 #endif
 #if CONFIG_SWRESAMPLE
-    swr_class = swr_get_class();
     if (!consumed && (o=opt_find(&swr_class, opt, NULL, 0,
                                     AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         struct SwrContext *swr = swr_alloc();
