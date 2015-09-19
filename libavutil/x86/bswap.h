@@ -30,16 +30,16 @@
 
 #if HAVE_INLINE_ASM
 
-#if !AV_GCC_VERSION_AT_LEAST(4,1)
+#if AV_GCC_VERSION_AT_MOST(4,0)
 #define av_bswap16 av_bswap16
 static av_always_inline av_const unsigned av_bswap16(unsigned x)
 {
     __asm__("rorw $8, %w0" : "+r"(x));
     return x;
 }
-#endif /* !AV_GCC_VERSION_AT_LEAST(4,1) */
+#endif /* AV_GCC_VERSION_AT_MOST(4,0) */
 
-#if !AV_GCC_VERSION_AT_LEAST(4,5) || defined(__INTEL_COMPILER)
+#if AV_GCC_VERSION_AT_MOST(4,4) || defined(__INTEL_COMPILER)
 #define av_bswap32 av_bswap32
 static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 {
@@ -55,7 +55,7 @@ static inline uint64_t av_const av_bswap64(uint64_t x)
     return x;
 }
 #endif
-#endif /* !AV_GCC_VERSION_AT_LEAST(4,5) */
+#endif /* AV_GCC_VERSION_AT_MOST(4,4) */
 
 #endif /* HAVE_INLINE_ASM */
 #endif /* AVUTIL_X86_BSWAP_H */

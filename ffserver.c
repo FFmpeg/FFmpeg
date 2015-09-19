@@ -71,6 +71,8 @@
 #include "cmdutils.h"
 #include "ffserver_config.h"
 
+#define PATH_LENGTH 1024
+
 const char program_name[] = "ffserver";
 const int program_birth_year = 2000;
 
@@ -388,16 +390,33 @@ static int compute_datarate(DataRateData *drd, int64_t count)
 
 static void start_children(FFServerStream *feed)
 {
-    char pathname[1024];
+    char *pathname;
     char *slash;
     int i;
+    size_t cmd_length;
 
     if (no_launch)
         return;
 
+    cmd_length = strlen(my_program_name);
+
+   /**
+    * FIXME: WIP Safeguard. Remove after clearing all harcoded
+    * '1024' path lengths
+    */
+    if (cmd_length > PATH_LENGTH - 1) {
+        http_log("Could not start children. Command line: '%s' exceeds "
+                    "path length limit (%d)\n", my_program_name, PATH_LENGTH);
+        return;
+    }
+
+    pathname = av_strdup (my_program_name);
+    if (!pathname) {
+        http_log("Could not allocate memory for children cmd line\n");
+        return;
+    }
    /* replace "ffserver" with "ffmpeg" in the path of current
     * program. Ignore user provided path */
-    av_strlcpy(pathname, my_program_name, sizeof(pathname));
 
     slash = strrchr(pathname, '/');
     if (!slash)
@@ -445,6 +464,7 @@ static void start_children(FFServerStream *feed)
 
         signal(SIGPIPE, SIG_DFL);
         execvp(pathname, feed->child_argv);
+        av_free (pathname);
         _exit(1);
     }
 }
@@ -3840,6 +3860,7 @@ int main(int argc, char **argv)
     if ((ret = ffserver_parse_ffconfig(config.filename, &config)) < 0) {
         fprintf(stderr, "Error reading configuration file '%s': %s\n",
                 config.filename, av_err2str(ret));
+        av_freep(&config.filename);
         exit(1);
     }
     av_freep(&config.filename);

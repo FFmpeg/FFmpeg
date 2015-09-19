@@ -7,6 +7,7 @@ version <next>:
 - ocr filter
 - alimiter filter
 - stereowiden filter
+- stereotools filter
 
 
 version 2.8:
