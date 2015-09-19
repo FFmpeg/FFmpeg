@@ -58,6 +58,8 @@ typedef struct FLVContext {
     int searched_for_end;
 
     uint8_t resync_buffer[2*RESYNC_BUFFER_SIZE];
+
+    int broken_sizes;
 } FLVContext;
 
 static int probe(AVProbeData *p, int live)
@@ -513,6 +515,15 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                         vcodec->width = num_val;
                     } else if (!strcmp(key, "height") && vcodec) {
                         vcodec->height = num_val;
+                    }
+                }
+            }
+            if (amf_type == AMF_DATA_TYPE_STRING) {
+                if (!strcmp(key, "encoder")) {
+                    int version = -1;
+                    if (1 == sscanf(str_val, "Open Broadcaster Software v0.%d", &version)) {
+                        if (version > 0 && version <= 655)
+                            flv->broken_sizes = 1;
                     }
                 }
             }
@@ -1127,7 +1138,7 @@ retry_duration:
 
 leave:
     last = avio_rb32(s->pb);
-    if (last != orig_size + 11) {
+    if (last != orig_size + 11 && !flv->broken_sizes) {
         av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d\n", last, orig_size + 11);
         avio_seek(s->pb, pos + 1, SEEK_SET);
         ret = resync(s);
