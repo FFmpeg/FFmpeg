@@ -263,26 +263,6 @@ EXPORTS
     av_murmur3_init_seeded
     av_murmur3_update
     av_nearer_q
-    av_opencl_alloc_external_env
-    av_opencl_benchmark
-    av_opencl_buffer_create
-    av_opencl_buffer_read
-    av_opencl_buffer_read_image
-    av_opencl_buffer_release
-    av_opencl_buffer_write
-    av_opencl_buffer_write_image
-    av_opencl_compile
-    av_opencl_errstr
-    av_opencl_free_device_list
-    av_opencl_free_external_env
-    av_opencl_free_option
-    av_opencl_get_command_queue
-    av_opencl_get_device_list
-    av_opencl_get_option
-    av_opencl_init
-    av_opencl_register_kernel_code
-    av_opencl_set_option
-    av_opencl_uninit
     av_opt_child_class_next
     av_opt_child_next
     av_opt_copy
@@ -445,7 +425,6 @@ EXPORTS
     avpriv_get_gamma_from_trc
     avpriv_get_trc_function_from_trc
     avpriv_init_lls
-    avpriv_opencl_set_parameter
     avpriv_report_missing_feature
     avpriv_request_sample
     avpriv_scalarproduct_float_c

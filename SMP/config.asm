@@ -482,7 +482,7 @@
 %define CONFIG_MMAL 0
 %define CONFIG_NVENC 1
 %define CONFIG_OPENAL 0
-%define CONFIG_OPENCL 1
+%define CONFIG_OPENCL 0
 %define CONFIG_OPENGL 1
 %define CONFIG_OPENSSL 0
 %define CONFIG_SDL 1

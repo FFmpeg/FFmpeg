@@ -476,12 +476,6 @@
     <ClCompile Include="..\libavfilter\vf_null.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\deshake_opencl.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\unsharp_opencl.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_overlay.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

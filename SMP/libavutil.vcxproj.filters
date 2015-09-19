@@ -227,12 +227,6 @@
     <ClCompile Include="..\libavutil\lzo.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\opencl.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\opencl_internal.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c">
       <Filter>Source Files\compat\msvcrt</Filter>
     </ClCompile>
@@ -437,9 +431,6 @@
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\lzo.h">
-      <Filter>Header Files\libavutil</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libavutil\opencl.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
   </ItemGroup>

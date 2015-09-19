@@ -18,9 +18,6 @@
     <ClCompile Include="..\cmdutils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\cmdutils_opencl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\ffmpeg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
