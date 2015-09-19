@@ -563,6 +563,12 @@ int opt_default(void *optctx, const char *opt, const char *arg)
         struct SwsContext *sws = sws_alloc_context();
         int ret = av_opt_set(sws, opt, arg, 0);
         sws_freeContext(sws);
+        if (!strcmp(opt, "srcw") || !strcmp(opt, "srch") ||
+            !strcmp(opt, "dstw") || !strcmp(opt, "dsth") ||
+            !strcmp(opt, "src_format") || !strcmp(opt, "dst_format")) {
+            av_log(NULL, AV_LOG_ERROR, "Directly using swscale dimensions/format options is not supported, please use the -s or -pix_fmt options\n");
+            return AVERROR(EINVAL);
+        }
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;
