@@ -501,7 +501,6 @@ static int videotoolbox_default_init(AVCodecContext *avctx)
     VTDecompressionOutputCallbackRecord decoder_cb;
     CFDictionaryRef decoder_spec;
     CFDictionaryRef buf_attr;
-    int32_t pix_fmt;
 
     if (!videotoolbox) {
         av_log(avctx, AV_LOG_ERROR, "hwaccel context is not set\n");
@@ -527,8 +526,6 @@ static int videotoolbox_default_init(AVCodecContext *avctx)
     default :
         break;
     }
-
-    pix_fmt = videotoolbox->cv_pix_fmt_type;
 
     decoder_spec = videotoolbox_decoder_config_create(videotoolbox->cm_codec_type, avctx);
 
