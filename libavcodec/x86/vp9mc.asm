@@ -583,11 +583,11 @@ filter_vx2_fn avg
 %endif
 
 %if %2 <= mmsize
-cglobal vp9_%1%2%%szsuf, 5, 7, 4, dst, dstride, src, sstride, h, dstride3, sstride3
+cglobal vp9_%1%2 %+ %%szsuf, 5, 7, 4, dst, dstride, src, sstride, h, dstride3, sstride3
     lea  sstride3q, [sstrideq*3]
     lea  dstride3q, [dstrideq*3]
 %else
-cglobal vp9_%1%2%%szsuf, 5, 5, %8, dst, dstride, src, sstride, h
+cglobal vp9_%1%2 %+ %%szsuf, 5, 5, %8, dst, dstride, src, sstride, h
 %endif
 .loop:
     %%srcfn     m0, [srcq]
