@@ -1584,7 +1584,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     }
     emms_c();
-    s->new_picture = pict;
 
     s->m.picture_number= avctx->frame_number;
     if(avctx->flags&AV_CODEC_FLAG_PASS2){
