@@ -121,12 +121,12 @@ static const AVClass libdc1394_class = {
 
 
 static inline int dc1394_read_common(AVFormatContext *c,
-                                     struct dc1394_frame_format **select_fmt, struct dc1394_frame_rate **select_fps)
+                                     const struct dc1394_frame_format **select_fmt, const struct dc1394_frame_rate **select_fps)
 {
     dc1394_data* dc1394 = c->priv_data;
     AVStream* vst;
-    struct dc1394_frame_format *fmt;
-    struct dc1394_frame_rate *fps;
+    const struct dc1394_frame_format *fmt;
+    const struct dc1394_frame_rate *fps;
     enum AVPixelFormat pix_fmt;
     int width, height;
     AVRational framerate;
@@ -293,8 +293,8 @@ static int dc1394_v2_read_header(AVFormatContext *c)
     dc1394_data* dc1394 = c->priv_data;
     dc1394camera_list_t *list;
     int res, i;
-    struct dc1394_frame_format *fmt = NULL;
-    struct dc1394_frame_rate *fps = NULL;
+    const struct dc1394_frame_format *fmt = NULL;
+    const struct dc1394_frame_rate *fps = NULL;
 
     if (dc1394_read_common(c, &fmt, &fps) != 0)
        return -1;
