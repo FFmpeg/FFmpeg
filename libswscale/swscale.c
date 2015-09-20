@@ -526,8 +526,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 #ifdef NEW_FILTER
             hasLumHoles = lastInLumBuf != firstLumSrcY - 1;
             if (hasLumHoles) {
-                hout_slice->plane[0].sliceY = lastInLumBuf + 1;
-                hout_slice->plane[3].sliceY = lastInLumBuf + 1;
+                hout_slice->plane[0].sliceY = firstLumSrcY;
+                hout_slice->plane[3].sliceY = firstLumSrcY;
                 hout_slice->plane[0].sliceH =
                 hout_slice->plane[3].sliceH = 0;
             }
@@ -538,8 +538,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 #ifdef NEW_FILTER
             hasChrHoles = lastInChrBuf != firstChrSrcY - 1;
             if (hasChrHoles) {
-                hout_slice->plane[1].sliceY = lastInChrBuf + 1;
-                hout_slice->plane[2].sliceY = lastInChrBuf + 1;
+                hout_slice->plane[1].sliceY = firstChrSrcY;
+                hout_slice->plane[2].sliceY = firstChrSrcY;
                 hout_slice->plane[1].sliceH =
                 hout_slice->plane[2].sliceH = 0;
             }
