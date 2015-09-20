@@ -474,8 +474,9 @@ static const EbmlSyntax matroska_attachments[] = {
 };
 
 static const EbmlSyntax matroska_chapter_display[] = {
-    { MATROSKA_ID_CHAPSTRING, EBML_UTF8, 0, offsetof(MatroskaChapter, title) },
-    { MATROSKA_ID_CHAPLANG,   EBML_NONE },
+    { MATROSKA_ID_CHAPSTRING,  EBML_UTF8, 0, offsetof(MatroskaChapter, title) },
+    { MATROSKA_ID_CHAPLANG,    EBML_NONE },
+    { MATROSKA_ID_CHAPCOUNTRY, EBML_NONE },
     { 0 }
 };
 
