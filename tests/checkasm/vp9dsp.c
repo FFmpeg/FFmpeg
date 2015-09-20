@@ -102,7 +102,7 @@ static void check_ipred(void)
             ((uint16_t *)buf0)[(a) + (b) * jstride] = c; \
         } \
     } while (0)
-#define setdx(a,b,c,d) setpx(a,b,c-(d)+(rnd()%((d)*2+1)))
+#define setdx(a,b,c,d) setpx(a,b,(c)-(d)+(rnd()%((d)*2+1)))
 #define setsx(a,b,c,d) setdx(a,b,c,(d) << (bit_depth - 8))
 #define randomize_buffers(bidx, lineoff, str) \
     do { \
@@ -220,7 +220,7 @@ static void check_loopfilter()
                         randomize_buffers(0, 0, 16);
                         randomize_buffers(1, 8, 16);
                         memcpy(buf1 - midoff, buf0 - midoff, 16 * 16 * SIZEOF_PIXEL);
-#define M(a) ((a[1] << 8) | a[0])
+#define M(a) (((a)[1] << 8) | (a)[0])
                         call_ref(buf0, 16 * SIZEOF_PIXEL, M(E), M(I), M(H));
                         call_new(buf1, 16 * SIZEOF_PIXEL, M(E), M(I), M(H));
                         if (memcmp(buf0 - midoff, buf1 - midoff, 16 * 16 * SIZEOF_PIXEL))
