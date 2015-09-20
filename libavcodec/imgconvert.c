@@ -236,9 +236,41 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     int x_shift;
     int yheight;
     int i, y;
+    int max_step[4];
 
-    if (pix_fmt < 0 || pix_fmt >= AV_PIX_FMT_NB ||
-        !is_yuv_planar(desc)) return -1;
+    if (pix_fmt < 0 || pix_fmt >= AV_PIX_FMT_NB)
+        return -1;
+
+    if (!is_yuv_planar(desc)) {
+        if (src)
+            return -1; //TODO: Not yet implemented
+
+        av_image_fill_max_pixsteps(max_step, NULL, desc);
+
+        if (padtop || padleft) {
+            memset(dst->data[0], color[0],
+                    dst->linesize[0] * padtop + (padleft * max_step[0]));
+        }
+
+        if (padleft || padright) {
+            optr = dst->data[0] + dst->linesize[0] * padtop +
+                    (dst->linesize[0] - (padright * max_step[0]));
+            yheight = height - 1 - (padtop + padbottom);
+            for (y = 0; y < yheight; y++) {
+                memset(optr, color[0], (padleft + padright) * max_step[0]);
+                optr += dst->linesize[0];
+            }
+        }
+
+        if (padbottom || padright) {
+            optr = dst->data[0] + dst->linesize[0] * (height - padbottom) -
+                    (padright * max_step[0]);
+            memset(optr, color[0], dst->linesize[0] * padbottom +
+                    (padright * max_step[0]));
+        }
+
+        return 0;
+    }
 
     for (i = 0; i < 3; i++) {
         x_shift = i ? desc->log2_chroma_w : 0;
@@ -284,6 +316,7 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
                 (padbottom >> y_shift) + (padright >> x_shift));
         }
     }
+
     return 0;
 }
 

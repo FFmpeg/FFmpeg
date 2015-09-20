@@ -2142,7 +2142,7 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
             temp_corr[param.pulse_pos[0]] = 1;
 
             for (k = 1; k < pulse_cnt; k++) {
-                max = -1 << 30;
+                max = INT_MIN;
                 for (l = i; l < SUBFRAME_LEN; l += GRID_SIZE) {
                     if (temp_corr[l])
                         continue;

@@ -693,8 +693,8 @@ yuv2rgba64_X_c_template(SwsContext *c, const int16_t *lumFilter,
         int j;
         int Y1 = -0x40000000;
         int Y2 = -0x40000000;
-        int U  = -128 << 23; // 19
-        int V  = -128 << 23;
+        int U  = -(128 << 23); // 19
+        int V  = -(128 << 23);
         int R, G, B;
 
         for (j = 0; j < lumFilterSize; j++) {
@@ -780,8 +780,8 @@ yuv2rgba64_2_c_template(SwsContext *c, const int32_t *buf[2],
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha) >> 14;
         int Y2 = (buf0[i * 2 + 1] * yalpha1  + buf1[i * 2 + 1] * yalpha) >> 14;
-        int U  = (ubuf0[i]        * uvalpha1 + ubuf1[i]        * uvalpha + (-128 << 23)) >> 14;
-        int V  = (vbuf0[i]        * uvalpha1 + vbuf1[i]        * uvalpha + (-128 << 23)) >> 14;
+        int U  = (ubuf0[i]        * uvalpha1 + ubuf1[i]        * uvalpha - (128 << 23)) >> 14;
+        int V  = (vbuf0[i]        * uvalpha1 + vbuf1[i]        * uvalpha - (128 << 23)) >> 14;
         int R, G, B;
 
         Y1 -= c->yuv2rgb_y_offset;
@@ -836,8 +836,8 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             int Y1 = (buf0[i * 2]    ) >> 2;
             int Y2 = (buf0[i * 2 + 1]) >> 2;
-            int U  = (ubuf0[i] + (-128 << 11)) >> 2;
-            int V  = (vbuf0[i] + (-128 << 11)) >> 2;
+            int U  = (ubuf0[i] - (128 << 11)) >> 2;
+            int V  = (vbuf0[i] - (128 << 11)) >> 2;
             int R, G, B;
 
             Y1 -= c->yuv2rgb_y_offset;
@@ -882,8 +882,8 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             int Y1 = (buf0[i * 2]    ) >> 2;
             int Y2 = (buf0[i * 2 + 1]) >> 2;
-            int U  = (ubuf0[i] + ubuf1[i] + (-128 << 12)) >> 3;
-            int V  = (vbuf0[i] + vbuf1[i] + (-128 << 12)) >> 3;
+            int U  = (ubuf0[i] + ubuf1[i] - (128 << 12)) >> 3;
+            int V  = (vbuf0[i] + vbuf1[i] - (128 << 12)) >> 3;
             int R, G, B;
 
             Y1 -= c->yuv2rgb_y_offset;
@@ -939,8 +939,8 @@ yuv2rgba64_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
     for (i = 0; i < dstW; i++) {
         int j;
         int Y  = -0x40000000;
-        int U  = -128 << 23; // 19
-        int V  = -128 << 23;
+        int U  = -(128 << 23); // 19
+        int V  = -(128 << 23);
         int R, G, B;
 
         for (j = 0; j < lumFilterSize; j++) {
@@ -1008,8 +1008,8 @@ yuv2rgba64_full_2_c_template(SwsContext *c, const int32_t *buf[2],
 
     for (i = 0; i < dstW; i++) {
         int Y  = (buf0[i]     * yalpha1  + buf1[i]     * yalpha) >> 14;
-        int U  = (ubuf0[i]   * uvalpha1 + ubuf1[i]     * uvalpha + (-128 << 23)) >> 14;
-        int V  = (vbuf0[i]   * uvalpha1 + vbuf1[i]     * uvalpha + (-128 << 23)) >> 14;
+        int U  = (ubuf0[i]   * uvalpha1 + ubuf1[i]     * uvalpha - (128 << 23)) >> 14;
+        int V  = (vbuf0[i]   * uvalpha1 + vbuf1[i]     * uvalpha - (128 << 23)) >> 14;
         int R, G, B;
 
         Y -= c->yuv2rgb_y_offset;
@@ -1051,8 +1051,8 @@ yuv2rgba64_full_1_c_template(SwsContext *c, const int32_t *buf0,
     if (uvalpha < 2048) {
         for (i = 0; i < dstW; i++) {
             int Y  = (buf0[i]) >> 2;
-            int U  = (ubuf0[i] + (-128 << 11)) >> 2;
-            int V  = (vbuf0[i] + (-128 << 11)) >> 2;
+            int U  = (ubuf0[i] - (128 << 11)) >> 2;
+            int V  = (vbuf0[i] - (128 << 11)) >> 2;
             int R, G, B;
 
             Y -= c->yuv2rgb_y_offset;
@@ -1084,8 +1084,8 @@ yuv2rgba64_full_1_c_template(SwsContext *c, const int32_t *buf0,
         int A = 0xffff<<14;
         for (i = 0; i < dstW; i++) {
             int Y  = (buf0[i]    ) >> 2;
-            int U  = (ubuf0[i] + ubuf1[i] + (-128 << 12)) >> 3;
-            int V  = (vbuf0[i] + vbuf1[i] + (-128 << 12)) >> 3;
+            int U  = (ubuf0[i] + ubuf1[i] - (128 << 12)) >> 3;
+            int V  = (vbuf0[i] + vbuf1[i] - (128 << 12)) >> 3;
             int R, G, B;
 
             Y -= c->yuv2rgb_y_offset;
