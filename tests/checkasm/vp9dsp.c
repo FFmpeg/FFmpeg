@@ -197,6 +197,9 @@ static void check_loopfilter()
             midoff = (dir ? 16 * 8 : 8) * SIZEOF_PIXEL;
             midoff_aligned = (dir ? 16 * 8 : 16) * SIZEOF_PIXEL;
 
+            buf0 = base0 + midoff_aligned;
+            buf1 = base1 + midoff_aligned;
+
             // 16wd_16px loopfilter
             if (check_func(dsp.loop_filter_16[dir],
                            "vp9_loop_filter_%s_16_16_%dbpp",
