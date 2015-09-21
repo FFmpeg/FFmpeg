@@ -553,22 +553,22 @@ int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational
  * @}
  */
 
-#define AV_OPT_SEARCH_CHILDREN   0x0001 /**< Search in possible children of the
-                                             given object first. */
+#define AV_OPT_SEARCH_CHILDREN   (1 << 0) /**< Search in possible children of the
+                                               given object first. */
 /**
  *  The obj passed to av_opt_find() is fake -- only a double pointer to AVClass
  *  instead of a required pointer to a struct containing AVClass. This is
  *  useful for searching for options without needing to allocate the corresponding
  *  object.
  */
-#define AV_OPT_SEARCH_FAKE_OBJ   0x0002
+#define AV_OPT_SEARCH_FAKE_OBJ   (1 << 1)
 
 /**
  *  Allows av_opt_query_ranges and av_opt_query_ranges_default to return more than
  *  one component for certain option types.
  *  @see AVOptionRanges for details.
  */
-#define AV_OPT_MULTI_COMPONENT_RANGE 0x1000
+#define AV_OPT_MULTI_COMPONENT_RANGE (1 << 12)
 
 /**
  * Look for an option in an object. Consider only options which
