@@ -269,6 +269,7 @@ External library support:
   --enable-libxcb-shape    enable X11 grabbing shape rendering [autodetect]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
+  --enable-libzimg         enable z.lib, needed for zscale filter [no]
   --enable-libzmq          enable message passing via libzmq [no]
   --enable-libzvbi         enable teletext support via libzvbi [no]
   --disable-lzma           disable lzma [autodetect]
@@ -1456,6 +1457,7 @@ EXTERNAL_LIBRARY_LIST="
     libxcb_shape
     libxcb_xfixes
     libxvid
+    libzimg
     libzmq
     libzvbi
     lzma
@@ -2843,6 +2845,7 @@ tinterlace_pad_test_deps="tinterlace_filter"
 uspp_filter_deps="gpl avcodec"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
+zscale_filter_deps="libzimg"
 
 # examples
 avio_reading="avformat avcodec avutil"
@@ -5423,6 +5426,7 @@ enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                                die "ERROR: libx265 version must be >= 57."; }
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
+enabled libzimg           && require_pkg_config zimg zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
 enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi
 enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||

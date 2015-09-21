@@ -21,6 +21,7 @@ version <next>:
 - extensive native AAC encoder improvements
 - ADPCM PSX decoder
 - genh, vag, ads & svag demuxer
+- zscale filter
 
 
 version 2.8:
