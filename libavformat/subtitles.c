@@ -204,7 +204,8 @@ void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q)
         if (q->subs[i].duration == -1 && i < q->nb_subs - 1)
             q->subs[i].duration = q->subs[i + 1].pts - q->subs[i].pts;
 
-    drop_dups(log_ctx, q);
+    if (!q->keep_duplicates)
+        drop_dups(log_ctx, q);
 }
 
 int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)

@@ -105,6 +105,7 @@ typedef struct {
     int allocated_size;     ///< allocated size for subs
     int current_sub_idx;    ///< current position for the read packet callback
     enum sub_sort sort;     ///< sort method to use when finalizing subtitles
+    int keep_duplicates;    ///< set to 1 to keep duplicated subtitle events
 } FFDemuxSubtitlesQueue;
 
 /**
