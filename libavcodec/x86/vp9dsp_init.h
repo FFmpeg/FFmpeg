@@ -23,7 +23,7 @@
 #ifndef AVCODEC_X86_VP9DSP_INIT_H
 #define AVCODEC_X86_VP9DSP_INIT_H
 
-#include <libavcodec/vp9dsp.h>
+#include "libavcodec/vp9dsp.h"
 
 #define decl_fpel_func(avg, sz, bpp, opt) \
 void ff_vp9_##avg##sz##bpp##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
