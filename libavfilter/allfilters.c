@@ -106,6 +106,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(STEREOTOOLS,    stereotools,    af);
     REGISTER_FILTER(STEREOWIDEN,    stereowiden,    af);
     REGISTER_FILTER(TREBLE,         treble,         af);
+    REGISTER_FILTER(TREMOLO,        tremolo,        af);
     REGISTER_FILTER(VOLUME,         volume,         af);
     REGISTER_FILTER(VOLUMEDETECT,   volumedetect,   af);
 
