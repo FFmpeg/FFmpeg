@@ -220,12 +220,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    return 0;
-}
-
 static PullupBuffer *pullup_lock_buffer(PullupBuffer *b, int parity)
 {
     if (!b)
@@ -766,7 +760,6 @@ static const AVFilterPad pullup_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
     },
     { NULL }
 };

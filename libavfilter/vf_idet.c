@@ -313,29 +313,24 @@ static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     IDETContext *idet = ctx->priv;
+    int ret;
 
-    do {
-        int ret;
+    if (idet->eof)
+        return AVERROR_EOF;
 
-        if (idet->eof)
-            return AVERROR_EOF;
+    ret = ff_request_frame(link->src->inputs[0]);
 
-        ret = ff_request_frame(link->src->inputs[0]);
+    if (ret == AVERROR_EOF && idet->cur && !idet->analyze_interlaced_flag_done) {
+        AVFrame *next = av_frame_clone(idet->next);
 
-        if (ret == AVERROR_EOF && idet->cur && !idet->analyze_interlaced_flag_done) {
-            AVFrame *next = av_frame_clone(idet->next);
+        if (!next)
+            return AVERROR(ENOMEM);
 
-            if (!next)
-                return AVERROR(ENOMEM);
+        ret = filter_frame(link->src->inputs[0], next);
+        idet->eof = 1;
+    }
 
-            filter_frame(link->src->inputs[0], next);
-            idet->eof = 1;
-        } else if (ret < 0) {
-            return ret;
-        }
-    } while (link->frame_requested);
-
-    return 0;
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -405,12 +400,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    return 0;
-}
-
 static av_cold int init(AVFilterContext *ctx)
 {
     IDETContext *idet = ctx->priv;
@@ -445,7 +434,6 @@ static const AVFilterPad idet_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
         .request_frame = request_frame
     },
     { NULL }

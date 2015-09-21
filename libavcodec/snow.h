@@ -121,7 +121,6 @@ typedef struct SnowContext{
     H264QpelContext h264qpel;
     MpegvideoEncDSPContext mpvencdsp;
     SnowDWTContext dwt;
-    const AVFrame *new_picture;
     AVFrame *input_picture;              ///< new_picture with the internal linesizes
     AVFrame *current_picture;
     AVFrame *last_picture[MAX_REF_FRAMES];

@@ -56,11 +56,20 @@ static void trim_right(char* p)
 static int split_tag_value(char **tag, char **value, char *line)
 {
     char *p = line;
+    int  foundData = 0;
 
-    while (*p != '\0' && *p != ':')
+    *tag = NULL;
+    *value = NULL;
+
+
+    while (*p != '\0' && *p != ':') {
+        if (!av_isspace(*p)) {
+            foundData = 1;
+        }
         p++;
+    }
     if (*p != ':')
-        return AVERROR_INVALIDDATA;
+        return foundData ? AVERROR_INVALIDDATA : 0;
 
     *p   = '\0';
     *tag = line;
@@ -167,6 +176,8 @@ static int parse_multipart_header(AVIOContext *pb, void *log_ctx)
         ret = split_tag_value(&tag, &value, line);
         if (ret < 0)
             return ret;
+        if (value==NULL || tag==NULL)
+            break;
 
         if (!av_strcasecmp(tag, "Content-type")) {
             if (av_strcasecmp(value, "image/jpeg")) {

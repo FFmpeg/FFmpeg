@@ -531,7 +531,6 @@ static int config_output(AVFilterLink *outlink)
     if (err)
         return err;
 
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     s->compand = compand_delay;
     return 0;
 }

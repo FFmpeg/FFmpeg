@@ -153,13 +153,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-
-    return 0;
-}
-
 static double compute_rms(SilenceRemoveContext *s, double sample)
 {
     double new_sum;
@@ -463,7 +456,6 @@ static const AVFilterPad silenceremove_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_output,
         .request_frame = request_frame,
     },
     { NULL }

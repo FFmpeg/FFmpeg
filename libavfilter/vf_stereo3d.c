@@ -373,7 +373,6 @@ static int config_output(AVFilterLink *outlink)
         break;
     case ALTERNATING_RL:
     case ALTERNATING_LR:
-        outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
         fps.den        *= 2;
         tb.num         *= 2;
         break;

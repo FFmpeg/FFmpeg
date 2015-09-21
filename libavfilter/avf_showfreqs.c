@@ -300,7 +300,6 @@ static int config_output(AVFilterLink *outlink)
         s->scale += s->window_func_lut[i] * s->window_func_lut[i];
     }
 
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->frame_rate = av_make_q(inlink->sample_rate, s->win_size * (1.-s->overlap));
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->w = s->w;

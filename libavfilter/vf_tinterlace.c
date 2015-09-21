@@ -117,7 +117,6 @@ static int config_out_props(AVFilterLink *outlink)
     int i;
 
     tinterlace->vsub = desc->log2_chroma_h;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->w = inlink->w;
     outlink->h = tinterlace->mode == MODE_MERGE || tinterlace->mode == MODE_PAD ?
         inlink->h*2 : inlink->h;

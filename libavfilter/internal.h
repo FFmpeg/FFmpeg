@@ -102,9 +102,9 @@ struct AVFilterPad {
     int (*poll_frame)(AVFilterLink *link);
 
     /**
-     * Frame request callback. A call to this should result in at least one
-     * frame being output over the given link. This should return zero on
-     * success, and another value on error.
+     * Frame request callback. A call to this should result in some progress
+     * towards producing output over the given link. This should return zero
+     * on success, and another value on error.
      *
      * Output pads only.
      */
@@ -291,8 +291,11 @@ int ff_poll_frame(AVFilterLink *link);
  * caller (generally eventually a user application) as this step may (but does
  * not have to be) necessary to provide the input with the next frame.
  *
- * If a request is successful then the filter_frame() function will be called
- * at least once before ff_request_frame() returns
+ * If a request is successful then some progress has been made towards
+ * providing a frame on the link (through ff_filter_frame()). A filter that
+ * needs several frames to produce one is allowed to return success if one
+ * more frame has been processed but no output has been produced yet. A
+ * filter is also allowed to simply forward a success return value.
  *
  * @param link the input link
  * @return     zero on success
@@ -331,20 +334,6 @@ int ff_request_frame(AVFilterLink *link);
  * is responsible for unreferencing frame in case of error.
  */
 int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
-
-/**
- * Flags for AVFilterLink.flags.
- */
-enum {
-
-    /**
-     * Frame requests may need to loop in order to be fulfilled.
-     * A filter must set this flags on an output link if it may return 0 in
-     * request_frame() without filtering a frame.
-     */
-    FF_LINK_FLAG_REQUEST_LOOP = 1,
-
-};
 
 /**
  * Allocate a new filter context and return it.

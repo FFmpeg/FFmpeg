@@ -8,6 +8,7 @@ version <next>:
 - alimiter filter
 - stereowiden filter
 - stereotools filter
+- rubberband filter
 
 
 version 2.8:
