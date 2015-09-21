@@ -535,6 +535,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AVSubtitle *sub = data;
+    int appended = 0;
     int is_menu;
 
     if (ctx->buf_size) {
@@ -545,12 +546,13 @@ static int dvdsub_decode(AVCodecContext *avctx,
         }
         buf = ctx->buf;
         buf_size = ctx->buf_size;
+        appended = 1;
     }
 
     is_menu = decode_dvd_subtitles(ctx, sub, buf, buf_size);
     if (is_menu == AVERROR(EAGAIN)) {
         *data_size = 0;
-        return append_to_cached_buf(avctx, buf, buf_size);
+        return appended ? 0 : append_to_cached_buf(avctx, buf, buf_size);
     }
 
     if (is_menu < 0) {
