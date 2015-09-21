@@ -939,7 +939,7 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
         total_read += pkt_size;
 
         /* the current chunk doesn't match the stream index (unlikely) */
-        if ((startcode & 0x1f) != idx_pkt.stream_index)
+        if ((startcode & 0x1f) != s->streams[idx_pkt.stream_index]->id)
             break;
 
         ret = av_grow_packet(pkt, to_read);
