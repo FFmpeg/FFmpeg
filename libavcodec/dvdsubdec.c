@@ -227,6 +227,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
     int date;
     int i;
     int is_menu = 0;
+    uint32_t size;
 
     if (buf_size < 10)
         return -1;
@@ -241,10 +242,16 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
         cmd_pos = 2;
     }
 
+    size = READ_OFFSET(buf + (big_offsets ? 2 : 0));
     cmd_pos = READ_OFFSET(buf + cmd_pos);
 
-    if (cmd_pos < 0 || cmd_pos > buf_size - 2 - offset_size)
+    if (cmd_pos < 0 || cmd_pos > buf_size - 2 - offset_size) {
+        if (cmd_pos > size) {
+            av_log(ctx, AV_LOG_ERROR, "Discarding invalid packet\n");
+            return 0;
+        }
         return AVERROR(EAGAIN);
+    }
 
     while (cmd_pos > 0 && cmd_pos < buf_size - 2 - offset_size) {
         date = AV_RB16(buf + cmd_pos);
