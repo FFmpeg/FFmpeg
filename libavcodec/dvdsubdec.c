@@ -290,7 +290,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 alpha[1] = buf[pos + 1] >> 4;
                 alpha[0] = buf[pos + 1] & 0x0f;
                 pos += 2;
-            ff_dlog(NULL, "alpha=%x%x%x%x\n", alpha[0],alpha[1],alpha[2],alpha[3]);
+                ff_dlog(NULL, "alpha=%x%x%x%x\n", alpha[0],alpha[1],alpha[2],alpha[3]);
                 break;
             case 0x05:
             case 0x85:
