@@ -984,8 +984,8 @@ following image formats are supported:
 @item Musepack SV8           @tab     @tab  X
 @item Nellymoser Asao        @tab  X  @tab  X
 @item On2 AVC (Audio for Video Codec) @tab     @tab  X
-@item Opus                   @tab  E  @tab  E
-    @tab supported through external library libopus
+@item Opus                   @tab  E  @tab  X
+    @tab encoding supported through external library libopus
 @item PCM A-law              @tab  X  @tab  X
 @item PCM mu-law             @tab  X  @tab  X
 @item PCM signed 8-bit planar  @tab  X  @tab  X
