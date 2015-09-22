@@ -321,6 +321,7 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
     ThreadFrame tframe;
     GetByteContext *gbc = &ctx->gbc;
     int (*decompress_tex)(AVCodecContext *avctx);
+    const char *msgcomp, *msgtext;
     uint32_t tag;
     int version_major, version_minor = 0;
     int size = 0, old_type = 0;
@@ -335,14 +336,16 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
         ctx->tex_funct = ctx->texdsp.dxt1_block;
         ctx->tex_rat   = 8;
         ctx->tex_step  = 8;
-        av_log(avctx, AV_LOG_DEBUG, "DXTR1 compression and DXT1 texture ");
+        msgcomp = "DXTR1";
+        msgtext = "DXT1";
         break;
     case MKBETAG('D', 'X', 'T', '5'):
         decompress_tex = dxv_decompress_dxt5;
         ctx->tex_funct = ctx->texdsp.dxt5_block;
         ctx->tex_rat   = 4;
         ctx->tex_step  = 16;
-        av_log(avctx, AV_LOG_DEBUG, "DXTR5 compression and DXT5 texture ");
+        msgcomp = "DXTR5";
+        msgtext = "DXT5";
         break;
     case MKBETAG('Y', 'C', 'G', '6'):
     case MKBETAG('Y', 'G', '1', '0'):
@@ -353,13 +356,16 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
         size = tag & 0x00FFFFFF;
         old_type = tag >> 24;
         version_major = (old_type & 0x0F) - 1;
+        msgcomp = "LZF";
 
         if (old_type & 0x40) {
-            av_log(avctx, AV_LOG_DEBUG, "LZF compression and DXT5 texture ");
+            msgtext = "DXT5";
+
             ctx->tex_funct = ctx->texdsp.dxt5_block;
             ctx->tex_step  = 16;
         } else if (old_type & 0x20 || version_major == 1) {
-            av_log(avctx, AV_LOG_DEBUG, "LZF compression and DXT1 texture ");
+            msgtext = "DXT1";
+
             ctx->tex_funct = ctx->texdsp.dxt1_block;
             ctx->tex_step  = 8;
         } else {
@@ -379,7 +385,9 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
         bytestream2_skip(gbc, 2); // unknown
         size = bytestream2_get_le32(gbc);
     }
-    av_log(avctx, AV_LOG_DEBUG, "(version %d.%d)\n", version_major, version_minor);
+    av_log(avctx, AV_LOG_DEBUG,
+           "%s compression with %s texture (version %d.%d)\n",
+           msgcomp, msgtext, version_major, version_minor);
 
     if (size != bytestream2_get_bytes_left(gbc)) {
         av_log(avctx, AV_LOG_ERROR, "Incomplete or invalid file (%u > %u)\n.",
