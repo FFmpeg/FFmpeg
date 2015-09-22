@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
                     b = buf[1][j];
                 }
                 sse += (a - b) * (a - b);
-                dist = abs(a - b);
+                dist = llabs(a - b);
                 if (dist > maxdist)
                     maxdist = dist;
                 break;
