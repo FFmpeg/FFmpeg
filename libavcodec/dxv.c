@@ -314,6 +314,15 @@ static int dxv_decompress_lzf(AVCodecContext *avctx)
     return ff_lzf_uncompress(&ctx->gbc, &ctx->tex_data, &ctx->tex_size);
 }
 
+static int dxv_decompress_raw(AVCodecContext *avctx)
+{
+    DXVContext *ctx = avctx->priv_data;
+    GetByteContext *gbc = &ctx->gbc;
+
+    bytestream2_get_buffer(gbc, ctx->tex_data, ctx->tex_size);
+    return 0;
+}
+
 static int dxv_decode(AVCodecContext *avctx, void *data,
                       int *got_frame, AVPacket *avpkt)
 {
@@ -356,7 +365,14 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
         size = tag & 0x00FFFFFF;
         old_type = tag >> 24;
         version_major = (old_type & 0x0F) - 1;
-        msgcomp = "LZF";
+
+        if (old_type & 0x80) {
+            msgcomp = "RAW";
+            decompress_tex = dxv_decompress_raw;
+        } else {
+            msgcomp = "LZF";
+            decompress_tex = dxv_decompress_lzf;
+        }
 
         if (old_type & 0x40) {
             msgtext = "DXT5";
@@ -372,7 +388,6 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Unsupported header (0x%08X)\n.", tag);
             return AVERROR_INVALIDDATA;
         }
-        decompress_tex = dxv_decompress_lzf;
         ctx->tex_rat = 1;
         break;
     }
@@ -382,7 +397,14 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
         version_major = bytestream2_get_byte(gbc) - 1;
         version_minor = bytestream2_get_byte(gbc);
 
-        bytestream2_skip(gbc, 2); // unknown
+        /* Encoder copies texture data when compression is not advantageous. */
+        if (bytestream2_get_byte(gbc)) {
+            msgcomp = "RAW";
+            ctx->tex_rat = 1;
+            decompress_tex = dxv_decompress_raw;
+        }
+
+        bytestream2_skip(gbc, 1); // unknown
         size = bytestream2_get_le32(gbc);
     }
     av_log(avctx, AV_LOG_DEBUG,
