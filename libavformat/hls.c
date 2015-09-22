@@ -1043,7 +1043,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
     /* Seek to the requested position. If this was a HTTP request, the offset
      * should already be where want it to, but this allows e.g. local testing
      * without a HTTP server. */
-    if (ret == 0 && seg->key_type == KEY_NONE) {
+    if (ret == 0 && seg->key_type == KEY_NONE && seg->url_offset) {
         int seekret = ffurl_seek(pls->input, seg->url_offset, SEEK_SET);
         if (seekret < 0) {
             av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
