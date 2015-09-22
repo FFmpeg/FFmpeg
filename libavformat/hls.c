@@ -996,8 +996,6 @@ static int open_input(HLSContext *c, struct playlist *pls)
 
     if (seg->key_type == KEY_NONE) {
         ret = open_url(pls->parent->priv_data, &pls->input, seg->url, opts);
-        update_options(&c->cookies, "cookies", pls->input->priv_data);
-        av_dict_set(&opts, "cookies", c->cookies, 0);
     } else if (seg->key_type == KEY_AES_128) {
 //         HLSContext *c = var->parent->priv_data;
         char iv[33], key[33], url[MAX_URL_SIZE];
@@ -1044,16 +1042,21 @@ static int open_input(HLSContext *c, struct playlist *pls)
     else
       ret = AVERROR(ENOSYS);
 
-    /* Seek to the requested position. If this was a HTTP request, the offset
-     * should already be where want it to, but this allows e.g. local testing
-     * without a HTTP server. */
-    if (ret == 0 && seg->key_type == KEY_NONE) {
-        int seekret = ffurl_seek(pls->input, seg->url_offset, SEEK_SET);
-        if (seekret < 0) {
-            av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
-            ret = seekret;
-            ffurl_close(pls->input);
-            pls->input = NULL;
+    if(ret == 0) {
+        // update cookies on http response with setcookies.
+        update_options(&c->cookies, "cookies", pls->input->priv_data);
+        av_dict_set(&opts, "cookies", c->cookies, 0);
+        /* Seek to the requested position. If this was a HTTP request, the offset
+         * should already be where want it to, but this allows e.g. local testing
+         * without a HTTP server. */
+        if (seg->key_type == KEY_NONE) {
+            int seekret = ffurl_seek(pls->input, seg->url_offset, SEEK_SET);
+            if (seekret < 0) {
+                av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
+                ret = seekret;
+                ffurl_close(pls->input);
+                pls->input = NULL;
+            }
         }
     }
 
