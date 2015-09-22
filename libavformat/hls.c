@@ -535,7 +535,11 @@ static int open_url(HLSContext *c, URLContext **uc, const char *url, AVDictionar
     av_dict_copy(&tmp, c->avio_opts, 0);
     av_dict_copy(&tmp, opts, 0);
 
-    ret = ffurl_open(uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
+    if(ret = ffurl_open(uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp) == 0) {
+        // update cookies on http response with setcookies.
+        update_options(&c->cookies, "cookies", uc->priv_data);
+        av_dict_set(&opts, "cookies", c->cookies, 0);
+    }
 
     av_dict_free(&tmp);
 
@@ -971,7 +975,6 @@ static void update_options(char **dest, const char *name, void *src)
 static int open_input(HLSContext *c, struct playlist *pls)
 {
     AVDictionary *opts = NULL;
-    AVDictionary *opts2 = NULL;
     int ret;
     struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
 
@@ -980,9 +983,6 @@ static int open_input(HLSContext *c, struct playlist *pls)
     av_dict_set(&opts, "cookies", c->cookies, 0);
     av_dict_set(&opts, "headers", c->headers, 0);
     av_dict_set(&opts, "seekable", "0", 0);
-
-    // Same opts for key request (ffurl_open mutilates the opts so it cannot be used twice)
-    av_dict_copy(&opts2, opts, 0);
 
     if (seg->size >= 0) {
         /* try to restrict the HTTP request to the part we want
@@ -1001,14 +1001,12 @@ static int open_input(HLSContext *c, struct playlist *pls)
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             URLContext *uc;
-            if (open_url(pls->parent->priv_data, &uc, seg->key, opts2) == 0) {
+            if (open_url(pls->parent->priv_data, &uc, seg->key, opts) == 0) {
                 if (ffurl_read_complete(uc, pls->key, sizeof(pls->key))
                     != sizeof(pls->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
                            seg->key);
                 }
-                update_options(&c->cookies, "cookies", uc->priv_data);
-                av_dict_set(&opts, "cookies", c->cookies, 0);
                 ffurl_close(uc);
             } else {
                 av_log(NULL, AV_LOG_ERROR, "Unable to open key file %s\n",
@@ -1040,29 +1038,24 @@ static int open_input(HLSContext *c, struct playlist *pls)
         ret = AVERROR_PATCHWELCOME;
     }
     else
-      ret = AVERROR(ENOSYS);
+        
+        ret = AVERROR(ENOSYS);
 
-    if(ret == 0) {
-        // update cookies on http response with setcookies.
-        update_options(&c->cookies, "cookies", pls->input->priv_data);
-        av_dict_set(&opts, "cookies", c->cookies, 0);
-        /* Seek to the requested position. If this was a HTTP request, the offset
-         * should already be where want it to, but this allows e.g. local testing
-         * without a HTTP server. */
-        if (seg->key_type == KEY_NONE) {
-            int seekret = ffurl_seek(pls->input, seg->url_offset, SEEK_SET);
-            if (seekret < 0) {
-                av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
-                ret = seekret;
-                ffurl_close(pls->input);
-                pls->input = NULL;
-            }
+    /* Seek to the requested position. If this was a HTTP request, the offset
+     * should already be where want it to, but this allows e.g. local testing
+     * without a HTTP server. */
+    if (ret == 0 && seg->key_type == KEY_NONE) {
+        int seekret = ffurl_seek(pls->input, seg->url_offset, SEEK_SET);
+        if (seekret < 0) {
+            av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
+            ret = seekret;
+            ffurl_close(pls->input);
+            pls->input = NULL;
         }
     }
 
 cleanup:
     av_dict_free(&opts);
-    av_dict_free(&opts2);
     pls->cur_seg_offset = 0;
     return ret;
 }
