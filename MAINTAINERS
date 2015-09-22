@@ -365,7 +365,7 @@ Filters:
   vf_colorlevels.c                      Paul B Mahol
   vf_deband.c                           Paul B Mahol
   vf_dejudder.c                         Nicholas Robbins
-  vf_delogo.c                           Jean Delvare (CC <khali@linux-fr.org>)
+  vf_delogo.c                           Jean Delvare (CC <jdelvare@suse.com>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
   vf_extractplanes.c                    Paul B Mahol
   vf_histogram.c                        Paul B Mahol
