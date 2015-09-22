@@ -406,7 +406,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             }
         }
         if (next_cmd_pos < cmd_pos) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid command offset\n");
+            av_log(ctx, AV_LOG_ERROR, "Invalid command offset\n");
             break;
         }
         if (next_cmd_pos == cmd_pos)
