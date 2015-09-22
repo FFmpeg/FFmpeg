@@ -137,8 +137,8 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
 static void qsv_decode_flush(AVCodecContext *avctx)
 {
-//    QSVH2645Context *s = avctx->priv_data;
-    /* TODO: flush qsv engine if necessary */
+    QSVH2645Context *s = avctx->priv_data;
+    ff_qsv_decode_reset(avctx, &s->qsv);
 }
 
 #define OFFSET(x) offsetof(QSVH2645Context, x)

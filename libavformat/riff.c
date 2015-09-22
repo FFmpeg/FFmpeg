@@ -149,6 +149,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_DVVIDEO,      MKTAG('p', 'd', 'v', 'c') },
     { AV_CODEC_ID_DVVIDEO,      MKTAG('S', 'L', '2', '5') },
     { AV_CODEC_ID_DVVIDEO,      MKTAG('S', 'L', 'D', 'V') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('A', 'V', 'd', '1') },
     { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('m', 'p', 'g', '1') },
     { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('m', 'p', 'g', '2') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('m', 'p', 'g', '2') },
@@ -323,6 +324,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'C') },
     { AV_CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'K') },
     { AV_CODEC_ID_JPEG2000,     MKTAG('I', 'P', 'J', '2') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('A', 'V', 'j', '2') }, /* Avid jpeg2000 */
     { AV_CODEC_ID_VMNC,         MKTAG('V', 'M', 'n', 'c') },
     { AV_CODEC_ID_TARGA,        MKTAG('t', 'g', 'a', ' ') },
     { AV_CODEC_ID_PNG,          MKTAG('M', 'P', 'N', 'G') },
@@ -371,6 +373,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_HQX,          MKTAG('C', 'H', 'Q', 'X') },
     { AV_CODEC_ID_TDSC,         MKTAG('T', 'D', 'S', 'C') },
     { AV_CODEC_ID_HQ_HQA,       MKTAG('C', 'U', 'V', 'C') },
+    { AV_CODEC_ID_RV40,         MKTAG('R', 'V', '4', '0') },
     { AV_CODEC_ID_NONE,         0 }
 };
 

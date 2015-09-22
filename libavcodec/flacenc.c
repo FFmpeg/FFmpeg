@@ -1346,7 +1346,13 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         av_md5_final(s->md5ctx, s->md5sum);
         write_streaminfo(s, avctx->extradata);
 
+#if FF_API_SIDEDATA_ONLY_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
         if (avctx->side_data_only_packets && !s->flushed) {
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+        if (!s->flushed) {
+#endif
             uint8_t *side_data = av_packet_new_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
                                                          avctx->extradata_size);
             if (!side_data)

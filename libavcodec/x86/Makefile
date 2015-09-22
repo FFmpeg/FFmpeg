@@ -62,7 +62,10 @@ OBJS-$(CONFIG_V210_ENCODER)            += x86/v210enc_init.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
-OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
+OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o            \
+                                          x86/vp9dsp_init_10bpp.o      \
+                                          x86/vp9dsp_init_12bpp.o      \
+                                          x86/vp9dsp_init_16bpp.o
 OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 
 
@@ -76,10 +79,6 @@ MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/simple_idct.o
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
-
-
-# YASM optimizations
-YASM-OBJS                              += x86/deinterlace.o             \
 
 # subsystems
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
@@ -160,5 +159,6 @@ YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
 YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9intrapred.o            \
                                           x86/vp9itxfm.o                \
                                           x86/vp9lpf.o                  \
-                                          x86/vp9mc.o
+                                          x86/vp9mc.o                   \
+                                          x86/vp9mc_16bpp.o
 YASM-OBJS-$(CONFIG_WEBP_DECODER)       += x86/vp8dsp.o

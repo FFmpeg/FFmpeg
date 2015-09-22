@@ -39,7 +39,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
     s->big_endian         = !!(desc->flags & AV_PIX_FMT_FLAG_BE);
-    s->bits_per_component = desc->comp[0].depth_minus1 + 1;
+    s->bits_per_component = desc->comp[0].depth;
     s->num_components     = desc->nb_components;
     s->descriptor         = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? 51 : 50;
     s->planar             = !!(desc->flags & AV_PIX_FMT_FLAG_PLANAR);

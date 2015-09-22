@@ -858,6 +858,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     SonicContext *s = avctx->priv_data;
     GetBitContext gb;
     int i;
+    int ret;
 
     s->channels = avctx->channels;
     s->samplerate = avctx->sample_rate;
@@ -868,7 +869,9 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    init_get_bits8(&gb, avctx->extradata, avctx->extradata_size);
+    ret = init_get_bits8(&gb, avctx->extradata, avctx->extradata_size);
+    if (ret < 0)
+        return ret;
 
     s->version = get_bits(&gb, 2);
     if (s->version >= 2) {

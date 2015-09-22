@@ -121,6 +121,9 @@ static void mov_text_cleanup(MovTextContext *m)
 static void mov_text_cleanup_ftab(MovTextContext *m)
 {
     int i;
+    if (m->ftab_temp)
+        av_freep(&m->ftab_temp->font);
+    av_freep(&m->ftab_temp);
     if (m->ftab) {
         for(i = 0; i < m->count_f; i++) {
             av_freep(&m->ftab[i]->font);
@@ -132,7 +135,7 @@ static void mov_text_cleanup_ftab(MovTextContext *m)
 
 static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
 {
-    char *tx3g_ptr = avctx->extradata;
+    uint8_t *tx3g_ptr = avctx->extradata;
     int i, box_size, font_length;
     int8_t v_align, h_align;
     int style_fontID;
@@ -210,7 +213,7 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
             m->ftab_entries = 0;
             return -1;
         }
-        m->ftab_temp = av_malloc(sizeof(*m->ftab_temp));
+        m->ftab_temp = av_mallocz(sizeof(*m->ftab_temp));
         if (!m->ftab_temp) {
             mov_text_cleanup_ftab(m);
             return AVERROR(ENOMEM);
@@ -237,6 +240,7 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
             mov_text_cleanup_ftab(m);
             return AVERROR(ENOMEM);
         }
+        m->ftab_temp = NULL;
         tx3g_ptr = tx3g_ptr + font_length;
     }
     for (i = 0; i < m->ftab_entries; i++) {

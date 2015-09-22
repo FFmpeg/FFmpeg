@@ -347,9 +347,7 @@ int ff_request_frame(AVFilterLink *link)
 
     if (link->closed)
         return AVERROR_EOF;
-    av_assert0(!link->frame_requested);
-    link->frame_requested = 1;
-    while (link->frame_requested) {
+    // TODO reindent
         if (link->srcpad->request_frame)
             ret = link->srcpad->request_frame(link);
         else if (link->src->inputs[0])
@@ -360,14 +358,9 @@ int ff_request_frame(AVFilterLink *link)
             ret = ff_filter_frame_framed(link, pbuf);
         }
         if (ret < 0) {
-            link->frame_requested = 0;
             if (ret == AVERROR_EOF)
                 link->closed = 1;
-        } else {
-            av_assert0(!link->frame_requested ||
-                       link->flags & FF_LINK_FLAG_REQUEST_LOOP);
         }
-    }
     return ret;
 }
 
@@ -501,18 +494,9 @@ AVFilter *avfilter_get_by_name(const char *name)
 int avfilter_register(AVFilter *filter)
 {
     AVFilter **f = last_filter;
-    int i;
 
     /* the filter must select generic or internal exclusively */
     av_assert0((filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE) != AVFILTER_FLAG_SUPPORT_TIMELINE);
-
-    for(i=0; filter->inputs && filter->inputs[i].name; i++) {
-        const AVFilterPad *input = &filter->inputs[i];
-#if FF_API_AVFILTERPAD_PUBLIC
-        av_assert0(     !input->filter_frame
-                    || (!input->start_frame && !input->end_frame));
-#endif
-    }
 
     filter->next = NULL;
 
@@ -671,12 +655,6 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         if (!ret->outputs)
             goto err;
     }
-#if FF_API_FOO_COUNT
-FF_DISABLE_DEPRECATION_WARNINGS
-    ret->output_count = ret->nb_outputs;
-    ret->input_count  = ret->nb_inputs;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     return ret;
 
@@ -1103,7 +1081,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     }
     ret = filter_frame(link, out);
     link->frame_count++;
-    link->frame_requested = 0;
     ff_update_link_current_pts(link, pts);
     return ret;
 
@@ -1120,7 +1097,6 @@ static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
     int nb_channels = av_frame_get_channels(frame);
     int ret = 0;
 
-    link->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     /* Handle framing (min_samples, max_samples) */
     while (insamples) {
         if (!pbuf) {
@@ -1161,8 +1137,11 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 
     /* Consistency checks */
     if (link->type == AVMEDIA_TYPE_VIDEO) {
-        if (strcmp(link->dst->filter->name, "scale") &&
-            strcmp(link->dst->filter->name, "idet")) {
+        if (strcmp(link->dst->filter->name, "buffersink") &&
+            strcmp(link->dst->filter->name, "format") &&
+            strcmp(link->dst->filter->name, "idet") &&
+            strcmp(link->dst->filter->name, "null") &&
+            strcmp(link->dst->filter->name, "scale")) {
             av_assert1(frame->format                 == link->format);
             av_assert1(frame->width               == link->w);
             av_assert1(frame->height               == link->h);

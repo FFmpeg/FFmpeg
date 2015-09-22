@@ -105,15 +105,15 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
 static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 {
     AVFilterLink *inlink = ctx->inputs[0];
-    UnsharpContext *unsharp = ctx->priv;
+    UnsharpContext *s = ctx->priv;
     int i, plane_w[3], plane_h[3];
     UnsharpFilterParam *fp[3];
     plane_w[0] = inlink->w;
-    plane_w[1] = plane_w[2] = FF_CEIL_RSHIFT(inlink->w, unsharp->hsub);
+    plane_w[1] = plane_w[2] = FF_CEIL_RSHIFT(inlink->w, s->hsub);
     plane_h[0] = inlink->h;
-    plane_h[1] = plane_h[2] = FF_CEIL_RSHIFT(inlink->h, unsharp->vsub);
-    fp[0] = &unsharp->luma;
-    fp[1] = fp[2] = &unsharp->chroma;
+    plane_h[1] = plane_h[2] = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+    fp[0] = &s->luma;
+    fp[1] = fp[2] = &s->chroma;
     for (i = 0; i < 3; i++) {
         apply_unsharp(out->data[i], out->linesize[i], in->data[i], in->linesize[i], plane_w[i], plane_h[i], fp[i]);
     }
@@ -135,19 +135,19 @@ static void set_filter_param(UnsharpFilterParam *fp, int msize_x, int msize_y, f
 static av_cold int init(AVFilterContext *ctx)
 {
     int ret = 0;
-    UnsharpContext *unsharp = ctx->priv;
+    UnsharpContext *s = ctx->priv;
 
 
-    set_filter_param(&unsharp->luma,   unsharp->lmsize_x, unsharp->lmsize_y, unsharp->lamount);
-    set_filter_param(&unsharp->chroma, unsharp->cmsize_x, unsharp->cmsize_y, unsharp->camount);
+    set_filter_param(&s->luma,   s->lmsize_x, s->lmsize_y, s->lamount);
+    set_filter_param(&s->chroma, s->cmsize_x, s->cmsize_y, s->camount);
 
-    unsharp->apply_unsharp = apply_unsharp_c;
-    if (!CONFIG_OPENCL && unsharp->opencl) {
+    s->apply_unsharp = apply_unsharp_c;
+    if (!CONFIG_OPENCL && s->opencl) {
         av_log(ctx, AV_LOG_ERROR, "OpenCL support was not enabled in this build, cannot be selected\n");
         return AVERROR(EINVAL);
     }
-    if (CONFIG_OPENCL && unsharp->opencl) {
-        unsharp->apply_unsharp = ff_opencl_apply_unsharp;
+    if (CONFIG_OPENCL && s->opencl) {
+        s->apply_unsharp = ff_opencl_apply_unsharp;
         ret = ff_opencl_unsharp_init(ctx);
         if (ret < 0)
             return ret;
@@ -194,17 +194,17 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
 
 static int config_props(AVFilterLink *link)
 {
-    UnsharpContext *unsharp = link->dst->priv;
+    UnsharpContext *s = link->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     int ret;
 
-    unsharp->hsub = desc->log2_chroma_w;
-    unsharp->vsub = desc->log2_chroma_h;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
 
-    ret = init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
+    ret = init_filter_param(link->dst, &s->luma,   "luma",   link->w);
     if (ret < 0)
         return ret;
-    ret = init_filter_param(link->dst, &unsharp->chroma, "chroma", FF_CEIL_RSHIFT(link->w, unsharp->hsub));
+    ret = init_filter_param(link->dst, &s->chroma, "chroma", FF_CEIL_RSHIFT(link->w, s->hsub));
     if (ret < 0)
         return ret;
 
@@ -221,19 +221,19 @@ static void free_filter_param(UnsharpFilterParam *fp)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    UnsharpContext *unsharp = ctx->priv;
+    UnsharpContext *s = ctx->priv;
 
-    if (CONFIG_OPENCL && unsharp->opencl) {
+    if (CONFIG_OPENCL && s->opencl) {
         ff_opencl_unsharp_uninit(ctx);
     }
 
-    free_filter_param(&unsharp->luma);
-    free_filter_param(&unsharp->chroma);
+    free_filter_param(&s->luma);
+    free_filter_param(&s->chroma);
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    UnsharpContext *unsharp = link->dst->priv;
+    UnsharpContext *s = link->dst->priv;
     AVFilterLink *outlink   = link->dst->outputs[0];
     AVFrame *out;
     int ret = 0;
@@ -244,13 +244,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
-    if (CONFIG_OPENCL && unsharp->opencl) {
+    if (CONFIG_OPENCL && s->opencl) {
         ret = ff_opencl_unsharp_process_inout_buf(link->dst, in, out);
         if (ret < 0)
             goto end;
     }
 
-    ret = unsharp->apply_unsharp(link->dst, in, out);
+    ret = s->apply_unsharp(link->dst, in, out);
 end:
     av_frame_free(&in);
 
@@ -276,7 +276,7 @@ static const AVOption unsharp_options[] = {
     { "cy",             "set chroma matrix vertical size",   OFFSET(cmsize_y), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
     { "chroma_amount",  "set chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
     { "ca",             "set chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
-    { "opencl",         "use OpenCL filtering capabilities", OFFSET(opencl), AV_OPT_TYPE_INT, { .i64 = 0 },        0,        1, FLAGS },
+    { "opencl",         "use OpenCL filtering capabilities", OFFSET(opencl),   AV_OPT_TYPE_BOOL,  { .i64 = 0 },        0,        1, FLAGS },
     { NULL }
 };
 

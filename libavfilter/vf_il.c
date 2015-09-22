@@ -70,12 +70,12 @@ static const AVOption il_options[] = {
     {"i",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_INTERLEAVE},   0, 0, FLAGS, "alpha_mode"},
     {"deinterleave", NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_DEINTERLEAVE}, 0, 0, FLAGS, "alpha_mode"},
     {"d",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_DEINTERLEAVE}, 0, 0, FLAGS, "alpha_mode"},
-    {"luma_swap",   "swap luma fields",   OFFSET(luma_swap),   AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
-    {"ls",          "swap luma fields",   OFFSET(luma_swap),   AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
-    {"chroma_swap", "swap chroma fields", OFFSET(chroma_swap), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
-    {"cs",          "swap chroma fields", OFFSET(chroma_swap), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
-    {"alpha_swap",  "swap alpha fields",  OFFSET(alpha_swap),  AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
-    {"as",          "swap alpha fields",  OFFSET(alpha_swap),  AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
+    {"luma_swap",   "swap luma fields",   OFFSET(luma_swap),   AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"ls",          "swap luma fields",   OFFSET(luma_swap),   AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"chroma_swap", "swap chroma fields", OFFSET(chroma_swap), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"cs",          "swap chroma fields", OFFSET(chroma_swap), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"alpha_swap",  "swap alpha fields",  OFFSET(alpha_swap),  AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"as",          "swap alpha fields",  OFFSET(alpha_swap),  AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {NULL}
 };
 

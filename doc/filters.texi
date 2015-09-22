@@ -641,6 +641,41 @@ Force the output to either unsigned 8-bit or signed 16-bit stereo
 aformat=sample_fmts=u8|s16:channel_layouts=stereo
 @end example
 
+@section alimiter
+
+The limiter prevents input signal from raising over a desired threshold.
+This limiter uses lookahead technology to prevent your signal from distorting.
+It means that there is a small delay after signal is processed. Keep in mind
+that the delay it produces is the attack time you set.
+
+The filter accepts the following options:
+
+@table @option
+@item limit
+Don't let signals above this level pass the limiter. The removed amplitude is
+added automatically. Default is 1.
+
+@item attack
+The limiter will reach its attenuation level in this amount of time in
+milliseconds. Default is 5 milliseconds.
+
+@item release
+Come back from limiting to attenuation 1.0 in this amount of milliseconds.
+Default is 50 milliseconds.
+
+@item asc
+When gain reduction is always needed ASC takes care of releasing to an
+average reduction level rather than reaching a reduction of 0 in the release
+time.
+
+@item asc_level
+Select how much the release time is affected by ASC, 0 means nearly no changes
+in release time while 1 produces higher release times.
+@end table
+
+Depending on picked setting it is recommended to upsample input 2x or 4x times
+with @ref{aresample} before applying this filter.
+
 @section allpass
 
 Apply a two-pole all-pass filter with central frequency (in Hz)
@@ -1817,6 +1852,23 @@ equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g
 @end example
 @end itemize
 
+@section extrastereo
+
+Linearly increases the difference between left and right channels which
+adds some sort of "live" effect to playback.
+
+The filter accepts the following option:
+
+@table @option
+@item m
+Sets the difference coefficient (default: 2.5). 0.0 means mono sound
+(average of both channels), with 1.0 sound will be unchanged, with
+-1.0 left and right channels will be swapped.
+
+@item c
+Enable clipping. By default is enabled.
+@end table
+
 @section flanger
 Apply a flanging effect to the audio.
 
@@ -1953,6 +2005,9 @@ threshold or gain).
 Controls need to be defined using the following syntax:
 c0=@var{value0}|c1=@var{value1}|c2=@var{value2}|..., where
 @var{valuei} is the value set on the @var{i}-th control.
+Alternatively they can be also defined using the following syntax:
+@var{value0}|@var{value1}|@var{value2}|..., where
+@var{valuei} is the value set on the @var{i}-th control.
 If @option{controls} is set to @code{help}, all available controls and
 their valid ranges are printed.
 
@@ -2023,6 +2078,20 @@ ladspa=file=caps:Click:c=c1=20'
 Apply @code{C* Eq10X2 - Stereo 10-band equaliser} effect:
 @example
 ladspa=caps:Eq10X2:c=c0=-48|c9=-24|c3=12|c4=2
+@end example
+
+@item
+Increase volume by 20dB using fast lookahead limiter from Steve Harris
+@code{SWH Plugins} collection:
+@example
+ladspa=fast_lookahead_limiter_1913:fastLookaheadLimiter:20|0|2
+@end example
+
+@item
+Attenuate low frequencies using Multiband EQ from Steve Harris
+@code{SWH Plugins} collection:
+@example
+ladspa=mbeq_1197:mbeq:-24|-24|-24|0|0|0|0|0|0|0|0|0|0|0|0
 @end example
 @end itemize
 
@@ -2339,6 +2408,130 @@ silenceremove=1:5:0.02
 @end example
 @end itemize
 
+@section stereotools
+
+This filter has some handy utilities to manage stereo signals, for converting
+M/S stereo recordings to L/R signal while having control over the parameters
+or spreading the stereo image of master track.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set input level before filtering for both channels. Defaults is 1.
+Allowed range is from 0.015625 to 64.
+
+@item level_out
+Set output level after filtering for both channels. Defaults is 1.
+Allowed range is from 0.015625 to 64.
+
+@item balance_in
+Set input balance between both channels. Default is 0.
+Allowed range is from -1 to 1.
+
+@item balance_out
+Set output balance between both channels. Default is 0.
+Allowed range is from -1 to 1.
+
+@item softclip
+Enable softclipping. Results in analog distortion instead of harsh digital 0dB
+clipping. Disabled by default.
+
+@item mutel
+Mute the left channel. Disabled by default.
+
+@item muter
+Mute the right channel. Disabled by default.
+
+@item phasel
+Change the phase of the left channel. Disabled by default.
+
+@item phaser
+Change the phase of the right channel. Disabled by default.
+
+@item mode
+Set stereo mode. Available values are:
+
+@table @samp
+@item lr>lr
+Left/Right to Left/Right, this is default.
+
+@item lr>ms
+Left/Right to Mid/Side.
+
+@item ms>lr
+Mid/Side to Left/Right.
+
+@item lr>ll
+Left/Right to Left/Left.
+
+@item lr>rr
+Left/Right to Right/Right.
+
+@item lr>l+r
+Left/Right to Left + Right.
+
+@item lr>rl
+Left/Right to Right/Left.
+@end table
+
+@item slev
+Set level of side signal. Default is 1.
+Allowed range is from 0.015625 to 64.
+
+@item sbal
+Set balance of side signal. Default is 0.
+Allowed range is from -1 to 1.
+
+@item mlev
+Set level of the middle signal. Default is 1.
+Allowed range is from 0.015625 to 64.
+
+@item mpan
+Set middle signal pan. Default is 0. Allowed range is from -1 to 1.
+
+@item base
+Set stereo base between mono and inversed channels. Default is 0.
+Allowed range is from -1 to 1.
+
+@item delay
+Set delay in milliseconds how much to delay left from right channel and
+vice versa. Default is 0. Allowed range is from -20 to 20.
+
+@item sclevel
+Set S/C level. Default is 1. Allowed range is from 1 to 100.
+
+@item phase
+Set the stereo phase in degrees. Default is 0. Allowed range is from 0 to 360.
+@end table
+
+@section stereowiden
+
+This filter enhance the stereo effect by suppressing signal common to both
+channels and by delaying the signal of left into right and vice versa,
+thereby widening the stereo effect.
+
+The filter accepts the following options:
+
+@table @option
+@item delay
+Time in milliseconds of the delay of left signal into right and vice versa.
+Default is 20 milliseconds.
+
+@item feedback
+Amount of gain in delayed signal into right and vice versa. Gives a delay
+effect of left signal in right output and vice versa which gives widening
+effect. Default is 0.3.
+
+@item crossfeed
+Cross feed of left into right with inverted phase. This helps in suppressing
+the mono. If the value is 1 it will cancel all the signal common to both
+channels. Default is 0.3.
+
+@item drymix
+Set level of input signal of original channel. Default is 0.8.
+@end table
+
 @section treble
 
 Boost or cut treble (upper) frequencies of the audio using a two-pole
@@ -2373,6 +2566,25 @@ slope
 
 @item width, w
 Determine how steep is the filter's shelf transition.
+@end table
+
+@section tremolo
+
+Sinusoidal amplitude modulation.
+
+The filter accepts the following options:
+
+@table @option
+@item f
+Modulation frequency in Hertz. Modulation frequencies in the subharmonic range
+(20 Hz or lower) will result in a tremolo effect.
+This filter may also be used as a ring modulator by specifying
+a modulation frequency higher than 20 Hz.
+Range is 0.1 - 20000.0. Default value is 5.0 Hz.
+
+@item d
+Depth of modulation as a percentage. Range is 0.0 - 1.0.
+Default value is 0.5.
 @end table
 
 @section volume
@@ -2857,7 +3069,26 @@ Specify the sample rate, default is 44100.
 Specify the duration of the generated audio stream.
 
 @item samples_per_frame
-Set the number of samples per output frame, default is 1024.
+Set the number of samples per output frame.
+
+The expression can contain the following constants:
+
+@table @option
+@item n
+The (sequential) number of the output audio frame, starting from 0.
+
+@item pts
+The PTS (Presentation TimeStamp) of the output audio frame,
+expressed in @var{TB} units.
+
+@item t
+The PTS of the output audio frame, expressed in seconds.
+
+@item TB
+The timebase of the output audio frames.
+@end table
+
+Default is @code{1024}.
 @end table
 
 @subsection Examples
@@ -2878,6 +3109,12 @@ sine=f=220:b=4:d=5
 sine=frequency=220:beep_factor=4:duration=5
 @end example
 
+@item
+Generate a 1 kHz sine wave following @code{1602,1601,1602,1601,1602} NTSC
+pattern:
+@example
+sine=1000:samples_per_frame='st(0,mod(n,5)); 1602-not(not(eq(ld(0),1)+eq(ld(0),3)))'
+@end example
 @end itemize
 
 @c man end AUDIO SOURCES
@@ -3911,7 +4148,7 @@ Can be used in addition to the other key points component
 options. In this case, the unset component(s) will fallback on this
 @option{all} setting.
 @item psfile
-Specify a Photoshop curves file (@code{.asv}) to import the settings from.
+Specify a Photoshop curves file (@code{.acv}) to import the settings from.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
@@ -3956,7 +4193,7 @@ curves=vintage
 @item
 Use a Photoshop preset and redefine the points of the green component:
 @example
-curves=psfile='MyCurvesPresets/purple.asv':green='0.45/0.53'
+curves=psfile='MyCurvesPresets/purple.acv':green='0.45/0.53'
 @end example
 @end itemize
 
@@ -4496,6 +4733,9 @@ Replace old columns with new ones.
 
 @item scroll
 Scroll from right to left.
+
+@item rscroll
+Scroll from left to right.
 @end table
 
 Default is @code{frame}.
@@ -5088,7 +5328,7 @@ The filter accepts the following options:
 @table @option
 @item contrast
 Set the contrast expression. The value must be a float value in range
-@code{-2.0} to @code{2.0}. The default value is "0".
+@code{-2.0} to @code{2.0}. The default value is "1".
 
 @item brightness
 Set the brightness expression. The value must be a float value in
@@ -5279,6 +5519,10 @@ computation time. Default value is 1.
 Set a random seed, must be an integer included between 0 and
 UINT32_MAX. If not specified, or if explicitly set to -1, the filter
 will try to use a good random seed on a best effort basis.
+
+@item pal8
+Set pal8 output pixel format. This option does not work with codebook
+length greater than 256.
 @end table
 
 @section fade
@@ -5476,8 +5720,9 @@ which @code{fieldmatch} is based on. While the semantic and usage are very
 close, some behaviour and options names can differ.
 
 The @ref{decimate} filter currently only works for constant frame rate input.
-Do not use @code{fieldmatch} and @ref{decimate} if your input has mixed
-telecined and progressive content with changing framerate.
+If your input has mixed telecined (30fps) and progressive content with a lower
+framerate like 24fps use the following filterchain to produce the necessary cfr
+stream: @code{dejudder,fps=30000/1001,fieldmatch,decimate}.
 
 The filter accepts the following options:
 
@@ -7434,6 +7679,30 @@ noise=alls=20:allf=t+u
 @section null
 
 Pass the video source unchanged to the output.
+
+@section ocr
+Optical Character Recognition
+
+This filter uses Tesseract for optical character recognition.
+
+It accepts the following options:
+
+@table @option
+@item datapath
+Set datapath to tesseract data. Default is to use whatever was
+set at installation.
+
+@item language
+Set language, default is "eng".
+
+@item whitelist
+Set character whitelist.
+
+@item blacklist
+Set character blacklist.
+@end table
+
+The filter exports recognized text as the frame metadata @code{lavfi.ocr.text}.
 
 @section ocv
 
@@ -9783,6 +10052,12 @@ alternating frames (left eye first, right eye second)
 @item ar
 alternating frames (right eye first, left eye second)
 
+@item irl
+interleaved rows (left eye has top row, right eye starts on next row)
+
+@item irr
+interleaved rows (right eye has top row, left eye starts on next row)
+
 Default value is @samp{sbsl}.
 @end table
 
@@ -9847,17 +10122,23 @@ anaglyph yellow/blue colored
 anaglyph yellow/blue color optimized with the least squares projection of dubois
 (yellow filter on left eye, blue filter on right eye)
 
-@item irl
-interleaved rows (left eye has top row, right eye starts on next row)
-
-@item irr
-interleaved rows (right eye has top row, left eye starts on next row)
-
 @item ml
 mono output (left eye only)
 
 @item mr
 mono output (right eye only)
+
+@item chl
+checkerboard, left eye first
+
+@item chr
+checkerboard, right eye first
+
+@item icl
+interleaved columns, left eye first
+
+@item icr
+interleaved columns, right eye first
 @end table
 
 Default value is @samp{arcd}.
@@ -9938,6 +10219,10 @@ was composed. For the syntax of this option, check the
 @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 Due to a misdesign in ASS aspect ratio arithmetic, this is necessary to
 correctly scale the fonts if the aspect ratio has been changed.
+
+@item fontsdir
+Set a directory path containing fonts that can be used by the filter.
+These fonts will be used in addition to whatever the font provider uses.
 
 @item charenc
 Set subtitles input character encoding. @code{subtitles} filter only. Only
@@ -10566,7 +10851,7 @@ a vectorscope).
 This filter accepts the following options:
 
 @table @option
-@item mode
+@item mode, m
 Set vectorscope mode.
 
 It accepts the following values:
@@ -10587,6 +10872,11 @@ Actual color components values present in video frame are displayed on graph.
 Similar as color2 but higher frequency of same values @code{x} and @code{y}
 on graph increases value of another color component, which is luminance by
 default values of @code{x} and @code{y}.
+
+@item color4
+Actual colors present in video frame are displayed on graph. If two different
+colors map to same position on graph then color with higher value of component
+not present in graph is picked.
 @end table
 
 @item x
@@ -10595,9 +10885,25 @@ Set which color component will be represented on X-axis. Default is @code{1}.
 @item y
 Set which color component will be represented on Y-axis. Default is @code{2}.
 
-@item intensity
+@item intensity, i
 Set intensity, used by modes: gray, color and color3 for increasing brightness
 of color component which represents frequency of (X, Y) location in graph.
+
+@item envelope, e
+@table @samp
+@item none
+No envelope, this is default.
+
+@item instant
+Instant envelope, even darkest single pixel will be clearly highlighted.
+
+@item peak
+Hold maximum and minimum values presented in graph over time. This way you
+can still spot out of range values without constantly looking at vectorscope.
+
+@item peak+instant
+Peak and instant envelope combined together.
+@end table
 @end table
 
 @anchor{vidstabdetect}
@@ -11026,7 +11332,7 @@ color component value = 0 and bottom side represents value = 255.
 @item intensity, i
 Set intensity. Smaller values are useful to find out how many values of the same
 luminance are distributed across input rows/columns.
-Default value is @code{10}. Allowed range is [1, 255].
+Default value is @code{0.04}. Allowed range is [0, 1].
 
 @item mirror, r
 Set mirroring mode. @code{0} means unmirrored, @code{1} means mirrored.
@@ -11080,6 +11386,27 @@ can still spot out of range values without constantly looking at waveforms.
 
 @item peak+instant
 Peak and instant envelope combined together.
+@end table
+
+@item filter, f
+@table @samp
+@item lowpass
+No filtering, this is default.
+
+@item flat
+Luma and chroma combined together.
+
+@item aflat
+Similar as above, but shows difference between blue and red chroma.
+
+@item chroma
+Displays only chroma.
+
+@item achroma
+Similar as above, but shows difference between blue and red chroma.
+
+@item color
+Displays actual color value on waveform.
 @end table
 @end table
 
@@ -11722,6 +12049,7 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @end example
 @end itemize
 
+@anchor{allrgb}
 @anchor{allyuv}
 @anchor{color}
 @anchor{haldclutsrc}
@@ -11730,7 +12058,9 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{smptebars}
 @anchor{smptehdbars}
 @anchor{testsrc}
-@section allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+@section allrgb, allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+
+The @code{allrgb} source returns frames of size 4096x4096 of all rgb colors.
 
 The @code{allyuv} source returns frames of size 4096x4096 of all yuv colors.
 
@@ -12996,6 +13326,8 @@ It accepts the following values:
 @item bhann
 @item sine
 @item nuttall
+@item lanczos
+@item gauss
 @end table
 Default is @code{hanning}.
 
@@ -13007,7 +13339,7 @@ which means optimal overlap for selected window function will be picked.
 Set time averaging. Setting this to 0 will display current maximal peaks.
 Default is @code{1}, which means time averaging is disabled.
 
-@item color
+@item colors
 Specify list of colors separated by space or by '|' which will be used to
 draw channel frequencies. Unrecognized or missing colors will be replaced
 by white color.

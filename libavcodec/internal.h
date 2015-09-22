@@ -46,12 +46,18 @@
  * all.
  */
 #define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
-
+/**
+ * Decoders marked with FF_CODEC_CAP_SETS_PKT_DTS want to set
+ * AVFrame.pkt_dts manually. If the flag is set, utils.c won't overwrite
+ * this field. If it's unset, utils.c tries to guess the pkt_dts field
+ * from the input AVPacket.
+ */
+#define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
 #else
-#   define ff_tlog(ctx, ...) while(0)
+#   define ff_tlog(ctx, ...) do {} while(0)
 #endif
 
 
@@ -113,14 +119,6 @@ typedef struct AVCodecInternal {
      * ff_thread_release_buffer().
      */
     int allocate_progress;
-
-#if FF_API_OLD_ENCODE_AUDIO
-    /**
-     * Internal sample count used by avcodec_encode_audio() to fabricate pts.
-     * Can be removed along with avcodec_encode_audio().
-     */
-    int64_t sample_count;
-#endif
 
     /**
      * An audio frame with less than required samples has been submitted and

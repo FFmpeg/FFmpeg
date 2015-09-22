@@ -58,19 +58,9 @@
 #include "libavutil/opt.h"
 #include "libavutil/timecode.h"
 
-#define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
-
-#define MAX_FCODE 7
-
 #define MAX_THREADS 32
 
 #define MAX_B_FRAMES 16
-
-#define ME_MAP_SIZE 64
-
-#define MAX_MB_BYTES (30*16*16*3/8 + 120)
-
-#define INPLACE_OFFSET 16
 
 /* Start codes. */
 #define SEQ_END_CODE            0x000001b7
@@ -107,7 +97,7 @@ typedef struct MpegEncContext {
     int width, height;///< picture size. must be a multiple of 16
     int gop_size;
     int intra_only;   ///< if true, only intra pictures are generated
-    int bit_rate;     ///< wanted bit rate
+    int64_t bit_rate; ///< wanted bit rate
     enum OutputFormat out_format; ///< output format
     int h263_pred;    ///< use mpeg4/h263 ac/dc predictions
     int pb_frame;     ///< PB frame mode (0 = none, 1 = base, 2 = improved)

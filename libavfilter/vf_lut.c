@@ -213,7 +213,7 @@ static int config_props(AVFilterLink *inlink)
 
     s->var_values[VAR_W] = inlink->w;
     s->var_values[VAR_H] = inlink->h;
-    s->is_16bit = desc->comp[0].depth_minus1 > 7;
+    s->is_16bit = desc->comp[0].depth > 8;
 
     switch (inlink->format) {
     case AV_PIX_FMT_YUV410P:
@@ -251,14 +251,14 @@ static int config_props(AVFilterLink *inlink)
     case AV_PIX_FMT_YUVA420P16LE:
     case AV_PIX_FMT_YUVA422P16LE:
     case AV_PIX_FMT_YUVA444P16LE:
-        min[Y] = 16 * (1 << (desc->comp[0].depth_minus1 - 7));
-        min[U] = 16 * (1 << (desc->comp[1].depth_minus1 - 7));
-        min[V] = 16 * (1 << (desc->comp[2].depth_minus1 - 7));
+        min[Y] = 16 * (1 << (desc->comp[0].depth - 8));
+        min[U] = 16 * (1 << (desc->comp[1].depth - 8));
+        min[V] = 16 * (1 << (desc->comp[2].depth - 8));
         min[A] = 0;
-        max[Y] = 235 * (1 << (desc->comp[0].depth_minus1 - 7));
-        max[U] = 240 * (1 << (desc->comp[1].depth_minus1 - 7));
-        max[V] = 240 * (1 << (desc->comp[2].depth_minus1 - 7));
-        max[A] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
+        max[Y] = 235 * (1 << (desc->comp[0].depth - 8));
+        max[U] = 240 * (1 << (desc->comp[1].depth - 8));
+        max[V] = 240 * (1 << (desc->comp[2].depth - 8));
+        max[A] = (1 << desc->comp[3].depth) - 1;
         break;
     default:
         min[0] = min[1] = min[2] = min[3] = 0;
@@ -294,7 +294,7 @@ static int config_props(AVFilterLink *inlink)
         s->var_values[VAR_MAXVAL] = max[color];
         s->var_values[VAR_MINVAL] = min[color];
 
-        for (val = 0; val < (1 << (desc->comp[0].depth_minus1 + 1)); val++) {
+        for (val = 0; val < (1 << desc->comp[0].depth); val++) {
             s->var_values[VAR_VAL] = val;
             s->var_values[VAR_CLIPVAL] = av_clip(val, min[color], max[color]);
             s->var_values[VAR_NEGVAL] =
@@ -503,7 +503,7 @@ DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input vid
 #if CONFIG_NEGATE_FILTER
 
 static const AVOption negate_options[] = {
-    { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+    { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 

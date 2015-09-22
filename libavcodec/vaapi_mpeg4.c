@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "h263.h"
 #include "mpeg4video.h"
+#include "mpegvideo.h"
 
 /** Reconstruct bitstream intra_dc_vlc_thr */
 static int mpeg4_get_intra_dc_vlc_thr(Mpeg4DecContext *s)

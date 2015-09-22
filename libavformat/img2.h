@@ -62,6 +62,13 @@ typedef struct VideoDemuxData {
     int ts_from_file;
 } VideoDemuxData;
 
+typedef struct IdStrMap {
+    enum AVCodecID id;
+    const char *str;
+} IdStrMap;
+
+extern const IdStrMap ff_img_tags[];
+
 extern const AVOption ff_img_options[];
 
 int ff_img_read_header(AVFormatContext *s1);

@@ -260,6 +260,16 @@ Set timeout in microseconds of socket I/O operations used by the underlying low 
 operation. By default it is set to -1, which means that the timeout is
 not specified.
 
+@item reconnect_at_eof
+If set then eof is treated like an error and causes reconnection, this is useful
+for live / endless streams.
+
+@item reconnect_streamed
+If set then even streamed/non seekable streams will be reconnected on errors.
+
+@item reconnect_delay_max
+Sets the maximum delay in seconds after which to give up reconnecting
+
 @item mime_type
 Export the MIME type.
 

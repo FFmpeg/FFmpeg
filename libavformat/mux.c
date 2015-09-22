@@ -250,10 +250,23 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         (ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
         goto fail;
 
+    if (s->nb_streams && s->streams[0]->codec->flags & AV_CODEC_FLAG_BITEXACT) {
+        if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
 #if FF_API_LAVF_BITEXACT
-    if (s->nb_streams && s->streams[0]->codec->flags & AV_CODEC_FLAG_BITEXACT)
-        s->flags |= AVFMT_FLAG_BITEXACT;
+            av_log(s, AV_LOG_WARNING,
+                   "Setting the AVFormatContext to bitexact mode, because "
+                   "the AVCodecContext is in that mode. This behavior will "
+                   "change in the future. To keep the current behavior, set "
+                   "AVFormatContext.flags |= AVFMT_FLAG_BITEXACT.\n");
+            s->flags |= AVFMT_FLAG_BITEXACT;
+#else
+            av_log(s, AV_LOG_WARNING,
+                   "The AVFormatContext is not in set to bitexact mode, only "
+                   "the AVCodecContext. If this is not intended, set "
+                   "AVFormatContext.flags |= AVFMT_FLAG_BITEXACT.\n");
 #endif
+        }
+    }
 
     // some sanity checks
     if (s->nb_streams == 0 && !(of->flags & AVFMT_NOSTREAMS)) {
@@ -647,8 +660,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         ret = s->oformat->write_packet(s, pkt);
     }
 
-    if (s->flush_packets && s->pb && ret >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
-        avio_flush(s->pb);
+    if (s->pb && ret >= 0) {
+        if (s->flush_packets && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
+            avio_flush(s->pb);
+        if (s->pb->error < 0)
+            ret = s->pb->error;
+    }
+
 
     if (did_split)
         av_packet_merge_side_data(pkt);
@@ -723,11 +741,6 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     if (!this_pktl)
         return AVERROR(ENOMEM);
     this_pktl->pkt = *pkt;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-    pkt->destruct  = NULL;           // do not free original but only the copy
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     pkt->buf       = NULL;
     pkt->side_data = NULL;
     pkt->side_data_elems = 0;
@@ -1051,11 +1064,6 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
     pkt->buf = local_pkt.buf;
     pkt->side_data       = local_pkt.side_data;
     pkt->side_data_elems = local_pkt.side_data_elems;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-    pkt->destruct = local_pkt.destruct;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     return ret;
 }
 

@@ -168,8 +168,9 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags)
     }
     /* write WAVEFORMATEXTENSIBLE extensions */
     if (waveformatextensible) {
-        int write_channel_mask = enc->strict_std_compliance < FF_COMPLIANCE_NORMAL ||
-                                 enc->channel_layout < 0x40000;
+        int write_channel_mask = !(flags & FF_PUT_WAV_HEADER_SKIP_CHANNELMASK) &&
+                                 (enc->strict_std_compliance < FF_COMPLIANCE_NORMAL ||
+                                  enc->channel_layout < 0x40000);
         /* 22 is WAVEFORMATEXTENSIBLE size */
         avio_wl16(pb, riff_extradata - riff_extradata_start + 22);
         /* ValidBitsPerSample || SamplesPerBlock || Reserved */

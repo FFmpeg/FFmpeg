@@ -62,6 +62,7 @@
 #include "libavcodec/aac.h"
 #include "libavcodec/aacenc.h"
 #include "libavcodec/aactab.h"
+#include "libavcodec/aacenctab.h"
 
 #if HAVE_INLINE_ASM
 typedef struct BandCodingPath {
@@ -69,21 +70,6 @@ typedef struct BandCodingPath {
     float cost;
     int run;
 } BandCodingPath;
-
-static const uint8_t run_value_bits_long[64] = {
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15
-};
-
-static const uint8_t run_value_bits_short[16] = {
-    3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
-};
-
-static const uint8_t * const run_value_bits[2] = {
-    run_value_bits_long, run_value_bits_short
-};
 
 static const uint8_t uquad_sign_bits[81] = {
     0, 1, 1, 1, 2, 2, 1, 2, 2,
@@ -213,11 +199,13 @@ static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
                                                      int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     int i;
     int qc1, qc2, qc3, qc4;
 
     uint8_t  *p_bits  = (uint8_t  *)ff_aac_spectral_bits[cb-1];
     uint16_t *p_codes = (uint16_t *)ff_aac_spectral_codes[cb-1];
+    float    *p_vec   = (float    *)ff_aac_codebook_vectors[cb-1];
 
     abs_pow34_v(s->scoefs, in, size);
     scaled = s->scoefs;
@@ -225,6 +213,7 @@ static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
         int curidx;
         int *in_int = (int *)&in[i];
         int t0, t1, t2, t3, t4, t5, t6, t7;
+        const float *vec;
 
         qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
         qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
@@ -276,6 +265,14 @@ static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
         curidx += 40;
 
         put_bits(pb, p_bits[curidx], p_codes[curidx]);
+
+        if (out) {
+           vec = &p_vec[curidx*4];
+           out[i+0] = vec[0] * IQ;
+           out[i+1] = vec[1] * IQ;
+           out[i+2] = vec[2] * IQ;
+           out[i+3] = vec[3] * IQ;
+        }
     }
 }
 
@@ -286,11 +283,13 @@ static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
                                                      int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     int i;
     int qc1, qc2, qc3, qc4;
 
     uint8_t  *p_bits  = (uint8_t  *)ff_aac_spectral_bits[cb-1];
     uint16_t *p_codes = (uint16_t *)ff_aac_spectral_codes[cb-1];
+    float    *p_vec   = (float    *)ff_aac_codebook_vectors[cb-1];
 
     abs_pow34_v(s->scoefs, in, size);
     scaled = s->scoefs;
@@ -300,6 +299,7 @@ static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
         uint8_t v_bits;
         unsigned int v_codes;
         int t0, t1, t2, t3, t4;
+        const float *vec;
 
         qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
         qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
@@ -368,6 +368,14 @@ static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
         v_codes = (p_codes[curidx] << count) | (sign & ((1 << count) - 1));
         v_bits  = p_bits[curidx] + count;
         put_bits(pb, v_bits, v_codes);
+
+        if (out) {
+           vec = &p_vec[curidx*4];
+           out[i+0] = copysignf(vec[0] * IQ, in[i+0]);
+           out[i+1] = copysignf(vec[1] * IQ, in[i+1]);
+           out[i+2] = copysignf(vec[2] * IQ, in[i+2]);
+           out[i+3] = copysignf(vec[3] * IQ, in[i+3]);
+        }
     }
 }
 
@@ -378,11 +386,13 @@ static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
                                                      int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     int i;
     int qc1, qc2, qc3, qc4;
 
     uint8_t  *p_bits  = (uint8_t  *)ff_aac_spectral_bits[cb-1];
     uint16_t *p_codes = (uint16_t *)ff_aac_spectral_codes[cb-1];
+    float    *p_vec   = (float    *)ff_aac_codebook_vectors[cb-1];
 
     abs_pow34_v(s->scoefs, in, size);
     scaled = s->scoefs;
@@ -392,6 +402,7 @@ static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
         uint8_t v_bits;
         unsigned int v_codes;
         int t0, t1, t2, t3, t4, t5, t6, t7;
+        const float *vec1, *vec2;
 
         qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
         qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
@@ -447,6 +458,15 @@ static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
         v_codes = (p_codes[curidx] << p_bits[curidx2]) | (p_codes[curidx2]);
         v_bits  = p_bits[curidx] + p_bits[curidx2];
         put_bits(pb, v_bits, v_codes);
+
+        if (out) {
+           vec1 = &p_vec[curidx*2 ];
+           vec2 = &p_vec[curidx2*2];
+           out[i+0] = vec1[0] * IQ;
+           out[i+1] = vec1[1] * IQ;
+           out[i+2] = vec2[0] * IQ;
+           out[i+3] = vec2[1] * IQ;
+        }
     }
 }
 
@@ -457,20 +477,23 @@ static void quantize_and_encode_band_cost_UPAIR7_mips(struct AACEncContext *s,
                                                       int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     int i;
     int qc1, qc2, qc3, qc4;
 
     uint8_t  *p_bits  = (uint8_t*) ff_aac_spectral_bits[cb-1];
     uint16_t *p_codes = (uint16_t*)ff_aac_spectral_codes[cb-1];
+    float    *p_vec   = (float    *)ff_aac_codebook_vectors[cb-1];
 
     abs_pow34_v(s->scoefs, in, size);
     scaled = s->scoefs;
     for (i = 0; i < size; i += 4) {
-        int curidx, sign1, count1, sign2, count2;
+        int curidx1, curidx2, sign1, count1, sign2, count2;
         int *in_int = (int *)&in[i];
         uint8_t v_bits;
         unsigned int v_codes;
         int t0, t1, t2, t3, t4;
+        const float *vec1, *vec2;
 
         qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
         qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
@@ -528,19 +551,28 @@ static void quantize_and_encode_band_cost_UPAIR7_mips(struct AACEncContext *s,
               "memory"
         );
 
-        curidx  = 8 * qc1;
-        curidx += qc2;
+        curidx1  = 8 * qc1;
+        curidx1 += qc2;
 
-        v_codes = (p_codes[curidx] << count1) | sign1;
-        v_bits  = p_bits[curidx] + count1;
+        v_codes = (p_codes[curidx1] << count1) | sign1;
+        v_bits  = p_bits[curidx1] + count1;
         put_bits(pb, v_bits, v_codes);
 
-        curidx  = 8 * qc3;
-        curidx += qc4;
+        curidx2  = 8 * qc3;
+        curidx2 += qc4;
 
-        v_codes = (p_codes[curidx] << count2) | sign2;
-        v_bits  = p_bits[curidx] + count2;
+        v_codes = (p_codes[curidx2] << count2) | sign2;
+        v_bits  = p_bits[curidx2] + count2;
         put_bits(pb, v_bits, v_codes);
+
+        if (out) {
+           vec1 = &p_vec[curidx1*2];
+           vec2 = &p_vec[curidx2*2];
+           out[i+0] = copysignf(vec1[0] * IQ, in[i+0]);
+           out[i+1] = copysignf(vec1[1] * IQ, in[i+1]);
+           out[i+2] = copysignf(vec2[0] * IQ, in[i+2]);
+           out[i+3] = copysignf(vec2[1] * IQ, in[i+3]);
+        }
     }
 }
 
@@ -551,20 +583,23 @@ static void quantize_and_encode_band_cost_UPAIR12_mips(struct AACEncContext *s,
                                                        int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     int i;
     int qc1, qc2, qc3, qc4;
 
     uint8_t  *p_bits  = (uint8_t*) ff_aac_spectral_bits[cb-1];
     uint16_t *p_codes = (uint16_t*)ff_aac_spectral_codes[cb-1];
+    float    *p_vec   = (float   *)ff_aac_codebook_vectors[cb-1];
 
     abs_pow34_v(s->scoefs, in, size);
     scaled = s->scoefs;
     for (i = 0; i < size; i += 4) {
-        int curidx, sign1, count1, sign2, count2;
+        int curidx1, curidx2, sign1, count1, sign2, count2;
         int *in_int = (int *)&in[i];
         uint8_t v_bits;
         unsigned int v_codes;
         int t0, t1, t2, t3, t4;
+        const float *vec1, *vec2;
 
         qc1 = scaled[i  ] * Q34 + ROUND_STANDARD;
         qc2 = scaled[i+1] * Q34 + ROUND_STANDARD;
@@ -621,19 +656,28 @@ static void quantize_and_encode_band_cost_UPAIR12_mips(struct AACEncContext *s,
             : "memory"
         );
 
-        curidx  = 13 * qc1;
-        curidx += qc2;
+        curidx1  = 13 * qc1;
+        curidx1 += qc2;
 
-        v_codes = (p_codes[curidx] << count1) | sign1;
-        v_bits  = p_bits[curidx] + count1;
+        v_codes = (p_codes[curidx1] << count1) | sign1;
+        v_bits  = p_bits[curidx1] + count1;
         put_bits(pb, v_bits, v_codes);
 
-        curidx  = 13 * qc3;
-        curidx += qc4;
+        curidx2  = 13 * qc3;
+        curidx2 += qc4;
 
-        v_codes = (p_codes[curidx] << count2) | sign2;
-        v_bits  = p_bits[curidx] + count2;
+        v_codes = (p_codes[curidx2] << count2) | sign2;
+        v_bits  = p_bits[curidx2] + count2;
         put_bits(pb, v_bits, v_codes);
+
+        if (out) {
+           vec1 = &p_vec[curidx1*2];
+           vec2 = &p_vec[curidx2*2];
+           out[i+0] = copysignf(vec1[0] * IQ, in[i+0]);
+           out[i+1] = copysignf(vec1[1] * IQ, in[i+1]);
+           out[i+2] = copysignf(vec2[0] * IQ, in[i+2]);
+           out[i+3] = copysignf(vec2[1] * IQ, in[i+3]);
+        }
     }
 }
 
@@ -644,6 +688,7 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
                                                    int *bits, const float ROUNDING)
 {
     const float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     int i;
     int qc1, qc2, qc3, qc4;
 
@@ -661,6 +706,7 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             uint8_t v_bits;
             unsigned int v_codes;
             int t0, t1, t2, t3, t4;
+            const float *vec1, *vec2;
 
             qc1 = scaled[i  ] * Q34 + ROUNDING;
             qc2 = scaled[i+1] * Q34 + ROUNDING;
@@ -729,6 +775,15 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             v_codes = (p_codes[curidx2] << count2) | sign2;
             v_bits  = p_bits[curidx2] + count2;
             put_bits(pb, v_bits, v_codes);
+
+            if (out) {
+               vec1 = &p_vectors[curidx*2 ];
+               vec2 = &p_vectors[curidx2*2];
+               out[i+0] = copysignf(vec1[0] * IQ, in[i+0]);
+               out[i+1] = copysignf(vec1[1] * IQ, in[i+1]);
+               out[i+2] = copysignf(vec2[0] * IQ, in[i+2]);
+               out[i+3] = copysignf(vec2[1] * IQ, in[i+3]);
+            }
         }
     } else {
         for (i = 0; i < size; i += 4) {
@@ -738,6 +793,7 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             unsigned int v_codes;
             int c1, c2, c3, c4;
             int t0, t1, t2, t3, t4;
+            const float *vec1, *vec2;
 
             qc1 = scaled[i  ] * Q34 + ROUNDING;
             qc2 = scaled[i+1] * Q34 + ROUNDING;
@@ -839,6 +895,41 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
                 v_codes = (((1 << (len - 3)) - 2) << len) | (c4 & ((1 << len) - 1));
                 put_bits(pb, len * 2 - 3, v_codes);
             }
+
+            if (out) {
+               vec1 = &p_vectors[curidx*2];
+               vec2 = &p_vectors[curidx2*2];
+               out[i+0] = copysignf(c1 * cbrtf(c1) * IQ, in[i+0]);
+               out[i+1] = copysignf(c2 * cbrtf(c2) * IQ, in[i+1]);
+               out[i+2] = copysignf(c3 * cbrtf(c3) * IQ, in[i+2]);
+               out[i+3] = copysignf(c4 * cbrtf(c4) * IQ, in[i+3]);
+            }
+        }
+    }
+}
+
+static void quantize_and_encode_band_cost_NONE_mips(struct AACEncContext *s,
+                                                         PutBitContext *pb, const float *in, float *out,
+                                                         const float *scaled, int size, int scale_idx,
+                                                         int cb, const float lambda, const float uplim,
+                                                         int *bits, const float ROUNDING) {
+    av_assert0(0);
+}
+
+static void quantize_and_encode_band_cost_ZERO_mips(struct AACEncContext *s,
+                                                         PutBitContext *pb, const float *in, float *out,
+                                                         const float *scaled, int size, int scale_idx,
+                                                         int cb, const float lambda, const float uplim,
+                                                         int *bits, const float ROUNDING) {
+    int i;
+    if (bits)
+        *bits = 0;
+    if (out) {
+        for (i = 0; i < size; i += 4) {
+           out[i  ] = 0.0f;
+           out[i+1] = 0.0f;
+           out[i+2] = 0.0f;
+           out[i+3] = 0.0f;
         }
     }
 }
@@ -848,7 +939,7 @@ static void (*const quantize_and_encode_band_cost_arr[])(struct AACEncContext *s
                                                          const float *scaled, int size, int scale_idx,
                                                          int cb, const float lambda, const float uplim,
                                                          int *bits, const float ROUNDING) = {
-    NULL,
+    quantize_and_encode_band_cost_ZERO_mips,
     quantize_and_encode_band_cost_SQUAD_mips,
     quantize_and_encode_band_cost_SQUAD_mips,
     quantize_and_encode_band_cost_UQUAD_mips,
@@ -860,6 +951,10 @@ static void (*const quantize_and_encode_band_cost_arr[])(struct AACEncContext *s
     quantize_and_encode_band_cost_UPAIR12_mips,
     quantize_and_encode_band_cost_UPAIR12_mips,
     quantize_and_encode_band_cost_ESC_mips,
+    quantize_and_encode_band_cost_NONE_mips, /* cb 12 doesn't exist */
+    quantize_and_encode_band_cost_ZERO_mips,
+    quantize_and_encode_band_cost_ZERO_mips,
+    quantize_and_encode_band_cost_ZERO_mips,
 };
 
 #define quantize_and_encode_band_cost(                                       \
@@ -886,6 +981,16 @@ static float get_band_numbits_ZERO_mips(struct AACEncContext *s,
                                         int cb, const float lambda, const float uplim,
                                         int *bits)
 {
+    return 0;
+}
+
+static float get_band_numbits_NONE_mips(struct AACEncContext *s,
+                                        PutBitContext *pb, const float *in,
+                                        const float *scaled, int size, int scale_idx,
+                                        int cb, const float lambda, const float uplim,
+                                        int *bits)
+{
+    av_assert0(0);
     return 0;
 }
 
@@ -1328,6 +1433,10 @@ static float (*const get_band_numbits_arr[])(struct AACEncContext *s,
     get_band_numbits_UPAIR12_mips,
     get_band_numbits_UPAIR12_mips,
     get_band_numbits_ESC_mips,
+    get_band_numbits_NONE_mips, /* cb 12 doesn't exist */
+    get_band_numbits_ZERO_mips,
+    get_band_numbits_ZERO_mips,
+    get_band_numbits_ZERO_mips,
 };
 
 #define get_band_numbits(                                  \
@@ -1340,7 +1449,7 @@ static float (*const get_band_numbits_arr[])(struct AACEncContext *s,
 static float quantize_band_cost_bits(struct AACEncContext *s, const float *in,
                                      const float *scaled, int size, int scale_idx,
                                      int cb, const float lambda, const float uplim,
-                                     int *bits)
+                                     int *bits, int rtz)
 {
     return get_band_numbits(s, NULL, in, scaled, size, scale_idx, cb, lambda, uplim, bits);
 }
@@ -1367,6 +1476,16 @@ static float get_band_cost_ZERO_mips(struct AACEncContext *s,
     if (bits)
         *bits = 0;
     return cost * lambda;
+}
+
+static float get_band_cost_NONE_mips(struct AACEncContext *s,
+                                     PutBitContext *pb, const float *in,
+                                     const float *scaled, int size, int scale_idx,
+                                     int cb, const float lambda, const float uplim,
+                                     int *bits)
+{
+    av_assert0(0);
+    return 0;
 }
 
 static float get_band_cost_SQUAD_mips(struct AACEncContext *s,
@@ -2119,6 +2238,10 @@ static float (*const get_band_cost_arr[])(struct AACEncContext *s,
     get_band_cost_UPAIR12_mips,
     get_band_cost_UPAIR12_mips,
     get_band_cost_ESC_mips,
+    get_band_cost_NONE_mips, /* cb 12 doesn't exist */
+    get_band_cost_ZERO_mips,
+    get_band_cost_ZERO_mips,
+    get_band_cost_ZERO_mips,
 };
 
 #define get_band_cost(                                  \
@@ -2131,197 +2254,25 @@ static float (*const get_band_cost_arr[])(struct AACEncContext *s,
 static float quantize_band_cost(struct AACEncContext *s, const float *in,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits)
+                                int *bits, int rtz)
 {
     return get_band_cost(s, NULL, in, scaled, size, scale_idx, cb, lambda, uplim, bits);
 }
 
-static void search_for_quantizers_twoloop_mips(AVCodecContext *avctx,
-                                               AACEncContext *s,
-                                               SingleChannelElement *sce,
-                                               const float lambda)
-{
-    int start = 0, i, w, w2, g;
-    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels;
-    float dists[128] = { 0 }, uplims[128];
-    float maxvals[128];
-    int fflag, minscaler;
-    int its  = 0;
-    int allz = 0;
-    float minthr = INFINITY;
-
-    destbits = FFMIN(destbits, 5800);
-    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        for (g = 0;  g < sce->ics.num_swb; g++) {
-            int nz = 0;
-            float uplim = 0.0f;
-            for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
-                FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                uplim += band->threshold;
-                if (band->energy <= band->threshold || band->threshold == 0.0f) {
-                    sce->zeroes[(w+w2)*16+g] = 1;
-                    continue;
-                }
-                nz = 1;
-            }
-            uplims[w*16+g] = uplim *512;
-            sce->zeroes[w*16+g] = !nz;
-            if (nz)
-                minthr = FFMIN(minthr, uplim);
-            allz |= nz;
-        }
-    }
-    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        for (g = 0;  g < sce->ics.num_swb; g++) {
-            if (sce->zeroes[w*16+g]) {
-                sce->sf_idx[w*16+g] = SCALE_ONE_POS;
-                continue;
-            }
-            sce->sf_idx[w*16+g] = SCALE_ONE_POS + FFMIN(log2f(uplims[w*16+g]/minthr)*4,59);
-        }
-    }
-
-    if (!allz)
-        return;
-    abs_pow34_v(s->scoefs, sce->coeffs, 1024);
-
-    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        start = w*128;
-        for (g = 0;  g < sce->ics.num_swb; g++) {
-            const float *scaled = s->scoefs + start;
-            maxvals[w*16+g] = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled);
-            start += sce->ics.swb_sizes[g];
-        }
-    }
-
-    do {
-        int tbits, qstep;
-        minscaler = sce->sf_idx[0];
-        qstep = its ? 1 : 32;
-        do {
-            int prev = -1;
-            tbits = 0;
-            fflag = 0;
-
-            if (qstep > 1) {
-                for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-                    start = w*128;
-                    for (g = 0;  g < sce->ics.num_swb; g++) {
-                        const float *coefs = sce->coeffs + start;
-                        const float *scaled = s->scoefs + start;
-                        int bits = 0;
-                        int cb;
-
-                        if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
-                            start += sce->ics.swb_sizes[g];
-                            continue;
-                        }
-                        minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
-                        cb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
-                        for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
-                            int b;
-                            bits += quantize_band_cost_bits(s, coefs + w2*128,
-                                                            scaled + w2*128,
-                                                            sce->ics.swb_sizes[g],
-                                                            sce->sf_idx[w*16+g],
-                                                            cb,
-                                                            1.0f,
-                                                            INFINITY,
-                                                            &b);
-                        }
-                        if (prev != -1) {
-                            bits += ff_aac_scalefactor_bits[sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO];
-                        }
-                        tbits += bits;
-                        start += sce->ics.swb_sizes[g];
-                        prev = sce->sf_idx[w*16+g];
-                    }
-                }
-            }
-            else {
-                for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-                    start = w*128;
-                    for (g = 0;  g < sce->ics.num_swb; g++) {
-                        const float *coefs = sce->coeffs + start;
-                        const float *scaled = s->scoefs + start;
-                        int bits = 0;
-                        int cb;
-                        float dist = 0.0f;
-
-                        if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
-                            start += sce->ics.swb_sizes[g];
-                            continue;
-                        }
-                        minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
-                        cb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
-                        for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
-                            int b;
-                            dist += quantize_band_cost(s, coefs + w2*128,
-                                                       scaled + w2*128,
-                                                       sce->ics.swb_sizes[g],
-                                                       sce->sf_idx[w*16+g],
-                                                       cb,
-                                                       1.0f,
-                                                       INFINITY,
-                                                       &b);
-                            bits += b;
-                        }
-                        dists[w*16+g] = dist - bits;
-                        if (prev != -1) {
-                            bits += ff_aac_scalefactor_bits[sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO];
-                        }
-                        tbits += bits;
-                        start += sce->ics.swb_sizes[g];
-                        prev = sce->sf_idx[w*16+g];
-                    }
-                }
-            }
-            if (tbits > destbits) {
-                for (i = 0; i < 128; i++)
-                    if (sce->sf_idx[i] < 218 - qstep)
-                        sce->sf_idx[i] += qstep;
-            } else {
-                for (i = 0; i < 128; i++)
-                    if (sce->sf_idx[i] > 60 - qstep)
-                        sce->sf_idx[i] -= qstep;
-            }
-            qstep >>= 1;
-            if (!qstep && tbits > destbits*1.02 && sce->sf_idx[0] < 217)
-                qstep = 1;
-        } while (qstep);
-
-        fflag = 0;
-        minscaler = av_clip(minscaler, 60, 255 - SCALE_MAX_DIFF);
-        for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-            for (g = 0; g < sce->ics.num_swb; g++) {
-                int prevsc = sce->sf_idx[w*16+g];
-                if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
-                    if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
-                        sce->sf_idx[w*16+g]--;
-                    else
-                        sce->sf_idx[w*16+g]-=2;
-                }
-                sce->sf_idx[w*16+g] = av_clip(sce->sf_idx[w*16+g], minscaler, minscaler + SCALE_MAX_DIFF);
-                sce->sf_idx[w*16+g] = FFMIN(sce->sf_idx[w*16+g], 219);
-                if (sce->sf_idx[w*16+g] != prevsc)
-                    fflag = 1;
-                sce->band_type[w*16+g] = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
-            }
-        }
-        its++;
-    } while (fflag && its < 10);
-}
+#include "libavcodec/aaccoder_twoloop.h"
 
 static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
 {
     int start = 0, i, w, w2, g;
     float M[128], S[128];
     float *L34 = s->scoefs, *R34 = s->scoefs + 128, *M34 = s->scoefs + 128*2, *S34 = s->scoefs + 128*3;
+    const float lambda = s->lambda;
     SingleChannelElement *sce0 = &cpe->ch[0];
     SingleChannelElement *sce1 = &cpe->ch[1];
     if (!cpe->common_window)
         return;
     for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
+        start = 0;
         for (g = 0;  g < sce0->ics.num_swb; g++) {
             if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g]) {
                 float dist1 = 0.0f, dist2 = 0.0f;
@@ -2349,34 +2300,34 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
                         S[i+3] =  M[i+3]
                                 - sce1->coeffs[start+w2*128+i+3];
                    }
-                    abs_pow34_v(L34, sce0->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);
-                    abs_pow34_v(R34, sce1->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(L34, sce0->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(R34, sce1->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
                     abs_pow34_v(M34, M,                         sce0->ics.swb_sizes[g]);
                     abs_pow34_v(S34, S,                         sce0->ics.swb_sizes[g]);
-                    dist1 += quantize_band_cost(s, sce0->coeffs + start + w2*128,
+                    dist1 += quantize_band_cost(s, &sce0->coeffs[start + (w+w2)*128],
                                                 L34,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
-                                                s->lambda / band0->threshold, INFINITY, NULL);
-                    dist1 += quantize_band_cost(s, sce1->coeffs + start + w2*128,
+                                                lambda / band0->threshold, INFINITY, NULL, 0);
+                    dist1 += quantize_band_cost(s, &sce1->coeffs[start + (w+w2)*128],
                                                 R34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],
                                                 sce1->band_type[(w+w2)*16+g],
-                                                s->lambda / band1->threshold, INFINITY, NULL);
+                                                lambda / band1->threshold, INFINITY, NULL, 0);
                     dist2 += quantize_band_cost(s, M,
                                                 M34,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
-                                                s->lambda / maxthr, INFINITY, NULL);
+                                                lambda / maxthr, INFINITY, NULL, 0);
                     dist2 += quantize_band_cost(s, S,
                                                 S34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],
                                                 sce1->band_type[(w+w2)*16+g],
-                                                s->lambda / minthr, INFINITY, NULL);
+                                                lambda / minthr, INFINITY, NULL, 0);
                 }
                 cpe->ms_mask[w*16+g] = dist2 < dist1;
             }
@@ -2386,126 +2337,8 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
 }
 #endif /*HAVE_MIPSFPU */
 
-static void codebook_trellis_rate_mips(AACEncContext *s, SingleChannelElement *sce,
-                                       int win, int group_len, const float lambda)
-{
-    BandCodingPath path[120][12];
-    int w, swb, cb, start, size;
-    int i, j;
-    const int max_sfb  = sce->ics.max_sfb;
-    const int run_bits = sce->ics.num_windows == 1 ? 5 : 3;
-    const int run_esc  = (1 << run_bits) - 1;
-    int idx, ppos, count;
-    int stackrun[120], stackcb[120], stack_len;
-    float next_minbits = INFINITY;
-    int next_mincb = 0;
+#include "libavcodec/aaccoder_trellis.h"
 
-    abs_pow34_v(s->scoefs, sce->coeffs, 1024);
-    start = win*128;
-    for (cb = 0; cb < 12; cb++) {
-        path[0][cb].cost     = run_bits+4;
-        path[0][cb].prev_idx = -1;
-        path[0][cb].run      = 0;
-    }
-    for (swb = 0; swb < max_sfb; swb++) {
-        size = sce->ics.swb_sizes[swb];
-        if (sce->zeroes[win*16 + swb]) {
-            float cost_stay_here = path[swb][0].cost;
-            float cost_get_here  = next_minbits + run_bits + 4;
-            if (   run_value_bits[sce->ics.num_windows == 8][path[swb][0].run]
-                != run_value_bits[sce->ics.num_windows == 8][path[swb][0].run+1])
-                cost_stay_here += run_bits;
-            if (cost_get_here < cost_stay_here) {
-                path[swb+1][0].prev_idx = next_mincb;
-                path[swb+1][0].cost     = cost_get_here;
-                path[swb+1][0].run      = 1;
-            } else {
-                path[swb+1][0].prev_idx = 0;
-                path[swb+1][0].cost     = cost_stay_here;
-                path[swb+1][0].run      = path[swb][0].run + 1;
-            }
-            next_minbits = path[swb+1][0].cost;
-            next_mincb = 0;
-            for (cb = 1; cb < 12; cb++) {
-                path[swb+1][cb].cost = 61450;
-                path[swb+1][cb].prev_idx = -1;
-                path[swb+1][cb].run = 0;
-            }
-        } else {
-            float minbits = next_minbits;
-            int mincb = next_mincb;
-            int startcb = sce->band_type[win*16+swb];
-            next_minbits = INFINITY;
-            next_mincb = 0;
-            for (cb = 0; cb < startcb; cb++) {
-                path[swb+1][cb].cost = 61450;
-                path[swb+1][cb].prev_idx = -1;
-                path[swb+1][cb].run = 0;
-            }
-            for (cb = startcb; cb < 12; cb++) {
-                float cost_stay_here, cost_get_here;
-                float bits = 0.0f;
-                for (w = 0; w < group_len; w++) {
-                    bits += quantize_band_cost_bits(s, sce->coeffs + start + w*128,
-                                                    s->scoefs + start + w*128, size,
-                                                    sce->sf_idx[(win+w)*16+swb], cb,
-                                                    0, INFINITY, NULL);
-                }
-                cost_stay_here = path[swb][cb].cost + bits;
-                cost_get_here  = minbits            + bits + run_bits + 4;
-                if (   run_value_bits[sce->ics.num_windows == 8][path[swb][cb].run]
-                    != run_value_bits[sce->ics.num_windows == 8][path[swb][cb].run+1])
-                    cost_stay_here += run_bits;
-                if (cost_get_here < cost_stay_here) {
-                    path[swb+1][cb].prev_idx = mincb;
-                    path[swb+1][cb].cost     = cost_get_here;
-                    path[swb+1][cb].run      = 1;
-                } else {
-                    path[swb+1][cb].prev_idx = cb;
-                    path[swb+1][cb].cost     = cost_stay_here;
-                    path[swb+1][cb].run      = path[swb][cb].run + 1;
-                }
-                if (path[swb+1][cb].cost < next_minbits) {
-                    next_minbits = path[swb+1][cb].cost;
-                    next_mincb = cb;
-                }
-            }
-        }
-        start += sce->ics.swb_sizes[swb];
-    }
-
-    stack_len = 0;
-    idx       = 0;
-    for (cb = 1; cb < 12; cb++)
-        if (path[max_sfb][cb].cost < path[max_sfb][idx].cost)
-            idx = cb;
-    ppos = max_sfb;
-    while (ppos > 0) {
-        av_assert1(idx >= 0);
-        cb = idx;
-        stackrun[stack_len] = path[ppos][cb].run;
-        stackcb [stack_len] = cb;
-        idx = path[ppos-path[ppos][cb].run+1][cb].prev_idx;
-        ppos -= path[ppos][cb].run;
-        stack_len++;
-    }
-
-    start = 0;
-    for (i = stack_len - 1; i >= 0; i--) {
-        put_bits(&s->pb, 4, stackcb[i]);
-        count = stackrun[i];
-        memset(sce->zeroes + win*16 + start, !stackcb[i], count);
-        for (j = 0; j < count; j++) {
-            sce->band_type[win*16 + start] =  stackcb[i];
-            start++;
-        }
-        while (count >= run_esc) {
-            put_bits(&s->pb, run_bits, run_esc);
-            count -= run_esc;
-        }
-        put_bits(&s->pb, run_bits, count);
-    }
-}
 #endif /* HAVE_INLINE_ASM */
 
 void ff_aac_coder_init_mips(AACEncContext *c) {
@@ -2515,11 +2348,13 @@ void ff_aac_coder_init_mips(AACEncContext *c) {
 
     if (option == 2) {
         e->quantize_and_encode_band = quantize_and_encode_band_mips;
-        e->encode_window_bands_info = codebook_trellis_rate_mips;
+        e->encode_window_bands_info = codebook_trellis_rate;
 #if HAVE_MIPSFPU
-        e->search_for_quantizers    = search_for_quantizers_twoloop_mips;
-        e->search_for_ms            = search_for_ms_mips;
+        e->search_for_quantizers    = search_for_quantizers_twoloop;
 #endif /* HAVE_MIPSFPU */
     }
+#if HAVE_MIPSFPU
+    e->search_for_ms            = search_for_ms_mips;
+#endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 }

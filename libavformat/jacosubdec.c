@@ -240,7 +240,7 @@ static int jacosub_read_header(AVFormatContext *s)
         AVPacket *sub = &jacosub->q.subs[i];
         read_ts(jacosub, sub->data, &sub->pts, &sub->duration);
     }
-    ff_subtitles_queue_finalize(&jacosub->q);
+    ff_subtitles_queue_finalize(s, &jacosub->q);
 
     return 0;
 fail:

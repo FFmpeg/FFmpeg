@@ -365,7 +365,7 @@ Filters:
   vf_colorlevels.c                      Paul B Mahol
   vf_deband.c                           Paul B Mahol
   vf_dejudder.c                         Nicholas Robbins
-  vf_delogo.c                           Jean Delvare (CC <khali@linux-fr.org>)
+  vf_delogo.c                           Jean Delvare (CC <jdelvare@suse.com>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
   vf_extractplanes.c                    Paul B Mahol
   vf_histogram.c                        Paul B Mahol
@@ -564,11 +564,11 @@ x86                                     Michael Niedermayer
 Releases
 ========
 
+2.8                                     Michael Niedermayer
 2.7                                     Michael Niedermayer
 2.6                                     Michael Niedermayer
 2.5                                     Michael Niedermayer
 2.4                                     Michael Niedermayer
-2.2                                     Michael Niedermayer
 
 If you want to maintain an older release, please contact us
 

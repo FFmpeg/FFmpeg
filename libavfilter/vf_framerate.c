@@ -72,6 +72,12 @@ typedef struct FrameRateContext {
     AVFrame *srce[N_SRCE];              ///< buffered source frames
     int64_t srce_pts_dest[N_SRCE];      ///< pts for source frames scaled to output timebase
     int64_t pts;                        ///< pts of frame we are working on
+
+    int (*blend_frames)(AVFilterContext *ctx, float interpolate,
+                        AVFrame *copy_src1, AVFrame *copy_src2);
+    int max;
+    int bitdepth;
+    AVFrame *work;
 } FrameRateContext;
 
 #define OFFSET(x) offsetof(FrameRateContext, x)
@@ -114,6 +120,58 @@ static void next_source(AVFilterContext *ctx)
     s->srce[s->frst] = NULL;
 }
 
+static av_always_inline int64_t sad_8x8_16(const uint16_t *src1, ptrdiff_t stride1,
+                                           const uint16_t *src2, ptrdiff_t stride2)
+{
+    int sum = 0;
+    int x, y;
+
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++)
+            sum += FFABS(src1[x] - src2[x]);
+        src1 += stride1;
+        src2 += stride2;
+    }
+    return sum;
+}
+
+static double get_scene_score16(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next)
+{
+    FrameRateContext *s = ctx->priv;
+    double ret = 0;
+
+    ff_dlog(ctx, "get_scene_score16()\n");
+
+    if (crnt &&
+        crnt->height == next->height &&
+        crnt->width  == next->width) {
+        int x, y;
+        int64_t sad;
+        double mafd, diff;
+        const uint16_t *p1 = (const uint16_t *)crnt->data[0];
+        const uint16_t *p2 = (const uint16_t *)next->data[0];
+        const int p1_linesize = crnt->linesize[0] / 2;
+        const int p2_linesize = next->linesize[0] / 2;
+
+        ff_dlog(ctx, "get_scene_score16() process\n");
+
+        for (sad = y = 0; y < crnt->height; y += 8) {
+            for (x = 0; x < p1_linesize; x += 8) {
+                sad += sad_8x8_16(p1 + y * p1_linesize + x,
+                                  p1_linesize,
+                                  p2 + y * p2_linesize + x,
+                                  p2_linesize);
+            }
+        }
+        mafd = sad / (crnt->height * crnt->width * 3);
+        diff = fabs(mafd - s->prev_mafd);
+        ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
+        s->prev_mafd = mafd;
+    }
+    ff_dlog(ctx, "get_scene_score16() result is:%f\n", ret);
+    return ret;
+}
+
 static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next)
 {
     FrameRateContext *s = ctx->priv;
@@ -152,13 +210,143 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next
     return ret;
 }
 
-static int process_work_frame(AVFilterContext *ctx, int stop)
+static int blend_frames16(AVFilterContext *ctx, float interpolate,
+                          AVFrame *copy_src1, AVFrame *copy_src2)
 {
     FrameRateContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    double interpolate_scene_score = 0;
+
+    if ((s->flags & FRAMERATE_FLAG_SCD) && copy_src2) {
+        interpolate_scene_score = get_scene_score16(ctx, copy_src1, copy_src2);
+        ff_dlog(ctx, "blend_frames16() interpolate scene score:%f\n", interpolate_scene_score);
+    }
+    // decide if the shot-change detection allows us to blend two frames
+    if (interpolate_scene_score < s->scene_score && copy_src2) {
+        uint16_t src2_factor = FFABS(interpolate) * (1 << (s->bitdepth - 8));
+        uint16_t src1_factor = s->max - src2_factor;
+        const int half = s->max / 2;
+        const int uv = (s->max + 1) * half;
+        const int shift = s->bitdepth;
+        int plane, line, pixel;
+
+        // get work-space for output frame
+        s->work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!s->work)
+            return AVERROR(ENOMEM);
+
+        av_frame_copy_props(s->work, s->srce[s->crnt]);
+
+        ff_dlog(ctx, "blend_frames16() INTERPOLATE to create work frame\n");
+        for (plane = 0; plane < 4 && copy_src1->data[plane] && copy_src2->data[plane]; plane++) {
+            int cpy_line_width = s->line_size[plane];
+            const uint16_t *cpy_src1_data = (const uint16_t *)copy_src1->data[plane];
+            int cpy_src1_line_size = copy_src1->linesize[plane] / 2;
+            const uint16_t *cpy_src2_data = (const uint16_t *)copy_src2->data[plane];
+            int cpy_src2_line_size = copy_src2->linesize[plane] / 2;
+            int cpy_src_h = (plane > 0 && plane < 3) ? (copy_src1->height >> s->vsub) : (copy_src1->height);
+            uint16_t *cpy_dst_data = (uint16_t *)s->work->data[plane];
+            int cpy_dst_line_size = s->work->linesize[plane] / 2;
+
+            if (plane <1 || plane >2) {
+                // luma or alpha
+                for (line = 0; line < cpy_src_h; line++) {
+                    for (pixel = 0; pixel < cpy_line_width; pixel++)
+                        cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + half) >> shift;
+                    cpy_src1_data += cpy_src1_line_size;
+                    cpy_src2_data += cpy_src2_line_size;
+                    cpy_dst_data += cpy_dst_line_size;
+                }
+            } else {
+                // chroma
+                for (line = 0; line < cpy_src_h; line++) {
+                    for (pixel = 0; pixel < cpy_line_width; pixel++) {
+                        cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - half) * src1_factor) + ((cpy_src2_data[pixel] - half) * src2_factor) + uv) >> shift;
+                    }
+                    cpy_src1_data += cpy_src1_line_size;
+                    cpy_src2_data += cpy_src2_line_size;
+                    cpy_dst_data += cpy_dst_line_size;
+                }
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+static int blend_frames8(AVFilterContext *ctx, float interpolate,
+                         AVFrame *copy_src1, AVFrame *copy_src2)
+{
+    FrameRateContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    double interpolate_scene_score = 0;
+
+    if ((s->flags & FRAMERATE_FLAG_SCD) && copy_src2) {
+        interpolate_scene_score = get_scene_score(ctx, copy_src1, copy_src2);
+        ff_dlog(ctx, "blend_frames8() interpolate scene score:%f\n", interpolate_scene_score);
+    }
+    // decide if the shot-change detection allows us to blend two frames
+    if (interpolate_scene_score < s->scene_score && copy_src2) {
+        uint16_t src2_factor = FFABS(interpolate);
+        uint16_t src1_factor = 256 - src2_factor;
+        int plane, line, pixel;
+
+        // get work-space for output frame
+        s->work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!s->work)
+            return AVERROR(ENOMEM);
+
+        av_frame_copy_props(s->work, s->srce[s->crnt]);
+
+        ff_dlog(ctx, "blend_frames8() INTERPOLATE to create work frame\n");
+        for (plane = 0; plane < 4 && copy_src1->data[plane] && copy_src2->data[plane]; plane++) {
+            int cpy_line_width = s->line_size[plane];
+            uint8_t *cpy_src1_data = copy_src1->data[plane];
+            int cpy_src1_line_size = copy_src1->linesize[plane];
+            uint8_t *cpy_src2_data = copy_src2->data[plane];
+            int cpy_src2_line_size = copy_src2->linesize[plane];
+            int cpy_src_h = (plane > 0 && plane < 3) ? (copy_src1->height >> s->vsub) : (copy_src1->height);
+            uint8_t *cpy_dst_data = s->work->data[plane];
+            int cpy_dst_line_size = s->work->linesize[plane];
+            if (plane <1 || plane >2) {
+                // luma or alpha
+                for (line = 0; line < cpy_src_h; line++) {
+                    for (pixel = 0; pixel < cpy_line_width; pixel++) {
+                        // integer version of (src1 * src1_factor) + (src2 + src2_factor) + 0.5
+                        // 0.5 is for rounding
+                        // 128 is the integer representation of 0.5 << 8
+                        cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + 128) >> 8;
+                    }
+                    cpy_src1_data += cpy_src1_line_size;
+                    cpy_src2_data += cpy_src2_line_size;
+                    cpy_dst_data += cpy_dst_line_size;
+                }
+            } else {
+                // chroma
+                for (line = 0; line < cpy_src_h; line++) {
+                    for (pixel = 0; pixel < cpy_line_width; pixel++) {
+                        // as above
+                        // because U and V are based around 128 we have to subtract 128 from the components.
+                        // 32896 is the integer representation of 128.5 << 8
+                        cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - 128) * src1_factor) + ((cpy_src2_data[pixel] - 128) * src2_factor) + 32896) >> 8;
+                    }
+                    cpy_src1_data += cpy_src1_line_size;
+                    cpy_src2_data += cpy_src2_line_size;
+                    cpy_dst_data += cpy_dst_line_size;
+                }
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+static int process_work_frame(AVFilterContext *ctx, int stop)
+{
+    FrameRateContext *s = ctx->priv;
     int64_t work_next_pts;
-    AVFrame *copy_src1, *copy_src2, *work;
-    int interpolate;
+    AVFrame *copy_src1;
+    float interpolate;
 
     ff_dlog(ctx, "process_work_frame()\n");
 
@@ -200,8 +388,8 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
     }
 
     // calculate interpolation
-    interpolate = (int) ((s->pts - s->srce_pts_dest[s->crnt]) * 256.0 / s->average_srce_pts_dest_delta);
-    ff_dlog(ctx, "process_work_frame() interpolate:%d/256\n", interpolate);
+    interpolate = ((s->pts - s->srce_pts_dest[s->crnt]) * 256.0 / s->average_srce_pts_dest_delta);
+    ff_dlog(ctx, "process_work_frame() interpolate:%f/256\n", interpolate);
     copy_src1 = s->srce[s->crnt];
     if (interpolate > s->interp_end) {
         ff_dlog(ctx, "process_work_frame() source is:NEXT\n");
@@ -214,7 +402,7 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
 
     // decide whether to blend two frames
     if ((interpolate >= s->interp_start && interpolate <= s->interp_end) || (interpolate <= -s->interp_start && interpolate >= -s->interp_end)) {
-        double interpolate_scene_score = 0;
+        AVFrame *copy_src2;
 
         if (interpolate > 0) {
             ff_dlog(ctx, "process_work_frame() interpolate source is:NEXT\n");
@@ -223,76 +411,20 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
             ff_dlog(ctx, "process_work_frame() interpolate source is:PREV\n");
             copy_src2 = s->srce[s->prev];
         }
-        if ((s->flags & FRAMERATE_FLAG_SCD) && copy_src2) {
-            interpolate_scene_score = get_scene_score(ctx, copy_src1, copy_src2);
-            ff_dlog(ctx, "process_work_frame() interpolate scene score:%f\n", interpolate_scene_score);
-        }
-        // decide if the shot-change detection allows us to blend two frames
-        if (interpolate_scene_score < s->scene_score && copy_src2) {
-            uint16_t src2_factor = abs(interpolate);
-            uint16_t src1_factor = 256 - src2_factor;
-            int plane, line, pixel;
-
-            // get work-space for output frame
-            work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-            if (!work)
-                return AVERROR(ENOMEM);
-
-            av_frame_copy_props(work, s->srce[s->crnt]);
-
-            ff_dlog(ctx, "process_work_frame() INTERPOLATE to create work frame\n");
-            for (plane = 0; plane < 4 && copy_src1->data[plane] && copy_src2->data[plane]; plane++) {
-                int cpy_line_width = s->line_size[plane];
-                uint8_t *cpy_src1_data = copy_src1->data[plane];
-                int cpy_src1_line_size = copy_src1->linesize[plane];
-                uint8_t *cpy_src2_data = copy_src2->data[plane];
-                int cpy_src2_line_size = copy_src2->linesize[plane];
-                int cpy_src_h = (plane > 0 && plane < 3) ? (copy_src1->height >> s->vsub) : (copy_src1->height);
-                uint8_t *cpy_dst_data = work->data[plane];
-                int cpy_dst_line_size = work->linesize[plane];
-                if (plane <1 || plane >2) {
-                    // luma or alpha
-                    for (line = 0; line < cpy_src_h; line++) {
-                        for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                            // integer version of (src1 * src1_factor) + (src2 + src2_factor) + 0.5
-                            // 0.5 is for rounding
-                            // 128 is the integer representation of 0.5 << 8
-                            cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + 128) >> 8;
-                        }
-                        cpy_src1_data += cpy_src1_line_size;
-                        cpy_src2_data += cpy_src2_line_size;
-                        cpy_dst_data += cpy_dst_line_size;
-                    }
-                } else {
-                    // chroma
-                    for (line = 0; line < cpy_src_h; line++) {
-                        for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                            // as above
-                            // because U and V are based around 128 we have to subtract 128 from the components.
-                            // 32896 is the integer representation of 128.5 << 8
-                            cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - 128) * src1_factor) + ((cpy_src2_data[pixel] - 128) * src2_factor) + 32896) >> 8;
-                        }
-                        cpy_src1_data += cpy_src1_line_size;
-                        cpy_src2_data += cpy_src2_line_size;
-                        cpy_dst_data += cpy_dst_line_size;
-                    }
-                }
-            }
+        if (s->blend_frames(ctx, interpolate, copy_src1, copy_src2))
             goto copy_done;
-        }
-        else {
+        else
             ff_dlog(ctx, "process_work_frame() CUT - DON'T INTERPOLATE\n");
-        }
     }
 
     ff_dlog(ctx, "process_work_frame() COPY to the work frame\n");
     // copy the frame we decided is our base source
-    work = av_frame_clone(copy_src1);
-    if (!work)
+    s->work = av_frame_clone(copy_src1);
+    if (!s->work)
         return AVERROR(ENOMEM);
 
 copy_done:
-    work->pts = s->pts;
+    s->work->pts = s->pts;
 
     // should filter be re-using input frame (output frame rate is higher than input frame rate)
     if (!s->flush && (work_next_pts + s->average_dest_pts_delta) < (s->srce_pts_dest[s->crnt] + s->average_srce_pts_dest_delta)) {
@@ -306,9 +438,9 @@ copy_done:
     s->dest_frame_num++;
     if (stop)
         s->pending_end_frame = 0;
-    s->last_dest_frame_pts = work->pts;
+    s->last_dest_frame_pts = s->work->pts;
 
-    return ff_filter_frame(ctx->outputs[0], work);
+    return ff_filter_frame(ctx->outputs[0], s->work);
 }
 
 static void set_srce_frame_dest_pts(AVFilterContext *ctx)
@@ -344,28 +476,23 @@ static void set_work_frame_pts(AVFilterContext *ctx)
     average_srce_pts_delta = s->average_srce_pts_dest_delta;
     ff_dlog(ctx, "set_work_frame_pts() initial average srce pts:%"PRId64"\n", average_srce_pts_delta);
 
+    set_srce_frame_dest_pts(ctx);
+
     // calculate the PTS delta
-    if ((pts = (s->srce[s->next]->pts - s->srce[s->crnt]->pts))) {
+    if ((pts = (s->srce_pts_dest[s->next] - s->srce_pts_dest[s->crnt]))) {
         average_srce_pts_delta = average_srce_pts_delta?((average_srce_pts_delta+pts)>>1):pts;
-    } else if (s->srce[s->prev] && (pts = (s->srce[s->crnt]->pts - s->srce[s->prev]->pts))) {
+    } else if (s->srce[s->prev] && (pts = (s->srce_pts_dest[s->crnt] - s->srce_pts_dest[s->prev]))) {
         average_srce_pts_delta = average_srce_pts_delta?((average_srce_pts_delta+pts)>>1):pts;
     }
 
-    s->average_srce_pts_dest_delta = av_rescale_q(average_srce_pts_delta, s->srce_time_base, s->dest_time_base);
+    s->average_srce_pts_dest_delta = average_srce_pts_delta;
     ff_dlog(ctx, "set_work_frame_pts() average srce pts:%"PRId64"\n", average_srce_pts_delta);
     ff_dlog(ctx, "set_work_frame_pts() average srce pts:%"PRId64" at dest time base:%u/%u\n",
             s->average_srce_pts_dest_delta, s->dest_time_base.num, s->dest_time_base.den);
 
-    set_srce_frame_dest_pts(ctx);
-
     if (ctx->inputs[0] && !s->average_dest_pts_delta) {
-        int64_t d = av_q2d(av_inv_q(av_mul_q(s->srce_time_base, s->dest_frame_rate)));
-        if (d == 0) { // FIXME
-            av_log(ctx, AV_LOG_WARNING, "Buggy path reached, use settb filter before this filter!\n");
-            d = av_q2d(av_mul_q(ctx->inputs[0]->time_base, s->dest_frame_rate));
-        }
-        s->average_dest_pts_delta = av_rescale_q(d, s->srce_time_base, s->dest_time_base);
-        ff_dlog(ctx, "set_frame_pts() average output pts from input timebase\n");
+        int64_t d = av_q2d(av_inv_q(av_mul_q(s->dest_time_base, s->dest_frame_rate)));
+        s->average_dest_pts_delta = d;
         ff_dlog(ctx, "set_work_frame_pts() average dest pts delta:%"PRId64"\n", s->average_dest_pts_delta);
     }
 
@@ -399,7 +526,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     FrameRateContext *s = ctx->priv;
     int i;
 
-    for (i = s->frst + 1; i > s->last; i++) {
+    for (i = s->frst + 1; i < s->last; i++) {
         if (s->srce[i] && (s->srce[i] != s->srce[i + 1]))
             av_frame_free(&s->srce[i]);
     }
@@ -415,6 +542,9 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12,
+        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12,
         AV_PIX_FMT_NONE
     };
 
@@ -436,6 +566,7 @@ static int config_input(AVFilterLink *inlink)
                                                     plane);
     }
 
+    s->bitdepth = pix_desc->comp[0].depth;
     s->vsub = pix_desc->log2_chroma_h;
 
     s->sad = av_pixelutils_get_sad_fn(3, 3, 2, s); // 8x8 both sources aligned
@@ -443,6 +574,12 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
 
     s->srce_time_base = inlink->time_base;
+
+    if (s->bitdepth == 8)
+        s->blend_frames = blend_frames8;
+    else
+        s->blend_frames = blend_frames16;
+    s->max = 1 << (s->bitdepth);
 
     return 0;
 }
@@ -502,7 +639,6 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->frame_rate = s->dest_frame_rate;
     outlink->time_base = s->dest_time_base;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     ff_dlog(ctx,
            "config_output() output time base:%u/%u (%f) w:%d h:%d\n",
@@ -529,9 +665,12 @@ static int request_frame(AVFilterLink *outlink)
     // if there is no "next" frame AND we are not in flush then get one from our input filter
     if (!s->srce[s->frst] && !s->flush) {
         ff_dlog(ctx, "request_frame() call source's request_frame()\n");
-        if ((val = ff_request_frame(outlink->src->inputs[0])) < 0) {
+        val = ff_request_frame(outlink->src->inputs[0]);
+        if (val < 0 && (val != AVERROR_EOF)) {
             ff_dlog(ctx, "request_frame() source's request_frame() returned error:%d\n", val);
             return val;
+        } else if (val == AVERROR_EOF) {
+            s->flush = 1;
         }
         ff_dlog(ctx, "request_frame() source's request_frame() returned:%d\n", val);
         return 0;

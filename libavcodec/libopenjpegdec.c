@@ -114,22 +114,22 @@ static inline int libopenjpeg_matches_pix_fmt(const opj_image_t *image, enum AVP
     switch (desc->nb_components) {
     case 4:
         match = match &&
-                desc->comp[3].depth_minus1 + 1 >= image->comps[3].prec &&
+                desc->comp[3].depth >= image->comps[3].prec &&
                 1 == image->comps[3].dx &&
                 1 == image->comps[3].dy;
     case 3:
         match = match &&
-                desc->comp[2].depth_minus1 + 1 >= image->comps[2].prec &&
+                desc->comp[2].depth >= image->comps[2].prec &&
                 1 << desc->log2_chroma_w == image->comps[2].dx &&
                 1 << desc->log2_chroma_h == image->comps[2].dy;
     case 2:
         match = match &&
-                desc->comp[1].depth_minus1 + 1 >= image->comps[1].prec &&
+                desc->comp[1].depth >= image->comps[1].prec &&
                 1 << desc->log2_chroma_w == image->comps[1].dx &&
                 1 << desc->log2_chroma_h == image->comps[1].dy;
     case 1:
         match = match &&
-                desc->comp[0].depth_minus1 + 1 >= image->comps[0].prec &&
+                desc->comp[0].depth >= image->comps[0].prec &&
                 1 == image->comps[0].dx &&
                 1 == image->comps[0].dy;
     default:
@@ -204,7 +204,7 @@ static inline void libopenjpeg_copy_to_packed16(AVFrame *picture, opj_image_t *i
     int index, x, y, c;
     int adjust[4];
     for (x = 0; x < image->numcomps; x++)
-        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth_minus1 + 1 - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
+        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
 
     for (y = 0; y < picture->height; y++) {
         index   = y * picture->width;
@@ -241,7 +241,7 @@ static inline void libopenjpeg_copyto16(AVFrame *picture, opj_image_t *image) {
     int index, x, y;
     int adjust[4];
     for (x = 0; x < image->numcomps; x++)
-        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth_minus1 + 1 - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
+        adjust[x] = FFMAX(FFMIN(desc->comp[x].depth - image->comps[x].prec, 8), 0) + desc->comp[x].shift;
 
     for (index = 0; index < image->numcomps; index++) {
         comp_data = image->comps[index].data;
@@ -388,7 +388,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
 
     desc       = av_pix_fmt_desc_get(avctx->pix_fmt);
-    pixel_size = desc->comp[0].step_minus1 + 1;
+    pixel_size = desc->comp[0].step;
     ispacked   = libopenjpeg_ispacked(avctx->pix_fmt);
 
     switch (pixel_size) {

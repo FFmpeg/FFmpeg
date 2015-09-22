@@ -516,9 +516,7 @@ static int url_connect(struct playlist *pls, AVDictionary *opts, AVDictionary *o
     av_dict_copy(&tmp, opts, 0);
     av_dict_copy(&tmp, opts2, 0);
 
-    av_opt_set_dict(pls->input, &tmp);
-
-    if ((ret = ffurl_connect(pls->input, NULL)) < 0) {
+    if ((ret = ffurl_connect(pls->input, &tmp)) < 0) {
         ffurl_close(pls->input);
         pls->input = NULL;
     }

@@ -1120,8 +1120,9 @@ static void iterative_me(SnowContext *s){
                     do{
                         int newx = block->mx;
                         int newy = block->my;
+                        int dia_size = s->iterative_dia_size ? s->iterative_dia_size : FFMAX(s->avctx->dia_size, 1);
                         dia_change=0;
-                        for(i=0; i<FFMAX(s->avctx->dia_size, 1); i++){
+                        for(i=0; i < dia_size; i++){
                             for(j=0; j<i; j++){
                                 dia_change |= check_block_inter(s, mb_x, mb_y, newx+4*(i-j), newy+(4*j), obmc_edged, &best_rd);
                                 dia_change |= check_block_inter(s, mb_x, mb_y, newx-4*(i-j), newy-(4*j), obmc_edged, &best_rd);
@@ -1556,7 +1557,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     SnowContext *s = avctx->priv_data;
     RangeCoder * const c= &s->c;
-    AVFrame *pic = pict;
+    AVFrame *pic;
     const int width= s->avctx->width;
     const int height= s->avctx->height;
     int level, orientation, plane_index, i, y, ret;
@@ -1583,7 +1584,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     }
     emms_c();
-    s->new_picture = pict;
+    pic = s->input_picture;
+    pic->pict_type = pict->pict_type;
+    pic->quality = pict->quality;
 
     s->m.picture_number= avctx->frame_number;
     if(avctx->flags&AV_CODEC_FLAG_PASS2){
@@ -1844,8 +1847,8 @@ redo_frame:
     ff_snow_release_buffer(avctx);
 
     s->current_picture->coded_picture_number = avctx->frame_number;
-    s->current_picture->pict_type = pict->pict_type;
-    s->current_picture->quality = pict->quality;
+    s->current_picture->pict_type = pic->pict_type;
+    s->current_picture->quality = pic->quality;
     s->m.frame_bits = 8*(s->c.bytestream - s->c.bytestream_start);
     s->m.p_tex_bits = s->m.frame_bits - s->m.misc_bits - s->m.mv_bits;
     s->m.current_picture.f->display_picture_number =
@@ -1898,6 +1901,7 @@ static const AVOption options[] = {
     { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "iterative_dia_size",  "Dia size for the iterative ME",          OFFSET(iterative_dia_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { NULL },
 };
 

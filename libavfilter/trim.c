@@ -114,12 +114,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    return 0;
-}
-
 #define OFFSET(x) offsetof(TrimContext, x)
 #define COMMON_OPTS                                                                                                                                                         \
     { "starti",      "Timestamp of the first frame that "                                                                                                        \
@@ -223,7 +217,6 @@ static const AVFilterPad trim_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
     },
     { NULL }
 };
@@ -378,7 +371,6 @@ static const AVFilterPad atrim_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .config_props = config_output,
     },
     { NULL }
 };

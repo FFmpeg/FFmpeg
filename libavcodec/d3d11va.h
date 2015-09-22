@@ -53,8 +53,10 @@
  * to the Direct3D11 FFmpeg HWAccel implementation.
  *
  * The application must make it available as AVCodecContext.hwaccel_context.
+ *
+ * Use av_d3d11va_alloc_context() exclusively to allocate an AVD3D11VAContext.
  */
-struct AVD3D11VAContext {
+typedef struct AVD3D11VAContext {
     /**
      * D3D11 decoder object
      */
@@ -89,7 +91,19 @@ struct AVD3D11VAContext {
      * Private to the FFmpeg AVHWAccel implementation
      */
     unsigned report_id;
-};
+
+    /**
+      * Mutex to access video_context
+      */
+    HANDLE  context_mutex;
+} AVD3D11VAContext;
+
+/**
+ * Allocate an AVD3D11VAContext.
+ *
+ * @return Newly-allocated AVD3D11VAContext or NULL on failure.
+ */
+AVD3D11VAContext *av_d3d11va_alloc_context(void);
 
 /**
  * @}

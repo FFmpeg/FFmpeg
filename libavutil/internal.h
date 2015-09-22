@@ -276,10 +276,6 @@ static av_always_inline av_const int avpriv_mirror(int x, int w)
     return x;
 }
 
-#if FF_API_GET_CHANNEL_LAYOUT_COMPAT
-uint64_t ff_get_channel_layout(const char *name, int compat);
-#endif
-
 void ff_check_pixfmt_descriptors(void);
 
 extern const uint8_t ff_reverse[256];

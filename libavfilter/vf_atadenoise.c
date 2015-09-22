@@ -269,7 +269,7 @@ static int config_input(AVFilterLink *inlink)
     s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
-    depth = desc->comp[0].depth_minus1 + 1;
+    depth = desc->comp[0].depth;
     if (depth == 8)
         s->filter_slice = filter_slice8;
     else
@@ -285,12 +285,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    return 0;
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -302,6 +296,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if (s->q.available != s->size) {
         if (s->q.available < s->mid) {
             out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+            if (!out)
+                return AVERROR(ENOMEM);
+
             for (i = 0; i < s->mid; i++)
                 ff_bufqueue_add(ctx, &s->q, av_frame_clone(out));
             av_frame_free(&out);
@@ -398,7 +395,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
-        .config_props  = config_output,
     },
     { NULL }
 };

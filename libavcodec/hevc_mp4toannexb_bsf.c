@@ -134,7 +134,7 @@ static int hevc_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                        "The input looks like it is Annex B already\n");
                 ctx->logged_nonmp4_warning = 1;
             }
-            *poutbuf      = buf;
+            *poutbuf      = (uint8_t *)buf;
             *poutbuf_size = buf_size;
             return 0;
         }

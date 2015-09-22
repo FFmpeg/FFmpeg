@@ -49,8 +49,6 @@ static av_cold void idctdsp_init_mmi(IDCTDSPContext *c, AVCodecContext *avctx,
         (avctx->bits_per_raw_sample != 10) &&
         (avctx->bits_per_raw_sample != 12) &&
         (avctx->idct_algo == FF_IDCT_AUTO)) {
-                c->idct_put = ff_simple_idct_put_mmi;
-                c->idct_add = ff_simple_idct_add_mmi;
                 c->idct = ff_simple_idct_mmi;
                 c->perm_type = FF_IDCT_PERM_NONE;
     }

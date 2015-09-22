@@ -120,13 +120,13 @@ typedef struct VP9DSPContext {
     vp9_scaled_mc_func smc[5][4][2];
 } VP9DSPContext;
 
-void ff_vp9dsp_init(VP9DSPContext *dsp, int bpp);
+void ff_vp9dsp_init(VP9DSPContext *dsp, int bpp, int bitexact);
 
 void ff_vp9dsp_init_8(VP9DSPContext *dsp);
 void ff_vp9dsp_init_10(VP9DSPContext *dsp);
 void ff_vp9dsp_init_12(VP9DSPContext *dsp);
 
-void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp);
+void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact);
 void ff_vp9dsp_init_mips(VP9DSPContext *dsp, int bpp);
 
 #endif /* AVCODEC_VP9DSP_H */

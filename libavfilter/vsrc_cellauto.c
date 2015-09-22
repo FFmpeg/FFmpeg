@@ -74,10 +74,10 @@ static const AVOption cellauto_options[] = {
     { "ratio",             "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl = 1/M_PHI}, 0, 1, FLAGS },
     { "random_seed", "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { "seed",        "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
-    { "scroll",      "scroll pattern downward", OFFSET(scroll), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, FLAGS },
-    { "start_full",  "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
-    { "full",        "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, FLAGS },
-    { "stitch",      "stitch boundaries", OFFSET(stitch), AV_OPT_TYPE_INT,    {.i64 = 1},   0, 1, FLAGS },
+    { "scroll",      "scroll pattern downward", OFFSET(scroll), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
+    { "start_full",  "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
+    { "full",        "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
+    { "stitch",      "stitch boundaries", OFFSET(stitch), AV_OPT_TYPE_BOOL,    {.i64 = 1},   0, 1, FLAGS },
     { NULL }
 };
 
@@ -86,55 +86,55 @@ AVFILTER_DEFINE_CLASS(cellauto);
 #ifdef DEBUG
 static void show_cellauto_row(AVFilterContext *ctx)
 {
-    CellAutoContext *cellauto = ctx->priv;
+    CellAutoContext *s = ctx->priv;
     int i;
-    uint8_t *row = cellauto->buf + cellauto->w * cellauto->buf_row_idx;
-    char *line = av_malloc(cellauto->w + 1);
+    uint8_t *row = s->buf + s->w * s->buf_row_idx;
+    char *line = av_malloc(s->w + 1);
     if (!line)
         return;
 
-    for (i = 0; i < cellauto->w; i++)
+    for (i = 0; i < s->w; i++)
         line[i] = row[i] ? '@' : ' ';
     line[i] = 0;
-    av_log(ctx, AV_LOG_DEBUG, "generation:%"PRId64" row:%s|\n", cellauto->generation, line);
+    av_log(ctx, AV_LOG_DEBUG, "generation:%"PRId64" row:%s|\n", s->generation, line);
     av_free(line);
 }
 #endif
 
 static int init_pattern_from_string(AVFilterContext *ctx)
 {
-    CellAutoContext *cellauto = ctx->priv;
+    CellAutoContext *s = ctx->priv;
     char *p;
     int i, w = 0;
 
-    w = strlen(cellauto->pattern);
+    w = strlen(s->pattern);
     av_log(ctx, AV_LOG_DEBUG, "w:%d\n", w);
 
-    if (cellauto->w) {
-        if (w > cellauto->w) {
+    if (s->w) {
+        if (w > s->w) {
             av_log(ctx, AV_LOG_ERROR,
                    "The specified width is %d which cannot contain the provided string width of %d\n",
-                   cellauto->w, w);
+                   s->w, w);
             return AVERROR(EINVAL);
         }
     } else {
         /* width was not specified, set it to width of the provided row */
-        cellauto->w = w;
-        cellauto->h = (double)cellauto->w * M_PHI;
+        s->w = w;
+        s->h = (double)s->w * M_PHI;
     }
 
-    cellauto->buf = av_mallocz_array(sizeof(uint8_t) * cellauto->w, cellauto->h);
-    if (!cellauto->buf)
+    s->buf = av_mallocz_array(sizeof(uint8_t) * s->w, s->h);
+    if (!s->buf)
         return AVERROR(ENOMEM);
 
     /* fill buf */
-    p = cellauto->pattern;
-    for (i = (cellauto->w - w)/2;; i++) {
+    p = s->pattern;
+    for (i = (s->w - w)/2;; i++) {
         av_log(ctx, AV_LOG_DEBUG, "%d %c\n", i, *p == '\n' ? 'N' : *p);
         if (*p == '\n' || !*p)
             break;
         else
-            cellauto->buf[i] = !!av_isgraph(*(p++));
+            s->buf[i] = !!av_isgraph(*(p++));
     }
 
     return 0;
@@ -142,165 +142,165 @@ static int init_pattern_from_string(AVFilterContext *ctx)
 
 static int init_pattern_from_file(AVFilterContext *ctx)
 {
-    CellAutoContext *cellauto = ctx->priv;
+    CellAutoContext *s = ctx->priv;
     int ret;
 
-    ret = av_file_map(cellauto->filename,
-                      &cellauto->file_buf, &cellauto->file_bufsize, 0, ctx);
+    ret = av_file_map(s->filename,
+                      &s->file_buf, &s->file_bufsize, 0, ctx);
     if (ret < 0)
         return ret;
 
     /* create a string based on the read file */
-    cellauto->pattern = av_malloc(cellauto->file_bufsize + 1);
-    if (!cellauto->pattern)
+    s->pattern = av_malloc(s->file_bufsize + 1);
+    if (!s->pattern)
         return AVERROR(ENOMEM);
-    memcpy(cellauto->pattern, cellauto->file_buf, cellauto->file_bufsize);
-    cellauto->pattern[cellauto->file_bufsize] = 0;
+    memcpy(s->pattern, s->file_buf, s->file_bufsize);
+    s->pattern[s->file_bufsize] = 0;
 
     return init_pattern_from_string(ctx);
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    CellAutoContext *cellauto = ctx->priv;
+    CellAutoContext *s = ctx->priv;
     int ret;
 
-    if (!cellauto->w && !cellauto->filename && !cellauto->pattern)
-        av_opt_set(cellauto, "size", "320x518", 0);
+    if (!s->w && !s->filename && !s->pattern)
+        av_opt_set(s, "size", "320x518", 0);
 
-    if (cellauto->filename && cellauto->pattern) {
+    if (s->filename && s->pattern) {
         av_log(ctx, AV_LOG_ERROR, "Only one of the filename or pattern options can be used\n");
         return AVERROR(EINVAL);
     }
 
-    if (cellauto->filename) {
+    if (s->filename) {
         if ((ret = init_pattern_from_file(ctx)) < 0)
             return ret;
-    } else if (cellauto->pattern) {
+    } else if (s->pattern) {
         if ((ret = init_pattern_from_string(ctx)) < 0)
             return ret;
     } else {
         /* fill the first row randomly */
         int i;
 
-        cellauto->buf = av_mallocz_array(sizeof(uint8_t) * cellauto->w, cellauto->h);
-        if (!cellauto->buf)
+        s->buf = av_mallocz_array(sizeof(uint8_t) * s->w, s->h);
+        if (!s->buf)
             return AVERROR(ENOMEM);
-        if (cellauto->random_seed == -1)
-            cellauto->random_seed = av_get_random_seed();
+        if (s->random_seed == -1)
+            s->random_seed = av_get_random_seed();
 
-        av_lfg_init(&cellauto->lfg, cellauto->random_seed);
+        av_lfg_init(&s->lfg, s->random_seed);
 
-        for (i = 0; i < cellauto->w; i++) {
-            double r = (double)av_lfg_get(&cellauto->lfg) / UINT32_MAX;
-            if (r <= cellauto->random_fill_ratio)
-                cellauto->buf[i] = 1;
+        for (i = 0; i < s->w; i++) {
+            double r = (double)av_lfg_get(&s->lfg) / UINT32_MAX;
+            if (r <= s->random_fill_ratio)
+                s->buf[i] = 1;
         }
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
            "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%u\n",
-           cellauto->w, cellauto->h, cellauto->frame_rate.num, cellauto->frame_rate.den,
-           cellauto->rule, cellauto->stitch, cellauto->scroll, cellauto->start_full,
-           cellauto->random_seed);
+           s->w, s->h, s->frame_rate.num, s->frame_rate.den,
+           s->rule, s->stitch, s->scroll, s->start_full,
+           s->random_seed);
     return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    CellAutoContext *cellauto = ctx->priv;
+    CellAutoContext *s = ctx->priv;
 
-    av_file_unmap(cellauto->file_buf, cellauto->file_bufsize);
-    av_freep(&cellauto->buf);
-    av_freep(&cellauto->pattern);
+    av_file_unmap(s->file_buf, s->file_bufsize);
+    av_freep(&s->buf);
+    av_freep(&s->pattern);
 }
 
 static int config_props(AVFilterLink *outlink)
 {
-    CellAutoContext *cellauto = outlink->src->priv;
+    CellAutoContext *s = outlink->src->priv;
 
-    outlink->w = cellauto->w;
-    outlink->h = cellauto->h;
-    outlink->time_base = av_inv_q(cellauto->frame_rate);
+    outlink->w = s->w;
+    outlink->h = s->h;
+    outlink->time_base = av_inv_q(s->frame_rate);
 
     return 0;
 }
 
 static void evolve(AVFilterContext *ctx)
 {
-    CellAutoContext *cellauto = ctx->priv;
+    CellAutoContext *s = ctx->priv;
     int i, v, pos[3];
-    uint8_t *row, *prev_row = cellauto->buf + cellauto->buf_row_idx * cellauto->w;
+    uint8_t *row, *prev_row = s->buf + s->buf_row_idx * s->w;
     enum { NW, N, NE };
 
-    cellauto->buf_prev_row_idx = cellauto->buf_row_idx;
-    cellauto->buf_row_idx      = cellauto->buf_row_idx == cellauto->h-1 ? 0 : cellauto->buf_row_idx+1;
-    row = cellauto->buf + cellauto->w * cellauto->buf_row_idx;
+    s->buf_prev_row_idx = s->buf_row_idx;
+    s->buf_row_idx      = s->buf_row_idx == s->h-1 ? 0 : s->buf_row_idx+1;
+    row = s->buf + s->w * s->buf_row_idx;
 
-    for (i = 0; i < cellauto->w; i++) {
-        if (cellauto->stitch) {
-            pos[NW] = i-1 < 0 ? cellauto->w-1 : i-1;
+    for (i = 0; i < s->w; i++) {
+        if (s->stitch) {
+            pos[NW] = i-1 < 0 ? s->w-1 : i-1;
             pos[N]  = i;
-            pos[NE] = i+1 == cellauto->w ? 0  : i+1;
+            pos[NE] = i+1 == s->w ? 0  : i+1;
             v = prev_row[pos[NW]]<<2 | prev_row[pos[N]]<<1 | prev_row[pos[NE]];
         } else {
             v = 0;
             v|= i-1 >= 0          ? prev_row[i-1]<<2 : 0;
             v|=                     prev_row[i  ]<<1    ;
-            v|= i+1 < cellauto->w ? prev_row[i+1]    : 0;
+            v|= i+1 < s->w ? prev_row[i+1]    : 0;
         }
-        row[i] = !!(cellauto->rule & (1<<v));
+        row[i] = !!(s->rule & (1<<v));
         ff_dlog(ctx, "i:%d context:%c%c%c -> cell:%d\n", i,
                 v&4?'@':' ', v&2?'@':' ', v&1?'@':' ', row[i]);
     }
 
-    cellauto->generation++;
+    s->generation++;
 }
 
 static void fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
-    CellAutoContext *cellauto = ctx->priv;
+    CellAutoContext *s = ctx->priv;
     int i, j, k, row_idx = 0;
     uint8_t *p0 = picref->data[0];
 
-    if (cellauto->scroll && cellauto->generation >= cellauto->h)
+    if (s->scroll && s->generation >= s->h)
         /* show on top the oldest row */
-        row_idx = (cellauto->buf_row_idx + 1) % cellauto->h;
+        row_idx = (s->buf_row_idx + 1) % s->h;
 
     /* fill the output picture with the whole buffer */
-    for (i = 0; i < cellauto->h; i++) {
+    for (i = 0; i < s->h; i++) {
         uint8_t byte = 0;
-        uint8_t *row = cellauto->buf + row_idx*cellauto->w;
+        uint8_t *row = s->buf + row_idx*s->w;
         uint8_t *p = p0;
-        for (k = 0, j = 0; j < cellauto->w; j++) {
+        for (k = 0, j = 0; j < s->w; j++) {
             byte |= row[j]<<(7-k++);
-            if (k==8 || j == cellauto->w-1) {
+            if (k==8 || j == s->w-1) {
                 k = 0;
                 *p++ = byte;
                 byte = 0;
             }
         }
-        row_idx = (row_idx + 1) % cellauto->h;
+        row_idx = (row_idx + 1) % s->h;
         p0 += picref->linesize[0];
     }
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
-    CellAutoContext *cellauto = outlink->src->priv;
-    AVFrame *picref = ff_get_video_buffer(outlink, cellauto->w, cellauto->h);
+    CellAutoContext *s = outlink->src->priv;
+    AVFrame *picref = ff_get_video_buffer(outlink, s->w, s->h);
     if (!picref)
         return AVERROR(ENOMEM);
     picref->sample_aspect_ratio = (AVRational) {1, 1};
-    if (cellauto->generation == 0 && cellauto->start_full) {
+    if (s->generation == 0 && s->start_full) {
         int i;
-        for (i = 0; i < cellauto->h-1; i++)
+        for (i = 0; i < s->h-1; i++)
             evolve(outlink->src);
     }
     fill_picture(outlink->src, picref);
     evolve(outlink->src);
 
-    picref->pts = cellauto->pts++;
+    picref->pts = s->pts++;
 
 #ifdef DEBUG
     show_cellauto_row(outlink->src);

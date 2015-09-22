@@ -90,7 +90,12 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
 #endif
     case VPX_IMG_FMT_I444:
         avctx->profile = FF_PROFILE_VP9_1;
+#if VPX_IMAGE_ABI_VERSION >= 3
+        avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
+                         AV_PIX_FMT_GBRP : AV_PIX_FMT_YUV444P;
+#else
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+#endif
         return 0;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
     case VPX_IMG_FMT_I42016:
@@ -131,10 +136,20 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
     case VPX_IMG_FMT_I44416:
         avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
+#if VPX_IMAGE_ABI_VERSION >= 3
+            avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
+                             AV_PIX_FMT_GBRP10LE : AV_PIX_FMT_YUV444P10LE;
+#else
             avctx->pix_fmt = AV_PIX_FMT_YUV444P10LE;
+#endif
             return 0;
         } else if (img->bit_depth == 12) {
+#if VPX_IMAGE_ABI_VERSION >= 3
+            avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
+                             AV_PIX_FMT_GBRP12LE : AV_PIX_FMT_YUV444P12LE;
+#else
             avctx->pix_fmt = AV_PIX_FMT_YUV444P12LE;
+#endif
             return 0;
         } else {
             return AVERROR_INVALIDDATA;

@@ -1170,3 +1170,84 @@ AVFilter ff_vsrc_allyuv = {
 };
 
 #endif /* CONFIG_ALLYUV_FILTER */
+
+#if CONFIG_ALLRGB_FILTER
+
+static const AVOption allrgb_options[] = {
+    COMMON_OPTIONS_NOSIZE
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(allrgb);
+
+static void allrgb_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    unsigned x, y;
+    const int linesize = frame->linesize[0];
+    uint8_t *line = frame->data[0];
+
+    for (y = 0; y < 4096; y++) {
+        uint8_t *dst = line;
+
+        for (x = 0; x < 4096; x++) {
+            *dst++ = x;
+            *dst++ = y;
+            *dst++ = (x >> 8) | ((y >> 8) << 4);
+        }
+        line += linesize;
+    }
+}
+
+static av_cold int allrgb_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->w = test->h = 4096;
+    test->draw_once = 1;
+    test->fill_picture_fn = allrgb_fill_picture;
+    return init(ctx);
+}
+
+static int allrgb_config_props(AVFilterLink *outlink)
+{
+    TestSourceContext *test = outlink->src->priv;
+
+    ff_fill_rgba_map(test->rgba_map, outlink->format);
+    return config_props(outlink);
+}
+
+static int allrgb_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static const AVFilterPad avfilter_vsrc_allrgb_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = allrgb_config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_allrgb = {
+    .name          = "allrgb",
+    .description   = NULL_IF_CONFIG_SMALL("Generate all RGB colors."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &allrgb_class,
+    .init          = allrgb_init,
+    .uninit        = uninit,
+    .query_formats = allrgb_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_allrgb_outputs,
+};
+
+#endif /* CONFIG_ALLRGB_FILTER */

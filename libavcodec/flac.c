@@ -235,18 +235,3 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     skip_bits_long(&gb, 64); /* md5 sum */
     skip_bits_long(&gb, 64); /* md5 sum */
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 57
-void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
-                              const uint8_t *buffer)
-{
-    ff_flac_parse_streaminfo(avctx, s, buffer);
-}
-
-int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
-                               enum FLACExtradataFormat *format,
-                               uint8_t **streaminfo_start)
-{
-    return ff_flac_is_extradata_valid(avctx, format, streaminfo_start);
-}
-#endif

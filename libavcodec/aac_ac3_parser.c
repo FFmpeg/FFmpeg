@@ -84,14 +84,6 @@ get_next:
         avctx->sample_rate = s->sample_rate;
 
         /* (E-)AC-3: allow downmixing to stereo or mono */
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (avctx->request_channels == 1)
-            avctx->request_channel_layout = AV_CH_LAYOUT_MONO;
-        else if (avctx->request_channels == 2)
-            avctx->request_channel_layout = AV_CH_LAYOUT_STEREO;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         if (s->channels > 1 &&
             avctx->request_channel_layout == AV_CH_LAYOUT_MONO) {
             avctx->channels       = 1;

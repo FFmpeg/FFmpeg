@@ -2,6 +2,17 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- DXV decoding
+- extrastereo filter
+- ocr filter
+- alimiter filter
+- stereowiden filter
+- stereotools filter
+- rubberband filter
+- tremolo filter
+
+
+version 2.8:
 - colorkey video filter
 - BFSTM/BCSTM demuxer
 - little-endian ADPCM_THP decoder
@@ -27,7 +38,7 @@ version <next>:
 - sidechaincompress audio filter
 - bitstream filter for converting HEVC from MP4 to Annex B
 - acrossfade audio filter
-- allyuv video source
+- allyuv and allrgb video sources
 - atadenoise video filter
 - OS X VideoToolbox support
 - aphasemeter filter
@@ -40,6 +51,7 @@ version <next>:
 - VDPAU hevc hwaccel
 - framerate filter
 - Switched default encoders for webm to VP9 and Opus
+- Removed experimental flag from the JPEG 2000 encoder
 
 
 version 2.7:

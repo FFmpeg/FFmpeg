@@ -58,6 +58,7 @@ typedef struct DCAEncContext {
     int lfe_scale_factor;
     softfloat lfe_quant;
     int32_t lfe_peak_cb;
+    const int8_t *channel_order_tab;  ///< channel reordering table, lfe and non lfe
 
     int32_t history[512][MAX_CHANNELS]; /* This is a circular buffer */
     int32_t subband[SUBBAND_SAMPLES][DCAENC_SUBBANDS][MAX_CHANNELS];
@@ -133,8 +134,12 @@ static int encode_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    if (c->lfe_channel)
+    if (c->lfe_channel) {
         c->fullband_channels--;
+        c->channel_order_tab = ff_dca_channel_reorder_lfe[c->channel_config];
+    } else {
+        c->channel_order_tab = ff_dca_channel_reorder_nolfe[c->channel_config];
+    }
 
     for (i = 0; i < 9; i++) {
         if (sample_rates[i] == avctx->sample_rate)
@@ -145,7 +150,7 @@ static int encode_init(AVCodecContext *avctx)
     c->samplerate_index = i;
 
     if (avctx->bit_rate < 32000 || avctx->bit_rate > 3840000) {
-        av_log(avctx, AV_LOG_ERROR, "Bit rate %i not supported.", avctx->bit_rate);
+        av_log(avctx, AV_LOG_ERROR, "Bit rate %"PRId64" not supported.", (int64_t)avctx->bit_rate);
         return AVERROR(EINVAL);
     }
     for (i = 0; ff_dca_bit_rates[i] < avctx->bit_rate; i++)
@@ -169,10 +174,11 @@ static int encode_init(AVCodecContext *avctx)
             cb_to_level[i] = (int32_t)(0x7fffffff * pow(10, -0.005 * i));
         }
 
-        /* FIXME: probably incorrect */
-        for (i = 0; i < 256; i++) {
-            lfe_fir_64i[i] = (int32_t)(0x01ffffff * ff_dca_lfe_fir_64[i]);
-            lfe_fir_64i[511 - i] = (int32_t)(0x01ffffff * ff_dca_lfe_fir_64[i]);
+        for (k = 0; k < 32; k++) {
+            for (j = 0; j < 8; j++) {
+                lfe_fir_64i[64 * j + k] = (int32_t)(0xffffff800000ULL * ff_dca_lfe_fir_64[8 * k + j]);
+                lfe_fir_64i[64 * (7-j) + (63 - k)] = (int32_t)(0xffffff800000ULL * ff_dca_lfe_fir_64[8 * k + j]);
+            }
         }
 
         for (i = 0; i < 512; i++) {
@@ -243,6 +249,7 @@ static void subband_transform(DCAEncContext *c, const int32_t *input)
         /* History is copied because it is also needed for PSY */
         int32_t hist[512];
         int hist_start = 0;
+        const int chi = c->channel_order_tab[ch];
 
         for (i = 0; i < 512; i++)
             hist[i] = c->history[i][ch];
@@ -279,7 +286,7 @@ static void subband_transform(DCAEncContext *c, const int32_t *input)
 
             /* Copy in 32 new samples from input */
             for (i = 0; i < 32; i++)
-                hist[i + hist_start] = input[(subs * 32 + i) * c->channels + ch];
+                hist[i + hist_start] = input[(subs * 32 + i) * c->channels + chi];
             hist_start = (hist_start + 32) & 511;
         }
     }
@@ -288,6 +295,7 @@ static void subband_transform(DCAEncContext *c, const int32_t *input)
 static void lfe_downsample(DCAEncContext *c, const int32_t *input)
 {
     /* FIXME: make 128x LFE downsampling possible */
+    const int lfech = ff_dca_lfe_index[c->channel_config];
     int i, j, lfes;
     int32_t hist[512];
     int32_t accum;
@@ -309,7 +317,7 @@ static void lfe_downsample(DCAEncContext *c, const int32_t *input)
 
         /* Copy in 64 new samples from input */
         for (i = 0; i < 64; i++)
-            hist[i + hist_start] = input[(lfes * 64 + i) * c->channels + c->channels - 1];
+            hist[i + hist_start] = input[(lfes * 64 + i) * c->channels + lfech];
 
         hist_start = (hist_start + 64) & 511;
     }
@@ -497,10 +505,12 @@ static void calc_masking(DCAEncContext *c, const int32_t *input)
 
     for (ssf = 0; ssf < SUBSUBFRAMES; ssf++)
         for (ch = 0; ch < c->fullband_channels; ch++) {
+            const int chi = c->channel_order_tab[ch];
+
             for (i = 0, k = 128 + 256 * ssf; k < 512; i++, k++)
                 data[i] = c->history[k][ch];
             for (k -= 512; i < 512; i++, k++)
-                data[i] = input[k * c->channels + ch];
+                data[i] = input[k * c->channels + chi];
             adjust_jnd(c->samplerate_index, data, c->masking_curve_cb[ssf]);
         }
     for (i = 0; i < 256; i++) {
@@ -632,8 +642,11 @@ static void shift_history(DCAEncContext *c, const int32_t *input)
     int k, ch;
 
     for (k = 0; k < 512; k++)
-        for (ch = 0; ch < c->channels; ch++)
-            c->history[k][ch] = input[k * c->channels + ch];
+        for (ch = 0; ch < c->channels; ch++) {
+            const int chi = c->channel_order_tab[ch];
+
+            c->history[k][ch] = input[k * c->channels + chi];
+        }
 }
 
 static int32_t quantize_value(int32_t value, softfloat quant)

@@ -86,6 +86,7 @@ typedef struct ScaleContext {
     int w, h;
     char *size_str;
     unsigned int flags;         ///sws flags
+    double param[2];            // sws params
 
     int hsub, vsub;             ///< chroma subsampling
     int slice_y;                ///< top of current output slice
@@ -350,6 +351,8 @@ static int config_props(AVFilterLink *outlink)
     scale->isws[0] = scale->isws[1] = scale->sws = NULL;
     if (inlink0->w == outlink->w &&
         inlink0->h == outlink->h &&
+        !scale->out_color_matrix &&
+        scale->in_range == scale->out_range &&
         inlink0->format == outlink->format)
         ;
     else {
@@ -369,6 +372,14 @@ static int config_props(AVFilterLink *outlink)
             av_opt_set_int(*s, "dsth", outlink->h >> !!i, 0);
             av_opt_set_int(*s, "dst_format", outfmt, 0);
             av_opt_set_int(*s, "sws_flags", scale->flags, 0);
+            av_opt_set_int(*s, "param0", scale->param[0], 0);
+            av_opt_set_int(*s, "param1", scale->param[1], 0);
+            if (scale->in_range != AVCOL_RANGE_UNSPECIFIED)
+                av_opt_set_int(*s, "src_range",
+                               scale->in_range == AVCOL_RANGE_JPEG, 0);
+            if (scale->out_range != AVCOL_RANGE_UNSPECIFIED)
+                av_opt_set_int(*s, "dst_range",
+                               scale->out_range == AVCOL_RANGE_JPEG, 0);
 
             if (scale->opts) {
                 AVDictionaryEntry *e = NULL;
@@ -533,6 +544,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             inv_table = parse_yuv_type(scale->in_color_matrix, av_frame_get_colorspace(in));
         if (scale->out_color_matrix)
             table     = parse_yuv_type(scale->out_color_matrix, AVCOL_SPC_UNSPECIFIED);
+        else if (scale->in_color_matrix)
+            table = inv_table;
 
         if (scale-> in_range != AVCOL_RANGE_UNSPECIFIED)
             in_full  = (scale-> in_range == AVCOL_RANGE_JPEG);
@@ -636,6 +649,8 @@ static const AVOption scale_options[] = {
     { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
     { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "force_oar" },
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
+    { "param0", "Scaler param 0",             OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
+    { "param1", "Scaler param 1",             OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { NULL }
 };
 

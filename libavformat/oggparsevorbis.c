@@ -406,6 +406,9 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     struct oggvorbis_private *priv = os->private;
     int duration, flags = 0;
 
+    if (!priv->vp)
+        return AVERROR_INVALIDDATA;
+
     /* first packet handling
      * here we parse the duration of each packet in the first page and compare
      * the total duration to the page granule to find the encoder delay and

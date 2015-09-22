@@ -1360,6 +1360,7 @@ PREDEFINED             = "__attribute__(x)=" \
                          "offsetof(x,y)=0x42" \
                          av_alloc_size \
                          AV_GCC_VERSION_AT_LEAST(x,y)=1 \
+                         AV_GCC_VERSION_AT_MOST(x,y)=0 \
                          __GNUC__=1 \
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then

@@ -190,9 +190,7 @@ typedef struct AC3HeaderInfo {
     int surround_mix_level;                 ///< Surround mix level index
     uint16_t channel_map;
     int num_blocks;                         ///< number of audio blocks
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     int dolby_surround_mode;
-#endif
     /** @} */
 
     /** @name Derived values
@@ -205,9 +203,6 @@ typedef struct AC3HeaderInfo {
     uint16_t frame_size;
     uint64_t channel_layout;
     /** @} */
-#if !AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int dolby_surround_mode;
-#endif
 } AC3HeaderInfo;
 
 typedef enum {

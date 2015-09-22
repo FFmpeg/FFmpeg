@@ -493,8 +493,8 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
         else if (avctx->bit_rate > 5750 ) ctx->mode = MODE_6k5;
         else                              ctx->mode = MODE_5k0;
         av_log(avctx, AV_LOG_WARNING,
-               "Invalid block_align: %d. Mode %s guessed based on bitrate: %d\n",
-               avctx->block_align, modes[ctx->mode].mode_name, avctx->bit_rate);
+               "Invalid block_align: %d. Mode %s guessed based on bitrate: %"PRId64"\n",
+               avctx->block_align, modes[ctx->mode].mode_name, (int64_t)avctx->bit_rate);
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Mode: %s\n", modes[ctx->mode].mode_name);

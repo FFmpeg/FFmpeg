@@ -84,7 +84,7 @@ static const int swf_index_tables[4][16] = {
 /* end of tables */
 
 typedef struct ADPCMDecodeContext {
-    ADPCMChannelStatus status[10];
+    ADPCMChannelStatus status[14];
     int vqa_version;                /**< VQA version. Used for ADPCM_IMA_WS */
     int has_status;
 } ADPCMDecodeContext;
@@ -109,7 +109,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         break;
     case AV_CODEC_ID_ADPCM_THP:
     case AV_CODEC_ID_ADPCM_THP_LE:
-        max_channels = 10;
+        max_channels = 14;
         break;
     }
     if (avctx->channels < min_channels || avctx->channels > max_channels) {
@@ -775,7 +775,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             int samples_per_block = ff_adpcm_ima_block_samples[avctx->bits_per_coded_sample - 2];
             GetBitContext g;
 
-            init_get_bits8(&g, gb.buffer, bytestream2_get_bytes_left(&gb));
+            ret = init_get_bits8(&g, gb.buffer, bytestream2_get_bytes_left(&gb));
+            if (ret < 0)
+                return ret;
             for (n = 0; n < (nb_samples - 1) / samples_per_block; n++) {
                 for (i = 0; i < avctx->channels; i++) {
                     cs = &c->status[i];
@@ -1429,7 +1431,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_THP:
     case AV_CODEC_ID_ADPCM_THP_LE:
     {
-        int table[10][16];
+        int table[14][16];
         int ch;
 
 #define THP_GET16(g) \

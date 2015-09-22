@@ -90,7 +90,7 @@ static int vplayer_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&vplayer->q);
+    ff_subtitles_queue_finalize(s, &vplayer->q);
     return 0;
 }
 

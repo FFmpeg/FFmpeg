@@ -141,7 +141,7 @@ static int microdvd_read_header(AVFormatContext *s)
         sub->pts = get_pts(line);
         sub->duration = get_duration(line);
     }
-    ff_subtitles_queue_finalize(&microdvd->q);
+    ff_subtitles_queue_finalize(s, &microdvd->q);
     if (has_real_fps) {
         /* export the FPS info only if set in the file */
         microdvd->frame_rate = pts_info;

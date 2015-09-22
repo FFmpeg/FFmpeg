@@ -177,25 +177,25 @@ static int query_formats(AVFilterContext *ctx)
         avff = ctx->inputs[0]->in_formats;
         desc = av_pix_fmt_desc_get(avff->formats[0]);
         rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
-        bits = desc->comp[0].depth_minus1;
+        bits = desc->comp[0].depth;
         for (i = 1; i < avff->nb_formats; i++) {
             desc = av_pix_fmt_desc_get(avff->formats[i]);
-            if ((rgb != desc->flags & AV_PIX_FMT_FLAG_RGB) ||
-                (bits != desc->comp[0].depth_minus1))
+            if ((rgb != (desc->flags & AV_PIX_FMT_FLAG_RGB)) ||
+                (bits != desc->comp[0].depth))
                 return AVERROR(EAGAIN);
         }
 
-        if (rgb && bits == 7)
+        if (rgb && bits == 8)
             out_pix_fmts = levels_out_rgb8_pix_fmts;
-        else if (rgb && bits == 8)
-            out_pix_fmts = levels_out_rgb9_pix_fmts;
         else if (rgb && bits == 9)
+            out_pix_fmts = levels_out_rgb9_pix_fmts;
+        else if (rgb && bits == 10)
             out_pix_fmts = levels_out_rgb10_pix_fmts;
-        else if (bits == 7)
-            out_pix_fmts = levels_out_yuv8_pix_fmts;
         else if (bits == 8)
+            out_pix_fmts = levels_out_yuv8_pix_fmts;
+        else if (bits == 9)
             out_pix_fmts = levels_out_yuv9_pix_fmts;
-        else // if (bits == 9)
+        else // if (bits == 10)
             out_pix_fmts = levels_out_yuv10_pix_fmts;
         ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats);
 
@@ -227,7 +227,7 @@ static int config_input(AVFilterLink *inlink)
 
     h->desc  = av_pix_fmt_desc_get(inlink->format);
     h->ncomp = h->desc->nb_components;
-    h->histogram_size = 1 << (h->desc->comp[0].depth_minus1 + 1);
+    h->histogram_size = 1 << h->desc->comp[0].depth;
     h->mult = h->histogram_size / 256;
 
     switch (inlink->format) {

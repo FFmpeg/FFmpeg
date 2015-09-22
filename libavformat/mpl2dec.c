@@ -108,7 +108,7 @@ static int mpl2_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&mpl2->q);
+    ff_subtitles_queue_finalize(s, &mpl2->q);
     return res;
 }
 

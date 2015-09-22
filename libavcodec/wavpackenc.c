@@ -1829,9 +1829,9 @@ static int wv_stereo(WavPackEncodeContext *s,
     log_limit = (((s->flags & MAG_MASK) >> MAG_LSB) + 4) * 256;
     log_limit = FFMIN(6912, log_limit);
 
-    if (s->joint) {
-        force_js = s->joint > 0;
-        force_ts = s->joint < 0;
+    if (s->joint != -1) {
+        force_js =  s->joint;
+        force_ts = !s->joint;
     }
 
     if ((ret = allocate_buffers(s)) < 0)
@@ -2955,13 +2955,8 @@ static av_cold int wavpack_encode_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(WavPackEncodeContext, x)
 #define FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption options[] = {
-    { "joint_stereo",  "", OFFSET(joint), AV_OPT_TYPE_INT, {.i64=0},-1, 1, FLAGS, "joint" },
-    { "on",   "mid/side",   0, AV_OPT_TYPE_CONST, {.i64= 1}, 0, 0, FLAGS, "joint"},
-    { "off",  "left/right", 0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, FLAGS, "joint"},
-    { "auto", NULL, 0, AV_OPT_TYPE_CONST, {.i64= 0}, 0, 0, FLAGS, "joint"},
-    { "optimize_mono",        "", OFFSET(optimize_mono), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "opt_mono" },
-    { "on",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "opt_mono"},
-    { "off",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "opt_mono"},
+    { "joint_stereo",  "", OFFSET(joint), AV_OPT_TYPE_BOOL, {.i64=-1}, -1, 1, FLAGS },
+    { "optimize_mono", "", OFFSET(optimize_mono), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL },
 };
 

@@ -217,6 +217,7 @@ int ff_init_filters(SwsContext * c)
     int num_vdesc = isPlanarYUV(c->dstFormat) && !isGray(c->dstFormat) ? 2 : 1;
     int need_lum_conv = c->lumToYV12 || c->readLumPlanar || c->alpToYV12 || c->readAlpPlanar;
     int need_chr_conv = c->chrToYV12 || c->readChrPlanar;
+    int need_gamma = c->is_internal_gamma;
     int srcIdx, dstIdx;
     int dst_stride = FFALIGN(c->dstW * sizeof(int16_t) + 66, 16);
 
@@ -230,9 +231,9 @@ int ff_init_filters(SwsContext * c)
     num_cdesc = need_chr_conv ? 2 : 1;
 
     c->numSlice = FFMAX(num_ydesc, num_cdesc) + 2;
-    c->numDesc = num_ydesc + num_cdesc + num_vdesc;
-    c->descIndex[0] = num_ydesc;
-    c->descIndex[1] = num_ydesc + num_cdesc;
+    c->numDesc = num_ydesc + num_cdesc + num_vdesc + (need_gamma ? 2 : 0);
+    c->descIndex[0] = num_ydesc + (need_gamma ? 1 : 0);
+    c->descIndex[1] = num_ydesc + num_cdesc + (need_gamma ? 1 : 0);
 
 
 
@@ -267,8 +268,15 @@ int ff_init_filters(SwsContext * c)
     srcIdx = 0;
     dstIdx = 1;
 
+    if (need_gamma) {
+        res = ff_init_gamma_convert(c->desc + index, c->slice + srcIdx, c->inv_gamma);
+        if (res < 0) goto cleanup;
+        ++index;
+    }
+
     if (need_lum_conv) {
-        ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+        res = ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+        if (res < 0) goto cleanup;
         c->desc[index].alpha = c->alpPixBuf != 0;
         ++index;
         srcIdx = dstIdx;
@@ -276,7 +284,8 @@ int ff_init_filters(SwsContext * c)
 
 
     dstIdx = FFMAX(num_ydesc, num_cdesc);
-    ff_init_desc_hscale(&c->desc[index], &c->slice[index], &c->slice[dstIdx], c->hLumFilter, c->hLumFilterPos, c->hLumFilterSize, c->lumXInc);
+    res = ff_init_desc_hscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hLumFilter, c->hLumFilterPos, c->hLumFilterSize, c->lumXInc);
+    if (res < 0) goto cleanup;
     c->desc[index].alpha = c->alpPixBuf != 0;
 
 
@@ -285,23 +294,32 @@ int ff_init_filters(SwsContext * c)
         srcIdx = 0;
         dstIdx = 1;
         if (need_chr_conv) {
-            ff_init_desc_cfmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+            res = ff_init_desc_cfmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
+            if (res < 0) goto cleanup;
             ++index;
             srcIdx = dstIdx;
         }
 
         dstIdx = FFMAX(num_ydesc, num_cdesc);
         if (c->needs_hcscale)
-            ff_init_desc_chscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hChrFilter, c->hChrFilterPos, c->hChrFilterSize, c->chrXInc);
+            res = ff_init_desc_chscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hChrFilter, c->hChrFilterPos, c->hChrFilterSize, c->chrXInc);
         else
-            ff_init_desc_no_chr(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx]);
+            res = ff_init_desc_no_chr(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx]);
+        if (res < 0) goto cleanup;
     }
 
     ++index;
     {
         srcIdx = c->numSlice - 2;
         dstIdx = c->numSlice - 1;
-        ff_init_vscale(c, c->desc + index, c->slice + srcIdx, c->slice + dstIdx);
+        res = ff_init_vscale(c, c->desc + index, c->slice + srcIdx, c->slice + dstIdx);
+        if (res < 0) goto cleanup;
+    }
+
+    ++index;
+    if (need_gamma) {
+        res = ff_init_gamma_convert(c->desc + index, c->slice + dstIdx, c->gamma);
+        if (res < 0) goto cleanup;
     }
 
     return 0;

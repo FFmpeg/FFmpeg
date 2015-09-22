@@ -64,7 +64,6 @@
 #include "libavcodec/mathops.h"
 #include "libavformat/os_support.h"
 
-# include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/buffersrc.h"
 # include "libavfilter/buffersink.h"
@@ -693,13 +692,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                                            &new_pkt.data, &new_pkt.size,
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
-FF_DISABLE_DEPRECATION_WARNINGS
-        if(a == 0 && new_pkt.data != pkt->data
-#if FF_API_DESTRUCT_PACKET
-           && new_pkt.destruct
-#endif
-           ) {
-FF_ENABLE_DEPRECATION_WARNINGS
+        if(a == 0 && new_pkt.data != pkt->data) {
             uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
             if(t) {
                 memcpy(t, new_pkt.data, new_pkt.size);
@@ -2603,7 +2596,6 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         }
         if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
             av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
-        av_dict_set(&ost->encoder_opts, "side_data_only_packets", "1", 0);
         if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
             !codec->defaults &&
             !av_dict_get(ost->encoder_opts, "b", NULL, 0) &&
@@ -2914,7 +2906,7 @@ static int transcode_init(void)
                 enc_ctx->time_base = dec_ctx->time_base;
             }
 
-            if (ist && !ost->frame_rate.num)
+            if (!ost->frame_rate.num)
                 ost->frame_rate = ist->framerate;
             if(ost->frame_rate.num)
                 enc_ctx->time_base = av_inv_q(ost->frame_rate);

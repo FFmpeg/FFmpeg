@@ -47,8 +47,8 @@ typedef struct {
 static const AVOption asetnsamples_options[] = {
     { "nb_out_samples", "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.i64=1024}, 1, INT_MAX, FLAGS },
     { "n",              "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.i64=1024}, 1, INT_MAX, FLAGS },
-    { "pad", "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
-    { "p",   "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
+    { "pad", "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "p",   "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -77,7 +77,6 @@ static int config_props_output(AVFilterLink *outlink)
     asns->fifo = av_audio_fifo_alloc(outlink->format, outlink->channels, asns->nb_out_samples);
     if (!asns->fifo)
         return AVERROR(ENOMEM);
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     return 0;
 }

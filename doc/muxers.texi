@@ -549,7 +549,7 @@ MD5 testing format.
 This muxer computes and prints the MD5 hash of all the input audio
 and video frames. By default audio frames are converted to signed
 16-bit raw audio and video frames to raw video before computing the
-hash.
+hash. Timestamps are ignored.
 
 The output of the muxer consists of a single line of the form:
 MD5=@var{MD5}, where @var{MD5} is a hexadecimal number representing

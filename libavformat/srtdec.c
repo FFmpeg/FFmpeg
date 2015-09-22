@@ -134,7 +134,7 @@ static int srt_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&srt->q);
+    ff_subtitles_queue_finalize(s, &srt->q);
 
 end:
     av_bprint_finalize(&buf, NULL);

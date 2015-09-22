@@ -128,6 +128,15 @@ static inline int quant_array_idx(const float val, const float *arr, const int n
     return index;
 }
 
+/*
+ * linear congruential pseudorandom number generator, copied from the decoder
+ */
+static inline int lcg_random(unsigned previous_val)
+{
+    union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
+    return v.s;
+}
+
 #define ERROR_IF(cond, ...) \
     if (cond) { \
         av_log(avctx, AV_LOG_ERROR, __VA_ARGS__); \

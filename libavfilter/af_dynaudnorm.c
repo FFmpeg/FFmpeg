@@ -82,9 +82,9 @@ static const AVOption dynaudnorm_options[] = {
     { "p", "set the peak value",               OFFSET(peak_value),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.95}, 0.0,   1.0, FLAGS },
     { "m", "set the max amplification",        OFFSET(max_amplification), AV_OPT_TYPE_DOUBLE, {.dbl = 10.0}, 1.0, 100.0, FLAGS },
     { "r", "set the target RMS",               OFFSET(target_rms),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
-    { "n", "enable channel coupling",          OFFSET(channels_coupled),  AV_OPT_TYPE_INT,    {.i64 = 1},      0,     1, FLAGS },
-    { "c", "enable DC correction",             OFFSET(dc_correction),     AV_OPT_TYPE_INT,    {.i64 = 0},      0,     1, FLAGS },
-    { "b", "enable alternative boundary mode", OFFSET(alt_boundary_mode), AV_OPT_TYPE_INT,    {.i64 = 0},      0,     1, FLAGS },
+    { "n", "set channel coupling",             OFFSET(channels_coupled),  AV_OPT_TYPE_BOOL,   {.i64 = 1},      0,     1, FLAGS },
+    { "c", "set DC correction",                OFFSET(dc_correction),     AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
+    { "b", "set alternative boundary mode",    OFFSET(alt_boundary_mode), AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
     { "s", "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
     { NULL }
 };
@@ -113,7 +113,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
     ret = ff_set_common_channel_layouts(ctx, layouts);
@@ -191,7 +191,7 @@ static int cqueue_enqueue(cqueue *q, double element)
 {
     int i;
 
-    av_assert2(q->nb_elements |= q->size);
+    av_assert2(q->nb_elements != q->size);
 
     i = (q->first + q->nb_elements) % q->size;
     q->elements[i] = element;
@@ -302,12 +302,6 @@ static int config_input(AVFilterLink *inlink)
     s->channels = inlink->channels;
     s->delay = s->filter_size;
 
-    return 0;
-}
-
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     return 0;
 }
 
@@ -721,7 +715,6 @@ static const AVFilterPad avfilter_af_dynaudnorm_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_output,
         .request_frame = request_frame,
     },
     { NULL }

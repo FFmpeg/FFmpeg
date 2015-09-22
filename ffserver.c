@@ -71,6 +71,8 @@
 #include "cmdutils.h"
 #include "ffserver_config.h"
 
+#define PATH_LENGTH 1024
+
 const char program_name[] = "ffserver";
 const int program_birth_year = 2000;
 
@@ -388,16 +390,33 @@ static int compute_datarate(DataRateData *drd, int64_t count)
 
 static void start_children(FFServerStream *feed)
 {
-    char pathname[1024];
+    char *pathname;
     char *slash;
     int i;
+    size_t cmd_length;
 
     if (no_launch)
         return;
 
+    cmd_length = strlen(my_program_name);
+
+   /**
+    * FIXME: WIP Safeguard. Remove after clearing all harcoded
+    * '1024' path lengths
+    */
+    if (cmd_length > PATH_LENGTH - 1) {
+        http_log("Could not start children. Command line: '%s' exceeds "
+                    "path length limit (%d)\n", my_program_name, PATH_LENGTH);
+        return;
+    }
+
+    pathname = av_strdup (my_program_name);
+    if (!pathname) {
+        http_log("Could not allocate memory for children cmd line\n");
+        return;
+    }
    /* replace "ffserver" with "ffmpeg" in the path of current
     * program. Ignore user provided path */
-    av_strlcpy(pathname, my_program_name, sizeof(pathname));
 
     slash = strrchr(pathname, '/');
     if (!slash)
@@ -445,6 +464,7 @@ static void start_children(FFServerStream *feed)
 
         signal(SIGPIPE, SIG_DFL);
         execvp(pathname, feed->child_argv);
+        av_free (pathname);
         _exit(1);
     }
 }
@@ -470,20 +490,22 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
         snprintf(bindmsg, sizeof(bindmsg), "bind(port %d)",
                  ntohs(my_addr->sin_port));
         perror (bindmsg);
-        closesocket(server_fd);
-        return -1;
+        goto fail;
     }
 
     if (listen (server_fd, 5) < 0) {
         perror ("listen");
-        closesocket(server_fd);
-        return -1;
+        goto fail;
     }
 
     if (ff_socket_nonblock(server_fd, 1) < 0)
         av_log(NULL, AV_LOG_WARNING, "ff_socket_nonblock failed\n");
 
     return server_fd;
+
+fail:
+    closesocket(server_fd);
+    return -1;
 }
 
 /* start all multicast streams */
@@ -564,25 +586,21 @@ static int http_server(void)
 
     if (config.http_addr.sin_port) {
         server_fd = socket_open_listen(&config.http_addr);
-        if (server_fd < 0) {
-            av_free(poll_table);
-            return -1;
-        }
+        if (server_fd < 0)
+            goto quit;
     }
 
     if (config.rtsp_addr.sin_port) {
         rtsp_server_fd = socket_open_listen(&config.rtsp_addr);
         if (rtsp_server_fd < 0) {
-            av_free(poll_table);
             closesocket(server_fd);
-            return -1;
+            goto quit;
         }
     }
 
     if (!rtsp_server_fd && !server_fd) {
         http_log("HTTP and RTSP disabled.\n");
-        av_free(poll_table);
-        return -1;
+        goto quit;
     }
 
     http_log("FFserver started.\n");
@@ -660,8 +678,7 @@ static int http_server(void)
             ret = poll(poll_table, poll_entry - poll_table, delay);
             if (ret < 0 && ff_neterrno() != AVERROR(EAGAIN) &&
                 ff_neterrno() != AVERROR(EINTR)) {
-                av_free(poll_table);
-                return -1;
+                goto quit;
             }
         } while (ret < 0);
 
@@ -695,6 +712,10 @@ static int http_server(void)
                 new_connection(rtsp_server_fd, 1);
         }
     }
+
+quit:
+    av_free(poll_table);
+    return -1;
 }
 
 /* start waiting for a new HTTP/RTSP request */
@@ -1284,7 +1305,6 @@ static void compute_real_filename(char *filename, int max_size)
     char *p;
     FFServerStream *stream;
 
-    /* compute filename by matching without the file extensions */
     av_strlcpy(file1, filename, sizeof(file1));
     p = strrchr(file1, '.');
     if (p)
@@ -1447,7 +1467,7 @@ static int http_parse_request(HTTPContext *c)
     if (c->post == 0 && stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth += stream->bandwidth;
 
-    /* If already streaming this feed, do not let start another feeder. */
+    /* If already streaming this feed, do not let another feeder start */
     if (stream->feed_opened) {
         snprintf(msg, sizeof(msg), "This feed is already being received.");
         http_log("Feed '%s' already being received\n", stream->feed_filename);
@@ -1787,9 +1807,9 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
             abort();
         }
 
-        avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%d"
+        avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%"PRId64
                         "<td>%s<td>%s\n",
-                    i, type, st->codec->bit_rate/1000,
+                    i, type, (int64_t)st->codec->bit_rate/1000,
                     codec ? codec->name : "", parameters);
      }
 
@@ -3840,6 +3860,7 @@ int main(int argc, char **argv)
     if ((ret = ffserver_parse_ffconfig(config.filename, &config)) < 0) {
         fprintf(stderr, "Error reading configuration file '%s': %s\n",
                 config.filename, av_err2str(ret));
+        av_freep(&config.filename);
         exit(1);
     }
     av_freep(&config.filename);

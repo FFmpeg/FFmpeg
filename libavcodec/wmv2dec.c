@@ -108,7 +108,7 @@ static int decode_ext_header(Wmv2Context *w)
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG,
-               "fps:%d, br:%d, qpbit:%d, abt_flag:%d, j_type_bit:%d, "
+               "fps:%d, br:%"PRId64", qpbit:%d, abt_flag:%d, j_type_bit:%d, "
                "tl_mv_flag:%d, mbrl_bit:%d, code:%d, loop_filter:%d, "
                "slices:%d\n",
                fps, s->bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit,

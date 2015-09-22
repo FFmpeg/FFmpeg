@@ -296,27 +296,6 @@ AVVorbisParseContext *av_vorbis_parse_init(const uint8_t *extradata,
     return s;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 57
-int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, AVVorbisParseContext *s)
-{
-    return vorbis_parse_init(s, avctx->extradata, avctx->extradata_size);
-}
-void avpriv_vorbis_parse_reset(AVVorbisParseContext *s)
-{
-    av_vorbis_parse_reset(s);
-}
-int avpriv_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
-                              int buf_size)
-{
-    return av_vorbis_parse_frame(s, buf, buf_size);
-}
-int avpriv_vorbis_parse_frame_flags(AVVorbisParseContext *s, const uint8_t *buf,
-                                    int buf_size, int *flags)
-{
-    return av_vorbis_parse_frame_flags(s, buf, buf_size, flags);
-}
-#endif
-
 #if CONFIG_VORBIS_PARSER
 
 typedef struct VorbisParseContext {

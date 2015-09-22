@@ -26,35 +26,47 @@
 
 #include "attributes.h"
 #include "pixfmt.h"
+#include "version.h"
 
 typedef struct AVComponentDescriptor {
     /**
      * Which of the 4 planes contains the component.
      */
-    uint16_t plane        : 2;
+    int plane;
 
     /**
-     * Number of elements between 2 horizontally consecutive pixels minus 1.
+     * Number of elements between 2 horizontally consecutive pixels.
      * Elements are bits for bitstream formats, bytes otherwise.
      */
-    uint16_t step_minus1  : 3;
+    int step;
 
     /**
-     * Number of elements before the component of the first pixel plus 1.
+     * Number of elements before the component of the first pixel.
      * Elements are bits for bitstream formats, bytes otherwise.
      */
-    uint16_t offset_plus1 : 3;
+    int offset;
 
     /**
      * Number of least significant bits that must be shifted away
      * to get the value.
      */
-    uint16_t shift        : 3;
+    int shift;
 
     /**
-     * Number of bits in the component minus 1.
+     * Number of bits in the component.
      */
-    uint16_t depth_minus1 : 4;
+    int depth;
+
+#if FF_API_PLUS1_MINUS1
+    /** deprecated, use step instead */
+    attribute_deprecated int step_minus1;
+
+    /** deprecated, use depth instead */
+    attribute_deprecated int depth_minus1;
+
+    /** deprecated, use offset instead */
+    attribute_deprecated int offset_plus1;
+#endif
 } AVComponentDescriptor;
 
 /**
@@ -87,15 +99,20 @@ typedef struct AVPixFmtDescriptor {
      * This value only refers to the chroma components.
      */
     uint8_t log2_chroma_h;
-    uint8_t flags;
+
+    /**
+     * Combination of AV_PIX_FMT_FLAG_... flags.
+     */
+    uint64_t flags;
 
     /**
      * Parameters that describe how pixels are packed.
-     * If the format has 2 or 4 components, then alpha is last.
      * If the format has 1 or 2 components, then luma is 0.
      * If the format has 3 or 4 components:
      *   if the RGB flag is set then 0 is red, 1 is green and 2 is blue;
      *   otherwise 0 is luma, 1 is chroma-U and 2 is chroma-V.
+     *
+     * If present, the Alpha channel is always the last component.
      */
     AVComponentDescriptor comp[4];
 
@@ -154,27 +171,6 @@ typedef struct AVPixFmtDescriptor {
  * AV_PIX_FMT_RGB0 (or AV_PIX_FMT_RGB24 etc.) instead of AV_PIX_FMT_RGBA.
  */
 #define AV_PIX_FMT_FLAG_ALPHA        (1 << 7)
-
-#if FF_API_PIX_FMT
-/**
- * @deprecated use the AV_PIX_FMT_FLAG_* flags
- */
-#define PIX_FMT_BE        AV_PIX_FMT_FLAG_BE
-#define PIX_FMT_PAL       AV_PIX_FMT_FLAG_PAL
-#define PIX_FMT_BITSTREAM AV_PIX_FMT_FLAG_BITSTREAM
-#define PIX_FMT_HWACCEL   AV_PIX_FMT_FLAG_HWACCEL
-#define PIX_FMT_PLANAR    AV_PIX_FMT_FLAG_PLANAR
-#define PIX_FMT_RGB       AV_PIX_FMT_FLAG_RGB
-#define PIX_FMT_PSEUDOPAL AV_PIX_FMT_FLAG_PSEUDOPAL
-#define PIX_FMT_ALPHA     AV_PIX_FMT_FLAG_ALPHA
-#endif
-
-#if FF_API_PIX_FMT_DESC
-/**
- * The array of all the pixel format descriptors.
- */
-extern attribute_deprecated const AVPixFmtDescriptor av_pix_fmt_descriptors[];
-#endif
 
 /**
  * Read a line from an image, and write the values of the

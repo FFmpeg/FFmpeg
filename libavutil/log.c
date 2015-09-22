@@ -343,7 +343,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 
 #if CONFIG_VALGRIND_BACKTRACE
     if (level <= BACKTRACE_LOGLEVEL)
-        VALGRIND_PRINTF_BACKTRACE("");
+        VALGRIND_PRINTF_BACKTRACE("%s", "");
 #endif
 end:
     av_bprint_finalize(part+3, NULL);

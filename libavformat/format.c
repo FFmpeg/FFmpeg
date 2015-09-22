@@ -175,7 +175,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
 
     if (!lpd.buf)
-        lpd.buf = zerobuffer;
+        lpd.buf = (unsigned char *) zerobuffer;
 
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
@@ -261,8 +261,13 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
 
     if (pb->av_class) {
         uint8_t *mime_type_opt = NULL;
+        char *semi;
         av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type_opt);
         pd.mime_type = (const char *)mime_type_opt;
+        semi = pd.mime_type ? strchr(pd.mime_type, ';') : NULL;
+        if (semi) {
+            *semi = '\0';
+        }
     }
 #if 0
     if (!*fmt && pb->av_class && av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type) >= 0 && mime_type) {

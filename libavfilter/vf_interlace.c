@@ -38,16 +38,16 @@
 #include "video.h"
 
 #define OFFSET(x) offsetof(InterlaceContext, x)
-#define V AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption interlace_options[] = {
     { "scan", "scanning mode", OFFSET(scan),
-        AV_OPT_TYPE_INT,   {.i64 = MODE_TFF }, 0, 1, .flags = V, .unit = "scan" },
+        AV_OPT_TYPE_INT,   {.i64 = MODE_TFF }, 0, 1, .flags = FLAGS, .unit = "scan" },
     { "tff", "top field first", 0,
-        AV_OPT_TYPE_CONST, {.i64 = MODE_TFF }, INT_MIN, INT_MAX, .flags = V, .unit = "scan" },
+        AV_OPT_TYPE_CONST, {.i64 = MODE_TFF }, INT_MIN, INT_MAX, .flags = FLAGS, .unit = "scan" },
     { "bff", "bottom field first", 0,
-        AV_OPT_TYPE_CONST, {.i64 = MODE_BFF }, INT_MIN, INT_MAX, .flags = V, .unit = "scan" },
-    { "lowpass", "enable vertical low-pass filter", OFFSET(lowpass),
-        AV_OPT_TYPE_INT,   {.i64 = 1 },        0, 1, .flags = V },
+        AV_OPT_TYPE_CONST, {.i64 = MODE_BFF }, INT_MIN, INT_MAX, .flags = FLAGS, .unit = "scan" },
+    { "lowpass", "set vertical low-pass filter", OFFSET(lowpass),
+        AV_OPT_TYPE_BOOL,  {.i64 = 1 },        0, 1, .flags = FLAGS },
     { NULL }
 };
 
@@ -113,7 +113,6 @@ static int config_out_props(AVFilterLink *outlink)
     // half framerate
     outlink->time_base.num *= 2;
     outlink->frame_rate.den *= 2;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
 
     if (s->lowpass) {

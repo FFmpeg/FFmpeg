@@ -81,7 +81,7 @@ static const AVOption silenceremove_options[] = {
     { "stop_periods",    NULL, OFFSET(stop_periods),    AV_OPT_TYPE_INT,      {.i64=0}, -9000,    9000, FLAGS },
     { "stop_duration",   NULL, OFFSET(stop_duration),   AV_OPT_TYPE_DURATION, {.i64=0},     0,    9000, FLAGS },
     { "stop_threshold",  NULL, OFFSET(stop_threshold),  AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0, DBL_MAX, FLAGS },
-    { "leave_silence",   NULL, OFFSET(leave_silence),   AV_OPT_TYPE_INT,      {.i64=0},     0,       1, FLAGS },
+    { "leave_silence",   NULL, OFFSET(leave_silence),   AV_OPT_TYPE_BOOL,     {.i64=0},     0,       1, FLAGS },
     { NULL }
 };
 
@@ -149,13 +149,6 @@ static int config_input(AVFilterLink *inlink)
         s->mode = SILENCE_TRIM;
     else
         s->mode = SILENCE_COPY;
-
-    return 0;
-}
-
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     return 0;
 }
@@ -420,7 +413,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
     ret = ff_set_common_channel_layouts(ctx, layouts);
@@ -463,7 +456,6 @@ static const AVFilterPad silenceremove_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_output,
         .request_frame = request_frame,
     },
     { NULL }

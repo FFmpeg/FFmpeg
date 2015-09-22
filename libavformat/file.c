@@ -105,19 +105,19 @@ static const AVClass pipe_class = {
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
-    int r;
+    int ret;
     size = FFMIN(size, c->blocksize);
-    r = read(c->fd, buf, size);
-    return (-1 == r)?AVERROR(errno):r;
+    ret = read(c->fd, buf, size);
+    return (ret == -1) ? AVERROR(errno) : ret;
 }
 
 static int file_write(URLContext *h, const unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
-    int r;
+    int ret;
     size = FFMIN(size, c->blocksize);
-    r = write(c->fd, buf, size);
-    return (-1 == r)?AVERROR(errno):r;
+    ret = write(c->fd, buf, size);
+    return (ret == -1) ? AVERROR(errno) : ret;
 }
 
 static int file_get_handle(URLContext *h)
@@ -180,7 +180,7 @@ static int file_move(URLContext *h_src, URLContext *h_dst)
     const char *filename_src = h_src->filename;
     const char *filename_dst = h_dst->filename;
     av_strstart(filename_src, "file:", &filename_src);
-    av_strstart(filename_dst, "file:", &filename_src);
+    av_strstart(filename_dst, "file:", &filename_dst);
 
     if (rename(filename_src, filename_dst) < 0)
         return AVERROR(errno);

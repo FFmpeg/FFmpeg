@@ -1173,7 +1173,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
         if (h->current_slice) {
-            av_assert0(!h->setup_finished);
+            if (h->setup_finished) {
+                av_log(h->avctx, AV_LOG_ERROR, "Too many fields\n");
+                return AVERROR_INVALIDDATA;
+            }
             if (h->cur_pic_ptr && FIELD_PICTURE(h) && h->first_field) {
                 ret = ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;

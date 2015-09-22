@@ -74,7 +74,7 @@ typedef struct OMAContext {
     uint8_t sm_val[8];
     uint8_t e_val[8];
     uint8_t iv[8];
-    struct AVDES av_des;
+    struct AVDES *av_des;
 } OMAContext;
 
 static void hex_log(AVFormatContext *s, int level,
@@ -125,27 +125,33 @@ static int rprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
 {
     OMAContext *oc = s->priv_data;
     unsigned int pos;
-    struct AVDES av_des;
+    struct AVDES *av_des;
 
     if (!enc_header || !r_val ||
         size < OMA_ENC_HEADER_SIZE + oc->k_size + oc->e_size + oc->i_size ||
         size < OMA_RPROBE_M_VAL)
         return -1;
 
+    av_des = av_des_alloc();
+    if (!av_des)
+        return AVERROR(ENOMEM);
+
     /* m_val */
-    av_des_init(&av_des, r_val, 192, 1);
-    av_des_crypt(&av_des, oc->m_val, &enc_header[48], 1, NULL, 1);
+    av_des_init(av_des, r_val, 192, 1);
+    av_des_crypt(av_des, oc->m_val, &enc_header[48], 1, NULL, 1);
 
     /* s_val */
-    av_des_init(&av_des, oc->m_val, 64, 0);
-    av_des_crypt(&av_des, oc->s_val, NULL, 1, NULL, 0);
+    av_des_init(av_des, oc->m_val, 64, 0);
+    av_des_crypt(av_des, oc->s_val, NULL, 1, NULL, 0);
 
     /* sm_val */
     pos = OMA_ENC_HEADER_SIZE + oc->k_size + oc->e_size;
-    av_des_init(&av_des, oc->s_val, 64, 0);
-    av_des_mac(&av_des, oc->sm_val, &enc_header[pos], (oc->i_size >> 3));
+    av_des_init(av_des, oc->s_val, 64, 0);
+    av_des_mac(av_des, oc->sm_val, &enc_header[pos], (oc->i_size >> 3));
 
     pos += oc->i_size;
+
+    av_free(av_des);
 
     return memcmp(&enc_header[pos], oc->sm_val, 8) ? -1 : 0;
 }
@@ -156,7 +162,7 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     OMAContext *oc = s->priv_data;
     uint64_t pos;
     uint32_t taglen, datalen;
-    struct AVDES av_des;
+    struct AVDES *av_des;
 
     if (!enc_header || !n_val ||
         size < OMA_ENC_HEADER_SIZE + oc->k_size + 4)
@@ -180,15 +186,22 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     if (pos + (((uint64_t)datalen) << 4) > size)
         return -1;
 
-    av_des_init(&av_des, n_val, 192, 1);
+    av_des = av_des_alloc();
+    if (!av_des)
+        return AVERROR(ENOMEM);
+
+    av_des_init(av_des, n_val, 192, 1);
     while (datalen-- > 0) {
-        av_des_crypt(&av_des, oc->r_val, &enc_header[pos], 2, NULL, 1);
-        kset(s, oc->r_val, NULL, 16);
+        av_des_crypt(av_des, oc->r_val, &enc_header[pos], 2, NULL, 1);
+        kset(s, oc->r_val, NULL, 16); {
         if (!rprobe(s, enc_header, size, oc->r_val))
+            av_free(av_des);
             return 0;
+        }
         pos += 16;
     }
 
+    av_free(av_des);
     return -1;
 }
 
@@ -273,14 +286,18 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
         }
     }
 
+    oc->av_des = av_des_alloc();
+    if (!oc->av_des)
+        return AVERROR(ENOMEM);
+
     /* e_val */
-    av_des_init(&oc->av_des, oc->m_val, 64, 0);
-    av_des_crypt(&oc->av_des, oc->e_val,
+    av_des_init(oc->av_des, oc->m_val, 64, 0);
+    av_des_crypt(oc->av_des, oc->e_val,
                  &gdata[OMA_ENC_HEADER_SIZE + 40], 1, NULL, 0);
     hex_log(s, AV_LOG_DEBUG, "EK", oc->e_val, 8);
 
     /* init e_val */
-    av_des_init(&oc->av_des, oc->e_val, 64, 1);
+    av_des_init(oc->av_des, oc->e_val, 64, 1);
 
     return 0;
 }
@@ -440,7 +457,7 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* previous unencrypted block saved in IV for
          * the next packet (CBC mode) */
         if (ret == packet_size)
-            av_des_crypt(&oc->av_des, pkt->data, pkt->data,
+            av_des_crypt(oc->av_des, pkt->data, pkt->data,
                          (packet_size >> 3), oc->iv, 1);
         else
             memset(oc->iv, 0, 8);
@@ -496,6 +513,13 @@ wipe:
     return err;
 }
 
+static int oma_read_close(AVFormatContext *s)
+{
+    OMAContext *oc = s->priv_data;
+    av_free(oc->av_des);
+    return 0;
+}
+
 AVInputFormat ff_oma_demuxer = {
     .name           = "oma",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
@@ -504,6 +528,7 @@ AVInputFormat ff_oma_demuxer = {
     .read_header    = oma_read_header,
     .read_packet    = oma_read_packet,
     .read_seek      = oma_read_seek,
+    .read_close     = oma_read_close,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "oma,omg,aa3",
     .codec_tag      = (const AVCodecTag* const []){ff_oma_codec_tags, 0},

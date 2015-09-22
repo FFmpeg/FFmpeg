@@ -116,8 +116,10 @@ static int process_frame(FFFrameSync *fs)
         int linesize[4];
         int height[4];
 
-        if ((ret = av_image_fill_linesizes(linesize, inlink->format, inlink->w)) < 0)
+        if ((ret = av_image_fill_linesizes(linesize, inlink->format, inlink->w)) < 0) {
+            av_frame_free(&out);
             return ret;
+        }
 
         height[1] = height[2] = FF_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
         height[0] = height[3] = inlink->h;

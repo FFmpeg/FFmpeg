@@ -372,7 +372,7 @@ static const AVClass dummy_v2_class = {
 };
 
 /* codec with options */
-AVCodec dummy_v1_encoder = {
+static AVCodec dummy_v1_encoder = {
     .name             = "dummy_v1_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 1,
@@ -384,7 +384,7 @@ AVCodec dummy_v1_encoder = {
 };
 
 /* codec with options, different class */
-AVCodec dummy_v2_encoder = {
+static AVCodec dummy_v2_encoder = {
     .name             = "dummy_v2_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 2,
@@ -396,7 +396,7 @@ AVCodec dummy_v2_encoder = {
 };
 
 /* codec with priv data, but no class */
-AVCodec dummy_v3_encoder = {
+static AVCodec dummy_v3_encoder = {
     .name             = "dummy_v3_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 3,
@@ -407,7 +407,7 @@ AVCodec dummy_v3_encoder = {
 };
 
 /* codec without priv data */
-AVCodec dummy_v4_encoder = {
+static AVCodec dummy_v4_encoder = {
     .name             = "dummy_v4_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 4,

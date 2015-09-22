@@ -129,7 +129,7 @@ should be @code{1 / frame_rate} and timestamp increments should be
 identically 1.
 
 @item g @var{integer} (@emph{encoding,video})
-Set the group of picture size. Default value is 12.
+Set the group of picture (GOP) size. Default value is 12.
 
 @item ar @var{integer} (@emph{decoding/encoding,audio})
 Set audio sampling rate (in Hz).
@@ -817,12 +817,16 @@ for codecs that support it. See also @file{doc/examples/export_mvs.c}.
 Deprecated, use mpegvideo private options instead.
 
 @item threads @var{integer} (@emph{decoding/encoding,video})
+Set the number of threads to be used, in case the selected codec
+implementation supports multi-threading.
 
 Possible values:
 @table @samp
-@item auto
-detect a good number of threads
+@item auto, 0
+automatically select the number of threads to set
 @end table
+
+Default value is @samp{auto}.
 
 @item me_threshold @var{integer} (@emph{encoding,video})
 Set motion estimation threshold.
