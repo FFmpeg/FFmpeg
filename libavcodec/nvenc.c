@@ -402,10 +402,11 @@ static av_cold int nvenc_check_cuda(AVCodecContext *avctx)
 
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H264:
-        target_smver = avctx->pix_fmt == AV_PIX_FMT_YUV444P ? 0x52 : 0x30;
+        target_smver = avctx->pix_fmt == AV_PIX_FMT_YUV444P ? 0x50 : 0x30; // 5.0=GM10X, 3.5=GK110/GK208 , 3.0=GK10x 
         break;
     case AV_CODEC_ID_H265:
-        target_smver = 0x52;
+        // TODO: prevent GM10x devices being included. Only GM20x provide hevc and only GM204 is CUDA 5.2
+        target_smver = 0x50;
         break;
     default:
         av_log(avctx, AV_LOG_FATAL, "Unknown codec name\n");
