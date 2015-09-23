@@ -188,8 +188,9 @@ static av_cold int ffmmal_close_decoder(AVCodecContext *avctx)
 static void input_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
     if (!buffer->cmd) {
-        AVBufferRef *buf = buffer->user_data;
-        av_buffer_unref(&buf);
+        FFBufferEntry *entry = buffer->user_data;
+        av_buffer_unref(&entry->ref);
+        av_free(entry);
     }
     mmal_buffer_header_release(buffer);
 }
@@ -535,19 +536,19 @@ static int ffmmal_fill_input_port(AVCodecContext *avctx)
         mbuffer->flags = buffer->flags;
         mbuffer->data = buffer->data;
         mbuffer->length = buffer->length;
-        mbuffer->user_data = buffer->ref;
+        mbuffer->user_data = buffer;
         mbuffer->alloc_size = ctx->decoder->input[0]->buffer_size;
-
-        if ((status = mmal_port_send_buffer(ctx->decoder->input[0], mbuffer))) {
-            mmal_buffer_header_release(mbuffer);
-            av_buffer_unref(&buffer->ref);
-        }
 
         // Remove from start of the list
         ctx->waiting_buffers = buffer->next;
         if (ctx->waiting_buffers_tail == buffer)
             ctx->waiting_buffers_tail = NULL;
-        av_free(buffer);
+
+        if ((status = mmal_port_send_buffer(ctx->decoder->input[0], mbuffer))) {
+            mmal_buffer_header_release(mbuffer);
+            av_buffer_unref(&buffer->ref);
+            av_free(buffer);
+        }
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "MMAL error %d when sending input\n", (int)status);
