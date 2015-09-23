@@ -433,7 +433,7 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
         pthread_mutex_lock(&s->out_mutex);
         if (!s->out_queue->empty()) break;
         pthread_mutex_unlock(&s->out_mutex);
-        if (s->source_done) {
+        if (!s->source_done) {
             usleep(10000);
             continue;
         } else {
