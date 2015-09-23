@@ -97,9 +97,9 @@ static void check_ipred(void)
 #define setpx(a,b,c) \
     do { \
         if (SIZEOF_PIXEL == 1) { \
-            buf0[(a) + (b) * jstride] = c; \
+            buf0[(a) + (b) * jstride] = av_clip_uint8(c); \
         } else { \
-            ((uint16_t *)buf0)[(a) + (b) * jstride] = c; \
+            ((uint16_t *)buf0)[(a) + (b) * jstride] = av_clip_uintp2(c, bit_depth); \
         } \
     } while (0)
 
