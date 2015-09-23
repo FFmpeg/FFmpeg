@@ -22,15 +22,13 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "audio.h"
-#include "generate_wave_table.h"
 
 typedef struct TremoloContext {
     const AVClass *class;
     double freq;
     double depth;
-    double *wave_table;
-    int wave_table_index;
-    int sample_rate;
+    double *table;
+    int index;
 } TremoloContext;
 
 #define OFFSET(x) offsetof(TremoloContext, x)
@@ -44,20 +42,11 @@ static const AVOption tremolo_options[] = {
 
 AVFILTER_DEFINE_CLASS(tremolo);
 
-static double trem_env(AVFilterContext *ctx)
-{
-    TremoloContext *s = ctx->priv;
-    double env = s->wave_table[s->wave_table_index];
-    s->wave_table_index++;
-    if (s->wave_table_index >= s->sample_rate / s->freq)
-        s->wave_table_index = 0;
-    return 1.0 - (s->depth * env);
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
+    TremoloContext *s = ctx->priv;
     const double *src = (const double *)in->data[0];
     const int channels = inlink->channels;
     const int nb_samples = in->nb_samples;
@@ -78,12 +67,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     dst = (double *)out->data[0];
 
     for (n = 0; n < nb_samples; n++) {
-        const double env = trem_env(ctx);
-
         for (c = 0; c < channels; c++)
-            dst[c] = src[c] * env;
+            dst[c] = src[c] * s->table[s->index];
         dst += channels;
         src += channels;
+        s->index++;
+        if (s->index >= inlink->sample_rate)
+            s->index = 0;
     }
 
     if (in != out)
@@ -125,21 +115,30 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     TremoloContext *s = ctx->priv;
-    av_freep(&s->wave_table);
+    av_freep(&s->table);
 }
 
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     TremoloContext *s = ctx->priv;
+    const double offset = 1. - s->depth / 2.;
+    int i;
 
-    s->sample_rate = inlink->sample_rate;
-    s->wave_table = av_malloc_array(s->sample_rate / s->freq, sizeof(*s->wave_table));
-    if (!s->wave_table)
+    s->table = av_malloc_array(inlink->sample_rate, sizeof(*s->table));
+    if (!s->table)
         return AVERROR(ENOMEM);
 
-    ff_generate_wave_table(WAVE_SIN, AV_SAMPLE_FMT_DBL, s->wave_table, s->sample_rate / s->freq, 0.0, 1.0, 0.0);
-    s->wave_table_index = 0;
+    for (i = 0; i < inlink->sample_rate; i++) {
+        double env = s->freq * i / inlink->sample_rate;
+
+        env = sin(2 * M_PI * fmod(env + 0.25, 1.0));
+
+        s->table[i] = env * (1 - fabs(offset)) + offset;
+    }
+
+    s->index = 0;
+
     return 0;
 }
 
