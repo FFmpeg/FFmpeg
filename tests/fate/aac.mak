@@ -146,7 +146,7 @@ fate-aac-aref-encode: CMD = enc_dec_pcm adts wav s16le $(REF) -strict -2 -c:a aa
 fate-aac-aref-encode: CMP = stddev
 fate-aac-aref-encode: REF = ./tests/data/asynth-44100-2.wav
 fate-aac-aref-encode: CMP_SHIFT = -4096
-fate-aac-aref-encode: CMP_TARGET = 594
+fate-aac-aref-encode: CMP_TARGET = 584
 fate-aac-aref-encode: SIZE_TOLERANCE = 2464
 fate-aac-aref-encode: FUZZ = 6
 
@@ -172,7 +172,7 @@ fate-aac-pns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-re
 fate-aac-pns-encode: CMP = stddev
 fate-aac-pns-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-pns-encode: CMP_SHIFT = -4096
-fate-aac-pns-encode: CMP_TARGET = 633.77
+fate-aac-pns-encode: CMP_TARGET = 623.77
 fate-aac-pns-encode: SIZE_TOLERANCE = 3560
 fate-aac-pns-encode: FUZZ = 1
 
@@ -181,7 +181,7 @@ fate-aac-tns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-re
 fate-aac-tns-encode: CMP = stddev
 fate-aac-tns-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-tns-encode: CMP_SHIFT = -4096
-fate-aac-tns-encode: CMP_TARGET = 650.37
+fate-aac-tns-encode: CMP_TARGET = 644.50
 fate-aac-tns-encode: FUZZ = 2.8
 fate-aac-tns-encode: SIZE_TOLERANCE = 3560
 
@@ -190,7 +190,7 @@ fate-aac-is-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-ref
 fate-aac-is-encode: CMP = stddev
 fate-aac-is-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-is-encode: CMP_SHIFT = -4096
-fate-aac-is-encode: CMP_TARGET = 616.75
+fate-aac-is-encode: CMP_TARGET = 614.04
 fate-aac-is-encode: SIZE_TOLERANCE = 3560
 fate-aac-is-encode: FUZZ = 1
 
@@ -199,7 +199,7 @@ fate-aac-pred-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-r
 fate-aac-pred-encode: CMP = stddev
 fate-aac-pred-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-pred-encode: CMP_SHIFT = -4096
-fate-aac-pred-encode: CMP_TARGET = 652.60
+fate-aac-pred-encode: CMP_TARGET = 657
 fate-aac-pred-encode: FUZZ = 5
 fate-aac-pred-encode: SIZE_TOLERANCE = 3560
 

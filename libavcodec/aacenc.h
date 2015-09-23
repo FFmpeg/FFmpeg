@@ -96,10 +96,12 @@ typedef struct AACEncContext {
     FFPsyContext psy;
     struct FFPsyPreprocessContext* psypp;
     AACCoefficientsEncoder *coder;
-    int cur_channel;
+    int cur_channel;                             ///< current channel for coder context
     int last_frame;
     int random_state;
     float lambda;
+    enum RawDataBlockType cur_type;              ///< channel group type cur_channel belongs to
+
     AudioFrameQueue afq;
     DECLARE_ALIGNED(16, int,   qcoefs)[96];      ///< quantized coefficients
     DECLARE_ALIGNED(32, float, scoefs)[1024];    ///< scaled coefficients
