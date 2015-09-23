@@ -241,7 +241,7 @@ DECL_IMDCT_BLOCKS(avx,avx)
 
 av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 {
-    int cpu_flags = av_get_cpu_flags();
+    av_unused int cpu_flags = av_get_cpu_flags();
 
     int i, j;
     for (j = 0; j < 4; j++) {

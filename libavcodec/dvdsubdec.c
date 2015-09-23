@@ -227,6 +227,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
     int date;
     int i;
     int is_menu = 0;
+    uint32_t size;
 
     if (buf_size < 10)
         return -1;
@@ -241,10 +242,16 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
         cmd_pos = 2;
     }
 
+    size = READ_OFFSET(buf + (big_offsets ? 2 : 0));
     cmd_pos = READ_OFFSET(buf + cmd_pos);
 
-    if (cmd_pos < 0 || cmd_pos > buf_size - 2 - offset_size)
+    if (cmd_pos < 0 || cmd_pos > buf_size - 2 - offset_size) {
+        if (cmd_pos > size) {
+            av_log(ctx, AV_LOG_ERROR, "Discarding invalid packet\n");
+            return 0;
+        }
         return AVERROR(EAGAIN);
+    }
 
     while (cmd_pos > 0 && cmd_pos < buf_size - 2 - offset_size) {
         date = AV_RB16(buf + cmd_pos);
@@ -399,7 +406,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             }
         }
         if (next_cmd_pos < cmd_pos) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid command offset\n");
+            av_log(ctx, AV_LOG_ERROR, "Invalid command offset\n");
             break;
         }
         if (next_cmd_pos == cmd_pos)
@@ -535,6 +542,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AVSubtitle *sub = data;
+    int appended = 0;
     int is_menu;
 
     if (ctx->buf_size) {
@@ -545,12 +553,13 @@ static int dvdsub_decode(AVCodecContext *avctx,
         }
         buf = ctx->buf;
         buf_size = ctx->buf_size;
+        appended = 1;
     }
 
     is_menu = decode_dvd_subtitles(ctx, sub, buf, buf_size);
     if (is_menu == AVERROR(EAGAIN)) {
         *data_size = 0;
-        return append_to_cached_buf(avctx, buf, buf_size);
+        return appended ? 0 : append_to_cached_buf(avctx, buf, buf_size);
     }
 
     if (is_menu < 0) {

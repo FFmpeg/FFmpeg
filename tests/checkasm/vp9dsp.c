@@ -157,26 +157,25 @@ static void check_ipred(void)
         } \
     } while (0)
 
-static void check_loopfilter()
+static void check_loopfilter(void)
 {
     LOCAL_ALIGNED_32(uint8_t, base0, [32 + 16 * 16 * 2]);
     LOCAL_ALIGNED_32(uint8_t, base1, [32 + 16 * 16 * 2]);
     VP9DSPContext dsp;
     int dir, wd, wd2, bit_depth;
     static const char *const dir_name[2] = { "h", "v" };
-    int E[2] = { 20, 28 }, I[2] = { 10, 16 }, H[2] = { 7, 11 }, F[2] = { 1, 1 };
+    static const int E[2] = { 20, 28 }, I[2] = { 10, 16 };
+    static const int H[2] = { 7, 11 }, F[2] = { 1, 1 };
     declare_func(void, uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         ff_vp9dsp_init(&dsp, bit_depth, 0);
 
         for (dir = 0; dir < 2; dir++) {
-            uint8_t *buf0, *buf1;
             int midoff = (dir ? 8 * 8 : 8) * SIZEOF_PIXEL;
             int midoff_aligned = (dir ? 8 * 8 : 16) * SIZEOF_PIXEL;
-
-            buf0 = base0 + midoff_aligned;
-            buf1 = base1 + midoff_aligned;
+            uint8_t *buf0 = base0 + midoff_aligned;
+            uint8_t *buf1 = base1 + midoff_aligned;
 
             for (wd = 0; wd < 3; wd++) {
                 // 4/8/16wd_8px

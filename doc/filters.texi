@@ -641,6 +641,57 @@ Force the output to either unsigned 8-bit or signed 16-bit stereo
 aformat=sample_fmts=u8|s16:channel_layouts=stereo
 @end example
 
+@section agate
+
+A gate is mainly used to reduce lower parts of a signal. This kind of signal
+processing reduces disturbing noise between useful signals.
+
+Gating is done by detecting the volume below a chosen level @var{threshold}
+and divide it by the factor set with @var{ratio}. The bottom of the noise
+floor is set via @var{range}. Because an exact manipulation of the signal
+would cause distortion of the waveform the reduction can be levelled over
+time. This is done by setting @var{attack} and @var{release}.
+
+@var{attack} determines how long the signal has to fall below the threshold
+before any reduction will occur and @var{release} sets the time the signal
+has to raise above the threshold to reduce the reduction again.
+Shorter signals than the chosen attack time will be left untouched.
+
+@table @option
+@item level_in
+Set input level before filtering.
+
+@item range
+Set the level of gain reduction when the signal is below the threshold.
+
+@item threshold
+If a signal rises above this level the gain reduction is released.
+
+@item ratio
+Set a ratio about which the signal is reduced.
+
+@item attack
+Amount of milliseconds the signal has to rise above the threshold before gain
+reduction stops.
+
+@item release
+Amount of milliseconds the signal has to fall below the threshold before the
+reduction is increased again.
+
+@item makeup
+Set amount of amplification of signal after processing.
+
+@item knee
+Curve the sharp knee around the threshold to enter gain reduction more softly.
+
+@item detection
+Choose if exact signal should be taken for detection or an RMS like one.
+
+@item link
+Choose if the average level between all channels or the louder channel affects
+the reduction.
+@end table
+
 @section alimiter
 
 The limiter prevents input signal from raising over a desired threshold.
@@ -2566,6 +2617,25 @@ slope
 
 @item width, w
 Determine how steep is the filter's shelf transition.
+@end table
+
+@section tremolo
+
+Sinusoidal amplitude modulation.
+
+The filter accepts the following options:
+
+@table @option
+@item f
+Modulation frequency in Hertz. Modulation frequencies in the subharmonic range
+(20 Hz or lower) will result in a tremolo effect.
+This filter may also be used as a ring modulator by specifying
+a modulation frequency higher than 20 Hz.
+Range is 0.1 - 20000.0. Default value is 5.0 Hz.
+
+@item d
+Depth of modulation as a percentage. Range is 0.0 - 1.0.
+Default value is 0.5.
 @end table
 
 @section volume

@@ -214,7 +214,7 @@ DEFINE_FN(avg, 16, mmx)
 
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 {
-    int cpu_flags = av_get_cpu_flags();
+    av_unused int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_MMX_INLINE
     if (INLINE_MMX(cpu_flags)) {

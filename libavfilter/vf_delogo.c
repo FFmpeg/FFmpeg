@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2002 Jindrich Makovicka <makovick@gmail.com>
  * Copyright (c) 2011 Stefano Sabatini
- * Copyright (c) 2013 Jean Delvare <khali@linux-fr.org>
+ * Copyright (c) 2013 Jean Delvare <jdelvare@suse.com>
  *
  * This file is part of FFmpeg.
  *
