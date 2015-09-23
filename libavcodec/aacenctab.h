@@ -110,7 +110,7 @@ static const uint8_t aac_cb_in_map[CB_TOT_ALL+1] = {0,1,2,3,4,5,6,7,8,9,10,11,0,
 static const uint8_t aac_cb_range [12] = {0, 3, 3, 3, 3, 9, 9, 8, 8, 13, 13, 17};
 static const uint8_t aac_cb_maxval[12] = {0, 1, 1, 2, 2, 4, 4, 7, 7, 12, 12, 16};
 
-static unsigned char aac_maxval_cb[] = {
+static const unsigned char aac_maxval_cb[] = {
     0, 1, 3, 5, 5, 7, 7, 7, 9, 9, 9, 9, 9, 11
 };
 
