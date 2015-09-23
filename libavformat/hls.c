@@ -1036,7 +1036,6 @@ static int open_input(HLSContext *c, struct playlist *pls)
         ret = AVERROR_PATCHWELCOME;
     }
     else
-        
         ret = AVERROR(ENOSYS);
 
     /* Seek to the requested position. If this was a HTTP request, the offset
