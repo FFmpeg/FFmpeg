@@ -388,14 +388,14 @@ static int config_props(AVFilterLink *outlink)
                         return ret;
                 }
             }
-            /* Override YUV420P settings to have the correct (MPEG-2) chroma positions
+            /* Override YUV420P default settings to have the correct (MPEG-2) chroma positions
              * MPEG-2 chroma positions are used by convention
              * XXX: support other 4:2:0 pixel formats */
-            if (inlink0->format == AV_PIX_FMT_YUV420P) {
+            if (inlink0->format == AV_PIX_FMT_YUV420P && scale->in_v_chr_pos == -513) {
                 scale->in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
-            if (outlink->format == AV_PIX_FMT_YUV420P) {
+            if (outlink->format == AV_PIX_FMT_YUV420P && scale->out_v_chr_pos == -513) {
                 scale->out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
