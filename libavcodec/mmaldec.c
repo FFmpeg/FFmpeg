@@ -81,6 +81,7 @@ typedef struct MMALDecodeContext {
     FFBufferEntry *waiting_buffers, *waiting_buffers_tail;
 
     int64_t packets_sent;
+    volatile int packets_buffered;
     int64_t frames_output;
     int eos_received;
     int eos_sent;
@@ -164,6 +165,8 @@ static void ffmmal_stop_decoder(AVCodecContext *avctx)
     }
     ctx->waiting_buffers_tail = NULL;
 
+    assert(avpriv_atomic_get(&ctx->packets_buffered) == 0);
+
     ctx->frames_output = ctx->eos_received = ctx->eos_sent = ctx->packets_sent = ctx->extradata_sent = 0;
 }
 
@@ -187,9 +190,14 @@ static av_cold int ffmmal_close_decoder(AVCodecContext *avctx)
 
 static void input_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
+    AVCodecContext *avctx = (AVCodecContext*)port->userdata;
+    MMALDecodeContext *ctx = avctx->priv_data;
+
     if (!buffer->cmd) {
         FFBufferEntry *entry = buffer->user_data;
         av_buffer_unref(&entry->ref);
+        if (entry->flags & MMAL_BUFFER_HEADER_FLAG_FRAME_END)
+            avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, -1);
         av_free(entry);
     }
     mmal_buffer_header_release(buffer);
@@ -483,8 +491,10 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt,
         buffer->pts = avpkt->pts == AV_NOPTS_VALUE ? MMAL_TIME_UNKNOWN : avpkt->pts;
         buffer->dts = avpkt->dts == AV_NOPTS_VALUE ? MMAL_TIME_UNKNOWN : avpkt->dts;
 
-        if (!size)
+        if (!size) {
             buffer->flags |= MMAL_BUFFER_HEADER_FLAG_FRAME_END;
+            avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, 1);
+        }
 
         if (!buffer->length) {
             buffer->flags |= MMAL_BUFFER_HEADER_FLAG_EOS;
@@ -547,6 +557,8 @@ static int ffmmal_fill_input_port(AVCodecContext *avctx)
         if ((status = mmal_port_send_buffer(ctx->decoder->input[0], mbuffer))) {
             mmal_buffer_header_release(mbuffer);
             av_buffer_unref(&buffer->ref);
+            if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_FRAME_END)
+                avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, -1);
             av_free(buffer);
         }
 
@@ -627,7 +639,7 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // excessive buffering.
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).
-        if (ctx->frames_output || ctx->packets_sent > MAX_DELAYED_FRAMES ||
+        if (avpriv_atomic_int_get(&ctx->packets_buffered) > MAX_DELAYED_FRAMES ||
             (ctx->packets_sent && ctx->eos_sent)) {
             // MMAL will ignore broken input packets, which means the frame we
             // expect here may never arrive. Dealing with this correctly is
