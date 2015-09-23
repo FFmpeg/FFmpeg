@@ -525,7 +525,7 @@ static int url_connect(struct playlist *pls, AVDictionary *opts, AVDictionary *o
     return ret;
 }
 
-static int open_url(HLSContext *c, URLContext **uc, const char *url, AVDictionary *opts)
+static int open_url(HLSContext *c, URLContext *uc, const char *url, AVDictionary *opts)
 {
     AVDictionary *tmp = NULL;
     int ret;
@@ -994,13 +994,13 @@ static int open_input(HLSContext *c, struct playlist *pls)
            seg->url, seg->url_offset, pls->index);
 
     if (seg->key_type == KEY_NONE) {
-        ret = open_url(pls->parent->priv_data, &pls->input, seg->url, opts);
+        ret = open_url(pls->parent->priv_data, pls->input, seg->url, opts);
     } else if (seg->key_type == KEY_AES_128) {
 //         HLSContext *c = var->parent->priv_data;
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             URLContext *uc;
-            if (open_url(pls->parent->priv_data, &uc, seg->key, opts) == 0) {
+            if (open_url(pls->parent->priv_data, uc, seg->key, opts) == 0) {
                 if (ffurl_read_complete(uc, pls->key, sizeof(pls->key))
                     != sizeof(pls->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
