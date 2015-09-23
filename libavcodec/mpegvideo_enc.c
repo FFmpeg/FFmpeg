@@ -1824,16 +1824,18 @@ vbv_retry:
         if (avctx->rc_buffer_size) {
             RateControlContext *rcc = &s->rc_context;
             int max_size = FFMAX(rcc->buffer_index * avctx->rc_max_available_vbv_use, rcc->buffer_index - 500);
+            int hq = (s->avctx->mb_decision == FF_MB_DECISION_RD || s->avctx->trellis);
+            int min_step = hq ? 1 : (1<<(FF_LAMBDA_SHIFT + 7))/139;
 
             if (put_bits_count(&s->pb) > max_size &&
                 s->lambda < s->lmax) {
-                s->next_lambda = FFMAX(s->lambda + 1, s->lambda *
+                s->next_lambda = FFMAX(s->lambda + min_step, s->lambda *
                                        (s->qscale + 1) / s->qscale);
                 if (s->adaptive_quant) {
                     int i;
                     for (i = 0; i < s->mb_height * s->mb_stride; i++)
                         s->lambda_table[i] =
-                            FFMAX(s->lambda_table[i] + 1,
+                            FFMAX(s->lambda_table[i] + min_step,
                                   s->lambda_table[i] * (s->qscale + 1) /
                                   s->qscale);
                 }
