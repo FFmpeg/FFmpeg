@@ -533,7 +533,8 @@ static int open_url(HLSContext *c, URLContext **uc, const char *url, AVDictionar
     av_dict_copy(&tmp, c->avio_opts, 0);
     av_dict_copy(&tmp, opts, 0);
 
-    if(ret = ffurl_open(uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp) == 0) {
+    ret = ffurl_open(uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
+    if( ret >= 0) {
         // update cookies on http response with setcookies.
         update_options(&c->cookies, "cookies", uc->priv_data);
         av_dict_set(&opts, "cookies", c->cookies, 0);
