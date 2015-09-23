@@ -2292,6 +2292,87 @@ At end of filtering it displays @code{track_gain} and @code{track_peak}.
 Convert the audio sample format, sample rate and channel layout. It is
 not meant to be used directly.
 
+@section rubberband
+Apply time-stretching and pitch-shifting with librubberband.
+
+The filter accepts the following options:
+
+@table @option
+@item tempo
+Set tempo scale factor.
+
+@item pitch
+Set pitch scale factor.
+
+@item transients
+Set transients detector.
+Possible values are:
+@table @var
+@item crisp
+@item mixed
+@item smooth
+@end table
+
+@item detector
+Set detector.
+Possible values are:
+@table @var
+@item compound
+@item percussive
+@item soft
+@end table
+
+@item phase
+Set phase.
+Possible values are:
+@table @var
+@item laminar
+@item independent
+@end table
+
+@item window
+Set processing window size.
+Possible values are:
+@table @var
+@item standard
+@item short
+@item long
+@end table
+
+@item smoothing
+Set smoothing.
+Possible values are:
+@table @var
+@item off
+@item on
+@end table
+
+@item formant
+Enable formant preservation when shift pitching.
+Possible values are:
+@table @var
+@item shifted
+@item preserved
+@end table
+
+@item pitchq
+Set pitch quality.
+Possible values are:
+@table @var
+@item quality
+@item speed
+@item consistency
+@end table
+
+@item channels
+Set channels.
+Possible values are:
+@table @var
+@item apart
+@item together
+@end table
+@end table
+
 @section sidechaincompress
 
 This filter acts like normal compressor but has the ability to compress
