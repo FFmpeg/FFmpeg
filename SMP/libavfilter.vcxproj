@@ -113,6 +113,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_aformat.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_agate.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\f_interleave.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_alimiter.c">
@@ -196,6 +198,8 @@
     <ClCompile Include="..\libavfilter\af_stereotools.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_stereowiden.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_tremolo.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_volume.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
