@@ -305,6 +305,9 @@
     <ClCompile Include="..\libavfilter\vf_boxblur.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_chromakey.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_codecview.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

@@ -236,6 +236,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_boxblur.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_chromakey.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_codecview.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_colorbalance.c">
