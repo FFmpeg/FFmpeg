@@ -122,6 +122,7 @@ typedef struct FFV1Context {
 
     struct FFV1Context *slice_context[MAX_SLICES];
     int slice_count;
+    int max_slice_count;
     int num_v_slices;
     int num_h_slices;
     int slice_width;
