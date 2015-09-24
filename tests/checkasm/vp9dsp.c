@@ -102,7 +102,9 @@ static void check_ipred(void)
             ((uint16_t *)buf0)[(a) + (b) * jstride] = c; \
         } \
     } while (0)
-#define setdx(a,b,c,d) setpx(a,b,(c)-(d)+(rnd()%((d)*2+1)))
+
+// c can be an assignment and must not be put under ()
+#define setdx(a,b,c,d) setpx(a,b,c-(d)+(rnd()%((d)*2+1)))
 #define setsx(a,b,c,d) setdx(a,b,c,(d) << (bit_depth - 8))
 #define randomize_buffers(bidx, lineoff, str) \
     do { \
