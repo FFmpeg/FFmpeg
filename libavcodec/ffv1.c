@@ -101,7 +101,7 @@ av_cold int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
 av_cold int ffv1_init_slices_state(FFV1Context *f)
 {
     int i, ret;
-    for (i = 0; i < f->slice_count; i++) {
+    for (i = 0; i < f->max_slice_count; i++) {
         FFV1Context *fs = f->slice_context[i];
         if ((ret = ffv1_init_slice_state(f, fs)) < 0)
             return AVERROR(ENOMEM);
@@ -113,10 +113,10 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
 {
     int i;
 
-    f->slice_count = f->num_h_slices * f->num_v_slices;
-    av_assert0(f->slice_count > 0);
+    f->max_slice_count = f->num_h_slices * f->num_v_slices;
+    av_assert0(f->max_slice_count > 0);
 
-    for (i = 0; i < f->slice_count; i++) {
+    for (i = 0; i < f->max_slice_count; i++) {
         FFV1Context *fs = av_mallocz(sizeof(*fs));
         int sx          = i % f->num_h_slices;
         int sy          = i / f->num_h_slices;
@@ -201,7 +201,7 @@ av_cold int ffv1_close(AVCodecContext *avctx)
         ff_thread_release_buffer(avctx, &s->last_picture);
     av_frame_free(&s->last_picture.f);
 
-    for (j = 0; j < s->slice_count; j++) {
+    for (j = 0; j < s->max_slice_count; j++) {
         FFV1Context *fs = s->slice_context[j];
         for (i = 0; i < s->plane_count; i++) {
             PlaneContext *p = &fs->plane[i];
@@ -215,14 +215,14 @@ av_cold int ffv1_close(AVCodecContext *avctx)
     av_freep(&avctx->stats_out);
     for (j = 0; j < s->quant_table_count; j++) {
         av_freep(&s->initial_states[j]);
-        for (i = 0; i < s->slice_count; i++) {
+        for (i = 0; i < s->max_slice_count; i++) {
             FFV1Context *sf = s->slice_context[i];
             av_freep(&sf->rc_stat2[j]);
         }
         av_freep(&s->rc_stat2[j]);
     }
 
-    for (i = 0; i < s->slice_count; i++)
+    for (i = 0; i < s->max_slice_count; i++)
         av_freep(&s->slice_context[i]);
 
     return 0;
