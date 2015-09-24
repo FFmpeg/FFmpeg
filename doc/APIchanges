@@ -14,6 +14,12 @@ libavutil:     2015-08-28
 
 
 API changes, most recent first:
+
+2015-12-22 - xxxxxxx - lavfi 6.21.101 - avfilter.h
+  Deprecate avfilter_link_set_closed().
+  Applications are not supposed to mess with links,
+  they should close the sinks.
+
 2015-12-17 - lavc 57.18.100 / 57.11.0 - avcodec.h dirac.h
   xxxxxxx - Add av_packet_add_side_data().
   xxxxxxx - Add AVCodecContext.coded_side_data.

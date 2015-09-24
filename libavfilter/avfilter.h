@@ -546,7 +546,10 @@ int avfilter_link_get_channels(AVFilterLink *link);
 
 /**
  * Set the closed field of a link.
+ * @deprecated applications are not supposed to mess with links, they should
+ * close the sinks.
  */
+attribute_deprecated
 void avfilter_link_set_closed(AVFilterLink *link, int closed);
 
 /**
