@@ -758,6 +758,7 @@ static int read_header(FFV1Context *f)
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
             return AVERROR_INVALIDDATA;
         }
+        f->slice_count = f->max_slice_count;
     } else if (f->version < 3) {
         f->slice_count = get_symbol(c, state, 0);
     } else {
@@ -772,8 +773,8 @@ static int read_header(FFV1Context *f)
             p -= size + trailer;
         }
     }
-    if (f->slice_count > (unsigned)MAX_SLICES || f->slice_count <= 0) {
-        av_log(f->avctx, AV_LOG_ERROR, "slice count %d is invalid\n", f->slice_count);
+    if (f->slice_count > (unsigned)MAX_SLICES || f->slice_count <= 0 || f->slice_count > f->max_slice_count) {
+        av_log(f->avctx, AV_LOG_ERROR, "slice count %d is invalid (max=%d)\n", f->slice_count, f->max_slice_count);
         return AVERROR_INVALIDDATA;
     }
 
@@ -996,6 +997,7 @@ static int init_thread_copy(AVCodecContext *avctx)
     f->picture.f      = NULL;
     f->last_picture.f = NULL;
     f->sample_buffer  = NULL;
+    f->max_slice_count = 0;
     f->slice_count = 0;
 
     for (i = 0; i < f->quant_table_count; i++) {
@@ -1066,7 +1068,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         av_assert0(!fdst->sample_buffer);
     }
 
-    av_assert1(fdst->slice_count == fsrc->slice_count);
+    av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
 
     ff_thread_release_buffer(dst, &fdst->picture);
