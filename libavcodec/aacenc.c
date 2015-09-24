@@ -489,7 +489,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     float **samples = s->planar_samples, *samples2, *la, *overlap;
     ChannelElement *cpe;
     SingleChannelElement *sce;
-    int i, ch, w, chans, tag, start_ch, ret;
+    int i, its, ch, w, chans, tag, start_ch, ret, frame_bits;
     int ms_mode = 0, is_mode = 0, tns_mode = 0, pred_mode = 0;
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
@@ -581,14 +581,16 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     if ((ret = ff_alloc_packet2(avctx, avpkt, 8192 * s->channels, 0)) < 0)
         return ret;
+    frame_bits = its = 0;
     do {
-        int frame_bits;
+        int target_bits, too_many_bits, too_few_bits;
 
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
         if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & AV_CODEC_FLAG_BITEXACT))
             put_bitstream_info(s, LIBAVCODEC_IDENT);
         start_ch = 0;
+        target_bits = 0;
         memset(chan_el_counter, 0, sizeof(chan_el_counter));
         for (i = 0; i < s->chan_map[0]; i++) {
             FFPsyWindowInfo* wi = windows + start_ch;
@@ -611,7 +613,15 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     if (sce->band_type[w] > RESERVED_BT)
                         sce->band_type[w] = 0;
             }
+            s->psy.bitres.alloc = -1;
+            s->psy.bitres.bits = avctx->frame_bits / s->channels;
             s->psy.model->analyze(&s->psy, start_ch, coeffs, wi);
+            if (s->psy.bitres.alloc > 0) {
+                /* Lambda unused here on purpose, we need to take psy's unscaled allocation */
+                target_bits += s->psy.bitres.alloc;
+                s->psy.bitres.alloc /= chans;
+            }
+            s->cur_type = tag;
             for (ch = 0; ch < chans; ch++) {
                 s->cur_channel = start_ch + ch;
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
@@ -692,35 +702,68 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             start_ch += chans;
         }
 
-        frame_bits = put_bits_count(&s->pb);
-        if (frame_bits <= 6144 * s->channels - 3) {
-            s->psy.bitres.bits = frame_bits / s->channels;
+        if (avctx->flags & CODEC_FLAG_QSCALE) {
+            /* When using a constant Q-scale, don't mess with lambda */
             break;
         }
-        if (is_mode || ms_mode || tns_mode || pred_mode) {
-            for (i = 0; i < s->chan_map[0]; i++) {
-                // Must restore coeffs
-                chans = tag == TYPE_CPE ? 2 : 1;
-                cpe = &s->cpe[i];
-                for (ch = 0; ch < chans; ch++)
-                    memcpy(cpe->ch[ch].coeffs, cpe->ch[ch].pcoeffs, sizeof(cpe->ch[ch].coeffs));
+
+        /* rate control stuff
+         * target either the nominal bitrate, or what psy's bit reservoir says to target
+         * whichever is greatest
+         */
+
+        frame_bits = put_bits_count(&s->pb);
+        target_bits = FFMAX(target_bits, avctx->bit_rate * 1024 / avctx->sample_rate);
+        target_bits = FFMIN(target_bits, 6144 * s->channels - 3);
+
+        /* When using ABR, be strict (but only for increasing) */
+        too_many_bits = target_bits + target_bits/2;
+        too_few_bits = target_bits - target_bits/8;
+
+        if (   its == 0 /* for steady-state Q-scale tracking */
+            || (its < 5 && (frame_bits < too_few_bits || frame_bits > too_many_bits))
+            || frame_bits >= 6144 * s->channels - 3  )
+        {
+            float ratio = ((float)target_bits) / frame_bits;
+
+            if (frame_bits >= too_few_bits && frame_bits <= too_many_bits) {
+                /*
+                 * This path is for steady-state Q-scale tracking
+                 * When frame bits fall within the stable range, we still need to adjust
+                 * lambda to maintain it like so in a stable fashion (large jumps in lambda
+                 * create artifacts and should be avoided), but slowly
+                 */
+                ratio = sqrtf(sqrtf(ratio));
+                ratio = av_clipf(ratio, 0.9f, 1.1f);
+            } else {
+                /* Not so fast though */
+                ratio = sqrtf(ratio);
             }
+            s->lambda = FFMIN(s->lambda * ratio, 65536.f);
+
+            /* Keep iterating if we must reduce and lambda is in the sky */
+            if (s->lambda < 300.f || ratio > 0.9f) {
+                break;
+            } else {
+                if (is_mode || ms_mode || tns_mode || pred_mode) {
+                    for (i = 0; i < s->chan_map[0]; i++) {
+                        // Must restore coeffs
+                        chans = tag == TYPE_CPE ? 2 : 1;
+                        cpe = &s->cpe[i];
+                        for (ch = 0; ch < chans; ch++)
+                            memcpy(cpe->ch[ch].coeffs, cpe->ch[ch].pcoeffs, sizeof(cpe->ch[ch].coeffs));
+                    }
+                }
+                its++;
+            }
+        } else {
+            break;
         }
-
-        s->lambda *= avctx->bit_rate * 1024.0f / avctx->sample_rate / frame_bits;
-
     } while (1);
 
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
     avctx->frame_bits = put_bits_count(&s->pb);
-
-    // rate control stuff
-    if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
-        float ratio = avctx->bit_rate * 1024.0f / avctx->sample_rate / avctx->frame_bits;
-        s->lambda *= ratio;
-        s->lambda = FFMIN(s->lambda, 65536.f);
-    }
 
     if (!frame)
         s->last_frame++;

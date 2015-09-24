@@ -389,6 +389,10 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         codec->codec_id == AV_CODEC_ID_ADPCM_THP_LE) {
         uint8_t *dst;
 
+        if (size > (INT_MAX - 32 - 4) ||
+            (32 + 4 + size) > (INT_MAX / codec->channels) ||
+            (32 + 4 + size) * codec->channels > INT_MAX - 8)
+            return AVERROR_INVALIDDATA;
         if (av_new_packet(pkt, 8 + (32 + 4 + size) * codec->channels) < 0)
             return AVERROR(ENOMEM);
         dst = pkt->data;

@@ -2153,8 +2153,9 @@ static av_cold int validate_options(AC3EncodeContext *s)
 
     /* validate bit rate */
     if (s->eac3) {
-        int max_br, min_br, wpf, min_br_dist, min_br_code;
+        int max_br, min_br, wpf, min_br_code;
         int num_blks_code, num_blocks, frame_samples;
+        long long min_br_dist;
 
         /* calculate min/max bitrate */
         /* TODO: More testing with 3 and 2 blocks. All E-AC-3 samples I've
@@ -2184,9 +2185,9 @@ static av_cold int validate_options(AC3EncodeContext *s)
            this is needed for lookup tables for bandwidth and coupling
            parameter selection */
         min_br_code = -1;
-        min_br_dist = INT_MAX;
+        min_br_dist = INT64_MAX;
         for (i = 0; i < 19; i++) {
-            int br_dist = abs(ff_ac3_bitrate_tab[i] * 1000 - avctx->bit_rate);
+            long long br_dist = llabs(ff_ac3_bitrate_tab[i] * 1000 - avctx->bit_rate);
             if (br_dist < min_br_dist) {
                 min_br_dist = br_dist;
                 min_br_code = i;
@@ -2199,10 +2200,11 @@ static av_cold int validate_options(AC3EncodeContext *s)
             wpf--;
         s->frame_size_min = 2 * wpf;
     } else {
-        int best_br = 0, best_code = 0, best_diff = INT_MAX;
+        int best_br = 0, best_code = 0;
+        long long best_diff = INT64_MAX;
         for (i = 0; i < 19; i++) {
             int br   = (ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift) * 1000;
-            int diff = abs(br - avctx->bit_rate);
+            long long diff = llabs(br - avctx->bit_rate);
             if (diff < best_diff) {
                 best_br   = br;
                 best_code = i;
