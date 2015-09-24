@@ -42,8 +42,8 @@ static void report_config_error(const char *filename, int line_num,
                                 int log_level, int *errors, const char *fmt,
                                 ...);
 
-#define ERROR(...)   report_config_error(config->filename, config->line_num,\
-                                         AV_LOG_ERROR, &config->errors,  __VA_ARGS__)
+#define ERROR(...) report_config_error(config->filename, config->line_num,\
+                                       AV_LOG_ERROR, &config->errors, __VA_ARGS__)
 #define WARNING(...) report_config_error(config->filename, config->line_num,\
                                          AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
 
