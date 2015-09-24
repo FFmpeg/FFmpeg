@@ -435,6 +435,12 @@ struct AVFilterLink {
 
     /**
      * Current timestamp of the link, as defined by the most recent
+     * frame(s), in link time_base units.
+     */
+    int64_t current_pts;
+
+    /**
+     * Current timestamp of the link, as defined by the most recent
      * frame(s), in AV_TIME_BASE units.
      */
     int64_t current_pts_us;
