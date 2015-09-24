@@ -1324,7 +1324,7 @@ static void heap_bubble_up(AVFilterGraph *graph,
 
     while (index) {
         int parent = (index - 1) >> 1;
-        if (links[parent]->current_pts >= link->current_pts)
+        if (links[parent]->current_pts_us >= link->current_pts_us)
             break;
         links[index] = links[parent];
         links[index]->age_index = index;
@@ -1346,9 +1346,9 @@ static void heap_bubble_down(AVFilterGraph *graph,
         if (child >= graph->sink_links_count)
             break;
         if (child + 1 < graph->sink_links_count &&
-            links[child + 1]->current_pts < links[child]->current_pts)
+            links[child + 1]->current_pts_us < links[child]->current_pts_us)
             child++;
-        if (link->current_pts < links[child]->current_pts)
+        if (link->current_pts_us < links[child]->current_pts_us)
             break;
         links[index] = links[child];
         links[index]->age_index = index;

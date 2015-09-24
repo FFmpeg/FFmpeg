@@ -238,7 +238,7 @@ int avfilter_config_links(AVFilterContext *filter)
         }
 
         inlink = link->src->nb_inputs ? link->src->inputs[0] : NULL;
-        link->current_pts = AV_NOPTS_VALUE;
+        link->current_pts_us = AV_NOPTS_VALUE;
 
         switch (link->init_state) {
         case AVLINK_INIT:
@@ -443,7 +443,7 @@ void ff_update_link_current_pts(AVFilterLink *link, int64_t pts)
 {
     if (pts == AV_NOPTS_VALUE)
         return;
-    link->current_pts = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
+    link->current_pts_us = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
     /* TODO use duration */
     if (link->graph && link->age_index >= 0)
         ff_avfilter_graph_update_heap(link->graph, link);
