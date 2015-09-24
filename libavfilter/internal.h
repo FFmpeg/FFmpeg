@@ -226,6 +226,21 @@ int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
 
 void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
 
+/**
+ * Set the status field of a link from the source filter.
+ * The pts should reflect the timestamp of the status change,
+ * in link time base and relative to the frames timeline.
+ * In particular, for AVERROR_EOF, it should reflect the
+ * end time of the last frame.
+ */
+void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts);
+
+/**
+ * Set the status field of a link from the destination filter.
+ * The pts should probably be left unset (AV_NOPTS_VALUE).
+ */
+void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts);
+
 void ff_command_queue_pop(AVFilterContext *filter);
 
 /* misc trace functions */

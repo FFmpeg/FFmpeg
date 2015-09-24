@@ -490,16 +490,16 @@ struct AVFilterLink {
     int max_samples;
 
     /**
-     * True if the link is closed.
-     * If set, all attempts of start_frame, filter_frame or request_frame
-     * will fail with AVERROR_EOF, and if necessary the reference will be
-     * destroyed.
-     * If request_frame returns AVERROR_EOF, this flag is set on the
+     * Link status.
+     * If not zero, all attempts of start_frame, filter_frame or request_frame
+     * will fail with the corresponding code, and if necessary the reference
+     * will be destroyed.
+     * If request_frame returns an error, the status is set on the
      * corresponding link.
      * It can be set also be set by either the source or the destination
      * filter.
      */
-    int closed;
+    int status;
 
     /**
      * Number of channels.

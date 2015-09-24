@@ -77,7 +77,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     for (i = 0; i < ctx->nb_outputs; i++) {
         AVFrame *buf_out;
 
-        if (ctx->outputs[i]->closed)
+        if (ctx->outputs[i]->status)
             continue;
         buf_out = av_frame_clone(frame);
         if (!buf_out) {

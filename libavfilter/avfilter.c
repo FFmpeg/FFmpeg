@@ -178,9 +178,20 @@ int avfilter_link_get_channels(AVFilterLink *link)
     return link->channels;
 }
 
+void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts)
+{
+    ff_avfilter_link_set_out_status(link, status, pts);
+}
+
+void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts)
+{
+    link->status = status;
+    ff_update_link_current_pts(link, pts);
+}
+
 void avfilter_link_set_closed(AVFilterLink *link, int closed)
 {
-    link->closed = closed;
+    ff_avfilter_link_set_out_status(link, closed ? AVERROR_EOF : 0, AV_NOPTS_VALUE);
 }
 
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
@@ -346,8 +357,8 @@ int ff_request_frame(AVFilterLink *link)
     int ret = -1;
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
-    if (link->closed)
-        return AVERROR_EOF;
+    if (link->status)
+        return link->status;
     if (link->srcpad->request_frame)
         ret = link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
@@ -358,8 +369,8 @@ int ff_request_frame(AVFilterLink *link)
         ret = ff_filter_frame_framed(link, pbuf);
     }
     if (ret < 0) {
-        if (ret == AVERROR_EOF)
-            link->closed = 1;
+        if (ret != AVERROR(EAGAIN) && ret != link->status)
+            ff_avfilter_link_set_in_status(link, ret, AV_NOPTS_VALUE);
     }
     return ret;
 }
@@ -1005,9 +1016,9 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     AVFilterCommand *cmd= link->dst->command_queue;
     int64_t pts;
 
-    if (link->closed) {
+    if (link->status) {
         av_frame_free(&frame);
-        return AVERROR_EOF;
+        return link->status;
     }
 
     if (!(filter_frame = dst->filter_frame))
