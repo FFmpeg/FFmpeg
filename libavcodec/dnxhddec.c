@@ -73,6 +73,7 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 
     ctx->avctx = avctx;
     ctx->cid = -1;
+    avctx->colorspace = AVCOL_SPC_BT709;
     return 0;
 }
 
