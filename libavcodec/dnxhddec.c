@@ -51,6 +51,7 @@ typedef struct DNXHDContext {
     int bit_depth; // 8, 10 or 0 if not initialized at all.
     int is_444;
     int mbaff;
+    int act;
     void (*decode_dct_block)(struct DNXHDContext *ctx, int16_t *block,
                              int n, int qscale);
     int last_qscale;
@@ -188,6 +189,11 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if (ctx->mbaff && ctx->cid_table->cid != 1260)
         av_log(ctx->avctx, AV_LOG_WARNING,
                "Adaptive MB interlace flag in an unsupported profile.\n");
+
+    ctx->act = buf[0x2C] & 7;
+    if (ctx->act && ctx->cid_table->cid != 1256)
+        av_log(ctx->avctx, AV_LOG_WARNING,
+               "Adaptive color transform in an unsupported profile.\n");
 
     // make sure profile size constraints are respected
     // DNx100 allows 1920->1440 and 1280->960 subsampling
@@ -354,7 +360,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
     int dct_linesize_chroma = frame->linesize[1];
     uint8_t *dest_y, *dest_u, *dest_v;
     int dct_y_offset, dct_x_offset;
-    int qscale, i;
+    int qscale, i, act;
     int interlaced_mb = 0;
 
     if (ctx->mbaff) {
@@ -362,7 +368,15 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
         qscale = get_bits(&ctx->gb, 10);
     } else
     qscale = get_bits(&ctx->gb, 11);
-    skip_bits1(&ctx->gb);
+    act = get_bits1(&ctx->gb);
+    if (act) {
+        static int warned = 0;
+        if (!warned) {
+            warned = 1;
+            av_log(ctx->avctx, AV_LOG_ERROR,
+                   "Unsupported adaptive color transform, patch welcome.\n");
+        }
+    }
 
     if (qscale != ctx->last_qscale) {
         for (i = 0; i < 64; i++) {
