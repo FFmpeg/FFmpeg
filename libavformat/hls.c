@@ -525,7 +525,15 @@ static int url_connect(struct playlist *pls, AVDictionary *opts, AVDictionary *o
     return ret;
 }
 
-static int open_url(HLSContext *c, URLContext *uc, const char *url, AVDictionary *opts)
+static void update_options(char **dest, const char *name, void *src)
+{
+    av_freep(dest);
+    av_opt_get(src, name, 0, (uint8_t**)dest);
+    if (*dest && !strlen(*dest))
+        av_freep(dest);
+}
+
+static int open_url(HLSContext *c, URLContext **uc, const char *url, AVDictionary *opts)
 {
     AVDictionary *tmp = NULL;
     int ret;
@@ -533,10 +541,11 @@ static int open_url(HLSContext *c, URLContext *uc, const char *url, AVDictionary
     av_dict_copy(&tmp, c->avio_opts, 0);
     av_dict_copy(&tmp, opts, 0);
 
-    ret = ffurl_open(&uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
+    ret = ffurl_open(uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
     if( ret >= 0) {
         // update cookies on http response with setcookies.
-        update_options(&c->cookies, "cookies", uc->priv_data);
+        URLContext *u = *uc;
+        update_options(&c->cookies, "cookies", u->priv_data);
         av_dict_set(&opts, "cookies", c->cookies, 0);
     }
 
@@ -963,14 +972,6 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
         pls->is_id3_timestamped = (pls->id3_mpegts_timestamp != AV_NOPTS_VALUE);
 }
 
-static void update_options(char **dest, const char *name, void *src)
-{
-    av_freep(dest);
-    av_opt_get(src, name, 0, (uint8_t**)dest);
-    if (*dest && !strlen(*dest))
-        av_freep(dest);
-}
-
 static int open_input(HLSContext *c, struct playlist *pls)
 {
     AVDictionary *opts = NULL;
@@ -994,13 +995,13 @@ static int open_input(HLSContext *c, struct playlist *pls)
            seg->url, seg->url_offset, pls->index);
 
     if (seg->key_type == KEY_NONE) {
-        ret = open_url(pls->parent->priv_data, pls->input, seg->url, opts);
+        ret = open_url(pls->parent->priv_data, &pls->input, seg->url, opts);
     } else if (seg->key_type == KEY_AES_128) {
 //         HLSContext *c = var->parent->priv_data;
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             URLContext *uc;
-            if (open_url(pls->parent->priv_data, uc, seg->key, opts) == 0) {
+            if (open_url(pls->parent->priv_data, &uc, seg->key, opts) == 0) {
                 if (ffurl_read_complete(uc, pls->key, sizeof(pls->key))
                     != sizeof(pls->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
