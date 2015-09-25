@@ -88,6 +88,7 @@ typedef struct FFPsyContext {
     struct {
         int size;                     ///< size of the bitresevoir in bits
         int bits;                     ///< number of bits used in the bitresevoir
+        int alloc;                    ///< number of bits allocated by the psy, or -1 if no allocation was done
     } bitres;
 
     void* model_priv_data;            ///< psychoacoustic model implementation private data

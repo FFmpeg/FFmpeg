@@ -85,7 +85,7 @@ OBJS-$(CONFIG_SILENCEREMOVE_FILTER)          += af_silenceremove.o
 OBJS-$(CONFIG_STEREOTOOLS_FILTER)            += af_stereotools.o
 OBJS-$(CONFIG_STEREOWIDEN_FILTER)            += af_stereowiden.o
 OBJS-$(CONFIG_TREBLE_FILTER)                 += af_biquads.o
-OBJS-$(CONFIG_TREMOLO_FILTER)                += af_tremolo.o generate_wave_table.o
+OBJS-$(CONFIG_TREMOLO_FILTER)                += af_tremolo.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
 OBJS-$(CONFIG_VOLUMEDETECT_FILTER)           += af_volumedetect.o
 
@@ -105,6 +105,7 @@ OBJS-$(CONFIG_BLACKDETECT_FILTER)            += vf_blackdetect.o
 OBJS-$(CONFIG_BLACKFRAME_FILTER)             += vf_blackframe.o
 OBJS-$(CONFIG_BLEND_FILTER)                  += vf_blend.o dualinput.o framesync.o
 OBJS-$(CONFIG_BOXBLUR_FILTER)                += vf_boxblur.o
+OBJS-$(CONFIG_CHROMAKEY_FILTER)              += vf_chromakey.o
 OBJS-$(CONFIG_CODECVIEW_FILTER)              += vf_codecview.o
 OBJS-$(CONFIG_COLORBALANCE_FILTER)           += vf_colorbalance.o
 OBJS-$(CONFIG_COLORCHANNELMIXER_FILTER)      += vf_colorchannelmixer.o

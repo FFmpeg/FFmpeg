@@ -89,13 +89,10 @@ static inline int find_min_book(float maxval, int sf)
     float Q34 = sqrtf(Q * sqrtf(Q));
     int qmaxval, cb;
     qmaxval = maxval * Q34 + C_QUANT;
-    if      (qmaxval ==  0) cb = 0;
-    else if (qmaxval ==  1) cb = 1;
-    else if (qmaxval ==  2) cb = 3;
-    else if (qmaxval <=  4) cb = 5;
-    else if (qmaxval <=  7) cb = 7;
-    else if (qmaxval <= 12) cb = 9;
-    else                    cb = 11;
+    if (qmaxval >= (FF_ARRAY_ELEMS(aac_maxval_cb)))
+        cb = 11;
+    else
+        cb = aac_maxval_cb[qmaxval];
     return cb;
 }
 

@@ -87,6 +87,7 @@ enum {
 };
 
 #define PSY_3GPP_BITS_TO_PE(bits) ((bits) * 1.18f)
+#define PSY_3GPP_PE_TO_BITS(bits) ((bits) / 1.18f)
 
 /* LAME psy model constants */
 #define PSY_LAME_FIR_LEN 21         ///< LAME psy model FIR order
@@ -687,6 +688,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
         desired_pe *= av_clipf(pctx->pe.previous / PSY_3GPP_BITS_TO_PE(ctx->bitres.bits),
                                0.85f, 1.15f);
     pctx->pe.previous = PSY_3GPP_BITS_TO_PE(desired_bits);
+    ctx->bitres.alloc = desired_bits;
 
     if (desired_pe < pe) {
         /* 5.6.1.3.4 "First Estimation of the reduction value" */
@@ -788,6 +790,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
             psy_band->threshold = band->thr;
             psy_band->energy    = band->energy;
             psy_band->spread    = band->active_lines * 2.0f / band_sizes[g];
+            psy_band->bits      = PSY_3GPP_PE_TO_BITS(band->pe);
         }
     }
 

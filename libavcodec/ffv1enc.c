@@ -982,6 +982,7 @@ slices_ok:
 
     if ((ret = ff_ffv1_init_slice_contexts(s)) < 0)
         return ret;
+    s->slice_count = s->max_slice_count;
     if ((ret = ff_ffv1_init_slices_state(s)) < 0)
         return ret;
 
@@ -991,7 +992,7 @@ slices_ok:
         if (!avctx->stats_out)
             return AVERROR(ENOMEM);
         for (i = 0; i < s->quant_table_count; i++)
-            for (j = 0; j < s->slice_count; j++) {
+            for (j = 0; j < s->max_slice_count; j++) {
                 FFV1Context *sf = s->slice_context[j];
                 av_assert0(!sf->rc_stat2[i]);
                 sf->rc_stat2[i] = av_mallocz(s->context_count[i] *
@@ -1215,6 +1216,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             for (i = 0; i < f->quant_table_count; i++)
                 memset(f->rc_stat2[i], 0, f->context_count[i] * sizeof(*f->rc_stat2[i]));
 
+            av_assert0(f->slice_count == f->max_slice_count);
             for (j = 0; j < f->slice_count; j++) {
                 FFV1Context *fs = f->slice_context[j];
                 for (i = 0; i < 256; i++) {
