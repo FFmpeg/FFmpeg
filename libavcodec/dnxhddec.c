@@ -349,7 +349,12 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
     uint8_t *dest_y, *dest_u, *dest_v;
     int dct_y_offset, dct_x_offset;
     int qscale, i;
+    int interlaced_mb = 0;
 
+    if (ctx->cid_table->cid == 1260) {
+        interlaced_mb = get_bits1(&ctx->gb);
+        qscale = get_bits(&ctx->gb, 10);
+    } else
     qscale = get_bits(&ctx->gb, 11);
     skip_bits1(&ctx->gb);
 
@@ -386,8 +391,12 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
         dest_u += frame->linesize[1];
         dest_v += frame->linesize[2];
     }
+    if (interlaced_mb) {
+        dct_linesize_luma   <<= 1;
+        dct_linesize_chroma <<= 1;
+    }
 
-    dct_y_offset = dct_linesize_luma << 3;
+    dct_y_offset = interlaced_mb ? frame->linesize[0] : (dct_linesize_luma << 3);
     dct_x_offset = 8 << shift1;
     if (!ctx->is_444) {
         ctx->idsp.idct_put(dest_y,                               dct_linesize_luma, ctx->blocks[0]);
@@ -396,7 +405,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
         ctx->idsp.idct_put(dest_y + dct_y_offset + dct_x_offset, dct_linesize_luma, ctx->blocks[5]);
 
         if (!(ctx->avctx->flags & AV_CODEC_FLAG_GRAY)) {
-            dct_y_offset = dct_linesize_chroma << 3;
+            dct_y_offset = interlaced_mb ? frame->linesize[1] : (dct_linesize_chroma << 3);
             ctx->idsp.idct_put(dest_u,                dct_linesize_chroma, ctx->blocks[2]);
             ctx->idsp.idct_put(dest_v,                dct_linesize_chroma, ctx->blocks[3]);
             ctx->idsp.idct_put(dest_u + dct_y_offset, dct_linesize_chroma, ctx->blocks[6]);
@@ -409,7 +418,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
         ctx->idsp.idct_put(dest_y + dct_y_offset + dct_x_offset, dct_linesize_luma, ctx->blocks[7]);
 
         if (!(ctx->avctx->flags & AV_CODEC_FLAG_GRAY)) {
-            dct_y_offset = dct_linesize_chroma << 3;
+            dct_y_offset = interlaced_mb ? frame->linesize[1] : (dct_linesize_chroma << 3);
             ctx->idsp.idct_put(dest_u,                               dct_linesize_chroma, ctx->blocks[2]);
             ctx->idsp.idct_put(dest_u + dct_x_offset,                dct_linesize_chroma, ctx->blocks[3]);
             ctx->idsp.idct_put(dest_u + dct_y_offset,                dct_linesize_chroma, ctx->blocks[8]);
