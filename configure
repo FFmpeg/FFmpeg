@@ -1357,11 +1357,21 @@ ARCH_EXT_LIST_X86="
     i686
 "
 
+ARCH_EXT_LIST_MIPS="
+    loongson
+    mips32r1
+    mips64r1
+    mips32r2
+    mips64r2
+    mips32r6
+    mips64r6
+"
+
 ARCH_EXT_LIST="
     $ARCH_EXT_LIST_ARM
+    $ARCH_EXT_LIST_MIPS
     $ARCH_EXT_LIST_PPC
     $ARCH_EXT_LIST_X86
-    loongson
     vis
 "
 
@@ -4058,6 +4068,19 @@ EOF
 elif enabled mips; then
 
     check_inline_asm loongson '"dmult.g $1, $2, $3"'
+
+    # make sure that only an instruction set is enabled
+    disable mips64r6 mips32r6 mips64r2 mips32r2 mips64r1 mips32r1
+
+    if enabled mips64; then
+        check_inline_asm mips64r6 '"dlsa $0, $0, $0, 1"' ||
+            check_inline_asm mips64r2 '"dext $0, $0, 0, 1"' ||
+                check_inline_asm mips64r1 '"daddi $0, $0, 0"'
+    else
+        check_inline_asm mips32r6 '"aui $0, $0, 0"' ||
+            check_inline_asm mips32r2 '"ext $0, $0, 0, 1"' ||
+                check_inline_asm mips32r1 '"daddi $0, $0, 0"'
+    fi
 
 elif enabled parisc; then
 
