@@ -137,8 +137,9 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
                 "%s:%d: ACL refers to invalid host or IP address '%s'\n",
                 filename, line_num, arg);
         goto bail;
-    } else
-        acl.last = acl.first;
+    }
+
+    acl.last = acl.first;
 
     ffserver_get_arg(arg, sizeof(arg), &p);
 
