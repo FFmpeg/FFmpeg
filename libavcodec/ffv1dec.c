@@ -979,16 +979,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         FFV1Context *fs = f->slice_context[i];
         int j;
         if (fs->slice_damaged && f->last_picture.f->data[0]) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             const uint8_t *src[4];
             uint8_t *dst[4];
             ff_thread_await_progress(&f->last_picture, INT_MAX, 0);
             for (j = 0; j < 4; j++) {
+                int pixshift = desc->comp[j].depth > 8;
                 int sh = (j == 1 || j == 2) ? f->chroma_h_shift : 0;
                 int sv = (j == 1 || j == 2) ? f->chroma_v_shift : 0;
                 dst[j] = p->data[j] + p->linesize[j] *
-                         (fs->slice_y >> sv) + (fs->slice_x >> sh);
+                         (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
                 src[j] = f->last_picture.f->data[j] + f->last_picture.f->linesize[j] *
-                         (fs->slice_y >> sv) + (fs->slice_x >> sh);
+                         (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
             }
             av_image_copy(dst, p->linesize, src,
                           f->last_picture.f->linesize,
