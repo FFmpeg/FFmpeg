@@ -46,6 +46,11 @@ decl_fpel_func(avg,  32, _16, avx2);
 decl_fpel_func(avg,  64, _16, avx2);
 decl_fpel_func(avg, 128, _16, avx2);
 
+decl_ipred_fns(v,       16, mmx,    sse);
+decl_ipred_fns(h,       16, mmxext, sse2);
+decl_ipred_fns(dc,      16, mmxext, sse2);
+decl_ipred_fns(dc_top,  16, mmxext, sse2);
+decl_ipred_fns(dc_left, 16, mmxext, sse2);
 #endif /* HAVE_YASM */
 
 av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
@@ -55,10 +60,15 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
 
     if (EXTERNAL_MMX(cpu_flags)) {
         init_fpel_func(4, 0,   8, put, , mmx);
+        init_ipred_func(v, VERT, 4, 16, mmx);
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         init_fpel_func(4, 1,   8, avg, _16, mmxext);
+        init_ipred_func(h, HOR, 4, 16, mmxext);
+        init_ipred_func(dc, DC, 4, 16, mmxext);
+        init_ipred_func(dc_top,  TOP_DC,  4, 16, mmxext);
+        init_ipred_func(dc_left, LEFT_DC, 4, 16, mmxext);
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
@@ -66,6 +76,7 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
         init_fpel_func(2, 0,  32, put, , sse);
         init_fpel_func(1, 0,  64, put, , sse);
         init_fpel_func(0, 0, 128, put, , sse);
+        init_8_16_32_ipred_funcs(v, VERT, 16, sse);
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -73,6 +84,10 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
         init_fpel_func(2, 1,  32, avg, _16, sse2);
         init_fpel_func(1, 1,  64, avg, _16, sse2);
         init_fpel_func(0, 1, 128, avg, _16, sse2);
+        init_8_16_32_ipred_funcs(h, HOR, 16, sse2);
+        init_8_16_32_ipred_funcs(dc, DC, 16, sse2);
+        init_8_16_32_ipred_funcs(dc_top,  TOP_DC,  16, sse2);
+        init_8_16_32_ipred_funcs(dc_left, LEFT_DC, 16, sse2);
     }
 
     if (EXTERNAL_AVX_FAST(cpu_flags)) {

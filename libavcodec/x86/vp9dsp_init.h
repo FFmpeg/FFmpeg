@@ -41,6 +41,18 @@ decl_mc_func(avg, sz, h, opt, type, fsz, bpp); \
 decl_mc_func(put, sz, v, opt, type, fsz, bpp); \
 decl_mc_func(avg, sz, v, opt, type, fsz, bpp)
 
+#define decl_ipred_fn(type, sz, bpp, opt) \
+void ff_vp9_ipred_##type##_##sz##x##sz##_##bpp##_##opt(uint8_t *dst, \
+                                                       ptrdiff_t stride, \
+                                                       const uint8_t *l, \
+                                                       const uint8_t *a)
+
+#define decl_ipred_fns(type, bpp, opt4, opt8_16_32) \
+decl_ipred_fn(type,  4, bpp, opt4); \
+decl_ipred_fn(type,  8, bpp, opt8_16_32); \
+decl_ipred_fn(type, 16, bpp, opt8_16_32); \
+decl_ipred_fn(type, 32, bpp, opt8_16_32)
+
 #define mc_rep_func(avg, sz, hsz, hszb, dir, opt, type, f_sz, bpp) \
 static av_always_inline void \
 ff_vp9_##avg##_8tap_1d_##dir##_##sz##_##bpp##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
@@ -141,6 +153,17 @@ filters_8tap_2d_fn(op, 4, align, bpp, bytes, opt4, f_opt)
 #define init_subpel3(idx, type, bpp, opt) \
     init_subpel3_8to64(idx, type, bpp, opt); \
     init_subpel2(4, idx,  4, type, bpp, opt)
+
+#define cat(a, bpp, b) a##bpp##b
+
+#define init_ipred_func(type, enum, sz, bpp, opt) \
+    dsp->intra_pred[TX_##sz##X##sz][enum##_PRED] = \
+        cat(ff_vp9_ipred_##type##_##sz##x##sz##_, bpp, _##opt)
+
+#define init_8_16_32_ipred_funcs(type, enum, bpp, opt) \
+    init_ipred_func(type, enum,  8, bpp, opt); \
+    init_ipred_func(type, enum, 16, bpp, opt); \
+    init_ipred_func(type, enum, 32, bpp, opt)
 
 void ff_vp9dsp_init_10bpp_x86(VP9DSPContext *dsp);
 void ff_vp9dsp_init_12bpp_x86(VP9DSPContext *dsp);

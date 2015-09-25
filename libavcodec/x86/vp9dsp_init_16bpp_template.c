@@ -121,6 +121,8 @@ lpf_mix2_wrappers(8, 8, bpp, opt); \
 lpf_mix2_wrappers_set(BPC, sse2);
 lpf_mix2_wrappers_set(BPC, ssse3);
 lpf_mix2_wrappers_set(BPC, avx);
+
+decl_ipred_fns(tm, BPC, mmxext, sse2);
 #endif /* HAVE_YASM */
 
 av_cold void INIT_FUNC(VP9DSPContext *dsp)
@@ -153,10 +155,15 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp)
     init_lpf_mix2_func(1, 0, 1, v, 8, 4, bpp, opt); \
     init_lpf_mix2_func(1, 1, 1, v, 8, 8, bpp, opt)
 
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        init_ipred_func(tm, TM_VP8, 4, BPC, mmxext);
+    }
+
     if (EXTERNAL_SSE2(cpu_flags)) {
         init_subpel3(0, put, BPC, sse2);
         init_subpel3(1, avg, BPC, sse2);
         init_lpf_funcs(BPC, sse2);
+        init_8_16_32_ipred_funcs(tm, TM_VP8, BPC, sse2);
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
