@@ -412,7 +412,8 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
            msgcomp, msgtext, version_major, version_minor);
 
     if (size != bytestream2_get_bytes_left(gbc)) {
-        av_log(avctx, AV_LOG_ERROR, "Incomplete or invalid file (%u > %u)\n.",
+        av_log(avctx, AV_LOG_ERROR,
+               "Incomplete or invalid file (header %d, left %d).\n",
                size, bytestream2_get_bytes_left(gbc));
         return AVERROR_INVALIDDATA;
     }
