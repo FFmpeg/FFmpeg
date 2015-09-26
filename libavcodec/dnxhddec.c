@@ -30,6 +30,7 @@
 #include "dnxhddata.h"
 #include "idctdsp.h"
 #include "internal.h"
+#include "thread.h"
 
 typedef struct DNXHDContext {
     AVCodecContext *avctx;
@@ -427,14 +428,16 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DNXHDContext *ctx = avctx->priv_data;
-    AVFrame *picture = data;
+    ThreadFrame tf;
     int first_field = 1;
     int ret;
+
+    tf.f = data;
 
     ff_dlog(avctx, "frame size %d\n", buf_size);
 
 decode_coding_unit:
-    if ((ret = dnxhd_decode_header(ctx, picture, buf, buf_size, first_field)) < 0)
+    if ((ret = dnxhd_decode_header(ctx, tf.f, buf, buf_size, first_field)) < 0)
         return ret;
 
     if ((avctx->width || avctx->height) &&
@@ -449,17 +452,17 @@ decode_coding_unit:
         return ret;
 
     if (first_field) {
-        if ((ret = ff_get_buffer(avctx, picture, 0)) < 0) {
+        if ((ret = ff_thread_get_buffer(avctx, &tf, 0)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
-        picture->pict_type = AV_PICTURE_TYPE_I;
-        picture->key_frame = 1;
+        tf.f->pict_type = AV_PICTURE_TYPE_I;
+        tf.f->key_frame = 1;
     }
 
-    dnxhd_decode_macroblocks(ctx, picture, buf + 0x280, buf_size - 0x280);
+    dnxhd_decode_macroblocks(ctx, tf.f, buf + 0x280, buf_size - 0x280);
 
-    if (first_field && picture->interlaced_frame) {
+    if (first_field && tf.f->interlaced_frame) {
         buf      += ctx->cid_table->coding_unit_size;
         buf_size -= ctx->cid_table->coding_unit_size;
         first_field = 0;
@@ -489,5 +492,5 @@ AVCodec ff_dnxhd_decoder = {
     .init           = dnxhd_decode_init,
     .close          = dnxhd_decode_close,
     .decode         = dnxhd_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };
