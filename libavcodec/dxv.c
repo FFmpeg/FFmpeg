@@ -322,7 +322,8 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
     GetByteContext *gbc = &ctx->gbc;
     int (*decompress_tex)(AVCodecContext *avctx);
     uint32_t tag;
-    int channels, size = 0, old_type = 0;
+    int version_major, version_minor = 0;
+    int size = 0, old_type = 0;
     int ret;
 
     bytestream2_init(gbc, avpkt->data, avpkt->size);
@@ -351,7 +352,8 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
         /* Old version does not have a real header, just size and type. */
         size = tag & 0x00FFFFFF;
         old_type = tag >> 24;
-        channels = old_type & 0x0F;
+        version_major = (old_type & 0x0F) - 1;
+
         if (old_type & 0x40) {
             av_log(avctx, AV_LOG_DEBUG, "LZF compression and DXT5 texture ");
             ctx->tex_funct = ctx->texdsp.dxt5_block;
@@ -371,11 +373,13 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
 
     /* New header is 12 bytes long. */
     if (!old_type) {
-        channels = bytestream2_get_byte(gbc);
-        bytestream2_skip(gbc, 3); // unknown
+        version_major = bytestream2_get_byte(gbc) - 1;
+        version_minor = bytestream2_get_byte(gbc);
+
+        bytestream2_skip(gbc, 2); // unknown
         size = bytestream2_get_le32(gbc);
     }
-    av_log(avctx, AV_LOG_DEBUG, "(%d channels)\n", channels);
+    av_log(avctx, AV_LOG_DEBUG, "(version %d.%d)\n", version_major, version_minor);
 
     if (size != bytestream2_get_bytes_left(gbc)) {
         av_log(avctx, AV_LOG_ERROR, "Incomplete or invalid file (%u > %u)\n.",
