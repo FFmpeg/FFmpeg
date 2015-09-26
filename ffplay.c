@@ -285,7 +285,7 @@ typedef struct VideoState {
     SDL_Rect last_display_rect;
     int eof;
 
-    char filename[1024];
+    char *filename;
     int width, height, xleft, ytop;
     int step;
 
@@ -1132,6 +1132,7 @@ static void stream_close(VideoState *is)
     sws_freeContext(is->img_convert_ctx);
 #endif
     sws_freeContext(is->sub_convert_ctx);
+    av_free(is->filename);
     av_free(is);
 }
 
@@ -3099,7 +3100,9 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is = av_mallocz(sizeof(VideoState));
     if (!is)
         return NULL;
-    av_strlcpy(is->filename, filename, sizeof(is->filename));
+    is->filename = av_strdup(filename);
+    if (!is->filename)
+        goto fail;
     is->iformat = iformat;
     is->ytop    = 0;
     is->xleft   = 0;
