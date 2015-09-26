@@ -548,11 +548,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 #if FF_API_QUANT_BIAS
 FF_DISABLE_DEPRECATION_WARNINGS
-    if (s->intra_quant_bias == FF_DEFAULT_QUANT_BIAS &&
-        avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
+    if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
         s->intra_quant_bias = avctx->intra_quant_bias;
-    if (s->inter_quant_bias == FF_DEFAULT_QUANT_BIAS &&
-        avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
+    if (avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
         s->inter_quant_bias = avctx->inter_quant_bias;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
