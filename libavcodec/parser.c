@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 
 #include "internal.h"
@@ -86,7 +87,11 @@ found:
     s->fetch_timestamp      = 1;
     s->pict_type            = AV_PICTURE_TYPE_I;
     s->key_frame            = -1;
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     s->convergence_duration = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     s->dts_sync_point       = INT_MIN;
     s->dts_ref_dts_delta    = INT_MIN;
     s->pts_dts_delta        = INT_MIN;

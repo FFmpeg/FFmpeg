@@ -735,8 +735,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* update flags */
     if (is_intra_only(st->codec->codec_id))
         pkt->flags |= AV_PKT_FLAG_KEY;
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     if (pc)
         pkt->convergence_duration = pc->convergence_duration;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static void free_packet_buffer(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
@@ -906,7 +910,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         if (s->debug & FF_FDEBUG_TS)
             av_log(s, AV_LOG_DEBUG,
                    "ff_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", "
-                   "size=%d, duration=%d, flags=%d\n",
+                   "size=%d, duration=%"PRId64", flags=%d\n",
                    cur_pkt.stream_index, cur_pkt.pts, cur_pkt.dts,
                    cur_pkt.size, cur_pkt.duration, cur_pkt.flags);
 
@@ -955,7 +959,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
     if (s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG,
                "read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", "
-               "size=%d, duration=%d, flags=%d\n",
+               "size=%d, duration=%"PRId64", flags=%d\n",
                pkt->stream_index, pkt->pts, pkt->dts,
                pkt->size, pkt->duration, pkt->flags);
 

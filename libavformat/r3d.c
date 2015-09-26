@@ -264,7 +264,7 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     if (st->avg_frame_rate.num)
         pkt->duration = (uint64_t)st->time_base.den*
             st->avg_frame_rate.den/st->avg_frame_rate.num;
-    av_log(s, AV_LOG_TRACE, "pkt dts %"PRId64" duration %d\n", pkt->dts, pkt->duration);
+    av_log(s, AV_LOG_TRACE, "pkt dts %"PRId64" duration %"PRId64"\n", pkt->dts, pkt->duration);
 
     return 0;
 }
@@ -313,7 +313,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     pkt->stream_index = 1;
     pkt->dts = dts;
     pkt->duration = av_rescale(samples, st->time_base.den, st->codec->sample_rate);
-    av_log(s, AV_LOG_TRACE, "pkt dts %"PRId64" duration %d samples %d sample rate %d\n",
+    av_log(s, AV_LOG_TRACE, "pkt dts %"PRId64" duration %"PRId64" samples %d sample rate %d\n",
             pkt->dts, pkt->duration, samples, st->codec->sample_rate);
 
     return 0;

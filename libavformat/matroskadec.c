@@ -2335,10 +2335,14 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     else
         pkt->pts = timecode;
     pkt->pos = pos;
+    if (track->type != MATROSKA_TRACK_TYPE_SUBTITLE || st->codec->codec_id == AV_CODEC_ID_TEXT)
+        pkt->duration = duration;
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     if (st->codec->codec_id == AV_CODEC_ID_TEXT)
         pkt->convergence_duration = duration;
-    else if (track->type != MATROSKA_TRACK_TYPE_SUBTITLE)
-        pkt->duration = duration;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (st->codec->codec_id == AV_CODEC_ID_SSA)
         matroska_fix_ass_packet(matroska, pkt, duration);

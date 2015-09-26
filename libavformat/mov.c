@@ -3535,7 +3535,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         goto retry;
     pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? AV_PKT_FLAG_KEY : 0;
     pkt->pos = sample->pos;
-    av_log(s, AV_LOG_TRACE, "stream %d, pts %"PRId64", dts %"PRId64", pos 0x%"PRIx64", duration %d\n",
+    av_log(s, AV_LOG_TRACE, "stream %d, pts %"PRId64", dts %"PRId64", pos 0x%"PRIx64", duration %"PRId64"\n",
             pkt->stream_index, pkt->pts, pkt->dts, pkt->pos, pkt->duration);
     return 0;
 }

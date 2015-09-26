@@ -34,7 +34,11 @@ void av_init_packet(AVPacket *pkt)
     pkt->dts                  = AV_NOPTS_VALUE;
     pkt->pos                  = -1;
     pkt->duration             = 0;
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->convergence_duration = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     pkt->flags                = 0;
     pkt->stream_index         = 0;
     pkt->buf                  = NULL;
@@ -269,7 +273,11 @@ int av_packet_copy_props(AVPacket *dst, const AVPacket *src)
     dst->dts                  = src->dts;
     dst->pos                  = src->pos;
     dst->duration             = src->duration;
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->convergence_duration = src->convergence_duration;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     dst->flags                = src->flags;
     dst->stream_index         = src->stream_index;
 
@@ -341,6 +349,10 @@ void av_packet_rescale_ts(AVPacket *pkt, AVRational src_tb, AVRational dst_tb)
         pkt->dts = av_rescale_q(pkt->dts, src_tb, dst_tb);
     if (pkt->duration > 0)
         pkt->duration = av_rescale_q(pkt->duration, src_tb, dst_tb);
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     if (pkt->convergence_duration > 0)
         pkt->convergence_duration = av_rescale_q(pkt->convergence_duration, src_tb, dst_tb);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
