@@ -597,13 +597,13 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
 
     memcpy(sce->band_alt, sce->band_type, sizeof(sce->band_type));
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        int wstart = sce->ics.swb_offset[w*16];
+        int wstart = w*128;
         for (g = 0;  g < sce->ics.num_swb; g++) {
             int noise_sfi;
             float dist1 = 0.0f, dist2 = 0.0f, noise_amp;
             float pns_energy = 0.0f, pns_tgt_energy, energy_ratio, dist_thresh;
             float sfb_energy = 0.0f, threshold = 0.0f, spread = 0.0f;
-            const int start = sce->ics.swb_offset[w*16+g];
+            const int start = wstart+sce->ics.swb_offset[g];
             const float freq = (start-wstart)*freq_mult;
             const float freq_boost = FFMAX(0.88f*freq/NOISE_LOW_LIMIT, 1.0f);
             if (freq < NOISE_LOW_LIMIT || avctx->cutoff && freq >= avctx->cutoff)
@@ -632,7 +632,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             noise_amp = -ff_aac_pow2sf_tab[noise_sfi + POW_SF2_ZERO];    /* Dequantize */
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 float band_energy, scale, pns_senergy;
-                const int start_c = sce->ics.swb_offset[(w+w2)*16+g];
+                const int start_c = (w+w2)*128+sce->ics.swb_offset[g];
                 band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 for (i = 0; i < sce->ics.swb_sizes[g]; i++)
                     PNS[i] = s->random_state = lcg_random(s->random_state);
