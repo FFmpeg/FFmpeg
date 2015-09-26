@@ -50,6 +50,7 @@ typedef struct DNXHDContext {
     const CIDEntry *cid_table;
     int bit_depth; // 8, 10 or 0 if not initialized at all.
     int is_444;
+    int mbaff;
     void (*decode_dct_block)(struct DNXHDContext *ctx, int16_t *block,
                              int n, int qscale);
     int last_qscale;
@@ -144,6 +145,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     } else {
         ctx->cur_field = 0;
     }
+    ctx->mbaff = buf[0x6] & 32;
 
     ctx->height = AV_RB16(buf + 0x18);
     ctx->width  = AV_RB16(buf + 0x1a);
@@ -183,6 +185,9 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     if ((ret = dnxhd_init_vlc(ctx, cid)) < 0)
         return ret;
+    if (ctx->mbaff && ctx->cid_table->cid != 1260)
+        av_log(ctx->avctx, AV_LOG_WARNING,
+               "Adaptive MB interlace flag in an unsupported profile.\n");
 
     // make sure profile size constraints are respected
     // DNx100 allows 1920->1440 and 1280->960 subsampling
@@ -352,7 +357,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
     int qscale, i;
     int interlaced_mb = 0;
 
-    if (ctx->cid_table->cid == 1260) {
+    if (ctx->mbaff) {
         interlaced_mb = get_bits1(&ctx->gb);
         qscale = get_bits(&ctx->gb, 10);
     } else
