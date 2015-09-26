@@ -306,7 +306,7 @@ static int decode_slice_header(FFV1Context *f, FFV1Context *fs)
     for (i = 0; i < f->plane_count; i++) {
         PlaneContext * const p = &fs->plane[i];
         int idx = get_symbol(c, state, 0);
-        if (idx > (unsigned)f->quant_table_count) {
+        if (idx >= (unsigned)f->quant_table_count) {
             av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
             return -1;
         }
