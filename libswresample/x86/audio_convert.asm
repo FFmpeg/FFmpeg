@@ -202,8 +202,8 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
 %endif
 %endmacro
 
-%macro PACK_6CH 5-7
-cglobal pack_6ch_%2_to_%1_%3, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
+%macro PACK_6CH 8
+cglobal pack_6ch_%2_to_%1_%3, 2, 8, %6, dst, src, src1, src2, src3, src4, src5, len
 %if ARCH_X86_64
     mov     lend, r2d
 %else
@@ -239,7 +239,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX:
     sub    src3q, srcq
     sub    src4q, srcq
     sub    src5q, srcq
-    %7 x,x,x,x,m7,x
+    %8 x,x,x,x,m7,x
 .loop:
     mov%3     m0, [srcq      ]
     mov%3     m1, [srcq+src1q]
@@ -271,9 +271,9 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX:
     movlhps   m1, m3
     movhlps   m5, m3
 
-    %6 m0,m6,x,x,m7,m3
-    %6 m4,m1,x,x,m7,m3
-    %6 m2,m5,x,x,m7,m3
+    %7 m0,m6,x,x,m7,m3
+    %7 m4,m1,x,x,m7,m3
+    %7 m2,m5,x,x,m7,m3
 
     mov %+ %3 %+ ps [dstq   ], m0
     mov %+ %3 %+ ps [dstq+16], m6
@@ -305,8 +305,8 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
 %endmacro
 
-%macro UNPACK_6CH 5-7
-cglobal unpack_6ch_%2_to_%1_%3, 2, 8, 8, dst, src, dst1, dst2, dst3, dst4, dst5, len
+%macro UNPACK_6CH 8
+cglobal unpack_6ch_%2_to_%1_%3, 2, 8, %6, dst, src, dst1, dst2, dst3, dst4, dst5, len
 %if ARCH_X86_64
     mov     lend, r2d
 %else
@@ -342,7 +342,7 @@ unpack_6ch_%2_to_%1_u_int %+ SUFFIX:
     sub    dst3q, dstq
     sub    dst4q, dstq
     sub    dst5q, dstq
-    %7 x,x,x,x,m7,x
+    %8 x,x,x,x,m7,x
 .loop:
     mov%3     m0, [srcq   ]
     mov%3     m1, [srcq+16]
@@ -360,9 +360,9 @@ unpack_6ch_%2_to_%1_u_int %+ SUFFIX:
     SWAP 1, 4
     SWAP 2, 3
 
-    %6 m0,m1,x,x,m7,m6
-    %6 m2,m3,x,x,m7,m6
-    %6 m4,m5,x,x,m7,m6
+    %7 m0,m1,x,x,m7,m6
+    %7 m2,m3,x,x,m7,m6
+    %7 m4,m5,x,x,m7,m6
 
     mov %+ %3 %+ ps [dstq      ], m0
     mov %+ %3 %+ ps [dstq+dst1q], m1
@@ -380,8 +380,8 @@ unpack_6ch_%2_to_%1_u_int %+ SUFFIX:
 
 %define PACK_8CH_GPRS (10 * ARCH_X86_64) + ((6 + HAVE_ALIGNED_STACK) * ARCH_X86_32)
 
-%macro PACK_8CH 5-7
-cglobal pack_8ch_%2_to_%1_%3, 2,PACK_8CH_GPRS,10, ARCH_X86_32*48, dst, src, len, src1, src2, src3, src4, src5, src6, src7
+%macro PACK_8CH 8
+cglobal pack_8ch_%2_to_%1_%3, 2, PACK_8CH_GPRS, %6, ARCH_X86_32*48, dst, src, len, src1, src2, src3, src4, src5, src6, src7
     mov     dstq, [dstq]
 %if ARCH_X86_32
     DEFINE_ARGS dst, src, src2, src3, src4, src5, src6
@@ -463,7 +463,7 @@ pack_8ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
 
 %if ARCH_X86_64
-    %7 x,x,x,x,m9,x
+    %8 x,x,x,x,m9,x
 %elifidn %1, int32
     %define m9 [flt2p31]
 %else
@@ -489,10 +489,10 @@ pack_8ch_%2_to_%1_u_int %+ SUFFIX:
 %if ARCH_X86_64
     TRANSPOSE8x4D 0, 1, 2, 3, 4, 5, 6, 7, 8
 
-    %6 m0,m1,x,x,m9,m8
-    %6 m2,m3,x,x,m9,m8
-    %6 m4,m5,x,x,m9,m8
-    %6 m6,m7,x,x,m9,m8
+    %7 m0,m1,x,x,m9,m8
+    %7 m2,m3,x,x,m9,m8
+    %7 m4,m5,x,x,m9,m8
+    %7 m6,m7,x,x,m9,m8
 
     mov%3 [dstq], m0
 %else
@@ -500,12 +500,12 @@ pack_8ch_%2_to_%1_u_int %+ SUFFIX:
 
     TRANSPOSE8x4D 0, 1, 2, 3, 4, 5, 6, 7, [rsp], [rsp+16], 1
 
-    %6 m0,m1,x,x,m9,m2
+    %7 m0,m1,x,x,m9,m2
     mova     m2, [rsp]
     mov%3   [dstq], m0
-    %6 m2,m3,x,x,m9,m0
-    %6 m4,m5,x,x,m9,m0
-    %6 m6,m7,x,x,m9,m0
+    %7 m2,m3,x,x,m9,m0
+    %7 m4,m5,x,x,m9,m0
+    %7 m6,m7,x,x,m9,m0
 
 %endif
 
@@ -614,15 +614,15 @@ CONV int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
 CONV int16, int32, u, 1, 2, INT32_TO_INT16_N, NOP_N
 CONV int16, int32, a, 1, 2, INT32_TO_INT16_N, NOP_N
 
-PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
-PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+PACK_6CH float, float, u, 2, 2, 0, NOP_N, NOP_N
+PACK_6CH float, float, a, 2, 2, 0, NOP_N, NOP_N
 
 INIT_XMM sse
-PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
-PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+PACK_6CH float, float, u, 2, 2, 7, NOP_N, NOP_N
+PACK_6CH float, float, a, 2, 2, 7, NOP_N, NOP_N
 
-UNPACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
-UNPACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+UNPACK_6CH float, float, u, 2, 2, 7, NOP_N, NOP_N
+UNPACK_6CH float, float, a, 2, 2, 7, NOP_N, NOP_N
 
 INIT_XMM sse2
 CONV int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
@@ -675,23 +675,23 @@ UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 UNPACK_2CH int16, float, u, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 UNPACK_2CH int16, float, a, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 
-PACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
-PACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_6CH float, int32, u, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_6CH float, int32, a, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_6CH int32, float, u, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_6CH int32, float, a, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
-UNPACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-UNPACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-UNPACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
-UNPACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_6CH float, int32, u, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH float, int32, a, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH int32, float, u, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_6CH int32, float, a, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
-PACK_8CH float, float, u, 2, 2, NOP_N, NOP_N
-PACK_8CH float, float, a, 2, 2, NOP_N, NOP_N
+PACK_8CH float, float, u, 2, 2, 9, NOP_N, NOP_N
+PACK_8CH float, float, a, 2, 2, 9, NOP_N, NOP_N
 
-PACK_8CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_8CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_8CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
-PACK_8CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_8CH float, int32, u, 2, 2, 10, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_8CH float, int32, a, 2, 2, 10, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_8CH int32, float, u, 2, 2, 10, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_8CH int32, float, a, 2, 2, 10, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
 INIT_XMM ssse3
 UNPACK_2CH int16, int16, u, 1, 1, NOP_N, NOP_N
@@ -703,29 +703,29 @@ UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
-PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
-PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+PACK_6CH float, float, u, 2, 2, 8, NOP_N, NOP_N
+PACK_6CH float, float, a, 2, 2, 8, NOP_N, NOP_N
 
-UNPACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
-UNPACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+UNPACK_6CH float, float, u, 2, 2, 8, NOP_N, NOP_N
+UNPACK_6CH float, float, a, 2, 2, 8, NOP_N, NOP_N
 
-PACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
-PACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_6CH float, int32, u, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_6CH float, int32, a, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_6CH int32, float, u, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_6CH int32, float, a, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
-UNPACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-UNPACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-UNPACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
-UNPACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_6CH float, int32, u, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH float, int32, a, 2, 2, 8, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH int32, float, u, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_6CH int32, float, a, 2, 2, 8, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
-PACK_8CH float, float, u, 2, 2, NOP_N, NOP_N
-PACK_8CH float, float, a, 2, 2, NOP_N, NOP_N
+PACK_8CH float, float, u, 2, 2, 9, NOP_N, NOP_N
+PACK_8CH float, float, a, 2, 2, 9, NOP_N, NOP_N
 
-PACK_8CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_8CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
-PACK_8CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
-PACK_8CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_8CH float, int32, u, 2, 2, 10, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_8CH float, int32, a, 2, 2, 10, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_8CH int32, float, u, 2, 2, 10, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+PACK_8CH int32, float, a, 2, 2, 10, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
 INIT_YMM avx
 CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
