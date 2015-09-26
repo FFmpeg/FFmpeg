@@ -3493,6 +3493,7 @@ of @var{all_mode}. Default value is @code{normal}.
 Available values for component modes are:
 @table @samp
 @item addition
+@item addition128
 @item and
 @item average
 @item burn

@@ -62,6 +62,7 @@ enum BlendMode {
     BLEND_HARDMIX,
     BLEND_LINEARLIGHT,
     BLEND_GLOW,
+    BLEND_ADDITION128,
     BLEND_NB
 };
 
@@ -110,6 +111,7 @@ typedef struct {
     { "c3_mode", "set component #3 blend mode", OFFSET(params[3].mode), AV_OPT_TYPE_INT, {.i64=0}, 0, BLEND_NB-1, FLAGS, "mode"},\
     { "all_mode", "set blend mode for all components", OFFSET(all_mode), AV_OPT_TYPE_INT, {.i64=-1},-1, BLEND_NB-1, FLAGS, "mode"},\
     { "addition",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_ADDITION},   0, 0, FLAGS, "mode" },\
+    { "addition128", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_ADDITION128}, 0, 0, FLAGS, "mode" },\
     { "and",        "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_AND},        0, 0, FLAGS, "mode" },\
     { "average",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_AVERAGE},    0, 0, FLAGS, "mode" },\
     { "burn",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_BURN},       0, 0, FLAGS, "mode" },\
@@ -224,6 +226,7 @@ static void blend_## name##_16bit(const uint8_t *_top, int top_linesize,       \
 #define DODGE(a, b)       (((a) == 255) ? (a) : FFMIN(255, (((b) << 8) / (255 - (a)))))
 
 DEFINE_BLEND8(addition,   FFMIN(255, A + B))
+DEFINE_BLEND8(addition128, av_clip_uint8(A + B - 128))
 DEFINE_BLEND8(average,    (A + B) / 2)
 DEFINE_BLEND8(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND8(multiply,   MULTIPLY(1, A, B))
@@ -262,6 +265,7 @@ DEFINE_BLEND8(linearlight,av_clip_uint8((B < 128) ? B + 2 * A - 255 : B + 2 * (A
 #define DODGE(a, b)       (((a) == 65535) ? (a) : FFMIN(65535, (((b) << 16) / (65535 - (a)))))
 
 DEFINE_BLEND16(addition,   FFMIN(65535, A + B))
+DEFINE_BLEND16(addition128, av_clip_uint16(A + B - 32768))
 DEFINE_BLEND16(average,    (A + B) / 2)
 DEFINE_BLEND16(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B))
@@ -481,6 +485,7 @@ static int config_output(AVFilterLink *outlink)
 
         switch (param->mode) {
         case BLEND_ADDITION:   param->blend = is_16bit ? blend_addition_16bit   : blend_addition_8bit;   break;
+        case BLEND_ADDITION128: param->blend = is_16bit ? blend_addition128_16bit : blend_addition128_8bit; break;
         case BLEND_AND:        param->blend = is_16bit ? blend_and_16bit        : blend_and_8bit;        break;
         case BLEND_AVERAGE:    param->blend = is_16bit ? blend_average_16bit    : blend_average_8bit;    break;
         case BLEND_BURN:       param->blend = is_16bit ? blend_burn_16bit       : blend_burn_8bit;       break;
