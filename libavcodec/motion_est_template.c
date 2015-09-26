@@ -704,7 +704,8 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
 
         key += (1<<(ME_MAP_MV_BITS-1)) + (1<<(2*ME_MAP_MV_BITS-1));
 
-        if((key&((-1)<<(2*ME_MAP_MV_BITS))) != map_generation) continue;
+        if ((key & (-(1 << (2 * ME_MAP_MV_BITS)))) != map_generation)
+            continue;
 
         minima[j].height= score_map[i];
         minima[j].x= key & ((1<<ME_MAP_MV_BITS)-1); key>>=ME_MAP_MV_BITS;
