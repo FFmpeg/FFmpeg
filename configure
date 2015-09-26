@@ -4367,8 +4367,6 @@ case $target_os in
             LIBTARGET=arm-wince
         fi
         enabled shared && ! enabled small && check_cmd $windres --version && enable gnu_windres
-        check_ldflags -Wl,--nxcompat
-        check_ldflags -Wl,--dynamicbase
         enabled x86_32 && check_ldflags -Wl,--large-address-aware
         shlibdir_default="$bindir_default"
         SLIBPREF=""
@@ -4392,6 +4390,7 @@ case $target_os in
         objformat="win32"
         ranlib=:
         enable dos_paths
+        check_ldflags -Wl,--nxcompat,--dynamicbase
         # Lets work around some stupidity in binutils.
         # ld will strip relocations from executables even though we need them
         # for dynamicbase (ASLR).  Using -pie does retain the reloc section
