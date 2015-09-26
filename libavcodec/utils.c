@@ -2320,20 +2320,6 @@ void ff_thread_await_progress(ThreadFrame *f, int progress, int field)
 
 #endif
 
-enum AVMediaType avcodec_get_type(enum AVCodecID codec_id)
-{
-    if (codec_id <= AV_CODEC_ID_NONE)
-        return AVMEDIA_TYPE_UNKNOWN;
-    else if (codec_id < AV_CODEC_ID_FIRST_AUDIO)
-        return AVMEDIA_TYPE_VIDEO;
-    else if (codec_id < AV_CODEC_ID_FIRST_SUBTITLE)
-        return AVMEDIA_TYPE_AUDIO;
-    else if (codec_id < AV_CODEC_ID_FIRST_UNKNOWN)
-        return AVMEDIA_TYPE_SUBTITLE;
-
-    return AVMEDIA_TYPE_UNKNOWN;
-}
-
 int avcodec_is_open(AVCodecContext *s)
 {
     return !!s->internal;
