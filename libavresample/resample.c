@@ -234,7 +234,6 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
                                 int compensation_distance)
 {
     ResampleContext *c;
-    AudioData *fifo_buf = NULL;
 
     if (compensation_distance < 0)
         return AVERROR(EINVAL);
