@@ -47,8 +47,11 @@ static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
     else {
         int i, e, a;
         e = 0;
-        while (get_rac(c, state + 1 + FFMIN(e, 9))) // 1..10
+        while (get_rac(c, state + 1 + FFMIN(e, 9))) { // 1..10
             e++;
+            if (e > 31)
+                return AVERROR_INVALIDDATA;
+        }
 
         a = 1;
         for (i = e - 1; i >= 0; i--)
@@ -302,7 +305,7 @@ static int decode_slice_header(FFV1Context *f, FFV1Context *fs)
     for (i = 0; i < f->plane_count; i++) {
         PlaneContext * const p = &fs->plane[i];
         int idx = get_symbol(c, state, 0);
-        if (idx > (unsigned)f->quant_table_count) {
+        if (idx >= (unsigned)f->quant_table_count) {
             av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
             return -1;
         }
@@ -499,7 +502,10 @@ static int read_quant_tables(RangeCoder *c,
     int context_count = 1;
 
     for (i = 0; i < 5; i++) {
-        context_count *= read_quant_table(c, quant_table[i], context_count);
+        int ret = read_quant_table(c, quant_table[i], context_count);
+        if (ret < 0)
+            return ret;
+        context_count *= ret;
         if (context_count > 32768U) {
             return AVERROR_INVALIDDATA;
         }
@@ -976,16 +982,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         FFV1Context *fs = f->slice_context[i];
         int j;
         if (fs->slice_damaged && f->last_picture.f->data[0]) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             const uint8_t *src[4];
             uint8_t *dst[4];
             ff_thread_await_progress(&f->last_picture, INT_MAX, 0);
             for (j = 0; j < 4; j++) {
+                int pixshift = desc->comp[j].depth > 8;
                 int sh = (j == 1 || j == 2) ? f->chroma_h_shift : 0;
                 int sv = (j == 1 || j == 2) ? f->chroma_v_shift : 0;
                 dst[j] = p->data[j] + p->linesize[j] *
-                         (fs->slice_y >> sv) + (fs->slice_x >> sh);
+                         (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
                 src[j] = f->last_picture.f->data[j] + f->last_picture.f->linesize[j] *
-                         (fs->slice_y >> sv) + (fs->slice_x >> sh);
+                         (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
             }
             av_image_copy(dst, p->linesize, src,
                           f->last_picture.f->linesize,
