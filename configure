@@ -4400,6 +4400,10 @@ case $target_os in
             add_ldexeflags -Wl,--pic-executable,-e,_mainCRTStartup
         elif enabled x86_64; then
             add_ldexeflags -Wl,--pic-executable,-e,mainCRTStartup
+            check_ldflags -Wl,--high-entropy-va # binutils 2.25
+            # Set image base >4GB for extra entropy with HEASLR
+            add_ldexeflags -Wl,--image-base,0x140000000
+            append SHFLAGS -Wl,--image-base,0x180000000
         fi
         ;;
     win32|win64)
