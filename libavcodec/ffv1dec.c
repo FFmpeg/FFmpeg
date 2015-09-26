@@ -502,7 +502,10 @@ static int read_quant_tables(RangeCoder *c,
     int context_count = 1;
 
     for (i = 0; i < 5; i++) {
-        context_count *= read_quant_table(c, quant_table[i], context_count);
+        int ret = read_quant_table(c, quant_table[i], context_count);
+        if (ret < 0)
+            return ret;
+        context_count *= ret;
         if (context_count > 32768U) {
             return AVERROR_INVALIDDATA;
         }
