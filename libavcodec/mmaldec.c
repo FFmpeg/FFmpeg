@@ -352,13 +352,6 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     format_in->es->video.par.den = avctx->sample_aspect_ratio.den;
     format_in->flags = MMAL_ES_FORMAT_FLAG_FRAMED;
 
-    if (avctx->extradata_size) {
-        if ((status = mmal_format_extradata_alloc(format_in, avctx->extradata_size)))
-            goto fail;
-        format_in->extradata_size = avctx->extradata_size;
-        memcpy(format_in->extradata, avctx->extradata, format_in->extradata_size);
-    }
-
     if ((status = mmal_port_format_commit(decoder->input[0])))
         goto fail;
 
