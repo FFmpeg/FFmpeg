@@ -433,17 +433,20 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt,
     if (avpkt->size) {
         if (avpkt->buf) {
             buf = av_buffer_ref(avpkt->buf);
+            size = avpkt->size;
+            data = avpkt->data;
         } else {
             buf = av_buffer_alloc(avpkt->size);
-            if (buf)
+            if (buf) {
                 memcpy(buf->data, avpkt->data, avpkt->size);
+                size = buf->size;
+                data = buf->data;
+            }
         }
         if (!buf) {
             ret = AVERROR(ENOMEM);
             goto done;
         }
-        size = buf->size;
-        data = buf->data;
         if (!is_extradata)
             ctx->packets_sent++;
     } else {
