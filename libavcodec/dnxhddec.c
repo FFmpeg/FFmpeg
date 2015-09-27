@@ -63,7 +63,7 @@ typedef struct DNXHDContext {
     int act;
     void (*decode_dct_block)(const struct DNXHDContext *ctx,
                              RowContext *row, int16_t *block,
-                             int n, int qscale);
+                             int n);
 } DNXHDContext;
 
 #define DNXHD_VLC_BITS 9
@@ -71,13 +71,13 @@ typedef struct DNXHDContext {
 
 static void dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
                                      RowContext *row, int16_t *block,
-                                     int n, int qscale);
+                                     int n);
 static void dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
                                       RowContext *row, int16_t *block,
-                                      int n, int qscale);
+                                      int n);
 static void dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
                                           RowContext *row, int16_t *block,
-                                          int n, int qscale);
+                                          int n);
 
 static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 {
@@ -272,7 +272,6 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
                                                     RowContext *row,
                                                     int16_t *block, int n,
-                                                    int qscale,
                                                     int index_bits,
                                                     int level_bias,
                                                     int level_shift)
@@ -366,23 +365,23 @@ static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
 
 static void dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
                                      RowContext *row, int16_t *block,
-                                     int n, int qscale)
+                                     int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, qscale, 4, 32, 6);
+    dnxhd_decode_dct_block(ctx, row, block, n, 4, 32, 6);
 }
 
 static void dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
                                       RowContext *row, int16_t *block,
-                                      int n, int qscale)
+                                      int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, qscale, 6, 8, 4);
+    dnxhd_decode_dct_block(ctx, row, block, n, 6, 8, 4);
 }
 
 static void dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
                                           RowContext *row, int16_t *block,
-                                          int n, int qscale)
+                                          int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, qscale, 6, 32, 6);
+    dnxhd_decode_dct_block(ctx, row, block, n, 6, 32, 6);
 }
 
 static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
@@ -421,12 +420,12 @@ static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
 
     for (i = 0; i < 8; i++) {
         ctx->bdsp.clear_block(row->blocks[i]);
-        ctx->decode_dct_block(ctx, row, row->blocks[i], i, qscale);
+        ctx->decode_dct_block(ctx, row, row->blocks[i], i);
     }
     if (ctx->is_444) {
         for (; i < 12; i++) {
             ctx->bdsp.clear_block(row->blocks[i]);
-            ctx->decode_dct_block(ctx, row, row->blocks[i], i, qscale);
+            ctx->decode_dct_block(ctx, row, row->blocks[i], i);
         }
     }
 
