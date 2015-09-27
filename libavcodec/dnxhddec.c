@@ -2,8 +2,10 @@
  * VC3/DNxHD decoder.
  * Copyright (c) 2007 SmartJog S.A., Baptiste Coudurier <baptiste dot coudurier at smartjog dot com>
  * Copyright (c) 2011 MirriAd Ltd
+ * Copyright (c) 2015 Christophe Gisquet
  *
  * 10 bit support added by MirriAd Ltd, Joseph Artsimovich <joseph@mirriad.com>
+ * Slice multithreading and MB interlaced support added by Christophe Gisquet
  *
  * This file is part of FFmpeg.
  *
