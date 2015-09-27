@@ -62,22 +62,18 @@ typedef struct DNXHDContext {
     int mbaff;
     int act;
     void (*decode_dct_block)(const struct DNXHDContext *ctx,
-                             RowContext *row, int16_t *block,
-                             int n);
+                             RowContext *row, int n);
 } DNXHDContext;
 
 #define DNXHD_VLC_BITS 9
 #define DNXHD_DC_VLC_BITS 7
 
 static void dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
-                                     RowContext *row, int16_t *block,
-                                     int n);
+                                     RowContext *row, int n);
 static void dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
-                                      RowContext *row, int16_t *block,
-                                      int n);
+                                      RowContext *row, int n);
 static void dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
-                                          RowContext *row, int16_t *block,
-                                          int n);
+                                          RowContext *row, int n);
 
 static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 {
@@ -271,7 +267,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
 static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
                                                     RowContext *row,
-                                                    int16_t *block, int n,
+                                                    int n,
                                                     int index_bits,
                                                     int level_bias,
                                                     int level_shift)
@@ -282,8 +278,11 @@ static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
     const uint8_t *weight_matrix;
     const uint8_t *ac_level = ctx->cid_table->ac_level;
     const uint8_t *ac_flags = ctx->cid_table->ac_flags;
+    int16_t *block = row->blocks[n];
     const int eob_index     = ctx->cid_table->eob_index;
     OPEN_READER(bs, &row->gb);
+
+    ctx->bdsp.clear_block(block);
 
     if (!ctx->is_444) {
         if (n & 2) {
@@ -364,24 +363,21 @@ static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
 }
 
 static void dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
-                                     RowContext *row, int16_t *block,
-                                     int n)
+                                     RowContext *row, int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, 4, 32, 6);
+    dnxhd_decode_dct_block(ctx, row, n, 4, 32, 6);
 }
 
 static void dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
-                                      RowContext *row, int16_t *block,
-                                      int n)
+                                      RowContext *row, int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, 6, 8, 4);
+    dnxhd_decode_dct_block(ctx, row, n, 6, 8, 4);
 }
 
 static void dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
-                                          RowContext *row, int16_t *block,
-                                          int n)
+                                          RowContext *row, int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, 6, 32, 6);
+    dnxhd_decode_dct_block(ctx, row, n, 6, 32, 6);
 }
 
 static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
@@ -418,15 +414,8 @@ static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
         row->last_qscale = qscale;
     }
 
-    for (i = 0; i < 8; i++) {
-        ctx->bdsp.clear_block(row->blocks[i]);
-        ctx->decode_dct_block(ctx, row, row->blocks[i], i);
-    }
-    if (ctx->is_444) {
-        for (; i < 12; i++) {
-            ctx->bdsp.clear_block(row->blocks[i]);
-            ctx->decode_dct_block(ctx, row, row->blocks[i], i);
-        }
+    for (i = 0; i < 8 + 4 * ctx->is_444; i++) {
+        ctx->decode_dct_block(ctx, row, i);
     }
 
     if (frame->interlaced_frame) {
