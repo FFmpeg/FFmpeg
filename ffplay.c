@@ -73,6 +73,9 @@ const int program_birth_year = 2003;
 /* Calculate actual buffer size keeping in mind not cause too frequent audio callbacks */
 #define SDL_AUDIO_MAX_CALLBACKS_PER_SEC 30
 
+/* Step size for volume control */
+#define SDL_VOLUME_STEP (SDL_MIX_MAXVOLUME / 50)
+
 /* no AV sync correction is done if below the minimum AV sync threshold */
 #define AV_SYNC_THRESHOLD_MIN 0.04
 /* AV sync correction is done if above the maximum AV sync threshold */
@@ -246,6 +249,8 @@ typedef struct VideoState {
     unsigned int audio_buf1_size;
     int audio_buf_index; /* in bytes */
     int audio_write_buf_size;
+    int audio_volume;
+    int muted;
     struct AudioParams audio_src;
 #if CONFIG_AVFILTER
     struct AudioParams audio_filter_src;
@@ -1349,6 +1354,16 @@ static void toggle_pause(VideoState *is)
     is->step = 0;
 }
 
+static void toggle_mute(VideoState *is)
+{
+    is->muted = !is->muted;
+}
+
+static void update_volume(VideoState *is, int sign, int step)
+{
+    is->audio_volume = av_clip(is->audio_volume + sign * step, 0, SDL_MIX_MAXVOLUME);
+}
+
 static void step_to_next_frame(VideoState *is)
 {
     /* if the stream is paused unpause it, then step */
@@ -2448,7 +2463,13 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
         len1 = is->audio_buf_size - is->audio_buf_index;
         if (len1 > len)
             len1 = len;
-        memcpy(stream, (uint8_t *)is->audio_buf + is->audio_buf_index, len1);
+        if (!is->muted && is->audio_volume == SDL_MIX_MAXVOLUME)
+            memcpy(stream, (uint8_t *)is->audio_buf + is->audio_buf_index, len1);
+        else {
+            memset(stream, is->silence_buf[0], len1);
+            if (!is->muted)
+                SDL_MixAudio(stream, (uint8_t *)is->audio_buf + is->audio_buf_index, len1, is->audio_volume);
+        }
         len -= len1;
         stream += len1;
         is->audio_buf_index += len1;
@@ -3125,6 +3146,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     init_clock(&is->audclk, &is->audioq.serial);
     init_clock(&is->extclk, &is->extclk.serial);
     is->audio_clock_serial = -1;
+    is->audio_volume = SDL_MIX_MAXVOLUME;
+    is->muted = 0;
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, is);
     if (!is->read_tid) {
@@ -3313,6 +3336,17 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_p:
             case SDLK_SPACE:
                 toggle_pause(cur_stream);
+                break;
+            case SDLK_m:
+                toggle_mute(cur_stream);
+                break;
+            case SDLK_KP_MULTIPLY:
+            case SDLK_0:
+                update_volume(cur_stream, 1, SDL_VOLUME_STEP);
+                break;
+            case SDLK_KP_DIVIDE:
+            case SDLK_9:
+                update_volume(cur_stream, -1, SDL_VOLUME_STEP);
                 break;
             case SDLK_s: // S: Step to next frame
                 step_to_next_frame(cur_stream);
