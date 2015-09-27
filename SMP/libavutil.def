@@ -228,10 +228,6 @@ EXPORTS
     av_image_get_buffer_size
     av_image_get_linesize
     av_int_list_length_for_size
-    av_isdigit
-    av_isgraph
-    av_isspace
-    av_isxdigit
     av_lfg_init
     av_log
     av_log2
