@@ -1,0 +1,18 @@
+Files without standard license headers:
+cmdutils_common_opts.h
+compat/avisynth/windowsPorts/basicDataTypeConversions.h
+compat/avisynth/windowsPorts/windows2linux.h
+libavcodec/file_open.c
+libavcodec/log2_tab.c
+libavcodec/mathops.c
+libavcodec/reverse.c
+libavdevice/file_open.c
+libavfilter/log2_tab.c
+libavformat/file_open.c
+libavformat/golomb_tab.c
+libavformat/log2_tab.c
+libavutil/x86_cpu.h
+libswresample/log2_tab.c
+libswscale/log2_tab.c
+tools/uncoded_frame.c
+tools/yuvcmp.c

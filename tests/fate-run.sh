@@ -87,6 +87,11 @@ probefmt(){
     run ffprobe -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
+runlocal(){
+    test "${V:-0}" -gt 0 && echo ${base}/"$@" ${base} >&3
+    ${base}/"$@" ${base}
+}
+
 probeframes(){
     run ffprobe -show_frames -v 0 "$@"
 }
