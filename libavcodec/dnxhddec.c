@@ -64,18 +64,18 @@ typedef struct DNXHDContext {
     int mbaff;
     int act;
     int (*decode_dct_block)(const struct DNXHDContext *ctx,
-                             RowContext *row, int n);
+                            RowContext *row, int n);
 } DNXHDContext;
 
 #define DNXHD_VLC_BITS 9
 #define DNXHD_DC_VLC_BITS 7
 
 static int dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
-                                     RowContext *row, int n);
+                                    RowContext *row, int n);
 static int dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
-                                      RowContext *row, int n);
+                                     RowContext *row, int n);
 static int dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
-                                          RowContext *row, int n);
+                                         RowContext *row, int n);
 
 static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 {
@@ -153,8 +153,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     int old_bit_depth = ctx->bit_depth;
 
     if (buf_size < 0x280) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "buffer too small (%d < 640).\n",
-               buf_size);
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "buffer too small (%d < 640).\n", buf_size);
         return AVERROR_INVALIDDATA;
     }
 
@@ -199,8 +199,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->is_444 = 0;
         ctx->decode_dct_block = dnxhd_decode_dct_block_8;
     } else {
-        av_log(ctx->avctx, AV_LOG_ERROR, "invalid bit depth value (%d).\n",
-               buf[0x21]);
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "invalid bit depth value (%d).\n", buf[0x21]);
         return AVERROR_INVALIDDATA;
     }
     if (ctx->bit_depth != old_bit_depth) {
@@ -268,11 +268,11 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 }
 
 static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
-                                                    RowContext *row,
-                                                    int n,
-                                                    int index_bits,
-                                                    int level_bias,
-                                                    int level_shift)
+                                                   RowContext *row,
+                                                   int n,
+                                                   int index_bits,
+                                                   int level_bias,
+                                                   int level_shift)
 {
     int i, j, index1, index2, len, flags;
     int level, component, sign;
@@ -368,19 +368,19 @@ static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
 }
 
 static int dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
-                                     RowContext *row, int n)
+                                    RowContext *row, int n)
 {
     return dnxhd_decode_dct_block(ctx, row, n, 4, 32, 6);
 }
 
 static int dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
-                                      RowContext *row, int n)
+                                     RowContext *row, int n)
 {
     return dnxhd_decode_dct_block(ctx, row, n, 6, 8, 4);
 }
 
 static int dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
-                                          RowContext *row, int n)
+                                         RowContext *row, int n)
 {
     return dnxhd_decode_dct_block(ctx, row, n, 6, 32, 6);
 }
