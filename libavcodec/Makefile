@@ -19,6 +19,7 @@ OBJS = allcodecs.o                                                      \
        bitstream.o                                                      \
        bitstream_filter.o                                               \
        codec_desc.o                                                     \
+       d3d11va.o                                                        \
        dv_profile.o                                                     \
        imgconvert.o                                                     \
        log2_tab.o                                                       \
@@ -582,7 +583,7 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)       += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
 
 # hardware accelerators
-OBJS-$(CONFIG_D3D11VA)                    += d3d11va.o dxva2.o
+OBJS-$(CONFIG_D3D11VA)                    += dxva2.o
 OBJS-$(CONFIG_DXVA2)                      += dxva2.o
 OBJS-$(CONFIG_VAAPI)                      += vaapi.o
 OBJS-$(CONFIG_VDA)                        += vda.o

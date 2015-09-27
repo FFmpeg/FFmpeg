@@ -23,6 +23,8 @@
 #include <stddef.h>
 
 #include "config.h"
+
+#if CONFIG_D3D11VA
 #include "libavutil/error.h"
 #include "libavutil/mem.h"
 
@@ -36,3 +38,11 @@ AVD3D11VAContext *av_d3d11va_alloc_context(void)
     res->context_mutex = INVALID_HANDLE_VALUE;
     return res;
 }
+#else
+struct AVD3D11VAContext *av_d3d11va_alloc_context(void);
+
+struct AVD3D11VAContext *av_d3d11va_alloc_context(void)
+{
+    return NULL;
+}
+#endif /* CONFIG_D3D11VA */
