@@ -134,6 +134,7 @@ typedef struct CheckasmFuncVersion {
 typedef struct CheckasmFunc {
     struct CheckasmFunc *child[2];
     CheckasmFuncVersion versions;
+    uint8_t color; /* 0 = red, 1 = black */
     char name[1];
 } CheckasmFunc;
 
@@ -296,23 +297,56 @@ static int cmp_func_names(const char *a, const char *b)
     return (digit_diff = av_isdigit(*a) - av_isdigit(*b)) ? digit_diff : ascii_diff;
 }
 
-/* Get a node with the specified name, creating it if it doesn't exist */
-static CheckasmFunc *get_func(const char *name, int length)
+/* Perform a tree rotation in the specified direction and return the new root */
+static CheckasmFunc *rotate_tree(CheckasmFunc *f, int dir)
 {
-    CheckasmFunc *f, **f_ptr = &state.funcs;
+    CheckasmFunc *r = f->child[dir^1];
+    f->child[dir^1] = r->child[dir];
+    r->child[dir] = f;
+    r->color = f->color;
+    f->color = 0;
+    return r;
+}
 
-    /* Search the tree for a matching node */
-    while ((f = *f_ptr)) {
-        int cmp = cmp_func_names(name, f->name);
-        if (!cmp)
-            return f;
+#define is_red(f) ((f) && !(f)->color)
 
-        f_ptr = &f->child[(cmp > 0)];
+/* Balance a left-leaning red-black tree at the specified node */
+static void balance_tree(CheckasmFunc **root)
+{
+    CheckasmFunc *f = *root;
+
+    if (is_red(f->child[0]) && is_red(f->child[1])) {
+        f->color ^= 1;
+        f->child[0]->color = f->child[1]->color = 1;
     }
 
-    /* Allocate and insert a new node into the tree */
-    f = *f_ptr = checkasm_malloc(sizeof(CheckasmFunc) + length);
-    memcpy(f->name, name, length+1);
+    if (!is_red(f->child[0]) && is_red(f->child[1]))
+        *root = rotate_tree(f, 0); /* Rotate left */
+    else if (is_red(f->child[0]) && is_red(f->child[0]->child[0]))
+        *root = rotate_tree(f, 1); /* Rotate right */
+}
+
+/* Get a node with the specified name, creating it if it doesn't exist */
+static CheckasmFunc *get_func(CheckasmFunc **root, const char *name)
+{
+    CheckasmFunc *f = *root;
+
+    if (f) {
+        /* Search the tree for a matching node */
+        int cmp = cmp_func_names(name, f->name);
+        if (cmp) {
+            f = get_func(&f->child[cmp > 0], name);
+
+            /* Rebalance the tree on the way up if a new node was inserted */
+            if (!f->versions.func)
+                balance_tree(root);
+        }
+    } else {
+        /* Allocate and insert a new node into the tree */
+        int name_length = strlen(name);
+        f = *root = checkasm_malloc(sizeof(CheckasmFunc) + name_length);
+        memcpy(f->name, name, name_length + 1);
+    }
 
     return f;
 }
@@ -414,7 +448,8 @@ void *checkasm_check_func(void *func, const char *name, ...)
     if (!func || name_length <= 0 || name_length >= sizeof(name_buf))
         return NULL;
 
-    state.current_func = get_func(name_buf, name_length);
+    state.current_func = get_func(&state.funcs, name_buf);
+    state.funcs->color = 1;
     v = &state.current_func->versions;
 
     if (v->func) {

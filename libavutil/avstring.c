@@ -317,28 +317,6 @@ int av_escape(char **dst, const char *src, const char *special_chars,
     }
 }
 
-int av_isdigit(int c)
-{
-    return c >= '0' && c <= '9';
-}
-
-int av_isgraph(int c)
-{
-    return c > 32 && c < 127;
-}
-
-int av_isspace(int c)
-{
-    return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' ||
-           c == '\v';
-}
-
-int av_isxdigit(int c)
-{
-    c = av_tolower(c);
-    return av_isdigit(c) || (c >= 'a' && c <= 'f');
-}
-
 int av_match_name(const char *name, const char *names)
 {
     const char *p;

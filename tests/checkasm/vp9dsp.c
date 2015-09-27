@@ -107,8 +107,8 @@ static void check_ipred(void)
 #define setdx(a,b,c,d) setpx(a,b,c-(d)+(rnd()%((d)*2+1)))
 #define setsx(a,b,c,d) setdx(a,b,c,(d) << (bit_depth - 8))
 static void randomize_loopfilter_buffers(int bidx, int lineoff, int str,
-                                         int bit_depth, int dir,
-                                         int* E, int* F, int* H, int* I,
+                                         int bit_depth, int dir, const int *E,
+                                         const int *F, const int *H, const int *I,
                                          uint8_t *buf0, uint8_t *buf1)
 {
     uint32_t mask = (1 << bit_depth) - 1;

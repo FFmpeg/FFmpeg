@@ -30,7 +30,7 @@ $(CHECKASM): $(EXEOBJS) $(CHECKASMOBJS) $(FF_STATIC_DEP_LIBS)
 
 checkasm: $(CHECKASM)
 
-clean:: checkasmclean
+testclean:: checkasmclean
 
 checkasmclean:
 	$(RM) $(CHECKASM) $(CLEANSUFFIXES:%=tests/checkasm/%) $(CLEANSUFFIXES:%=tests/checkasm/$(ARCH)/%)
