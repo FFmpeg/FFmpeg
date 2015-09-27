@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2006-2011 Michael Niedermayer <michaelni@gmx.at>
  *               2010      James Darnley <james.darnley@gmail.com>
+
+ * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
