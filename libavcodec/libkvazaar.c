@@ -74,7 +74,6 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
     cfg->height = avctx->height;
     cfg->framerate =
       avctx->time_base.den / (double)(avctx->time_base.num * avctx->ticks_per_frame);
-    cfg->threads = avctx->thread_count;
     cfg->target_bitrate = avctx->bit_rate;
     cfg->vui.sar_width = avctx->sample_aspect_ratio.num;
     cfg->vui.sar_height = avctx->sample_aspect_ratio.den;
