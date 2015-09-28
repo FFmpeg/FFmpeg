@@ -280,12 +280,16 @@ static void print_benchs(CheckasmFunc *f)
 /* ASCIIbetical sort except preserving natural order for numbers */
 static int cmp_func_names(const char *a, const char *b)
 {
+    const char *start = a;
     int ascii_diff, digit_diff;
 
-    for (; !(ascii_diff = *a - *b) && *a; a++, b++);
+    for (; !(ascii_diff = *(const unsigned char*)a - *(const unsigned char*)b) && *a; a++, b++);
     for (; av_isdigit(*a) && av_isdigit(*b); a++, b++);
 
-    return (digit_diff = av_isdigit(*a) - av_isdigit(*b)) ? digit_diff : ascii_diff;
+    if (a > start && av_isdigit(a[-1]) && (digit_diff = av_isdigit(*a) - av_isdigit(*b)))
+        return digit_diff;
+
+    return ascii_diff;
 }
 
 /* Perform a tree rotation in the specified direction and return the new root */
