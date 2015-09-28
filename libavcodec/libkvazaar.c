@@ -26,6 +26,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
 
@@ -149,9 +150,26 @@ static int libkvazaar_encode(AVCodecContext *avctx,
     if (frame) {
         int i = 0;
 
-        av_assert0(frame->width == ctx->config->width);
-        av_assert0(frame->height == ctx->config->height);
-        av_assert0(frame->format == avctx->pix_fmt);
+        if (frame->width != ctx->config->width ||
+                frame->height != ctx->config->height) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Changing video dimensions during encoding is not supported. "
+                   "(changed from %dx%d to %dx%d)\n",
+                   ctx->config->width, ctx->config->height,
+                   frame->width, frame->height);
+            retval = AVERROR_INVALIDDATA;
+            goto done;
+        }
+
+        if (frame->format != avctx->pix_fmt) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Changing pixel format during encoding is not supported. "
+                   "(changed from %s to %s)\n",
+                   av_get_pix_fmt_name(avctx->pix_fmt),
+                   av_get_pix_fmt_name(frame->format));
+            retval = AVERROR_INVALIDDATA;
+            goto done;
+        }
 
         // Allocate input picture for kvazaar.
         img_in = ctx->api->picture_alloc(frame->width, frame->height);
