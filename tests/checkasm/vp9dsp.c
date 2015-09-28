@@ -297,7 +297,7 @@ static int iszero(const int16_t *c, int sz)
 {
     int n;
 
-    for (n = 0; n < sz; n += 4)
+    for (n = 0; n < sz / sizeof(int16_t); n += 2)
         if (AV_RN32A(&c[n]))
             return 0;
 
