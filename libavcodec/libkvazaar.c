@@ -137,8 +137,11 @@ static int libkvazaar_encode(AVCodecContext *avctx,
 {
     int retval = 0;
     kvz_picture *img_in = NULL;
+
     kvz_data_chunk *data_out = NULL;
     uint32_t len_out = 0;
+    kvz_frame_info frame_info;
+
     LibkvazaarContext *ctx = avctx->priv_data;
 
     *got_packet_ptr = 0;
@@ -173,7 +176,10 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         }
     }
 
-    if (!ctx->api->encoder_encode(ctx->encoder, img_in, &data_out, &len_out, NULL)) {
+    if (!ctx->api->encoder_encode(ctx->encoder, img_in,
+                                  &data_out, &len_out,
+                                  NULL, NULL,
+                                  &frame_info)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to encode frame.\n");
         retval = AVERROR_EXTERNAL;
         goto done;
@@ -198,6 +204,14 @@ static int libkvazaar_encode(AVCodecContext *avctx,
 
         ctx->api->chunk_free(data_out);
         data_out = NULL;
+
+        avpkt->flags = 0;
+        // IRAP VCL NAL unit types span the range
+        // [BLA_W_LP (16), RSV_IRAP_VCL23 (23)].
+        if (frame_info.nal_unit_type >= KVZ_NAL_BLA_W_LP &&
+                frame_info.nal_unit_type <= KVZ_NAL_RSV_IRAP_VCL23) {
+            avpkt->flags |= AV_PKT_FLAG_KEY;
+        }
     }
 
 done:
