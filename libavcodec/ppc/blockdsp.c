@@ -143,10 +143,9 @@ static void clear_block_altivec(int16_t *block)
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_blockdsp_init_ppc(BlockDSPContext *c, unsigned high_bit_depth)
+av_cold void ff_blockdsp_init_ppc(BlockDSPContext *c)
 {
     // common optimizations whether AltiVec is available or not
-    if (!high_bit_depth) {
         switch (check_dcbzl_effect()) {
         case 32:
             c->clear_blocks = clear_blocks_dcbz32_ppc;
@@ -157,13 +156,11 @@ av_cold void ff_blockdsp_init_ppc(BlockDSPContext *c, unsigned high_bit_depth)
         default:
             break;
         }
-    }
 
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
-    if (!high_bit_depth)
         c->clear_block = clear_block_altivec;
 #endif /* HAVE_ALTIVEC */
 }
