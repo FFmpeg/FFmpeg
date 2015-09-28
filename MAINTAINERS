@@ -196,6 +196,7 @@ Codecs:
   interplayvideo.c                      Mike Melanson
   ivi*                                  Kostya Shishkov
   jacosub*                              Clément Bœsch
+  jni*, ffjni*                          Matthieu Bouron
   jpeg2000*                             Nicolas Bertrand
   jpeg_ls.c                             Kostya Shishkov
   jvdec.c                               Peter Ross

@@ -207,6 +207,7 @@ External library support:
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
+  --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
   --enable-libass          enable libass subtitles rendering,
                            needed for subtitles and ass filter [no]
@@ -1436,6 +1437,7 @@ EXTERNAL_LIBRARY_LIST="
     gmp
     gnutls
     iconv
+    jni
     ladspa
     libass
     libbluray
@@ -5556,6 +5558,8 @@ enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLin
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
+enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads &&
+                               check_lib2 "dlfcn.h" dlopen -ldl; }
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
@@ -6324,6 +6328,7 @@ echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
 echo "opencl enabled            ${opencl-no}"
+echo "JNI support               ${jni-no}"
 echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
