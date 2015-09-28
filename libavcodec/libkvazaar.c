@@ -106,8 +106,8 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
     cfg = NULL;
 
 done:
-    if (cfg) api->config_destroy(cfg);
-    if (enc) api->encoder_close(enc);
+    api->config_destroy(cfg);
+    api->encoder_close(enc);
 
     return retval;
 }
@@ -215,8 +215,8 @@ static int libkvazaar_encode(AVCodecContext *avctx,
     }
 
 done:
-    if (img_in) ctx->api->picture_free(img_in);
-    if (data_out) ctx->api->chunk_free(data_out);
+    ctx->api->picture_free(img_in);
+    ctx->api->chunk_free(data_out);
     return retval;
 }
 
