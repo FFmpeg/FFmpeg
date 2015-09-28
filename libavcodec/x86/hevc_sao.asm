@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* SIMD optimized SAO functions for HEVC decoding
+;* SIMD optimized SAO functions for HEVC 8bit decoding
 ;*
 ;* Copyright (c) 2013 Pierre-Edouard LEPERE
 ;* Copyright (c) 2014 James Almer
@@ -25,27 +25,18 @@
 
 SECTION_RODATA 32
 
-pw_mask10: times 16 dw 0x03FF
-pw_mask12: times 16 dw 0x0FFF
-pw_m2:     times 16 dw -2
 pb_edge_shuffle: times 2 db 1, 2, 0, 3, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 pb_eo:                   db -1, 0, 1, 0, 0, -1, 0, 1, -1, -1, 1, 1, 1, -1, -1, 1
-cextern pw_m1
-cextern pw_1
-cextern pw_2
 cextern pb_1
 cextern pb_2
 
 SECTION .text
 
-%define MAX_PB_SIZE  64
-%define PADDING_SIZE 32 ; AV_INPUT_BUFFER_PADDING_SIZE
-
 ;******************************************************************************
 ;SAO Band Filter
 ;******************************************************************************
 
-%macro HEVC_SAO_BAND_FILTER_INIT 1
+%macro HEVC_SAO_BAND_FILTER_INIT 0
     and            leftq, 31
     movd             xm0, leftd
     add            leftq, 1
@@ -76,9 +67,6 @@ SECTION .text
 %endif
 
 %if ARCH_X86_64
-%if %1 > 8
-    mova             m13, [pw_mask %+ %1]
-%endif
     pxor             m14, m14
 
 %else ; ARCH_X86_32
@@ -90,9 +78,6 @@ SECTION .text
     mova  [rsp+mmsize*5], m5
     mova  [rsp+mmsize*6], m6
     pxor              m0, m0
-%if %1 > 8
-    mova              m1, [pw_mask %+ %1]
-%endif
     %assign MMSIZE mmsize
     %define m14 m0
     %define m13 m1
@@ -103,49 +88,49 @@ DEFINE_ARGS dst, src, dststride, srcstride, offset, height
     mov          heightd, r7m
 %endmacro
 
-%macro HEVC_SAO_BAND_FILTER_COMPUTE 3
-    psraw             %2, %3, %1-5
+%macro HEVC_SAO_BAND_FILTER_COMPUTE 2
+    psraw             %1, %2, 3
 %if ARCH_X86_64
-    pcmpeqw          m10, %2, m0
-    pcmpeqw          m11, %2, m1
-    pcmpeqw          m12, %2, m2
-    pcmpeqw           %2, m3
+    pcmpeqw          m10, %1, m0
+    pcmpeqw          m11, %1, m1
+    pcmpeqw          m12, %1, m2
+    pcmpeqw           %1, m3
     pand             m10, m4
     pand             m11, m5
     pand             m12, m6
-    pand              %2, m7
+    pand              %1, m7
     por              m10, m11
-    por              m12, %2
+    por              m12, %1
     por              m10, m12
-    paddw             %3, m10
+    paddw             %2, m10
 %else ; ARCH_X86_32
-    pcmpeqw           m4, %2, [rsp+MMSIZE*0]
-    pcmpeqw           m5, %2, [rsp+MMSIZE*1]
-    pcmpeqw           m6, %2, [rsp+MMSIZE*2]
-    pcmpeqw           %2, [rsp+MMSIZE*3]
+    pcmpeqw           m4, %1, [rsp+MMSIZE*0]
+    pcmpeqw           m5, %1, [rsp+MMSIZE*1]
+    pcmpeqw           m6, %1, [rsp+MMSIZE*2]
+    pcmpeqw           %1, [rsp+MMSIZE*3]
     pand              m4, [rsp+MMSIZE*4]
     pand              m5, [rsp+MMSIZE*5]
     pand              m6, [rsp+MMSIZE*6]
-    pand              %2, m7
+    pand              %1, m7
     por               m4, m5
-    por               m6, %2
+    por               m6, %1
     por               m4, m6
-    paddw             %3, m4
+    paddw             %2, m4
 %endif ; ARCH
 %endmacro
 
 ;void ff_hevc_sao_band_filter_<width>_8_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
 ;                                             int16_t *sao_offset_val, int sao_left_class, int width, int height);
-%macro HEVC_SAO_BAND_FILTER_8 2
+%macro HEVC_SAO_BAND_FILTER 2
 cglobal hevc_sao_band_filter_%1_8, 6, 6, 15, 7*mmsize*ARCH_X86_32, dst, src, dststride, srcstride, offset, left
-    HEVC_SAO_BAND_FILTER_INIT 8
+    HEVC_SAO_BAND_FILTER_INIT
 
 align 16
 .loop:
 %if %1 == 8
     movq              m8, [srcq]
     punpcklbw         m8, m14
-    HEVC_SAO_BAND_FILTER_COMPUTE 8, m9, m8
+    HEVC_SAO_BAND_FILTER_COMPUTE m9, m8
     packuswb          m8, m14
     movq          [dstq], m8
 %endif ; %1 == 8
@@ -154,9 +139,9 @@ align 16
 %rep %2
     mova             m13, [srcq + i]
     punpcklbw         m8, m13, m14
-    HEVC_SAO_BAND_FILTER_COMPUTE 8, m9,  m8
+    HEVC_SAO_BAND_FILTER_COMPUTE m9,  m8
     punpckhbw        m13, m14
-    HEVC_SAO_BAND_FILTER_COMPUTE 8, m9, m13
+    HEVC_SAO_BAND_FILTER_COMPUTE m9, m13
     packuswb          m8, m13
     mova      [dstq + i], m8
 %assign i i+mmsize
@@ -167,9 +152,9 @@ INIT_XMM cpuname
 
     mova             m13, [srcq + i]
     punpcklbw         m8, m13, m14
-    HEVC_SAO_BAND_FILTER_COMPUTE 8, m9,  m8
+    HEVC_SAO_BAND_FILTER_COMPUTE m9,  m8
     punpckhbw        m13, m14
-    HEVC_SAO_BAND_FILTER_COMPUTE 8, m9, m13
+    HEVC_SAO_BAND_FILTER_COMPUTE m9, m13
     packuswb          m8, m13
     mova      [dstq + i], m8
 %if cpuflag(avx2)
@@ -184,76 +169,13 @@ INIT_YMM cpuname
     REP_RET
 %endmacro
 
-;void ff_hevc_sao_band_filter_<width>_<depth>_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
-;                                                   int16_t *sao_offset_val, int sao_left_class, int width, int height);
-%macro HEVC_SAO_BAND_FILTER_16 3
-cglobal hevc_sao_band_filter_%2_%1, 6, 6, 15, 7*mmsize*ARCH_X86_32, dst, src, dststride, srcstride, offset, left
-    HEVC_SAO_BAND_FILTER_INIT %1
-
-align 16
-.loop:
-%if %2 == 8
-    movu              m8, [srcq]
-    HEVC_SAO_BAND_FILTER_COMPUTE %1, m9, m8
-    CLIPW             m8, m14, m13
-    movu          [dstq], m8
-%endif
-
-%assign i 0
-%rep %3
-    mova              m8, [srcq + i]
-    HEVC_SAO_BAND_FILTER_COMPUTE %1, m9, m8
-    CLIPW             m8, m14, m13
-    mova      [dstq + i], m8
-
-    mova              m9, [srcq + i + mmsize]
-    HEVC_SAO_BAND_FILTER_COMPUTE %1, m8, m9
-    CLIPW             m9, m14, m13
-    mova      [dstq + i + mmsize], m9
-%assign i i+mmsize*2
-%endrep
-
-%if %2 == 48
-INIT_XMM cpuname
-    mova              m8, [srcq + i]
-    HEVC_SAO_BAND_FILTER_COMPUTE %1, m9, m8
-    CLIPW             m8, m14, m13
-    mova      [dstq + i], m8
-
-    mova              m9, [srcq + i + mmsize]
-    HEVC_SAO_BAND_FILTER_COMPUTE %1, m8, m9
-    CLIPW             m9, m14, m13
-    mova      [dstq + i + mmsize], m9
-%if cpuflag(avx2)
-INIT_YMM cpuname
-%endif
-%endif ; %1 == 48
-
-    add             dstq, dststrideq
-    add             srcq, srcstrideq
-    dec          heightd
-    jg .loop
-    REP_RET
-%endmacro
 
 %macro HEVC_SAO_BAND_FILTER_FUNCS 0
-HEVC_SAO_BAND_FILTER_8       8, 0
-HEVC_SAO_BAND_FILTER_8      16, 1
-HEVC_SAO_BAND_FILTER_8      32, 2
-HEVC_SAO_BAND_FILTER_8      48, 2
-HEVC_SAO_BAND_FILTER_8      64, 4
-
-HEVC_SAO_BAND_FILTER_16 10,  8, 0
-HEVC_SAO_BAND_FILTER_16 10, 16, 1
-HEVC_SAO_BAND_FILTER_16 10, 32, 2
-HEVC_SAO_BAND_FILTER_16 10, 48, 2
-HEVC_SAO_BAND_FILTER_16 10, 64, 4
-
-HEVC_SAO_BAND_FILTER_16 12,  8, 0
-HEVC_SAO_BAND_FILTER_16 12, 16, 1
-HEVC_SAO_BAND_FILTER_16 12, 32, 2
-HEVC_SAO_BAND_FILTER_16 12, 48, 2
-HEVC_SAO_BAND_FILTER_16 12, 64, 4
+HEVC_SAO_BAND_FILTER  8, 0
+HEVC_SAO_BAND_FILTER 16, 1
+HEVC_SAO_BAND_FILTER 32, 2
+HEVC_SAO_BAND_FILTER 48, 2
+HEVC_SAO_BAND_FILTER 64, 4
 %endmacro
 
 INIT_XMM sse2
@@ -263,37 +185,23 @@ HEVC_SAO_BAND_FILTER_FUNCS
 
 %if HAVE_AVX2_EXTERNAL
 INIT_XMM avx2
-HEVC_SAO_BAND_FILTER_8       8, 0
-HEVC_SAO_BAND_FILTER_8      16, 1
+HEVC_SAO_BAND_FILTER  8, 0
+HEVC_SAO_BAND_FILTER 16, 1
 INIT_YMM avx2
-HEVC_SAO_BAND_FILTER_8      32, 1
-HEVC_SAO_BAND_FILTER_8      48, 1
-HEVC_SAO_BAND_FILTER_8      64, 2
-
-INIT_XMM avx2
-HEVC_SAO_BAND_FILTER_16 10,  8, 0
-HEVC_SAO_BAND_FILTER_16 10, 16, 1
-INIT_YMM avx2
-HEVC_SAO_BAND_FILTER_16 10, 32, 1
-HEVC_SAO_BAND_FILTER_16 10, 48, 1
-HEVC_SAO_BAND_FILTER_16 10, 64, 2
-
-INIT_XMM avx2
-HEVC_SAO_BAND_FILTER_16 12,  8, 0
-HEVC_SAO_BAND_FILTER_16 12, 16, 1
-INIT_YMM avx2
-HEVC_SAO_BAND_FILTER_16 12, 32, 1
-HEVC_SAO_BAND_FILTER_16 12, 48, 1
-HEVC_SAO_BAND_FILTER_16 12, 64, 2
+HEVC_SAO_BAND_FILTER 32, 1
+HEVC_SAO_BAND_FILTER 48, 1
+HEVC_SAO_BAND_FILTER 64, 2
 %endif
 
 ;******************************************************************************
 ;SAO Edge Filter
 ;******************************************************************************
 
+%define MAX_PB_SIZE  64
+%define PADDING_SIZE 32 ; AV_INPUT_BUFFER_PADDING_SIZE
 %define EDGE_SRCSTRIDE 2 * MAX_PB_SIZE + PADDING_SIZE
 
-%macro HEVC_SAO_EDGE_FILTER_INIT 1
+%macro HEVC_SAO_EDGE_FILTER_INIT 0
 %if WIN64
     movsxd           eoq, dword eom
 %elif ARCH_X86_64
@@ -304,15 +212,15 @@ HEVC_SAO_BAND_FILTER_16 12, 64, 2
     lea            tmp2q, [pb_eo]
     movsx      a_strideq, byte [tmp2q+eoq*4+1]
     movsx      b_strideq, byte [tmp2q+eoq*4+3]
-    imul       a_strideq, EDGE_SRCSTRIDE>>%1
-    imul       b_strideq, EDGE_SRCSTRIDE>>%1
+    imul       a_strideq, EDGE_SRCSTRIDE
+    imul       b_strideq, EDGE_SRCSTRIDE
     movsx           tmpq, byte [tmp2q+eoq*4]
     add        a_strideq, tmpq
     movsx           tmpq, byte [tmp2q+eoq*4+2]
     add        b_strideq, tmpq
 %endmacro
 
-%macro HEVC_SAO_EDGE_FILTER_COMPUTE_8 1
+%macro HEVC_SAO_EDGE_FILTER_COMPUTE 1
     pminub            m4, m1, m2
     pminub            m5, m1, m3
     pcmpeqb           m2, m4
@@ -343,11 +251,11 @@ HEVC_SAO_BAND_FILTER_16 12, 64, 2
 
 ;void ff_hevc_sao_edge_filter_<width>_8_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
 ;                                             int eo, int width, int height);
-%macro HEVC_SAO_EDGE_FILTER_8 2-3
+%macro HEVC_SAO_EDGE_FILTER 2-3
 %if ARCH_X86_64
 cglobal hevc_sao_edge_filter_%1_8, 4, 9, 8, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
 %define tmp2q heightq
-    HEVC_SAO_EDGE_FILTER_INIT 0
+    HEVC_SAO_EDGE_FILTER_INIT
     mov          heightd, r6m
 
 %else ; ARCH_X86_32
@@ -356,7 +264,7 @@ cglobal hevc_sao_edge_filter_%1_8, 1, 6, 8, dst, src, dststride, a_stride, b_str
 %define tmpq  heightq
 %define tmp2q dststrideq
 %define offsetq heightq
-    HEVC_SAO_EDGE_FILTER_INIT 0
+    HEVC_SAO_EDGE_FILTER_INIT
     mov             srcq, srcm
     mov          offsetq, r3m
     mov       dststrideq, dststridem
@@ -383,7 +291,7 @@ align 16
     movq              m1, [srcq]
     movq              m2, [srcq + a_strideq]
     movq              m3, [srcq + b_strideq]
-    HEVC_SAO_EDGE_FILTER_COMPUTE_8 %1
+    HEVC_SAO_EDGE_FILTER_COMPUTE %1
     movq          [dstq], m3
 %endif
 
@@ -392,7 +300,7 @@ align 16
     mova              m1, [srcq + i]
     movu              m2, [srcq + a_strideq + i]
     movu              m3, [srcq + b_strideq + i]
-    HEVC_SAO_EDGE_FILTER_COMPUTE_8 %1
+    HEVC_SAO_EDGE_FILTER_COMPUTE %1
     mov%3     [dstq + i], m3
 %assign i i+mmsize
 %endrep
@@ -403,7 +311,7 @@ INIT_XMM cpuname
     mova              m1, [srcq + i]
     movu              m2, [srcq + a_strideq + i]
     movu              m3, [srcq + b_strideq + i]
-    HEVC_SAO_EDGE_FILTER_COMPUTE_8 %1
+    HEVC_SAO_EDGE_FILTER_COMPUTE %1
     mova      [dstq + i], m3
 %if cpuflag(avx2)
 INIT_YMM cpuname
@@ -417,208 +325,16 @@ INIT_YMM cpuname
     RET
 %endmacro
 
-%macro PMINUW 4
-%if cpuflag(sse4)
-    pminuw            %1, %2, %3
-%else
-    psubusw           %4, %2, %3
-    psubw             %1, %2, %4
-%endif
-%endmacro
-
-%macro HEVC_SAO_EDGE_FILTER_COMPUTE_10 0
-    PMINUW            m4, m1, m2, m6
-    PMINUW            m5, m1, m3, m7
-    pcmpeqw           m2, m4
-    pcmpeqw           m3, m5
-    pcmpeqw           m4, m1
-    pcmpeqw           m5, m1
-    psubw             m4, m2
-    psubw             m5, m3
-
-    paddw             m4, m5
-    pcmpeqw           m2, m4, [pw_m2]
-%if ARCH_X86_64
-    pcmpeqw           m3, m4, m13
-    pcmpeqw           m5, m4, m0
-    pcmpeqw           m6, m4, m14
-    pcmpeqw           m7, m4, m15
-    pand              m2, m8
-    pand              m3, m9
-    pand              m5, m10
-    pand              m6, m11
-    pand              m7, m12
-%else
-    pcmpeqw           m3, m4, [pw_m1]
-    pcmpeqw           m5, m4, m0
-    pcmpeqw           m6, m4, [pw_1]
-    pcmpeqw           m7, m4, [pw_2]
-    pand              m2, [rsp+MMSIZE*0]
-    pand              m3, [rsp+MMSIZE*1]
-    pand              m5, [rsp+MMSIZE*2]
-    pand              m6, [rsp+MMSIZE*3]
-    pand              m7, [rsp+MMSIZE*4]
-%endif
-    paddw             m2, m3
-    paddw             m5, m6
-    paddw             m2, m7
-    paddw             m2, m1
-    paddw             m2, m5
-%endmacro
-
-;void ff_hevc_sao_edge_filter_<width>_<depth>_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
-;                                                   int eo, int width, int height);
-%macro HEVC_SAO_EDGE_FILTER_16 3
-%if ARCH_X86_64
-cglobal hevc_sao_edge_filter_%2_%1, 4, 9, 16, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
-%define tmp2q heightq
-    HEVC_SAO_EDGE_FILTER_INIT 1
-    mov          heightd, r6m
-    add        a_strideq, a_strideq
-    add        b_strideq, b_strideq
-
-%else ; ARCH_X86_32
-cglobal hevc_sao_edge_filter_%2_%1, 1, 6, 8, 5*mmsize, dst, src, dststride, a_stride, b_stride, height
-%assign MMSIZE mmsize
-%define eoq   srcq
-%define tmpq  heightq
-%define tmp2q dststrideq
-%define offsetq heightq
-%define m8 m1
-%define m9 m2
-%define m10 m3
-%define m11 m4
-%define m12 m5
-    HEVC_SAO_EDGE_FILTER_INIT 1
-    mov             srcq, srcm
-    mov          offsetq, r3m
-    mov       dststrideq, dststridem
-    add        a_strideq, a_strideq
-    add        b_strideq, b_strideq
-
-%endif ; ARCH
-
-%if cpuflag(avx2)
-    SPLATW            m8, [offsetq+2]
-    SPLATW            m9, [offsetq+4]
-    SPLATW           m10, [offsetq+0]
-    SPLATW           m11, [offsetq+6]
-    SPLATW           m12, [offsetq+8]
-%else
-    movq             m10, [offsetq+0]
-    movd             m12, [offsetq+6]
-    SPLATW            m8, xm10, 1
-    SPLATW            m9, xm10, 2
-    SPLATW           m10, xm10, 0
-    SPLATW           m11, xm12, 0
-    SPLATW           m12, xm12, 1
-%endif
-    pxor              m0, m0
-%if ARCH_X86_64
-    mova             m13, [pw_m1]
-    mova             m14, [pw_1]
-    mova             m15, [pw_2]
-%else
-    mov          heightd, r6m
-    mova  [rsp+mmsize*0], m8
-    mova  [rsp+mmsize*1], m9
-    mova  [rsp+mmsize*2], m10
-    mova  [rsp+mmsize*3], m11
-    mova  [rsp+mmsize*4], m12
-%endif
-
-align 16
-.loop:
-
-%if %2 == 8
-    mova              m1, [srcq]
-    movu              m2, [srcq+a_strideq]
-    movu              m3, [srcq+b_strideq]
-
-    HEVC_SAO_EDGE_FILTER_COMPUTE_10
-    CLIPW             m2, m0, [pw_mask %+ %1]
-    movu          [dstq], m2
-%endif
-
-%assign i 0
-%rep %3
-    mova              m1, [srcq + i]
-    movu              m2, [srcq+a_strideq + i]
-    movu              m3, [srcq+b_strideq + i]
-    HEVC_SAO_EDGE_FILTER_COMPUTE_10
-    CLIPW             m2, m0, [pw_mask %+ %1]
-    mova      [dstq + i], m2
-
-    mova              m1, [srcq + i + mmsize]
-    movu              m2, [srcq+a_strideq + i + mmsize]
-    movu              m3, [srcq+b_strideq + i + mmsize]
-    HEVC_SAO_EDGE_FILTER_COMPUTE_10
-    CLIPW             m2, m0, [pw_mask %+ %1]
-    mova [dstq + i + mmsize], m2
-%assign i i+mmsize*2
-%endrep
-
-%if %2 == 48
-INIT_XMM cpuname
-    mova              m1, [srcq + i]
-    movu              m2, [srcq+a_strideq + i]
-    movu              m3, [srcq+b_strideq + i]
-    HEVC_SAO_EDGE_FILTER_COMPUTE_10
-    CLIPW             m2, m0, [pw_mask %+ %1]
-    mova              [dstq + i], m2
-
-    mova              m1, [srcq + i + mmsize]
-    movu              m2, [srcq+a_strideq + i + mmsize]
-    movu              m3, [srcq+b_strideq + i + mmsize]
-    HEVC_SAO_EDGE_FILTER_COMPUTE_10
-    CLIPW             m2, m0, [pw_mask %+ %1]
-    mova [dstq + i + mmsize], m2
-%if cpuflag(avx2)
-INIT_YMM cpuname
-%endif
-%endif
-
-    add             dstq, dststrideq
-    add             srcq, EDGE_SRCSTRIDE
-    dec          heightd
-    jg .loop
-    RET
-%endmacro
-
 INIT_XMM ssse3
-HEVC_SAO_EDGE_FILTER_8       8, 0
-HEVC_SAO_EDGE_FILTER_8      16, 1, a
-HEVC_SAO_EDGE_FILTER_8      32, 2, a
-HEVC_SAO_EDGE_FILTER_8      48, 2, a
-HEVC_SAO_EDGE_FILTER_8      64, 4, a
+HEVC_SAO_EDGE_FILTER  8, 0
+HEVC_SAO_EDGE_FILTER 16, 1, a
+HEVC_SAO_EDGE_FILTER 32, 2, a
+HEVC_SAO_EDGE_FILTER 48, 2, a
+HEVC_SAO_EDGE_FILTER 64, 4, a
 
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
-HEVC_SAO_EDGE_FILTER_8      32, 1, a
-HEVC_SAO_EDGE_FILTER_8      48, 1, u
-HEVC_SAO_EDGE_FILTER_8      64, 2, a
-%endif
-
-INIT_XMM sse2
-HEVC_SAO_EDGE_FILTER_16 10,  8, 0
-HEVC_SAO_EDGE_FILTER_16 10, 16, 1
-HEVC_SAO_EDGE_FILTER_16 10, 32, 2
-HEVC_SAO_EDGE_FILTER_16 10, 48, 2
-HEVC_SAO_EDGE_FILTER_16 10, 64, 4
-
-HEVC_SAO_EDGE_FILTER_16 12,  8, 0
-HEVC_SAO_EDGE_FILTER_16 12, 16, 1
-HEVC_SAO_EDGE_FILTER_16 12, 32, 2
-HEVC_SAO_EDGE_FILTER_16 12, 48, 2
-HEVC_SAO_EDGE_FILTER_16 12, 64, 4
-
-%if HAVE_AVX2_EXTERNAL
-INIT_YMM avx2
-HEVC_SAO_EDGE_FILTER_16 10, 32, 1
-HEVC_SAO_EDGE_FILTER_16 10, 48, 1
-HEVC_SAO_EDGE_FILTER_16 10, 64, 2
-
-HEVC_SAO_EDGE_FILTER_16 12, 32, 1
-HEVC_SAO_EDGE_FILTER_16 12, 48, 1
-HEVC_SAO_EDGE_FILTER_16 12, 64, 2
+HEVC_SAO_EDGE_FILTER 32, 1, a
+HEVC_SAO_EDGE_FILTER 48, 1, u
+HEVC_SAO_EDGE_FILTER 64, 2, a
 %endif
