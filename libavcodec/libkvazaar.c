@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -149,8 +150,6 @@ static int libkvazaar_encode(AVCodecContext *avctx,
     *got_packet_ptr = 0;
 
     if (frame) {
-        int i = 0;
-
         if (frame->width != ctx->config->width ||
                 frame->height != ctx->config->height) {
             av_log(avctx, AV_LOG_ERROR,
@@ -181,17 +180,16 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         }
 
         // Copy pixels from frame to img_in.
-        for (i = 0; i < 3; ++i) {
-            uint8_t *dst = img_in->data[i];
-            uint8_t *src = frame->data[i];
-            int width = (i == 0) ? frame->width : (frame->width / 2);
-            int height = (i == 0) ? frame->height : (frame->height / 2);
-            int y = 0;
-            for (y = 0; y < height; ++y) {
-                memcpy(dst, src, width);
-                src += frame->linesize[i];
-                dst += width;
-            }
+        {
+            int dst_linesizes[4] = {
+              frame->width,
+              frame->width / 2,
+              frame->width / 2,
+              0
+            };
+            av_image_copy(img_in->data, dst_linesizes,
+                          frame->data, frame->linesize,
+                          frame->format, frame->width, frame->height);
         }
 
         img_in->pts = frame->pts;
