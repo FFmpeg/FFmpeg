@@ -228,17 +228,6 @@ static const uint8_t dnxhd_1252_chroma_weight[] = {
     114, 128, 125, 129, 134, 125, 116, 116,
 };
 
-static const uint8_t dnxhd_1256_chroma_weight[] = {
-     0, 32, 32, 32, 32, 32, 32, 32,
-    32, 32, 32, 32, 32, 32, 32, 32,
-    32, 32, 32, 32, 32, 32, 37, 32,
-    32, 32, 32, 32, 33, 32, 32, 32,
-    32, 32, 33, 34, 37, 36, 32, 32,
-    32, 33, 34, 37, 36, 34, 35, 36,
-    39, 44, 40, 40, 39, 39, 44, 43,
-    43, 51, 56, 50, 49, 60, 61, 70,
-};
-
 static const uint8_t dnxhd_1260_luma_weight[] = {
      0, 32, 33, 34, 36, 37, 37, 36,
     34, 33, 34, 35, 37, 38, 40, 41,
@@ -1041,7 +1030,7 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       { 36, 36, 45, 75, 90 },
       { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
     { 1256, 1920, 1080, 0, 1835008, 1835008, 6, 10, 4,
-      dnxhd_1235_luma_weight, dnxhd_1256_chroma_weight,
+      dnxhd_1235_luma_weight, dnxhd_1235_luma_weight,
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_level,
       dnxhd_1235_ac_flags,
