@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2002 Jindrich Makovicka <makovick@gmail.com>
  * Copyright (c) 2011 Stefano Sabatini
- * Copyright (c) 2013 Jean Delvare <jdelvare@suse.com>
+ * Copyright (c) 2013, 2015 Jean Delvare <jdelvare@suse.com>
  *
  * This file is part of FFmpeg.
  *
@@ -101,6 +101,12 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
              xdst = dst+logo_x1+1,
              xsrc = src+logo_x1+1; x < logo_x2-1; x++, xdst++, xsrc++) {
 
+            if (show && (y == logo_y+1 || y == logo_y+logo_h-2 ||
+                         x == logo_x+1 || x == logo_x+logo_w-2)) {
+                *xdst = 0;
+                continue;
+            }
+
             /* Weighted interpolation based on relative distances, taking SAR into account */
             weightl = (uint64_t)              (logo_x2-1-x) * (y-logo_y1) * (logo_y2-1-y) * sar.den;
             weightr = (uint64_t)(x-logo_x1)                 * (y-logo_y1) * (logo_y2-1-y) * sar.den;
@@ -138,8 +144,6 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                     dist = FFMAX(dist, y-(logo_y+logo_h-1-band));
 
                 *xdst = (*xsrc*dist + interp*(band-dist))/band;
-                if (show && (dist == band-1))
-                    *xdst = 0;
             }
         }
 
