@@ -400,7 +400,11 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->color_range            = src->color_range;
     dst->chroma_location        = src->chroma_location;
 
+#if FF_API_ERROR_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     memcpy(dst->error, src->error, sizeof(dst->error));
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];

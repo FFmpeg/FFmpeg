@@ -83,6 +83,8 @@ typedef struct Picture {
 
     int reference;
     int shared;
+
+    uint64_t encoding_error[4];
 } Picture;
 
 /**
