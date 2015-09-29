@@ -49,7 +49,7 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format)
     }
 }
 
-int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
+static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
 {
     mfxVideoParam param = { { 0 } };
     mfxBitstream bs   = { { { 0 } } };
@@ -323,7 +323,7 @@ static int do_qsv_decode(AVCodecContext *avctx, QSVContext *q,
     int flush    = !avpkt->size || q->reinit_pending;
 
     if (!q->engine_ready) {
-        ret = ff_qsv_decode_init(avctx, q, avpkt);
+        ret = qsv_decode_init(avctx, q, avpkt);
         if (ret)
             return ret;
     }
