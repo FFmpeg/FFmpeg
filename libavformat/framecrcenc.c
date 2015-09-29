@@ -47,7 +47,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     uint32_t crc = av_adler32_update(0, pkt->data, pkt->size);
     char buf[256];
 
-    snprintf(buf, sizeof(buf), "%d, %10"PRId64", %10"PRId64", %8d, %8d, 0x%08"PRIx32,
+    snprintf(buf, sizeof(buf), "%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, 0x%08"PRIx32,
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size, crc);
     if (pkt->flags != AV_PKT_FLAG_KEY)
         av_strlcatf(buf, sizeof(buf), ", F=0x%0X", pkt->flags);

@@ -101,7 +101,7 @@ static int jacosub_read_close(AVFormatContext *s)
 }
 
 static const char *read_ts(JACOsubContext *jacosub, const char *buf,
-                           int64_t *start, int *duration)
+                           int64_t *start, int64_t *duration)
 {
     int len;
     unsigned hs, ms, ss, fs; // hours, minutes, seconds, frame start

@@ -1629,7 +1629,7 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     ebml_master block_group, block_additions, block_more;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
-           "pts %" PRId64 ", dts %" PRId64 ", duration %d, keyframe %d\n",
+           "pts %" PRId64 ", dts %" PRId64 ", duration %" PRId64 ", keyframe %d\n",
            avio_tell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration,
            keyframe != 0);
     if (codec->codec_id == AV_CODEC_ID_H264 && codec->extradata_size > 0 &&
@@ -1734,7 +1734,7 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
     size = id_size + 1 + settings_size + 1 + pkt->size;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
-           "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
+           "pts %" PRId64 ", dts %" PRId64 ", duration %" PRId64 ", flags %d\n",
            avio_tell(pb), size, pkt->pts, pkt->dts, pkt->duration, flags);
 
     blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(size));
@@ -1847,10 +1847,15 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
         } else {
             ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
                                                        mkv_blockgroup_size(pkt->size));
+
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
             /* For backward compatibility, prefer convergence_duration. */
             if (pkt->convergence_duration > 0) {
                 duration = pkt->convergence_duration;
             }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             /* All subtitle blocks are considered to be keyframes. */
             mkv_write_block(s, pb, MATROSKA_ID_BLOCK, pkt, 1);
             put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
