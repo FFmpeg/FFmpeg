@@ -4079,7 +4079,7 @@ elif enabled mips; then
     else
         check_inline_asm mips32r6 '"aui $0, $0, 0"' ||
             check_inline_asm mips32r2 '"ext $0, $0, 0, 1"' ||
-                check_inline_asm mips32r1 '"daddi $0, $0, 0"'
+                check_inline_asm mips32r1 '"addi $0, $0, 0"'
     fi
 
 elif enabled parisc; then
