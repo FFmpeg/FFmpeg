@@ -537,7 +537,8 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
 {
     QSVFrame *cur;
 
-    MFXVideoENCODE_Close(q->session);
+    if (q->session)
+        MFXVideoENCODE_Close(q->session);
     q->session = NULL;
 
     ff_qsv_close_internal_session(&q->internal_qs);
