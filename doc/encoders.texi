@@ -1411,7 +1411,7 @@ can be selected with @code{-pred 1}.
 @table @option
 @item format
 Can be set to either @code{j2k} or @code{jp2} (the default) that
-allows to store non-rgb pix_fmts.
+makes it possible to store non-rgb pix_fmts.
 
 @end table
 

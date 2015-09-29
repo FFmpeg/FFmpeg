@@ -32,7 +32,7 @@
 
 /**
  * G.726 11bit float.
- * G.726 Standard uses rather odd 11bit floating point arithmentic for
+ * G.726 Standard uses rather odd 11bit floating point arithmetic for
  * numerous occasions. It's a mystery to me why they did it this way
  * instead of simply using 32bit integer arithmetic.
  */

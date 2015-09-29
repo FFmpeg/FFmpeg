@@ -205,7 +205,7 @@ static void fill_picture_parameters(const HEVCContext *h, VAPictureParameterBuff
     pp->pps_tc_offset_div2 = h->ps.pps->tc_offset / 2;
     pp->log2_parallel_merge_level_minus2 = h->ps.pps->log2_parallel_merge_level - 2;
 
-    /* Diffrent chroma/luma bit depths are currently not supported by ffmpeg. */
+    /* Different chroma/luma bit depths are currently not supported by ffmpeg. */
     pp->bit_depth_luma_minus8 = h->ps.sps->bit_depth - 8;
     pp->bit_depth_chroma_minus8 = h->ps.sps->bit_depth - 8;
 

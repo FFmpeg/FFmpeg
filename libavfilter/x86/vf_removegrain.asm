@@ -359,7 +359,7 @@ cglobal rg_fl_mode_6, 4, 5, 16, 0, dst, src, stride, pixels
         paddw m2, m7 ; c2
         paddw m3, m6 ; c3
         paddw m4, m5 ; c4
-        ; As the differences (d1..d4) can only be postive, there is no need to
+        ; As the differences (d1..d4) can only be positive, there is no need to
         ; clip to zero.  Also, the maximum positive value is less than 768.
 
         pminsw m1, m2
@@ -485,7 +485,7 @@ cglobal rg_fl_mode_8, 4, 5, 16, 0, dst, src, stride, pixels
         paddw m2, m7 ; c1
         paddw m3, m6 ; c1
         paddw m4, m5 ; c1
-        ; As the differences (d1..d4) can only be postive, there is no need to
+        ; As the differences (d1..d4) can only be positive, there is no need to
         ; clip to zero.  Also, the maximum positive value is less than 768.
 
         pminsw m1, m2
