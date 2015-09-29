@@ -1,5 +1,5 @@
 /*
- * Correctly include the correct math.h header based on which native
+ * Correctly setup required msvc compatibility options based on which native
  * Windows compiler is in use.
  * Copyright (c) 2015 Matthew Oliver
  *
@@ -20,29 +20,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _SMP_MATH_H
-#define _SMP_MATH_H
+#ifndef SMP_COMPAT_H
+#define SMP_COMPAT_H
 
-#ifdef __INTEL_COMPILER
-    // Use the Intel Math library. This provides Intel processor optimized functions.
-    //  This also avoids an error with the msvc math.h definition of NAN found in msvc12.
-#   include <mathimf.h>
-    // The Intel header automatically includes defines used with complex.h
-    //  that interfere with normal code and need to be removed.
-#   undef I
-#   undef complex
-#elif defined(_MSC_VER)
+#ifdef _MSC_VER
 #   include <crtversion.h>
-#   ifndef _USE_MATH_DEFINES
-#       define _USE_MATH_DEFINES
-#   endif
 #   if _VC_CRT_MAJOR_VERSION >= 14
-#       include <../ucrt/math.h>
+#       pragma comment(lib, "legacy_stdio_definitions.lib")
 #   else
-#       include <../include/math.h>
+#       include <../compat/msvcrt/snprintf.h>
+#       define strtod avpriv_strtod
+#       define strtoll _strtoi64
 #   endif
-#else
-#   include_next <math.h>
 #endif
 
-#endif /* _SMP_MATH_H */
+#endif /* SMP_COMPAT_H */

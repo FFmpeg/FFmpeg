@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
+
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pre-build (optional)", "pre-build (optional)", "{9065B509-5108-45E4-AAF2-B5FD4EF9D9DF}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "project_generate", "project_generate\project_generate.vcxproj", "{FA1D2C31-D809-4021-9DE4-7552704175EE}"

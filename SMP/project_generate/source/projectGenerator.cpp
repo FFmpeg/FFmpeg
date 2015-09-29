@@ -17,7 +17,7 @@
  * License along with ShiftMediaProject; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- 
+
 #include "projectGenerator.h"
 
 #include <algorithm>
@@ -269,6 +269,18 @@ bool projectGenerator::outputProject( )
     if( !passToolchain( sToolchain ) )
     {
         return false;
+    }
+    //If toolchain is newer than 2013 then add additional toolsets
+    if( sToolchain.compare( "v150" ) == 0 )
+    {
+        sToolchain = "v120</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='15.0'\">v150";
+    }
+    else if( sToolchain.compare( "v140" ) == 0 )
+    {
+        sToolchain = "v120</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140";
     }
     const string sPlatformSearch = "template_platform";
     uiFindPos = sProjectFile.find( sPlatformSearch );
@@ -806,9 +818,9 @@ cd $(ProjectDir)\n\
       <UniqueIdentifier>{";
     string sFilterAddClose = "}</UniqueIdentifier>\n\
     </Filter>";
-    string asFilterKeys[] = { "cac6df1e-4a60-495c-8daa-5707dc1216ff", "9fee14b2-1b77-463a-bd6b-60efdcf8850f", 
-        "bf017c32-250d-47da-b7e6-d5a5091cb1e6", "fd9e10e9-18f6-437d-b5d7-17290540c8b8", "f026e68e-ff14-4bf4-8758-6384ac7bcfaf", 
-        "a2d068fe-f5d5-4b6f-95d4-f15631533341", "8a4a673d-2aba-4d8d-a18e-dab035e5c446", "0dcfb38d-54ca-4ceb-b383-4662f006eca9", 
+    string asFilterKeys[] = { "cac6df1e-4a60-495c-8daa-5707dc1216ff", "9fee14b2-1b77-463a-bd6b-60efdcf8850f",
+        "bf017c32-250d-47da-b7e6-d5a5091cb1e6", "fd9e10e9-18f6-437d-b5d7-17290540c8b8", "f026e68e-ff14-4bf4-8758-6384ac7bcfaf",
+        "a2d068fe-f5d5-4b6f-95d4-f15631533341", "8a4a673d-2aba-4d8d-a18e-dab035e5c446", "0dcfb38d-54ca-4ceb-b383-4662f006eca9",
         "57bf1423-fb68-441f-b5c1-f41e6ae5fa9c" };
     uint uiCurrentKey = 0;
     string sAddFilters;
@@ -971,11 +983,11 @@ cd $(ProjectDir)\n\
 
     //Use Microsoft compiler to pass the test file and retrieve declarations
     string sCLLaunchBat = "@echo off \n";
-    sCLLaunchBat += "if exist \"%VS140COMNTOOLS%\\vsvars32.bat\" ( \n\
-call \"%VS140COMNTOOLS%\\vsvars32.bat\" \n\
+    sCLLaunchBat += "if exist \"%VS150COMNTOOLS%\\vsvars32.bat\" ( \n\
+call \"%VS150COMNTOOLS%\\vsvars32.bat\" \n\
 goto MSVCVarsDone \n\
-) else if exist \"%VS130COMNTOOLS%\\vsvars32.bat\" ( \n\
-call \"%VS130COMNTOOLS%\\vsvars32.bat\" \n\
+) else if exist \"%VS140COMNTOOLS%\\vsvars32.bat\" ( \n\
+call \"%VS140COMNTOOLS%\\vsvars32.bat\" \n\
 goto MSVCVarsDone \n\
 ) else if exist \"%VS120COMNTOOLS%\\vsvars32.bat\" ( \n\
 call \"%VS120COMNTOOLS%\\vsvars32.bat\" \n\
@@ -1078,7 +1090,7 @@ exit /b 1 \n\
             //  STX=static or inline
             //  NULL=pre-processor
             // ID is a 2 or 3 character sequence used to uniquely identify the object
-            
+
             //Check if it is a wild card search
             uiFindPos = itI->find( '*' );
             if( uiFindPos != string::npos )
@@ -1101,7 +1113,7 @@ exit /b 1 \n\
                         --uiFindPos3;
                     }
                     uint uiFindPosDiff = uiFindPos - uiFindPos3;
-                    if( ( sSBRFile.at( uiFindPos3 - 1 ) == '@' ) && 
+                    if( ( sSBRFile.at( uiFindPos3 - 1 ) == '@' ) &&
                         ( ( ( uiFindPosDiff == 3 ) && ( sSBRFile.at( uiFindPos3 - 3 ) == (char)0x03 ) ) ||
                         ( ( uiFindPosDiff == 4 ) && ( sSBRFile.at( uiFindPos3 - 3 ) == 'C' ) ) ) )
                     {
@@ -1309,7 +1321,7 @@ bool projectGenerator::outputSolution()
     string sSolutionKey = "8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942";
 
     vector<string> vAddedKeys;
-    
+
     string sProject = "\nProject(\"{";
     string sProject2 = "}\") = \"";
     string sProject3 = "\", \"";
@@ -1324,9 +1336,9 @@ bool projectGenerator::outputSolution()
     string sSubDependEnd = "}";
 
     //Find the start of the file
-    string sFileStart = "# Visual Studio 2013";
-    uint uiPos = sSolutionFile.find( sFileStart ) + sFileStart.length( );
-    
+    string sFileStart = "Project";
+    uint uiPos = sSolutionFile.find( sFileStart ) - 1;
+
     map<string,StaticList>::iterator mitLibraries = m_mProjectLibs.begin();
     while( mitLibraries != m_mProjectLibs.end( ) )
     {
@@ -1400,6 +1412,18 @@ bool projectGenerator::outputSolution()
     if( !passToolchain( sToolchain ) )
     {
         return false;
+    }
+    //If toolchain is newer than 2013 then add additional toolsets
+    if( sToolchain.compare( "v150" ) == 0 )
+    {
+        sToolchain = "v120</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='15.0'\">v150";
+    }
+    else if( sToolchain.compare( "v140" ) == 0 )
+    {
+        sToolchain = "v120</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140";
     }
     string sProjectAdd;
     vector<string> vAddedPrograms;
@@ -1665,7 +1689,7 @@ bool projectGenerator::outputSolution()
                     uiFindPos = sProgramFile.find( sAddLibDir, uiFindPos + 1 );
                     ui32Or64 = !ui32Or64;
                 }
-            }         
+            }
 
             //Output program file and close
             ofstream ofProjectFile( sDestinationFile );
@@ -1728,7 +1752,7 @@ bool projectGenerator::outputSolution()
         else
         {
             //Delete any existing to avoid pollution
-            deleteFile( sDestinationFile ); 
+            deleteFile( sDestinationFile );
             deleteFile( sDestinationFilterFile );
         }
         //next
@@ -1805,7 +1829,6 @@ bool projectGenerator::outputSolution()
                     sAddPlatform += sConfigPlatform3;
                     sAddPlatform += aBuildArchs[uiJ];
                     sAddPlatform += aBuildTypes[uiK];
-                    //there is no program lto build so use release instead
                     if( uiI == 2 )
                     {
                         sAddPlatform += aBuildConfigs[1];
@@ -1813,6 +1836,11 @@ bool projectGenerator::outputSolution()
                     else if( uiI == 5 )
                     {
                         sAddPlatform += aBuildConfigs[4];
+                    }
+                    else if( uiI == 6 )
+                    {
+                        //there is no program lto build so use release instead
+                        sAddPlatform += aBuildConfigs[3];
                     }
                     else
                     {
@@ -2393,10 +2421,14 @@ bool projectGenerator::passToolchain( string & sToolchain )
     if( m_ConfigHelper.m_sToolchain.compare( "msvc" ) == 0 )
     {
         //Check for the existence of complient msvc compiler
-        if( GetEnvironmentVariable( "VS130COMNTOOLS", NULL, 0 ) )
+        if( GetEnvironmentVariable( "VS150COMNTOOLS", NULL, 0 ) )
         {
             //??? Future release
-            sToolchain = "v130";
+            sToolchain = "v150";
+        }
+        if( GetEnvironmentVariable("VS140COMNTOOLS", NULL, 0 ) )
+        {
+            sToolchain = "v140";
         }
         else if( GetEnvironmentVariable( "VS120COMNTOOLS", NULL, 0 ) )
         {
