@@ -293,7 +293,8 @@ static void close_decoder(QSVContext *q)
 {
     QSVFrame *cur;
 
-    MFXVideoDECODE_Close(q->session);
+    if (q->session)
+        MFXVideoDECODE_Close(q->session);
 
     cur = q->work_frames;
     while (cur) {
