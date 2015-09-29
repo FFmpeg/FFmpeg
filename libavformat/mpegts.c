@@ -1543,14 +1543,7 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
                 st->codec->extradata_size > 0)
                 st->need_parsing = 0;
 
-            if (st->codec->codec_id <= AV_CODEC_ID_NONE) {
-                // do nothing
-            } else if (st->codec->codec_id < AV_CODEC_ID_FIRST_AUDIO)
-                st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            else if (st->codec->codec_id < AV_CODEC_ID_FIRST_SUBTITLE)
-                st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            else if (st->codec->codec_id < AV_CODEC_ID_FIRST_UNKNOWN)
-                st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            st->codec->codec_type = avcodec_get_type(st->codec->codec_id);
         }
     }
     for (i = 0; i < mp4_descr_count; i++)
