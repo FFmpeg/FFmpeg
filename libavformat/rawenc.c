@@ -241,6 +241,7 @@ AVOutputFormat ff_hevc_muxer = {
     .extensions        = "hevc",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_HEVC,
+    .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
@@ -253,6 +254,7 @@ AVOutputFormat ff_m4v_muxer = {
     .extensions        = "m4v",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_MPEG4,
+    .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
