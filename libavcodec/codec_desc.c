@@ -2843,3 +2843,9 @@ const AVCodecDescriptor *avcodec_descriptor_get_by_name(const char *name)
             return desc;
     return NULL;
 }
+
+enum AVMediaType avcodec_get_type(enum AVCodecID codec_id)
+{
+    const AVCodecDescriptor *desc = avcodec_descriptor_get(codec_id);
+    return desc ? desc->type : AVMEDIA_TYPE_UNKNOWN;
+}
