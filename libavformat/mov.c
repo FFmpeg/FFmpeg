@@ -838,9 +838,9 @@ static int mov_read_adrm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     /* drm blob processing */
-    avio_read(pb, output, 8); // go to offset 8, absolute postion 0x251
+    avio_read(pb, output, 8); // go to offset 8, absolute position 0x251
     avio_read(pb, input, DRM_BLOB_SIZE);
-    avio_read(pb, output, 4); // go to offset 4, absolute postion 0x28d
+    avio_read(pb, output, 4); // go to offset 4, absolute position 0x28d
     avio_read(pb, file_checksum, 20);
 
     av_log(c->fc, AV_LOG_INFO, "[aax] file checksum == "); // required by external tools

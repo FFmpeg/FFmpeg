@@ -1032,7 +1032,7 @@ Number_of_samples
 For example full key look like this @code{lavfi.astats.1.DC_offset} or
 this @code{lavfi.astats.Overall.Peak_count}.
 
-For description what each key means read bellow.
+For description what each key means read below.
 
 @item reset
 Set number of frame after which stats are going to be recalculated.
@@ -2199,7 +2199,7 @@ Amount of milliseconds the signal has to rise above the threshold before gain
 reduction starts. Default is 20. Range is between 0.01 and 2000.
 
 @item release
-Amount of milliseconds the signal has to fall bellow the threshold before
+Amount of milliseconds the signal has to fall below the threshold before
 reduction is decreased again. Default is 250. Range is between 0.01 and 9000.
 
 @item makeup
@@ -4118,7 +4118,7 @@ It accepts the following options:
 @item threshold1
 @item threshold2
 @item threshold3
-Allows to limit the maximum change for each plane, default is 65535.
+Limit the maximum change for each plane, default is 65535.
 If 0, plane will remain unchanged.
 @end table
 
@@ -4321,7 +4321,7 @@ It accepts the following options:
 @item threshold1
 @item threshold2
 @item threshold3
-Allows to limit the maximum change for each plane, default is 65535.
+Limit the maximum change for each plane, default is 65535.
 If 0, plane will remain unchanged.
 
 @item coordinates
@@ -5206,7 +5206,7 @@ It accepts the following options:
 @item threshold1
 @item threshold2
 @item threshold3
-Allows to limit the maximum change for each plane, default is 65535.
+Limit the maximum change for each plane, default is 65535.
 If 0, plane will remain unchanged.
 
 @item coordinates
@@ -6900,7 +6900,7 @@ It accepts the following options:
 @item threshold1
 @item threshold2
 @item threshold3
-Allows to limit the maximum change for each plane, default is 65535.
+Limit the maximum change for each plane, default is 65535.
 If 0, plane will remain unchanged.
 @end table
 
@@ -9881,7 +9881,7 @@ stereo3d=sbsl:aybd
 @end example
 
 @item
-Convert input video from above bellow (left eye above, right eye below) to side by side crosseye.
+Convert input video from above below (left eye above, right eye below) to side by side crosseye.
 @example
 stereo3d=abl:sbsr
 @end example

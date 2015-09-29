@@ -151,7 +151,7 @@ static int ffm_read_data(AVFormatContext *s,
     return size1 - size;
 }
 
-/* ensure that acutal seeking happens between FFM_PACKET_SIZE
+/* ensure that actual seeking happens between FFM_PACKET_SIZE
    and file_size - FFM_PACKET_SIZE */
 static int64_t ffm_seek1(AVFormatContext *s, int64_t pos1)
 {
