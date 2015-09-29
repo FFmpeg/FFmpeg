@@ -116,15 +116,6 @@ fail:
 
 static mfxStatus frame_free(mfxHDL pthis, mfxFrameAllocResponse *resp)
 {
-    DecodeContext *decode = pthis;
-
-    if (decode->surfaces)
-        vaDestroySurfaces(decode->va_dpy, decode->surfaces, decode->nb_surfaces);
-    av_freep(&decode->surfaces);
-    av_freep(&decode->surface_ids);
-    av_freep(&decode->surface_used);
-    decode->nb_surfaces = 0;
-
     return MFX_ERR_NONE;
 }
 
@@ -142,6 +133,16 @@ static mfxStatus frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
 {
     *hdl = mid;
     return MFX_ERR_NONE;
+}
+
+static void free_surfaces(DecodeContext *decode)
+{
+    if (decode->surfaces)
+        vaDestroySurfaces(decode->va_dpy, decode->surfaces, decode->nb_surfaces);
+    av_freep(&decode->surfaces);
+    av_freep(&decode->surface_ids);
+    av_freep(&decode->surface_used);
+    decode->nb_surfaces = 0;
 }
 
 static void free_buffer(void *opaque, uint8_t *data)
@@ -467,16 +468,18 @@ finish:
 
     av_frame_free(&frame);
 
+    if (decoder_ctx)
+        av_freep(&decoder_ctx->hwaccel_context);
+    avcodec_free_context(&decoder_ctx);
+
+    free_surfaces(&decode);
+
     if (decode.mfx_session)
         MFXClose(decode.mfx_session);
     if (decode.va_dpy)
         vaTerminate(decode.va_dpy);
     if (dpy)
         XCloseDisplay(dpy);
-
-    if (decoder_ctx)
-        av_freep(&decoder_ctx->hwaccel_context);
-    avcodec_free_context(&decoder_ctx);
 
     avio_close(output_ctx);
 

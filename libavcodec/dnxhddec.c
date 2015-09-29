@@ -2,8 +2,10 @@
  * VC3/DNxHD decoder.
  * Copyright (c) 2007 SmartJog S.A., Baptiste Coudurier <baptiste dot coudurier at smartjog dot com>
  * Copyright (c) 2011 MirriAd Ltd
+ * Copyright (c) 2015 Christophe Gisquet
  *
  * 10 bit support added by MirriAd Ltd, Joseph Artsimovich <joseph@mirriad.com>
+ * Slice multithreading and MB interlaced support added by Christophe Gisquet
  *
  * This file is part of FFmpeg.
  *
@@ -26,6 +28,7 @@
 #include "libavutil/timer.h"
 #include "avcodec.h"
 #include "blockdsp.h"
+#define  UNCHECKED_BITSTREAM_READER 1
 #include "get_bits.h"
 #include "dnxhddata.h"
 #include "idctdsp.h"
@@ -39,6 +42,7 @@ typedef struct RowContext {
     GetBitContext gb;
     int last_dc[3];
     int last_qscale;
+    int errors;
 } RowContext;
 
 typedef struct DNXHDContext {
@@ -61,23 +65,19 @@ typedef struct DNXHDContext {
     int is_444;
     int mbaff;
     int act;
-    void (*decode_dct_block)(const struct DNXHDContext *ctx,
-                             RowContext *row, int16_t *block,
-                             int n, int qscale);
+    int (*decode_dct_block)(const struct DNXHDContext *ctx,
+                            RowContext *row, int n);
 } DNXHDContext;
 
 #define DNXHD_VLC_BITS 9
 #define DNXHD_DC_VLC_BITS 7
 
-static void dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
-                                     RowContext *row, int16_t *block,
-                                     int n, int qscale);
-static void dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
-                                      RowContext *row, int16_t *block,
-                                      int n, int qscale);
-static void dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
-                                          RowContext *row, int16_t *block,
-                                          int n, int qscale);
+static int dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
+                                    RowContext *row, int n);
+static int dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
+                                     RowContext *row, int n);
+static int dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
+                                         RowContext *row, int n);
 
 static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 {
@@ -155,8 +155,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     int old_bit_depth = ctx->bit_depth;
 
     if (buf_size < 0x280) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "buffer too small (%d < 640).\n",
-               buf_size);
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "buffer too small (%d < 640).\n", buf_size);
         return AVERROR_INVALIDDATA;
     }
 
@@ -201,8 +201,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->is_444 = 0;
         ctx->decode_dct_block = dnxhd_decode_dct_block_8;
     } else {
-        av_log(ctx->avctx, AV_LOG_ERROR, "invalid bit depth value (%d).\n",
-               buf[0x21]);
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "invalid bit depth value (%d).\n", buf[0x21]);
         return AVERROR_INVALIDDATA;
     }
     if (ctx->bit_depth != old_bit_depth) {
@@ -269,13 +269,12 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     return 0;
 }
 
-static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
-                                                    RowContext *row,
-                                                    int16_t *block, int n,
-                                                    int qscale,
-                                                    int index_bits,
-                                                    int level_bias,
-                                                    int level_shift)
+static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
+                                                   RowContext *row,
+                                                   int n,
+                                                   int index_bits,
+                                                   int level_bias,
+                                                   int level_shift)
 {
     int i, j, index1, index2, len, flags;
     int level, component, sign;
@@ -283,8 +282,12 @@ static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
     const uint8_t *weight_matrix;
     const uint8_t *ac_level = ctx->cid_table->ac_level;
     const uint8_t *ac_flags = ctx->cid_table->ac_flags;
+    int16_t *block = row->blocks[n];
     const int eob_index     = ctx->cid_table->eob_index;
+    int ret = 0;
     OPEN_READER(bs, &row->gb);
+
+    ctx->bdsp.clear_block(block);
 
     if (!ctx->is_444) {
         if (n & 2) {
@@ -345,6 +348,7 @@ static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
 
         if (++i > 63) {
             av_log(ctx->avctx, AV_LOG_ERROR, "ac tex damaged %d, %d\n", n, i);
+            ret = -1;
             break;
         }
 
@@ -362,27 +366,25 @@ static av_always_inline void dnxhd_decode_dct_block(const DNXHDContext *ctx,
     }
 
     CLOSE_READER(bs, &row->gb);
+    return ret;
 }
 
-static void dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
-                                     RowContext *row, int16_t *block,
-                                     int n, int qscale)
+static int dnxhd_decode_dct_block_8(const DNXHDContext *ctx,
+                                    RowContext *row, int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, qscale, 4, 32, 6);
+    return dnxhd_decode_dct_block(ctx, row, n, 4, 32, 6);
 }
 
-static void dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
-                                      RowContext *row, int16_t *block,
-                                      int n, int qscale)
+static int dnxhd_decode_dct_block_10(const DNXHDContext *ctx,
+                                     RowContext *row, int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, qscale, 6, 8, 4);
+    return dnxhd_decode_dct_block(ctx, row, n, 6, 8, 4);
 }
 
-static void dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
-                                          RowContext *row, int16_t *block,
-                                          int n, int qscale)
+static int dnxhd_decode_dct_block_10_444(const DNXHDContext *ctx,
+                                         RowContext *row, int n)
 {
-    dnxhd_decode_dct_block(ctx, row, block, n, qscale, 6, 32, 6);
+    return dnxhd_decode_dct_block(ctx, row, n, 6, 32, 6);
 }
 
 static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
@@ -419,15 +421,9 @@ static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
         row->last_qscale = qscale;
     }
 
-    for (i = 0; i < 8; i++) {
-        ctx->bdsp.clear_block(row->blocks[i]);
-        ctx->decode_dct_block(ctx, row, row->blocks[i], i, qscale);
-    }
-    if (ctx->is_444) {
-        for (; i < 12; i++) {
-            ctx->bdsp.clear_block(row->blocks[i]);
-            ctx->decode_dct_block(ctx, row, row->blocks[i], i, qscale);
-        }
+    for (i = 0; i < 8 + 4 * ctx->is_444; i++) {
+        if (ctx->decode_dct_block(ctx, row, i) < 0)
+            return AVERROR_INVALIDDATA;
     }
 
     if (frame->interlaced_frame) {
@@ -500,7 +496,11 @@ static int dnxhd_decode_row(AVCodecContext *avctx, void *data,
     init_get_bits(&row->gb, ctx->buf + offset, (ctx->buf_size - offset) << 3);
     for (x = 0; x < ctx->mb_width; x++) {
         //START_TIMER;
-        dnxhd_decode_macroblock(ctx, row, data, x, rownb);
+        int ret = dnxhd_decode_macroblock(ctx, row, data, x, rownb);
+        if (ret < 0) {
+            row->errors++;
+            return ret;
+        }
         //STOP_TIMER("decode macroblock");
     }
 
@@ -516,7 +516,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data,
     ThreadFrame frame = { .f = data };
     AVFrame *picture = data;
     int first_field = 1;
-    int ret;
+    int ret, i;
 
     ff_dlog(avctx, "frame size %d\n", buf_size);
 
@@ -557,6 +557,17 @@ decode_coding_unit:
         buf_size -= ctx->cid_table->coding_unit_size;
         first_field = 0;
         goto decode_coding_unit;
+    }
+
+    ret = 0;
+    for (i = 0; i < avctx->thread_count; i++) {
+        ret += ctx->rows[i].errors;
+        ctx->rows[i].errors = 0;
+    }
+
+    if (ret) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "%d lines with errors\n", ret);
+        return AVERROR_INVALIDDATA;
     }
 
     *got_frame = 1;

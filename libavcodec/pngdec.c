@@ -1254,7 +1254,7 @@ static int decode_frame_png(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    s->y = s->state = 0;
+    s->y = s->state = s->has_trns = 0;
 
     /* init the zlib */
     s->zstream.zalloc = ff_png_zalloc;

@@ -18,12 +18,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <math.h>
 #include <string.h>
 #include "checkasm.h"
+#include "libavcodec/vp9data.h"
 #include "libavcodec/vp9dsp.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 
 static const uint32_t pixel_mask[3] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
 #define SIZEOF_PIXEL ((bit_depth + 7) / 8)
@@ -90,6 +93,277 @@ static void check_ipred(void)
         }
     }
     report("ipred");
+}
+
+#undef randomize_buffers
+
+#define randomize_buffers() \
+    do { \
+        uint32_t mask = pixel_mask[(bit_depth - 8) >> 1];                  \
+        for (y = 0; y < sz; y++) {                                         \
+            for (x = 0; x < sz * SIZEOF_PIXEL; x += 4) {                   \
+                uint32_t r = rnd() & mask;                                 \
+                AV_WN32A(dst + y * sz * SIZEOF_PIXEL + x, r);              \
+                AV_WN32A(src + y * sz * SIZEOF_PIXEL + x, rnd() & mask);   \
+            }                                                              \
+            for (x = 0; x < sz; x++) {                                     \
+                if (bit_depth == 8) {                                      \
+                    coef[y * sz + x] = src[y * sz + x] - dst[y * sz + x];  \
+                } else {                                                   \
+                    ((int32_t *) coef)[y * sz + x] =                       \
+                        ((uint16_t *) src)[y * sz + x] -                   \
+                        ((uint16_t *) dst)[y * sz + x];                    \
+                }                                                          \
+            }                                                              \
+        }                                                                  \
+    } while(0)
+
+// wht function copied from libvpx
+static void fwht_1d(double *out, const double *in, int sz)
+{
+    double t0 = in[0] + in[1];
+    double t3 = in[3] - in[2];
+    double t4 = trunc((t0 - t3) * 0.5);
+    double t1 = t4 - in[1];
+    double t2 = t4 - in[2];
+
+    out[0] = t0 - t2;
+    out[1] = t2;
+    out[2] = t3 + t1;
+    out[3] = t1;
+}
+
+// standard DCT-II
+static void fdct_1d(double *out, const double *in, int sz)
+{
+    int k, n;
+
+    for (k = 0; k < sz; k++) {
+        out[k] = 0.0;
+        for (n = 0; n < sz; n++)
+            out[k] += in[n] * cos(M_PI * (2 * n + 1) * k / (sz * 2.0));
+    }
+    out[0] *= M_SQRT1_2;
+}
+
+// see "Towards jointly optimal spatial prediction and adaptive transform in
+// video/image coding", by J. Han, A. Saxena, and K. Rose
+// IEEE Proc. ICASSP, pp. 726-729, Mar. 2010.
+static void fadst4_1d(double *out, const double *in, int sz)
+{
+    int k, n;
+
+    for (k = 0; k < sz; k++) {
+        out[k] = 0.0;
+        for (n = 0; n < sz; n++)
+            out[k] += in[n] * sin(M_PI * (n + 1) * (2 * k + 1) / (sz * 2.0 + 1.0));
+    }
+}
+
+// see "A Butterfly Structured Design of The Hybrid Transform Coding Scheme",
+// by Jingning Han, Yaowu Xu, and Debargha Mukherjee
+// http://static.googleusercontent.com/media/research.google.com/en//pubs/archive/41418.pdf
+static void fadst_1d(double *out, const double *in, int sz)
+{
+    int k, n;
+
+    for (k = 0; k < sz; k++) {
+        out[k] = 0.0;
+        for (n = 0; n < sz; n++)
+            out[k] += in[n] * sin(M_PI * (2 * n + 1) * (2 * k + 1) / (sz * 4.0));
+    }
+}
+
+typedef void (*ftx1d_fn)(double *out, const double *in, int sz);
+static void ftx_2d(double *out, const double *in, enum TxfmMode tx,
+                   enum TxfmType txtp, int sz)
+{
+    static const double scaling_factors[5][4] = {
+        { 4.0, 16.0 * M_SQRT1_2 / 3.0, 16.0 * M_SQRT1_2 / 3.0, 32.0 / 9.0 },
+        { 2.0, 2.0, 2.0, 2.0 },
+        { 1.0, 1.0, 1.0, 1.0 },
+        { 0.25 },
+        { 4.0 }
+    };
+    static const ftx1d_fn ftx1d_tbl[5][4][2] = {
+        {
+            { fdct_1d, fdct_1d },
+            { fadst4_1d, fdct_1d },
+            { fdct_1d, fadst4_1d },
+            { fadst4_1d, fadst4_1d },
+        }, {
+            { fdct_1d, fdct_1d },
+            { fadst_1d, fdct_1d },
+            { fdct_1d, fadst_1d },
+            { fadst_1d, fadst_1d },
+        }, {
+            { fdct_1d, fdct_1d },
+            { fadst_1d, fdct_1d },
+            { fdct_1d, fadst_1d },
+            { fadst_1d, fadst_1d },
+        }, {
+            { fdct_1d, fdct_1d },
+        }, {
+            { fwht_1d, fwht_1d },
+        },
+    };
+    double temp[1024];
+    double scaling_factor = scaling_factors[tx][txtp];
+    int i, j;
+
+    // cols
+    for (i = 0; i < sz; ++i) {
+        double temp_out[32];
+
+        ftx1d_tbl[tx][txtp][0](temp_out, &in[i * sz], sz);
+        // scale and transpose
+        for (j = 0; j < sz; ++j)
+            temp[j * sz + i] = temp_out[j] * scaling_factor;
+    }
+
+    // rows
+    for (i = 0; i < sz; i++)
+        ftx1d_tbl[tx][txtp][1](&out[i * sz], &temp[i * sz], sz);
+}
+
+static void ftx(int16_t *buf, enum TxfmMode tx,
+                enum TxfmType txtp, int sz, int bit_depth)
+{
+    double ind[1024], outd[1024];
+    int n;
+
+    emms_c();
+    for (n = 0; n < sz * sz; n++) {
+        if (bit_depth == 8)
+            ind[n] = buf[n];
+        else
+            ind[n] = ((int32_t *) buf)[n];
+    }
+    ftx_2d(outd, ind, tx, txtp, sz);
+    for (n = 0; n < sz * sz; n++) {
+        if (bit_depth == 8)
+            buf[n] = lrint(outd[n]);
+        else
+            ((int32_t *) buf)[n] = lrint(outd[n]);
+    }
+}
+
+static int copy_subcoefs(int16_t *out, const int16_t *in, enum TxfmMode tx,
+                         enum TxfmType txtp, int sz, int sub, int bit_depth)
+{
+    // copy the topleft coefficients such that the return value (being the
+    // coefficient scantable index for the eob token) guarantees that only
+    // the topleft $sub out of $sz (where $sz >= $sub) coefficients in both
+    // dimensions are non-zero. This leads to braching to specific optimized
+    // simd versions (e.g. dc-only) so that we get full asm coverage in this
+    // test
+
+    int n;
+    const int16_t *scan = vp9_scans[tx][txtp];
+    int eob;
+
+    for (n = 0; n < sz * sz; n++) {
+        int rc = scan[n], rcx = rc % sz, rcy = rc / sz;
+
+        // find eob for this sub-idct
+        if (rcx >= sub || rcy >= sub)
+            break;
+
+        // copy coef
+        if (bit_depth == 8) {
+            out[rc] = in[rc];
+        } else {
+            AV_COPY32(&out[rc * 2], &in[rc * 2]);
+        }
+    }
+
+    eob = n;
+
+    for (; n < sz * sz; n++) {
+        int rc = scan[n];
+
+        // zero
+        if (bit_depth == 8) {
+            out[rc] = 0;
+        } else {
+            AV_ZERO32(&out[rc * 2]);
+        }
+    }
+
+    return eob;
+}
+
+static int iszero(const int16_t *c, int sz)
+{
+    int n;
+
+    for (n = 0; n < sz / sizeof(int16_t); n += 2)
+        if (AV_RN32A(&c[n]))
+            return 0;
+
+    return 1;
+}
+
+#define SIZEOF_COEF (2 * ((bit_depth + 7) / 8))
+
+static void check_itxfm(void)
+{
+    LOCAL_ALIGNED_32(uint8_t, src, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(int16_t, coef, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(int16_t, subcoef0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(int16_t, subcoef1, [32 * 32 * 2]);
+    declare_func(void, uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
+    VP9DSPContext dsp;
+    int y, x, tx, txtp, bit_depth, sub;
+    static const char *const txtp_types[N_TXFM_TYPES] = {
+        [DCT_DCT] = "dct_dct", [DCT_ADST] = "adst_dct",
+        [ADST_DCT] = "dct_adst", [ADST_ADST] = "adst_adst"
+    };
+
+    for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
+        ff_vp9dsp_init(&dsp, bit_depth, 0);
+
+        for (tx = TX_4X4; tx <= N_TXFM_SIZES /* 4 = lossless */; tx++) {
+            int sz = 4 << (tx & 3);
+            int n_txtps = tx < TX_32X32 ? N_TXFM_TYPES : 1;
+
+            for (txtp = 0; txtp < n_txtps; txtp++) {
+                if (check_func(dsp.itxfm_add[tx][txtp], "vp9_inv_%s_%dx%d_add_%d",
+                               tx == 4 ? "wht_wht" : txtp_types[txtp], sz, sz,
+                               bit_depth)) {
+                    randomize_buffers();
+                    ftx(coef, tx, txtp, sz, bit_depth);
+
+                    for (sub = (txtp == 0) ? 1 : sz; sub <= sz; sub <<= 1) {
+                        int eob;
+
+                        if (sub < sz) {
+                            eob = copy_subcoefs(subcoef0, coef, tx, txtp,
+                                                sz, sub, bit_depth);
+                        } else {
+                            eob = sz * sz;
+                            memcpy(subcoef0, coef, sz * sz * SIZEOF_COEF);
+                        }
+
+                        memcpy(dst0, dst, sz * sz * SIZEOF_PIXEL);
+                        memcpy(dst1, dst, sz * sz * SIZEOF_PIXEL);
+                        memcpy(subcoef1, subcoef0, sz * sz * SIZEOF_COEF);
+                        call_ref(dst0, sz * SIZEOF_PIXEL, subcoef0, eob);
+                        call_new(dst1, sz * SIZEOF_PIXEL, subcoef1, eob);
+                        if (memcmp(dst0, dst1, sz * sz * SIZEOF_PIXEL) ||
+                            !iszero(subcoef0, sz * sz * SIZEOF_COEF) ||
+                            !iszero(subcoef1, sz * sz * SIZEOF_COEF))
+                            fail();
+                    }
+                    bench_new(dst, sz * SIZEOF_PIXEL, coef, sz * sz);
+                }
+            }
+        }
+    }
+    report("itxfm");
 }
 
 #undef randomize_buffers
@@ -343,6 +617,7 @@ static void check_mc(void)
 void checkasm_check_vp9dsp(void)
 {
     check_ipred();
+    check_itxfm();
     check_loopfilter();
     check_mc();
 }

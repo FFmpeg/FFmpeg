@@ -12,6 +12,7 @@ version <next>:
 - tremolo filter
 - agate filter
 - chromakey filter
+- maskedmerge filter
 
 
 version 2.8:

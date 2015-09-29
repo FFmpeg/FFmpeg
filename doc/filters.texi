@@ -7625,6 +7625,69 @@ lutyuv=y='bitand(val, 128+64+32)'
 @end example
 @end itemize
 
+@section maskedmerge
+
+Merge the first input stream with the second input stream using per pixel
+weights in the third input stream.
+
+A value of 0 in the third stream pixel component means that pixel component
+from first stream is returned unchanged, while maximum value (eg. 255 for
+8-bit videos) means that pixel component from second stream is returned
+unchanged. Intermediate values define the amount of merging between both
+input stream's pixel components.
+
+This filter accepts the following options:
+@table @option
+@item planes
+Set which planes will be processed as bitmap, unprocessed planes will be
+copied from first stream.
+By default value 0xf, all planes will be processed.
+@end table
+
+@section mcdeint
+
+Apply motion-compensation deinterlacing.
+
+It needs one field per frame as input and must thus be used together
+with yadif=1/3 or equivalent.
+
+This filter accepts the following options:
+@table @option
+@item mode
+Set the deinterlacing mode.
+
+It accepts one of the following values:
+@table @samp
+@item fast
+@item medium
+@item slow
+use iterative motion estimation
+@item extra_slow
+like @samp{slow}, but use multiple reference frames.
+@end table
+Default value is @samp{fast}.
+
+@item parity
+Set the picture field parity assumed for the input video. It must be
+one of the following values:
+
+@table @samp
+@item 0, tff
+assume top field first
+@item 1, bff
+assume bottom field first
+@end table
+
+Default value is @samp{bff}.
+
+@item qp
+Set per-block quantization parameter (QP) used by the internal
+encoder.
+
+Higher values should result in a smoother motion vector field but less
+optimal individual vectors. Default value is 1.
+@end table
+
 @section mergeplanes
 
 Merge color channel components from several video streams.
@@ -7683,50 +7746,6 @@ Cast a rgb24 clip to yuv444p:
 format=rgb24,mergeplanes=0x000102:yuv444p
 @end example
 @end itemize
-
-@section mcdeint
-
-Apply motion-compensation deinterlacing.
-
-It needs one field per frame as input and must thus be used together
-with yadif=1/3 or equivalent.
-
-This filter accepts the following options:
-@table @option
-@item mode
-Set the deinterlacing mode.
-
-It accepts one of the following values:
-@table @samp
-@item fast
-@item medium
-@item slow
-use iterative motion estimation
-@item extra_slow
-like @samp{slow}, but use multiple reference frames.
-@end table
-Default value is @samp{fast}.
-
-@item parity
-Set the picture field parity assumed for the input video. It must be
-one of the following values:
-
-@table @samp
-@item 0, tff
-assume top field first
-@item 1, bff
-assume bottom field first
-@end table
-
-Default value is @samp{bff}.
-
-@item qp
-Set per-block quantization parameter (QP) used by the internal
-encoder.
-
-Higher values should result in a smoother motion vector field but less
-optimal individual vectors. Default value is 1.
-@end table
 
 @section mpdecimate
 

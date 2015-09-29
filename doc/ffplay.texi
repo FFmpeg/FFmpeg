@@ -197,6 +197,15 @@ Toggle full screen.
 @item p, SPC
 Pause.
 
+@item m
+Toggle mute.
+
+@item 9, 0
+Decrease and increase volume respectively.
+
+@item /, *
+Decrease and increase volume respectively.
+
 @item a
 Cycle audio channel in the current program.
 
