@@ -187,8 +187,7 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     status = decoder_query_caps(vdctx->device, profile, &supported, &max_level,
                                 &max_mb, &max_width, &max_height);
 #ifdef VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE
-    if (status != VDP_STATUS_OK && profile == VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE) {
-        /* Run-time backward compatibility for libvdpau 0.8 and earlier */
+    if ((status != VDP_STATUS_OK || supported != VDP_TRUE) && profile == VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE) {
         profile = VDP_DECODER_PROFILE_H264_MAIN;
         status = decoder_query_caps(vdctx->device, profile, &supported,
                                     &max_level, &max_mb,
