@@ -23,10 +23,29 @@
 
 #include <mfx/mfxvideo.h>
 
+/**
+ * This struct is used for communicating QSV parameters between libavcodec and
+ * the caller. It is managed by the caller and must be assigned to
+ * AVCodecContext.hwaccel_context.
+ * - decoding: hwaccel_context must be set on return from the get_format()
+ *             callback
+ * - encoding: hwaccel_context must be set before avcodec_open2()
+ */
 typedef struct AVQSVContext {
+    /**
+     * If non-NULL, the session to use for encoding or decoding.
+     * Otherwise, libavcodec will try to create an internal session.
+     */
     mfxSession session;
+
+    /**
+     * The IO pattern to use.
+     */
     int iopattern;
 
+    /**
+     * Extra buffers to pass to encoder or decoder initialization.
+     */
     mfxExtBuffer **ext_buffers;
     int         nb_ext_buffers;
 } AVQSVContext;
