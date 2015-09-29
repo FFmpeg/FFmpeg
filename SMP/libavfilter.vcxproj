@@ -351,6 +351,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_lut.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_maskedmerge.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_mcdeint.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_mergeplanes.c">
