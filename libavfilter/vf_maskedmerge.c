@@ -35,11 +35,11 @@ typedef struct MaskedMergeContext {
     int max, half, depth;
     FFFrameSync fs;
 
-    void (*maskedmerge)(struct MaskedMergeContext *s,
-                        const uint8_t *bsrc, int blinesize,
+    void (*maskedmerge)(const uint8_t *bsrc, int blinesize,
                         const uint8_t *osrc, int olinesize,
                         const uint8_t *msrc, int mlinesize,
-                        uint8_t *dst, int dlinesize, int w, int h);
+                        uint8_t *dst, int dlinesize, int w, int h,
+                        int max, int half, int shift);
 } MaskedMergeContext;
 
 #define OFFSET(x) offsetof(MaskedMergeContext, x)
@@ -109,11 +109,12 @@ static int process_frame(FFFrameSync *fs)
                 continue;
             }
 
-            s->maskedmerge(s, base->data[p], base->linesize[p],
+            s->maskedmerge(base->data[p], base->linesize[p],
                            overlay->data[p], overlay->linesize[p],
                            mask->data[p], mask->linesize[p],
                            out->data[p], out->linesize[p],
-                           s->width[p], s->height[p]);
+                           s->width[p], s->height[p],
+                           s->max, s->half, s->depth);
         }
     }
     out->pts = av_rescale_q(base->pts, s->fs.time_base, outlink->time_base);
@@ -121,11 +122,11 @@ static int process_frame(FFFrameSync *fs)
     return ff_filter_frame(outlink, out);
 }
 
-static void maskedmerge8(MaskedMergeContext *s,
-                         const uint8_t *bsrc, int blinesize,
+static void maskedmerge8(const uint8_t *bsrc, int blinesize,
                          const uint8_t *osrc, int olinesize,
                          const uint8_t *msrc, int mlinesize,
-                         uint8_t *dst, int dlinesize, int w, int h)
+                         uint8_t *dst, int dlinesize, int w, int h,
+                         int max, int half, int shift)
 {
     int x, y;
 
@@ -141,15 +142,12 @@ static void maskedmerge8(MaskedMergeContext *s,
     }
 }
 
-static void maskedmerge16(MaskedMergeContext *s,
-                          const uint8_t *bbsrc, int blinesize,
+static void maskedmerge16(const uint8_t *bbsrc, int blinesize,
                           const uint8_t *oosrc, int olinesize,
                           const uint8_t *mmsrc, int mlinesize,
-                          uint8_t *ddst, int dlinesize, int w, int h)
+                          uint8_t *ddst, int dlinesize, int w, int h,
+                          int max, int half, int shift)
 {
-    const int max = s->max;
-    const int half = s->half;
-    const int shift = s->depth;
     const uint16_t *bsrc = (const uint16_t *)bbsrc;
     const uint16_t *osrc = (const uint16_t *)oosrc;
     const uint16_t *msrc = (const uint16_t *)mmsrc;
