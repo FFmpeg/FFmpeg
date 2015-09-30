@@ -31,6 +31,7 @@ version <next>:
 - MediaCodec HEVC decoding
 - TrueHD encoder
 - Meridian Lossless Packing (MLP) encoder
+- Non-Local Means (nlmeans) denoising filter
 
 
 version 3.1:
