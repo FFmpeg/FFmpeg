@@ -520,6 +520,20 @@ struct AVFilterLink {
      * A pointer to a FFVideoFramePool struct.
      */
     void *video_frame_pool;
+
+    /**
+     * True if a frame is currently wanted on the input of this filter.
+     * Set when ff_request_frame() is called by the output,
+     * cleared when the request is handled or forwarded.
+     */
+    int frame_wanted_in;
+
+    /**
+     * True if a frame is currently wanted on the output of this filter.
+     * Set when ff_request_frame() is called by the output,
+     * cleared when a frame is filtered.
+     */
+    int frame_wanted_out;
 };
 
 /**

@@ -140,6 +140,11 @@ int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFr
             return AVERROR(EAGAIN);
         if ((ret = ff_request_frame(inlink)) < 0)
             return ret;
+        while (inlink->frame_wanted_out) {
+            ret = ff_filter_graph_run_once(ctx->graph);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     if (flags & AV_BUFFERSINK_FLAG_PEEK) {

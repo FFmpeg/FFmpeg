@@ -186,6 +186,7 @@ void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts)
 void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts)
 {
     link->status = status;
+    link->frame_wanted_in = link->frame_wanted_out = 0;
     ff_update_link_current_pts(link, pts);
 }
 
@@ -354,11 +355,21 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
 
 int ff_request_frame(AVFilterLink *link)
 {
-    int ret = -1;
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
     if (link->status)
         return link->status;
+    link->frame_wanted_in = 1;
+    link->frame_wanted_out = 1;
+    return 0;
+}
+
+int ff_request_frame_to_filter(AVFilterLink *link)
+{
+    int ret = -1;
+
+    FF_TPRINTF_START(NULL, request_frame_to_filter); ff_tlog_link(NULL, link, 1);
+    link->frame_wanted_in = 0;
     if (link->srcpad->request_frame)
         ret = link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
@@ -367,6 +378,9 @@ int ff_request_frame(AVFilterLink *link)
         AVFrame *pbuf = link->partial_buf;
         link->partial_buf = NULL;
         ret = ff_filter_frame_framed(link, pbuf);
+        ff_avfilter_link_set_in_status(link, AVERROR_EOF, AV_NOPTS_VALUE);
+        link->frame_wanted_out = 0;
+        return ret;
     }
     if (ret < 0) {
         if (ret != AVERROR(EAGAIN) && ret != link->status)
@@ -1136,6 +1150,9 @@ static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
         if (pbuf->nb_samples >= link->min_samples) {
             ret = ff_filter_frame_framed(link, pbuf);
             pbuf = NULL;
+        } else {
+            if (link->frame_wanted_out)
+                link->frame_wanted_in = 1;
         }
     }
     av_frame_free(&frame);
@@ -1177,6 +1194,7 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
         }
     }
 
+    link->frame_wanted_out = 0;
     /* Go directly to actual filtering if possible */
     if (link->type == AVMEDIA_TYPE_AUDIO &&
         link->min_samples &&

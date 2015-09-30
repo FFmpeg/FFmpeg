@@ -334,6 +334,8 @@ int ff_poll_frame(AVFilterLink *link);
  */
 int ff_request_frame(AVFilterLink *link);
 
+int ff_request_frame_to_filter(AVFilterLink *link);
+
 #define AVFILTER_DEFINE_CLASS(fname)            \
     static const AVClass fname##_class = {      \
         .class_name = #fname,                   \
@@ -378,6 +380,11 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name);
  * Remove a filter from a graph;
  */
 void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter);
+
+/**
+ * Run one round of processing on a filter graph.
+ */
+int ff_filter_graph_run_once(AVFilterGraph *graph);
 
 /**
  * Normalize the qscale factor
