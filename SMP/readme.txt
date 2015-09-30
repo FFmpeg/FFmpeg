@@ -13,7 +13,7 @@ Intel compiler can be used to add in the required C99 capability.
 *** Using the Default Supplied Projects ***
 
 The supplied project files are created using default configuration options as used by the ShiftMediaProject.
-These projects use Visual Studio 2013 and require certain additional dependencies to be built and available at compile time.
+These projects use Visual Studio 2013/2015 and require certain additional dependencies to be built and available at compile time.
 Required supplied project dependencies include:
     bzlib
     iconv
@@ -51,7 +51,7 @@ Required supplied project dependencies include:
 All above dependencies are supplied as part of the ShiftMediaProject repositories.
 
 Many of the possible FFmpeg dependencies (and there dependencies) are available in the ShiftMediaProject repositories.
-However the following is a list of used extra dependency options that require external downloads:
+However the following is a list of possible extra dependency options that require external downloads:
     1) sdl (requires SDL 1.2)
 		a) Download pre-built binaries from the sdl homepage.
 		b) Extract all the header files into OutputDir/include/SDL/*.
@@ -71,7 +71,15 @@ However the following is a list of used extra dependency options that require ex
 	5) libmfx (requires Intel Media SDK)
 		a) Download the "Intel Media SDK" as part of the "Intel Integrated Native Developer Experience" from the Intel website.
 		b) Install the downloaded SDK wherever desired.
-		c) Copy the SDK headers found in the SDKs include directory into a new subdirectory named "mfx". 
+		c) Copy the SDK headers found in the SDKs include directory into a new subdirectory named "mfx".
+    6) decklink (requires Blackmagic DeckLink SDK)
+		a) Download the "Blackmagic DeckLink SDK" from the Blackmagic website.
+		b) Extract the downloaded SDK wherever desired.
+        c) Create a batch file in the extracted "Win/include" folder containing the following (Note: you may have to change 
+            the first line depending on the installed Visual Studio version and location):
+call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\vcvars32.bat"
+midl /win32 /h DeckLinkAPI.h DeckLinkAPI.idl
+        d) Copy the newly created "DeckLinkAPI.h" and "DeckLinkAPI_i.c" files to OutputDir/include/*.
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
     Note: There is a different OutputDir for 32/64bit configurations. Lib's and DLL's should be placed in the correct directory.
