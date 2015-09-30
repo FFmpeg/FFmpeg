@@ -175,29 +175,31 @@ static int request_frame(AVFilterLink *outlink)
     ret = ff_request_frame(ctx->inputs[0]);
 
     if (ret == AVERROR_EOF && !s->flushed) {
-        AVFrame *out = ff_get_audio_buffer(inlink, 1);
-        int nb_samples;
+        if (rubberband_available(s->rbs) > 0) {
+            AVFrame *out = ff_get_audio_buffer(inlink, 1);
+            int nb_samples;
 
-        if (!out)
-            return AVERROR(ENOMEM);
-
-        rubberband_process(s->rbs, (const float *const *)out->data, 1, 1);
-        av_frame_free(&out);
-        s->flushed = 1;
-        nb_samples = rubberband_available(s->rbs);
-
-        if (nb_samples > 0) {
-            out = ff_get_audio_buffer(inlink, nb_samples);
             if (!out)
                 return AVERROR(ENOMEM);
-            out->pts = av_rescale_q(s->nb_samples_out,
-                         (AVRational){ 1, outlink->sample_rate },
-                         outlink->time_base);
-            nb_samples = rubberband_retrieve(s->rbs, (float *const *)out->data, nb_samples);
-            out->nb_samples = nb_samples;
-            ret = ff_filter_frame(outlink, out);
-            s->nb_samples_out += nb_samples;
+
+            rubberband_process(s->rbs, (const float *const *)out->data, 1, 1);
+            av_frame_free(&out);
+            nb_samples = rubberband_available(s->rbs);
+
+            if (nb_samples > 0) {
+                out = ff_get_audio_buffer(inlink, nb_samples);
+                if (!out)
+                    return AVERROR(ENOMEM);
+                out->pts = av_rescale_q(s->nb_samples_out,
+                             (AVRational){ 1, outlink->sample_rate },
+                             outlink->time_base);
+                nb_samples = rubberband_retrieve(s->rbs, (float *const *)out->data, nb_samples);
+                out->nb_samples = nb_samples;
+                ret = ff_filter_frame(outlink, out);
+                s->nb_samples_out += nb_samples;
+            }
         }
+        s->flushed = 1;
         av_log(ctx, AV_LOG_DEBUG, "nb_samples_in %"PRId64" nb_samples_out %"PRId64"\n",
                                    s->nb_samples_in, s->nb_samples_out);
     }
