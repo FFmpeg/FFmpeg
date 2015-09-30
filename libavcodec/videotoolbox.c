@@ -32,8 +32,8 @@
 #include "h264.h"
 #include "mpegvideo.h"
 
-#ifndef kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder
-#  define kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder CFSTR("EnableHardwareAcceleratedVideoDecoder")
+#ifndef kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder
+#  define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder CFSTR("RequireHardwareAcceleratedVideoDecoder")
 #endif
 
 #define VIDEOTOOLBOX_ESDS_EXTRADATA_PADDING  12
@@ -398,7 +398,7 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
                                                                    &kCFTypeDictionaryValueCallBacks);
 
     CFDictionarySetValue(config_info,
-                         kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder,
+                         kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder,
                          kCFBooleanTrue);
 
     if (avctx->extradata_size) {

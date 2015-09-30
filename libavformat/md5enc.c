@@ -135,7 +135,7 @@ static int framemd5_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     av_hash_init(c->hash);
     av_hash_update(c->hash, pkt->data, pkt->size);
 
-    snprintf(buf, sizeof(buf) - 64, "%d, %10"PRId64", %10"PRId64", %8d, %8d, ",
+    snprintf(buf, sizeof(buf) - 64, "%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, ",
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size);
     md5_finish(s, buf);
     return 0;

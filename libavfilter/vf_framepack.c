@@ -143,92 +143,127 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void horizontal_frame_pack(FramepackContext *s,
-                                  AVFrame *dst,
+static void horizontal_frame_pack(AVFilterLink *outlink,
+                                  AVFrame *out,
                                   int interleaved)
 {
-    int plane, i;
-    int length = dst->width / 2;
-    int lines  = dst->height;
+    AVFilterContext *ctx = outlink->src;
+    FramepackContext *s = ctx->priv;
+    int i, plane;
 
-    for (plane = 0; plane < s->pix_desc->nb_components; plane++) {
-        const uint8_t *leftp  = s->input_views[LEFT]->data[plane];
-        const uint8_t *rightp = s->input_views[RIGHT]->data[plane];
-        uint8_t *dstp         = dst->data[plane];
+    if (interleaved) {
+        const uint8_t *leftp  = s->input_views[LEFT]->data[0];
+        const uint8_t *rightp = s->input_views[RIGHT]->data[0];
+        uint8_t *dstp         = out->data[0];
+        int length = out->width / 2;
+        int lines  = out->height;
 
-        if (plane == 1 || plane == 2) {
-            length = FF_CEIL_RSHIFT(dst->width / 2, s->pix_desc->log2_chroma_w);
-            lines  = FF_CEIL_RSHIFT(dst->height,    s->pix_desc->log2_chroma_h);
-        }
-
-        if (interleaved) {
+        for (plane = 0; plane < s->pix_desc->nb_components; plane++) {
+            if (plane == 1 || plane == 2) {
+                length = FF_CEIL_RSHIFT(out->width / 2, s->pix_desc->log2_chroma_w);
+                lines  = FF_CEIL_RSHIFT(out->height,    s->pix_desc->log2_chroma_h);
+            }
             for (i = 0; i < lines; i++) {
                 int j;
-                int k = 0;
-
+                leftp  = s->input_views[LEFT]->data[plane] +
+                         s->input_views[LEFT]->linesize[plane] * i;
+                rightp = s->input_views[RIGHT]->data[plane] +
+                         s->input_views[RIGHT]->linesize[plane] * i;
+                dstp   = out->data[plane] + out->linesize[plane] * i;
                 for (j = 0; j < length; j++) {
-                    dstp[k++] = leftp[j];
-                    dstp[k++] = rightp[j];
+                    // interpolate chroma as necessary
+                    if ((s->pix_desc->log2_chroma_w ||
+                         s->pix_desc->log2_chroma_h) &&
+                        (plane == 1 || plane == 2)) {
+                        *dstp++ = (*leftp + *rightp) / 2;
+                        *dstp++ = (*leftp + *rightp) / 2;
+                    } else {
+                        *dstp++ = *leftp;
+                        *dstp++ = *rightp;
+                    }
+                    leftp += 1;
+                    rightp += 1;
                 }
-
-                dstp   += dst->linesize[plane];
-                leftp  += s->input_views[LEFT]->linesize[plane];
-                rightp += s->input_views[RIGHT]->linesize[plane];
             }
-        } else {
-            av_image_copy_plane(dst->data[plane], dst->linesize[plane],
-                                leftp, s->input_views[LEFT]->linesize[plane],
-                                length, lines);
-            av_image_copy_plane(dst->data[plane] + length, dst->linesize[plane],
-                                rightp, s->input_views[RIGHT]->linesize[plane],
-                                length, lines);
+        }
+    } else {
+        for (i = 0; i < 2; i++) {
+            const uint8_t *src[4];
+            uint8_t *dst[4];
+            int sub_w = s->input_views[i]->width >> s->pix_desc->log2_chroma_w;
+
+            src[0] = s->input_views[i]->data[0];
+            src[1] = s->input_views[i]->data[1];
+            src[2] = s->input_views[i]->data[2];
+
+            dst[0] = out->data[0] + i * s->input_views[i]->width;
+            dst[1] = out->data[1] + i * sub_w;
+            dst[2] = out->data[2] + i * sub_w;
+
+            av_image_copy(dst, out->linesize, src, s->input_views[i]->linesize,
+                          s->input_views[i]->format,
+                          s->input_views[i]->width,
+                          s->input_views[i]->height);
         }
     }
 }
 
-static void vertical_frame_pack(FramepackContext *s,
-                                AVFrame *dst,
+static void vertical_frame_pack(AVFilterLink *outlink,
+                                AVFrame *out,
                                 int interleaved)
 {
-    int plane, offset;
-    int length = dst->width;
-    int lines  = dst->height / 2;
+    AVFilterContext *ctx = outlink->src;
+    FramepackContext *s = ctx->priv;
+    int i;
 
-    for (plane = 0; plane < s->pix_desc->nb_components; plane++) {
-        if (plane == 1 || plane == 2) {
-            length = -(-(dst->width)      >> s->pix_desc->log2_chroma_w);
-            lines  = -(-(dst->height / 2) >> s->pix_desc->log2_chroma_h);
-        }
+    for (i = 0; i < 2; i++) {
+        const uint8_t *src[4];
+        uint8_t *dst[4];
+        int linesizes[4];
+        int sub_h = s->input_views[i]->height >> s->pix_desc->log2_chroma_h;
 
-        offset = interleaved ? dst->linesize[plane] : dst->linesize[plane] * lines;
+        src[0] = s->input_views[i]->data[0];
+        src[1] = s->input_views[i]->data[1];
+        src[2] = s->input_views[i]->data[2];
 
-        av_image_copy_plane(dst->data[plane],
-                            dst->linesize[plane] << interleaved,
-                            s->input_views[LEFT]->data[plane],
-                            s->input_views[LEFT]->linesize[plane],
-                            length, lines);
-        av_image_copy_plane(dst->data[plane] + offset,
-                            dst->linesize[plane] << interleaved,
-                            s->input_views[RIGHT]->data[plane],
-                            s->input_views[RIGHT]->linesize[plane],
-                            length, lines);
+        dst[0] = out->data[0] + i * out->linesize[0] *
+                 (interleaved + s->input_views[i]->height * (1 - interleaved));
+        dst[1] = out->data[1] + i * out->linesize[1] *
+                 (interleaved + sub_h * (1 - interleaved));
+        dst[2] = out->data[2] + i * out->linesize[2] *
+                 (interleaved + sub_h * (1 - interleaved));
+
+        linesizes[0] = out->linesize[0] +
+                       interleaved * out->linesize[0];
+        linesizes[1] = out->linesize[1] +
+                       interleaved * out->linesize[1];
+        linesizes[2] = out->linesize[2] +
+                       interleaved * out->linesize[2];
+
+        av_image_copy(dst, linesizes, src, s->input_views[i]->linesize,
+                      s->input_views[i]->format,
+                      s->input_views[i]->width,
+                      s->input_views[i]->height);
     }
 }
 
-static av_always_inline void spatial_frame_pack(FramepackContext *s, AVFrame *dst)
+static av_always_inline void spatial_frame_pack(AVFilterLink *outlink,
+                                                AVFrame *dst)
 {
+    AVFilterContext *ctx = outlink->src;
+    FramepackContext *s = ctx->priv;
     switch (s->format) {
     case AV_STEREO3D_SIDEBYSIDE:
-        horizontal_frame_pack(s, dst, 0);
+        horizontal_frame_pack(outlink, dst, 0);
         break;
     case AV_STEREO3D_COLUMNS:
-        horizontal_frame_pack(s, dst, 1);
+        horizontal_frame_pack(outlink, dst, 1);
         break;
     case AV_STEREO3D_TOPBOTTOM:
-        vertical_frame_pack(s, dst, 0);
+        vertical_frame_pack(outlink, dst, 0);
         break;
     case AV_STEREO3D_LINES:
-        vertical_frame_pack(s, dst, 1);
+        vertical_frame_pack(outlink, dst, 1);
         break;
     }
 }
@@ -289,7 +324,7 @@ static int request_frame(AVFilterLink *outlink)
         if (!dst)
             return AVERROR(ENOMEM);
 
-        spatial_frame_pack(s, dst);
+        spatial_frame_pack(outlink, dst);
 
         // get any property from the original frame
         ret = av_frame_copy_props(dst, s->input_views[LEFT]);

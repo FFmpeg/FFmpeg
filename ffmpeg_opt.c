@@ -2802,63 +2802,6 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
     return 0;
 }
 
-/* Search a class from a codec, format, or filter, named 'opt', in order
- * to extract its private options. If the class type is specified, only
- * the associated options are printed, otherwise all the ones matching
- * the input name are shown. */
-static int show_help_specific(const char *opt)
-{
-    AVCodec *codec = NULL;
-    AVFilter *filter = NULL;
-    AVInputFormat *iformat = NULL;
-    AVOutputFormat *oformat = NULL;
-    int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM |
-                AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM;
-
-    char *kind = av_get_token(&opt, ":");
-    if (!kind)
-        return 0;
-    if (*opt)
-        opt = &opt[1]; // skip ':'
-
-    show_usage();
-
-    if (!strcmp(kind, "decoder") &&
-        (codec = avcodec_find_decoder_by_name(opt)) && codec->priv_class)
-        show_help_children(codec->priv_class, flags);
-    else if (!strcmp(kind, "encoder") &&
-             (codec = avcodec_find_encoder_by_name(opt)) && codec->priv_class)
-        show_help_children(codec->priv_class, flags);
-    else if (!strcmp(kind, "demuxer") &&
-             (iformat = av_find_input_format(opt)) && iformat->priv_class)
-        show_help_children(iformat->priv_class, flags);
-    else if (!strcmp(kind, "muxer") &&
-             (oformat = av_guess_format(opt, NULL, NULL)) && oformat->priv_class)
-        show_help_children(oformat->priv_class, flags);
-    else if (!strcmp(kind, "filter") &&
-             (filter = avfilter_get_by_name(opt)) && filter->priv_class)
-        show_help_children(filter->priv_class, flags);
-    else if (*opt)
-        av_log(NULL, AV_LOG_ERROR,
-               "Unknown class '%s', only 'decoder', 'encoder', 'demuxer', "
-               "'muxer', or 'filter' are valid specifiers.\n", kind);
-    else {
-        if ((codec = avcodec_find_decoder_by_name(kind)) && codec->priv_class)
-            show_help_children(codec->priv_class, flags);
-        if ((codec = avcodec_find_encoder_by_name(kind)) && codec->priv_class)
-            show_help_children(codec->priv_class, flags);
-        if ((iformat = av_find_input_format(kind)) && iformat->priv_class)
-            show_help_children(iformat->priv_class, flags);
-        if ((oformat = av_guess_format(kind, NULL, NULL)) && oformat->priv_class)
-            show_help_children(oformat->priv_class, flags);
-        if ((filter = avfilter_get_by_name(kind)) && filter->priv_class)
-            show_help_children(filter->priv_class, flags);
-    }
-    av_freep(&kind);
-
-    return codec || iformat || oformat || filter;
-}
-
 void show_help_default(const char *opt, const char *arg)
 {
     /* per-file options have at least one of those set */
@@ -2870,8 +2813,6 @@ void show_help_default(const char *opt, const char *arg)
             show_advanced = 1;
         else if (!strcmp(opt, "full"))
             show_advanced = show_avoptions = 1;
-        else if (show_help_specific(opt))
-            return;
         else
             av_log(NULL, AV_LOG_ERROR, "Unknown help option '%s'.\n", opt);
     }
@@ -2882,7 +2823,7 @@ void show_help_default(const char *opt, const char *arg)
            "    -h      -- print basic options\n"
            "    -h long -- print more options\n"
            "    -h full -- print all options (including all format and codec specific options, very long)\n"
-           "    -h [type:]name -- print private options from a codec, format or filter named 'name' (set 'type' to print options from a single class)\n"
+           "    -h type=name -- print all options for the named decoder/encoder/demuxer/muxer/filter\n"
            "    See man %s for detailed description of the options.\n"
            "\n", program_name);
 

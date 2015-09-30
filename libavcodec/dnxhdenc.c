@@ -360,8 +360,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
 #if FF_API_QUANT_BIAS
 FF_DISABLE_DEPRECATION_WARNINGS
-    if (ctx->intra_quant_bias == FF_DEFAULT_QUANT_BIAS &&
-        avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
+    if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
         ctx->intra_quant_bias = avctx->intra_quant_bias;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif

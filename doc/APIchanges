@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-09-29 - xxxxxxx - lavc 57.3.100 / lavc 57.2.0 - avcodec.h
+  Change type of AVPacket.duration from int to int64_t.
+
 2015-09-17 - xxxxxxx - lavc 57.3.100 / lavc 57.2.0 - d3d11va.h
   Add av_d3d11va_alloc_context(). This function must from now on be used for
   allocating AVD3D11VAContext.

@@ -4317,7 +4317,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->pts = AV_NOPTS_VALUE;
         }
         if (pkt->duration < 0) {
-            av_log(s, AV_LOG_ERROR, "Application provided duration: %d is invalid\n", pkt->duration);
+            av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" is invalid\n", pkt->duration);
             return AVERROR(EINVAL);
         }
     }

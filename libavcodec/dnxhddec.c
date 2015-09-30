@@ -401,8 +401,9 @@ static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
     if (ctx->mbaff) {
         interlaced_mb = get_bits1(&row->gb);
         qscale = get_bits(&row->gb, 10);
-    } else
+    } else {
         qscale = get_bits(&row->gb, 11);
+    }
     act = get_bits1(&row->gb);
     if (act) {
         static int warned = 0;

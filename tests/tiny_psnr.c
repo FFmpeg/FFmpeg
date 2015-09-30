@@ -190,7 +190,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
                     b = buf[1][j];
                 }
                 sse += (a - b) * (a - b);
-                dist = abs(a - b);
+                dist = llabs(a - b);
                 if (dist > maxdist)
                     maxdist = dist;
                 break;
