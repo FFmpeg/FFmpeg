@@ -1642,9 +1642,11 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
     uint32_t header;
     int ret;
 
+    int skipped = 0;
     while(buf_size && !*buf){
         buf++;
         buf_size--;
+        skipped++;
     }
 
     if (buf_size < HEADER_SIZE)
@@ -1699,7 +1701,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
             return ret;
     }
     s->frame_size = 0;
-    return buf_size;
+    return buf_size + skipped;
 }
 
 static void mp_flush(MPADecodeContext *ctx)
