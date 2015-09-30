@@ -220,9 +220,8 @@ static int url_connect(struct variant *var, AVDictionary *opts)
 
     av_dict_copy(&tmp, opts, 0);
 
-    av_opt_set_dict(var->input, &tmp);
-
-    if ((ret = ffurl_connect(var->input, NULL)) < 0) {
+    if ((ret = av_opt_set_dict(var->input, &tmp)) < 0 ||
+        (ret = ffurl_connect(var->input, NULL)) < 0) {
         ffurl_close(var->input);
         var->input = NULL;
     }
