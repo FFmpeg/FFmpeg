@@ -17,7 +17,7 @@
  * License along with ShiftMediaProject; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- 
+
 #include "projectGenerator.h"
 
 void projectGenerator::buildInterDependenciesHelper( const StaticList & vConfigOptions, const StaticList & vAddDeps, StaticList & vLibs )
@@ -176,6 +176,10 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             else if( vitLib->compare("dshow_indev") == 0 )
             {
                 vAddLibs.push_back( "strmiids" ); //Add the additional required libs
+            }
+            else if( vitLib->compare("decklink") == 0 )
+            {
+                //doesnt need any additional libs
             }
             else if( vitLib->compare("sdl") == 0 )
             {
