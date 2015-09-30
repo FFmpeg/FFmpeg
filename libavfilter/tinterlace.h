@@ -38,6 +38,7 @@ enum TInterlaceMode {
     MODE_INTERLEAVE_TOP,
     MODE_INTERLEAVE_BOTTOM,
     MODE_INTERLACEX2,
+    MODE_MERGEX2,
     MODE_NB,
 };
 
