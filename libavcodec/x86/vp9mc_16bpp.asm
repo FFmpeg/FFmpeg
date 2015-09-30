@@ -24,10 +24,10 @@
 
 SECTION_RODATA 32
 
-pw_4095: times 16 dw 0xfff
 pd_64: times 8 dd 64
 
 cextern pw_1023
+cextern pw_4095
 
 SECTION .text
 

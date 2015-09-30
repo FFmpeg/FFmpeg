@@ -47,6 +47,7 @@ extern const ymm_reg  ff_pw_512;
 extern const ymm_reg  ff_pw_1023;
 extern const ymm_reg  ff_pw_1024;
 extern const ymm_reg  ff_pw_2048;
+extern const ymm_reg  ff_pw_4095;
 extern const ymm_reg  ff_pw_4096;
 extern const ymm_reg  ff_pw_8192;
 extern const ymm_reg  ff_pw_m1;

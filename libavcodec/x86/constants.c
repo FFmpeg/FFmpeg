@@ -55,6 +55,8 @@ DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_1024) = { 0x0400040004000400ULL, 0x040
                                                     0x0400040004000400ULL, 0x0400040004000400ULL};
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_2048) = { 0x0800080008000800ULL, 0x0800080008000800ULL,
                                                     0x0800080008000800ULL, 0x0800080008000800ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_4095) = { 0x0fff0fff0fff0fffULL, 0x0fff0fff0fff0fffULL,
+                                                    0x0fff0fff0fff0fffULL, 0x0fff0fff0fff0fffULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_4096) = { 0x1000100010001000ULL, 0x1000100010001000ULL,
                                                     0x1000100010001000ULL, 0x1000100010001000ULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_8192) = { 0x2000200020002000ULL, 0x2000200020002000ULL,
