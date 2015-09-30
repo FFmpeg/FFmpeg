@@ -1130,6 +1130,7 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     ff_mpeg12_common_init(&s->mpeg_enc_ctx);
     ff_mpeg12_init_vlcs();
 
+    s2->chroma_format              = 1;
     s->mpeg_enc_ctx_allocated      = 0;
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field                = 0;
