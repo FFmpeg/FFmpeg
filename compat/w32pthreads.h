@@ -87,14 +87,19 @@ static av_unused int pthread_create(pthread_t *thread, const void *unused_attr,
     return !thread->handle;
 }
 
-static av_unused void pthread_join(pthread_t thread, void **value_ptr)
+static av_unused int pthread_join(pthread_t thread, void **value_ptr)
 {
     DWORD ret = WaitForSingleObject(thread.handle, INFINITE);
-    if (ret != WAIT_OBJECT_0)
-        return;
+    if (ret != WAIT_OBJECT_0) {
+        if (ret == WAIT_ABANDONED)
+            return EINVAL;
+        else
+            return EDEADLK;
+    }
     if (value_ptr)
         *value_ptr = thread.ret;
     CloseHandle(thread.handle);
+    return 0;
 }
 
 static inline int pthread_mutex_init(pthread_mutex_t *m, void* attr)
@@ -126,14 +131,15 @@ static inline int pthread_cond_init(pthread_cond_t *cond, const void *unused_att
 }
 
 /* native condition variables do not destroy */
-static inline void pthread_cond_destroy(pthread_cond_t *cond)
+static inline int pthread_cond_destroy(pthread_cond_t *cond)
 {
-    return;
+    return 0;
 }
 
-static inline void pthread_cond_broadcast(pthread_cond_t *cond)
+static inline int pthread_cond_broadcast(pthread_cond_t *cond)
 {
     WakeAllConditionVariable(cond);
+    return 0;
 }
 
 static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
@@ -142,9 +148,10 @@ static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex
     return 0;
 }
 
-static inline void pthread_cond_signal(pthread_cond_t *cond)
+static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
     WakeConditionVariable(cond);
+    return 0;
 }
 
 #else // _WIN32_WINNT < 0x0600
@@ -191,12 +198,12 @@ static av_unused int pthread_cond_init(pthread_cond_t *cond, const void *unused_
     return 0;
 }
 
-static av_unused void pthread_cond_destroy(pthread_cond_t *cond)
+static av_unused int pthread_cond_destroy(pthread_cond_t *cond)
 {
     win32_cond_t *win32_cond = cond->Ptr;
     /* native condition variables do not destroy */
     if (cond_init)
-        return;
+        return 0;
 
     /* non native condition variables */
     CloseHandle(win32_cond->semaphore);
@@ -205,16 +212,17 @@ static av_unused void pthread_cond_destroy(pthread_cond_t *cond)
     pthread_mutex_destroy(&win32_cond->mtx_broadcast);
     av_freep(&win32_cond);
     cond->Ptr = NULL;
+    return 0;
 }
 
-static av_unused void pthread_cond_broadcast(pthread_cond_t *cond)
+static av_unused int pthread_cond_broadcast(pthread_cond_t *cond)
 {
     win32_cond_t *win32_cond = cond->Ptr;
     int have_waiter;
 
     if (cond_broadcast) {
         cond_broadcast(cond);
-        return;
+        return 0;
     }
 
     /* non native condition variables */
@@ -236,6 +244,7 @@ static av_unused void pthread_cond_broadcast(pthread_cond_t *cond)
     } else
         pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
     pthread_mutex_unlock(&win32_cond->mtx_broadcast);
+    return 0;
 }
 
 static av_unused int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
@@ -270,13 +279,13 @@ static av_unused int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mu
     return pthread_mutex_lock(mutex);
 }
 
-static av_unused void pthread_cond_signal(pthread_cond_t *cond)
+static av_unused int pthread_cond_signal(pthread_cond_t *cond)
 {
     win32_cond_t *win32_cond = cond->Ptr;
     int have_waiter;
     if (cond_signal) {
         cond_signal(cond);
-        return;
+        return 0;
     }
 
     pthread_mutex_lock(&win32_cond->mtx_broadcast);
@@ -293,6 +302,7 @@ static av_unused void pthread_cond_signal(pthread_cond_t *cond)
     }
 
     pthread_mutex_unlock(&win32_cond->mtx_broadcast);
+    return 0;
 }
 #endif
 
