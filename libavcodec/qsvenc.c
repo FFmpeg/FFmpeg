@@ -333,46 +333,46 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
 
         qf->surface = (mfxFrameSurface1*)qf->frame->data[3];
     } else {
-    /* make a copy if the input is not padded as libmfx requires */
-    if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
-        qf->frame->height = FFALIGN(frame->height, 32);
-        qf->frame->width  = FFALIGN(frame->width, q->width_align);
+        /* make a copy if the input is not padded as libmfx requires */
+        if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
+            qf->frame->height = FFALIGN(frame->height, 32);
+            qf->frame->width  = FFALIGN(frame->width, q->width_align);
 
-        ret = ff_get_buffer(q->avctx, qf->frame, AV_GET_BUFFER_FLAG_REF);
-        if (ret < 0)
-            return ret;
+            ret = ff_get_buffer(q->avctx, qf->frame, AV_GET_BUFFER_FLAG_REF);
+            if (ret < 0)
+                return ret;
 
-        qf->frame->height = frame->height;
-        qf->frame->width  = frame->width;
-        ret = av_frame_copy(qf->frame, frame);
-        if (ret < 0) {
-            av_frame_unref(qf->frame);
-            return ret;
+            qf->frame->height = frame->height;
+            qf->frame->width  = frame->width;
+            ret = av_frame_copy(qf->frame, frame);
+            if (ret < 0) {
+                av_frame_unref(qf->frame);
+                return ret;
+            }
+        } else {
+            ret = av_frame_ref(qf->frame, frame);
+            if (ret < 0)
+                return ret;
         }
-    } else {
-        ret = av_frame_ref(qf->frame, frame);
-        if (ret < 0)
-            return ret;
-    }
 
-    qf->surface_internal.Info = q->param.mfx.FrameInfo;
+        qf->surface_internal.Info = q->param.mfx.FrameInfo;
 
-    qf->surface_internal.Info.PicStruct =
-        !frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
-        frame->top_field_first   ? MFX_PICSTRUCT_FIELD_TFF :
-                                   MFX_PICSTRUCT_FIELD_BFF;
-    if (frame->repeat_pict == 1)
-        qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FIELD_REPEATED;
-    else if (frame->repeat_pict == 2)
-        qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FRAME_DOUBLING;
-    else if (frame->repeat_pict == 4)
-        qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FRAME_TRIPLING;
+        qf->surface_internal.Info.PicStruct =
+            !frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
+            frame->top_field_first   ? MFX_PICSTRUCT_FIELD_TFF :
+                                       MFX_PICSTRUCT_FIELD_BFF;
+        if (frame->repeat_pict == 1)
+            qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FIELD_REPEATED;
+        else if (frame->repeat_pict == 2)
+            qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FRAME_DOUBLING;
+        else if (frame->repeat_pict == 4)
+            qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FRAME_TRIPLING;
 
-    qf->surface_internal.Data.PitchLow  = qf->frame->linesize[0];
-    qf->surface_internal.Data.Y         = qf->frame->data[0];
-    qf->surface_internal.Data.UV        = qf->frame->data[1];
+        qf->surface_internal.Data.PitchLow  = qf->frame->linesize[0];
+        qf->surface_internal.Data.Y         = qf->frame->data[0];
+        qf->surface_internal.Data.UV        = qf->frame->data[1];
 
-    qf->surface = &qf->surface_internal;
+        qf->surface = &qf->surface_internal;
     }
 
     qf->surface->Data.TimeStamp = av_rescale_q(frame->pts, q->avctx->time_base, (AVRational){1, 90000});
