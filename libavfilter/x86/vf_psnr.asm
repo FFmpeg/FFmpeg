@@ -1,5 +1,5 @@
 ;*****************************************************************************
-;* x86-optimized functions for interlace filter
+;* x86-optimized functions for psnr filter
 ;*
 ;* Copyright (C) 2015 Ronald S. Bultje <rsbultje@gmail.com>
 ;*
