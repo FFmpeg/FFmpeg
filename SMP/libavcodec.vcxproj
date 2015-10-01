@@ -111,6 +111,7 @@
     <YASM Include="..\libavcodec\x86\hevc_idct.asm" />
     <YASM Include="..\libavcodec\x86\hevc_res_add.asm" />
     <YASM Include="..\libavcodec\x86\hevc_sao.asm" />
+    <YASM Include="..\libavcodec\x86\hevc_sao_10bit.asm" />
     <YASM Include="..\libavcodec\x86\jpeg2000dsp.asm" />
     <YASM Include="..\libavcodec\x86\mlpdsp.asm" />
     <YASM Include="..\libavcodec\x86\xvididct.asm" />

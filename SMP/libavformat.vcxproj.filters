@@ -1146,6 +1146,9 @@
     <ClCompile Include="..\libavformat\libssh.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\async.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\bluray.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

@@ -177,6 +177,9 @@
     <YASM Include="..\libavcodec\x86\hevc_sao.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\hevc_sao_10bit.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\jpeg2000dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>

@@ -811,6 +811,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\libssh.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\async.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\bluray.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\cache.c">
