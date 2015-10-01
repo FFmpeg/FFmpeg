@@ -264,6 +264,14 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     if (ret < 0)
         return ret;
 
+    ret = MFXVideoENCODE_Query(q->session, &q->param,&q->param);
+    if (MFX_WRN_PARTIAL_ACCELERATION==ret) {
+        av_log(avctx, AV_LOG_WARNING, "Encoder will work with partial HW acceleration\n");
+    } else if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error %d querying encoder params\n", ret);
+        return ff_qsv_error(ret);
+    }
+
     ret = MFXVideoENCODE_QueryIOSurf(q->session, &q->param, &q->req);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error querying the encoding parameters\n");
