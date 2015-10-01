@@ -220,21 +220,21 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
 
     /* TODO: Escape the quoted strings properly. */
     av_strlcatf(authstr, len, "username=\"%s\"",   username);
-    av_strlcatf(authstr, len, ",realm=\"%s\"",     state->realm);
-    av_strlcatf(authstr, len, ",nonce=\"%s\"",     digest->nonce);
-    av_strlcatf(authstr, len, ",uri=\"%s\"",       uri);
-    av_strlcatf(authstr, len, ",response=\"%s\"",  response);
+    av_strlcatf(authstr, len, ", realm=\"%s\"",     state->realm);
+    av_strlcatf(authstr, len, ", nonce=\"%s\"",     digest->nonce);
+    av_strlcatf(authstr, len, ", uri=\"%s\"",       uri);
+    av_strlcatf(authstr, len, ", response=\"%s\"",  response);
 
     // we are violating the RFC and use "" because all others seem to do that too.
     if (digest->algorithm[0])
-        av_strlcatf(authstr, len, ",algorithm=\"%s\"",  digest->algorithm);
+        av_strlcatf(authstr, len, ", algorithm=\"%s\"",  digest->algorithm);
 
     if (digest->opaque[0])
-        av_strlcatf(authstr, len, ",opaque=\"%s\"", digest->opaque);
+        av_strlcatf(authstr, len, ", opaque=\"%s\"", digest->opaque);
     if (digest->qop[0]) {
-        av_strlcatf(authstr, len, ",qop=\"%s\"",    digest->qop);
-        av_strlcatf(authstr, len, ",cnonce=\"%s\"", cnonce);
-        av_strlcatf(authstr, len, ",nc=%s",         nc);
+        av_strlcatf(authstr, len, ", qop=\"%s\"",    digest->qop);
+        av_strlcatf(authstr, len, ", cnonce=\"%s\"", cnonce);
+        av_strlcatf(authstr, len, ", nc=%s",         nc);
     }
 
     av_strlcatf(authstr, len, "\r\n");
