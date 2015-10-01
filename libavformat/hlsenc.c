@@ -165,12 +165,6 @@ static int hls_delete_old_segments(HLSContext *hls) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        sub_path_size = strlen(dirname) + strlen(segment->sub_filename) + 1;
-        sub_path = av_malloc(sub_path_size);
-        if (!sub_path) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
 
         av_strlcpy(path, dirname, path_size);
         av_strlcat(path, segment->filename, path_size);
@@ -179,14 +173,23 @@ static int hls_delete_old_segments(HLSContext *hls) {
                                      path, strerror(errno));
         }
 
-        av_strlcpy(sub_path, dirname, sub_path_size);
-        av_strlcat(sub_path, segment->sub_filename, sub_path_size);
-        if (unlink(sub_path) < 0) {
-            av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
-                                     sub_path, strerror(errno));
+        if (segment->sub_filename[0] != '\0') {
+            sub_path_size = strlen(dirname) + strlen(segment->sub_filename) + 1;
+            sub_path = av_malloc(sub_path_size);
+            if (!sub_path) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            av_strlcpy(sub_path, dirname, sub_path_size);
+            av_strlcat(sub_path, segment->sub_filename, sub_path_size);
+            if (unlink(sub_path) < 0) {
+                av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
+                                         sub_path, strerror(errno));
+            }
+            av_free(sub_path);
         }
         av_freep(&path);
-        av_free(sub_path);
         previous_segment = segment;
         segment = previous_segment->next;
         av_free(previous_segment);
@@ -312,6 +315,8 @@ static int hls_append_segment(HLSContext *hls, double duration, int64_t pos,
 
     if(hls->has_subtitle)
         av_strlcpy(en->sub_filename, av_basename(hls->vtt_avf->filename), sizeof(en->sub_filename));
+    else
+        en->sub_filename[0] = '\0';
 
     en->duration = duration;
     en->pos      = pos;
