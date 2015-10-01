@@ -845,20 +845,21 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_dict_copy(&tmp, *options, 0);
 
     /* If there is a user-supplied mutex locking routine, call it. */
-    if (lockmgr_cb) {
-        if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
-            return -1;
-    }
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
+        if (lockmgr_cb) {
+            if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
+                return -1;
+        }
 
-    entangled_thread_counter++;
-    if (entangled_thread_counter != 1 &&
-        !(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Insufficient thread locking. At least %d threads are "
-               "calling avcodec_open2() at the same time right now.\n",
-               entangled_thread_counter);
-        ret = -1;
-        goto end;
+        entangled_thread_counter++;
+        if (entangled_thread_counter != 1) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Insufficient thread locking. At least %d threads are "
+                   "calling avcodec_open2() at the same time right now.\n",
+                   entangled_thread_counter);
+            ret = -1;
+            goto end;
+        }
     }
 
     avctx->internal = av_mallocz(sizeof(AVCodecInternal));
@@ -1085,12 +1086,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
 end:
-    entangled_thread_counter--;
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
+        entangled_thread_counter--;
 
-    /* Release any user-supplied mutex. */
-    if (lockmgr_cb) {
-        (*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
+        /* Release any user-supplied mutex. */
+        if (lockmgr_cb) {
+            (*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
+        }
     }
+
     if (options) {
         av_dict_free(options);
         *options = tmp;
