@@ -127,8 +127,6 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
                  ctx->cid_table->run_bits, 1, 1,
                  ctx->cid_table->run_codes, 2, 2, 0);
 
-        ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
-                          ff_zigzag_direct);
         ctx->cid = cid;
     }
     return 0;
@@ -211,6 +209,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if (ctx->bit_depth != old_bit_depth) {
         ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
         ff_idctdsp_init(&ctx->idsp, ctx->avctx);
+        ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
+                          ff_zigzag_direct);
     }
 
     cid = AV_RB32(buf + 0x28);
