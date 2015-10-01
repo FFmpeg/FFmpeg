@@ -357,8 +357,9 @@ static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
 
         j     = ctx->scantable.permutated[i];
         level *= scale[i];
+        level += scale[i] >> 1;
         if (level_bias < 32 || weight_matrix[i] != level_bias)
-            level += level_bias;
+            level += level_bias; // 1<<(level_shift-1)
         level >>= level_shift;
 
         block[j] = (level ^ sign) - sign;
