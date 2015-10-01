@@ -1217,6 +1217,7 @@ exit_loop:
         }
     }
     ff_thread_report_progress(&s->picture, INT_MAX, 0);
+    ff_thread_report_progress(&s->previous_picture, INT_MAX, 0);
 
     av_frame_set_metadata(p, metadata);
     metadata   = NULL;
@@ -1225,6 +1226,7 @@ exit_loop:
 fail:
     av_dict_free(&metadata);
     ff_thread_report_progress(&s->picture, INT_MAX, 0);
+    ff_thread_report_progress(&s->previous_picture, INT_MAX, 0);
     return ret;
 }
 

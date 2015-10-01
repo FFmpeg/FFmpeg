@@ -41,15 +41,17 @@ static int srt_probe(AVProbeData *p)
         ff_text_r8(&tr);
 
     /* Check if the first non-empty line is a number. We do not check what the
-     * number is because in practice it can be anything. */
+     * number is because in practice it can be anything.
+     * Also, that number can be followed by random garbage, so we can not
+     * unfortunately check that we only have a number. */
     if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0 ||
-        strtol(buf, &pbuf, 10) < 0 || *pbuf)
+        strtol(buf, &pbuf, 10) < 0)
         return 0;
 
     /* Check if the next line matches a SRT timestamp */
     if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
         return 0;
-    if (buf[0] >= '0' && buf[1] <= '9' && strstr(buf, " --> ")
+    if (buf[0] >= '0' && buf[0] <= '9' && strstr(buf, " --> ")
         && sscanf(buf, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
         return AVPROBE_SCORE_MAX;
 
