@@ -1145,7 +1145,7 @@ int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AV
 {
     int ret = 0;
 
-    ff_unlock_avcodec();
+    ff_unlock_avcodec(codec);
 
     ret = avcodec_open2(avctx, codec, options);
 
@@ -1306,7 +1306,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
     if (CONFIG_FRAME_THREAD_ENCODER) {
-        ff_unlock_avcodec(); //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
+        ff_unlock_avcodec(codec); //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
         ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
         ff_lock_avcodec(avctx, codec);
         if (ret < 0)
@@ -1553,7 +1553,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
 end:
-    ff_unlock_avcodec();
+    ff_unlock_avcodec(codec);
     if (options) {
         av_dict_free(options);
         *options = tmp;
@@ -3266,13 +3266,15 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 
 int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
 {
+    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)
+        return 0;
+
     if (lockmgr_cb) {
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
             return -1;
     }
 
-    if (avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, 1) != 1 &&
-        !(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
+    if (avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, 1) != 1) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Insufficient thread locking. At least %d threads are "
                "calling avcodec_open2() at the same time right now.\n",
@@ -3280,7 +3282,7 @@ int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
         if (!lockmgr_cb)
             av_log(log_ctx, AV_LOG_ERROR, "No lock manager is set, please see av_lockmgr_register()\n");
         ff_avcodec_locked = 1;
-        ff_unlock_avcodec();
+        ff_unlock_avcodec(codec);
         return AVERROR(EINVAL);
     }
     av_assert0(!ff_avcodec_locked);
@@ -3288,8 +3290,11 @@ int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
     return 0;
 }
 
-int ff_unlock_avcodec(void)
+int ff_unlock_avcodec(const AVCodec *codec)
 {
+    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)
+        return 0;
+
     av_assert0(ff_avcodec_locked);
     ff_avcodec_locked = 0;
     avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, -1);

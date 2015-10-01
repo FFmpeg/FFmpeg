@@ -182,7 +182,7 @@ void avpriv_color_frame(AVFrame *frame, const int color[4]);
 
 extern volatile int ff_avcodec_locked;
 int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec);
-int ff_unlock_avcodec(void);
+int ff_unlock_avcodec(const AVCodec *codec);
 
 int avpriv_lock_avformat(void);
 int avpriv_unlock_avformat(void);
