@@ -207,9 +207,32 @@ FF_DEF_RAWVIDEO_DEMUXER2(mjpeg, "raw MJPEG video", mjpeg_probe, "mjpg,mjpeg,mpo"
 #endif
 
 #if CONFIG_MLP_DEMUXER
+static int mlp_probe(AVProbeData *p)
+{
+    const uint8_t *buf, *last_buf = p->buf, *end = p->buf + p->buf_size;
+    int frames = 0, valid = 0, size = 0;
+
+    for (buf = p->buf; buf + 8 <= end; buf++) {
+        if (AV_RB32(buf + 4) == 0xf8726fbb) {
+            frames++;
+            if (last_buf + size == buf) {
+                valid++;
+            }
+            last_buf = buf;
+            size = (AV_RB16(buf) & 0xfff) * 2;
+        } else if (buf - last_buf == size) {
+            size += (AV_RB16(buf) & 0xfff) * 2;
+        }
+    }
+    if (valid >= 100)
+        return AVPROBE_SCORE_MAX;
+    return 0;
+}
+
 AVInputFormat ff_mlp_demuxer = {
     .name           = "mlp",
     .long_name      = NULL_IF_CONFIG_SMALL("raw MLP"),
+    .read_probe     = mlp_probe,
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
