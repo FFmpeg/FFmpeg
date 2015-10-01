@@ -49,7 +49,7 @@ static int srt_probe(AVProbeData *p)
     /* Check if the next line matches a SRT timestamp */
     if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
         return 0;
-    if (buf[0] >= '0' && buf[1] <= '9' && strstr(buf, " --> ")
+    if (buf[0] >= '0' && buf[0] <= '9' && strstr(buf, " --> ")
         && sscanf(buf, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
         return AVPROBE_SCORE_MAX;
 
