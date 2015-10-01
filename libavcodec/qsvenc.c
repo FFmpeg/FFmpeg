@@ -332,10 +332,7 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
             return ret;
 
         qf->surface = (mfxFrameSurface1*)qf->frame->data[3];
-        *surface = qf->surface;
-        return 0;
-    }
-
+    } else {
     /* make a copy if the input is not padded as libmfx requires */
     if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
         qf->frame->height = FFALIGN(frame->height, 32);
@@ -374,9 +371,11 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
     qf->surface_internal.Data.PitchLow  = qf->frame->linesize[0];
     qf->surface_internal.Data.Y         = qf->frame->data[0];
     qf->surface_internal.Data.UV        = qf->frame->data[1];
-    qf->surface_internal.Data.TimeStamp = av_rescale_q(frame->pts, q->avctx->time_base, (AVRational){1, 90000});
 
     qf->surface = &qf->surface_internal;
+    }
+
+    qf->surface->Data.TimeStamp = av_rescale_q(frame->pts, q->avctx->time_base, (AVRational){1, 90000});
 
     *surface = qf->surface;
 
