@@ -44,7 +44,6 @@ typedef struct {
     const AVClass *class;
     int w, h;
     AVFrame *outpicref;
-    int req_fullfilled;
     int nb_display_channels;
     int channel_height;
     int sliding;                ///< 1 if sliding mode, 0 otherwise
@@ -268,8 +267,7 @@ static int request_frame(AVFilterLink *outlink)
     unsigned i;
     int ret;
 
-    s->req_fullfilled = 0;
-    do {
+    /* TODO reindent */
         ret = ff_request_frame(inlink);
         if (ret == AVERROR_EOF && s->sliding == FULLFRAME && s->xpos > 0 &&
             s->outpicref) {
@@ -280,9 +278,7 @@ static int request_frame(AVFilterLink *outlink)
             }
             ret = ff_filter_frame(outlink, s->outpicref);
             s->outpicref = NULL;
-            s->req_fullfilled = 1;
         }
-    } while (!s->req_fullfilled && ret >= 0);
 
     return ret;
 }
@@ -468,7 +464,6 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     if (s->xpos >= outlink->w)
         s->xpos = 0;
     if (s->sliding != FULLFRAME || s->xpos == 0) {
-        s->req_fullfilled = 1;
         ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
         if (ret < 0)
             return ret;
