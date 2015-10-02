@@ -1,3 +1,4 @@
+OBJS-$(CONFIG_BLEND_FILTER)                  += x86/vf_blend_init.o
 OBJS-$(CONFIG_EQ_FILTER)                     += x86/vf_eq.o
 OBJS-$(CONFIG_FSPP_FILTER)                   += x86/vf_fspp_init.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += x86/vf_gradfun_init.o
@@ -12,10 +13,12 @@ OBJS-$(CONFIG_PULLUP_FILTER)                 += x86/vf_pullup_init.o
 OBJS-$(CONFIG_REMOVEGRAIN_FILTER)            += x86/vf_removegrain_init.o
 OBJS-$(CONFIG_SPP_FILTER)                    += x86/vf_spp.o
 OBJS-$(CONFIG_SSIM_FILTER)                   += x86/vf_ssim_init.o
+OBJS-$(CONFIG_TBLEND_FILTER)                 += x86/vf_blend_init.o
 OBJS-$(CONFIG_TINTERLACE_FILTER)             += x86/vf_tinterlace_init.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += x86/af_volume_init.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += x86/vf_yadif_init.o
 
+YASM-OBJS-$(CONFIG_BLEND_FILTER)             += x86/vf_blend.o
 YASM-OBJS-$(CONFIG_FSPP_FILTER)              += x86/vf_fspp.o
 YASM-OBJS-$(CONFIG_GRADFUN_FILTER)           += x86/vf_gradfun.o
 YASM-OBJS-$(CONFIG_HQDN3D_FILTER)            += x86/vf_hqdn3d.o
@@ -29,6 +32,7 @@ ifdef CONFIG_GPL
 YASM-OBJS-$(CONFIG_REMOVEGRAIN_FILTER)       += x86/vf_removegrain.o
 endif
 YASM-OBJS-$(CONFIG_SSIM_FILTER)              += x86/vf_ssim.o
+YASM-OBJS-$(CONFIG_TBLEND_FILTER)            += x86/vf_blend.o
 YASM-OBJS-$(CONFIG_TINTERLACE_FILTER)        += x86/vf_interlace.o
 YASM-OBJS-$(CONFIG_VOLUME_FILTER)            += x86/af_volume.o
 YASM-OBJS-$(CONFIG_YADIF_FILTER)             += x86/vf_yadif.o x86/yadif-16.o x86/yadif-10.o
