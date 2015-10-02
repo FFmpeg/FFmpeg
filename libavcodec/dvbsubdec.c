@@ -1175,7 +1175,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
 
 
 #ifdef DEBUG
-static void save_display_set(DVBSubContext *ctx)
+static int save_display_set(DVBSubContext *ctx)
 {
     DVBSubRegion *region;
     DVBSubRegionDisplay *display;
@@ -1268,6 +1268,7 @@ static void save_display_set(DVBSubContext *ctx)
     }
 
     fileno_index++;
+    return 0;
 }
 #endif
 
