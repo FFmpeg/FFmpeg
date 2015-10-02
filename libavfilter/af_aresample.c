@@ -40,7 +40,6 @@ typedef struct {
     double ratio;
     struct SwrContext *swr;
     int64_t next_pts;
-    int req_fullfilled;
     int more_data;
 } AResampleContext;
 
@@ -231,7 +230,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
     outsamplesref->nb_samples  = n_out;
 
     ret = ff_filter_frame(outlink, outsamplesref);
-    aresample->req_fullfilled= 1;
     av_frame_free(&insamplesref);
     return ret;
 }
@@ -284,10 +282,7 @@ static int request_frame(AVFilterLink *outlink)
     aresample->more_data = 0;
 
     // Second request more data from the input
-    aresample->req_fullfilled = 0;
-    do{
-        ret = ff_request_frame(ctx->inputs[0]);
-    }while(!aresample->req_fullfilled && ret>=0);
+    ret = ff_request_frame(ctx->inputs[0]);
 
     // Third if we hit the end flush
     if (ret == AVERROR_EOF) {
