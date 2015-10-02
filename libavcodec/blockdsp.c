@@ -25,12 +25,12 @@
 #include "blockdsp.h"
 #include "version.h"
 
-static void clear_block_8_c(int16_t *block)
+static void clear_block_c(int16_t *block)
 {
     memset(block, 0, sizeof(int16_t) * 64);
 }
 
-static void clear_blocks_8_c(int16_t *blocks)
+static void clear_blocks_c(int16_t *blocks)
 {
     memset(blocks, 0, sizeof(int16_t) * 6 * 64);
 }
@@ -57,22 +57,20 @@ static void fill_block8_c(uint8_t *block, uint8_t value, int line_size, int h)
 
 av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
 {
-    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-    c->clear_block  = clear_block_8_c;
-    c->clear_blocks = clear_blocks_8_c;
+    c->clear_block  = clear_block_c;
+    c->clear_blocks = clear_blocks_c;
 
     c->fill_block_tab[0] = fill_block16_c;
     c->fill_block_tab[1] = fill_block8_c;
 
     if (ARCH_ALPHA)
-        ff_blockdsp_init_alpha(c, high_bit_depth);
+        ff_blockdsp_init_alpha(c);
     if (ARCH_ARM)
-        ff_blockdsp_init_arm(c, high_bit_depth);
+        ff_blockdsp_init_arm(c);
     if (ARCH_PPC)
-        ff_blockdsp_init_ppc(c, high_bit_depth);
+        ff_blockdsp_init_ppc(c);
     if (ARCH_X86)
-        ff_blockdsp_init_x86(c, high_bit_depth, avctx);
+        ff_blockdsp_init_x86(c, avctx);
     if (ARCH_MIPS)
-        ff_blockdsp_init_mips(c, high_bit_depth);
+        ff_blockdsp_init_mips(c);
 }
