@@ -75,7 +75,6 @@ typedef struct {
     int spectogram_count;
     int spectogram_index;
     int fft_bits;
-    int req_fullfilled;
     int remaining_fill;
     char *tlength;
     char *volume;
@@ -423,7 +422,6 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = video_width;
     outlink->h = video_height;
 
-    s->req_fullfilled = 0;
     s->spectogram_index = 0;
     s->frame_count = 0;
     s->spectogram_count = 0;
@@ -649,7 +647,6 @@ static int plot_cqt(AVFilterLink *inlink)
 
         s->outpicref->pts = s->frame_count;
         ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
-        s->req_fullfilled = 1;
         s->frame_count++;
     }
     s->spectogram_count = (s->spectogram_count + 1) % s->count;
@@ -723,11 +720,7 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
     int ret;
 
-    s->req_fullfilled = 0;
-    do {
-        ret = ff_request_frame(inlink);
-    } while (!s->req_fullfilled && ret >= 0);
-
+    ret = ff_request_frame(inlink);
     if (ret == AVERROR_EOF && s->outpicref)
         filter_frame(inlink, NULL);
     return ret;
