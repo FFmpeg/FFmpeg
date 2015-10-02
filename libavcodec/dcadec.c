@@ -1147,7 +1147,7 @@ static float dca_dmix_code(unsigned code)
 static int scan_for_extensions(AVCodecContext *avctx)
 {
     DCAContext *s = avctx->priv_data;
-    int core_ss_end, ret;
+    int core_ss_end, ret = 0;
 
     core_ss_end = FFMIN(s->frame_size, s->dca_buffer_size) * 8;
 
