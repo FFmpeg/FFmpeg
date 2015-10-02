@@ -39,7 +39,7 @@ typedef struct DVwork_chunk {
 
 typedef struct DVVideoContext {
     const AVDVProfile *sys;
-    AVFrame         *frame;
+    const AVFrame   *frame;
     AVCodecContext  *avctx;
     uint8_t         *buf;
 
