@@ -2072,7 +2072,7 @@ decode_intra_mb:
                     sl->intra4x4_pred_mode_cache[scan8[i]] = decode_cabac_mb_intra4x4_pred_mode(sl, pred);
 
                     ff_dlog(h->avctx, "i4x4 pred=%d mode=%d\n", pred,
-                            h->intra4x4_pred_mode_cache[scan8[i]]);
+                            sl->intra4x4_pred_mode_cache[scan8[i]]);
                 }
             }
             write_back_intra_pred_mode(h, sl);
