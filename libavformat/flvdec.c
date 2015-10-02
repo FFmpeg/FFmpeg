@@ -1138,7 +1138,9 @@ retry_duration:
 
 leave:
     last = avio_rb32(s->pb);
-    if (last != orig_size + 11 && !flv->broken_sizes) {
+    if (last != orig_size + 11 &&
+        (last != orig_size || !last) &&
+        !flv->broken_sizes) {
         av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d\n", last, orig_size + 11);
         avio_seek(s->pb, pos + 1, SEEK_SET);
         ret = resync(s);
