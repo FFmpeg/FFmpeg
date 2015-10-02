@@ -312,8 +312,10 @@ int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation)
         return AVERROR(ENOMEM);
 
     sps->data_size = h->gb.buffer_end - h->gb.buffer;
-    if (sps->data_size > sizeof(sps->data))
-        goto fail;
+    if (sps->data_size > sizeof(sps->data)) {
+        av_log(h->avctx, AV_LOG_WARNING, "Truncating likely oversized SPS\n");
+        sps->data_size = sizeof(sps->data);
+    }
     memcpy(sps->data, h->gb.buffer, sps->data_size);
 
     profile_idc           = get_bits(&h->gb, 8);
@@ -611,8 +613,8 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         return AVERROR(ENOMEM);
     pps->data_size = h->gb.buffer_end - h->gb.buffer;
     if (pps->data_size > sizeof(pps->data)) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        av_log(h->avctx, AV_LOG_WARNING, "Truncating likely oversized PPS\n");
+        pps->data_size = sizeof(pps->data);
     }
     memcpy(pps->data, h->gb.buffer, pps->data_size);
     pps->sps_id = get_ue_golomb_31(&h->gb);
