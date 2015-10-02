@@ -354,7 +354,7 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     W3FDIFContext *s = ctx->priv;
 
-    do {
+    /* TODO reindent */
         int ret;
 
         if (s->eof)
@@ -372,7 +372,6 @@ static int request_frame(AVFilterLink *outlink)
         } else if (ret < 0) {
             return ret;
         }
-    } while (!s->cur);
 
     return 0;
 }
