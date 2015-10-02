@@ -126,11 +126,9 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     FPSContext        *s = ctx->priv;
-    int frames_out = s->frames_out;
-    int ret = 0;
+    int ret;
 
-    while (ret >= 0 && s->frames_out == frames_out)
-        ret = ff_request_frame(ctx->inputs[0]);
+    ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
     if (ret == AVERROR_EOF && av_fifo_size(s->fifo)) {
