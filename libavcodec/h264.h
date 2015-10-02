@@ -229,6 +229,8 @@ typedef struct SPS {
     int residual_color_transform_flag;    ///< residual_colour_transform_flag
     int constraint_set_flags;             ///< constraint_set[0-3]_flag
     int new;                              ///< flag to keep track if the decoder context needs re-init due to changed SPS
+    uint8_t data[4096];
+    size_t data_size;
 } SPS;
 
 /**
@@ -254,6 +256,8 @@ typedef struct PPS {
     uint8_t scaling_matrix8[6][64];
     uint8_t chroma_qp_table[2][QP_MAX_NUM+1];  ///< pre-scaled (with chroma_qp_index_offset) version of qp_table
     int chroma_qp_diff;
+    uint8_t data[4096];
+    size_t data_size;
 } PPS;
 
 /**
