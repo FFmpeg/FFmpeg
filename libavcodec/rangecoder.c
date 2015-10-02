@@ -34,9 +34,10 @@
 #include <string.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
 #include "rangecoder.h"
-#include "bytestream.h"
 
 av_cold void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size)
 {
@@ -55,7 +56,8 @@ av_cold void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf,
     /* cast to avoid compiler warning */
     ff_init_range_encoder(c, (uint8_t *)buf, buf_size);
 
-    c->low = bytestream_get_be16(&c->bytestream);
+    c->low = AV_RB16(c->bytestream);
+    c->bytestream += 2;
 }
 
 void ff_build_rac_states(RangeCoder *c, int factor, int max_p)
