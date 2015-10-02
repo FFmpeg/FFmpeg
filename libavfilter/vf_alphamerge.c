@@ -158,11 +158,10 @@ static int request_frame(AVFilterLink *outlink)
     AlphaMergeContext *merge = ctx->priv;
     int in, ret;
 
-    /* TODO reindent */
-        in = ff_bufqueue_peek(&merge->queue_main, 0) ? 1 : 0;
-        ret = ff_request_frame(ctx->inputs[in]);
-        if (ret < 0)
-            return ret;
+    in = ff_bufqueue_peek(&merge->queue_main, 0) ? 1 : 0;
+    ret = ff_request_frame(ctx->inputs[in]);
+    if (ret < 0)
+        return ret;
     return 0;
 }
 
