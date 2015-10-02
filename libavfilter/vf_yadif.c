@@ -379,15 +379,15 @@ static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     YADIFContext *yadif = ctx->priv;
+    int ret;
 
     if (yadif->frame_pending) {
         return_frame(ctx, 1);
         return 0;
     }
 
-    do {
-        int ret;
 
+    /* TODO reindent */
         if (yadif->eof)
             return AVERROR_EOF;
 
@@ -406,7 +406,6 @@ static int request_frame(AVFilterLink *link)
         } else if (ret < 0) {
             return ret;
         }
-    } while (!yadif->prev);
 
     return 0;
 }
