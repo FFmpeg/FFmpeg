@@ -165,6 +165,10 @@ filters_8tap_2d_fn(op, 4, align, bpp, bytes, opt4, f_opt)
     init_ipred_func(type, enum, 16, bpp, opt); \
     init_ipred_func(type, enum, 32, bpp, opt)
 
+#define init_ipred_funcs(type, enum, bpp, opt) \
+    init_ipred_func(type, enum,  4, bpp, opt); \
+    init_8_16_32_ipred_funcs(type, enum, bpp, opt)
+
 void ff_vp9dsp_init_10bpp_x86(VP9DSPContext *dsp);
 void ff_vp9dsp_init_12bpp_x86(VP9DSPContext *dsp);
 void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp);

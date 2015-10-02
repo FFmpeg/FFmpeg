@@ -51,6 +51,18 @@ decl_ipred_fns(h,       16, mmxext, sse2);
 decl_ipred_fns(dc,      16, mmxext, sse2);
 decl_ipred_fns(dc_top,  16, mmxext, sse2);
 decl_ipred_fns(dc_left, 16, mmxext, sse2);
+
+#define decl_ipred_dir_funcs(type) \
+decl_ipred_fns(type, 16, sse2,  sse2); \
+decl_ipred_fns(type, 16, ssse3, ssse3); \
+decl_ipred_fns(type, 16, avx,   avx)
+
+decl_ipred_dir_funcs(dl);
+decl_ipred_dir_funcs(dr);
+decl_ipred_dir_funcs(vl);
+decl_ipred_dir_funcs(vr);
+decl_ipred_dir_funcs(hu);
+decl_ipred_dir_funcs(hd);
 #endif /* HAVE_YASM */
 
 av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
@@ -88,12 +100,33 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
         init_8_16_32_ipred_funcs(dc, DC, 16, sse2);
         init_8_16_32_ipred_funcs(dc_top,  TOP_DC,  16, sse2);
         init_8_16_32_ipred_funcs(dc_left, LEFT_DC, 16, sse2);
+        init_ipred_funcs(dl, DIAG_DOWN_LEFT, 16, sse2);
+        init_ipred_funcs(dr, DIAG_DOWN_RIGHT, 16, sse2);
+        init_ipred_funcs(vl, VERT_LEFT, 16, sse2);
+        init_ipred_funcs(vr, VERT_RIGHT, 16, sse2);
+        init_ipred_funcs(hu, HOR_UP, 16, sse2);
+        init_ipred_funcs(hd, HOR_DOWN, 16, sse2);
+    }
+
+    if (EXTERNAL_SSSE3(cpu_flags)) {
+        init_ipred_funcs(dl, DIAG_DOWN_LEFT, 16, ssse3);
+        init_ipred_funcs(dr, DIAG_DOWN_RIGHT, 16, ssse3);
+        init_ipred_funcs(vl, VERT_LEFT, 16, ssse3);
+        init_ipred_funcs(vr, VERT_RIGHT, 16, ssse3);
+        init_ipred_funcs(hu, HOR_UP, 16, ssse3);
+        init_ipred_funcs(hd, HOR_DOWN, 16, ssse3);
     }
 
     if (EXTERNAL_AVX_FAST(cpu_flags)) {
         init_fpel_func(2, 0,  32, put, , avx);
         init_fpel_func(1, 0,  64, put, , avx);
         init_fpel_func(0, 0, 128, put, , avx);
+        init_ipred_funcs(dl, DIAG_DOWN_LEFT, 16, avx);
+        init_ipred_funcs(dr, DIAG_DOWN_RIGHT, 16, avx);
+        init_ipred_funcs(vl, VERT_LEFT, 16, avx);
+        init_ipred_funcs(vr, VERT_RIGHT, 16, avx);
+        init_ipred_funcs(hu, HOR_UP, 16, avx);
+        init_ipred_funcs(hd, HOR_DOWN, 16, avx);
     }
 
     if (EXTERNAL_AVX2(cpu_flags)) {

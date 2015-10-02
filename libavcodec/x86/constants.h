@@ -65,5 +65,6 @@ extern const xmm_reg  ff_ps_neg;
 extern const ymm_reg  ff_pd_1;
 extern const ymm_reg  ff_pd_16;
 extern const ymm_reg  ff_pd_32;
+extern const ymm_reg  ff_pd_65535;
 
 #endif /* AVCODEC_X86_CONSTANTS_H */
