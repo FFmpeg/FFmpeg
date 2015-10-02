@@ -236,8 +236,8 @@ static int decode_slice(MpegEncContext *s)
 
             s->mv_dir  = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
-            ff_dlog(s, "%d %d %06X\n",
-                    ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
+            ff_dlog(s, "%d %06X\n",
+                    get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret = s->decode_mb(s, s->block);
 
             if (s->pict_type != AV_PICTURE_TYPE_B)
