@@ -172,9 +172,7 @@ static int request_frame(AVFilterLink *link)
     AVFilterContext *ctx = link->src;
     ThumbContext *s = ctx->priv;
 
-    /* loop until a frame thumbnail is available (when a frame is queued,
-     * s->n is reset to zero) */
-    do {
+    /* TODO reindent */
         int ret = ff_request_frame(ctx->inputs[0]);
         if (ret == AVERROR_EOF && s->n) {
             ret = ff_filter_frame(link, get_best_frame(ctx));
@@ -184,7 +182,6 @@ static int request_frame(AVFilterLink *link)
         }
         if (ret < 0)
             return ret;
-    } while (s->n);
     return 0;
 }
 
