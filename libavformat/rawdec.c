@@ -206,14 +206,14 @@ static int mjpeg_probe(AVProbeData *p)
 FF_DEF_RAWVIDEO_DEMUXER2(mjpeg, "raw MJPEG video", mjpeg_probe, "mjpg,mjpeg,mpo", AV_CODEC_ID_MJPEG, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
 #endif
 
-#if CONFIG_MLP_DEMUXER
-static int mlp_probe(AVProbeData *p)
+#if CONFIG_MLP_DEMUXER || CONFIG_TRUEHD_DEMUXER
+static int av_always_inline mlp_thd_probe(AVProbeData *p, uint32_t sync)
 {
     const uint8_t *buf, *last_buf = p->buf, *end = p->buf + p->buf_size;
     int frames = 0, valid = 0, size = 0;
 
     for (buf = p->buf; buf + 8 <= end; buf++) {
-        if (AV_RB32(buf + 4) == 0xf8726fbb) {
+        if (AV_RB32(buf + 4) == sync) {
             frames++;
             if (last_buf + size == buf) {
                 valid++;
@@ -227,6 +227,13 @@ static int mlp_probe(AVProbeData *p)
     if (valid >= 100)
         return AVPROBE_SCORE_MAX;
     return 0;
+}
+#endif
+
+#if CONFIG_MLP_DEMUXER
+static int mlp_probe(AVProbeData *p)
+{
+    return mlp_thd_probe(p, 0xf8726fbb);
 }
 
 AVInputFormat ff_mlp_demuxer = {
@@ -242,9 +249,15 @@ AVInputFormat ff_mlp_demuxer = {
 #endif
 
 #if CONFIG_TRUEHD_DEMUXER
+static int thd_probe(AVProbeData *p)
+{
+    return mlp_thd_probe(p, 0xf8726fba);
+}
+
 AVInputFormat ff_truehd_demuxer = {
     .name           = "truehd",
     .long_name      = NULL_IF_CONFIG_SMALL("raw TrueHD"),
+    .read_probe     = thd_probe,
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
