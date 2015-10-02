@@ -53,7 +53,6 @@ typedef struct {
     int buf_idx;
     int16_t *buf_idy;    /* y coordinate of previous sample for each channel */
     AVFrame *outpicref;
-    int req_fullfilled;
     int n;
     int sample_count_mod;
     int mode;                   ///< ShowWavesMode
@@ -179,8 +178,7 @@ inline static int push_frame(AVFilterLink *outlink)
     int nb_channels = inlink->channels;
     int ret, i;
 
-    if ((ret = ff_filter_frame(outlink, showwaves->outpicref)) >= 0)
-        showwaves->req_fullfilled = 1;
+    ret = ff_filter_frame(outlink, showwaves->outpicref);
     showwaves->outpicref = NULL;
     showwaves->buf_idx = 0;
     for (i = 0; i < nb_channels; i++)
@@ -248,11 +246,7 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
     int ret;
 
-    showwaves->req_fullfilled = 0;
-    do {
-        ret = ff_request_frame(inlink);
-    } while (!showwaves->req_fullfilled && ret >= 0);
-
+    ret = ff_request_frame(inlink);
     if (ret == AVERROR_EOF && showwaves->outpicref) {
         if (showwaves->single_pic)
             push_single_pic(outlink);
