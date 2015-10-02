@@ -176,35 +176,35 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     } else {
         ctx->cur_field = 0;
     }
-    ctx->mbaff = buf[0x6] & 32;
+    ctx->mbaff = (buf[0x6] >> 5) & 1;
 
     ctx->height = AV_RB16(buf + 0x18);
     ctx->width  = AV_RB16(buf + 0x1a);
 
-    ff_dlog(ctx->avctx, "width %d, height %d\n", ctx->width, ctx->height);
-
-    if (buf[0x21] == 0x58) { /* 10 bit */
-        ctx->bit_depth = ctx->avctx->bits_per_raw_sample = 10;
-
-        if (buf[0x4] == 0x2) {
-            ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
-            ctx->pix_fmt = AV_PIX_FMT_YUV444P10;
-            ctx->is_444 = 1;
-        } else {
-            ctx->decode_dct_block = dnxhd_decode_dct_block_10;
-            ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
-            ctx->is_444 = 0;
-        }
-    } else if (buf[0x21] == 0x38) { /* 8 bit */
-        ctx->bit_depth = ctx->avctx->bits_per_raw_sample = 8;
-
-        ctx->pix_fmt = AV_PIX_FMT_YUV422P;
-        ctx->is_444 = 0;
-        ctx->decode_dct_block = dnxhd_decode_dct_block_8;
-    } else {
+    switch(buf[0x21] >> 5) {
+    case 1: ctx->bit_depth = 8; break;
+    case 2: ctx->bit_depth = 10; break;
+    default:
         av_log(ctx->avctx, AV_LOG_ERROR,
-               "invalid bit depth value (%d).\n", buf[0x21]);
+               "Unknown bitdepth indicator (%d)\n", buf[0x21] >> 5);
         return AVERROR_INVALIDDATA;
+    }
+    ctx->avctx->bits_per_raw_sample = ctx->bit_depth;
+
+    ctx->is_444 = (buf[0x2C] >> 6) & 1;
+    if (ctx->is_444) {
+        if (ctx->bit_depth == 8) {
+            avpriv_request_sample(ctx->avctx, "4:4:4 8 bits\n");
+            return AVERROR_INVALIDDATA;
+        }
+        ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
+        ctx->pix_fmt = AV_PIX_FMT_YUV444P10;
+    } else if (ctx->bit_depth == 10) {
+        ctx->decode_dct_block = dnxhd_decode_dct_block_10;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+    } else {
+        ctx->decode_dct_block = dnxhd_decode_dct_block_8;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P;
     }
     if (ctx->bit_depth != old_bit_depth) {
         ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
@@ -214,7 +214,6 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     }
 
     cid = AV_RB32(buf + 0x28);
-    ff_dlog(ctx->avctx, "compression id %d\n", cid);
 
     if ((ret = dnxhd_init_vlc(ctx, cid)) < 0)
         return ret;
@@ -242,14 +241,15 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
-    ctx->mb_width  = ctx->width >> 4;
+    ctx->mb_width  = (ctx->width + 15)>> 4;
     ctx->mb_height = buf[0x16d];
-
-    ff_dlog(ctx->avctx,
-            "mb width %d, mb height %d\n", ctx->mb_width, ctx->mb_height);
 
     if ((ctx->height + 15) >> 4 == ctx->mb_height && frame->interlaced_frame)
         ctx->height <<= 1;
+
+    av_log(ctx->avctx, AV_LOG_VERBOSE, "%dx%d, 4:%s %d bits, MBAFF=%d ACT=%d\n",
+           ctx->width, ctx->height, ctx->is_444 ? "4:4" : "2:2",
+           ctx->bit_depth, ctx->mbaff, ctx->act);
 
     if (ctx->mb_height > 68 ||
         (ctx->mb_height << frame->interlaced_frame) > (ctx->height + 15) >> 4) {
