@@ -3347,7 +3347,10 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 break;
             }
             if (pkt->duration) {
-                st->info->codec_info_duration        += pkt->duration;
+                if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE && pkt->pts != AV_NOPTS_VALUE && pkt->pts >= st->start_time) {
+                    st->info->codec_info_duration = FFMIN(pkt->pts - st->start_time, st->info->codec_info_duration + pkt->duration);
+                } else
+                    st->info->codec_info_duration += pkt->duration;
                 st->info->codec_info_duration_fields += st->parser && st->need_parsing && st->codec->ticks_per_frame ==2 ? st->parser->repeat_pict + 1 : 2;
             }
         }
