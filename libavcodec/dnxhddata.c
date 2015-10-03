@@ -1073,6 +1073,14 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1237_ac_flags,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
       { 80, 90, 100, 110 } },
+    { 1274, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
+      0, 4, 8, 3,
+      dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
+      dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
+      dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
+      dnxhd_1237_ac_flags,
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
+      { 0 } },
 };
 
 int ff_dnxhd_get_cid_table(int cid)

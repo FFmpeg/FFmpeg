@@ -153,6 +153,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 {
     static const uint8_t header_prefix[]    = { 0x00, 0x00, 0x02, 0x80, 0x01 };
     static const uint8_t header_prefix444[] = { 0x00, 0x00, 0x02, 0x80, 0x02 };
+    static const uint8_t header_prefixhr[] = { 0x00, 0x00, 0x02, 0x80, 0x03 };
     int i, cid, ret;
     int old_bit_depth = ctx->bit_depth;
 
@@ -162,7 +163,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
-    if (memcmp(buf, header_prefix, 5) && memcmp(buf, header_prefix444, 5)) {
+    if (memcmp(buf, header_prefix, 5) && memcmp(buf, header_prefix444, 5) && memcmp(buf, header_prefixhr, 5)) {
         av_log(ctx->avctx, AV_LOG_ERROR,
                "unknown header 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n",
                buf[0], buf[1], buf[2], buf[3], buf[4]);
