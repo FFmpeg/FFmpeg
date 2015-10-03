@@ -270,13 +270,22 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         }
 
         x4->pic.i_pts  = frame->pts;
-        x4->pic.i_type =
-            frame->pict_type == AV_PICTURE_TYPE_I ?
-                                (x4->forced_idr >= 0 ? X264_TYPE_IDR : X264_TYPE_KEYFRAME) :
-            frame->pict_type == AV_PICTURE_TYPE_P ? X264_TYPE_P :
-            frame->pict_type == AV_PICTURE_TYPE_B ? X264_TYPE_B :
-                                            X264_TYPE_AUTO;
 
+        switch (frame->pict_type) {
+        case AV_PICTURE_TYPE_I:
+            x4->pic.i_type = x4->forced_idr >= 0 ? X264_TYPE_IDR
+                                                 : X264_TYPE_KEYFRAME;
+            break;
+        case AV_PICTURE_TYPE_P:
+            x4->pic.i_type = X264_TYPE_P;
+            break;
+        case AV_PICTURE_TYPE_B:
+            x4->pic.i_type = X264_TYPE_B;
+            break;
+        default:
+            x4->pic.i_type = X264_TYPE_AUTO;
+            break;
+        }
         reconfig_encoder(ctx, frame);
     }
     do {
