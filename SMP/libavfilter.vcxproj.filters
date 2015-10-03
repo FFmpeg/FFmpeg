@@ -36,6 +36,9 @@
     <YASM Include="..\libavfilter\x86\vf_interlace.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
+    <YASM Include="..\libavfilter\x86\vf_maskedmerge.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
     <YASM Include="..\libavfilter\x86\vf_pp7.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
@@ -702,6 +705,9 @@
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_interlace_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_maskedmerge_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_noise.c">
