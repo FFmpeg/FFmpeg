@@ -13,6 +13,7 @@ version <next>:
 - agate filter
 - chromakey filter
 - maskedmerge filter
+- Screenpresso SPV1 decoding
 
 
 version 2.8:
