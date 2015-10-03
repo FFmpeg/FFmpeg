@@ -37,6 +37,7 @@ static const uint8_t dnxhd_1235_luma_weight[] = {
     50, 50, 53, 55, 55, 56, 60, 60,
 };
 
+/* Used in CID 1235, 1256 */
 static const uint8_t dnxhd_1235_chroma_weight[] = {
      0, 32, 33, 34, 34, 33, 34, 35,
     37, 40, 43, 42, 39, 38, 39, 41,
