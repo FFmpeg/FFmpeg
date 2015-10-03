@@ -559,6 +559,7 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
     NVENCContext *ctx               = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
     NV_ENC_PRESET_CONFIG preset_cfg = { 0 };
+    AVCPBProperties *cpb_props;
     int ret;
 
     ctx->params.version = NV_ENC_INITIALIZE_PARAMS_VER;
@@ -643,6 +644,14 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Cannot initialize the decoder");
         return AVERROR_UNKNOWN;
     }
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+    cpb_props->max_bitrate = avctx->rc_max_rate;
+    cpb_props->min_bitrate = avctx->rc_min_rate;
+    cpb_props->avg_bitrate = avctx->bit_rate;
+    cpb_props->buffer_size = avctx->rc_buffer_size;
 
     return 0;
 }
