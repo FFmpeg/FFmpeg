@@ -307,6 +307,15 @@ int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation)
     int i, log2_max_frame_num_minus4;
     SPS *sps;
 
+    sps = av_mallocz(sizeof(SPS));
+    if (!sps)
+        return AVERROR(ENOMEM);
+
+    sps->data_size = h->gb.buffer_end - h->gb.buffer;
+    if (sps->data_size > sizeof(sps->data))
+        goto fail;
+    memcpy(sps->data, h->gb.buffer, sps->data_size);
+
     profile_idc           = get_bits(&h->gb, 8);
     constraint_set_flags |= get_bits1(&h->gb) << 0;   // constraint_set0_flag
     constraint_set_flags |= get_bits1(&h->gb) << 1;   // constraint_set1_flag
@@ -320,11 +329,8 @@ int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation)
 
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(h->avctx, AV_LOG_ERROR, "sps_id %u out of range\n", sps_id);
-        return AVERROR_INVALIDDATA;
+        goto fail;
     }
-    sps = av_mallocz(sizeof(SPS));
-    if (!sps)
-        return AVERROR(ENOMEM);
 
     sps->sps_id               = sps_id;
     sps->time_offset_length   = 24;
@@ -603,6 +609,12 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
     pps = av_mallocz(sizeof(PPS));
     if (!pps)
         return AVERROR(ENOMEM);
+    pps->data_size = h->gb.buffer_end - h->gb.buffer;
+    if (pps->data_size > sizeof(pps->data)) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+    memcpy(pps->data, h->gb.buffer, pps->data_size);
     pps->sps_id = get_ue_golomb_31(&h->gb);
     if ((unsigned)pps->sps_id >= MAX_SPS_COUNT ||
         !h->sps_buffers[pps->sps_id]) {

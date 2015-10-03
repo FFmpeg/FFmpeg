@@ -77,28 +77,40 @@ int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
     return 0;
 }
 
+#define AV_W8(p, v) *(p) = (v)
+
 CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
 {
+    H264Context *h     = avctx->priv_data;
     CFDataRef data = NULL;
+    uint8_t *p;
+    int vt_extradata_size = 6 + 3 + h->sps.data_size + 4 + h->pps.data_size;
+    uint8_t *vt_extradata = av_malloc(vt_extradata_size);
+    if (!vt_extradata)
+        return NULL;
 
-    /* Each VCL NAL in the bitstream sent to the decoder
-     * is preceded by a 4 bytes length header.
-     * Change the avcC atom header if needed, to signal headers of 4 bytes. */
-    if (avctx->extradata_size >= 4 && (avctx->extradata[4] & 0x03) != 0x03) {
-        uint8_t *rw_extradata = av_memdup(avctx->extradata, avctx->extradata_size);
+    p = vt_extradata;
 
-        if (!rw_extradata)
-            return NULL;
+    AV_W8(p + 0, 1); /* version */
+    AV_W8(p + 1, h->sps.data[0]); /* profile */
+    AV_W8(p + 2, h->sps.data[1]); /* profile compat */
+    AV_W8(p + 3, h->sps.data[2]); /* level */
+    AV_W8(p + 4, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 3 (11) */
+    AV_W8(p + 5, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
+    AV_WB16(p + 6, h->sps.data_size + 1);
+    AV_W8(p + 8, NAL_SPS | (3 << 5)); // NAL unit header
+    memcpy(p + 9, h->sps.data, h->sps.data_size);
+    p += 9 + h->sps.data_size;
+    AV_W8(p + 0, 1); /* number of pps */
+    AV_WB16(p + 1, h->pps.data_size + 1);
+    AV_W8(p + 3, NAL_PPS | (3 << 5)); // NAL unit header
+    memcpy(p + 4, h->pps.data, h->pps.data_size);
 
-        rw_extradata[4] |= 0x03;
+    p += 4 + h->pps.data_size;
+    av_assert0(p - vt_extradata == vt_extradata_size);
 
-        data = CFDataCreate(kCFAllocatorDefault, rw_extradata, avctx->extradata_size);
-
-        av_freep(&rw_extradata);
-    } else {
-        data = CFDataCreate(kCFAllocatorDefault, avctx->extradata, avctx->extradata_size);
-    }
-
+    data = CFDataCreate(kCFAllocatorDefault, vt_extradata, vt_extradata_size);
+    av_free(vt_extradata);
     return data;
 }
 

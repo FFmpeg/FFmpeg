@@ -207,6 +207,38 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    RubberBandContext *s = ctx->priv;
+
+    if (!strcmp(cmd, "tempo")) {
+        double arg;
+
+        sscanf(args, "%lf", &arg);
+        if (arg < 0.01 || arg > 100) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Tempo scale factor '%f' out of range\n", arg);
+            return AVERROR(EINVAL);
+        }
+        rubberband_set_time_ratio(s->rbs, 1. / arg);
+    }
+
+    if (!strcmp(cmd, "pitch")) {
+        double arg;
+
+        sscanf(args, "%lf", &arg);
+        if (arg < 0.01 || arg > 100) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Pitch scale factor '%f' out of range\n", arg);
+            return AVERROR(EINVAL);
+        }
+        rubberband_set_pitch_scale(s->rbs, arg);
+    }
+
+    return 0;
+}
+
 static const AVFilterPad rubberband_inputs[] = {
     {
         .name          = "default",
@@ -235,4 +267,5 @@ AVFilter ff_af_rubberband = {
     .uninit        = uninit,
     .inputs        = rubberband_inputs,
     .outputs       = rubberband_outputs,
+    .process_command = process_command,
 };

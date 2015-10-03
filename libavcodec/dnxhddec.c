@@ -87,6 +87,9 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
     ctx->cid = -1;
     avctx->colorspace = AVCOL_SPC_BT709;
 
+    avctx->coded_width  = FFALIGN(avctx->width,  16);
+    avctx->coded_height = FFALIGN(avctx->height, 16);
+
     ctx->rows = av_mallocz_array(avctx->thread_count, sizeof(RowContext));
     if (!ctx->rows)
         return AVERROR(ENOMEM);
@@ -124,8 +127,6 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
                  ctx->cid_table->run_bits, 1, 1,
                  ctx->cid_table->run_codes, 2, 2, 0);
 
-        ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
-                          ff_zigzag_direct);
         ctx->cid = cid;
     }
     return 0;
@@ -208,6 +209,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if (ctx->bit_depth != old_bit_depth) {
         ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
         ff_idctdsp_init(&ctx->idsp, ctx->avctx);
+        ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
+                          ff_zigzag_direct);
     }
 
     cid = AV_RB32(buf + 0x28);
@@ -354,8 +357,9 @@ static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
 
         j     = ctx->scantable.permutated[i];
         level *= scale[i];
+        level += scale[i] >> 1;
         if (level_bias < 32 || weight_matrix[i] != level_bias)
-            level += level_bias;
+            level += level_bias; // 1<<(level_shift-1)
         level >>= level_shift;
 
         block[j] = (level ^ sign) - sign;
