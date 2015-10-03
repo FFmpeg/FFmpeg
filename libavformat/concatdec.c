@@ -389,14 +389,14 @@ static int concat_read_header(AVFormatContext *avf)
                 file->outpoint = dur;
         } else if (!strcmp(keyword, "file_packet_metadata")) {
             char *metadata;
-            metadata = av_get_token((const char **)&cursor, SPACE_CHARS);
-            if (!metadata) {
-                av_log(avf, AV_LOG_ERROR, "Line %d: packet metadata required\n", line);
-                FAIL(AVERROR_INVALIDDATA);
-            }
             if (!file) {
                 av_log(avf, AV_LOG_ERROR, "Line %d: %s without file\n",
                        line, keyword);
+                FAIL(AVERROR_INVALIDDATA);
+            }
+            metadata = av_get_token((const char **)&cursor, SPACE_CHARS);
+            if (!metadata) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: packet metadata required\n", line);
                 FAIL(AVERROR_INVALIDDATA);
             }
             if ((ret = av_dict_parse_string(&file->metadata, metadata, "=", "", 0)) < 0) {
