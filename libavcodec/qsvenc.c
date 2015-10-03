@@ -523,6 +523,8 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
 static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
 {
+    AVCPBProperties *cpb_props;
+
     uint8_t sps_buf[128];
     uint8_t pps_buf[128];
 
@@ -588,6 +590,14 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
         memcpy(avctx->extradata + extradata.SPSBufSize, pps_buf, extradata.PPSBufSize);
     avctx->extradata_size = extradata.SPSBufSize + need_pps * extradata.PPSBufSize;
     memset(avctx->extradata + avctx->extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+    cpb_props->max_bitrate = avctx->rc_max_rate;
+    cpb_props->min_bitrate = avctx->rc_min_rate;
+    cpb_props->avg_bitrate = avctx->bit_rate;
+    cpb_props->buffer_size = avctx->rc_buffer_size;
 
     dump_video_param(avctx, q, ext_buffers + 1);
 
