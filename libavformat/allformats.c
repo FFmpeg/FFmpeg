@@ -391,6 +391,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL(UNIX,             unix);
 
     /* external libraries */
+    REGISTER_MUXER   (CHROMAPRINT,      chromaprint);
     REGISTER_DEMUXER (LIBGME,           libgme);
     REGISTER_DEMUXER (LIBMODPLUG,       libmodplug);
     REGISTER_MUXDEMUX(LIBNUT,           libnut);
