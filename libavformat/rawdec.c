@@ -266,18 +266,6 @@ AVInputFormat ff_truehd_demuxer = {
 };
 #endif
 
-#if CONFIG_SHORTEN_DEMUXER
-AVInputFormat ff_shorten_demuxer = {
-    .name           = "shn",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw Shorten"),
-    .read_header    = ff_raw_audio_read_header,
-    .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK|AVFMT_NOTIMESTAMPS,
-    .extensions     = "shn",
-    .raw_codec_id   = AV_CODEC_ID_SHORTEN,
-};
-#endif
-
 #if CONFIG_VC1_DEMUXER
 FF_DEF_RAWVIDEO_DEMUXER2(vc1, "raw VC-1", NULL, "vc1", AV_CODEC_ID_VC1, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
 #endif
