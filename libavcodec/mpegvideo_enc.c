@@ -1651,6 +1651,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
     av_frame_copy_props(s->avctx->coded_frame, s->current_picture.f);
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+#if FF_API_ERROR_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    memcpy(s->current_picture.f->error, s->current_picture.encoding_error,
+           sizeof(s->current_picture.encoding_error));
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static void update_noise_reduction(MpegEncContext *s)
@@ -1865,13 +1871,11 @@ vbv_retry:
             ff_write_pass1_stats(s);
 
         for (i = 0; i < 4; i++) {
-            s->current_picture_ptr->f->error[i] =
-            s->current_picture.f->error[i] =
-                s->current_picture.error[i];
-            avctx->error[i] += s->current_picture_ptr->f->error[i];
+            s->current_picture_ptr->encoding_error[i] = s->current_picture.encoding_error[i];
+            avctx->error[i] += s->current_picture_ptr->encoding_error[i];
         }
         ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality,
-                                       s->current_picture_ptr->f->error,
+                                       s->current_picture_ptr->encoding_error,
                                        (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
                                        s->pict_type);
 
@@ -2838,7 +2842,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         /* note: quant matrix value (8) is implied here */
         s->last_dc[i] = 128 << s->intra_dc_precision;
 
-        s->current_picture.error[i] = 0;
+        s->current_picture.encoding_error[i] = 0;
     }
     if(s->codec_id==AV_CODEC_ID_AMV){
         s->last_dc[0] = 128*8/13;
@@ -3408,13 +3412,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(s->mb_x*16 + 16 > s->width ) w= s->width - s->mb_x*16;
                 if(s->mb_y*16 + 16 > s->height) h= s->height- s->mb_y*16;
 
-                s->current_picture.error[0] += sse(
+                s->current_picture.encoding_error[0] += sse(
                     s, s->new_picture.f->data[0] + s->mb_x*16 + s->mb_y*s->linesize*16,
                     s->dest[0], w, h, s->linesize);
-                s->current_picture.error[1] += sse(
+                s->current_picture.encoding_error[1] += sse(
                     s, s->new_picture.f->data[1] + s->mb_x*8  + s->mb_y*s->uvlinesize*chr_h,
                     s->dest[1], w>>1, h>>s->chroma_y_shift, s->uvlinesize);
-                s->current_picture.error[2] += sse(
+                s->current_picture.encoding_error[2] += sse(
                     s, s->new_picture.f->data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*chr_h,
                     s->dest[2], w>>1, h>>s->chroma_y_shift, s->uvlinesize);
             }
@@ -3467,9 +3471,9 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(misc_bits);
     MERGE(er.error_count);
     MERGE(padding_bug_score);
-    MERGE(current_picture.error[0]);
-    MERGE(current_picture.error[1]);
-    MERGE(current_picture.error[2]);
+    MERGE(current_picture.encoding_error[0]);
+    MERGE(current_picture.encoding_error[1]);
+    MERGE(current_picture.encoding_error[2]);
 
     if(dst->avctx->noise_reduction){
         for(i=0; i<64; i++){

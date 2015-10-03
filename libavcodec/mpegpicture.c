@@ -387,6 +387,9 @@ int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
     dst->reference               = src->reference;
     dst->shared                  = src->shared;
 
+    memcpy(dst->encoding_error, src->encoding_error,
+           sizeof(dst->encoding_error));
+
     return 0;
 fail:
     ff_mpeg_unref_picture(avctx, dst);
