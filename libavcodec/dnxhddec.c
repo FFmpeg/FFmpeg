@@ -106,7 +106,8 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
             av_log(ctx->avctx, AV_LOG_ERROR, "unsupported cid %d\n", cid);
             return AVERROR(ENOSYS);
         }
-        if (ff_dnxhd_cid_table[index].bit_depth != ctx->bit_depth) {
+        if (ff_dnxhd_cid_table[index].bit_depth != ctx->bit_depth &&
+            ff_dnxhd_cid_table[index].bit_depth != DNXHD_VARIABLE) {
             av_log(ctx->avctx, AV_LOG_ERROR, "bit depth mismatches %d %d\n", ff_dnxhd_cid_table[index].bit_depth, ctx->bit_depth);
             return AVERROR_INVALIDDATA;
         }
@@ -228,7 +229,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     // make sure profile size constraints are respected
     // DNx100 allows 1920->1440 and 1280->960 subsampling
-    if (ctx->width != ctx->cid_table->width) {
+    if (ctx->width != ctx->cid_table->width &&
+        ctx->cid_table->width != DNXHD_VARIABLE) {
         av_reduce(&ctx->avctx->sample_aspect_ratio.num,
                   &ctx->avctx->sample_aspect_ratio.den,
                   ctx->width, ctx->cid_table->width, 255);

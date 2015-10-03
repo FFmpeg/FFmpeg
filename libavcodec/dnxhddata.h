@@ -30,6 +30,9 @@
 #define DNXHD_INTERLACED   (1<<0)
 #define DNXHD_444          (1<<1)
 
+/** Indicate that a CIDEntry value must be read in the bitstream */
+#define DNXHD_VARIABLE 0
+
 typedef struct CIDEntry {
     int cid;
     unsigned int width, height;
