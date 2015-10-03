@@ -212,6 +212,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 {
     VP8Context *ctx = avctx->priv_data;
     struct vpx_codec_enc_cfg enccfg = { 0 };
+    AVCPBProperties *cpb_props;
     int res;
 
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
@@ -361,6 +362,18 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     //provide dummy value to initialize wrapper, values will be updated each _encode()
     vpx_img_wrap(&ctx->rawimg, ff_vpx_pixfmt_to_imgfmt(avctx->pix_fmt),
                  avctx->width, avctx->height, 1, (unsigned char *)1);
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+
+    if (enccfg.rc_end_usage == VPX_CBR ||
+        enccfg.g_pass != VPX_RC_ONE_PASS) {
+        cpb_props->max_bitrate = avctx->rc_max_rate;
+        cpb_props->min_bitrate = avctx->rc_min_rate;
+        cpb_props->avg_bitrate = avctx->bit_rate;
+    }
+    cpb_props->buffer_size = avctx->rc_buffer_size;
 
     return 0;
 }
