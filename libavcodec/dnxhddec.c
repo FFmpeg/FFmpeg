@@ -224,7 +224,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
                "Adaptive MB interlace flag in an unsupported profile.\n");
 
     ctx->act = buf[0x2C] & 7;
-    if (ctx->act && ctx->cid_table->cid != 1256)
+    if (ctx->act && ctx->cid_table->cid != 1256 && ctx->cid_table->cid != 1270)
         av_log(ctx->avctx, AV_LOG_WARNING,
                "Adaptive color transform in an unsupported profile.\n");
 

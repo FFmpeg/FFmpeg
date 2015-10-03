@@ -25,7 +25,7 @@
 
 /* The quantization tables below are in zigzag order! */
 
-/* Used in CID 1235, 1256 */
+/* Used in CID 1235, 1256, 1270 */
 static const uint8_t dnxhd_1235_luma_weight[] = {
      0, 32, 32, 32, 33, 32, 32, 32,
     32, 31, 32, 33, 33, 33, 33, 35,
@@ -251,12 +251,12 @@ static const uint8_t dnxhd_1260_chroma_weight[] = {
     56, 56, 53, 53, 53, 54, 58, 58,
 };
 
-/* Used in CID 1235, 1241, 1250, 1256 */
+/* Used in CID 1235, 1236, 1241, 1250, 1256, 1257, 1270, 1271 */
 static const uint8_t dnxhd_1235_dc_codes[14] = {
     10, 62, 11, 12, 13, 0, 1, 2, 3, 4, 14, 30, 126, 127,
 };
 
-/* Used in CID 1235, 1241, 1250, 1256 */
+/* Used in CID 1235, 1236, 1241, 1250, 1256, 1257, 1270, 1271 */
 static const uint8_t dnxhd_1235_dc_bits[14] = {
     4, 6, 4, 4, 4, 3, 3, 3, 3, 3, 4, 5, 7, 7,
 };
@@ -371,7 +371,7 @@ static const uint8_t dnxhd_1237_ac_flags[257] = {
     3,
 };
 
-/* Used in CID 1238, 1243 */
+/* Used in CID 1238, 1240, 1243, 1272 */
 static const uint16_t dnxhd_1238_ac_codes[257] = {
         0,     1,     4,    10,    11,    24,    25,    26,
        54,    55,    56,    57,   116,   117,   118,   119,
@@ -408,7 +408,7 @@ static const uint16_t dnxhd_1238_ac_codes[257] = {
     65535,
 };
 
-/* Used in CID 1238, 1243 */
+/* Used in CID 1238, 1240, 1243, 1272 */
 static const uint8_t dnxhd_1238_ac_bits[257] = {
      2,  2,  3,  4,  4,  5,  5,  5,  6,  6,  6,  6,  7,  7,  7,  7,
      8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9,  9,  9, 10, 10,
@@ -429,7 +429,7 @@ static const uint8_t dnxhd_1238_ac_bits[257] = {
     16,
 };
 
-/* Used in CID 1238, 1243 */
+/* Used in CID 1238, 1240, 1243, 1272 */
 static const uint8_t dnxhd_1238_ac_level[257] = {
       3,  3,  5,  7,  0,  9, 11,  5, 13, 15, 17,  7, 19, 21, 23,  9,
      25, 27, 29, 31, 33, 11, 35, 37, 39, 41, 43, 45, 13, 15, 47, 49,
@@ -470,7 +470,7 @@ static const uint8_t dnxhd_1238_ac_flags[257] = {
     3,
 };
 
-/* Used in CID 1235, 1241, 1256 */
+/* Used in CID 1235, 1236, 1241, 1256, 1257, 1270, 1271 */
 static const uint16_t dnxhd_1235_ac_codes[257] = {
         0,     1,     4,    10,    11,    24,    25,    26,
        54,    55,    56,    57,   116,   117,   118,   119,
@@ -507,7 +507,7 @@ static const uint16_t dnxhd_1235_ac_codes[257] = {
     65535,
 };
 
-/* Used in CID 1235, 1241, 1256 */
+/* Used in CID 1235, 1236, 1241, 1256, 1257, 1270, 1271 */
 static const uint8_t dnxhd_1235_ac_bits[257] = {
      2,  2,  3,  4,  4,  5,  5,  5,  6,  6,  6,  6,  7,  7,  7,  7,
      8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9,  9, 10, 10, 10,
@@ -1073,6 +1073,14 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1237_ac_flags,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
       { 80, 90, 100, 110 } },
+    { 1270, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
+      DNXHD_444, 6, 10, 4,
+      dnxhd_1235_luma_weight, dnxhd_1235_luma_weight,
+      dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
+      dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_level,
+      dnxhd_1235_ac_flags,
+      dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
+      { 0 } },
     { 1274, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 4, 8, 3,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
