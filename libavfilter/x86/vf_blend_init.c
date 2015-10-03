@@ -26,73 +26,73 @@
 void ff_blend_addition_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                             const uint8_t *bottom, ptrdiff_t bottom_linesize,
                             uint8_t *dst, ptrdiff_t dst_linesize,
-                            int width, int start, int end,
+                            ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                             struct FilterParams *param, double *values);
 
 void ff_blend_addition128_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                                const uint8_t *bottom, ptrdiff_t bottom_linesize,
                                uint8_t *dst, ptrdiff_t dst_linesize,
-                               int width, int start, int end,
+                               ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                                struct FilterParams *param, double *values);
 
 void ff_blend_average_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                            const uint8_t *bottom, ptrdiff_t bottom_linesize,
                            uint8_t *dst, ptrdiff_t dst_linesize,
-                           int width, int start, int end,
+                           ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                            struct FilterParams *param, double *values);
 
 void ff_blend_and_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                        const uint8_t *bottom, ptrdiff_t bottom_linesize,
                        uint8_t *dst, ptrdiff_t dst_linesize,
-                       int width, int start, int end,
+                       ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                        struct FilterParams *param, double *values);
 
 void ff_blend_darken_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                           const uint8_t *bottom, ptrdiff_t bottom_linesize,
                           uint8_t *dst, ptrdiff_t dst_linesize,
-                          int width, int start, int end,
+                          ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                           struct FilterParams *param, double *values);
 
 void ff_blend_difference128_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                                  const uint8_t *bottom, ptrdiff_t bottom_linesize,
                                  uint8_t *dst, ptrdiff_t dst_linesize,
-                                 int width, int start, int end,
+                                 ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                                  struct FilterParams *param, double *values);
 
 void ff_blend_lighten_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                            const uint8_t *bottom, ptrdiff_t bottom_linesize,
                            uint8_t *dst, ptrdiff_t dst_linesize,
-                           int width, int start, int end,
+                           ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                            struct FilterParams *param, double *values);
 
 void ff_blend_or_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                       const uint8_t *bottom, ptrdiff_t bottom_linesize,
                       uint8_t *dst, ptrdiff_t dst_linesize,
-                      int width, int start, int end,
+                      ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                       struct FilterParams *param, double *values);
 
 void ff_blend_subtract_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                             const uint8_t *bottom, ptrdiff_t bottom_linesize,
                             uint8_t *dst, ptrdiff_t dst_linesize,
-                            int width, int start, int end,
+                            ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                             struct FilterParams *param, double *values);
 
 void ff_blend_xor_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                        const uint8_t *bottom, ptrdiff_t bottom_linesize,
                        uint8_t *dst, ptrdiff_t dst_linesize,
-                       int width, int start, int end,
+                       ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                        struct FilterParams *param, double *values);
 
 void ff_blend_difference_ssse3(const uint8_t *top, ptrdiff_t top_linesize,
                                const uint8_t *bottom, ptrdiff_t bottom_linesize,
                                uint8_t *dst, ptrdiff_t dst_linesize,
-                               int width, int start, int end,
+                               ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                                struct FilterParams *param, double *values);
 
 void ff_blend_negation_ssse3(const uint8_t *top, ptrdiff_t top_linesize,
                              const uint8_t *bottom, ptrdiff_t bottom_linesize,
                              uint8_t *dst, ptrdiff_t dst_linesize,
-                             int width, int start, int end,
+                             ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                              struct FilterParams *param, double *values);
 
 av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)

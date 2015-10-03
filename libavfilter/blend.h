@@ -63,7 +63,7 @@ typedef struct FilterParams {
     void (*blend)(const uint8_t *top, ptrdiff_t top_linesize,
                   const uint8_t *bottom, ptrdiff_t bottom_linesize,
                   uint8_t *dst, ptrdiff_t dst_linesize,
-                  int width, int start, int end,
+                  ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                   struct FilterParams *param, double *values);
 } FilterParams;
 
