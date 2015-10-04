@@ -10774,6 +10774,29 @@ Output:
  11111   11111   22222   22222   33333   33333   44444
 @end example
 
+@item mergex2, 7
+Move odd frames into the upper field, even into the lower field,
+generating a double height frame at same frame rate.
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+11111           33333           33333           55555
+22222           22222           44444           44444
+11111           33333           33333           55555
+22222           22222           44444           44444
+11111           33333           33333           55555
+22222           22222           44444           44444
+11111           33333           33333           55555
+22222           22222           44444           44444
+@end example
 
 @end table
 

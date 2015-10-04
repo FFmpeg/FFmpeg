@@ -1837,7 +1837,7 @@ redo_frame:
                     }
                 }
             s->avctx->error[plane_index] += error;
-            s->current_picture->error[plane_index] = error;
+            s->encoding_error[plane_index] = error;
         }
 
     }
@@ -1869,9 +1869,15 @@ redo_frame:
     emms_c();
 
     ff_side_data_set_encoder_stats(pkt, s->current_picture->quality,
-                                   s->current_picture->error,
+                                   s->encoding_error,
                                    (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
                                    s->current_picture->pict_type);
+
+#if FF_API_ERROR_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    memcpy(s->current_picture->error, s->encoding_error, sizeof(s->encoding_error));
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     pkt->size = ff_rac_terminate(c);
     if (s->current_picture->key_frame)

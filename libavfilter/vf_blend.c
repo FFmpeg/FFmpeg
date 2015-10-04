@@ -28,69 +28,12 @@
 #include "internal.h"
 #include "dualinput.h"
 #include "video.h"
+#include "blend.h"
 
 #define TOP    0
 #define BOTTOM 1
 
-enum BlendMode {
-    BLEND_UNSET = -1,
-    BLEND_NORMAL,
-    BLEND_ADDITION,
-    BLEND_AND,
-    BLEND_AVERAGE,
-    BLEND_BURN,
-    BLEND_DARKEN,
-    BLEND_DIFFERENCE,
-    BLEND_DIFFERENCE128,
-    BLEND_DIVIDE,
-    BLEND_DODGE,
-    BLEND_EXCLUSION,
-    BLEND_HARDLIGHT,
-    BLEND_LIGHTEN,
-    BLEND_MULTIPLY,
-    BLEND_NEGATION,
-    BLEND_OR,
-    BLEND_OVERLAY,
-    BLEND_PHOENIX,
-    BLEND_PINLIGHT,
-    BLEND_REFLECT,
-    BLEND_SCREEN,
-    BLEND_SOFTLIGHT,
-    BLEND_SUBTRACT,
-    BLEND_VIVIDLIGHT,
-    BLEND_XOR,
-    BLEND_HARDMIX,
-    BLEND_LINEARLIGHT,
-    BLEND_GLOW,
-    BLEND_ADDITION128,
-    BLEND_NB
-};
-
-static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "SW",   "SH",   "T",   "N",   "A",   "B",   "TOP",   "BOTTOM",        NULL };
-enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_SW, VAR_SH, VAR_T, VAR_N, VAR_A, VAR_B, VAR_TOP, VAR_BOTTOM, VAR_VARS_NB };
-
-typedef struct FilterParams {
-    enum BlendMode mode;
-    double opacity;
-    AVExpr *e;
-    char *expr_str;
-    void (*blend)(const uint8_t *top, int top_linesize,
-                  const uint8_t *bottom, int bottom_linesize,
-                  uint8_t *dst, int dst_linesize,
-                  int width, int start, int end,
-                  struct FilterParams *param, double *values);
-} FilterParams;
-
-typedef struct ThreadData {
-    const AVFrame *top, *bottom;
-    AVFrame *dst;
-    AVFilterLink *inlink;
-    int plane;
-    int w, h;
-    FilterParams *param;
-} ThreadData;
-
-typedef struct {
+typedef struct BlendContext {
     const AVClass *class;
     FFDualInputContext dinput;
     int hsub, vsub;             ///< chroma subsampling values
@@ -103,6 +46,18 @@ typedef struct {
     int tblend;
     AVFrame *prev_frame;        /* only used with tblend */
 } BlendContext;
+
+static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "SW",   "SH",   "T",   "N",   "A",   "B",   "TOP",   "BOTTOM",        NULL };
+enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_SW, VAR_SH, VAR_T, VAR_N, VAR_A, VAR_B, VAR_TOP, VAR_BOTTOM, VAR_VARS_NB };
+
+typedef struct ThreadData {
+    const AVFrame *top, *bottom;
+    AVFrame *dst;
+    AVFilterLink *inlink;
+    int plane;
+    int w, h;
+    FilterParams *param;
+} ThreadData;
 
 #define COMMON_OPTIONS \
     { "c0_mode", "set component #0 blend mode", OFFSET(params[0].mode), AV_OPT_TYPE_INT, {.i64=0}, 0, BLEND_NB-1, FLAGS, "mode"},\
@@ -162,20 +117,20 @@ static const AVOption blend_options[] = {
 
 AVFILTER_DEFINE_CLASS(blend);
 
-static void blend_normal(const uint8_t *top, int top_linesize,
-                         const uint8_t *bottom, int bottom_linesize,
-                         uint8_t *dst, int dst_linesize,
-                         int width, int start, int end,
+static void blend_normal(const uint8_t *top, ptrdiff_t top_linesize,
+                         const uint8_t *bottom, ptrdiff_t bottom_linesize,
+                         uint8_t *dst, ptrdiff_t dst_linesize,
+                         ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                          FilterParams *param, double *values)
 {
     av_image_copy_plane(dst, dst_linesize, top, top_linesize, width, end - start);
 }
 
 #define DEFINE_BLEND8(name, expr)                                              \
-static void blend_## name##_8bit(const uint8_t *top, int top_linesize,         \
-                                 const uint8_t *bottom, int bottom_linesize,   \
-                                 uint8_t *dst, int dst_linesize,               \
-                                 int width, int start, int end,                \
+static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,         \
+                                 const uint8_t *bottom, ptrdiff_t bottom_linesize,   \
+                                 uint8_t *dst, ptrdiff_t dst_linesize,               \
+                                 ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,                \
                                  FilterParams *param, double *values)          \
 {                                                                              \
     double opacity = param->opacity;                                           \
@@ -192,10 +147,10 @@ static void blend_## name##_8bit(const uint8_t *top, int top_linesize,         \
 }
 
 #define DEFINE_BLEND16(name, expr)                                             \
-static void blend_## name##_16bit(const uint8_t *_top, int top_linesize,       \
-                                  const uint8_t *_bottom, int bottom_linesize, \
-                                  uint8_t *_dst, int dst_linesize,             \
-                                  int width, int start, int end,               \
+static void blend_## name##_16bit(const uint8_t *_top, ptrdiff_t top_linesize,       \
+                                  const uint8_t *_bottom, ptrdiff_t bottom_linesize, \
+                                  uint8_t *_dst, ptrdiff_t dst_linesize,             \
+                                  ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,               \
                                   FilterParams *param, double *values)         \
 {                                                                              \
     const uint16_t *top = (uint16_t*)_top;                                     \
@@ -294,10 +249,10 @@ DEFINE_BLEND16(vividlight, (A < 32768) ? BURN(2 * A, B) : DODGE(2 * (A - 32768),
 DEFINE_BLEND16(linearlight,av_clip_uint16((B < 32768) ? B + 2 * A - 65535 : B + 2 * (A - 32768)))
 
 #define DEFINE_BLEND_EXPR(type, name, div)                                     \
-static void blend_expr_## name(const uint8_t *_top, int top_linesize,          \
-                               const uint8_t *_bottom, int bottom_linesize,    \
-                               uint8_t *_dst, int dst_linesize,                \
-                               int width, int start, int end,                  \
+static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,          \
+                               const uint8_t *_bottom, ptrdiff_t bottom_linesize,    \
+                               uint8_t *_dst, ptrdiff_t dst_linesize,                \
+                               ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,                  \
                                FilterParams *param, double *values)            \
 {                                                                              \
     const type *top = (type*)_top;                                             \
@@ -514,6 +469,9 @@ static int config_output(AVFilterLink *outlink)
         case BLEND_VIVIDLIGHT: param->blend = is_16bit ? blend_vividlight_16bit : blend_vividlight_8bit; break;
         case BLEND_XOR:        param->blend = is_16bit ? blend_xor_16bit        : blend_xor_8bit;        break;
         }
+
+        if (ARCH_X86)
+            ff_blend_init_x86(param, is_16bit);
 
         if (s->all_expr && !param->expr_str) {
             param->expr_str = av_strdup(s->all_expr);

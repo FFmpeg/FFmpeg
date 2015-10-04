@@ -37,6 +37,41 @@ ID3v2.3 and ID3v2.4) are supported. The default is version 4.
 
 @end table
 
+@anchor{chromaprint}
+@section chromaprint
+
+Chromaprint fingerprinter
+
+This muxer feeds audio data to the Chromaprint library, which generates
+a fingerprint for the provided audio data. It takes a single signed
+native-endian 16-bit raw audio stream.
+
+@subsection Options
+
+@table @option
+@item silence_threshold
+Threshold for detecting silence, ranges from 0 to 32767. -1 for default
+(required for use with the AcoustID service).
+
+@item algorithm
+Algorithm index to fingerprint with.
+
+@item fp_format
+Format to output the fingerprint as. Accepts the following options:
+@table @samp
+@item raw
+Binary raw fingerprint
+
+@item compressed
+Binary compressed fingerprint
+
+@item base64
+Base64 compressed fingerprint
+
+@end table
+
+@end table
+
 @anchor{crc}
 @section crc
 

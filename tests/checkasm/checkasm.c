@@ -361,8 +361,9 @@ static void check_cpu_flag(const char *name, int flag)
     int old_cpu_flag = state.cpu_flag;
 
     flag |= old_cpu_flag;
-    av_set_cpu_flags_mask(flag);
-    state.cpu_flag = av_get_cpu_flags();
+    av_force_cpu_flags(-1);
+    state.cpu_flag = flag & av_get_cpu_flags();
+    av_force_cpu_flags(state.cpu_flag);
 
     if (!flag || state.cpu_flag != old_cpu_flag) {
         int i;

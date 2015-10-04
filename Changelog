@@ -13,6 +13,8 @@ version <next>:
 - agate filter
 - chromakey filter
 - maskedmerge filter
+- Screenpresso SPV1 decoding
+- chromaprint fingerprinting muxer
 
 
 version 2.8:

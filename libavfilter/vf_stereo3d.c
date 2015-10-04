@@ -531,6 +531,26 @@ static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const u
     return av_clip_uint8(sum >> 16);
 }
 
+static void anaglyph(uint8_t *dst, uint8_t *lsrc, uint8_t *rsrc,
+                     ptrdiff_t dst_linesize, ptrdiff_t l_linesize, ptrdiff_t r_linesize,
+                     int width, int height,
+                     const int *ana_matrix_r, const int *ana_matrix_g, const int *ana_matrix_b)
+{
+    int x, y, o;
+
+    for (y = 0; y < height; y++) {
+        for (o = 0, x = 0; x < width; x++, o+= 3) {
+            dst[o    ] = ana_convert(ana_matrix_r, lsrc + o, rsrc + o);
+            dst[o + 1] = ana_convert(ana_matrix_g, lsrc + o, rsrc + o);
+            dst[o + 2] = ana_convert(ana_matrix_b, lsrc + o, rsrc + o);
+        }
+
+        dst  += dst_linesize;
+        lsrc += l_linesize;
+        rsrc += r_linesize;
+    }
+}
+
 typedef struct ThreadData {
     AVFrame *ileft, *iright;
     AVFrame *out;
@@ -546,23 +566,16 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int height = s->out.height;
     int start = (height *  jobnr   ) / nb_jobs;
     int end   = (height * (jobnr+1)) / nb_jobs;
-    uint8_t *dst = out->data[0];
     const int **ana_matrix = s->ana_matrix;
-    int x, y, il, ir, o;
-    const uint8_t *lsrc = ileft->data[0];
-    const uint8_t *rsrc = iright->data[0];
-    int out_width = s->out.width;
 
-    for (y = start; y < end; y++) {
-        o   = out->linesize[0] * y;
-        il  = s->in_off_left[0]  + y * ileft->linesize[0] * s->in.row_step;
-        ir  = s->in_off_right[0] + y * iright->linesize[0] * s->in.row_step;
-        for (x = 0; x < out_width; x++, il += 3, ir += 3, o+= 3) {
-            dst[o    ] = ana_convert(ana_matrix[0], lsrc + il, rsrc + ir);
-            dst[o + 1] = ana_convert(ana_matrix[1], lsrc + il, rsrc + ir);
-            dst[o + 2] = ana_convert(ana_matrix[2], lsrc + il, rsrc + ir);
-        }
-    }
+    anaglyph(out->data[0] + out->linesize[0] * start,
+             ileft ->data[0] + s->in_off_left [0]  + ileft->linesize[0] * start * s->in.row_step,
+             iright->data[0] + s->in_off_right[0] + iright->linesize[0] * start * s->in.row_step,
+             out->linesize[0],
+             ileft->linesize[0] * s->in.row_step,
+             iright->linesize[0] * s->in.row_step,
+             s->out.width, end - start,
+             ana_matrix[0], ana_matrix[1], ana_matrix[2]);
 
     return 0;
 }

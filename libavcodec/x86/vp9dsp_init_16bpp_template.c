@@ -65,6 +65,64 @@ filters_8tap_1d_fn2(put, 16, BPC, avx2, 16bpp)
 filters_8tap_1d_fn2(avg, 16, BPC, avx2, 16bpp)
 #endif
 
+#define decl_lpf_func(dir, wd, bpp, opt) \
+void ff_vp9_loop_filter_##dir##_##wd##_##bpp##_##opt(uint8_t *dst, ptrdiff_t stride, \
+                                                     int E, int I, int H)
+
+#define decl_lpf_funcs(dir, wd, bpp) \
+decl_lpf_func(dir, wd, bpp, sse2); \
+decl_lpf_func(dir, wd, bpp, ssse3); \
+decl_lpf_func(dir, wd, bpp, avx)
+
+#define decl_lpf_funcs_wd(dir) \
+decl_lpf_funcs(dir,  4, BPC); \
+decl_lpf_funcs(dir,  8, BPC); \
+decl_lpf_funcs(dir, 16, BPC)
+
+decl_lpf_funcs_wd(h);
+decl_lpf_funcs_wd(v);
+
+#define lpf_16_wrapper(dir, off, bpp, opt) \
+static void loop_filter_##dir##_16_##bpp##_##opt(uint8_t *dst, ptrdiff_t stride, \
+                                                 int E, int I, int H) \
+{ \
+    ff_vp9_loop_filter_##dir##_16_##bpp##_##opt(dst,       stride, E, I, H); \
+    ff_vp9_loop_filter_##dir##_16_##bpp##_##opt(dst + off, stride, E, I, H); \
+}
+
+#define lpf_16_wrappers(bpp, opt) \
+lpf_16_wrapper(h, 8 * stride, bpp, opt); \
+lpf_16_wrapper(v, 16,         bpp, opt)
+
+lpf_16_wrappers(BPC, sse2);
+lpf_16_wrappers(BPC, ssse3);
+lpf_16_wrappers(BPC, avx);
+
+#define lpf_mix2_wrapper(dir, off, wd1, wd2, bpp, opt) \
+static void loop_filter_##dir##_##wd1##wd2##_##bpp##_##opt(uint8_t *dst, ptrdiff_t stride, \
+                                                           int E, int I, int H) \
+{ \
+    ff_vp9_loop_filter_##dir##_##wd1##_##bpp##_##opt(dst,       stride, \
+                                                     E & 0xff, I & 0xff, H & 0xff); \
+    ff_vp9_loop_filter_##dir##_##wd2##_##bpp##_##opt(dst + off, stride, \
+                                                     E >> 8,   I >> 8,   H >> 8); \
+}
+
+#define lpf_mix2_wrappers(wd1, wd2, bpp, opt) \
+lpf_mix2_wrapper(h, 8 * stride, wd1, wd2, bpp, opt); \
+lpf_mix2_wrapper(v, 16,         wd1, wd2, bpp, opt)
+
+#define lpf_mix2_wrappers_set(bpp, opt) \
+lpf_mix2_wrappers(4, 4, bpp, opt); \
+lpf_mix2_wrappers(4, 8, bpp, opt); \
+lpf_mix2_wrappers(8, 4, bpp, opt); \
+lpf_mix2_wrappers(8, 8, bpp, opt); \
+
+lpf_mix2_wrappers_set(BPC, sse2);
+lpf_mix2_wrappers_set(BPC, ssse3);
+lpf_mix2_wrappers_set(BPC, avx);
+
+decl_ipred_fns(tm, BPC, mmxext, sse2);
 #endif /* HAVE_YASM */
 
 av_cold void INIT_FUNC(VP9DSPContext *dsp)
@@ -72,9 +130,48 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp)
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
+#define init_lpf_8_func(idx1, idx2, dir, wd, bpp, opt) \
+    dsp->loop_filter_8[idx1][idx2] = ff_vp9_loop_filter_##dir##_##wd##_##bpp##_##opt
+#define init_lpf_16_func(idx, dir, bpp, opt) \
+    dsp->loop_filter_16[idx] = loop_filter_##dir##_16_##bpp##_##opt
+#define init_lpf_mix2_func(idx1, idx2, idx3, dir, wd1, wd2, bpp, opt) \
+    dsp->loop_filter_mix2[idx1][idx2][idx3] = loop_filter_##dir##_##wd1##wd2##_##bpp##_##opt
+
+#define init_lpf_funcs(bpp, opt) \
+    init_lpf_8_func(0, 0, h,  4, bpp, opt); \
+    init_lpf_8_func(0, 1, v,  4, bpp, opt); \
+    init_lpf_8_func(1, 0, h,  8, bpp, opt); \
+    init_lpf_8_func(1, 1, v,  8, bpp, opt); \
+    init_lpf_8_func(2, 0, h, 16, bpp, opt); \
+    init_lpf_8_func(2, 1, v, 16, bpp, opt); \
+    init_lpf_16_func(0, h, bpp, opt); \
+    init_lpf_16_func(1, v, bpp, opt); \
+    init_lpf_mix2_func(0, 0, 0, h, 4, 4, bpp, opt); \
+    init_lpf_mix2_func(0, 1, 0, h, 4, 8, bpp, opt); \
+    init_lpf_mix2_func(1, 0, 0, h, 8, 4, bpp, opt); \
+    init_lpf_mix2_func(1, 1, 0, h, 8, 8, bpp, opt); \
+    init_lpf_mix2_func(0, 0, 1, v, 4, 4, bpp, opt); \
+    init_lpf_mix2_func(0, 1, 1, v, 4, 8, bpp, opt); \
+    init_lpf_mix2_func(1, 0, 1, v, 8, 4, bpp, opt); \
+    init_lpf_mix2_func(1, 1, 1, v, 8, 8, bpp, opt)
+
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        init_ipred_func(tm, TM_VP8, 4, BPC, mmxext);
+    }
+
     if (EXTERNAL_SSE2(cpu_flags)) {
         init_subpel3(0, put, BPC, sse2);
         init_subpel3(1, avg, BPC, sse2);
+        init_lpf_funcs(BPC, sse2);
+        init_8_16_32_ipred_funcs(tm, TM_VP8, BPC, sse2);
+    }
+
+    if (EXTERNAL_SSSE3(cpu_flags)) {
+        init_lpf_funcs(BPC, ssse3);
+    }
+
+    if (EXTERNAL_AVX(cpu_flags)) {
+        init_lpf_funcs(BPC, avx);
     }
 
     if (EXTERNAL_AVX2(cpu_flags)) {

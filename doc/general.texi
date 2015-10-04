@@ -475,6 +475,7 @@ library:
 @item RTSP                      @tab X @tab X
 @item SAP                       @tab X @tab X
 @item SBG                       @tab   @tab X
+@item Screenpresso              @tab   @tab X
 @item SDP                       @tab   @tab X
 @item Sega FILM/CPK             @tab   @tab X
     @tab Used in many Sega Saturn console games.

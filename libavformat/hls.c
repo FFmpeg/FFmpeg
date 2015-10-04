@@ -183,6 +183,7 @@ typedef struct HLSContext {
     char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
     char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
     AVDictionary *avio_opts;
+    int strict_std_compliance;
 } HLSContext;
 
 static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
@@ -392,8 +393,9 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
         return NULL;
 
     /* TODO: handle subtitles (each segment has to parsed separately) */
-    if (type == AVMEDIA_TYPE_SUBTITLE)
-        return NULL;
+    if (c->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL)
+        if (type == AVMEDIA_TYPE_SUBTITLE)
+            return NULL;
 
     rend = av_mallocz(sizeof(struct rendition));
     if (!rend)
@@ -1317,6 +1319,7 @@ static int hls_read_header(AVFormatContext *s)
     int ret = 0, i, j, stream_offset = 0;
 
     c->interrupt_callback = &s->interrupt_callback;
+    c->strict_std_compliance = s->strict_std_compliance;
 
     c->first_packet = 1;
     c->first_timestamp = AV_NOPTS_VALUE;

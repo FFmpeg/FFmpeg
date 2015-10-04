@@ -25,6 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
 
@@ -83,6 +84,7 @@ typedef struct X264Context {
     int avcintra_class;
     int motion_est;
     int forced_idr;
+    int a53_cc;
     char *x264_params;
 } X264Context;
 
@@ -256,6 +258,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     int nnal, i, ret;
     x264_picture_t pic_out = {0};
     int pict_type;
+    AVFrameSideData *side_data;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -270,15 +273,65 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         }
 
         x4->pic.i_pts  = frame->pts;
-        x4->pic.i_type =
-            frame->pict_type == AV_PICTURE_TYPE_I ?
-                                (x4->forced_idr >= 0 ? X264_TYPE_IDR : X264_TYPE_KEYFRAME) :
-            frame->pict_type == AV_PICTURE_TYPE_P ? X264_TYPE_P :
-            frame->pict_type == AV_PICTURE_TYPE_B ? X264_TYPE_B :
-                                            X264_TYPE_AUTO;
 
+        switch (frame->pict_type) {
+        case AV_PICTURE_TYPE_I:
+            x4->pic.i_type = x4->forced_idr >= 0 ? X264_TYPE_IDR
+                                                 : X264_TYPE_KEYFRAME;
+            break;
+        case AV_PICTURE_TYPE_P:
+            x4->pic.i_type = X264_TYPE_P;
+            break;
+        case AV_PICTURE_TYPE_B:
+            x4->pic.i_type = X264_TYPE_B;
+            break;
+        default:
+            x4->pic.i_type = X264_TYPE_AUTO;
+            break;
+        }
         reconfig_encoder(ctx, frame);
+
+        if (x4->a53_cc) {
+            side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
+            if (side_data) {
+                x4->pic.extra_sei.payloads = av_mallocz(sizeof(x4->pic.extra_sei.payloads[0]));
+                if (x4->pic.extra_sei.payloads == NULL) {
+                    av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+                    goto skip_a53cc;
+                }
+                x4->pic.extra_sei.sei_free = av_free;
+
+                x4->pic.extra_sei.payloads[0].payload_size = side_data->size + 11;
+                x4->pic.extra_sei.payloads[0].payload = av_mallocz(x4->pic.extra_sei.payloads[0].payload_size);
+                if (x4->pic.extra_sei.payloads[0].payload == NULL) {
+                    av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+                    av_freep(&x4->pic.extra_sei.payloads);
+                    goto skip_a53cc;
+                }
+                x4->pic.extra_sei.num_payloads = 1;
+                x4->pic.extra_sei.payloads[0].payload_type = 4;
+                memcpy(x4->pic.extra_sei.payloads[0].payload + 10, side_data->data, side_data->size);
+                x4->pic.extra_sei.payloads[0].payload[0] = 181;
+                x4->pic.extra_sei.payloads[0].payload[1] = 0;
+                x4->pic.extra_sei.payloads[0].payload[2] = 49;
+
+                /**
+                 * 'GA94' is standard in North America for ATSC, but hard coding
+                 * this style may not be the right thing to do -- other formats
+                 * do exist. This information is not available in the side_data
+                 * so we are going with this right now.
+                 */
+                AV_WL32(x4->pic.extra_sei.payloads[0].payload + 3,
+                    MKTAG('G', 'A', '9', '4'));
+                x4->pic.extra_sei.payloads[0].payload[7] = 3;
+                x4->pic.extra_sei.payloads[0].payload[8] =
+                    ((side_data->size/3) & 0x1f) | 0x40;
+                x4->pic.extra_sei.payloads[0].payload[9] = 0;
+                x4->pic.extra_sei.payloads[0].payload[side_data->size+10] = 255;
+            }
+        }
     }
+skip_a53cc:
     do {
         if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
             return AVERROR_EXTERNAL;
@@ -821,6 +874,7 @@ static const AVOption options[] = {
     {"level", "Specify level (as defined by Annex A)", OFFSET(level), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     {"wpredp", "Weighted prediction for P-frames", OFFSET(wpredp), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"a53cc",          "Use A53 Closed Captions (if available)",          OFFSET(a53_cc),        AV_OPT_TYPE_BOOL,   {.i64 = 0}, 0, 1, VE},
     {"x264opts", "x264 options", OFFSET(x264opts), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           AV_OPT_TYPE_FLOAT,  {.dbl = -1 }, -1, FLT_MAX, VE },
     { "crf_max",       "In CRF mode, prevents VBV from lowering quality beyond this point.",OFFSET(crf_max), AV_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, VE },

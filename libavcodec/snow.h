@@ -185,6 +185,7 @@ typedef struct SnowContext{
 
     AVMotionVector *avmv;
     int avmv_index;
+    uint64_t encoding_error[AV_NUM_DATA_POINTERS];
 }SnowContext;
 
 /* Tables */

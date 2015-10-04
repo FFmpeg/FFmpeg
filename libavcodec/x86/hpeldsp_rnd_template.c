@@ -106,7 +106,7 @@ av_unused static void DEF(put, pixels16_x2)(uint8_t *block, const uint8_t *pixel
         :REG_a, "memory");
 }
 
-static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+av_unused static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm__ volatile(
@@ -162,7 +162,7 @@ av_unused static void DEF(avg, pixels16_x2)(uint8_t *block, const uint8_t *pixel
             :"memory");
 }
 
-static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+av_unused static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm__ volatile(
