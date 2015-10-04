@@ -43,6 +43,8 @@ typedef struct RowContext {
     int last_dc[3];
     int last_qscale;
     int errors;
+    /** -1:not set yet  0:off=RGB  1:on=YUV  2:variable */
+    int format;
 } RowContext;
 
 typedef struct DNXHDContext {
@@ -102,7 +104,7 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
+static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
 {
     if (cid != ctx->cid) {
         int index;
@@ -111,9 +113,9 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
             av_log(ctx->avctx, AV_LOG_ERROR, "unsupported cid %d\n", cid);
             return AVERROR(ENOSYS);
         }
-        if (ff_dnxhd_cid_table[index].bit_depth != ctx->bit_depth &&
+        if (ff_dnxhd_cid_table[index].bit_depth != bitdepth &&
             ff_dnxhd_cid_table[index].bit_depth != DNXHD_VARIABLE) {
-            av_log(ctx->avctx, AV_LOG_ERROR, "bit depth mismatches %d %d\n", ff_dnxhd_cid_table[index].bit_depth, ctx->bit_depth);
+            av_log(ctx->avctx, AV_LOG_ERROR, "bit depth mismatches %d %d\n", ff_dnxhd_cid_table[index].bit_depth, bitdepth);
             return AVERROR_INVALIDDATA;
         }
         ctx->cid_table = &ff_dnxhd_cid_table[index];
@@ -126,7 +128,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
         init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
                  ctx->cid_table->ac_bits, 1, 1,
                  ctx->cid_table->ac_codes, 2, 2, 0);
-        init_vlc(&ctx->dc_vlc, DNXHD_DC_VLC_BITS, ctx->bit_depth + 4,
+        init_vlc(&ctx->dc_vlc, DNXHD_DC_VLC_BITS, bitdepth + 4,
                  ctx->cid_table->dc_bits, 1, 1,
                  ctx->cid_table->dc_codes, 1, 1, 0);
         init_vlc(&ctx->run_vlc, DNXHD_VLC_BITS, 62,
@@ -161,7 +163,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     static const uint8_t header_prefixhr1[] = { 0x00, 0x00, 0x02, 0x80, 0x03 };
     static const uint8_t header_prefixhr2[] = { 0x00, 0x00, 0x03, 0x8C, 0x03 };
     int i, cid, ret;
-    int old_bit_depth = ctx->bit_depth;
+    int old_bit_depth = ctx->bit_depth, bitdepth;
     int old_mb_height = ctx->mb_height;
 
     if (buf_size < 0x280) {
@@ -192,48 +194,17 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     ctx->width  = AV_RB16(buf + 0x1a);
 
     switch(buf[0x21] >> 5) {
-    case 1: ctx->bit_depth = 8; break;
-    case 2: ctx->bit_depth = 10; break;
-    case 3: ctx->bit_depth = 12; break;
+    case 1: bitdepth = 8; break;
+    case 2: bitdepth = 10; break;
+    case 3: bitdepth = 12; break;
     default:
         av_log(ctx->avctx, AV_LOG_ERROR,
                "Unknown bitdepth indicator (%d)\n", buf[0x21] >> 5);
         return AVERROR_INVALIDDATA;
     }
-    ctx->avctx->bits_per_raw_sample = ctx->bit_depth;
-
-    ctx->is_444 = (buf[0x2C] >> 6) & 1;
-    if (ctx->is_444) {
-        if (ctx->bit_depth == 8) {
-            avpriv_request_sample(ctx->avctx, "4:4:4 8 bits\n");
-            return AVERROR_INVALIDDATA;
-        } else if (ctx->bit_depth == 10) {
-            ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
-            ctx->pix_fmt = AV_PIX_FMT_YUV444P10;
-        } else {
-            ctx->decode_dct_block = dnxhd_decode_dct_block_12_444;
-            ctx->pix_fmt = AV_PIX_FMT_YUV444P12;
-        }
-    } else if (ctx->bit_depth == 12) {
-        ctx->decode_dct_block = dnxhd_decode_dct_block_12;
-        ctx->pix_fmt = AV_PIX_FMT_YUV422P12;
-    } else if (ctx->bit_depth == 10) {
-        ctx->decode_dct_block = dnxhd_decode_dct_block_10;
-        ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
-    } else {
-        ctx->decode_dct_block = dnxhd_decode_dct_block_8;
-        ctx->pix_fmt = AV_PIX_FMT_YUV422P;
-    }
-    if (ctx->bit_depth != old_bit_depth) {
-        ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
-        ff_idctdsp_init(&ctx->idsp, ctx->avctx);
-        ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
-                          ff_zigzag_direct);
-    }
 
     cid = AV_RB32(buf + 0x28);
-
-    if ((ret = dnxhd_init_vlc(ctx, cid)) < 0)
+    if ((ret = dnxhd_init_vlc(ctx, cid, bitdepth)) < 0)
         return ret;
     if (ctx->mbaff && ctx->cid_table->cid != 1260)
         av_log(ctx->avctx, AV_LOG_WARNING,
@@ -243,6 +214,39 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if (ctx->act && ctx->cid_table->cid != 1256 && ctx->cid_table->cid != 1270)
         av_log(ctx->avctx, AV_LOG_WARNING,
                "Adaptive color transform in an unsupported profile.\n");
+
+    ctx->is_444 = (buf[0x2C] >> 6) & 1;
+    if (ctx->is_444) {
+        if (bitdepth == 8) {
+            avpriv_request_sample(ctx->avctx, "4:4:4 8 bits\n");
+            return AVERROR_INVALIDDATA;
+        } else if (bitdepth == 10) {
+            ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
+            ctx->pix_fmt = ctx->act ? AV_PIX_FMT_YUV444P10
+                                    : AV_PIX_FMT_GBRP10;
+        } else {
+            ctx->decode_dct_block = dnxhd_decode_dct_block_12_444;
+            ctx->pix_fmt = ctx->act ? AV_PIX_FMT_YUV444P12
+                                    : AV_PIX_FMT_GBRP12;
+        }
+    } else if (bitdepth == 12) {
+        ctx->decode_dct_block = dnxhd_decode_dct_block_12;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P12;
+    } else if (bitdepth == 10) {
+        ctx->decode_dct_block = dnxhd_decode_dct_block_10;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+    } else {
+        ctx->decode_dct_block = dnxhd_decode_dct_block_8;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P;
+    }
+
+    ctx->avctx->bits_per_raw_sample = ctx->bit_depth = bitdepth;
+    if (ctx->bit_depth != old_bit_depth) {
+        ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
+        ff_idctdsp_init(&ctx->idsp, ctx->avctx);
+        ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
+                          ff_zigzag_direct);
+    }
 
     // make sure profile size constraints are respected
     // DNx100 allows 1920->1440 and 1280->960 subsampling
@@ -462,11 +466,17 @@ static int dnxhd_decode_macroblock(const DNXHDContext *ctx, RowContext *row,
     }
     act = get_bits1(&row->gb);
     if (act) {
-        static int warned = 0;
-        if (!warned) {
-            warned = 1;
-            av_log(ctx->avctx, AV_LOG_ERROR,
-                   "Unsupported adaptive color transform, patch welcome.\n");
+        if (!ctx->act) {
+            static int act_warned;
+            if (!act_warned) {
+                act_warned = 1;
+                av_log(ctx->avctx, AV_LOG_ERROR,
+                       "ACT flag set, in violation of frame header.\n");
+            }
+        } else if (row->format == -1) {
+            row->format = act;
+        } else if (row->format != act) {
+            row->format = 2; // Variable
         }
     }
 
@@ -577,6 +587,9 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data,
 
     ff_dlog(avctx, "frame size %d\n", buf_size);
 
+    for (i = 0; i < avctx->thread_count; i++)
+        ctx->rows[i].format = -1;
+
 decode_coding_unit:
     if ((ret = dnxhd_decode_header(ctx, picture, buf, buf_size, first_field)) < 0)
         return ret;
@@ -622,6 +635,36 @@ decode_coding_unit:
         ctx->rows[i].errors = 0;
     }
 
+    if (ctx->act) {
+        static int act_warned;
+        int format = ctx->rows[0].format;
+        for (i = 1; i < avctx->thread_count; i++) {
+            if (ctx->rows[i].format != format &&
+                ctx->rows[i].format != -1 /* not run */) {
+                format = 2;
+                break;
+            }
+        }
+        switch (format) {
+        case -1:
+        case 2:
+            if (!act_warned) {
+                act_warned = 1;
+                av_log(ctx->avctx, AV_LOG_ERROR,
+                       "Unsupported: variable ACT flag.\n");
+            }
+            break;
+        case 0:
+            ctx->pix_fmt = ctx->bit_depth==10
+                         ? AV_PIX_FMT_GBRP10 : AV_PIX_FMT_GBRP12;
+            break;
+        case 1:
+            ctx->pix_fmt = ctx->bit_depth==10
+                         ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV444P12;
+            break;
+        }
+    }
+    avctx->pix_fmt = ctx->pix_fmt;
     if (ret) {
         av_log(ctx->avctx, AV_LOG_ERROR, "%d lines with errors\n", ret);
         return AVERROR_INVALIDDATA;
