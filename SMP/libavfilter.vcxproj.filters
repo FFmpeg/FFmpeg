@@ -21,6 +21,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavfilter\x86\vf_blend.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
     <YASM Include="..\libavfilter\x86\vf_fspp.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
@@ -688,6 +691,9 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\log2_tab.c">
       <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_blend_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_eq.c">
       <Filter>Source Files\libavfilter\x86</Filter>

@@ -495,6 +495,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\microdvdenc.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\mlpdec.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\mlvdec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\mm.c">
@@ -684,6 +686,8 @@
     <ClCompile Include="..\libavformat\segafilm.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\segment.c">
+    </ClCompile>
+    <ClCompile Include="..\libavformat\shortendec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\siff.c">
     </ClCompile>

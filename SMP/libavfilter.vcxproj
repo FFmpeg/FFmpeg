@@ -59,6 +59,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavfilter\x86\vf_blend.asm" />
     <YASM Include="..\libavfilter\x86\vf_fspp.asm" />
     <YASM Include="..\libavfilter\x86\vf_gradfun.asm" />
     <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm" />
@@ -230,6 +231,7 @@
     <ClCompile Include="..\libavfilter\vf_blackframe.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_blend.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_blend.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\dualinput.c">
     </ClCompile>
@@ -502,6 +504,8 @@
     <ClCompile Include="..\libavfilter\pthread.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\log2_tab.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_blend_init.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_eq.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_eq.obj</ObjectFileName>

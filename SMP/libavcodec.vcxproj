@@ -125,8 +125,10 @@
     <YASM Include="..\libavcodec\x86\vorbisdsp.asm" />
     <YASM Include="..\libavcodec\x86\vp6dsp.asm" />
     <YASM Include="..\libavcodec\x86\vp9intrapred.asm" />
+    <YASM Include="..\libavcodec\x86\vp9intrapred_16bpp.asm" />
     <YASM Include="..\libavcodec\x86\vp9itxfm.asm" />
     <YASM Include="..\libavcodec\x86\vp9lpf.asm" />
+    <YASM Include="..\libavcodec\x86\vp9lpf_16bpp.asm" />
     <YASM Include="..\libavcodec\x86\vp9mc.asm" />
     <YASM Include="..\libavcodec\x86\vp9mc_16bpp.asm" />
   </ItemGroup>
@@ -1158,6 +1160,8 @@
     <ClCompile Include="..\libavcodec\s302menc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\sanm.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\screenpresso.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\sgidec.c">
     </ClCompile>
