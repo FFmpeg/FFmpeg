@@ -341,6 +341,8 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     lpcm_id = LPCM_ID;
 
     for (i = 0; i < ctx->nb_streams; i++) {
+        AVCPBProperties *props;
+
         st     = ctx->streams[i];
         stream = av_mallocz(sizeof(StreamInfo));
         if (!stream)
@@ -383,8 +385,10 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->id = h264_id++;
             else
                 stream->id = mpv_id++;
-            if (st->codec->rc_buffer_size)
-                stream->max_buffer_size = 6 * 1024 + st->codec->rc_buffer_size / 8;
+
+            props = (AVCPBProperties*)av_stream_get_side_data(st, AV_PKT_DATA_CPB_PROPERTIES, NULL);
+            if (props && props->buffer_size)
+                stream->max_buffer_size = 6 * 1024 + props->buffer_size / 8;
             else {
                 av_log(ctx, AV_LOG_WARNING,
                        "VBV buffer size not set, muxing may fail\n");
@@ -408,13 +412,14 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     audio_bitrate = 0;
     video_bitrate = 0;
     for (i = 0; i < ctx->nb_streams; i++) {
+        AVCPBProperties *props;
         int codec_rate;
         st     = ctx->streams[i];
         stream = (StreamInfo *)st->priv_data;
 
-        if (st->codec->rc_max_rate ||
-            st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-            codec_rate = st->codec->rc_max_rate;
+        props = (AVCPBProperties*)av_stream_get_side_data(st, AV_PKT_DATA_CPB_PROPERTIES, NULL);
+        if (props)
+            codec_rate = props->max_bitrate;
         else
             codec_rate = st->codec->bit_rate;
 
