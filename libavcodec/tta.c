@@ -387,7 +387,6 @@ error:
     return ret;
 }
 
-#if HAVE_THREADS
 static int init_thread_copy(AVCodecContext *avctx)
 {
     TTAContext *s = avctx->priv_data;
@@ -405,7 +404,6 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
 
     return 0;
 }
-#endif
 
 #define OFFSET(x) offsetof(TTAContext, x)
 #define DEC (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
