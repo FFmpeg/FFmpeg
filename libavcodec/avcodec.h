@@ -2914,13 +2914,18 @@ typedef struct AVCodecContext {
     int error_rate;
 #endif
 
+#if FF_API_VBV_DELAY
     /**
      * VBV delay coded in the last frame (in periods of a 27 MHz clock).
      * Used for compliant TS muxing.
      * - encoding: Set by libavcodec.
      * - decoding: unused.
+     * @deprecated this value is now exported as a part of
+     * AV_PKT_DATA_CPB_PROPERTIES packet side data
      */
+    attribute_deprecated
     uint64_t vbv_delay;
+#endif
 
 #if FF_API_SIDEDATA_ONLY_PKT
     /**
