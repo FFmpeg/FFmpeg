@@ -2817,6 +2817,12 @@ static int read_thread(void *arg)
     int scan_all_pmts_set = 0;
     int64_t pkt_ts;
 
+    if (!wait_mutex) {
+        av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     memset(st_index, -1, sizeof(st_index));
     is->last_video_stream = is->video_stream = -1;
     is->last_audio_stream = is->audio_stream = -1;
