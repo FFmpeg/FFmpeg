@@ -15,6 +15,7 @@ version <next>:
 - maskedmerge filter
 - Screenpresso SPV1 decoding
 - chromaprint fingerprinting muxer
+- ffplay dynamic volume control
 
 
 version 2.8:
