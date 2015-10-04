@@ -1488,9 +1488,11 @@ static int http_parse_request(HTTPContext *c)
                       "Content-type: text/html\r\n"
                       "\r\n"
                       "<html><head><title>Too busy</title></head><body>\r\n"
-                      "<p>The server is too busy to serve your request at this time.</p>\r\n"
-                      "<p>The bandwidth being served (including your stream) is %"PRIu64"kbit/sec, "
-                      "and this exceeds the limit of %"PRIu64"kbit/sec.</p>\r\n"
+                      "<p>The server is too busy to serve your request at "
+                      "this time.</p>\r\n"
+                      "<p>The bandwidth being served (including your stream) "
+                      "is %"PRIu64"kbit/sec, and this exceeds the limit of "
+                      "%"PRIu64"kbit/sec.</p>\r\n"
                       "</body></html>\r\n",
                  current_bandwidth, config.max_bandwidth);
         q += strlen(q);
