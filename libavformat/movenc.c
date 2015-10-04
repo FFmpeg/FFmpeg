@@ -305,6 +305,7 @@ static void put_descr(AVIOContext *pb, int tag, unsigned int size)
 
 static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
 {
+    AVCPBProperties *props;
     int64_t pos = avio_tell(pb);
     int decoder_specific_info_len = track->vos_len ? 5 + track->vos_len : 0;
 
@@ -337,14 +338,16 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
     else
         avio_w8(pb, 0x11); // flags (= Visualstream)
 
-    avio_wb24(pb, track->enc->rc_buffer_size >> 3); // Buffersize DB
+    props = (AVCPBProperties*)av_stream_get_side_data(track->st, AV_PKT_DATA_CPB_PROPERTIES,
+                                                      NULL);
 
-    avio_wb32(pb, FFMAX(track->enc->bit_rate, track->enc->rc_max_rate)); // maxbitrate (FIXME should be max rate in any 1 sec window)
-    if (track->enc->rc_max_rate != track->enc->rc_min_rate ||
-        track->enc->rc_min_rate == 0)
+    avio_wb24(pb, props ? props->buffer_size / 8 : 0); // Buffersize DB
+
+    avio_wb32(pb, props ? FFMAX(props->max_bitrate, props->avg_bitrate) : track->enc->bit_rate); // maxbitrate (FIXME should be max rate in any 1 sec window)
+    if (!props || !props->min_bitrate || props->max_bitrate != props->min_bitrate)
         avio_wb32(pb, 0); // vbr
     else
-        avio_wb32(pb, track->enc->rc_max_rate); // avg bitrate
+        avio_wb32(pb, props->max_bitrate); // avg bitrate
 
     if (track->vos_len) {
         // DecoderSpecific info descriptor
