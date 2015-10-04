@@ -1491,8 +1491,8 @@ static int http_parse_request(HTTPContext *c)
                       "<p>The server is too busy to serve your request at "
                       "this time.</p>\r\n"
                       "<p>The bandwidth being served (including your stream) "
-                      "is %"PRIu64"kbit/sec, and this exceeds the limit of "
-                      "%"PRIu64"kbit/sec.</p>\r\n"
+                      "is %"PRIu64"kbit/s, and this exceeds the limit of "
+                      "%"PRIu64"kbit/s.</p>\r\n"
                       "</body></html>\r\n",
                  current_bandwidth, config.max_bandwidth);
         q += strlen(q);
@@ -1789,7 +1789,7 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
     stream_no = stream->nb_streams;
 
     avio_printf(pb, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>"
-                    "type<th>kbits/s<th align=left>codec<th align=left>"
+                    "type<th>kbit/s<th align=left>codec<th align=left>"
                     "Parameters\n");
 
     for (i = 0; i < stream_no; i++) {
@@ -1854,7 +1854,7 @@ static void compute_status(HTTPContext *c)
     /* format status */
     avio_printf(pb, "<h2>Available Streams</h2>\n");
     avio_printf(pb, "<table cellspacing=0 cellpadding=4>\n");
-    avio_printf(pb, "<tr><th valign=top>Path<th align=left>Served<br>Conns<th><br>bytes<th valign=top>Format<th>Bit rate<br>kbits/s<th align=left>Video<br>kbits/s<th><br>Codec<th align=left>Audio<br>kbits/s<th><br>Codec<th align=left valign=top>Feed\n");
+    avio_printf(pb, "<tr><th valign=top>Path<th align=left>Served<br>Conns<th><br>bytes<th valign=top>Format<th>Bit rate<br>kbit/s<th align=left>Video<br>kbit/s<th><br>Codec<th align=left>Audio<br>kbit/s<th><br>Codec<th align=left valign=top>Feed\n");
     stream = config.first_stream;
     while (stream) {
         char sfilename[1024];
@@ -2009,7 +2009,7 @@ static void compute_status(HTTPContext *c)
 
     avio_printf(pb, "<table>\n");
     avio_printf(pb, "<tr><th>#<th>File<th>IP<th>Proto<th>State<th>Target "
-                    "bits/sec<th>Actual bits/sec<th>Bytes transferred\n");
+                    "bit/s<th>Actual bit/s<th>Bytes transferred\n");
     c1 = first_http_ctx;
     i = 0;
     while (c1) {
