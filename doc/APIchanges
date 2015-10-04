@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavu 55.2.0 - dict.h
+  Change return type of av_dict_copy() from void to int, so that a proper
+  error code can be reported.
+
 2015-xx-xx - xxxxxxx - lavc 57.0.0 - avcodec.h
   Change type of AVPacket.duration from int to int64_t.
 
