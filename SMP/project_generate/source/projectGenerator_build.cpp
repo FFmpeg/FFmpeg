@@ -25,7 +25,8 @@ void projectGenerator::buildInterDependenciesHelper( const StaticList & vConfigO
     bool bFound = false;
     for( StaticList::const_iterator itI = vConfigOptions.begin( ); itI < vConfigOptions.end( ); itI++ )
     {
-        bFound = ( m_ConfigHelper.getConfigOption( *itI )->m_sValue.compare( "1" ) == 0 );
+        configGenerator::ValuesList::iterator itConfOpt = m_ConfigHelper.getConfigOption( *itI );
+        bFound = ( ( itConfOpt != m_ConfigHelper.m_vConfigValues.end( ) ) && ( m_ConfigHelper.getConfigOption( *itI )->m_sValue.compare( "1" ) == 0 ) );
         if( !bFound )
         {
             break;
