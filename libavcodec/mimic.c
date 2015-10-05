@@ -167,6 +167,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
 static int mimic_decode_update_thread_context(AVCodecContext *avctx, const AVCodecContext *avctx_from)
 {
     MimicContext *dst = avctx->priv_data, *src = avctx_from->priv_data;
@@ -191,6 +192,7 @@ static int mimic_decode_update_thread_context(AVCodecContext *avctx, const AVCod
 
     return 0;
 }
+#endif
 
 static const int8_t vlcdec_lookup[9][64] = {
     {    0, },
@@ -454,6 +456,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
+#if HAVE_THREADS
 static av_cold int mimic_init_thread_copy(AVCodecContext *avctx)
 {
     MimicContext *ctx = avctx->priv_data;
@@ -469,6 +472,7 @@ static av_cold int mimic_init_thread_copy(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
 AVCodec ff_mimic_decoder = {
     .name                  = "mimic",

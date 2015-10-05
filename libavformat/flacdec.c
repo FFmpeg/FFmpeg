@@ -28,11 +28,27 @@
 #include "vorbiscomment.h"
 #include "replaygain.h"
 
+#define SEEKPOINT_SIZE 18
+
+typedef struct FLACDecContext {
+    int found_seektable;
+} FLACDecContext;
+
+static void reset_index_position(int64_t metadata_head_size, AVStream *st)
+{
+    /* the real seek index offset should be the size of metadata blocks with the offset in the frame blocks */
+    int i;
+    for(i=0; i<st->nb_index_entries; i++) {
+        st->index_entries[i].pos += metadata_head_size;
+    }
+}
+
 static int flac_read_header(AVFormatContext *s)
 {
     int ret, metadata_last=0, metadata_type, metadata_size, found_streaminfo=0;
     uint8_t header[4];
     uint8_t *buffer=NULL;
+    FLACDecContext *flac = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
@@ -58,6 +74,7 @@ static int flac_read_header(AVFormatContext *s)
         case FLAC_METADATA_TYPE_CUESHEET:
         case FLAC_METADATA_TYPE_PICTURE:
         case FLAC_METADATA_TYPE_VORBIS_COMMENT:
+        case FLAC_METADATA_TYPE_SEEKTABLE:
             buffer = av_mallocz(metadata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer) {
                 return AVERROR(ENOMEM);
@@ -132,7 +149,23 @@ static int flac_read_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "Error parsing attached picture.\n");
                 return ret;
             }
-        } else {
+        } else if (metadata_type == FLAC_METADATA_TYPE_SEEKTABLE) {
+            const uint8_t *seekpoint = buffer;
+            int i, seek_point_count = metadata_size/SEEKPOINT_SIZE;
+            flac->found_seektable = 1;
+            if ((s->flags&AVFMT_FLAG_FAST_SEEK)) {
+                for(i=0; i<seek_point_count; i++) {
+                    int64_t timestamp = bytestream_get_be64(&seekpoint);
+                    int64_t pos = bytestream_get_be64(&seekpoint);
+                    /* skip number of samples */
+                    bytestream_get_be16(&seekpoint);
+                    av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
+                }
+            }
+            av_freep(&buffer);
+        }
+        else {
+
             /* STREAMINFO must be the first block */
             if (!found_streaminfo) {
                 RETURN_ERROR(AVERROR_INVALIDDATA);
@@ -169,6 +202,7 @@ static int flac_read_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
+    reset_index_position(avio_tell(s->pb), st);
     return 0;
 
 fail:
@@ -249,14 +283,38 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
     return pts;
 }
 
+static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags) {
+    int index;
+    int64_t pos;
+    AVIndexEntry e;
+    FLACDecContext *flac = s->priv_data;
+
+    if (!flac->found_seektable || !(s->flags&AVFMT_FLAG_FAST_SEEK)) {
+        return -1;
+    }
+
+    index = av_index_search_timestamp(s->streams[0], timestamp, flags);
+    if(index<0 || index >= s->streams[0]->nb_index_entries)
+        return -1;
+
+    e = s->streams[0]->index_entries[index];
+    pos = avio_seek(s->pb, e.pos, SEEK_SET);
+    if (pos >= 0) {
+        return 0;
+    }
+    return -1;
+}
+
 AVInputFormat ff_flac_demuxer = {
     .name           = "flac",
     .long_name      = NULL_IF_CONFIG_SMALL("raw FLAC"),
     .read_probe     = flac_probe,
     .read_header    = flac_read_header,
     .read_packet    = ff_raw_read_partial_packet,
+    .read_seek      = flac_seek,
     .read_timestamp = flac_read_timestamp,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "flac",
     .raw_codec_id   = AV_CODEC_ID_FLAC,
+    .priv_data_size = sizeof(FLACDecContext),
 };

@@ -1340,6 +1340,7 @@ end:
 }
 #endif
 
+#if HAVE_THREADS
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     PNGDecContext *psrc = src->priv_data;
@@ -1387,6 +1388,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
     return 0;
 }
+#endif
 
 static av_cold int png_dec_init(AVCodecContext *avctx)
 {

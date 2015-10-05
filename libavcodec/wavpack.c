@@ -597,12 +597,14 @@ static av_cold int wv_alloc_frame_context(WavpackContext *c)
     return 0;
 }
 
+#if HAVE_THREADS
 static int init_thread_copy(AVCodecContext *avctx)
 {
     WavpackContext *s = avctx->priv_data;
     s->avctx = avctx;
     return 0;
 }
+#endif
 
 static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 {

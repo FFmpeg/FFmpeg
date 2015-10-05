@@ -571,6 +571,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return ret;
 }
 
+#if HAVE_THREADS
 static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
@@ -595,6 +596,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
 /** Subset of GET_VLC for use in hand-roller VLC code */
 #define VLC_INTERN(dst, table, gb, name, bits, max_depth)   \

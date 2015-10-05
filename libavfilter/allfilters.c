@@ -148,6 +148,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(DESHAKE,        deshake,        vf);
     REGISTER_FILTER(DETELECINE,     detelecine,     vf);
     REGISTER_FILTER(DILATION,       dilation,       vf);
+    REGISTER_FILTER(DISPLACE,       displace,       vf);
     REGISTER_FILTER(DRAWBOX,        drawbox,        vf);
     REGISTER_FILTER(DRAWGRAPH,      drawgraph,      vf);
     REGISTER_FILTER(DRAWGRID,       drawgrid,       vf);

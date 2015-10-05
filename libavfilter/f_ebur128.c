@@ -139,6 +139,8 @@ typedef struct {
     /* misc */
     int loglevel;                   ///< log level for frame logging
     int metadata;                   ///< whether or not to inject loudness results in frames
+    int dual_mono;                  ///< whether or not to treat single channel input files as dual-mono
+    double pan_law;                 ///< pan law value used to calulate dual-mono measurements
 } EBUR128Context;
 
 enum {
@@ -152,7 +154,7 @@ enum {
 #define V AV_OPT_FLAG_VIDEO_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption ebur128_options[] = {
-    { "video", "set video output", OFFSET(do_video), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, V|F },
+    { "video", "set video output", OFFSET(do_video), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, V|F },
     { "size",  "set video size",   OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x480"}, 0, 0, V|F },
     { "meter", "set scale meter (+9 to +18)",  OFFSET(meter), AV_OPT_TYPE_INT, {.i64 = 9}, 9, 18, V|F },
     { "framelog", "force frame logging level", OFFSET(loglevel), AV_OPT_TYPE_INT, {.i64 = -1},   INT_MIN, INT_MAX, A|V|F, "level" },
@@ -163,6 +165,8 @@ static const AVOption ebur128_options[] = {
         { "none",   "disable any peak mode",   0, AV_OPT_TYPE_CONST, {.i64 = PEAK_MODE_NONE},          INT_MIN, INT_MAX, A|F, "mode" },
         { "sample", "enable peak-sample mode", 0, AV_OPT_TYPE_CONST, {.i64 = PEAK_MODE_SAMPLES_PEAKS}, INT_MIN, INT_MAX, A|F, "mode" },
         { "true",   "enable true-peak mode",   0, AV_OPT_TYPE_CONST, {.i64 = PEAK_MODE_TRUE_PEAKS},    INT_MIN, INT_MAX, A|F, "mode" },
+    { "dualmono", "treat mono input files as dual-mono", OFFSET(dual_mono), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, A|F },
+    { "panlaw", "set a specific pan law for dual-mono files", OFFSET(pan_law), AV_OPT_TYPE_DOUBLE, {.dbl = -3.01029995663978}, -10.0, 0.0, A|F },
     { NULL },
 };
 
@@ -661,6 +665,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
                 if (nb_integrated)
                     ebur128->integrated_loudness = LOUDNESS(integrated_sum / nb_integrated);
+                    /* dual-mono correction */
+                    if (nb_channels == 1 && ebur128->dual_mono) {
+                        ebur128->integrated_loudness -= ebur128->pan_law;
+                    }
             }
 
             /* LRA */
@@ -705,6 +713,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     // XXX: show low & high on the graph?
                     ebur128->loudness_range = ebur128->lra_high - ebur128->lra_low;
                 }
+            }
+
+            /* dual-mono correction */
+            if (nb_channels == 1 && ebur128->dual_mono) {
+                loudness_400 -= ebur128->pan_law;
+                loudness_3000 -= ebur128->pan_law;
             }
 
 #define LOG_FMT "M:%6.1f S:%6.1f     I:%6.1f LUFS     LRA:%6.1f LU"
@@ -854,6 +868,14 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     int i;
     EBUR128Context *ebur128 = ctx->priv;
+
+    /* dual-mono correction */
+    if (ebur128->nb_channels == 1 && ebur128->dual_mono) {
+        ebur128->i400.rel_threshold -= ebur128->pan_law;
+        ebur128->i3000.rel_threshold -= ebur128->pan_law;
+        ebur128->lra_low -= ebur128->pan_law;
+        ebur128->lra_high -= ebur128->pan_law;
+    }
 
     av_log(ctx, AV_LOG_INFO, "Summary:\n\n"
            "  Integrated loudness:\n"

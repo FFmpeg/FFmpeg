@@ -2688,6 +2688,7 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
     return 0;
 }
 
+#if HAVE_THREADS
 static int mpeg4_update_thread_context(AVCodecContext *dst,
                                        const AVCodecContext *src)
 {
@@ -2707,6 +2708,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
 
     return 0;
 }
+#endif
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {

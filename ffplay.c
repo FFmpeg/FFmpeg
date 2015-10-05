@@ -2080,10 +2080,15 @@ static int audio_thread(void *arg)
     return ret;
 }
 
-static void decoder_start(Decoder *d, int (*fn)(void *), void *arg)
+static int decoder_start(Decoder *d, int (*fn)(void *), void *arg)
 {
     packet_queue_start(d->queue);
     d->decoder_tid = SDL_CreateThread(fn, arg);
+    if (!d->decoder_tid) {
+        av_log(d, AV_LOG_ERROR, "SDL_CreateThread(): %s\n", SDL_GetError());
+        return AVERROR(ENOMEM);
+    }
+    return 0;
 }
 
 static int video_thread(void *arg)
@@ -2681,7 +2686,8 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
         }
-        decoder_start(&is->auddec, audio_thread, is);
+        if ((ret = decoder_start(&is->auddec, audio_thread, is)) < 0)
+            goto fail;
         SDL_PauseAudio(0);
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -2692,7 +2698,8 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->viddec_height = avctx->height;
 
         decoder_init(&is->viddec, avctx, &is->videoq, is->continue_read_thread);
-        decoder_start(&is->viddec, video_thread, is);
+        if ((ret = decoder_start(&is->viddec, video_thread, is)) < 0)
+            goto fail;
         is->queue_attachments_req = 1;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
@@ -2700,7 +2707,8 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->subtitle_st = ic->streams[stream_index];
 
         decoder_init(&is->subdec, avctx, &is->subtitleq, is->continue_read_thread);
-        decoder_start(&is->subdec, subtitle_thread, is);
+        if ((ret = decoder_start(&is->subdec, subtitle_thread, is)) < 0)
+            goto fail;
         break;
     default:
         break;
@@ -2808,6 +2816,12 @@ static int read_thread(void *arg)
     SDL_mutex *wait_mutex = SDL_CreateMutex();
     int scan_all_pmts_set = 0;
     int64_t pkt_ts;
+
+    if (!wait_mutex) {
+        av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     memset(st_index, -1, sizeof(st_index));
     is->last_video_stream = is->video_stream = -1;

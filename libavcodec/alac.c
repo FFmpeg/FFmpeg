@@ -57,6 +57,7 @@
 #include "unary.h"
 #include "mathops.h"
 #include "alac_data.h"
+#include "alacdsp.h"
 
 #define ALAC_EXTRADATA_SIZE 36
 
@@ -81,6 +82,8 @@ typedef struct ALACContext {
 
     int direct_output;
     int extra_bit_bug;
+
+    ALACDSPContext dsp;
 } ALACContext;
 
 static inline unsigned int decode_scalar(GetBitContext *gb, int k, int bps)
@@ -230,35 +233,6 @@ static void lpc_prediction(int32_t *error_buffer, int32_t *buffer_out,
     }
 }
 
-static void decorrelate_stereo(int32_t *buffer[2], int nb_samples,
-                               int decorr_shift, int decorr_left_weight)
-{
-    int i;
-
-    for (i = 0; i < nb_samples; i++) {
-        int32_t a, b;
-
-        a = buffer[0][i];
-        b = buffer[1][i];
-
-        a -= (b * decorr_left_weight) >> decorr_shift;
-        b += a;
-
-        buffer[0][i] = b;
-        buffer[1][i] = a;
-    }
-}
-
-static void append_extra_bits(int32_t *buffer[2], int32_t *extra_bits_buffer[2],
-                              int extra_bits, int channels, int nb_samples)
-{
-    int i, ch;
-
-    for (ch = 0; ch < channels; ch++)
-        for (i = 0; i < nb_samples; i++)
-            buffer[ch][i] = (buffer[ch][i] << extra_bits) | extra_bits_buffer[ch][i];
-}
-
 static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
                           int channels)
 {
@@ -389,19 +363,24 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
         decorr_left_weight = 0;
     }
 
-    if (alac->extra_bits && alac->extra_bit_bug) {
-        append_extra_bits(alac->output_samples_buffer, alac->extra_bits_buffer,
-                          alac->extra_bits, channels, alac->nb_samples);
-    }
+    if (channels == 2) {
+        if (alac->extra_bits && alac->extra_bit_bug) {
+            alac->dsp.append_extra_bits[1](alac->output_samples_buffer, alac->extra_bits_buffer,
+                                           alac->extra_bits, channels, alac->nb_samples);
+        }
 
-    if (channels == 2 && decorr_left_weight) {
-        decorrelate_stereo(alac->output_samples_buffer, alac->nb_samples,
-                           decorr_shift, decorr_left_weight);
-    }
+        if (decorr_left_weight) {
+            alac->dsp.decorrelate_stereo(alac->output_samples_buffer, alac->nb_samples,
+                                         decorr_shift, decorr_left_weight);
+        }
 
-    if (alac->extra_bits && !alac->extra_bit_bug) {
-        append_extra_bits(alac->output_samples_buffer, alac->extra_bits_buffer,
-                          alac->extra_bits, channels, alac->nb_samples);
+        if (alac->extra_bits && !alac->extra_bit_bug) {
+            alac->dsp.append_extra_bits[1](alac->output_samples_buffer, alac->extra_bits_buffer,
+                                           alac->extra_bits, channels, alac->nb_samples);
+        }
+    } else if (alac->extra_bits) {
+        alac->dsp.append_extra_bits[0](alac->output_samples_buffer, alac->extra_bits_buffer,
+                                       alac->extra_bits, channels, alac->nb_samples);
     }
 
     switch(alac->sample_size) {
@@ -606,15 +585,19 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
         return ret;
     }
 
+    ff_alacdsp_init(&alac->dsp);
+
     return 0;
 }
 
+#if HAVE_THREADS
 static int init_thread_copy(AVCodecContext *avctx)
 {
     ALACContext *alac = avctx->priv_data;
     alac->avctx = avctx;
     return allocate_buffers(alac);
 }
+#endif
 
 static const AVOption options[] = {
     { "extra_bits_bug", "Force non-standard decoding process",

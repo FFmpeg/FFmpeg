@@ -908,6 +908,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
     return pkt->size;
 }
 
+#if HAVE_THREADS
 static int init_thread_copy(AVCodecContext *avctx)
 {
     TAKDecContext *s = avctx->priv_data;
@@ -926,6 +927,7 @@ static int update_thread_context(AVCodecContext *dst,
     memcpy(&tdst->ti, &tsrc->ti, sizeof(TAKStreamInfo));
     return 0;
 }
+#endif
 
 static av_cold int tak_decode_close(AVCodecContext *avctx)
 {

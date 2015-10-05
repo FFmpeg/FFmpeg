@@ -685,8 +685,8 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
     return 0;
 }
 
-static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, const char **p,
-                                      FFServerStream **pfeed)
+static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd,
+                                      const char **p, FFServerStream **pfeed)
 {
     FFServerStream *feed;
     char arg[1024];
@@ -793,7 +793,8 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
     return 0;
 }
 
-static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd, const char **p,
+static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
+                                        const char **p,
                                         FFServerStream **pstream)
 {
     char arg[1024], arg2[1024];

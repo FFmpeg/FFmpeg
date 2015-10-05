@@ -1017,6 +1017,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     return buf_size;
 }
 
+#if HAVE_THREADS
 static int init_thread_copy(AVCodecContext *avctx)
 {
     FFV1Context *f = avctx->priv_data;
@@ -1042,6 +1043,7 @@ static int init_thread_copy(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
 static void copy_fields(FFV1Context *fsdst, FFV1Context *fssrc, FFV1Context *fsrc)
 {
@@ -1071,6 +1073,7 @@ static void copy_fields(FFV1Context *fsdst, FFV1Context *fssrc, FFV1Context *fsr
     }
 }
 
+#if HAVE_THREADS
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     FFV1Context *fsrc = src->priv_data;
@@ -1114,6 +1117,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
     return 0;
 }
+#endif
 
 AVCodec ff_ffv1_decoder = {
     .name           = "ffv1",
