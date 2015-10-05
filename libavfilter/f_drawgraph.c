@@ -110,11 +110,11 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA,
         AV_PIX_FMT_NONE
     };
+    int ret;
 
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    ff_formats_ref(fmts_list, &outlink->in_formats);
+    if ((ret = ff_formats_ref(fmts_list, &outlink->in_formats)) < 0)
+        return ret;
 
     return 0;
 }

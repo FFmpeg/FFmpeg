@@ -76,8 +76,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 }
 
 static void displace_planar(DisplaceContext *s, const AVFrame *in,

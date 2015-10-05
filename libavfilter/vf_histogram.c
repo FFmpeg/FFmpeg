@@ -155,6 +155,7 @@ static int query_formats(AVFilterContext *ctx)
     HistogramContext *h = ctx->priv;
     const enum AVPixelFormat *pix_fmts;
     AVFilterFormats *fmts_list;
+    int ret;
 
     switch (h->mode) {
     case MODE_WAVEFORM:
@@ -173,7 +174,8 @@ static int query_formats(AVFilterContext *ctx)
         }
 
         if (!ctx->inputs[0]->out_formats)
-            ff_formats_ref(ff_make_format_list(levels_in_pix_fmts), &ctx->inputs[0]->out_formats);
+            if ((ret = ff_formats_ref(ff_make_format_list(levels_in_pix_fmts), &ctx->inputs[0]->out_formats)) < 0)
+                return ret;
         avff = ctx->inputs[0]->in_formats;
         desc = av_pix_fmt_desc_get(avff->formats[0]);
         rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
@@ -197,7 +199,8 @@ static int query_formats(AVFilterContext *ctx)
             out_pix_fmts = levels_out_yuv9_pix_fmts;
         else // if (bits == 10)
             out_pix_fmts = levels_out_yuv10_pix_fmts;
-        ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats);
+        if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
+            return ret;
 
         return 0;
     }

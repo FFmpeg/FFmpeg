@@ -428,10 +428,7 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, fmts_list);
-    return 0;
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static const AVFilterPad life_outputs[] = {
