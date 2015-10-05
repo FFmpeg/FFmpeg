@@ -702,8 +702,12 @@ int configure_filtergraph(FilterGraph *fg)
             return ret;
     avfilter_inout_free(&inputs);
 
-    for (cur = outputs, i = 0; cur; cur = cur->next, i++)
-        configure_output_filter(fg, fg->outputs[i], cur);
+    for (cur = outputs, i = 0; cur; cur = cur->next, i++) {
+        OutputFilter *ofilter = fg->outputs[i];
+        if (ofilter->ost)
+            configure_output_filter(fg, ofilter, cur);
+    }
+
     avfilter_inout_free(&outputs);
 
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
