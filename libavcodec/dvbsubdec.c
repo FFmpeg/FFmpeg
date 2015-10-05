@@ -1435,7 +1435,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
 
 
 #ifdef DEBUG
-static void save_display_set(DVBSubContext *ctx)
+static int save_display_set(DVBSubContext *ctx)
 {
     DVBSubRegion *region;
     DVBSubRegionDisplay *display;
@@ -1456,7 +1456,7 @@ static void save_display_set(DVBSubContext *ctx)
         region = get_region(ctx, display->region_id);
 
         if (!region)
-            return;
+            return -1;
 
         if (x_pos == -1) {
             x_pos = display->x_pos;
@@ -1488,13 +1488,13 @@ static void save_display_set(DVBSubContext *ctx)
 
         pbuf = av_malloc(width * height * 4);
         if (!pbuf)
-            return;
+            return -1;
 
         for (display = ctx->display_list; display; display = display->next) {
             region = get_region(ctx, display->region_id);
 
             if (!region)
-                return;
+                return -1;
 
             x_off = display->x_pos - x_pos;
             y_off = display->y_pos - y_pos;
@@ -1534,6 +1534,7 @@ static void save_display_set(DVBSubContext *ctx)
     }
 
     fileno_index++;
+    return 0;
 }
 #endif
 
