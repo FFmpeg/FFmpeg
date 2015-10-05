@@ -1158,6 +1158,11 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
         if (cid->width == avctx->width && cid->height == avctx->height &&
             interlaced == !!(avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) &&
             !(cid->flags & DNXHD_444) && cid->bit_depth == bit_depth) {
+            if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL &&
+                cid->flags & DNXHD_MBAFF) {
+                av_log(avctx, AV_LOG_WARNING, "Profile selected is experimental\n");
+                continue;
+            }
             for (j = 0; j < FF_ARRAY_ELEMS(cid->bit_rates); j++) {
                 if (cid->bit_rates[j] == mbs)
                     return cid->cid;
