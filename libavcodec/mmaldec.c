@@ -165,7 +165,7 @@ static void ffmmal_stop_decoder(AVCodecContext *avctx)
     }
     ctx->waiting_buffers_tail = NULL;
 
-    assert(avpriv_atomic_get(&ctx->packets_buffered) == 0);
+    av_assert0(avpriv_atomic_get(&ctx->packets_buffered) == 0);
 
     ctx->frames_output = ctx->eos_received = ctx->eos_sent = ctx->packets_sent = ctx->extradata_sent = 0;
 }
