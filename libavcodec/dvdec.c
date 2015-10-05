@@ -499,6 +499,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DVVideoContext *s = avctx->priv_data;
+    AVFrame *frame = data;
     const uint8_t *vsc_pack;
     int apt, is16_9, ret;
     const AVDVProfile *sys;
@@ -519,9 +520,9 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
         s->sys = sys;
     }
 
-    s->frame            = data;
-    s->frame->key_frame = 1;
-    s->frame->pict_type = AV_PICTURE_TYPE_I;
+    s->frame            = frame;
+    frame->key_frame    = 1;
+    frame->pict_type    = AV_PICTURE_TYPE_I;
     avctx->pix_fmt      = s->sys->pix_fmt;
     avctx->framerate    = av_inv_q(s->sys->time_base);
 
@@ -538,14 +539,14 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
         ff_set_sar(avctx, s->sys->sar[is16_9]);
     }
 
-    if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0)
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    s->frame->interlaced_frame = 1;
-    s->frame->top_field_first  = 0;
+    frame->interlaced_frame = 1;
+    frame->top_field_first  = 0;
 
     /* Determine the codec's field order from the packet */
     if ( *vsc_pack == dv_video_control ) {
-        s->frame->top_field_first = !(vsc_pack[3] & 0x40);
+        frame->top_field_first = !(vsc_pack[3] & 0x40);
     }
 
     s->buf = buf;
