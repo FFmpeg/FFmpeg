@@ -378,7 +378,7 @@ void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalD
 {
     mAdditionalDependencies.clear( );
     mAdditionalDependencies["capCreateCaptureWindow"] = true;
-    mAdditionalDependencies["CreateDIBSection"] = false;
+    mAdditionalDependencies["CreateDIBSection"] = true;
     mAdditionalDependencies["dv1394"] = false;
     mAdditionalDependencies["DXVA_PicParams_HEVC"] = true;
     mAdditionalDependencies["dxva2api_h"] = true;
