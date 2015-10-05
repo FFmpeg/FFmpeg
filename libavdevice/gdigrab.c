@@ -235,6 +235,8 @@ gdigrab_read_header(AVFormatContext *s1)
     AVStream   *st       = NULL;
 
     int bpp;
+    int vertres;
+    int desktopvertres;
     RECT virtual_rect;
     RECT clip_rect;
     BITMAP bmp;
@@ -263,13 +265,26 @@ gdigrab_read_header(AVFormatContext *s1)
         goto error;
     }
 
+    /* This will get the device context for the selected window, or if
+     * none, the primary screen */
+    source_hdc = GetDC(hwnd);
+    if (!source_hdc) {
+        WIN32_API_ERROR("Couldn't get window device context");
+        ret = AVERROR(EIO);
+        goto error;
+    }
+    bpp = GetDeviceCaps(source_hdc, BITSPIXEL);
+
     if (hwnd) {
         GetClientRect(hwnd, &virtual_rect);
     } else {
+        /* desktop -- get the right height and width for scaling DPI */
+        vertres = GetDeviceCaps(source_hdc, VERTRES);
+        desktopvertres = GetDeviceCaps(source_hdc, DESKTOPVERTRES);
         virtual_rect.left = GetSystemMetrics(SM_XVIRTUALSCREEN);
         virtual_rect.top = GetSystemMetrics(SM_YVIRTUALSCREEN);
-        virtual_rect.right = virtual_rect.left + GetSystemMetrics(SM_CXVIRTUALSCREEN);
-        virtual_rect.bottom = virtual_rect.top + GetSystemMetrics(SM_CYVIRTUALSCREEN);
+        virtual_rect.right = (virtual_rect.left + GetSystemMetrics(SM_CXVIRTUALSCREEN)) * desktopvertres / vertres;
+        virtual_rect.bottom = (virtual_rect.top + GetSystemMetrics(SM_CYVIRTUALSCREEN)) * desktopvertres / vertres;
     }
 
     /* If no width or height set, use full screen/window area */
@@ -299,15 +314,6 @@ gdigrab_read_header(AVFormatContext *s1)
             goto error;
     }
 
-    /* This will get the device context for the selected window, or if
-     * none, the primary screen */
-    source_hdc = GetDC(hwnd);
-    if (!source_hdc) {
-        WIN32_API_ERROR("Couldn't get window device context");
-        ret = AVERROR(EIO);
-        goto error;
-    }
-    bpp = GetDeviceCaps(source_hdc, BITSPIXEL);
 
     if (name) {
         av_log(s1, AV_LOG_INFO,
