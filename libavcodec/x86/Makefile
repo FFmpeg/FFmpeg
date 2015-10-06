@@ -42,6 +42,7 @@ OBJS-$(CONFIG_AAC_DECODER)             += x86/aacpsdsp_init.o          \
                                           x86/sbrdsp_init.o
 OBJS-$(CONFIG_ADPCM_G722_DECODER)      += x86/g722dsp_init.o
 OBJS-$(CONFIG_ADPCM_G722_ENCODER)      += x86/g722dsp_init.o
+OBJS-$(CONFIG_ALAC_DECODER)            += x86/alacdsp_init.o
 OBJS-$(CONFIG_APNG_DECODER)            += x86/pngdsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
@@ -134,6 +135,7 @@ YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/aacpsdsp.o                \
                                           x86/sbrdsp.o
 YASM-OBJS-$(CONFIG_ADPCM_G722_DECODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
+YASM-OBJS-$(CONFIG_ALAC_DECODER)       += x86/alacdsp.o
 YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
 YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \

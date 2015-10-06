@@ -494,11 +494,11 @@ static int allocate_buffers(ALACContext *alac)
         alac->direct_output = alac->sample_size > 16;
         if (!alac->direct_output) {
             FF_ALLOC_OR_GOTO(alac->avctx, alac->output_samples_buffer[ch],
-                             buf_size, buf_alloc_fail);
+                             buf_size + AV_INPUT_BUFFER_PADDING_SIZE, buf_alloc_fail);
         }
 
         FF_ALLOC_OR_GOTO(alac->avctx, alac->extra_bits_buffer[ch],
-                         buf_size, buf_alloc_fail);
+                         buf_size + AV_INPUT_BUFFER_PADDING_SIZE, buf_alloc_fail);
     }
     return 0;
 buf_alloc_fail:
