@@ -85,6 +85,8 @@ DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_16)   = { 0x0000001000000010ULL, 0x000
                                                     0x0000001000000010ULL, 0x0000001000000010ULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_32)   = { 0x0000002000000020ULL, 0x0000002000000020ULL,
                                                     0x0000002000000020ULL, 0x0000002000000020ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_8192) = { 0x0000200000002000ULL, 0x0000200000002000ULL,
+                                                    0x0000200000002000ULL, 0x0000200000002000ULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_65535)= { 0x0000ffff0000ffffULL, 0x0000ffff0000ffffULL,
                                                     0x0000ffff0000ffffULL, 0x0000ffff0000ffffULL };
 

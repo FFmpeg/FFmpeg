@@ -25,8 +25,18 @@
 
 SECTION_RODATA
 
+cextern pw_8
 cextern pw_1023
+cextern pw_2048
 cextern pw_4095
+cextern pd_8192
+
+; FIXME these should probably be shared between 8bpp and 10/12bpp
+pw_m11585_11585: times 4 dw -11585, 11585
+pw_11585_11585: times 8 dw 11585
+pw_m15137_6270: times 4 dw -15137, 6270
+pw_6270_15137: times 4 dw 6270, 15137
+pw_11585x2: times 8 dw 11585*2
 
 SECTION .text
 
@@ -118,3 +128,89 @@ INIT_MMX mmxext
 IWHT4_FN 10, 1023
 INIT_MMX mmxext
 IWHT4_FN 12, 4095
+
+; 4x4 coefficients are 5+depth+sign bits, so for 10bpp, everything still fits
+; in 15+1 words without additional effort, since the coefficients are 15bpp.
+
+%macro IDCT4_10_FN 0
+cglobal vp9_idct_idct_4x4_add_10, 4, 4, 8, dst, stride, block, eob
+    cmp               eobd, 1
+    jg .idctfull
+
+    ; dc-only
+%if cpuflag(ssse3)
+    movd                m0, [blockq]
+    mova                m5, [pw_11585x2]
+    pmulhrsw            m0, m5
+    pmulhrsw            m0, m5
+%else
+    DEFINE_ARGS dst, stride, block, coef
+    mov              coefd, dword [blockq]
+    imul             coefd, 11585
+    add              coefd, 8192
+    sar              coefd, 14
+    imul             coefd, 11585
+    add              coefd, (8 << 14) + 8192
+    sar              coefd, 14 + 4
+    movd                m0, coefd
+%endif
+    pshufw              m0, m0, 0
+    pxor                m4, m4
+    mova                m5, [pw_1023]
+    movh          [blockq], m4
+%if cpuflag(ssse3)
+    pmulhrsw            m0, [pw_2048]       ; (x*2048 + (1<<14))>>15 <=> (x+8)>>4
+%endif
+    VP9_STORE_2X         0,  0,  6,  7,  4,  5
+    lea               dstq, [dstq+2*strideq]
+    VP9_STORE_2X         0,  0,  6,  7,  4,  5
+    RET
+
+.idctfull:
+    mova                m0, [blockq+0*16+0]
+    mova                m1, [blockq+1*16+0]
+    packssdw            m0, [blockq+0*16+8]
+    packssdw            m1, [blockq+1*16+8]
+    mova                m2, [blockq+2*16+0]
+    mova                m3, [blockq+3*16+0]
+    packssdw            m2, [blockq+2*16+8]
+    packssdw            m3, [blockq+3*16+8]
+
+%if cpuflag(ssse3)
+    mova                m6, [pw_11585x2]
+%endif
+    mova                m7, [pd_8192]       ; rounding
+    VP9_IDCT4_1D
+    TRANSPOSE4x4W  0, 1, 2, 3, 4
+    VP9_IDCT4_1D
+
+    pxor                m4, m4
+    ZERO_BLOCK      blockq, 16, 4, m4
+%if cpuflag(ssse3)
+    mova                m5, [pw_2048]
+    pmulhrsw            m0, m5
+    pmulhrsw            m1, m5
+    pmulhrsw            m2, m5
+    pmulhrsw            m3, m5
+%else
+    mova                m5, [pw_8]
+    paddw               m0, m5
+    paddw               m1, m5
+    paddw               m2, m5
+    paddw               m3, m5
+    psraw               m0, 4
+    psraw               m1, 4
+    psraw               m2, 4
+    psraw               m3, 4
+%endif
+    mova                m5, [pw_1023]
+    VP9_STORE_2X         0,  1,  6,  7,  4,  5
+    lea               dstq, [dstq+2*strideq]
+    VP9_STORE_2X         2,  3,  6,  7,  4,  5
+    RET
+%endmacro
+
+INIT_MMX mmxext
+IDCT4_10_FN
+INIT_MMX ssse3
+IDCT4_10_FN
