@@ -123,9 +123,11 @@ lpf_mix2_wrappers_set(BPC, ssse3);
 lpf_mix2_wrappers_set(BPC, avx);
 
 decl_ipred_fns(tm, BPC, mmxext, sse2);
+
+decl_itxfm_func(iwht, iwht, 4, BPC, mmxext);
 #endif /* HAVE_YASM */
 
-av_cold void INIT_FUNC(VP9DSPContext *dsp)
+av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
 {
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
@@ -155,8 +157,20 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp)
     init_lpf_mix2_func(1, 0, 1, v, 8, 4, bpp, opt); \
     init_lpf_mix2_func(1, 1, 1, v, 8, 8, bpp, opt)
 
+#define init_itx_func(idxa, idxb, typea, typeb, size, bpp, opt) \
+    dsp->itxfm_add[idxa][idxb] = \
+        ff_vp9_##typea##_##typeb##_##size##x##size##_add_##bpp##_##opt;
+#define init_itx_func_one(idx, typea, typeb, size, bpp, opt) \
+    init_itx_func(idx, DCT_DCT,   typea, typeb, size, bpp, opt); \
+    init_itx_func(idx, ADST_DCT,  typea, typeb, size, bpp, opt); \
+    init_itx_func(idx, DCT_ADST,  typea, typeb, size, bpp, opt); \
+    init_itx_func(idx, ADST_ADST, typea, typeb, size, bpp, opt)
+
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         init_ipred_func(tm, TM_VP8, 4, BPC, mmxext);
+        if (!bitexact) {
+            init_itx_func_one(4 /* lossless */, iwht, iwht, 4, BPC, mmxext);
+        }
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {

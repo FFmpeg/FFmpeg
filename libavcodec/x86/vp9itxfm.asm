@@ -22,6 +22,7 @@
 ;******************************************************************************
 
 %include "libavutil/x86/x86util.asm"
+%include "vp9itxfm_template.asm"
 
 SECTION_RODATA
 
@@ -163,21 +164,6 @@ SECTION .text
 ;-------------------------------------------------------------------------------------------
 ; void vp9_iwht_iwht_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
 ;-------------------------------------------------------------------------------------------
-
-%macro VP9_IWHT4_1D 0
-    SWAP                 1, 2, 3
-    paddw               m0, m2
-    psubw               m3, m1
-    psubw               m4, m0, m3
-    psraw               m4, 1
-    psubw               m5, m4, m1
-    SWAP                 5, 1
-    psubw               m4, m2
-    SWAP                 4, 2
-    psubw               m0, m1
-    paddw               m3, m2
-    SWAP                 3, 2, 1
-%endmacro
 
 INIT_MMX mmx
 cglobal vp9_iwht_iwht_4x4_add, 3, 3, 0, dst, stride, block, eob
