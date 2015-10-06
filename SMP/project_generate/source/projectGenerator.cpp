@@ -98,7 +98,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
+        makeFileProjectRelative( sRetFileName, *itIt );
     }
 
     //Check that all C Source are correct
@@ -111,7 +111,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
+        makeFileProjectRelative( sRetFileName, *itIt );
     }
 
     //Check that all CPP Source are correct
@@ -124,7 +124,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
+        makeFileProjectRelative( sRetFileName, *itIt );
     }
 
     //Check that all ASM Source are correct
@@ -137,7 +137,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
+        makeFileProjectRelative( sRetFileName, *itIt );
     }
 
     //Check the output Unknown Includes and find there corresponding file
@@ -152,7 +152,8 @@ bool projectGenerator::outputProject( )
                 //skip this item
                 continue;
             }
-            m_vCIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ..\..\ so the file is up 2 directories
+            makeFileProjectRelative( sRetFileName, sRetFileName );
+            m_vCIncludes.push_back( sRetFileName );
         }
         else if( findSourceFile( *itIt, ".cpp", sRetFileName ) )
         {
@@ -162,7 +163,8 @@ bool projectGenerator::outputProject( )
                 //skip this item
                 continue;
             }
-            m_vCPPIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ..\..\ so the file is up 2 directories
+            makeFileProjectRelative( sRetFileName, sRetFileName );
+            m_vCPPIncludes.push_back( sRetFileName );
         }
         else if( findSourceFile( *itIt, ".asm", sRetFileName ) )
         {
@@ -172,7 +174,8 @@ bool projectGenerator::outputProject( )
                 //skip this item
                 continue;
             }
-            m_vYASMIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ..\..\ so the file is up 2 directories
+            makeFileProjectRelative( sRetFileName, sRetFileName );
+            m_vYASMIncludes.push_back( sRetFileName );
         }
         else
         {
@@ -2182,9 +2185,9 @@ bool projectGenerator::passDMMXInclude( )
     return true;
 }
 
-bool projectGenerator::passHInclude( )
+bool projectGenerator::passHInclude( uint uiCutPos )
 {
-    return passStaticInclude( 7, m_vHIncludes );
+    return passStaticInclude( uiCutPos, m_vHIncludes );
 }
 
 bool projectGenerator::passDHInclude( )
@@ -2348,7 +2351,7 @@ bool projectGenerator::passMake( )
             }
             else if( m_sInLine.substr(0, 7).compare("HEADERS") == 0 )
             {
-                //Found some static headers
+                //Found some headers
                 if( m_sInLine.at(7) == '-' )
                 {
                     //Found some dynamic headers
@@ -2366,6 +2369,15 @@ bool projectGenerator::passMake( )
                         m_ifInputFile.close( );
                         return false;
                     }
+                }
+            }
+            else if( m_sInLine.find( "BUILT_HEADERS" ) == 0 )
+            {
+                //Found some static built headers
+                if( !passHInclude( 13 ) )
+                {
+                    m_ifInputFile.close( );
+                    return false;
                 }
             }
             else if( m_sInLine.substr(0, 6).compare("FFLIBS") == 0 )
@@ -2399,7 +2411,7 @@ bool projectGenerator::passMake( )
                     return false;
                 }
             }
-            else if(m_sInLine.find("LIBS-$") != string::npos )
+            else if( m_sInLine.find("LIBS-$") != string::npos )
             {
                 //Found Lib unknown
                 if( !passDLibUnknown( ) )
@@ -2490,7 +2502,6 @@ bool projectGenerator::findFiles( const string & sFileSearch, vector<string> & v
     uint uiPos = sFileSearch.rfind( '\\' );
     if( sFileSearch.rfind( '/' ) != string::npos )
     {
-        cout << "Fuck" << endl;
         return false;
     }
     string sPath;
@@ -2540,13 +2551,30 @@ bool projectGenerator::findSourceFile( const string & sFile, const string & sExt
 {
     string sFileName;
     sRetFileName = m_sProjectDir + sFile + sExtension;
-    return findFile( sRetFileName, sFileName );
+    if( !findFile( sRetFileName, sFileName ) )
+    {
+        // Check if this is a built file
+        uint uiSPos = m_sProjectDir.rfind( '\\', m_sProjectDir.length( ) - 2 );
+        string sProjectName = m_sProjectDir.substr( uiSPos );
+        sRetFileName = m_sProjectDir.substr( 0, uiSPos + 1 ) + "SMP" + sProjectName + sFile + sExtension;
+        return findFile( sRetFileName, sFileName );
+    }
+    return true;
 }
 
 bool projectGenerator::findSourceFiles( const string & sFile, const string & sExtension, vector<string> & vRetFiles )
 {
     string sFileName = m_sProjectDir + sFile + sExtension;
     return findFiles( sFileName, vRetFiles );
+}
+
+void projectGenerator::makeFileProjectRelative( const string & sFileName, string & sRetFileName)
+{
+    sRetFileName = sFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
+    if( sRetFileName.find( "..\\SMP" ) == 0 )
+    {
+        sRetFileName = sRetFileName.substr( 7 ); //Remove the preceding ..\SMP
+    }
 }
 
 bool projectGenerator::copyFile( const string & sSourceFile, const string & sDestinationFile )

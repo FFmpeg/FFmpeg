@@ -17,7 +17,7 @@
  * License along with ShiftMediaProject; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- 
+
 #ifndef _PROJECTGENERATOR_H_
 #define _PROJECTGENERATOR_H_
 
@@ -85,7 +85,7 @@ private:
 
     bool passDMMXInclude( );
 
-    bool passHInclude( );
+    bool passHInclude( uint uiCutPos = 7 );
 
     bool passDHInclude( );
 
@@ -108,6 +108,8 @@ private:
     bool findSourceFile( const string & sFile, const string & sExtension, string & sRetFileName );
 
     bool findSourceFiles( const string & sFile, const string & sExtension, vector<string> & vRetFiles );
+
+    void makeFileProjectRelative( const string & sFileName, string & sRetFileName );
 
     void buildInterDependenciesHelper( const StaticList & vConfigOptions, const StaticList & vAddDeps, StaticList & vLibs );
 
