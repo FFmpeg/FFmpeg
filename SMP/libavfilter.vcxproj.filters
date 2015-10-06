@@ -374,6 +374,9 @@
     <ClCompile Include="..\libavfilter\vf_detelecine.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_displace.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_drawbox.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

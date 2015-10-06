@@ -48,6 +48,9 @@
     <ClCompile Include="..\libavdevice\dshow_common.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavdevice\gdigrab.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavdevice\lavfi.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>

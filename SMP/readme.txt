@@ -55,7 +55,7 @@ However the following is a list of possible extra dependency options that requir
     1) sdl (requires SDL 1.2)
 		a) Download pre-built binaries from the sdl homepage.
 		b) Extract all the header files into OutputDir/include/SDL/*.
-		c) Extract the lib's to OutputDir/lib* and the DLL's to OutputDir/bin*.
+		c) Extract the lib's to OutputDir/lib/x86(and x64)/* and the DLL's to OutputDir/bin/x86(and x64)/*.
     2) opengl (requires glext)
 		a) Download glext from the glext homepage.
 		b) Extract all the header files into OutputDir/include/gl/*.

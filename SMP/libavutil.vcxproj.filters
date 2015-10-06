@@ -433,6 +433,12 @@
     <ClInclude Include="..\libavutil\lzo.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="libavutil\avconfig.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\ffversion.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libavutil.def">
