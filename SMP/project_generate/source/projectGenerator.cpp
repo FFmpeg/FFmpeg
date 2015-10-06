@@ -937,7 +937,7 @@ cd $(ProjectDir)\n\
     }
 
     //Create a test file to read in definitions
-    string sOutDir = "../../../../../msvc32/";
+    string sOutDir = "../../../../../msvc/";
     string sCLExtra = "/I\"" + sOutDir + "include/\"";
     for( StaticList::iterator vitIt = vIncludeDirs.begin( ); vitIt < vIncludeDirs.end( ); vitIt++ )
     {
