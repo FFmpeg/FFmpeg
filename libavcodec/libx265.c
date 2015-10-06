@@ -183,28 +183,37 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         ctx->params->bRepeatHeaders = 1;
 
     if (ctx->x265_opts) {
+        // libx264.c has this same block of code for parsing options
         AVDictionary *dict    = NULL;
         AVDictionaryEntry *en = NULL;
 
-        if (!av_dict_parse_string(&dict, ctx->x265_opts, "=", ":", 0)) {
+        int parse_ret = av_dict_parse_string(&dict, ctx->x265_opts, "=", ":", 0);
+        if (parse_ret) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "can't split '%s' into key=value:key=value pairs\n", ctx->x265_opts);
+            return parse_ret;
+        } else {
             while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                int parse_ret = ctx->api->param_parse(ctx->params, en->key, en->value);
+                char *tmpval = en->value;  // we need NULLs, not empty strings,
+                if ('\0' == *tmpval) tmpval = NULL; // for the no-value case
+                parse_ret = ctx->api->param_parse(ctx->params, en->key, tmpval);
 
                 switch (parse_ret) {
+                case 0:
+                    break;
                 case X265_PARAM_BAD_NAME:
                     av_log(avctx, AV_LOG_WARNING,
-                          "Unknown option: %s.\n", en->key);
+                          "Unknown option: '%s'.\n", en->key);
                     break;
                 case X265_PARAM_BAD_VALUE:
-                    av_log(avctx, AV_LOG_WARNING,
-                          "Invalid value for %s: %s.\n", en->key, en->value);
-                    break;
                 default:
+                    av_log(avctx, AV_LOG_WARNING,
+                          "Invalid value for '%s = %s'.\n", en->key, en->value);
                     break;
                 }
             }
-            av_dict_free(&dict);
         }
+        av_dict_free(&dict);
     }
 
     ctx->encoder = ctx->api->encoder_open(ctx->params);

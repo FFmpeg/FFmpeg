@@ -396,20 +396,6 @@ static av_cold int X264_close(AVCodecContext *avctx)
     return 0;
 }
 
-#define OPT_STR(opt, param)                                                   \
-    do {                                                                      \
-        int ret;                                                              \
-        if (param && (ret = x264_param_parse(&x4->params, opt, param)) < 0) { \
-            if(ret == X264_PARAM_BAD_NAME)                                    \
-                av_log(avctx, AV_LOG_ERROR,                                   \
-                        "bad option '%s': '%s'\n", opt, param);               \
-            else                                                              \
-                av_log(avctx, AV_LOG_ERROR,                                   \
-                        "bad value for '%s': '%s'\n", opt, param);            \
-            return -1;                                                        \
-        }                                                                     \
-    } while (0)
-
 static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
 {
     switch (pix_fmt) {
@@ -445,9 +431,36 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
 
 #define PARSE_X264_OPT(name, var)\
     if (x4->var && x264_param_parse(&x4->params, name, x4->var) < 0) {\
-        av_log(avctx, AV_LOG_ERROR, "Error parsing option '%s' with value '%s'.\n", name, x4->var);\
+        av_log(avctx, AV_LOG_ERROR, "Error setting option '%s' with value '%s'.\n", name, x4->var);\
         return AVERROR(EINVAL);\
     }
+
+
+#define OPT_STR(opt, param)                                                   \
+    do {                                                                      \
+        int ret;                                                              \
+        if (param && (ret = x264_param_parse(&x4->params, opt, param)) != 0){ \
+            if(ret == X264_PARAM_BAD_NAME)                                    \
+                av_log(avctx, AV_LOG_ERROR,                                   \
+                        "bad option '%s': '%s'\n", opt, param);               \
+            else                                                              \
+                av_log(avctx, AV_LOG_ERROR,                                   \
+                        "bad value for '%s': '%s'\n", opt, param);            \
+            return -1;                                                        \
+        }                                                                     \
+    } while (0)
+
+//static av_cold int x264_parse_optstring(AVDictionary **dict, const char *str)
+#define PARSE_OPTSTR_RETURN_ON_ERROR(dict, str)                         \
+    do {                                                                \
+        int parse_ret = av_dict_parse_string((dict), (str), "=", ":", 0); \
+        if (parse_ret) {                                                \
+            av_log(avctx, AV_LOG_ERROR,                                 \
+                   "can't split '%s' into key=value:key=value pairs\n", str); \
+            av_dict_free(dict);                                         \
+            return -1;                                                  \
+        }                                                               \
+    } while(0)
 
 static av_cold int X264_init(AVCodecContext *avctx)
 {
@@ -748,34 +761,49 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
 
-    if(x4->x264opts){
-        const char *p= x4->x264opts;
-        while(p){
-            char param[256]={0}, val[256]={0};
-            if(sscanf(p, "%255[^:=]=%255[^:]", param, val) == 1){
-                OPT_STR(param, "1");
-            }else
-                OPT_STR(param, val);
-            p= strchr(p, ':');
-            p+=!!p;
-        }
-    }
+    /* why do we have two ways to pass : separated options lists,
+     * one with ' and \ quoting support, one without?
+     * never-committed attempt to fix this
+     * http://ffmpeg.org/pipermail/ffmpeg-devel/2013-July/146329.html
+     */
 
-    if (x4->x264_params) {
+    if (x4->x264opts || x4->x264_params) {
+        // libx265.c has a similar code block for parsing its param string
+        // but it doesn't have two separate options for option strings
         AVDictionary *dict    = NULL;
         AVDictionaryEntry *en = NULL;
+        int parse_ret;
 
-        if (!av_dict_parse_string(&dict, x4->x264_params, "=", ":", 0)) {
-            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                if (x264_param_parse(&x4->params, en->key, en->value) < 0)
-                    av_log(avctx, AV_LOG_WARNING,
-                           "Error parsing option '%s = %s'.\n",
-                            en->key, en->value);
+        if (x4->x264opts)
+            PARSE_OPTSTR_RETURN_ON_ERROR(&dict, x4->x264opts);
+
+        if (x4->x264_params) // merge into the same dictionary
+            PARSE_OPTSTR_RETURN_ON_ERROR(&dict, x4->x264_params);
+
+        while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
+            char *tmpval = en->value;  // we need NULLs, not empty strings,
+            if ('\0' == *tmpval) tmpval = NULL; // for the no-value case
+            parse_ret = x264_param_parse(&x4->params, en->key, tmpval);
+
+            switch (parse_ret) {
+            case 0:
+                break;
+            case X264_PARAM_BAD_NAME:
+                av_log(avctx, AV_LOG_WARNING,
+                       "Unknown option: '%s'.\n", en->key);
+                return parse_ret;
+                break;
+            case X264_PARAM_BAD_VALUE:
+            default:
+                av_log(avctx, AV_LOG_WARNING,
+                       "Invalid value for '%s' = '%s'.\n", en->key, en->value);
+                return parse_ret;
+                break;
             }
-
-            av_dict_free(&dict);
         }
+        av_dict_free(&dict);
     }
+
 
     // update AVCodecContext with x264 parameters
     avctx->has_b_frames = x4->params.i_bframe ?

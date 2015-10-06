@@ -151,24 +151,24 @@ int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value,
 
 static int parse_key_value_pair(AVDictionary **pm, const char **buf,
                                 const char *key_val_sep, const char *pairs_sep,
-                                int flags)
+                                const char *all_sep, int flags)
 {
-    char *key = av_get_token(buf, key_val_sep);
-    char *val = NULL;
+    char *key, *val = NULL;
     int ret;
 
-    if (key && *key && strspn(*buf, key_val_sep)) {
-        (*buf)++;
-        val = av_get_token(buf, pairs_sep);
+    key = av_get_token(buf, all_sep);
+    if (key && *key) {
+        if (**buf && strchr(key_val_sep, **buf))
+            (*buf)++;    // skip over the = to get to val
+        val = av_get_token(buf, pairs_sep); // will be "" if a sep is next
     }
 
-    if (key && *key && val && *val)
-        ret = av_dict_set(pm, key, val, flags);
-    else
-        ret = AVERROR(EINVAL);
-
-    av_freep(&key);
-    av_freep(&val);
+    if (val) // av_get_token reallocs to the min length needed, so don't re-dup
+            ret = av_dict_set(pm, key, val, flags | AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
+    else {
+        ret = AVERROR(EINVAL);  // error only on empty key or malloc fail
+        av_freep(&key);
+    }
 
     return ret;
 }
@@ -178,18 +178,19 @@ int av_dict_parse_string(AVDictionary **pm, const char *str,
                          int flags)
 {
     int ret;
+    char all_sep[16];
 
     if (!str)
         return 0;
 
-    /* ignore STRDUP flags */
-    flags &= ~(AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
+    av_strlcpy(all_sep, key_val_sep, sizeof(all_sep));
+    av_strlcat(all_sep, pairs_sep, sizeof(all_sep));
 
     while (*str) {
-        if ((ret = parse_key_value_pair(pm, &str, key_val_sep, pairs_sep, flags)) < 0)
+        if ((ret = parse_key_value_pair(pm, &str, key_val_sep, pairs_sep, all_sep, flags)) < 0)
             return ret;
 
-        if (*str)
+        if (*str) // allows a trailing pairs_sep
             str++;
     }
 

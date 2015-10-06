@@ -148,36 +148,39 @@ char *av_d2str(double d)
 
 char *av_get_token(const char **buf, const char *term)
 {
-    char *out     = av_malloc(strlen(*buf) + 1);
-    char *ret     = out, *end = out;
+    char *out     = av_realloc(NULL, strlen(*buf) + 1); // av_malloc isn't safe for realloc
+    char *ret     = out, *end_quote = out;
     const char *p = *buf;
     if (!out)
         return NULL;
     p += strspn(p, WHITESPACES);
 
-    while (*p && !strspn(p, term)) {
+    while (*p && !strchr(term, *p)) {
         char c = *p++;
         if (c == '\\' && *p) {
             *out++ = *p++;
-            end    = out;
+            end_quote    = out;
         } else if (c == '\'') {
             while (*p && *p != '\'')
                 *out++ = *p++;
             if (*p) {
                 p++;
-                end = out;
+                end_quote = out;
             }
         } else {
             *out++ = c;
         }
     }
+    *buf = p;  // advance caller's position to the end of the returned token
 
-    do
+    do  // kill non-quoted trailing whitespace
         *out-- = 0;
-    while (out >= end && strspn(out, WHITESPACES));
+    while (out >= end_quote && strchr(WHITESPACES, *out));
 
-    *buf = p;
-
+    // +1 for nul byte, +1 to counteract the do {} while extra decrement
+    out = av_realloc(ret, out - ret + 2);
+    if (out)  // we're only ever shrinking, so we don't have to error on fail
+        ret = out;
     return ret;
 }
 
