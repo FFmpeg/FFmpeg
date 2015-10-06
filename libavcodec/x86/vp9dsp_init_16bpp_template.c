@@ -126,8 +126,11 @@ decl_ipred_fns(tm, BPC, mmxext, sse2);
 
 decl_itxfm_func(iwht, iwht, 4, BPC, mmxext);
 #if BPC == 10
-decl_itxfm_func(idct, idct, 4, BPC, mmxext);
-decl_itxfm_func(idct, idct, 4, BPC, ssse3);
+decl_itxfm_func(idct,  idct,  4, BPC, mmxext);
+decl_itxfm_func(idct,  iadst, 4, BPC, sse2);
+decl_itxfm_func(iadst, idct,  4, BPC, sse2);
+decl_itxfm_func(iadst, iadst, 4, BPC, sse2);
+decl_itxfm_funcs(4, BPC, ssse3);
 #endif
 #endif /* HAVE_YASM */
 
@@ -169,6 +172,11 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
     init_itx_func(idx, ADST_DCT,  typea, typeb, size, bpp, opt); \
     init_itx_func(idx, DCT_ADST,  typea, typeb, size, bpp, opt); \
     init_itx_func(idx, ADST_ADST, typea, typeb, size, bpp, opt)
+#define init_itx_funcs(idx, size, bpp, opt) \
+    init_itx_func(idx, DCT_DCT,   idct,  idct,  size, bpp, opt); \
+    init_itx_func(idx, ADST_DCT,  idct,  iadst, size, bpp, opt); \
+    init_itx_func(idx, DCT_ADST,  iadst, idct,  size, bpp, opt); \
+    init_itx_func(idx, ADST_ADST, iadst, iadst, size, bpp, opt); \
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         init_ipred_func(tm, TM_VP8, 4, BPC, mmxext);
@@ -185,13 +193,20 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
         init_subpel3(1, avg, BPC, sse2);
         init_lpf_funcs(BPC, sse2);
         init_8_16_32_ipred_funcs(tm, TM_VP8, BPC, sse2);
+#if BPC == 10
+        if (!bitexact) {
+            init_itx_func(TX_4X4, ADST_DCT,  idct,  iadst, 4, 10, sse2);
+            init_itx_func(TX_4X4, DCT_ADST,  iadst, idct,  4, 10, sse2);
+            init_itx_func(TX_4X4, ADST_ADST, iadst, iadst, 4, 10, sse2);
+        }
+#endif
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
         init_lpf_funcs(BPC, ssse3);
 #if BPC == 10
         if (!bitexact) {
-            init_itx_func(TX_4X4, DCT_DCT, idct, idct, 4, 10, ssse3);
+            init_itx_funcs(TX_4X4, 4, BPC, ssse3);
         }
 #endif
     }

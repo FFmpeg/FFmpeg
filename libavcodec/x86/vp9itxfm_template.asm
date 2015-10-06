@@ -82,3 +82,61 @@
     VP9_UNPACK_MULSUB_2W_4X 1, 3, 15137, 6270, m7, 4, 5     ; m1=t2, m3=t3
     VP9_IDCT4_1D_FINALIZE
 %endmacro
+
+%macro VP9_IADST4_1D 0
+    movq2dq           xmm0, m0
+    movq2dq           xmm1, m1
+    movq2dq           xmm2, m2
+    movq2dq           xmm3, m3
+%if cpuflag(ssse3)
+    paddw               m3, m0
+%endif
+    punpcklwd         xmm0, xmm1
+    punpcklwd         xmm2, xmm3
+    pmaddwd           xmm1, xmm0, [pw_5283_13377]
+    pmaddwd           xmm4, xmm0, [pw_9929_13377]
+%if notcpuflag(ssse3)
+    pmaddwd           xmm6, xmm0, [pw_13377_0]
+%endif
+    pmaddwd           xmm0, [pw_15212_m13377]
+    pmaddwd           xmm3, xmm2, [pw_15212_9929]
+%if notcpuflag(ssse3)
+    pmaddwd           xmm7, xmm2, [pw_m13377_13377]
+%endif
+    pmaddwd           xmm2, [pw_m5283_m15212]
+%if cpuflag(ssse3)
+    psubw               m3, m2
+%else
+    paddd             xmm6, xmm7
+%endif
+    paddd             xmm0, xmm2
+    paddd             xmm3, xmm5
+    paddd             xmm2, xmm5
+%if notcpuflag(ssse3)
+    paddd             xmm6, xmm5
+%endif
+    paddd             xmm1, xmm3
+    paddd             xmm0, xmm3
+    paddd             xmm4, xmm2
+    psrad             xmm1, 14
+    psrad             xmm0, 14
+    psrad             xmm4, 14
+%if cpuflag(ssse3)
+    pmulhrsw            m3, [pw_13377x2]        ; out2
+%else
+    psrad             xmm6, 14
+%endif
+    packssdw          xmm0, xmm0
+    packssdw          xmm1, xmm1
+    packssdw          xmm4, xmm4
+%if notcpuflag(ssse3)
+    packssdw          xmm6, xmm6
+%endif
+    movdq2q             m0, xmm0                ; out3
+    movdq2q             m1, xmm1                ; out0
+    movdq2q             m2, xmm4                ; out1
+%if notcpuflag(ssse3)
+    movdq2q             m3, xmm6                ; out2
+%endif
+    SWAP                 0, 1, 2, 3
+%endmacro

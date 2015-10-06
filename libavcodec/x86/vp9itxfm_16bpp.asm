@@ -38,6 +38,15 @@ pw_m15137_6270: times 4 dw -15137, 6270
 pw_6270_15137: times 4 dw 6270, 15137
 pw_11585x2: times 8 dw 11585*2
 
+pw_5283_13377: times 4 dw 5283, 13377
+pw_9929_13377: times 4 dw 9929, 13377
+pw_15212_m13377: times 4 dw 15212, -13377
+pw_15212_9929: times 4 dw 15212, 9929
+pw_m5283_m15212: times 4 dw -5283, -15212
+pw_13377x2: times 8 dw 13377*2
+pw_m13377_13377: times 4 dw -13377, 13377
+pw_13377_0: times 4 dw 13377, 0
+
 SECTION .text
 
 %macro VP9_STORE_2X 6-7 dstq ; reg1, reg2, tmp1, tmp2, min, max, dst
@@ -129,6 +138,30 @@ IWHT4_FN 10, 1023
 INIT_MMX mmxext
 IWHT4_FN 12, 4095
 
+%macro VP9_IDCT4_WRITEOUT 0
+%if cpuflag(ssse3)
+    mova                m5, [pw_2048]
+    pmulhrsw            m0, m5
+    pmulhrsw            m1, m5
+    pmulhrsw            m2, m5
+    pmulhrsw            m3, m5
+%else
+    mova                m5, [pw_8]
+    paddw               m0, m5
+    paddw               m1, m5
+    paddw               m2, m5
+    paddw               m3, m5
+    psraw               m0, 4
+    psraw               m1, 4
+    psraw               m2, 4
+    psraw               m3, 4
+%endif
+    mova                m5, [pw_1023]
+    VP9_STORE_2X         0,  1,  6,  7,  4,  5
+    lea               dstq, [dstq+2*strideq]
+    VP9_STORE_2X         2,  3,  6,  7,  4,  5
+%endmacro
+
 ; 4x4 coefficients are 5+depth+sign bits, so for 10bpp, everything still fits
 ; in 15+1 words without additional effort, since the coefficients are 15bpp.
 
@@ -186,27 +219,7 @@ cglobal vp9_idct_idct_4x4_add_10, 4, 4, 8, dst, stride, block, eob
 
     pxor                m4, m4
     ZERO_BLOCK      blockq, 16, 4, m4
-%if cpuflag(ssse3)
-    mova                m5, [pw_2048]
-    pmulhrsw            m0, m5
-    pmulhrsw            m1, m5
-    pmulhrsw            m2, m5
-    pmulhrsw            m3, m5
-%else
-    mova                m5, [pw_8]
-    paddw               m0, m5
-    paddw               m1, m5
-    paddw               m2, m5
-    paddw               m3, m5
-    psraw               m0, 4
-    psraw               m1, 4
-    psraw               m2, 4
-    psraw               m3, 4
-%endif
-    mova                m5, [pw_1023]
-    VP9_STORE_2X         0,  1,  6,  7,  4,  5
-    lea               dstq, [dstq+2*strideq]
-    VP9_STORE_2X         2,  3,  6,  7,  4,  5
+    VP9_IDCT4_WRITEOUT
     RET
 %endmacro
 
@@ -214,3 +227,44 @@ INIT_MMX mmxext
 IDCT4_10_FN
 INIT_MMX ssse3
 IDCT4_10_FN
+
+%macro IADST4_FN 4
+cglobal vp9_%1_%3_4x4_add_10, 3, 3, 0, dst, stride, block, eob
+%if WIN64 && notcpuflag(ssse3)
+    WIN64_SPILL_XMM 8
+%endif
+    movdqa            xmm5, [pd_8192]
+    mova                m0, [blockq+0*16+0]
+    mova                m1, [blockq+1*16+0]
+    packssdw            m0, [blockq+0*16+8]
+    packssdw            m1, [blockq+1*16+8]
+    mova                m2, [blockq+2*16+0]
+    mova                m3, [blockq+3*16+0]
+    packssdw            m2, [blockq+2*16+8]
+    packssdw            m3, [blockq+3*16+8]
+
+%if cpuflag(ssse3)
+    mova                m6, [pw_11585x2]
+%endif
+%ifnidn %1%3, iadstiadst
+    movdq2q             m7, xmm5
+%endif
+    VP9_%2_1D
+    TRANSPOSE4x4W  0, 1, 2, 3, 4
+    VP9_%4_1D
+
+    pxor                m4, m4
+    ZERO_BLOCK      blockq, 16, 4, m4
+    VP9_IDCT4_WRITEOUT
+    RET
+%endmacro
+
+INIT_MMX sse2
+IADST4_FN idct,  IDCT4,  iadst, IADST4
+IADST4_FN iadst, IADST4, idct,  IDCT4
+IADST4_FN iadst, IADST4, iadst, IADST4
+
+INIT_MMX ssse3
+IADST4_FN idct,  IDCT4,  iadst, IADST4
+IADST4_FN iadst, IADST4, idct,  IDCT4
+IADST4_FN iadst, IADST4, iadst, IADST4

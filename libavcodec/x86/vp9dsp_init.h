@@ -62,6 +62,12 @@ void cat(ff_vp9_##typea##_##typeb##_##size##x##size##_add_, bpp, _##opt)(uint8_t
                                                                          int16_t *block, \
                                                                          int eob)
 
+#define decl_itxfm_funcs(size, bpp, opt) \
+decl_itxfm_func(idct,  idct,  size, bpp, opt); \
+decl_itxfm_func(iadst, idct,  size, bpp, opt); \
+decl_itxfm_func(idct,  iadst, size, bpp, opt); \
+decl_itxfm_func(iadst, iadst, size, bpp, opt)
+
 #define mc_rep_func(avg, sz, hsz, hszb, dir, opt, type, f_sz, bpp) \
 static av_always_inline void \
 ff_vp9_##avg##_8tap_1d_##dir##_##sz##_##bpp##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
