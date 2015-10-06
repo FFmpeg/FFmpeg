@@ -26,12 +26,19 @@
 #include "avcodec.h"
 #include "libavutil/internal.h"
 
+/** Additional profile info flags */
+#define DNXHD_INTERLACED   (1<<0)
+#define DNXHD_444          (1<<1)
+
+/** Indicate that a CIDEntry value must be read in the bitstream */
+#define DNXHD_VARIABLE 0
+
 typedef struct CIDEntry {
     int cid;
     unsigned int width, height;
-    int interlaced;
     unsigned int frame_size;
     unsigned int coding_unit_size;
+    uint16_t flags;
     int index_bits;
     int bit_depth;
     int eob_index;

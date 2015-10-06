@@ -471,6 +471,7 @@ static void start_children(FFServerStream *feed)
         av_free (pathname);
         _exit(1);
     }
+    av_free (pathname);
 }
 
 /* open a listening socket */

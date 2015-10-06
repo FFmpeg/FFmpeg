@@ -851,7 +851,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 retry:
     /* pkt size is repeated at end. skip it */
-    for (;; last = avio_rb32(s->pb)) {
         pos  = avio_tell(s->pb);
         type = (avio_r8(s->pb) & 0x1F);
         orig_size =
@@ -975,8 +974,6 @@ skip:
             ret = AVERROR(EAGAIN);
             goto leave;
         }
-        break;
-    }
 
     // if not streamed and no duration from metadata then seek to end to find
     // the duration from the timestamps
