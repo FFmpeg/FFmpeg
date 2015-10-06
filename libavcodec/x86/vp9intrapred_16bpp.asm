@@ -601,7 +601,7 @@ cglobal vp9_ipred_tm_16x16_12, 4, 4, 8, dst, stride, l, a
     jmp mangle(private_prefix %+ _ %+ vp9_ipred_tm_16x16_10 %+ SUFFIX).body
 
 INIT_XMM sse2
-cglobal vp9_ipred_tm_32x32_10, 4, 4, 10, 32 * ARCH_X86_32, dst, stride, l, a
+cglobal vp9_ipred_tm_32x32_10, 4, 4, 10, 32 * -ARCH_X86_32, dst, stride, l, a
     mova                    m0, [pw_1023]
 .body:
     pxor                    m1, m1
@@ -655,7 +655,7 @@ cglobal vp9_ipred_tm_32x32_10, 4, 4, 10, 32 * ARCH_X86_32, dst, stride, l, a
     jge .loop
     RET
 
-cglobal vp9_ipred_tm_32x32_12, 4, 4, 10, 32 * ARCH_X86_32, dst, stride, l, a
+cglobal vp9_ipred_tm_32x32_12, 4, 4, 10, 32 * -ARCH_X86_32, dst, stride, l, a
     mova                    m0, [pw_4095]
     jmp mangle(private_prefix %+ _ %+ vp9_ipred_tm_32x32_10 %+ SUFFIX).body
 
@@ -945,7 +945,7 @@ cglobal vp9_ipred_dr_16x16_16, 4, 4, 7, dst, stride, l, a
     RET
 
 cglobal vp9_ipred_dr_32x32_16, 4, 5, 10 + notcpuflag(ssse3), \
-                               %1 * ARCH_X86_32 * mmsize, dst, stride, l, a
+                               %1 * ARCH_X86_32 * -mmsize, dst, stride, l, a
     mova                    m0, [aq+mmsize*3]       ; a[24-31]
     movu                    m1, [aq+mmsize*3-2]     ; a[23-30]
     psrldq                  m2, m0, 2               ; a[25-31].
@@ -1634,13 +1634,8 @@ cglobal vp9_ipred_hu_16x16_16, 3, 4, 6 + notcpuflag(ssse3), dst, stride, l, a
     jg .loop
     RET
 
-%if ARCH_X86_64 || HAVE_ALIGNED_STACK
 cglobal vp9_ipred_hu_32x32_16, 3, 7, 10 + notcpuflag(ssse3), \
-                               %1 * mmsize * ARCH_X86_32, dst, stride, l, a
-%else
-cglobal vp9_ipred_hu_32x32_16, 3, 6, 10 + notcpuflag(ssse3), \
-                               %1 * mmsize * ARCH_X86_32, dst, stride, l, a
-%endif
+                               %1 * -mmsize * ARCH_X86_32, dst, stride, l, a
     mova                    m2, [lq+mmsize*0+0]
     movu                    m1, [lq+mmsize*0+2]
     movu                    m0, [lq+mmsize*0+4]
@@ -1671,12 +1666,7 @@ cglobal vp9_ipred_hu_32x32_16, 3, 6, 10 + notcpuflag(ssse3), \
     SBUTTERFLY           wd, 7,  6,  0
     pshufd                  m1, m1, q3333
     UNSCRATCH                0,  9, rsp+1*mmsize
-%if ARCH_X86_64 || HAVE_ALIGNED_STACK
     DEFINE_ARGS dst, stride, cnt, stride3, stride4, stride20, stride28
-%else
-    DEFINE_ARGS dst, stride, stride3, stride4, stride20, stride28
-%define cntd dword r0m
-%endif
     lea               stride3q, [strideq*3]
     lea               stride4q, [strideq*4]
     lea              stride28q, [stride4q*8]
@@ -1902,7 +1892,7 @@ cglobal vp9_ipred_hd_16x16_16, 4, 4, 8, dst, stride, l, a
     RET
 
 cglobal vp9_ipred_hd_32x32_16, 4, 4 + 3 * ARCH_X86_64, 14, \
-                               10 * mmsize * ARCH_X86_32, dst, stride, l, a
+                               10 * -mmsize * ARCH_X86_32, dst, stride, l, a
     mova                    m2, [lq+mmsize*0+0]
     movu                    m1, [lq+mmsize*0+2]
     movu                    m0, [lq+mmsize*0+4]
