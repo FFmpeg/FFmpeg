@@ -1015,7 +1015,7 @@ exit /b 1 \n\
         for( uint uiI = 0; uiI < uiNumCLCalls; uiI++ )
         {
             sCLLaunchBat += "cl.exe";
-            sCLLaunchBat += " /I\"../../\" /I\"../../../\" " + sCLExtra + " /Fo\"" + sDirName + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /D\"strtod=avpriv_strtod\" /FI\"compat\\msvcrt\\snprintf.h\" /FR\"" + sDirName + "/\" /c /MP /w /nologo";
+            sCLLaunchBat += " /I\"../../\" /I\"../../../\" " + sCLExtra + " /Fo\"" + sDirName + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /FI\"compat.h\" /FR\"" + sDirName + "/\" /c /MP /w /nologo";
             uint uiStartPos = uiTotalPos;
             for( uiTotalPos; uiTotalPos < min( uiStartPos + uiRowSize, itI->second.size( ) ); uiTotalPos++ )
             {
