@@ -90,14 +90,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const float drymix = s->drymix;
     const float crossfeed = s->crossfeed;
     const float feedback = s->feedback;
-    AVFrame *out = NULL;
+    AVFrame *out;
     float *dst;
     int n;
 
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
-        AVFrame *out = ff_get_audio_buffer(inlink, in->nb_samples);
+        out = ff_get_audio_buffer(inlink, in->nb_samples);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
