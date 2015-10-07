@@ -51,11 +51,13 @@ static double bessel(double x){
     x= x*x/4;
     t = x;
     v = 1 + x;
-    for(i=1; v != lastv; i++){
-        lastv=v;
+    for(i=1; v != lastv; i+=2){
         t *= x*inv[i];
         v += t;
-        av_assert2(i<99);
+        lastv=v;
+        t *= x*inv[i + 1];
+        v += t;
+        av_assert2(i<98);
     }
     return v;
 }
