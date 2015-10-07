@@ -27,6 +27,8 @@ SECTION_RODATA
 
 pw_128: times 8 dw 128
 pw_255: times 8 dw 255
+pb_128: times 16 db 128
+pb_255: times 16 db 255
 
 SECTION .text
 
@@ -273,6 +275,37 @@ cglobal blend_darken, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, d
     jg .nextrow
 REP_RET
 
+cglobal blend_hardmix, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+    add      topq, widthq
+    add   bottomq, widthq
+    add      dstq, widthq
+    sub      endq, startq
+    mova       m2, [pb_255]
+    mova       m3, [pb_128]
+    neg    widthq
+.nextrow:
+    mov       r10q, widthq
+    %define      x  r10q
+
+    .loop:
+        movu            m0, [topq + x]
+        movu            m1, [bottomq + x]
+        pxor            m1, m2
+        pxor            m0, m3
+        pxor            m1, m3
+        pcmpgtb         m1, m0
+        pxor            m1, m2
+        mova    [dstq + x], m1
+        add           r10q, mmsize
+    jl .loop
+
+    add          topq, top_linesizeq
+    add       bottomq, bottom_linesizeq
+    add          dstq, dst_linesizeq
+    sub          endd, 1
+    jg .nextrow
+REP_RET
+
 cglobal blend_lighten, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
@@ -288,6 +321,37 @@ cglobal blend_lighten, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, 
         movu            m1, [bottomq + x]
         pmaxub          m0, m1
         mova    [dstq + x], m0
+        add           r10q, mmsize
+    jl .loop
+
+    add          topq, top_linesizeq
+    add       bottomq, bottom_linesizeq
+    add          dstq, dst_linesizeq
+    sub          endd, 1
+    jg .nextrow
+REP_RET
+
+cglobal blend_phoenix, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+    add      topq, widthq
+    add   bottomq, widthq
+    add      dstq, widthq
+    sub      endq, startq
+    mova       m3, [pb_255]
+    neg    widthq
+.nextrow:
+    mov       r10q, widthq
+    %define      x  r10q
+
+    .loop:
+        movu            m0, [topq + x]
+        movu            m1, [bottomq + x]
+        mova            m2, m0
+        pminub          m0, m1
+        pmaxub          m1, m2
+        mova            m2, m3
+        psubusb         m2, m1
+        paddusb         m2, m0
+        mova    [dstq + x], m2
         add           r10q, mmsize
     jl .loop
 

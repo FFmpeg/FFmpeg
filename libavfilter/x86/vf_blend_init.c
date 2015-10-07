@@ -59,6 +59,12 @@ void ff_blend_difference128_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                                  ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                                  struct FilterParams *param, double *values);
 
+void ff_blend_hardmix_sse2(const uint8_t *top, ptrdiff_t top_linesize,
+                           const uint8_t *bottom, ptrdiff_t bottom_linesize,
+                           uint8_t *dst, ptrdiff_t dst_linesize,
+                           ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
+                           struct FilterParams *param, double *values);
+
 void ff_blend_lighten_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                            const uint8_t *bottom, ptrdiff_t bottom_linesize,
                            uint8_t *dst, ptrdiff_t dst_linesize,
@@ -70,6 +76,12 @@ void ff_blend_or_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                       uint8_t *dst, ptrdiff_t dst_linesize,
                       ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
                       struct FilterParams *param, double *values);
+
+void ff_blend_phoenix_sse2(const uint8_t *top, ptrdiff_t top_linesize,
+                           const uint8_t *bottom, ptrdiff_t bottom_linesize,
+                           uint8_t *dst, ptrdiff_t dst_linesize,
+                           ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
+                           struct FilterParams *param, double *values);
 
 void ff_blend_subtract_sse2(const uint8_t *top, ptrdiff_t top_linesize,
                             const uint8_t *bottom, ptrdiff_t bottom_linesize,
@@ -107,8 +119,10 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
         case BLEND_AVERAGE:  param->blend = ff_blend_average_sse2;  break;
         case BLEND_DARKEN:   param->blend = ff_blend_darken_sse2;   break;
         case BLEND_DIFFERENCE128: param->blend = ff_blend_difference128_sse2; break;
+        case BLEND_HARDMIX:  param->blend = ff_blend_hardmix_sse2;  break;
         case BLEND_LIGHTEN:  param->blend = ff_blend_lighten_sse2;  break;
         case BLEND_OR:       param->blend = ff_blend_or_sse2;       break;
+        case BLEND_PHOENIX:  param->blend = ff_blend_phoenix_sse2;  break;
         case BLEND_SUBTRACT: param->blend = ff_blend_subtract_sse2; break;
         case BLEND_XOR:      param->blend = ff_blend_xor_sse2;      break;
         }
