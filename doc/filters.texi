@@ -4590,7 +4590,9 @@ specified.
 
 @item band, t
 Specify the thickness of the fuzzy edge of the rectangle (added to
-@var{w} and @var{h}). The default value is 4.
+@var{w} and @var{h}). The default value is 1. This option is
+deprecated, setting higher values should no longer be necessary and
+is not recommended.
 
 @item show
 When set to 1, a green rectangle is drawn on the screen to simplify
