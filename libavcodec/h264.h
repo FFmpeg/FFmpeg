@@ -29,6 +29,7 @@
 #define AVCODEC_H264_H
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/thread.h"
 #include "cabac.h"
 #include "error_resilience.h"
 #include "get_bits.h"
