@@ -104,6 +104,7 @@
     <YASM Include="..\libavcodec\x86\aacpsdsp.asm" />
     <YASM Include="..\libavcodec\x86\sbrdsp.asm" />
     <YASM Include="..\libavcodec\x86\g722dsp.asm" />
+    <YASM Include="..\libavcodec\x86\alacdsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
     <YASM Include="..\libavcodec\x86\dcadsp.asm" />
     <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
@@ -472,6 +473,7 @@
     <ClCompile Include="..\libavcodec\alac_data.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\alacdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_alacdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\alacenc.c">
     </ClCompile>
@@ -1695,6 +1697,8 @@
     <ClCompile Include="..\libavcodec\x86\sbrdsp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\g722dsp_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\alacdsp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\pngdsp_init.c">
     </ClCompile>

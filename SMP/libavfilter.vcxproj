@@ -71,6 +71,7 @@
     <YASM Include="..\libavfilter\x86\vf_pullup.asm" />
     <YASM Include="..\libavfilter\x86\vf_removegrain.asm" />
     <YASM Include="..\libavfilter\x86\vf_ssim.asm" />
+    <YASM Include="..\libavfilter\x86\vf_stereo3d.asm" />
     <YASM Include="..\libavfilter\x86\af_volume.asm" />
     <YASM Include="..\libavfilter\x86\vf_yadif.asm" />
     <YASM Include="..\libavfilter\x86\yadif-16.asm" />
@@ -437,6 +438,7 @@
       <ObjectFileName>$(IntDir)\libavfilter_vf_ssim.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_stereo3d.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_stereo3d.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_super2xsai.c">
     </ClCompile>
@@ -539,6 +541,8 @@
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_spp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_ssim_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_stereo3d_init.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_tinterlace_init.c">
     </ClCompile>
