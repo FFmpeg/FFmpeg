@@ -33,7 +33,7 @@ pb_255: times 16 db 255
 SECTION .text
 
 INIT_XMM sse2
-cglobal blend_xor, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_xor, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -58,7 +58,7 @@ cglobal blend_xor, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst,
     jg .nextrow
 REP_RET
 
-cglobal blend_or, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_or, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -83,7 +83,7 @@ cglobal blend_or, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, 
     jg .nextrow
 REP_RET
 
-cglobal blend_and, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_and, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -108,7 +108,7 @@ cglobal blend_and, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst,
     jg .nextrow
 REP_RET
 
-cglobal blend_addition, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_addition, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -133,7 +133,7 @@ cglobal blend_addition, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize,
     jg .nextrow
 REP_RET
 
-cglobal blend_subtract, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_subtract, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -158,7 +158,7 @@ cglobal blend_subtract, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize,
     jg .nextrow
 REP_RET
 
-cglobal blend_difference128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_difference128, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -189,7 +189,7 @@ cglobal blend_difference128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_line
     jg .nextrow
 REP_RET
 
-cglobal blend_average, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_average, 9, 11, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -219,7 +219,7 @@ cglobal blend_average, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesize, 
     jg .nextrow
 REP_RET
 
-cglobal blend_addition128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_addition128, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -250,7 +250,7 @@ cglobal blend_addition128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesi
     jg .nextrow
 REP_RET
 
-cglobal blend_darken, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_darken, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -275,7 +275,7 @@ cglobal blend_darken, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, d
     jg .nextrow
 REP_RET
 
-cglobal blend_hardmix, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_hardmix, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -306,7 +306,7 @@ cglobal blend_hardmix, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, 
     jg .nextrow
 REP_RET
 
-cglobal blend_lighten, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_lighten, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -331,7 +331,7 @@ cglobal blend_lighten, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, 
     jg .nextrow
 REP_RET
 
-cglobal blend_phoenix, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_phoenix, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -363,7 +363,7 @@ cglobal blend_phoenix, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, 
 REP_RET
 
 INIT_XMM ssse3
-cglobal blend_difference, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_difference, 9, 11, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -393,7 +393,7 @@ cglobal blend_difference, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesiz
     jg .nextrow
 REP_RET
 
-cglobal blend_negation, 9, 10, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_negation, 9, 11, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
