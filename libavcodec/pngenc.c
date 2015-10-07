@@ -842,6 +842,9 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR(ENOMEM);
 
     if (avctx->frame_number == 0) {
+        if (!pict)
+            return AVERROR(EINVAL);
+
         s->bytestream = avctx->extradata = av_malloc(FF_MIN_BUFFER_SIZE);
         if (!avctx->extradata)
             return AVERROR(ENOMEM);
