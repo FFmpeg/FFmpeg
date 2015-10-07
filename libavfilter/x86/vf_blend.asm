@@ -27,6 +27,7 @@ SECTION_RODATA
 
 pw_128: times 8 dw 128
 pw_255: times 8 dw 255
+pb_127: times 16 db 127
 pb_128: times 16 db 128
 pb_255: times 16 db 255
 
@@ -275,13 +276,14 @@ cglobal blend_darken, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, d
     jg .nextrow
 REP_RET
 
-cglobal blend_hardmix, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_hardmix, 9, 11, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
     sub      endq, startq
     mova       m2, [pb_255]
     mova       m3, [pb_128]
+    mova       m4, [pb_127]
     neg    widthq
 .nextrow:
     mov       r10q, widthq
@@ -290,9 +292,8 @@ cglobal blend_hardmix, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, 
     .loop:
         movu            m0, [topq + x]
         movu            m1, [bottomq + x]
-        pxor            m1, m2
+        pxor            m1, m4
         pxor            m0, m3
-        pxor            m1, m3
         pcmpgtb         m1, m0
         pxor            m1, m2
         mova    [dstq + x], m1
