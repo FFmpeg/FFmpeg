@@ -57,4 +57,7 @@ av_cold void ff_alacdsp_init(ALACDSPContext *c)
     c->decorrelate_stereo   = decorrelate_stereo;
     c->append_extra_bits[0] =
     c->append_extra_bits[1] = append_extra_bits;
+
+    if (ARCH_X86)
+        ff_alacdsp_init_x86(c);
 }

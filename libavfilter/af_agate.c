@@ -158,14 +158,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const double attack_coeff = s->attack_coeff;
     const double release_coeff = s->release_coeff;
     const double level_in = s->level_in;
-    AVFrame *out = NULL;
+    AVFrame *out;
     double *dst;
     int n, c;
 
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
-        AVFrame *out = ff_get_audio_buffer(inlink, in->nb_samples);
+        out = ff_get_audio_buffer(inlink, in->nb_samples);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);

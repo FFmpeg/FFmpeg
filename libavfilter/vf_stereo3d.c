@@ -30,6 +30,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+#include "stereo3d.h"
 
 enum StereoCode {
     ANAGLYPH_RC_GRAY,   // anaglyph red/cyan gray
@@ -150,6 +151,7 @@ typedef struct Stereo3DContext {
     double ts_unit;
     int blanks;
     int in_off_left[4], in_off_right[4];
+    Stereo3DDSPContext dsp;
 } Stereo3DContext;
 
 #define OFFSET(x) offsetof(Stereo3DContext, x)
@@ -298,6 +300,37 @@ static int query_formats(AVFilterContext *ctx)
     if (!fmts_list)
         return AVERROR(ENOMEM);
     return ff_set_common_formats(ctx, fmts_list);
+}
+
+static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const uint8_t *right)
+{
+    int sum;
+
+    sum  = coeff[0] * left[0] + coeff[3] * right[0]; //red in
+    sum += coeff[1] * left[1] + coeff[4] * right[1]; //green in
+    sum += coeff[2] * left[2] + coeff[5] * right[2]; //blue in
+
+    return av_clip_uint8(sum >> 16);
+}
+
+static void anaglyph(uint8_t *dst, uint8_t *lsrc, uint8_t *rsrc,
+                     ptrdiff_t dst_linesize, ptrdiff_t l_linesize, ptrdiff_t r_linesize,
+                     int width, int height,
+                     const int *ana_matrix_r, const int *ana_matrix_g, const int *ana_matrix_b)
+{
+    int x, y, o;
+
+    for (y = 0; y < height; y++) {
+        for (o = 0, x = 0; x < width; x++, o+= 3) {
+            dst[o    ] = ana_convert(ana_matrix_r, lsrc + o, rsrc + o);
+            dst[o + 1] = ana_convert(ana_matrix_g, lsrc + o, rsrc + o);
+            dst[o + 2] = ana_convert(ana_matrix_b, lsrc + o, rsrc + o);
+        }
+
+        dst  += dst_linesize;
+        lsrc += l_linesize;
+        rsrc += r_linesize;
+    }
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -517,38 +550,11 @@ static int config_output(AVFilterLink *outlink)
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
 
+    s->dsp.anaglyph = anaglyph;
+    if (ARCH_X86)
+        ff_stereo3d_init_x86(&s->dsp);
+
     return 0;
-}
-
-static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const uint8_t *right)
-{
-    int sum;
-
-    sum  = coeff[0] * left[0] + coeff[3] * right[0]; //red in
-    sum += coeff[1] * left[1] + coeff[4] * right[1]; //green in
-    sum += coeff[2] * left[2] + coeff[5] * right[2]; //blue in
-
-    return av_clip_uint8(sum >> 16);
-}
-
-static void anaglyph(uint8_t *dst, uint8_t *lsrc, uint8_t *rsrc,
-                     ptrdiff_t dst_linesize, ptrdiff_t l_linesize, ptrdiff_t r_linesize,
-                     int width, int height,
-                     const int *ana_matrix_r, const int *ana_matrix_g, const int *ana_matrix_b)
-{
-    int x, y, o;
-
-    for (y = 0; y < height; y++) {
-        for (o = 0, x = 0; x < width; x++, o+= 3) {
-            dst[o    ] = ana_convert(ana_matrix_r, lsrc + o, rsrc + o);
-            dst[o + 1] = ana_convert(ana_matrix_g, lsrc + o, rsrc + o);
-            dst[o + 2] = ana_convert(ana_matrix_b, lsrc + o, rsrc + o);
-        }
-
-        dst  += dst_linesize;
-        lsrc += l_linesize;
-        rsrc += r_linesize;
-    }
 }
 
 typedef struct ThreadData {
@@ -568,7 +574,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int end   = (height * (jobnr+1)) / nb_jobs;
     const int **ana_matrix = s->ana_matrix;
 
-    anaglyph(out->data[0] + out->linesize[0] * start,
+    s->dsp.anaglyph(out->data[0] + out->linesize[0] * start,
              ileft ->data[0] + s->in_off_left [0]  + ileft->linesize[0] * start * s->in.row_step,
              iright->data[0] + s->in_off_right[0] + iright->linesize[0] * start * s->in.row_step,
              out->linesize[0],

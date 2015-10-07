@@ -64,7 +64,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ExtraStereoContext *s = ctx->priv;
     const float *src = (const float *)in->data[0];
     const float mult = s->mult;
-    AVFrame *out = NULL;
+    AVFrame *out;
     float *dst;
     int n;
 

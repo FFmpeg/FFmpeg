@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2015 Paul B Mahol
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,19 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ALACDSP_H
-#define AVCODEC_ALACDSP_H
+#ifndef LIBAVFILTER_STEREO3D_H
+#define LIBAVFILTER_STEREO3D_H
 
+#include <stddef.h>
 #include <stdint.h>
 
-typedef struct ALACDSPContext {
-    void (*decorrelate_stereo)(int32_t *buffer[2], int nb_samples,
-                               int decorr_shift, int decorr_left_weight);
-    void (*append_extra_bits[2])(int32_t *buffer[2], int32_t *extra_bits_buffer[2],
-                                 int extra_bits, int channels, int nb_samples);
-} ALACDSPContext;
+typedef struct Stereo3DDSPContext {
+    void (*anaglyph)(uint8_t *dst, uint8_t *lsrc, uint8_t *rsrc,
+                     ptrdiff_t dst_linesize, ptrdiff_t l_linesize, ptrdiff_t r_linesize,
+                     int width, int height,
+                     const int *ana_matrix_r, const int *ana_matrix_g, const int *ana_matrix_b);
+} Stereo3DDSPContext;
 
-void ff_alacdsp_init(ALACDSPContext *c);
-void ff_alacdsp_init_x86(ALACDSPContext *c);
+void ff_stereo3d_init_x86(Stereo3DDSPContext *dsp);
 
-#endif /* AVCODEC_ALACDSP_H */
+#endif /* LIBAVFILTER_STEREO3D_H */
