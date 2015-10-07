@@ -2984,8 +2984,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     HEVCContext *s = avctx->priv_data;
     int ret;
 
-    ff_init_cabac_states();
-
     avctx->internal->allocate_progress = 1;
 
     ret = hevc_init_context(avctx);

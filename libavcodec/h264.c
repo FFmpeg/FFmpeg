@@ -621,8 +621,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     ff_h264_decode_init_vlc();
 
-    ff_init_cabac_states();
-
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         if (avctx->ticks_per_frame == 1)
             h->avctx->framerate.num *= 2;
