@@ -32,9 +32,8 @@
  * 0th order modified bessel function of the first kind.
  */
 static double bessel(double x){
-    double v=1;
     double lastv=0;
-    double t=1;
+    double t, v;
     int i;
     static const double inv[100]={
  1.0/( 1* 1), 1.0/( 2* 2), 1.0/( 3* 3), 1.0/( 4* 4), 1.0/( 5* 5), 1.0/( 6* 6), 1.0/( 7* 7), 1.0/( 8* 8), 1.0/( 9* 9), 1.0/(10*10),
@@ -50,7 +49,9 @@ static double bessel(double x){
     };
 
     x= x*x/4;
-    for(i=0; v != lastv; i++){
+    t = x;
+    v = 1 + x;
+    for(i=1; v != lastv; i++){
         lastv=v;
         t *= x*inv[i];
         v += t;
