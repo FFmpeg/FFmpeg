@@ -688,6 +688,8 @@ typedef struct AVIndexEntry {
  */
 #define AV_DISPOSITION_ATTACHED_PIC      0x0400
 
+typedef struct AVStreamInternal AVStreamInternal;
+
 /**
  * Stream structure.
  * New fields can be added to the end with minor version bumps.
@@ -878,6 +880,12 @@ typedef struct AVStream {
                                     support seeking natively. */
     int nb_index_entries;
     unsigned int index_entries_allocated_size;
+
+    /**
+     * An opaque field for libavformat internal usage.
+     * Must not be accessed in any way by callers.
+     */
+    AVStreamInternal *internal;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

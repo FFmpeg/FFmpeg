@@ -90,6 +90,18 @@ struct AVFormatInternal {
      * Timebase for the timestamp offset.
      */
     AVRational offset_timebase;
+
+#if FF_API_COMPUTE_PKT_FIELDS2
+    int missing_ts_warning;
+#endif
+};
+
+struct AVStreamInternal {
+    /**
+     * Set to 1 if the codec allows reordering, so pts can be different
+     * from dts.
+     */
+    int reorder;
 };
 
 void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem);
