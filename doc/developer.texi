@@ -28,7 +28,7 @@ this document.
 
 For more detailed legal information about the use of FFmpeg in
 external programs read the @file{LICENSE} file in the source tree and
-consult @url{http://ffmpeg.org/legal.html}.
+consult @url{https://ffmpeg.org/legal.html}.
 
 @section Contributing
 
@@ -430,7 +430,7 @@ Also please if you send several patches, send each patch as a separate mail,
 do not attach several unrelated patches to the same mail.
 
 Patches should be posted to the
-@uref{http://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
+@uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
 mailing list. Use @code{git send-email} when possible since it will properly
 send patches without requiring extra care. If you cannot, then send patches
 as base64-encoded attachments, so your patch is not trashed during
@@ -545,7 +545,7 @@ amounts of memory when fed damaged data.
 
 @item
 Did you test your decoder or demuxer against sample files?
-Samples may be obtained at @url{http://samples.ffmpeg.org}.
+Samples may be obtained at @url{https://samples.ffmpeg.org}.
 
 @item
 Does the patch not mix functional and cosmetic changes?
@@ -712,7 +712,7 @@ FFmpeg maintains a set of @strong{release branches}, which are the
 recommended deliverable for system integrators and distributors (such as
 Linux distributions, etc.). At regular times, a @strong{release
 manager} prepares, tests and publishes tarballs on the
-@url{http://ffmpeg.org} website.
+@url{https://ffmpeg.org} website.
 
 There are two kinds of releases:
 
@@ -791,7 +791,7 @@ Prepare the release tarballs in @code{bz2} and @code{gz} formats, and
 supplementing files that contain @code{gpg} signatures
 
 @item
-Publish the tarballs at @url{http://ffmpeg.org/releases}. Create and
+Publish the tarballs at @url{https://ffmpeg.org/releases}. Create and
 push an annotated tag in the form @code{nX}, with @code{X}
 containing the version number.
 
