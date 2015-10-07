@@ -134,7 +134,7 @@ decl_itxfm_func(idct,  idct,  4, BPC, sse2);
 decl_itxfm_func(idct,  iadst, 4, BPC, sse2);
 decl_itxfm_func(iadst, idct,  4, BPC, sse2);
 decl_itxfm_func(iadst, iadst, 4, BPC, sse2);
-decl_itxfm_func(idct, idct, 8, BPC, sse2);
+decl_itxfm_funcs(8, BPC, sse2);
 #endif /* HAVE_YASM */
 
 av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
@@ -205,7 +205,7 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
 #else
         init_itx_funcs(TX_4X4, 4, 12, sse2);
 #endif
-        init_itx_func(TX_8X8, DCT_DCT, idct, idct, 8, BPC, sse2);
+        init_itx_funcs(TX_8X8, 8, BPC, sse2);
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {

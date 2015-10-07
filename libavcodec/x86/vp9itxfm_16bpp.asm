@@ -29,6 +29,8 @@ cextern pw_8
 cextern pw_1023
 cextern pw_2048
 cextern pw_4095
+cextern pw_m1
+cextern pd_1
 cextern pd_16
 cextern pd_8192
 
@@ -56,6 +58,17 @@ pw_3196_16069: times 4 dw 3196, 16069
 pw_m16069_3196: times 4 dw -16069, 3196
 pw_13623_9102: times 4 dw 13623, 9102
 pw_m9102_13623: times 4 dw -9102, 13623
+
+pw_1606_16305: times 4 dw 1606, 16305
+pw_m16305_1606: times 4 dw -16305, 1606
+pw_12665_10394: times 4 dw 12665, 10394
+pw_m10394_12665: times 4 dw -10394, 12665
+pw_7723_14449: times 4 dw 7723, 14449
+pw_m14449_7723: times 4 dw -14449, 7723
+pw_15679_4756: times 4 dw 15679, 4756
+pw_m4756_15679: times 4 dw -4756, 15679
+pw_15137_6270: times 4 dw 15137, 6270
+pw_m6270_15137: times 4 dw -6270, 15137
 
 SECTION .text
 
@@ -517,7 +530,7 @@ IADST4_12BPP_FN iadst, IADST4, idct,  IDCT4
 IADST4_12BPP_FN iadst, IADST4, iadst, IADST4
 
 ; the following line has not been executed at the end of this macro:
-; UNSCRATCH            7, 8, rsp+17*mmsize
+; UNSCRATCH            6, 8, rsp+17*mmsize
 %macro IDCT8_1D 1 ; src
     mova                m0, [%1+ 0*mmsize]
     mova                m2, [%1+ 4*mmsize]
@@ -539,9 +552,9 @@ IADST4_12BPP_FN iadst, IADST4, iadst, IADST4
     SUMSUB_BA         d, 1, 2, 4                    ; m1=out1, m2=out6
     UNSCRATCH            4, 8, rsp+17*mmsize
     UNSCRATCH            6, 9, rsp+18*mmsize
-    SCRATCH              0, 8, rsp+17*mmsize
-    SUMSUB_BA         d, 7, 4, 0                    ; m7=out2, m4=out5
-    SUMSUB_BA         d, 3, 6, 0                    ; m3=out3, m6=out4
+    SCRATCH              2, 8, rsp+17*mmsize
+    SUMSUB_BA         d, 7, 4, 2                    ; m7=out2, m4=out5
+    SUMSUB_BA         d, 3, 6, 2                    ; m3=out3, m6=out4
     SWAP                 0, 5, 4, 6, 2, 7
 %endmacro
 
@@ -621,12 +634,12 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
 .loop_1:
     IDCT8_1D        blockq
 
-    TRANSPOSE4x4D        0, 1, 2, 3, 7
+    TRANSPOSE4x4D        0, 1, 2, 3, 6
     mova  [ptrq+ 0*mmsize], m0
     mova  [ptrq+ 2*mmsize], m1
     mova  [ptrq+ 4*mmsize], m2
     mova  [ptrq+ 6*mmsize], m3
-    UNSCRATCH            7, 8, rsp+17*mmsize
+    UNSCRATCH            6, 8, rsp+17*mmsize
     TRANSPOSE4x4D        4, 5, 6, 7, 0
     mova  [ptrq+ 1*mmsize], m4
     mova  [ptrq+ 3*mmsize], m5
@@ -642,12 +655,12 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
 .loop_2:
     IDCT8_1D          ptrq
 
-    pxor                m7, m7
+    pxor                m6, m6
     PRELOAD              9, rsp+16*mmsize, max
-    ROUND_AND_STORE_4x4  0, 1, 2, 3, m7, reg_max, [pd_16], 5
+    ROUND_AND_STORE_4x4  0, 1, 2, 3, m6, reg_max, [pd_16], 5
     lea               dstq, [dstq+strideq*4]
     UNSCRATCH            0, 8, rsp+17*mmsize
-    ROUND_AND_STORE_4x4  4, 5, 6, 0, m7, reg_max, [pd_16], 5
+    ROUND_AND_STORE_4x4  4, 5, 0, 7, m6, reg_max, [pd_16], 5
     add               ptrq, 16
 %if ARCH_X86_64
     lea               dstq, [dstbakq+8]
@@ -658,8 +671,8 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
     dec               cntd
     jg .loop_2
 
-    ; m7 is still zero
-    ZERO_BLOCK blockq-2*mmsize, 32, 8, m7
+    ; m6 is still zero
+    ZERO_BLOCK blockq-2*mmsize, 32, 8, m6
     RET
 
 INIT_XMM sse2
@@ -715,3 +728,179 @@ cglobal vp9_idct_idct_8x8_add_12, 4, 6 + ARCH_X86_64, 10, \
     dec               cntd
     jg .loop_dc
     RET
+
+; inputs and outputs are dwords, coefficients are words
+;
+; dst1[hi]:dst3[lo] = src1 * coef1 + src2 * coef2
+; dst2[hi]:dst4[lo] = src1 * coef2 - src2 * coef1
+%macro SUMSUB_MUL_D 6 ; src/dst 1-2, dst3-4, coef1-2
+    pand               m%3, m%1, [pd_3fff]
+    pand               m%4, m%2, [pd_3fff]
+    psrad              m%1, 14
+    psrad              m%2, 14
+    packssdw           m%4, m%2
+    packssdw           m%3, m%1
+    punpckhwd          m%2, m%4, m%3
+    punpcklwd          m%4, m%3
+    pmaddwd            m%3, m%4, [pw_%6_%5]
+    pmaddwd            m%1, m%2, [pw_%6_%5]
+    pmaddwd            m%4, [pw_m%5_%6]
+    pmaddwd            m%2, [pw_m%5_%6]
+%endmacro
+
+; dst1 = src2[hi]:src4[lo] + src1[hi]:src3[lo] + rnd >> 14
+; dst2 = src2[hi]:src4[lo] - src1[hi]:src3[lo] + rnd >> 14
+%macro SUMSUB_PACK_D 5 ; src/dst 1-2, src3-4, tmp
+    SUMSUB_BA        d, %1, %2, %5
+    SUMSUB_BA        d, %3, %4, %5
+    paddd              m%3, [pd_8192]
+    paddd              m%4, [pd_8192]
+    psrad              m%3, 14
+    psrad              m%4, 14
+    paddd              m%1, m%3
+    paddd              m%2, m%4
+%endmacro
+
+%macro NEGD 1
+%if cpuflag(ssse3)
+    psignd              %1, [pw_m1]
+%else
+    pxor                %1, [pw_m1]
+    paddd               %1, [pd_1]
+%endif
+%endmacro
+
+; the following line has not been executed at the end of this macro:
+; UNSCRATCH            6, 8, rsp+17*mmsize
+%macro IADST8_1D 1
+    mova                m0, [%1+ 0*mmsize]
+    mova                m3, [%1+ 6*mmsize]
+    mova                m4, [%1+ 8*mmsize]
+    mova                m7, [%1+14*mmsize]
+    SUMSUB_MUL_D         7, 0, 1, 2, 16305,  1606       ; m7/1=t0a, m0/2=t1a
+    SUMSUB_MUL_D         3, 4, 5, 6, 10394, 12665       ; m3/5=t4a, m4/6=t5a
+    SCRATCH              0, 8, rsp+17*mmsize
+    SUMSUB_PACK_D        3, 7, 5, 1, 0                  ; m3=t0, m7=t4
+    UNSCRATCH            0, 8, rsp+17*mmsize
+    SUMSUB_PACK_D        4, 0, 6, 2, 1                  ; m4=t1, m0=t5
+
+    SCRATCH              3, 8, rsp+17*mmsize
+    SCRATCH              4, 9, rsp+18*mmsize
+    SCRATCH              7, 10, rsp+19*mmsize
+    SCRATCH              0, 11, rsp+20*mmsize
+
+    mova                m1, [%1+ 2*mmsize]
+    mova                m2, [%1+ 4*mmsize]
+    mova                m5, [%1+10*mmsize]
+    mova                m6, [%1+12*mmsize]
+    SUMSUB_MUL_D         5, 2, 3, 4, 14449,  7723       ; m5/8=t2a, m2/9=t3a
+    SUMSUB_MUL_D         1, 6, 7, 0,  4756, 15679       ; m1/10=t6a, m6/11=t7a
+    SCRATCH              2, 12, rsp+21*mmsize
+    SUMSUB_PACK_D        1, 5, 7, 3, 2                  ; m1=t2, m5=t6
+    UNSCRATCH            2, 12, rsp+21*mmsize
+    SUMSUB_PACK_D        6, 2, 0, 4, 3                  ; m6=t3, m2=t7
+
+    UNSCRATCH            7, 10, rsp+19*mmsize
+    UNSCRATCH            0, 11, rsp+20*mmsize
+    SCRATCH              1, 10, rsp+19*mmsize
+    SCRATCH              6, 11, rsp+20*mmsize
+
+    SUMSUB_MUL_D         7, 0, 3, 4, 15137,  6270       ; m7/8=t4a, m0/9=t5a
+    SUMSUB_MUL_D         2, 5, 1, 6,  6270, 15137       ; m2/10=t7a, m5/11=t6a
+    SCRATCH              2, 12, rsp+21*mmsize
+    SUMSUB_PACK_D        5, 7, 6, 3, 2                  ; m5=-out1, m7=t6
+    UNSCRATCH            2, 12, rsp+21*mmsize
+    NEGD                m5                              ; m5=out1
+    SUMSUB_PACK_D        2, 0, 1, 4, 3                  ; m2=out6, m0=t7
+    SUMSUB_MUL           7, 0, 3, 4, 11585, 11585       ; m7=out2, m0=-out5
+    NEGD                m0                              ; m0=out5
+
+    UNSCRATCH            3, 8, rsp+17*mmsize
+    UNSCRATCH            4, 9, rsp+18*mmsize
+    UNSCRATCH            1, 10, rsp+19*mmsize
+    UNSCRATCH            6, 11, rsp+20*mmsize
+    SCRATCH              2, 8, rsp+17*mmsize
+    SCRATCH              0, 9, rsp+18*mmsize
+
+    SUMSUB_BA         d, 1, 3,  2                       ; m1=out0, m3=t2
+    SUMSUB_BA         d, 6, 4,  2                       ; m6=-out7, m4=t3
+    NEGD                m6                              ; m6=out7
+    SUMSUB_MUL           3, 4,  2,  0, 11585, 11585     ; m3=-out3, m4=out4
+    NEGD                m3                              ; m3=out3
+
+    UNSCRATCH            0, 9, rsp+18*mmsize
+
+    SWAP                 0, 1, 5
+    SWAP                 2, 7, 6
+%endmacro
+
+%macro IADST8_FN 4
+cglobal vp9_%1_%3_8x8_add_10, 3, 6 + ARCH_X86_64, 13, \
+                              17 * mmsize + ARCH_X86_32 * 5 * mmsize, \
+                              dst, stride, block, eob
+    mova                m0, [pw_1023]
+
+.body:
+    mova   [rsp+16*mmsize], m0
+    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+%if ARCH_X86_64
+    mov            dstbakq, dstq
+%endif
+    lea           stride3q, [strideq*3]
+    mov               cntd, 2
+    mov               ptrq, rsp
+.loop_1:
+    %2_1D           blockq
+
+    TRANSPOSE4x4D        0, 1, 2, 3, 6
+    mova  [ptrq+ 0*mmsize], m0
+    mova  [ptrq+ 2*mmsize], m1
+    mova  [ptrq+ 4*mmsize], m2
+    mova  [ptrq+ 6*mmsize], m3
+    UNSCRATCH            6, 8, rsp+17*mmsize
+    TRANSPOSE4x4D        4, 5, 6, 7, 0
+    mova  [ptrq+ 1*mmsize], m4
+    mova  [ptrq+ 3*mmsize], m5
+    mova  [ptrq+ 5*mmsize], m6
+    mova  [ptrq+ 7*mmsize], m7
+    add               ptrq, 8 * mmsize
+    add             blockq, mmsize
+    dec               cntd
+    jg .loop_1
+
+    mov               cntd, 2
+    mov               ptrq, rsp
+.loop_2:
+    %4_1D             ptrq
+
+    pxor                m6, m6
+    PRELOAD              9, rsp+16*mmsize, max
+    ROUND_AND_STORE_4x4  0, 1, 2, 3, m6, reg_max, [pd_16], 5
+    lea               dstq, [dstq+strideq*4]
+    UNSCRATCH            0, 8, rsp+17*mmsize
+    ROUND_AND_STORE_4x4  4, 5, 0, 7, m6, reg_max, [pd_16], 5
+    add               ptrq, 16
+%if ARCH_X86_64
+    lea               dstq, [dstbakq+8]
+%else
+    mov               dstq, dstm
+    add               dstq, 8
+%endif
+    dec               cntd
+    jg .loop_2
+
+    ; m6 is still zero
+    ZERO_BLOCK blockq-2*mmsize, 32, 8, m6
+    RET
+
+cglobal vp9_%1_%3_8x8_add_12, 3, 6 + ARCH_X86_64, 13, \
+                              17 * mmsize + ARCH_X86_32 * 5 * mmsize, \
+                              dst, stride, block, eob
+    mova                m0, [pw_4095]
+    jmp mangle(private_prefix %+ _ %+ vp9_%1_%3_8x8_add_10 %+ SUFFIX).body
+%endmacro
+
+INIT_XMM sse2
+IADST8_FN idct,  IDCT8,  iadst, IADST8
+IADST8_FN iadst, IADST8, idct,  IDCT8
+IADST8_FN iadst, IADST8, iadst, IADST8
