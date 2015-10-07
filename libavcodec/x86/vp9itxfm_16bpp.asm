@@ -49,6 +49,7 @@ pw_m5283_m15212: times 4 dw -5283, -15212
 pw_13377x2: times 8 dw 13377*2
 pw_m13377_13377: times 4 dw -13377, 13377
 pw_13377_0: times 4 dw 13377, 0
+pw_9929_m5283: times 4 dw 9929, -5283
 
 SECTION .text
 
@@ -390,3 +391,149 @@ cglobal vp9_idct_idct_4x4_add_12, 4, 4, 6, dst, stride, block, eob
     movh   [dstq+strideq*2], m2
     movhps [dstq+stride3q ], m2
     RET
+
+%macro SCRATCH 3-4
+%if ARCH_X86_64
+    SWAP                %1, %2
+%if %0 == 4
+%define reg_%4 m%2
+%endif
+%else
+    mova              [%3], m%1
+%if %0 == 4
+%define reg_%4 [%3]
+%endif
+%endif
+%endmacro
+
+%macro UNSCRATCH 3-4
+%if ARCH_X86_64
+    SWAP                %1, %2
+%else
+    mova               m%1, [%3]
+%endif
+%if %0 == 4
+%undef reg_%4
+%endif
+%endmacro
+
+; out0 =  5283 * in0 + 13377 + in1 + 15212 * in2 +  9929 * in3 + rnd >> 14
+; out1 =  9929 * in0 + 13377 * in1 -  5283 * in2 - 15282 * in3 + rnd >> 14
+; out2 = 13377 * in0               - 13377 * in2 + 13377 * in3 + rnd >> 14
+; out3 = 15212 * in0 - 13377 * in1 +  9929 * in2 -  5283 * in3 + rnd >> 14
+%macro IADST4_12BPP_1D 0
+    pand                m4, m0, [pd_3fff]
+    pand                m5, m1, [pd_3fff]
+    psrad               m0, 14
+    psrad               m1, 14
+    packssdw            m5, m1
+    packssdw            m4, m0
+    punpckhwd           m1, m4, m5
+    punpcklwd           m4, m5
+    pand                m5, m2, [pd_3fff]
+    pand                m6, m3, [pd_3fff]
+    psrad               m2, 14
+    psrad               m3, 14
+    packssdw            m6, m3
+    packssdw            m5, m2
+    punpckhwd           m3, m5, m6
+    punpcklwd           m5, m6
+    SCRATCH              1,  8, rsp+0*mmsize, a
+    SCRATCH              5,  9, rsp+1*mmsize, b
+
+    ; m1/3 have the high bits of 0,1,2,3
+    ; m4/5 have the low bits of 0,1,2,3
+    ; m0/2/6/7 are free
+
+    pmaddwd             m7, reg_b, [pw_15212_9929]
+    pmaddwd             m6, m4, [pw_5283_13377]
+    pmaddwd             m2, m3, [pw_15212_9929]
+    pmaddwd             m0, reg_a, [pw_5283_13377]
+    paddd               m6, m7
+    paddd               m0, m2
+    pmaddwd             m7, reg_b, [pw_m13377_13377]
+    pmaddwd             m2, m4, [pw_13377_0]
+    pmaddwd             m1, m3, [pw_m13377_13377]
+    pmaddwd             m5, reg_a, [pw_13377_0]
+    paddd               m2, m7
+    paddd               m1, m5
+    paddd               m6, [pd_8192]
+    paddd               m2, [pd_8192]
+    psrad               m6, 14
+    psrad               m2, 14
+    paddd               m0, m6                      ; t0
+    paddd               m2, m1                      ; t2
+
+    pmaddwd             m1, reg_b, [pw_m5283_m15212]
+    pmaddwd             m6, m4, [pw_9929_13377]
+    pmaddwd             m7, m3, [pw_m5283_m15212]
+    pmaddwd             m5, reg_a, [pw_9929_13377]
+    paddd               m6, m1
+    paddd               m7, m5
+    UNSCRATCH            5,  9, rsp+1*mmsize, b
+    pmaddwd             m5, [pw_9929_m5283]
+    pmaddwd             m4, [pw_15212_m13377]
+    pmaddwd             m3, [pw_9929_m5283]
+    UNSCRATCH            1,  8, rsp+0*mmsize, a
+    pmaddwd             m1, [pw_15212_m13377]
+    paddd               m4, m5
+    paddd               m3, m1
+    paddd               m6, [pd_8192]
+    paddd               m4, [pd_8192]
+    psrad               m6, 14
+    psrad               m4, 14
+    paddd               m7, m6                      ; t1
+    paddd               m3, m4                      ; t3
+
+    SWAP                 1, 7
+%endmacro
+
+%macro IADST4_12BPP_FN 4
+cglobal vp9_%1_%3_4x4_add_12, 3, 3, 10, 2 * ARCH_X86_32 * mmsize, dst, stride, block, eob
+    mova                m0, [blockq+0*16]
+    mova                m1, [blockq+1*16]
+    mova                m2, [blockq+2*16]
+    mova                m3, [blockq+3*16]
+
+    %2_12BPP_1D
+    TRANSPOSE4x4D        0, 1, 2, 3, 4
+    %4_12BPP_1D
+
+    pxor                m4, m4
+    ZERO_BLOCK      blockq, 16, 4, m4
+
+    ; writeout
+    DEFINE_ARGS dst, stride, stride3
+    lea           stride3q, [strideq*3]
+    paddd               m0, [pd_8]
+    paddd               m1, [pd_8]
+    paddd               m2, [pd_8]
+    paddd               m3, [pd_8]
+    psrad               m0, 4
+    psrad               m1, 4
+    psrad               m2, 4
+    psrad               m3, 4
+    packssdw            m0, m1
+    packssdw            m2, m3
+    mova                m5, [pw_4095]
+    movh                m1, [dstq+strideq*0]
+    movh                m3, [dstq+strideq*2]
+    movhps              m1, [dstq+strideq*1]
+    movhps              m3, [dstq+stride3q ]
+    paddw               m0, m1
+    paddw               m2, m3
+    pmaxsw              m0, m4
+    pmaxsw              m2, m4
+    pminsw              m0, m5
+    pminsw              m2, m5
+    movh   [dstq+strideq*0], m0
+    movhps [dstq+strideq*1], m0
+    movh   [dstq+strideq*2], m2
+    movhps [dstq+stride3q ], m2
+    RET
+%endmacro
+
+INIT_XMM sse2
+IADST4_12BPP_FN idct,  IDCT4,  iadst, IADST4
+IADST4_12BPP_FN iadst, IADST4, idct,  IDCT4
+IADST4_12BPP_FN iadst, IADST4, iadst, IADST4
