@@ -122,7 +122,7 @@ static int config_output(AVFilterLink *outlink)
 }
 
 /*
- * Filter coefficients from PH-2071, scaled by 256 * 256.
+ * Filter coefficients from PH-2071, scaled by 256 * 128.
  * Each set of coefficients has a set for low-frequencies and high-frequencies.
  * n_coef_lf[] and n_coef_hf[] are the number of coefs for simple and more-complex.
  * It is important for later that n_coef_lf[] is even and n_coef_hf[] is odd.
@@ -130,11 +130,11 @@ static int config_output(AVFilterLink *outlink)
  * and high-frequencies for simple and more-complex mode.
  */
 static const int8_t   n_coef_lf[2] = { 2, 4 };
-static const int32_t coef_lf[2][4] = {{ 32768, 32768,     0,     0},
-                                      { -1704, 34472, 34472, -1704}};
+static const int16_t coef_lf[2][4] = {{ 16384, 16384,     0,    0},
+                                      {  -852, 17236, 17236, -852}};
 static const int8_t   n_coef_hf[2] = { 3, 5 };
-static const int32_t coef_hf[2][5] = {{ -4096,  8192, -4096,     0,     0},
-                                      {  2032, -7602, 11140, -7602,  2032}};
+static const int16_t coef_hf[2][5] = {{ -2048,  4096, -2048,     0,    0},
+                                      {  1016, -3801,  5570, -3801, 1016}};
 
 typedef struct ThreadData {
     AVFrame *out, *cur, *adj;
@@ -256,12 +256,12 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
             }
         }
 
-        /* save scaled result to the output frame, scaling down by 256 * 256 */
+        /* save scaled result to the output frame, scaling down by 256 * 128 */
         work_pixel = s->work_line[jobnr];
         out_pixel = out_line;
 
         for (j = 0; j < linesize; j++, out_pixel++, work_pixel++)
-             *out_pixel = av_clip(*work_pixel, 0, 255 * 256 * 256) >> 16;
+             *out_pixel = av_clip(*work_pixel, 0, 255 * 256 * 128) >> 15;
 
         /* move on to next line */
         y_out += 2;
