@@ -49,6 +49,9 @@ Required supplied project dependencies include:
 	libmfx
 
 All above dependencies are supplied as part of the ShiftMediaProject repositories.
+These repositories can be manually downloaded or automatically cloned using the supplied
+  project_get_dependencies.bat file. This file can also be used to check for and download
+  any dependency updates at any point after the first clone of the library.
 
 Many of the possible FFmpeg dependencies (and there dependencies) are available in the ShiftMediaProject repositories.
 However the following is a list of possible extra dependency options that require external downloads:
