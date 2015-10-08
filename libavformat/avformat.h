@@ -600,6 +600,29 @@ typedef struct AVOutputFormat {
      */
     int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
     enum AVCodecID data_codec; /**< default data codec */
+    /**
+     * Initialize format. May allocate data here, and set any AVFormatContext or
+     * AVStream parameters that need to be set before packets are sent.
+     * This method must not write output.
+     *
+     * Any allocations made here must be freed in deinit().
+     */
+    int (*init)(struct AVFormatContext *);
+    /**
+     * Deinitialize format. If present, this is called whenever the muxer is being
+     * destroyed, regardless of whether or not the header has been written.
+     *
+     * If a trailer is being written, this is called after write_trailer().
+     *
+     * This is called if init() fails as well.
+     */
+    void (*deinit)(struct AVFormatContext *);
+    /**
+     * Set up any necessary bitstream filtering and extract any extra data needed
+     * for the global header.
+     * Return 0 if more packets from this stream must be checked; 1 if not.
+     */
+    int (*check_bitstream)(struct AVFormatContext *, const AVPacket *pkt);
 } AVOutputFormat;
 /**
  * @}

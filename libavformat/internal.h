@@ -117,6 +117,11 @@ struct AVFormatInternal {
     int inject_global_side_data;
 
     int avoid_negative_ts_use_pts;
+
+    /**
+     * Whether or not a header has already been written
+     */
+    int header_written;
 };
 
 struct AVStreamInternal {
@@ -125,6 +130,18 @@ struct AVStreamInternal {
      * from dts.
      */
     int reorder;
+
+    /**
+     * bitstream filter to run on stream
+     * - encoding: Set by muxer using ff_stream_add_bitstream_filter
+     * - decoding: unused
+     */
+    AVBitStreamFilterContext *bsfc;
+
+    /**
+     * Whether or not check_bitstream should still be run on each packet
+     */
+    int bitstream_checked;
 };
 
 #ifdef __GNUC__
