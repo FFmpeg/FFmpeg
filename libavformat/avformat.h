@@ -2764,6 +2764,17 @@ int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
 
 int avformat_queue_attached_pictures(AVFormatContext *s);
 
+/**
+ * Apply a list of bitstream filters to a packet.
+ *
+ * @param codec AVCodecContext, usually from an AVStream
+ * @param pkt the packet to apply filters to
+ * @param bsfc a NULL-terminated list of filters to apply
+ * @return  >=0 on success;
+ *          AVERROR code on failure
+ */
+int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
+                               AVBitStreamFilterContext *bsfc);
 
 /**
  * @}
