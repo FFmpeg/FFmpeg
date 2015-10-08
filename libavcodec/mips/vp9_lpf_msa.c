@@ -259,7 +259,7 @@
     mask_out = __msa_xori_b(mask_out, 0xff);                       \
 }
 
-void ff_loop_filter_v_4_8_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_4_8_msa(uint8_t *src, ptrdiff_t pitch,
                               int32_t b_limit_ptr,
                               int32_t limit_ptr,
                               int32_t thresh_ptr)
@@ -288,7 +288,7 @@ void ff_loop_filter_v_4_8_msa(uint8_t *src, int32_t pitch,
 }
 
 
-void ff_loop_filter_v_44_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_44_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -318,7 +318,7 @@ void ff_loop_filter_v_44_16_msa(uint8_t *src, int32_t pitch,
     ST_UB4(p1, p0, q0, q1, (src - 2 * pitch), pitch);
 }
 
-void ff_loop_filter_v_8_8_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_8_8_msa(uint8_t *src, ptrdiff_t pitch,
                               int32_t b_limit_ptr,
                               int32_t limit_ptr,
                               int32_t thresh_ptr)
@@ -392,7 +392,7 @@ void ff_loop_filter_v_8_8_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_v_88_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_88_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -471,7 +471,7 @@ void ff_loop_filter_v_88_16_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_v_84_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_84_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -542,7 +542,7 @@ void ff_loop_filter_v_84_16_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_v_48_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_48_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -614,7 +614,7 @@ void ff_loop_filter_v_48_16_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-static int32_t vp9_hz_lpf_t4_and_t8_16w(uint8_t *src, int32_t pitch,
+static int32_t vp9_hz_lpf_t4_and_t8_16w(uint8_t *src, ptrdiff_t pitch,
                                         uint8_t *filter48,
                                         int32_t b_limit_ptr,
                                         int32_t limit_ptr,
@@ -689,7 +689,7 @@ static int32_t vp9_hz_lpf_t4_and_t8_16w(uint8_t *src, int32_t pitch,
     }
 }
 
-static void vp9_hz_lpf_t16_16w(uint8_t *src, int32_t pitch, uint8_t *filter48)
+static void vp9_hz_lpf_t16_16w(uint8_t *src, ptrdiff_t pitch, uint8_t *filter48)
 {
     v16u8 flat, flat2, filter8;
     v16i8 zero = { 0 };
@@ -1021,7 +1021,7 @@ static void vp9_hz_lpf_t16_16w(uint8_t *src, int32_t pitch, uint8_t *filter48)
     }
 }
 
-void ff_loop_filter_v_16_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_16_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -1037,7 +1037,7 @@ void ff_loop_filter_v_16_16_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_v_16_8_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_v_16_8_msa(uint8_t *src, ptrdiff_t pitch,
                                int32_t b_limit_ptr,
                                int32_t limit_ptr,
                                int32_t thresh_ptr)
@@ -1261,7 +1261,7 @@ void ff_loop_filter_v_16_8_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_h_4_8_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_4_8_msa(uint8_t *src, ptrdiff_t pitch,
                               int32_t b_limit_ptr,
                               int32_t limit_ptr,
                               int32_t thresh_ptr)
@@ -1290,7 +1290,7 @@ void ff_loop_filter_h_4_8_msa(uint8_t *src, int32_t pitch,
     ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src, pitch);
 }
 
-void ff_loop_filter_h_44_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_44_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -1337,7 +1337,7 @@ void ff_loop_filter_h_44_16_msa(uint8_t *src, int32_t pitch,
     ST4x8_UB(tmp4, tmp5, src, pitch);
 }
 
-void ff_loop_filter_h_8_8_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_8_8_msa(uint8_t *src, ptrdiff_t pitch,
                               int32_t b_limit_ptr,
                               int32_t limit_ptr,
                               int32_t thresh_ptr)
@@ -1417,7 +1417,7 @@ void ff_loop_filter_h_8_8_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_h_88_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_88_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -1531,7 +1531,7 @@ void ff_loop_filter_h_88_16_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_h_84_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_84_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -1635,7 +1635,7 @@ void ff_loop_filter_h_84_16_msa(uint8_t *src, int32_t pitch,
     }
 }
 
-void ff_loop_filter_h_48_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_48_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
@@ -1912,7 +1912,7 @@ static int32_t vp9_vt_lpf_t4_and_t8_8w(uint8_t *src, uint8_t *filter48,
     }
 }
 
-static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, int32_t pitch,
+static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch,
                                  uint8_t *filter48)
 {
     v16i8 zero = { 0 };
@@ -2136,7 +2136,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, int32_t pitch,
     }
 }
 
-void ff_loop_filter_h_16_8_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_16_8_msa(uint8_t *src, ptrdiff_t pitch,
                                int32_t b_limit_ptr,
                                int32_t limit_ptr,
                                int32_t thresh_ptr)
@@ -2162,7 +2162,7 @@ void ff_loop_filter_h_16_8_msa(uint8_t *src, int32_t pitch,
 }
 
 static int32_t vp9_vt_lpf_t4_and_t8_16w(uint8_t *src, uint8_t *filter48,
-                                        uint8_t *src_org, int32_t pitch,
+                                        uint8_t *src_org, ptrdiff_t pitch,
                                         int32_t b_limit_ptr,
                                         int32_t limit_ptr,
                                         int32_t thresh_ptr)
@@ -2246,7 +2246,7 @@ static int32_t vp9_vt_lpf_t4_and_t8_16w(uint8_t *src, uint8_t *filter48,
     }
 }
 
-static int32_t vp9_vt_lpf_t16_16w(uint8_t *src, uint8_t *src_org, int32_t pitch,
+static int32_t vp9_vt_lpf_t16_16w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch,
                                   uint8_t *filter48)
 {
     v16u8 flat, flat2, filter8;
@@ -2573,7 +2573,7 @@ static int32_t vp9_vt_lpf_t16_16w(uint8_t *src, uint8_t *src_org, int32_t pitch,
     }
 }
 
-void ff_loop_filter_h_16_16_msa(uint8_t *src, int32_t pitch,
+void ff_loop_filter_h_16_16_msa(uint8_t *src, ptrdiff_t pitch,
                                 int32_t b_limit_ptr,
                                 int32_t limit_ptr,
                                 int32_t thresh_ptr)
