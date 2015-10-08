@@ -124,10 +124,10 @@ the @samp{inline} keyword;
 @samp{//} comments;
 
 @item
-designated struct initializers (@samp{struct s x = @{ .i = 17 @};})
+designated struct initializers (@samp{struct s x = @{ .i = 17 @};});
 
 @item
-compound literals (@samp{x = (struct s) @{ 17, 23 @};})
+compound literals (@samp{x = (struct s) @{ 17, 23 @};}).
 @end itemize
 
 These features are supported by all compilers we care about, so we will not
@@ -156,7 +156,7 @@ GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
 All names should be composed with underscores (_), not CamelCase. For example,
 @samp{avfilter_get_video_buffer} is an acceptable function name and
 @samp{AVFilterGetVideo} is not. The exception from this are type names, like
-for example structs and enums; they should always be in the CamelCase
+for example structs and enums; they should always be in CamelCase.
 
 There are the following conventions for naming variables and functions:
 
