@@ -44,7 +44,6 @@ typedef struct {
     const AVClass *class;
     int w, h;
     AVFrame *outpicref;
-    int req_fullfilled;
     int nb_display_channels;
     int channel_height;
     int sliding;                ///< 1 if sliding mode, 0 otherwise
@@ -268,21 +267,17 @@ static int request_frame(AVFilterLink *outlink)
     unsigned i;
     int ret;
 
-    s->req_fullfilled = 0;
-    do {
-        ret = ff_request_frame(inlink);
-        if (ret == AVERROR_EOF && s->sliding == FULLFRAME && s->xpos > 0 &&
-            s->outpicref) {
-            for (i = 0; i < outlink->h; i++) {
-                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0] + s->xpos,   0, outlink->w - s->xpos);
-                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1] + s->xpos, 128, outlink->w - s->xpos);
-                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2] + s->xpos, 128, outlink->w - s->xpos);
-            }
-            ret = ff_filter_frame(outlink, s->outpicref);
-            s->outpicref = NULL;
-            s->req_fullfilled = 1;
+    ret = ff_request_frame(inlink);
+    if (ret == AVERROR_EOF && s->sliding == FULLFRAME && s->xpos > 0 &&
+        s->outpicref) {
+        for (i = 0; i < outlink->h; i++) {
+            memset(s->outpicref->data[0] + i * s->outpicref->linesize[0] + s->xpos,   0, outlink->w - s->xpos);
+            memset(s->outpicref->data[1] + i * s->outpicref->linesize[1] + s->xpos, 128, outlink->w - s->xpos);
+            memset(s->outpicref->data[2] + i * s->outpicref->linesize[2] + s->xpos, 128, outlink->w - s->xpos);
         }
-    } while (!s->req_fullfilled && ret >= 0);
+        ret = ff_filter_frame(outlink, s->outpicref);
+        s->outpicref = NULL;
+    }
 
     return ret;
 }
@@ -468,7 +463,6 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     if (s->xpos >= outlink->w)
         s->xpos = 0;
     if (s->sliding != FULLFRAME || s->xpos == 0) {
-        s->req_fullfilled = 1;
         ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
         if (ret < 0)
             return ret;

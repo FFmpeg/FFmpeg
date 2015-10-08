@@ -2401,9 +2401,6 @@ configuration. You need to explicitly configure the build with
 @item b
 Set target video bitrate in bit/s and enable rate control.
 
-@item threads
-Set number of encoding threads.
-
 @item kvazaar-params
 Set kvazaar parameters as a list of @var{name}=@var{value} pairs separated
 by commas (,). See kvazaar documentation for a list of options.

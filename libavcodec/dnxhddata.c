@@ -1072,7 +1072,7 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
       { 63, 84, 100, 110 } },
     { 1260, 1440, 1080, 835584, 417792,
-      DNXHD_INTERLACED, 4, 8, 3,
+      DNXHD_INTERLACED | DNXHD_MBAFF, 4, 8, 3,
       dnxhd_1260_luma_weight, dnxhd_1260_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
@@ -1158,6 +1158,11 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
         if (cid->width == avctx->width && cid->height == avctx->height &&
             interlaced == !!(avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) &&
             !(cid->flags & DNXHD_444) && cid->bit_depth == bit_depth) {
+            if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL &&
+                cid->flags & DNXHD_MBAFF) {
+                av_log(avctx, AV_LOG_WARNING, "Profile selected is experimental\n");
+                continue;
+            }
             for (j = 0; j < FF_ARRAY_ELEMS(cid->bit_rates); j++) {
                 if (cid->bit_rates[j] == mbs)
                     return cid->cid;

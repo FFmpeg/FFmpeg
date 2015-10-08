@@ -399,7 +399,7 @@ static av_cold int X264_close(AVCodecContext *avctx)
 #define OPT_STR(opt, param)                                                   \
     do {                                                                      \
         int ret;                                                              \
-        if (param && (ret = x264_param_parse(&x4->params, opt, param)) < 0) { \
+        if ((ret = x264_param_parse(&x4->params, opt, param)) < 0) { \
             if(ret == X264_PARAM_BAD_NAME)                                    \
                 av_log(avctx, AV_LOG_ERROR,                                   \
                         "bad option '%s': '%s'\n", opt, param);               \
@@ -490,7 +490,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_log_level          = X264_LOG_DEBUG;
     x4->params.i_csp                = convert_pix_fmt(avctx->pix_fmt);
 
-    OPT_STR("weightp", x4->wpredp);
+    PARSE_X264_OPT("weightp", wpredp);
 
     if (avctx->bit_rate) {
         x4->params.rc.i_bitrate   = avctx->bit_rate / 1000;
@@ -520,7 +520,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
             (float)avctx->rc_initial_buffer_occupancy / avctx->rc_buffer_size;
     }
 
-    OPT_STR("level", x4->level);
+    PARSE_X264_OPT("level", level);
 
     if (avctx->i_quant_factor > 0)
         x4->params.rc.f_ip_factor         = 1 / fabs(avctx->i_quant_factor);

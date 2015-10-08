@@ -27,11 +27,14 @@ SECTION_RODATA
 
 pw_128: times 8 dw 128
 pw_255: times 8 dw 255
+pb_127: times 16 db 127
+pb_128: times 16 db 128
+pb_255: times 16 db 255
 
 SECTION .text
 
 INIT_XMM sse2
-cglobal blend_xor, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_xor, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -56,7 +59,7 @@ cglobal blend_xor, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst,
     jg .nextrow
 REP_RET
 
-cglobal blend_or, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_or, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -81,7 +84,7 @@ cglobal blend_or, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, 
     jg .nextrow
 REP_RET
 
-cglobal blend_and, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_and, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -106,7 +109,7 @@ cglobal blend_and, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst,
     jg .nextrow
 REP_RET
 
-cglobal blend_addition, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_addition, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -131,7 +134,7 @@ cglobal blend_addition, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize,
     jg .nextrow
 REP_RET
 
-cglobal blend_subtract, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_subtract, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -156,7 +159,7 @@ cglobal blend_subtract, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize,
     jg .nextrow
 REP_RET
 
-cglobal blend_difference128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_difference128, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -187,7 +190,7 @@ cglobal blend_difference128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_line
     jg .nextrow
 REP_RET
 
-cglobal blend_average, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_average, 9, 11, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -217,7 +220,7 @@ cglobal blend_average, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesize, 
     jg .nextrow
 REP_RET
 
-cglobal blend_addition128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_addition128, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -248,7 +251,7 @@ cglobal blend_addition128, 9, 10, 4, 0, top, top_linesize, bottom, bottom_linesi
     jg .nextrow
 REP_RET
 
-cglobal blend_darken, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_darken, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -273,7 +276,38 @@ cglobal blend_darken, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, d
     jg .nextrow
 REP_RET
 
-cglobal blend_lighten, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_hardmix, 9, 11, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+    add      topq, widthq
+    add   bottomq, widthq
+    add      dstq, widthq
+    sub      endq, startq
+    mova       m2, [pb_255]
+    mova       m3, [pb_128]
+    mova       m4, [pb_127]
+    neg    widthq
+.nextrow:
+    mov       r10q, widthq
+    %define      x  r10q
+
+    .loop:
+        movu            m0, [topq + x]
+        movu            m1, [bottomq + x]
+        pxor            m1, m4
+        pxor            m0, m3
+        pcmpgtb         m1, m0
+        pxor            m1, m2
+        mova    [dstq + x], m1
+        add           r10q, mmsize
+    jl .loop
+
+    add          topq, top_linesizeq
+    add       bottomq, bottom_linesizeq
+    add          dstq, dst_linesizeq
+    sub          endd, 1
+    jg .nextrow
+REP_RET
+
+cglobal blend_lighten, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -298,8 +332,39 @@ cglobal blend_lighten, 9, 10, 2, 0, top, top_linesize, bottom, bottom_linesize, 
     jg .nextrow
 REP_RET
 
+cglobal blend_phoenix, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+    add      topq, widthq
+    add   bottomq, widthq
+    add      dstq, widthq
+    sub      endq, startq
+    mova       m3, [pb_255]
+    neg    widthq
+.nextrow:
+    mov       r10q, widthq
+    %define      x  r10q
+
+    .loop:
+        movu            m0, [topq + x]
+        movu            m1, [bottomq + x]
+        mova            m2, m0
+        pminub          m0, m1
+        pmaxub          m1, m2
+        mova            m2, m3
+        psubusb         m2, m1
+        paddusb         m2, m0
+        mova    [dstq + x], m2
+        add           r10q, mmsize
+    jl .loop
+
+    add          topq, top_linesizeq
+    add       bottomq, bottom_linesizeq
+    add          dstq, dst_linesizeq
+    sub          endd, 1
+    jg .nextrow
+REP_RET
+
 INIT_XMM ssse3
-cglobal blend_difference, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_difference, 9, 11, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
@@ -329,7 +394,7 @@ cglobal blend_difference, 9, 10, 3, 0, top, top_linesize, bottom, bottom_linesiz
     jg .nextrow
 REP_RET
 
-cglobal blend_negation, 9, 10, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
+cglobal blend_negation, 9, 11, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq

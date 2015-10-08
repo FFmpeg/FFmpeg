@@ -24,8 +24,10 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
 
@@ -71,8 +73,7 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
     cfg->width = avctx->width;
     cfg->height = avctx->height;
     cfg->framerate =
-      (double)(avctx->time_base.num * avctx->ticks_per_frame) / avctx->time_base.den;
-    cfg->threads = avctx->thread_count;
+      avctx->time_base.den / (double)(avctx->time_base.num * avctx->ticks_per_frame);
     cfg->target_bitrate = avctx->bit_rate;
     cfg->vui.sar_width = avctx->sample_aspect_ratio.num;
     cfg->vui.sar_height = avctx->sample_aspect_ratio.den;
@@ -106,8 +107,8 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
     cfg = NULL;
 
 done:
-    if (cfg) api->config_destroy(cfg);
-    if (enc) api->encoder_close(enc);
+    api->config_destroy(cfg);
+    api->encoder_close(enc);
 
     return retval;
 }
@@ -137,18 +138,37 @@ static int libkvazaar_encode(AVCodecContext *avctx,
 {
     int retval = 0;
     kvz_picture *img_in = NULL;
+
     kvz_data_chunk *data_out = NULL;
     uint32_t len_out = 0;
+    kvz_picture *recon_pic = NULL;
+    kvz_frame_info frame_info;
+
     LibkvazaarContext *ctx = avctx->priv_data;
 
     *got_packet_ptr = 0;
 
     if (frame) {
-        int i = 0;
+        if (frame->width != ctx->config->width ||
+                frame->height != ctx->config->height) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Changing video dimensions during encoding is not supported. "
+                   "(changed from %dx%d to %dx%d)\n",
+                   ctx->config->width, ctx->config->height,
+                   frame->width, frame->height);
+            retval = AVERROR_INVALIDDATA;
+            goto done;
+        }
 
-        av_assert0(frame->width == ctx->config->width);
-        av_assert0(frame->height == ctx->config->height);
-        av_assert0(frame->format == avctx->pix_fmt);
+        if (frame->format != avctx->pix_fmt) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Changing pixel format during encoding is not supported. "
+                   "(changed from %s to %s)\n",
+                   av_get_pix_fmt_name(avctx->pix_fmt),
+                   av_get_pix_fmt_name(frame->format));
+            retval = AVERROR_INVALIDDATA;
+            goto done;
+        }
 
         // Allocate input picture for kvazaar.
         img_in = ctx->api->picture_alloc(frame->width, frame->height);
@@ -159,21 +179,25 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         }
 
         // Copy pixels from frame to img_in.
-        for (i = 0; i < 3; ++i) {
-            uint8_t *dst = img_in->data[i];
-            uint8_t *src = frame->data[i];
-            int width = (i == 0) ? frame->width : (frame->width / 2);
-            int height = (i == 0) ? frame->height : (frame->height / 2);
-            int y = 0;
-            for (y = 0; y < height; ++y) {
-                memcpy(dst, src, width);
-                src += frame->linesize[i];
-                dst += width;
-            }
+        {
+            int dst_linesizes[4] = {
+              frame->width,
+              frame->width / 2,
+              frame->width / 2,
+              0
+            };
+            av_image_copy(img_in->data, dst_linesizes,
+                          frame->data, frame->linesize,
+                          frame->format, frame->width, frame->height);
         }
+
+        img_in->pts = frame->pts;
     }
 
-    if (!ctx->api->encoder_encode(ctx->encoder, img_in, &data_out, &len_out, NULL)) {
+    if (!ctx->api->encoder_encode(ctx->encoder, img_in,
+                                  &data_out, &len_out,
+                                  &recon_pic, NULL,
+                                  &frame_info)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to encode frame.\n");
         retval = AVERROR_EXTERNAL;
         goto done;
@@ -198,11 +222,23 @@ static int libkvazaar_encode(AVCodecContext *avctx,
 
         ctx->api->chunk_free(data_out);
         data_out = NULL;
+
+        avpkt->pts = recon_pic->pts;
+        avpkt->dts = recon_pic->dts;
+
+        avpkt->flags = 0;
+        // IRAP VCL NAL unit types span the range
+        // [BLA_W_LP (16), RSV_IRAP_VCL23 (23)].
+        if (frame_info.nal_unit_type >= KVZ_NAL_BLA_W_LP &&
+                frame_info.nal_unit_type <= KVZ_NAL_RSV_IRAP_VCL23) {
+            avpkt->flags |= AV_PKT_FLAG_KEY;
+        }
     }
 
 done:
-    if (img_in) ctx->api->picture_free(img_in);
-    if (data_out) ctx->api->chunk_free(data_out);
+    ctx->api->picture_free(img_in);
+    ctx->api->picture_free(recon_pic);
+    ctx->api->chunk_free(data_out);
     return retval;
 }
 
