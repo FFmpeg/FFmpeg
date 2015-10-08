@@ -465,6 +465,17 @@ enum AVChromaLocation ff_choose_chroma_location(AVFormatContext *s, AVStream *st
 int ff_generate_avci_extradata(AVStream *st);
 
 /**
+ * Add a bitstream filter to a stream.
+ *
+ * @param st output stream to add a filter to
+ * @param name the name of the filter to add
+ * @param args filter-specific argument string
+ * @return  >0 on success;
+ *          AVERROR code on failure
+ */
+int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *args);
+
+/**
  * Wrap errno on rename() error.
  *
  * @param oldpath source path

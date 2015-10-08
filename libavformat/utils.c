@@ -4651,6 +4651,28 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
     return data;
 }
 
+int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *args)
+{
+    AVBitStreamFilterContext *bsfc = NULL;
+    AVBitStreamFilterContext **dest = &st->internal->bsfc;
+    while (*dest && (*dest)->next)
+        dest = &(*dest)->next;
+
+    if (!(bsfc = av_bitstream_filter_init(name))) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown bitstream filter '%s'\n", name);
+        return AVERROR(EINVAL);
+    }
+    if (args && !(bsfc->args = av_strdup(args))) {
+        av_bitstream_filter_close(bsfc);
+        return AVERROR(ENOMEM);
+    }
+    av_log(st->codec, AV_LOG_VERBOSE,
+           "Automatically inserted bitstream filter '%s'; args='%s'\n",
+           name, args ? args : "");
+    *dest = bsfc;
+    return 1;
+}
+
 int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
                                AVBitStreamFilterContext *bsfc)
 {
