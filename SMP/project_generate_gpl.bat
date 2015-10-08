@@ -1,0 +1,2 @@
+cd project_generate\bin
+project_generate.exe --enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --enable-librtmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-libmfx --toolchain=msvc
