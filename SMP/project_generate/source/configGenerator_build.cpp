@@ -17,7 +17,7 @@
  * License along with ShiftMediaProject; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- 
+
 #include "configGenerator.h"
 
 #include <algorithm>
@@ -302,6 +302,11 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define HAVE_MM_EMPTY 0\n\
 #endif";
+    mReplaceValues["HAVE_STRUCT_POLLFD"] = "#if !defined(_WIN32_WINNT) || _WIN32_WINNT >= 0x0600\n\
+#   define HAVE_STRUCT_POLLFD 1\n\
+#else\n\
+#   define HAVE_STRUCT_POLLFD 0\n\
+#endif";
 
     //Build replace values for all inline asm
     vector<string> vInlineList;
@@ -404,9 +409,9 @@ void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalD
 void configGenerator::buildOptimisedDisables( OptimisedConfigList & mOptimisedDisables )
 {
     //This used is to return prioritised version of different config options
-    //  For instance If enabling the decoder from an passed in library that is better than the inbuilt one 
+    //  For instance If enabling the decoder from an passed in library that is better than the inbuilt one
     //  then simply disable the inbuilt so as to avoid unnecessary compilation
-    //This may have issues should a user not want to disable these but currently there are static compilation errors 
+    //This may have issues should a user not want to disable these but currently there are static compilation errors
     //  that will occur as several of these overlapping decoder/encoders have similar named methods that cause link errors.
 
     mOptimisedDisables.clear( );
@@ -422,9 +427,9 @@ void configGenerator::buildOptimisedDisables( OptimisedConfigList & mOptimisedDi
     //MP3: libmp3lame, libshine
     //Opus: libopus
     //libopus >= libvorbis >= libfdk_aac > libmp3lame > libfaac >= eac3/ac3 > aac > libtwolame > vorbis > mp2 > wmav2/wmav1 > libvo_aacenc
-    
+
     //*****Encoder optimization is currently ignored as people may want to compare encoders. The commandline should be used to disable unwanted encoders*****//
-    
+
     //mOptimisedDisables["LIBTWOLAME_ENCODER"].push_back( "MP2_ENCODER" );
     //mOptimisedDisables["LIBFDK_AAC_ENCODER"].push_back( "LIBFAAC_ENCODER" );
     //mOptimisedDisables["LIBFDK_AAC_ENCODER"].push_back( "AAC_ENCODER" );
