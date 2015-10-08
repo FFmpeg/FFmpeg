@@ -5026,6 +5026,11 @@ typedef struct AVBitStreamFilterContext {
     struct AVBitStreamFilter *filter;
     AVCodecParserContext *parser;
     struct AVBitStreamFilterContext *next;
+    /**
+     * Internal default arguments, used if NULL is passed to av_bitstream_filter_filter().
+     * Not for access by library users.
+     */
+    char *args;
 } AVBitStreamFilterContext;
 
 
