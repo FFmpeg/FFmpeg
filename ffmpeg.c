@@ -683,47 +683,10 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     if (bsfc)
         av_packet_split_side_data(pkt);
 
-    while (bsfc) {
-        AVPacket new_pkt = *pkt;
-        AVDictionaryEntry *bsf_arg = av_dict_get(ost->bsf_args,
-                                                 bsfc->filter->name,
-                                                 NULL, 0);
-        int a = av_bitstream_filter_filter(bsfc, avctx,
-                                           bsf_arg ? bsf_arg->value : NULL,
-                                           &new_pkt.data, &new_pkt.size,
-                                           pkt->data, pkt->size,
-                                           pkt->flags & AV_PKT_FLAG_KEY);
-        if(a == 0 && new_pkt.data != pkt->data) {
-            uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
-            if(t) {
-                memcpy(t, new_pkt.data, new_pkt.size);
-                memset(t + new_pkt.size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-                new_pkt.data = t;
-                new_pkt.buf = NULL;
-                a = 1;
-            } else
-                a = AVERROR(ENOMEM);
-        }
-        if (a > 0) {
-            pkt->side_data = NULL;
-            pkt->side_data_elems = 0;
-            av_packet_unref(pkt);
-            new_pkt.buf = av_buffer_create(new_pkt.data, new_pkt.size,
-                                           av_buffer_default_free, NULL, 0);
-            if (!new_pkt.buf)
-                exit_program(1);
-        } else if (a < 0) {
-            new_pkt = *pkt;
-            av_log(NULL, AV_LOG_ERROR, "Failed to open bitstream filter %s for stream %d with codec %s",
-                   bsfc->filter->name, pkt->stream_index,
-                   avctx->codec ? avctx->codec->name : "copy");
-            print_error("", a);
-            if (exit_on_error)
-                exit_program(1);
-        }
-        *pkt = new_pkt;
-
-        bsfc = bsfc->next;
+    if ((ret = av_apply_bitstream_filters(avctx, pkt, bsfc)) < 0) {
+        print_error("", ret);
+        if (exit_on_error)
+            exit_program(1);
     }
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
@@ -4244,7 +4207,6 @@ static int transcode(void)
                 av_dict_free(&ost->sws_dict);
                 av_dict_free(&ost->swr_opts);
                 av_dict_free(&ost->resample_opts);
-                av_dict_free(&ost->bsf_args);
             }
         }
     }
