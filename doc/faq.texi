@@ -147,7 +147,7 @@ exec /usr/bin/pkg-config "$@@"
 
 Try a @code{make distclean} in the ffmpeg source directory before the build.
 If this does not help see
-(@url{http://ffmpeg.org/bugreports.html}).
+(@url{https://ffmpeg.org/bugreports.html}).
 
 @section How do I encode single pictures into movies?
 
@@ -311,18 +311,18 @@ invoking ffmpeg with several @option{-i} options.
 For audio, to put all channels together in a single stream (example: two
 mono streams into one stereo stream): this is sometimes called to
 @emph{merge} them, and can be done using the
-@url{http://ffmpeg.org/ffmpeg-filters.html#amerge, @code{amerge}} filter.
+@url{https://ffmpeg.org/ffmpeg-filters.html#amerge, @code{amerge}} filter.
 
 @item
 For audio, to play one on top of the other: this is called to @emph{mix}
 them, and can be done by first merging them into a single stream and then
-using the @url{http://ffmpeg.org/ffmpeg-filters.html#pan, @code{pan}} filter to mix
+using the @url{https://ffmpeg.org/ffmpeg-filters.html#pan, @code{pan}} filter to mix
 the channels at will.
 
 @item
 For video, to display both together, side by side or one on top of a part of
 the other; it can be done using the
-@url{http://ffmpeg.org/ffmpeg-filters.html#overlay, @code{overlay}} video filter.
+@url{https://ffmpeg.org/ffmpeg-filters.html#overlay, @code{overlay}} video filter.
 
 @end itemize
 
@@ -333,19 +333,19 @@ There are several solutions, depending on the exact circumstances.
 
 @subsection Concatenating using the concat @emph{filter}
 
-FFmpeg has a @url{http://ffmpeg.org/ffmpeg-filters.html#concat,
+FFmpeg has a @url{https://ffmpeg.org/ffmpeg-filters.html#concat,
 @code{concat}} filter designed specifically for that, with examples in the
 documentation. This operation is recommended if you need to re-encode.
 
 @subsection Concatenating using the concat @emph{demuxer}
 
-FFmpeg has a @url{http://www.ffmpeg.org/ffmpeg-formats.html#concat,
+FFmpeg has a @url{https://www.ffmpeg.org/ffmpeg-formats.html#concat,
 @code{concat}} demuxer which you can use when you want to avoid a re-encode and
 your format doesn't support file level concatenation.
 
 @subsection Concatenating using the concat @emph{protocol} (file level)
 
-FFmpeg has a @url{http://ffmpeg.org/ffmpeg-protocols.html#concat,
+FFmpeg has a @url{https://ffmpeg.org/ffmpeg-protocols.html#concat,
 @code{concat}} protocol designed specifically for that, with examples in the
 documentation.
 
@@ -485,7 +485,7 @@ scaling adjusts the SAR to keep the DAR constant.
 
 If you want to stretch, or “unstretch”, the image, you need to override the
 information with the
-@url{http://ffmpeg.org/ffmpeg-filters.html#setdar_002c-setsar, @code{setdar or setsar filters}}.
+@url{https://ffmpeg.org/ffmpeg-filters.html#setdar_002c-setsar, @code{setdar or setsar filters}}.
 
 Do not forget to examine carefully the original video to check whether the
 stretching comes from the image or from the aspect ratio information.
@@ -589,7 +589,7 @@ see @file{libavformat/aviobuf.c} in FFmpeg and @file{libmpdemux/demux_lavf.c} in
 
 @section Where is the documentation about ffv1, msmpeg4, asv1, 4xm?
 
-see @url{http://www.ffmpeg.org/~michael/}
+see @url{https://www.ffmpeg.org/~michael/}
 
 @section How do I feed H.263-RTP (and other codecs in RTP) to libavcodec?
 
