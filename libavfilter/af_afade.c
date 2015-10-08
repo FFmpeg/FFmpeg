@@ -272,7 +272,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     int64_t cur_sample = av_rescale_q(buf->pts, inlink->time_base, (AVRational){1, inlink->sample_rate});
 
     if ((!s->type && (s->start_sample + s->nb_samples < cur_sample)) ||
-        ( s->type && (cur_sample + s->nb_samples < s->start_sample)))
+        ( s->type && (cur_sample + nb_samples < s->start_sample)))
         return ff_filter_frame(outlink, buf);
 
     if (av_frame_is_writable(buf)) {
