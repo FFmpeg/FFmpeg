@@ -472,6 +472,7 @@ OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o \
                                           msmpeg4.o msmpeg4enc.o msmpeg4data.o
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
 OBJS-$(CONFIG_WS_SND1_DECODER)         += ws-snd1.o
+OBJS-$(CONFIG_WRAPPED_AVFRAME_ENCODER) += wrapped_avframe.o
 OBJS-$(CONFIG_XAN_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_XAN_WC3_DECODER)         += xan.o
 OBJS-$(CONFIG_XAN_WC4_DECODER)         += xxan.o
