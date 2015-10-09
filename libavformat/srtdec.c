@@ -45,7 +45,7 @@ static int srt_probe(AVProbeData *p)
      * Also, that number can be followed by random garbage, so we can not
      * unfortunately check that we only have a number. */
     if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0 ||
-        strtol(buf, &pbuf, 10) < 0)
+        strtol(buf, &pbuf, 10) < 0 || pbuf == buf)
         return 0;
 
     /* Check if the next line matches a SRT timestamp */
