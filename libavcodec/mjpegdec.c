@@ -2038,6 +2038,22 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR(ENOSYS);
         }
 
+        if (avctx->skip_frame == AVDISCARD_ALL) {
+            switch(start_code) {
+            case SOF0:
+            case SOF1:
+            case SOF2:
+            case SOF3:
+            case SOF48:
+            case SOI:
+            case SOS:
+            case EOI:
+                break;
+            default:
+                goto skip;
+            }
+        }
+
         switch (start_code) {
         case SOI:
             s->restart_interval = 0;
@@ -2103,6 +2119,10 @@ eoi_parser:
                 if (s->bottom_field == !s->interlace_polarity)
                     break;
             }
+            if (avctx->skip_frame == AVDISCARD_ALL) {
+                s->got_picture = 0;
+                goto the_end_no_picture;
+            }
             if ((ret = av_frame_ref(frame, s->picture_ptr)) < 0)
                 return ret;
             *got_frame = 1;
@@ -2126,6 +2146,9 @@ eoi_parser:
             goto the_end;
         case SOS:
             s->cur_scan++;
+            if (avctx->skip_frame == AVDISCARD_ALL)
+                break;
+
             if ((ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL)) < 0 &&
                 (avctx->err_recognition & AV_EF_EXPLODE))
                 goto fail;
@@ -2148,6 +2171,7 @@ eoi_parser:
             break;
         }
 
+skip:
         /* eof process start code */
         buf_ptr += (get_bits_count(&s->gb) + 7) / 8;
         av_log(avctx, AV_LOG_DEBUG,
@@ -2344,6 +2368,7 @@ the_end:
     av_dict_copy(avpriv_frame_get_metadatap(data), s->exif_metadata, 0);
     av_dict_free(&s->exif_metadata);
 
+the_end_no_picture:
     av_log(avctx, AV_LOG_DEBUG, "decode frame unused %"PTRDIFF_SPECIFIER" bytes\n",
            buf_end - buf_ptr);
 //  return buf_end - buf_ptr;
