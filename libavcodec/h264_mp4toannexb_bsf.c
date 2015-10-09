@@ -122,7 +122,7 @@ pps:
         if (!unit_nb && !sps_done++) {
             unit_nb = *extradata++; /* number of pps unit(s) */
             if (unit_nb) {
-                ctx->pps_offset = (extradata - 1) - (avctx->extradata + 4);
+                ctx->pps_offset = total_size;
                 pps_seen = 1;
             }
         }
