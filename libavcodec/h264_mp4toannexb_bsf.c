@@ -276,7 +276,7 @@ static void h264_mp4toannexb_filter_close(AVBitStreamFilterContext *bsfc)
 {
     H264BSFContext *ctx = bsfc->priv_data;
     if (ctx->private_spspps)
-        av_free(ctx->spspps_buf);
+        av_freep(&ctx->spspps_buf);
 }
 
 AVBitStreamFilter ff_h264_mp4toannexb_bsf = {
