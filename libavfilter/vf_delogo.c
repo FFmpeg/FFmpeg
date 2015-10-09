@@ -165,8 +165,11 @@ static const AVOption delogo_options[]= {
     { "y",    "set logo y position",       OFFSET(y),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
     { "w",    "set logo width",            OFFSET(w),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
     { "h",    "set logo height",           OFFSET(h),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
-    { "band", "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { .i64 =  4 },  1, INT_MAX, FLAGS },
-    { "t",    "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { .i64 =  4 },  1, INT_MAX, FLAGS },
+#if LIBAVFILTER_VERSION_MAJOR < 7
+    /* Actual default value for band/t is 1, set in init */
+    { "band", "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { .i64 =  0 },  0, INT_MAX, FLAGS },
+    { "t",    "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { .i64 =  0 },  0, INT_MAX, FLAGS },
+#endif
     { "show", "show delogo area",          OFFSET(show), AV_OPT_TYPE_BOOL,{ .i64 =  0 },  0, 1,       FLAGS },
     { NULL }
 };
@@ -201,6 +204,16 @@ static av_cold int init(AVFilterContext *ctx)
     CHECK_UNSET_OPT(w);
     CHECK_UNSET_OPT(h);
 
+#if LIBAVFILTER_VERSION_MAJOR < 7
+    if (s->band == 0) { /* Unset, use default */
+        av_log(ctx, AV_LOG_WARNING, "Note: default band value was changed from 4 to 1.\n");
+        s->band = 1;
+    } else if (s->band != 1) {
+        av_log(ctx, AV_LOG_WARNING, "Option band is deprecated.\n");
+    }
+#else
+    s->band = 1;
+#endif
     av_log(ctx, AV_LOG_VERBOSE, "x:%d y:%d, w:%d h:%d band:%d show:%d\n",
            s->x, s->y, s->w, s->h, s->band, s->show);
 

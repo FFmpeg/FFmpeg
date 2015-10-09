@@ -1521,10 +1521,11 @@ static void matroska_add_index_entries(MatroskaDemuxContext *matroska)
 
     index_list = &matroska->index;
     index      = index_list->elem;
-    if (index_list->nb_elem &&
-        index[0].time > 1E14 / matroska->time_scale) {
-        av_log(matroska->ctx, AV_LOG_WARNING, "Working around broken index.\n");
-        index_scale = matroska->time_scale;
+    if (index_list->nb_elem < 2)
+        return;
+    if (index[1].time > 1E14 / matroska->time_scale) {
+        av_log(matroska->ctx, AV_LOG_WARNING, "Dropping apparently-broken index.\n");
+        return;
     }
     for (i = 0; i < index_list->nb_elem; i++) {
         EbmlList *pos_list    = &index[i].pos;

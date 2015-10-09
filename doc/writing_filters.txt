@@ -3,8 +3,8 @@ libavfilter.
 
 Foreword: just like everything else in FFmpeg, libavfilter is monolithic, which
 means that it is highly recommended that you submit your filters to the FFmpeg
-development mailing-list and make sure it is applied. Otherwise, your filter is
-likely to have a very short lifetime due to more a less regular internal API
+development mailing-list and make sure that they are applied. Otherwise, your filters
+are likely to have a very short lifetime due to more or less regular internal API
 changes, and a limited distribution, review, and testing.
 
 Bootstrap
@@ -64,7 +64,7 @@ filter, so you can update the boilerplate with your credits.
 Doxy
 ----
 
-Next chunk is the Doxygen about the file. See http://ffmpeg.org/doxygen/trunk/.
+Next chunk is the Doxygen about the file. See https://ffmpeg.org/doxygen/trunk/.
 Detail here what the filter is, does, and add some references if you feel like
 it.
 
@@ -73,11 +73,11 @@ Context
 
 Skip the headers and scroll down to the definition of FoobarContext. This is
 your local state context. It is already filled with 0 when you get it so do not
-worry about uninitialized read into this context. This is where you put every
-"global" information you need, typically the variable storing the user options.
+worry about uninitialized reads into this context. This is where you put all
+"global" information that you need; typically the variables storing the user options.
 You'll notice the first field "const AVClass *class"; it's the only field you
-need to keep assuming you have a context. There are some magic you don't care
-about around this field, just let it be (in first position) for now.
+need to keep assuming you have a context. There is some magic you don't need to
+care about around this field, just let it be (in the first position) for now.
 
 Options
 -------
@@ -87,7 +87,7 @@ options. For example, -vf foobar=mode=colormix:high=0.4:low=0.1. Most options
 have the following pattern:
   name, description, offset, type, default value, minimum value, maximum value, flags
 
- - name is the option name, keep it simple, lowercase
+ - name is the option name, keep it simple and lowercase
  - description are short, in lowercase, without period, and describe what they
    do, for example "set the foo of the bar"
  - offset is the offset of the field in your local context, see the OFFSET()
@@ -99,7 +99,7 @@ have the following pattern:
  - min and max values define the range of available values, inclusive
  - flags are AVOption generic flags. See AV_OPT_FLAG_* definitions
 
-In doubt, just look at the other AVOption definitions all around the codebase,
+When in doubt, just look at the other AVOption definitions all around the codebase,
 there are tons of examples.
 
 Class
@@ -146,14 +146,14 @@ we won't cover this here since vf_foobar is just a simple 1:1 filter.
 uninit()
 ~~~~~~~~
 
-Similarly, there is the uninit() callback, doing what the name suggest. Free
+Similarly, there is the uninit() callback, doing what the name suggests. Free
 everything you allocated here.
 
 query_formats()
 ~~~~~~~~~~~~~~~
 
-This is following the init() and is used for the format negotiation, basically
-where you say what pixel format(s) (gray, rgb 32, yuv 4:2:0, ...) you accept
+This follows the init() and is used for the format negotiation. Basically
+you specify here what pixel format(s) (gray, rgb 32, yuv 4:2:0, ...) you accept
 for your inputs, and what you can output. All pixel formats are defined in
 libavutil/pixfmt.h. If you don't change the pixel format between the input and
 the output, you just have to define a pixel formats array and call
@@ -182,7 +182,7 @@ will update outlink->w and outlink->h.
 filter_frame()
 ~~~~~~~~~~~~~~
 
-This is the callback you are waiting from the beginning: it is where you
+This is the callback you are waiting for from the beginning: it is where you
 process the received frames. Along with the frame, you get the input link from
 where the frame comes from.
 
@@ -317,7 +317,7 @@ Adding timeline support
 feature to add. In the most simple case, you just have to add
 AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC to the AVFilter.flags. You can typically
 do this when your filter does not need to save the previous context frames, or
-basically if your filter just alter whatever goes in and doesn't need
+basically if your filter just alters whatever goes in and doesn't need
 previous/future information. See for instance commit 86cb986ce that adds
 timeline support to the fieldorder filter.
 
