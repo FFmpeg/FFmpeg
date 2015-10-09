@@ -275,14 +275,16 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     MPADecodeHeader c;
     int vbrtag_size = 0;
     MP3DecContext *mp3 = s->priv_data;
+    int ret;
 
     ffio_init_checksum(s->pb, ff_crcA001_update, 0);
 
     v = avio_rb32(s->pb);
-    if(ff_mpa_check_header(v) < 0)
-      return -1;
 
-    if (avpriv_mpegaudio_decode_header(&c, v) == 0)
+    ret = avpriv_mpegaudio_decode_header(&c, v);
+    if (ret < 0)
+        return ret;
+    else if (ret == 0)
         vbrtag_size = c.frame_size;
     if(c.layer != 3)
         return -1;
@@ -388,8 +390,8 @@ static int check(AVIOContext *pb, int64_t pos, int64_t *out_pos)
 
         header = avio_rb32(pb);
 
-        if (ff_mpa_check_header(header) < 0 ||
-            avpriv_mpegaudio_decode_header(&mh, header))
+
+        if (avpriv_mpegaudio_decode_header(&mh, header))
             break;
         out_pos[i] = off;
     }
