@@ -1088,6 +1088,13 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
     for (;;) {
         length = bytestream2_get_bytes_left(&s->gb);
         if (length <= 0) {
+
+            if (avctx->codec_id == AV_CODEC_ID_PNG &&
+                avctx->skip_frame == AVDISCARD_ALL) {
+                av_frame_set_metadata(p, metadata);
+                return 0;
+            }
+
             if (CONFIG_APNG_DECODER && avctx->codec_id == AV_CODEC_ID_APNG && length == 0) {
                 if (!(s->state & PNG_IDAT))
                     return 0;
@@ -1115,6 +1122,20 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 ((tag >> 8) & 0xff),
                 ((tag >> 16) & 0xff),
                 ((tag >> 24) & 0xff), length);
+
+        if (avctx->codec_id == AV_CODEC_ID_PNG &&
+            avctx->skip_frame == AVDISCARD_ALL) {
+            switch(tag) {
+            case MKTAG('I', 'H', 'D', 'R'):
+            case MKTAG('p', 'H', 'Y', 's'):
+            case MKTAG('t', 'E', 'X', 't'):
+            case MKTAG('I', 'D', 'A', 'T'):
+                break;
+            default:
+                goto skip_tag;
+            }
+        }
+
         switch (tag) {
         case MKTAG('I', 'H', 'D', 'R'):
             if ((ret = decode_ihdr_chunk(avctx, s, length)) < 0)
@@ -1197,6 +1218,11 @@ skip_tag:
         }
     }
 exit_loop:
+    if (avctx->codec_id == AV_CODEC_ID_PNG &&
+        avctx->skip_frame == AVDISCARD_ALL) {
+        av_frame_set_metadata(p, metadata);
+        return 0;
+    }
 
     if (s->bits_per_pixel <= 4)
         handle_small_bpp(s, p);
@@ -1293,6 +1319,12 @@ static int decode_frame_png(AVCodecContext *avctx,
 
     if ((ret = decode_frame_common(avctx, s, p, avpkt)) < 0)
         goto the_end;
+
+    if (avctx->skip_frame == AVDISCARD_ALL) {
+        *got_frame = 0;
+        ret = bytestream2_tell(&s->gb);
+        goto the_end;
+    }
 
     if ((ret = av_frame_ref(data, s->picture.f)) < 0)
         return ret;
