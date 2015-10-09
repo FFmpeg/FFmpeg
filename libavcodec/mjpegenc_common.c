@@ -64,11 +64,14 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
 {
     int i, j, size;
     uint8_t *ptr;
+    MpegEncContext *s = avctx->priv_data;
 
     if (avctx->codec_id != AV_CODEC_ID_LJPEG) {
         int matrix_count = 1 + !!memcmp(luma_intra_matrix,
                                         chroma_intra_matrix,
                                         sizeof(luma_intra_matrix[0]) * 64);
+    if (s->force_duplicated_matrix)
+        matrix_count = 2;
     /* quant matrixes */
     put_marker(p, DQT);
     put_bits(p, 16, 2 + matrix_count * (1 + 64));
