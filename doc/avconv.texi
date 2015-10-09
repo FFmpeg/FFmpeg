@@ -253,6 +253,9 @@ Overwrite output files without asking.
 @item -n (@emph{global})
 Immediately exit when output files already exist.
 
+@item -loop @var{number} (@emph{input})
+Set number of times input stream shall be looped.
+
 @item -c[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 @itemx -codec[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 Select an encoder (when used before an output file) or a decoder (when used
