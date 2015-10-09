@@ -1529,7 +1529,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     AVCodecContext *enc;
     int frame_number, vid, i;
     double bitrate;
-    int64_t pts = INT64_MIN;
+    int64_t pts = INT64_MIN + 1;
     static int64_t last_time = -1;
     static int qp_histogram[52];
     int hours, mins, secs, us;
