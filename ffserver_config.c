@@ -460,7 +460,7 @@ static int ffserver_set_int_param(int *dest, const char *value, int factor,
     if (tmp < min || tmp > max)
         goto error;
     if (factor) {
-        if (FFABS(tmp) > INT_MAX / FFABS(factor))
+        if (tmp == INT_MIN || FFABS(tmp) > INT_MAX / FFABS(factor))
             goto error;
         tmp *= factor;
     }
