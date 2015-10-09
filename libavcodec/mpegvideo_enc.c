@@ -148,7 +148,7 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
                     qmat16[qscale][0][i] == 128 * 256)
                     qmat16[qscale][0][i] = 128 * 256 - 1;
                 qmat16[qscale][1][i] =
-                    ROUNDED_DIV(bias << (16 - QUANT_BIAS_SHIFT),
+                    ROUNDED_DIV(bias * (1<<(16 - QUANT_BIAS_SHIFT)),
                                 qmat16[qscale][0][i]);
             }
         }
