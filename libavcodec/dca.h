@@ -132,6 +132,47 @@ typedef struct QMF64_table {
     float rsin[32];
 } QMF64_table;
 
+/* Primary audio coding header */
+typedef struct DCAAudioHeader {
+    int subband_activity[DCA_PRIM_CHANNELS_MAX];    ///< subband activity count
+    int vq_start_subband[DCA_PRIM_CHANNELS_MAX];    ///< high frequency vq start subband
+    int joint_intensity[DCA_PRIM_CHANNELS_MAX];     ///< joint intensity coding index
+    int transient_huffman[DCA_PRIM_CHANNELS_MAX];   ///< transient mode code book
+    int scalefactor_huffman[DCA_PRIM_CHANNELS_MAX]; ///< scale factor code book
+    int bitalloc_huffman[DCA_PRIM_CHANNELS_MAX];    ///< bit allocation quantizer select
+    int quant_index_huffman[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX]; ///< quantization index codebook select
+    float scalefactor_adj[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX];   ///< scale factor adjustment
+
+    int subframes;              ///< number of subframes
+    int total_channels;         ///< number of channels including extensions
+    int prim_channels;          ///< number of primary audio channels
+} DCAAudioHeader;
+
+typedef struct DCAChan {
+    DECLARE_ALIGNED(32, float, subband_samples)[DCA_BLOCKS_MAX][DCA_SUBBANDS][8];
+
+    /* Subband samples history (for ADPCM) */
+    DECLARE_ALIGNED(16, float, subband_samples_hist)[DCA_SUBBANDS][4];
+    int hist_index;
+
+    /* Half size is sufficient for core decoding, but for 96 kHz data
+     * we need QMF with 64 subbands and 1024 samples. */
+    DECLARE_ALIGNED(32, float, subband_fir_hist)[1024];
+    DECLARE_ALIGNED(32, float, subband_fir_noidea)[64];
+
+    /* Primary audio coding side information */
+    int prediction_mode[DCA_SUBBANDS];    ///< prediction mode (ADPCM used or not)
+    int prediction_vq[DCA_SUBBANDS];      ///< prediction VQ coefs
+    int bitalloc[DCA_SUBBANDS];           ///< bit allocation index
+    int transition_mode[DCA_SUBBANDS];    ///< transition mode (transients)
+    int32_t scale_factor[DCA_SUBBANDS][2];///< scale factors (2 if transient)
+    int joint_huff;                       ///< joint subband scale factors codebook
+    int joint_scale_factor[DCA_SUBBANDS]; ///< joint subband scale factors
+
+    int32_t  high_freq_vq[DCA_SUBBANDS];  ///< VQ encoded high frequency subbands
+} DCAChan;
+
+
 typedef struct DCAContext {
     const AVClass *class;       ///< class for AVOptions
     AVCodecContext *avctx;
@@ -165,28 +206,11 @@ typedef struct DCAContext {
     int dialog_norm;            ///< dialog normalisation parameter
 
     /* Primary audio coding header */
-    int subframes;              ///< number of subframes
-    int total_channels;         ///< number of channels including extensions
-    int prim_channels;          ///< number of primary audio channels
-    int subband_activity[DCA_PRIM_CHANNELS_MAX];    ///< subband activity count
-    int vq_start_subband[DCA_PRIM_CHANNELS_MAX];    ///< high frequency vq start subband
-    int joint_intensity[DCA_PRIM_CHANNELS_MAX];     ///< joint intensity coding index
-    int transient_huffman[DCA_PRIM_CHANNELS_MAX];   ///< transient mode code book
-    int scalefactor_huffman[DCA_PRIM_CHANNELS_MAX]; ///< scale factor code book
-    int bitalloc_huffman[DCA_PRIM_CHANNELS_MAX];    ///< bit allocation quantizer select
-    int quant_index_huffman[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX]; ///< quantization index codebook select
-    float scalefactor_adj[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX];   ///< scale factor adjustment
+    DCAAudioHeader audio_header;
 
     /* Primary audio coding side information */
     int subsubframes[DCA_SUBFRAMES_MAX];                         ///< number of subsubframes
     int partial_samples[DCA_SUBFRAMES_MAX];                      ///< partial subsubframe samples count
-    int prediction_mode[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];    ///< prediction mode (ADPCM used or not)
-    int prediction_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];      ///< prediction VQ coefs
-    int bitalloc[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];           ///< bit allocation index
-    int transition_mode[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];    ///< transition mode (transients)
-    int32_t scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][2];///< scale factors (2 if transient)
-    int joint_huff[DCA_PRIM_CHANNELS_MAX];                       ///< joint subband scale factors codebook
-    int joint_scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS]; ///< joint subband scale factors
     float downmix_coef[DCA_PRIM_CHANNELS_MAX + 1][2];            ///< stereo downmix coefficients
     int dynrange_coef;                                           ///< dynamic range coefficient
 
@@ -197,23 +221,17 @@ typedef struct DCAContext {
     uint8_t  core_downmix_amode;                                 ///< audio channel arrangement of embedded downmix
     uint16_t core_downmix_codes[DCA_PRIM_CHANNELS_MAX + 1][4];   ///< embedded downmix coefficients (9-bit codes)
 
-    int32_t  high_freq_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];  ///< VQ encoded high frequency subbands
 
     float lfe_data[2 * DCA_LFE_MAX * (DCA_BLOCKS_MAX + 4)];      ///< Low frequency effect data
     int lfe_scale_factor;
 
     /* Subband samples history (for ADPCM) */
-    DECLARE_ALIGNED(16, float, subband_samples_hist)[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
-    /* Half size is sufficient for core decoding, but for 96 kHz data
-     * we need QMF with 64 subbands and 1024 samples. */
-    DECLARE_ALIGNED(32, float, subband_fir_hist)[DCA_PRIM_CHANNELS_MAX][1024];
-    DECLARE_ALIGNED(32, float, subband_fir_noidea)[DCA_PRIM_CHANNELS_MAX][64];
-    int hist_index[DCA_PRIM_CHANNELS_MAX];
     DECLARE_ALIGNED(32, float, raXin)[32];
+
+    DCAChan dca_chan[DCA_PRIM_CHANNELS_MAX];
 
     int output;                 ///< type of output
 
-    DECLARE_ALIGNED(32, float, subband_samples)[DCA_BLOCKS_MAX][DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
     float *samples_chanptr[DCA_PRIM_CHANNELS_MAX + 1];
     float *extra_channels[DCA_PRIM_CHANNELS_MAX + 1];
     uint8_t *extra_channels_buffer;
