@@ -1272,7 +1272,8 @@ Several bitstream filters can be specified, separated by ",".
 @item select
 Select the streams that should be mapped to the slave output,
 specified by a stream specifier. If not specified, this defaults to
-all the input streams.
+all the input streams. You may use multiple stream specifiers
+separated by commas (@code{,}) e.g.: @code{a:0,v}
 @end table
 
 @subsection Examples
