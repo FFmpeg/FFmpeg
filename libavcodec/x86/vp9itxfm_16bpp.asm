@@ -97,6 +97,40 @@ pw_m3196_m16069: times 4 dw -3196, -16069
 pw_m13623_m9102: times 4 dw -13623, -9102
 pw_m6270_m15137: times 4 dw -6270, -15137
 
+default_8x8:
+times 12 db 1
+times 52 db 2
+row_8x8:
+times 18 db 1
+times 46 db 2
+col_8x8:
+times 6 db 1
+times 58 db 2
+default_16x16:
+times 10 db 1
+times 28 db 2
+times 51 db 3
+times 167 db 4
+row_16x16:
+times 21 db 1
+times 45 db 2
+times 60 db 3
+times 130 db 4
+col_16x16:
+times 5 db 1
+times 12 db 2
+times 25 db 3
+times 214 db 4
+default_32x32:
+times 9 db 1
+times 25 db 2
+times 36 db 3
+times 65 db 4
+times 105 db 5
+times 96 db 6
+times 112 db 7
+times 576 db 8
+
 SECTION .text
 
 %macro VP9_STORE_2X 6-7 dstq ; reg1, reg2, tmp1, tmp2, min, max, dst
@@ -636,18 +670,21 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
     jg .loop_dc
     RET
 
-    ; FIXME a sub-idct for the top-left 4x4 coefficients would save 1 loop
-    ; iteration in the first idct (2->1) and thus probably a lot of time.
-    ; I haven't implemented that yet, though
-
 .idctfull:
     mova   [rsp+16*mmsize], m0
-    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    DEFINE_ARGS dst, stride, block, cnt, ptr, skip, dstbak
 %if ARCH_X86_64
     mov            dstbakq, dstq
+    movsxd            cntq, cntd
 %endif
-    lea           stride3q, [strideq*3]
-    mov               cntd, 2
+%ifdef PIC
+    lea               ptrq, [default_8x8]
+    movzx             cntd, byte [ptrq+cntq-1]
+%else
+    movzx             cntd, byte [default_8x8+cntq-1]
+%endif
+    mov              skipd, 2
+    sub              skipd, cntd
     mov               ptrq, rsp
 .loop_1:
     IDCT8_1D        blockq
@@ -668,6 +705,24 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
     dec               cntd
     jg .loop_1
 
+    ; zero-pad the remainder (skipped cols)
+    test             skipd, skipd
+    jz .end
+    add              skipd, skipd
+    lea             blockq, [blockq+skipq*(mmsize/2)]
+    pxor                m0, m0
+.loop_z:
+    mova   [ptrq+mmsize*0], m0
+    mova   [ptrq+mmsize*1], m0
+    mova   [ptrq+mmsize*2], m0
+    mova   [ptrq+mmsize*3], m0
+    add               ptrq, 4 * mmsize
+    dec              skipd
+    jg .loop_z
+.end:
+
+    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    lea           stride3q, [strideq*3]
     mov               cntd, 2
     mov               ptrq, rsp
 .loop_2:
@@ -854,20 +909,27 @@ cglobal vp9_idct_idct_8x8_add_12, 4, 6 + ARCH_X86_64, 10, \
     SWAP                 2, 7, 6
 %endmacro
 
-%macro IADST8_FN 4
-cglobal vp9_%1_%3_8x8_add_10, 3, 6 + ARCH_X86_64, 13, \
-                              17 * mmsize + ARCH_X86_32 * 5 * mmsize, \
+%macro IADST8_FN 5
+cglobal vp9_%1_%3_8x8_add_10, 4, 6 + ARCH_X86_64, 16, \
+                              16 * mmsize + ARCH_X86_32 * 6 * mmsize, \
                               dst, stride, block, eob
     mova                m0, [pw_1023]
 
 .body:
     mova   [rsp+16*mmsize], m0
-    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    DEFINE_ARGS dst, stride, block, cnt, ptr, skip, dstbak
 %if ARCH_X86_64
     mov            dstbakq, dstq
+    movsxd            cntq, cntd
 %endif
-    lea           stride3q, [strideq*3]
-    mov               cntd, 2
+%ifdef PIC
+    lea               ptrq, [%5_8x8]
+    movzx             cntd, byte [ptrq+cntq-1]
+%else
+    movzx             cntd, byte [%5_8x8+cntq-1]
+%endif
+    mov              skipd, 2
+    sub              skipd, cntd
     mov               ptrq, rsp
 .loop_1:
     %2_1D           blockq
@@ -888,6 +950,24 @@ cglobal vp9_%1_%3_8x8_add_10, 3, 6 + ARCH_X86_64, 13, \
     dec               cntd
     jg .loop_1
 
+    ; zero-pad the remainder (skipped cols)
+    test             skipd, skipd
+    jz .end
+    add              skipd, skipd
+    lea             blockq, [blockq+skipq*(mmsize/2)]
+    pxor                m0, m0
+.loop_z:
+    mova   [ptrq+mmsize*0], m0
+    mova   [ptrq+mmsize*1], m0
+    mova   [ptrq+mmsize*2], m0
+    mova   [ptrq+mmsize*3], m0
+    add               ptrq, 4 * mmsize
+    dec              skipd
+    jg .loop_z
+.end:
+
+    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    lea           stride3q, [strideq*3]
     mov               cntd, 2
     mov               ptrq, rsp
 .loop_2:
@@ -913,17 +993,17 @@ cglobal vp9_%1_%3_8x8_add_10, 3, 6 + ARCH_X86_64, 13, \
     ZERO_BLOCK blockq-2*mmsize, 32, 8, m6
     RET
 
-cglobal vp9_%1_%3_8x8_add_12, 3, 6 + ARCH_X86_64, 13, \
-                              17 * mmsize + ARCH_X86_32 * 5 * mmsize, \
+cglobal vp9_%1_%3_8x8_add_12, 4, 6 + ARCH_X86_64, 16, \
+                              16 * mmsize + ARCH_X86_32 * 6 * mmsize, \
                               dst, stride, block, eob
     mova                m0, [pw_4095]
     jmp mangle(private_prefix %+ _ %+ vp9_%1_%3_8x8_add_10 %+ SUFFIX).body
 %endmacro
 
 INIT_XMM sse2
-IADST8_FN idct,  IDCT8,  iadst, IADST8
-IADST8_FN iadst, IADST8, idct,  IDCT8
-IADST8_FN iadst, IADST8, iadst, IADST8
+IADST8_FN idct,  IDCT8,  iadst, IADST8, row
+IADST8_FN iadst, IADST8, idct,  IDCT8,  col
+IADST8_FN iadst, IADST8, iadst, IADST8, default
 
 %macro IDCT16_1D 1-4 4 * mmsize, 65, 67 ; src, src_stride, stack_offset, mm32bit_stack_offset
     IDCT8_1D            %1, %2 * 2, %4              ; m0-3=t0-3a, m4-5/m8|r67/m7=t4-7
@@ -1040,12 +1120,19 @@ cglobal vp9_idct_idct_16x16_add_10, 4, 6 + ARCH_X86_64, 16, \
 
 .idctfull:
     mova   [rsp+64*mmsize], m0
-    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    DEFINE_ARGS dst, stride, block, cnt, ptr, skip, dstbak
 %if ARCH_X86_64
     mov            dstbakq, dstq
+    movsxd            cntq, cntd
 %endif
-    lea           stride3q, [strideq*3]
-    mov               cntd, 4
+%ifdef PIC
+    lea               ptrq, [default_16x16]
+    movzx             cntd, byte [ptrq+cntq-1]
+%else
+    movzx             cntd, byte [default_16x16+cntq-1]
+%endif
+    mov              skipd, 4
+    sub              skipd, cntd
     mov               ptrq, rsp
 .loop_1:
     IDCT16_1D       blockq
@@ -1084,6 +1171,28 @@ cglobal vp9_idct_idct_16x16_add_10, 4, 6 + ARCH_X86_64, 16, \
     dec               cntd
     jg .loop_1
 
+    ; zero-pad the remainder (skipped cols)
+    test             skipd, skipd
+    jz .end
+    add              skipd, skipd
+    lea             blockq, [blockq+skipq*(mmsize/2)]
+    pxor                m0, m0
+.loop_z:
+    mova   [ptrq+mmsize*0], m0
+    mova   [ptrq+mmsize*1], m0
+    mova   [ptrq+mmsize*2], m0
+    mova   [ptrq+mmsize*3], m0
+    mova   [ptrq+mmsize*4], m0
+    mova   [ptrq+mmsize*5], m0
+    mova   [ptrq+mmsize*6], m0
+    mova   [ptrq+mmsize*7], m0
+    add               ptrq, 8 * mmsize
+    dec              skipd
+    jg .loop_z
+.end:
+
+    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    lea           stride3q, [strideq*3]
     mov               cntd, 4
     mov               ptrq, rsp
 .loop_2:
@@ -1318,20 +1427,27 @@ cglobal vp9_idct_idct_16x16_add_12, 4, 6 + ARCH_X86_64, 16, \
     SWAP                 2, 5, 4, 6, 7, 3
 %endmacro
 
-%macro IADST16_FN 6
-cglobal vp9_%1_%4_16x16_add_10, 3, 6 + ARCH_X86_64, 16, \
+%macro IADST16_FN 7
+cglobal vp9_%1_%4_16x16_add_10, 4, 6 + ARCH_X86_64, 16, \
                                 70 * mmsize + ARCH_X86_32 * 8 * mmsize, \
                                 dst, stride, block, eob
     mova                m0, [pw_1023]
 
 .body:
     mova   [rsp+64*mmsize], m0
-    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    DEFINE_ARGS dst, stride, block, cnt, ptr, skip, dstbak
 %if ARCH_X86_64
     mov            dstbakq, dstq
+    movsxd            cntq, cntd
 %endif
-    lea           stride3q, [strideq*3]
-    mov               cntd, 4
+%ifdef PIC
+    lea               ptrq, [%7_16x16]
+    movzx             cntd, byte [ptrq+cntq-1]
+%else
+    movzx             cntd, byte [%7_16x16+cntq-1]
+%endif
+    mov              skipd, 4
+    sub              skipd, cntd
     mov               ptrq, rsp
 .loop_1:
     %2_1D           blockq
@@ -1370,6 +1486,28 @@ cglobal vp9_%1_%4_16x16_add_10, 3, 6 + ARCH_X86_64, 16, \
     dec               cntd
     jg .loop_1
 
+    ; zero-pad the remainder (skipped cols)
+    test             skipd, skipd
+    jz .end
+    add              skipd, skipd
+    lea             blockq, [blockq+skipq*(mmsize/2)]
+    pxor                m0, m0
+.loop_z:
+    mova   [ptrq+mmsize*0], m0
+    mova   [ptrq+mmsize*1], m0
+    mova   [ptrq+mmsize*2], m0
+    mova   [ptrq+mmsize*3], m0
+    mova   [ptrq+mmsize*4], m0
+    mova   [ptrq+mmsize*5], m0
+    mova   [ptrq+mmsize*6], m0
+    mova   [ptrq+mmsize*7], m0
+    add               ptrq, 8 * mmsize
+    dec              skipd
+    jg .loop_z
+.end:
+
+    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    lea           stride3q, [strideq*3]
     mov               cntd, 4
     mov               ptrq, rsp
 .loop_2:
@@ -1419,7 +1557,7 @@ cglobal vp9_%1_%4_16x16_add_10, 3, 6 + ARCH_X86_64, 16, \
     ZERO_BLOCK blockq-4*mmsize, 64, 16, m7
     RET
 
-cglobal vp9_%1_%4_16x16_add_12, 3, 6 + ARCH_X86_64, 16, \
+cglobal vp9_%1_%4_16x16_add_12, 4, 6 + ARCH_X86_64, 16, \
                                 70 * mmsize + ARCH_X86_32 * 8 * mmsize, \
                                 dst, stride, block, eob
     mova                m0, [pw_4095]
@@ -1427,9 +1565,9 @@ cglobal vp9_%1_%4_16x16_add_12, 3, 6 + ARCH_X86_64, 16, \
 %endmacro
 
 INIT_XMM sse2
-IADST16_FN idct,  IDCT16,  67, iadst, IADST16, 70
-IADST16_FN iadst, IADST16, 70, idct,  IDCT16,  67
-IADST16_FN iadst, IADST16, 70, iadst, IADST16, 70
+IADST16_FN idct,  IDCT16,  67, iadst, IADST16, 70, row
+IADST16_FN iadst, IADST16, 70, idct,  IDCT16,  67, col
+IADST16_FN iadst, IADST16, 70, iadst, IADST16, 70, default
 
 %macro IDCT32_1D 2-3 8 * mmsize; pass[1/2], src, src_stride
     IDCT16_1D %2, 2 * %3, 272, 257
@@ -1808,12 +1946,19 @@ cglobal vp9_idct_idct_32x32_add_10, 4, 6 + ARCH_X86_64, 16, \
 
 .idctfull:
     mova  [rsp+256*mmsize], m0
-    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    DEFINE_ARGS dst, stride, block, cnt, ptr, skip, dstbak
 %if ARCH_X86_64
     mov            dstbakq, dstq
+    movsxd            cntq, cntd
 %endif
-    lea           stride3q, [strideq*3]
-    mov               cntd, 8
+%ifdef PIC
+    lea               ptrq, [default_32x32]
+    movzx             cntd, byte [ptrq+cntq-1]
+%else
+    movzx             cntd, byte [default_32x32+cntq-1]
+%endif
+    mov              skipd, 8
+    sub              skipd, cntd
     mov               ptrq, rsp
 .loop_1:
     IDCT32_1D            1, blockq
@@ -1823,6 +1968,28 @@ cglobal vp9_idct_idct_32x32_add_10, 4, 6 + ARCH_X86_64, 16, \
     dec               cntd
     jg .loop_1
 
+    ; zero-pad the remainder (skipped cols)
+    test             skipd, skipd
+    jz .end
+    shl              skipd, 2
+    lea             blockq, [blockq+skipq*(mmsize/4)]
+    pxor                m0, m0
+.loop_z:
+    mova   [ptrq+mmsize*0], m0
+    mova   [ptrq+mmsize*1], m0
+    mova   [ptrq+mmsize*2], m0
+    mova   [ptrq+mmsize*3], m0
+    mova   [ptrq+mmsize*4], m0
+    mova   [ptrq+mmsize*5], m0
+    mova   [ptrq+mmsize*6], m0
+    mova   [ptrq+mmsize*7], m0
+    add               ptrq, 8 * mmsize
+    dec              skipd
+    jg .loop_z
+.end:
+
+    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+    lea           stride3q, [strideq*3]
     mov               cntd, 8
     mov               ptrq, rsp
 .loop_2:
