@@ -26,7 +26,7 @@ SECTION .text
 
 INIT_XMM sse2
 cglobal w3fdif_scale, 3, 3, 2, 0, out_pixel, work_pixel, linesize
-.loop
+.loop:
     mova                         m0, [work_pixelq]
     mova                         m1, [work_pixelq+mmsize]
     psrad                        m0, 15
@@ -50,7 +50,7 @@ cglobal w3fdif_simple_low, 4, 5, 6, 0, work_line, in_lines_cur0, coef, linesize,
     mov       in_lines_cur1q, [in_lines_cur0q + gprsize]
     mov       in_lines_cur0q, [in_lines_cur0q]
 
-.loop
+.loop:
     movh                                   m2, [in_lines_cur0q+offsetq]
     movh                                   m3, [in_lines_cur1q+offsetq]
     punpcklbw                              m2, m4
@@ -76,7 +76,7 @@ cglobal w3fdif_complex_low, 4, 7, 7, 0, work_line, in_lines_cur0, coef, linesize
     mov       in_lines_cur1q, [in_lines_cur0q+gprsize]
     mov       in_lines_cur0q, [in_lines_cur0q]
 
-.loop
+.loop:
     movh                                   m4, [in_lines_cur0q+offsetq]
     movh                                   m5, [in_lines_cur1q+offsetq]
     pxor                                   m1, m1
@@ -119,7 +119,7 @@ cglobal w3fdif_simple_high, 5, 9, 9, 0, work_line, in_lines_cur0, in_lines_adj0,
     mov       in_lines_adj1q, [in_lines_adj0q+gprsize]
     mov       in_lines_adj0q, [in_lines_adj0q]
 
-.loop
+.loop:
     movh                                   m3, [in_lines_cur0q+offsetq]
     movh                                   m4, [in_lines_cur1q+offsetq]
     punpcklbw                              m3, m7
@@ -176,7 +176,7 @@ cglobal w3fdif_complex_high, 5, 13, 10, 0, work_line, in_lines_cur0, in_lines_ad
     mov       in_lines_adj1q, [in_lines_adj0q+gprsize]
     mov       in_lines_adj0q, [in_lines_adj0q]
 
-.loop
+.loop:
     movh                                   m5, [in_lines_cur0q+offsetq]
     movh                                   m6, [in_lines_cur1q+offsetq]
     punpcklbw                              m5, m3
