@@ -168,6 +168,11 @@ static inline int pthread_cond_signal(pthread_cond_t *cond)
 }
 
 #else // _WIN32_WINNT < 0x0600
+
+/* atomic init state of dynamically loaded functions */
+static LONG w32thread_init_state = 0;
+static av_unused void w32thread_init(void);
+
 /* for pre-Windows 6.0 platforms, define INIT_ONCE struct,
  * compatible to the one used in the native API */
 
@@ -208,6 +213,8 @@ static inline void w32thread_once_fallback(LONG volatile *state, void (*init_rou
 
 static av_unused int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
 {
+    w32thread_once_fallback(&w32thread_init_state, w32thread_init);
+
     /* Use native functions on Windows 6.0+ */
     if (initonce_begin && initonce_complete) {
         BOOL pending = FALSE;
@@ -244,6 +251,9 @@ static BOOL (WINAPI *cond_wait)(pthread_cond_t *cond, pthread_mutex_t *mutex,
 static av_unused int pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
 {
     win32_cond_t *win32_cond = NULL;
+
+    w32thread_once_fallback(&w32thread_init_state, w32thread_init);
+
     if (cond_init) {
         cond_init(cond);
         return 0;
