@@ -409,6 +409,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
         if (ret > 0) {
+            pkt->side_data = NULL;
+            pkt->side_data_elems = 0;
             av_free_packet(pkt);
             new_pkt.buf = av_buffer_create(new_pkt.data, new_pkt.size,
                                            av_buffer_default_free, NULL, 0);
