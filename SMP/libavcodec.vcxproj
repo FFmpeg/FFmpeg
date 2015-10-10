@@ -119,6 +119,7 @@
     <YASM Include="..\libavcodec\x86\proresdsp.asm" />
     <YASM Include="..\libavcodec\x86\rv40dsp.asm" />
     <YASM Include="..\libavcodec\x86\svq1enc.asm" />
+    <YASM Include="..\libavcodec\x86\takdsp.asm" />
     <YASM Include="..\libavcodec\x86\ttadsp.asm" />
     <YASM Include="..\libavcodec\x86\v210enc.asm" />
     <YASM Include="..\libavcodec\x86\v210.asm" />
@@ -1226,6 +1227,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\tak.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\takdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_takdsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\targa.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\targaenc.c">
@@ -1722,6 +1726,8 @@
     <ClCompile Include="..\libavcodec\x86\rv40dsp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\svq1enc_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\takdsp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\ttadsp_init.c">
     </ClCompile>

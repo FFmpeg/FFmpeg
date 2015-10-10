@@ -201,6 +201,9 @@
     <YASM Include="..\libavcodec\x86\svq1enc.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\takdsp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\ttadsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -1835,6 +1838,9 @@
     <ClCompile Include="..\libavcodec\tak.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\takdsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\targa.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2562,6 +2568,9 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\svq1enc_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\takdsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\ttadsp_init.c">
