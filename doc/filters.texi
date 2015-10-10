@@ -5398,14 +5398,20 @@ A 1 character description of the current picture type.
 
 @item pts
 The timestamp of the current frame.
-It can take up to two arguments.
+It can take up to three arguments.
 
 The first argument is the format of the timestamp; it defaults to @code{flt}
 for seconds as a decimal number with microsecond accuracy; @code{hms} stands
 for a formatted @var{[-]HH:MM:SS.mmm} timestamp with millisecond accuracy.
+@code{gmtime} stands for the timestamp of the frame formatted as UTC time;
+@code{localtime} stands for the timestamp of the frame formatted as
+local time zone time.
 
 The second argument is an offset added to the timestamp.
 
+If the format is set to @code{localtime} or @code{gmtime},
+a third argument may be supplied: a strftime() format string.
+By default, @var{YYYY-MM-DD HH:MM:SS} format will be used.
 @end table
 
 @subsection Examples
