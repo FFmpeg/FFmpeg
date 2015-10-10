@@ -169,8 +169,8 @@ enum SwrEngine {
 /** Resampling Filter Types */
 enum SwrFilterType {
     SWR_FILTER_TYPE_CUBIC,              /**< Cubic */
-    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
-    SWR_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
+    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall windowed sinc */
+    SWR_FILTER_TYPE_KAISER,             /**< Kaiser windowed sinc */
 };
 
 /**
