@@ -65,11 +65,12 @@ cglobal w3fdif_simple_low, 4, 5, 6, 0, work_line, in_lines_cur0, coef, linesize,
     jg .loop
 REP_RET
 
-cglobal w3fdif_complex_low, 4, 7, 7, 0, work_line, in_lines_cur0, coef, linesize
+cglobal w3fdif_complex_low, 4, 7, 8, 0, work_line, in_lines_cur0, coef, linesize
     movq                  m0, [coefq]
     DEFINE_ARGS    work_line, in_lines_cur0, in_lines_cur1, linesize, offset, in_lines_cur2, in_lines_cur3
     pshufd                m2, m0, q1111
     SPLATD                m0
+    pxor                  m1, m1
     mov              offsetq, 0
     mov       in_lines_cur3q, [in_lines_cur0q+gprsize*3]
     mov       in_lines_cur2q, [in_lines_cur0q+gprsize*2]
@@ -79,17 +80,16 @@ cglobal w3fdif_complex_low, 4, 7, 7, 0, work_line, in_lines_cur0, coef, linesize
 .loop:
     movh                                   m4, [in_lines_cur0q+offsetq]
     movh                                   m5, [in_lines_cur1q+offsetq]
-    pxor                                   m1, m1
     punpcklbw                              m4, m1
     punpcklbw                              m5, m1
-    SBUTTERFLY                             wd, 4, 5, 3
+    SBUTTERFLY                             wd, 4, 5, 7
     pmaddwd                                m4, m0
     pmaddwd                                m5, m0
     movh                                   m6, [in_lines_cur2q+offsetq]
     movh                                   m3, [in_lines_cur3q+offsetq]
     punpcklbw                              m6, m1
     punpcklbw                              m3, m1
-    SBUTTERFLY                             wd, 6, 3, 1
+    SBUTTERFLY                             wd, 6, 3, 7
     pmaddwd                                m6, m2
     pmaddwd                                m3, m2
     paddd                                  m4, m6
