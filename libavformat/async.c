@@ -387,6 +387,9 @@ static const AVOption options[] = {
     {NULL},
 };
 
+#undef D
+#undef OFFSET
+
 static const AVClass async_context_class = {
     .class_name = "Async",
     .item_name  = av_default_item_name,
@@ -413,6 +416,9 @@ typedef struct TestContext {
     AVClass        *class;
     int64_t         logical_pos;
     int64_t         logical_size;
+
+    /* options */
+    int             opt_read_error;
 } TestContext;
 
 static int async_test_open(URLContext *h, const char *arg, int flags, AVDictionary **options)
@@ -433,6 +439,9 @@ static int async_test_read(URLContext *h, unsigned char *buf, int size)
     TestContext *c = h->priv_data;
     int          i;
     int          read_len = 0;
+
+    if (c->opt_read_error)
+        return c->opt_read_error;
 
     if (c->logical_pos >= c->logical_size)
         return AVERROR_EOF;
@@ -471,9 +480,22 @@ static int64_t async_test_seek(URLContext *h, int64_t pos, int whence)
     return new_logical_pos;
 }
 
+#define OFFSET(x) offsetof(TestContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption async_test_options[] = {
+    { "async-test-read-error",      "cause read fail",
+        OFFSET(opt_read_error),     AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, .flags = D },
+    {NULL},
+};
+
+#undef D
+#undef OFFSET
+
 static const AVClass async_test_context_class = {
     .class_name = "Async-Test",
     .item_name  = av_default_item_name,
+    .option     = async_test_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -496,10 +518,14 @@ int main(void)
     int64_t       pos;
     int64_t       read_len;
     unsigned char buf[4096];
+    AVDictionary *opts = NULL;
 
     ffurl_register_protocol(&ff_async_protocol);
     ffurl_register_protocol(&ff_async_test_protocol);
 
+    /*
+     * test normal read
+     */
     ret = ffurl_open(&h, "async:async-test:", AVIO_FLAG_READ, NULL, NULL);
     printf("open: %d\n", ret);
 
@@ -534,6 +560,9 @@ int main(void)
     }
     printf("read: %"PRId64"\n", read_len);
 
+    /*
+     * test normal seek
+     */
     ret = ffurl_read(h, buf, 1);
     printf("read: %d\n", ret);
 
@@ -568,7 +597,19 @@ int main(void)
     ret = ffurl_read(h, buf, 1);
     printf("read: %d\n", ret);
 
+    /*
+     * test read error
+     */
+    ffurl_close(h);
+    av_dict_set_int(&opts, "async-test-read-error", -10000, 0);
+    ret = ffurl_open(&h, "async:async-test:", AVIO_FLAG_READ, NULL, &opts);
+    printf("open: %d\n", ret);
+
+    ret = ffurl_read(h, buf, 1);
+    printf("read: %d\n", ret);
+
 fail:
+    av_dict_free(&opts);
     ffurl_close(h);
     return 0;
 }
