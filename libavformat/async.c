@@ -55,6 +55,7 @@ typedef struct Context {
     int             seek_completed;
     int64_t         seek_ret;
 
+    int             inner_io_error;
     int             io_error;
     int             io_eof_reached;
 
@@ -83,6 +84,18 @@ static int async_check_interrupt(void *arg)
         c->abort_request = 1;
 
     return c->abort_request;
+}
+
+static int wrapped_url_read(void *src, void *dst, int size)
+{
+    URLContext *h   = src;
+    Context    *c   = h->priv_data;
+    int         ret;
+
+    ret = ffurl_read(c->inner, dst, size);
+    c->inner_io_error = ret < 0 ? ret : 0;
+
+    return ret;
 }
 
 static void *async_buffer_task(void *arg)
@@ -136,14 +149,13 @@ static void *async_buffer_task(void *arg)
         pthread_mutex_unlock(&c->mutex);
 
         to_copy = FFMIN(4096, fifo_space);
-        ret = av_fifo_generic_write(fifo, c->inner, to_copy, (void *)ffurl_read);
+        ret = av_fifo_generic_write(fifo, (void *)h, to_copy, (void *)wrapped_url_read);
 
         pthread_mutex_lock(&c->mutex);
         if (ret <= 0) {
             c->io_eof_reached = 1;
-            if (ret < 0) {
-                c->io_error = ret;
-            }
+            if (c->inner_io_error < 0)
+                c->io_error = c->inner_io_error;
         }
 
         pthread_cond_signal(&c->cond_wakeup_main);
@@ -270,8 +282,12 @@ static int async_read_internal(URLContext *h, void *dest, int size, int read_com
             if (to_read <= 0 || !read_complete)
                 break;
         } else if (c->io_eof_reached) {
-            if (ret <= 0)
-                ret = AVERROR_EOF;
+            if (ret <= 0) {
+                if (c->io_error)
+                    ret = c->io_error;
+                else
+                    ret = AVERROR_EOF;
+            }
             break;
         }
         pthread_cond_signal(&c->cond_wakeup_background);
