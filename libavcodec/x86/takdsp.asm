@@ -75,8 +75,8 @@ cglobal tak_decorrelate_sm, 3, 3, 6, p1, p2, length
     mova                         m4, [p2q+lengthq+mmsize]
     mova                         m2, m1
     mova                         m5, m4
-    psrld                        m2, 1
-    psrld                        m5, 1
+    psrad                        m2, 1
+    psrad                        m5, 1
     psubd                        m0, m2
     psubd                        m3, m5
     paddd                        m1, m0
@@ -104,10 +104,10 @@ cglobal tak_decorrelate_sf, 3, 3, 5, p1, p2, length, dshift, dfactor
 .loop:
     mova                 m0, [p1q+lengthq]
     mova                 m1, [p2q+lengthq]
-    psrld                m1, m2
+    psrad                m1, m2
     pmulld               m1, m3
     paddd                m1, m4
-    psrld                m1, 8
+    psrad                m1, 8
     pslld                m1, m2
     psubd                m1, m0
     mova      [p1q+lengthq], m1
