@@ -126,6 +126,50 @@ static void blend_normal(const uint8_t *top, ptrdiff_t top_linesize,
     av_image_copy_plane(dst, dst_linesize, top, top_linesize, width, end - start);
 }
 
+static void blend_normal_8bit(const uint8_t *top, ptrdiff_t top_linesize,
+                              const uint8_t *bottom, ptrdiff_t bottom_linesize,
+                              uint8_t *dst, ptrdiff_t dst_linesize,
+                              ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
+                              FilterParams *param, double *values)
+{
+    const double opacity = param->opacity;
+    int i, j;
+
+    for (i = start; i < end; i++) {
+        for (j = 0; j < width; j++) {
+            dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
+        }
+        dst    += dst_linesize;
+        top    += top_linesize;
+        bottom += bottom_linesize;
+    }
+}
+
+static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
+                                  const uint8_t *_bottom, ptrdiff_t bottom_linesize,
+                                  uint8_t *_dst, ptrdiff_t dst_linesize,
+                                  ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
+                                  FilterParams *param, double *values)
+{
+    const uint16_t *top = (uint16_t*)_top;
+    const uint16_t *bottom = (uint16_t*)_bottom;
+    uint16_t *dst = (uint16_t*)_dst;
+    const double opacity = param->opacity;
+    int i, j;
+    dst_linesize /= 2;
+    top_linesize /= 2;
+    bottom_linesize /= 2;
+
+    for (i = start; i < end; i++) {
+        for (j = 0; j < width; j++) {
+            dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
+        }
+        dst    += dst_linesize;
+        top    += top_linesize;
+        bottom += bottom_linesize;
+    }
+}
+
 #define DEFINE_BLEND8(name, expr)                                              \
 static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,         \
                                  const uint8_t *bottom, ptrdiff_t bottom_linesize,   \
@@ -457,7 +501,8 @@ static int config_output(AVFilterLink *outlink)
         case BLEND_LINEARLIGHT:param->blend = is_16bit ? blend_linearlight_16bit: blend_linearlight_8bit;break;
         case BLEND_MULTIPLY:   param->blend = is_16bit ? blend_multiply_16bit   : blend_multiply_8bit;   break;
         case BLEND_NEGATION:   param->blend = is_16bit ? blend_negation_16bit   : blend_negation_8bit;   break;
-        case BLEND_NORMAL:     param->blend = blend_normal;                                              break;
+        case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_normal:
+                                              is_16bit ? blend_normal_16bit     : blend_normal_8bit;     break;
         case BLEND_OR:         param->blend = is_16bit ? blend_or_16bit         : blend_or_8bit;         break;
         case BLEND_OVERLAY:    param->blend = is_16bit ? blend_overlay_16bit    : blend_overlay_8bit;    break;
         case BLEND_PHOENIX:    param->blend = is_16bit ? blend_phoenix_16bit    : blend_phoenix_8bit;    break;

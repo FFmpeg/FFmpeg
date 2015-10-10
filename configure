@@ -1818,6 +1818,7 @@ SYSTEM_FUNCS="
     sysconf
     sysctl
     usleep
+    UTGetOSTypeFromString
     VirtualAlloc
     wglGetProcAddress
 "
@@ -2395,11 +2396,11 @@ crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 vaapi_deps="va_va_h"
-vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads CoreServices_CoreServices_h"
-vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore -framework CoreServices"
+vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
+vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
-videotoolbox_deps="VideoToolbox_VideoToolbox_h pthreads CoreServices_CoreServices_h"
-videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework QuartzCore -framework CoreServices"
+videotoolbox_deps="VideoToolbox_VideoToolbox_h pthreads"
+videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
 
 h263_vaapi_hwaccel_deps="vaapi"
@@ -2983,7 +2984,7 @@ target_path='$(CURDIR)'
 
 # since the object filename is not given with the -MM flag, the compiler
 # is only able to print the basename, and we must add the path ourselves
-DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< 2>/dev/null | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o," > $(@:.o=.d)'
+DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< 2>/dev/null | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(@F),$(@D)/$(@F)," > $(@:.o=.d)'
 DEPFLAGS='-MM'
 
 # find source path
@@ -5157,7 +5158,6 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
-check_header CoreServices/CoreServices.h
 check_header direct.h
 check_header dirent.h
 check_header dlfcn.h
@@ -5190,6 +5190,7 @@ check_header asm/types.h
 check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
+check_lib "CoreServices/CoreServices.h" UTGetOSTypeFromString "-framework CoreServices"
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 

@@ -1300,7 +1300,7 @@ static int save_avio_options(AVFormatContext *s)
     int ret = 0;
 
     while (*opt) {
-        if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN, &buf) >= 0) {
+        if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN | AV_OPT_ALLOW_NULL, &buf) >= 0) {
             ret = av_dict_set(&c->avio_opts, *opt, buf,
                               AV_DICT_DONT_STRDUP_VAL);
             if (ret < 0)
