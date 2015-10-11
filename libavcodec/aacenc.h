@@ -66,6 +66,7 @@ typedef struct AACCoefficientsEncoder {
     void (*apply_tns_filt)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
+    void (*mark_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
     void (*search_for_tns)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe);
     void (*search_for_is)(struct AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
@@ -100,6 +101,8 @@ typedef struct AACEncContext {
     int last_frame;
     int random_state;
     float lambda;
+    float lambda_sum;                            ///< sum(lambda), for Qvg reporting
+    int lambda_count;                            ///< count(lambda), for Qvg reporting
     enum RawDataBlockType cur_type;              ///< channel group type cur_channel belongs to
 
     AudioFrameQueue afq;

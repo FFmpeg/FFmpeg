@@ -252,6 +252,7 @@ typedef struct SingleChannelElement {
     INTFLOAT sf[120];                               ///< scalefactors
     int sf_idx[128];                                ///< scalefactor indices (used by encoder)
     uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
+    uint8_t can_pns[128];                           ///< band is allowed to PNS (informative)
     float  is_ener[128];                            ///< Intensity stereo pos (used by encoder)
     float pns_ener[128];                            ///< Noise energy values (used by encoder)
     DECLARE_ALIGNED(32, INTFLOAT, pcoeffs)[1024];   ///< coefficients for IMDCT, pristine

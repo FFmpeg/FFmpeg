@@ -29,7 +29,20 @@
 /** maximum number of channels */
 #define PSY_MAX_CHANS 20
 
-#define AAC_CUTOFF(s) ((s)->bit_rate ? FFMIN3(4000 + (s)->bit_rate/8, 12000 + (s)->bit_rate/32, (s)->sample_rate / 2) : ((s)->sample_rate / 2))
+/* cutoff for VBR is purposedly increased, since LP filtering actually
+ * hinders VBR performance rather than the opposite
+ */
+#define AAC_CUTOFF_FROM_BITRATE(bit_rate,channels,sample_rate) (bit_rate ? FFMIN3(FFMIN3( \
+    FFMAX(bit_rate/channels/5, bit_rate/channels*15/32 - 5500), \
+    3000 + bit_rate/channels/4, \
+    12000 + bit_rate/channels/16), \
+    22000, \
+    sample_rate / 2): (sample_rate / 2))
+#define AAC_CUTOFF(s) ( \
+    (s->flags & CODEC_FLAG_QSCALE) \
+    ? s->sample_rate / 2 \
+    : AAC_CUTOFF_FROM_BITRATE(s->bit_rate, s->channels, s->sample_rate) \
+)
 
 /**
  * single band psychoacoustic information

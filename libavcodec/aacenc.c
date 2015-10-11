@@ -258,6 +258,8 @@ static void apply_intensity_stereo(ChannelElement *cpe)
                     start += ics->swb_sizes[g];
                     continue;
                 }
+                if (cpe->ms_mask[w*16 + g])
+                    p *= -1;
                 for (i = 0; i < ics->swb_sizes[g]; i++) {
                     float sum = (cpe->ch[0].coeffs[start+i] + p*cpe->ch[1].coeffs[start+i])*scale;
                     cpe->ch[0].coeffs[start+i] = sum;
@@ -279,7 +281,7 @@ static void apply_mid_side_stereo(ChannelElement *cpe)
         for (w2 =  0; w2 < ics->group_len[w]; w2++) {
             int start = (w+w2) * 128;
             for (g = 0; g < ics->num_swb; g++) {
-                if (!cpe->ms_mask[w*16 + g]) {
+                if (!cpe->ms_mask[w*16 + g] && !cpe->is_mask[w*16 + g]) {
                     start += ics->swb_sizes[g];
                     continue;
                 }
@@ -490,6 +492,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ChannelElement *cpe;
     SingleChannelElement *sce;
     int i, its, ch, w, chans, tag, start_ch, ret, frame_bits;
+    int target_bits, rate_bits, too_many_bits, too_few_bits;
     int ms_mode = 0, is_mode = 0, tns_mode = 0, pred_mode = 0;
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
@@ -583,8 +586,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return ret;
     frame_bits = its = 0;
     do {
-        int target_bits, too_many_bits, too_few_bits;
-
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
         if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & AV_CODEC_FLAG_BITEXACT))
@@ -618,12 +619,15 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             s->psy.model->analyze(&s->psy, start_ch, coeffs, wi);
             if (s->psy.bitres.alloc > 0) {
                 /* Lambda unused here on purpose, we need to take psy's unscaled allocation */
-                target_bits += s->psy.bitres.alloc;
+                target_bits += s->psy.bitres.alloc
+                    * (s->lambda / (avctx->global_quality ? avctx->global_quality : 120));
                 s->psy.bitres.alloc /= chans;
             }
             s->cur_type = tag;
             for (ch = 0; ch < chans; ch++) {
                 s->cur_channel = start_ch + ch;
+                if (s->options.pns && s->coder->mark_pns)
+                    s->coder->mark_pns(s, avctx, &cpe->ch[ch]);
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
             }
             if (chans > 1
@@ -680,8 +684,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     s->coder->search_for_ms(s, cpe);
                 else if (cpe->common_window)
                     memset(cpe->ms_mask, 1, sizeof(cpe->ms_mask));
-                for (w = 0; w < 128; w++)
-                    cpe->ms_mask[w] = cpe->is_mask[w] ? 0 : cpe->ms_mask[w];
                 apply_mid_side_stereo(cpe);
             }
             adjust_frame_information(cpe, chans);
@@ -708,23 +710,25 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         /* rate control stuff
-         * target either the nominal bitrate, or what psy's bit reservoir says to target
-         * whichever is greatest
+         * allow between the nominal bitrate, and what psy's bit reservoir says to target
+         * but drift towards the nominal bitrate always
          */
-
         frame_bits = put_bits_count(&s->pb);
-        target_bits = FFMAX(target_bits, avctx->bit_rate * 1024 / avctx->sample_rate);
-        target_bits = FFMIN(target_bits, 6144 * s->channels - 3);
+        rate_bits = avctx->bit_rate * 1024 / avctx->sample_rate;
+        rate_bits = FFMIN(rate_bits, 6144 * s->channels - 3);
+        too_many_bits = FFMAX(target_bits, rate_bits);
+        too_many_bits = FFMIN(too_many_bits, 6144 * s->channels - 3);
+        too_few_bits = FFMIN(FFMAX(rate_bits - rate_bits/4, target_bits), too_many_bits);
 
         /* When using ABR, be strict (but only for increasing) */
-        too_many_bits = target_bits + target_bits/2;
-        too_few_bits = target_bits - target_bits/8;
+        too_few_bits = too_few_bits - too_few_bits/8;
+        too_many_bits = too_many_bits + too_many_bits/2;
 
         if (   its == 0 /* for steady-state Q-scale tracking */
             || (its < 5 && (frame_bits < too_few_bits || frame_bits > too_many_bits))
             || frame_bits >= 6144 * s->channels - 3  )
         {
-            float ratio = ((float)target_bits) / frame_bits;
+            float ratio = ((float)rate_bits) / frame_bits;
 
             if (frame_bits >= too_few_bits && frame_bits <= too_many_bits) {
                 /*
@@ -742,7 +746,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             s->lambda = FFMIN(s->lambda * ratio, 65536.f);
 
             /* Keep iterating if we must reduce and lambda is in the sky */
-            if (s->lambda < 300.f || ratio > 0.9f) {
+            if ((s->lambda < 300.f || ratio > 0.9f) && (s->lambda > 10.f || ratio < 1.1f)) {
                 break;
             } else {
                 if (is_mode || ms_mode || tns_mode || pred_mode) {
@@ -764,6 +768,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
     avctx->frame_bits = put_bits_count(&s->pb);
+    s->lambda_sum += s->lambda;
+    s->lambda_count++;
 
     if (!frame)
         s->last_frame++;
@@ -779,6 +785,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 static av_cold int aac_encode_end(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
+
+    av_log(avctx, AV_LOG_INFO, "Qavg: %.3f\n", s->lambda_sum / s->lambda_count);
 
     ff_mdct_end(&s->mdct1024);
     ff_mdct_end(&s->mdct128);
