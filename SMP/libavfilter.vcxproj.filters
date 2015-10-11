@@ -63,6 +63,9 @@
     <YASM Include="..\libavfilter\x86\af_volume.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
+    <YASM Include="..\libavfilter\x86\vf_w3fdif.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
     <YASM Include="..\libavfilter\x86\vf_yadif.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
@@ -750,6 +753,9 @@
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\af_volume_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_w3fdif_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_yadif_init.c">
