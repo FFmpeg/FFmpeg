@@ -279,6 +279,11 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
                                               NULL);
         ost->quality = sd ? *(int *)sd : -1;
+
+        if (ost->frame_rate.num) {
+            pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
+                                         ost->st->time_base);
+        }
     }
 
     while (bsfc) {
