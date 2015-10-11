@@ -143,10 +143,8 @@ cglobal w3fdif_simple_high, 5, 9, 8, 0, work_line, in_lines_cur0, in_lines_adj0,
     pmaddwd                                m6, m2
     paddd                                  m3, m5
     paddd                                  m4, m6
-    movu                                   m5, [work_lineq+offsetq*4]
-    movu                                   m6, [work_lineq+offsetq*4+mmsize]
-    paddd                                  m3, m5
-    paddd                                  m4, m6
+    paddd                                  m3, [work_lineq+offsetq*4]
+    paddd                                  m4, [work_lineq+offsetq*4+mmsize]
     mova               [work_lineq+offsetq*4], m3
     mova        [work_lineq+offsetq*4+mmsize], m4
     add                               offsetq, mmsize/2
