@@ -708,16 +708,16 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
         pctx->pe.max = FFMAX(pe, pctx->pe.max);
         pctx->pe.min = FFMIN(pe, pctx->pe.min);
     } else {
-    desired_bits = calc_bit_demand(pctx, pe, ctx->bitres.bits, ctx->bitres.size, wi->num_windows == 8);
-    desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits);
+        desired_bits = calc_bit_demand(pctx, pe, ctx->bitres.bits, ctx->bitres.size, wi->num_windows == 8);
+        desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits);
 
-    /* NOTE: PE correction is kept simple. During initial testing it had very
-     *       little effect on the final bitrate. Probably a good idea to come
-     *       back and do more testing later.
-     */
-    if (ctx->bitres.bits > 0)
-        desired_pe *= av_clipf(pctx->pe.previous / PSY_3GPP_BITS_TO_PE(ctx->bitres.bits),
-                               0.85f, 1.15f);
+        /* NOTE: PE correction is kept simple. During initial testing it had very
+         *       little effect on the final bitrate. Probably a good idea to come
+         *       back and do more testing later.
+         */
+        if (ctx->bitres.bits > 0)
+            desired_pe *= av_clipf(pctx->pe.previous / PSY_3GPP_BITS_TO_PE(ctx->bitres.bits),
+                                   0.85f, 1.15f);
     }
     pctx->pe.previous = PSY_3GPP_BITS_TO_PE(desired_bits);
     ctx->bitres.alloc = desired_bits;
