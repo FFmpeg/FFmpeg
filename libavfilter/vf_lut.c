@@ -125,7 +125,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 #define RGB_FORMATS                             \
     AV_PIX_FMT_ARGB,         AV_PIX_FMT_RGBA,         \
     AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,         \
-    AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24
+    AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24,        \
+    AV_PIX_FMT_RGB48LE,      AV_PIX_FMT_RGBA64LE
 
 static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
 static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
@@ -260,6 +261,11 @@ static int config_props(AVFilterLink *inlink)
         max[V] = 240 * (1 << (desc->comp[2].depth - 8));
         max[A] = (1 << desc->comp[3].depth) - 1;
         break;
+    case AV_PIX_FMT_RGB48LE:
+    case AV_PIX_FMT_RGBA64LE:
+        min[0] = min[1] = min[2] = min[3] = 0;
+        max[0] = max[1] = max[2] = max[3] = 65535;
+        break;
     default:
         min[0] = min[1] = min[2] = min[3] = 0;
         max[0] = max[1] = max[2] = max[3] = 255;
@@ -272,6 +278,9 @@ static int config_props(AVFilterLink *inlink)
     if (s->is_rgb) {
         ff_fill_rgba_map(rgba_map, inlink->format);
         s->step = av_get_bits_per_pixel(desc) >> 3;
+        if (s->is_16bit) {
+            s->step = s->step >> 1;
+        }
     }
 
     for (color = 0; color < desc->nb_components; color++) {
@@ -336,7 +345,44 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    if (s->is_rgb) {
+    if (s->is_rgb && s->is_16bit) {
+        /* packed, 16-bit */
+        uint16_t *inrow, *outrow, *inrow0, *outrow0;
+        const int w = inlink->w;
+        const int h = in->height;
+        const uint16_t (*tab)[256*256] = (const uint16_t (*)[256*256])s->lut;
+        const int in_linesize  =  in->linesize[0] / 2;
+        const int out_linesize = out->linesize[0] / 2;
+        const int step = s->step;
+
+        inrow0  = (uint16_t*) in ->data[0];
+        outrow0 = (uint16_t*) out->data[0];
+
+        for (i = 0; i < h; i ++) {
+            inrow  = inrow0;
+            outrow = outrow0;
+            for (j = 0; j < w; j++) {
+
+                switch (step) {
+#if HAVE_BIGENDIAN
+                case 4:  outrow[3] = av_bswap16(tab[3][av_bswap16(inrow[3])]); // Fall-through
+                case 3:  outrow[2] = av_bswap16(tab[2][av_bswap16(inrow[2])]); // Fall-through
+                case 2:  outrow[1] = av_bswap16(tab[1][av_bswap16(inrow[1])]); // Fall-through
+                default: outrow[0] = av_bswap16(tab[0][av_bswap16(inrow[0])]);
+#else
+                case 4:  outrow[3] = tab[3][inrow[3]]; // Fall-through
+                case 3:  outrow[2] = tab[2][inrow[2]]; // Fall-through
+                case 2:  outrow[1] = tab[1][inrow[1]]; // Fall-through
+                default: outrow[0] = tab[0][inrow[0]];
+#endif
+                }
+                outrow += step;
+                inrow  += step;
+            }
+            inrow0  += in_linesize;
+            outrow0 += out_linesize;
+        }
+    } else if (s->is_rgb) {
         /* packed */
         uint8_t *inrow, *outrow, *inrow0, *outrow0;
         const int w = inlink->w;

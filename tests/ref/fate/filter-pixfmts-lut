@@ -3,7 +3,9 @@ argb                4f575be3cd02799389f581df99c4de38
 bgr24               fa43e3b2abfde8d9e60e157a9acc553d
 bgra                4e2e689897ee7a8e42b16234597bab35
 rgb24               a356171207723a580e7d277078072005
+rgb48le             5c7dd8575836d18c91e09f1915cf9aa9
 rgba                7bc854c2698b78af3e9159a19c2d9d21
+rgba64le            3a087ecab583d1930220592731f282b4
 yuv410p             51b39a0e33f108e652457a26667319ea
 yuv411p             9204c5af92aef4922a05f58c1f6c095e
 yuv420p             7c43bb0cae8dee633375c89295598508
