@@ -1065,7 +1065,7 @@ static void remove_wasted_bits(FlacEncodeContext *s)
         }
 
         if (v && !(v & 1)) {
-            v = av_ctz(v);
+            v = ff_ctz(v);
 
             for (i = 0; i < s->frame.blocksize; i++)
                 sub->samples[i] >>= v;

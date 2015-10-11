@@ -122,6 +122,12 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
 
 #ifndef ff_ctz
 #define ff_ctz ff_ctz_c
+/**
+ * Trailing zero bit count.
+ *
+ * @param v  input value. If v is 0, the result is undefined.
+ * @return   the number of trailing 0-bits
+ */
 #if !defined( _MSC_VER )
 static av_always_inline av_const int ff_ctz_c(int v)
 {
@@ -176,14 +182,6 @@ static av_always_inline av_const int ff_ctzll_c(long long v)
     return debruijn_ctz64[(uint64_t)((v & -v) * 0x022FDD63CC95386D) >> 58];
 }
 #endif
-
-/**
- * Trailing zero bit count.
- *
- * @param v  input value. If v is 0, the result is undefined.
- * @return   the number of trailing 0-bits
- */
-int av_ctz(int v);
 
 /**
  * @}
