@@ -1129,17 +1129,6 @@ fail:
     return ret;
 }
 
-static enum AVPixelFormat non_j_pixfmt(enum AVPixelFormat a)
-{
-    switch (a) {
-    case AV_PIX_FMT_YUVJ420P: return AV_PIX_FMT_YUV420P;
-    case AV_PIX_FMT_YUVJ422P: return AV_PIX_FMT_YUV422P;
-    case AV_PIX_FMT_YUVJ444P: return AV_PIX_FMT_YUV444P;
-    default:
-        return a;
-    }
-}
-
 /**
  * Decode a slice header.
  * This will (re)intialize the decoder and call h264_frame_start() as needed.
@@ -1323,9 +1312,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                      || h->mb_width  != h->sps.mb_width
                      || h->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag)
                     ));
-    if (h->avctx->pix_fmt == AV_PIX_FMT_NONE
-        || (non_j_pixfmt(h->avctx->pix_fmt) != non_j_pixfmt(get_pixel_format(h, 0))))
-        must_reinit = 1;
 
     if (first_slice && av_cmp_q(h->sps.sar, h->avctx->sample_aspect_ratio))
         must_reinit = 1;
