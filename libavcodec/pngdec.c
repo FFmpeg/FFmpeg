@@ -980,7 +980,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_PATCHWELCOME;
     }
 
-    buffer = av_malloc(s->image_linesize * s->height);
+    buffer = av_malloc_array(s->image_linesize, s->height);
     if (!buffer)
         return AVERROR(ENOMEM);
 
