@@ -17,15 +17,15 @@
  * License along with ShiftMediaProject; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- 
+
 #include "configGenerator.h"
 
 #include <algorithm>
 
-configGenerator::configGenerator( ) : 
-    m_sWhiteSpace( " \t\n\0" ), 
+configGenerator::configGenerator( ) :
+    m_sWhiteSpace( " \t\n\0" ),
     m_sToolchain( "msvc" ),
-    m_bLibav( false ), 
+    m_bLibav( false ),
     m_sProjectName( "FFMPEG" )
 {
 }
@@ -417,6 +417,26 @@ bool configGenerator::changeConfig( const string & stOption )
                     cout << "  Error: Unknown option (" << sOption << ") in command line option (" << stOption << ")" << endl;
                     return false;
                 }
+                //Check if this option has a component list
+                string sOption2 = sOption;
+                transform( sOption2.begin( ), sOption2.end( ), sOption2.begin( ), ::toupper );
+                sOption2 += "_COMPONENTS";
+                vList.resize( 0 );
+                getConfigList( sOption2, vList, false );
+                for( vitComponent = vList.begin(); vitComponent<vList.end(); vitComponent++ )
+                {
+                    //This is a component
+                    sOption2 = vitComponent->substr( 0, vitComponent->length()-1 ); //Need to remove the s from end
+                    //Get the specific list
+                    vector<string> vList2;
+                    transform( sOption2.begin( ), sOption2.end( ), sOption2.begin( ), ::toupper );
+                    getConfigList( sOption2 + "_LIST", vList2 );
+                    vector<string>::iterator vitComponent2;
+                    for( vitComponent2 = vList2.begin(); vitComponent2<vList2.end(); vitComponent2++ )
+                    {
+                        toggleConfigValue( *vitComponent2, bEnable );
+                    }
+                }
             }
             toggleConfigValue( sOption, bEnable );
         }
@@ -454,7 +474,7 @@ bool configGenerator::outputConfig( )
             fastToggleConfigValue( "lgplv3", true );
         }
     }
-    
+
     //Perform full check of all config values
     ValuesList::iterator vitOption = m_vConfigValues.begin( );
     for( vitOption; vitOption < m_vConfigValues.end( ); vitOption++ )
@@ -486,7 +506,7 @@ bool configGenerator::outputConfig( )
         }
     }
 
-    //It may be possible that the above optimzation pass disables some dependencies of other options. 
+    //It may be possible that the above optimzation pass disables some dependencies of other options.
     // If this happens then a full recheck is performed
     if( bDisabledOpt )
     {
@@ -499,7 +519,7 @@ bool configGenerator::outputConfig( )
             }
         }
     }
-    
+
     //Open configure output file
     string sConfigFile = "../../config.h";
     ofstream ofConfigureFile( sConfigFile );
@@ -547,7 +567,7 @@ bool configGenerator::outputConfig( )
     else
     {
         vitOption->m_sValue = "\"LGPL version 2.1 or later\"";
-    }    
+    }
 
     //Output all fixed config options
     vitOption = m_vFixedConfigValues.begin( );
@@ -596,7 +616,7 @@ bool configGenerator::outputConfig( )
             ofASMConfigureFile << "%define " << sTagName << " " << vitOption->m_sValue << endl;
         }
     }
-    
+
     //Output end header guard
     ofConfigureFile << "#endif /* " << m_sProjectName << "_CONFIG_H */" << endl;
     //Close output files
@@ -1074,7 +1094,7 @@ bool configGenerator::toggleConfigValue( const string & sOption, bool bEnable, b
             cout << "  Error: Unknown config option (" << sOption << ")" << endl;
             return false;
         }
-    }    
+    }
     return true;
 }
 
@@ -1120,7 +1140,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
 
     //Get list of additional dependencies
     DependencyList mAdditionalDependencies;
-    buildAdditionalDependencies( mAdditionalDependencies );    
+    buildAdditionalDependencies( mAdditionalDependencies );
 
     //Check if disabled
     if( vitOption->m_sValue.compare("1") != 0 )
