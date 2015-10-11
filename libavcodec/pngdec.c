@@ -912,6 +912,11 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
         cur_w > s->width - x_offset|| cur_h > s->height - y_offset)
             return AVERROR_INVALIDDATA;
 
+    if (blend_op != APNG_BLEND_OP_OVER && blend_op != APNG_BLEND_OP_SOURCE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid blend_op %d\n", blend_op);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (sequence_number == 0 && dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
         // No previous frame to revert to for the first frame
         // Spec says to just treat it as a APNG_DISPOSE_OP_BACKGROUND
