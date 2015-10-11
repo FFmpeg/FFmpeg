@@ -26,50 +26,70 @@
 
 SECTION_RODATA
 
-pw_11585x2:  times 8 dw 23170
-pw_m11585x2: times 8 dw -23170
-pw_m11585_11585: times 4 dw -11585, 11585
-pw_11585_11585: times 8 dw 11585
-pw_m11585_m11585: times 8 dw -11585
-
 %macro VP9_IDCT_COEFFS 2-3 0
-pw_%1x2:    times 8 dw  %1*2
-pw_m%1x2:   times 8 dw -%1*2
-pw_%2x2:    times 8 dw  %2*2
-pw_m%2x2:   times 8 dw -%2*2
-pw_m%1_%2:  times 4 dw -%1,  %2
-pw_%2_%1:   times 4 dw  %2,  %1
-pw_m%2_m%1: times 4 dw -%2, -%1
+const pw_m%1_%2
+times 4 dw -%1,  %2
+const pw_%2_%1
+times 4 dw  %2,  %1
+
 %if %3 == 1
-pw_m%2_%1:  times 4 dw -%2,  %1
-pw_%1_%2:   times 4 dw  %1,  %2
+const pw_m%2_m%1
+times 4 dw -%2, -%1
+%if %1 != %2
+const pw_m%2_%1
+times 4 dw -%2,  %1
+const pw_%1_%2
+times 4 dw  %1,  %2
+%endif
+%endif
+
+%if %1 < 11585
+pw_m%1x2:   times 8 dw -%1*2
+%elif %1 > 11585
+pw_%1x2:    times 8 dw  %1*2
+%else
+const pw_%1x2
+times 8 dw %1*2
+%endif
+
+%if %2 != %1
+pw_%2x2:    times 8 dw  %2*2
 %endif
 %endmacro
 
-VP9_IDCT_COEFFS 15137,  6270, 1
-VP9_IDCT_COEFFS 16069,  3196, 1
-VP9_IDCT_COEFFS  9102, 13623, 1
-VP9_IDCT_COEFFS 16305,  1606
-VP9_IDCT_COEFFS 10394, 12665
-VP9_IDCT_COEFFS 14449,  7723
-VP9_IDCT_COEFFS  4756, 15679
 VP9_IDCT_COEFFS 16364,   804
-VP9_IDCT_COEFFS 11003, 12140
-VP9_IDCT_COEFFS 14811,  7005
-VP9_IDCT_COEFFS  5520, 15426
+VP9_IDCT_COEFFS 16305,  1606
+VP9_IDCT_COEFFS 16069,  3196, 1
 VP9_IDCT_COEFFS 15893,  3981
-VP9_IDCT_COEFFS  8423, 14053
+VP9_IDCT_COEFFS 15137,  6270, 1
+VP9_IDCT_COEFFS 14811,  7005
+VP9_IDCT_COEFFS 14449,  7723
 VP9_IDCT_COEFFS 13160,  9760
+VP9_IDCT_COEFFS 11585, 11585, 1
+VP9_IDCT_COEFFS 11003, 12140
+VP9_IDCT_COEFFS 10394, 12665
+VP9_IDCT_COEFFS  9102, 13623, 1
+VP9_IDCT_COEFFS  8423, 14053
+VP9_IDCT_COEFFS  5520, 15426
+VP9_IDCT_COEFFS  4756, 15679
 VP9_IDCT_COEFFS  2404, 16207
 
-pw_5283_13377: times 4 dw 5283, 13377
-pw_9929_13377: times 4 dw 9929, 13377
-pw_15212_m13377: times 4 dw 15212, -13377
-pw_15212_9929: times 4 dw 15212, 9929
-pw_m5283_m15212: times 4 dw -5283, -15212
-pw_13377x2: times 8 dw 13377*2
-pw_m13377_13377: times 4 dw -13377, 13377
-pw_13377_0: times 4 dw 13377, 0
+const pw_5283_13377
+times 4 dw 5283, 13377
+const pw_9929_13377
+times 4 dw 9929, 13377
+const pw_15212_m13377
+times 4 dw 15212, -13377
+const pw_15212_9929
+times 4 dw 15212, 9929
+const pw_m5283_m15212
+times 4 dw -5283, -15212
+const pw_13377x2
+times 8 dw 13377*2
+const pw_m13377_13377
+times 4 dw -13377, 13377
+const pw_13377_0
+times 4 dw 13377, 0
 
 cextern pw_8
 cextern pw_16

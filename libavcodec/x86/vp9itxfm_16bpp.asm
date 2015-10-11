@@ -38,64 +38,47 @@ cextern pd_8192
 pd_8: times 4 dd 8
 pd_3fff: times 4 dd 0x3fff
 
-; FIXME these should probably be shared between 8bpp and 10/12bpp
-pw_m11585_11585: times 4 dw -11585, 11585
-pw_11585_11585: times 8 dw 11585
-pw_m15137_6270: times 4 dw -15137, 6270
-pw_6270_15137: times 4 dw 6270, 15137
-pw_11585x2: times 8 dw 11585*2
+cextern pw_11585x2
 
-pw_5283_13377: times 4 dw 5283, 13377
-pw_9929_13377: times 4 dw 9929, 13377
-pw_15212_m13377: times 4 dw 15212, -13377
-pw_15212_9929: times 4 dw 15212, 9929
-pw_m5283_m15212: times 4 dw -5283, -15212
-pw_13377x2: times 8 dw 13377*2
-pw_m13377_13377: times 4 dw -13377, 13377
-pw_13377_0: times 4 dw 13377, 0
+cextern pw_5283_13377
+cextern pw_9929_13377
+cextern pw_15212_m13377
+cextern pw_15212_9929
+cextern pw_m5283_m15212
+cextern pw_13377x2
+cextern pw_m13377_13377
+cextern pw_13377_0
+
 pw_9929_m5283: times 4 dw 9929, -5283
 
-pw_3196_16069: times 4 dw 3196, 16069
-pw_m16069_3196: times 4 dw -16069, 3196
-pw_13623_9102: times 4 dw 13623, 9102
-pw_m9102_13623: times 4 dw -9102, 13623
+%macro COEF_PAIR 2-3
+cextern pw_m%1_%2
+cextern pw_%2_%1
+%if %0 == 3
+cextern pw_m%1_m%2
+%if %1 != %2
+cextern pw_m%2_%1
+cextern pw_%1_%2
+%endif
+%endif
+%endmacro
 
-pw_1606_16305: times 4 dw 1606, 16305
-pw_m16305_1606: times 4 dw -16305, 1606
-pw_12665_10394: times 4 dw 12665, 10394
-pw_m10394_12665: times 4 dw -10394, 12665
-pw_7723_14449: times 4 dw 7723, 14449
-pw_m14449_7723: times 4 dw -14449, 7723
-pw_15679_4756: times 4 dw 15679, 4756
-pw_m4756_15679: times 4 dw -4756, 15679
-pw_15137_6270: times 4 dw 15137, 6270
-pw_m6270_15137: times 4 dw -6270, 15137
-
-pw_804_16364: times 4 dw 804, 16364
-pw_m16364_804: times 4 dw -16364, 804
-pw_12140_11003: times 4 dw 12140, 11003
-pw_m11003_12140: times 4 dw -11003, 12140
-pw_7005_14811: times 4 dw 7005, 14811
-pw_m14811_7005: times 4 dw -14811, 7005
-pw_15426_5520: times 4 dw 15426, 5520
-pw_m5520_15426: times 4 dw -5520, 15426
-pw_16069_3196: times 4 dw 16069, 3196
-pw_m3196_16069: times 4 dw -3196, 16069
-pw_3981_15893: times 4 dw 3981, 15893
-pw_m15893_3981: times 4 dw -15893, 3981
-pw_14053_8423: times 4 dw 14053, 8423
-pw_m8423_14053: times 4 dw -8423, 14053
-pw_9760_13160: times 4 dw 9760, 13160
-pw_m13160_9760: times 4 dw -13160, 9760
-pw_16207_2404: times 4 dw 16207, 2404
-pw_m2404_16207: times 4 dw -2404, 16207
-pw_9102_13623: times 4 dw 9102, 13623
-pw_m13623_9102: times 4 dw -13623, 9102
-pw_m11585_m11585: times 8 dw -11585
-
-pw_m3196_m16069: times 4 dw -3196, -16069
-pw_m13623_m9102: times 4 dw -13623, -9102
-pw_m6270_m15137: times 4 dw -6270, -15137
+COEF_PAIR  2404, 16207
+COEF_PAIR  3196, 16069, 1
+COEF_PAIR  4756, 15679
+COEF_PAIR  5520, 15426
+COEF_PAIR  6270, 15137, 1
+COEF_PAIR  8423, 14053
+COEF_PAIR 10394, 12665
+COEF_PAIR 11003, 12140
+COEF_PAIR 11585, 11585, 1
+COEF_PAIR 13160,  9760
+COEF_PAIR 13623,  9102, 1
+COEF_PAIR 14449,  7723
+COEF_PAIR 14811,  7005
+COEF_PAIR 15893,  3981
+COEF_PAIR 16305,  1606
+COEF_PAIR 16364,   804
 
 default_8x8:
 times 12 db 1
