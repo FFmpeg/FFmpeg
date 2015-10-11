@@ -877,13 +877,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_IFF_BYTERUN1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "iff_byterun1",
-        .long_name = NULL_IF_CONFIG_SMALL("IFF ByteRun1"),
-        .props     = AV_CODEC_PROP_LOSSY,
-    },
-    {
         .id        = AV_CODEC_ID_KGV1,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "kgv1",

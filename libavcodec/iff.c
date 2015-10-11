@@ -890,16 +890,3 @@ AVCodec ff_iff_ilbm_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
-#if CONFIG_IFF_BYTERUN1_DECODER
-AVCodec ff_iff_byterun1_decoder = {
-    .name           = "iff",
-    .long_name      = NULL_IF_CONFIG_SMALL("IFF"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_IFF_BYTERUN1,
-    .priv_data_size = sizeof(IffContext),
-    .init           = decode_init,
-    .close          = decode_end,
-    .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
-};
-#endif
