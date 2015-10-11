@@ -124,6 +124,19 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *m)
 }
 
 #if _WIN32_WINNT >= 0x0600
+typedef INIT_ONCE pthread_once_t;
+#define PTHREAD_ONCE_INIT INIT_ONCE_STATIC_INIT
+
+static av_unused int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+{
+    BOOL pending = FALSE;
+    InitOnceBeginInitialize(once_control, 0, &pending, NULL);
+    if (pending)
+        init_routine();
+    InitOnceComplete(once_control, 0, NULL);
+    return 0;
+}
+
 static inline int pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
 {
     InitializeConditionVariable(cond);
@@ -155,8 +168,70 @@ static inline int pthread_cond_signal(pthread_cond_t *cond)
 }
 
 #else // _WIN32_WINNT < 0x0600
+
+/* atomic init state of dynamically loaded functions */
+static LONG w32thread_init_state = 0;
+static av_unused void w32thread_init(void);
+
+/* for pre-Windows 6.0 platforms, define INIT_ONCE struct,
+ * compatible to the one used in the native API */
+
+typedef union pthread_once_t  {
+    void * Ptr;    ///< For the Windows 6.0+ native functions
+    LONG state;    ///< For the pre-Windows 6.0 compat code
+} pthread_once_t;
+
+#define PTHREAD_ONCE_INIT {0}
+
+/* function pointers to init once API on windows 6.0+ kernels */
+static BOOL (WINAPI *initonce_begin)(pthread_once_t *lpInitOnce, DWORD dwFlags, BOOL *fPending, void **lpContext);
+static BOOL (WINAPI *initonce_complete)(pthread_once_t *lpInitOnce, DWORD dwFlags, void *lpContext);
+
+/* pre-Windows 6.0 compat using a spin-lock */
+static inline void w32thread_once_fallback(LONG volatile *state, void (*init_routine)(void))
+{
+    switch (InterlockedCompareExchange(state, 1, 0)) {
+    /* Initial run */
+    case 0:
+        init_routine();
+        InterlockedExchange(state, 2);
+        break;
+    /* Another thread is running init */
+    case 1:
+        while (1) {
+            MemoryBarrier();
+            if (*state == 2)
+                break;
+            Sleep(0);
+        }
+        break;
+    /* Initialization complete */
+    case 2:
+        break;
+    }
+}
+
+static av_unused int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+{
+    w32thread_once_fallback(&w32thread_init_state, w32thread_init);
+
+    /* Use native functions on Windows 6.0+ */
+    if (initonce_begin && initonce_complete) {
+        BOOL pending = FALSE;
+        initonce_begin(once_control, 0, &pending, NULL);
+        if (pending)
+            init_routine();
+        initonce_complete(once_control, 0, NULL);
+        return 0;
+    }
+
+    w32thread_once_fallback(&once_control->state, init_routine);
+    return 0;
+}
+
 /* for pre-Windows 6.0 platforms we need to define and use our own condition
  * variable and api */
+
 typedef struct  win32_cond_t {
     pthread_mutex_t mtx_broadcast;
     pthread_mutex_t mtx_waiter_count;
@@ -176,6 +251,9 @@ static BOOL (WINAPI *cond_wait)(pthread_cond_t *cond, pthread_mutex_t *mutex,
 static av_unused int pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
 {
     win32_cond_t *win32_cond = NULL;
+
+    w32thread_once_fallback(&w32thread_init_state, w32thread_init);
+
     if (cond_init) {
         cond_init(cond);
         return 0;
@@ -319,6 +397,10 @@ static av_unused void w32thread_init(void)
         (void*)GetProcAddress(kernel_dll, "WakeConditionVariable");
     cond_wait      =
         (void*)GetProcAddress(kernel_dll, "SleepConditionVariableCS");
+    initonce_begin =
+        (void*)GetProcAddress(kernel_dll, "InitOnceBeginInitialize");
+    initonce_complete =
+        (void*)GetProcAddress(kernel_dll, "InitOnceComplete");
 #endif
 
 }

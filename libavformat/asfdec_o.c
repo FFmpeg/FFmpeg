@@ -1428,7 +1428,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         case READ_MULTI_SUB:
             if (!asf->sub_left && !asf->nb_mult_left) {
                 asf->state = PARSE_PACKET_HEADER;
-                if (!asf->return_subpayload)
+                if (!asf->return_subpayload &&
+                    (avio_tell(pb) <= asf->packet_offset +
+                     asf->packet_size - asf->pad_len))
                     avio_skip(pb, asf->pad_len); // skip padding
                 if (asf->packet_offset + asf->packet_size > avio_tell(pb))
                     avio_seek(pb, asf->packet_offset + asf->packet_size, SEEK_SET);
@@ -1438,9 +1440,10 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         case READ_MULTI:
             if (!asf->nb_mult_left) {
                 asf->state = PARSE_PACKET_HEADER;
-                if (!asf->return_subpayload) {
+                if (!asf->return_subpayload &&
+                    (avio_tell(pb) <= asf->packet_offset +
+                     asf->packet_size - asf->pad_len))
                     avio_skip(pb, asf->pad_len); // skip padding
-                }
                 if (asf->packet_offset + asf->packet_size > avio_tell(pb))
                     avio_seek(pb, asf->packet_offset + asf->packet_size, SEEK_SET);
             }

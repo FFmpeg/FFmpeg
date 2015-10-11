@@ -46,7 +46,7 @@ Select Gaussian rescaling algorithm.
 Select sinc rescaling algorithm.
 
 @item lanczos
-Select lanczos rescaling algorithm.
+Select Lanczos rescaling algorithm.
 
 @item spline
 Select natural bicubic spline rescaling algorithm.

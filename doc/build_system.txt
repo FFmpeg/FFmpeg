@@ -9,7 +9,7 @@ V
 
 DBG
     Preprocess x86 external assembler files to a .dbg.asm file in the object
-    directory, which then gets compiled. Helps developping those assembler
+    directory, which then gets compiled. Helps in developing those assembler
     files.
 
 DESTDIR
@@ -25,10 +25,10 @@ all
     Default target, builds all the libraries and the executables.
 
 fate
-    Run the fate test suite, note you must have installed it
+    Run the fate test suite, note that you must have installed it.
 
 fate-list
-    Will list all fate/regression test targets
+    List all fate/regression test targets.
 
 install
     Install headers, libraries and programs.
@@ -43,22 +43,22 @@ libavcodec/api-example
     Build the libavcodec basic example.
 
 libswscale/swscale-test
-    Build the swscale self-test (useful also as example).
+    Build the swscale self-test (useful also as an example).
 
 config
-    Reconfigure the project with current configuration.
+    Reconfigure the project with the current configuration.
 
 
 Useful standard make commands:
 make -t <target>
-    Touch all files that otherwise would be build, this is useful to reduce
-    unneeded rebuilding when changing headers, but note you must force rebuilds
+    Touch all files that otherwise would be built, this is useful to reduce
+    unneeded rebuilding when changing headers, but note that you must force rebuilds
     of files that actually need it by hand then.
 
 make -j<num>
-    rebuild with multiple jobs at the same time. Faster on multi processor systems
+    Rebuild with multiple jobs at the same time. Faster on multi processor systems.
 
 make -k
-    continue build in case of errors, this is useful for the regression tests
-    sometimes but note it will still not run all reg tests.
+    Continue build in case of errors, this is useful for the regression tests
+    sometimes but note that it will still not run all reg tests.
 

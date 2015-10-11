@@ -17,6 +17,7 @@ OBJS-$(CONFIG_STEREO3D_FILTER)               += x86/vf_stereo3d_init.o
 OBJS-$(CONFIG_TBLEND_FILTER)                 += x86/vf_blend_init.o
 OBJS-$(CONFIG_TINTERLACE_FILTER)             += x86/vf_tinterlace_init.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += x86/af_volume_init.o
+OBJS-$(CONFIG_W3FDIF_FILTER)                 += x86/vf_w3fdif_init.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += x86/vf_yadif_init.o
 
 YASM-OBJS-$(CONFIG_BLEND_FILTER)             += x86/vf_blend.o
@@ -37,4 +38,5 @@ YASM-OBJS-$(CONFIG_STEREO3D_FILTER)          += x86/vf_stereo3d.o
 YASM-OBJS-$(CONFIG_TBLEND_FILTER)            += x86/vf_blend.o
 YASM-OBJS-$(CONFIG_TINTERLACE_FILTER)        += x86/vf_interlace.o
 YASM-OBJS-$(CONFIG_VOLUME_FILTER)            += x86/af_volume.o
+YASM-OBJS-$(CONFIG_W3FDIF_FILTER)            += x86/vf_w3fdif.o
 YASM-OBJS-$(CONFIG_YADIF_FILTER)             += x86/vf_yadif.o x86/yadif-16.o x86/yadif-10.o

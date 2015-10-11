@@ -55,6 +55,7 @@ typedef struct Context {
     int             seek_completed;
     int64_t         seek_ret;
 
+    int             inner_io_error;
     int             io_error;
     int             io_eof_reached;
 
@@ -83,6 +84,18 @@ static int async_check_interrupt(void *arg)
         c->abort_request = 1;
 
     return c->abort_request;
+}
+
+static int wrapped_url_read(void *src, void *dst, int size)
+{
+    URLContext *h   = src;
+    Context    *c   = h->priv_data;
+    int         ret;
+
+    ret = ffurl_read(c->inner, dst, size);
+    c->inner_io_error = ret < 0 ? ret : 0;
+
+    return ret;
 }
 
 static void *async_buffer_task(void *arg)
@@ -136,14 +149,13 @@ static void *async_buffer_task(void *arg)
         pthread_mutex_unlock(&c->mutex);
 
         to_copy = FFMIN(4096, fifo_space);
-        ret = av_fifo_generic_write(fifo, c->inner, to_copy, (void *)ffurl_read);
+        ret = av_fifo_generic_write(fifo, (void *)h, to_copy, (void *)wrapped_url_read);
 
         pthread_mutex_lock(&c->mutex);
         if (ret <= 0) {
             c->io_eof_reached = 1;
-            if (ret < 0) {
-                c->io_error = ret;
-            }
+            if (c->inner_io_error < 0)
+                c->io_error = c->inner_io_error;
         }
 
         pthread_cond_signal(&c->cond_wakeup_main);
@@ -270,8 +282,12 @@ static int async_read_internal(URLContext *h, void *dest, int size, int read_com
             if (to_read <= 0 || !read_complete)
                 break;
         } else if (c->io_eof_reached) {
-            if (ret <= 0)
-                ret = AVERROR_EOF;
+            if (ret <= 0) {
+                if (c->io_error)
+                    ret = c->io_error;
+                else
+                    ret = AVERROR_EOF;
+            }
             break;
         }
         pthread_cond_signal(&c->cond_wakeup_background);
@@ -371,6 +387,9 @@ static const AVOption options[] = {
     {NULL},
 };
 
+#undef D
+#undef OFFSET
+
 static const AVClass async_context_class = {
     .class_name = "Async",
     .item_name  = av_default_item_name,
@@ -397,6 +416,9 @@ typedef struct TestContext {
     AVClass        *class;
     int64_t         logical_pos;
     int64_t         logical_size;
+
+    /* options */
+    int             opt_read_error;
 } TestContext;
 
 static int async_test_open(URLContext *h, const char *arg, int flags, AVDictionary **options)
@@ -417,6 +439,9 @@ static int async_test_read(URLContext *h, unsigned char *buf, int size)
     TestContext *c = h->priv_data;
     int          i;
     int          read_len = 0;
+
+    if (c->opt_read_error)
+        return c->opt_read_error;
 
     if (c->logical_pos >= c->logical_size)
         return AVERROR_EOF;
@@ -455,9 +480,22 @@ static int64_t async_test_seek(URLContext *h, int64_t pos, int whence)
     return new_logical_pos;
 }
 
+#define OFFSET(x) offsetof(TestContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption async_test_options[] = {
+    { "async-test-read-error",      "cause read fail",
+        OFFSET(opt_read_error),     AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, .flags = D },
+    {NULL},
+};
+
+#undef D
+#undef OFFSET
+
 static const AVClass async_test_context_class = {
     .class_name = "Async-Test",
     .item_name  = av_default_item_name,
+    .option     = async_test_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -480,10 +518,14 @@ int main(void)
     int64_t       pos;
     int64_t       read_len;
     unsigned char buf[4096];
+    AVDictionary *opts = NULL;
 
     ffurl_register_protocol(&ff_async_protocol);
     ffurl_register_protocol(&ff_async_test_protocol);
 
+    /*
+     * test normal read
+     */
     ret = ffurl_open(&h, "async:async-test:", AVIO_FLAG_READ, NULL, NULL);
     printf("open: %d\n", ret);
 
@@ -518,6 +560,9 @@ int main(void)
     }
     printf("read: %"PRId64"\n", read_len);
 
+    /*
+     * test normal seek
+     */
     ret = ffurl_read(h, buf, 1);
     printf("read: %d\n", ret);
 
@@ -552,7 +597,19 @@ int main(void)
     ret = ffurl_read(h, buf, 1);
     printf("read: %d\n", ret);
 
+    /*
+     * test read error
+     */
+    ffurl_close(h);
+    av_dict_set_int(&opts, "async-test-read-error", -10000, 0);
+    ret = ffurl_open(&h, "async:async-test:", AVIO_FLAG_READ, NULL, &opts);
+    printf("open: %d\n", ret);
+
+    ret = ffurl_read(h, buf, 1);
+    printf("read: %d\n", ret);
+
 fail:
+    av_dict_free(&opts);
     ffurl_close(h);
     return 0;
 }

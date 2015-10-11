@@ -94,13 +94,13 @@ select triangular dither
 @item triangular_hp
 select triangular dither with high pass
 @item lipshitz
-select lipshitz noise shaping dither
+select Lipshitz noise shaping dither.
 @item shibata
-select shibata noise shaping dither
+select Shibata noise shaping dither.
 @item low_shibata
-select low shibata noise shaping dither
+select low Shibata noise shaping dither.
 @item high_shibata
-select high shibata noise shaping dither
+select high Shibata noise shaping dither.
 @item f_weighted
 select f-weighted noise shaping dither
 @item modified_e_weighted
@@ -132,7 +132,7 @@ For swr only, set resampling phase shift, default value is 10, and must be in
 the interval [0,30].
 
 @item linear_interp
-Use Linear Interpolation if set to 1, default value is 0.
+Use linear interpolation if set to 1, default value is 0.
 
 @item cutoff
 Set cutoff frequency (swr: 6dB point; soxr: 0dB point) ratio; must be a float
@@ -214,13 +214,13 @@ It accepts the following values:
 @item cubic
 select cubic
 @item blackman_nuttall
-select Blackman Nuttall Windowed Sinc
+select Blackman Nuttall windowed sinc
 @item kaiser
-select Kaiser Windowed Sinc
+select Kaiser windowed sinc
 @end table
 
 @item kaiser_beta
-For swr only, set Kaiser Window Beta value. Must be an integer in the
+For swr only, set Kaiser window beta value. Must be an integer in the
 interval [2,16], default value is 9.
 
 @item output_sample_bits

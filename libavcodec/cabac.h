@@ -31,12 +31,7 @@
 
 #include "put_bits.h"
 
-#if CONFIG_HARDCODED_TABLES
-#define CABAC_TABLE_CONST const
-#else
-#define CABAC_TABLE_CONST
-#endif
-extern CABAC_TABLE_CONST uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
+extern const uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
 #define H264_NORM_SHIFT_OFFSET 0
 #define H264_LPS_RANGE_OFFSET 512
 #define H264_MLPS_STATE_OFFSET 1024
@@ -57,6 +52,5 @@ typedef struct CABACContext{
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size);
-void ff_init_cabac_states(void);
 
 #endif /* AVCODEC_CABAC_H */
