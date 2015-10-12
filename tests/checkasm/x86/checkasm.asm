@@ -66,14 +66,14 @@ cextern fail_func
 ;-----------------------------------------------------------------------------
 cglobal stack_clobber, 1,2
     ; Clobber the stack with junk below the stack pointer
-    %define size (max_args+6)*8
-    SUB  rsp, size
-    mov   r1, size-8
+    %define argsize (max_args+6)*8
+    SUB  rsp, argsize
+    mov   r1, argsize-8
 .loop:
     mov [rsp+r1], r0
     sub   r1, 8
     jge .loop
-    ADD  rsp, size
+    ADD  rsp, argsize
     RET
 
 %if WIN64
