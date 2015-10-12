@@ -148,7 +148,7 @@ static inline int update_counters(IndividualChannelStream *ics, int inc)
     return 0;
 }
 
-void ff_aac_adjust_common_prediction(AACEncContext *s, ChannelElement *cpe)
+void ff_aac_adjust_common_pred(AACEncContext *s, ChannelElement *cpe)
 {
     int start, w, w2, g, i, count = 0;
     SingleChannelElement *sce0 = &cpe->ch[0];

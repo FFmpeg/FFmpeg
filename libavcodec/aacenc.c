@@ -718,8 +718,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                         s->coder->search_for_pred(s, sce);
                     if (cpe->ch[ch].ics.predictor_present) pred_mode = 1;
                 }
-                if (s->coder->adjust_common_prediction)
-                    s->coder->adjust_common_prediction(s, cpe);
+                if (s->coder->adjust_common_pred)
+                    s->coder->adjust_common_pred(s, cpe);
                 for (ch = 0; ch < chans; ch++) {
                     sce = &cpe->ch[ch];
                     s->cur_channel = start_ch + ch;

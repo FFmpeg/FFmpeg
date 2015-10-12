@@ -61,7 +61,7 @@ typedef struct AACCoefficientsEncoder {
                                      int scale_idx, int cb, const float lambda, int rtz);
     void (*encode_tns_info)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*encode_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
-    void (*adjust_common_prediction)(struct AACEncContext *s, ChannelElement *cpe);
+    void (*adjust_common_pred)(struct AACEncContext *s, ChannelElement *cpe);
     void (*apply_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*apply_tns_filt)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
