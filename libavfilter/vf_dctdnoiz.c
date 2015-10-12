@@ -367,10 +367,10 @@ static av_always_inline void filter_freq_##bsize(const float *src, int src_lines
         float *b = &tmp_block2[i];                                                          \
         /* frequency filtering */                                                           \
         if (expr) {                                                                         \
-            var_values[VAR_C] = FFABS(*b);                                                  \
+            var_values[VAR_C] = fabsf(*b);                                                  \
             *b *= av_expr_eval(expr, var_values, NULL);                                     \
         } else {                                                                            \
-            if (FFABS(*b) < sigma_th)                                                       \
+            if (fabsf(*b) < sigma_th)                                                       \
                 *b = 0;                                                                     \
         }                                                                                   \
     }                                                                                       \
