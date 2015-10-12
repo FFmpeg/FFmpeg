@@ -31,6 +31,9 @@ cextern pw_2048
 cextern pw_4095
 cextern pd_8192
 
+pd_8: times 4 dd 8
+pd_3fff: times 4 dd 0x3fff
+
 ; FIXME these should probably be shared between 8bpp and 10/12bpp
 pw_m11585_11585: times 4 dw -11585, 11585
 pw_11585_11585: times 8 dw 11585
@@ -268,3 +271,122 @@ INIT_MMX ssse3
 IADST4_FN idct,  IDCT4,  iadst, IADST4
 IADST4_FN iadst, IADST4, idct,  IDCT4
 IADST4_FN iadst, IADST4, iadst, IADST4
+
+; inputs and outputs are dwords, coefficients are words
+;
+; dst1 = src1 * coef1 + src2 * coef2 + rnd >> 14
+; dst2 = src1 * coef2 - src2 * coef1 + rnd >> 14
+%macro SUMSUB_MUL 6 ; src/dst 1-2, tmp1-2, coef1-2
+    pand               m%3, m%1, [pd_3fff]
+    pand               m%4, m%2, [pd_3fff]
+    psrad              m%1, 14
+    psrad              m%2, 14
+    packssdw           m%4, m%2
+    packssdw           m%3, m%1
+    punpckhwd          m%2, m%4, m%3
+    punpcklwd          m%4, m%3
+    pmaddwd            m%3, m%4, [pw_%6_%5]
+    pmaddwd            m%1, m%2, [pw_%6_%5]
+    pmaddwd            m%4, [pw_m%5_%6]
+    pmaddwd            m%2, [pw_m%5_%6]
+    paddd              m%3, [pd_8192]
+    paddd              m%4, [pd_8192]
+    psrad              m%3, 14
+    psrad              m%4, 14
+    paddd              m%1, m%3
+    paddd              m%2, m%4
+%endmacro
+
+%macro IDCT4_12BPP_1D 0
+    SUMSUB_MUL           0, 2, 4, 5, 11585, 11585
+    SUMSUB_MUL           1, 3, 4, 5, 15137,  6270
+    SUMSUB_BA         d, 1, 0, 4
+    SUMSUB_BA         d, 3, 2, 4
+    SWAP                 1, 3, 0
+%endmacro
+
+INIT_XMM sse2
+cglobal vp9_idct_idct_4x4_add_12, 4, 4, 6, dst, stride, block, eob
+    cmp               eobd, 1
+    jg .idctfull
+
+    ; dc-only - this is special, since for 4x4 12bpp, the max coef size is
+    ; 17+sign bpp. Since the multiply is with 11585, which is 14bpp, the
+    ; result of each multiply is 31+sign bit, i.e. it _exactly_ fits in a
+    ; dword. After the final shift (4), the result is 13+sign bits, so we
+    ; don't need any additional processing to fit it in a word
+    DEFINE_ARGS dst, stride, block, coef
+    mov              coefd, dword [blockq]
+    imul             coefd, 11585
+    add              coefd, 8192
+    sar              coefd, 14
+    imul             coefd, 11585
+    add              coefd, (8 << 14) + 8192
+    sar              coefd, 14 + 4
+    movd                m0, coefd
+    pshuflw             m0, m0, q0000
+    punpcklqdq          m0, m0
+    pxor                m4, m4
+    mova                m5, [pw_4095]
+    movd          [blockq], m4
+    DEFINE_ARGS dst, stride, stride3
+    lea           stride3q, [strideq*3]
+    movh                m1, [dstq+strideq*0]
+    movh                m3, [dstq+strideq*2]
+    movhps              m1, [dstq+strideq*1]
+    movhps              m3, [dstq+stride3q ]
+    paddw               m1, m0
+    paddw               m3, m0
+    pmaxsw              m1, m4
+    pmaxsw              m3, m4
+    pminsw              m1, m5
+    pminsw              m3, m5
+    movh   [dstq+strideq*0], m1
+    movhps [dstq+strideq*1], m1
+    movh   [dstq+strideq*2], m3
+    movhps [dstq+stride3q ], m3
+    RET
+
+.idctfull:
+    DEFINE_ARGS dst, stride, block, eob
+    mova                m0, [blockq+0*16]
+    mova                m1, [blockq+1*16]
+    mova                m2, [blockq+2*16]
+    mova                m3, [blockq+3*16]
+
+    IDCT4_12BPP_1D
+    TRANSPOSE4x4D        0, 1, 2, 3, 4
+    IDCT4_12BPP_1D
+
+    pxor                m4, m4
+    ZERO_BLOCK      blockq, 16, 4, m4
+
+    ; writeout
+    DEFINE_ARGS dst, stride, stride3
+    lea           stride3q, [strideq*3]
+    paddd               m0, [pd_8]
+    paddd               m1, [pd_8]
+    paddd               m2, [pd_8]
+    paddd               m3, [pd_8]
+    psrad               m0, 4
+    psrad               m1, 4
+    psrad               m2, 4
+    psrad               m3, 4
+    packssdw            m0, m1
+    packssdw            m2, m3
+    mova                m5, [pw_4095]
+    movh                m1, [dstq+strideq*0]
+    movh                m3, [dstq+strideq*2]
+    movhps              m1, [dstq+strideq*1]
+    movhps              m3, [dstq+stride3q ]
+    paddw               m0, m1
+    paddw               m2, m3
+    pmaxsw              m0, m4
+    pmaxsw              m2, m4
+    pminsw              m0, m5
+    pminsw              m2, m5
+    movh   [dstq+strideq*0], m0
+    movhps [dstq+strideq*1], m0
+    movh   [dstq+strideq*2], m2
+    movhps [dstq+stride3q ], m2
+    RET
