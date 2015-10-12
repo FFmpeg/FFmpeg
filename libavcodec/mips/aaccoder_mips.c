@@ -2543,7 +2543,7 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
 #endif /* HAVE_INLINE_ASM */
 
 void ff_aac_coder_init_mips(AACEncContext *c) {
-#if HAVE_INLINE_ASM
+#if 0 // HAVE_INLINE_ASM
     AACCoefficientsEncoder *e = c->coder;
     int option = c->options.aac_coder;
 
