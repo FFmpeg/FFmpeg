@@ -525,6 +525,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                         if (version > 0 && version <= 655)
                             flv->broken_sizes = 1;
                     }
+                } else if (!strcmp(key, "metadatacreator") && !strcmp(str_val, "MEGA")) {
+                    flv->broken_sizes = 1;
                 }
             }
         }
