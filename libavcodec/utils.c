@@ -845,7 +845,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_dict_copy(&tmp, *options, 0);
 
     /* If there is a user-supplied mutex locking routine, call it. */
-    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init) {
         if (lockmgr_cb) {
             if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
                 return -1;
@@ -1086,7 +1086,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
 end:
-    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init) {
         entangled_thread_counter--;
 
         /* Release any user-supplied mutex. */
