@@ -71,6 +71,16 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     flush_put_bits(&pb);
 }
 
+void ff_quantize_band_cost_cache_init(struct AACEncContext *s)
+{
+    int sf, g;
+    for (sf = 0; sf < 256; sf++) {
+        for (g = 0; g < 128; g++) {
+            s->quantize_band_cost_cache[sf][g].bits = -1;
+        }
+    }
+}
+
 #define WINDOW_FUNC(type) \
 static void apply_ ##type ##_window(AVFloatDSPContext *fdsp, \
                                     SingleChannelElement *sce, \

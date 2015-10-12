@@ -278,4 +278,6 @@ static inline void quantize_and_encode_band(struct AACEncContext *s, PutBitConte
                                   INFINITY, NULL, NULL, rtz);
 }
 
+#include "aacenc_quantization_misc.h"
+
 #endif /* AVCODEC_AACENC_QUANTIZATION_H */

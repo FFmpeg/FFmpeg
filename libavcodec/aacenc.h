@@ -75,6 +75,15 @@ typedef struct AACCoefficientsEncoder {
 
 extern AACCoefficientsEncoder ff_aac_coders[];
 
+typedef struct AACQuantizeBandCostCacheEntry {
+    float rd;
+    float energy;
+    int bits; ///< -1 means uninitialized entry
+    char cb;
+    char rtz;
+    char padding[2]; ///< Keeps the entry size a multiple of 32 bits
+} AACQuantizeBandCostCacheEntry;
+
 /**
  * AAC encoder context
  */
@@ -109,11 +118,15 @@ typedef struct AACEncContext {
     DECLARE_ALIGNED(16, int,   qcoefs)[96];      ///< quantized coefficients
     DECLARE_ALIGNED(32, float, scoefs)[1024];    ///< scaled coefficients
 
+    AACQuantizeBandCostCacheEntry quantize_band_cost_cache[256][128]; ///< memoization area for quantize_band_cost
+
     struct {
         float *samples;
     } buffer;
 } AACEncContext;
 
 void ff_aac_coder_init_mips(AACEncContext *c);
+void ff_quantize_band_cost_cache_init(struct AACEncContext *s);
+
 
 #endif /* AVCODEC_AACENC_H */
