@@ -128,18 +128,18 @@ cextern w7_min_w5
     psubd       m3,  m9            ; a1[4-7] intermediate
 
     ; load/store
-    mova   [r2+  0], m0
-    mova   [r2+ 32], m2
-    mova   [r2+ 64], m4
-    mova   [r2+ 96], m6
-    mova        m10,[r2+ 16]       ; { row[1] }[0-7]
-    mova        m8, [r2+ 48]       ; { row[3] }[0-7]
-    mova        m13,[r2+ 80]       ; { row[5] }[0-7]
-    mova        m14,[r2+112]       ; { row[7] }[0-7]
-    mova   [r2+ 16], m1
-    mova   [r2+ 48], m3
-    mova   [r2+ 80], m5
-    mova   [r2+112], m7
+    mova   [COEFFS+  0], m0
+    mova   [COEFFS+ 32], m2
+    mova   [COEFFS+ 64], m4
+    mova   [COEFFS+ 96], m6
+    mova        m10,[COEFFS+ 16]       ; { row[1] }[0-7]
+    mova        m8, [COEFFS+ 48]       ; { row[3] }[0-7]
+    mova        m13,[COEFFS+ 80]       ; { row[5] }[0-7]
+    mova        m14,[COEFFS+112]       ; { row[7] }[0-7]
+    mova   [COEFFS+ 16], m1
+    mova   [COEFFS+ 48], m3
+    mova   [COEFFS+ 80], m5
+    mova   [COEFFS+112], m7
 %if %0 == 3
     pmullw      m10,[%3+ 16]
     pmullw      m8, [%3+ 48]
@@ -210,17 +210,17 @@ cextern w7_min_w5
     ; row[5] = (a2 - b2) >> 15;
     ; row[3] = (a3 + b3) >> 15;
     ; row[4] = (a3 - b3) >> 15;
-    mova        m8, [r2+ 0]        ; a0[0-3]
-    mova        m9, [r2+16]        ; a0[4-7]
+    mova        m8, [COEFFS+ 0]        ; a0[0-3]
+    mova        m9, [COEFFS+16]        ; a0[4-7]
     SUMSUB_SHPK m8,  m9,  m10, m11, m0,  m1,  %2
-    mova        m0, [r2+32]        ; a1[0-3]
-    mova        m1, [r2+48]        ; a1[4-7]
+    mova        m0, [COEFFS+32]        ; a1[0-3]
+    mova        m1, [COEFFS+48]        ; a1[4-7]
     SUMSUB_SHPK m0,  m1,  m9,  m11, m2,  m3,  %2
-    mova        m1, [r2+64]        ; a2[0-3]
-    mova        m2, [r2+80]        ; a2[4-7]
+    mova        m1, [COEFFS+64]        ; a2[0-3]
+    mova        m2, [COEFFS+80]        ; a2[4-7]
     SUMSUB_SHPK m1,  m2,  m11, m3,  m4,  m5,  %2
-    mova        m2, [r2+96]        ; a3[0-3]
-    mova        m3, [r2+112]       ; a3[4-7]
+    mova        m2, [COEFFS+96]        ; a3[0-3]
+    mova        m3, [COEFFS+112]       ; a3[4-7]
     SUMSUB_SHPK m2,  m3,  m4,  m5,  m6,  m7,  %2
 %endmacro
 
@@ -235,15 +235,21 @@ cextern w7_min_w5
 ; %6 = max pixel value
 ; %7 = qmat (for prores)
 
-%macro IDCT_PUT_FN 6-7
+%macro IDCT_FN 4-7
+%if %0 == 4
+    ; No clamping, means pure idct
+%xdefine COEFFS r0
+%else
     movsxd      r1,  r1d
+%xdefine COEFFS r2
+%endif
 
     ; for (i = 0; i < 8; i++)
     ;     idctRowCondDC(block + i*8);
-    mova        m10,[r2+ 0]        ; { row[0] }[0-7]
-    mova        m8, [r2+32]        ; { row[2] }[0-7]
-    mova        m13,[r2+64]        ; { row[4] }[0-7]
-    mova        m12,[r2+96]        ; { row[6] }[0-7]
+    mova        m10,[COEFFS+ 0]        ; { row[0] }[0-7]
+    mova        m8, [COEFFS+32]        ; { row[2] }[0-7]
+    mova        m13,[COEFFS+64]        ; { row[4] }[0-7]
+    mova        m12,[COEFFS+96]        ; { row[6] }[0-7]
 
 %if %0 == 7
     pmullw      m10,[%7+ 0]
@@ -258,10 +264,10 @@ cextern w7_min_w5
 
     ; transpose for second part of IDCT
     TRANSPOSE8x8W 8, 0, 1, 2, 4, 11, 9, 10, 3
-    mova   [r2+ 16], m0
-    mova   [r2+ 48], m2
-    mova   [r2+ 80], m11
-    mova   [r2+112], m10
+    mova   [COEFFS+ 16], m0
+    mova   [COEFFS+ 48], m2
+    mova   [COEFFS+ 80], m11
+    mova   [COEFFS+112], m10
     SWAP         8,  10
     SWAP         1,   8
     SWAP         4,  13
@@ -272,6 +278,17 @@ cextern w7_min_w5
     IDCT_1D     %3, %4
 
     ; clip/store
+%if %0 == 4
+    ; No clamping, means pure idct
+    mova  [r0+  0], m8
+    mova  [r0+ 16], m0
+    mova  [r0+ 32], m1
+    mova  [r0+ 48], m2
+    mova  [r0+ 64], m4
+    mova  [r0+ 80], m11
+    mova  [r0+ 96], m9
+    mova  [r0+112], m10
+%else
 %ifidn %5, 0
     pxor        m3, m3
 %else
@@ -305,6 +322,7 @@ cextern w7_min_w5
     mova  [r0+r1  ], m11
     mova  [r0+r1*2], m9
     mova  [r0+r2  ], m10
+%endif
 %endmacro
 
 %endif

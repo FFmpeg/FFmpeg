@@ -4,6 +4,7 @@
 ;* except for the clip range
 ;*
 ;* Copyright (c) 2011 Ronald S. Bultje <rsbultje@gmail.com>
+;* Copyright (c) 2015 Christophe Gisquet
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -28,18 +29,22 @@
 
 SECTION_RODATA
 
-pw_88:      times 8 dw 0x2008
-cextern pw_1
-cextern pw_4
-cextern pw_1019
+cextern pw_16
+cextern pw_1023
+pd_round_12: times 4 dd 1<<(12-1)
+pd_round_19: times 4 dd 1<<(19-1)
 
 %include "libavcodec/x86/simple_idct10_template.asm"
 
 section .text align=16
 
 %macro idct_fn 0
-cglobal prores_idct_put_10, 4, 4, 15
-    IDCT_FN    pw_1, 15, pw_88, 18, pw_4, pw_1019, r3
+cglobal simple_idct10, 1, 1, 16
+    IDCT_FN    "", 12, "", 19
+    RET
+
+cglobal simple_idct10_put, 3, 3, 16
+    IDCT_FN    "", 12, "", 19, 0, pw_1023
     RET
 %endmacro
 
