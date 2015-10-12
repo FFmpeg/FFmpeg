@@ -84,7 +84,7 @@ static const AVOption opencl_options[] = {
 };
 
 static const AVClass openclutils_class = {
-    .class_name                = "OPENCLUTILS",
+    .class_name                = "opencl",
     .option                    = opencl_options,
     .item_name                 = av_default_item_name,
     .version                   = LIBAVUTIL_VERSION_INT,
