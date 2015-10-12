@@ -82,6 +82,8 @@ static const struct algo idct_tab[] = {
     { "REF-DBL",     ff_ref_idct,          FF_IDCT_PERM_NONE },
     { "INT",         ff_j_rev_dct,         FF_IDCT_PERM_LIBMPEG2 },
     { "SIMPLE-C",    ff_simple_idct_8,     FF_IDCT_PERM_NONE },
+    { "SIMPLE-C10",  ff_simple_idct_10,    FF_IDCT_PERM_NONE },
+    { "SIMPLE-C12",  ff_simple_idct_12,    FF_IDCT_PERM_NONE, 0, 1 },
     { "PR-C",        ff_prores_idct_wrap,  FF_IDCT_PERM_NONE, 0, 1 },
 #if CONFIG_FAANIDCT
     { "FAANI",       ff_faanidct,          FF_IDCT_PERM_NONE },

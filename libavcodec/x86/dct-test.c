@@ -85,6 +85,18 @@ static const struct algo idct_tab_arch[] = {
     { "PR-AVX",      ff_prores_idct_put_10_avx_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX, 1 },
 # endif
 #endif
+#if HAVE_YASM
+#if ARCH_X86_64
+#if HAVE_SSE2_EXTERNAL
+    { "SIMPLE10-SSE2",  ff_simple_idct10_sse2, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2},
+    { "SIMPLE12-SSE2",  ff_simple_idct12_sse2, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
+#endif
+#if HAVE_AVX_EXTERNAL
+    { "SIMPLE10-AVX",   ff_simple_idct10_avx,  FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX},
+    { "SIMPLE12-AVX",   ff_simple_idct12_avx,  FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX,  1 },
+#endif
+#endif
+#endif
     { 0 }
 };
 
