@@ -110,6 +110,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     int tbits;
     int cutoff = 1024;
     int pns_start_pos;
+    int prev;
 
     /**
      * zeroscale controls a multiplier of the threshold, if band energy
@@ -353,8 +354,8 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         int overdist;
         int qstep = its ? 1 : 32;
         do {
-            int prev = -1;
             int changed = 0;
+            prev = -1;
             recomprd = 0;
             tbits = 0;
             for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
@@ -394,8 +395,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     dists[w*16+g] = dist - bits;
                     qenergies[w*16+g] = qenergy;
                     if (prev != -1) {
-                        int sfdiff = sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO;
-                        av_assert1(sfdiff >= 0 && sfdiff <= 2*SCALE_MAX_DIFF);
+                        int sfdiff = av_clip(sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO, 0, 2*SCALE_MAX_DIFF);
                         bits += ff_aac_scalefactor_bits[sfdiff];
                     }
                     tbits += bits;
@@ -436,7 +436,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         for (i = 0; i < 2 && (overdist || recomprd); ++i) {
             if (recomprd) {
                 /** Must recompute distortion */
-                int prev = -1;
+                prev = -1;
                 tbits = 0;
                 for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
                     start = w*128;
@@ -475,8 +475,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                         dists[w*16+g] = dist - bits;
                         qenergies[w*16+g] = qenergy;
                         if (prev != -1) {
-                            int sfdiff = sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO;
-                            av_assert1(sfdiff >= 0 && sfdiff <= 2*SCALE_MAX_DIFF);
+                            int sfdiff = av_clip(sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO, 0, 2*SCALE_MAX_DIFF);
                             bits += ff_aac_scalefactor_bits[sfdiff];
                         }
                         tbits += bits;
@@ -662,8 +661,8 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 start += sce->ics.swb_sizes[g];
             }
         }
-        if (nminscaler < minscaler) {
-            /** Drecreased some scalers below minscaler. Must re-clamp. */
+        if (nminscaler < minscaler || sce->ics.num_windows > 1) {
+            /** SF difference limit violation risk. Must re-clamp. */
             minscaler = nminscaler;
             for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
                 for (g = 0; g < sce->ics.num_swb; g++) {
@@ -675,6 +674,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         its++;
     } while (fflag && its < maxits);
 
+    prev = -1;
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         /** Make sure proper codebooks are set */
         for (g = start = 0; g < sce->ics.num_swb; start += sce->ics.swb_sizes[g++]) {
@@ -686,6 +686,14 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 }
             } else {
                 sce->band_type[w*16+g] = 0;
+            }
+            /** Check that there's no SF delta range violations */
+            if (!sce->zeroes[w*16+g]) {
+                if (prev != -1) {
+                    int sfdiff = sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO;
+                    av_assert1(sfdiff >= 0 && sfdiff <= 2*SCALE_MAX_DIFF);
+                }
+                prev = sce->sf_idx[w*16+g];
             }
         }
     }
