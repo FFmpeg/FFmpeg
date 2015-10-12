@@ -280,7 +280,7 @@ int main(int argc, char **argv)
         { 0x10, 0xa5, 0x88, 0x69, 0xd7, 0x4b, 0xe5, 0xa3,
           0x74, 0xcf, 0x86, 0x7c, 0xfb, 0x47, 0x38, 0x59 }
     };
-    uint8_t pt[16], rpt[2][16]= {
+    uint8_t pt[32], rpt[2][16]= {
         { 0x6a, 0x84, 0x86, 0x7c, 0xd7, 0x7e, 0x12, 0xad,
           0x07, 0xea, 0x1b, 0xe8, 0x95, 0xc5, 0x3f, 0xa3 },
         { 0 }
@@ -291,7 +291,8 @@ int main(int argc, char **argv)
         { 0x6d, 0x25, 0x1e, 0x69, 0x44, 0xb0, 0x51, 0xe0,
           0x4e, 0xaa, 0x6f, 0xb4, 0xdb, 0xf7, 0x84, 0x65 }
     };
-    uint8_t temp[16];
+    uint8_t temp[32];
+    uint8_t iv[2][16];
     int err = 0;
 
     av_log_set_level(AV_LOG_DEBUG);
@@ -317,16 +318,24 @@ int main(int argc, char **argv)
         av_lfg_init(&prng, 1);
 
         for (i = 0; i < 10000; i++) {
-            for (j = 0; j < 16; j++) {
+            for (j = 0; j < 32; j++) {
                 pt[j] = av_lfg_get(&prng);
+            }
+            for (j = 0; j < 16; j++) {
+                iv[0][j] = iv[1][j] = av_lfg_get(&prng);
             }
             {
                 START_TIMER;
-                av_aes_crypt(&ae, temp, pt, 1, NULL, 0);
+                av_aes_crypt(&ae, temp, pt, 2, iv[0], 0);
                 if (!(i & (i - 1)))
                     av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n",
                            temp[0], temp[5], temp[10], temp[15]);
-                av_aes_crypt(&ad, temp, temp, 1, NULL, 1);
+                av_aes_crypt(&ad, temp, temp, 2, iv[1], 1);
+                av_aes_crypt(&ae, temp, pt, 2, NULL, 0);
+                if (!(i & (i - 1)))
+                    av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n",
+                           temp[0], temp[5], temp[10], temp[15]);
+                av_aes_crypt(&ad, temp, temp, 2, NULL, 1);
                 STOP_TIMER("aes");
             }
             for (j = 0; j < 16; j++) {
