@@ -491,48 +491,30 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     int ret;
     AVCodecContext *c;
     AVFrame *frame;
+    AVPacket pkt   = { 0 };
     int got_packet = 0;
 
     c = ost->st->codec;
 
     frame = get_video_frame(ost);
 
-    if (oc->oformat->flags & AVFMT_RAWPICTURE) {
-        /* a hack to avoid data copy with some raw video muxers */
-        AVPacket pkt;
-        av_init_packet(&pkt);
+    av_init_packet(&pkt);
 
-        if (!frame)
-            return 1;
-
-        pkt.flags        |= AV_PKT_FLAG_KEY;
-        pkt.stream_index  = ost->st->index;
-        pkt.data          = (uint8_t *)frame;
-        pkt.size          = sizeof(AVPicture);
-
-        pkt.pts = pkt.dts = frame->pts;
-        av_packet_rescale_ts(&pkt, c->time_base, ost->st->time_base);
-
-        ret = av_interleaved_write_frame(oc, &pkt);
-    } else {
-        AVPacket pkt = { 0 };
-        av_init_packet(&pkt);
-
-        /* encode the image */
-        ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
-        if (ret < 0) {
-            fprintf(stderr, "Error encoding a video frame\n");
-            exit(1);
-        }
-
-        if (got_packet) {
-            av_packet_rescale_ts(&pkt, c->time_base, ost->st->time_base);
-            pkt.stream_index = ost->st->index;
-
-            /* Write the compressed frame to the media file. */
-            ret = av_interleaved_write_frame(oc, &pkt);
-        }
+    /* encode the image */
+    ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
+    if (ret < 0) {
+        fprintf(stderr, "Error encoding a video frame\n");
+        exit(1);
     }
+
+    if (got_packet) {
+        av_packet_rescale_ts(&pkt, c->time_base, ost->st->time_base);
+        pkt.stream_index = ost->st->index;
+
+        /* Write the compressed frame to the media file. */
+        ret = av_interleaved_write_frame(oc, &pkt);
+    }
+
     if (ret != 0) {
         fprintf(stderr, "Error while writing video frame\n");
         exit(1);

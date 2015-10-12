@@ -452,7 +452,7 @@ static void do_video_out(AVFormatContext *s,
                          AVFrame *in_picture,
                          int *frame_size)
 {
-    int ret, format_video_sync;
+    int ret, format_video_sync, got_packet;
     AVPacket pkt;
     AVCodecContext *enc = ost->enc_ctx;
 
@@ -488,57 +488,37 @@ static void do_video_out(AVFormatContext *s,
     if (ost->frame_number >= ost->max_frames)
         return;
 
-    if (s->oformat->flags & AVFMT_RAWPICTURE &&
-        enc->codec->id == AV_CODEC_ID_RAWVIDEO) {
-        /* raw pictures are written as AVPicture structure to
-           avoid any copies. We support temporarily the older
-           method. */
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        enc->coded_frame->interlaced_frame = in_picture->interlaced_frame;
-        enc->coded_frame->top_field_first  = in_picture->top_field_first;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-        pkt.data   = (uint8_t *)in_picture;
-        pkt.size   =  sizeof(AVPicture);
-        pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->st->time_base);
-        pkt.flags |= AV_PKT_FLAG_KEY;
+    if (enc->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
+        ost->top_field_first >= 0)
+        in_picture->top_field_first = !!ost->top_field_first;
 
+    in_picture->quality = enc->global_quality;
+    in_picture->pict_type = 0;
+    if (ost->forced_kf_index < ost->forced_kf_count &&
+        in_picture->pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
+        in_picture->pict_type = AV_PICTURE_TYPE_I;
+        ost->forced_kf_index++;
+    }
+
+    ost->frames_encoded++;
+
+    ret = avcodec_encode_video2(enc, &pkt, in_picture, &got_packet);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
+        exit_program(1);
+    }
+
+    if (got_packet) {
+        av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
         write_frame(s, &pkt, ost);
-    } else {
-        int got_packet;
+        *frame_size = pkt.size;
 
-        if (enc->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
-            ost->top_field_first >= 0)
-            in_picture->top_field_first = !!ost->top_field_first;
-
-        in_picture->quality = enc->global_quality;
-        in_picture->pict_type = 0;
-        if (ost->forced_kf_index < ost->forced_kf_count &&
-            in_picture->pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
-            in_picture->pict_type = AV_PICTURE_TYPE_I;
-            ost->forced_kf_index++;
-        }
-
-        ost->frames_encoded++;
-
-        ret = avcodec_encode_video2(enc, &pkt, in_picture, &got_packet);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
-            exit_program(1);
-        }
-
-        if (got_packet) {
-            av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
-            write_frame(s, &pkt, ost);
-            *frame_size = pkt.size;
-
-            /* if two pass, output log */
-            if (ost->logfile && enc->stats_out) {
-                fprintf(ost->logfile, "%s", enc->stats_out);
-            }
+        /* if two pass, output log */
+        if (ost->logfile && enc->stats_out) {
+            fprintf(ost->logfile, "%s", enc->stats_out);
         }
     }
+
     ost->sync_opts++;
     /*
      * For video, number of frames in == number of packets out.
@@ -958,8 +938,6 @@ static void flush_encoders(void)
             continue;
 
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <= 1)
-            continue;
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == AV_CODEC_ID_RAWVIDEO)
             continue;
 
         for (;;) {
