@@ -29,6 +29,7 @@ cextern pw_8
 cextern pw_1023
 cextern pw_2048
 cextern pw_4095
+cextern pd_16
 cextern pd_8192
 
 pd_8: times 4 dd 8
@@ -50,6 +51,11 @@ pw_13377x2: times 8 dw 13377*2
 pw_m13377_13377: times 4 dw -13377, 13377
 pw_13377_0: times 4 dw 13377, 0
 pw_9929_m5283: times 4 dw 9929, -5283
+
+pw_3196_16069: times 4 dw 3196, 16069
+pw_m16069_3196: times 4 dw -16069, 3196
+pw_13623_9102: times 4 dw 13623, 9102
+pw_m9102_13623: times 4 dw -9102, 13623
 
 SECTION .text
 
@@ -298,12 +304,43 @@ IADST4_FN iadst, IADST4, iadst, IADST4
     paddd              m%2, m%4
 %endmacro
 
-%macro IDCT4_12BPP_1D 0
-    SUMSUB_MUL           0, 2, 4, 5, 11585, 11585
-    SUMSUB_MUL           1, 3, 4, 5, 15137,  6270
-    SUMSUB_BA         d, 1, 0, 4
-    SUMSUB_BA         d, 3, 2, 4
-    SWAP                 1, 3, 0
+%macro IDCT4_12BPP_1D 0-6 0, 1, 2, 3, 4, 5
+    SUMSUB_MUL          %1, %3, %5, %6, 11585, 11585
+    SUMSUB_MUL          %2, %4, %5, %6, 15137,  6270
+    SUMSUB_BA        d, %2, %1, %5
+    SUMSUB_BA        d, %4, %3, %5
+    SWAP                %2, %4, %1
+%endmacro
+
+%macro STORE_4x4 6 ; tmp1-2, reg1-2, min, max
+    movh               m%1, [dstq+strideq*0]
+    movh               m%2, [dstq+strideq*2]
+    movhps             m%1, [dstq+strideq*1]
+    movhps             m%2, [dstq+stride3q ]
+    paddw              m%1, m%3
+    paddw              m%2, m%4
+    pmaxsw             m%1, %5
+    pmaxsw             m%2, %5
+    pminsw             m%1, %6
+    pminsw             m%2, %6
+    movh   [dstq+strideq*0], m%1
+    movhps [dstq+strideq*1], m%1
+    movh   [dstq+strideq*2], m%2
+    movhps [dstq+stride3q ], m%2
+%endmacro
+
+%macro ROUND_AND_STORE_4x4 8 ; reg1-4, min, max, rnd, shift
+    paddd              m%1, %7
+    paddd              m%2, %7
+    paddd              m%3, %7
+    paddd              m%4, %7
+    psrad              m%1, %8
+    psrad              m%2, %8
+    psrad              m%3, %8
+    psrad              m%4, %8
+    packssdw           m%1, m%2
+    packssdw           m%3, m%4
+    STORE_4x4           %2, %4, %1, %3, %5, %6
 %endmacro
 
 INIT_XMM sse2
@@ -332,20 +369,7 @@ cglobal vp9_idct_idct_4x4_add_12, 4, 4, 6, dst, stride, block, eob
     movd          [blockq], m4
     DEFINE_ARGS dst, stride, stride3
     lea           stride3q, [strideq*3]
-    movh                m1, [dstq+strideq*0]
-    movh                m3, [dstq+strideq*2]
-    movhps              m1, [dstq+strideq*1]
-    movhps              m3, [dstq+stride3q ]
-    paddw               m1, m0
-    paddw               m3, m0
-    pmaxsw              m1, m4
-    pmaxsw              m3, m4
-    pminsw              m1, m5
-    pminsw              m3, m5
-    movh   [dstq+strideq*0], m1
-    movhps [dstq+strideq*1], m1
-    movh   [dstq+strideq*2], m3
-    movhps [dstq+stride3q ], m3
+    STORE_4x4            1, 3, 0, 0, m4, m5
     RET
 
 .idctfull:
@@ -365,31 +389,8 @@ cglobal vp9_idct_idct_4x4_add_12, 4, 4, 6, dst, stride, block, eob
     ; writeout
     DEFINE_ARGS dst, stride, stride3
     lea           stride3q, [strideq*3]
-    paddd               m0, [pd_8]
-    paddd               m1, [pd_8]
-    paddd               m2, [pd_8]
-    paddd               m3, [pd_8]
-    psrad               m0, 4
-    psrad               m1, 4
-    psrad               m2, 4
-    psrad               m3, 4
-    packssdw            m0, m1
-    packssdw            m2, m3
     mova                m5, [pw_4095]
-    movh                m1, [dstq+strideq*0]
-    movh                m3, [dstq+strideq*2]
-    movhps              m1, [dstq+strideq*1]
-    movhps              m3, [dstq+stride3q ]
-    paddw               m0, m1
-    paddw               m2, m3
-    pmaxsw              m0, m4
-    pmaxsw              m2, m4
-    pminsw              m0, m5
-    pminsw              m2, m5
-    movh   [dstq+strideq*0], m0
-    movhps [dstq+strideq*1], m0
-    movh   [dstq+strideq*2], m2
-    movhps [dstq+stride3q ], m2
+    ROUND_AND_STORE_4x4  0, 1, 2, 3, m4, m5, [pd_8], 4
     RET
 
 %macro SCRATCH 3-4
@@ -505,31 +506,8 @@ cglobal vp9_%1_%3_4x4_add_12, 3, 3, 10, 2 * ARCH_X86_32 * mmsize, dst, stride, b
     ; writeout
     DEFINE_ARGS dst, stride, stride3
     lea           stride3q, [strideq*3]
-    paddd               m0, [pd_8]
-    paddd               m1, [pd_8]
-    paddd               m2, [pd_8]
-    paddd               m3, [pd_8]
-    psrad               m0, 4
-    psrad               m1, 4
-    psrad               m2, 4
-    psrad               m3, 4
-    packssdw            m0, m1
-    packssdw            m2, m3
     mova                m5, [pw_4095]
-    movh                m1, [dstq+strideq*0]
-    movh                m3, [dstq+strideq*2]
-    movhps              m1, [dstq+strideq*1]
-    movhps              m3, [dstq+stride3q ]
-    paddw               m0, m1
-    paddw               m2, m3
-    pmaxsw              m0, m4
-    pmaxsw              m2, m4
-    pminsw              m0, m5
-    pminsw              m2, m5
-    movh   [dstq+strideq*0], m0
-    movhps [dstq+strideq*1], m0
-    movh   [dstq+strideq*2], m2
-    movhps [dstq+stride3q ], m2
+    ROUND_AND_STORE_4x4  0, 1, 2, 3, m4, m5, [pd_8], 4
     RET
 %endmacro
 
@@ -537,3 +515,203 @@ INIT_XMM sse2
 IADST4_12BPP_FN idct,  IDCT4,  iadst, IADST4
 IADST4_12BPP_FN iadst, IADST4, idct,  IDCT4
 IADST4_12BPP_FN iadst, IADST4, iadst, IADST4
+
+; the following line has not been executed at the end of this macro:
+; UNSCRATCH            7, 8, rsp+17*mmsize
+%macro IDCT8_1D 1 ; src
+    mova                m0, [%1+ 0*mmsize]
+    mova                m2, [%1+ 4*mmsize]
+    mova                m4, [%1+ 8*mmsize]
+    mova                m6, [%1+12*mmsize]
+    IDCT4_12BPP_1D       0, 2, 4, 6, 1, 3           ; m0/2/4/6 have t0/1/2/3
+    SCRATCH              4, 8, rsp+17*mmsize
+    SCRATCH              6, 9, rsp+18*mmsize
+    mova                m1, [%1+ 2*mmsize]
+    mova                m3, [%1+ 6*mmsize]
+    mova                m5, [%1+10*mmsize]
+    mova                m7, [%1+14*mmsize]
+    SUMSUB_MUL           1, 7, 4, 6, 16069,  3196   ; m1=t7a, m7=t4a
+    SUMSUB_MUL           5, 3, 4, 6,  9102, 13623   ; m5=t6a, m3=t5a
+    SUMSUB_BA         d, 3, 7, 4                    ; m3=t4, m7=t5a
+    SUMSUB_BA         d, 5, 1, 4                    ; m5=t7, m1=t6a
+    SUMSUB_MUL           1, 7, 4, 6, 11585, 11585   ; m1=t6, m7=t5
+    SUMSUB_BA         d, 5, 0, 4                    ; m5=out0, m0=out7
+    SUMSUB_BA         d, 1, 2, 4                    ; m1=out1, m2=out6
+    UNSCRATCH            4, 8, rsp+17*mmsize
+    UNSCRATCH            6, 9, rsp+18*mmsize
+    SCRATCH              0, 8, rsp+17*mmsize
+    SUMSUB_BA         d, 7, 4, 0                    ; m7=out2, m4=out5
+    SUMSUB_BA         d, 3, 6, 0                    ; m3=out3, m6=out4
+    SWAP                 0, 5, 4, 6, 2, 7
+%endmacro
+
+%macro STORE_2x8 5 ; tmp1-2, reg, min, max
+    mova               m%1, [dstq+strideq*0]
+    mova               m%2, [dstq+strideq*1]
+    paddw              m%1, m%3
+    paddw              m%2, m%3
+    pmaxsw             m%1, %4
+    pmaxsw             m%2, %4
+    pminsw             m%1, %5
+    pminsw             m%2, %5
+    mova  [dstq+strideq*0], m%1
+    mova  [dstq+strideq*1], m%2
+%endmacro
+
+%macro PRELOAD 2-3
+%if ARCH_X86_64
+    mova               m%1, [%2]
+%if %0 == 3
+%define reg_%3 m%1
+%endif
+%elif %0 == 3
+%define reg_%3 [%2]
+%endif
+%endmacro
+
+; FIXME we can use the intermediate storage (rsp[0-15]) on x86-32 for temp
+; storage also instead of allocating two more stack spaces. This doesn't
+; matter much but it's something...
+INIT_XMM sse2
+cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
+                                  17 * mmsize + 2 * ARCH_X86_32 * mmsize, \
+                                  dst, stride, block, eob
+    mova                m0, [pw_1023]
+    cmp               eobd, 1
+    jg .idctfull
+
+    ; dc-only - the 10bit version can be done entirely in 32bit, since the max
+    ; coef values are 16+sign bit, and the coef is 14bit, so 30+sign easily
+    ; fits in 32bit
+    DEFINE_ARGS dst, stride, block, coef
+    mov              coefd, dword [blockq]
+    imul             coefd, 11585
+    add              coefd, 8192
+    sar              coefd, 14
+    imul             coefd, 11585
+    add              coefd, (16 << 14) + 8192
+    sar              coefd, 14 + 5
+    movd                m1, coefd
+    pshuflw             m1, m1, q0000
+    punpcklqdq          m1, m1
+    pxor                m2, m2
+    movd          [blockq], m2
+    DEFINE_ARGS dst, stride, cnt
+    mov               cntd, 4
+.loop_dc:
+    STORE_2x8            3, 4, 1, m2, m0
+    lea               dstq, [dstq+strideq*2]
+    dec               cntd
+    jg .loop_dc
+    RET
+
+    ; FIXME a sub-idct for the top-left 4x4 coefficients would save 1 loop
+    ; iteration in the first idct (2->1) and thus probably a lot of time.
+    ; I haven't implemented that yet, though
+
+.idctfull:
+    mova   [rsp+16*mmsize], m0
+    DEFINE_ARGS dst, stride, block, cnt, ptr, stride3, dstbak
+%if ARCH_X86_64
+    mov            dstbakq, dstq
+%endif
+    lea           stride3q, [strideq*3]
+    mov               cntd, 2
+    mov               ptrq, rsp
+.loop_1:
+    IDCT8_1D        blockq
+
+    TRANSPOSE4x4D        0, 1, 2, 3, 7
+    mova  [ptrq+ 0*mmsize], m0
+    mova  [ptrq+ 2*mmsize], m1
+    mova  [ptrq+ 4*mmsize], m2
+    mova  [ptrq+ 6*mmsize], m3
+    UNSCRATCH            7, 8, rsp+17*mmsize
+    TRANSPOSE4x4D        4, 5, 6, 7, 0
+    mova  [ptrq+ 1*mmsize], m4
+    mova  [ptrq+ 3*mmsize], m5
+    mova  [ptrq+ 5*mmsize], m6
+    mova  [ptrq+ 7*mmsize], m7
+    add               ptrq, 8 * mmsize
+    add             blockq, mmsize
+    dec               cntd
+    jg .loop_1
+
+    mov               cntd, 2
+    mov               ptrq, rsp
+.loop_2:
+    IDCT8_1D          ptrq
+
+    pxor                m7, m7
+    PRELOAD              9, rsp+16*mmsize, max
+    ROUND_AND_STORE_4x4  0, 1, 2, 3, m7, reg_max, [pd_16], 5
+    lea               dstq, [dstq+strideq*4]
+    UNSCRATCH            0, 8, rsp+17*mmsize
+    ROUND_AND_STORE_4x4  4, 5, 6, 0, m7, reg_max, [pd_16], 5
+    add               ptrq, 16
+%if ARCH_X86_64
+    lea               dstq, [dstbakq+8]
+%else
+    mov               dstq, dstm
+    add               dstq, 8
+%endif
+    dec               cntd
+    jg .loop_2
+
+    ; m7 is still zero
+    ZERO_BLOCK blockq-2*mmsize, 32, 8, m7
+    RET
+
+INIT_XMM sse2
+cglobal vp9_idct_idct_8x8_add_12, 4, 6 + ARCH_X86_64, 10, \
+                                  17 * mmsize + 2 * ARCH_X86_32 * mmsize, \
+                                  dst, stride, block, eob
+    mova                m0, [pw_4095]
+    cmp               eobd, 1
+    jg mangle(private_prefix %+ _ %+ vp9_idct_idct_8x8_add_10 %+ SUFFIX).idctfull
+
+    ; dc-only - unfortunately, this one can overflow, since coefs are 18+sign
+    ; bpp, and 18+14+sign does not fit in 32bit, so we do 2-stage multiplies
+    DEFINE_ARGS dst, stride, block, coef, coefl
+%if ARCH_X86_64
+    DEFINE_ARGS dst, stride, block, coef
+    movsxd           coefq, dword [blockq]
+    pxor                m2, m2
+    movd          [blockq], m2
+    imul             coefq, 11585
+    add              coefq, 8192
+    sar              coefq, 14
+    imul             coefq, 11585
+    add              coefq, (16 << 14) + 8192
+    sar              coefq, 14 + 5
+%else
+    mov              coefd, dword [blockq]
+    pxor                m2, m2
+    movd          [blockq], m2
+    DEFINE_ARGS dst, stride, cnt, coef, coefl
+    mov               cntd, 2
+.loop_dc_calc:
+    mov             coefld, coefd
+    sar              coefd, 14
+    and             coefld, 0x3fff
+    imul             coefd, 11585
+    imul            coefld, 11585
+    add             coefld, 8192
+    sar             coefld, 14
+    add              coefd, coefld
+    dec               cntd
+    jg .loop_dc_calc
+    add              coefd, 16
+    sar              coefd, 5
+%endif
+    movd                m1, coefd
+    pshuflw             m1, m1, q0000
+    punpcklqdq          m1, m1
+    DEFINE_ARGS dst, stride, cnt
+    mov               cntd, 4
+.loop_dc:
+    STORE_2x8            3, 4, 1, m2, m0
+    lea               dstq, [dstq+strideq*2]
+    dec               cntd
+    jg .loop_dc
+    RET
