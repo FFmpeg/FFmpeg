@@ -56,14 +56,10 @@
 
 #define sclip(x) av_clip(x,60,218)
 
-
-static av_always_inline int ff_pns_bits(const SingleChannelElement *sce, int w, int g)
+/* Reflects the cost to change codebooks */
+static inline int ff_pns_bits(SingleChannelElement *sce, int w, int g)
 {
-    if (!g || !sce->zeroes[w*16+g-1] || !sce->can_pns[w*16+g-1]) {
-        return 9;
-    } else {
-        return 5;
-    }
+    return (!g || !sce->zeroes[w*16+g-1] || !sce->can_pns[w*16+g-1]) ? 9 : 5;
 }
 
 /**
