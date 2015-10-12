@@ -142,7 +142,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
          * No need to be overly precise, this only controls RD
          * adjustment CB limits when going overboard
          */
-        if (s->options.stereo_mode && s->cur_type == TYPE_CPE)
+        if (s->options.mid_side && s->cur_type == TYPE_CPE)
             destbits *= 2;
 
         /**

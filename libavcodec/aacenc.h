@@ -42,11 +42,11 @@ typedef enum AACCoder {
 }AACCoder;
 
 typedef struct AACEncOptions {
-    int stereo_mode;
-    int aac_coder;
+    int coder;
     int pns;
     int tns;
     int pred;
+    int mid_side;
     int intensity_stereo;
 } AACEncOptions;
 

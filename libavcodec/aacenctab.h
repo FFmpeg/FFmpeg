@@ -36,6 +36,13 @@
 /** Total number of codebooks, including special ones **/
 #define CB_TOT_ALL 15
 
+/** Profile option settings **/
+#define OPT_AUTO         -1
+#define OPT_BANNED     -256
+#define OPT_NEEDS_LTP  -384
+#define OPT_NEEDS_MAIN -512
+#define OPT_REQUIRED   -768
+
 #define AAC_MAX_CHANNELS 8
 
 extern const uint8_t *ff_aac_swb_size_1024[];
