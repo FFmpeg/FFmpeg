@@ -3266,7 +3266,7 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 
 int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
 {
-    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)
+    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
         return 0;
 
     if (lockmgr_cb) {
@@ -3292,7 +3292,7 @@ int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
 
 int ff_unlock_avcodec(const AVCodec *codec)
 {
-    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)
+    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
         return 0;
 
     av_assert0(ff_avcodec_locked);
