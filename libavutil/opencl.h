@@ -32,6 +32,7 @@
 #ifndef LIBAVUTIL_OPENCL_H
 #define LIBAVUTIL_OPENCL_H
 
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS 1
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
