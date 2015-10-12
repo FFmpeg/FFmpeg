@@ -386,8 +386,11 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
         %if %1 != 0 && required_stack_alignment > STACK_ALIGNMENT
             %if %1 > 0
                 %assign regs_used (regs_used + 1)
-            %elif ARCH_X86_64 && regs_used == num_args && num_args <= 4 + UNIX64 * 2
-                %warning "Stack pointer will overwrite register argument"
+            %endif
+            %if ARCH_X86_64 && regs_used < 5 + UNIX64 * 3
+                ; Ensure that we don't clobber any registers containing arguments. For UNIX64 we also preserve r6 (rax)
+                ; since it's used as a hidden argument in vararg functions to specify the number of vector registers used.
+                %assign regs_used 5 + UNIX64 * 3
             %endif
         %endif
     %endif
