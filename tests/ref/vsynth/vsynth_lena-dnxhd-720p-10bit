@@ -1,4 +1,4 @@
 e96fc4a7d994b9369c50da32fd325822 *tests/data/fate/vsynth_lena-dnxhd-720p-10bit.dnxhd
 2293760 tests/data/fate/vsynth_lena-dnxhd-720p-10bit.dnxhd
-2b497215c57558910a605ff8c78430d9 *tests/data/fate/vsynth_lena-dnxhd-720p-10bit.out.rawvideo
+0e9fcec94aeff70bac5dec02cf2391bc *tests/data/fate/vsynth_lena-dnxhd-720p-10bit.out.rawvideo
 stddev:    1.33 PSNR: 45.61 MAXDIFF:   22 bytes:  7603200/   760320
