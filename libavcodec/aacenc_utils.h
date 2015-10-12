@@ -96,7 +96,8 @@ static inline int find_min_book(float maxval, int sf)
     return cb;
 }
 
-static inline float find_form_factor(int group_len, int swb_size, float thresh, const float *scaled, float nzslope) {
+static inline float find_form_factor(int group_len, int swb_size, float thresh,
+                                     const float *scaled, float nzslope) {
     const float iswb_size = 1.0f / swb_size;
     const float iswb_sizem1 = 1.0f / (swb_size - 1);
     const float ethresh = thresh;
