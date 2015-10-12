@@ -177,6 +177,7 @@ OBJS-$(CONFIG_G722_MUXER)                += rawenc.o
 OBJS-$(CONFIG_G723_1_DEMUXER)            += g723_1.o
 OBJS-$(CONFIG_G723_1_MUXER)              += rawenc.o
 OBJS-$(CONFIG_G729_DEMUXER)              += g729dec.o
+OBJS-$(CONFIG_GENH_DEMUXER)              += genh.o
 OBJS-$(CONFIG_H261_DEMUXER)              += h261dec.o rawdec.o
 OBJS-$(CONFIG_H261_MUXER)                += rawenc.o
 OBJS-$(CONFIG_H263_DEMUXER)              += h263dec.o rawdec.o
