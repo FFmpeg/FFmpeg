@@ -36,6 +36,7 @@ typedef struct AVAES {
     av_aes_block round_key[15];
     av_aes_block state[2];
     int rounds;
+    void (*crypt)(struct AVAES *a, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int rounds);
 } AVAES;
 
 #endif /* AVUTIL_AES_INTERNAL_H */

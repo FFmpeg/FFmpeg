@@ -126,29 +126,42 @@ static inline void aes_crypt(AVAES *a, int s, const uint8_t *sbox,
     subshift(&a->state[0], s, sbox);
 }
 
-void av_aes_crypt(AVAES *a, uint8_t *dst, const uint8_t *src,
-                  int count, uint8_t *iv, int decrypt)
+static void aes_encrypt(AVAES *a, uint8_t *dst, const uint8_t *src,
+                        int count, uint8_t *iv, int rounds)
 {
     while (count--) {
-        addkey_s(&a->state[1], src, &a->round_key[a->rounds]);
-        if (decrypt) {
-            aes_crypt(a, 0, inv_sbox, dec_multbl);
-            if (iv) {
-                addkey_s(&a->state[0], iv, &a->state[0]);
-                memcpy(iv, src, 16);
-            }
-            addkey_d(dst, &a->state[0], &a->round_key[0]);
-        } else {
-            if (iv)
-                addkey_s(&a->state[1], iv, &a->state[1]);
-            aes_crypt(a, 2, sbox, enc_multbl);
-            addkey_d(dst, &a->state[0], &a->round_key[0]);
-            if (iv)
-                memcpy(iv, dst, 16);
-        }
+        addkey_s(&a->state[1], src, &a->round_key[rounds]);
+        if (iv)
+            addkey_s(&a->state[1], iv, &a->state[1]);
+        aes_crypt(a, 2, sbox, enc_multbl);
+        addkey_d(dst, &a->state[0], &a->round_key[0]);
+        if (iv)
+            memcpy(iv, dst, 16);
         src += 16;
         dst += 16;
     }
+}
+
+static void aes_decrypt(AVAES *a, uint8_t *dst, const uint8_t *src,
+                        int count, uint8_t *iv, int rounds)
+{
+    while (count--) {
+        addkey_s(&a->state[1], src, &a->round_key[rounds]);
+        aes_crypt(a, 0, inv_sbox, dec_multbl);
+        if (iv) {
+            addkey_s(&a->state[0], iv, &a->state[0]);
+            memcpy(iv, src, 16);
+        }
+        addkey_d(dst, &a->state[0], &a->round_key[0]);
+        src += 16;
+        dst += 16;
+    }
+}
+
+void av_aes_crypt(AVAES *a, uint8_t *dst, const uint8_t *src,
+                  int count, uint8_t *iv, int decrypt)
+{
+    a->crypt(a, dst, src, count, iv, a->rounds);
 }
 
 static void init_multbl2(uint32_t tbl[][256], const int c[4],
@@ -185,6 +198,8 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
     int rounds = KC + 6;
     uint8_t log8[256];
     uint8_t alog8[512];
+
+    a->crypt = decrypt ? aes_decrypt : aes_encrypt;
 
     if (!enc_multbl[FF_ARRAY_ELEMS(enc_multbl)-1][FF_ARRAY_ELEMS(enc_multbl[0])-1]) {
         j = 1;
