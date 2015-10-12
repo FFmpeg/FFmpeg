@@ -484,7 +484,8 @@ cl_program av_opencl_compile(const char *program_name, const char *build_opts)
     status = clBuildProgram(program, 1, &(opencl_ctx.device_id), build_opts, NULL, NULL);
     if (status != CL_SUCCESS) {
         av_log(&opencl_ctx, AV_LOG_ERROR,
-               "Compilation failed with OpenCL program: %s\n", program_name);
+               "Compilation failed with OpenCL program '%s': %s\n",
+               program_name, av_opencl_errstr(status));
         program = NULL;
         goto end;
     }
