@@ -183,9 +183,9 @@
     %define e%1h %3
     %define r%1b %2
     %define e%1b %2
-%if ARCH_X86_64 == 0
-    %define r%1  e%1
-%endif
+    %if ARCH_X86_64 == 0
+        %define r%1 e%1
+    %endif
 %endmacro
 
 DECLARE_REG_SIZE ax, al, ah
@@ -504,9 +504,9 @@ DECLARE_REG 14, R15, 120
 %macro RET 0
     WIN64_RESTORE_XMM_INTERNAL rsp
     POP_IF_USED 14, 13, 12, 11, 10, 9, 8, 7
-%if mmsize == 32
-    vzeroupper
-%endif
+    %if mmsize == 32
+        vzeroupper
+    %endif
     AUTO_REP_RET
 %endmacro
 
@@ -543,17 +543,17 @@ DECLARE_REG 14, R15, 72
 %define has_epilogue regs_used > 9 || mmsize == 32 || stack_size > 0
 
 %macro RET 0
-%if stack_size_padded > 0
-%if required_stack_alignment > STACK_ALIGNMENT
-    mov rsp, rstkm
-%else
-    add rsp, stack_size_padded
-%endif
-%endif
+    %if stack_size_padded > 0
+        %if required_stack_alignment > STACK_ALIGNMENT
+            mov rsp, rstkm
+        %else
+            add rsp, stack_size_padded
+        %endif
+    %endif
     POP_IF_USED 14, 13, 12, 11, 10, 9
-%if mmsize == 32
-    vzeroupper
-%endif
+    %if mmsize == 32
+        vzeroupper
+    %endif
     AUTO_REP_RET
 %endmacro
 
@@ -599,29 +599,29 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %define has_epilogue regs_used > 3 || mmsize == 32 || stack_size > 0
 
 %macro RET 0
-%if stack_size_padded > 0
-%if required_stack_alignment > STACK_ALIGNMENT
-    mov rsp, rstkm
-%else
-    add rsp, stack_size_padded
-%endif
-%endif
+    %if stack_size_padded > 0
+        %if required_stack_alignment > STACK_ALIGNMENT
+            mov rsp, rstkm
+        %else
+            add rsp, stack_size_padded
+        %endif
+    %endif
     POP_IF_USED 6, 5, 4, 3
-%if mmsize == 32
-    vzeroupper
-%endif
+    %if mmsize == 32
+        vzeroupper
+    %endif
     AUTO_REP_RET
 %endmacro
 
 %endif ;======================================================================
 
 %if WIN64 == 0
-%macro WIN64_SPILL_XMM 1
-%endmacro
-%macro WIN64_RESTORE_XMM 1
-%endmacro
-%macro WIN64_PUSH_XMM 0
-%endmacro
+    %macro WIN64_SPILL_XMM 1
+    %endmacro
+    %macro WIN64_RESTORE_XMM 1
+    %endmacro
+    %macro WIN64_PUSH_XMM 0
+    %endmacro
 %endif
 
 ; On AMD cpus <=K10, an ordinary ret is slow if it immediately follows either
@@ -848,14 +848,14 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %define movnta movntq
     %assign %%i 0
     %rep 8
-    CAT_XDEFINE m, %%i, mm %+ %%i
-    CAT_XDEFINE nnmm, %%i, %%i
-    %assign %%i %%i+1
+        CAT_XDEFINE m, %%i, mm %+ %%i
+        CAT_XDEFINE nnmm, %%i, %%i
+        %assign %%i %%i+1
     %endrep
     %rep 8
-    CAT_UNDEF m, %%i
-    CAT_UNDEF nnmm, %%i
-    %assign %%i %%i+1
+        CAT_UNDEF m, %%i
+        CAT_UNDEF nnmm, %%i
+        %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
 %endmacro
@@ -866,7 +866,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %define mmsize 16
     %define num_mmregs 8
     %if ARCH_X86_64
-    %define num_mmregs 16
+        %define num_mmregs 16
     %endif
     %define mova movdqa
     %define movu movdqu
@@ -874,9 +874,9 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %define movnta movntdq
     %assign %%i 0
     %rep num_mmregs
-    CAT_XDEFINE m, %%i, xmm %+ %%i
-    CAT_XDEFINE nnxmm, %%i, %%i
-    %assign %%i %%i+1
+        CAT_XDEFINE m, %%i, xmm %+ %%i
+        CAT_XDEFINE nnxmm, %%i, %%i
+        %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
 %endmacro
@@ -887,7 +887,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %define mmsize 32
     %define num_mmregs 8
     %if ARCH_X86_64
-    %define num_mmregs 16
+        %define num_mmregs 16
     %endif
     %define mova movdqa
     %define movu movdqu
@@ -895,9 +895,9 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %define movnta movntdq
     %assign %%i 0
     %rep num_mmregs
-    CAT_XDEFINE m, %%i, ymm %+ %%i
-    CAT_XDEFINE nnymm, %%i, %%i
-    %assign %%i %%i+1
+        CAT_XDEFINE m, %%i, ymm %+ %%i
+        CAT_XDEFINE nnymm, %%i, %%i
+        %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
 %endmacro
@@ -921,7 +921,7 @@ INIT_XMM
 %assign i 0
 %rep 16
     DECLARE_MMCAST i
-%assign i i+1
+    %assign i i+1
 %endrep
 
 ; I often want to use macros that permute their arguments. e.g. there's no
@@ -939,23 +939,23 @@ INIT_XMM
 ; doesn't cost any cycles.
 
 %macro PERMUTE 2-* ; takes a list of pairs to swap
-%rep %0/2
-    %xdefine %%tmp%2 m%2
-    %rotate 2
-%endrep
-%rep %0/2
-    %xdefine m%1 %%tmp%2
-    CAT_XDEFINE nn, m%1, %1
-    %rotate 2
-%endrep
+    %rep %0/2
+        %xdefine %%tmp%2 m%2
+        %rotate 2
+    %endrep
+    %rep %0/2
+        %xdefine m%1 %%tmp%2
+        CAT_XDEFINE nn, m%1, %1
+        %rotate 2
+    %endrep
 %endmacro
 
 %macro SWAP 2+ ; swaps a single chain (sometimes more concise than pairs)
-%ifnum %1 ; SWAP 0, 1, ...
-    SWAP_INTERNAL_NUM %1, %2
-%else ; SWAP m0, m1, ...
-    SWAP_INTERNAL_NAME %1, %2
-%endif
+    %ifnum %1 ; SWAP 0, 1, ...
+        SWAP_INTERNAL_NUM %1, %2
+    %else ; SWAP m0, m1, ...
+        SWAP_INTERNAL_NAME %1, %2
+    %endif
 %endmacro
 
 %macro SWAP_INTERNAL_NUM 2-*
@@ -965,7 +965,7 @@ INIT_XMM
         %xdefine m%2 %%tmp
         CAT_XDEFINE nn, m%1, %1
         CAT_XDEFINE nn, m%2, %2
-    %rotate 1
+        %rotate 1
     %endrep
 %endmacro
 
@@ -973,7 +973,7 @@ INIT_XMM
     %xdefine %%args nn %+ %1
     %rep %0-1
         %xdefine %%args %%args, nn %+ %2
-    %rotate 1
+        %rotate 1
     %endrep
     SWAP_INTERNAL_NUM %%args
 %endmacro
@@ -990,7 +990,7 @@ INIT_XMM
     %assign %%i 0
     %rep num_mmregs
         CAT_XDEFINE %%f, %%i, m %+ %%i
-    %assign %%i %%i+1
+        %assign %%i %%i+1
     %endrep
 %endmacro
 
@@ -1000,7 +1000,7 @@ INIT_XMM
         %rep num_mmregs
             CAT_XDEFINE m, %%i, %1_m %+ %%i
             CAT_XDEFINE nn, m %+ %%i, %%i
-        %assign %%i %%i+1
+            %assign %%i %%i+1
         %endrep
     %endif
 %endmacro
@@ -1056,7 +1056,7 @@ INIT_XMM
     %endif
     CAT_XDEFINE sizeofxmm, i, 16
     CAT_XDEFINE sizeofymm, i, 32
-%assign i i+1
+    %assign i i+1
 %endrep
 %undef i
 
@@ -1433,7 +1433,7 @@ AVX_INSTR pfmul, 3dnow, 1, 0, 1
     %else
         CAT_XDEFINE q, j, i
     %endif
-%assign i i+1
+    %assign i i+1
 %endrep
 %undef i
 %undef j
