@@ -54,11 +54,12 @@ static void put_audio_specific_config(AVCodecContext *avctx)
 {
     PutBitContext pb;
     AACEncContext *s = avctx->priv_data;
+    int channels = s->channels - (s->channels == 8 ? 1 : 0);
 
     init_put_bits(&pb, avctx->extradata, avctx->extradata_size);
     put_bits(&pb, 5, s->profile+1); //profile
     put_bits(&pb, 4, s->samplerate_index); //sample rate index
-    put_bits(&pb, 4, s->channels);
+    put_bits(&pb, 4, channels);
     //GASpecificConfig
     put_bits(&pb, 1, 0); //frame length - 1024 samples
     put_bits(&pb, 1, 0); //does not depend on core coder
@@ -866,7 +867,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     ERROR_IF(i == 16 || i >= ff_aac_swb_size_1024_len || i >= ff_aac_swb_size_128_len,
              "Unsupported sample rate %d\n", avctx->sample_rate);
-    ERROR_IF(s->channels > AAC_MAX_CHANNELS,
+    ERROR_IF(s->channels > AAC_MAX_CHANNELS || s->channels == 7,
              "Unsupported number of channels: %d\n", s->channels);
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
              "Too many bits per frame requested, clamping to max\n");
