@@ -186,6 +186,17 @@ IWHT4_FN 12, 4095
     VP9_STORE_2X         2,  3,  6,  7,  4,  5
 %endmacro
 
+%macro DC_ONLY 2 ; shift, zero
+    mov              coefd, dword [blockq]
+    movd          [blockq], %2
+    imul             coefd, 11585
+    add              coefd, 8192
+    sar              coefd, 14
+    imul             coefd, 11585
+    add              coefd, ((1 << (%1 - 1)) << 14) + 8192
+    sar              coefd, 14 + %1
+%endmacro
+
 ; 4x4 coefficients are 5+depth+sign bits, so for 10bpp, everything still fits
 ; in 15+1 words without additional effort, since the coefficients are 15bpp.
 
@@ -195,26 +206,20 @@ cglobal vp9_idct_idct_4x4_add_10, 4, 4, 8, dst, stride, block, eob
     jg .idctfull
 
     ; dc-only
+    pxor                m4, m4
 %if cpuflag(ssse3)
     movd                m0, [blockq]
+    movd          [blockq], m4
     mova                m5, [pw_11585x2]
     pmulhrsw            m0, m5
     pmulhrsw            m0, m5
 %else
     DEFINE_ARGS dst, stride, block, coef
-    mov              coefd, dword [blockq]
-    imul             coefd, 11585
-    add              coefd, 8192
-    sar              coefd, 14
-    imul             coefd, 11585
-    add              coefd, (8 << 14) + 8192
-    sar              coefd, 14 + 4
+    DC_ONLY              4, m4
     movd                m0, coefd
 %endif
     pshufw              m0, m0, 0
-    pxor                m4, m4
     mova                m5, [pw_1023]
-    movh          [blockq], m4
 %if cpuflag(ssse3)
     pmulhrsw            m0, [pw_2048]       ; (x*2048 + (1<<14))>>15 <=> (x+8)>>4
 %endif
@@ -368,19 +373,12 @@ cglobal vp9_idct_idct_4x4_add_12, 4, 4, 6, dst, stride, block, eob
     ; dword. After the final shift (4), the result is 13+sign bits, so we
     ; don't need any additional processing to fit it in a word
     DEFINE_ARGS dst, stride, block, coef
-    mov              coefd, dword [blockq]
-    imul             coefd, 11585
-    add              coefd, 8192
-    sar              coefd, 14
-    imul             coefd, 11585
-    add              coefd, (8 << 14) + 8192
-    sar              coefd, 14 + 4
+    pxor                m4, m4
+    DC_ONLY              4, m4
     movd                m0, coefd
     pshuflw             m0, m0, q0000
     punpcklqdq          m0, m0
-    pxor                m4, m4
     mova                m5, [pw_4095]
-    movd          [blockq], m4
     DEFINE_ARGS dst, stride, stride3
     lea           stride3q, [strideq*3]
     STORE_4x4            1, 3, 0, 0, m4, m5
@@ -559,17 +557,17 @@ IADST4_12BPP_FN iadst, IADST4, iadst, IADST4
     SWAP                 0, 5, 4, 6, 2, 7
 %endmacro
 
-%macro STORE_2x8 5 ; tmp1-2, reg, min, max
-    mova               m%1, [dstq+strideq*0]
-    mova               m%2, [dstq+strideq*1]
+%macro STORE_2x8 5-7 dstq, strideq ; tmp1-2, reg, min, max
+    mova               m%1, [%6+%7*0]
+    mova               m%2, [%6+%7*1]
     paddw              m%1, m%3
     paddw              m%2, m%3
     pmaxsw             m%1, %4
     pmaxsw             m%2, %4
     pminsw             m%1, %5
     pminsw             m%2, %5
-    mova  [dstq+strideq*0], m%1
-    mova  [dstq+strideq*1], m%2
+    mova         [%6+%7*0], m%1
+    mova         [%6+%7*1], m%2
 %endmacro
 
 %macro PRELOAD 2-3
@@ -598,18 +596,11 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
     ; coef values are 16+sign bit, and the coef is 14bit, so 30+sign easily
     ; fits in 32bit
     DEFINE_ARGS dst, stride, block, coef
-    mov              coefd, dword [blockq]
-    imul             coefd, 11585
-    add              coefd, 8192
-    sar              coefd, 14
-    imul             coefd, 11585
-    add              coefd, (16 << 14) + 8192
-    sar              coefd, 14 + 5
+    pxor                m2, m2
+    DC_ONLY              5, m2
     movd                m1, coefd
     pshuflw             m1, m1, q0000
     punpcklqdq          m1, m1
-    pxor                m2, m2
-    movd          [blockq], m2
     DEFINE_ARGS dst, stride, cnt
     mov               cntd, 4
 .loop_dc:
@@ -676,32 +667,19 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 10, \
     ZERO_BLOCK blockq-2*mmsize, 32, 8, m6
     RET
 
-INIT_XMM sse2
-cglobal vp9_idct_idct_8x8_add_12, 4, 6 + ARCH_X86_64, 10, \
-                                  17 * mmsize + 2 * ARCH_X86_32 * mmsize, \
-                                  dst, stride, block, eob
-    mova                m0, [pw_4095]
-    cmp               eobd, 1
-    jg mangle(private_prefix %+ _ %+ vp9_idct_idct_8x8_add_10 %+ SUFFIX).idctfull
-
-    ; dc-only - unfortunately, this one can overflow, since coefs are 18+sign
-    ; bpp, and 18+14+sign does not fit in 32bit, so we do 2-stage multiplies
-    DEFINE_ARGS dst, stride, block, coef, coefl
+%macro DC_ONLY_64BIT 2 ; shift, zero
 %if ARCH_X86_64
-    DEFINE_ARGS dst, stride, block, coef
     movsxd           coefq, dword [blockq]
-    pxor                m2, m2
-    movd          [blockq], m2
+    movd          [blockq], %2
     imul             coefq, 11585
     add              coefq, 8192
     sar              coefq, 14
     imul             coefq, 11585
-    add              coefq, (16 << 14) + 8192
-    sar              coefq, 14 + 5
+    add              coefq, ((1 << (%1 - 1)) << 14) + 8192
+    sar              coefq, 14 + %1
 %else
     mov              coefd, dword [blockq]
-    pxor                m2, m2
-    movd          [blockq], m2
+    movd          [blockq], %2
     DEFINE_ARGS dst, stride, cnt, coef, coefl
     mov               cntd, 2
 .loop_dc_calc:
@@ -715,9 +693,24 @@ cglobal vp9_idct_idct_8x8_add_12, 4, 6 + ARCH_X86_64, 10, \
     add              coefd, coefld
     dec               cntd
     jg .loop_dc_calc
-    add              coefd, 16
-    sar              coefd, 5
+    add              coefd, 1 << (%1 - 1)
+    sar              coefd, %1
 %endif
+%endmacro
+
+INIT_XMM sse2
+cglobal vp9_idct_idct_8x8_add_12, 4, 6 + ARCH_X86_64, 10, \
+                                  17 * mmsize + 2 * ARCH_X86_32 * mmsize, \
+                                  dst, stride, block, eob
+    mova                m0, [pw_4095]
+    cmp               eobd, 1
+    jg mangle(private_prefix %+ _ %+ vp9_idct_idct_8x8_add_10 %+ SUFFIX).idctfull
+
+    ; dc-only - unfortunately, this one can overflow, since coefs are 18+sign
+    ; bpp, and 18+14+sign does not fit in 32bit, so we do 2-stage multiplies
+    DEFINE_ARGS dst, stride, block, coef, coefl
+    pxor                m2, m2
+    DC_ONLY_64BIT        5, m2
     movd                m1, coefd
     pshuflw             m1, m1, q0000
     punpcklqdq          m1, m1
@@ -1000,7 +993,24 @@ cglobal vp9_idct_idct_16x16_add_10, 4, 6 + ARCH_X86_64, 16, \
     cmp               eobd, 1
     jg .idctfull
 
-    ; dc-only
+    ; dc-only - the 10bit version can be done entirely in 32bit, since the max
+    ; coef values are 17+sign bit, and the coef is 14bit, so 31+sign easily
+    ; fits in 32bit
+    DEFINE_ARGS dst, stride, block, coef
+    pxor                m2, m2
+    DC_ONLY              6, m2
+    movd                m1, coefd
+    pshuflw             m1, m1, q0000
+    punpcklqdq          m1, m1
+    DEFINE_ARGS dst, stride, cnt
+    mov               cntd, 8
+.loop_dc:
+    STORE_2x8            3, 4, 1, m2, m0, dstq,         mmsize
+    STORE_2x8            3, 4, 1, m2, m0, dstq+strideq, mmsize
+    lea               dstq, [dstq+strideq*2]
+    dec               cntd
+    jg .loop_dc
+    RET
 
 .idctfull:
     mova   [rsp+64*mmsize], m0
@@ -1013,7 +1023,6 @@ cglobal vp9_idct_idct_16x16_add_10, 4, 6 + ARCH_X86_64, 16, \
     mov               ptrq, rsp
 .loop_1:
     IDCT16_1D       blockq
-; order: 2,1,0,11,3,7,9,10,6,8,4,5,12,13,r65,15
 
     TRANSPOSE4x4D        0, 1, 2, 3, 7
     mova  [ptrq+ 1*mmsize], m0
@@ -1106,6 +1115,20 @@ cglobal vp9_idct_idct_16x16_add_12, 4, 6 + ARCH_X86_64, 16, \
     cmp               eobd, 1
     jg mangle(private_prefix %+ _ %+ vp9_idct_idct_16x16_add_10 %+ SUFFIX).idctfull
 
-    ; dc-only
-    jmp mangle(private_prefix %+ _ %+ vp9_idct_idct_16x16_add_10 %+ SUFFIX).idctfull
+    ; dc-only - unfortunately, this one can overflow, since coefs are 19+sign
+    ; bpp, and 19+14+sign does not fit in 32bit, so we do 2-stage multiplies
+    DEFINE_ARGS dst, stride, block, coef, coefl
+    pxor                m2, m2
+    DC_ONLY_64BIT        6, m2
+    movd                m1, coefd
+    pshuflw             m1, m1, q0000
+    punpcklqdq          m1, m1
+    DEFINE_ARGS dst, stride, cnt
+    mov               cntd, 8
+.loop_dc:
+    STORE_2x8            3, 4, 1, m2, m0, dstq,         mmsize
+    STORE_2x8            3, 4, 1, m2, m0, dstq+strideq, mmsize
+    lea               dstq, [dstq+strideq*2]
+    dec               cntd
+    jg .loop_dc
     RET
