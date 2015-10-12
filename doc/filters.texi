@@ -7128,7 +7128,7 @@ to create same output.
 The filter accept the following option:
 
 @table @option
-@item nb_inputs
+@item inputs
 Set number of input streams. Default is 2.
 @end table
 
@@ -11550,7 +11550,7 @@ to create same output.
 The filter accept the following option:
 
 @table @option
-@item nb_inputs
+@item inputs
 Set number of input streams. Default is 2.
 @end table
 
