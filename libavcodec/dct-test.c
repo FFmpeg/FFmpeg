@@ -245,8 +245,10 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
            omse, ome, (double) sysErrMax / NB_ITS,
            maxout, blockSumErrMax);
 
-    if (spec_err && !dct->nonspec)
+    if (spec_err && !dct->nonspec) {
+        printf("Failed!\n");
         return 1;
+    }
 
     if (!speed)
         return 0;
