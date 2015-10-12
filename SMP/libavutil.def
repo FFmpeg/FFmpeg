@@ -70,7 +70,6 @@ EXPORTS
     av_crc
     av_crc_get_table
     av_crc_init
-    av_ctz
     av_d2q
     av_d2str
     av_default_get_category

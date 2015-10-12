@@ -419,6 +419,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_scale.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_selectivecolor.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_aspect.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_setfield.c">
