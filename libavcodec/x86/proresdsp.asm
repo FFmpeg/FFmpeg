@@ -37,17 +37,17 @@ cextern pw_1019
 
 section .text align=16
 
-%macro idct_put_fn 1
-cglobal prores_idct_put_10, 4, 4, %1
+%macro idct_put_fn 0
+cglobal prores_idct_put_10, 4, 4, 15
     IDCT_PUT_FN    pw_1, 15, pw_88, 18, pw_4, pw_1019, r3
     RET
 %endmacro
 
 INIT_XMM sse2
-idct_put_fn 16
+idct_put_fn
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
-idct_put_fn 16
+idct_put_fn
 %endif
 
 %endif

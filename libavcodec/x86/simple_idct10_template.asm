@@ -75,6 +75,7 @@ cextern w7_min_w5
     ; a2 -= W6 * row[2];
     ; a3 -= W2 * row[2];
 %ifstr %1
+    mova        m15, [pd_round_ %+ %2]
 %else
     paddw       m10, [%1]
 %endif
@@ -87,6 +88,17 @@ cextern w7_min_w5
     pmaddwd     m7,  m1, [w4_min_w2]
     pmaddwd     m0, [w4_plus_w2]
     pmaddwd     m1, [w4_plus_w2]
+%ifstr %1
+    ; Adding 1<<(%2-1) for >=15 bits values
+    paddd       m2, m15
+    paddd       m3, m15
+    paddd       m4, m15
+    paddd       m5, m15
+    paddd       m6, m15
+    paddd       m7, m15
+    paddd       m0, m15
+    paddd       m1, m15
+%endif
 
     ; a0: -1*row[0]-1*row[2]
     ; a1: -1*row[0]
@@ -225,7 +237,6 @@ cextern w7_min_w5
 
 %macro IDCT_PUT_FN 6-7
     movsxd      r1,  r1d
-    pxor        m15, m15           ; zero
 
     ; for (i = 0; i < 8; i++)
     ;     idctRowCondDC(block + i*8);
