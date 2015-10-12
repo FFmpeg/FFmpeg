@@ -67,4 +67,20 @@ extern const ymm_reg  ff_pd_16;
 extern const ymm_reg  ff_pd_32;
 extern const ymm_reg  ff_pd_65535;
 
+# if ARCH_X86_64
+/* simple_idct10, used by prores and dnxhd */
+extern const xmm_reg  ff_w4_plus_w2;
+extern const xmm_reg  ff_w4_min_w2;
+extern const xmm_reg  ff_w4_plus_w6;
+extern const xmm_reg  ff_w4_min_w6;
+extern const xmm_reg  ff_w1_plus_w3;
+extern const xmm_reg  ff_w3_min_w1;
+extern const xmm_reg  ff_w7_plus_w3;
+extern const xmm_reg  ff_w3_min_w7;
+extern const xmm_reg  ff_w1_plus_w5;
+extern const xmm_reg  ff_w5_min_w1;
+extern const xmm_reg  ff_w5_plus_w7;
+extern const xmm_reg  ff_w7_min_w5;
+# endif
+
 #endif /* AVCODEC_X86_CONSTANTS_H */
