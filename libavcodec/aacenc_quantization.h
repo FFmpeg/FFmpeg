@@ -1,5 +1,5 @@
 /*
- * AAC encoder intensity stereo
+ * AAC encoder quantizer
  * Copyright (C) 2015 Rostislav Pehlivanov
  *
  * This file is part of FFmpeg.
