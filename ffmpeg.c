@@ -32,13 +32,11 @@
 #include <limits.h>
 #include <stdint.h>
 
-#if HAVE_ISATTY
 #if HAVE_IO_H
 #include <io.h>
 #endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 #endif
 
 #include "libavformat/avformat.h"
@@ -370,11 +368,7 @@ void term_init(void)
 #if HAVE_TERMIOS_H
     if(!run_as_daemon){
         struct termios tty;
-        int istty = 1;
-#if HAVE_ISATTY
-        istty = isatty(0) && isatty(2);
-#endif
-        if (istty && tcgetattr (0, &tty) == 0) {
+        if (tcgetattr (0, &tty) == 0) {
             oldtty = tty;
             restore_tty = 1;
 

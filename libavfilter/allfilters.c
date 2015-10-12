@@ -226,6 +226,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(SCALE,          scale,          vf);
     REGISTER_FILTER(SCALE2REF,      scale2ref,      vf);
     REGISTER_FILTER(SELECT,         select,         vf);
+    REGISTER_FILTER(SELECTIVECOLOR, selectivecolor, vf);
     REGISTER_FILTER(SENDCMD,        sendcmd,        vf);
     REGISTER_FILTER(SEPARATEFIELDS, separatefields, vf);
     REGISTER_FILTER(SETDAR,         setdar,         vf);

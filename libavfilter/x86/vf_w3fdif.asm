@@ -65,11 +65,12 @@ cglobal w3fdif_simple_low, 4, 5, 6, 0, work_line, in_lines_cur0, coef, linesize,
     jg .loop
 REP_RET
 
-cglobal w3fdif_complex_low, 4, 7, 7, 0, work_line, in_lines_cur0, coef, linesize
+cglobal w3fdif_complex_low, 4, 7, 8, 0, work_line, in_lines_cur0, coef, linesize
     movq                  m0, [coefq]
     DEFINE_ARGS    work_line, in_lines_cur0, in_lines_cur1, linesize, offset, in_lines_cur2, in_lines_cur3
     pshufd                m2, m0, q1111
     SPLATD                m0
+    pxor                  m1, m1
     mov              offsetq, 0
     mov       in_lines_cur3q, [in_lines_cur0q+gprsize*3]
     mov       in_lines_cur2q, [in_lines_cur0q+gprsize*2]
@@ -79,17 +80,16 @@ cglobal w3fdif_complex_low, 4, 7, 7, 0, work_line, in_lines_cur0, coef, linesize
 .loop:
     movh                                   m4, [in_lines_cur0q+offsetq]
     movh                                   m5, [in_lines_cur1q+offsetq]
-    pxor                                   m1, m1
     punpcklbw                              m4, m1
     punpcklbw                              m5, m1
-    SBUTTERFLY                             wd, 4, 5, 3
+    SBUTTERFLY                             wd, 4, 5, 7
     pmaddwd                                m4, m0
     pmaddwd                                m5, m0
     movh                                   m6, [in_lines_cur2q+offsetq]
     movh                                   m3, [in_lines_cur3q+offsetq]
     punpcklbw                              m6, m1
     punpcklbw                              m3, m1
-    SBUTTERFLY                             wd, 6, 3, 1
+    SBUTTERFLY                             wd, 6, 3, 7
     pmaddwd                                m6, m2
     pmaddwd                                m3, m2
     paddd                                  m4, m6
@@ -103,13 +103,11 @@ REP_RET
 
 %if ARCH_X86_64
 
-cglobal w3fdif_simple_high, 5, 9, 9, 0, work_line, in_lines_cur0, in_lines_adj0, coef, linesize
+cglobal w3fdif_simple_high, 5, 9, 8, 0, work_line, in_lines_cur0, in_lines_adj0, coef, linesize
     movq                  m2, [coefq]
     DEFINE_ARGS    work_line, in_lines_cur0, in_lines_adj0, in_lines_cur1, linesize, offset, in_lines_cur2, in_lines_adj1, in_lines_adj2
-    SPLATW                m0, m2, 0
-    SPLATW                m1, m2, 1
+    pshufd                m0, m2, q0000
     SPLATW                m2, m2, 2
-    SBUTTERFLY            wd, 0, 1, 7
     pxor                  m7, m7
     mov              offsetq, 0
     mov       in_lines_cur2q, [in_lines_cur0q+gprsize*2]
@@ -124,31 +122,29 @@ cglobal w3fdif_simple_high, 5, 9, 9, 0, work_line, in_lines_cur0, in_lines_adj0,
     movh                                   m4, [in_lines_cur1q+offsetq]
     punpcklbw                              m3, m7
     punpcklbw                              m4, m7
-    SBUTTERFLY                             wd, 3, 4, 8
+    SBUTTERFLY                             wd, 3, 4, 1
     pmaddwd                                m3, m0
-    pmaddwd                                m4, m1
+    pmaddwd                                m4, m0
     movh                                   m5, [in_lines_adj0q+offsetq]
     movh                                   m6, [in_lines_adj1q+offsetq]
     punpcklbw                              m5, m7
     punpcklbw                              m6, m7
-    SBUTTERFLY                             wd, 5, 6, 8
+    SBUTTERFLY                             wd, 5, 6, 1
     pmaddwd                                m5, m0
-    pmaddwd                                m6, m1
+    pmaddwd                                m6, m0
     paddd                                  m3, m5
     paddd                                  m4, m6
     movh                                   m5, [in_lines_cur2q+offsetq]
     movh                                   m6, [in_lines_adj2q+offsetq]
     punpcklbw                              m5, m7
     punpcklbw                              m6, m7
-    SBUTTERFLY                             wd, 5, 6, 8
+    SBUTTERFLY                             wd, 5, 6, 1
     pmaddwd                                m5, m2
     pmaddwd                                m6, m2
     paddd                                  m3, m5
     paddd                                  m4, m6
-    movu                                   m5, [work_lineq+offsetq*4]
-    movu                                   m6, [work_lineq+offsetq*4+mmsize]
-    paddd                                  m3, m5
-    paddd                                  m4, m6
+    paddd                                  m3, [work_lineq+offsetq*4]
+    paddd                                  m4, [work_lineq+offsetq*4+mmsize]
     mova               [work_lineq+offsetq*4], m3
     mova        [work_lineq+offsetq*4+mmsize], m4
     add                               offsetq, mmsize/2

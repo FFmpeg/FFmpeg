@@ -28,6 +28,7 @@
 static const AVCodecTag rsd_tags[] = {
     { AV_CODEC_ID_ADPCM_THP,       MKTAG('G','A','D','P') },
     { AV_CODEC_ID_ADPCM_IMA_RAD,   MKTAG('R','A','D','P') },
+    { AV_CODEC_ID_ADPCM_IMA_WAV,   MKTAG('X','A','D','P') },
     { AV_CODEC_ID_PCM_S16BE,       MKTAG('P','C','M','B') },
     { AV_CODEC_ID_PCM_S16LE,       MKTAG('P','C','M',' ') },
     { AV_CODEC_ID_NONE, 0 },
@@ -37,7 +38,6 @@ static const uint32_t rsd_unsupported_tags[] = {
     MKTAG('O','G','G',' '),
     MKTAG('V','A','G',' '),
     MKTAG('W','A','D','P'),
-    MKTAG('X','A','D','P'),
     MKTAG('X','M','A',' '),
 };
 
@@ -100,6 +100,15 @@ static int rsd_read_header(AVFormatContext *s)
         if (pb->seekable)
             st->duration = av_get_audio_frame_duration(codec, avio_size(pb) - start);
         break;
+    case AV_CODEC_ID_ADPCM_IMA_WAV:
+        if (version == 2)
+            start = avio_rl32(pb);
+
+        codec->bits_per_coded_sample = 4;
+        codec->block_align = 36 * codec->channels;
+        if (pb->seekable)
+            st->duration = av_get_audio_frame_duration(codec, avio_size(pb) - start);
+        break;
     case AV_CODEC_ID_ADPCM_THP:
         /* RSD3GADP is mono, so only alloc enough memory
            to store the coeff table for a single channel. */
@@ -140,7 +149,8 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (avio_feof(s->pb))
         return AVERROR_EOF;
 
-    if (codec->codec_id == AV_CODEC_ID_ADPCM_IMA_RAD)
+    if (codec->codec_id == AV_CODEC_ID_ADPCM_IMA_RAD ||
+        codec->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV)
         ret = av_get_packet(s->pb, pkt, codec->block_align);
     else
         ret = av_get_packet(s->pb, pkt, size);

@@ -43,7 +43,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                                 PutBitContext *pb, const float *in, float *out,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits, int BT_ZERO, int BT_UNSIGNED,
+                                int *bits, float *energy, int BT_ZERO, int BT_UNSIGNED,
                                 int BT_PAIR, int BT_ESC, int BT_NOISE, int BT_STEREO,
                                 const float ROUNDING)
 {
@@ -54,6 +54,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
     const float CLIPPED_ESCAPE = 165140.0f*IQ;
     int i, j;
     float cost = 0;
+    float qenergy = 0;
     const int dim = BT_PAIR ? 2 : 4;
     int resbits = 0;
     int off;
@@ -63,6 +64,8 @@ static av_always_inline float quantize_and_encode_band_cost_template(
             cost += in[i]*in[i];
         if (bits)
             *bits = 0;
+        if (energy)
+            *energy = qenergy;
         if (out) {
             for (i = 0; i < size; i += dim)
                 for (j = 0; j < dim; j++)
@@ -113,11 +116,13 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                     out[i+j] = in[i+j] >= 0 ? quantized : -quantized;
                 if (vec[j] != 0.0f)
                     curbits++;
+                qenergy += quantized*quantized;
                 rd += di*di;
             }
         } else {
             for (j = 0; j < dim; j++) {
                 quantized = vec[j]*IQ;
+                qenergy += quantized*quantized;
                 if (out)
                     out[i+j] = quantized;
                 rd += (in[i+j] - quantized)*(in[i+j] - quantized);
@@ -149,6 +154,8 @@ static av_always_inline float quantize_and_encode_band_cost_template(
 
     if (bits)
         *bits = resbits;
+    if (energy)
+        *energy = qenergy;
     return cost;
 }
 
@@ -156,7 +163,7 @@ static inline float quantize_and_encode_band_cost_NONE(struct AACEncContext *s, 
                                                 const float *in, float *quant, const float *scaled,
                                                 int size, int scale_idx, int cb,
                                                 const float lambda, const float uplim,
-                                                int *bits) {
+                                                int *bits, float *energy) {
     av_assert0(0);
     return 0.0f;
 }
@@ -167,10 +174,10 @@ static float quantize_and_encode_band_cost_ ## NAME(                            
                                 PutBitContext *pb, const float *in, float *quant,            \
                                 const float *scaled, int size, int scale_idx,                \
                                 int cb, const float lambda, const float uplim,               \
-                                int *bits) {                                                 \
+                                int *bits, float *energy) {                                  \
     return quantize_and_encode_band_cost_template(                                           \
                                 s, pb, in, quant, scaled, size, scale_idx,                   \
-                                BT_ESC ? ESC_BT : cb, lambda, uplim, bits,                   \
+                                BT_ESC ? ESC_BT : cb, lambda, uplim, bits, energy,           \
                                 BT_ZERO, BT_UNSIGNED, BT_PAIR, BT_ESC, BT_NOISE, BT_STEREO,  \
                                 ROUNDING);                                                   \
 }
@@ -190,7 +197,7 @@ static float (*const quantize_and_encode_band_cost_arr[])(
                                 PutBitContext *pb, const float *in, float *quant,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits) = {
+                                int *bits, float *energy) = {
     quantize_and_encode_band_cost_ZERO,
     quantize_and_encode_band_cost_SQUAD,
     quantize_and_encode_band_cost_SQUAD,
@@ -214,7 +221,7 @@ static float (*const quantize_and_encode_band_cost_rtz_arr[])(
                                 PutBitContext *pb, const float *in, float *quant,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits) = {
+                                int *bits, float *energy) = {
     quantize_and_encode_band_cost_ZERO,
     quantize_and_encode_band_cost_SQUAD,
     quantize_and_encode_band_cost_SQUAD,
@@ -235,32 +242,32 @@ static float (*const quantize_and_encode_band_cost_rtz_arr[])(
 
 #define quantize_and_encode_band_cost(                                  \
                                 s, pb, in, quant, scaled, size, scale_idx, cb, \
-                                lambda, uplim, bits, rtz)               \
+                                lambda, uplim, bits, energy, rtz)               \
     ((rtz) ? quantize_and_encode_band_cost_rtz_arr : quantize_and_encode_band_cost_arr)[cb]( \
                                 s, pb, in, quant, scaled, size, scale_idx, cb, \
-                                lambda, uplim, bits)
+                                lambda, uplim, bits, energy)
 
 static inline float quantize_band_cost(struct AACEncContext *s, const float *in,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits, int rtz)
+                                int *bits, float *energy, int rtz)
 {
     return quantize_and_encode_band_cost(s, NULL, in, NULL, scaled, size, scale_idx,
-                                         cb, lambda, uplim, bits, rtz);
+                                         cb, lambda, uplim, bits, energy, rtz);
 }
 
 static inline int quantize_band_cost_bits(struct AACEncContext *s, const float *in,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits, int rtz)
+                                int *bits, float *energy, int rtz)
 {
-    int _bits;
+    int auxbits;
     quantize_and_encode_band_cost(s, NULL, in, NULL, scaled, size, scale_idx,
-                                         cb, 0.0f, uplim, &_bits, rtz);
+                                         cb, 0.0f, uplim, &auxbits, energy, rtz);
     if (bits) {
-        *bits = _bits;
+        *bits = auxbits;
     }
-    return _bits;
+    return auxbits;
 }
 
 static inline void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
@@ -268,7 +275,7 @@ static inline void quantize_and_encode_band(struct AACEncContext *s, PutBitConte
                                             int cb, const float lambda, int rtz)
 {
     quantize_and_encode_band_cost(s, pb, in, out, NULL, size, scale_idx, cb, lambda,
-                                  INFINITY, NULL, rtz);
+                                  INFINITY, NULL, NULL, rtz);
 }
 
 #endif /* AVCODEC_AACENC_QUANTIZATION_H */

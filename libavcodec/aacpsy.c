@@ -158,6 +158,7 @@ typedef struct AacPsyContext{
     } pe;
     AacPsyCoeffs psy_coef[2][64];
     AacPsyChannel *ch;
+    float global_quality; ///< normalized global quality taken from avctx
 }AacPsyContext;
 
 /**
@@ -300,7 +301,8 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     float bark;
     int i, j, g, start;
     float prev, minscale, minath, minsnr, pe_min;
-    const int chan_bitrate = ctx->avctx->bit_rate / ctx->avctx->channels;
+    int chan_bitrate = ctx->avctx->bit_rate / ((ctx->avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : ctx->avctx->channels);
+
     const int bandwidth    = ctx->avctx->cutoff ? ctx->avctx->cutoff : AAC_CUTOFF(ctx->avctx);
     const float num_bark   = calc_bark((float)bandwidth);
 
@@ -308,9 +310,15 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     if (!ctx->model_priv_data)
         return AVERROR(ENOMEM);
     pctx = (AacPsyContext*) ctx->model_priv_data;
+    pctx->global_quality = (ctx->avctx->global_quality ? ctx->avctx->global_quality : 120) * 0.01f;
+
+    if (ctx->avctx->flags & CODEC_FLAG_QSCALE) {
+        /* Use the target average bitrate to compute spread parameters */
+        chan_bitrate = (int)(chan_bitrate / 120.0 * (ctx->avctx->global_quality ? ctx->avctx->global_quality : 120));
+    }
 
     pctx->chan_bitrate = chan_bitrate;
-    pctx->frame_bits   = chan_bitrate * AAC_BLOCK_SIZE_LONG / ctx->avctx->sample_rate;
+    pctx->frame_bits   = FFMIN(2560, chan_bitrate * AAC_BLOCK_SIZE_LONG / ctx->avctx->sample_rate);
     pctx->pe.min       =  8.0f * AAC_BLOCK_SIZE_LONG * bandwidth / (ctx->avctx->sample_rate * 2.0f);
     pctx->pe.max       = 12.0f * AAC_BLOCK_SIZE_LONG * bandwidth / (ctx->avctx->sample_rate * 2.0f);
     ctx->bitres.size   = 6144 - pctx->frame_bits;
@@ -398,7 +406,7 @@ static av_unused FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
                                                  int channel, int prev_type)
 {
     int i, j;
-    int br               = ctx->avctx->bit_rate / ctx->avctx->channels;
+    int br               = ((AacPsyContext*)ctx->model_priv_data)->chan_bitrate;
     int attack_ratio     = br <= 16000 ? 18 : 10;
     AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
     AacPsyChannel *pch  = &pctx->ch[channel];
@@ -508,7 +516,12 @@ static int calc_bit_demand(AacPsyContext *ctx, float pe, int bits, int size,
     ctx->pe.max = FFMAX(pe, ctx->pe.max);
     ctx->pe.min = FFMIN(pe, ctx->pe.min);
 
-    return FFMIN(ctx->frame_bits * bit_factor, ctx->frame_bits + size - bits);
+    /* NOTE: allocate a minimum of 1/8th average frame bits, to avoid
+     *   reservoir starvation from producing zero-bit frames
+     */
+    return FFMIN(
+        ctx->frame_bits * bit_factor,
+        FFMAX(ctx->frame_bits + size - bits, ctx->frame_bits / 8));
 }
 
 static float calc_pe_3gpp(AacPsyBand *band)
@@ -678,15 +691,34 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
 
     /* 5.6.1.3.2 "Calculation of the desired perceptual entropy" */
     ctx->ch[channel].entropy = pe;
-    desired_bits = calc_bit_demand(pctx, pe, ctx->bitres.bits, ctx->bitres.size, wi->num_windows == 8);
-    desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits);
-    /* NOTE: PE correction is kept simple. During initial testing it had very
-     *       little effect on the final bitrate. Probably a good idea to come
-     *       back and do more testing later.
-     */
-    if (ctx->bitres.bits > 0)
-        desired_pe *= av_clipf(pctx->pe.previous / PSY_3GPP_BITS_TO_PE(ctx->bitres.bits),
-                               0.85f, 1.15f);
+    if (ctx->avctx->flags & CODEC_FLAG_QSCALE) {
+        /* (2.5 * 120) achieves almost transparent rate, and we want to give
+         * ample room downwards, so we make that equivalent to QSCALE=2.4
+         */
+        desired_pe = pe * (ctx->avctx->global_quality ? ctx->avctx->global_quality : 120) / (2 * 2.5f * 120.0f);
+        desired_bits = FFMIN(2560, PSY_3GPP_PE_TO_BITS(desired_pe));
+        desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits); // reflect clipping
+
+        /* PE slope smoothing */
+        if (ctx->bitres.bits > 0) {
+            desired_bits = FFMIN(2560, PSY_3GPP_PE_TO_BITS(desired_pe));
+            desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits); // reflect clipping
+        }
+
+        pctx->pe.max = FFMAX(pe, pctx->pe.max);
+        pctx->pe.min = FFMIN(pe, pctx->pe.min);
+    } else {
+        desired_bits = calc_bit_demand(pctx, pe, ctx->bitres.bits, ctx->bitres.size, wi->num_windows == 8);
+        desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits);
+
+        /* NOTE: PE correction is kept simple. During initial testing it had very
+         *       little effect on the final bitrate. Probably a good idea to come
+         *       back and do more testing later.
+         */
+        if (ctx->bitres.bits > 0)
+            desired_pe *= av_clipf(pctx->pe.previous / PSY_3GPP_BITS_TO_PE(ctx->bitres.bits),
+                                   0.85f, 1.15f);
+    }
     pctx->pe.previous = PSY_3GPP_BITS_TO_PE(desired_bits);
     ctx->bitres.alloc = desired_bits;
 

@@ -22,7 +22,7 @@
 /**
  * @file
  * AAC encoder twoloop coder
- * @author Konstantin Shishkov
+ * @author Konstantin Shishkov, Claudio Freire
  */
 
 /**
@@ -34,6 +34,7 @@
  *  - abs_pow34_v
  *  - find_max_val
  *  - find_min_book
+ *  - find_form_factor
  */
 
 #ifndef AVCODEC_AACCODER_TWOLOOP_H
@@ -41,6 +42,7 @@
 
 #include <float.h>
 #include "libavutil/mathematics.h"
+#include "mathops.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "aac.h"
@@ -49,6 +51,16 @@
 #include "aacenctab.h"
 #include "aac_tablegen_decl.h"
 
+/** Frequency in Hz for lower limit of noise substitution **/
+#define NOISE_LOW_LIMIT 4000
+
+#define sclip(x) av_clip(x,60,218)
+
+/* Reflects the cost to change codebooks */
+static inline int ff_pns_bits(SingleChannelElement *sce, int w, int g)
+{
+    return (!g || !sce->zeroes[w*16+g-1] || !sce->can_pns[w*16+g-1]) ? 9 : 5;
+}
 
 /**
  * two-loop quantizers search taken from ISO 13818-7 Appendix C
@@ -58,50 +70,219 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                           SingleChannelElement *sce,
                                           const float lambda)
 {
-    int start = 0, i, w, w2, g;
-    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels * (lambda / 120.f);
-    float dists[128] = { 0 }, uplims[128] = { 0 };
-    float maxvals[128];
-    int fflag, minscaler;
-    int its  = 0;
-    int allz = 0;
-    float minthr = INFINITY;
+    int start = 0, i, w, w2, g, recomprd;
+    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
+        / ((avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        * (lambda / 120.f);
+    int refbits = destbits;
+    int toomanybits, toofewbits;
+    char nzs[128];
+    int maxsf[128];
+    float dists[128] = { 0 }, qenergies[128] = { 0 }, uplims[128], euplims[128], energies[128];
+    float maxvals[128], spread_thr_r[128];
+    float min_spread_thr_r, max_spread_thr_r;
 
-    // for values above this the decoder might end up in an endless loop
-    // due to always having more bits than what can be encoded.
+    /**
+     * rdlambda controls the maximum tolerated distortion. Twoloop
+     * will keep iterating until it fails to lower it or it reaches
+     * ulimit * rdlambda. Keeping it low increases quality on difficult
+     * signals, but lower it too much, and bits will be taken from weak
+     * signals, creating "holes". A balance is necesary.
+     * rdmax and rdmin specify the relative deviation from rdlambda
+     * allowed for tonality compensation
+     */
+    float rdlambda = av_clipf(2.0f * 120.f / lambda, 0.0625f, 16.0f);
+    const float nzslope = 1.5f;
+    float rdmin = 0.03125f;
+    float rdmax = 1.0f;
+
+    /**
+     * sfoffs controls an offset of optmium allocation that will be
+     * applied based on lambda. Keep it real and modest, the loop
+     * will take care of the rest, this just accelerates convergence
+     */
+    float sfoffs = av_clipf(log2f(120.0f / lambda) * 4.0f, -5, 10);
+
+    int fflag, minscaler, maxscaler, nminscaler, minrdsf;
+    int its  = 0;
+    int maxits = 30;
+    int allz = 0;
+    int tbits;
+    int cutoff = 1024;
+    int pns_start_pos;
+    int prev;
+
+    /**
+     * zeroscale controls a multiplier of the threshold, if band energy
+     * is below this, a zero is forced. Keep it lower than 1, unless
+     * low lambda is used, because energy < threshold doesn't mean there's
+     * no audible signal outright, it's just energy. Also make it rise
+     * slower than rdlambda, as rdscale has due compensation with
+     * noisy band depriorization below, whereas zeroing logic is rather dumb
+     */
+    float zeroscale;
+    if (lambda > 120.f) {
+        zeroscale = av_clipf(powf(120.f / lambda, 0.25f), 0.0625f, 1.0f);
+    } else {
+        zeroscale = 1.f;
+    }
+
+    if (s->psy.bitres.alloc >= 0) {
+        /**
+         * Psy granted us extra bits to use, from the reservoire
+         * adjust for lambda except what psy already did
+         */
+        destbits = s->psy.bitres.alloc
+            * (lambda / (avctx->global_quality ? avctx->global_quality : 120));
+    }
+
+    if (avctx->flags & CODEC_FLAG_QSCALE) {
+        /**
+         * Constant Q-scale doesn't compensate MS coding on its own
+         * No need to be overly precise, this only controls RD
+         * adjustment CB limits when going overboard
+         */
+        if (s->options.stereo_mode && s->cur_type == TYPE_CPE)
+            destbits *= 2;
+
+        /**
+         * When using a constant Q-scale, don't adjust bits, just use RD
+         * Don't let it go overboard, though... 8x psy target is enough
+         */
+        toomanybits = 5800;
+        toofewbits = destbits / 16;
+
+        /** Don't offset scalers, just RD */
+        sfoffs = sce->ics.num_windows - 1;
+        rdlambda = sqrtf(rdlambda);
+
+        /** search further */
+        maxits *= 2;
+    } else {
+        /** When using ABR, be strict */
+        toomanybits = destbits + destbits/16;
+        toofewbits = destbits - destbits/4;
+
+        sfoffs = 0;
+        rdlambda = sqrtf(rdlambda);
+    }
+
+    /** and zero out above cutoff frequency */
+    {
+        int wlen = 1024 / sce->ics.num_windows;
+        int bandwidth;
+
+        /**
+         * Scale, psy gives us constant quality, this LP only scales
+         * bitrate by lambda, so we save bits on subjectively unimportant HF
+         * rather than increase quantization noise. Adjust nominal bitrate
+         * to effective bitrate according to encoding parameters,
+         * AAC_CUTOFF_FROM_BITRATE is calibrated for effective bitrate.
+         */
+        float rate_bandwidth_multiplier = 1.5f;
+        int frame_bit_rate = (avctx->flags & CODEC_FLAG_QSCALE)
+            ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
+            : (avctx->bit_rate / avctx->channels);
+
+        /** Compensate for extensions that increase efficiency */
+        if (s->options.pns || s->options.intensity_stereo)
+            frame_bit_rate *= 1.15f;
+
+        if (avctx->cutoff > 0) {
+            bandwidth = avctx->cutoff;
+        } else {
+            bandwidth = FFMAX(3000, AAC_CUTOFF_FROM_BITRATE(frame_bit_rate, 1, avctx->sample_rate));
+        }
+
+        cutoff = bandwidth * 2 * wlen / avctx->sample_rate;
+        pns_start_pos = NOISE_LOW_LIMIT * 2 * wlen / avctx->sample_rate;
+    }
+
+    /**
+     * for values above this the decoder might end up in an endless loop
+     * due to always having more bits than what can be encoded.
+     */
     destbits = FFMIN(destbits, 5800);
-    //XXX: some heuristic to determine initial quantizers will reduce search time
-    //determine zero bands and upper limits
+    toomanybits = FFMIN(toomanybits, 5800);
+    toofewbits = FFMIN(toofewbits, 5800);
+    /**
+     * XXX: some heuristic to determine initial quantizers will reduce search time
+     * determine zero bands and upper distortion limits
+     */
+    min_spread_thr_r = -1;
+    max_spread_thr_r = -1;
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = start = 0;  g < sce->ics.num_swb; start += sce->ics.swb_sizes[g++]) {
             int nz = 0;
-            float uplim = 0.0f, energy = 0.0f;
+            float uplim = 0.0f, energy = 0.0f, spread = 0.0f;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                uplim  += band->threshold;
-                energy += band->energy;
-                if (band->energy <= band->threshold || band->threshold == 0.0f) {
+                if (start >= cutoff || band->energy <= (band->threshold * zeroscale) || band->threshold == 0.0f) {
                     sce->zeroes[(w+w2)*16+g] = 1;
                     continue;
                 }
                 nz = 1;
             }
-            uplims[w*16+g] = uplim *512;
+            if (!nz) {
+                uplim = 0.0f;
+            } else {
+                nz = 0;
+                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                    FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
+                    if (band->energy <= (band->threshold * zeroscale) || band->threshold == 0.0f)
+                        continue;
+                    uplim += band->threshold;
+                    energy += band->energy;
+                    spread += band->spread;
+                    nz++;
+                }
+            }
+            uplims[w*16+g] = uplim;
+            energies[w*16+g] = energy;
+            nzs[w*16+g] = nz;
             sce->zeroes[w*16+g] = !nz;
-            if (nz)
-                minthr = FFMIN(minthr, uplim);
             allz |= nz;
+            if (nz) {
+                spread_thr_r[w*16+g] = energy * nz / (uplim * spread);
+                if (min_spread_thr_r < 0) {
+                    min_spread_thr_r = max_spread_thr_r = spread_thr_r[w*16+g];
+                } else {
+                    min_spread_thr_r = FFMIN(min_spread_thr_r, spread_thr_r[w*16+g]);
+                    max_spread_thr_r = FFMAX(max_spread_thr_r, spread_thr_r[w*16+g]);
+                }
+            }
         }
     }
+
+    /** Compute initial scalers */
+    minscaler = 65535;
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         for (g = 0;  g < sce->ics.num_swb; g++) {
             if (sce->zeroes[w*16+g]) {
                 sce->sf_idx[w*16+g] = SCALE_ONE_POS;
                 continue;
             }
-            sce->sf_idx[w*16+g] = SCALE_ONE_POS + FFMIN(log2f(uplims[w*16+g]/minthr)*4,59);
+            /**
+             * log2f-to-distortion ratio is, technically, 2 (1.5db = 4, but it's power vs level so it's 2).
+             * But, as offsets are applied, low-frequency signals are too sensitive to the induced distortion,
+             * so we make scaling more conservative by choosing a lower log2f-to-distortion ratio, and thus
+             * more robust.
+             */
+            sce->sf_idx[w*16+g] = av_clip(
+                SCALE_ONE_POS
+                    + 1.75*log2f(FFMAX(0.00125f,uplims[w*16+g]) / sce->ics.swb_sizes[g])
+                    + sfoffs,
+                60, SCALE_MAX_POS);
+            minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
         }
     }
+
+    /** Clip */
+    minscaler = av_clip(minscaler, SCALE_ONE_POS - SCALE_DIV_512, SCALE_MAX_POS - SCALE_DIV_512);
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w])
+        for (g = 0;  g < sce->ics.num_swb; g++)
+            if (!sce->zeroes[w*16+g])
+                sce->sf_idx[w*16+g] = av_clip(sce->sf_idx[w*16+g], minscaler, minscaler + SCALE_MAX_DIFF - 1);
 
     if (!allz)
         return;
@@ -116,15 +297,66 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         }
     }
 
+    /**
+     * Scale uplims to match rate distortion to quality
+     * bu applying noisy band depriorization and tonal band priorization.
+     * Maxval-energy ratio gives us an idea of how noisy/tonal the band is.
+     * If maxval^2 ~ energy, then that band is mostly noise, and we can relax
+     * rate distortion requirements.
+     */
+    memcpy(euplims, uplims, sizeof(euplims));
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+        /** psy already priorizes transients to some extent */
+        float de_psy_factor = (sce->ics.num_windows > 1) ? 8.0f / sce->ics.group_len[w] : 1.0f;
+        start = w*128;
+        for (g = 0;  g < sce->ics.num_swb; g++) {
+            if (nzs[g] > 0) {
+                float cleanup_factor = ff_sqrf(av_clipf(start / (cutoff * 0.75f), 1.0f, 2.0f));
+                float energy2uplim = find_form_factor(
+                    sce->ics.group_len[w], sce->ics.swb_sizes[g],
+                    uplims[w*16+g] / (nzs[g] * sce->ics.swb_sizes[w]),
+                    sce->coeffs + start,
+                    nzslope * cleanup_factor);
+                energy2uplim *= de_psy_factor;
+                if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+                    /** In ABR, we need to priorize less and let rate control do its thing */
+                    energy2uplim = sqrtf(energy2uplim);
+                }
+                energy2uplim = FFMAX(0.015625f, FFMIN(1.0f, energy2uplim));
+                uplims[w*16+g] *= av_clipf(rdlambda * energy2uplim, rdmin, rdmax)
+                                  * sce->ics.group_len[w];
+
+                energy2uplim = find_form_factor(
+                    sce->ics.group_len[w], sce->ics.swb_sizes[g],
+                    uplims[w*16+g] / (nzs[g] * sce->ics.swb_sizes[w]),
+                    sce->coeffs + start,
+                    2.0f);
+                energy2uplim *= de_psy_factor;
+                if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+                    /** In ABR, we need to priorize less and let rate control do its thing */
+                    energy2uplim = sqrtf(energy2uplim);
+                }
+                energy2uplim = FFMAX(0.015625f, FFMIN(1.0f, energy2uplim));
+                euplims[w*16+g] *= av_clipf(rdlambda * energy2uplim * sce->ics.group_len[w],
+                    0.5f, 1.0f);
+            }
+            start += sce->ics.swb_sizes[g];
+        }
+    }
+
+    for (i = 0; i < sizeof(maxsf) / sizeof(maxsf[0]); ++i)
+        maxsf[i] = SCALE_MAX_POS;
+
     //perform two-loop search
     //outer loop - improve quality
     do {
-        int tbits, qstep;
-        minscaler = sce->sf_idx[0];
         //inner loop - quantize spectrum to fit into given number of bits
-        qstep = its ? 1 : 32;
+        int overdist;
+        int qstep = its ? 1 : 32;
         do {
-            int prev = -1;
+            int changed = 0;
+            prev = -1;
+            recomprd = 0;
             tbits = 0;
             for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
                 start = w*128;
@@ -134,15 +366,20 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     int bits = 0;
                     int cb;
                     float dist = 0.0f;
+                    float qenergy = 0.0f;
 
                     if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
                         start += sce->ics.swb_sizes[g];
+                        if (sce->can_pns[w*16+g]) {
+                            /** PNS isn't free */
+                            tbits += ff_pns_bits(sce, w, g);
+                        }
                         continue;
                     }
-                    minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
                     cb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
                     for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                         int b;
+                        float sqenergy;
                         dist += quantize_band_cost(s, coefs + w2*128,
                                                    scaled + w2*128,
                                                    sce->ics.swb_sizes[g],
@@ -150,54 +387,316 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                                    cb,
                                                    1.0f,
                                                    INFINITY,
-                                                   &b,
+                                                   &b, &sqenergy,
                                                    0);
                         bits += b;
+                        qenergy += sqenergy;
                     }
                     dists[w*16+g] = dist - bits;
+                    qenergies[w*16+g] = qenergy;
                     if (prev != -1) {
-                        bits += ff_aac_scalefactor_bits[sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO];
+                        int sfdiff = av_clip(sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO, 0, 2*SCALE_MAX_DIFF);
+                        bits += ff_aac_scalefactor_bits[sfdiff];
                     }
                     tbits += bits;
                     start += sce->ics.swb_sizes[g];
                     prev = sce->sf_idx[w*16+g];
                 }
             }
-            if (tbits > destbits) {
-                for (i = 0; i < 128; i++)
-                    if (sce->sf_idx[i] < 218 - qstep)
-                        sce->sf_idx[i] += qstep;
-            } else {
-                for (i = 0; i < 128; i++)
-                    if (sce->sf_idx[i] > 60 - qstep)
-                        sce->sf_idx[i] -= qstep;
+            if (tbits > toomanybits) {
+                recomprd = 1;
+                for (i = 0; i < 128; i++) {
+                    if (sce->sf_idx[i] < (SCALE_MAX_POS - SCALE_DIV_512)) {
+                        int maxsf_i = (tbits > 5800) ? SCALE_MAX_POS : maxsf[i];
+                        int new_sf = FFMIN(maxsf_i, sce->sf_idx[i] + qstep);
+                        if (new_sf != sce->sf_idx[i]) {
+                            sce->sf_idx[i] = new_sf;
+                            changed = 1;
+                        }
+                    }
+                }
+            } else if (tbits < toofewbits) {
+                recomprd = 1;
+                for (i = 0; i < 128; i++) {
+                    if (sce->sf_idx[i] > SCALE_ONE_POS) {
+                        int new_sf = FFMAX(SCALE_ONE_POS, sce->sf_idx[i] - qstep);
+                        if (new_sf != sce->sf_idx[i]) {
+                            sce->sf_idx[i] = new_sf;
+                            changed = 1;
+                        }
+                    }
+                }
             }
             qstep >>= 1;
-            if (!qstep && tbits > destbits*1.02 && sce->sf_idx[0] < 217)
+            if (!qstep && tbits > toomanybits && sce->sf_idx[0] < 217 && changed)
                 qstep = 1;
         } while (qstep);
 
-        fflag = 0;
-        minscaler = av_clip(minscaler, 60, 255 - SCALE_MAX_DIFF);
+        overdist = 1;
+        for (i = 0; i < 2 && (overdist || recomprd); ++i) {
+            if (recomprd) {
+                /** Must recompute distortion */
+                prev = -1;
+                tbits = 0;
+                for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+                    start = w*128;
+                    for (g = 0;  g < sce->ics.num_swb; g++) {
+                        const float *coefs = sce->coeffs + start;
+                        const float *scaled = s->scoefs + start;
+                        int bits = 0;
+                        int cb;
+                        float dist = 0.0f;
+                        float qenergy = 0.0f;
 
+                        if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
+                            start += sce->ics.swb_sizes[g];
+                            if (sce->can_pns[w*16+g]) {
+                                /** PNS isn't free */
+                                tbits += ff_pns_bits(sce, w, g);
+                            }
+                            continue;
+                        }
+                        cb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
+                        for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                            int b;
+                            float sqenergy;
+                            dist += quantize_band_cost(s, coefs + w2*128,
+                                                    scaled + w2*128,
+                                                    sce->ics.swb_sizes[g],
+                                                    sce->sf_idx[w*16+g],
+                                                    cb,
+                                                    1.0f,
+                                                    INFINITY,
+                                                    &b, &sqenergy,
+                                                    0);
+                            bits += b;
+                            qenergy += sqenergy;
+                        }
+                        dists[w*16+g] = dist - bits;
+                        qenergies[w*16+g] = qenergy;
+                        if (prev != -1) {
+                            int sfdiff = av_clip(sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO, 0, 2*SCALE_MAX_DIFF);
+                            bits += ff_aac_scalefactor_bits[sfdiff];
+                        }
+                        tbits += bits;
+                        start += sce->ics.swb_sizes[g];
+                        prev = sce->sf_idx[w*16+g];
+                    }
+                }
+            }
+            if (!i && s->options.pns && its > maxits/2) {
+                float maxoverdist = 0.0f;
+                overdist = recomprd = 0;
+                for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+                    float ovrfactor = 2.f+(maxits-its)*16.f/maxits;
+                    for (g = start = 0;  g < sce->ics.num_swb; start += sce->ics.swb_sizes[g++]) {
+                        if (!sce->zeroes[w*16+g] && dists[w*16+g] > uplims[w*16+g]*ovrfactor) {
+                            float ovrdist = dists[w*16+g] / FFMAX(uplims[w*16+g],euplims[w*16+g]);
+                            maxoverdist = FFMAX(maxoverdist, ovrdist);
+                            overdist++;
+                        }
+                    }
+                }
+                if (overdist) {
+                    /* We have overdistorted bands, trade for zeroes (that can be noise)
+                     * Zero the bands in the lowest 1.25% spread-energy-threshold ranking
+                     */
+                    float minspread = max_spread_thr_r;
+                    float maxspread = min_spread_thr_r;
+                    float zspread;
+                    int zeroable = 0;
+                    int zeroed = 0;
+                    int maxzeroed;
+                    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+                        for (g = start = 0;  g < sce->ics.num_swb; start += sce->ics.swb_sizes[g++]) {
+                            if (start >= pns_start_pos && !sce->zeroes[w*16+g] && sce->can_pns[w*16+g]) {
+                                minspread = FFMIN(minspread, spread_thr_r[w*16+g]);
+                                maxspread = FFMAX(maxspread, spread_thr_r[w*16+g]);
+                                zeroable++;
+                            }
+                        }
+                    }
+                    zspread = (maxspread-minspread) * 0.0125f + minspread;
+                    zspread = FFMIN(maxoverdist, zspread);
+                    maxzeroed = zeroable * its / (2 * maxits);
+                    for (g = sce->ics.num_swb-1; g > 0 && zeroed < maxzeroed; g--) {
+                        if (sce->ics.swb_offset[g] < pns_start_pos)
+                            continue;
+                        for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+                            if (!sce->zeroes[w*16+g] && sce->can_pns[w*16+g] && spread_thr_r[w*16+g] <= zspread) {
+                                sce->zeroes[w*16+g] = 1;
+                                sce->band_type[w*16+g] = 0;
+                                zeroed++;
+                            }
+                        }
+                    }
+                    if (zeroed)
+                        recomprd = 1;
+                } else {
+                    overdist = 0;
+                }
+            }
+        }
+
+        minscaler = SCALE_MAX_POS;
+        maxscaler = 0;
         for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+            for (g = 0;  g < sce->ics.num_swb; g++) {
+                if (!sce->zeroes[w*16+g]) {
+                    minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
+                    maxscaler = FFMAX(maxscaler, sce->sf_idx[w*16+g]);
+                }
+            }
+        }
+
+        fflag = 0;
+        minscaler = nminscaler = av_clip(minscaler, SCALE_ONE_POS - SCALE_DIV_512, SCALE_MAX_POS - SCALE_DIV_512);
+        minrdsf = FFMAX3(60, minscaler - 1, maxscaler - SCALE_MAX_DIFF - 1);
+        for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+            /** Start with big steps, end up fine-tunning */
+            int depth = (its > maxits/2) ? ((its > maxits*2/3) ? 1 : 3) : 10;
+            int edepth = depth+2;
+            float uplmax = its / (maxits*0.25f) + 1.0f;
+            uplmax *= (tbits > destbits) ? FFMIN(2.0f, tbits / (float)FFMAX(1,destbits)) : 1.0f;
+            start = w * 128;
             for (g = 0; g < sce->ics.num_swb; g++) {
                 int prevsc = sce->sf_idx[w*16+g];
-                if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
-                    if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
-                        sce->sf_idx[w*16+g]--;
-                    else //Try to make sure there is some energy in every band
-                        sce->sf_idx[w*16+g]-=2;
+                int minrdsfboost = (sce->ics.num_windows > 1) ? av_clip(g-4, -2, 0) : av_clip(g-16, -4, 0);
+                if (!sce->zeroes[w*16+g]) {
+                    const float *coefs = sce->coeffs + start;
+                    const float *scaled = s->scoefs + start;
+                    int cmb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
+                    if ((!cmb || dists[w*16+g] > uplims[w*16+g]) && sce->sf_idx[w*16+g] > minrdsf) {
+                        /* Try to make sure there is some energy in every nonzero band
+                         * NOTE: This algorithm must be forcibly imbalanced, pushing harder
+                         *  on holes or more distorted bands at first, otherwise there's
+                         *  no net gain (since the next iteration will offset all bands
+                         *  on the opposite direction to compensate for extra bits)
+                         */
+                        for (i = 0; i < edepth; ++i) {
+                            int cb, bits;
+                            float dist, qenergy;
+                            int mb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1);
+                            cb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
+                            dist = qenergy = 0.f;
+                            bits = 0;
+                            if (!cb) {
+                                maxsf[w*16+g] = FFMIN(sce->sf_idx[w*16+g]-1, maxsf[w*16+g]);
+                            } else if (i >= depth && dists[w*16+g] < euplims[w*16+g]) {
+                                break;
+                            }
+                            for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                                int b;
+                                float sqenergy;
+                                dist += quantize_band_cost(s, coefs + w2*128,
+                                                        scaled + w2*128,
+                                                        sce->ics.swb_sizes[g],
+                                                        sce->sf_idx[w*16+g]-1,
+                                                        cb,
+                                                        1.0f,
+                                                        INFINITY,
+                                                        &b, &sqenergy,
+                                                        0);
+                                bits += b;
+                                qenergy += sqenergy;
+                            }
+                            sce->sf_idx[w*16+g]--;
+                            dists[w*16+g] = dist - bits;
+                            qenergies[w*16+g] = qenergy;
+                            if (mb && (sce->sf_idx[w*16+g] < (minrdsf+minrdsfboost) || (
+                                    (dists[w*16+g] < FFMIN(uplmax*uplims[w*16+g], euplims[w*16+g]))
+                                    && (fabsf(qenergies[w*16+g]-energies[w*16+g]) < euplims[w*16+g])
+                                ) )) {
+                                break;
+                            }
+                        }
+                    } else if (tbits > toofewbits && sce->sf_idx[w*16+g] < maxscaler
+                            && (dists[w*16+g] < FFMIN(euplims[w*16+g], uplims[w*16+g]))
+                            && (fabsf(qenergies[w*16+g]-energies[w*16+g]) < euplims[w*16+g])
+                        ) {
+                        /** Um... over target. Save bits for more important stuff. */
+                        for (i = 0; i < depth; ++i) {
+                            int cb, bits;
+                            float dist, qenergy;
+                            cb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]+1);
+                            if (cb > 0) {
+                                dist = qenergy = 0.f;
+                                bits = 0;
+                                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                                    int b;
+                                    float sqenergy;
+                                    dist += quantize_band_cost(s, coefs + w2*128,
+                                                            scaled + w2*128,
+                                                            sce->ics.swb_sizes[g],
+                                                            sce->sf_idx[w*16+g]+1,
+                                                            cb,
+                                                            1.0f,
+                                                            INFINITY,
+                                                            &b, &sqenergy,
+                                                            0);
+                                    bits += b;
+                                    qenergy += sqenergy;
+                                }
+                                dist -= bits;
+                                if (dist < FFMIN(euplims[w*16+g], uplims[w*16+g])) {
+                                    sce->sf_idx[w*16+g]++;
+                                    dists[w*16+g] = dist;
+                                    qenergies[w*16+g] = qenergy;
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                maxsf[w*16+g] = FFMIN(sce->sf_idx[w*16+g], maxsf[w*16+g]);
+                                break;
+                            }
+                        }
+                    }
                 }
-                sce->sf_idx[w*16+g] = av_clip(sce->sf_idx[w*16+g], minscaler, minscaler + SCALE_MAX_DIFF);
-                sce->sf_idx[w*16+g] = FFMIN(sce->sf_idx[w*16+g], 219);
+                sce->sf_idx[w*16+g] = av_clip(sce->sf_idx[w*16+g], minrdsf, minscaler + SCALE_MAX_DIFF);
+                sce->sf_idx[w*16+g] = FFMIN(sce->sf_idx[w*16+g], SCALE_MAX_POS - SCALE_DIV_512);
                 if (sce->sf_idx[w*16+g] != prevsc)
                     fflag = 1;
+                nminscaler = FFMIN(nminscaler, sce->sf_idx[w*16+g]);
                 sce->band_type[w*16+g] = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
+                start += sce->ics.swb_sizes[g];
+            }
+        }
+        if (nminscaler < minscaler || sce->ics.num_windows > 1) {
+            /** SF difference limit violation risk. Must re-clamp. */
+            minscaler = nminscaler;
+            for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+                for (g = 0; g < sce->ics.num_swb; g++) {
+                    sce->sf_idx[w*16+g] = av_clip(sce->sf_idx[w*16+g], minscaler, minscaler + SCALE_MAX_DIFF);
+                    sce->band_type[w*16+g] = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
+                }
             }
         }
         its++;
-    } while (fflag && its < 10);
+    } while (fflag && its < maxits);
+
+    prev = -1;
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+        /** Make sure proper codebooks are set */
+        for (g = start = 0; g < sce->ics.num_swb; start += sce->ics.swb_sizes[g++]) {
+            if (!sce->zeroes[w*16+g]) {
+                sce->band_type[w*16+g] = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
+                if (sce->band_type[w*16+g] <= 0) {
+                    sce->zeroes[w*16+g] = 1;
+                    sce->band_type[w*16+g] = 0;
+                }
+            } else {
+                sce->band_type[w*16+g] = 0;
+            }
+            /** Check that there's no SF delta range violations */
+            if (!sce->zeroes[w*16+g]) {
+                if (prev != -1) {
+                    int sfdiff = sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO;
+                    av_assert1(sfdiff >= 0 && sfdiff <= 2*SCALE_MAX_DIFF);
+                }
+                prev = sce->sf_idx[w*16+g];
+            }
+        }
+    }
 }
 
 #endif /* AVCODEC_AACCODER_TWOLOOP_H */

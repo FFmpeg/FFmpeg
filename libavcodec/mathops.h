@@ -233,6 +233,11 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 }
 #endif
 
+static inline av_const float ff_sqrf(float a)
+{
+    return a*a;
+}
+
 static inline int8_t ff_u8_to_s8(uint8_t a)
 {
     union {

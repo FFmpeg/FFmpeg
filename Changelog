@@ -17,6 +17,8 @@ version <next>:
 - chromaprint fingerprinting muxer
 - ffplay dynamic volume control
 - displace filter
+- selectivecolor filter
+- extensive native AAC encoder improvements
 
 
 version 2.8:

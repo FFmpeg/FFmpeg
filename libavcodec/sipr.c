@@ -537,7 +537,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR,
                "Error processing packet: packet size (%d) too small\n",
                avpkt->size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* get output buffer */

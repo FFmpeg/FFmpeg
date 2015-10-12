@@ -969,10 +969,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                                AVFrame *p)
 {
     size_t x, y;
-    uint8_t *buffer = av_malloc(s->image_linesize * s->height);
-
-    if (!buffer)
-        return AVERROR(ENOMEM);
+    uint8_t *buffer;
 
     if (s->blend_op == APNG_BLEND_OP_OVER &&
         avctx->pix_fmt != AV_PIX_FMT_RGBA &&
@@ -982,6 +979,11 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                               av_get_pix_fmt_name(avctx->pix_fmt));
         return AVERROR_PATCHWELCOME;
     }
+
+    buffer = av_malloc_array(s->image_linesize, s->height);
+    if (!buffer)
+        return AVERROR(ENOMEM);
+
 
     // Do the disposal operation specified by the last frame on the frame
     if (s->last_dispose_op != APNG_DISPOSE_OP_PREVIOUS) {

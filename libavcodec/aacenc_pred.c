@@ -271,7 +271,7 @@ void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
         abs_pow34_v(O34, &sce->coeffs[start_coef], num_coeffs);
         dist1 = quantize_and_encode_band_cost(s, NULL, &sce->coeffs[start_coef], NULL,
                                               O34, num_coeffs, sce->sf_idx[sfb],
-                                              cb_n, s->lambda / band->threshold, INFINITY, &cost1, 0);
+                                              cb_n, s->lambda / band->threshold, INFINITY, &cost1, NULL, 0);
         cost_coeffs += cost1;
 
         /* Encoded coefficients - needed for #bits, band type and quant. error */
@@ -284,7 +284,7 @@ void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
             cb_p = cb_n;
         quantize_and_encode_band_cost(s, NULL, SENT, QERR, S34, num_coeffs,
                                       sce->sf_idx[sfb], cb_p, s->lambda / band->threshold, INFINITY,
-                                      &cost2, 0);
+                                      &cost2, NULL, 0);
 
         /* Reconstructed coefficients - needed for distortion measurements */
         for (i = 0; i < num_coeffs; i++)
@@ -296,7 +296,7 @@ void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
             cb_p = cb_n;
         dist2 = quantize_and_encode_band_cost(s, NULL, &sce->prcoeffs[start_coef], NULL,
                                               P34, num_coeffs, sce->sf_idx[sfb],
-                                              cb_p, s->lambda / band->threshold, INFINITY, NULL, 0);
+                                              cb_p, s->lambda / band->threshold, INFINITY, NULL, NULL, 0);
         for (i = 0; i < num_coeffs; i++)
             dist_spec_err += (O34[i] - P34[i])*(O34[i] - P34[i]);
         dist_spec_err *= s->lambda / band->threshold;
