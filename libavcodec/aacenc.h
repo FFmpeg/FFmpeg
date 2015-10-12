@@ -94,7 +94,7 @@ typedef struct AACEncContext {
     FFTContext mdct1024;                         ///< long (1024 samples) frame transform context
     FFTContext mdct128;                          ///< short (128 samples) frame transform context
     AVFloatDSPContext *fdsp;
-    float *planar_samples[6];                    ///< saved preprocessed input
+    float *planar_samples[8];                    ///< saved preprocessed input
 
     int profile;                                 ///< copied from avctx
     LPCContext lpc;                              ///< used by TNS
