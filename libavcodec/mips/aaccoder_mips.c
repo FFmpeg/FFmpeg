@@ -63,6 +63,7 @@
 #include "libavcodec/aacenc.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/aacenctab.h"
+#include "libavcodec/aacenc_utils.h"
 
 #if HAVE_INLINE_ASM
 typedef struct BandCodingPath {
@@ -129,62 +130,6 @@ static const uint8_t esc_sign_bits[289] = {
     1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
     1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 };
-
-#define ROUND_STANDARD 0.4054f
-#define ROUND_TO_ZERO 0.1054f
-
-static void abs_pow34_v(float *out, const float *in, const int size) {
-#ifndef USE_REALLY_FULL_SEARCH
-    int i;
-    float a, b, c, d;
-    float ax, bx, cx, dx;
-
-    for (i = 0; i < size; i += 4) {
-        a = fabsf(in[i  ]);
-        b = fabsf(in[i+1]);
-        c = fabsf(in[i+2]);
-        d = fabsf(in[i+3]);
-
-        ax = sqrtf(a);
-        bx = sqrtf(b);
-        cx = sqrtf(c);
-        dx = sqrtf(d);
-
-        a = a * ax;
-        b = b * bx;
-        c = c * cx;
-        d = d * dx;
-
-        out[i  ] = sqrtf(a);
-        out[i+1] = sqrtf(b);
-        out[i+2] = sqrtf(c);
-        out[i+3] = sqrtf(d);
-    }
-#endif /* USE_REALLY_FULL_SEARCH */
-}
-
-static float find_max_val(int group_len, int swb_size, const float *scaled) {
-    float maxval = 0.0f;
-    int w2, i;
-    for (w2 = 0; w2 < group_len; w2++) {
-        for (i = 0; i < swb_size; i++) {
-            maxval = FFMAX(maxval, scaled[w2*128+i]);
-        }
-    }
-    return maxval;
-}
-
-static int find_min_book(float maxval, int sf) {
-    float Q = ff_aac_pow2sf_tab[POW_SF2_ZERO - sf + SCALE_ONE_POS - SCALE_DIV_512];
-    float Q34 = sqrtf(Q * sqrtf(Q));
-    int qmaxval, cb;
-    qmaxval = maxval * Q34 + 0.4054f;
-    if (qmaxval >= (FF_ARRAY_ELEMS(aac_maxval_cb)))
-        cb = 11;
-    else
-        cb = aac_maxval_cb[qmaxval];
-    return cb;
-}
 
 /**
  * Functions developed from template function and optimized for quantizing and encoding band
@@ -860,7 +805,6 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             unsigned int v_codes;
             int c1, c2, c3, c4;
             int t0, t1, t2, t3, t4;
-            const float *vec1, *vec2;
 
             qc1 = scaled[i  ] * Q34 + ROUNDING;
             qc2 = scaled[i+1] * Q34 + ROUNDING;
@@ -965,8 +909,6 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
 
             if (out || energy) {
                 float e1, e2, e3, e4;
-                vec1 = &p_vectors[curidx*2];
-                vec2 = &p_vectors[curidx2*2];
                 e1 = copysignf(c1 * cbrtf(c1) * IQ, in[i+0]);
                 e2 = copysignf(c2 * cbrtf(c2) * IQ, in[i+1]);
                 e3 = copysignf(c3 * cbrtf(c3) * IQ, in[i+2]);
@@ -2390,76 +2332,6 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
 
 #include "libavcodec/aacenc_quantization_misc.h"
 
-static float find_form_factor(int group_len, int swb_size, float thresh, const float *scaled, float nzslope) {
-    const float iswb_size = 1.0f / swb_size;
-    const float iswb_sizem1 = 1.0f / (swb_size - 1);
-    const float ethresh = thresh, iethresh = 1.0f / ethresh;
-    float form = 0.0f, weight = 0.0f;
-    int w2, i;
-    for (w2 = 0; w2 < group_len; w2++) {
-        float e = 0.0f, e2 = 0.0f, var = 0.0f, maxval = 0.0f;
-        float nzl = 0;
-        for (i = 0; i < swb_size; i+=4) {
-            float s1 = fabsf(scaled[w2*128+i  ]);
-            float s2 = fabsf(scaled[w2*128+i+1]);
-            float s3 = fabsf(scaled[w2*128+i+2]);
-            float s4 = fabsf(scaled[w2*128+i+3]);
-            maxval = FFMAX(maxval, FFMAX(FFMAX(s1, s2), FFMAX(s3, s4)));
-            e += (s1+s2)+(s3+s4);
-            s1 *= s1;
-            s2 *= s2;
-            s3 *= s3;
-            s4 *= s4;
-            e2 += (s1+s2)+(s3+s4);
-            /* We really don't want a hard non-zero-line count, since
-             * even below-threshold lines do add up towards band spectral power.
-             * So, fall steeply towards zero, but smoothly
-             */
-            if (s1 >= ethresh) {
-                nzl += 1.0f;
-            } else {
-                nzl += powf(s1 * iethresh, nzslope);
-            }
-            if (s2 >= ethresh) {
-                nzl += 1.0f;
-            } else {
-                nzl += powf(s2 * iethresh, nzslope);
-            }
-            if (s3 >= ethresh) {
-                nzl += 1.0f;
-            } else {
-                nzl += powf(s3 * iethresh, nzslope);
-            }
-            if (s4 >= ethresh) {
-                nzl += 1.0f;
-            } else {
-                nzl += powf(s4 * iethresh, nzslope);
-            }
-        }
-        if (e2 > thresh) {
-            float frm;
-            e *= iswb_size;
-
-            /** compute variance */
-            for (i = 0; i < swb_size; i++) {
-                float d = fabsf(scaled[w2*128+i]) - e;
-                var += d*d;
-            }
-            var = sqrtf(var * iswb_sizem1);
-
-            e2 *= iswb_size;
-            frm = e / FFMIN(e+4*var,maxval);
-            form += e2 * sqrtf(frm) / FFMAX(0.5f,nzl);
-            weight += e2;
-        }
-    }
-    if (weight > 0) {
-        return form / weight;
-    } else {
-        return 1.0f;
-    }
-}
-
 #include "libavcodec/aaccoder_twoloop.h"
 
 static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
@@ -2543,9 +2415,9 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
 #endif /* HAVE_INLINE_ASM */
 
 void ff_aac_coder_init_mips(AACEncContext *c) {
-#if 0 // HAVE_INLINE_ASM
+#if HAVE_INLINE_ASM
     AACCoefficientsEncoder *e = c->coder;
-    int option = c->options.aac_coder;
+    int option = c->options.coder;
 
     if (option == 2) {
         e->quantize_and_encode_band = quantize_and_encode_band_mips;
