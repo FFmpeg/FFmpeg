@@ -116,8 +116,12 @@ float avpriv_scalarproduct_float_c(const float *v1, const float *v2, int len)
     return p;
 }
 
-av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
+av_cold AVFloatDSPContext *avpriv_float_dsp_alloc(int bit_exact)
 {
+    AVFloatDSPContext *fdsp = av_mallocz(sizeof(AVFloatDSPContext));
+    if (!fdsp)
+        return NULL;
+
     fdsp->vector_fmul = vector_fmul_c;
     fdsp->vector_fmac_scalar = vector_fmac_scalar_c;
     fdsp->vector_fmul_scalar = vector_fmul_scalar_c;
@@ -138,14 +142,7 @@ av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
         ff_float_dsp_init_x86(fdsp);
     if (ARCH_MIPS)
         ff_float_dsp_init_mips(fdsp);
-}
-
-av_cold AVFloatDSPContext *avpriv_float_dsp_alloc(int bit_exact)
-{
-    AVFloatDSPContext *ret = av_mallocz(sizeof(AVFloatDSPContext));
-    if (ret)
-        avpriv_float_dsp_init(ret, bit_exact);
-    return ret;
+    return fdsp;
 }
 
 
@@ -386,7 +383,7 @@ int main(int argc, char **argv)
 {
     int ret = 0, seeded = 0;
     uint32_t seed;
-    AVFloatDSPContext fdsp, cdsp;
+    AVFloatDSPContext *fdsp, *cdsp;
     AVLFG lfg;
 
     LOCAL_ALIGNED(32, float, src0, [LEN]);
@@ -421,6 +418,15 @@ int main(int argc, char **argv)
 
     av_log(NULL, AV_LOG_INFO, "float_dsp-test: %s %u\n", seeded ? "seed" : "random seed", seed);
 
+    fdsp = avpriv_float_dsp_alloc(1);
+    av_force_cpu_flags(0);
+    cdsp = avpriv_float_dsp_alloc(1);
+
+    if (!fdsp || !cdsp) {
+        ret = 1;
+        goto end;
+    }
+
     av_lfg_init(&lfg, seed);
 
     fill_float_array(&lfg, src0, LEN);
@@ -430,29 +436,28 @@ int main(int argc, char **argv)
     fill_double_array(&lfg, dbl_src0, LEN);
     fill_double_array(&lfg, dbl_src1, LEN);
 
-    avpriv_float_dsp_init(&fdsp, 1);
-    av_force_cpu_flags(0);
-    avpriv_float_dsp_init(&cdsp, 1);
-
-    if (test_vector_fmul(&fdsp, &cdsp, src0, src1))
+    if (test_vector_fmul(fdsp, cdsp, src0, src1))
         ret -= 1 << 0;
-    if (test_vector_fmac_scalar(&fdsp, &cdsp, src2, src0, src1[0]))
+    if (test_vector_fmac_scalar(fdsp, cdsp, src2, src0, src1[0]))
         ret -= 1 << 1;
-    if (test_vector_fmul_scalar(&fdsp, &cdsp, src0, src1[0]))
+    if (test_vector_fmul_scalar(fdsp, cdsp, src0, src1[0]))
         ret -= 1 << 2;
-    if (test_vector_fmul_window(&fdsp, &cdsp, src0, src1, src2))
+    if (test_vector_fmul_window(fdsp, cdsp, src0, src1, src2))
         ret -= 1 << 3;
-    if (test_vector_fmul_add(&fdsp, &cdsp, src0, src1, src2))
+    if (test_vector_fmul_add(fdsp, cdsp, src0, src1, src2))
         ret -= 1 << 4;
-    if (test_vector_fmul_reverse(&fdsp, &cdsp, src0, src1))
+    if (test_vector_fmul_reverse(fdsp, cdsp, src0, src1))
         ret -= 1 << 5;
-    if (test_butterflies_float(&fdsp, &cdsp, src0, src1))
+    if (test_butterflies_float(fdsp, cdsp, src0, src1))
         ret -= 1 << 6;
-    if (test_scalarproduct_float(&fdsp, &cdsp, src0, src1))
+    if (test_scalarproduct_float(fdsp, cdsp, src0, src1))
         ret -= 1 << 7;
-    if (test_vector_dmul_scalar(&fdsp, &cdsp, dbl_src0, dbl_src1[0]))
+    if (test_vector_dmul_scalar(fdsp, cdsp, dbl_src0, dbl_src1[0]))
         ret -= 1 << 8;
 
+end:
+    av_freep(&fdsp);
+    av_freep(&cdsp);
     return ret;
 }
 
