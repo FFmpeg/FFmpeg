@@ -308,6 +308,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (TXD,              txd);
     REGISTER_DEMUXER (TTY,              tty);
     REGISTER_MUXER   (UNCODEDFRAMECRC,  uncodedframecrc);
+    REGISTER_DEMUXER (VAG,              vag);
     REGISTER_MUXDEMUX(VC1,              vc1);
     REGISTER_MUXDEMUX(VC1T,             vc1t);
     REGISTER_DEMUXER (VIVO,             vivo);
