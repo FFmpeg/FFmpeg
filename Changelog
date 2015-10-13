@@ -44,6 +44,7 @@ version <next>:
 - Support DNx100 (1440x1080@8)
 - DXV decoding
 - Screenpresso SPV1 decoding
+- zero-copy Intel QSV transcoding in avconv
 
 
 version 11:

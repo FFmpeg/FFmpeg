@@ -54,6 +54,7 @@ enum HWAccelID {
     HWACCEL_VDPAU,
     HWACCEL_DXVA2,
     HWACCEL_VDA,
+    HWACCEL_QSV,
 };
 
 typedef struct HWAccel {
@@ -331,6 +332,8 @@ typedef struct OutputStream {
     int64_t max_frames;
     AVFrame *filtered_frame;
 
+    void  *hwaccel_ctx;
+
     /* video only */
     AVRational frame_rate;
     int force_fps;
@@ -443,5 +446,7 @@ int avconv_parse_options(int argc, char **argv);
 int vdpau_init(AVCodecContext *s);
 int dxva2_init(AVCodecContext *s);
 int vda_init(AVCodecContext *s);
+int qsv_init(AVCodecContext *s);
+int qsv_transcode_init(OutputStream *ost);
 
 #endif /* AVCONV_H */
