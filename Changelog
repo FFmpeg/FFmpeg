@@ -1,6 +1,50 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.1:
+- swscale: fix ticket #4881
+- doc: fix spelling errors
+- hls: only seek if there is an offset
+- asfdec: add more checks for size left in asf packet buffer
+- asfdec: alloc enough space for storing name in asf_read_metadata_obj
+- avcodec/pngdec: Check blend_op.
+- h264_mp4toannexb: fix pps offfset fault when there are more than one sps in avcc
+- avcodec/h264_mp4toannexb_bsf: Use av_freep() to free spspps_buf
+- avformat/avidec: Workaround broken initial frame
+- avformat/hls: fix some cases of HLS streams which require cookies
+- avcodec/pngdec: reset has_trns after every decode_frame_png()
+- lavf/img2dec: Fix memory leak
+- avcodec/mp3: fix skipping zeros
+- avformat/srtdec: make sure we probe a number
+- configure: check for ID3D11VideoContext
+- avformat/vobsub: compare correct packet stream IDs
+- avformat/srtdec: more lenient first line probing
+- avformat/srtdec: fix number check for the first character
+- avcodec/mips: build fix for MSA 64bit
+- avcodec/mips: build fix for MSA
+- avformat/httpauth: Add space after commas in HTTP/RTSP auth header
+- libavformat/hlsenc: Use of uninitialized memory unlinking old files
+- avcodec/x86/sbrdsp: Fix using uninitialized upper 32bit of noise
+- avcodec/ffv1dec: Fix off by 1 error in quant_table_count check
+- avcodec/ffv1dec: Explicitly check read_quant_table() return value
+- dnxhddata: correct weight tables
+- dnxhddec: decode and use interlace mb flag
+- swscale: fix ticket #4877
+- avcodec/rangecoder: Check e
+- avcodec/ffv1: seperate slice_count from max_slice_count
+- swscale: fix ticket 4850
+- cmdutils: Filter dst/srcw/h
+- avutil/log: fix zero length gnu_printf format string warning
+- lavf/webvttenc: Require webvtt file to contain exactly one WebVTT stream.
+- swscale/swscale: Fix "unused variable" warning
+- avcodec/mjpegdec: Fix decoding RGBA RCT LJPEG
+- MAINTAINERS: add 2.8, drop 2.2
+- doc: mention libavcodec can decode Opus natively
+- hevc: properly handle no_rasl_output_flag when removing pictures from the DPB
+- avfilter/af_ladspa: process all channels for nb_handles > 1
+- configure: add libsoxr to swresample's pkgconfig
+- lavc: Fix compilation with --disable-everything --enable-parser=mpeg4video.
+
 version 2.8:
 - colorkey video filter
 - BFSTM/BCSTM demuxer
