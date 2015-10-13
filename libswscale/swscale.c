@@ -475,11 +475,11 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                    yuv2packed1, yuv2packed2, yuv2packedX, yuv2anyX, c->use_mmx_vfilter);
 
     ff_init_slice_from_src(src_slice, (uint8_t**)src, srcStride, c->srcW,
-            srcSliceY, srcSliceH, chrSrcSliceY, chrSrcSliceH);
+            srcSliceY, srcSliceH, chrSrcSliceY, chrSrcSliceH, 1);
 
     ff_init_slice_from_src(vout_slice, (uint8_t**)dst, dstStride, c->dstW,
             dstY, dstH, dstY >> c->chrDstVSubSample,
-            FF_CEIL_RSHIFT(dstH, c->chrDstVSubSample));
+            FF_CEIL_RSHIFT(dstH, c->chrDstVSubSample), 0);
     if (srcSliceY == 0) {
         hout_slice->plane[0].sliceY = lastInLumBuf + 1;
         hout_slice->plane[1].sliceY = lastInChrBuf + 1;
