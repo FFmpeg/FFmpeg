@@ -36,6 +36,11 @@
 
 #define BIT_DEPTH 10
 #include "simple_idct_template.c"
+
+#define EXTRA_SHIFT  2
+#include "simple_idct_template.c"
+
+#undef EXTRA_SHIFT
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 12
@@ -230,10 +235,10 @@ void ff_prores_idct(int16_t *block, const int16_t *qmat)
         block[i] *= qmat[i];
 
     for (i = 0; i < 8; i++)
-        idctRowCondDC_10(block + i*8, 2);
+        idctRowCondDC_extrashift_10(block + i*8, 2);
 
     for (i = 0; i < 8; i++) {
         block[i] += 8192;
-        idctSparseCol_10(block + i);
+        idctSparseCol_extrashift_10(block + i);
     }
 }

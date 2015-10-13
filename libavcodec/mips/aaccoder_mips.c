@@ -2388,6 +2388,8 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
     return get_band_cost(s, NULL, in, scaled, size, scale_idx, cb, lambda, uplim, bits, energy);
 }
 
+#include "libavcodec/aacenc_quantization_misc.h"
+
 static float find_form_factor(int group_len, int swb_size, float thresh, const float *scaled, float nzslope) {
     const float iswb_size = 1.0f / swb_size;
     const float iswb_sizem1 = 1.0f / (swb_size - 1);
@@ -2541,7 +2543,7 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
 #endif /* HAVE_INLINE_ASM */
 
 void ff_aac_coder_init_mips(AACEncContext *c) {
-#if HAVE_INLINE_ASM
+#if 0 // HAVE_INLINE_ASM
     AACCoefficientsEncoder *e = c->coder;
     int option = c->options.aac_coder;
 

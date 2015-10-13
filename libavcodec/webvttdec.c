@@ -37,11 +37,14 @@ static const struct {
     {"<b>", "{\\b1}"}, {"</b>", "{\\b0}"},
     {"<u>", "{\\u1}"}, {"</u>", "{\\u0}"},
     {"{", "\\{"}, {"}", "\\}"}, // escape to avoid ASS markup conflicts
+    {"&gt;", ">"}, {"&lt;", "<"},
+    {"&lrm;", ""}, {"&rlm;", ""}, // FIXME: properly honor bidi marks
+    {"&amp;", "&"}, {"&nbsp;", "\\h"},
 };
 
 static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
 {
-    int i, skip = 0;
+    int i, again, skip = 0;
 
     while (*p) {
 
@@ -51,12 +54,18 @@ static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
             if (!strncmp(p, from, len)) {
                 av_bprintf(buf, "%s", webvtt_tag_replace[i].to);
                 p += len;
+                again = 1;
                 break;
             }
         }
         if (!*p)
             break;
 
+        if (again) {
+            again = 0;
+            skip = 0;
+            continue;
+        }
         if (*p == '<')
             skip = 1;
         else if (*p == '>')

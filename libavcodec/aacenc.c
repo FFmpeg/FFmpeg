@@ -46,6 +46,44 @@
 
 #include "psymodel.h"
 
+struct AACProfileOptions {
+    int profile;
+    struct AACEncOptions opts;
+};
+
+ /**
+ * List of currently supported profiles, anything not listed isn't supported.
+ */
+static const struct AACProfileOptions aacenc_profiles[] = {
+    {FF_PROFILE_AAC_MAIN,
+        {  /* Main profile, all advanced encoding abilities enabled */
+            .mid_side = 0,
+            .pns = 1,
+            .tns = 0,
+            .pred = OPT_REQUIRED,
+            .intensity_stereo = 1,
+        },
+    },
+    {FF_PROFILE_AAC_LOW,
+        {  /* Default profile, these are the settings that get set by default */
+            .mid_side = 0,
+            .pns = 1,
+            .tns = 0,
+            .pred = OPT_NEEDS_MAIN,
+            .intensity_stereo = 1,
+        },
+    },
+    {FF_PROFILE_MPEG2_AAC_LOW,
+        {  /* Strict MPEG 2 Part 7 compliance profile */
+            .mid_side = 0,
+            .pns = OPT_BANNED,
+            .tns = 0,
+            .pred = OPT_BANNED,
+            .intensity_stereo = 1,
+        },
+    },
+};
+
 /**
  * Make AAC audio config object.
  * @see 1.6.2.1 "Syntax - AudioSpecificConfig"
@@ -54,11 +92,12 @@ static void put_audio_specific_config(AVCodecContext *avctx)
 {
     PutBitContext pb;
     AACEncContext *s = avctx->priv_data;
+    int channels = s->channels - (s->channels == 8 ? 1 : 0);
 
     init_put_bits(&pb, avctx->extradata, avctx->extradata_size);
     put_bits(&pb, 5, s->profile+1); //profile
     put_bits(&pb, 4, s->samplerate_index); //sample rate index
-    put_bits(&pb, 4, s->channels);
+    put_bits(&pb, 4, channels);
     //GASpecificConfig
     put_bits(&pb, 1, 0); //frame length - 1024 samples
     put_bits(&pb, 1, 0); //does not depend on core coder
@@ -69,6 +108,16 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     put_bits(&pb, 5,  AOT_SBR);
     put_bits(&pb, 1,  0);
     flush_put_bits(&pb);
+}
+
+void ff_quantize_band_cost_cache_init(struct AACEncContext *s)
+{
+    int sf, g;
+    for (sf = 0; sf < 256; sf++) {
+        for (g = 0; g < 128; g++) {
+            s->quantize_band_cost_cache[sf][g].bits = -1;
+        }
+    }
 }
 
 #define WINDOW_FUNC(type) \
@@ -669,8 +718,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                         s->coder->search_for_pred(s, sce);
                     if (cpe->ch[ch].ics.predictor_present) pred_mode = 1;
                 }
-                if (s->coder->adjust_common_prediction)
-                    s->coder->adjust_common_prediction(s, cpe);
+                if (s->coder->adjust_common_pred)
+                    s->coder->adjust_common_pred(s, cpe);
                 for (ch = 0; ch < chans; ch++) {
                     sce = &cpe->ch[ch];
                     s->cur_channel = start_ch + ch;
@@ -679,8 +728,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 }
                 s->cur_channel = start_ch;
             }
-            if (s->options.stereo_mode) { /* Mid/Side stereo */
-                if (s->options.stereo_mode == -1 && s->coder->search_for_ms)
+            if (s->options.mid_side) { /* Mid/Side stereo */
+                if (s->options.mid_side == -1 && s->coder->search_for_ms)
                     s->coder->search_for_ms(s, cpe);
                 else if (cpe->common_window)
                     memset(cpe->ms_mask, 1, sizeof(cpe->ms_mask));
@@ -841,50 +890,62 @@ alloc_fail:
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
+    const AACEncOptions *p_opt = NULL;
     int i, ret = 0;
     const uint8_t *sizes[2];
     uint8_t grouping[AAC_MAX_CHANNELS];
     int lengths[2];
 
+    s->channels = avctx->channels;
+    s->chan_map = aac_chan_configs[s->channels-1];
+    s->random_state = 0x1f2e3d4c;
+    s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
+    avctx->extradata_size = 5;
     avctx->frame_size = 1024;
+    avctx->initial_padding = 1024;
+    avctx->bit_rate = (int)FFMIN(
+        6144 * s->channels / 1024.0 * avctx->sample_rate,
+        avctx->bit_rate);
+    avctx->profile = avctx->profile == FF_PROFILE_UNKNOWN ? FF_PROFILE_AAC_LOW :
+                     avctx->profile;
 
     for (i = 0; i < 16; i++)
         if (avctx->sample_rate == avpriv_mpeg4audio_sample_rates[i])
             break;
+    s->samplerate_index = i;
 
-    s->channels = avctx->channels;
-
-    ERROR_IF(i == 16 || i >= ff_aac_swb_size_1024_len || i >= ff_aac_swb_size_128_len,
+    ERROR_IF(s->samplerate_index == 16 ||
+             s->samplerate_index >= ff_aac_swb_size_1024_len ||
+             s->samplerate_index >= ff_aac_swb_size_128_len,
              "Unsupported sample rate %d\n", avctx->sample_rate);
-    ERROR_IF(s->channels > AAC_MAX_CHANNELS,
+    ERROR_IF(s->channels > AAC_MAX_CHANNELS || s->channels == 7,
              "Unsupported number of channels: %d\n", s->channels);
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
              "Too many bits per frame requested, clamping to max\n");
-    if (avctx->profile == FF_PROFILE_AAC_MAIN) {
-        s->options.pred = 1;
-    } else if ((avctx->profile == FF_PROFILE_AAC_LOW ||
-                avctx->profile == FF_PROFILE_UNKNOWN) && s->options.pred) {
-        s->profile = 0; /* Main */
-        WARN_IF(1, "Prediction requested, changing profile to AAC-Main\n");
-    } else if (avctx->profile == FF_PROFILE_AAC_LOW ||
-               avctx->profile == FF_PROFILE_UNKNOWN) {
-        s->profile = 1; /* Low */
-    } else {
-        ERROR_IF(1, "Unsupported profile %d\n", avctx->profile);
-    }
 
-    if (s->options.aac_coder != AAC_CODER_TWOLOOP) {
+    for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++) {
+        if (avctx->profile == aacenc_profiles[i].profile) {
+            p_opt = &aacenc_profiles[i].opts;
+            break;
+        }
+    }
+    ERROR_IF(!p_opt, "Unsupported encoding profile: %d\n", avctx->profile);
+    AAC_OPT_SET(&s->options, p_opt, 1, coder);
+    AAC_OPT_SET(&s->options, p_opt, 0, pns);
+    AAC_OPT_SET(&s->options, p_opt, 0, tns);
+    AAC_OPT_SET(&s->options, p_opt, 0, pred);
+    AAC_OPT_SET(&s->options, p_opt, 1, mid_side);
+    AAC_OPT_SET(&s->options, p_opt, 0, intensity_stereo);
+    if (avctx->profile == FF_PROFILE_MPEG2_AAC_LOW)
+        s->profile = FF_PROFILE_AAC_LOW;
+    else
+        s->profile = avctx->profile;
+    s->coder = &ff_aac_coders[s->options.coder];
+
+    if (s->options.coder != AAC_CODER_TWOLOOP) {
         s->options.intensity_stereo = 0;
         s->options.pns = 0;
     }
-
-    avctx->bit_rate = (int)FFMIN(
-        6144 * s->channels / 1024.0 * avctx->sample_rate,
-        avctx->bit_rate);
-
-    s->samplerate_index = i;
-
-    s->chan_map = aac_chan_configs[s->channels-1];
 
     if ((ret = dsp_init(avctx, s)) < 0)
         goto fail;
@@ -892,31 +953,25 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if ((ret = alloc_buffers(avctx, s)) < 0)
         goto fail;
 
-    avctx->extradata_size = 5;
     put_audio_specific_config(avctx);
 
-    sizes[0]   = ff_aac_swb_size_1024[i];
-    sizes[1]   = ff_aac_swb_size_128[i];
-    lengths[0] = ff_aac_num_swb_1024[i];
-    lengths[1] = ff_aac_num_swb_128[i];
+    sizes[0]   = ff_aac_swb_size_1024[s->samplerate_index];
+    sizes[1]   = ff_aac_swb_size_128[s->samplerate_index];
+    lengths[0] = ff_aac_num_swb_1024[s->samplerate_index];
+    lengths[1] = ff_aac_num_swb_128[s->samplerate_index];
     for (i = 0; i < s->chan_map[0]; i++)
         grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
     if ((ret = ff_psy_init(&s->psy, avctx, 2, sizes, lengths,
                            s->chan_map[0], grouping)) < 0)
         goto fail;
     s->psypp = ff_psy_preprocess_init(avctx);
-    s->coder = &ff_aac_coders[s->options.aac_coder];
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
 
     if (HAVE_MIPSDSPR1)
         ff_aac_coder_init_mips(s);
 
-    s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
-    s->random_state = 0x1f2e3d4c;
-
     ff_aac_tableinit();
 
-    avctx->initial_padding = 1024;
     ff_af_queue_init(avctx, &s->afq);
 
     return 0;
@@ -927,19 +982,16 @@ fail:
 
 #define AACENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption aacenc_options[] = {
-    {"stereo_mode", "Stereo coding method", offsetof(AACEncContext, options.stereo_mode), AV_OPT_TYPE_INT, {.i64 = 0}, -1, 1, AACENC_FLAGS, "stereo_mode"},
-        {"auto",     "Selected by the Encoder", 0, AV_OPT_TYPE_CONST, {.i64 = -1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
-        {"ms_off",   "Disable Mid/Side coding", 0, AV_OPT_TYPE_CONST, {.i64 =  0 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
-        {"ms_force", "Force Mid/Side for the whole frame if possible", 0, AV_OPT_TYPE_CONST, {.i64 =  1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
-    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.aac_coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, 0, AAC_CODER_NB-1, AACENC_FLAGS, "aac_coder"},
-        {"faac",     "FAAC-inspired method",      0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAAC},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
-        {"anmr",     "ANMR method",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_ANMR},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
-        {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
-        {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
-    {"aac_pns", "Perceptual Noise Substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AACENC_FLAGS},
-    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AACENC_FLAGS},
-    {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AACENC_FLAGS},
-    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AACENC_FLAGS},
+    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, -1, AAC_CODER_NB-1, AACENC_FLAGS, "coder"},
+        {"faac",     "FAAC-inspired method",      0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAAC},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
+        {"anmr",     "ANMR method",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_ANMR},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
+        {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
+        {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
+    {"aac_ms", "Force M/S stereo coding", offsetof(AACEncContext, options.mid_side), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
+    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
+    {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
+    {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
+    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
     {NULL}
 };
 

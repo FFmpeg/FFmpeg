@@ -87,3 +87,31 @@ DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_32)   = { 0x0000002000000020ULL, 0x000
                                                     0x0000002000000020ULL, 0x0000002000000020ULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_65535)= { 0x0000ffff0000ffffULL, 0x0000ffff0000ffffULL,
                                                     0x0000ffff0000ffffULL, 0x0000ffff0000ffffULL };
+
+/* simple idct 10 */
+#define W1sh2 22725 // W1 = 90901 = 22725<<2 + 1
+#define W2sh2 21407 // W2 = 85627 = 21407<<2 - 1
+#define W3sh2 19265 // W3 = 77062 = 19265<<2 + 2
+#define W4sh2 16384 // W4 = 65535 = 16384<<2 - 1
+#define W5sh2 12873 // W5 = 51491 = 12873<<2 - 1
+#define W6sh2  8867 // W6 = 35468 =  8867<<2
+#define W7sh2  4520 // W7 = 18081 =  4520<<2 + 1
+
+#define TIMES4(a, b)                                                        \
+     (((b)&0xFFFFLL)<<48)+(((a)&0xFFFFLL)<<32)+(((b)&0xFFFFLL)<<16)+((a)&0xFFFFLL), \
+     (((b)&0xFFFFLL)<<48)+(((a)&0xFFFFLL)<<32)+(((b)&0xFFFFLL)<<16)+((a)&0xFFFFLL)
+
+#if ARCH_X86_64
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w4_plus_w2) = { TIMES4(W4sh2,  W2sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w4_min_w2)  = { TIMES4(W4sh2, -W2sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w4_plus_w6) = { TIMES4(W4sh2, +W6sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w4_min_w6)  = { TIMES4(W4sh2, -W6sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w1_plus_w3) = { TIMES4(W1sh2, +W3sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w3_min_w1)  = { TIMES4(W3sh2, -W1sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w7_plus_w3) = { TIMES4(W7sh2, +W3sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w3_min_w7)  = { TIMES4(W3sh2, -W7sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w1_plus_w5) = { TIMES4(W1sh2, +W5sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w5_min_w1)  = { TIMES4(W5sh2, -W1sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w5_plus_w7) = { TIMES4(W5sh2, +W7sh2) };
+DECLARE_ALIGNED(16, const xmm_reg,  ff_w7_min_w5)  = { TIMES4(W7sh2, -W5sh2) };
+#endif

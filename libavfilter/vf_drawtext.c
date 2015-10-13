@@ -824,6 +824,16 @@ static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
                        (int)(ms / 1000) % 60,
                        (int)ms % 1000);
         }
+    } else if (!strcmp(fmt, "localtime") ||
+               !strcmp(fmt, "gmtime")) {
+        struct tm tm;
+        time_t ms = (time_t)pts;
+        const char *timefmt = argc >= 3 ? argv[2] : "%Y-%m-%d %H:%M:%S";
+        if (!strcmp(fmt, "localtime"))
+            localtime_r(&ms, &tm);
+        else
+            gmtime_r(&ms, &tm);
+        av_bprint_strftime(bp, timefmt, &tm);
     } else {
         av_log(ctx, AV_LOG_ERROR, "Invalid format '%s'\n", fmt);
         return AVERROR(EINVAL);
@@ -958,7 +968,7 @@ static const struct drawtext_function {
     { "expr_int_format", 2, 3, 0, func_eval_expr_int_format },
     { "eif",       2, 3, 0,   func_eval_expr_int_format },
     { "pict_type", 0, 0, 0,   func_pict_type },
-    { "pts",       0, 2, 0,   func_pts      },
+    { "pts",       0, 3, 0,   func_pts      },
     { "gmtime",    0, 1, 'G', func_strftime },
     { "localtime", 0, 1, 'L', func_strftime },
     { "frame_num", 0, 0, 0,   func_frame_num },

@@ -142,7 +142,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
          * No need to be overly precise, this only controls RD
          * adjustment CB limits when going overboard
          */
-        if (s->options.stereo_mode && s->cur_type == TYPE_CPE)
+        if (s->options.mid_side && s->cur_type == TYPE_CPE)
             destbits *= 2;
 
         /**
@@ -287,6 +287,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     if (!allz)
         return;
     abs_pow34_v(s->scoefs, sce->coeffs, 1024);
+    ff_quantize_band_cost_cache_init(s);
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = w*128;
@@ -380,7 +381,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                         int b;
                         float sqenergy;
-                        dist += quantize_band_cost(s, coefs + w2*128,
+                        dist += quantize_band_cost_cached(s, w + w2, g, coefs + w2*128,
                                                    scaled + w2*128,
                                                    sce->ics.swb_sizes[g],
                                                    sce->sf_idx[w*16+g],
@@ -460,7 +461,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                         for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                             int b;
                             float sqenergy;
-                            dist += quantize_band_cost(s, coefs + w2*128,
+                            dist += quantize_band_cost_cached(s, w + w2, g, coefs + w2*128,
                                                     scaled + w2*128,
                                                     sce->ics.swb_sizes[g],
                                                     sce->sf_idx[w*16+g],
@@ -588,7 +589,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                                 int b;
                                 float sqenergy;
-                                dist += quantize_band_cost(s, coefs + w2*128,
+                                dist += quantize_band_cost_cached(s, w + w2, g, coefs + w2*128,
                                                         scaled + w2*128,
                                                         sce->ics.swb_sizes[g],
                                                         sce->sf_idx[w*16+g]-1,
@@ -625,7 +626,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                 for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                                     int b;
                                     float sqenergy;
-                                    dist += quantize_band_cost(s, coefs + w2*128,
+                                    dist += quantize_band_cost_cached(s, w + w2, g, coefs + w2*128,
                                                             scaled + w2*128,
                                                             sce->ics.swb_sizes[g],
                                                             sce->sf_idx[w*16+g]+1,

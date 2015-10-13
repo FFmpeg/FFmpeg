@@ -1,5 +1,5 @@
 /*
- * AAC encoder intensity stereo
+ * AAC encoder quantizer
  * Copyright (C) 2015 Rostislav Pehlivanov
  *
  * This file is part of FFmpeg.
@@ -277,5 +277,7 @@ static inline void quantize_and_encode_band(struct AACEncContext *s, PutBitConte
     quantize_and_encode_band_cost(s, pb, in, out, NULL, size, scale_idx, cb, lambda,
                                   INFINITY, NULL, NULL, rtz);
 }
+
+#include "aacenc_quantization_misc.h"
 
 #endif /* AVCODEC_AACENC_QUANTIZATION_H */

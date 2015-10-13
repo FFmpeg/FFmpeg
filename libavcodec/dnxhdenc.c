@@ -128,6 +128,11 @@ static int dnxhd_10bit_dct_quantize(MpegEncContext *ctx, int16_t *block,
             last_non_zero = i;
     }
 
+    /* we need this permutation so that we correct the IDCT, we only permute the !=0 elements */
+    if (ctx->idsp.perm_type != FF_IDCT_PERM_NONE)
+        ff_block_permute(block, ctx->idsp.idct_permutation,
+                         scantable, last_non_zero);
+
     return last_non_zero;
 }
 
@@ -241,7 +246,7 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
         // 10-bit
         for (qscale = 1; qscale <= ctx->m.avctx->qmax; qscale++) {
             for (i = 1; i < 64; i++) {
-                int j = ctx->m.idsp.idct_permutation[ff_zigzag_direct[i]];
+                int j = ff_zigzag_direct[i];
 
                 /* The quantization formula from the VC-3 standard is:
                  * quantized = sign(block[i]) * floor(abs(block[i]/s) * p /

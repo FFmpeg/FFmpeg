@@ -92,7 +92,8 @@ static int webvtt_read_header(AVFormatContext *s)
 
         /* ignore header chunk */
         if (!strncmp(p, "\xEF\xBB\xBFWEBVTT", 9) ||
-            !strncmp(p, "WEBVTT", 6))
+            !strncmp(p, "WEBVTT", 6) ||
+            !strncmp(p, "NOTE", 4))
             continue;
 
         /* optional cue identifier (can be a number like in SRT or some kind of
