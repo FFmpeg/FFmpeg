@@ -39,6 +39,4 @@
  */
 int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **hdr);
 
-int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr);
-
 #endif /* AVCODEC_AC3_PARSER_H */

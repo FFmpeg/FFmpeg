@@ -151,15 +151,6 @@ int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **phdr)
     return 0;
 }
 
-int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
-{
-    AC3HeaderInfo tmp, *ptmp = &tmp;
-    int ret = avpriv_ac3_parse_header2(gbc, &ptmp);
-
-    memcpy(hdr, ptmp, ((intptr_t)&tmp.channel_layout) - ((intptr_t)&tmp) + sizeof(uint64_t));
-    return ret;
-}
-
 static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
         int *need_next_header, int *new_frame_start)
 {
