@@ -37,6 +37,32 @@ pd_round_12: times 4 dd 1<<(12-1)
 pd_round_15: times 4 dd 1<<(15-1)
 pd_round_19: times 4 dd 1<<(19-1)
 
+%macro CONST_DEC  3
+const %1
+times 4 dw %2, %3
+%endmacro
+
+%define W1sh2 22725 ; W1 = 90901 = 22725<<2 + 1
+%define W2sh2 21407 ; W2 = 85627 = 21407<<2 - 1
+%define W3sh2 19265 ; W3 = 77062 = 19265<<2 + 2
+%define W4sh2 16384 ; W4 = 65535 = 16384<<2 - 1
+%define W5sh2 12873 ; W5 = 51491 = 12873<<2 - 1
+%define W6sh2  8867 ; W6 = 35468 =  8867<<2
+%define W7sh2  4520 ; W7 = 18081 =  4520<<2 + 1
+
+CONST_DEC  w4_plus_w2,   W4sh2, +W2sh2
+CONST_DEC  w4_min_w2,    W4sh2, -W2sh2
+CONST_DEC  w4_plus_w6,   W4sh2, +W6sh2
+CONST_DEC  w4_min_w6,    W4sh2, -W6sh2
+CONST_DEC  w1_plus_w3,   W1sh2, +W3sh2
+CONST_DEC  w3_min_w1,    W3sh2, -W1sh2
+CONST_DEC  w7_plus_w3,   W7sh2, +W3sh2
+CONST_DEC  w3_min_w7,    W3sh2, -W7sh2
+CONST_DEC  w1_plus_w5,   W1sh2, +W5sh2
+CONST_DEC  w5_min_w1,    W5sh2, -W1sh2
+CONST_DEC  w5_plus_w7,   W5sh2, +W7sh2
+CONST_DEC  w7_min_w5,    W7sh2, -W5sh2
+
 %include "libavcodec/x86/simple_idct10_template.asm"
 
 section .text align=16

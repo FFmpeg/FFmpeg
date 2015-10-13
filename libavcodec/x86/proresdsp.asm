@@ -32,6 +32,19 @@ pw_88:      times 8 dw 0x2008
 cextern pw_1
 cextern pw_4
 cextern pw_1019
+; Below are defined in simple_idct10.asm built from selecting idctdsp
+cextern w4_plus_w2
+cextern w4_min_w2
+cextern w4_plus_w6
+cextern w4_min_w6
+cextern w1_plus_w3
+cextern w3_min_w1
+cextern w7_plus_w3
+cextern w3_min_w7
+cextern w1_plus_w5
+cextern w5_min_w1
+cextern w5_plus_w7
+cextern w7_min_w5
 
 %include "libavcodec/x86/simple_idct10_template.asm"
 

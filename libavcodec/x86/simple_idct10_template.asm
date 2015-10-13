@@ -26,19 +26,6 @@
 
 %if ARCH_X86_64
 
-cextern w4_plus_w2
-cextern w4_min_w2
-cextern w4_plus_w6
-cextern w4_min_w6
-cextern w1_plus_w3
-cextern w3_min_w1
-cextern w7_plus_w3
-cextern w3_min_w7
-cextern w1_plus_w5
-cextern w5_min_w1
-cextern w5_plus_w7
-cextern w7_min_w5
-
 ; interleave data while maintaining source
 ; %1=type, %2=dstlo, %3=dsthi, %4=src, %5=interleave
 %macro SBUTTERFLY3 5
