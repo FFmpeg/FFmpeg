@@ -153,23 +153,21 @@ int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size,
 {
 // Read memory barrier needed for SMP here in theory
     uint8_t *rptr = f->rptr;
-    uint32_t rndx = f->rndx;
 
     do {
-        int len = FFMIN(f->end - f->rptr, buf_size);
+        int len = FFMIN(f->end - rptr, buf_size);
         if (func)
-            func(dest, f->rptr, len);
+            func(dest, rptr, len);
         else {
-            memcpy(dest, f->rptr, len);
+            memcpy(dest, rptr, len);
             dest = (uint8_t *)dest + len;
         }
 // memory barrier needed for SMP here in theory
-        av_fifo_drain(f, len);
+        rptr += len;
+        if (rptr >= f->end)
+            rptr -= f->end - f->buffer;
         buf_size -= len;
     } while (buf_size > 0);
-
-    f->rptr = rptr;
-    f->rndx = rndx;
 
     return 0;
 }
