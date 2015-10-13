@@ -20,6 +20,7 @@ HEADERS = adler32.h                                                     \
           common.h                                                      \
           cpu.h                                                         \
           crc.h                                                         \
+          des.h                                                         \
           display.h                                                     \
           downmix_info.h                                                \
           error.h                                                       \
@@ -47,6 +48,7 @@ HEADERS = adler32.h                                                     \
           pixelutils.h                                                  \
           pixfmt.h                                                      \
           random_seed.h                                                 \
+          rc4.h                                                         \
           replaygain.h                                                  \
           rational.h                                                    \
           ripemd.h                                                      \
@@ -58,6 +60,7 @@ HEADERS = adler32.h                                                     \
           time.h                                                        \
           timecode.h                                                    \
           timestamp.h                                                   \
+          tree.h                                                        \
           twofish.h                                                     \
           version.h                                                     \
           xtea.h                                                        \
