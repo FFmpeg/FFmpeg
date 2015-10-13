@@ -406,7 +406,7 @@ IADST4_FN iadst, IADST4, iadst, IADST4
 %endmacro
 
 INIT_XMM sse2
-cglobal vp9_idct_idct_4x4_add_12, 4, 4, 6, dst, stride, block, eob
+cglobal vp9_idct_idct_4x4_add_12, 4, 4, 8, dst, stride, block, eob
     cmp               eobd, 1
     jg .idctfull
 
