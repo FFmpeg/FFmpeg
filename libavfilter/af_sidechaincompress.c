@@ -154,14 +154,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     for (i = 0; i < nb_samples; i++) {
         double abs_sample, gain = 1.0;
 
-        abs_sample = FFABS(scsrc[0]);
+        abs_sample = fabs(scsrc[0]);
 
         if (s->link == 1) {
             for (c = 1; c < sclink->channels; c++)
-                abs_sample = FFMAX(FFABS(scsrc[c]), abs_sample);
+                abs_sample = FFMAX(fabs(scsrc[c]), abs_sample);
         } else {
             for (c = 1; c < sclink->channels; c++)
-                abs_sample += FFABS(scsrc[c]);
+                abs_sample += fabs(scsrc[c]);
 
             abs_sample /= sclink->channels;
         }
