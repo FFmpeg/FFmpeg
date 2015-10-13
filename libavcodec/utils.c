@@ -687,7 +687,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-void avpriv_color_frame(AVFrame *frame, const int c[4])
+void ff_color_frame(AVFrame *frame, const int c[4])
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     int p, y, x;

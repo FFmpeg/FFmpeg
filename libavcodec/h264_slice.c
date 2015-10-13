@@ -617,7 +617,7 @@ static int h264_frame_start(H264Context *h)
        && !(h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
 #endif
        )
-        avpriv_color_frame(pic->f, c);
+        ff_color_frame(pic->f, c);
 
     h->cur_pic_ptr = pic;
     ff_h264_unref_picture(h, &h->cur_pic);
