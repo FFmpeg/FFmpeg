@@ -82,20 +82,23 @@ static int query_formats(AVFilterContext *ctx)
 {
     ChannelSplitContext *s = ctx->priv;
     AVFilterChannelLayouts *in_layouts = NULL;
-    int i;
+    int i, ret;
 
-    ff_set_common_formats    (ctx, ff_planar_sample_fmts());
-    ff_set_common_samplerates(ctx, ff_all_samplerates());
+    if ((ret = ff_set_common_formats(ctx, ff_planar_sample_fmts())) < 0 ||
+        (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
+        return ret;
 
-    ff_add_channel_layout(&in_layouts, s->channel_layout);
-    ff_channel_layouts_ref(in_layouts, &ctx->inputs[0]->out_channel_layouts);
+    if ((ret = ff_add_channel_layout(&in_layouts, s->channel_layout)) < 0 ||
+        (ret = ff_channel_layouts_ref(in_layouts, &ctx->inputs[0]->out_channel_layouts)) < 0)
+        return ret;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
         AVFilterChannelLayouts *out_layouts = NULL;
         uint64_t channel = av_channel_layout_extract_channel(s->channel_layout, i);
 
-        ff_add_channel_layout(&out_layouts, channel);
-        ff_channel_layouts_ref(out_layouts, &ctx->outputs[i]->in_channel_layouts);
+        if ((ret = ff_add_channel_layout(&out_layouts, channel)) < 0 ||
+            (ret = ff_channel_layouts_ref(out_layouts, &ctx->outputs[i]->in_channel_layouts)) < 0)
+            return ret;
     }
 
     return 0;

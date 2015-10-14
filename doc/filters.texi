@@ -13097,7 +13097,7 @@ pixels of its range.
 
 @itemize
 @item
-Increase cyan by 55% and reduce yellow by 33% in every green areas, and
+Increase cyan by 50% and reduce yellow by 33% in every green areas, and
 increase magenta by 27% in blue areas:
 @example
 selectivecolor=greens=.5 0 -.33 0:blues=0 .27

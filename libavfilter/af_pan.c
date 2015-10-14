@@ -227,27 +227,29 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts;
+    int ret;
 
     pan->pure_gains = are_gains_pure(pan);
     /* libswr supports any sample and packing formats */
-    ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO));
+    if ((ret = ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO))) < 0)
+        return ret;
 
     formats = ff_all_samplerates();
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
+    if ((ret = ff_set_common_samplerates(ctx, formats)) < 0)
+        return ret;
 
     // inlink supports any channel layout
     layouts = ff_all_channel_counts();
-    ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
+    if ((ret = ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts)) < 0)
+        return ret;
 
     // outlink supports only requested output channel layout
     layouts = NULL;
-    ff_add_channel_layout(&layouts,
+    if ((ret = ff_add_channel_layout(&layouts,
                           pan->out_channel_layout ? pan->out_channel_layout :
-                          FF_COUNT2LAYOUT(pan->nb_output_channels));
-    ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
-    return 0;
+                          FF_COUNT2LAYOUT(pan->nb_output_channels))) < 0)
+        return ret;
+    return ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
 }
 
 static int config_props(AVFilterLink *link)

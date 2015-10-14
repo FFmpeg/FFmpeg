@@ -125,15 +125,20 @@ AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
  * Construct an empty AVFilterChannelLayouts/AVFilterFormats struct --
  * representing any channel layout (with known disposition)/sample rate.
  */
+av_warn_unused_result
 AVFilterChannelLayouts *ff_all_channel_layouts(void);
+
+av_warn_unused_result
 AVFilterFormats *ff_all_samplerates(void);
 
 /**
  * Construct an AVFilterChannelLayouts coding for any channel layout, with
  * known or unknown disposition.
  */
+av_warn_unused_result
 AVFilterChannelLayouts *ff_all_channel_counts(void);
 
+av_warn_unused_result
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
 
 
@@ -142,8 +147,10 @@ AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
  * layouts/sample rates. If there are no links hooked to this filter, the list
  * is freed.
  */
+av_warn_unused_result
 int ff_set_common_channel_layouts(AVFilterContext *ctx,
                                   AVFilterChannelLayouts *layouts);
+av_warn_unused_result
 int ff_set_common_samplerates(AVFilterContext *ctx,
                               AVFilterFormats *samplerates);
 
@@ -152,13 +159,16 @@ int ff_set_common_samplerates(AVFilterContext *ctx,
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
  */
+av_warn_unused_result
 int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 
+av_warn_unused_result
 int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout);
 
 /**
  * Add *ref as a new reference to f.
  */
+av_warn_unused_result
 int ff_channel_layouts_ref(AVFilterChannelLayouts *f,
                            AVFilterChannelLayouts **ref);
 
@@ -170,6 +180,7 @@ void ff_channel_layouts_unref(AVFilterChannelLayouts **ref);
 void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
                                   AVFilterChannelLayouts **newref);
 
+av_warn_unused_result
 int ff_default_query_formats(AVFilterContext *ctx);
 
 /**
@@ -178,6 +189,7 @@ int ff_default_query_formats(AVFilterContext *ctx);
  * accepts channel layouts with unknown disposition. It should only be used
  * with audio filters.
  */
+av_warn_unused_result
 int ff_query_formats_all(AVFilterContext *ctx);
 
 
@@ -188,6 +200,7 @@ int ff_query_formats_all(AVFilterContext *ctx);
  * @param fmts list of media formats, terminated by -1
  * @return the format list, with no existing references
  */
+av_warn_unused_result
 AVFilterFormats *ff_make_format_list(const int *fmts);
 
 /**
@@ -198,16 +211,19 @@ AVFilterFormats *ff_make_format_list(const int *fmts);
  * @return a non negative value in case of success, or a negative
  * value corresponding to an AVERROR code in case of error
  */
+av_warn_unused_result
 int ff_add_format(AVFilterFormats **avff, int64_t fmt);
 
 /**
  * Return a list of all formats supported by FFmpeg for the given media type.
  */
+av_warn_unused_result
 AVFilterFormats *ff_all_formats(enum AVMediaType type);
 
 /**
  * Construct a formats list containing all planar sample formats.
  */
+av_warn_unused_result
 AVFilterFormats *ff_planar_sample_fmts(void);
 
 /**
@@ -233,6 +249,7 @@ AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
  *  | |____| |    | |____|
  *  |________|    |________________________
  */
+av_warn_unused_result
 int ff_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
 
 /**

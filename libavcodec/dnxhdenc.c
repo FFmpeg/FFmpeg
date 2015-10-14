@@ -776,11 +776,13 @@ static int dnxhd_mb_var_thread(AVCodecContext *avctx, void *arg,
             unsigned mb  = mb_y * ctx->m.mb_width + mb_x;
             int sum = 0;
             int sqsum = 0;
+            int bw = FFMIN(avctx->width - 16 * mb_x, 16);
+            int bh = FFMIN((avctx->height >> ctx->interlaced) - 16 * mb_y, 16);
             int mean, sqmean;
             int i, j;
             // Macroblocks are 16x16 pixels, unlike DCT blocks which are 8x8.
-            for (i = 0; i < 16; ++i) {
-                for (j = 0; j < 16; ++j) {
+            for (i = 0; i < bh; ++i) {
+                for (j = 0; j < bw; ++j) {
                     // Turn 16-bit pixels into 10-bit ones.
                     int const sample = (unsigned) pix[j] >> 6;
                     sum   += sample;

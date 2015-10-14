@@ -370,11 +370,14 @@ static int query_formats(AVFilterContext *ctx)
 {
     Frei0rContext *s = ctx->priv;
     AVFilterFormats *formats = NULL;
+    int ret;
 
     if        (s->plugin_info.color_model == F0R_COLOR_MODEL_BGRA8888) {
-        ff_add_format(&formats, AV_PIX_FMT_BGRA);
+        if ((ret = ff_add_format(&formats, AV_PIX_FMT_BGRA)) < 0)
+            return ret;
     } else if (s->plugin_info.color_model == F0R_COLOR_MODEL_RGBA8888) {
-        ff_add_format(&formats, AV_PIX_FMT_RGBA);
+        if ((ret = ff_add_format(&formats, AV_PIX_FMT_RGBA)) < 0)
+            return ret;
     } else {                                   /* F0R_COLOR_MODEL_PACKED32 */
         static const enum AVPixelFormat pix_fmts[] = {
             AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_ARGB, AV_PIX_FMT_NONE

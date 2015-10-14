@@ -138,15 +138,14 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
     AVIOContext *pb = s->pb;
-    AVPicture *picture, picture_tmp;
+    AVFrame *frame;
     int* first_pkt = s->priv_data;
     int width, height, h_chroma_shift, v_chroma_shift;
     int i;
     char buf2[Y4M_LINE_MAX + 1];
     uint8_t *ptr, *ptr1, *ptr2;
 
-    memcpy(&picture_tmp, pkt->data, sizeof(AVPicture));
-    picture = &picture_tmp;
+    frame = (AVFrame *)pkt->data;
 
     /* for the first packet we have to output the header as well */
     if (*first_pkt) {
@@ -167,7 +166,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     width  = st->codec->width;
     height = st->codec->height;
 
-    ptr = picture->data[0];
+    ptr = frame->data[0];
 
     switch (st->codec->pix_fmt) {
     case AV_PIX_FMT_GRAY8:
@@ -202,7 +201,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     for (i = 0; i < height; i++) {
         avio_write(pb, ptr, width);
-        ptr += picture->linesize[0];
+        ptr += frame->linesize[0];
     }
 
     if (st->codec->pix_fmt != AV_PIX_FMT_GRAY8 &&
@@ -213,15 +212,15 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
         width  = FF_CEIL_RSHIFT(width,  h_chroma_shift);
         height = FF_CEIL_RSHIFT(height, v_chroma_shift);
 
-        ptr1 = picture->data[1];
-        ptr2 = picture->data[2];
+        ptr1 = frame->data[1];
+        ptr2 = frame->data[2];
         for (i = 0; i < height; i++) {     /* Cb */
             avio_write(pb, ptr1, width);
-            ptr1 += picture->linesize[1];
+            ptr1 += frame->linesize[1];
         }
         for (i = 0; i < height; i++) {     /* Cr */
             avio_write(pb, ptr2, width);
-            ptr2 += picture->linesize[2];
+            ptr2 += frame->linesize[2];
         }
     }
 
@@ -235,8 +234,8 @@ static int yuv4_write_header(AVFormatContext *s)
     if (s->nb_streams != 1)
         return AVERROR(EIO);
 
-    if (s->streams[0]->codec->codec_id != AV_CODEC_ID_RAWVIDEO) {
-        av_log(s, AV_LOG_ERROR, "ERROR: Only rawvideo supported.\n");
+    if (s->streams[0]->codec->codec_id != AV_CODEC_ID_WRAPPED_AVFRAME) {
+        av_log(s, AV_LOG_ERROR, "ERROR: Codec not supported.\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -298,8 +297,7 @@ AVOutputFormat ff_yuv4mpegpipe_muxer = {
     .extensions        = "y4m",
     .priv_data_size    = sizeof(int),
     .audio_codec       = AV_CODEC_ID_NONE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .video_codec       = AV_CODEC_ID_WRAPPED_AVFRAME,
     .write_header      = yuv4_write_header,
     .write_packet      = yuv4_write_packet,
-    .flags             = AVFMT_RAWPICTURE,
 };

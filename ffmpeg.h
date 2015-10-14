@@ -112,6 +112,7 @@ typedef struct OptionsContext {
 
     /* input options */
     int64_t input_ts_offset;
+    int loop;
     int rate_emu;
     int accurate_seek;
     int thread_queue_size;
@@ -272,6 +273,10 @@ typedef struct InputStream {
     int           wrap_correction_done;
 
     int64_t filter_in_rescale_delta_last;
+    
+    int64_t min_pts; /* pts with the smallest value in a current stream */
+    int64_t max_pts; /* pts with the higher value in a current stream */
+    int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
 
     double ts_scale;
     int saw_first_ts;
@@ -342,7 +347,12 @@ typedef struct InputFile {
     int eof_reached;      /* true if eof reached */
     int eagain;           /* true if last read attempt returned EAGAIN */
     int ist_index;        /* index of first stream in input_streams */
+    int loop;             /* set number of times input stream should be looped */
+    int64_t duration;     /* actual duration of the longest stream in a file
+                             at the moment when looping happens */
+    AVRational time_base; /* time base of the duration */
     int64_t input_ts_offset;
+    
     int64_t ts_offset;
     int64_t last_ts;
     int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */

@@ -80,6 +80,7 @@ static int query_formats(AVFilterContext *ctx)
     unsigned type, nb_str, idx0 = 0, idx, str, seg;
     AVFilterFormats *formats, *rates = NULL;
     AVFilterChannelLayouts *layouts = NULL;
+    int ret;
 
     for (type = 0; type < TYPE_ALL; type++) {
         nb_str = cat->nb_streams[type];
@@ -88,26 +89,26 @@ static int query_formats(AVFilterContext *ctx)
 
             /* Set the output formats */
             formats = ff_all_formats(type);
-            if (!formats)
-                return AVERROR(ENOMEM);
-            ff_formats_ref(formats, &ctx->outputs[idx]->in_formats);
+            if ((ret = ff_formats_ref(formats, &ctx->outputs[idx]->in_formats)) < 0)
+                return ret;
+
             if (type == AVMEDIA_TYPE_AUDIO) {
                 rates = ff_all_samplerates();
-                if (!rates)
-                    return AVERROR(ENOMEM);
-                ff_formats_ref(rates, &ctx->outputs[idx]->in_samplerates);
+                if ((ret = ff_formats_ref(rates, &ctx->outputs[idx]->in_samplerates)) < 0)
+                    return ret;
                 layouts = ff_all_channel_layouts();
-                if (!layouts)
-                    return AVERROR(ENOMEM);
-                ff_channel_layouts_ref(layouts, &ctx->outputs[idx]->in_channel_layouts);
+                if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[idx]->in_channel_layouts)) < 0)
+                    return ret;
             }
 
             /* Set the same formats for each corresponding input */
             for (seg = 0; seg < cat->nb_segments; seg++) {
-                ff_formats_ref(formats, &ctx->inputs[idx]->out_formats);
+                if ((ret = ff_formats_ref(formats, &ctx->inputs[idx]->out_formats)) < 0)
+                    return ret;
                 if (type == AVMEDIA_TYPE_AUDIO) {
-                    ff_formats_ref(rates, &ctx->inputs[idx]->out_samplerates);
-                    ff_channel_layouts_ref(layouts, &ctx->inputs[idx]->out_channel_layouts);
+                    if ((ret = ff_formats_ref(rates, &ctx->inputs[idx]->out_samplerates)) < 0 ||
+                        (ret = ff_channel_layouts_ref(layouts, &ctx->inputs[idx]->out_channel_layouts)) < 0)
+                        return ret;
                 }
                 idx += ctx->nb_outputs;
             }

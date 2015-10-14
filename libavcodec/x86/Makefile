@@ -126,6 +126,7 @@ YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
 YASM-OBJS-$(CONFIG_RV34DSP)            += x86/rv34dsp.o
+YASM-OBJS-$(CONFIG_IDCTDSP)            += x86/simple_idct10.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 YASM-OBJS-$(CONFIG_VP8DSP)             += x86/vp8dsp.o                  \
@@ -164,6 +165,7 @@ YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
 YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9intrapred.o            \
                                           x86/vp9intrapred_16bpp.o      \
                                           x86/vp9itxfm.o                \
+                                          x86/vp9itxfm_16bpp.o          \
                                           x86/vp9lpf.o                  \
                                           x86/vp9lpf_16bpp.o            \
                                           x86/vp9mc.o                   \

@@ -99,7 +99,7 @@ static int query_formats(AVFilterContext *ctx)
     const enum AVPixelFormat *out_pixfmts;
     const AVPixFmtDescriptor *desc;
     AVFilterFormats *avff;
-    int i, depth = 0, be = 0;
+    int i, ret, depth = 0, be = 0;
 
     if (!ctx->inputs[0]->in_formats ||
         !ctx->inputs[0]->in_formats->nb_formats) {
@@ -107,7 +107,8 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     if (!ctx->inputs[0]->out_formats)
-        ff_formats_ref(ff_make_format_list(in_pixfmts), &ctx->inputs[0]->out_formats);
+        if ((ret = ff_formats_ref(ff_make_format_list(in_pixfmts), &ctx->inputs[0]->out_formats)) < 0)
+            return ret;
 
     avff = ctx->inputs[0]->in_formats;
     desc = av_pix_fmt_desc_get(avff->formats[0]);
@@ -129,7 +130,8 @@ static int query_formats(AVFilterContext *ctx)
         out_pixfmts = out16le_pixfmts;
 
     for (i = 0; i < ctx->nb_outputs; i++)
-        ff_formats_ref(ff_make_format_list(out_pixfmts), &ctx->outputs[i]->in_formats);
+        if ((ret = ff_formats_ref(ff_make_format_list(out_pixfmts), &ctx->outputs[i]->in_formats)) < 0)
+            return ret;
     return 0;
 }
 

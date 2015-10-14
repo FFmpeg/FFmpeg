@@ -22,55 +22,74 @@
 ;******************************************************************************
 
 %include "libavutil/x86/x86util.asm"
+%include "vp9itxfm_template.asm"
 
 SECTION_RODATA
 
-pw_11585x2:  times 8 dw 23170
-pw_m11585x2: times 8 dw -23170
-pw_m11585_11585: times 4 dw -11585, 11585
-pw_11585_11585: times 8 dw 11585
-pw_m11585_m11585: times 8 dw -11585
-
 %macro VP9_IDCT_COEFFS 2-3 0
-pw_%1x2:    times 8 dw  %1*2
-pw_m%1x2:   times 8 dw -%1*2
-pw_%2x2:    times 8 dw  %2*2
-pw_m%2x2:   times 8 dw -%2*2
-pw_m%1_%2:  times 4 dw -%1,  %2
-pw_%2_%1:   times 4 dw  %2,  %1
-pw_m%2_m%1: times 4 dw -%2, -%1
+const pw_m%1_%2
+times 4 dw -%1,  %2
+const pw_%2_%1
+times 4 dw  %2,  %1
+
 %if %3 == 1
-pw_m%2_%1:  times 4 dw -%2,  %1
-pw_%1_%2:   times 4 dw  %1,  %2
+const pw_m%2_m%1
+times 4 dw -%2, -%1
+%if %1 != %2
+const pw_m%2_%1
+times 4 dw -%2,  %1
+const pw_%1_%2
+times 4 dw  %1,  %2
+%endif
+%endif
+
+%if %1 < 11585
+pw_m%1x2:   times 8 dw -%1*2
+%elif %1 > 11585
+pw_%1x2:    times 8 dw  %1*2
+%else
+const pw_%1x2
+times 8 dw %1*2
+%endif
+
+%if %2 != %1
+pw_%2x2:    times 8 dw  %2*2
 %endif
 %endmacro
 
-VP9_IDCT_COEFFS 15137,  6270, 1
-VP9_IDCT_COEFFS 16069,  3196, 1
-VP9_IDCT_COEFFS  9102, 13623, 1
-VP9_IDCT_COEFFS 16305,  1606
-VP9_IDCT_COEFFS 10394, 12665
-VP9_IDCT_COEFFS 14449,  7723
-VP9_IDCT_COEFFS  4756, 15679
 VP9_IDCT_COEFFS 16364,   804
-VP9_IDCT_COEFFS 11003, 12140
-VP9_IDCT_COEFFS 14811,  7005
-VP9_IDCT_COEFFS  5520, 15426
+VP9_IDCT_COEFFS 16305,  1606
+VP9_IDCT_COEFFS 16069,  3196, 1
 VP9_IDCT_COEFFS 15893,  3981
-VP9_IDCT_COEFFS  8423, 14053
+VP9_IDCT_COEFFS 15137,  6270, 1
+VP9_IDCT_COEFFS 14811,  7005
+VP9_IDCT_COEFFS 14449,  7723
 VP9_IDCT_COEFFS 13160,  9760
+VP9_IDCT_COEFFS 11585, 11585, 1
+VP9_IDCT_COEFFS 11003, 12140
+VP9_IDCT_COEFFS 10394, 12665
+VP9_IDCT_COEFFS  9102, 13623, 1
+VP9_IDCT_COEFFS  8423, 14053
+VP9_IDCT_COEFFS  5520, 15426
+VP9_IDCT_COEFFS  4756, 15679
 VP9_IDCT_COEFFS  2404, 16207
 
-pw_5283_13377: times 4 dw 5283, 13377
-pw_9929_13377: times 4 dw 9929, 13377
-pw_15212_m13377: times 4 dw 15212, -13377
-pw_15212_9929: times 4 dw 15212, 9929
-pw_m5283_m15212: times 4 dw -5283, -15212
-pw_13377x2: times 8 dw 13377*2
-pw_m13377_13377: times 4 dw -13377, 13377
-pw_13377_0: times 4 dw 13377, 0
-
-pd_8192: times 4 dd 8192
+const pw_5283_13377
+times 4 dw 5283, 13377
+const pw_9929_13377
+times 4 dw 9929, 13377
+const pw_15212_m13377
+times 4 dw 15212, -13377
+const pw_15212_9929
+times 4 dw 15212, 9929
+const pw_m5283_m15212
+times 4 dw -5283, -15212
+const pw_13377x2
+times 8 dw 13377*2
+const pw_m13377_13377
+times 4 dw -13377, 13377
+const pw_13377_0
+times 4 dw 13377, 0
 
 cextern pw_8
 cextern pw_16
@@ -79,37 +98,9 @@ cextern pw_512
 cextern pw_1024
 cextern pw_2048
 cextern pw_m1
+cextern pd_8192
 
 SECTION .text
-
-; (a*x + b*y + round) >> shift
-%macro VP9_MULSUB_2W_2X 5 ; dst1, dst2/src, round, coefs1, coefs2
-    pmaddwd            m%1, m%2, %4
-    pmaddwd            m%2,  %5
-    paddd              m%1,  %3
-    paddd              m%2,  %3
-    psrad              m%1,  14
-    psrad              m%2,  14
-%endmacro
-
-%macro VP9_MULSUB_2W_4X 7 ; dst1, dst2, coef1, coef2, rnd, tmp1/src, tmp2
-    VP9_MULSUB_2W_2X    %7,  %6,  %5, [pw_m%3_%4], [pw_%4_%3]
-    VP9_MULSUB_2W_2X    %1,  %2,  %5, [pw_m%3_%4], [pw_%4_%3]
-    packssdw           m%1, m%7
-    packssdw           m%2, m%6
-%endmacro
-
-%macro VP9_UNPACK_MULSUB_2W_4X 7-9 ; dst1, dst2, (src1, src2,) coef1, coef2, rnd, tmp1, tmp2
-%if %0 == 7
-    punpckhwd          m%6, m%2, m%1
-    punpcklwd          m%2, m%1
-    VP9_MULSUB_2W_4X   %1, %2, %3, %4, %5, %6, %7
-%else
-    punpckhwd          m%8, m%4, m%3
-    punpcklwd          m%2, m%4, m%3
-    VP9_MULSUB_2W_4X   %1, %2, %5, %6, %7, %8, %9
-%endif
-%endmacro
 
 %macro VP9_UNPACK_MULSUB_2D_4X 6 ; dst1 [src1], dst2 [src2], dst3, dst4, mul1, mul2
     punpckhwd          m%4, m%2, m%1
@@ -164,21 +155,6 @@ SECTION .text
 ; void vp9_iwht_iwht_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
 ;-------------------------------------------------------------------------------------------
 
-%macro VP9_IWHT4_1D 0
-    SWAP                 1, 2, 3
-    paddw               m0, m2
-    psubw               m3, m1
-    psubw               m4, m0, m3
-    psraw               m4, 1
-    psubw               m5, m4, m1
-    SWAP                 5, 1
-    psubw               m4, m2
-    SWAP                 4, 2
-    psubw               m0, m1
-    paddw               m3, m2
-    SWAP                 3, 2, 1
-%endmacro
-
 INIT_MMX mmx
 cglobal vp9_iwht_iwht_4x4_add, 3, 3, 0, dst, stride, block, eob
     mova                m0, [blockq+0*8]
@@ -204,24 +180,6 @@ cglobal vp9_iwht_iwht_4x4_add, 3, 3, 0, dst, stride, block, eob
 ;-------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
 ;-------------------------------------------------------------------------------------------
-
-%macro VP9_IDCT4_1D_FINALIZE 0
-    SUMSUB_BA            w, 3, 2, 4                         ; m3=t3+t0, m2=-t3+t0
-    SUMSUB_BA            w, 1, 0, 4                         ; m1=t2+t1, m0=-t2+t1
-    SWAP                 0, 3, 2                            ; 3102 -> 0123
-%endmacro
-
-%macro VP9_IDCT4_1D 0
-%if cpuflag(ssse3)
-    SUMSUB_BA            w, 2, 0, 4                         ; m2=IN(0)+IN(2) m0=IN(0)-IN(2)
-    pmulhrsw            m2, m6                              ; m2=t0
-    pmulhrsw            m0, m6                              ; m0=t1
-%else ; <= sse2
-    VP9_UNPACK_MULSUB_2W_4X 0, 2, 11585, 11585, m7, 4, 5    ; m0=t1, m1=t0
-%endif
-    VP9_UNPACK_MULSUB_2W_4X 1, 3, 15137, 6270, m7, 4, 5     ; m1=t2, m3=t3
-    VP9_IDCT4_1D_FINALIZE
-%endmacro
 
 ; 2x2 top left corner
 %macro VP9_IDCT4_2x2_1D 0
@@ -350,64 +308,6 @@ IDCT_4x4_FN ssse3
 ;-------------------------------------------------------------------------------------------
 ; void vp9_iadst_iadst_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
 ;-------------------------------------------------------------------------------------------
-
-%macro VP9_IADST4_1D 0
-    movq2dq           xmm0, m0
-    movq2dq           xmm1, m1
-    movq2dq           xmm2, m2
-    movq2dq           xmm3, m3
-%if cpuflag(ssse3)
-    paddw               m3, m0
-%endif
-    punpcklwd         xmm0, xmm1
-    punpcklwd         xmm2, xmm3
-    pmaddwd           xmm1, xmm0, [pw_5283_13377]
-    pmaddwd           xmm4, xmm0, [pw_9929_13377]
-%if notcpuflag(ssse3)
-    pmaddwd           xmm6, xmm0, [pw_13377_0]
-%endif
-    pmaddwd           xmm0, [pw_15212_m13377]
-    pmaddwd           xmm3, xmm2, [pw_15212_9929]
-%if notcpuflag(ssse3)
-    pmaddwd           xmm7, xmm2, [pw_m13377_13377]
-%endif
-    pmaddwd           xmm2, [pw_m5283_m15212]
-%if cpuflag(ssse3)
-    psubw               m3, m2
-%else
-    paddd             xmm6, xmm7
-%endif
-    paddd             xmm0, xmm2
-    paddd             xmm3, xmm5
-    paddd             xmm2, xmm5
-%if notcpuflag(ssse3)
-    paddd             xmm6, xmm5
-%endif
-    paddd             xmm1, xmm3
-    paddd             xmm0, xmm3
-    paddd             xmm4, xmm2
-    psrad             xmm1, 14
-    psrad             xmm0, 14
-    psrad             xmm4, 14
-%if cpuflag(ssse3)
-    pmulhrsw            m3, [pw_13377x2]        ; out2
-%else
-    psrad             xmm6, 14
-%endif
-    packssdw          xmm0, xmm0
-    packssdw          xmm1, xmm1
-    packssdw          xmm4, xmm4
-%if notcpuflag(ssse3)
-    packssdw          xmm6, xmm6
-%endif
-    movdq2q             m0, xmm0                ; out3
-    movdq2q             m1, xmm1                ; out0
-    movdq2q             m2, xmm4                ; out1
-%if notcpuflag(ssse3)
-    movdq2q             m3, xmm6                ; out2
-%endif
-    SWAP                 0, 1, 2, 3
-%endmacro
 
 %macro IADST4_FN 5
 INIT_MMX %5

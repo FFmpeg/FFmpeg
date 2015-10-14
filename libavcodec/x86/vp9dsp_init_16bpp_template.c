@@ -123,9 +123,23 @@ lpf_mix2_wrappers_set(BPC, ssse3);
 lpf_mix2_wrappers_set(BPC, avx);
 
 decl_ipred_fns(tm, BPC, mmxext, sse2);
+
+decl_itxfm_func(iwht, iwht, 4, BPC, mmxext);
+#if BPC == 10
+decl_itxfm_func(idct,  idct,  4, BPC, mmxext);
+decl_itxfm_funcs(4, BPC, ssse3);
+#else
+decl_itxfm_func(idct,  idct,  4, BPC, sse2);
+#endif
+decl_itxfm_func(idct,  iadst, 4, BPC, sse2);
+decl_itxfm_func(iadst, idct,  4, BPC, sse2);
+decl_itxfm_func(iadst, iadst, 4, BPC, sse2);
+decl_itxfm_funcs(8, BPC, sse2);
+decl_itxfm_funcs(16, BPC, sse2);
+decl_itxfm_func(idct,  idct, 32, BPC, sse2);
 #endif /* HAVE_YASM */
 
-av_cold void INIT_FUNC(VP9DSPContext *dsp)
+av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
 {
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
@@ -155,8 +169,28 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp)
     init_lpf_mix2_func(1, 0, 1, v, 8, 4, bpp, opt); \
     init_lpf_mix2_func(1, 1, 1, v, 8, 8, bpp, opt)
 
+#define init_itx_func(idxa, idxb, typea, typeb, size, bpp, opt) \
+    dsp->itxfm_add[idxa][idxb] = \
+        cat(ff_vp9_##typea##_##typeb##_##size##x##size##_add_, bpp, _##opt);
+#define init_itx_func_one(idx, typea, typeb, size, bpp, opt) \
+    init_itx_func(idx, DCT_DCT,   typea, typeb, size, bpp, opt); \
+    init_itx_func(idx, ADST_DCT,  typea, typeb, size, bpp, opt); \
+    init_itx_func(idx, DCT_ADST,  typea, typeb, size, bpp, opt); \
+    init_itx_func(idx, ADST_ADST, typea, typeb, size, bpp, opt)
+#define init_itx_funcs(idx, size, bpp, opt) \
+    init_itx_func(idx, DCT_DCT,   idct,  idct,  size, bpp, opt); \
+    init_itx_func(idx, ADST_DCT,  idct,  iadst, size, bpp, opt); \
+    init_itx_func(idx, DCT_ADST,  iadst, idct,  size, bpp, opt); \
+    init_itx_func(idx, ADST_ADST, iadst, iadst, size, bpp, opt); \
+
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         init_ipred_func(tm, TM_VP8, 4, BPC, mmxext);
+        if (!bitexact) {
+            init_itx_func_one(4 /* lossless */, iwht, iwht, 4, BPC, mmxext);
+#if BPC == 10
+            init_itx_func(TX_4X4, DCT_DCT, idct, idct, 4, 10, mmxext);
+#endif
+        }
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -164,10 +198,27 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp)
         init_subpel3(1, avg, BPC, sse2);
         init_lpf_funcs(BPC, sse2);
         init_8_16_32_ipred_funcs(tm, TM_VP8, BPC, sse2);
+#if BPC == 10
+        if (!bitexact) {
+            init_itx_func(TX_4X4, ADST_DCT,  idct,  iadst, 4, 10, sse2);
+            init_itx_func(TX_4X4, DCT_ADST,  iadst, idct,  4, 10, sse2);
+            init_itx_func(TX_4X4, ADST_ADST, iadst, iadst, 4, 10, sse2);
+        }
+#else
+        init_itx_funcs(TX_4X4, 4, 12, sse2);
+#endif
+        init_itx_funcs(TX_8X8, 8, BPC, sse2);
+        init_itx_funcs(TX_16X16, 16, BPC, sse2);
+        init_itx_func_one(TX_32X32, idct, idct, 32, BPC, sse2);
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
         init_lpf_funcs(BPC, ssse3);
+#if BPC == 10
+        if (!bitexact) {
+            init_itx_funcs(TX_4X4, 4, BPC, ssse3);
+        }
+#endif
     }
 
     if (EXTERNAL_AVX(cpu_flags)) {

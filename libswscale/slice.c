@@ -144,7 +144,7 @@ int ff_rotate_slice(SwsSlice *s, int lum, int chr)
     return 0;
 }
 
-int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH)
+int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH, int relative)
 {
     int i = 0;
 
@@ -158,29 +158,31 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int src
                         chrY + chrH,
                         lumY + lumH};
 
+    const uint8_t *src_[4] = {src[0] + (relative ? 0 : start[0]) * stride[0],
+                             src[1] + (relative ? 0 : start[1]) * stride[0],
+                             src[2] + (relative ? 0 : start[2]) * stride[0],
+                             src[3] + (relative ? 0 : start[3]) * stride[0]};
+
     s->width = srcW;
 
     for (i = 0; i < 4; ++i) {
         int j;
-        int lines = end[i];
-        lines = s->plane[i].available_lines < lines ? s->plane[i].available_lines : lines;
+        int first = s->plane[i].sliceY;
+        int n = s->plane[i].available_lines;
+        int lines = end[i] - start[i];
+        int tot_lines = end[i] - first;
 
-        if (end[i] > s->plane[i].sliceY+s->plane[i].sliceH) {
-            if (start[i] <= s->plane[i].sliceY+1)
-                s->plane[i].sliceY = FFMIN(start[i], s->plane[i].sliceY);
-            else
-                s->plane[i].sliceY = start[i];
-            s->plane[i].sliceH = end[i] - s->plane[i].sliceY;
+        if (start[i] >= first && n >= tot_lines) {
+            s->plane[i].sliceH = FFMAX(tot_lines, s->plane[i].sliceH);
+            for (j = 0; j < lines; j+= 1)
+                s->plane[i].line[start[i] - first + j] = src_[i] +  j * stride[i];
         } else {
-            if (end[i] >= s->plane[i].sliceY)
-                s->plane[i].sliceH = s->plane[i].sliceY + s->plane[i].sliceH - start[i];
-            else
-                s->plane[i].sliceH = end[i] - start[i];
             s->plane[i].sliceY = start[i];
+            lines = lines > n ? n : lines;
+            s->plane[i].sliceH = lines;
+            for (j = 0; j < lines; j+= 1)
+                s->plane[i].line[j] = src_[i] +  j * stride[i];
         }
-
-        for (j = start[i]; j < lines; j+= 1)
-            s->plane[i].line[j] = src[i] + (start[i] + j) * stride[i];
 
     }
 

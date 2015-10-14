@@ -77,7 +77,8 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts;
     int ret;
 
-    ff_add_format(&formats, AV_SAMPLE_FMT_DBL);
+    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL)) < 0)
+        return ret;
     ret = ff_set_common_formats(ctx, formats);
     if (ret < 0)
         return ret;
@@ -175,17 +176,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     dst = (double *)out->data[0];
 
     for (n = 0; n < in->nb_samples; n++, src += inlink->channels, dst += inlink->channels) {
-        double abs_sample = FFABS(src[0]), gain = 1.0;
+        double abs_sample = fabs(src[0]), gain = 1.0;
 
         for (c = 0; c < inlink->channels; c++)
             dst[c] = src[c] * level_in;
 
         if (s->link == 1) {
             for (c = 1; c < inlink->channels; c++)
-                abs_sample = FFMAX(FFABS(src[c]), abs_sample);
+                abs_sample = FFMAX(fabs(src[c]), abs_sample);
         } else {
             for (c = 1; c < inlink->channels; c++)
-                abs_sample += FFABS(src[c]);
+                abs_sample += fabs(src[c]);
 
             abs_sample /= inlink->channels;
         }

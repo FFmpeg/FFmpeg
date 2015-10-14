@@ -826,6 +826,7 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
+    int ret;
 
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_NONE };
     static const int input_srate[] = {48000, -1}; // ITU-R BS.1770 provides coeff only for 48kHz
@@ -834,9 +835,8 @@ static int query_formats(AVFilterContext *ctx)
     /* set optional output video format */
     if (ebur128->do_video) {
         formats = ff_make_format_list(pix_fmts);
-        if (!formats)
-            return AVERROR(ENOMEM);
-        ff_formats_ref(formats, &outlink->in_formats);
+        if ((ret = ff_formats_ref(formats, &outlink->in_formats)) < 0)
+            return ret;
         outlink = ctx->outputs[1];
     }
 
@@ -844,22 +844,19 @@ static int query_formats(AVFilterContext *ctx)
      * Note: ff_set_common_* functions are not used because they affect all the
      * links, and thus break the video format negotiation */
     formats = ff_make_format_list(sample_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_formats_ref(formats, &inlink->out_formats);
-    ff_formats_ref(formats, &outlink->in_formats);
+    if ((ret = ff_formats_ref(formats, &inlink->out_formats)) < 0 ||
+        (ret = ff_formats_ref(formats, &outlink->in_formats)) < 0)
+        return ret;
 
     layouts = ff_all_channel_layouts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
-    ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
-    ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
+    if ((ret = ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts)) < 0 ||
+        (ret = ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts)) < 0)
+        return ret;
 
     formats = ff_make_format_list(input_srate);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_formats_ref(formats, &inlink->out_samplerates);
-    ff_formats_ref(formats, &outlink->in_samplerates);
+    if ((ret = ff_formats_ref(formats, &inlink->out_samplerates)) < 0 ||
+        (ret = ff_formats_ref(formats, &outlink->in_samplerates)) < 0)
+        return ret;
 
     return 0;
 }

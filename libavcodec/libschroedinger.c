@@ -26,6 +26,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libschroedinger.h"
+#include "internal.h"
 
 static const SchroVideoFormatInfo ff_schro_video_format_info[] = {
     { 640,  480,  24000, 1001},
@@ -167,19 +168,14 @@ int ff_get_schro_frame_format (SchroChromaFormat schro_pix_fmt,
 
 static void free_schro_frame(SchroFrame *frame, void *priv)
 {
-    AVPicture *p_pic = priv;
-
-    if (!p_pic)
-        return;
-
-    avpicture_free(p_pic);
-    av_freep(&p_pic);
+    AVFrame *p_pic = priv;
+    av_frame_free(&p_pic);
 }
 
 SchroFrame *ff_create_schro_frame(AVCodecContext *avctx,
                                   SchroFrameFormat schro_frame_fmt)
 {
-    AVPicture *p_pic;
+    AVFrame *p_pic;
     SchroFrame *p_frame;
     int y_width, uv_width;
     int y_height, uv_height;
@@ -190,9 +186,12 @@ SchroFrame *ff_create_schro_frame(AVCodecContext *avctx,
     uv_width  = y_width  >> (SCHRO_FRAME_FORMAT_H_SHIFT(schro_frame_fmt));
     uv_height = y_height >> (SCHRO_FRAME_FORMAT_V_SHIFT(schro_frame_fmt));
 
-    p_pic = av_mallocz(sizeof(AVPicture));
-    if (!p_pic || avpicture_alloc(p_pic, avctx->pix_fmt, y_width, y_height) < 0) {
-        av_free(p_pic);
+    p_pic = av_frame_alloc();
+    if (!p_pic)
+        return NULL;
+
+    if (ff_get_buffer(avctx, p_pic, AV_GET_BUFFER_FLAG_REF) < 0) {
+        av_frame_free(&p_pic);
         return NULL;
     }
 

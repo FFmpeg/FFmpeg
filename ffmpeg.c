@@ -1099,6 +1099,7 @@ static void do_video_out(AVFormatContext *s,
 #endif
         return;
 
+#if FF_API_LAVF_FMT_RAWPICTURE
     if (s->oformat->flags & AVFMT_RAWPICTURE &&
         enc->codec->id == AV_CODEC_ID_RAWVIDEO) {
         /* raw pictures are written as AVPicture structure to
@@ -1114,7 +1115,9 @@ static void do_video_out(AVFormatContext *s,
         pkt.flags |= AV_PKT_FLAG_KEY;
 
         write_frame(s, &pkt, ost);
-    } else {
+    } else
+#endif
+    {
         int got_packet, forced_keyframe = 0;
         double pts_time;
 
@@ -1704,8 +1707,10 @@ static void flush_encoders(void)
 
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <= 1)
             continue;
+#if FF_API_LAVF_FMT_RAWPICTURE
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == AV_CODEC_ID_RAWVIDEO)
             continue;
+#endif
 
         for (;;) {
             int (*encode)(AVCodecContext*, AVPacket*, const AVFrame*, int*) = NULL;
@@ -1880,6 +1885,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
     av_copy_packet_side_data(&opkt, pkt);
 
+#if FF_API_LAVF_FMT_RAWPICTURE
     if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
         ost->st->codec->codec_id == AV_CODEC_ID_RAWVIDEO &&
         (of->ctx->oformat->flags & AVFMT_RAWPICTURE)) {
@@ -1894,6 +1900,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.size = sizeof(AVPicture);
         opkt.flags |= AV_PKT_FLAG_KEY;
     }
+#endif
 
     write_frame(of->ctx, &opkt, ost);
 }
@@ -2024,6 +2031,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
                                               (AVRational){1, avctx->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
                                               (AVRational){1, avctx->sample_rate});
+    ist->nb_samples = decoded_frame->nb_samples;
     for (i = 0; i < ist->nb_filters; i++) {
         if (i < ist->nb_filters - 1) {
             f = ist->filter_frame;
@@ -2261,7 +2269,7 @@ static int send_filter_eof(InputStream *ist)
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int process_input_packet(InputStream *ist, const AVPacket *pkt)
+static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
     int ret = 0, i;
     int got_output = 0;
@@ -2370,7 +2378,8 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
     }
 
     /* after flushing, send an EOF on all the filter inputs attached to the stream */
-    if (!pkt && ist->decoding_needed && !got_output) {
+    /* except when looping we need to flush but not to send an EOF */
+    if (!pkt && ist->decoding_needed && !got_output && !no_eof) {
         int ret = send_filter_eof(ist);
         if (ret < 0) {
             av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
@@ -3606,6 +3615,86 @@ static void reset_eagain(void)
         output_streams[i]->unavailable = 0;
 }
 
+// set duration to max(tmp, duration) in a proper time base and return duration's time_base
+static AVRational duration_max(int64_t tmp, int64_t *duration, AVRational tmp_time_base,
+                                AVRational time_base)
+{
+    int ret;
+
+    if (!*duration) {
+        *duration = tmp;
+        return tmp_time_base;
+    }
+
+    ret = av_compare_ts(*duration, time_base, tmp, tmp_time_base);
+    if (ret < 0) {
+        *duration = tmp;
+        return tmp_time_base;
+    }
+
+    return time_base;
+}
+
+static int seek_to_start(InputFile *ifile, AVFormatContext *is)
+{
+    InputStream *ist;
+    AVCodecContext *avctx;
+    int i, ret, has_audio = 0;
+    int64_t duration = 0;
+
+    ret = av_seek_frame(is, -1, is->start_time, 0);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i < ifile->nb_streams; i++) {
+        ist   = input_streams[ifile->ist_index + i];
+        avctx = ist->dec_ctx;
+
+        // flush decoders
+        if (ist->decoding_needed) {
+            process_input_packet(ist, NULL, 1);
+            avcodec_flush_buffers(avctx);
+        }
+
+        /* duration is the length of the last frame in a stream
+         * when audio stream is present we don't care about
+         * last video frame length because it's not defined exactly */
+        if (avctx->codec_type == AVMEDIA_TYPE_AUDIO && ist->nb_samples)
+            has_audio = 1;
+    }
+
+    for (i = 0; i < ifile->nb_streams; i++) {
+        ist   = input_streams[ifile->ist_index + i];
+        avctx = ist->dec_ctx;
+
+        if (has_audio) {
+            if (avctx->codec_type == AVMEDIA_TYPE_AUDIO && ist->nb_samples) {
+                AVRational sample_rate = {1, avctx->sample_rate};
+
+                duration = av_rescale_q(ist->nb_samples, sample_rate, ist->st->time_base);
+            } else
+                continue;
+        } else {
+            if (ist->framerate.num) {
+                duration = av_rescale_q(1, ist->framerate, ist->st->time_base);
+            } else if (ist->st->avg_frame_rate.num) {
+                duration = av_rescale_q(1, ist->st->avg_frame_rate, ist->st->time_base);
+            } else duration = 1;
+        }
+        if (!ifile->duration)
+            ifile->time_base = ist->st->time_base;
+        /* the total duration of the stream, max_pts - min_pts is
+         * the duration of the stream without the last frame */
+        duration += ist->max_pts - ist->min_pts;
+        ifile->time_base = duration_max(duration, &ifile->duration, ist->st->time_base,
+                                        ifile->time_base);
+    }
+
+    ifile->loop--;
+
+    return ret;
+}
+
 /*
  * Return
  * - 0 -- one packet was read and processed
@@ -3620,6 +3709,7 @@ static int process_input(int file_index)
     InputStream *ist;
     AVPacket pkt;
     int ret, i, j;
+    int64_t duration;
 
     is  = ifile->ctx;
     ret = get_input_packet(ifile, &pkt);
@@ -3627,6 +3717,11 @@ static int process_input(int file_index)
     if (ret == AVERROR(EAGAIN)) {
         ifile->eagain = 1;
         return ret;
+    }
+    if ((ret < 0) && (ifile->loop > 1)) {
+        if ((ret = seek_to_start(ifile, is)) < 0)
+            return ret;
+        ret = get_input_packet(ifile, &pkt);
     }
     if (ret < 0) {
         if (ret != AVERROR_EOF) {
@@ -3638,7 +3733,7 @@ static int process_input(int file_index)
         for (i = 0; i < ifile->nb_streams; i++) {
             ist = input_streams[ifile->ist_index + i];
             if (ist->decoding_needed) {
-                ret = process_input_packet(ist, NULL);
+                ret = process_input_packet(ist, NULL, 0);
                 if (ret>0)
                     return 0;
             }
@@ -3774,6 +3869,16 @@ static int process_input(int file_index)
         }
     }
 
+    duration = av_rescale_q(ifile->duration, ifile->time_base, ist->st->time_base);
+    if (pkt.pts != AV_NOPTS_VALUE) {
+        pkt.pts += duration;
+        ist->max_pts = FFMAX(pkt.pts, ist->max_pts);
+        ist->min_pts = FFMIN(pkt.pts, ist->min_pts);
+    }
+
+    if (pkt.dts != AV_NOPTS_VALUE)
+        pkt.dts += duration;
+
     if ((ist->dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
          ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
          pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE &&
@@ -3824,7 +3929,7 @@ static int process_input(int file_index)
 
     sub2video_heartbeat(ist, pkt.pts);
 
-    process_input_packet(ist, &pkt);
+    process_input_packet(ist, &pkt, 0);
 
 discard_packet:
     av_free_packet(&pkt);
@@ -3989,7 +4094,7 @@ static int transcode(void)
     for (i = 0; i < nb_input_streams; i++) {
         ist = input_streams[i];
         if (!input_files[ist->file_index]->eof_reached && ist->decoding_needed) {
-            process_input_packet(ist, NULL);
+            process_input_packet(ist, NULL, 0);
         }
     }
     flush_encoders();

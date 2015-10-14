@@ -337,7 +337,7 @@ static void check_itxfm(void)
                     randomize_buffers();
                     ftx(coef, tx, txtp, sz, bit_depth);
 
-                    for (sub = (txtp == 0) ? 1 : sz; sub <= sz; sub <<= 1) {
+                    for (sub = (txtp == 0) ? 1 : 2; sub <= sz; sub <<= 1) {
                         int eob;
 
                         if (sub < sz) {

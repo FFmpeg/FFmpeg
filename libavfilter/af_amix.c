@@ -537,12 +537,13 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     layouts = ff_all_channel_layouts();
-
     if (!layouts)
         return AVERROR(ENOMEM);
 
-    ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
-    ff_add_format(&formats, AV_SAMPLE_FMT_FLTP);
+    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT)) < 0)
+        return ret;
+    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLTP)) < 0)
+        return ret;
     ret = ff_set_common_formats(ctx, formats);
     if (ret < 0)
         return ret;

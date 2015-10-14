@@ -92,6 +92,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat in_fmts[]  = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
     static const enum AVPixelFormat out_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
+    int ret;
     AVFilterFormats *in  = ff_make_format_list(in_fmts);
     AVFilterFormats *out = ff_make_format_list(out_fmts);
     if (!in || !out) {
@@ -99,8 +100,9 @@ static int query_formats(AVFilterContext *ctx)
         av_freep(&out);
         return AVERROR(ENOMEM);
     }
-    ff_formats_ref(in,  &ctx->inputs[0]->out_formats);
-    ff_formats_ref(out, &ctx->outputs[0]->in_formats);
+    if ((ret = ff_formats_ref(in , &ctx->inputs[0]->out_formats)) < 0 ||
+        (ret = ff_formats_ref(out, &ctx->outputs[0]->in_formats)) < 0)
+        return ret;
     return 0;
 }
 

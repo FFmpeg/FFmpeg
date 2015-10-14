@@ -300,17 +300,20 @@ AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
     return formats;
 }
 
-#define ADD_FORMAT(f, fmt, type, list, nb)                  \
+#define ADD_FORMAT(f, fmt, unref_fn, type, list, nb)        \
 do {                                                        \
     type *fmts;                                             \
     void *oldf = *f;                                        \
                                                             \
-    if (!(*f) && !(*f = av_mallocz(sizeof(**f))))           \
+    if (!(*f) && !(*f = av_mallocz(sizeof(**f)))) {         \
+        unref_fn(f);                                        \
         return AVERROR(ENOMEM);                             \
+    }                                                       \
                                                             \
     fmts = av_realloc_array((*f)->list, (*f)->nb + 1,       \
                             sizeof(*(*f)->list));           \
     if (!fmts) {                                            \
+        unref_fn(f);                                        \
         if (!oldf)                                          \
             av_freep(f);                                    \
         return AVERROR(ENOMEM);                             \
@@ -322,14 +325,14 @@ do {                                                        \
 
 int ff_add_format(AVFilterFormats **avff, int64_t fmt)
 {
-    ADD_FORMAT(avff, fmt, int, formats, nb_formats);
+    ADD_FORMAT(avff, fmt, ff_formats_unref, int, formats, nb_formats);
     return 0;
 }
 
 int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout)
 {
     av_assert1(!(*l && (*l)->all_layouts));
-    ADD_FORMAT(l, channel_layout, uint64_t, channel_layouts, nb_channel_layouts);
+    ADD_FORMAT(l, channel_layout, ff_channel_layouts_unref, uint64_t, channel_layouts, nb_channel_layouts);
     return 0;
 }
 
@@ -340,12 +343,14 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     if (type == AVMEDIA_TYPE_VIDEO) {
         const AVPixFmtDescriptor *desc = NULL;
         while ((desc = av_pix_fmt_desc_next(desc))) {
-            ff_add_format(&ret, av_pix_fmt_desc_get_id(desc));
+            if (ff_add_format(&ret, av_pix_fmt_desc_get_id(desc)) < 0)
+                return NULL;
         }
     } else if (type == AVMEDIA_TYPE_AUDIO) {
         enum AVSampleFormat fmt = 0;
         while (av_get_sample_fmt_name(fmt)) {
-            ff_add_format(&ret, fmt);
+            if (ff_add_format(&ret, fmt) < 0)
+                return NULL;
             fmt++;
         }
     }
@@ -370,7 +375,8 @@ AVFilterFormats *ff_planar_sample_fmts(void)
 
     for (fmt = 0; av_get_bytes_per_sample(fmt)>0; fmt++)
         if (av_sample_fmt_is_planar(fmt))
-            ff_add_format(&ret, fmt);
+            if (ff_add_format(&ret, fmt) < 0)
+                return NULL;
 
     return ret;
 }
@@ -399,15 +405,17 @@ AVFilterChannelLayouts *ff_all_channel_counts(void)
     return ret;
 }
 
-#define FORMATS_REF(f, ref)                                                     \
+#define FORMATS_REF(f, ref, unref_fn)                                           \
     void *tmp;                                                                  \
                                                                                 \
-    if (!ref)                                                                   \
-        return AVERROR_BUG;                                                     \
+    if (!f || !ref)                                                             \
+        return AVERROR(ENOMEM);                                                 \
                                                                                 \
     tmp = av_realloc_array(f->refs, sizeof(*f->refs), f->refcount + 1);         \
-    if (!tmp)                                                                   \
+    if (!tmp) {                                                                 \
+        unref_fn(&f);                                                           \
         return AVERROR(ENOMEM);                                                 \
+    }                                                                           \
     f->refs = tmp;                                                              \
     f->refs[f->refcount++] = ref;                                               \
     *ref = f;                                                                   \
@@ -415,12 +423,12 @@ AVFilterChannelLayouts *ff_all_channel_counts(void)
 
 int ff_channel_layouts_ref(AVFilterChannelLayouts *f, AVFilterChannelLayouts **ref)
 {
-    FORMATS_REF(f, ref);
+    FORMATS_REF(f, ref, ff_channel_layouts_unref);
 }
 
 int ff_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
 {
-    FORMATS_REF(f, ref);
+    FORMATS_REF(f, ref, ff_formats_unref);
 }
 
 #define FIND_REF_INDEX(ref, idx)            \
@@ -488,25 +496,29 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
     FORMATS_CHANGEREF(oldref, newref);
 }
 
-#define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref, list) \
+#define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref_fn, unref_fn, list) \
     int count = 0, i;                                               \
                                                                     \
     if (!fmts)                                                      \
-        return AVERROR_BUG;                                         \
+        return AVERROR(ENOMEM);                                     \
                                                                     \
     for (i = 0; i < ctx->nb_inputs; i++) {                          \
         if (ctx->inputs[i] && !ctx->inputs[i]->out_fmts) {          \
-            int ret = ref(fmts, &ctx->inputs[i]->out_fmts);         \
-            if (ret < 0)                                            \
+            int ret = ref_fn(fmts, &ctx->inputs[i]->out_fmts);      \
+            if (ret < 0) {                                          \
+                unref_fn(&fmts);                                    \
                 return ret;                                         \
+            }                                                       \
             count++;                                                \
         }                                                           \
     }                                                               \
     for (i = 0; i < ctx->nb_outputs; i++) {                         \
         if (ctx->outputs[i] && !ctx->outputs[i]->in_fmts) {         \
-            int ret = ref(fmts, &ctx->outputs[i]->in_fmts);         \
-            if (ret < 0)                                            \
+            int ret = ref_fn(fmts, &ctx->outputs[i]->in_fmts);      \
+            if (ret < 0) {                                          \
+                unref_fn(&fmts);                                    \
                 return ret;                                         \
+            }                                                       \
             count++;                                                \
         }                                                           \
     }                                                               \
@@ -523,14 +535,14 @@ int ff_set_common_channel_layouts(AVFilterContext *ctx,
                                   AVFilterChannelLayouts *layouts)
 {
     SET_COMMON_FORMATS(ctx, layouts, in_channel_layouts, out_channel_layouts,
-                       ff_channel_layouts_ref, channel_layouts);
+                       ff_channel_layouts_ref, ff_channel_layouts_unref, channel_layouts);
 }
 
 int ff_set_common_samplerates(AVFilterContext *ctx,
                               AVFilterFormats *samplerates)
 {
     SET_COMMON_FORMATS(ctx, samplerates, in_samplerates, out_samplerates,
-                       ff_formats_ref, formats);
+                       ff_formats_ref, ff_formats_unref, formats);
 }
 
 /**
@@ -541,7 +553,7 @@ int ff_set_common_samplerates(AVFilterContext *ctx,
 int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 {
     SET_COMMON_FORMATS(ctx, formats, in_formats, out_formats,
-                       ff_formats_ref, formats);
+                       ff_formats_ref, ff_formats_unref, formats);
 }
 
 static int default_query_formats_common(AVFilterContext *ctx,

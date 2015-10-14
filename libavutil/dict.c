@@ -210,12 +210,17 @@ void av_dict_free(AVDictionary **pm)
     av_freep(pm);
 }
 
-void av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags)
+int av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags)
 {
     AVDictionaryEntry *t = NULL;
 
-    while ((t = av_dict_get(src, "", t, AV_DICT_IGNORE_SUFFIX)))
-        av_dict_set(dst, t->key, t->value, flags);
+    while ((t = av_dict_get(src, "", t, AV_DICT_IGNORE_SUFFIX))) {
+        int ret = av_dict_set(dst, t->key, t->value, flags);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
 }
 
 int av_dict_get_string(const AVDictionary *m, char **buffer,
