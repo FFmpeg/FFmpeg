@@ -21,9 +21,13 @@
  */
 
 #include "libavutil/log.h"
-#include "dxva2_internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+
+// The headers above may include w32threads.h, which uses the original
+// _WIN32_WINNT define, while dxva2_internal.h redefines it to target a
+// potentially newer version.
+#include "dxva2_internal.h"
 
 #define MAX_SLICES 1024
 struct dxva2_picture_context {
