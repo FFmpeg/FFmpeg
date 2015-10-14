@@ -1099,6 +1099,7 @@ static void do_video_out(AVFormatContext *s,
 #endif
         return;
 
+#if FF_API_LAVF_FMT_RAWPICTURE
     if (s->oformat->flags & AVFMT_RAWPICTURE &&
         enc->codec->id == AV_CODEC_ID_RAWVIDEO) {
         /* raw pictures are written as AVPicture structure to
@@ -1114,7 +1115,9 @@ static void do_video_out(AVFormatContext *s,
         pkt.flags |= AV_PKT_FLAG_KEY;
 
         write_frame(s, &pkt, ost);
-    } else {
+    } else
+#endif
+    {
         int got_packet, forced_keyframe = 0;
         double pts_time;
 
@@ -1704,8 +1707,10 @@ static void flush_encoders(void)
 
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <= 1)
             continue;
+#if FF_API_LAVF_FMT_RAWPICTURE
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == AV_CODEC_ID_RAWVIDEO)
             continue;
+#endif
 
         for (;;) {
             int (*encode)(AVCodecContext*, AVPacket*, const AVFrame*, int*) = NULL;
@@ -1880,6 +1885,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
     av_copy_packet_side_data(&opkt, pkt);
 
+#if FF_API_LAVF_FMT_RAWPICTURE
     if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
         ost->st->codec->codec_id == AV_CODEC_ID_RAWVIDEO &&
         (of->ctx->oformat->flags & AVFMT_RAWPICTURE)) {
@@ -1894,6 +1900,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.size = sizeof(AVPicture);
         opkt.flags |= AV_PKT_FLAG_KEY;
     }
+#endif
 
     write_frame(of->ctx, &opkt, ost);
 }
