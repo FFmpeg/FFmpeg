@@ -43,6 +43,11 @@
 #define ff_mutex_unlock  pthread_mutex_unlock
 #define ff_mutex_destroy pthread_mutex_destroy
 
+#define AVOnce pthread_once_t
+#define AV_ONCE_INIT PTHREAD_ONCE_INIT
+
+#define ff_thread_once(control, routine) pthread_once(control, routine)
+
 #else
 
 #define USE_ATOMICS 1
@@ -53,6 +58,18 @@
 #define ff_mutex_lock(mutex) (0)
 #define ff_mutex_unlock(mutex) (0)
 #define ff_mutex_destroy(mutex) (0)
+
+#define AVOnce char
+#define AV_ONCE_INIT 0
+
+static inline int ff_thread_once(char *control, void (*routine)(void))
+{
+    if (!*control) {
+        routine();
+        *control = 1;
+    }
+    return 0;
+}
 
 #endif
 
