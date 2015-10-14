@@ -4104,7 +4104,9 @@ static int transcode(void)
     /* write the trailer if needed and close file */
     for (i = 0; i < nb_output_files; i++) {
         os = output_files[i]->ctx;
-        av_write_trailer(os);
+        if ((ret = av_write_trailer(os)) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s", os->filename, av_err2str(ret));
+        }
     }
 
     /* dump report by using the first video and audio streams */
