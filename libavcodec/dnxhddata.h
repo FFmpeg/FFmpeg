@@ -46,8 +46,7 @@ typedef struct CIDEntry {
     const uint8_t *luma_weight, *chroma_weight;
     const uint8_t *dc_codes, *dc_bits;
     const uint16_t *ac_codes;
-    const uint8_t *ac_bits, *ac_level;
-    const uint8_t *ac_flags;
+    const uint8_t *ac_bits, *ac_info;
     const uint16_t *run_codes;
     const uint8_t *run_bits, *run;
     int bit_rates[5]; ///< Helper to choose variants, rounded to nearest 5Mb/s
