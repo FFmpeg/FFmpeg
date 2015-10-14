@@ -4130,6 +4130,15 @@ elif enabled mips; then
             disable mips64r6
             disable msa
         ;;
+        *)
+            disable mipsfpu
+            disable mips32r2
+            disable mips32r5
+            disable mips64r6
+            disable mipsdspr1
+            disable mipsdspr2
+            disable msa
+        ;;
     esac
 
 elif enabled ppc; then
