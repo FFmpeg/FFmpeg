@@ -110,6 +110,8 @@
 #   include "arm/aac.h"
 #endif
 
+#include "libavutil/thread.h"
+
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
 
@@ -1003,10 +1005,55 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
                                     sizeof(ff_aac_spectral_codes[num][0]), \
         size);
 
+static av_cold void aac_static_table_init()
+{
+    AAC_INIT_VLC_STATIC( 0, 304);
+    AAC_INIT_VLC_STATIC( 1, 270);
+    AAC_INIT_VLC_STATIC( 2, 550);
+    AAC_INIT_VLC_STATIC( 3, 300);
+    AAC_INIT_VLC_STATIC( 4, 328);
+    AAC_INIT_VLC_STATIC( 5, 294);
+    AAC_INIT_VLC_STATIC( 6, 306);
+    AAC_INIT_VLC_STATIC( 7, 268);
+    AAC_INIT_VLC_STATIC( 8, 510);
+    AAC_INIT_VLC_STATIC( 9, 366);
+    AAC_INIT_VLC_STATIC(10, 462);
+
+    ff_aac_sbr_init();
+
+    ff_aac_tableinit();
+
+    INIT_VLC_STATIC(&vlc_scalefactors, 7,
+                    FF_ARRAY_ELEMS(ff_aac_scalefactor_code),
+                    ff_aac_scalefactor_bits,
+                    sizeof(ff_aac_scalefactor_bits[0]),
+                    sizeof(ff_aac_scalefactor_bits[0]),
+                    ff_aac_scalefactor_code,
+                    sizeof(ff_aac_scalefactor_code[0]),
+                    sizeof(ff_aac_scalefactor_code[0]),
+                    352);
+
+
+    // window initialization
+    ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
+    ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
+    ff_init_ff_sine_windows(10);
+    ff_init_ff_sine_windows( 9);
+    ff_init_ff_sine_windows( 7);
+
+    cbrt_tableinit();
+}
+
+static AVOnce aac_init = AV_ONCE_INIT;
+
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
     int ret;
+
+    ret = ff_thread_once(&aac_init, &aac_static_table_init);
+    if (ret != 0)
+        return AVERROR_UNKNOWN;
 
     ac->avctx = avctx;
     ac->oc[1].m4ac.sample_rate = avctx->sample_rate;
@@ -1049,35 +1096,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         }
     }
 
-    AAC_INIT_VLC_STATIC( 0, 304);
-    AAC_INIT_VLC_STATIC( 1, 270);
-    AAC_INIT_VLC_STATIC( 2, 550);
-    AAC_INIT_VLC_STATIC( 3, 300);
-    AAC_INIT_VLC_STATIC( 4, 328);
-    AAC_INIT_VLC_STATIC( 5, 294);
-    AAC_INIT_VLC_STATIC( 6, 306);
-    AAC_INIT_VLC_STATIC( 7, 268);
-    AAC_INIT_VLC_STATIC( 8, 510);
-    AAC_INIT_VLC_STATIC( 9, 366);
-    AAC_INIT_VLC_STATIC(10, 462);
-
-    ff_aac_sbr_init();
-
     avpriv_float_dsp_init(&ac->fdsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     ac->random_state = 0x1f2e3d4c;
-
-    ff_aac_tableinit();
-
-    INIT_VLC_STATIC(&vlc_scalefactors, 7,
-                    FF_ARRAY_ELEMS(ff_aac_scalefactor_code),
-                    ff_aac_scalefactor_bits,
-                    sizeof(ff_aac_scalefactor_bits[0]),
-                    sizeof(ff_aac_scalefactor_bits[0]),
-                    ff_aac_scalefactor_code,
-                    sizeof(ff_aac_scalefactor_code[0]),
-                    sizeof(ff_aac_scalefactor_code[0]),
-                    352);
 
     ff_mdct_init(&ac->mdct,       11, 1, 1.0 / (32768.0 * 1024.0));
     ff_mdct_init(&ac->mdct_ld,    10, 1, 1.0 / (32768.0 * 512.0));
@@ -1086,15 +1107,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ret = ff_imdct15_init(&ac->mdct480, 5);
     if (ret < 0)
         return ret;
-
-    // window initialization
-    ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
-    ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
-    ff_init_ff_sine_windows(10);
-    ff_init_ff_sine_windows( 9);
-    ff_init_ff_sine_windows( 7);
-
-    cbrt_tableinit();
 
     return 0;
 }
@@ -3321,6 +3333,7 @@ AVCodec ff_aac_decoder = {
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE
     },
     .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
+    .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE,
     .channel_layouts = aac_channel_layout,
 };
 
@@ -3342,5 +3355,6 @@ AVCodec ff_aac_latm_decoder = {
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE
     },
     .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
+    .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE,
     .channel_layouts = aac_channel_layout,
 };
