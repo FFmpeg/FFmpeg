@@ -435,7 +435,8 @@ static inline void fill_rectangle(SDL_Surface *screen,
 
 #define BPP 1
 
-static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, int imgh)
+static void blend_subrect(uint8_t *dst[4], uint16_t dst_linesize[4],
+                          const AVSubtitleRect *rect, int imgw, int imgh)
 {
     int wrap, wrap3, width2, skip2;
     int y, u, v, a, u1, v1, a1, w, h;
@@ -448,13 +449,14 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     dsth = av_clip(rect->h, 0, imgh);
     dstx = av_clip(rect->x, 0, imgw - dstw);
     dsty = av_clip(rect->y, 0, imgh - dsth);
-    lum = dst->data[0] + dsty * dst->linesize[0];
-    cb  = dst->data[1] + (dsty >> 1) * dst->linesize[1];
-    cr  = dst->data[2] + (dsty >> 1) * dst->linesize[2];
+    /* sdl has U and V inverted */
+    lum = dst[0] +  dsty       * dst_linesize[0];
+    cb  = dst[2] + (dsty >> 1) * dst_linesize[2];
+    cr  = dst[1] + (dsty >> 1) * dst_linesize[1];
 
     width2 = ((dstw + 1) >> 1) + (dstx & ~dstw & 1);
     skip2 = dstx >> 1;
-    wrap = dst->linesize[0];
+    wrap = dst_linesize[0];
     wrap3 = rect->linesize[0];
     p = rect->data[0];
     pal = (const uint32_t *)rect->data[1];  /* Now in YCrCb! */
@@ -503,8 +505,8 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
         }
         p += wrap3 - dstw * BPP;
         lum += wrap - dstw - dstx;
-        cb += dst->linesize[1] - width2 - skip2;
-        cr += dst->linesize[2] - width2 - skip2;
+        cb += dst_linesize[2] - width2 - skip2;
+        cr += dst_linesize[1] - width2 - skip2;
     }
     for (h = dsth - (dsty & 1); h >= 2; h -= 2) {
         lum += dstx;
@@ -588,8 +590,8 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
         }
         p += wrap3 + (wrap3 - dstw * BPP);
         lum += wrap + (wrap - dstw - dstx);
-        cb += dst->linesize[1] - width2 - skip2;
-        cr += dst->linesize[2] - width2 - skip2;
+        cb += dst_linesize[2] - width2 - skip2;
+        cr += dst_linesize[1] - width2 - skip2;
     }
     /* handle odd height */
     if (h) {
@@ -644,7 +646,6 @@ static void video_image_display(VideoState *is)
 {
     VideoPicture *vp;
     SubPicture *sp;
-    AVPicture pict;
     float aspect_ratio;
     int width, height, x, y;
     SDL_Rect rect;
@@ -681,17 +682,9 @@ static void video_image_display(VideoState *is)
                 {
                     SDL_LockYUVOverlay (vp->bmp);
 
-                    pict.data[0] = vp->bmp->pixels[0];
-                    pict.data[1] = vp->bmp->pixels[2];
-                    pict.data[2] = vp->bmp->pixels[1];
-
-                    pict.linesize[0] = vp->bmp->pitches[0];
-                    pict.linesize[1] = vp->bmp->pitches[2];
-                    pict.linesize[2] = vp->bmp->pitches[1];
-
                     for (i = 0; i < sp->sub.num_rects; i++)
-                        blend_subrect(&pict, sp->sub.rects[i],
-                                      vp->bmp->w, vp->bmp->h);
+                        blend_subrect(vp->bmp->pixels, vp->bmp->pitches,
+                                      sp->sub.rects[i], vp->bmp->w, vp->bmp->h);
 
                     SDL_UnlockYUVOverlay (vp->bmp);
                 }
@@ -1303,9 +1296,7 @@ static void alloc_picture(void *opaque)
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
 {
     VideoPicture *vp;
-#if CONFIG_AVFILTER
-    AVPicture pict_src;
-#else
+#if !CONFIG_AVFILTER
     int dst_pix_fmt = AV_PIX_FMT_YUV420P;
 #endif
     /* wait until we have space to put a new picture */
@@ -1360,31 +1351,24 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
     /* if the frame is not skipped, then display it */
     if (vp->bmp) {
-        AVPicture pict = { { 0 } };
+        uint8_t *data[4];
+        int linesize[4];
 
         /* get a pointer on the bitmap */
         SDL_LockYUVOverlay (vp->bmp);
 
-        pict.data[0] = vp->bmp->pixels[0];
-        pict.data[1] = vp->bmp->pixels[2];
-        pict.data[2] = vp->bmp->pixels[1];
+        data[0] = vp->bmp->pixels[0];
+        data[1] = vp->bmp->pixels[2];
+        data[2] = vp->bmp->pixels[1];
 
-        pict.linesize[0] = vp->bmp->pitches[0];
-        pict.linesize[1] = vp->bmp->pitches[2];
-        pict.linesize[2] = vp->bmp->pitches[1];
+        linesize[0] = vp->bmp->pitches[0];
+        linesize[1] = vp->bmp->pitches[2];
+        linesize[2] = vp->bmp->pitches[1];
 
 #if CONFIG_AVFILTER
-        pict_src.data[0] = src_frame->data[0];
-        pict_src.data[1] = src_frame->data[1];
-        pict_src.data[2] = src_frame->data[2];
-
-        pict_src.linesize[0] = src_frame->linesize[0];
-        pict_src.linesize[1] = src_frame->linesize[1];
-        pict_src.linesize[2] = src_frame->linesize[2];
-
         // FIXME use direct rendering
-        av_picture_copy(&pict, &pict_src,
-                        vp->pix_fmt, vp->width, vp->height);
+        av_image_copy(data, linesize, src_frame->data, src_frame->linesize,
+                      vp->pix_fmt, vp->width, vp->height);
 #else
         av_opt_get_int(sws_opts, "sws_flags", 0, &sws_flags);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
@@ -1395,7 +1379,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
             exit(1);
         }
         sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
-                  0, vp->height, pict.data, pict.linesize);
+                  0, vp->height, data, linesize);
 #endif
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
