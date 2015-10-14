@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/imgutils.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -199,8 +201,9 @@ static int roq_decode_frame(AVCodecContext *avctx,
     }
 
     if(copy)
-        av_picture_copy((AVPicture*)s->current_frame, (AVPicture*)s->last_frame,
-                        avctx->pix_fmt, avctx->width, avctx->height);
+        av_image_copy(s->current_frame->data, s->current_frame->linesize,
+                      s->last_frame->data, s->last_frame->linesize,
+                      avctx->pix_fmt, avctx->width, avctx->height);
 
     bytestream2_init(&s->gb, buf, buf_size);
     roqvideo_decode_frame(s);
