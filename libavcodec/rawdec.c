@@ -109,8 +109,10 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             memset(context->palette->data, 0, AVPALETTE_SIZE);
     }
 
-    context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
-                                             avctx->height);
+    context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
+                                                   avctx->width,
+                                                   avctx->height, 1);
+
     if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' ')))
@@ -129,10 +131,10 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     return 0;
 }
 
-static void flip(AVCodecContext *avctx, AVPicture *picture)
+static void flip(AVCodecContext *avctx, AVFrame *frame)
 {
-    picture->data[0]     += picture->linesize[0] * (avctx->height - 1);
-    picture->linesize[0] *= -1;
+    frame->data[0]     += frame->linesize[0] * (avctx->height - 1);
+    frame->linesize[0] *= -1;
 }
 
 static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
@@ -146,7 +148,6 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     int res;
 
     AVFrame   *frame   = data;
-    AVPicture *picture = data;
 
     frame->pict_type        = AV_PICTURE_TYPE_I;
     frame->key_frame        = 1;
@@ -194,8 +195,9 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
         buf += buf_size - context->frame_size;
 
-    if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
-                              avctx->width, avctx->height)) < 0)
+    if ((res = av_image_fill_arrays(frame->data, frame->linesize,
+                                    buf, avctx->pix_fmt,
+                                    avctx->width, avctx->height, 1)) < 0)
         return res;
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
@@ -224,22 +226,22 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         frame->linesize[0] = (frame->linesize[0] + 3) & ~3;
 
     if (context->flip)
-        flip(avctx, picture);
+        flip(avctx, frame);
 
     if (avctx->codec_tag == MKTAG('Y', 'V', '1', '2') ||
         avctx->codec_tag == MKTAG('Y', 'V', '1', '6') ||
         avctx->codec_tag == MKTAG('Y', 'V', '2', '4') ||
         avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
-        FFSWAP(uint8_t *, picture->data[1], picture->data[2]);
+        FFSWAP(uint8_t *, frame->data[1], frame->data[2]);
 
     if (avctx->codec_tag == AV_RL32("yuv2") &&
         avctx->pix_fmt   == AV_PIX_FMT_YUYV422) {
         int x, y;
-        uint8_t *line = picture->data[0];
+        uint8_t *line = frame->data[0];
         for (y = 0; y < avctx->height; y++) {
             for (x = 0; x < avctx->width; x++)
                 line[2 * x + 1] ^= 0x80;
-            line += picture->linesize[0];
+            line += frame->linesize[0];
         }
     }
 
