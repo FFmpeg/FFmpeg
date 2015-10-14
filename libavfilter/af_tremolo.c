@@ -131,9 +131,7 @@ static int config_input(AVFilterLink *inlink)
 
     for (i = 0; i < inlink->sample_rate; i++) {
         double env = s->freq * i / inlink->sample_rate;
-
         env = sin(2 * M_PI * fmod(env + 0.25, 1.0));
-
         s->table[i] = env * (1 - fabs(offset)) + offset;
     }
 
