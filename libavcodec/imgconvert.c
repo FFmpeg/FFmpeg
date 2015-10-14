@@ -252,6 +252,7 @@ static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
              (desc->flags & AV_PIX_FMT_FLAG_PLANAR));
 }
 
+#if FF_API_AVPICTURE
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
                     enum AVPixelFormat pix_fmt, int top_band, int left_band)
 {
@@ -335,3 +336,4 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     }
     return 0;
 }
+#endif /* FF_API_AVPICTURE */

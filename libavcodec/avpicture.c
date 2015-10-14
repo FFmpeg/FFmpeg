@@ -31,6 +31,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/colorspace.h"
 
+#if FF_API_AVPICTURE
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height)
 {
@@ -76,4 +77,4 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
     av_image_copy(dst->data, dst->linesize, src->data,
                   src->linesize, pix_fmt, width, height);
 }
-
+#endif /* FF_API_AVPICTURE */
