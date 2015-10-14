@@ -1350,6 +1350,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
     i = 0;
 
     for (display = ctx->display_list; display; display = display->next) {
+        int j;
         region = get_region(ctx, display->region_id);
         rect = sub->rects[i];
 
@@ -1362,7 +1363,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
         rect->h = region->height;
         rect->nb_colors = 16;
         rect->type      = SUBTITLE_BITMAP;
-        rect->pict.linesize[0] = region->width;
+        rect->linesize[0] = region->width;
 
         clut = get_clut(ctx, region->clut);
 
@@ -1382,20 +1383,29 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
             break;
         }
 
-        rect->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
-        if (!rect->pict.data[1]) {
+        rect->data[1] = av_mallocz(AVPALETTE_SIZE);
+        if (!rect->data[1]) {
             av_free(sub->rects);
             return AVERROR(ENOMEM);
         }
-        memcpy(rect->pict.data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
+        memcpy(rect->data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
 
-        rect->pict.data[0] = av_malloc(region->buf_size);
-        if (!rect->pict.data[0]) {
-            av_free(rect->pict.data[1]);
+        rect->data[0] = av_malloc(region->buf_size);
+        if (!rect->data[0]) {
+            av_free(rect->data[1]);
             av_free(sub->rects);
             return AVERROR(ENOMEM);
         }
-        memcpy(rect->pict.data[0], region->pbuf, region->buf_size);
+        memcpy(rect->data[0], region->pbuf, region->buf_size);
+
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+        for (j = 0; j < 4; j++) {
+            rect->pict.data[j] = rect->data[j];
+            rect->pict.linesize[j] = rect->linesize[j];
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         i++;
     }

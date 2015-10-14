@@ -314,10 +314,12 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             if (h < 0)
                 h = 0;
             if (w > 0 && h > 0) {
+                int j;
+                AVSubtitleRect *rect;
                 if (sub_header->rects) {
                     for (i = 0; i < sub_header->num_rects; i++) {
-                        av_freep(&sub_header->rects[i]->pict.data[0]);
-                        av_freep(&sub_header->rects[i]->pict.data[1]);
+                        av_freep(&sub_header->rects[i]->data[0]);
+                        av_freep(&sub_header->rects[i]->data[1]);
                         av_freep(&sub_header->rects[i]);
                     }
                     av_freep(&sub_header->rects);
@@ -331,25 +333,27 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 if (!sub_header->rects[0])
                     goto fail;
                 sub_header->num_rects = 1;
-                bitmap = sub_header->rects[0]->pict.data[0] = av_malloc(w * h);
+                bitmap = sub_header->rects[0]->data[0] = av_malloc(w * h);
                 if (!bitmap)
                     goto fail;
                 decode_rle(bitmap, w * 2, w, (h + 1) / 2,
                            buf, offset1, buf_size, is_8bit);
                 decode_rle(bitmap + w, w * 2, w, h / 2,
                            buf, offset2, buf_size, is_8bit);
-                sub_header->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
-                if (!sub_header->rects[0]->pict.data[1])
+                sub_header->rects[0]->data[1] = av_mallocz(AVPALETTE_SIZE);
+                if (!sub_header->rects[0]->data[1])
                     goto fail;
                 if (is_8bit) {
                     if (yuv_palette == 0)
                         goto fail;
                     sub_header->rects[0]->nb_colors = 256;
-                    yuv_a_to_rgba(yuv_palette, alpha, (uint32_t*)sub_header->rects[0]->pict.data[1], 256);
+                    yuv_a_to_rgba(yuv_palette, alpha,
+                                  (uint32_t *)sub_header->rects[0]->data[1],
+                                  256);
                 } else {
                     sub_header->rects[0]->nb_colors = 4;
                     guess_palette(ctx,
-                                  (uint32_t*)sub_header->rects[0]->pict.data[1],
+                                  (uint32_t *)sub_header->rects[0]->data[1],
                                   colormap, alpha, 0xffff00);
                 }
                 sub_header->rects[0]->x = x1;
@@ -357,7 +361,17 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 sub_header->rects[0]->w = w;
                 sub_header->rects[0]->h = h;
                 sub_header->rects[0]->type = SUBTITLE_BITMAP;
-                sub_header->rects[0]->pict.linesize[0] = w;
+                sub_header->rects[0]->linesize[0] = w;
+
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+                rect = sub_header->rects[0];
+                for (j = 0; j < 4; j++) {
+                    rect->pict.data[j] = rect->data[j];
+                    rect->pict.linesize[j] = rect->linesize[j];
+                }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             }
         }
         if (next_cmd_pos == cmd_pos)
@@ -369,8 +383,8 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
  fail:
     if (!sub_header->rects) {
         for (i = 0; i < sub_header->num_rects; i++) {
-            av_freep(&sub_header->rects[i]->pict.data[0]);
-            av_freep(&sub_header->rects[i]->pict.data[1]);
+            av_freep(&sub_header->rects[i]->data[0]);
+            av_freep(&sub_header->rects[i]->data[1]);
             av_freep(&sub_header->rects[i]);
         }
         av_freep(&sub_header->rects);
@@ -402,29 +416,29 @@ static int find_smallest_bounding_rectangle(AVSubtitle *s)
         return 0;
 
     for(i = 0; i < s->rects[0]->nb_colors; i++) {
-        if ((((uint32_t*)s->rects[0]->pict.data[1])[i] >> 24) == 0)
+        if ((((uint32_t *)s->rects[0]->data[1])[i] >> 24) == 0)
             transp_color[i] = 1;
     }
     y1 = 0;
-    while (y1 < s->rects[0]->h && is_transp(s->rects[0]->pict.data[0] + y1 * s->rects[0]->pict.linesize[0],
+    while (y1 < s->rects[0]->h && is_transp(s->rects[0]->data[0] + y1 * s->rects[0]->linesize[0],
                                   1, s->rects[0]->w, transp_color))
         y1++;
     if (y1 == s->rects[0]->h) {
-        av_freep(&s->rects[0]->pict.data[0]);
+        av_freep(&s->rects[0]->data[0]);
         s->rects[0]->w = s->rects[0]->h = 0;
         return 0;
     }
 
     y2 = s->rects[0]->h - 1;
-    while (y2 > 0 && is_transp(s->rects[0]->pict.data[0] + y2 * s->rects[0]->pict.linesize[0], 1,
+    while (y2 > 0 && is_transp(s->rects[0]->data[0] + y2 * s->rects[0]->linesize[0], 1,
                                s->rects[0]->w, transp_color))
         y2--;
     x1 = 0;
-    while (x1 < (s->rects[0]->w - 1) && is_transp(s->rects[0]->pict.data[0] + x1, s->rects[0]->pict.linesize[0],
+    while (x1 < (s->rects[0]->w - 1) && is_transp(s->rects[0]->data[0] + x1, s->rects[0]->linesize[0],
                                         s->rects[0]->h, transp_color))
         x1++;
     x2 = s->rects[0]->w - 1;
-    while (x2 > 0 && is_transp(s->rects[0]->pict.data[0] + x2, s->rects[0]->pict.linesize[0], s->rects[0]->h,
+    while (x2 > 0 && is_transp(s->rects[0]->data[0] + x2, s->rects[0]->linesize[0], s->rects[0]->h,
                                   transp_color))
         x2--;
     w = x2 - x1 + 1;
@@ -433,11 +447,11 @@ static int find_smallest_bounding_rectangle(AVSubtitle *s)
     if (!bitmap)
         return 1;
     for(y = 0; y < h; y++) {
-        memcpy(bitmap + w * y, s->rects[0]->pict.data[0] + x1 + (y1 + y) * s->rects[0]->pict.linesize[0], w);
+        memcpy(bitmap + w * y, s->rects[0]->data[0] + x1 + (y1 + y) * s->rects[0]->linesize[0], w);
     }
-    av_freep(&s->rects[0]->pict.data[0]);
-    s->rects[0]->pict.data[0] = bitmap;
-    s->rects[0]->pict.linesize[0] = w;
+    av_freep(&s->rects[0]->data[0]);
+    s->rects[0]->data[0] = bitmap;
+    s->rects[0]->linesize[0] = w;
     s->rects[0]->w = w;
     s->rects[0]->h = h;
     s->rects[0]->x += x1;
@@ -498,8 +512,8 @@ static int dvdsub_decode(AVCodecContext *avctx,
     ff_dlog(NULL, "start=%d ms end =%d ms\n",
             sub->start_display_time,
             sub->end_display_time);
-    ppm_save("/tmp/a.ppm", sub->rects[0]->pict.data[0],
-             sub->rects[0]->w, sub->rects[0]->h, sub->rects[0]->pict.data[1]);
+    ppm_save("/tmp/a.ppm", sub->rects[0]->data[0],
+             sub->rects[0]->w, sub->rects[0]->h, sub->rects[0]->data[1]);
 #endif
 
     *data_size = 1;

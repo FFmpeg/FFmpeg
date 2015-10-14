@@ -163,9 +163,9 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
 
     rle_bitmap_end = buf + buf_size;
 
-    rect->pict.data[0] = av_malloc(rect->w * rect->h);
+    rect->data[0] = av_malloc(rect->w * rect->h);
 
-    if (!rect->pict.data[0])
+    if (!rect->data[0])
         return AVERROR(ENOMEM);
 
     pixel_count = 0;
@@ -187,7 +187,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
         }
 
         if (run > 0 && pixel_count + run <= rect->w * rect->h) {
-            memset(rect->pict.data[0] + pixel_count, color, run);
+            memset(rect->data[0] + pixel_count, color, run);
             pixel_count += run;
         } else if (!run) {
             /*
@@ -509,6 +509,8 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     }
     for (i = 0; i < ctx->presentation.object_count; i++) {
         PGSSubObject *object;
+        AVSubtitleRect *rect;
+        int j;
 
         sub->rects[i]  = av_mallocz(sizeof(*sub->rects[0]));
         if (!sub->rects[i]) {
@@ -539,7 +541,17 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
         sub->rects[i]->w    = object->w;
         sub->rects[i]->h    = object->h;
 
-        sub->rects[i]->pict.linesize[0] = object->w;
+        sub->rects[i]->linesize[0] = object->w;
+
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+        rect = sub->rects[i];
+        for (j = 0; j < 4; j++) {
+            rect->pict.data[j] = rect->data[j];
+            rect->pict.linesize[j] = rect->linesize[j];
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         if (object->rle) {
             if (object->rle_remaining_len) {
@@ -564,13 +576,13 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
         }
         /* Allocate memory for colors */
         sub->rects[i]->nb_colors    = 256;
-        sub->rects[i]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
-        if (!sub->rects[i]->pict.data[1]) {
+        sub->rects[i]->data[1] = av_mallocz(AVPALETTE_SIZE);
+        if (!sub->rects[i]->data[1]) {
             avsubtitle_free(sub);
             return AVERROR(ENOMEM);
         }
 
-        memcpy(sub->rects[i]->pict.data[1], palette->clut, sub->rects[i]->nb_colors * sizeof(uint32_t));
+        memcpy(sub->rects[i]->data[1], palette->clut, sub->rects[i]->nb_colors * sizeof(uint32_t));
 
     }
     return 1;

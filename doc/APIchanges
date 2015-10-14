@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavc 57.5.0 - avcodec.h
+  Add data and linesize array to AVSubtitleRect, to be used instead of
+  the ones from the embedded AVPicture.
+
 2015-xx-xx - xxxxxxx - lavc 57.0.0 - qsv.h
   Add an API for allocating opaque surfaces.
 

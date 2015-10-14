@@ -3215,11 +3215,20 @@ typedef struct AVSubtitleRect {
     int h;         ///< height           of pict, undefined when pict is not set
     int nb_colors; ///< number of colors in pict, undefined when pict is not set
 
+#if FF_API_AVPICTURE
+    /**
+     * @deprecated unused
+     */
+    attribute_deprecated
+    AVPicture pict;
+#endif
     /**
      * data+linesize for the bitmap of this subtitle.
-     * can be set for text/ass as well once they where rendered
+     * Can be set for text/ass as well once they are rendered.
      */
-    AVPicture pict;
+    uint8_t *data[4];
+    int linesize[4];
+
     enum AVSubtitleType type;
 
     char *text;                     ///< 0 terminated plain UTF-8 text
