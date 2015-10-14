@@ -162,8 +162,10 @@ int av_dict_parse_string(AVDictionary **pm, const char *str,
  * @param src pointer to source AVDictionary struct
  * @param flags flags to use when setting entries in *dst
  * @note metadata is read using the AV_DICT_IGNORE_SUFFIX flag
+ * @return 0 on success, negative AVERROR code on failure. If dst was allocated
+ *           by this function, callers should free the associated memory.
  */
-void av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags);
+int av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags);
 
 /**
  * Free all the memory allocated for an AVDictionary struct
