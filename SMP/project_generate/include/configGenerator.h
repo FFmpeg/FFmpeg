@@ -48,10 +48,10 @@ private:
         string m_sValue;
         bool m_bLock;
 
-        ConfigPair( const string & sOption, const string & sPrefix, const string & sValue ) : 
-            m_sOption( sOption ), 
-            m_sPrefix( sPrefix ), 
-            m_sValue( sValue ), 
+        ConfigPair( const string & sOption, const string & sPrefix, const string & sValue ) :
+            m_sOption( sOption ),
+            m_sPrefix( sPrefix ),
+            m_sValue( sValue ),
             m_bLock( false ) {}
     };
     typedef vector<ConfigPair> ValuesList;
@@ -115,12 +115,14 @@ private:
     bool fastToggleConfigValue( const string & sOption, bool bEnable );
 
     bool toggleConfigValue( const string & sOption, bool bEnable, bool bRecursive=false );
-    
+
     ValuesList::iterator getConfigOption( const string & sOption );
 
     ValuesList::iterator getConfigOptionPrefixed( const string & sOption );
 
     bool passDependencyCheck( const ValuesList::iterator vitOption );
+
+    void getFileHeader( string & sHeader );
 };
 
 #endif
