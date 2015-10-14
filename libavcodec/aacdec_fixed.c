@@ -438,6 +438,7 @@ AVCodec ff_aac_fixed_decoder = {
         AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE
     },
     .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
+    .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE,
     .channel_layouts = aac_channel_layout,
     .flush = flush,
 };

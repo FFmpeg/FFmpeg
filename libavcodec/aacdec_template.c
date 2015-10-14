@@ -89,6 +89,8 @@
            Parametric Stereo.
  */
 
+#include "libavutil/thread.h"
+
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
 
@@ -1063,10 +1065,54 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
 
 static void aacdec_init(AACContext *ac);
 
+static av_cold void aac_static_table_init()
+{
+    AAC_INIT_VLC_STATIC( 0, 304);
+    AAC_INIT_VLC_STATIC( 1, 270);
+    AAC_INIT_VLC_STATIC( 2, 550);
+    AAC_INIT_VLC_STATIC( 3, 300);
+    AAC_INIT_VLC_STATIC( 4, 328);
+    AAC_INIT_VLC_STATIC( 5, 294);
+    AAC_INIT_VLC_STATIC( 6, 306);
+    AAC_INIT_VLC_STATIC( 7, 268);
+    AAC_INIT_VLC_STATIC( 8, 510);
+    AAC_INIT_VLC_STATIC( 9, 366);
+    AAC_INIT_VLC_STATIC(10, 462);
+
+    AAC_RENAME(ff_aac_sbr_init)();
+
+    ff_aac_tableinit();
+
+    INIT_VLC_STATIC(&vlc_scalefactors, 7,
+                    FF_ARRAY_ELEMS(ff_aac_scalefactor_code),
+                    ff_aac_scalefactor_bits,
+                    sizeof(ff_aac_scalefactor_bits[0]),
+                    sizeof(ff_aac_scalefactor_bits[0]),
+                    ff_aac_scalefactor_code,
+                    sizeof(ff_aac_scalefactor_code[0]),
+                    sizeof(ff_aac_scalefactor_code[0]),
+                    352);
+
+    // window initialization
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_long_1024), 4.0, 1024);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_short_128), 6.0, 128);
+    AAC_RENAME(ff_init_ff_sine_windows)(10);
+    AAC_RENAME(ff_init_ff_sine_windows)( 9);
+    AAC_RENAME(ff_init_ff_sine_windows)( 7);
+
+    AAC_RENAME(cbrt_tableinit)();
+}
+
+static AVOnce aac_init = AV_ONCE_INIT;
+
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
     int ret;
+
+    ret = ff_thread_once(&aac_init, &aac_static_table_init);
+    if (ret != 0)
+        return AVERROR_UNKNOWN;
 
     ac->avctx = avctx;
     ac->oc[1].m4ac.sample_rate = avctx->sample_rate;
@@ -1119,20 +1165,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    AAC_INIT_VLC_STATIC( 0, 304);
-    AAC_INIT_VLC_STATIC( 1, 270);
-    AAC_INIT_VLC_STATIC( 2, 550);
-    AAC_INIT_VLC_STATIC( 3, 300);
-    AAC_INIT_VLC_STATIC( 4, 328);
-    AAC_INIT_VLC_STATIC( 5, 294);
-    AAC_INIT_VLC_STATIC( 6, 306);
-    AAC_INIT_VLC_STATIC( 7, 268);
-    AAC_INIT_VLC_STATIC( 8, 510);
-    AAC_INIT_VLC_STATIC( 9, 366);
-    AAC_INIT_VLC_STATIC(10, 462);
-
-    AAC_RENAME(ff_aac_sbr_init)();
-
 #if USE_FIXED
     ac->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 #else
@@ -1144,18 +1176,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ac->random_state = 0x1f2e3d4c;
 
-    ff_aac_tableinit();
-
-    INIT_VLC_STATIC(&vlc_scalefactors, 7,
-                    FF_ARRAY_ELEMS(ff_aac_scalefactor_code),
-                    ff_aac_scalefactor_bits,
-                    sizeof(ff_aac_scalefactor_bits[0]),
-                    sizeof(ff_aac_scalefactor_bits[0]),
-                    ff_aac_scalefactor_code,
-                    sizeof(ff_aac_scalefactor_code[0]),
-                    sizeof(ff_aac_scalefactor_code[0]),
-                    352);
-
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct,       11, 1, 1.0 / RANGE15(1024.0));
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_ld,    10, 1, 1.0 / RANGE15(512.0));
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_small,  8, 1, 1.0 / RANGE15(128.0));
@@ -1165,14 +1185,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 #endif
-    // window initialization
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_long_1024), 4.0, 1024);
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_short_128), 6.0, 128);
-    AAC_RENAME(ff_init_ff_sine_windows)(10);
-    AAC_RENAME(ff_init_ff_sine_windows)( 9);
-    AAC_RENAME(ff_init_ff_sine_windows)( 7);
-
-    AAC_RENAME(cbrt_tableinit)();
 
     return 0;
 }
