@@ -78,7 +78,7 @@ do { \
     else               AV_WL32(p, value); \
 } while(0)
 
-static void encode_rgb48_10bit(AVCodecContext *avctx, const AVPicture *pic,
+static void encode_rgb48_10bit(AVCodecContext *avctx, const AVFrame *pic,
                                uint8_t *dst)
 {
     DPXContext *s = avctx->priv_data;
@@ -115,7 +115,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (s->bits_per_component == 10)
         size = avctx->height * avctx->width * 4;
     else
-        size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+        size = av_image_get_buffer_size(avctx->pix_fmt,
+                                        avctx->width, avctx->height, 1);
     if ((ret = ff_alloc_packet(pkt, size + HEADER_SIZE)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
         return ret;
@@ -153,14 +154,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     switch (s->bits_per_component) {
     case 8:
     case 16:
-        size = avpicture_layout((const AVPicture*)frame, avctx->pix_fmt,
-                                avctx->width, avctx->height,
-                                buf + HEADER_SIZE, pkt->size - HEADER_SIZE);
+        size = av_image_copy_to_buffer(buf + HEADER_SIZE,
+                                       pkt->size - HEADER_SIZE,
+                                       frame->data, frame->linesize,
+                                       avctx->pix_fmt,
+                                       avctx->width, avctx->height, 1);
         if (size < 0)
             return size;
         break;
     case 10:
-        encode_rgb48_10bit(avctx, (const AVPicture*)frame, buf + HEADER_SIZE);
+        encode_rgb48_10bit(avctx, frame, buf + HEADER_SIZE);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", s->bits_per_component);
