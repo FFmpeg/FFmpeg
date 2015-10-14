@@ -26,6 +26,9 @@
 
 #include <stdint.h>
 
+#include "thread.h"
+#include "vp56.h"
+
 enum BlockLevel {
     BL_64X64,
     BL_32X32,
@@ -115,6 +118,19 @@ enum CompPredMode {
     PRED_SWITCHABLE,
 };
 
+struct VP9mvrefPair {
+    VP56mv mv[2];
+    int8_t ref[2];
+};
+
+typedef struct VP9Frame {
+    ThreadFrame tf;
+    AVBufferRef *extradata;
+    uint8_t *segmentation_map;
+    struct VP9mvrefPair *mv;
+    int uses_2pass;
+} VP9Frame;
+
 typedef struct VP9BitstreamHeader {
     // bitstream header
     uint8_t profile;
@@ -181,6 +197,12 @@ typedef struct VP9BitstreamHeader {
 
 typedef struct VP9SharedContext {
     VP9BitstreamHeader h;
+
+    ThreadFrame refs[8];
+#define CUR_FRAME 0
+#define REF_FRAME_MVPAIR 1
+#define REF_FRAME_SEGMAP 2
+    VP9Frame frames[3];
 } VP9SharedContext;
 
 #endif /* AVCODEC_VP9_H */
