@@ -980,12 +980,14 @@ static void print_codec(const AVCodec *c)
     if (c->type == AVMEDIA_TYPE_VIDEO) {
         printf("    Threading capabilities: ");
         switch (c->capabilities & (AV_CODEC_CAP_FRAME_THREADS |
-                                   AV_CODEC_CAP_SLICE_THREADS)) {
+                                   AV_CODEC_CAP_SLICE_THREADS |
+                                   AV_CODEC_CAP_AUTO_THREADS)) {
         case AV_CODEC_CAP_FRAME_THREADS |
              AV_CODEC_CAP_SLICE_THREADS: printf("frame and slice"); break;
         case AV_CODEC_CAP_FRAME_THREADS: printf("frame");           break;
         case AV_CODEC_CAP_SLICE_THREADS: printf("slice");           break;
-        default:                      printf("no");              break;
+        case AV_CODEC_CAP_AUTO_THREADS : printf("auto");            break;
+        default:                         printf("none");            break;
         }
         printf("\n");
     }
