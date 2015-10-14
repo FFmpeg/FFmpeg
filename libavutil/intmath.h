@@ -129,33 +129,15 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
  * @return   the number of trailing 0-bits
  */
 #if !defined( _MSC_VER )
+/* We use the De-Bruijn method outlined in:
+ * http://supertech.csail.mit.edu/papers/debruijn.pdf. */
 static av_always_inline av_const int ff_ctz_c(int v)
 {
-    int c;
-
-    if (v & 0x1)
-        return 0;
-
-    c = 1;
-    if (!(v & 0xffff)) {
-        v >>= 16;
-        c += 16;
-    }
-    if (!(v & 0xff)) {
-        v >>= 8;
-        c += 8;
-    }
-    if (!(v & 0xf)) {
-        v >>= 4;
-        c += 4;
-    }
-    if (!(v & 0x3)) {
-        v >>= 2;
-        c += 2;
-    }
-    c -= v & 0x1;
-
-    return c;
+    static const uint8_t debruijn_ctz32[32] = {
+        0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+        31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+    };
+    return debruijn_ctz32[(uint32_t)((v & -v) * 0x077CB531U) >> 27];
 }
 #else
 static av_always_inline av_const int ff_ctz_c( int v )
