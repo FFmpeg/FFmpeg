@@ -66,6 +66,7 @@ OBJS-$(CONFIG_AC3_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_ACT_DEMUXER)               += act.o
 OBJS-$(CONFIG_ADF_DEMUXER)               += bintext.o sauce.o
 OBJS-$(CONFIG_ADP_DEMUXER)               += adp.o
+OBJS-$(CONFIG_ADS_DEMUXER)               += ads.o
 OBJS-$(CONFIG_ADX_DEMUXER)               += adxdec.o
 OBJS-$(CONFIG_ADX_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o apetag.o img2.o \
