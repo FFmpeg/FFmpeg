@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "yuv4mpeg.h"
@@ -226,7 +228,8 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     width  = st->codec->width;
     height = st->codec->height;
 
-    packet_size = avpicture_get_size(st->codec->pix_fmt, width, height);
+    packet_size = av_image_get_buffer_size(st->codec->pix_fmt,
+                                           width, height, 1);
     if (packet_size < 0)
         return packet_size;
 

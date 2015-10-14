@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -31,10 +32,10 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVFrame * const p = pict;
     int i, h, h1, c, n, linesize, ret;
     uint8_t *ptr, *ptr1, *ptr2;
+    int size = av_image_get_buffer_size(avctx->pix_fmt,
+                                        avctx->width, avctx->height, 1);
 
-    if ((ret = ff_alloc_packet(pkt, avpicture_get_size(avctx->pix_fmt,
-                                                       avctx->width,
-                                                       avctx->height) + 200)) < 0) {
+    if ((ret = ff_alloc_packet(pkt, size + 200)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return ret;
     }

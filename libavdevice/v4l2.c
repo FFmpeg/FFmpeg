@@ -828,8 +828,8 @@ static int v4l2_read_header(AVFormatContext *s1)
         return res;
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);
-    s->frame_size =
-        avpicture_get_size(st->codec->pix_fmt, s->width, s->height);
+    s->frame_size = av_image_get_buffer_size(st->codec->pix_fmt,
+                                             s->width, s->height, 1);
 
     if ((res = mmap_init(s1)) ||
         (res = mmap_start(s1)) < 0) {

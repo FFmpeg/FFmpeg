@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
+
 #include "parser.h" //for ParseContext
 #include "pnm.h"
 
@@ -66,7 +68,7 @@ retry:
         next = END_NOT_FOUND;
     } else {
         next = pnmctx.bytestream - pnmctx.bytestream_start
-               + avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+               + av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
         if (pnmctx.bytestream_start != buf)
             next -= pc->index;
         if (next > buf_size)
