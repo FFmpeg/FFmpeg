@@ -20,71 +20,71 @@ API changes, most recent first:
   Change return type of av_dict_copy() from void to int, so that a proper
   error code can be reported.
 
-2015-xx-xx - xxxxxxx - lavc 57.0.0 - avcodec.h
+2015-09-29 - 948f3c1 - lavc 57.0.0 - avcodec.h
   Change type of AVPacket.duration from int to int64_t.
 
-2015-xx-xx - xxxxxxx - lavc 57.2.0 - d3d11va.h
+2015-09-18 - e3d4784 - lavc 57.2.0 - d3d11va.h
   Add av_d3d11va_alloc_context(). This function must from now on be used for
   allocating AVD3D11VAContext.
 
-2015-xx-xx - lavu 55.0.0
-  xxxxxxx - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
-  xxxxxxx - Change type of AVComponentDescriptor fields from uint16_t to int
+2015-09-07 - lavu 55.0.0
+  b8b5d82 - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
+  6b3ef7f - Change type of AVComponentDescriptor fields from uint16_t to int
             and drop bit packing.
-  xxxxxxx - Add step, offset, and depth to AVComponentDescriptor to replace
+  2268db2 - Add step, offset, and depth to AVComponentDescriptor to replace
             the deprecated step_minus1, offset_plus1, and depth_minus1.
 
-2015-xx-xx - lavu 54.17.0
-  xxxxxxx -  Add av_blowfish_alloc().
-  xxxxxxx -  Add av_rc4_alloc().
-  xxxxxxx -  Add av_xtea_alloc().
-  xxxxxxx -  Add av_des_alloc().
+2015-07-31 - lavu 54.17.0
+  7a7df34 - Add av_blowfish_alloc().
+  ae36545 - Add av_rc4_alloc().
+  5d8bea3 - Add av_xtea_alloc().
+  d9e8b47 - Add av_des_alloc().
 
 2015-07-29 - 7e38340 - lavu 54.16.0 - hmac.h
   Add AV_HMAC_SHA224 and AV_HMAC_SHA256.
 
-2015-xx-xx - lavc 56.35.0 - avcodec.h
-  xxxxxxxxx - Rename CODEC_FLAG* defines to AV_CODEC_FLAG*.
-  xxxxxxxxx - Rename CODEC_CAP_* defines to AV_CODEC_CAP_*.
-  xxxxxxxxx - Rename FF_INPUT_BUFFER_PADDING_SIZE and FF_MIN_BUFFER_SIZE
-              to AV_INPUT_BUFFER_PADDING_SIZE and AV_INPUT_BUFFER_MIN_SIZE.
+2015-07-27 - lavc 56.35.0 - avcodec.h
+  7c6eb0a - Rename CODEC_FLAG* defines to AV_CODEC_FLAG*.
+  def9785 - Rename CODEC_CAP_* defines to AV_CODEC_CAP_*.
+  059a934 - Rename FF_INPUT_BUFFER_PADDING_SIZE and FF_MIN_BUFFER_SIZE
+            to AV_INPUT_BUFFER_PADDING_SIZE and AV_INPUT_BUFFER_MIN_SIZE.
 
-2015-xx-xx - xxxxxxx - lavc 56.33.0 - avcodec.h
+2015-07-20 - 5d3addb - lavc 56.33.0 - avcodec.h
   Add AV_PKT_DATA_QUALITY_FACTOR to export the quality value of an AVPacket.
 
-2015-xx-xx - xxxxxxx - lavu 56.15.0
+2015-07-02 - 1316df7 - lavu 56.15.0
   Add av_version_info().
 
-2015-xx-xx - xxxxxxx - lavfi 5.1.0 - version.h
-             xxxxxxx - lavd 55.2.0 - version.h
+2015-07-01 - 0d449c8 - lavfi 5.1.0 - version.h
+             0f87f9b - lavd 55.2.0 - version.h
   Add library identification symbols, LIBAVFILTER_IDENT and LIBAVDEVICE_IDENT.
 
-2015-xx-xx - xxxxxxx - lavf 56.20.0 - avio.h
+2015-06-07 - 252d620 - lavf 56.20.0 - avio.h
   Add avio_put_str16be.
 
-2015-xx-xx - xxxxxxx - lavu 54.14.0 - cpu.h
+2015-05-13 - f7cafb5 - lavu 54.14.0 - cpu.h
   Add AV_CPU_FLAG_AVXSLOW.
 
-2015-xx-xx - xxxxxxx - lavc 56.23.0
+2015-05-13 - e7c5e17 - lavc 56.23.0
   Add av_vda_default_init2.
 
-2015-xx-xx - xxxxxxx - lavu 54.12.0
+2015-04-19 - c253340 - lavu 54.12.0
   Add AV_LOG_TRACE for extremely verbose debugging.
 
-2015-xx-xx - xxxxxxx - lavu 54.11.0
+2015-04-07 - 27f2746 - lavu 54.11.0
   Add av_small_strptime().
 
-2015-xx-xx - xxxxxxx - lavc 56.22.0
+2015-03-29 - 6fe2641 - lavc 56.22.0
   Add FF_PROFILE_DTS_EXPRESS.
 
-2015-xx-xx - xxxxxxx - lavu 54.10.0
+2015-03-29 - c484561 - lavu 54.10.0
   Add AV_PIX_FMT_MMAL for MMAL hardware acceleration.
 
-2015-xx-xx - xxxxxxx - lavc 56.13
+2015-02-19 - 31d2039 - lavc 56.13
   Add width, height, coded_width, coded_height and format to
   AVCodecParserContext.
 
-2015-xx-xx - xxxxxxx - lavu 54.9.0
+2015-02-19 - 5b1d9ce - lavu 54.9.0
   Add AV_PIX_FMT_QSV for QSV hardware acceleration.
 
 2015-01-27 - 728685f - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
