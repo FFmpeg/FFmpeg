@@ -493,12 +493,12 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     AVCodecContext *c;
     AVFrame *frame;
     int got_packet = 0;
+    AVPacket pkt = { 0 };
 
     c = ost->st->codec;
 
     frame = get_video_frame(ost);
 
-    AVPacket pkt = { 0 };
     av_init_packet(&pkt);
 
     /* encode the image */
