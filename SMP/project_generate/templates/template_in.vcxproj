@@ -545,7 +545,6 @@ echo            These errors are the result of dead code elimination not being p
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
@@ -587,7 +586,6 @@ echo            These errors are the result of dead code elimination not being p
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
@@ -629,7 +627,6 @@ echo            These errors are the result of dead code elimination not being p
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
@@ -677,7 +674,6 @@ echo            These errors are the result of dead code elimination not being p
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
@@ -724,7 +720,6 @@ echo            These errors are the result of dead code elimination not being p
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
@@ -772,7 +767,6 @@ echo            These errors are the result of dead code elimination not being p
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>

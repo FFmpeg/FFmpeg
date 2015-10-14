@@ -390,7 +390,6 @@ echo            These errors are the result of dead code elimination not being p
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -447,7 +446,6 @@ del ..\libavutil\ffversion.h
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -503,7 +501,6 @@ del ..\libavutil\ffversion.h
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -560,7 +557,6 @@ del ..\libavutil\ffversion.h
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
