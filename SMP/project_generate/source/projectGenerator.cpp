@@ -268,31 +268,25 @@ bool projectGenerator::outputProject( )
     }
 
     //Change all occurance of template_platform with specified project toolchain
-    string sToolchain;
-    if( !passToolchain( sToolchain ) )
-    {
-        return false;
-    }
-    //If toolchain is newer than 2013 then add additional toolsets
-    if( sToolchain.compare( "v150" ) == 0 )
-    {
-        sToolchain = "v120</PlatformToolset>\n\
+    string sToolchain = "<PlatformToolset Condition=\"'$(VisualStudioVersion)'=='12.0'\">v120</PlatformToolset>\n\
     <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140</PlatformToolset>\n\
-    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='15.0'\">v150";
-    }
-    else if( sToolchain.compare( "v140" ) == 0 )
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='15.0'\">v150</PlatformToolset>";
+    if( m_ConfigHelper.m_sToolchain.compare("icl") == 0 )
     {
-        sToolchain = "v120</PlatformToolset>\n\
-    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140";
+        sToolchain += "\n    <PlatformToolset Condition=\"'$(ICPP_COMPILER13)'!=''\">Intel C++ Compiler XE 13.0</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(ICPP_COMPILER14)'!=''\">Intel C++ Compiler XE 14.0</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(ICPP_COMPILER15)'!=''\">Intel C++ Compiler XE 15.0</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(ICPP_COMPILER16)'!=''\">Intel C++ Compiler 16.0</PlatformToolset>";
     }
-    const string sPlatformSearch = "template_platform";
+
+    const string sPlatformSearch = "<PlatformToolset>template_platform</PlatformToolset>";
     uiFindPos = sProjectFile.find( sPlatformSearch );
     while( uiFindPos != string::npos )
     {
         //Replace
         sProjectFile.replace( uiFindPos, sPlatformSearch.length( ), sToolchain );
         //Get next
-        uiFindPos = sProjectFile.find( sPlatformSearch, uiFindPos + 1 );
+        uiFindPos = sProjectFile.find( sPlatformSearch, uiFindPos + sPlatformSearch.length( ));
     }
 
     //Set the project key
@@ -1411,22 +1405,15 @@ bool projectGenerator::outputSolution()
     }
 
     //Next add the projects
-    string sToolchain;
-    if( !passToolchain( sToolchain ) )
-    {
-        return false;
-    }
-    //If toolchain is newer than 2013 then add additional toolsets
-    if( sToolchain.compare( "v150" ) == 0 )
-    {
-        sToolchain = "v120</PlatformToolset>\n\
+    string sToolchain = "<PlatformToolset Condition=\"'$(VisualStudioVersion)'=='12.0'\">v120</PlatformToolset>\n\
     <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140</PlatformToolset>\n\
-    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='15.0'\">v150";
-    }
-    else if( sToolchain.compare( "v140" ) == 0 )
+    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='15.0'\">v150</PlatformToolset>";
+    if( m_ConfigHelper.m_sToolchain.compare("icl") == 0 )
     {
-        sToolchain = "v120</PlatformToolset>\n\
-    <PlatformToolset Condition=\"'$(VisualStudioVersion)'=='14.0'\">v140";
+        sToolchain += "\n    <PlatformToolset Condition=\"'$(ICPP_COMPILER13)'!=''\">Intel C++ Compiler XE 13.0</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(ICPP_COMPILER14)'!=''\">Intel C++ Compiler XE 14.0</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(ICPP_COMPILER15)'!=''\">Intel C++ Compiler XE 15.0</PlatformToolset>\n\
+    <PlatformToolset Condition=\"'$(ICPP_COMPILER16)'!=''\">Intel C++ Compiler 16.0</PlatformToolset>";
     }
     string sProjectAdd;
     vector<string> vAddedPrograms;
@@ -1499,7 +1486,7 @@ bool projectGenerator::outputSolution()
                 uiFindPosFilt = sProgramFiltersFile.find( sFFSearchTag, uiFindPosFilt + 1 );
             }
             //Change all occurance of template_platform with specified project toolchain
-            const string sPlatformSearch = "template_platform";
+            const string sPlatformSearch = "<PlatformToolset>template_platform</PlatformToolset>";
             uiFindPos = sProgramFile.find( sPlatformSearch );
             while( uiFindPos != string::npos )
             {
