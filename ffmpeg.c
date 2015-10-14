@@ -4106,6 +4106,8 @@ static int transcode(void)
         os = output_files[i]->ctx;
         if ((ret = av_write_trailer(os)) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s", os->filename, av_err2str(ret));
+            if (exit_on_error)
+                exit_program(1);
         }
     }
 
