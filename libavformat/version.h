@@ -65,6 +65,9 @@
 #ifndef FF_API_URL_FEOF
 #define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
+#ifndef FF_API_LAVF_FMT_RAWPICTURE
+#define FF_API_LAVF_FMT_RAWPICTURE      (LIBAVFORMAT_VERSION_MAJOR < 58)
+#endif
 
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
