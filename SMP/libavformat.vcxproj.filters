@@ -1059,6 +1059,9 @@
     <ClCompile Include="..\libavformat\uncodedframecrcenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\vc1dec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\vc1test.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

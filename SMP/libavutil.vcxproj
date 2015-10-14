@@ -292,6 +292,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -299,6 +300,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'" Label="Configuration">
@@ -306,6 +308,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'" Label="Configuration">
@@ -313,6 +316,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'" Label="Configuration">
@@ -320,6 +324,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'" Label="Configuration">
@@ -327,6 +332,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -334,6 +340,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -341,6 +348,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'" Label="Configuration">
@@ -348,6 +356,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'" Label="Configuration">
@@ -355,6 +364,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|Win32'" Label="Configuration">
@@ -362,6 +372,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|x64'" Label="Configuration">
@@ -369,6 +380,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'" Label="Configuration">
@@ -376,6 +388,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
@@ -384,6 +397,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='12.0'">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)'=='14.0'">v140</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)'=='15.0'">v150</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
@@ -520,7 +534,7 @@
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDataBaseFileName>
@@ -651,7 +665,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDataBaseFileName>
@@ -782,7 +796,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -924,7 +938,7 @@ echo            These errors are the result of dead code elimination not being p
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -1065,7 +1079,7 @@ echo            These errors are the result of dead code elimination not being p
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -1207,7 +1221,7 @@ echo            These errors are the result of dead code elimination not being p
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -1352,12 +1366,11 @@ echo            These errors are the result of dead code elimination not being p
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1490,12 +1503,11 @@ cd $(ProjectDir)
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1628,12 +1640,11 @@ cd $(ProjectDir)
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1772,12 +1783,11 @@ cd $(ProjectDir)
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1915,12 +1925,11 @@ cd $(ProjectDir)
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -2059,12 +2068,11 @@ cd $(ProjectDir)
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -2206,7 +2214,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -2343,7 +2351,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 13.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>

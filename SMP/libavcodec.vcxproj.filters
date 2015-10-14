@@ -135,6 +135,9 @@
     <YASM Include="..\libavcodec\x86\rv34dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\simple_idct10.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\videodsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -229,6 +232,9 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\vp9itxfm.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavcodec\x86\vp9itxfm_16bpp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\vp9lpf.asm">
@@ -2085,6 +2091,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\ws-snd1.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\wrapped_avframe.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\xan.c">
