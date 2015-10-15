@@ -339,6 +339,7 @@ enum AVEscapeMode {
  * @return the length of the allocated string, or a negative error code in case of error
  * @see av_bprint_escape()
  */
+av_warn_unused_result
 int av_escape(char **dst, const char *src, const char *special_chars,
               enum AVEscapeMode mode, int flags);
 
@@ -378,6 +379,7 @@ int av_escape(char **dst, const char *src, const char *special_chars,
  * @return >= 0 in case a sequence was successfully read, a negative
  * value in case of invalid sequence
  */
+av_warn_unused_result
 int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
                    unsigned int flags);
 
