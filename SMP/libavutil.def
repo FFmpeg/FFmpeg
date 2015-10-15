@@ -108,6 +108,7 @@ EXPORTS
     av_fifo_free
     av_fifo_freep
     av_fifo_generic_peek
+    av_fifo_generic_peek_at
     av_fifo_generic_read
     av_fifo_generic_write
     av_fifo_grow
