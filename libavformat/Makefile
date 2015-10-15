@@ -475,7 +475,7 @@ OBJS-$(CONFIG_WEBVTT_DEMUXER)            += webvttdec.o subtitles.o
 OBJS-$(CONFIG_WEBVTT_MUXER)              += webvttenc.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood_aud.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood_vqa.o
-OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv_common.o asfdec_f.o asf.o asfcrypt.o \
+OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv_common.o asf.o \
                                             avlanguage.o mpegts.o isom.o
 OBJS-$(CONFIG_WTV_MUXER)                 += wtvenc.o wtv_common.o \
                                             mpegtsenc.o asf.o
