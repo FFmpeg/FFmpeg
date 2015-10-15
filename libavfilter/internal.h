@@ -152,7 +152,15 @@ struct AVFilterInternal {
     avfilter_execute_func *execute;
 };
 
-/** Tell is a format is contained in the provided list terminated by -1. */
+/**
+ * Tell if an integer is contained in the provided -1-terminated list of integers.
+ * This is useful for determining (for instance) if an AVPixelFormat is in an
+ * array of supported formats.
+ *
+ * @param fmt provided format
+ * @param fmts -1-terminated list of formats
+ * @return 1 if present, 0 if absent
+ */
 int ff_fmt_is_in(int fmt, const int *fmts);
 
 /* Functions to parse audio format arguments */
