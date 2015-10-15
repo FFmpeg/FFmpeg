@@ -16,11 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #if HAVE_UTGETOSTYPEFROMSTRING
 #include <CoreServices/CoreServices.h>
 #endif
 
-#include "config.h"
 #include "libavcodec/avcodec.h"
 #if CONFIG_VDA
 #  include "libavcodec/vda.h"
