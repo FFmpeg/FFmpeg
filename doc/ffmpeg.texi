@@ -253,7 +253,7 @@ Overwrite output files without asking.
 Do not overwrite output files, and exit immediately if a specified
 output file already exists.
 
-@item -loop @var{number} (@emph{input})
+@item -stream_loop @var{number} (@emph{input})
 Set number of times input stream shall be looped.
 
 @item -c[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
