@@ -167,7 +167,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(IVF,              ivf);
     REGISTER_MUXDEMUX(JACOSUB,          jacosub);
     REGISTER_DEMUXER (JV,               jv);
-    REGISTER_MUXDEMUX(LATM,             latm);
+    REGISTER_MUXER   (LATM,             latm);
     REGISTER_DEMUXER (LMLM4,            lmlm4);
     REGISTER_DEMUXER (LOAS,             loas);
     REGISTER_MUXDEMUX(LRC,              lrc);

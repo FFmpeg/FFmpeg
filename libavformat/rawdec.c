@@ -123,19 +123,6 @@ AVInputFormat ff_data_demuxer = {
 };
 #endif
 
-#if CONFIG_LATM_DEMUXER
-
-AVInputFormat ff_latm_demuxer = {
-    .name           = "latm",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw LOAS/LATM"),
-    .read_header    = ff_raw_audio_read_header,
-    .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
-    .extensions     = "latm",
-    .raw_codec_id   = AV_CODEC_ID_AAC_LATM,
-};
-#endif
-
 #if CONFIG_MJPEG_DEMUXER
 static int mjpeg_probe(AVProbeData *p)
 {

@@ -3158,7 +3158,7 @@ const OptionDef options[] = {
     { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC |
                          OPT_EXPERT | OPT_INPUT,                     { .off = OFFSET(dump_attachment) },
         "extract an attachment into a file", "filename" },
-    { "loop", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_INPUT |
+    { "stream_loop", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_INPUT |
                         OPT_OFFSET,                                  { .off = OFFSET(loop) }, "set number of times input stream shall be looped", "loop count" },
     { "debug_ts",       OPT_BOOL | OPT_EXPERT,                       { &debug_ts },
         "print timestamp debugging info" },

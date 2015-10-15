@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-10-15 - xxxxxxx - lavf 57.4.100
+  Remove the latm demuxer that was a duplicate of the loas demuxer.
+
 2015-10-14 - xxxxxxx - lavu 55.4.100 / lavu 55.2.0 - dict.h
   Change return type of av_dict_copy() from void to int, so that a proper
   error code can be reported.

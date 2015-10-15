@@ -163,9 +163,9 @@ static av_cold int dnxhd_init_vlc(DNXHDEncContext *ctx)
                 alevel -= offset << 6;
             }
             for (j = 0; j < 257; j++) {
-                if (ctx->cid_table->ac_level[j] >> 1 == alevel &&
-                    (!offset || (ctx->cid_table->ac_flags[j] & 1) && offset) &&
-                    (!run    || (ctx->cid_table->ac_flags[j] & 2) && run)) {
+                if (ctx->cid_table->ac_info[2*j+0] >> 1 == alevel &&
+                    (!offset || (ctx->cid_table->ac_info[2*j+1] & 1) && offset) &&
+                    (!run    || (ctx->cid_table->ac_info[2*j+1] & 2) && run)) {
                     av_assert1(!ctx->vlc_codes[index]);
                     if (alevel) {
                         ctx->vlc_codes[index] =

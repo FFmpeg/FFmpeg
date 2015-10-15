@@ -644,6 +644,8 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     return 0;
 }
 
+static AVOnce h264_vlc_init = AV_ONCE_INIT;
+
 av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
@@ -657,7 +659,11 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     if (!avctx->has_b_frames)
         h->low_delay = 1;
 
-    ff_h264_decode_init_vlc();
+    ret = ff_thread_once(&h264_vlc_init, ff_h264_decode_init_vlc);
+    if (ret != 0) {
+        av_log(avctx, AV_LOG_ERROR, "pthread_once has failed.");
+        return AVERROR_UNKNOWN;
+    }
 
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         if (avctx->ticks_per_frame == 1) {
@@ -1993,6 +1999,7 @@ AVCodec ff_h264_decoder = {
     .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
