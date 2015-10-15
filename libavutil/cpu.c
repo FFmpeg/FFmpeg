@@ -30,7 +30,7 @@
 #endif
 #include <sched.h>
 #endif
-#if HAVE_GETPROCESSAFFINITYMASK
+#if HAVE_GETPROCESSAFFINITYMASK || HAVE_WINRT
 #include <windows.h>
 #endif
 #if HAVE_SYSCTL
@@ -253,6 +253,9 @@ int av_cpu_count(void)
     static volatile int printed;
 
     int nb_cpus = 1;
+#if HAVE_WINRT
+    SYSTEM_INFO sysinfo;
+#endif
 #if HAVE_SCHED_GETAFFINITY && defined(CPU_COUNT)
     cpu_set_t cpuset;
 
@@ -274,6 +277,9 @@ int av_cpu_count(void)
     nb_cpus = sysconf(_SC_NPROC_ONLN);
 #elif HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
     nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+#elif HAVE_WINRT
+    GetNativeSystemInfo(&sysinfo);
+    nb_cpus = sysinfo.dwNumberOfProcessors;
 #endif
 
     if (!printed) {

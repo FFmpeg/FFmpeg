@@ -73,6 +73,8 @@ struct segment {
     char *key;
     enum KeyType key_type;
     uint8_t iv[16];
+    /* associated Media Initialization Section, treated as a segment */
+    struct segment *init_section;
 };
 
 struct rendition;
@@ -110,6 +112,13 @@ struct playlist {
     int64_t cur_seg_offset;
     int64_t last_load_time;
 
+    /* Currently active Media Initialization Section */
+    struct segment *cur_init_section;
+    uint8_t *init_sec_buf;
+    unsigned int init_sec_buf_size;
+    unsigned int init_sec_data_len;
+    unsigned int init_sec_buf_read_offset;
+
     char key_url[MAX_URL_SIZE];
     uint8_t key[16];
 
@@ -135,6 +144,11 @@ struct playlist {
      * multiple (playlist-less) renditions associated with them. */
     int n_renditions;
     struct rendition **renditions;
+
+    /* Media Initialization Sections (EXT-X-MAP) associated with this
+     * playlist, if any. */
+    int n_init_sections;
+    struct segment **init_sections;
 };
 
 /*
@@ -206,16 +220,29 @@ static void free_segment_list(struct playlist *pls)
     pls->n_segments = 0;
 }
 
+static void free_init_section_list(struct playlist *pls)
+{
+    int i;
+    for (i = 0; i < pls->n_init_sections; i++) {
+        av_freep(&pls->init_sections[i]->url);
+        av_freep(&pls->init_sections[i]);
+    }
+    av_freep(&pls->init_sections);
+    pls->n_init_sections = 0;
+}
+
 static void free_playlist_list(HLSContext *c)
 {
     int i;
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
         free_segment_list(pls);
+        free_init_section_list(pls);
         av_freep(&pls->renditions);
         av_freep(&pls->id3_buf);
         av_dict_free(&pls->id3_initial);
         ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
+        av_freep(&pls->init_sec_buf);
         av_free_packet(&pls->pkt);
         av_freep(&pls->pb.buffer);
         if (pls->input)
@@ -350,6 +377,60 @@ static void handle_key_args(struct key_info *info, const char *key,
     } else if (!strncmp(key, "IV=", key_len)) {
         *dest     =        info->iv;
         *dest_len = sizeof(info->iv);
+    }
+}
+
+struct init_section_info {
+    char uri[MAX_URL_SIZE];
+    char byterange[32];
+};
+
+static struct segment *new_init_section(struct playlist *pls,
+                                        struct init_section_info *info,
+                                        const char *url_base)
+{
+    struct segment *sec;
+    char *ptr;
+    char tmp_str[MAX_URL_SIZE];
+
+    if (!info->uri[0])
+        return NULL;
+
+    sec = av_mallocz(sizeof(*sec));
+    if (!sec)
+        return NULL;
+
+    ff_make_absolute_url(tmp_str, sizeof(tmp_str), url_base, info->uri);
+    sec->url = av_strdup(tmp_str);
+    if (!sec->url) {
+        av_free(sec);
+        return NULL;
+    }
+
+    if (info->byterange[0]) {
+        sec->size = atoi(info->byterange);
+        ptr = strchr(info->byterange, '@');
+        if (ptr)
+            sec->url_offset = atoi(ptr+1);
+    } else {
+        /* the entire file is the init section */
+        sec->size = -1;
+    }
+
+    dynarray_add(&pls->init_sections, &pls->n_init_sections, sec);
+
+    return sec;
+}
+
+static void handle_init_section_args(struct init_section_info *info, const char *key,
+                                           int key_len, char **dest, int *dest_len)
+{
+    if (!strncmp(key, "URI=", key_len)) {
+        *dest     =        info->uri;
+        *dest_len = sizeof(info->uri);
+    } else if (!strncmp(key, "BYTERANGE=", key_len)) {
+        *dest     =        info->byterange;
+        *dest_len = sizeof(info->byterange);
     }
 }
 
@@ -560,6 +641,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     uint8_t *new_url = NULL;
     struct variant_info variant_info;
     char tmp_str[MAX_URL_SIZE];
+    struct segment *cur_init_section = NULL;
 
     if (!in) {
 #if 1
@@ -645,6 +727,14 @@ static int parse_playlist(HLSContext *c, const char *url,
                 pls->type = PLS_TYPE_EVENT;
             else if (!strcmp(ptr, "VOD"))
                 pls->type = PLS_TYPE_VOD;
+        } else if (av_strstart(line, "#EXT-X-MAP:", &ptr)) {
+            struct init_section_info info = {{0}};
+            ret = ensure_playlist(c, &pls, url);
+            if (ret < 0)
+                goto fail;
+            ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_init_section_args,
+                               &info);
+            cur_init_section = new_init_section(pls, &info, url);
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             if (pls)
                 pls->finished = 1;
@@ -723,6 +813,8 @@ static int parse_playlist(HLSContext *c, const char *url,
                     seg->url_offset = 0;
                     seg_offset = 0;
                 }
+
+                seg->init_section = cur_init_section;
             }
         }
     }
@@ -736,17 +828,22 @@ fail:
     return ret;
 }
 
+static struct segment *current_segment(struct playlist *pls)
+{
+    return pls->segments[pls->cur_seq_no - pls->start_seq_no];
+}
+
 enum ReadFromURLMode {
     READ_NORMAL,
     READ_COMPLETE,
 };
 
 /* read from URLContext, limiting read to current segment */
-static int read_from_url(struct playlist *pls, uint8_t *buf, int buf_size,
+static int read_from_url(struct playlist *pls, struct segment *seg,
+                         uint8_t *buf, int buf_size,
                          enum ReadFromURLMode mode)
 {
     int ret;
-    struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
 
      /* limit read if the segment was only a part of a file */
     if (seg->size >= 0)
@@ -869,12 +966,13 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
     int bytes;
     int id3_buf_pos = 0;
     int fill_buf = 0;
+    struct segment *seg = current_segment(pls);
 
     /* gather all the id3 tags */
     while (1) {
         /* see if we can retrieve enough data for ID3 header */
         if (*len < ID3v2_HEADER_SIZE && buf_size >= ID3v2_HEADER_SIZE) {
-            bytes = read_from_url(pls, buf + *len, ID3v2_HEADER_SIZE - *len, READ_COMPLETE);
+            bytes = read_from_url(pls, seg, buf + *len, ID3v2_HEADER_SIZE - *len, READ_COMPLETE);
             if (bytes > 0) {
 
                 if (bytes == ID3v2_HEADER_SIZE - *len)
@@ -895,7 +993,6 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
             break;
 
         if (ff_id3v2_match(buf, ID3v2_DEFAULT_MAGIC)) {
-            struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
             int64_t maxsize = seg->size >= 0 ? seg->size : 1024*1024;
             int taglen = ff_id3v2_tag_len(buf);
             int tag_got_bytes = FFMIN(taglen, *len);
@@ -927,7 +1024,7 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
 
             if (remaining > 0) {
                 /* read the rest of the tag in */
-                if (read_from_url(pls, pls->id3_buf + id3_buf_pos, remaining, READ_COMPLETE) != remaining)
+                if (read_from_url(pls, seg, pls->id3_buf + id3_buf_pos, remaining, READ_COMPLETE) != remaining)
                     break;
                 id3_buf_pos += remaining;
                 av_log(pls->ctx, AV_LOG_DEBUG, "Stripped additional %d HLS ID3 bytes\n", remaining);
@@ -941,7 +1038,7 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
 
     /* re-fill buffer for the caller unless EOF */
     if (*len >= 0 && (fill_buf || *len == 0)) {
-        bytes = read_from_url(pls, buf + *len, buf_size - *len, READ_NORMAL);
+        bytes = read_from_url(pls, seg, buf + *len, buf_size - *len, READ_NORMAL);
 
         /* ignore error if we already had some data */
         if (bytes >= 0)
@@ -961,11 +1058,10 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
         pls->is_id3_timestamped = (pls->id3_mpegts_timestamp != AV_NOPTS_VALUE);
 }
 
-static int open_input(HLSContext *c, struct playlist *pls)
+static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
 {
     AVDictionary *opts = NULL;
     int ret;
-    struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
 
     // broker prior HTTP options that should be consistent across requests
     av_dict_set(&opts, "user-agent", c->user_agent, 0);
@@ -1048,6 +1144,66 @@ cleanup:
     return ret;
 }
 
+static int update_init_section(struct playlist *pls, struct segment *seg)
+{
+    static const int max_init_section_size = 1024*1024;
+    HLSContext *c = pls->parent->priv_data;
+    int64_t sec_size;
+    int64_t urlsize;
+    int ret;
+
+    if (seg->init_section == pls->cur_init_section)
+        return 0;
+
+    pls->cur_init_section = NULL;
+
+    if (!seg->init_section)
+        return 0;
+
+    /* this will clobber playlist URLContext stuff, so this should be
+     * called between segments only */
+    ret = open_input(c, pls, seg->init_section);
+    if (ret < 0) {
+        av_log(pls->parent, AV_LOG_WARNING,
+               "Failed to open an initialization section in playlist %d\n",
+               pls->index);
+        return ret;
+    }
+
+    if (seg->init_section->size >= 0)
+        sec_size = seg->init_section->size;
+    else if ((urlsize = ffurl_size(pls->input)) >= 0)
+        sec_size = urlsize;
+    else
+        sec_size = max_init_section_size;
+
+    av_log(pls->parent, AV_LOG_DEBUG,
+           "Downloading an initialization section of size %"PRId64"\n",
+           sec_size);
+
+    sec_size = FFMIN(sec_size, max_init_section_size);
+
+    av_fast_malloc(&pls->init_sec_buf, &pls->init_sec_buf_size, sec_size);
+
+    ret = read_from_url(pls, seg->init_section, pls->init_sec_buf,
+                        pls->init_sec_buf_size, READ_COMPLETE);
+    ffurl_close(pls->input);
+    pls->input = NULL;
+
+    if (ret < 0)
+        return ret;
+
+    pls->cur_init_section = seg->init_section;
+    pls->init_sec_data_len = ret;
+    pls->init_sec_buf_read_offset = 0;
+
+    /* spec says audio elementary streams do not have media initialization
+     * sections, so there should be no ID3 timestamps */
+    pls->is_id3_timestamped = 0;
+
+    return 0;
+}
+
 static int64_t default_reload_interval(struct playlist *pls)
 {
     return pls->n_segments > 0 ?
@@ -1068,6 +1224,7 @@ restart:
 
     if (!v->input) {
         int64_t reload_interval;
+        struct segment *seg;
 
         /* Check that the playlist is still needed before opening a new
          * segment. */
@@ -1121,7 +1278,14 @@ reload:
             goto reload;
         }
 
-        ret = open_input(c, v);
+        seg = current_segment(v);
+
+        /* load/update Media Initialization Section, if any */
+        ret = update_init_section(v, seg);
+        if (ret)
+            return ret;
+
+        ret = open_input(c, v, seg);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
@@ -1133,7 +1297,15 @@ reload:
         just_opened = 1;
     }
 
-    ret = read_from_url(v, buf, buf_size, READ_NORMAL);
+    if (v->init_sec_buf_read_offset < v->init_sec_data_len) {
+        /* Push init section out first before first actual segment */
+        int copy_size = FFMIN(v->init_sec_data_len - v->init_sec_buf_read_offset, buf_size);
+        memcpy(buf, v->init_sec_buf, copy_size);
+        v->init_sec_buf_read_offset += copy_size;
+        return copy_size;
+    }
+
+    ret = read_from_url(v, current_segment(v), buf, buf_size, READ_NORMAL);
     if (ret > 0) {
         if (just_opened && v->is_id3_timestamped != 0) {
             /* Intercept ID3 tags here, elementary audio streams are required
@@ -1602,6 +1774,7 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i, minplaylist = -1;
 
     recheck_discard_flags(s, c->first_packet);
+    c->first_packet = 0;
 
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];

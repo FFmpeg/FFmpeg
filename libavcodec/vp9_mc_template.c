@@ -36,14 +36,14 @@ static void FN(inter_pred)(AVCodecContext *ctx)
     VP9Context *s = ctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col;
-    ThreadFrame *tref1 = &s->refs[s->refidx[b->ref[0]]], *tref2;
+    ThreadFrame *tref1 = &s->s.refs[s->s.h.refidx[b->ref[0]]], *tref2;
     AVFrame *ref1 = tref1->f, *ref2;
     int w1 = ref1->width, h1 = ref1->height, w2, h2;
     ptrdiff_t ls_y = s->y_stride, ls_uv = s->uv_stride;
     int bytesperpixel = BYTES_PER_PIXEL;
 
     if (b->comp) {
-        tref2 = &s->refs[s->refidx[b->ref[1]]];
+        tref2 = &s->s.refs[s->s.h.refidx[b->ref[1]]];
         ref2 = tref2->f;
         w2 = ref2->width;
         h2 = ref2->height;

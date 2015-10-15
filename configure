@@ -1904,6 +1904,7 @@ HAVE_LIST="
     dos_paths
     dxva2api_cobj
     dxva2_lib
+    winrt
     libc_msvcrt
     libdc1394_1
     libdc1394_2
@@ -2419,7 +2420,7 @@ vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 videotoolbox_deps="VideoToolbox_VideoToolbox_h pthreads"
-videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework QuartzCore"
+videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework QuartzCore -framework CoreVideo"
 xvmc_deps="X11_extensions_XvMClib_h"
 
 h263_vaapi_hwaccel_deps="vaapi"
@@ -5236,9 +5237,15 @@ check_type "va/va.h" "VAPictureParameterBufferHEVC"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
+check_cpp_condition windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)" && enable winrt || disable winrt
+
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
         enable w32threads || disable w32threads
+    if ! enabled w32threads && enabled winrt; then
+        check_func_headers "windows.h" CreateThread &&
+            enable w32threads || disable w32threads
+    fi
 fi
 
 # check for some common methods of building with pthread support
