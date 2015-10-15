@@ -1147,10 +1147,22 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
             av_assert1(frame->height               == link->h);
         }
     } else {
-        av_assert1(frame->format                == link->format);
-        av_assert1(av_frame_get_channels(frame) == link->channels);
-        av_assert1(frame->channel_layout        == link->channel_layout);
-        av_assert1(frame->sample_rate           == link->sample_rate);
+        if (frame->format != link->format) {
+            av_log(link->dst, AV_LOG_ERROR, "Format change is not supported\n");
+            goto error;
+        }
+        if (av_frame_get_channels(frame) != link->channels) {
+            av_log(link->dst, AV_LOG_ERROR, "Channel count change is not supported\n");
+            goto error;
+        }
+        if (frame->channel_layout != link->channel_layout) {
+            av_log(link->dst, AV_LOG_ERROR, "Channel layout change is not supported\n");
+            goto error;
+        }
+        if (frame->sample_rate != link->sample_rate) {
+            av_log(link->dst, AV_LOG_ERROR, "Sample rate change is not supported\n");
+            goto error;
+        }
     }
 
     /* Go directly to actual filtering if possible */
@@ -1163,6 +1175,9 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
     } else {
         return ff_filter_frame_framed(link, frame);
     }
+error:
+    av_frame_free(&frame);
+    return AVERROR_PATCHWELCOME;
 }
 
 const AVClass *avfilter_get_class(void)
