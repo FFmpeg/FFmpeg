@@ -1535,6 +1535,7 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i, minplaylist = -1;
 
     recheck_discard_flags(s, c->first_packet);
+    c->first_packet = 0;
 
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
