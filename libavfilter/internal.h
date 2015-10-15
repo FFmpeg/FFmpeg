@@ -165,6 +165,7 @@ int ff_fmt_is_in(int fmt, const int *fmts);
  * @param log_ctx log context
  * @return >= 0 in case of success, a negative AVERROR code on error
  */
+av_warn_unused_result
 int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ctx);
 
 /**
@@ -175,6 +176,7 @@ int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ct
  * @param log_ctx log context
  * @return >= 0 in case of success, a negative AVERROR code on error
  */
+av_warn_unused_result
 int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx);
 
 /**
@@ -185,6 +187,7 @@ int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx);
  * @param log_ctx log context
  * @return >= 0 in case of success, a negative AVERROR code on error
  */
+av_warn_unused_result
 int ff_parse_time_base(AVRational *ret, const char *arg, void *log_ctx);
 
 /**
@@ -195,6 +198,7 @@ int ff_parse_time_base(AVRational *ret, const char *arg, void *log_ctx);
  * @param log_ctx log context
  * @return >= 0 in case of success, a negative AVERROR code on error
  */
+av_warn_unused_result
 int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
 
 /**
@@ -207,6 +211,7 @@ int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
  * @param log_ctx log context
  * @return >= 0 in case of success, a negative AVERROR code on error
  */
+av_warn_unused_result
 int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
                             void *log_ctx);
 
