@@ -233,7 +233,7 @@ av_cold int av_sha512_init(AVSHA512 *ctx, int bits)
         ctx->state[7] = UINT64_C(0x5BE0CD19137E2179);
         break;
     default:
-        return -1;
+        return AVERROR(EINVAL);
     }
     ctx->count = 0;
     return 0;

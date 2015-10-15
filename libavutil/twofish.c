@@ -273,7 +273,7 @@ av_cold int av_twofish_init(AVTWOFISH *cs, const uint8_t *key, int key_bits)
     uint32_t Key[8], Me[4], Mo[4], A, B;
     const uint32_t rho = 0x01010101;
     if (key_bits < 0)
-        return -1;
+        return AVERROR(EINVAL);
     if (key_bits <= 128) {
         cs->ksize = 2;
     } else if (key_bits <= 192) {
