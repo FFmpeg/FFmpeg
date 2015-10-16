@@ -2753,7 +2753,7 @@ AVCodec ff_mpeg_xvmc_decoder = {
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-                      AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_HWACCEL |
+                      AV_CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL |
                       AV_CODEC_CAP_DELAY,
     .flush          = flush,
 };
