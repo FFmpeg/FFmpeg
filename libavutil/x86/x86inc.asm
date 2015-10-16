@@ -648,8 +648,10 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
     %rep %0
         %macro %1 1-2 %1
             %2 %1
-            %%branch_instr:
-            %xdefine last_branch_adr %%branch_instr
+            %if notcpuflag(ssse3)
+                %%branch_instr equ $
+                %xdefine last_branch_adr %%branch_instr
+            %endif
         %endmacro
         %rotate 1
     %endrep
