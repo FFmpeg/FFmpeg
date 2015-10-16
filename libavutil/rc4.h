@@ -22,7 +22,6 @@
 #define AVUTIL_RC4_H
 
 #include <stdint.h>
-#include "version.h"
 
 /**
  * @defgroup lavu_rc4 RC4
@@ -30,14 +29,10 @@
  * @{
  */
 
-#if FF_API_CRYPTO_CONTEXT
 typedef struct AVRC4 {
     uint8_t state[256];
     int x, y;
 } AVRC4;
-#else
-typedef struct AVRC4 AVRC4;
-#endif
 
 /**
  * Allocate an AVRC4 context.

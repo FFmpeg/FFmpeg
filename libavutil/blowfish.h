@@ -23,7 +23,6 @@
 #define AVUTIL_BLOWFISH_H
 
 #include <stdint.h>
-#include "version.h"
 
 /**
  * @defgroup lavu_blowfish Blowfish
@@ -31,16 +30,12 @@
  * @{
  */
 
-#if FF_API_CRYPTO_CONTEXT
 #define AV_BF_ROUNDS 16
 
 typedef struct AVBlowfish {
     uint32_t p[AV_BF_ROUNDS + 2];
     uint32_t s[4][256];
 } AVBlowfish;
-#else
-typedef struct AVBlowfish AVBlowfish;
-#endif
 
 /**
  * Allocate an AVBlowfish context.
