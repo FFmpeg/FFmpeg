@@ -55,7 +55,7 @@ static int rsd_probe(AVProbeData *p)
 static int rsd_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    int i, version, start = 0x800;
+    int i, ret, version, start = 0x800;
     AVCodecContext *codec;
     AVStream *st = avformat_new_stream(s, NULL);
 
@@ -116,8 +116,8 @@ static int rsd_read_header(AVFormatContext *s)
 
             start = avio_rl32(pb);
 
-            if (ff_get_extradata(codec, s->pb, 32) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = ff_get_extradata(codec, s->pb, 32)) < 0)
+                return ret;
 
             for (i = 0; i < 16; i++)
                 AV_WB16(codec->extradata + i * 2, AV_RL16(codec->extradata + i * 2));
@@ -126,8 +126,8 @@ static int rsd_read_header(AVFormatContext *s)
             codec->block_align = 8 * codec->channels;
             avio_skip(s->pb, 0x1A4 - avio_tell(s->pb));
 
-            if (ff_alloc_extradata(st->codec, 32 * st->codec->channels) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = ff_alloc_extradata(st->codec, 32 * st->codec->channels)) < 0)
+                return ret;
 
             for (i = 0; i < st->codec->channels; i++) {
                 avio_read(s->pb, st->codec->extradata + 32 * i, 32);
