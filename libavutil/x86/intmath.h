@@ -24,6 +24,41 @@
 #include <stdint.h>
 #include "config.h"
 
+#if HAVE_FAST_CLZ
+#if defined(__INTEL_COMPILER)
+#   define ff_ctzll ff_ctzll_x86
+static av_always_inline av_const int ff_ctzll_x86(long long v)
+{
+#   if ARCH_X86_64
+    uint64_t c;
+    __asm__("bsfq %1,%0" : "=r" (c) : "r" (v));
+    return c;
+#   else
+    return ((uint32_t)v == 0) ? _bit_scan_forward((uint32_t)(v >> 32)) + 32 : _bit_scan_forward((uint32_t)v);
+#   endif
+}
+#elif defined(_MSC_VER)
+#   define ff_ctzll ff_ctzll_x86
+static av_always_inline av_const int ff_ctzll_x86(long long v)
+{
+    unsigned long c;
+#   if ARCH_X86_64
+    _BitScanForward64(&c, v);
+#   else
+    if ((uint32_t)v == 0) {
+        _BitScanForward(&c, (uint32_t)(v >> 32));
+        c += 32;
+    } else {
+        _BitScanForward(&c, (uint32_t)v);
+    }
+#   endif
+    return c;
+}
+
+#endif /* __INTEL_COMPILER */
+
+#endif /* HAVE_FAST_CLZ */
+
 #if defined(__GNUC__)
 
 /* Our generic version of av_popcount is faster than GCC's built-in on
