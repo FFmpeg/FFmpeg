@@ -26,6 +26,11 @@
 
 #if HAVE_FAST_CLZ
 #if defined(__INTEL_COMPILER)
+#   define ff_log2(x) (_bit_scan_reverse((x)|1))
+#   define ff_log2_16bit av_log2
+
+#   define ff_ctz(v) _bit_scan_forward(v)
+
 #   define ff_ctzll ff_ctzll_x86
 static av_always_inline av_const int ff_ctzll_x86(long long v)
 {
@@ -38,6 +43,21 @@ static av_always_inline av_const int ff_ctzll_x86(long long v)
 #   endif
 }
 #elif defined(_MSC_VER)
+#   define ff_log2 ff_log2_x86
+static av_always_inline av_const int ff_log2_x86(unsigned int v) {
+    unsigned long n;
+    _BitScanReverse(&n, v | 1);
+    return n;
+}
+#   define ff_log2_16bit av_log2
+
+#   define ff_ctz ff_ctz_x86
+static av_always_inline av_const int ff_ctz_x86(int v) {
+    unsigned long c;
+    _BitScanForward(&c, v);
+    return c;
+}
+
 #   define ff_ctzll ff_ctzll_x86
 static av_always_inline av_const int ff_ctzll_x86(long long v)
 {
