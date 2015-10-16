@@ -102,7 +102,7 @@ typedef struct MpegTSWrite {
     int flags;
     int copyts;
     int tables_version;
-    float pat_period;
+    double pat_period;
     float sdt_period;
     int64_t last_pat_ts;
     int64_t last_sdt_ts;
@@ -1555,7 +1555,7 @@ static const AVOption options[] = {
       offsetof(MpegTSWrite, pcr_period), AV_OPT_TYPE_INT,
       { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "pat_period", "PAT/PMT retransmission time limit in seconds",
-      offsetof(MpegTSWrite, pat_period), AV_OPT_TYPE_FLOAT,
+      offsetof(MpegTSWrite, pat_period), AV_OPT_TYPE_DOUBLE,
       { .dbl = INT_MAX }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "sdt_period", "SDT retransmission time limit in seconds",
       offsetof(MpegTSWrite, sdt_period), AV_OPT_TYPE_FLOAT,
