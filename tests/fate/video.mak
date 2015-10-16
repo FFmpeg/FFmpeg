@@ -286,9 +286,6 @@ fate-roqvideo: CMD = framecrc -i $(TARGET_SAMPLES)/idroq/idlogo.roq -an
 FATE_VIDEO-$(call DEMDEC, SMUSH, SANM) += fate-sanm
 fate-sanm: CMD = framecrc -i $(TARGET_SAMPLES)/smush/ronin_part.znm -an -pix_fmt rgb24
 
-FATE_VIDEO-$(call DEMDEC, AVI, SCREENPRESSO) += fate-screenpresso
-fate-screenpresso: CMD = framecrc -i $(TARGET_SAMPLES)/spv1/bunny.avi
-
 FATE_VIDEO-$(call DEMDEC, VMD, VMDVIDEO) += fate-sierra-vmd-video
 fate-sierra-vmd-video: CMD = framecrc -i $(TARGET_SAMPLES)/vmd/12.vmd -pix_fmt rgb24 -an
 
