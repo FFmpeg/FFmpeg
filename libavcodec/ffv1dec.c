@@ -935,6 +935,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         else                     v = buf_p - c->bytestream_start;
         if (buf_p - c->bytestream_start < v) {
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
+            ff_thread_report_progress(&f->picture, INT_MAX, 0);
             return AVERROR_INVALIDDATA;
         }
         buf_p -= v;
