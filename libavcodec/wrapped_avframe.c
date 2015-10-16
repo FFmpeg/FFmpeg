@@ -43,7 +43,6 @@ static int wrapped_avframe_encode(AVCodecContext *avctx, AVPacket *pkt,
                      const AVFrame *frame, int *got_packet)
 {
     AVFrame *wrapped = av_frame_clone(frame);
-    int ret;
 
     if (!wrapped)
         return AVERROR(ENOMEM);
