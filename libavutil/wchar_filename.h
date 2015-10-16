@@ -23,6 +23,7 @@
 #include <windows.h>
 #include "mem.h"
 
+av_warn_unused_result
 static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
 {
     int num_chars;
