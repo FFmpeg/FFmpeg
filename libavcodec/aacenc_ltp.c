@@ -1,5 +1,5 @@
 /*
- * AAC encoder TNS
+ * AAC encoder long term prediction extension
  * Copyright (C) 2015 Rostislav Pehlivanov
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file
- * AAC encoder long term prediction
+ * AAC encoder long term prediction extension
  * @author Rostislav Pehlivanov ( atomnuker gmail com )
  */
 
