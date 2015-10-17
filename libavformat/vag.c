@@ -34,7 +34,6 @@ static int vag_probe(AVProbeData *p)
 static int vag_read_header(AVFormatContext *s)
 {
     AVStream *st;
-    int64_t pos;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -53,7 +52,6 @@ static int vag_read_header(AVFormatContext *s)
     st->codec->sample_rate = avio_rb32(s->pb);
     if (st->codec->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
-    pos = avio_tell(s->pb);
     avio_seek(s->pb, 0x1000, SEEK_SET);
     if (avio_rl32(s->pb) == MKTAG('V','A','G','p')) {
         st->codec->block_align = 0x1000 * st->codec->channels;
