@@ -91,7 +91,7 @@ void ff_aac_apply_tns(AACEncContext *s, SingleChannelElement *sce)
     IndividualChannelStream *ics = &sce->ics;
     int w, filt, m, i, top, order, bottom, start, end, size, inc;
     const int mmm = FFMIN(ics->tns_max_bands, ics->max_sfb);
-    float lpc[TNS_MAX_ORDER];
+    float lpc[TNS_MAX_ORDER], tmp[TNS_MAX_ORDER+1];
 
     for (w = 0; w < ics->num_windows; w++) {
         bottom = ics->num_swb;
@@ -117,10 +117,21 @@ void ff_aac_apply_tns(AACEncContext *s, SingleChannelElement *sce)
             }
             start += w * 128;
 
-            // ar filter
-            for (m = 0; m < size; m++, start += inc)
-                for (i = 1; i <= FFMIN(m, order); i++)
-                    sce->coeffs[start] += lpc[i-1]*sce->pcoeffs[start - i*inc];
+            if (!s->options.ltp) {     // ar filter
+                for (m = 0; m < size; m++, start += inc) {
+                    for (i = 1; i <= FFMIN(m, order); i++) {
+                        sce->coeffs[start] += lpc[i-1]*sce->pcoeffs[start - i*inc];
+                    }
+                }
+            } else {                   // ma filter
+                for (m = 0; m < size; m++, start += inc) {
+                    tmp[0] = sce->pcoeffs[start];
+                    for (i = 1; i <= FFMIN(m, order); i++)
+                        sce->coeffs[start] += lpc[i-1]*tmp[i];
+                    for (i = order; i > 0; i--)
+                        tmp[i] = tmp[i - 1];
+                }
+            }
         }
     }
 }
