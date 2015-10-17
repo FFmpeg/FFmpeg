@@ -35,14 +35,6 @@
 
 #include <stdint.h>
 
-/* @name ltp_coef
- * Table of the LTP coefficients
- */
-static const INTFLOAT ltp_coef[8] = {
-    Q30(0.570829f), Q30(0.696616f), Q30(0.813004f), Q30(0.911304f),
-    Q30(0.984900f), Q30(1.067894f), Q30(1.194601f), Q30(1.369533f),
-};
-
 static const int8_t tags_per_config[16] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 4, 5, 0, 5, 0 };
 
 static const uint8_t aac_channel_layout_map[16][5][3] = {
