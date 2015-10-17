@@ -60,6 +60,7 @@ static const struct AACProfileOptions aacenc_profiles[] = {
             .mid_side = 0,
             .pns = 1,
             .tns = 0,
+            .ltp = OPT_BANNED,
             .pred = OPT_REQUIRED,
             .intensity_stereo = 1,
         },
@@ -69,6 +70,7 @@ static const struct AACProfileOptions aacenc_profiles[] = {
             .mid_side = 0,
             .pns = 1,
             .tns = 0,
+            .ltp = OPT_NEEDS_LTP,
             .pred = OPT_NEEDS_MAIN,
             .intensity_stereo = 1,
         },
@@ -78,6 +80,17 @@ static const struct AACProfileOptions aacenc_profiles[] = {
             .mid_side = 0,
             .pns = OPT_BANNED,
             .tns = 0,
+            .ltp = OPT_BANNED,
+            .pred = OPT_BANNED,
+            .intensity_stereo = 1,
+        },
+    },
+    {FF_PROFILE_AAC_LTP,
+        {  /* Long term prediction profile */
+            .mid_side = 0,
+            .pns = 1,
+            .tns = 0,
+            .ltp = OPT_REQUIRED,
             .pred = OPT_BANNED,
             .intensity_stereo = 1,
         },
@@ -475,6 +488,8 @@ static int encode_individual_channel(AVCodecContext *avctx, AACEncContext *s,
         put_ics_info(s, &sce->ics);
         if (s->coder->encode_main_pred)
             s->coder->encode_main_pred(s, sce);
+        if (s->coder->encode_ltp_info)
+            s->coder->encode_ltp_info(s, sce, 0);
     }
     encode_band_info(s, sce);
     encode_scale_factors(avctx, s, sce);
@@ -625,6 +640,13 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             }
 
             apply_window_and_mdct(s, sce, overlap);
+
+            if (s->options.ltp && s->coder->update_ltp) {
+                s->coder->update_ltp(s, sce);
+                apply_window[sce->ics.window_sequence[0]](s->fdsp, sce, &sce->ltp_state[0]);
+                s->mdct1024.mdct_calc(&s->mdct1024, sce->lcoeffs, sce->ret_buf);
+            }
+
             if (isnan(cpe->ch->coeffs[0])) {
                 av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
                 return AVERROR(EINVAL);
@@ -659,6 +681,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 sce = &cpe->ch[ch];
                 coeffs[ch] = sce->coeffs;
                 sce->ics.predictor_present = 0;
+                sce->ics.ltp.present = 0;
+                memset(sce->ics.ltp.used, 0, sizeof(sce->ics.ltp.used));
                 memset(sce->ics.prediction_used, 0, sizeof(sce->ics.prediction_used));
                 memset(&sce->tns, 0, sizeof(TemporalNoiseShaping));
                 for (w = 0; w < 128; w++)
@@ -738,12 +762,26 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 apply_mid_side_stereo(cpe);
             }
             adjust_frame_information(cpe, chans);
+            if (s->options.ltp) { /* LTP */
+                for (ch = 0; ch < chans; ch++) {
+                    sce = &cpe->ch[ch];
+                    s->cur_channel = start_ch + ch;
+                    if (s->coder->search_for_ltp)
+                        s->coder->search_for_ltp(s, sce, cpe->common_window);
+                    if (sce->ics.ltp.present) pred_mode = 1;
+                }
+                s->cur_channel = start_ch;
+                if (s->coder->adjust_common_ltp)
+                    s->coder->adjust_common_ltp(s, cpe);
+            }
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);
                 if (cpe->common_window) {
                     put_ics_info(s, &cpe->ch[0].ics);
                     if (s->coder->encode_main_pred)
                         s->coder->encode_main_pred(s, &cpe->ch[0]);
+                    if (s->coder->encode_ltp_info)
+                        s->coder->encode_ltp_info(s, &cpe->ch[0], 1);
                     encode_ms_info(&s->pb, cpe);
                     if (cpe->ms_mode) ms_mode = 1;
                 }
@@ -815,6 +853,9 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             break;
         }
     } while (1);
+
+    if (s->options.ltp && s->coder->ltp_insert_new_frame)
+        s->coder->ltp_insert_new_frame(s);
 
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
@@ -935,6 +976,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     AAC_OPT_SET(&s->options, p_opt, 1, coder);
     AAC_OPT_SET(&s->options, p_opt, 0, pns);
     AAC_OPT_SET(&s->options, p_opt, 1, tns);
+    AAC_OPT_SET(&s->options, p_opt, 0, ltp);
     AAC_OPT_SET(&s->options, p_opt, 0, pred);
     AAC_OPT_SET(&s->options, p_opt, 1, mid_side);
     AAC_OPT_SET(&s->options, p_opt, 0, intensity_stereo);
@@ -993,6 +1035,7 @@ static const AVOption aacenc_options[] = {
     {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
     {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
+    {"aac_ltp", "Long term prediction", offsetof(AACEncContext, options.ltp), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
     {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
     {NULL}
 };
