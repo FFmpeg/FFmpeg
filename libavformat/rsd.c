@@ -169,7 +169,9 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
                codec->channels > 1) {
         int i, ch;
 
-        av_new_packet(pkt, codec->block_align);
+        ret = av_new_packet(pkt, codec->block_align);
+        if (ret < 0)
+            return ret;
         for (i = 0; i < 4; i++) {
             for (ch = 0; ch < codec->channels; ch++) {
                 pkt->data[ch * 8 + i * 2 + 0] = avio_r8(s->pb);
