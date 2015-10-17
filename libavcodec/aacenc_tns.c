@@ -59,31 +59,31 @@ static inline int compress_coeffs(int *coef, int order, int c_bits)
  */
 void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
 {
-    int i, w, filt, coef_len, coef_compress = 0;
-    const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
+    int i, w, filt, coef_compress = 0, coef_len;
     TemporalNoiseShaping *tns = &sce->tns;
-    const int c_bits = is8 ? TNS_Q_BITS_SHORT == 4 : TNS_Q_BITS == 4;
+    const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
+    const int c_bits = is8 ? TNS_Q_BITS_IS8 == 4 : TNS_Q_BITS == 4;
 
     if (!sce->tns.present)
         return;
 
     for (i = 0; i < sce->ics.num_windows; i++) {
         put_bits(&s->pb, 2 - is8, sce->tns.n_filt[i]);
-        if (tns->n_filt[i]) {
-            put_bits(&s->pb, 1, c_bits);
-            for (filt = 0; filt < tns->n_filt[i]; filt++) {
-                put_bits(&s->pb, 6 - 2 * is8, tns->length[i][filt]);
-                put_bits(&s->pb, 5 - 2 * is8, tns->order[i][filt]);
-                if (tns->order[i][filt]) {
-                    coef_compress = compress_coeffs(tns->coef_idx[i][filt],
-                                                    tns->order[i][filt], c_bits);
-                    put_bits(&s->pb, 1, !!tns->direction[i][filt]);
-                    put_bits(&s->pb, 1, !!coef_compress);
-                    coef_len = c_bits + 3 - coef_compress;
-                    for (w = 0; w < tns->order[i][filt]; w++)
-                        put_bits(&s->pb, coef_len, tns->coef_idx[i][filt][w]);
-                }
-            }
+        if (!tns->n_filt[i])
+            continue;
+        put_bits(&s->pb, 1, c_bits);
+        for (filt = 0; filt < tns->n_filt[i]; filt++) {
+            put_bits(&s->pb, 6 - 2 * is8, tns->length[i][filt]);
+            put_bits(&s->pb, 5 - 2 * is8, tns->order[i][filt]);
+            if (!tns->order[i][filt])
+                continue;
+            put_bits(&s->pb, 1, tns->direction[i][filt]);
+            coef_compress = compress_coeffs(tns->coef_idx[i][filt],
+                                            tns->order[i][filt], c_bits);
+            put_bits(&s->pb, 1, coef_compress);
+            coef_len = c_bits + 3 - coef_compress;
+            for (w = 0; w < tns->order[i][filt]; w++)
+                put_bits(&s->pb, coef_len, tns->coef_idx[i][filt][w]);
         }
     }
 }
