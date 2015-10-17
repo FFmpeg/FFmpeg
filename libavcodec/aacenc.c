@@ -540,6 +540,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     float **samples = s->planar_samples, *samples2, *la, *overlap;
     ChannelElement *cpe;
     SingleChannelElement *sce;
+    IndividualChannelStream *ics;
     int i, its, ch, w, chans, tag, start_ch, ret, frame_bits;
     int target_bits, rate_bits, too_many_bits, too_few_bits;
     int ms_mode = 0, is_mode = 0, tns_mode = 0, pred_mode = 0;
@@ -569,10 +570,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
         for (ch = 0; ch < chans; ch++) {
-            IndividualChannelStream *ics = &cpe->ch[ch].ics;
-            int cur_channel = start_ch + ch;
+            sce = &cpe->ch[ch];
+            ics = &sce->ics;
+            s->cur_channel = start_ch + ch;
             float clip_avoidance_factor;
-            overlap  = &samples[cur_channel][0];
+            overlap  = &samples[s->cur_channel][0];
             samples2 = overlap + 1024;
             la       = samples2 + (448+64);
             if (!frame)
@@ -589,7 +591,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                  */
                 ics->num_swb = s->samplerate_index >= 8 ? 1 : 3;
             } else {
-                wi[ch] = s->psy.model->window(&s->psy, samples2, la, cur_channel,
+                wi[ch] = s->psy.model->window(&s->psy, samples2, la, s->cur_channel,
                                               ics->window_sequence[0]);
             }
             ics->window_sequence[1] = ics->window_sequence[0];
@@ -622,12 +624,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 ics->clip_avoidance_factor = 1.0f;
             }
 
-            apply_window_and_mdct(s, &cpe->ch[ch], overlap);
+            apply_window_and_mdct(s, sce, overlap);
             if (isnan(cpe->ch->coeffs[0])) {
                 av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
                 return AVERROR(EINVAL);
             }
-            avoid_clipping(s, &cpe->ch[ch]);
+            avoid_clipping(s, sce);
         }
         start_ch += chans;
     }
