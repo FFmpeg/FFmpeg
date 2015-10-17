@@ -27,6 +27,7 @@
 
 static const AVCodecTag rsd_tags[] = {
     { AV_CODEC_ID_ADPCM_THP,       MKTAG('G','A','D','P') },
+    { AV_CODEC_ID_ADPCM_THP,       MKTAG('W','A','D','P') },
     { AV_CODEC_ID_ADPCM_IMA_RAD,   MKTAG('R','A','D','P') },
     { AV_CODEC_ID_ADPCM_IMA_WAV,   MKTAG('X','A','D','P') },
     { AV_CODEC_ID_PCM_S16BE,       MKTAG('P','C','M','B') },
@@ -37,7 +38,6 @@ static const AVCodecTag rsd_tags[] = {
 static const uint32_t rsd_unsupported_tags[] = {
     MKTAG('O','G','G',' '),
     MKTAG('V','A','G',' '),
-    MKTAG('W','A','D','P'),
     MKTAG('X','M','A',' '),
 };
 
@@ -55,7 +55,7 @@ static int rsd_probe(AVProbeData *p)
 static int rsd_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    int i, version, start = 0x800;
+    int i, ret, version, start = 0x800;
     AVCodecContext *codec;
     AVStream *st = avformat_new_stream(s, NULL);
 
@@ -110,19 +110,32 @@ static int rsd_read_header(AVFormatContext *s)
             st->duration = av_get_audio_frame_duration(codec, avio_size(pb) - start);
         break;
     case AV_CODEC_ID_ADPCM_THP:
-        /* RSD3GADP is mono, so only alloc enough memory
-           to store the coeff table for a single channel. */
+        if (st->codec->codec_tag == MKTAG('G','A','D','P')) {
+            /* RSD3GADP is mono, so only alloc enough memory
+               to store the coeff table for a single channel. */
 
-        start = avio_rl32(pb);
+            start = avio_rl32(pb);
 
-        if (ff_get_extradata(codec, s->pb, 32) < 0)
-            return AVERROR(ENOMEM);
+            if ((ret = ff_get_extradata(codec, s->pb, 32)) < 0)
+                return ret;
 
-        for (i = 0; i < 16; i++)
-            AV_WB16(codec->extradata + i * 2, AV_RL16(codec->extradata + i * 2));
+            for (i = 0; i < 16; i++)
+                AV_WB16(codec->extradata + i * 2, AV_RL16(codec->extradata + i * 2));
 
+        } else {
+            codec->block_align = 8 * codec->channels;
+            avio_skip(s->pb, 0x1A4 - avio_tell(s->pb));
+
+            if ((ret = ff_alloc_extradata(st->codec, 32 * st->codec->channels)) < 0)
+                return ret;
+
+            for (i = 0; i < st->codec->channels; i++) {
+                avio_read(s->pb, st->codec->extradata + 32 * i, 32);
+                avio_skip(s->pb, 8);
+            }
+        }
         if (pb->seekable)
-            st->duration = (avio_size(pb) - start) / 8 * 14;
+            st->duration = (avio_size(pb) - start) / (8 * st->codec->channels) * 14;
         break;
     case AV_CODEC_ID_PCM_S16LE:
     case AV_CODEC_ID_PCM_S16BE:
@@ -150,18 +163,24 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     if (codec->codec_id == AV_CODEC_ID_ADPCM_IMA_RAD ||
-        codec->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV)
+        codec->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
         ret = av_get_packet(s->pb, pkt, codec->block_align);
-    else
-        ret = av_get_packet(s->pb, pkt, size);
+    } else if (codec->codec_tag == MKTAG('W','A','D','P') &&
+               codec->channels > 1) {
+        int i, ch;
 
-    if (ret != size) {
-        if (ret < 0) {
-            av_free_packet(pkt);
-            return ret;
+        av_new_packet(pkt, codec->block_align);
+        for (i = 0; i < 4; i++) {
+            for (ch = 0; ch < codec->channels; ch++) {
+                pkt->data[ch * 8 + i * 2 + 0] = avio_r8(s->pb);
+                pkt->data[ch * 8 + i * 2 + 1] = avio_r8(s->pb);
+            }
         }
-        av_shrink_packet(pkt, ret);
+        ret = 0;
+    } else {
+        ret = av_get_packet(s->pb, pkt, size);
     }
+
     pkt->stream_index = 0;
 
     return ret;

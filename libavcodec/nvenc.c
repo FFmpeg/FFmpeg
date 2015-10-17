@@ -742,8 +742,6 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         switch (avctx->codec->id) {
         case AV_CODEC_ID_H264:
             ctx->encode_config.encodeCodecConfig.h264Config.idrPeriod = avctx->gop_size;
-            ctx->encode_config.encodeCodecConfig.h264Config.hierarchicalPFrames = 1;
-            ctx->encode_config.encodeCodecConfig.h264Config.hierarchicalBFrames = 1;
             break;
         case AV_CODEC_ID_H265:
             ctx->encode_config.encodeCodecConfig.hevcConfig.idrPeriod = avctx->gop_size;
@@ -843,9 +841,9 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         if(avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
             ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p * fabs(avctx->i_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpIntra += qp_inter_p * avctx->i_quant_offset;
+            ctx->encode_config.rcParams.initialRCQP.qpIntra += avctx->i_quant_offset;
             ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p * fabs(avctx->b_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpInterB += qp_inter_p * avctx->b_quant_offset;
+            ctx->encode_config.rcParams.initialRCQP.qpInterB += avctx->b_quant_offset;
         } else {
             ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p;
             ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p;

@@ -144,6 +144,7 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
  *          The situation is undefined according to POSIX and may crash with
  *          some libc implementations.
  */
+av_warn_unused_result
 int av_reallocp(void *ptr, size_t size);
 
 /**
@@ -304,6 +305,7 @@ void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem);
  * @return >=0 on success, negative otherwise.
  * @see av_dynarray_add(), av_dynarray2_add()
  */
+av_warn_unused_result
 int av_dynarray_add_nofree(void *tab_ptr, int *nb_ptr, void *elem);
 
 /**

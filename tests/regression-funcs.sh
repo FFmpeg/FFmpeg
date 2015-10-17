@@ -19,8 +19,8 @@ target_datadir="${target_path}/${datadir}"
 this="$test.$test_ref"
 outfile="$datadir/$test_ref/"
 
-# various files
-ffmpeg="$target_exec ${target_path}/ffmpeg"
+ # various files
+ffmpeg="$target_exec ${target_path}/ffmpeg${PROGSUF}"
 raw_src="${target_path}/$raw_src_dir/%02d.pgm"
 raw_dst="$datadir/$this.out.yuv"
 pcm_src="$target_datadir/asynth1.sw"

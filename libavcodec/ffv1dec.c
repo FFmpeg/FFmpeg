@@ -408,6 +408,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
         if (ff_ffv1_init_slice_state(f, fs) < 0)
             return AVERROR(ENOMEM);
         if (decode_slice_header(f, fs) < 0) {
+            fs->slice_x = fs->slice_y = fs->slice_height = fs->slice_width = 0;
             fs->slice_damaged = 1;
             return AVERROR_INVALIDDATA;
         }
@@ -939,6 +940,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         else                     v = buf_p - c->bytestream_start;
         if (buf_p - c->bytestream_start < v) {
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
+            ff_thread_report_progress(&f->picture, INT_MAX, 0);
             return AVERROR_INVALIDDATA;
         }
         buf_p -= v;

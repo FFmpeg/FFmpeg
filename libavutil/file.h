@@ -40,6 +40,7 @@
  * @return a non negative number in case of success, a negative value
  * corresponding to an AVERROR error code in case of failure
  */
+av_warn_unused_result
 int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
                 int log_offset, void *log_ctx);
 

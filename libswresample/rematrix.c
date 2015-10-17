@@ -340,11 +340,16 @@ av_cold static int auto_matrix(SwrContext *s)
             }
     }
 
+    av_log(s, AV_LOG_DEBUG, "Matrix coefficients:\n");
     for(i=0; i<av_get_channel_layout_nb_channels(out_ch_layout); i++){
+        const char *c =
+            av_get_channel_name(av_channel_layout_extract_channel(out_ch_layout, i));
+        av_log(s, AV_LOG_DEBUG, "%s: ", c ? c : "?");
         for(j=0; j<av_get_channel_layout_nb_channels(in_ch_layout); j++){
-            av_log(NULL, AV_LOG_DEBUG, "%f ", s->matrix[i][j]);
+            c = av_get_channel_name(av_channel_layout_extract_channel(in_ch_layout, j));
+            av_log(s, AV_LOG_DEBUG, "%s:%f ", c ? c : "?", s->matrix[i][j]);
         }
-        av_log(NULL, AV_LOG_DEBUG, "\n");
+        av_log(s, AV_LOG_DEBUG, "\n");
     }
     return 0;
 }

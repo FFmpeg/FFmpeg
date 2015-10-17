@@ -25,13 +25,6 @@
 #include "mem.h"
 #include "des.h"
 
-#if !FF_API_CRYPTO_CONTEXT
-struct AVDES {
-    uint64_t round_keys[3][16];
-    int triple_des;
-};
-#endif
-
 #define T(a, b, c, d, e, f, g, h) 64-a,64-b,64-c,64-d,64-e,64-f,64-g,64-h
 static const uint8_t IP_shuffle[] = {
     T(58, 50, 42, 34, 26, 18, 10, 2),

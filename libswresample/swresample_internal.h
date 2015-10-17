@@ -184,6 +184,7 @@ struct SwrContext {
     /* TODO: callbacks for ASM optimizations */
 };
 
+av_warn_unused_result
 int swri_realloc_audio(AudioData *a, int count);
 
 void swri_noise_shaping_int16 (SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
@@ -191,12 +192,15 @@ void swri_noise_shaping_int32 (SwrContext *s, AudioData *dsts, const AudioData *
 void swri_noise_shaping_float (SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
 void swri_noise_shaping_double(SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
 
+av_warn_unused_result
 int swri_rematrix_init(SwrContext *s);
 void swri_rematrix_free(SwrContext *s);
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
 int swri_rematrix_init_x86(struct SwrContext *s);
 
+av_warn_unused_result
 int swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat noise_fmt);
+av_warn_unused_result
 int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt);
 
 void swri_audio_convert_init_aarch64(struct AudioConvert *ac,

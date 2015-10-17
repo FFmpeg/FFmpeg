@@ -45,6 +45,7 @@ typedef struct AACEncOptions {
     int coder;
     int pns;
     int tns;
+    int ltp;
     int pred;
     int mid_side;
     int intensity_stereo;
@@ -60,14 +61,19 @@ typedef struct AACCoefficientsEncoder {
     void (*quantize_and_encode_band)(struct AACEncContext *s, PutBitContext *pb, const float *in, float *out, int size,
                                      int scale_idx, int cb, const float lambda, int rtz);
     void (*encode_tns_info)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*encode_ltp_info)(struct AACEncContext *s, SingleChannelElement *sce, int common_window);
     void (*encode_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*adjust_common_pred)(struct AACEncContext *s, ChannelElement *cpe);
+    void (*adjust_common_ltp)(struct AACEncContext *s, ChannelElement *cpe);
     void (*apply_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*apply_tns_filt)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*update_ltp)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*ltp_insert_new_frame)(struct AACEncContext *s);
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
     void (*mark_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
     void (*search_for_tns)(struct AACEncContext *s, SingleChannelElement *sce);
+    void (*search_for_ltp)(struct AACEncContext *s, SingleChannelElement *sce, int common_window);
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe);
     void (*search_for_is)(struct AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
     void (*search_for_pred)(struct AACEncContext *s, SingleChannelElement *sce);

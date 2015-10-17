@@ -1,5 +1,5 @@
 /*
- * AAC encoder main-type prediction
+ * AAC encoder long term prediction extension
  * Copyright (C) 2015 Rostislav Pehlivanov
  *
  * This file is part of FFmpeg.
@@ -21,27 +21,21 @@
 
 /**
  * @file
- * AAC encoder main-type prediction
+ * AAC encoder long term prediction extension
  * @author Rostislav Pehlivanov ( atomnuker gmail com )
  */
 
-#ifndef AVCODEC_AACENC_PRED_H
-#define AVCODEC_AACENC_PRED_H
+#ifndef AVCODEC_AACENC_LTP_H
+#define AVCODEC_AACENC_LTP_H
 
 #include "aacenc.h"
 
-/* Every predictor group needs to get reset at least once in this many frames */
-#define PRED_RESET_FRAME_MIN 240
+void ff_aac_encode_ltp_info(AACEncContext *s, SingleChannelElement *sce,
+                            int common_window);
+void ff_aac_update_ltp(AACEncContext *s, SingleChannelElement *sce);
+void ff_aac_adjust_common_ltp(AACEncContext *s, ChannelElement *cpe);
+void ff_aac_ltp_insert_new_frame(AACEncContext *s);
+void ff_aac_search_for_ltp(AACEncContext *s, SingleChannelElement *sce,
+                           int common_window);
 
-/* Any frame with less than this amount of frames since last reset is ok */
-#define PRED_RESET_MIN 64
-
-/* Raise to filter any low frequency artifacts due to prediction */
-#define PRED_SFB_START 10
-
-void ff_aac_apply_main_pred(AACEncContext *s, SingleChannelElement *sce);
-void ff_aac_adjust_common_pred(AACEncContext *s, ChannelElement *cpe);
-void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce);
-void ff_aac_encode_main_pred(AACEncContext *s, SingleChannelElement *sce);
-
-#endif /* AVCODEC_AACENC_PRED_H */
+#endif /* AVCODEC_AACENC_LTP_H */
