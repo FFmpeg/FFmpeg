@@ -659,7 +659,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 sce = &cpe->ch[ch];
                 coeffs[ch] = sce->coeffs;
                 sce->ics.predictor_present = 0;
-                memset(&sce->ics.prediction_used, 0, sizeof(sce->ics.prediction_used));
+                memset(sce->ics.prediction_used, 0, sizeof(sce->ics.prediction_used));
                 memset(&sce->tns, 0, sizeof(TemporalNoiseShaping));
                 for (w = 0; w < 128; w++)
                     if (sce->band_type[w] > RESERVED_BT)
