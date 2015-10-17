@@ -46,57 +46,6 @@
 
 #include "psymodel.h"
 
-struct AACProfileOptions {
-    int profile;
-    struct AACEncOptions opts;
-};
-
- /**
- * List of currently supported profiles, anything not listed isn't supported.
- */
-static const struct AACProfileOptions aacenc_profiles[] = {
-    {FF_PROFILE_AAC_MAIN,
-        {  /* Main profile, all advanced encoding abilities enabled */
-            .mid_side = 0,
-            .pns = 1,
-            .tns = 0,
-            .ltp = OPT_BANNED,
-            .pred = OPT_REQUIRED,
-            .intensity_stereo = 1,
-        },
-    },
-    {FF_PROFILE_AAC_LOW,
-        {  /* Default profile, these are the settings that get set by default */
-            .mid_side = 0,
-            .pns = 1,
-            .tns = 0,
-            .ltp = OPT_NEEDS_LTP,
-            .pred = OPT_NEEDS_MAIN,
-            .intensity_stereo = 1,
-        },
-    },
-    {FF_PROFILE_MPEG2_AAC_LOW,
-        {  /* Strict MPEG 2 Part 7 compliance profile */
-            .mid_side = 0,
-            .pns = OPT_BANNED,
-            .tns = 0,
-            .ltp = OPT_BANNED,
-            .pred = OPT_BANNED,
-            .intensity_stereo = 1,
-        },
-    },
-    {FF_PROFILE_AAC_LTP,
-        {  /* Long term prediction profile */
-            .mid_side = 0,
-            .pns = 1,
-            .tns = 0,
-            .ltp = OPT_REQUIRED,
-            .pred = OPT_BANNED,
-            .intensity_stereo = 1,
-        },
-    },
-};
-
 /**
  * Make AAC audio config object.
  * @see 1.6.2.1 "Syntax - AudioSpecificConfig"
@@ -933,7 +882,6 @@ alloc_fail:
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
-    const AACEncOptions *p_opt = NULL;
     int i, ret = 0;
     const uint8_t *sizes[2];
     uint8_t grouping[AAC_MAX_CHANNELS];
@@ -966,24 +914,42 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
              "Too many bits per frame requested, clamping to max\n");
 
-    for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++) {
-        if (avctx->profile == aacenc_profiles[i].profile) {
-            p_opt = &aacenc_profiles[i].opts;
+    for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++)
+        if (avctx->profile == aacenc_profiles[i])
             break;
-        }
+    ERROR_IF(i == FF_ARRAY_ELEMS(aacenc_profiles),
+             "Unsupported encoding profile: %d\n", avctx->profile);
+    if (avctx->profile == FF_PROFILE_MPEG2_AAC_LOW) {
+        avctx->profile = FF_PROFILE_AAC_LOW;
+        ERROR_IF(s->options.pred,
+                 "Main prediction unavailable in the \"mpeg2_aac_low\" profile\n");
+        ERROR_IF(s->options.ltp,
+                 "LTP prediction unavailable in the \"mpeg2_aac_low\" profile\n");
+        WARN_IF(s->options.pns,
+                "PNS unavailable in the \"mpeg2_aac_low\" profile, turning off\n");
+        s->options.pns = 0;
+    } else if (avctx->profile == FF_PROFILE_AAC_LTP) {
+        s->options.ltp = 1;
+        ERROR_IF(s->options.pred,
+                 "Main prediction unavailable in the \"aac_ltp\" profile\n");
+    } else if (avctx->profile == FF_PROFILE_AAC_MAIN) {
+        s->options.pred = 1;
+        ERROR_IF(s->options.ltp,
+                 "LTP prediction unavailable in the \"aac_main\" profile\n");
+    } else if (s->options.ltp) {
+        avctx->profile = FF_PROFILE_AAC_LTP;
+        WARN_IF(1,
+                "Chainging profile to \"aac_ltp\"\n");
+        ERROR_IF(s->options.pred,
+                 "Main prediction unavailable in the \"aac_ltp\" profile\n");
+    } else if (s->options.pred) {
+        avctx->profile = FF_PROFILE_AAC_MAIN;
+        WARN_IF(1,
+                "Chainging profile to \"aac_main\"\n");
+        ERROR_IF(s->options.pred,
+                 "LTP prediction unavailable in the \"aac_main\" profile\n");
     }
-    ERROR_IF(!p_opt, "Unsupported encoding profile: %d\n", avctx->profile);
-    AAC_OPT_SET(&s->options, p_opt, 1, coder);
-    AAC_OPT_SET(&s->options, p_opt, 0, pns);
-    AAC_OPT_SET(&s->options, p_opt, 1, tns);
-    AAC_OPT_SET(&s->options, p_opt, 0, ltp);
-    AAC_OPT_SET(&s->options, p_opt, 0, pred);
-    AAC_OPT_SET(&s->options, p_opt, 1, mid_side);
-    AAC_OPT_SET(&s->options, p_opt, 0, intensity_stereo);
-    if (avctx->profile == FF_PROFILE_MPEG2_AAC_LOW)
-        s->profile = FF_PROFILE_AAC_LOW;
-    else
-        s->profile = avctx->profile;
+    s->profile = avctx->profile;
     s->coder = &ff_aac_coders[s->options.coder];
 
     if (s->options.coder != AAC_CODER_TWOLOOP) {
@@ -1032,11 +998,11 @@ static const AVOption aacenc_options[] = {
         {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
         {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
     {"aac_ms", "Force M/S stereo coding", offsetof(AACEncContext, options.mid_side), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AACENC_FLAGS},
-    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
-    {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
+    {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
+    {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
-    {"aac_ltp", "Long term prediction", offsetof(AACEncContext, options.ltp), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
-    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
+    {"aac_ltp", "Long term prediction", offsetof(AACEncContext, options.ltp), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
+    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     {NULL}
 };
 
