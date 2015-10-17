@@ -103,7 +103,7 @@ ffmpeg(){
         [ x${arg} = x-i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
         ffmpeg_args="${ffmpeg_args} ${arg}"
     done
-    run ./ffmpeg${PROGSUF} ${ffmpeg_args}
+    run ffmpeg${PROGSUF} ${ffmpeg_args}
 }
 
 framecrc(){
