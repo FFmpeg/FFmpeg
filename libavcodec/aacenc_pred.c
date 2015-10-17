@@ -21,7 +21,7 @@
 
 /**
  * @file
- * AAC encoder Intensity Stereo
+ * AAC encoder main-type prediction
  * @author Rostislav Pehlivanov ( atomnuker gmail com )
  */
 
