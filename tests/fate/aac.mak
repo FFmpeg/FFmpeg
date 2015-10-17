@@ -142,7 +142,7 @@ FATE_AAC += $(FATE_AAC_CT:%=fate-aac-ct-%)
 
 FATE_AAC_ENCODE += fate-aac-aref-encode
 fate-aac-aref-encode: ./tests/data/asynth-44100-2.wav
-fate-aac-aref-encode: CMD = enc_dec_pcm adts wav s16le $(REF) -strict -2 -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -b:a 512k
+fate-aac-aref-encode: CMD = enc_dec_pcm adts wav s16le $(REF) -strict -2 -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -aac_tns 0 -b:a 512k
 fate-aac-aref-encode: CMP = stddev
 fate-aac-aref-encode: REF = ./tests/data/asynth-44100-2.wav
 fate-aac-aref-encode: CMP_SHIFT = -4096
@@ -151,7 +151,7 @@ fate-aac-aref-encode: SIZE_TOLERANCE = 2464
 fate-aac-aref-encode: FUZZ = 6
 
 FATE_AAC_ENCODE += fate-aac-ln-encode
-fate-aac-ln-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -b:a 512k
+fate-aac-ln-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -aac_tns 0 -b:a 512k
 fate-aac-ln-encode: CMP = stddev
 fate-aac-ln-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-ln-encode: CMP_SHIFT = -4096
@@ -160,7 +160,7 @@ fate-aac-ln-encode: SIZE_TOLERANCE = 3560
 fate-aac-ln-encode: FUZZ = 30
 
 FATE_AAC_ENCODE += fate-aac-ln-encode-128k
-fate-aac-ln-encode-128k: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -b:a 128k -cutoff 22050
+fate-aac-ln-encode-128k: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -aac_tns 0 -b:a 128k -cutoff 22050
 fate-aac-ln-encode-128k: CMP = stddev
 fate-aac-ln-encode-128k: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-ln-encode-128k: CMP_SHIFT = -4096
@@ -169,7 +169,7 @@ fate-aac-ln-encode-128k: SIZE_TOLERANCE = 3560
 fate-aac-ln-encode-128k: FUZZ = 5
 
 FATE_AAC_ENCODE += fate-aac-pns-encode
-fate-aac-pns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 1 -aac_is 0 -aac_ms 0 -b:a 128k -cutoff 22050
+fate-aac-pns-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 1 -aac_is 0 -aac_ms 0 -aac_tns 0 -b:a 128k -cutoff 22050
 fate-aac-pns-encode: CMP = stddev
 fate-aac-pns-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-pns-encode: CMP_SHIFT = -4096
@@ -187,7 +187,7 @@ fate-aac-tns-encode: FUZZ = 6
 fate-aac-tns-encode: SIZE_TOLERANCE = 3560
 
 FATE_AAC_ENCODE += fate-aac-is-encode
-fate-aac-is-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 0 -aac_is 1 -aac_ms 0 -b:a 128k -cutoff 22050
+fate-aac-is-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 0 -aac_is 1 -aac_ms 0 -b:a 128k -aac_tns 0 -cutoff 22050
 fate-aac-is-encode: CMP = stddev
 fate-aac-is-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-is-encode: CMP_SHIFT = -4096
@@ -196,7 +196,7 @@ fate-aac-is-encode: SIZE_TOLERANCE = 3560
 fate-aac-is-encode: FUZZ = 1
 
 FATE_AAC_ENCODE += fate-aac-ms-encode
-fate-aac-ms-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 0 -aac_is 0 -aac_ms 1 -b:a 128k -cutoff 22050
+fate-aac-ms-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 0 -aac_is 0 -aac_ms 1 -aac_tns 0 -b:a 128k -cutoff 22050
 fate-aac-ms-encode: CMP = stddev
 fate-aac-ms-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-ms-encode: CMP_SHIFT = -4096
@@ -205,7 +205,7 @@ fate-aac-ms-encode: SIZE_TOLERANCE = 3560
 fate-aac-ms-encode: FUZZ = 10
 
 FATE_AAC_ENCODE += fate-aac-ltp-encode
-fate-aac-ltp-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 0 -aac_is 0 -aac_ms 0 -aac_ltp 1 -b:a 82k -cutoff 22050
+fate-aac-ltp-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 0 -aac_is 0 -aac_ms 0 -aac_ltp 1 -aac_tns 0 -b:a 82k -cutoff 22050
 fate-aac-ltp-encode: CMP = stddev
 fate-aac-ltp-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-ltp-encode: CMP_SHIFT = -4096
@@ -214,7 +214,7 @@ fate-aac-ltp-encode: SIZE_TOLERANCE = 3560
 fate-aac-ltp-encode: FUZZ = 4
 
 FATE_AAC_ENCODE += fate-aac-pred-encode
-fate-aac-pred-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -profile:a aac_main -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -b:a 128k -cutoff 22050
+fate-aac-pred-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -profile:a aac_main -c:a aac -aac_is 0 -aac_pns 0 -aac_ms 0 -aac_tns 0 -b:a 128k -cutoff 22050
 fate-aac-pred-encode: CMP = stddev
 fate-aac-pred-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-pred-encode: CMP_SHIFT = -4096
