@@ -66,7 +66,7 @@ av_cold int ffv1_common_init(AVCodecContext *avctx)
 
 av_cold int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
 {
-    int j;
+    int j, i;
 
     fs->plane_count  = f->plane_count;
     fs->transparency = f->transparency;
@@ -80,10 +80,15 @@ av_cold int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
             if (!p->state)
                 return AVERROR(ENOMEM);
         } else {
-            if (!p->vlc_state)
-                p->vlc_state = av_malloc_array(p->context_count, sizeof(VlcState));
-            if (!p->vlc_state)
-                return AVERROR(ENOMEM);
+            if (!p->vlc_state) {
+                p->vlc_state = av_mallocz_array(p->context_count, sizeof(VlcState));
+                if (!p->vlc_state)
+                    return AVERROR(ENOMEM);
+                for (i = 0; i < p->context_count; i++) {
+                    p->vlc_state[i].error_sum = 4;
+                    p->vlc_state[i].count     = 1;
+                }
+            }
         }
     }
 
