@@ -205,7 +205,7 @@ fate-aac-ms-encode: SIZE_TOLERANCE = 3560
 fate-aac-ms-encode: FUZZ = 10
 
 FATE_AAC_ENCODE += fate-aac-ltp-encode
-fate-aac-ltp-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -aac_pns 0 -aac_is 0 -aac_ms 0 -aac_ltp 1 -aac_tns 0 -b:a 82k -cutoff 22050
+fate-aac-ltp-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -strict -2 -c:a aac -profile:a aac_ltp -aac_pns 0 -aac_is 0 -aac_ms 0 -aac_tns 0 -b:a 82k -cutoff 22050
 fate-aac-ltp-encode: CMP = stddev
 fate-aac-ltp-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-ltp-encode: CMP_SHIFT = -4096
