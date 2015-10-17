@@ -101,7 +101,7 @@ void ff_aac_update_ltp(AACEncContext *s, SingleChannelElement *sce)
             lag = i;
         }
     }
-    lag = av_clip(lag, 0, 2048); /* 11 bits => 2^11 = 2048 */
+    lag = av_clip(lag, 0, 2047); /* 11 bits => 2^11 = 0->2047 */
 
     if (!lag) {
         sce->ics.ltp.lag = lag;
