@@ -1260,6 +1260,14 @@ Discard all frames excepts keyframes.
 Discard all frames.
 @end table
 
+@item -abort_on @var{flags} (@emph{global})
+Stop and abort on various conditions. The following flags are available:
+
+@table @option
+@item empty_output
+No packets were passed to the muxer, the output is empty.
+@end table
+
 @item -xerror (@emph{global})
 Stop and exit on error
 

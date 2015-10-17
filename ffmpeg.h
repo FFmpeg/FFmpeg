@@ -383,6 +383,8 @@ enum forced_keyframes_const {
     FKF_NB
 };
 
+#define ABORT_ON_FLAG_EMPTY_OUTPUT (1 <<  0)
+
 extern const char *const forced_keyframes_const_names[];
 
 typedef enum {
@@ -527,6 +529,7 @@ extern int start_at_zero;
 extern int copy_tb;
 extern int debug_ts;
 extern int exit_on_error;
+extern int abort_on_flags;
 extern int print_stats;
 extern int qp_hist;
 extern int stdin_interaction;
