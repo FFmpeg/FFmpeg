@@ -66,6 +66,7 @@ void ff_aac_ltp_insert_new_frame(AACEncContext *s)
             memcpy(&sce->ltp_state[0],    &sce->ltp_state[1024], 1024*sizeof(sce->ltp_state[0]));
             memcpy(&sce->ltp_state[1024], &s->planar_samples[cur_channel][2048], 1024*sizeof(sce->ltp_state[0]));
             memcpy(&sce->ltp_state[2048], &sce->ret_buf[0], 1024*sizeof(sce->ltp_state[0]));
+            sce->ics.ltp.lag = 0;
         }
         start_ch += chans;
     }
@@ -77,54 +78,44 @@ void ff_aac_ltp_insert_new_frame(AACEncContext *s)
  */
 void ff_aac_update_ltp(AACEncContext *s, SingleChannelElement *sce)
 {
-    int i, j, lag;
-    float corr, s0, s1, max_corr = 0.0f;
-    float *samples = &s->planar_samples[s->cur_channel][1024];
+    int i, j, lag, samples_num;
+    float corr, max_ratio, max_corr;
     float *pred_signal = &sce->ltp_state[0];
-    int samples_num = 2048;
+    const float *samples = &s->planar_samples[s->cur_channel][1024];
 
     if (s->profile != FF_PROFILE_AAC_LTP)
         return;
 
     /* Calculate lag */
-    for (i = 0; i < samples_num; i++) {
-        s0 = s1 = 0.0f;
-        for (j = 0; j < samples_num; j++) {
-            if (j + 1024 < i)
-                continue;
-            s0 += samples[j]*pred_signal[j-i+1024];
-            s1 += pred_signal[j-i+1024]*pred_signal[j-i+1024];
+    max_corr = 0.0f;
+    for (i = 0; i < 2048; i++) {
+        float s0 = 0.0f, s1 = 0.0f;
+        const int start = FFMAX(0, i - 1024);
+        for (j = start; j < 2048; j++) {
+            const int idx = j - i + 1024;
+            s0 += samples[j]*pred_signal[idx];
+            s1 += pred_signal[idx]*pred_signal[idx];
         }
         corr = s1 > 0.0f ? s0/sqrt(s1) : 0.0f;
         if (corr > max_corr) {
             max_corr = corr;
             lag = i;
+            max_ratio = corr/(2048-start);
         }
     }
-    lag = av_clip_uintp2(lag, 11); /* 11 bits => 2^11 = 0->2047 */
 
-    if (!lag) {
-        sce->ics.ltp.lag = lag;
+    if (lag < 1)
         return;
-    }
 
-    s0 = s1 = 0.0f;
-    for (i = 0; i < lag; i++) {
-        s0 += samples[i];
-        s1 += pred_signal[i-lag+1024];
-    }
-
-    sce->ics.ltp.coef_idx = quant_array_idx(s0/s1, ltp_coef, 8);
-    sce->ics.ltp.coef     = ltp_coef[sce->ics.ltp.coef_idx];
+    sce->ics.ltp.lag = lag = av_clip_uintp2(lag, 11);
+    sce->ics.ltp.coef_idx  = quant_array_idx(max_ratio, ltp_coef, 8);
+    sce->ics.ltp.coef      = ltp_coef[sce->ics.ltp.coef_idx];
 
     /* Predict the new samples */
-    if (lag < 1024)
-        samples_num = lag + 1024;
-    for (i = 0; i < samples_num; i++)
-        pred_signal[i+1024] = sce->ics.ltp.coef*pred_signal[i-lag+1024];
+    samples_num = 1024 + (lag < 1024 ? lag : 1024);
+    for (i = 1024; i < samples_num + 1024; i++)
+        pred_signal[i] = sce->ics.ltp.coef*pred_signal[i-lag];
     memset(&pred_signal[samples_num], 0, (2048 - samples_num)*sizeof(float));
-
-    sce->ics.ltp.lag = lag;
 }
 
 void ff_aac_adjust_common_ltp(AACEncContext *s, ChannelElement *cpe)
@@ -163,8 +154,15 @@ void ff_aac_search_for_ltp(AACEncContext *s, SingleChannelElement *sce,
     float *PCD34 = &s->scoefs[128*2];
     const int max_ltp = FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB);
 
-    if (sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE ||
-        !sce->ics.ltp.lag)
+    if (sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        if (sce->ics.ltp.lag) {
+            memset(&sce->lcoeffs[0], 0.0f, 3072*sizeof(sce->lcoeffs[0]));
+            memset(&sce->ics.ltp, 0, sizeof(LongTermPrediction));
+        }
+        return;
+    }
+
+    if (!sce->ics.ltp.lag)
         return;
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
