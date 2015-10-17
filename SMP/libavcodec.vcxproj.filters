@@ -683,6 +683,9 @@
     <ClCompile Include="..\libavcodec\aacenc_tns.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_ltp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc_pred.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

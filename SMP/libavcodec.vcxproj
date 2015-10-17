@@ -445,6 +445,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc_tns.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacenc_ltp.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc_pred.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\psymodel.c">

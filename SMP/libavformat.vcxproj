@@ -183,6 +183,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\adp.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\ads.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\adxdec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\adtsenc.c">
@@ -396,6 +398,8 @@
     <ClCompile Include="..\libavformat\g723_1.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\g729dec.c">
+    </ClCompile>
+    <ClCompile Include="..\libavformat\genh.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\h261dec.c">
     </ClCompile>
@@ -729,6 +733,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\supdec.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\svag.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\swfdec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\takdec.c">
@@ -752,6 +758,8 @@
     <ClCompile Include="..\libavformat\txd.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\uncodedframecrcenc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vag.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\vc1dec.c">
     </ClCompile>
