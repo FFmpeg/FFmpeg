@@ -932,7 +932,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ERROR_IF(!p_opt, "Unsupported encoding profile: %d\n", avctx->profile);
     AAC_OPT_SET(&s->options, p_opt, 1, coder);
     AAC_OPT_SET(&s->options, p_opt, 0, pns);
-    AAC_OPT_SET(&s->options, p_opt, 0, tns);
+    AAC_OPT_SET(&s->options, p_opt, 1, tns);
     AAC_OPT_SET(&s->options, p_opt, 0, pred);
     AAC_OPT_SET(&s->options, p_opt, 1, mid_side);
     AAC_OPT_SET(&s->options, p_opt, 0, intensity_stereo);
@@ -990,7 +990,7 @@ static const AVOption aacenc_options[] = {
     {"aac_ms", "Force M/S stereo coding", offsetof(AACEncContext, options.mid_side), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
     {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
-    {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
+    {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = OPT_AUTO}, -1, 1, AACENC_FLAGS},
     {NULL}
 };
