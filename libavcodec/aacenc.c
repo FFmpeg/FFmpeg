@@ -534,10 +534,10 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
         for (ch = 0; ch < chans; ch++) {
+            float clip_avoidance_factor;
             sce = &cpe->ch[ch];
             ics = &sce->ics;
             s->cur_channel = start_ch + ch;
-            float clip_avoidance_factor;
             overlap  = &samples[s->cur_channel][0];
             samples2 = overlap + 1024;
             la       = samples2 + (448+64);
