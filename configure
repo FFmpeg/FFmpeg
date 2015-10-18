@@ -3136,6 +3136,7 @@ for opt do
         --disable-all)
             map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
             disable $LIBRARY_LIST $PROGRAM_LIST doc
+            enable avutil
         ;;
         --enable-random|--disable-random)
             action=${opt%%-random}
