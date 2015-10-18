@@ -26,6 +26,7 @@
 #include "internal.h"
 
 static const AVCodecTag rsd_tags[] = {
+    { AV_CODEC_ID_ADPCM_PSX,       MKTAG('V','A','G',' ') },
     { AV_CODEC_ID_ADPCM_THP,       MKTAG('G','A','D','P') },
     { AV_CODEC_ID_ADPCM_THP,       MKTAG('W','A','D','P') },
     { AV_CODEC_ID_ADPCM_IMA_RAD,   MKTAG('R','A','D','P') },
@@ -37,7 +38,6 @@ static const AVCodecTag rsd_tags[] = {
 
 static const uint32_t rsd_unsupported_tags[] = {
     MKTAG('O','G','G',' '),
-    MKTAG('V','A','G',' '),
     MKTAG('X','M','A',' '),
 };
 
@@ -95,6 +95,11 @@ static int rsd_read_header(AVFormatContext *s)
     avio_skip(pb, 4); // Unknown
 
     switch (codec->codec_id) {
+    case AV_CODEC_ID_ADPCM_PSX:
+        codec->block_align = 16 * codec->channels;
+        if (pb->seekable)
+            st->duration = av_get_audio_frame_duration(codec, avio_size(pb) - start);
+        break;
     case AV_CODEC_ID_ADPCM_IMA_RAD:
         codec->block_align = 20 * codec->channels;
         if (pb->seekable)
@@ -163,6 +168,7 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     if (codec->codec_id == AV_CODEC_ID_ADPCM_IMA_RAD ||
+        codec->codec_id == AV_CODEC_ID_ADPCM_PSX     ||
         codec->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
         ret = av_get_packet(s->pb, pkt, codec->block_align);
     } else if (codec->codec_tag == MKTAG('W','A','D','P') &&
