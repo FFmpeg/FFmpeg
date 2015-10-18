@@ -23,44 +23,6 @@
 #include "voc.h"
 #include "internal.h"
 
-
-static int voc_probe(AVProbeData *p)
-{
-    int version, check;
-
-    if (memcmp(p->buf, ff_voc_magic, sizeof(ff_voc_magic) - 1))
-        return 0;
-    version = AV_RL16(p->buf + 22);
-    check = AV_RL16(p->buf + 24);
-    if (~version + 0x1234 != check)
-        return 10;
-
-    return AVPROBE_SCORE_MAX;
-}
-
-static int voc_read_header(AVFormatContext *s)
-{
-    VocDecContext *voc = s->priv_data;
-    AVIOContext *pb = s->pb;
-    int header_size;
-    AVStream *st;
-
-    avio_skip(pb, 20);
-    header_size = avio_rl16(pb) - 22;
-    if (header_size != 4) {
-        av_log(s, AV_LOG_ERROR, "unknown header size: %d\n", header_size);
-        return AVERROR(ENOSYS);
-    }
-    avio_skip(pb, header_size);
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-
-    voc->remaining_size = 0;
-    return 0;
-}
-
 int
 ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 {
@@ -159,6 +121,44 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
     return av_get_packet(pb, pkt, size);
 }
 
+#if CONFIG_VOC_DEMUXER
+static int voc_probe(AVProbeData *p)
+{
+    int version, check;
+
+    if (memcmp(p->buf, ff_voc_magic, sizeof(ff_voc_magic) - 1))
+        return 0;
+    version = AV_RL16(p->buf + 22);
+    check = AV_RL16(p->buf + 24);
+    if (~version + 0x1234 != check)
+        return 10;
+
+    return AVPROBE_SCORE_MAX;
+}
+
+static int voc_read_header(AVFormatContext *s)
+{
+    VocDecContext *voc = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int header_size;
+    AVStream *st;
+
+    avio_skip(pb, 20);
+    header_size = avio_rl16(pb) - 22;
+    if (header_size != 4) {
+        av_log(s, AV_LOG_ERROR, "unknown header size: %d\n", header_size);
+        return AVERROR(ENOSYS);
+    }
+    avio_skip(pb, header_size);
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+
+    voc->remaining_size = 0;
+    return 0;
+}
+
 static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     return ff_voc_get_packet(s, pkt, s->streams[0], 0);
@@ -173,3 +173,4 @@ AVInputFormat ff_voc_demuxer = {
     .read_packet    = voc_read_packet,
     .codec_tag      = (const AVCodecTag* const []){ ff_voc_codec_tags, 0 },
 };
+#endif /* CONFIG_VOC_DEMUXER */
