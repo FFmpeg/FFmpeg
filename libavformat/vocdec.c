@@ -141,7 +141,6 @@ static int voc_read_header(AVFormatContext *s)
     VocDecContext *voc = s->priv_data;
     AVIOContext *pb = s->pb;
     int header_size;
-    AVStream *st;
 
     avio_skip(pb, 20);
     header_size = avio_rl16(pb) - 22;
@@ -150,10 +149,8 @@ static int voc_read_header(AVFormatContext *s)
         return AVERROR(ENOSYS);
     }
     avio_skip(pb, header_size);
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     voc->remaining_size = 0;
     return 0;
@@ -161,6 +158,12 @@ static int voc_read_header(AVFormatContext *s)
 
 static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    if (!s->nb_streams) {
+        AVStream *st = avformat_new_stream(s, NULL);
+        if (!st)
+            return AVERROR(ENOMEM);
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    }
     return ff_voc_get_packet(s, pkt, s->streams[0], 0);
 }
 
