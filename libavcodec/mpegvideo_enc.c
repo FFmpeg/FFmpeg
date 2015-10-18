@@ -1558,12 +1558,13 @@ static int select_input_picture(MpegEncContext *s)
         }
     }
 no_output_pic:
+    ff_mpeg_unref_picture(s->avctx, &s->new_picture);
+
     if (s->reordered_input_picture[0]) {
         s->reordered_input_picture[0]->reference =
            s->reordered_input_picture[0]->f->pict_type !=
                AV_PICTURE_TYPE_B ? 3 : 0;
 
-        ff_mpeg_unref_picture(s->avctx, &s->new_picture);
         if ((ret = ff_mpeg_ref_picture(s->avctx, &s->new_picture, s->reordered_input_picture[0])))
             return ret;
 
@@ -1604,8 +1605,6 @@ no_output_pic:
             return ret;
 
         s->picture_number = s->new_picture.f->display_picture_number;
-    } else {
-        ff_mpeg_unref_picture(s->avctx, &s->new_picture);
     }
     return 0;
 }
