@@ -114,7 +114,12 @@ Currently only up to VS2010 is supported on the web page so just download that.
     Note: With newer version of VS the BuildCustomization path should be the version specific to the VS version you are using.
         so for instance the path for Visual Studio 2013 is:
         C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\BuildCustomizations
-    Note: For best compatibility the vsyasm executable should be copied to the VS tools folder:
+        and the path for Visual Studio 2015 would be:
+        C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\BuildCustomizations
+    Note: For best compatibility the vsyasm executable should be copied to the VS tools folder.
+        for Visual Studio 2013 this would be:
+        C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\Tools
+        and for Visual Studio 2015 would be:
         C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools
 
 3) Currently there is a bug in vsyasm so in order to make the build customizations work correctly you must edit a file
