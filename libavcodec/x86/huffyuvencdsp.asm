@@ -27,8 +27,8 @@
 
 section .text
 
-; void ff_diff_bytes_mmx(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-;                        intptr_t w);
+; void ff_diff_bytes(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                    intptr_t w);
 %macro DIFF_BYTES_PROLOGUE 0
 %if ARCH_X86_32
 cglobal diff_bytes, 3,5,2, dst, src1, src2
@@ -55,7 +55,7 @@ cglobal diff_bytes, 4,5,2, dst, src1, src2, w
 
 ; mov type used for src1q, dstq, first reg, second reg
 %macro DIFF_BYTES_LOOP_CORE 4
-%if regsize != 16
+%if mmsize != 16
     mov%1             %3, [src1q + i]
     mov%1             %4, [src1q + i + regsize]
     psubb             %3, [src2q + i]
