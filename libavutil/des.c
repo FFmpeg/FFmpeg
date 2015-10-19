@@ -292,7 +292,7 @@ AVDES *av_des_alloc(void)
 
 int av_des_init(AVDES *d, const uint8_t *key, int key_bits, av_unused int decrypt) {
     if (key_bits != 64 && key_bits != 192)
-        return -1;
+        return AVERROR(EINVAL);
     d->triple_des = key_bits > 64;
     gen_roundkeys(d->round_keys[0], AV_RB64(key));
     if (d->triple_des) {

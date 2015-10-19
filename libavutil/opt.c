@@ -928,6 +928,19 @@ static void log_value(void *av_log_obj, int level, double d)
     }
 }
 
+static const char *get_opt_const_name(void *obj, const char *unit, int64_t value)
+{
+    const AVOption *opt = NULL;
+
+    if (!unit)
+        return NULL;
+    while ((opt = av_opt_next(obj, opt)))
+        if (opt->type == AV_OPT_TYPE_CONST && !strcmp(opt->unit, unit) &&
+            opt->default_val.i64 == value)
+            return opt->name;
+    return NULL;
+}
+
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
                      int req_flags, int rej_flags)
 {
@@ -1057,10 +1070,17 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 av_log(av_log_obj, AV_LOG_INFO, "%"PRIX64, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_DURATION:
-            case AV_OPT_TYPE_INT:
-            case AV_OPT_TYPE_INT64:
                 log_value(av_log_obj, AV_LOG_INFO, opt->default_val.i64);
                 break;
+            case AV_OPT_TYPE_INT:
+            case AV_OPT_TYPE_INT64: {
+                const char *def_const = get_opt_const_name(obj, opt->unit, opt->default_val.i64);
+                if (def_const)
+                    av_log(av_log_obj, AV_LOG_INFO, "%s", def_const);
+                else
+                    log_value(av_log_obj, AV_LOG_INFO, opt->default_val.i64);
+                break;
+            }
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT:
                 log_value(av_log_obj, AV_LOG_INFO, opt->default_val.dbl);

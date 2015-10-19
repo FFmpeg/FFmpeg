@@ -504,7 +504,7 @@ av_cold int av_ripemd_init(AVRIPEMD *ctx, int bits)
         ctx->transform = ripemd320_transform;
         break;
     default:
-        return -1;
+        return AVERROR(EINVAL);
     }
     ctx->count = 0;
     return 0;

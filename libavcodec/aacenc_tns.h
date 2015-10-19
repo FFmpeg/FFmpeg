@@ -30,24 +30,6 @@
 
 #include "aacenc.h"
 
-/* Could be set to 3 to save an additional bit at the cost of little quality */
-#define TNS_Q_BITS 4
-
-/* Coefficient resolution in short windows */
-#define TNS_Q_BITS_SHORT 3
-
-/* TNS will only be used if the LPC gain is within these margins */
-#define TNS_GAIN_THRESHOLD_LOW  1.437f
-#define TNS_GAIN_THRESHOLD_HIGH 21.19f
-
-/* If the energy ratio between the low SFBs vs the high SFBs is not between
- * those two values, use 2 filters instead */
-#define TNS_E_RATIO_LOW  0.77
-#define TNS_E_RATIO_HIGH 1.23
-
-/* Do not use TNS if the psy band spread is below this value */
-#define TNS_SPREAD_THRESHOLD 0.5f
-
 void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce);
 void ff_aac_apply_tns(AACEncContext *s, SingleChannelElement *sce);
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce);

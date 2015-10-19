@@ -11856,6 +11856,177 @@ zoompan=z='min(zoom+0.0015,1.5)':d=700:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'
 @end example
 @end itemize
 
+@section zscale
+Scale (resize) the input video, using the z.lib library:
+https://github.com/sekrit-twc/zimg.
+
+The zscale filter forces the output display aspect ratio to be the same
+as the input, by changing the output sample aspect ratio.
+
+If the input image format is different from the format requested by
+the next filter, the zscale filter will convert the input to the
+requested format.
+
+@subsection Options
+The filter accepts the following options.
+
+@table @option
+@item width, w
+@item height, h
+Set the output video dimension expression. Default value is the input
+dimension.
+
+If the @var{width} or @var{w} is 0, the input width is used for the output.
+If the @var{height} or @var{h} is 0, the input height is used for the output.
+
+If one of the values is -1, the zscale filter will use a value that
+maintains the aspect ratio of the input image, calculated from the
+other specified dimension. If both of them are -1, the input size is
+used
+
+If one of the values is -n with n > 1, the zscale filter will also use a value
+that maintains the aspect ratio of the input image, calculated from the other
+specified dimension. After that it will, however, make sure that the calculated
+dimension is divisible by n and adjust the value if necessary.
+
+See below for the list of accepted constants for use in the dimension
+expression.
+
+@item size, s
+Set the video size. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+
+@item dither, d
+Set the dither type.
+
+Possible values are:
+@table @var
+@item none
+@item ordered
+@item random
+@item error_diffusion
+@end table
+
+Default is none.
+
+@item filter, f
+Set the resize filter type.
+
+Possible values are:
+@table @var
+@item point
+@item bilinear
+@item bicubic
+@item spline16
+@item spline36
+@item lanczos
+@end table
+
+Default is bilinear.
+
+@item range, r
+Set the color range.
+
+Possible values are:
+@table @var
+@item input
+@item limited
+@item full
+@end table
+
+Default is same as input.
+
+@item primaries, p
+Set the color primaries.
+
+Possible values are:
+@table @var
+@item input
+@item 709
+@item unspecified
+@item 170m
+@item 240m
+@item 2020
+@end table
+
+Default is same as input.
+
+@item transfer, t
+Set the transfer characteristics.
+
+Possible values are:
+@table @var
+@item input
+@item 709
+@item unspecified
+@item 601
+@item linear
+@item 2020_10
+@item 2020_12
+@end table
+
+Default is same as input.
+
+@item matrix, m
+Set the colorspace matrix.
+
+Possible value are:
+@table @var
+@item input
+@item 709
+@item unspecified
+@item 470bg
+@item 170m
+@item 2020_ncl
+@item 2020_cl
+@end table
+
+Default is same as input.
+@end table
+
+The values of the @option{w} and @option{h} options are expressions
+containing the following constants:
+
+@table @var
+@item in_w
+@item in_h
+The input width and height
+
+@item iw
+@item ih
+These are the same as @var{in_w} and @var{in_h}.
+
+@item out_w
+@item out_h
+The output (scaled) width and height
+
+@item ow
+@item oh
+These are the same as @var{out_w} and @var{out_h}
+
+@item a
+The same as @var{iw} / @var{ih}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+The input display aspect ratio. Calculated from @code{(iw / ih) * sar}.
+
+@item hsub
+@item vsub
+horizontal and vertical input chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+
+@item ohsub
+@item ovsub
+horizontal and vertical output chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+@end table
+
+@table @option
+@end table
+
 @c man end VIDEO FILTERS
 
 @chapter Video Sources

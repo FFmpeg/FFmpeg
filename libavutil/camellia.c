@@ -354,7 +354,7 @@ av_cold int av_camellia_init(AVCAMELLIA *cs, const uint8_t *key, int key_bits)
     uint64_t Kl[2], Kr[2], Ka[2], Kb[2];
     uint64_t D1, D2;
     if (key_bits != 128 && key_bits != 192 && key_bits != 256)
-        return -1;
+        return AVERROR(EINVAL);
     memset(Kb, 0, sizeof(Kb));
     memset(Kr, 0, sizeof(Kr));
     cs->key_bits = key_bits;
