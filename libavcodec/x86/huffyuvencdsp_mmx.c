@@ -31,7 +31,8 @@
 
 #if HAVE_INLINE_ASM
 
-static void diff_bytes_mmx(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w)
+static void diff_bytes_mmx(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+                           intptr_t w)
 {
     x86_reg i = 0;
 
@@ -57,7 +58,7 @@ static void diff_bytes_mmx(uint8_t *dst, const uint8_t *src1, const uint8_t *src
 }
 
 static void sub_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
-                                        const uint8_t *src2, int w,
+                                        const uint8_t *src2, intptr_t w,
                                         int *left, int *left_top)
 {
     x86_reg i = 0;
