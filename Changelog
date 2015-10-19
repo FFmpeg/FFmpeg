@@ -46,6 +46,7 @@ version <next>:
 - Screenpresso SPV1 decoding
 - zero-copy Intel QSV transcoding in avconv
 - libkvazaar HEVC encoder
+- innoHeim/Rsupport Screen Capture Codec decoder
 
 
 version 11:

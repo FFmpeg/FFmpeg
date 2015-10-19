@@ -41,6 +41,9 @@ fate-g2m4: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m4.asf
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, G2M) += $(FATE_G2M)
 fate-g2m: $(FATE_G2M)
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, RSCC) += fate-rscc
+fate-rscc: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/pip.avi -an
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, SCREENPRESSO) += fate-screenpresso
 fate-screenpresso: CMD = framecrc -i $(TARGET_SAMPLES)/spv1/bunny.avi
 
