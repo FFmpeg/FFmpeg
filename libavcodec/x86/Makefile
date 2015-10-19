@@ -115,6 +115,7 @@ YASM-OBJS-$(CONFIG_H264QPEL)           += x86/h264_qpel_8bit.o          \
 YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
                                           x86/hpeldsp.o
 YASM-OBJS-$(CONFIG_HUFFYUVDSP)         += x86/huffyuvdsp.o
+YASM-OBJS-$(CONFIG_HUFFYUVENCDSP)      += x86/huffyuvencdsp.o
 YASM-OBJS-$(CONFIG_IDCTDSP)            += x86/idctdsp.o
 YASM-OBJS-$(CONFIG_LLAUDDSP)           += x86/lossless_audiodsp.o
 YASM-OBJS-$(CONFIG_LLVIDDSP)           += x86/lossless_videodsp.o
