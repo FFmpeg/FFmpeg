@@ -9946,6 +9946,26 @@ Set the size of the box used to represent one palette color entry. Default is
 @code{30} (for a @code{30x30} pixel box).
 @end table
 
+@section shuffleframes
+
+Reorder and/or duplicate video frames.
+
+It accepts the following parameters:
+
+@table @option
+@item mapping
+Set the destination indexes of input frames.
+This is space or '|' separated list of indexes that maps input frames to output
+frames. Number of indexes also sets maximal value that each index may have.
+@end table
+
+The first frame has the index 0. The default is to keep the input unchanged.
+
+Swap second and third frame of every three frames of the input:
+@example
+ffmpeg -i INPUT -vf "shuffleframes=0 2 1" OUTPUT
+@end example
+
 @section shuffleplanes
 
 Reorder and/or duplicate video planes.
