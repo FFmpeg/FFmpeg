@@ -35,7 +35,7 @@ typedef struct MpegAudioParseContext {
 
 #define MPA_HEADER_SIZE 4
 
-/* header + layer + bitrate + freq + lsf/mpeg25 */
+/* header + layer + freq + lsf/mpeg25 */
 #define SAME_HEADER_MASK \
    (0xffe00000 | (3 << 17) | (3 << 10) | (3 << 19))
 

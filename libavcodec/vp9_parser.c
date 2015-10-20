@@ -111,12 +111,12 @@ static int parse(AVCodecParserContext *ctx,
                 while (n_frames--) { \
                     unsigned sz = rd; \
                     idx += a; \
-                    if (sz > size) { \
+                    if (sz == 0 || sz > size) { \
                         s->n_frames = 0; \
                         *out_size = size; \
                         *out_data = data; \
                         av_log(avctx, AV_LOG_ERROR, \
-                               "Superframe packet size too big: %u > %d\n", \
+                               "Invalid superframe packet size: %u frame size: %d\n", \
                                sz, size); \
                         return full_size; \
                     } \
