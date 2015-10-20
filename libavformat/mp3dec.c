@@ -42,6 +42,9 @@
 
 #define XING_TOC_COUNT 100
 
+#define SAME_HEADER_MASK \
+   (0xffe00000 | (3 << 17) | (3 << 10) | (3 << 19))
+
 typedef struct {
     AVClass *class;
     int64_t filesize;
@@ -54,7 +57,7 @@ typedef struct {
     int is_cbr;
 } MP3DecContext;
 
-static int check(AVIOContext *pb, int64_t pos);
+static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 
 /* mp3 read */
 
@@ -374,12 +377,21 @@ static int mp3_read_header(AVFormatContext *s)
 
     off = avio_tell(s->pb);
     for (i = 0; i < 64 * 1024; i++) {
+        uint32_t header, header2;
+        int frame_size;
         if (!(i&1023))
             ffio_ensure_seekback(s->pb, i + 1024 + 4);
-        if (check(s->pb, off + i) >= 0) {
-            av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
-            avio_seek(s->pb, off + i, SEEK_SET);
-            break;
+        frame_size = check(s->pb, off + i, &header);
+        if (frame_size > 0) {
+            avio_seek(s->pb, off, SEEK_SET);
+            ffio_ensure_seekback(s->pb, i + 1024 + frame_size + 4);
+            if (check(s->pb, off + i + frame_size, &header2) >= 0 &&
+                (header & SAME_HEADER_MASK) == (header2 & SAME_HEADER_MASK))
+            {
+                av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
+                avio_seek(s->pb, off + i, SEEK_SET);
+                break;
+            }
         }
         avio_seek(s->pb, off, SEEK_SET);
     }
@@ -420,7 +432,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 #define SEEK_WINDOW 4096
 
-static int check(AVIOContext *pb, int64_t pos)
+static int check(AVIOContext *pb, int64_t pos, uint32_t *ret_header)
 {
     int64_t ret = avio_seek(pb, pos, SEEK_SET);
     unsigned header;
@@ -434,6 +446,8 @@ static int check(AVIOContext *pb, int64_t pos)
     if (avpriv_mpegaudio_decode_header(&sd, header) == 1)
         return -1;
 
+    if (ret_header)
+        *ret_header = header;
     return sd.frame_size;
 }
 
@@ -461,7 +475,7 @@ static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
             continue;
 
         for(j=0; j<MIN_VALID; j++) {
-            ret = check(s->pb, pos);
+            ret = check(s->pb, pos, NULL);
             if(ret < 0)
                 break;
             if ((target_pos - pos)*dir <= 0 && abs(MIN_VALID/2-j) < score) {
