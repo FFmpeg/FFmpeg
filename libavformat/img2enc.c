@@ -33,6 +33,7 @@ typedef struct VideoMuxData {
     int img_number;
     int is_pipe;
     char path[1024];
+    char tmp[1024];
     int update;
 } VideoMuxData;
 
@@ -41,6 +42,7 @@ static int write_header(AVFormatContext *s)
     VideoMuxData *img = s->priv_data;
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
+    snprintf(img->tmp, sizeof(img->tmp), "%s.tmp", s->filename);
 
     /* find format */
     if (s->oformat->flags & AVFMT_NOFILE)
@@ -70,9 +72,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for (i = 0; i < 3; i++) {
-            if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
+            if (avio_open2(&pb[i], img->tmp, AVIO_FLAG_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", filename);
+                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->tmp);
                 return AVERROR(EIO);
             }
 
@@ -121,6 +123,7 @@ error:
     avio_flush(pb[0]);
     if (!img->is_pipe) {
         avio_close(pb[0]);
+        ff_rename(img->tmp, filename);
     }
 
     img->img_number++;
