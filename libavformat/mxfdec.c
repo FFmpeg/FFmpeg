@@ -2957,7 +2957,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
                 /* if this check is hit then it's possible OPAtom was treated as OP1a
                  * truncate the packet since it's probably very large (>2 GiB is common) */
                 avpriv_request_sample(s,
-                                      "OPAtom misinterpreted as OP1a?"
+                                      "OPAtom misinterpreted as OP1a? "
                                       "KLV for edit unit %i extending into "
                                       "next edit unit",
                                       mxf->current_edit_unit);
