@@ -416,7 +416,6 @@ EXPORTS
     avpriv_alloc_fixed_dsp
     avpriv_emms_yasm
     avpriv_float_dsp_alloc
-    avpriv_float_dsp_init
     avpriv_frame_get_metadatap
     avpriv_get_gamma_from_trc
     avpriv_get_trc_function_from_trc

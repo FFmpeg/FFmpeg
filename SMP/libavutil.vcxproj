@@ -226,6 +226,7 @@
     <ClInclude Include="..\libavutil\common.h" />
     <ClInclude Include="..\libavutil\cpu.h" />
     <ClInclude Include="..\libavutil\crc.h" />
+    <ClInclude Include="..\libavutil\des.h" />
     <ClInclude Include="..\libavutil\display.h" />
     <ClInclude Include="..\libavutil\downmix_info.h" />
     <ClInclude Include="..\libavutil\error.h" />
@@ -253,6 +254,7 @@
     <ClInclude Include="..\libavutil\pixelutils.h" />
     <ClInclude Include="..\libavutil\pixfmt.h" />
     <ClInclude Include="..\libavutil\random_seed.h" />
+    <ClInclude Include="..\libavutil\rc4.h" />
     <ClInclude Include="..\libavutil\replaygain.h" />
     <ClInclude Include="..\libavutil\rational.h" />
     <ClInclude Include="..\libavutil\ripemd.h" />
@@ -264,6 +266,7 @@
     <ClInclude Include="..\libavutil\time.h" />
     <ClInclude Include="..\libavutil\timecode.h" />
     <ClInclude Include="..\libavutil\timestamp.h" />
+    <ClInclude Include="..\libavutil\tree.h" />
     <ClInclude Include="..\libavutil\twofish.h" />
     <ClInclude Include="..\libavutil\version.h" />
     <ClInclude Include="..\libavutil\xtea.h" />
@@ -569,6 +572,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -596,6 +600,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -607,6 +612,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -700,6 +706,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -727,6 +734,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -738,6 +746,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -837,6 +846,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -864,6 +874,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -875,6 +886,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -978,6 +990,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1005,6 +1018,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -1016,6 +1030,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -1120,6 +1135,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1147,6 +1163,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -1158,6 +1175,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -1261,6 +1279,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1288,6 +1307,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -1299,6 +1319,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -1403,6 +1424,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1430,6 +1452,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -1441,6 +1464,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -1540,6 +1564,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1567,6 +1592,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -1578,6 +1604,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -1683,6 +1710,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1710,6 +1738,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -1721,6 +1750,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -1825,6 +1855,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1852,6 +1883,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -1863,6 +1895,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -1968,6 +2001,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1995,6 +2029,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -2006,6 +2041,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -2110,6 +2146,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -2137,6 +2174,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -2148,6 +2186,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -2247,6 +2286,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -2274,6 +2314,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -2285,6 +2326,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
@@ -2384,6 +2426,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\des.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -2411,6 +2454,7 @@ copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
+copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
@@ -2422,6 +2466,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\tree.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil

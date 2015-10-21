@@ -88,6 +88,7 @@
     <YASM Include="..\libavcodec\x86\qpel.asm" />
     <YASM Include="..\libavcodec\x86\hpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\huffyuvdsp.asm" />
+    <YASM Include="..\libavcodec\x86\huffyuvencdsp.asm" />
     <YASM Include="..\libavcodec\x86\idctdsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_audiodsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
@@ -258,6 +259,7 @@
       <ObjectFileName>$(IntDir)\libavcodec_huffyuvdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\huffyuvencdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_huffyuvencdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\idctdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_idctdsp.obj</ObjectFileName>

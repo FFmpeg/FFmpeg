@@ -533,6 +533,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\mpl2dec.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\msf.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\mpsubdec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\msnwc_tcp.c">
@@ -802,6 +804,8 @@
     <ClCompile Include="..\libavformat\wtvenc.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\wvdec.c">
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wvedec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\wvenc.c">
     </ClCompile>

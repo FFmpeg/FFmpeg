@@ -729,6 +729,9 @@
     <ClCompile Include="..\libavformat\mpl2dec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\msf.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mpsubdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -1132,6 +1135,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\wvdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wvedec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\wvenc.c">

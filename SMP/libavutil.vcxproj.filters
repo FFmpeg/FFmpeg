@@ -304,6 +304,9 @@
     <ClInclude Include="..\libavutil\crc.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\des.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\display.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
@@ -385,6 +388,9 @@
     <ClInclude Include="..\libavutil\random_seed.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\rc4.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\replaygain.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
@@ -416,6 +422,9 @@
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\timestamp.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavutil\tree.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\twofish.h">
