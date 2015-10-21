@@ -29,6 +29,8 @@ typedef struct R3DContext {
     unsigned video_offsets_count;
     unsigned *video_offsets;
     unsigned rdvo_offset;
+
+    int audio_channels;
 } R3DContext;
 
 typedef struct Atom {
@@ -52,6 +54,7 @@ static int read_atom(AVFormatContext *s, Atom *atom)
 static int r3d_read_red1(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
+    R3DContext *r3d = s->priv_data;
     char filename[258];
     int tmp;
     int av_unused tmp2;
@@ -89,17 +92,8 @@ static int r3d_read_red1(AVFormatContext *s)
         st->avg_frame_rate = framerate;
     }
 
-    tmp = avio_r8(s->pb); // audio channels
+    r3d->audio_channels = avio_r8(s->pb); // audio channels
     av_log(s, AV_LOG_TRACE, "audio channels %d\n", tmp);
-    if (tmp > 0) {
-        AVStream *ast = avformat_new_stream(s, NULL);
-        if (!ast)
-            return AVERROR(ENOMEM);
-        ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        ast->codec->codec_id = AV_CODEC_ID_PCM_S32BE;
-        ast->codec->channels = tmp;
-        avpriv_set_pts_info(ast, 32, 1, st->time_base.den);
-    }
 
     avio_read(s->pb, filename, 257);
     filename[sizeof(filename)-1] = 0;
@@ -182,6 +176,11 @@ static int r3d_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "could not find 'red1' atom\n");
         return -1;
     }
+
+    /* we cannot create the audio stream now because we do not know the
+     * sample rate */
+    if (r3d->audio_channels)
+        s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     s->internal->data_offset = avio_tell(s->pb);
     av_log(s, AV_LOG_TRACE, "data offset %#"PRIx64"\n", s->internal->data_offset);
@@ -271,12 +270,25 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 
 static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 {
-    AVStream *st = s->streams[1];
+    R3DContext *r3d = s->priv_data;
+    AVStream *st;
     int av_unused tmp, tmp2;
     int samples, size;
     int64_t pos = avio_tell(s->pb);
     unsigned dts;
     int ret;
+
+    if (s->nb_streams < 2) {
+        st = avformat_new_stream(s, NULL);
+        if (!st)
+            return AVERROR(ENOMEM);
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codec->codec_id = AV_CODEC_ID_PCM_S32BE;
+        st->codec->channels = r3d->audio_channels;
+        avpriv_set_pts_info(st, 32, 1, s->streams[0]->time_base.den);
+    } else {
+        st = s->streams[1];
+    }
 
     dts = avio_rb32(s->pb);
 
@@ -321,6 +333,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 
 static int r3d_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    R3DContext *r3d = s->priv_data;
     Atom atom;
     int err = 0;
 
@@ -337,7 +350,7 @@ static int r3d_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return 0;
             break;
         case MKTAG('R','E','D','A'):
-            if (s->nb_streams < 2)
+            if (!r3d->audio_channels)
                 return -1;
             if (s->streams[1]->discard == AVDISCARD_ALL)
                 goto skip;
