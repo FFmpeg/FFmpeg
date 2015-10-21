@@ -86,6 +86,8 @@ typedef struct EaDemuxContext {
     int sample_rate;
     int num_channels;
     int num_samples;
+
+    int platform;
 } EaDemuxContext;
 
 static uint32_t read_arbitrary(AVIOContext *pb)
@@ -255,6 +257,8 @@ static int process_audio_header_elements(AVFormatContext *s)
         return 0;
     }
 
+    if (ea->audio_codec == AV_CODEC_ID_NONE && ea->platform == 0x01)
+        ea->audio_codec = AV_CODEC_ID_ADPCM_PSX;
     if (ea->sample_rate == -1)
         ea->sample_rate = revision == 3 ? 48000 : 22050;
 
@@ -387,10 +391,10 @@ static int process_ea_header(AVFormatContext *s)
             blockid = avio_rl32(pb);
             if (blockid == GSTR_TAG) {
                 avio_skip(pb, 4);
-            } else if ((blockid & 0xFFFF) != PT00_TAG) {
-                avpriv_request_sample(s, "unknown SCHl headerid");
-                return 0;
+            } else if ((blockid & 0xFF) != (PT00_TAG & 0xFF)) {
+                blockid = avio_rl32(pb);
             }
+            ea->platform = (blockid >> 16) & 0xFF;
             err = process_audio_header_elements(s);
             break;
 
@@ -600,6 +604,9 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
                 num_samples = avio_rl32(pb);
                 avio_skip(pb, 8);
                 chunk_size -= 12;
+            } else if (ea->audio_codec == AV_CODEC_ID_ADPCM_PSX) {
+                avio_skip(pb, 8);
+                chunk_size -= 8;
             }
 
             if (partial_packet) {
@@ -638,6 +645,9 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
             case AV_CODEC_ID_PCM_S16LE_PLANAR:
             case AV_CODEC_ID_MP3:
                 pkt->duration = num_samples;
+                break;
+            case AV_CODEC_ID_ADPCM_PSX:
+                pkt->duration = chunk_size / (16 * ea->num_channels) * 28;
                 break;
             default:
                 pkt->duration = chunk_size / (ea->bytes * ea->num_channels);
