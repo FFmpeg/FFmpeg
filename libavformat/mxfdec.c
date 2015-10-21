@@ -2765,13 +2765,13 @@ static int mxf_read_header(AVFormatContext *s)
                 if ((ret = mxf_parse_klv(mxf, klv, metadata->read, metadata->ctx_size, metadata->type)) < 0)
                     goto fail;
                 break;
-            } else {
-                av_log(s, AV_LOG_VERBOSE, "Dark key " PRIxUID "\n",
-                       UID_ARG(klv.key));
             }
         }
-        if (!metadata->read)
+        if (!metadata->read) {
+            av_log(s, AV_LOG_VERBOSE, "Dark key " PRIxUID "\n",
+                            UID_ARG(klv.key));
             avio_skip(s->pb, klv.length);
+        }
     }
     /* FIXME avoid seek */
     if (!essence_offset)  {
