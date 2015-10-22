@@ -761,14 +761,14 @@ static int dvbsub_read_8bit_string(AVCodecContext *avctx,
     return pixels_read;
 }
 
-static void compute_default_clut(AVPicture *frame, int w, int h)
+static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
 {
     uint8_t list[256] = {0};
     uint8_t list_inv[256];
     int counttab[256] = {0};
     int count, i, x, y;
 
-#define V(x,y) frame->data[0][(x) + (y)*frame->linesize[0]]
+#define V(x,y) rect->data[0][(x) + (y)*rect->linesize[0]]
     for (y = 0; y<h; y++) {
         for (x = 0; x<w; x++) {
             int v = V(x,y) + 1;
@@ -779,7 +779,7 @@ static void compute_default_clut(AVPicture *frame, int w, int h)
             counttab[v-1] += !!((v!=vl) + (v!=vr) + (v!=vt) + (v!=vb));
         }
     }
-#define L(x,y) list[ frame->data[0][(x) + (y)*frame->linesize[0]] ]
+#define L(x,y) list[ rect->data[0][(x) + (y)*rect->linesize[0]] ]
 
     for (i = 0; i<256; i++) {
         int scoretab[256] = {0};
@@ -787,7 +787,7 @@ static void compute_default_clut(AVPicture *frame, int w, int h)
         int bestv = 0;
         for (y = 0; y<h; y++) {
             for (x = 0; x<w; x++) {
-                int v = frame->data[0][x + y*frame->linesize[0]];
+                int v = rect->data[0][x + y*rect->linesize[0]];
                 int l_m = list[v];
                 int l_l = x     ? L(x-1, y) : 1;
                 int l_r = x+1<w ? L(x+1, y) : 1;
@@ -813,7 +813,7 @@ static void compute_default_clut(AVPicture *frame, int w, int h)
     count = i - 1;
     for (i--; i>=0; i--) {
         int v = i*255/count;
-        AV_WN32(frame->data[1] + 4*list_inv[i], RGBA(v/2,v,v/2,v));
+        AV_WN32(rect->data[1] + 4*list_inv[i], RGBA(v/2,v,v/2,v));
     }
 }
 
@@ -827,7 +827,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     AVSubtitleRect *rect;
     DVBSubCLUT *clut;
     uint32_t *clut_table;
-    int i;
+    int i,j;
     int offset_x=0, offset_y=0;
     int ret = 0;
 
@@ -884,7 +884,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
             rect->h = region->height;
             rect->nb_colors = (1 << region->depth);
             rect->type      = SUBTITLE_BITMAP;
-            rect->pict.linesize[0] = region->width;
+            rect->linesize[0] = region->width;
 
             clut = get_clut(ctx, region->clut);
 
@@ -904,23 +904,32 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
                 break;
             }
 
-            rect->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
-            if (!rect->pict.data[1]) {
+            rect->data[1] = av_mallocz(AVPALETTE_SIZE);
+            if (!rect->data[1]) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            memcpy(rect->pict.data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
+            memcpy(rect->data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
 
-            rect->pict.data[0] = av_malloc(region->buf_size);
-            if (!rect->pict.data[0]) {
+            rect->data[0] = av_malloc(region->buf_size);
+            if (!rect->data[0]) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
 
-            memcpy(rect->pict.data[0], region->pbuf, region->buf_size);
+            memcpy(rect->data[0], region->pbuf, region->buf_size);
 
             if ((clut == &default_clut && ctx->compute_clut == -1) || ctx->compute_clut == 1)
-                compute_default_clut(&rect->pict, rect->w, rect->h);
+                compute_default_clut(rect, rect->w, rect->h);
+
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+            for (j = 0; j < 4; j++) {
+                rect->pict.data[j] = rect->data[j];
+                rect->pict.linesize[j] = rect->linesize[j];
+            }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
             i++;
         }
@@ -932,8 +941,8 @@ fail:
         for(i=0; i<sub->num_rects; i++) {
             rect = sub->rects[i];
             if (rect) {
-                av_freep(&rect->pict.data[0]);
-                av_freep(&rect->pict.data[1]);
+                av_freep(&rect->data[0]);
+                av_freep(&rect->data[1]);
             }
             av_freep(&sub->rects[i]);
         }

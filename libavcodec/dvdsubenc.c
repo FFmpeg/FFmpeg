@@ -118,15 +118,15 @@ static void count_colors(AVCodecContext *avctx, unsigned hits[33],
 {
     DVDSubtitleContext *dvdc = avctx->priv_data;
     unsigned count[256] = { 0 };
-    uint32_t *palette = (uint32_t *)r->pict.data[1];
+    uint32_t *palette = (uint32_t *)r->data[1];
     uint32_t color;
     int x, y, i, j, match, d, best_d, av_uninit(best_j);
-    uint8_t *p = r->pict.data[0];
+    uint8_t *p = r->data[0];
 
     for (y = 0; y < r->h; y++) {
         for (x = 0; x < r->w; x++)
             count[*(p++)]++;
-        p += r->pict.linesize[0] - r->w;
+        p += r->linesize[0] - r->w;
     }
     for (i = 0; i < 256; i++) {
         if (!count[i]) /* avoid useless search */
@@ -236,14 +236,14 @@ static void copy_rectangle(AVSubtitleRect *dst, AVSubtitleRect *src, int cmap[])
     int x, y;
     uint8_t *p, *q;
 
-    p = src->pict.data[0];
-    q = dst->pict.data[0] + (src->x - dst->x) +
-                            (src->y - dst->y) * dst->pict.linesize[0];
+    p = src->data[0];
+    q = dst->data[0] + (src->x - dst->x) +
+                            (src->y - dst->y) * dst->linesize[0];
     for (y = 0; y < src->h; y++) {
         for (x = 0; x < src->w; x++)
             *(q++) = cmap[*(p++)];
-        p += src->pict.linesize[0] - src->w;
-        q += dst->pict.linesize[0] - src->w;
+        p += src->linesize[0] - src->w;
+        q += dst->linesize[0] - src->w;
     }
 }
 
@@ -277,6 +277,21 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
             forced = 1;
             break;
         }
+
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+    for (i = 0; i < rects; i++)
+        if (!h->rects[i]->data[0]) {
+            AVSubtitleRect *rect = h->rects[i];
+            int j;
+            for (j = 0; j < 4; j++) {
+                rect->data[j] = rect->pict.data[j];
+                rect->linesize[j] = rect->pict.linesize[j];
+            }
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     vrect = *h->rects[0];
 
     if (rects > 1) {
@@ -312,17 +327,17 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
     if (rects > 1) {
         if (!(vrect_data = av_calloc(vrect.w, vrect.h)))
             return AVERROR(ENOMEM);
-        vrect.pict.data    [0] = vrect_data;
-        vrect.pict.linesize[0] = vrect.w;
+        vrect.data    [0] = vrect_data;
+        vrect.linesize[0] = vrect.w;
         for (i = 0; i < rects; i++) {
-            build_color_map(avctx, cmap, (uint32_t *)h->rects[i]->pict.data[1],
+            build_color_map(avctx, cmap, (uint32_t *)h->rects[i]->data[1],
                             out_palette, out_alpha);
             copy_rectangle(&vrect, h->rects[i], cmap);
         }
         for (i = 0; i < 4; i++)
             cmap[i] = i;
     } else {
-        build_color_map(avctx, cmap, (uint32_t *)h->rects[0]->pict.data[1],
+        build_color_map(avctx, cmap, (uint32_t *)h->rects[0]->data[1],
                         out_palette, out_alpha);
     }
 
@@ -342,10 +357,10 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
         ret = AVERROR_BUFFER_TOO_SMALL;
         goto fail;
     }
-    dvd_encode_rle(&q, vrect.pict.data[0], vrect.w * 2,
+    dvd_encode_rle(&q, vrect.data[0], vrect.w * 2,
                    vrect.w, (vrect.h + 1) >> 1, cmap);
     offset2 = q - outbuf;
-    dvd_encode_rle(&q, vrect.pict.data[0] + vrect.w, vrect.w * 2,
+    dvd_encode_rle(&q, vrect.data[0] + vrect.w, vrect.w * 2,
                    vrect.w, vrect.h >> 1, cmap);
 
     if (dvdc->even_rows_fix && (vrect.h & 1)) {
