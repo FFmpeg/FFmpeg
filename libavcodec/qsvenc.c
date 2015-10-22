@@ -160,7 +160,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extco.PicTimingSEI         = q->pic_timing_sei ?
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
 
-        q->extparam_internal[0] = (mfxExtBuffer *)&q->extco;
+        q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco;
 
 #if QSV_VERSION_ATLEAST(1,6)
         q->extco2.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION2;
@@ -175,7 +175,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extco2.LookAheadDS           = q->look_ahead_downsampling;
 #endif
 
-        q->extparam_internal[1] = (mfxExtBuffer *)&q->extco2;
+        q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
 
 #endif
     }
@@ -230,8 +230,46 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
     return 0;
 }
 
+static int qsv_init_opaque_alloc(AVCodecContext *avctx, QSVEncContext *q)
+{
+    AVQSVContext *qsv = avctx->hwaccel_context;
+    mfxFrameSurface1 *surfaces;
+    int nb_surfaces, i;
+
+    nb_surfaces = qsv->nb_opaque_surfaces + q->req.NumFrameSuggested + q->async_depth;
+
+    q->opaque_alloc_buf = av_buffer_allocz(sizeof(*surfaces) * nb_surfaces);
+    if (!q->opaque_alloc_buf)
+        return AVERROR(ENOMEM);
+
+    q->opaque_surfaces = av_malloc_array(nb_surfaces, sizeof(*q->opaque_surfaces));
+    if (!q->opaque_surfaces)
+        return AVERROR(ENOMEM);
+
+    surfaces = (mfxFrameSurface1*)q->opaque_alloc_buf->data;
+    for (i = 0; i < nb_surfaces; i++) {
+        surfaces[i].Info      = q->req.Info;
+        q->opaque_surfaces[i] = surfaces + i;
+    }
+
+    q->opaque_alloc.Header.BufferId = MFX_EXTBUFF_OPAQUE_SURFACE_ALLOCATION;
+    q->opaque_alloc.Header.BufferSz = sizeof(q->opaque_alloc);
+    q->opaque_alloc.In.Surfaces     = q->opaque_surfaces;
+    q->opaque_alloc.In.NumSurface   = nb_surfaces;
+    q->opaque_alloc.In.Type         = q->req.Type;
+
+    q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->opaque_alloc;
+
+    qsv->nb_opaque_surfaces = nb_surfaces;
+    qsv->opaque_surfaces    = q->opaque_alloc_buf;
+    qsv->opaque_alloc_type  = q->req.Type;
+
+    return 0;
+}
+
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 {
+    int opaque_alloc = 0;
     int ret;
 
     q->param.IOPattern  = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
@@ -247,6 +285,8 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 
         q->session         = qsv->session;
         q->param.IOPattern = qsv->iopattern;
+
+        opaque_alloc = qsv->opaque_alloc;
     }
 
     if (!q->session) {
@@ -276,11 +316,17 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         return ff_qsv_error(ret);
     }
 
+    if (opaque_alloc) {
+        ret = qsv_init_opaque_alloc(avctx, q);
+        if (ret < 0)
+            return ret;
+    }
+
     if (avctx->hwaccel_context) {
         AVQSVContext *qsv = avctx->hwaccel_context;
         int i, j;
 
-        q->extparam = av_mallocz_array(qsv->nb_ext_buffers + FF_ARRAY_ELEMS(q->extparam_internal),
+        q->extparam = av_mallocz_array(qsv->nb_ext_buffers + q->nb_extparam_internal,
                                        sizeof(*q->extparam));
         if (!q->extparam)
             return AVERROR(ENOMEM);
@@ -290,7 +336,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
             q->param.ExtParam[i] = qsv->ext_buffers[i];
         q->param.NumExtParam = qsv->nb_ext_buffers;
 
-        for (i = 0; i < FF_ARRAY_ELEMS(q->extparam_internal); i++) {
+        for (i = 0; i < q->nb_extparam_internal; i++) {
             for (j = 0; j < qsv->nb_ext_buffers; j++) {
                 if (qsv->ext_buffers[j]->BufferId == q->extparam_internal[i]->BufferId)
                     break;
@@ -302,7 +348,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         }
     } else {
         q->param.ExtParam    = q->extparam_internal;
-        q->param.NumExtParam = FF_ARRAY_ELEMS(q->extparam_internal);
+        q->param.NumExtParam = q->nb_extparam_internal;
     }
 
     ret = MFXVideoENCODE_Init(q->session, &q->param);
@@ -599,6 +645,9 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     }
     av_fifo_free(q->async_fifo);
     q->async_fifo = NULL;
+
+    av_freep(&q->opaque_surfaces);
+    av_buffer_unref(&q->opaque_alloc_buf);
 
     av_freep(&q->extparam);
 

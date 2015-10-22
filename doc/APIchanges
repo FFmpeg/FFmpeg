@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-10-22 - xxxxxxx - lavc 57.8.100 / lavc 57.0.0 - qsv.h
+  Add an API for allocating opaque surfaces.
+
 2015-10-15 - xxxxxxx - lavf 57.4.100
   Remove the latm demuxer that was a duplicate of the loas demuxer.
 
