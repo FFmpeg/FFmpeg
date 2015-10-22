@@ -52,10 +52,11 @@ typedef struct QSVEncContext {
     mfxExtCodingOption  extco;
 #if QSV_VERSION_ATLEAST(1,6)
     mfxExtCodingOption2 extco2;
-    mfxExtBuffer *extparam[2];
+    mfxExtBuffer  *extparam_internal[2];
 #else
-    mfxExtBuffer *extparam[1];
+    mfxExtBuffer  *extparam_internal[1];
 #endif
+    mfxExtBuffer **extparam;
 
     AVFifoBuffer *async_fifo;
 
