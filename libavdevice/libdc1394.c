@@ -41,6 +41,7 @@
 #define DC1394_FRAMERATE_240   FRAMERATE_240
 #endif
 
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
@@ -180,7 +181,8 @@ static inline int dc1394_read_common(AVFormatContext *c,
 
     /* packet init */
     av_init_packet(&dc1394->packet);
-    dc1394->packet.size = avpicture_get_size(fmt->pix_fmt, fmt->width, fmt->height);
+    dc1394->packet.size = av_image_get_buffer_size(fmt->pix_fmt,
+                                                   fmt->width, fmt->height, 1);
     dc1394->packet.stream_index = vst->index;
     dc1394->packet.flags |= AV_PKT_FLAG_KEY;
 

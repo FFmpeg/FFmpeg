@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
@@ -84,7 +85,8 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_log(avctx, AV_LOG_ERROR, "image dimensions too large\n");
         return AVERROR(EINVAL);
     }
-    picsize = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    picsize = av_image_get_buffer_size(avctx->pix_fmt,
+                                       avctx->width, avctx->height, 1);
     if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45, 0)) < 0)
         return ret;
 
