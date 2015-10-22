@@ -3012,6 +3012,11 @@ static int transcode_init(void)
 
             set_encoder_id(output_files[ost->file_index], ost);
 
+#if CONFIG_LIBMFX
+            if (qsv_transcode_init(ost))
+                exit_program(1);
+#endif
+
             if (!ost->filter &&
                 (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
                  enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO)) {
