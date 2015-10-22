@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/stereo3d.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -1164,6 +1165,21 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 av_log(avctx, AV_LOG_WARNING, "Broken zTXt chunk\n");
             bytestream2_skip(&s->gb, length + 4);
             break;
+        case MKTAG('s', 'T', 'E', 'R'): {
+            AVStereo3D *stereo3d = av_stereo3d_create_side_data(p);
+            if (!stereo3d) {
+                goto fail;
+            } else if (*s->gb.buffer == 0) {
+                stereo3d->type  = AV_STEREO3D_SIDEBYSIDE;
+                stereo3d->flags = AV_STEREO3D_FLAG_INVERT;
+            } else if (*s->gb.buffer == 1) {
+                stereo3d->type  = AV_STEREO3D_SIDEBYSIDE;
+            } else {
+                 av_log(avctx, AV_LOG_WARNING, "Broken sTER chunk - unknown value\n");
+            }
+            bytestream2_skip(&s->gb, length + 4);
+            break;
+        }
         case MKTAG('I', 'E', 'N', 'D'):
             if (!(s->state & PNG_ALLIMAGE))
                 av_log(avctx, AV_LOG_ERROR, "IEND without all image\n");
