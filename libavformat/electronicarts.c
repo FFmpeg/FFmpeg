@@ -239,6 +239,7 @@ static int process_audio_header_elements(AVFormatContext *s)
                 return 0;
             }
             break;
+        case 15:
         case 16:
             ea->audio_codec = AV_CODEC_ID_MP3;
             break;
