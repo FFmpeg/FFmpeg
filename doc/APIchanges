@@ -25,10 +25,10 @@ API changes, most recent first:
   Change return type of av_dict_copy() from void to int, so that a proper
   error code can be reported.
 
-2015-09-29 - xxxxxxx - lavc 57.3.100 / lavc 57.2.0 - avcodec.h
+2015-09-29 - b01891a / 948f3c1 - lavc 57.3.100 / lavc 57.2.0 - avcodec.h
   Change type of AVPacket.duration from int to int64_t.
 
-2015-09-17 - xxxxxxx - lavc 57.3.100 / lavc 57.2.0 - d3d11va.h
+2015-09-17 - 7c46f24 / e3d4784 - lavc 57.3.100 / lavc 57.2.0 - d3d11va.h
   Add av_d3d11va_alloc_context(). This function must from now on be used for
   allocating AVD3D11VAContext.
 
@@ -44,11 +44,11 @@ API changes, most recent first:
   bit_rate/rc_max_rate/rc_min_rate were changed to 64bit, make sure you update
   any printf() or other type sensitive code
 
-2015-xx-xx - lavu 55.0.100 / lavu 55.0.0
-  xxxxxxx - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
-  xxxxxxx - Change type of AVComponentDescriptor fields from uint16_t to int
+2015-09-07 - lavu 55.0.100 / lavu 55.0.0
+  c734b34 / b8b5d82 - Change type of AVPixFmtDescriptor.flags from uint8_t to uint64_t.
+  f53569a / 6b3ef7f - Change type of AVComponentDescriptor fields from uint16_t to int
             and drop bit packing.
-  xxxxxxx - Add step, offset, and depth to AVComponentDescriptor to replace
+  151aa2e / 2268db2 - Add step, offset, and depth to AVComponentDescriptor to replace
             the deprecated step_minus1, offset_plus1, and depth_minus1.
 
 -------- 8< --------- FFmpeg 2.8 was cut here -------- 8< ---------
