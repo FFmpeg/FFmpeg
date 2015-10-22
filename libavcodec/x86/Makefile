@@ -8,8 +8,7 @@ OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
-OBJS-$(CONFIG_FLAC_DECODER)            += x86/flacdsp_init.o
-OBJS-$(CONFIG_FLAC_ENCODER)            += x86/flacdsp_init.o
+OBJS-$(CONFIG_FLACDSP)                 += x86/flacdsp_init.o
 OBJS-$(CONFIG_FMTCONVERT)              += x86/fmtconvert_init.o
 OBJS-$(CONFIG_H263DSP)                 += x86/h263dsp_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
@@ -88,14 +87,7 @@ YASM-OBJS-$(CONFIG_AUDIODSP)           += x86/audiodsp.o
 YASM-OBJS-$(CONFIG_BLOCKDSP)           += x86/blockdsp.o
 YASM-OBJS-$(CONFIG_BSWAPDSP)           += x86/bswapdsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
-YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o\
-                                          x86/dwt_yasm.o
-YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
-YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o
-ifdef CONFIG_GPL
-YASM-OBJS-$(CONFIG_FLAC_ENCODER)       += x86/flac_dsp_gpl.o
-endif
 YASM-OBJS-$(CONFIG_FMTCONVERT)         += x86/fmtconvert.o
 YASM-OBJS-$(CONFIG_H263DSP)            += x86/h263_loopfilter.o
 YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
@@ -141,6 +133,13 @@ YASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ALAC_DECODER)       += x86/alacdsp.o
 YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
+YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o \
+                                          x86/dwt_yasm.o
+YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
+YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o
+ifdef CONFIG_GPL
+YASM-OBJS-$(CONFIG_FLAC_ENCODER)       += x86/flac_dsp_gpl.o
+endif
 YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
                                           x86/hevc_deblock.o            \
                                           x86/hevc_idct.o               \
