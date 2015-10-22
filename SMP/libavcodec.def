@@ -159,10 +159,9 @@ EXPORTS
     avpicture_get_size
     avpicture_layout
     avpriv_aac_parse_header
-    avpriv_ac3_parse_header2
+    avpriv_ac3_parse_header
     avpriv_align_put_bits
     avpriv_bprint_to_extradata
-    avpriv_color_frame
     avpriv_copy_bits
     avpriv_copy_pce_data
     avpriv_dca_convert_bitstream

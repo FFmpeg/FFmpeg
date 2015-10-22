@@ -64,12 +64,7 @@
     <YASM Include="..\libavcodec\x86\blockdsp.asm" />
     <YASM Include="..\libavcodec\x86\bswapdsp.asm" />
     <YASM Include="..\libavcodec\x86\dct32.asm" />
-    <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm" />
-    <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />
-    <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
     <YASM Include="..\libavcodec\x86\fft.asm" />
-    <YASM Include="..\libavcodec\x86\flacdsp.asm" />
-    <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
     <YASM Include="..\libavcodec\x86\fmtconvert.asm" />
     <YASM Include="..\libavcodec\x86\h263_loopfilter.asm" />
     <YASM Include="..\libavcodec\x86\h264_chromamc.asm" />
@@ -109,6 +104,11 @@
     <YASM Include="..\libavcodec\x86\alacdsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
     <YASM Include="..\libavcodec\x86\dcadsp.asm" />
+    <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm" />
+    <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />
+    <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
+    <YASM Include="..\libavcodec\x86\flacdsp.asm" />
+    <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
     <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
     <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
     <YASM Include="..\libavcodec\x86\hevc_idct.asm" />

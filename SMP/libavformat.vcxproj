@@ -573,6 +573,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\oggparsecelt.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\oggparsedaala.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\oggparsedirac.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\oggparseflac.c">
