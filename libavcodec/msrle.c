@@ -135,7 +135,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         }
     } else {
         bytestream2_init(&s->gb, buf, buf_size);
-        ff_msrle_decode(avctx, (AVPicture*)s->frame, avctx->bits_per_coded_sample, &s->gb);
+        ff_msrle_decode(avctx, s->frame, avctx->bits_per_coded_sample, &s->gb);
     }
 
     if ((ret = av_frame_ref(data, s->frame)) < 0)
