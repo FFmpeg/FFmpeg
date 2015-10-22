@@ -10226,7 +10226,8 @@ The description of the accepted parameters follows.
 @table @option
 @item stats_file, f
 If specified the filter will use the named file to save the SSIM of
-each individual frame.
+each individual frame. When filename equals "-" the data is sent to
+standard output.
 @end table
 
 The file printed if @var{stats_file} is selected, contains a sequence of

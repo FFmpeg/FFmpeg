@@ -298,7 +298,7 @@ static int parse_frame_header(AC3DecodeContext *s)
     AC3HeaderInfo hdr, *phdr=&hdr;
     int err;
 
-    err = avpriv_ac3_parse_header2(&s->gbc, &phdr);
+    err = avpriv_ac3_parse_header(&s->gbc, &phdr);
     if (err)
         return err;
 

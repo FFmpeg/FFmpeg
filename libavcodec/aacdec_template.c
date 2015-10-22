@@ -1065,7 +1065,7 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
 
 static void aacdec_init(AACContext *ac);
 
-static av_cold void aac_static_table_init()
+static av_cold void aac_static_table_init(void)
 {
     AAC_INIT_VLC_STATIC( 0, 304);
     AAC_INIT_VLC_STATIC( 1, 270);

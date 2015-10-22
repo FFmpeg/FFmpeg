@@ -1925,6 +1925,22 @@ int guess_input_channel_layout(InputStream *ist)
     return 1;
 }
 
+static void check_decode_result(InputStream *ist, int *got_output, int ret)
+{
+    if (*got_output || ret<0)
+        decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
+
+    if (exit_on_error && *got_output && ist) {
+        if (av_frame_get_decode_error_flags(ist->decoded_frame) || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
+            av_log(NULL, AV_LOG_FATAL, "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->filename, ist->st->index);
+            exit_program(1);
+        }
+    }
+}
+
 static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVFrame *decoded_frame, *f;
@@ -1947,11 +1963,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         ret = AVERROR_INVALIDDATA;
     }
 
-    if (*got_output || ret<0)
-        decode_error_stat[ret<0] ++;
-
-    if (ret < 0 && exit_on_error)
-        exit_program(1);
+    check_decode_result(ist, got_output, ret);
 
     if (!*got_output || ret < 0)
         return ret;
@@ -2088,11 +2100,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
                    ist->st->codec->has_b_frames);
     }
 
-    if (*got_output || ret<0)
-        decode_error_stat[ret<0] ++;
-
-    if (ret < 0 && exit_on_error)
-        exit_program(1);
+    check_decode_result(ist, got_output, ret);
 
     if (*got_output && ret >= 0) {
         if (ist->dec_ctx->width  != decoded_frame->width ||
@@ -2200,11 +2208,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                           &subtitle, got_output, pkt);
 
-    if (*got_output || ret<0)
-        decode_error_stat[ret<0] ++;
-
-    if (ret < 0 && exit_on_error)
-        exit_program(1);
+    check_decode_result(NULL, got_output, ret);
 
     if (ret < 0 || !*got_output) {
         if (!pkt->size)
@@ -3773,6 +3777,11 @@ static int process_input(int file_index)
     if (ist->discard)
         goto discard_packet;
 
+    if (exit_on_error && (pkt.flags & AV_PKT_FLAG_CORRUPT)) {
+        av_log(NULL, AV_LOG_FATAL, "%s: corrupt input packet in stream %d\n", is->filename, pkt.stream_index);
+        exit_program(1);
+    }
+
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
                "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%s off_time:%s\n",
@@ -4104,7 +4113,11 @@ static int transcode(void)
     /* write the trailer if needed and close file */
     for (i = 0; i < nb_output_files; i++) {
         os = output_files[i]->ctx;
-        av_write_trailer(os);
+        if ((ret = av_write_trailer(os)) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s", os->filename, av_err2str(ret));
+            if (exit_on_error)
+                exit_program(1);
+        }
     }
 
     /* dump report by using the first video and audio streams */

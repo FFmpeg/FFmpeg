@@ -223,7 +223,9 @@ static av_cold int init(AVFilterContext *ctx)
 {
     SSIMContext *s = ctx->priv;
 
-    if (s->stats_file_str) {
+    if (!strcmp(s->stats_file_str, "-")) {
+        s->stats_file = stdout;
+    } else if (s->stats_file_str) {
         s->stats_file = fopen(s->stats_file_str, "w");
         if (!s->stats_file) {
             int err = AVERROR(errno);
@@ -354,7 +356,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     ff_dualinput_uninit(&s->dinput);
 
-    if (s->stats_file)
+    if (s->stats_file && s->stats_file != stdout)
         fclose(s->stats_file);
 
     av_freep(&s->temp);
