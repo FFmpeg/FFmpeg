@@ -401,6 +401,7 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     TeletextContext *ctx = avctx->priv_data;
     AVSubtitle      *sub = data;
     int             ret = 0;
+    int j;
 
     if (!ctx->vbi) {
         if (!(ctx->vbi = vbi_decoder_new()))
