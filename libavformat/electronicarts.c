@@ -662,7 +662,19 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
         case SCEl_TAG:
         case SEND_TAG:
         case SEEN_TAG:
-            ret         = AVERROR(EIO);
+            while (!avio_feof(pb)) {
+                int tag = avio_rl32(pb);
+
+                if (tag == ISNh_TAG ||
+                    tag == SCHl_TAG ||
+                    tag == SEAD_TAG ||
+                    tag == SHEN_TAG) {
+                    avio_skip(pb, -4);
+                    break;
+                }
+            }
+            if (avio_feof(pb))
+                ret = AVERROR_EOF;
             packet_read = 1;
             break;
 
