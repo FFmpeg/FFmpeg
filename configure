@@ -5637,7 +5637,6 @@ disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
 # add some useful compiler flags if supported
-check_cflags -Wstrict-prototypes
 check_cflags -Wdeclaration-after-statement
 check_cflags -Wall
 check_cflags -Wdisabled-optimization
