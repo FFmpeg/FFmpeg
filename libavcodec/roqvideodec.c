@@ -192,7 +192,7 @@ static int roq_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     RoqContext *s = avctx->priv_data;
-    int copy= !s->current_frame->data[0];
+    int copy = !s->current_frame->data[0] && s->last_frame->data[0];
     int ret;
 
     if ((ret = ff_reget_buffer(avctx, s->current_frame)) < 0) {
@@ -200,10 +200,11 @@ static int roq_decode_frame(AVCodecContext *avctx,
         return ret;
     }
 
-    if(copy)
-        av_image_copy(s->current_frame->data, s->current_frame->linesize,
-                      s->last_frame->data, s->last_frame->linesize,
-                      avctx->pix_fmt, avctx->width, avctx->height);
+    if (copy) {
+        ret = av_frame_copy(s->current_frame, s->last_frame);
+        if (ret < 0)
+            return ret;
+    }
 
     bytestream2_init(&s->gb, buf, buf_size);
     roqvideo_decode_frame(s);
