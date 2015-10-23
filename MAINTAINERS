@@ -185,6 +185,7 @@ Codecs:
   h261*                                 Michael Niedermayer
   h263*                                 Michael Niedermayer
   h264*                                 Loren Merritt, Michael Niedermayer
+  hap*                                  Tom Butterworth
   huffyuv*                              Michael Niedermayer, Christophe Gisquet
   idcinvideo.c                          Mike Melanson
   imc*                                  Benjamin Larsson
