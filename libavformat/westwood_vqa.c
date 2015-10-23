@@ -184,7 +184,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
                 return AVERROR(EIO);
             ret = avio_read(pb, pkt->data, chunk_size);
             if (ret != chunk_size) {
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return AVERROR(EIO);
             }
 

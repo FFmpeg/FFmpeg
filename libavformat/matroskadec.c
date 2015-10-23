@@ -1227,7 +1227,7 @@ static int matroska_merge_packets(AVPacket *out, AVPacket *in)
 
     memcpy(out->data + old_size, in->data, in->size);
 
-    av_free_packet(in);
+    av_packet_unref(in);
     av_free(in);
     return 0;
 }
@@ -1997,7 +1997,7 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
     if (matroska->packets) {
         int n;
         for (n = 0; n < matroska->num_packets; n++) {
-            av_free_packet(matroska->packets[n]);
+            av_packet_unref(matroska->packets[n]);
             av_free(matroska->packets[n]);
         }
         av_freep(&matroska->packets);

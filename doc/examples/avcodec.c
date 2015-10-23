@@ -206,7 +206,7 @@ static void audio_encode_example(const char *filename)
         }
         if (got_output) {
             fwrite(pkt.data, 1, pkt.size, f);
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
         }
     }
     fclose(f);
@@ -403,7 +403,7 @@ static void video_encode_example(const char *filename)
         if (got_output) {
             printf("encoding frame %3d (size=%5d)\n", i, pkt.size);
             fwrite(pkt.data, 1, pkt.size, f);
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
         }
     }
 
@@ -420,7 +420,7 @@ static void video_encode_example(const char *filename)
         if (got_output) {
             printf("encoding frame %3d (size=%5d)\n", i, pkt.size);
             fwrite(pkt.data, 1, pkt.size, f);
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
         }
     }
 

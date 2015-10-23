@@ -110,7 +110,7 @@ static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)
 
     pkt->pos = orig_pos;
     if (!pkt->size)
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     return pkt->size > orig_size ? pkt->size - orig_size : ret;
 }
 
@@ -426,7 +426,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_WARNING,
                    "Dropped corrupted packet (stream = %d)\n",
                    pkt->stream_index);
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             continue;
         }
 
@@ -756,7 +756,7 @@ static void free_packet_buffer(AVPacketList **pkt_buf, AVPacketList **pkt_buf_en
     while (*pkt_buf) {
         AVPacketList *pktl = *pkt_buf;
         *pkt_buf = pktl->next;
-        av_free_packet(&pktl->pkt);
+        av_packet_unref(&pktl->pkt);
         av_freep(&pktl);
     }
     *pkt_buf_end = NULL;
@@ -845,7 +845,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
             goto fail;
 
         if (!add_to_pktbuf(&s->internal->parse_queue, &out_pkt, &s->internal->parse_queue_end)) {
-            av_free_packet(&out_pkt);
+            av_packet_unref(&out_pkt);
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -858,7 +858,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
     }
 
 fail:
-    av_free_packet(pkt);
+    av_packet_unref(pkt);
     return ret;
 }
 
@@ -949,7 +949,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 return ret;
         } else {
             /* free packet */
-            av_free_packet(&cur_pkt);
+            av_packet_unref(&cur_pkt);
         }
     }
 
@@ -1450,7 +1450,7 @@ static int seek_frame_generic(AVFormatContext *s, int stream_index,
             } while (read_status == AVERROR(EAGAIN));
             if (read_status < 0)
                 break;
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
             if (stream_index == pkt.stream_index)
                 if ((pkt.flags & AV_PKT_FLAG_KEY) && pkt.dts > timestamp)
                     break;
@@ -1752,7 +1752,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                         st->duration = duration;
                 }
             }
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
         }
     } while (end_time == AV_NOPTS_VALUE &&
              filesize > (DURATION_MAX_READ_SIZE << retry) &&
@@ -2461,7 +2461,7 @@ void avformat_free_context(AVFormatContext *s)
             av_parser_close(st->parser);
         }
         if (st->attached_pic.data)
-            av_free_packet(&st->attached_pic);
+            av_packet_unref(&st->attached_pic);
         av_dict_free(&st->metadata);
         av_freep(&st->probe_data.buf);
         av_free(st->index_entries);

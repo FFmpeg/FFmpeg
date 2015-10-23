@@ -117,7 +117,7 @@ RMStream *ff_rm_alloc_rmstream (void)
 
 void ff_rm_free_rmstream (RMStream *rms)
 {
-    av_free_packet(&rms->pkt);
+    av_packet_unref(&rms->pkt);
 }
 
 static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
@@ -659,7 +659,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
     if((seq & 0x7F) == 1 || vst->curpic_num != pic_num){
         vst->slices = ((hdr & 0x3F) << 1) + 1;
         vst->videobufsize = len2 + 8*vst->slices + 1;
-        av_free_packet(&vst->pkt); //FIXME this should be output.
+        av_packet_unref(&vst->pkt); //FIXME this should be output.
         if(av_new_packet(&vst->pkt, vst->videobufsize) < 0)
             return AVERROR(ENOMEM);
         vst->videobufpos = 8*vst->slices + 1;
@@ -879,7 +879,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if(  (st->discard >= AVDISCARD_NONKEY && !(flags&2))
            || st->discard >= AVDISCARD_ALL){
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
         } else
             break;
     }

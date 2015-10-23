@@ -51,7 +51,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = 0;
     ret = avio_read(s->pb, pkt->data, size);
     if (ret < 0) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret;
     }
     pkt->size = ret;

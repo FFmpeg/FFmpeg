@@ -190,7 +190,7 @@ static int hnm_read_close(AVFormatContext *s)
     Hnm4DemuxContext *hnm = s->priv_data;
 
     if (hnm->vpkt.size > 0)
-        av_free_packet(&hnm->vpkt);
+        av_packet_unref(&hnm->vpkt);
 
     return 0;
 }

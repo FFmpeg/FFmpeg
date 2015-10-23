@@ -310,7 +310,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         ret = av_get_packet(pb, pkt, frame_size);
         if (ret != frame_size) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return AVERROR(EIO);
         }
         pkt->duration = 1;
@@ -325,7 +325,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         ret = av_get_packet(pb, pkt, index_entry->size);
         if (ret != index_entry->size) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return AVERROR(EIO);
         }
 

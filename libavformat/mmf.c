@@ -292,7 +292,7 @@ static int mmf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = avio_read(s->pb, pkt->data, pkt->size);
     if (ret < 0)
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
 
     mmf->data_size -= ret;
 

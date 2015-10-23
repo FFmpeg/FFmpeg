@@ -122,7 +122,7 @@ int main(int argc, char **argv)
             }
             close(fd);
         }
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
         pktnum++;
         if (maxpkts && (pktnum >= maxpkts))
             break;

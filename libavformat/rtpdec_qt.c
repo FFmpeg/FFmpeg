@@ -217,7 +217,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
             av_freep(&qt->pkt.data);
             qt->pkt.data = av_realloc(NULL, qt->remaining * qt->bytes_per_frame);
             if (!qt->pkt.data) {
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return AVERROR(ENOMEM);
             }
             qt->pkt.size = qt->remaining * qt->bytes_per_frame;

@@ -230,13 +230,13 @@ static int movie_get_frame(AVFilterLink *outlink)
                         movie->frame->sample_aspect_ratio.num,
                         movie->frame->sample_aspect_ratio.den);
                 // We got it. Free the packet since we are returning
-                av_free_packet(&pkt);
+                av_packet_unref(&pkt);
 
                 return 0;
             }
         }
         // Free the packet that was allocated by av_read_frame
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
     }
 
     // On multi-frame source we should stop the mixing process when

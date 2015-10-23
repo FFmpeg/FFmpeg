@@ -133,7 +133,7 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((pa_simple_read(pd->s, pkt->data, pkt->size, &res)) < 0) {
         av_log(s, AV_LOG_ERROR, "pa_simple_read failed: %s\n",
                pa_strerror(res));
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
 

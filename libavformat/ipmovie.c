@@ -180,7 +180,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
 
         if (avio_read(pb, pkt->data, s->decode_map_chunk_size) !=
             s->decode_map_chunk_size) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return CHUNK_EOF;
         }
 
@@ -189,7 +189,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
 
         if (avio_read(pb, pkt->data + s->decode_map_chunk_size,
             s->video_chunk_size) != s->video_chunk_size) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return CHUNK_EOF;
         }
 

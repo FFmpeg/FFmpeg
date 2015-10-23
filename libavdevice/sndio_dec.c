@@ -67,7 +67,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     ret = sio_read(s->hdl, pkt->data, pkt->size);
     if (ret == 0 || sio_eof(s->hdl)) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR_EOF;
     }
 

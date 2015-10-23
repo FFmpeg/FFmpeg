@@ -129,7 +129,7 @@ static void free_variant_list(HLSContext *c)
     for (i = 0; i < c->n_variants; i++) {
         struct variant *var = c->variants[i];
         free_segment_list(var);
-        av_free_packet(&var->pkt);
+        av_packet_unref(&var->pkt);
         av_free(var->pb.buffer);
         if (var->input)
             ffurl_close(var->input);
@@ -724,7 +724,7 @@ start:
                     c->seek_timestamp = AV_NOPTS_VALUE;
                     break;
                 }
-                av_free_packet(&var->pkt);
+                av_packet_unref(&var->pkt);
                 reset_packet(&var->pkt);
             }
         }
@@ -815,7 +815,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
             ffurl_close(var->input);
             var->input = NULL;
         }
-        av_free_packet(&var->pkt);
+        av_packet_unref(&var->pkt);
         reset_packet(&var->pkt);
         var->pb.eof_reached = 0;
         /* Clear any buffered data */

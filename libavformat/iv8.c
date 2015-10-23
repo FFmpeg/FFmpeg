@@ -92,7 +92,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = av_append_packet(s->pb, pkt, size);
             if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "failed to grow packet\n");
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return ret;
             }
         }

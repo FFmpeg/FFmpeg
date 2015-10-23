@@ -508,7 +508,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         if (res < 0) {
             res = AVERROR(errno);
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return res;
         }
         avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);

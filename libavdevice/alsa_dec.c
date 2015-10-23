@@ -128,14 +128,14 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     while ((res = snd_pcm_readi(s->h, pkt->data, pkt->size / s->frame_size)) < 0) {
         if (res == -EAGAIN) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
 
             return AVERROR(EAGAIN);
         }
         if (ff_alsa_xrun_recover(s1, res) < 0) {
             av_log(s1, AV_LOG_ERROR, "ALSA read error: %s\n",
                    snd_strerror(res));
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
 
             return AVERROR(EIO);
         }

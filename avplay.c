@@ -299,7 +299,7 @@ static void packet_queue_flush(PacketQueue *q)
     SDL_LockMutex(q->mutex);
     for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
         pkt1 = pkt->next;
-        av_free_packet(&pkt->pkt);
+        av_packet_unref(&pkt->pkt);
         av_freep(&pkt);
     }
     q->last_pkt = NULL;
@@ -1617,7 +1617,7 @@ static int video_thread(void *arg)
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
 
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         if (ret < 0)
@@ -1684,7 +1684,7 @@ static int video_thread(void *arg)
     av_freep(&vfilters);
     avfilter_graph_free(&graph);
 #endif
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
     av_frame_free(&frame);
     return 0;
 }
@@ -1753,7 +1753,7 @@ static int subtitle_thread(void *arg)
             is->subpq_size++;
             SDL_UnlockMutex(is->subpq_mutex);
         }
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     }
     return 0;
 }
@@ -1984,7 +1984,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
 
         /* free the current packet */
         if (pkt->data)
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
         memset(pkt_temp, 0, sizeof(*pkt_temp));
 
         if (is->paused || is->audioq.abort_request) {
@@ -2181,7 +2181,7 @@ static void stream_component_close(VideoState *is, int stream_index)
         SDL_CloseAudio();
 
         packet_queue_end(&is->audioq);
-        av_free_packet(&is->audio_pkt);
+        av_packet_unref(&is->audio_pkt);
         if (is->avr)
             avresample_free(&is->avr);
         av_freep(&is->audio_buf1);
@@ -2490,7 +2490,7 @@ static int decode_thread(void *arg)
         } else if (pkt->stream_index == is->subtitle_stream && pkt_in_play_range) {
             packet_queue_put(&is->subtitleq, pkt);
         } else {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
         }
     }
     /* wait until the end */
