@@ -49,12 +49,12 @@ enum {
     CFA_VRIV6     = 2,  /**< BGGR/GRBG */
     CFA_BAYER     = 3,  /**< GB/RG */
     CFA_BAYERFLIP = 4,  /**< RG/GB */
-
-    CFA_TLGRAY    = 0x80000000,
-    CFA_TRGRAY    = 0x40000000,
-    CFA_BLGRAY    = 0x20000000,
-    CFA_BRGRAY    = 0x10000000
 };
+
+#define CFA_TLGRAY  0x80000000U
+#define CFA_TRGRAY  0x40000000U
+#define CFA_BLGRAY  0x20000000U
+#define CFA_BRGRAY  0x10000000U
 
 static int cine_read_probe(AVProbeData *p)
 {

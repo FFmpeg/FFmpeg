@@ -45,7 +45,7 @@
  *            do not specify a particular ordering of those channels."
  */
 enum MovChannelLayoutTag {
-    MOV_CH_LAYOUT_UNKNOWN               = 0xFFFF0000,
+#define MOV_CH_LAYOUT_UNKNOWN             0xFFFF0000
     MOV_CH_LAYOUT_USE_DESCRIPTIONS      = (  0 << 16) | 0,
     MOV_CH_LAYOUT_USE_BITMAP            = (  1 << 16) | 0,
     MOV_CH_LAYOUT_DISCRETEINORDER       = (147 << 16) | 0,
