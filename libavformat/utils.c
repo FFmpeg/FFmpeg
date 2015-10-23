@@ -209,12 +209,23 @@ static int init_input(AVFormatContext *s, const char *filename,
                                  s, 0, s->probesize);
 }
 
-static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
-                               AVPacketList **plast_pktl)
+static int add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
+                         AVPacketList **plast_pktl, int ref)
 {
     AVPacketList *pktl = av_mallocz(sizeof(AVPacketList));
+    int ret;
+
     if (!pktl)
-        return NULL;
+        return AVERROR(ENOMEM);
+
+    if (ref) {
+        if ((ret = av_packet_ref(&pktl->pkt, pkt)) < 0) {
+            av_free(pktl);
+            return ret;
+        }
+    } else {
+        pktl->pkt = *pkt;
+    }
 
     if (*packet_buffer)
         (*plast_pktl)->next = pktl;
@@ -223,23 +234,21 @@ static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
 
     /* Add the packet in the buffered packet list. */
     *plast_pktl = pktl;
-    pktl->pkt   = *pkt;
-    return &pktl->pkt;
+    return 0;
 }
 
 static int queue_attached_pictures(AVFormatContext *s)
 {
-    int i;
+    int i, ret;
     for (i = 0; i < s->nb_streams; i++)
         if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
             s->streams[i]->discard < AVDISCARD_ALL) {
-            AVPacket copy = s->streams[i]->attached_pic;
-            copy.buf = av_buffer_ref(copy.buf);
-            if (!copy.buf)
-                return AVERROR(ENOMEM);
 
-            add_to_pktbuf(&s->internal->raw_packet_buffer, &copy,
-                          &s->internal->raw_packet_buffer_end);
+            ret = add_to_pktbuf(&s->internal->raw_packet_buffer,
+                                &s->streams[i]->attached_pic,
+                                &s->internal->raw_packet_buffer_end, 1);
+            if (ret < 0)
+                return ret;
         }
     return 0;
 }
@@ -451,8 +460,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
                       !st->probe_packets))
             return ret;
 
-        add_to_pktbuf(&s->internal->raw_packet_buffer, pkt,
-                      &s->internal->raw_packet_buffer_end);
+        err = add_to_pktbuf(&s->internal->raw_packet_buffer, pkt,
+                            &s->internal->raw_packet_buffer_end, 0);
+        if (err)
+            return err;
         s->internal->raw_packet_buffer_remaining_size -= pkt->size;
 
         if ((err = probe_codec(s, st, pkt)) < 0)
@@ -837,16 +848,10 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
                                0, 0, AVINDEX_KEYFRAME);
         }
 
-        if (out_pkt.data == pkt->data && out_pkt.size == pkt->size) {
-            out_pkt.buf = pkt->buf;
-            pkt->buf    = NULL;
-        }
-        if ((ret = av_dup_packet(&out_pkt)) < 0)
-            goto fail;
-
-        if (!add_to_pktbuf(&s->internal->parse_queue, &out_pkt, &s->internal->parse_queue_end)) {
+        if ((ret = add_to_pktbuf(&s->internal->parse_queue, &out_pkt,
+                                 &s->internal->parse_queue_end,
+                                 1))) {
             av_packet_unref(&out_pkt);
-            ret = AVERROR(ENOMEM);
             goto fail;
         }
     }
@@ -1022,9 +1027,10 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                 return ret;
         }
 
-        if (av_dup_packet(add_to_pktbuf(&s->internal->packet_buffer, pkt,
-                                        &s->internal->packet_buffer_end)) < 0)
-            return AVERROR(ENOMEM);
+        ret = add_to_pktbuf(&s->internal->packet_buffer, pkt,
+                            &s->internal->packet_buffer_end, 1);
+        if (ret < 0)
+            return ret;
     }
 }
 
@@ -2181,12 +2187,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             break;
         }
 
-        if (ic->flags & AVFMT_FLAG_NOBUFFER) {
-            pkt = &pkt1;
-        } else {
-            pkt = add_to_pktbuf(&ic->internal->packet_buffer, &pkt1,
-                                &ic->internal->packet_buffer_end);
-            if ((ret = av_dup_packet(pkt)) < 0)
+        pkt = &pkt1;
+
+        if (!(ic->flags & AVFMT_FLAG_NOBUFFER)) {
+            ret = add_to_pktbuf(&ic->internal->packet_buffer, pkt,
+                                &ic->internal->packet_buffer_end, 0);
+            if (ret < 0)
                 goto find_stream_info_err;
         }
 
