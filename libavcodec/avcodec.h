@@ -3476,12 +3476,15 @@ int av_grow_packet(AVPacket *pkt, int grow_by);
  */
 int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size);
 
+#if FF_API_AVPACKET_OLD_API
 /**
  * @warning This is a hack - the packet memory allocation stuff is broken. The
  * packet is allocated if it was not really allocated.
+ *
+ * @deprecated Use av_packet_ref
  */
+attribute_deprecated
 int av_dup_packet(AVPacket *pkt);
-#if FF_API_AVPACKET_OLD_API
 /**
  * Free a packet.
  *

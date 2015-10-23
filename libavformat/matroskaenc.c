@@ -1608,12 +1608,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     // buffer an audio packet to ensure the packet containing the video
     // keyframe's timecode is contained in the same cluster for WebM
     if (codec_type == AVMEDIA_TYPE_AUDIO) {
-        mkv->cur_audio_pkt = *pkt;
-        if (pkt->buf) {
-            mkv->cur_audio_pkt.buf = av_buffer_ref(pkt->buf);
-            ret = mkv->cur_audio_pkt.buf ? 0 : AVERROR(ENOMEM);
-        } else
-            ret = av_dup_packet(&mkv->cur_audio_pkt);
+        ret = av_packet_ref(&mkv->cur_audio_pkt, pkt);
     } else
         ret = mkv_write_packet_internal(s, pkt);
     return ret;
