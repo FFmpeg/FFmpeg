@@ -1087,7 +1087,7 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
             continue;
 
         dummy.code = code;
-        glyph = av_tree_find(s->glyphs, &dummy, (void *)glyph_cmp, NULL);
+        glyph = av_tree_find(s->glyphs, &dummy, glyph_cmp, NULL);
 
         bitmap = borderw ? glyph->border_bitmap : glyph->bitmap;
 
