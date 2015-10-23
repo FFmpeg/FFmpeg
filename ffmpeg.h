@@ -64,6 +64,7 @@ enum HWAccelID {
     HWACCEL_DXVA2,
     HWACCEL_VDA,
     HWACCEL_VIDEOTOOLBOX,
+    HWACCEL_QSV,
 };
 
 typedef struct HWAccel {
@@ -273,7 +274,7 @@ typedef struct InputStream {
     int           wrap_correction_done;
 
     int64_t filter_in_rescale_delta_last;
-    
+
     int64_t min_pts; /* pts with the smallest value in a current stream */
     int64_t max_pts; /* pts with the higher value in a current stream */
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
@@ -352,7 +353,7 @@ typedef struct InputFile {
                              at the moment when looping happens */
     AVRational time_base; /* time base of the duration */
     int64_t input_ts_offset;
-    
+
     int64_t ts_offset;
     int64_t last_ts;
     int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
@@ -381,6 +382,8 @@ enum forced_keyframes_const {
     FKF_T,
     FKF_NB
 };
+
+#define ABORT_ON_FLAG_EMPTY_OUTPUT (1 <<  0)
 
 extern const char *const forced_keyframes_const_names[];
 
@@ -413,6 +416,8 @@ typedef struct OutputStream {
     AVFrame *last_frame;
     int last_droped;
     int last_nb0_frames[3];
+
+    void  *hwaccel_ctx;
 
     /* video only */
     AVRational frame_rate;
@@ -524,6 +529,7 @@ extern int start_at_zero;
 extern int copy_tb;
 extern int debug_ts;
 extern int exit_on_error;
+extern int abort_on_flags;
 extern int print_stats;
 extern int qp_hist;
 extern int stdin_interaction;
@@ -567,5 +573,7 @@ int vdpau_init(AVCodecContext *s);
 int dxva2_init(AVCodecContext *s);
 int vda_init(AVCodecContext *s);
 int videotoolbox_init(AVCodecContext *s);
+int qsv_init(AVCodecContext *s);
+int qsv_transcode_init(OutputStream *ost);
 
 #endif /* FFMPEG_H */

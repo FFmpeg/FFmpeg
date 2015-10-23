@@ -674,6 +674,16 @@ Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 
 @item dxva2
 Use DXVA2 (DirectX Video Acceleration) hardware acceleration.
+
+@item qsv
+Use the Intel QuickSync Video acceleration for video transcoding.
+
+Unlike most other values, this option does not enable accelerated decoding (that
+is used automatically whenever a qsv decoder is selected), but accelerated
+transcoding, without copying the frames into the system memory.
+
+For it to work, both the decoder and the encoder must support QSV acceleration
+and no filters must be used.
 @end table
 
 This option has no effect if the selected hwaccel is not available or not
@@ -700,6 +710,20 @@ is not specified, the value of the @var{DISPLAY} environment variable is used
 @item dxva2
 For DXVA2, this option should contain the number of the display adapter to use.
 If this option is not specified, the default adapter is used.
+
+@item qsv
+For QSV, this option corresponds to the valus of MFX_IMPL_* . Allowed values
+are:
+@table @option
+@item auto
+@item sw
+@item hw
+@item auto_any
+@item hw_any
+@item hw2
+@item hw3
+@item hw4
+@end table
 @end table
 
 @item -hwaccels
@@ -1234,6 +1258,14 @@ Discard all frames excepts keyframes.
 
 @item all
 Discard all frames.
+@end table
+
+@item -abort_on @var{flags} (@emph{global})
+Stop and abort on various conditions. The following flags are available:
+
+@table @option
+@item empty_output
+No packets were passed to the muxer, the output is empty.
 @end table
 
 @item -xerror (@emph{global})

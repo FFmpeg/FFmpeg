@@ -98,7 +98,7 @@ static int mpjpeg_read_probe(AVProbeData *p)
 
     pb = avio_alloc_context(p->buf, p->buf_size, 0, NULL, NULL, NULL, NULL);
     if (!pb)
-        return AVERROR(ENOMEM);
+        return 0;
 
     ret = (parse_multipart_header(pb, NULL)>0)?AVPROBE_SCORE_MAX:0;
 

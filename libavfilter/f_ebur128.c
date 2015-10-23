@@ -558,9 +558,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             ebur128->true_peaks_per_frame[ch] = 0.0;
         for (idx_insample = 0; idx_insample < ret; idx_insample++) {
             for (ch = 0; ch < nb_channels; ch++) {
-                ebur128->true_peaks[ch] = FFMAX(ebur128->true_peaks[ch], FFABS(*swr_samples));
+                ebur128->true_peaks[ch] = FFMAX(ebur128->true_peaks[ch], fabs(*swr_samples));
                 ebur128->true_peaks_per_frame[ch] = FFMAX(ebur128->true_peaks_per_frame[ch],
-                                                          FFABS(*swr_samples));
+                                                          fabs(*swr_samples));
                 swr_samples++;
             }
         }
@@ -586,7 +586,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             double bin;
 
             if (ebur128->peak_mode & PEAK_MODE_SAMPLES_PEAKS)
-                ebur128->sample_peaks[ch] = FFMAX(ebur128->sample_peaks[ch], FFABS(*samples));
+                ebur128->sample_peaks[ch] = FFMAX(ebur128->sample_peaks[ch], fabs(*samples));
 
             ebur128->x[ch * 3] = *samples++; // set X[i]
 

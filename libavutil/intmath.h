@@ -131,7 +131,7 @@ static av_always_inline av_const int ff_ctzll_c(long long v)
         63, 52, 6, 26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
         51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12
     };
-    return debruijn_ctz64[(uint64_t)((v & -v) * 0x022FDD63CC95386D) >> 58];
+    return debruijn_ctz64[(uint64_t)((v & -v) * 0x022FDD63CC95386DU) >> 58];
 }
 #endif
 

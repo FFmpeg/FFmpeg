@@ -374,7 +374,7 @@ int main(int argc, char **argv){
                 sum_aa+= a*a;
                 sum_bb+= b*b;
                 sum_ab+= a*b;
-                maxdiff= FFMAX(maxdiff, FFABS(a-b));
+                maxdiff= FFMAX(maxdiff, fabs(a-b));
             }
             sse= sum_aa + sum_bb - 2*sum_ab;
             if(sse < 0 && sse > -0.00001) sse=0; //fix rounding error
@@ -404,7 +404,7 @@ int main(int argc, char **argv){
                     sum_aa+= a*a;
                     sum_bb+= b*b;
                     sum_ab+= a*b;
-                    maxdiff= FFMAX(maxdiff, FFABS(a-b));
+                    maxdiff= FFMAX(maxdiff, fabs(a-b));
                 }
                 sse= sum_aa + sum_bb - 2*sum_ab;
                 if(sse < 0 && sse > -0.00001) sse=0; //fix rounding error

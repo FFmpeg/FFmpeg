@@ -3012,6 +3012,11 @@ static int transcode_init(void)
 
             set_encoder_id(output_files[ost->file_index], ost);
 
+#if CONFIG_LIBMFX
+            if (qsv_transcode_init(ost))
+                exit_program(1);
+#endif
+
             if (!ost->filter &&
                 (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
                  enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO)) {
@@ -4049,6 +4054,7 @@ static int transcode(void)
     OutputStream *ost;
     InputStream *ist;
     int64_t timer_start;
+    int64_t total_packets_written = 0;
 
     ret = transcode_init();
     if (ret < 0)
@@ -4129,6 +4135,12 @@ static int transcode(void)
         if (ost->encoding_needed) {
             av_freep(&ost->enc_ctx->stats_in);
         }
+        total_packets_written += ost->packets_written;
+    }
+
+    if (!total_packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT)) {
+        av_log(NULL, AV_LOG_FATAL, "Empty output\n");
+        exit_program(1);
     }
 
     /* close each decoder */

@@ -23,6 +23,8 @@ version <next>:
 - genh, vag, ads, msf & svag demuxer
 - zscale filter
 - wve demuxer
+- zero-copy Intel QSV transcoding in ffmpeg
+- shuffleframes filter
 
 
 version 2.8:

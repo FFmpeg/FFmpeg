@@ -319,13 +319,6 @@ cglobal vc1_h_loop_filter8, 3,5,8
     RET
 
 %if HAVE_MMX_INLINE
-%macro NORMALIZE_MMX 1 ; shift
-    paddw m3, m7 ; +bias-r
-    paddw m4, m7 ; +bias-r
-    psraw m3, %1
-    psraw m4, %1
-%endmacro
-
 ; Compute the rounder 32-r or 8-r and unpacks it to m7
 %macro LOAD_ROUNDER_MMX 1 ; round
     movd      m7, %1

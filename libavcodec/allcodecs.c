@@ -97,6 +97,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(MPEG2_XVMC,        mpeg2_xvmc);
     REGISTER_HWACCEL(MPEG2_D3D11VA,     mpeg2_d3d11va);
     REGISTER_HWACCEL(MPEG2_DXVA2,       mpeg2_dxva2);
+    REGISTER_HWACCEL(MPEG2_MMAL,        mpeg2_mmal);
     REGISTER_HWACCEL(MPEG2_QSV,         mpeg2_qsv);
     REGISTER_HWACCEL(MPEG2_VAAPI,       mpeg2_vaapi);
     REGISTER_HWACCEL(MPEG2_VDPAU,       mpeg2_vdpau);
@@ -238,6 +239,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MPEG_VDPAU,        mpeg_vdpau);
     REGISTER_DECODER(MPEG1_VDPAU,       mpeg1_vdpau);
 #endif
+    REGISTER_DECODER(MPEG2_MMAL,        mpeg2_mmal);
     REGISTER_DECODER(MPEG2_CRYSTALHD,   mpeg2_crystalhd);
     REGISTER_DECODER(MPEG2_QSV,         mpeg2_qsv);
     REGISTER_DECODER(MSA1,              msa1);

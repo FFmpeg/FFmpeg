@@ -26,6 +26,8 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -202,15 +204,16 @@ static int roq_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     RoqContext *s = avctx->priv_data;
-    int copy= !s->current_frame->data[0];
+    int copy= !s->current_frame->data[0] && s->last_frame->data[0];
     int ret;
 
     if ((ret = ff_reget_buffer(avctx, s->current_frame)) < 0)
         return ret;
 
-    if(copy)
-        av_picture_copy((AVPicture*)s->current_frame, (AVPicture*)s->last_frame,
-                        avctx->pix_fmt, avctx->width, avctx->height);
+    if(copy) {
+        if ((ret = av_frame_copy(s->current_frame, s->last_frame)) < 0)
+            return ret;
+    }
 
     bytestream2_init(&s->gb, buf, buf_size);
     roqvideo_decode_frame(s);
