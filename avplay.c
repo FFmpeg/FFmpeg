@@ -320,10 +320,6 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
 {
     AVPacketList *pkt1;
 
-    /* duplicate the packet */
-    if (pkt != &flush_pkt && av_dup_packet(pkt) < 0)
-        return -1;
-
     pkt1 = av_malloc(sizeof(AVPacketList));
     if (!pkt1)
         return -1;

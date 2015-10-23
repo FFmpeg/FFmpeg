@@ -2130,7 +2130,6 @@ static void *input_thread(void *arg)
         while (!av_fifo_space(f->fifo))
             pthread_cond_wait(&f->fifo_cond, &f->fifo_lock);
 
-        av_dup_packet(&pkt);
         av_fifo_generic_write(f->fifo, &pkt, sizeof(pkt), NULL);
 
         pthread_mutex_unlock(&f->fifo_lock);
