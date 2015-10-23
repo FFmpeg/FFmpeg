@@ -584,6 +584,9 @@
     <ClCompile Include="..\libavfilter\vf_showpalette.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_shuffleframes.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_shuffleplanes.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
