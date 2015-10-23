@@ -87,7 +87,7 @@ static int msf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_msf_demuxer = {
     .name           = "msf",
-    .long_name      = NULL_IF_CONFIG_SMALL("MSF"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony PS3 MSF"),
     .read_probe     = msf_probe,
     .read_header    = msf_read_header,
     .read_packet    = msf_read_packet,
