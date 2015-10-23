@@ -101,7 +101,7 @@ static void OP ## rv40_qpel ##SIZE ##_mc ##PH ##PV ##OPT(uint8_t *dst,  \
             ff_ ##OP ##rv40_qpel_h ## OPT(dst + i, stride, src + i,     \
                                           stride, SIZE, HCOFF(PH));     \
     }                                                                   \
-};
+}
 
 /** Declare functions for sizes 8 and 16 and given operations
  *  and qpel position. */
