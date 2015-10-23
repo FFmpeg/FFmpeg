@@ -1007,6 +1007,12 @@ static int setup_hwaccel(AVCodecContext *avctx,
     AVHWAccel *hwa = find_hwaccel(avctx->codec_id, fmt);
     int ret        = 0;
 
+    if (avctx->active_thread_type & FF_THREAD_FRAME) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Hardware accelerated decoding with frame threading is not supported.\n");
+        return AVERROR(EINVAL);
+    }
+
     if (!hwa) {
         av_log(avctx, AV_LOG_ERROR,
                "Could not find an AVHWAccel for the pixel format: %s",
