@@ -347,10 +347,9 @@ static int request_frame(AVFilterLink *outlink)
             if (cat->in[str].eof)
                 continue;
             ret = ff_request_frame(ctx->inputs[str]);
-            if (ret == AVERROR_EOF)
-                close_input(ctx, str);
-            else if (ret < 0)
+            if (ret != AVERROR_EOF)
                 return ret;
+            close_input(ctx, str);
         }
         ret = flush_segment(ctx);
         if (ret < 0)
