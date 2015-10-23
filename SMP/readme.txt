@@ -85,9 +85,6 @@ midl /win32 /h DeckLinkAPI.h DeckLinkAPI.idl
         d) Copy the newly created "DeckLinkAPI.h" and "DeckLinkAPI_i.c" files to OutputDir/include/*.
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
-    Note: There is a different OutputDir for 32/64bit configurations. Lib's and DLL's should be placed in the correct directory.
-	Any header files will need to be placed in both the 32 and the 64bit OutputDir's.
-	By default the 32bit OutputDir is "..\..\..\msvc32\" and 64bit is "..\..\..\msvc64\" when using the msvc compiler.
 	
 Any dependencies supplied by ShiftMediaProject should be downloaded next to the FFmpeg folder as they will use the same OutputDir
 location. Projects to build each dependency can be found in the respective repository ./SMP directories.
