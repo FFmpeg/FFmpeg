@@ -336,6 +336,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (XA,               xa);
     REGISTER_DEMUXER (XBIN,             xbin);
     REGISTER_DEMUXER (XMV,              xmv);
+    REGISTER_DEMUXER (XVAG,             xvag);
     REGISTER_DEMUXER (XWMA,             xwma);
     REGISTER_DEMUXER (YOP,              yop);
     REGISTER_MUXDEMUX(YUV4MPEGPIPE,     yuv4mpegpipe);
