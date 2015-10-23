@@ -589,8 +589,10 @@ static void show_packets(AVFormatContext *fmt_ctx)
 
     av_init_packet(&pkt);
     probe_array_header("packets", 0);
-    while (!av_read_frame(fmt_ctx, &pkt))
+    while (!av_read_frame(fmt_ctx, &pkt)) {
         show_packet(fmt_ctx, &pkt);
+        av_packet_unref(&pkt);
+    }
     probe_array_footer("packets", 0);
 }
 
