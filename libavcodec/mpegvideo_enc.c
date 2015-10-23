@@ -997,9 +997,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                 pts = display_picture_number;
             }
         }
-    }
 
-    if (pic_arg) {
         if (!pic_arg->buf[0] ||
             pic_arg->linesize[0] != s->linesize ||
             pic_arg->linesize[1] != s->uvlinesize ||
