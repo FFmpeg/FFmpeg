@@ -70,7 +70,7 @@ static int svag_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_svag_demuxer = {
     .name           = "svag",
-    .long_name      = NULL_IF_CONFIG_SMALL("SVAG"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Konami PS2 SVAG"),
     .read_probe     = svag_probe,
     .read_header    = svag_read_header,
     .read_packet    = svag_read_packet,
