@@ -204,6 +204,14 @@ Currently, the only conversion is adding the h264_mp4toannexb bitstream
 filter to H.264 streams in MP4 format. This is necessary in particular if
 there are resolution changes.
 
+@item segment_time_metadata
+If set to 1, every packet will contain the @var{lavf.concat.start_time} and the
+@var{lavf.concat.duration} packet metadata values which are the start_time and
+the duration of the respective file segments in the concatenated output
+expressed in microseconds. The duration metadata is only set if it is known
+based on the concat file.
+The default is 0.
+
 @end table
 
 @section flv
