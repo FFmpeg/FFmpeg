@@ -347,7 +347,6 @@ Filters:
   af_aphaser.c                          Paul B Mahol
   af_aresample.c                        Michael Niedermayer
   af_astats.c                           Paul B Mahol
-  af_astreamsync.c                      Nicolas George
   af_atempo.c                           Pavel Koshevoy
   af_biquads.c                          Paul B Mahol
   af_chorus.c                           Paul B Mahol

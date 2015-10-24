@@ -1170,42 +1170,6 @@ Number of occasions (not the number of samples) that the signal attained either
 Overall bit depth of audio. Number of bits used for each sample.
 @end table
 
-@section astreamsync
-
-Forward two audio streams and control the order the buffers are forwarded.
-
-The filter accepts the following options:
-
-@table @option
-@item expr, e
-Set the expression deciding which stream should be
-forwarded next: if the result is negative, the first stream is forwarded; if
-the result is positive or zero, the second stream is forwarded. It can use
-the following variables:
-
-@table @var
-@item b1 b2
-number of buffers forwarded so far on each stream
-@item s1 s2
-number of samples forwarded so far on each stream
-@item t1 t2
-current timestamp of each stream
-@end table
-
-The default value is @code{t1-t2}, which means to always forward the stream
-that has a smaller timestamp.
-@end table
-
-@subsection Examples
-
-Stress-test @code{amerge} by randomly sending buffers on the wrong
-input, while avoiding too much of a desynchronization:
-@example
-amovie=file.ogg [a] ; amovie=file.mp3 [b] ;
-[a] [b] astreamsync=(2*random(1))-1+tanh(5*(t1-t2)) [a2] [b2] ;
-[a2] [b2] amerge
-@end example
-
 @section asyncts
 
 Synchronize audio data with timestamps by squeezing/stretching it and/or
