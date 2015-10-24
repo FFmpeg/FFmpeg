@@ -288,7 +288,7 @@ typedef struct Glyph {
     int bitmap_top;
 } Glyph;
 
-static int glyph_cmp(void *key, const void *b)
+static int glyph_cmp(const void *key, const void *b)
 {
     const Glyph *a = key, *bb = b;
     int64_t diff = (int64_t)a->code - (int64_t)bb->code;
