@@ -26,6 +26,7 @@ version <next>:
 - zero-copy Intel QSV transcoding in ffmpeg
 - shuffleframes filter
 - SDX2 DPCM decoder
+- vibrato filter
 
 
 version 2.8:
