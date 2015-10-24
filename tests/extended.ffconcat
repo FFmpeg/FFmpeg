@@ -1,0 +1,114 @@
+ffconcat version 1.0
+
+file      %SRCFILE%
+
+file      %SRCFILE%
+duration  1
+file_packet_metadata dummy=1
+
+file      %SRCFILE%
+inpoint   00:00.00
+outpoint  00:00.04
+
+file      %SRCFILE%
+inpoint   00:00.04
+outpoint  00:00.08
+
+file      %SRCFILE%
+inpoint   00:00.08
+outpoint  00:00.12
+
+file      %SRCFILE%
+inpoint   00:00.12
+outpoint  00:00.16
+
+file      %SRCFILE%
+inpoint   00:00.16
+outpoint  00:00.20
+
+file      %SRCFILE%
+inpoint   00:00.20
+outpoint  00:00.24
+
+file      %SRCFILE%
+inpoint   00:00.24
+outpoint  00:00.28
+
+file      %SRCFILE%
+inpoint   00:00.28
+outpoint  00:00.32
+
+file      %SRCFILE%
+inpoint   00:00.32
+outpoint  00:00.36
+
+file      %SRCFILE%
+inpoint   00:00.36
+outpoint  00:00.40
+
+file      %SRCFILE%
+inpoint   00:00.40
+outpoint  00:00.44
+
+file      %SRCFILE%
+inpoint   00:00.44
+outpoint  00:00.48
+
+file      %SRCFILE%
+inpoint   00:00.48
+outpoint  00:00.52
+
+file      %SRCFILE%
+inpoint   00:00.52
+outpoint  00:00.56
+
+file      %SRCFILE%
+inpoint   00:00.56
+outpoint  00:00.60
+
+file      %SRCFILE%
+inpoint   00:00.60
+outpoint  00:00.64
+
+file      %SRCFILE%
+inpoint   00:00.64
+outpoint  00:00.68
+
+file      %SRCFILE%
+inpoint   00:00.68
+outpoint  00:00.72
+
+file      %SRCFILE%
+inpoint   00:00.72
+outpoint  00:00.76
+
+file      %SRCFILE%
+inpoint   00:00.76
+outpoint  00:00.80
+
+file      %SRCFILE%
+inpoint   00:00.80
+outpoint  00:00.84
+
+file      %SRCFILE%
+inpoint   00:00.84
+outpoint  00:00.88
+
+file      %SRCFILE%
+inpoint   00:00.88
+outpoint  00:00.92
+
+file      %SRCFILE%
+inpoint   00:00.92
+outpoint  00:00.96
+
+file      %SRCFILE%
+inpoint   00:00.96
+outpoint  00:01.00
+
+file      %SRCFILE%
+outpoint  00:00.40
+
+file      %SRCFILE%
+inpoint   00:00.40
+

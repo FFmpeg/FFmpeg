@@ -249,6 +249,26 @@ gapless(){
     do_md5sum $decfile3
 }
 
+concat(){
+    template=$1
+    sample=$(target_path $2)
+    mode=$3
+    extra_args=$4
+
+    concatfile="${outdir}/${test}.ffconcat"
+    packetfile="${outdir}/${test}.ffprobe"
+    cleanfiles="$concatfile $packetfile"
+
+    awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
+
+    if [ "$mode" = "md5" ]; then
+      run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile > $packetfile
+      do_md5sum $packetfile
+    else
+      run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile
+    fi
+}
+
 mkdir -p "$outdir"
 
 # Disable globbing: command arguments may contain globbing characters and
