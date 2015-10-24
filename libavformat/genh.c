@@ -41,7 +41,7 @@ static int genh_read_header(AVFormatContext *s)
     unsigned start_offset, header_size, codec, coef_type, coef[2];
     GENHDemuxContext *c = s->priv_data;
     unsigned coef_splitted[2];
-    int align, ch;
+    int align, ch, ret;
     AVStream *st;
 
     avio_skip(s->pb, 4);
@@ -84,6 +84,11 @@ static int genh_read_header(AVFormatContext *s)
     case  5: st->codec->codec_id = st->codec->block_align > 0 ?
                                    AV_CODEC_ID_PCM_S8_PLANAR :
                                    AV_CODEC_ID_PCM_S8;           break;
+    case  7: ret = ff_alloc_extradata(st->codec, 2);
+             if (ret < 0)
+                 return ret;
+             AV_WL16(st->codec->extradata, 3);
+             st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;     break;
     case 12: st->codec->codec_id = AV_CODEC_ID_ADPCM_THP;        break;
     case 13: st->codec->codec_id = AV_CODEC_ID_PCM_U8;           break;
     case 17: st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_QT;     break;

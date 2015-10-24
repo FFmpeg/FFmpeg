@@ -81,7 +81,7 @@ static int ads_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_ads_demuxer = {
     .name           = "ads",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony ADS"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony PS2 ADS"),
     .read_probe     = ads_probe,
     .read_header    = ads_read_header,
     .read_packet    = ads_read_packet,

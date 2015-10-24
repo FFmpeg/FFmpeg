@@ -1989,7 +1989,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_ADPCM_PSX,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "adpcm_psx",
-        .long_name = NULL_IF_CONFIG_SMALL("ADPCM PSX"),
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM Playstation"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
 
