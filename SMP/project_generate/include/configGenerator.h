@@ -17,22 +17,13 @@
  * License along with ShiftMediaProject; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- 
+
 #ifndef _CONFIGGENERATOR_H_
 #define _CONFIGGENERATOR_H_
 
-#include <string>
-#include <iostream>
-#include <fstream>
+#include "helperFunctions.h"
 #include <map>
 #include <vector>
-
-using namespace std;
-#if defined(__x86_64) || defined(_M_X64)
-typedef unsigned __int64 uint;
-#else
-typedef unsigned int uint;
-#endif
 
 class configGenerator
 {

@@ -21,15 +21,10 @@
 #ifndef _PROJECTGENERATOR_H_
 #define _PROJECTGENERATOR_H_
 
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <map>
-#include <vector>
-
-#include <Windows.h>
-
 #include "configGenerator.h"
+
+#include <fstream>
+#include <set>
 
 class projectGenerator
 {
@@ -58,6 +53,8 @@ public:
 private:
 
     bool outputProject( );
+
+    bool outputProgramProject(const string& sProjectName, const string& sDestinationFile, const string& sDestinationFilterFile);
 
     bool outputSolution();
 
@@ -99,7 +96,7 @@ private:
 
     bool passMake( );
 
-    bool passToolchain( string & sToolchain );
+    bool passProgramMake(const string& sProjectName);
 
     static bool findFile( const string & sFileName, string & sRetFileName );
 
@@ -115,19 +112,33 @@ private:
 
     void buildInterDependencies( const string & sProjectName, StaticList & vLibs );
 
-    void buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs, StaticList & vIncludeDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs );
+    void buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs );
+
+    void buildDependencyDirs(const string & sProjectName, StaticList & vIncludeDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs);
 
     void buildProjectDependencies( const string & sProjectName, map<string,bool> & mProjectDeps );
 
-    void buildProgramIncludes( const string & sProject, StaticList & vCIncludes, StaticList & vHIncludes, StaticList & vLibs, StaticList & vIncDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs );
+    void buildProjectGUIDs( map<string, string> & mKeys );
 
-    void buildProjectGUIDs( map<string, string> & mLibKeys, map<string, string> & mProgramKeys );
+    bool checkProjectFiles();
 
-    static bool copyFile( const string & sSourceFile, const string & sDestinationFile );
+    void outputTemplateTags(const string& sProjectName, string& sProjectTemplate, string& sFilterTemplate);
 
-    static void deleteFile( const string & sDestinationFile );
+    void outputSourceFileType(StaticList& vFileList, const string& sType, const string& sFilterType, string & sProjectTemplate, string & sFilterTemplate, StaticList& vFoundObjects, set<string>& vFoundFilters, bool bCheckExisting);
 
-    static void deleteFolder( const string & sDestinationFolder );
+    void outputSourceFiles(const string& sProjectName, string& sProjectTemplate, string& sFilterTemplate);
+
+    bool outputProjectExports(const string& sProjectName, const StaticList& vIncludeDirs);
+
+    void outputBuildEvents(const string& sProjectName, string & sProjectTemplate);
+
+    void outputIncludeDirs(const StaticList& vIncludeDirs, string & sProjectTemplate);
+
+    void outputLibDirs(const StaticList& vLib32Dirs, const StaticList& vLib64Dirs, string & sProjectTemplate);
+
+    void outputYASMTools(string & sProjectTemplate);
+
+    bool outputDependencyLibs(const string& sProjectName, string & sProjectTemplate, bool bProgram=false);
 };
 
 #endif

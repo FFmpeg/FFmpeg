@@ -21,6 +21,9 @@
     <ClInclude Include="include\projectGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\helperFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\configGenerator_build.cpp">
@@ -36,6 +39,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\project_generate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\helperFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

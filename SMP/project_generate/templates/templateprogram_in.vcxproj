@@ -179,23 +179,6 @@
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -233,23 +216,6 @@ echo            These errors are the result of dead code elimination not being p
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -288,23 +254,6 @@ echo            These errors are the result of dead code elimination not being p
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -342,23 +291,6 @@ echo            These errors are the result of dead code elimination not being p
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -403,23 +335,6 @@ echo            These errors are the result of dead code elimination not being p
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -458,23 +373,6 @@ del ..\libavutil\ffversion.h
       <ProgramDatabaseFile>$(OutDir)\bin\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
     <ClCompile>
@@ -514,23 +412,6 @@ del ..\libavutil\ffversion.h
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
     <ClCompile>
@@ -569,23 +450,6 @@ del ..\libavutil\ffversion.h
       <ProgramDatabaseFile>$(OutDir)\bin\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PreBuildEvent>
-      <Command>if exist ..\config.h (
-del ..\config.h
-)
-if exist ..\version.h (
-del ..\version.h
-)
-if exist ..\config.asm (
-del ..\config.asm
-)
-if exist ..\libavutil\avconfig.h (
-del ..\libavutil\avconfig.h
-)
-if exist ..\libavutil\ffversion.h (
-del ..\libavutil\ffversion.h
-)</Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

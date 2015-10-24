@@ -21,6 +21,8 @@
 #include "configGenerator.h"
 #include "projectGenerator.h"
 
+#include <iostream>
+
 int main( int argc, char** argv )
 {
     cout << "Project generator..." << endl;

@@ -20,6 +20,9 @@
 
 #include "projectGenerator.h"
 
+#include <iostream>
+#include <Windows.h>
+
 void projectGenerator::buildInterDependenciesHelper( const StaticList & vConfigOptions, const StaticList & vAddDeps, StaticList & vLibs )
 {
     bool bFound = false;
@@ -47,20 +50,16 @@ void projectGenerator::buildInterDependenciesHelper( const StaticList & vConfigO
 void projectGenerator::buildInterDependencies( const string & sProjectName, StaticList & vLibs )
 {
     //Get the lib dependencies from the configure file
-    if( sProjectName.find( "lib" ) == 0 )
+    string sLibName = sProjectName.substr( 3 ) + "_deps";
+    vector<string> vLibDeps;
+    if( m_ConfigHelper.getConfigList( sLibName, vLibDeps, false ) )
     {
-        //get the dependency list from configure
-        string sLibName = sProjectName.substr( 3 ) + "_deps";
-        vector<string> vLibDeps;
-        if( m_ConfigHelper.getConfigList( sLibName, vLibDeps, false ) )
+        for( vector<string>::iterator itI = vLibDeps.begin( ); itI < vLibDeps.end( ); itI++ )
         {
-            for( vector<string>::iterator itI = vLibDeps.begin( ); itI < vLibDeps.end( ); itI++ )
+            string sSearchTag = "lib" + *itI;
+            if( find( vLibs.begin( ), vLibs.end( ), sSearchTag ) == vLibs.end( ) )
             {
-                string sSearchTag = "lib" + *itI;
-                if( find( vLibs.begin( ), vLibs.end( ), sSearchTag ) == vLibs.end( ) )
-                {
-                    vLibs.push_back( sSearchTag );
-                }
+                vLibs.push_back( sSearchTag );
             }
         }
     }
@@ -98,7 +97,7 @@ void projectGenerator::buildInterDependencies( const string & sProjectName, Stat
     }
 }
 
-void projectGenerator::buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs, StaticList & vIncludeDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs )
+void projectGenerator::buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs )
 {
     //Add any forced dependencies
     if( sProjectName.compare( "libavformat" ) == 0 )
@@ -126,13 +125,10 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 cout << "  Warning: Unknown dependency found (" << *vitLib << ")" << endl;
             }
-            else
+            else if( !mProjectDeps[*vitLib] )
             {
-                if( !mProjectDeps[*vitLib] )
-                {
-                    //This dependency is not valid for this project so skip it
-                    continue;
-                }
+                //This dependency is not valid for this project so skip it
+                continue;
             }
 
             string sLib;
@@ -230,90 +226,76 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
                     vLibs.push_back( sLib );
                 }
             }
+        }
+    }
+}
 
+void projectGenerator::buildDependencyDirs(const string & sProjectName, StaticList & vIncludeDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs)
+{
+    //Determine only those dependencies that are valid for current project
+    map<string, bool> mProjectDeps;
+    buildProjectDependencies(sProjectName, mProjectDeps);
+
+    //Loop through each known configuration option and add the required dependencies
+    for (map<string, bool>::iterator mitLib = mProjectDeps.begin(); mitLib != mProjectDeps.end(); mitLib++) {
+        //Check if enabled
+        if (mitLib->second && m_ConfigHelper.getConfigOption(mitLib->first)->m_sValue.compare("1") == 0) {
             //Add in the additional include directories
-            if( vitLib->compare("libopus") == 0 )
-            {
+            if (mitLib->first.compare("libopus") == 0) {
                 vIncludeDirs.push_back("$(OutDir)\\include\\opus");
-            }
-            else if( vitLib->compare("libfreetype") == 0 )
-            {
+            } else if (mitLib->first.compare("libfreetype") == 0) {
                 vIncludeDirs.push_back("$(OutDir)\\include\\freetype2");
-            }
-            else if( vitLib->compare( "libfribidi" ) == 0 )
-            {
-                vIncludeDirs.push_back( "$(OutDir)\\include\\fribidi" );
-            }
-            else if( vitLib->compare("sdl") == 0 )
-            {
+            } else if (mitLib->first.compare("libfribidi") == 0) {
+                vIncludeDirs.push_back("$(OutDir)\\include\\fribidi");
+            } else if (mitLib->first.compare("sdl") == 0) {
                 vIncludeDirs.push_back("$(OutDir)\\include\\SDL");
-            }
-            else if( vitLib->compare( "opengl" ) == 0 )
-            {
+            } else if (mitLib->first.compare("opengl") == 0) {
                 //Requires glext headers to be installed in include dir (does not require the libs)
-            }
-            else if( vitLib->compare( "opencl" ) == 0 )
-            {
+            } else if (mitLib->first.compare("opencl") == 0) {
                 //Need to check for the existence of environment variables
-                if( GetEnvironmentVariable( "AMDAPPSDKROOT", NULL, 0 ) )
-                {
-                    vIncludeDirs.push_back( "$(AMDAPPSDKROOT)\\include\\" );
-                    vLib32Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\Win32" );
-                    vLib64Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\x64" );
-                }
-                else if( GetEnvironmentVariable( "INTELOCLSDKROOT", NULL, 0 ) )
-                {
-                    vIncludeDirs.push_back( "$(INTELOCLSDKROOT)\\include\\" );
-                    vLib32Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x86" );
-                    vLib64Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x64" );
-                }
-                else if( GetEnvironmentVariable( "CUDA_PATH", NULL, 0 ) )
-                {
+                if (GetEnvironmentVariable("AMDAPPSDKROOT", NULL, 0)) {
+                    vIncludeDirs.push_back("$(AMDAPPSDKROOT)\\include\\");
+                    vLib32Dirs.push_back("$(AMDAPPSDKROOT)\\lib\\Win32");
+                    vLib64Dirs.push_back("$(AMDAPPSDKROOT)\\lib\\x64");
+                } else if (GetEnvironmentVariable("INTELOCLSDKROOT", NULL, 0)) {
+                    vIncludeDirs.push_back("$(INTELOCLSDKROOT)\\include\\");
+                    vLib32Dirs.push_back("$(INTELOCLSDKROOT)\\lib\\x86");
+                    vLib64Dirs.push_back("$(INTELOCLSDKROOT)\\lib\\x64");
+                } else if (GetEnvironmentVariable("CUDA_PATH", NULL, 0)) {
                     cout << "  Warning: NVIDIA OpenCl currently is only 1.1. OpenCl 1.2 is needed for FFMpeg support" << endl;
-                    vIncludeDirs.push_back( "$(CUDA_PATH)\\include\\" );
-                    vLib32Dirs.push_back( "$(CUDA_PATH)\\lib\\Win32" );
-                    vLib64Dirs.push_back( "$(CUDA_PATH)\\lib\\x64" );
-                }
-                else
-                {
+                    vIncludeDirs.push_back("$(CUDA_PATH)\\include\\");
+                    vLib32Dirs.push_back("$(CUDA_PATH)\\lib\\Win32");
+                    vLib64Dirs.push_back("$(CUDA_PATH)\\lib\\x64");
+                } else {
                     cout << "  Warning: Could not find an OpenCl SDK environment variable." << endl;
                     cout << "    Either an OpenCL SDK is not installed or the environment variables are missing." << endl;
                 }
-            }
-            else if( vitLib->compare( "openal" ) == 0 )
-            {
-                if( !GetEnvironmentVariable( "OPENAL_SDK", NULL, 0 ) )
-                {
+            } else if (mitLib->first.compare("openal") == 0) {
+                if (!GetEnvironmentVariable("OPENAL_SDK", NULL, 0)) {
                     cout << "  Warning: Could not find the OpenAl SDK environment variable." << endl;
                     cout << "    Either the OpenAL SDK is not installed or the environment variable is missing." << endl;
                     cout << "    Using the default environment variable of 'OPENAL_SDK'." << endl;
                 }
-                vIncludeDirs.push_back( "$(OPENAL_SDK)\\include\\" );
-                vLib32Dirs.push_back( "$(OPENAL_SDK)\\libs\\Win32" );
-                vLib64Dirs.push_back( "$(CUDA_PATH)\\lib\\Win64" );
-            }
-            else if( vitLib->compare( "nvenc" ) == 0 )
-            {
+                vIncludeDirs.push_back("$(OPENAL_SDK)\\include\\");
+                vLib32Dirs.push_back("$(OPENAL_SDK)\\libs\\Win32");
+                vLib64Dirs.push_back("$(CUDA_PATH)\\lib\\Win64");
+            } else if (mitLib->first.compare("nvenc") == 0) {
                 //Need to check for the existence of environment variables
-                if( !GetEnvironmentVariable( "CUDA_PATH", NULL, 0 ) )
-                {
+                if (!GetEnvironmentVariable("CUDA_PATH", NULL, 0)) {
                     cout << "  Warning: Could not find the CUDA SDK environment variable." << endl;
                     cout << "    Either the CUDA SDK is not installed or the environment variable is missing." << endl;
                     cout << "    NVENC requires CUDA to be installed with NVENC headers made available in the CUDA SDK include path." << endl;
                 }
-                vIncludeDirs.push_back( "$(CUDA_PATH)\\include\\" );
-            }
-            else if( vitLib->compare( "libmfx" ) == 0 )
-            {
-                if( !GetEnvironmentVariable( "INTELMEDIASDKROOT", NULL, 0 ) )
-                {
+                vIncludeDirs.push_back("$(CUDA_PATH)\\include\\");
+            } else if (mitLib->first.compare("libmfx") == 0) {
+                if (!GetEnvironmentVariable("INTELMEDIASDKROOT", NULL, 0)) {
                     cout << "  Warning: Could not find the Intel Media SDK environment variable." << endl;
                     cout << "    Either the Intel Media is not installed or the environment variable is missing." << endl;
                     cout << "    Using the default environment variable of 'INTELMEDIASDKROOT'." << endl;
                 }
-                vIncludeDirs.push_back( "$(INTELMEDIASDKROOT)\\include\\" );
-                vLib32Dirs.push_back( "$(INTELMEDIASDKROOT)\\lib\\win32" );
-                vLib64Dirs.push_back( "$(INTELMEDIASDKROOT)\\lib\\x64" );
+                vIncludeDirs.push_back("$(INTELMEDIASDKROOT)\\include\\");
+                vLib32Dirs.push_back("$(INTELMEDIASDKROOT)\\lib\\win32");
+                vLib64Dirs.push_back("$(INTELMEDIASDKROOT)\\lib\\x64");
             }
         }
     }
@@ -345,7 +327,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libgme"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["libgsm"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libiec61883"] = ( sProjectName.compare("libavdevice") == 0 );//?
-    mProjectDeps["libmfx"] = ( sProjectName.compare( "libavcodec" ) == 0 );
+    mProjectDeps["libmfx"] = ( sProjectName.compare( "libavcodec" ) == 0 ) || ( sProjectName.compare( "ffmpeg" ) == 0 ) || ( sProjectName.compare( "avconv" ) == 0 );
     mProjectDeps["libilbc"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libmodplug"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["libmp3lame"] = ( sProjectName.compare("libavcodec") == 0 );
@@ -384,10 +366,11 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["lzma"] = ( sProjectName.compare( "libavcodec" ) == 0 );
     mProjectDeps["nvenc"] = ( sProjectName.compare( "libavcodec" ) == 0 );
     mProjectDeps["openal"] = ( sProjectName.compare("libavdevice") == 0 );//?
-    mProjectDeps["opencl"] = ( sProjectName.compare( "libavutil" ) == 0 ) || ( sProjectName.compare( "libavfilter" ) == 0 );
+    mProjectDeps["opencl"] = ( sProjectName.compare( "libavutil" ) == 0 ) || ( sProjectName.compare( "libavfilter" ) == 0 ) || ( sProjectName.compare( "ffmpeg" ) == 0 ) || ( sProjectName.compare( "avconv" ) == 0 )
+        || (sProjectName.compare("ffplay") == 0) || (sProjectName.compare("avplay") == 0) || (sProjectName.compare("ffprobe") == 0) || (sProjectName.compare("avprobe") == 0);
     mProjectDeps["opengl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
     mProjectDeps["openssl"] = ( sProjectName.compare( "libavformat" ) == 0 );
-    mProjectDeps["sdl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
+    mProjectDeps["sdl"] = ( sProjectName.compare( "libavdevice" ) == 0 ) || (sProjectName.compare("ffplay") == 0) || (sProjectName.compare("avplay") == 0);
     //mProjectDeps["x11grab"] = ( sProjectName.compare("libavdevice") == 0 );//Always disabled on Win32
     mProjectDeps["zlib"] = ( sProjectName.compare("libavformat") == 0 ) || ( sProjectName.compare("libavcodec") == 0 );
 
@@ -396,119 +379,28 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["dshow_indev"] = ( sProjectName.compare("libavdevice") == 0 );
 }
 
-void projectGenerator::buildProgramIncludes( const string & sProject, StaticList & vCIncludes, StaticList & vHIncludes, StaticList & vLibs, StaticList & vIncDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs )
+void projectGenerator::buildProjectGUIDs( map<string, string> & mKeys )
 {
-    vCIncludes.clear( );
-    vHIncludes.clear( );
-    vLibs.clear( );
-    vIncDirs.clear( );
-
-    //All projects include cmdutils
-    vCIncludes.push_back( "..\\cmdutils.c" );
-    if( m_ConfigHelper.getConfigOption( "opencl" )->m_sValue.compare( "1" ) == 0 )
-    {
-        vCIncludes.push_back( "..\\cmdutils_opencl.c" );
-        //Need to check for the existence of environment variables
-        if( GetEnvironmentVariable( "AMDAPPSDKROOT", NULL, 0 ) )
-        {
-            vIncDirs.push_back( "$(AMDAPPSDKROOT)\\include\\" );
-            vLib32Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\Win32" );
-            vLib64Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\x64" );
-        }
-        else if( GetEnvironmentVariable( "INTELOCLSDKROOT", NULL, 0 ) )
-        {
-            vIncDirs.push_back( "$(INTELOCLSDKROOT)\\include\\" );
-            vLib32Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x86" );
-            vLib64Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x64" );
-        }
-        else if( GetEnvironmentVariable( "CUDA_PATH", NULL, 0 ) )
-        {
-            cout << "  Warning: NVIDIA OpenCl currently is only 1.1. OpenCl 1.2 is needed for FFMpeg support" << endl;
-            vIncDirs.push_back( "$(CUDA_PATH)\\include\\" );
-            vLib32Dirs.push_back( "$(CUDA_PATH)\\lib\\Win32" );
-            vLib64Dirs.push_back( "$(CUDA_PATH)\\lib\\x64" );
-        }
-        vLibs.push_back( "OpenCL.lib" );
-    }
-    vHIncludes.push_back( "..\\cmdutils.h" );
-    vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
-
-    if( sProject.compare( "ffmpeg" ) == 0 )
-    {
-        vCIncludes.push_back( "..\\ffmpeg.c" );
-        vCIncludes.push_back( "..\\ffmpeg_filter.c" );
-        vCIncludes.push_back( "..\\ffmpeg_opt.c" );
-        if( m_ConfigHelper.getConfigOption( "dxva2_lib" )->m_sValue.compare( "1" ) == 0 )
-        {
-            vCIncludes.push_back( "..\\ffmpeg_dxva2.c" );
-        }
-
-        vHIncludes.push_back( "..\\ffmpeg.h" );
-    }
-    else if( sProject.compare( "ffplay" ) == 0 )
-    {
-        vCIncludes.push_back( "..\\ffplay.c" );
-
-        vHIncludes.push_back( "..\\ffmpeg.h" );
-
-        vLibs.push_back( "SDL.lib" );
-
-        vIncDirs.push_back( "$(OutDir)\\include\\SDL" );
-    }
-    else if( sProject.compare( "ffprobe" ) == 0 )
-    {
-        vCIncludes.push_back( "..\\ffprobe.c" );
-
-        vHIncludes.push_back( "..\\ffmpeg.h" );
-    }
-    else if( sProject.compare( "avconv" ) == 0 )
-    {
-        vCIncludes.push_back( "..\\avconv.c" );
-        vCIncludes.push_back( "..\\avconv_filter.c" );
-        vCIncludes.push_back( "..\\avconv_opt.c" );
-
-        vHIncludes.push_back( "..\\avconv.h" );
-    }
-    else if( sProject.compare( "avplay" ) == 0 )
-    {
-        vCIncludes.push_back( "..\\avplay.c" );
-
-        vHIncludes.push_back( "..\\avconv.h" );
-
-        vLibs.push_back( "SDL.lib" );
-
-        vIncDirs.push_back( "$(OutDir)\\include\\SDL" );
-    }
-    else if( sProject.compare( "avprobe" ) == 0 )
-    {
-        vCIncludes.push_back( "..\\avprobe.c" );
-
-        vHIncludes.push_back( "..\\avconv.h" );
-    }
-}
-
-void projectGenerator::buildProjectGUIDs( map<string, string> & mLibKeys, map<string, string> & mProgramKeys )
-{
-    mLibKeys["libavcodec"] = "B4824EFF-C340-425D-A4A8-E2E02A71A7AE";
-    mLibKeys["libavdevice"] = "6E165FA4-44EB-4330-8394-9F0D76D8E03E";
-    mLibKeys["libavfilter"] = "BC2E1028-66CD-41A0-AF90-EEBD8CC52787";
-    mLibKeys["libavformat"] = "30A96E9B-8061-4F19-BD71-FDE7EA8F7929";
-    mLibKeys["libavresample"] = "0096CB8C-3B04-462B-BF4F-0A9970A57C91";
-    mLibKeys["libavutil"] = "CE6C44DD-6E38-4293-8AB3-04EE28CCA972";
-    mLibKeys["libswresample"] = "3CE4A9EF-98B6-4454-B76E-3AD9C03A2114";
-    mLibKeys["libswscale"] = "6D8A6330-8EBE-49FD-9281-0A396F9F28F2";
-    mLibKeys["libpostproc"] = "4D9C457D-9ADA-4A12-9D06-42D80124C5AB";
+    mKeys["libavcodec"] = "B4824EFF-C340-425D-A4A8-E2E02A71A7AE";
+    mKeys["libavdevice"] = "6E165FA4-44EB-4330-8394-9F0D76D8E03E";
+    mKeys["libavfilter"] = "BC2E1028-66CD-41A0-AF90-EEBD8CC52787";
+    mKeys["libavformat"] = "30A96E9B-8061-4F19-BD71-FDE7EA8F7929";
+    mKeys["libavresample"] = "0096CB8C-3B04-462B-BF4F-0A9970A57C91";
+    mKeys["libavutil"] = "CE6C44DD-6E38-4293-8AB3-04EE28CCA972";
+    mKeys["libswresample"] = "3CE4A9EF-98B6-4454-B76E-3AD9C03A2114";
+    mKeys["libswscale"] = "6D8A6330-8EBE-49FD-9281-0A396F9F28F2";
+    mKeys["libpostproc"] = "4D9C457D-9ADA-4A12-9D06-42D80124C5AB";
 
     if( !m_ConfigHelper.m_bLibav )
     {
-        mProgramKeys["ffmpeg"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
-        mProgramKeys["ffplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
-        mProgramKeys["ffprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
+        mKeys["ffmpeg"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
+        mKeys["ffplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
+        mKeys["ffprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
     }
     else
     {
-        mProgramKeys["avconv"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
-        mProgramKeys["avplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
-        mProgramKeys["avprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
+        mKeys["avconv"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
+        mKeys["avplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
+        mKeys["avprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
     }
 }

@@ -20,6 +20,8 @@
 
 #include "configGenerator.h"
 
+#include <iostream>
+#include <fstream>
 #include <algorithm>
 
 configGenerator::configGenerator( ) :
@@ -36,24 +38,9 @@ bool configGenerator::passConfig( )
     cout << "  Generating config files..." << endl;
     //Open configure file
     string sConfigFile = "../../../configure";
-    ifstream ifConfigureFile( sConfigFile );
-    if( !ifConfigureFile.is_open( ) )
-    {
-        cout << "  Error: failed opening configure file (" << sConfigFile << ")" << endl;
+    if (!loadFromFile(sConfigFile, m_sConfigureFile)) {
         return false;
     }
-
-    //Load whole file into internal string
-    ifConfigureFile.seekg( 0, ifConfigureFile.end );
-    uint uiBufferSize = (uint)ifConfigureFile.tellg();
-    ifConfigureFile.seekg( 0, ifConfigureFile.beg );
-    m_sConfigureFile.resize( uiBufferSize );
-    ifConfigureFile.read( &m_sConfigureFile[0], uiBufferSize );
-    if( uiBufferSize != ifConfigureFile.gcount() )
-    {
-        m_sConfigureFile.resize( (uint)ifConfigureFile.gcount() );
-    }
-    ifConfigureFile.close( );
 
     //Search for start of config.h file parameters
     uint uiStartPos = m_sConfigureFile.find( "#define FFMPEG_CONFIG_H" );
@@ -853,20 +840,10 @@ bool configGenerator::passFindThings( const string & sParam1, const string & sPa
 {
     //Need to find and open the specified file
     string sFile = "../../../" + sParam3;
-    ifstream ifSourceFile( sFile );
-    if( !ifSourceFile.is_open( ) )
-    {
-        cout << "  Error: failed opening file (" << sFile << ") in find_things" << endl;
+    string sFindFile;
+    if (!loadFromFile(sFile, sFindFile)) {
         return false;
     }
-
-    //Load whole file into string
-    string sFindFile;
-    ifSourceFile.seekg( 0, ifSourceFile.end );
-    sFindFile.resize( (uint)ifSourceFile.tellg( ) );
-    ifSourceFile.seekg( 0, ifSourceFile.beg );
-    ifSourceFile.read( &sFindFile[0], sFindFile.size() );
-    ifSourceFile.close( );
 
     //Find the search pattern in the file
     string sParam1Upper = sParam1;

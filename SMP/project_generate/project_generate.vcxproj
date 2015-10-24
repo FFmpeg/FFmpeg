@@ -20,11 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\configGenerator.h" />
+    <ClInclude Include="include\helperFunctions.h" />
     <ClInclude Include="include\projectGenerator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\configGenerator.cpp" />
     <ClCompile Include="source\configGenerator_build.cpp" />
+    <ClCompile Include="source\helperFunctions.cpp" />
     <ClCompile Include="source\project_generate.cpp" />
     <ClCompile Include="source\projectGenerator.cpp" />
     <ClCompile Include="source\projectGenerator_build.cpp" />
