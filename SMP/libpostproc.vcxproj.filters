@@ -18,6 +18,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libpostproc.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libpostproc\postprocres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libpostproc\postprocess.c">
       <Filter>Source Files\libpostproc</Filter>
     </ClCompile>
@@ -29,15 +39,5 @@
     <ClInclude Include="..\libpostproc\version.h">
       <Filter>Header Files\libpostproc</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libpostproc.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libpostproc\postprocres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

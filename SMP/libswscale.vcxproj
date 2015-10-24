@@ -59,43 +59,40 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libswscale.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libswscale\swscaleres.rc">
+      <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)'=='ReleaseLTO'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)'=='Debug'">true</ExcludedFromBuild>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <YASM Include="..\libswscale\x86\input.asm" />
     <YASM Include="..\libswscale\x86\output.asm" />
     <YASM Include="..\libswscale\x86\scale.asm" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libswscale\alphablend.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\hscale_fast_bilinear.c">
-    </ClCompile>
+    <ClCompile Include="..\libswscale\alphablend.c" />
+    <ClCompile Include="..\libswscale\hscale_fast_bilinear.c" />
     <ClCompile Include="..\libswscale\input.c">
       <ObjectFileName>$(IntDir)\libswscale_input.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libswscale\options.c">
-    </ClCompile>
+    <ClCompile Include="..\libswscale\options.c" />
     <ClCompile Include="..\libswscale\output.c">
       <ObjectFileName>$(IntDir)\libswscale_output.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libswscale\rgb2rgb.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\swscale.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\swscale_unscaled.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\utils.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\yuv2rgb.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\slice.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\hscale.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\vscale.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\gamma.c">
-    </ClCompile>
-    <ClCompile Include="..\libswscale\log2_tab.c">
-    </ClCompile>
+    <ClCompile Include="..\libswscale\rgb2rgb.c" />
+    <ClCompile Include="..\libswscale\swscale.c" />
+    <ClCompile Include="..\libswscale\swscale_unscaled.c" />
+    <ClCompile Include="..\libswscale\utils.c" />
+    <ClCompile Include="..\libswscale\yuv2rgb.c" />
+    <ClCompile Include="..\libswscale\slice.c" />
+    <ClCompile Include="..\libswscale\hscale.c" />
+    <ClCompile Include="..\libswscale\vscale.c" />
+    <ClCompile Include="..\libswscale\gamma.c" />
+    <ClCompile Include="..\libswscale\log2_tab.c" />
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
       <ObjectFileName>$(IntDir)\libswscale_x86_rgb2rgb.obj</ObjectFileName>
     </ClCompile>
@@ -105,22 +102,11 @@
     <ClCompile Include="..\libswscale\x86\yuv2rgb.c">
       <ObjectFileName>$(IntDir)\libswscale_x86_yuv2rgb.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libswscale\x86\hscale_fast_bilinear_simd.c">
-    </ClCompile>
+    <ClCompile Include="..\libswscale\x86\hscale_fast_bilinear_simd.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libswscale\swscale.h" />
     <ClInclude Include="..\libswscale\version.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libswscale.def" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libswscale\swscaleres.rc">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)'=='ReleaseLTO'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)'=='Debug'">true</ExcludedFromBuild>
-    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6D8A6330-8EBE-49FD-9281-0A396F9F28F2}</ProjectGuid>

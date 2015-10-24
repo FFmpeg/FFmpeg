@@ -21,6 +21,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libswscale.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libswscale\swscaleres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <YASM Include="..\libswscale\x86\input.asm">
       <Filter>Source Files\libswscale\x86</Filter>
     </YASM>
@@ -97,15 +107,5 @@
     <ClInclude Include="..\libswscale\version.h">
       <Filter>Header Files\libswscale</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libswscale.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libswscale\swscaleres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

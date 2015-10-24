@@ -59,46 +59,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libavdevice\alldevices.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\avdevice.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\utils.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\dshow_crossbar.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\dshow.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\dshow_enummediatypes.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\dshow_enumpins.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\dshow_filter.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\dshow_pin.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\dshow_common.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\gdigrab.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\lavfi.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\opengl_enc.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\sdl.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\vfwcap.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\libcdio.c">
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\file_open.c">
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\libavdevice\avdevice.h" />
-    <ClInclude Include="..\libavdevice\version.h" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include=".\libavdevice.def" />
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +67,29 @@
       <ExcludedFromBuild Condition="'$(Configuration)'=='ReleaseLTO'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)'=='Debug'">true</ExcludedFromBuild>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libavdevice\alldevices.c" />
+    <ClCompile Include="..\libavdevice\avdevice.c" />
+    <ClCompile Include="..\libavdevice\utils.c" />
+    <ClCompile Include="..\libavdevice\dshow_crossbar.c" />
+    <ClCompile Include="..\libavdevice\dshow.c" />
+    <ClCompile Include="..\libavdevice\dshow_enummediatypes.c" />
+    <ClCompile Include="..\libavdevice\dshow_enumpins.c" />
+    <ClCompile Include="..\libavdevice\dshow_filter.c" />
+    <ClCompile Include="..\libavdevice\dshow_pin.c" />
+    <ClCompile Include="..\libavdevice\dshow_common.c" />
+    <ClCompile Include="..\libavdevice\gdigrab.c" />
+    <ClCompile Include="..\libavdevice\lavfi.c" />
+    <ClCompile Include="..\libavdevice\opengl_enc.c" />
+    <ClCompile Include="..\libavdevice\sdl.c" />
+    <ClCompile Include="..\libavdevice\vfwcap.c" />
+    <ClCompile Include="..\libavdevice\libcdio.c" />
+    <ClCompile Include="..\libavdevice\file_open.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libavdevice\avdevice.h" />
+    <ClInclude Include="..\libavdevice\version.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6E165FA4-44EB-4330-8394-9F0D76D8E03E}</ProjectGuid>
@@ -401,11 +384,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -471,11 +449,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -547,11 +520,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -627,11 +595,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -708,11 +671,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -788,11 +746,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
 echo            A output file will be generated anyway.
@@ -869,11 +822,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -945,11 +893,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1027,11 +970,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1108,11 +1046,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1190,11 +1123,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1271,11 +1199,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1347,11 +1270,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1423,11 +1341,6 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
-      <Debug>true</Debug>
-    </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\SDL;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>

@@ -27,6 +27,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libavutil.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavutil\avutilres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <YASM Include="..\libavutil\x86\cpuid.asm">
       <Filter>Source Files\libavutil\x86</Filter>
     </YASM>
@@ -448,15 +458,5 @@
     <ClInclude Include="libavutil\ffversion.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libavutil.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libavutil\avutilres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -21,6 +21,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libswresample.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libswresample\swresampleres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <YASM Include="..\libswresample\x86\audio_convert.asm">
       <Filter>Source Files\libswresample\x86</Filter>
     </YASM>
@@ -79,15 +89,5 @@
     <ClInclude Include="..\libswresample\version.h">
       <Filter>Header Files\libswresample</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libswresample.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libswresample\swresampleres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

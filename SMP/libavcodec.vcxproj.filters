@@ -21,6 +21,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libavcodec.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavcodec\avcodecres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <YASM Include="..\libavcodec\x86\ac3dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -2677,15 +2687,5 @@
     <ClInclude Include="..\libavcodec\xvmc.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libavcodec.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libavcodec\avcodecres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

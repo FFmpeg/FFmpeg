@@ -18,6 +18,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libavdevice.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavdevice\avdeviceres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libavdevice\alldevices.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
@@ -77,15 +87,5 @@
     <ClInclude Include="..\libavdevice\version.h">
       <Filter>Header Files\libavdevice</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libavdevice.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libavdevice\avdeviceres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

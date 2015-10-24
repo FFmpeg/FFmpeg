@@ -18,28 +18,20 @@
     <ClCompile Include="..\cmdutils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg.c">
+    <ClCompile Include="..\ffmpeg_opt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\ffmpeg_filter.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_opt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\ffmpeg_dxva2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\cmdutils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\cmdutils_common_opts.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ffmpeg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="..\ffmpeg_qsv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ffmpeg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

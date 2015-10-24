@@ -59,6 +59,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libavutil.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavutil\avutilres.rc">
+      <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)'=='ReleaseLTO'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)'=='Debug'">true</ExcludedFromBuild>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <YASM Include="..\libavutil\x86\cpuid.asm" />
     <YASM Include="..\libavutil\x86\emms.asm" />
     <YASM Include="..\libavutil\x86\float_dsp.asm" />
@@ -66,146 +76,82 @@
     <YASM Include="..\libavutil\x86\pixelutils.asm" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libavutil\adler32.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\aes.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\audio_fifo.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\avstring.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\base64.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\blowfish.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\bprint.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\buffer.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\cast5.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\camellia.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\channel_layout.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\color_utils.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\cpu.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\crc.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\des.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\display.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\downmix_info.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\error.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\eval.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\fifo.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\file.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\file_open.c">
-    </ClCompile>
+    <ClCompile Include="..\libavutil\adler32.c" />
+    <ClCompile Include="..\libavutil\aes.c" />
+    <ClCompile Include="..\libavutil\audio_fifo.c" />
+    <ClCompile Include="..\libavutil\avstring.c" />
+    <ClCompile Include="..\libavutil\base64.c" />
+    <ClCompile Include="..\libavutil\blowfish.c" />
+    <ClCompile Include="..\libavutil\bprint.c" />
+    <ClCompile Include="..\libavutil\buffer.c" />
+    <ClCompile Include="..\libavutil\cast5.c" />
+    <ClCompile Include="..\libavutil\camellia.c" />
+    <ClCompile Include="..\libavutil\channel_layout.c" />
+    <ClCompile Include="..\libavutil\color_utils.c" />
+    <ClCompile Include="..\libavutil\cpu.c" />
+    <ClCompile Include="..\libavutil\crc.c" />
+    <ClCompile Include="..\libavutil\des.c" />
+    <ClCompile Include="..\libavutil\display.c" />
+    <ClCompile Include="..\libavutil\downmix_info.c" />
+    <ClCompile Include="..\libavutil\error.c" />
+    <ClCompile Include="..\libavutil\eval.c" />
+    <ClCompile Include="..\libavutil\fifo.c" />
+    <ClCompile Include="..\libavutil\file.c" />
+    <ClCompile Include="..\libavutil\file_open.c" />
     <ClCompile Include="..\libavutil\float_dsp.c">
       <ObjectFileName>$(IntDir)\libavutil_float_dsp.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavutil\fixed_dsp.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\frame.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\hash.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\hmac.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\imgutils.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\intmath.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\lfg.c">
-    </ClCompile>
+    <ClCompile Include="..\libavutil\fixed_dsp.c" />
+    <ClCompile Include="..\libavutil\frame.c" />
+    <ClCompile Include="..\libavutil\hash.c" />
+    <ClCompile Include="..\libavutil\hmac.c" />
+    <ClCompile Include="..\libavutil\imgutils.c" />
+    <ClCompile Include="..\libavutil\intmath.c" />
+    <ClCompile Include="..\libavutil\lfg.c" />
     <ClCompile Include="..\libavutil\lls.c">
       <ObjectFileName>$(IntDir)\libavutil_lls.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavutil\log.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\log2_tab.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\mathematics.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\md5.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\mem.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\murmur3.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\dict.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\opt.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\parseutils.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\pixdesc.c">
-    </ClCompile>
+    <ClCompile Include="..\libavutil\log.c" />
+    <ClCompile Include="..\libavutil\log2_tab.c" />
+    <ClCompile Include="..\libavutil\mathematics.c" />
+    <ClCompile Include="..\libavutil\md5.c" />
+    <ClCompile Include="..\libavutil\mem.c" />
+    <ClCompile Include="..\libavutil\murmur3.c" />
+    <ClCompile Include="..\libavutil\dict.c" />
+    <ClCompile Include="..\libavutil\opt.c" />
+    <ClCompile Include="..\libavutil\parseutils.c" />
+    <ClCompile Include="..\libavutil\pixdesc.c" />
     <ClCompile Include="..\libavutil\pixelutils.c">
       <ObjectFileName>$(IntDir)\libavutil_pixelutils.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavutil\random_seed.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\rational.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\reverse.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\rc4.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\ripemd.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\samplefmt.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\sha.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\sha512.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\stereo3d.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\threadmessage.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\time.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\timecode.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\tree.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\twofish.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\utils.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\xga_font_data.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\xtea.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\tea.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\lzo.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\..\compat\strtod.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\..\compat\getopt.c">
-    </ClCompile>
+    <ClCompile Include="..\libavutil\random_seed.c" />
+    <ClCompile Include="..\libavutil\rational.c" />
+    <ClCompile Include="..\libavutil\reverse.c" />
+    <ClCompile Include="..\libavutil\rc4.c" />
+    <ClCompile Include="..\libavutil\ripemd.c" />
+    <ClCompile Include="..\libavutil\samplefmt.c" />
+    <ClCompile Include="..\libavutil\sha.c" />
+    <ClCompile Include="..\libavutil\sha512.c" />
+    <ClCompile Include="..\libavutil\stereo3d.c" />
+    <ClCompile Include="..\libavutil\threadmessage.c" />
+    <ClCompile Include="..\libavutil\time.c" />
+    <ClCompile Include="..\libavutil\timecode.c" />
+    <ClCompile Include="..\libavutil\tree.c" />
+    <ClCompile Include="..\libavutil\twofish.c" />
+    <ClCompile Include="..\libavutil\utils.c" />
+    <ClCompile Include="..\libavutil\xga_font_data.c" />
+    <ClCompile Include="..\libavutil\xtea.c" />
+    <ClCompile Include="..\libavutil\tea.c" />
+    <ClCompile Include="..\libavutil\lzo.c" />
+    <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c" />
+    <ClCompile Include="..\libavutil\..\compat\strtod.c" />
+    <ClCompile Include="..\libavutil\..\compat\getopt.c" />
     <ClCompile Include="..\libavutil\x86\cpu.c">
       <ObjectFileName>$(IntDir)\libavutil_x86_cpu.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavutil\x86\float_dsp_init.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\x86\lls_init.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\x86\pixelutils_init.c">
-    </ClCompile>
+    <ClCompile Include="..\libavutil\x86\float_dsp_init.c" />
+    <ClCompile Include="..\libavutil\x86\lls_init.c" />
+    <ClCompile Include="..\libavutil\x86\pixelutils_init.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavutil\adler32.h" />
@@ -274,16 +220,6 @@
     <ClInclude Include="..\libavutil\lzo.h" />
     <ClInclude Include="libavutil\avconfig.h" />
     <ClInclude Include="libavutil\ffversion.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libavutil.def" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libavutil\avutilres.rc">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)'=='ReleaseLTO'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)'=='Debug'">true</ExcludedFromBuild>
-    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CE6C44DD-6E38-4293-8AB3-04EE28CCA972}</ProjectGuid>

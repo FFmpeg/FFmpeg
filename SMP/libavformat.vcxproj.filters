@@ -18,6 +18,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libavformat.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavformat\avformatres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libavformat\allformats.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -1259,15 +1269,5 @@
     <ClInclude Include="..\libavformat\version.h">
       <Filter>Header Files\libavformat</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libavformat.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libavformat\avformatres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

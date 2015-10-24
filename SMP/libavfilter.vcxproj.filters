@@ -21,6 +21,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".\libavfilter.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavfilter\avfilterres.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
     <YASM Include="..\libavfilter\x86\vf_blend.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
@@ -784,15 +794,5 @@
     <ClInclude Include="..\libavfilter\version.h">
       <Filter>Header Files\libavfilter</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".\libavfilter.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\libavfilter\avfilterres.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>
