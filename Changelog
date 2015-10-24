@@ -25,6 +25,7 @@ version <next>:
 - wve demuxer
 - zero-copy Intel QSV transcoding in ffmpeg
 - shuffleframes filter
+- SDX2 DPCM decoder
 
 
 version 2.8:

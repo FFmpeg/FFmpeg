@@ -159,6 +159,7 @@ static int get_aiff_header(AVFormatContext *s, int size,
             codec->bits_per_coded_sample = 5;
         case AV_CODEC_ID_ADPCM_G722:
         case AV_CODEC_ID_MACE6:
+        case AV_CODEC_ID_SDX2_DPCM:
             codec->block_align = 1*codec->channels;
             break;
         case AV_CODEC_ID_GSM:

@@ -410,6 +410,8 @@ enum AVCodecID {
     AV_CODEC_ID_XAN_DPCM,
     AV_CODEC_ID_SOL_DPCM,
 
+    AV_CODEC_ID_SDX2_DPCM = 0x14800,
+
     /* audio codecs */
     AV_CODEC_ID_MP2 = 0x15000,
     AV_CODEC_ID_MP3, ///< preferred ID for decoding MPEG audio layer 1, 2 or 3
