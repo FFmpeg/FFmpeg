@@ -31,6 +31,7 @@ version <next>:
 - ADPCM AICA decoder
 - Interplay ACM demuxer and audio decoder
 - XMA1 & XMA2 decoder
+- realtime filter
 
 
 version 2.8:

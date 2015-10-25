@@ -13068,6 +13068,22 @@ following one, the permission might not be received as expected in that
 following filter. Inserting a @ref{format} or @ref{aformat} filter before the
 perms/aperms filter can avoid this problem.
 
+@section realtime, arealtime
+
+Slow down filtering to match real time approximatively.
+
+These filters will pause the filtering for a variable amount of time to
+match the output rate with the input timestamps.
+They are similar to the @option{re} option to @code{ffmpeg}.
+
+They accept the following options:
+
+@table @option
+@item limit
+Time limit for the pauses. Any pause longer than that will be considered
+a timestamp discontinuity and reset the timer. Default is 2 seconds.
+@end table
+
 @section select, aselect
 
 Select frames to pass in output.
