@@ -75,7 +75,7 @@ static int vag_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_vag_demuxer = {
     .name           = "vag",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony VAG"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony PS2 VAG"),
     .read_probe     = vag_probe,
     .read_header    = vag_read_header,
     .read_packet    = vag_read_packet,
