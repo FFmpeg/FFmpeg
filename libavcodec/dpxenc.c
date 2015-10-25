@@ -245,7 +245,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
         } else {
             size = av_image_copy_to_buffer(buf + HEADER_SIZE, pkt->size - HEADER_SIZE,
-                                           frame->data, frame->linesize,
+                                           (const uint8_t**)frame->data, frame->linesize,
                                            avctx->pix_fmt,
                                            avctx->width, avctx->height, 1);
         }

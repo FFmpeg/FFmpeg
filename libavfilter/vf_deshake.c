@@ -91,9 +91,10 @@ static const AVOption deshake_options[] = {
 
 AVFILTER_DEFINE_CLASS(deshake);
 
-static int cmp(const double *a, const double *b)
+static int cmp(const void *a, const void *b)
 {
-    return *a < *b ? -1 : ( *a > *b ? 1 : 0 );
+    const double va = *(const double *)a, vb = *(const double *)b;
+    return va < vb ? -1 : ( va > vb ? 1 : 0 );
 }
 
 /**
@@ -105,7 +106,7 @@ static double clean_mean(double *values, int count)
     int cut = count / 5;
     int x;
 
-    qsort(values, count, sizeof(double), (void*)cmp);
+    qsort(values, count, sizeof(double), cmp);
 
     for (x = cut; x < count - cut; x++) {
         mean += values[x];

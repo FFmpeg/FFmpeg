@@ -215,15 +215,15 @@ static int update_size(AVCodecContext *ctx, int w, int h, enum AVPixelFormat fmt
 {
     VP9Context *s = ctx->priv_data;
     uint8_t *p;
-    int bytesperpixel = s->bytesperpixel;
+    int bytesperpixel = s->bytesperpixel, res;
 
     av_assert0(w > 0 && h > 0);
 
     if (s->intra_pred_data[0] && w == ctx->width && h == ctx->height && ctx->pix_fmt == fmt)
         return 0;
 
-    ctx->width   = w;
-    ctx->height  = h;
+    if ((res = ff_set_dimensions(ctx, w, h)) < 0)
+        return res;
     ctx->pix_fmt = fmt;
     s->sb_cols   = (w + 63) >> 6;
     s->sb_rows   = (h + 63) >> 6;

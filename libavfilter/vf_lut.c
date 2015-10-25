@@ -186,9 +186,9 @@ static double compute_gammaval709(void *opaque, double gamma)
 }
 
 static double (* const funcs1[])(void *, double) = {
-    (void *)clip,
-    (void *)compute_gammaval,
-    (void *)compute_gammaval709,
+    clip,
+    compute_gammaval,
+    compute_gammaval709,
     NULL
 };
 

@@ -151,6 +151,7 @@ typedef struct Clock {
 typedef struct Frame {
     AVFrame *frame;
     AVSubtitle sub;
+    AVSubtitleRect **subrects;  /* rescaled subtitle rectangles in yuva */
     int serial;
     double pts;           /* presentation timestamp for the frame */
     double duration;      /* estimated duration of the frame */
@@ -649,6 +650,12 @@ static void decoder_destroy(Decoder *d) {
 
 static void frame_queue_unref_item(Frame *vp)
 {
+    int i;
+    for (i = 0; i < vp->sub.num_rects; i++) {
+        av_freep(&vp->subrects[i]->data[0]);
+        av_freep(&vp->subrects[i]);
+    }
+    av_freep(&vp->subrects);
     av_frame_unref(vp->frame);
     avsubtitle_free(&vp->sub);
 }
@@ -860,7 +867,7 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     int x, y, Y, U, V, A;
     uint8_t *lum, *cb, *cr;
     int dstx, dsty, dstw, dsth;
-    const AVPicture *src = &rect->pict;
+    const AVSubtitleRect *src = rect;
 
     dstw = av_clip(rect->w, 0, imgw);
     dsth = av_clip(rect->h, 0, imgh);
@@ -963,7 +970,7 @@ static void video_image_display(VideoState *is)
                     pict.linesize[2] = vp->bmp->pitches[1];
 
                     for (i = 0; i < sp->sub.num_rects; i++)
-                        blend_subrect(&pict, sp->sub.rects[i],
+                        blend_subrect(&pict, sp->subrects[i],
                                       vp->bmp->w, vp->bmp->h);
 
                     SDL_UnlockYUVOverlay (vp->bmp);
@@ -2295,6 +2302,10 @@ static int subtitle_thread(void *arg)
                 pts = sp->sub.pts / (double)AV_TIME_BASE;
             sp->pts = pts;
             sp->serial = is->subdec.pkt_serial;
+            if (!(sp->subrects = av_mallocz_array(sp->sub.num_rects, sizeof(AVSubtitleRect*)))) {
+                av_log(NULL, AV_LOG_FATAL, "Cannot allocate subrects\n");
+                exit(1);
+            }
 
             for (i = 0; i < sp->sub.num_rects; i++)
             {
@@ -2304,35 +2315,28 @@ static int subtitle_thread(void *arg)
                 int subh = is->subdec.avctx->height ? is->subdec.avctx->height : is->viddec_height;
                 int out_w = is->viddec_width  ? in_w * is->viddec_width  / subw : in_w;
                 int out_h = is->viddec_height ? in_h * is->viddec_height / subh : in_h;
-                AVPicture newpic;
 
-                //can not use avpicture_alloc as it is not compatible with avsubtitle_free()
-                av_image_fill_linesizes(newpic.linesize, AV_PIX_FMT_YUVA420P, out_w);
-                newpic.data[0] = av_malloc(newpic.linesize[0] * out_h);
-                newpic.data[3] = av_malloc(newpic.linesize[3] * out_h);
-                newpic.data[1] = av_malloc(newpic.linesize[1] * ((out_h+1)/2));
-                newpic.data[2] = av_malloc(newpic.linesize[2] * ((out_h+1)/2));
+                if (!(sp->subrects[i] = av_mallocz(sizeof(AVSubtitleRect))) ||
+                    av_image_alloc(sp->subrects[i]->data, sp->subrects[i]->linesize, out_w, out_h, AV_PIX_FMT_YUVA420P, 16) < 0) {
+                    av_log(NULL, AV_LOG_FATAL, "Cannot allocate subtitle data\n");
+                    exit(1);
+                }
 
                 is->sub_convert_ctx = sws_getCachedContext(is->sub_convert_ctx,
                     in_w, in_h, AV_PIX_FMT_PAL8, out_w, out_h,
                     AV_PIX_FMT_YUVA420P, sws_flags, NULL, NULL, NULL);
-                if (!is->sub_convert_ctx || !newpic.data[0] || !newpic.data[3] ||
-                    !newpic.data[1] || !newpic.data[2]
-                ) {
+                if (!is->sub_convert_ctx) {
                     av_log(NULL, AV_LOG_FATAL, "Cannot initialize the sub conversion context\n");
                     exit(1);
                 }
                 sws_scale(is->sub_convert_ctx,
-                          (void*)sp->sub.rects[i]->pict.data, sp->sub.rects[i]->pict.linesize,
-                          0, in_h, newpic.data, newpic.linesize);
+                          (void*)sp->sub.rects[i]->data, sp->sub.rects[i]->linesize,
+                          0, in_h, sp->subrects[i]->data, sp->subrects[i]->linesize);
 
-                av_free(sp->sub.rects[i]->pict.data[0]);
-                av_free(sp->sub.rects[i]->pict.data[1]);
-                sp->sub.rects[i]->pict = newpic;
-                sp->sub.rects[i]->w = out_w;
-                sp->sub.rects[i]->h = out_h;
-                sp->sub.rects[i]->x = sp->sub.rects[i]->x * out_w / in_w;
-                sp->sub.rects[i]->y = sp->sub.rects[i]->y * out_h / in_h;
+                sp->subrects[i]->w = out_w;
+                sp->subrects[i]->h = out_h;
+                sp->subrects[i]->x = sp->sub.rects[i]->x * out_w / in_w;
+                sp->subrects[i]->y = sp->sub.rects[i]->y * out_h / in_h;
             }
 
             /* now we can update the picture count */

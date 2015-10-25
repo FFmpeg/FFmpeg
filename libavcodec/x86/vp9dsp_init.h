@@ -81,9 +81,9 @@ ff_vp9_##avg##_8tap_1d_##dir##_##sz##_##bpp##_##opt(uint8_t *dst, ptrdiff_t dst_
 }
 
 #define mc_rep_funcs(sz, hsz, hszb, opt, type, fsz, bpp) \
-mc_rep_func(put, sz, hsz, hszb, h, opt, type, fsz, bpp); \
-mc_rep_func(avg, sz, hsz, hszb, h, opt, type, fsz, bpp); \
-mc_rep_func(put, sz, hsz, hszb, v, opt, type, fsz, bpp); \
+mc_rep_func(put, sz, hsz, hszb, h, opt, type, fsz, bpp) \
+mc_rep_func(avg, sz, hsz, hszb, h, opt, type, fsz, bpp) \
+mc_rep_func(put, sz, hsz, hszb, v, opt, type, fsz, bpp) \
 mc_rep_func(avg, sz, hsz, hszb, v, opt, type, fsz, bpp)
 
 #define filter_8tap_1d_fn(op, sz, f, f_opt, fname, dir, dvar, bpp, opt) \
