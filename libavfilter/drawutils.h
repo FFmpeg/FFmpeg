@@ -130,7 +130,7 @@ void ff_blend_rectangle(FFDrawContext *draw, FFDrawColor *color,
  */
 void ff_blend_mask(FFDrawContext *draw, FFDrawColor *color,
                    uint8_t *dst[], int dst_linesize[], int dst_w, int dst_h,
-                   uint8_t *mask, int mask_linesize, int mask_w, int mask_h,
+                   const uint8_t *mask, int mask_linesize, int mask_w, int mask_h,
                    int l2depth, unsigned endianness, int x0, int y0);
 
 /**
