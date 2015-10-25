@@ -13637,21 +13637,48 @@ settb=AVTB
 @end itemize
 
 @section showcqt
-Convert input audio to a video output representing
-frequency spectrum logarithmically (using constant Q transform with
-Brown-Puckette algorithm), with musical tone scale, from E0 to D#10 (10 octaves).
+Convert input audio to a video output representing frequency spectrum
+logarithmically using Brown-Puckette constant Q transform algorithm with
+direct frequency domain coefficient calculation (but the transform itself
+is not really constant Q, instead the Q factor is actually variable/clamped),
+with musical tone scale, from E0 to D#10.
 
 The filter accepts the following options:
 
 @table @option
-@item volume
-Specify transform volume (multiplier) expression. The expression can contain
-variables:
+@item size, s
+Specify the video size for the output. It must be even. For the syntax of this option,
+check the @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{1920x1080}.
+
+@item fps, rate, r
+Set the output frame rate. Default value is @code{25}.
+
+@item bar_h
+Set the bargraph height. It must be even. Default value is @code{-1} which
+computes the bargraph height automatically.
+
+@item axis_h
+Set the axis height. It must be even. Default value is @code{-1} which computes
+the axis height automatically.
+
+@item sono_h
+Set the sonogram height. It must be even. Default value is @code{-1} which
+computes the sonogram height automatically.
+
+@item fullhd
+Set the fullhd resolution. This option is deprecated, use @var{size}, @var{s}
+instead. Default value is @code{1}.
+
+@item sono_v, volume
+Specify the sonogram volume expression. It can contain variables:
 @table @option
+@item bar_v
+the @var{bar_v} evaluated expression
 @item frequency, freq, f
-the frequency where transform is evaluated
+the frequency where it is evaluated
 @item timeclamp, tc
-value of timeclamp option
+the value of @var{timeclamp} option
 @end table
 and functions:
 @table @option
@@ -13660,75 +13687,112 @@ A-weighting of equal loudness
 @item b_weighting(f)
 B-weighting of equal loudness
 @item c_weighting(f)
-C-weighting of equal loudness
+C-weighting of equal loudness.
 @end table
 Default value is @code{16}.
 
-@item tlength
-Specify transform length expression. The expression can contain variables:
+@item bar_v, volume2
+Specify the bargraph volume expression. It can contain variables:
 @table @option
+@item sono_v
+the @var{sono_v} evaluated expression
 @item frequency, freq, f
-the frequency where transform is evaluated
+the frequency where it is evaluated
 @item timeclamp, tc
-value of timeclamp option
+the value of @var{timeclamp} option
 @end table
-Default value is @code{384/f*tc/(384/f+tc)}.
+and functions:
+@table @option
+@item a_weighting(f)
+A-weighting of equal loudness
+@item b_weighting(f)
+B-weighting of equal loudness
+@item c_weighting(f)
+C-weighting of equal loudness.
+@end table
+Default value is @code{sono_v}.
 
-@item timeclamp
+@item sono_g, gamma
+Specify the sonogram gamma. Lower gamma makes the spectrum more contrast,
+higher gamma makes the spectrum having more range. Default value is @code{3}.
+Acceptable range is @code{[1, 7]}.
+
+@item bar_g, gamma2
+Specify the bargraph gamma. Default value is @code{1}. Acceptable range is
+@code{[1, 7]}.
+
+@item timeclamp, tc
 Specify the transform timeclamp. At low frequency, there is trade-off between
 accuracy in time domain and frequency domain. If timeclamp is lower,
 event in time domain is represented more accurately (such as fast bass drum),
 otherwise event in frequency domain is represented more accurately
-(such as bass guitar). Acceptable value is [0.1, 1.0]. Default value is @code{0.17}.
+(such as bass guitar). Acceptable range is @code{[0.1, 1]}. Default value is @code{0.17}.
+
+@item basefreq
+Specify the transform base frequency. Default value is @code{20.01523126408007475},
+which is frequency 50 cents below E0. Acceptable range is @code{[10, 100000]}.
+
+@item endfreq
+Specify the transform end frequency. Default value is @code{20495.59681441799654},
+which is frequency 50 cents above D#10. Acceptable range is @code{[10, 100000]}.
 
 @item coeffclamp
-Specify the transform coeffclamp. If coeffclamp is lower, transform is
-more accurate, otherwise transform is faster. Acceptable value is [0.1, 10.0].
-Default value is @code{1.0}.
+This option is deprecated and ignored.
 
-@item gamma
-Specify gamma. Lower gamma makes the spectrum more contrast, higher gamma
-makes the spectrum having more range. Acceptable value is [1.0, 7.0].
-Default value is @code{3.0}.
+@item tlength
+Specify the transform length in time domain. Use this option to control accuracy
+trade-off between time domain and frequency domain at every frequency sample.
+It can contain variables:
+@table @option
+@item frequency, freq, f
+the frequency where it is evaluated
+@item timeclamp, tc
+the value of @var{timeclamp} option.
+@end table
+Default value is @code{384*tc/(384+tc*f)}.
 
-@item gamma2
-Specify gamma of bargraph. Acceptable value is [1.0, 7.0].
-Default value is @code{1.0}.
+@item count
+Specify the transform count for every video frame. Default value is @code{6}.
+Acceptable range is @code{[1, 30]}.
+
+@item fcount
+Specify the the transform count for every single pixel. Default value is @code{0},
+which makes it computed automatically. Acceptable range is @code{[0, 10]}.
 
 @item fontfile
-Specify font file for use with freetype. If not specified, use embedded font.
+Specify font file for use with freetype to draw the axis. If not specified,
+use embedded font. Note that drawing with font file or embedded font is not
+implemented with custom @var{basefreq} and @var{endfreq}, use @var{axisfile}
+option instead.
 
 @item fontcolor
 Specify font color expression. This is arithmetic expression that should return
-integer value 0xRRGGBB. The expression can contain variables:
+integer value 0xRRGGBB. It can contain variables:
 @table @option
 @item frequency, freq, f
-the frequency where transform is evaluated
+the frequency where it is evaluated
 @item timeclamp, tc
-value of timeclamp option
+the value of @var{timeclamp} option
 @end table
 and functions:
 @table @option
 @item midi(f)
 midi number of frequency f, some midi numbers: E0(16), C1(24), C2(36), A4(69)
 @item r(x), g(x), b(x)
-red, green, and blue value of intensity x
+red, green, and blue value of intensity x.
 @end table
 Default value is @code{st(0, (midi(f)-59.5)/12);
 st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));
-r(1-ld(1)) + b(ld(1))}
+r(1-ld(1)) + b(ld(1))}.
 
-@item fullhd
-If set to 1 (the default), the video size is 1920x1080 (full HD),
-if set to 0, the video size is 960x540. Use this option to make CPU usage lower.
+@item axisfile
+Specify image file to draw the axis. This option override @var{fontfile} and
+@var{fontcolor} option.
 
-@item fps
-Specify video fps. Default value is @code{25}.
-
-@item count
-Specify number of transform per frame, so there are fps*count transforms
-per second. Note that audio data rate must be divisible by fps*count.
-Default value is @code{6}.
+@item axis, text
+Enable/disable drawing text to the axis. If it is set to @code{0}, drawing to
+the axis is disabled, ignoring @var{fontfile} and @var{axisfile} option.
+Default value is @code{1}.
 
 @end table
 
@@ -13748,9 +13812,15 @@ ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt=fps=30:count=5 [out
 @end example
 
 @item
-Playing at 960x540 and lower CPU usage:
+Playing at 1280x720:
 @example
-ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt=fullhd=0:count=3 [out0]'
+ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt=s=1280x720:count=4 [out0]'
+@end example
+
+@item
+Disable sonogram display:
+@example
+sono_h=0
 @end example
 
 @item
@@ -13761,36 +13831,41 @@ ffplay -f lavfi 'aevalsrc=0.1*sin(2*PI*55*t)+0.1*sin(4*PI*55*t)+0.1*sin(6*PI*55*
 @end example
 
 @item
-Same as above, but with more accuracy in frequency domain (and slower):
+Same as above, but with more accuracy in frequency domain:
 @example
 ffplay -f lavfi 'aevalsrc=0.1*sin(2*PI*55*t)+0.1*sin(4*PI*55*t)+0.1*sin(6*PI*55*t)+0.1*sin(8*PI*55*t),
                  asplit[a][out1]; [a] showcqt=timeclamp=0.5 [out0]'
 @end example
 
 @item
-B-weighting of equal loudness
+Custom volume:
 @example
-volume=16*b_weighting(f)
-@end example
-
-@item
-Lower Q factor
-@example
-tlength=100/f*tc/(100/f+tc)
-@end example
-
-@item
-Custom fontcolor, C-note is colored green, others are colored blue
-@example
-fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))'
+bar_v=10:sono_v=bar_v*a_weighting(f)
 @end example
 
 @item
 Custom gamma, now spectrum is linear to the amplitude.
 @example
-gamma=2:gamma2=2
+bar_g=2:sono_g=2
 @end example
 
+@item
+Custom tlength equation:
+@example
+tc=0.33:tlength='st(0,0.17); 384*tc / (384 / ld(0) + tc*f /(1-ld(0))) + 384*tc / (tc*f / ld(0) + 384 /(1-ld(0)))'
+@end example
+
+@item
+Custom fontcolor and fontfile, C-note is colored green, others are colored blue:
+@example
+fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))':fontfile=myfont.ttf
+@end example
+
+@item
+Custom frequency range with custom axis using image file:
+@example
+axisfile=myaxis.png:basefreq=40:endfreq=10000
+@end example
 @end itemize
 
 @section showfreqs
