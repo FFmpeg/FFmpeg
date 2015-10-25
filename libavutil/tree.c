@@ -202,9 +202,9 @@ static void print(AVTreeNode *t, int depth)
         av_log(NULL, AV_LOG_ERROR, "NULL\n");
 }
 
-static int cmp(void *a, const void *b)
+static int cmp(const void *a, const void *b)
 {
-    return (uint8_t *) a - (const uint8_t *) b;
+    return (const uint8_t *) a - (const uint8_t *) b;
 }
 
 int main(int argc, char **argv)
