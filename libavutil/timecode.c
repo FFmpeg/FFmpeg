@@ -160,9 +160,8 @@ static int check_timecode(void *log_ctx, AVTimecode *tc)
         return AVERROR(EINVAL);
     }
     if (check_fps(tc->fps) < 0) {
-        av_log(log_ctx, AV_LOG_ERROR, "Timecode frame rate %d/%d not supported\n",
+        av_log(log_ctx, AV_LOG_WARNING, "Using non-standard frame rate %d/%d\n",
                tc->rate.num, tc->rate.den);
-        return AVERROR_PATCHWELCOME;
     }
     return 0;
 }
