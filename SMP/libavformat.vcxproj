@@ -447,6 +447,7 @@
     <ClCompile Include="..\libavformat\wvenc.c" />
     <ClCompile Include="..\libavformat\xa.c" />
     <ClCompile Include="..\libavformat\xmv.c" />
+    <ClCompile Include="..\libavformat\xvag.c" />
     <ClCompile Include="..\libavformat\xwma.c" />
     <ClCompile Include="..\libavformat\yop.c" />
     <ClCompile Include="..\libavformat\yuv4mpegenc.c" />

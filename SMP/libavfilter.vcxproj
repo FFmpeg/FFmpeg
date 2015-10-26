@@ -152,6 +152,7 @@
     <ClCompile Include="..\libavfilter\af_stereotools.c" />
     <ClCompile Include="..\libavfilter\af_stereowiden.c" />
     <ClCompile Include="..\libavfilter\af_tremolo.c" />
+    <ClCompile Include="..\libavfilter\af_vibrato.c" />
     <ClCompile Include="..\libavfilter\af_volume.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
     </ClCompile>

@@ -276,6 +276,9 @@
     <ClCompile Include="..\libavfilter\af_tremolo.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_vibrato.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_volume.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

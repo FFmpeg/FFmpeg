@@ -1162,6 +1162,9 @@
     <ClCompile Include="..\libavformat\xmv.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\xvag.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\xwma.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
