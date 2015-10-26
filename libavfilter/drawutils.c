@@ -408,7 +408,7 @@ void ff_blend_rectangle(FFDrawContext *draw, FFDrawColor *color,
 }
 
 static void blend_pixel(uint8_t *dst, unsigned src, unsigned alpha,
-                        uint8_t *mask, int mask_linesize, int l2depth,
+                        const uint8_t *mask, int mask_linesize, int l2depth,
                         unsigned w, unsigned h, unsigned shift, unsigned xm0)
 {
     unsigned xm, x, y, t = 0;
@@ -432,7 +432,7 @@ static void blend_pixel(uint8_t *dst, unsigned src, unsigned alpha,
 
 static void blend_line_hv(uint8_t *dst, int dst_delta,
                           unsigned src, unsigned alpha,
-                          uint8_t *mask, int mask_linesize, int l2depth, int w,
+                          const uint8_t *mask, int mask_linesize, int l2depth, int w,
                           unsigned hsub, unsigned vsub,
                           int xm, int left, int right, int hband)
 {
@@ -457,12 +457,13 @@ static void blend_line_hv(uint8_t *dst, int dst_delta,
 
 void ff_blend_mask(FFDrawContext *draw, FFDrawColor *color,
                    uint8_t *dst[], int dst_linesize[], int dst_w, int dst_h,
-                   uint8_t *mask,  int mask_linesize, int mask_w, int mask_h,
+                   const uint8_t *mask,  int mask_linesize, int mask_w, int mask_h,
                    int l2depth, unsigned endianness, int x0, int y0)
 {
     unsigned alpha, nb_planes, nb_comp, plane, comp;
     int xm0, ym0, w_sub, h_sub, x_sub, y_sub, left, right, top, bottom, y;
-    uint8_t *p0, *p, *m;
+    uint8_t *p0, *p;
+    const uint8_t *m;
 
     clip_interval(dst_w, &x0, &mask_w, &xm0);
     clip_interval(dst_h, &y0, &mask_h, &ym0);

@@ -84,6 +84,7 @@ static int genh_read_header(AVFormatContext *s)
     case  5: st->codec->codec_id = st->codec->block_align > 0 ?
                                    AV_CODEC_ID_PCM_S8_PLANAR :
                                    AV_CODEC_ID_PCM_S8;           break;
+    case  6: st->codec->codec_id = AV_CODEC_ID_SDX2_DPCM;        break;
     case  7: ret = ff_alloc_extradata(st->codec, 2);
              if (ret < 0)
                  return ret;
@@ -168,6 +169,9 @@ static int genh_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
         ret = 0;
+    } else if (codec->codec_id == AV_CODEC_ID_SDX2_DPCM) {
+        ret = av_get_packet(s->pb, pkt, codec->block_align * 1024);
+
     } else {
         ret = av_get_packet(s->pb, pkt, codec->block_align ? codec->block_align : 1024 * codec->channels);
     }

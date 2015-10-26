@@ -23,7 +23,7 @@ TestContext AVOptions:
   -rational          <rational>   E....... set rational (from 0 to 10) (default 1/1)
   -string            <string>     E....... set string (default "default")
   -escape            <string>     E....... set escape str (default "\=,")
-  -flags             <flags>      E....... set flags (default 1)
+  -flags             <flags>      E....... set flags (default cool)
      cool                         E....... set cool flag
      lame                         E....... set lame flag
      mu                           E....... set mu flag

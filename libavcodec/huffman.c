@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/qsort.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "huffman.h"
@@ -170,7 +171,7 @@ int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes, int nb_bit
                "Tree construction is not possible\n");
         return -1;
     }
-    qsort(nodes, nb_codes, sizeof(Node), cmp);
+    AV_QSORT(nodes, nb_codes, Node, cmp);
     cur_node = nb_codes;
     nodes[nb_codes*2-1].count = 0;
     for (i = 0; i < nb_codes * 2 - 1; i += 2) {

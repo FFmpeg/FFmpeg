@@ -941,6 +941,27 @@ static const char *get_opt_const_name(void *obj, const char *unit, int64_t value
     return NULL;
 }
 
+static char *get_opt_flags_string(void *obj, const char *unit, int64_t value)
+{
+    const AVOption *opt = NULL;
+    char flags[512];
+
+    flags[0] = 0;
+    if (!unit)
+        return NULL;
+    while ((opt = av_opt_next(obj, opt))) {
+        if (opt->type == AV_OPT_TYPE_CONST && !strcmp(opt->unit, unit) &&
+            opt->default_val.i64 & value) {
+            if (flags[0])
+                av_strlcatf(flags, sizeof(flags), "+");
+            av_strlcatf(flags, sizeof(flags), "%s", opt->name);
+        }
+    }
+    if (flags[0])
+        return av_strdup(flags);
+    return NULL;
+}
+
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
                      int req_flags, int rej_flags)
 {
@@ -1066,9 +1087,16 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_BOOL:
                 av_log(av_log_obj, AV_LOG_INFO, "%s", (char *)av_x_if_null(get_bool_name(opt->default_val.i64), "invalid"));
                 break;
-            case AV_OPT_TYPE_FLAGS:
-                av_log(av_log_obj, AV_LOG_INFO, "%"PRIX64, opt->default_val.i64);
+            case AV_OPT_TYPE_FLAGS: {
+                char *def_flags = get_opt_flags_string(obj, opt->unit, opt->default_val.i64);
+                if (def_flags) {
+                    av_log(av_log_obj, AV_LOG_INFO, "%s", def_flags);
+                    av_freep(&def_flags);
+                } else {
+                    av_log(av_log_obj, AV_LOG_INFO, "%"PRIX64, opt->default_val.i64);
+                }
                 break;
+            }
             case AV_OPT_TYPE_DURATION:
                 log_value(av_log_obj, AV_LOG_INFO, opt->default_val.i64);
                 break;

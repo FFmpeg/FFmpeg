@@ -138,8 +138,8 @@ static void setup_array(uint8_t *out[SWR_CH_MAX], uint8_t *in, enum AVSampleForm
     }
 }
 
-static int cmp(const int *a, const int *b){
-    return *a - *b;
+static int cmp(const void *a, const void *b){
+    return *(const int *)a - *(const int *)b;
 }
 
 static void audiogen(void *data, enum AVSampleFormat sample_fmt,
@@ -271,7 +271,7 @@ int main(int argc, char **argv){
         r = (seed * (uint64_t)(max_tests - test)) >>32;
         FFSWAP(int, remaining_tests[r], remaining_tests[max_tests - test - 1]);
     }
-    qsort(remaining_tests + max_tests - num_tests, num_tests, sizeof(remaining_tests[0]), (void*)cmp);
+    qsort(remaining_tests + max_tests - num_tests, num_tests, sizeof(remaining_tests[0]), cmp);
     in_sample_rate=16000;
     for(test=0; test<num_tests; test++){
         char  in_layout_string[256];

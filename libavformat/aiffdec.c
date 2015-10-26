@@ -128,6 +128,11 @@ static int get_aiff_header(AVFormatContext *s, int size,
     } else if (version == AIFF_C_VERSION1) {
         codec->codec_tag = avio_rl32(pb);
         codec->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, codec->codec_tag);
+        if (codec->codec_id == AV_CODEC_ID_NONE) {
+            char tag[32];
+            av_get_codec_tag_string(tag, sizeof(tag), codec->codec_tag);
+            avpriv_request_sample(s, "unknown or unsupported codec tag: %s", tag);
+        }
         size -= 4;
     }
 
@@ -154,6 +159,7 @@ static int get_aiff_header(AVFormatContext *s, int size,
             codec->bits_per_coded_sample = 5;
         case AV_CODEC_ID_ADPCM_G722:
         case AV_CODEC_ID_MACE6:
+        case AV_CODEC_ID_SDX2_DPCM:
             codec->block_align = 1*codec->channels;
             break;
         case AV_CODEC_ID_GSM:

@@ -2054,6 +2054,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("DPCM Sol"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_SDX2_DPCM,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "sdx2_dpcm",
+        .long_name = NULL_IF_CONFIG_SMALL("DPCM Squareroot-Delta-Exact"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* audio codecs */
     {

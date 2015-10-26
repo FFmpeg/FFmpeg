@@ -265,6 +265,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint32_t data_type = 0, str_size, str_size_alloc;
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
     int raw = 0;
+    int num = 0;
 
     switch (atom.type) {
     case MKTAG( '@','P','R','M'): key = "premiere_version"; raw = 1; break;
@@ -368,6 +369,15 @@ retry:
                     av_log(c->fc, AV_LOG_ERROR, "Error parsing cover art.\n");
                 }
                 return ret;
+            } else if (!key && c->found_hdlr_mdta && c->meta_keys) {
+                uint32_t index = AV_RB32(&atom.type);
+                if (index < c->meta_keys_count) {
+                    key = c->meta_keys[index];
+                } else {
+                    av_log(c->fc, AV_LOG_WARNING,
+                           "The index of 'data' is out of range: %d >= %d.\n",
+                           index, c->meta_keys_count);
+                }
             }
         } else return 0;
     } else if (atom.size > 4 && key && !c->itunes_metadata && !raw) {
@@ -394,8 +404,10 @@ retry:
     if (atom.size < 0 || str_size >= INT_MAX/2)
         return AVERROR_INVALIDDATA;
 
+    // Allocates enough space if data_type is a float32 number, otherwise
     // worst-case requirement for output string in case of utf8 coded input
-    str_size_alloc = (raw ? str_size : str_size * 2) + 1;
+    num = (data_type == 23);
+    str_size_alloc = (num ? 512 : (raw ? str_size : str_size * 2)) + 1;
     str = av_mallocz(str_size_alloc);
     if (!str)
         return AVERROR(ENOMEM);
@@ -405,6 +417,13 @@ retry:
     else {
         if (!raw && (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff)))) { // MAC Encoded
             mov_read_mac_string(c, pb, str_size, str, str_size_alloc);
+        } else if (data_type == 23 && str_size >= 4) {  // BE float32
+            float val = av_int2float(avio_rb32(pb));
+            if (snprintf(str, str_size_alloc, "%f", val) >= str_size_alloc) {
+                av_log(c->fc, AV_LOG_ERROR,
+                       "Failed to store the float32 number (%f) in string.\n", val);
+                return AVERROR_INVALIDDATA;
+            }
         } else {
             int ret = ffio_read_size(pb, str, str_size);
             if (ret < 0) {
@@ -599,11 +618,6 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     char *title_str;
     int ret;
 
-    if (c->fc->nb_streams < 1) // meta before first trak
-        return 0;
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-
     avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
 
@@ -613,6 +627,15 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     av_log(c->fc, AV_LOG_TRACE, "ctype= %.4s (0x%08x)\n", (char*)&ctype, ctype);
     av_log(c->fc, AV_LOG_TRACE, "stype= %.4s\n", (char*)&type);
+
+    if (c->fc->nb_streams < 1) {  // meta before first trak
+        if (type == MKTAG('m','d','t','a')) {
+            c->found_hdlr_mdta = 1;
+        }
+        return 0;
+    }
+
+    st = c->fc->streams[c->fc->nb_streams-1];
 
     if     (type == MKTAG('v','i','d','e'))
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -3134,6 +3157,48 @@ static int mov_read_ilst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return ret;
 }
 
+static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    uint32_t count;
+    uint32_t i;
+
+    if (atom.size < 8)
+        return 0;
+
+    avio_skip(pb, 4);
+    count = avio_rb32(pb);
+    if (count > UINT_MAX / sizeof(*c->meta_keys)) {
+        av_log(c->fc, AV_LOG_ERROR,
+               "The 'keys' atom with the invalid key count: %d\n", count);
+        return AVERROR_INVALIDDATA;
+    }
+
+    c->meta_keys_count = count + 1;
+    c->meta_keys = av_mallocz(c->meta_keys_count * sizeof(*c->meta_keys));
+    if (!c->meta_keys)
+        return AVERROR(ENOMEM);
+
+    for (i = 1; i <= count; ++i) {
+        uint32_t key_size = avio_rb32(pb);
+        uint32_t type = avio_rl32(pb);
+        if (key_size < 8) {
+            av_log(c->fc, AV_LOG_ERROR,
+                   "The key# %d in meta has invalid size: %d\n", i, key_size);
+            return AVERROR_INVALIDDATA;
+        }
+        key_size -= 8;
+        if (type != MKTAG('m','d','t','a')) {
+            avio_skip(pb, key_size);
+        }
+        c->meta_keys[i] = av_mallocz(key_size + 1);
+        if (!c->meta_keys[i])
+            return AVERROR(ENOMEM);
+        avio_read(pb, c->meta_keys[i], key_size);
+    }
+
+    return 0;
+}
+
 static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int size)
 {
     int64_t end = avio_tell(pb) + size;
@@ -4078,6 +4143,14 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                        atom.type == MKTAG('i','l','s','t')))
             parse = mov_read_udta_string;
 
+        // Supports parsing the QuickTime Metadata Keys.
+        // https://developer.apple.com/library/mac/documentation/QuickTime/QTFF/Metadata/Metadata.html
+        if (!parse && c->found_hdlr_mdta &&
+            atom.type == MKTAG('m','e','t','a') &&
+            a.type == MKTAG('k','e','y','s')) {
+            parse = mov_read_keys;
+        }
+
         if (!parse) { /* skip leaf atoms data */
             avio_skip(pb, a.size);
         } else {
@@ -4357,6 +4430,13 @@ static int mov_read_close(AVFormatContext *s)
     if (mov->dv_demux) {
         avformat_free_context(mov->dv_fctx);
         mov->dv_fctx = NULL;
+    }
+
+    if (mov->meta_keys) {
+        for (i = 1; i < mov->meta_keys_count; i++) {
+            av_freep(&mov->meta_keys[i]);
+        }
+        av_freep(&mov->meta_keys);
     }
 
     av_freep(&mov->trex_data);
