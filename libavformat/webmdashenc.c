@@ -194,7 +194,7 @@ static int write_representation(AVFormatContext *s, AVStream *stream, char *id,
         avio_printf(s->pb, " width=\"%d\"", stream->codec->width);
     if (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO && output_height)
         avio_printf(s->pb, " height=\"%d\"", stream->codec->height);
-    if (stream->codec->codec_type = AVMEDIA_TYPE_AUDIO && output_sample_rate)
+    if (stream->codec->codec_type == AVMEDIA_TYPE_AUDIO && output_sample_rate)
         avio_printf(s->pb, " audioSamplingRate=\"%d\"", stream->codec->sample_rate);
     if (w->is_live) {
         // For live streams, Codec and Mime Type always go in the Representation tag.
