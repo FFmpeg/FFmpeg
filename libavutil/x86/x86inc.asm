@@ -772,6 +772,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %assign cpuflags_atom     (1<<21)
 %assign cpuflags_bmi1     (1<<22)|cpuflags_lzcnt
 %assign cpuflags_bmi2     (1<<23)|cpuflags_bmi1
+%assign cpuflags_aesni    (1<<24)|cpuflags_sse42
 
 ; Returns a boolean value expressing whether or not the specified cpuflag is enabled.
 %define    cpuflag(x) (((((cpuflags & (cpuflags_ %+ x)) ^ (cpuflags_ %+ x)) - 1) >> 31) & 1)
@@ -1171,12 +1172,12 @@ AVX_INSTR addsd, sse2, 1, 0, 1
 AVX_INSTR addss, sse, 1, 0, 1
 AVX_INSTR addsubpd, sse3, 1, 0, 0
 AVX_INSTR addsubps, sse3, 1, 0, 0
-AVX_INSTR aesdec, fnord, 0, 0, 0
-AVX_INSTR aesdeclast, fnord, 0, 0, 0
-AVX_INSTR aesenc, fnord, 0, 0, 0
-AVX_INSTR aesenclast, fnord, 0, 0, 0
-AVX_INSTR aesimc
-AVX_INSTR aeskeygenassist
+AVX_INSTR aesdec, aesni, 0, 0, 0
+AVX_INSTR aesdeclast, aesni, 0, 0, 0
+AVX_INSTR aesenc, aesni, 0, 0, 0
+AVX_INSTR aesenclast, aesni, 0, 0, 0
+AVX_INSTR aesimc, aesni
+AVX_INSTR aeskeygenassist, aesni
 AVX_INSTR andnpd, sse2, 1, 0, 0
 AVX_INSTR andnps, sse, 1, 0, 0
 AVX_INSTR andpd, sse2, 1, 0, 1

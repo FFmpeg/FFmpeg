@@ -368,6 +368,7 @@ Optimization options (experts only):
   --disable-fma3           disable FMA3 optimizations
   --disable-fma4           disable FMA4 optimizations
   --disable-avx2           disable AVX2 optimizations
+  --disable-aesni          disable AESNI optimizations
   --disable-armv5te        disable armv5te optimizations
   --disable-armv6          disable armv6 optimizations
   --disable-armv6t2        disable armv6t2 optimizations
@@ -1635,6 +1636,7 @@ ARCH_EXT_LIST_LOONGSON="
 "
 
 ARCH_EXT_LIST_X86_SIMD="
+    aesni
     amd3dnow
     amd3dnowext
     avx
@@ -2128,6 +2130,7 @@ sse3_deps="sse2"
 ssse3_deps="sse3"
 sse4_deps="ssse3"
 sse42_deps="sse4"
+aesni_deps="sse42"
 avx_deps="sse42"
 xop_deps="avx"
 fma3_deps="avx"
@@ -6011,6 +6014,7 @@ if enabled x86; then
     echo "3DNow! extended enabled   ${amd3dnowext-no}"
     echo "SSE enabled               ${sse-no}"
     echo "SSSE3 enabled             ${ssse3-no}"
+    echo "AESNI enabled             ${aesni-no}"
     echo "AVX enabled               ${avx-no}"
     echo "XOP enabled               ${xop-no}"
     echo "FMA3 enabled              ${fma3-no}"
