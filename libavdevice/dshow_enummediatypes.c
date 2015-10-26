@@ -37,6 +37,8 @@ libAVEnumMediaTypes_Next(libAVEnumMediaTypes *this, unsigned long n,
     if (!this->pos && n == 1) {
         if (!IsEqualGUID(&this->type.majortype, &GUID_NULL)) {
             AM_MEDIA_TYPE *type = av_malloc(sizeof(AM_MEDIA_TYPE));
+            if (!type)
+                return E_OUTOFMEMORY;
             ff_copy_dshow_media_type(type, &this->type);
             *types = type;
             count = 1;
