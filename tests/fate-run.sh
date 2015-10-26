@@ -103,33 +103,33 @@ ffmpeg(){
         [ x${arg} = x-i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
         ffmpeg_args="${ffmpeg_args} ${arg}"
     done
-    run ./ffmpeg${PROGSUF} ${ffmpeg_args}
+    run ffmpeg${PROGSUF} ${ffmpeg_args}
 }
 
 framecrc(){
-    ./ffmpeg${PROGSUF} "$@" -flags +bitexact -fflags +bitexact -f framecrc -
+    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framecrc -
 }
 
 framemd5(){
-    ./ffmpeg${PROGSUF} "$@" -flags +bitexact -fflags +bitexact -f framemd5 -
+    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framemd5 -
 }
 
 crc(){
-    ./ffmpeg${PROGSUF} "$@" -f crc -
+    ffmpeg "$@" -f crc -
 }
 
 md5(){
-    ./ffmpeg${PROGSUF} "$@" md5:
+    ffmpeg "$@" md5:
 }
 
 pcm(){
-    ./ffmpeg${PROGSUF} "$@" -vn -f s16le -
+    ffmpeg "$@" -vn -f s16le -
 }
 
 fmtstdout(){
     fmt=$1
     shift 1
-    ./ffmpeg${PROGSUF} -flags +bitexact -fflags +bitexact "$@" -f $fmt -
+    ffmpeg -flags +bitexact -fflags +bitexact "$@" -f $fmt -
 }
 
 enc_dec_pcm(){
@@ -141,8 +141,8 @@ enc_dec_pcm(){
     encfile="${outdir}/${test}.${out_fmt}"
     cleanfiles=$encfile
     encfile=$(target_path ${encfile})
-    ./ffmpeg${PROGSUF} -i $src_file "$@" -f $out_fmt -y ${encfile} || return
-    ./ffmpeg${PROGSUF} -flags +bitexact -fflags +bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -fflags +bitexact -f ${dec_fmt} -
+    ffmpeg -i $src_file "$@" -f $out_fmt -y ${encfile} || return
+    ffmpeg -flags +bitexact -fflags +bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -fflags +bitexact -f ${dec_fmt} -
 }
 
 FLAGS="-flags +bitexact -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
@@ -163,11 +163,11 @@ enc_dec(){
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     tdecfile=$(target_path $decfile)
-    ./ffmpeg${PROGSUF} -f $src_fmt $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS \
+    ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS \
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ./ffmpeg${PROGSUF} $8 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
+    ffmpeg $8 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
         -f $dec_fmt -y $tdecfile || return
     do_md5sum $decfile
     tests/tiny_psnr $srcfile $decfile $cmp_unit $cmp_shift
@@ -191,7 +191,7 @@ video_filter(){
     label=${test#filter-}
     raw_src="${target_path}/tests/vsynth1/%02d.pgm"
     printf '%-20s' $label
-    ./ffmpeg${PROGSUF} $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src \
+    ffmpeg $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src \
         $FLAGS $ENC_OPTS -vf "$filters" -vcodec rawvideo -frames:v 5 $* -f nut md5:
 }
 
@@ -236,16 +236,16 @@ gapless(){
     cleanfiles="$cleanfiles $decfile1 $decfile2 $decfile3"
 
     # test packet data
-    ./ffmpeg${PROGSUF} $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile1
+    ffmpeg $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile1
     do_md5sum $decfile1
     # test decoded (and cut) data
-    ./ffmpeg${PROGSUF} $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
+    ffmpeg $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
     # the same as above again, with seeking to the start
-    ./ffmpeg${PROGSUF} $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile2
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile2
     do_md5sum $decfile2
-    ./ffmpeg${PROGSUF} $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
     # test packet data, with seeking to a specific position
-    ./ffmpeg${PROGSUF} $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile3
+    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile3
     do_md5sum $decfile3
 }
 

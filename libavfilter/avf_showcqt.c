@@ -371,7 +371,7 @@ static int config_output(AVFilterLink *outlink)
             tlength = s->timeclamp;
         }
 
-        volume = FFABS(av_expr_eval(volume_expr, expr_vars_val, NULL));
+        volume = fabs(av_expr_eval(volume_expr, expr_vars_val, NULL));
         if (isnan(volume)) {
             av_log(ctx, AV_LOG_WARNING, "at freq %g: volume is nan, setting it to 0\n", freq);
             volume = VOLUME_MIN;

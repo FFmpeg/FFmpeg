@@ -25,13 +25,13 @@ typedef struct HuffYUVEncDSPContext {
     void (*diff_bytes)(uint8_t *dst /* align 16 */,
                        const uint8_t *src1 /* align 16 */,
                        const uint8_t *src2 /* align 1 */,
-                       int w);
+                       intptr_t w);
     /**
      * Subtract HuffYUV's variant of median prediction.
      * Note, this might read from src1[-1], src2[-1].
      */
     void (*sub_hfyu_median_pred)(uint8_t *dst, const uint8_t *src1,
-                                 const uint8_t *src2, int w,
+                                 const uint8_t *src2, intptr_t w,
                                  int *left, int *left_top);
 } HuffYUVEncDSPContext;
 

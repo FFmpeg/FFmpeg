@@ -41,6 +41,14 @@
  * encoder.
  */
 
+/* @name ltp_coef
+ * Table of the LTP coefficients
+ */
+static const INTFLOAT ltp_coef[8] = {
+    Q30(0.570829f), Q30(0.696616f), Q30(0.813004f), Q30(0.911304f),
+    Q30(0.984900f), Q30(1.067894f), Q30(1.194601f), Q30(1.369533f),
+};
+
 /* @name tns_tmp2_map
  * Tables of the tmp2[] arrays of LPC coefficients used for TNS.
  * The suffix _M_N[] indicate the values of coef_compress and coef_res

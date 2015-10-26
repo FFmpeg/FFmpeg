@@ -146,7 +146,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     double *buffer = s->buffer;
     AVFrame *out;
     double *dst;
-    int nbuf = inlink->sample_rate * (FFABS(delay) / 1000.);
+    int nbuf = inlink->sample_rate * (fabs(delay) / 1000.);
     int n;
 
     nbuf -= nbuf % 2;

@@ -34,12 +34,6 @@
 #include "mem.h"
 #include "xtea.h"
 
-#if !FF_API_CRYPTO_CONTEXT
-struct AVXTEA {
-    uint32_t key[16];
-};
-#endif
-
 AVXTEA *av_xtea_alloc(void)
 {
     return av_mallocz(sizeof(struct AVXTEA));

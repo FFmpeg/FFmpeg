@@ -35,6 +35,9 @@ typedef struct ChromakeyContext {
     float blend;
 
     int is_yuv;
+
+    int hsub_log2;
+    int vsub_log2;
 } ChromakeyContext;
 
 static uint8_t do_chromakey_pixel(ChromakeyContext *ctx, uint8_t u[9], uint8_t v[9])
@@ -79,24 +82,17 @@ static int do_chromakey_slice(AVFilterContext *avctx, void *arg, int jobnr, int 
 
     ChromakeyContext *ctx = avctx->priv;
 
-    int hsub_log2 = 0, vsub_log2 = 0;
     int x, y, xo, yo;
     uint8_t u[9], v[9];
 
     memset(u, ctx->chromakey_uv[0], sizeof(u));
     memset(v, ctx->chromakey_uv[1], sizeof(v));
 
-    if (frame->format == AV_PIX_FMT_YUVA420P || frame->format == AV_PIX_FMT_YUVA422P)
-        hsub_log2 = 1;
-
-    if (frame->format == AV_PIX_FMT_YUVA420P)
-        vsub_log2 = 1;
-
     for (y = slice_start; y < slice_end; ++y) {
         for (x = 0; x < frame->width; ++x) {
             for (yo = 0; yo < 3; ++yo) {
                 for (xo = 0; xo < 3; ++xo) {
-                    get_pixel_uv(frame, hsub_log2, vsub_log2, x + xo - 1, y + yo - 1, &u[yo * 3 + xo], &v[yo * 3 + xo]);
+                    get_pixel_uv(frame, ctx->hsub_log2, ctx->vsub_log2, x + xo - 1, y + yo - 1, &u[yo * 3 + xo], &v[yo * 3 + xo]);
                 }
             }
 
@@ -155,12 +151,25 @@ static av_cold int query_formats(AVFilterContext *avctx)
     return ff_set_common_formats(avctx, formats);
 }
 
+static av_cold int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *avctx = inlink->dst;
+    ChromakeyContext *ctx = avctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    ctx->hsub_log2 = desc->log2_chroma_w;
+    ctx->vsub_log2 = desc->log2_chroma_h;
+
+    return 0;
+}
+
 static const AVFilterPad chromakey_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
         .needs_writable = 1,
         .filter_frame   = filter_frame,
+        .config_props   = config_input,
     },
     { NULL }
 };

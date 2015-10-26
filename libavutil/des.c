@@ -25,13 +25,6 @@
 #include "mem.h"
 #include "des.h"
 
-#if !FF_API_CRYPTO_CONTEXT
-struct AVDES {
-    uint64_t round_keys[3][16];
-    int triple_des;
-};
-#endif
-
 #define T(a, b, c, d, e, f, g, h) 64-a,64-b,64-c,64-d,64-e,64-f,64-g,64-h
 static const uint8_t IP_shuffle[] = {
     T(58, 50, 42, 34, 26, 18, 10, 2),
@@ -299,7 +292,7 @@ AVDES *av_des_alloc(void)
 
 int av_des_init(AVDES *d, const uint8_t *key, int key_bits, av_unused int decrypt) {
     if (key_bits != 64 && key_bits != 192)
-        return -1;
+        return AVERROR(EINVAL);
     d->triple_des = key_bits > 64;
     gen_roundkeys(d->round_keys[0], AV_RB64(key));
     if (d->triple_des) {

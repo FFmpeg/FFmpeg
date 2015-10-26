@@ -313,6 +313,7 @@ enum AVCodecID {
     AV_CODEC_ID_SNOW,
     AV_CODEC_ID_SMVJPEG,
     AV_CODEC_ID_APNG,
+    AV_CODEC_ID_DAALA,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -393,6 +394,7 @@ enum AVCodecID {
     AV_CODEC_ID_ADPCM_IMA_RAD,
     AV_CODEC_ID_ADPCM_G726LE,
     AV_CODEC_ID_ADPCM_THP_LE,
+    AV_CODEC_ID_ADPCM_PSX,
 
     /* AMR */
     AV_CODEC_ID_AMR_NB = 0x12000,
@@ -3616,11 +3618,20 @@ typedef struct AVSubtitleRect {
     int h;         ///< height           of pict, undefined when pict is not set
     int nb_colors; ///< number of colors in pict, undefined when pict is not set
 
+#if FF_API_AVPICTURE
+    /**
+     * @deprecated unused
+     */
+    attribute_deprecated
+    AVPicture pict;
+#endif
     /**
      * data+linesize for the bitmap of this subtitle.
-     * can be set for text/ass as well once they are rendered
+     * Can be set for text/ass as well once they are rendered.
      */
-    AVPicture pict;
+    uint8_t *data[4];
+    int linesize[4];
+
     enum AVSubtitleType type;
 
     char *text;                     ///< 0 terminated plain UTF-8 text

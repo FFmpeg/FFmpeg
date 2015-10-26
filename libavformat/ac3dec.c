@@ -55,7 +55,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
                 init_get_bits(&gbc, buf3, 54);
             }else
                 init_get_bits(&gbc, buf2, 54);
-            if(avpriv_ac3_parse_header2(&gbc, &phdr) < 0)
+            if(avpriv_ac3_parse_header(&gbc, &phdr) < 0)
                 break;
             if(buf2 + phdr->frame_size > end)
                 break;

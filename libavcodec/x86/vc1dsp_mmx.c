@@ -33,7 +33,11 @@
 #include "fpel.h"
 #include "vc1dsp.h"
 
-#if HAVE_6REGS && HAVE_INLINE_ASM
+#if HAVE_6REGS && HAVE_INLINE_ASM && HAVE_MMX_EXTERNAL
+
+void ff_vc1_put_ver_16b_shift2_mmx(int16_t *dst,
+                                   const uint8_t *src, x86_reg stride,
+                                   int rnd, int64_t shift);
 
 #define OP_PUT(S,D)
 #define OP_AVG(S,D) "pavgb " #S ", " #D " \n\t"
@@ -65,55 +69,6 @@
      "movd      "ROUND", %%mm7         \n\t"    \
      "punpcklwd %%mm7, %%mm7           \n\t"    \
      "punpckldq %%mm7, %%mm7           \n\t"
-
-#define SHIFT2_LINE(OFF, R0,R1,R2,R3)           \
-    "paddw     %%mm"#R2", %%mm"#R1"    \n\t"    \
-    "movd      (%0,%3), %%mm"#R0"      \n\t"    \
-    "pmullw    %%mm6, %%mm"#R1"        \n\t"    \
-    "punpcklbw %%mm0, %%mm"#R0"        \n\t"    \
-    "movd      (%0,%2), %%mm"#R3"      \n\t"    \
-    "psubw     %%mm"#R0", %%mm"#R1"    \n\t"    \
-    "punpcklbw %%mm0, %%mm"#R3"        \n\t"    \
-    "paddw     %%mm7, %%mm"#R1"        \n\t"    \
-    "psubw     %%mm"#R3", %%mm"#R1"    \n\t"    \
-    "psraw     %4, %%mm"#R1"           \n\t"    \
-    "movq      %%mm"#R1", "#OFF"(%1)   \n\t"    \
-    "add       %2, %0                  \n\t"
-
-/** Sacrificing mm6 makes it possible to pipeline loads from src */
-static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
-                                       const uint8_t *src, x86_reg stride,
-                                       int rnd, int64_t shift)
-{
-    __asm__ volatile(
-        "mov       $3, %%"REG_c"           \n\t"
-        LOAD_ROUNDER_MMX("%5")
-        "movq      "MANGLE(ff_pw_9)", %%mm6 \n\t"
-        "1:                                \n\t"
-        "movd      (%0), %%mm2             \n\t"
-        "add       %2, %0                  \n\t"
-        "movd      (%0), %%mm3             \n\t"
-        "punpcklbw %%mm0, %%mm2            \n\t"
-        "punpcklbw %%mm0, %%mm3            \n\t"
-        SHIFT2_LINE(  0, 1, 2, 3, 4)
-        SHIFT2_LINE( 24, 2, 3, 4, 1)
-        SHIFT2_LINE( 48, 3, 4, 1, 2)
-        SHIFT2_LINE( 72, 4, 1, 2, 3)
-        SHIFT2_LINE( 96, 1, 2, 3, 4)
-        SHIFT2_LINE(120, 2, 3, 4, 1)
-        SHIFT2_LINE(144, 3, 4, 1, 2)
-        SHIFT2_LINE(168, 4, 1, 2, 3)
-        "sub       %6, %0                  \n\t"
-        "add       $8, %1                  \n\t"
-        "dec       %%"REG_c"               \n\t"
-        "jnz 1b                            \n\t"
-        : "+r"(src), "+r"(dst)
-        : "r"(stride), "r"(-2*stride),
-          "m"(shift), "m"(rnd), "r"(9*stride-4)
-          NAMED_CONSTRAINTS_ADD(ff_pw_9)
-        : "%"REG_c, "memory"
-    );
-}
 
 /**
  * Data is already unpacked, so some operations can directly be made from
@@ -430,7 +385,7 @@ static void OP ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride,\
                                int hmode, int vmode, int rnd)\
 {\
     static const vc1_mspel_mc_filter_ver_16bits vc1_put_shift_ver_16bits[] =\
-         { NULL, vc1_put_ver_16b_shift1_mmx, vc1_put_ver_16b_shift2_mmx, vc1_put_ver_16b_shift3_mmx };\
+         { NULL, vc1_put_ver_16b_shift1_mmx, ff_vc1_put_ver_16b_shift2_mmx, vc1_put_ver_16b_shift3_mmx };\
     static const vc1_mspel_mc_filter_hor_16bits vc1_put_shift_hor_16bits[] =\
          { NULL, OP ## vc1_hor_16b_shift1_mmx, OP ## vc1_hor_16b_shift2_mmx, OP ## vc1_hor_16b_shift3_mmx };\
     static const vc1_mspel_mc_filter_8bits vc1_put_shift_8bits[] =\
@@ -728,39 +683,12 @@ static void vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, int linesize,
     );
 }
 
-#if HAVE_MMX_EXTERNAL
-static void put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                                   ptrdiff_t stride, int rnd)
-{
-    ff_put_pixels8_mmx(dst, src, stride, 8);
-}
-static void put_vc1_mspel_mc00_16_mmx(uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride, int rnd)
-{
-    ff_put_pixels16_mmx(dst, src, stride, 16);
-}
-static void avg_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                                   ptrdiff_t stride, int rnd)
-{
-    ff_avg_pixels8_mmx(dst, src, stride, 8);
-}
-static void avg_vc1_mspel_mc00_16_mmx(uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride, int rnd)
-{
-    ff_avg_pixels16_mmx(dst, src, stride, 16);
-}
-#endif
-
 #define FN_ASSIGN(OP, X, Y, INSN) \
     dsp->OP##vc1_mspel_pixels_tab[1][X+4*Y] = OP##vc1_mspel_mc##X##Y##INSN; \
     dsp->OP##vc1_mspel_pixels_tab[0][X+4*Y] = OP##vc1_mspel_mc##X##Y##_16##INSN
 
 av_cold void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
 {
-#if HAVE_MMX_EXTERNAL
-    FN_ASSIGN(put_, 0, 0, _mmx);
-    FN_ASSIGN(avg_, 0, 0, _mmx);
-#endif
     FN_ASSIGN(put_, 0, 1, _mmx);
     FN_ASSIGN(put_, 0, 2, _mmx);
     FN_ASSIGN(put_, 0, 3, _mmx);
@@ -807,4 +735,4 @@ av_cold void ff_vc1dsp_init_mmxext(VC1DSPContext *dsp)
     dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmxext;
     dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmxext;
 }
-#endif /* HAVE_6REGS && HAVE_INLINE_ASM */
+#endif /* HAVE_6REGS && HAVE_INLINE_ASM && HAVE_MMX_EXTERNAL */

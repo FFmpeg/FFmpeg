@@ -47,7 +47,7 @@ static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
 static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
 
 
-int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **phdr)
+int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo **phdr)
 {
     int frame_size_code;
     AC3HeaderInfo *hdr;
@@ -151,15 +151,6 @@ int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **phdr)
     return 0;
 }
 
-int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
-{
-    AC3HeaderInfo tmp, *ptmp = &tmp;
-    int ret = avpriv_ac3_parse_header2(gbc, &ptmp);
-
-    memcpy(hdr, ptmp, ((intptr_t)&tmp.channel_layout) - ((intptr_t)&tmp) + sizeof(uint64_t));
-    return ret;
-}
-
 static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
         int *need_next_header, int *new_frame_start)
 {
@@ -172,7 +163,7 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     GetBitContext gbc;
 
     init_get_bits(&gbc, tmp.u8+8-AC3_HEADER_SIZE, 54);
-    err = avpriv_ac3_parse_header2(&gbc, &phdr);
+    err = avpriv_ac3_parse_header(&gbc, &phdr);
 
     if(err < 0)
         return 0;

@@ -3105,6 +3105,13 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         break;
     }
 
+    // If the duration of the mp3 packets is not constant, then they could need a parser
+    if (st->codec->codec_id == AV_CODEC_ID_MP3
+        && sc->stts_count > 3
+        && sc->stts_count*10 > st->nb_frames
+        && sc->time_scale == st->codec->sample_rate) {
+            st->need_parsing = AVSTREAM_PARSE_FULL;
+    }
     /* Do not need those anymore. */
     av_freep(&sc->chunk_offsets);
     av_freep(&sc->stsc_data);

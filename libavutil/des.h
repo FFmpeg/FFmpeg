@@ -23,7 +23,6 @@
 #define AVUTIL_DES_H
 
 #include <stdint.h>
-#include "version.h"
 
 /**
  * @defgroup lavu_des DES
@@ -31,14 +30,10 @@
  * @{
  */
 
-#if FF_API_CRYPTO_CONTEXT
 typedef struct AVDES {
     uint64_t round_keys[3][16];
     int triple_des;
 } AVDES;
-#else
-typedef struct AVDES AVDES;
-#endif
 
 /**
  * Allocate an AVDES context.

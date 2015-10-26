@@ -27,7 +27,7 @@
  * to construct input that requires O(n^2) time but this is very unlikely to
  * happen with non constructed input.
  */
-#define AV_QSORT(p, num, type, cmp) {\
+#define AV_QSORT(p, num, type, cmp) do {\
     void *stack[64][2];\
     int sp= 1;\
     stack[0][0] = p;\
@@ -89,7 +89,7 @@
             }\
         }\
     }\
-}
+} while (0)
 
 /**
  * Merge sort, this sort requires a temporary buffer and is stable, its worst
@@ -97,7 +97,7 @@
  * @param p     must be a lvalue pointer, this function may exchange it with tmp
  * @param tmp   must be a lvalue pointer, this function may exchange it with p
  */
-#define AV_MSORT(p, tmp, num, type, cmp) {\
+#define AV_MSORT(p, tmp, num, type, cmp) do {\
     unsigned i, j, step;\
     for(step=1; step<(num); step+=step){\
         for(i=0; i<(num); i+=2*step){\
@@ -114,4 +114,4 @@
         }\
         FFSWAP(type*, p, tmp);\
     }\
-}
+} while (0)

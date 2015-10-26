@@ -36,13 +36,6 @@
 /** Total number of codebooks, including special ones **/
 #define CB_TOT_ALL 15
 
-/** Profile option settings **/
-#define OPT_AUTO         -1
-#define OPT_BANNED     -256
-#define OPT_NEEDS_LTP  -384
-#define OPT_NEEDS_MAIN -512
-#define OPT_REQUIRED   -768
-
 #define AAC_MAX_CHANNELS 8
 
 extern const uint8_t *ff_aac_swb_size_1024[];
@@ -123,6 +116,13 @@ static const uint8_t aac_cb_maxval[12] = {0, 1, 1, 2, 2, 4, 4, 7, 7, 12, 12, 16}
 
 static const unsigned char aac_maxval_cb[] = {
     0, 1, 3, 5, 5, 7, 7, 7, 9, 9, 9, 9, 9, 11
+};
+
+static const int aacenc_profiles[] = {
+    FF_PROFILE_AAC_MAIN,
+    FF_PROFILE_AAC_LOW,
+    FF_PROFILE_AAC_LTP,
+    FF_PROFILE_MPEG2_AAC_LOW,
 };
 
 #endif /* AVCODEC_AACENCTAB_H */

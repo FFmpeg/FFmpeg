@@ -745,7 +745,8 @@ do {                                                                   \
             fmts = out_link->in_ ## list;                              \
                                                                        \
             if (!out_link->in_ ## list->nb) {                          \
-                add_format(&out_link->in_ ##list, fmt);                \
+                if ((ret = add_format(&out_link->in_ ##list, fmt)) < 0)\
+                    return ret;                                        \
                 ret = 1;                                               \
                 break;                                                 \
             }                                                          \
@@ -811,16 +812,21 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
     return ret;
 }
 
-static void reduce_formats(AVFilterGraph *graph)
+static int reduce_formats(AVFilterGraph *graph)
 {
-    int i, reduced;
+    int i, reduced, ret;
 
     do {
         reduced = 0;
 
-        for (i = 0; i < graph->nb_filters; i++)
-            reduced |= reduce_formats_on_filter(graph->filters[i]);
+        for (i = 0; i < graph->nb_filters; i++) {
+            if ((ret = reduce_formats_on_filter(graph->filters[i])) < 0)
+                return ret;
+            reduced |= ret;
+        }
     } while (reduced);
+
+    return 0;
 }
 
 static void swap_samplerates_on_filter(AVFilterContext *filter)
@@ -1138,7 +1144,8 @@ static int graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     /* Once everything is merged, it's possible that we'll still have
      * multiple valid media format choices. We try to minimize the amount
      * of format conversion inside filters */
-    reduce_formats(graph);
+    if ((ret = reduce_formats(graph)) < 0)
+        return ret;
 
     /* for audio filters, ensure the best format, sample rate and channel layout
      * is selected */

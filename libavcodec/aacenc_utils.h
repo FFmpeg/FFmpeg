@@ -202,43 +202,4 @@ static inline int lcg_random(unsigned previous_val)
         av_log(avctx, AV_LOG_WARNING, __VA_ARGS__); \
     }
 
-#define AAC_OPT_SET(e_opt, p_opt, bypass, name)                                \
-    ERROR_IF ((e_opt)->name == 1 && (p_opt)->name == OPT_BANNED,               \
-              "Profile %i does not allow %s\n", avctx->profile, #name);        \
-    ERROR_IF ((e_opt)->name == 0 && (p_opt)->name == OPT_REQUIRED,             \
-             "Option %s is a requirement for this profile (%i)\n",             \
-              #name, avctx->profile);                                          \
-    if ((e_opt)->name == 1 && (p_opt)->name == OPT_NEEDS_MAIN &&               \
-        avctx->profile == FF_PROFILE_AAC_LOW) {                                \
-        WARN_IF(1, "Profile %i does not allow for %s, setting profile to "     \
-                "\"aac_main\"(%i)\n", avctx->profile, #name,                   \
-                FF_PROFILE_AAC_MAIN);                                          \
-        avctx->profile = FF_PROFILE_AAC_MAIN;                                  \
-        p_opt = &aacenc_profiles[FF_PROFILE_AAC_MAIN].opts;                    \
-    }                                                                          \
-    if ((e_opt)->name == 1 && (p_opt)->name == OPT_NEEDS_LTP &&                \
-        avctx->profile == FF_PROFILE_AAC_LOW) {                                \
-        WARN_IF(1, "Profile %i does not allow for %s, setting profile to "     \
-                "\"aac_ltp\"(%i)\n", avctx->profile, #name,                    \
-                FF_PROFILE_AAC_LTP);                                           \
-        avctx->profile = FF_PROFILE_AAC_LTP;                                   \
-        p_opt = &aacenc_profiles[FF_PROFILE_AAC_LTP].opts;                     \
-    }                                                                          \
-    if ((e_opt)->name == OPT_AUTO) {                                           \
-        if ((p_opt)->name == OPT_BANNED) {                                     \
-            (e_opt)->name = 0;                                                 \
-        } else if ((p_opt)->name == OPT_NEEDS_LTP) {                           \
-            (e_opt)->name = 0;                                                 \
-        } else if ((p_opt)->name == OPT_NEEDS_MAIN) {                          \
-            (e_opt)->name = 0;                                                 \
-        } else if ((p_opt)->name == OPT_REQUIRED) {                            \
-            (e_opt)->name = 1;                                                 \
-        } else if (bypass) {                                                   \
-            (e_opt)->name = (e_opt)->name;                                     \
-        } else {                                                               \
-            (e_opt)->name = (p_opt)->name;                                     \
-        }                                                                      \
-    }                                                                          \
-    av_log(avctx, AV_LOG_VERBOSE, "Option %s set to %i\n", #name, (e_opt)->name);
-
 #endif /* AVCODEC_AACENC_UTILS_H */

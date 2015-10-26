@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "yuv4mpeg.h"
@@ -256,7 +258,7 @@ static int yuv4_read_header(AVFormatContext *s)
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
     st->codec->chroma_sample_location = chroma_sample_location;
     st->codec->field_order            = field_order;
-    s->packet_size = avpicture_get_size(st->codec->pix_fmt, width, height) + Y4M_FRAME_MAGIC_LEN;
+    s->packet_size = av_image_get_buffer_size(st->codec->pix_fmt, width, height, 1) + Y4M_FRAME_MAGIC_LEN;
     if ((int) s->packet_size < 0)
         return s->packet_size;
     s->internal->data_offset = avio_tell(pb);

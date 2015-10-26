@@ -383,9 +383,6 @@ static av_cold int hap_init(AVCodecContext *avctx)
     avctx->coded_width  = FFALIGN(avctx->width,  TEXTURE_BLOCK_W);
     avctx->coded_height = FFALIGN(avctx->height, TEXTURE_BLOCK_H);
 
-    /* Technically only one mode has alpha, but 32 bits are easier to handle */
-    avctx->pix_fmt = AV_PIX_FMT_RGBA;
-
     ff_texturedsp_init(&ctx->dxtc);
 
     switch (avctx->codec_tag) {
@@ -393,16 +390,19 @@ static av_cold int hap_init(AVCodecContext *avctx)
         texture_name = "DXT1";
         ctx->tex_rat = 8;
         ctx->tex_fun = ctx->dxtc.dxt1_block;
+        avctx->pix_fmt = AV_PIX_FMT_RGB0;
         break;
     case MKTAG('H','a','p','5'):
         texture_name = "DXT5";
         ctx->tex_rat = 16;
         ctx->tex_fun = ctx->dxtc.dxt5_block;
+        avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case MKTAG('H','a','p','Y'):
         texture_name = "DXT5-YCoCg-scaled";
         ctx->tex_rat = 16;
         ctx->tex_fun = ctx->dxtc.dxt5ys_block;
+        avctx->pix_fmt = AV_PIX_FMT_RGB0;
         break;
     default:
         return AVERROR_DECODER_NOT_FOUND;

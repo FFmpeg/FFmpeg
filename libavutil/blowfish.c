@@ -27,15 +27,6 @@
 #include "mem.h"
 #include "blowfish.h"
 
-#if !FF_API_CRYPTO_CONTEXT
-#define AV_BF_ROUNDS 16
-
-struct AVBlowfish {
-    uint32_t p[AV_BF_ROUNDS + 2];
-    uint32_t s[4][256];
-};
-#endif
-
 static const uint32_t orig_p[AV_BF_ROUNDS + 2] = {
     0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344,
     0xA4093822, 0x299F31D0, 0x082EFA98, 0xEC4E6C89,

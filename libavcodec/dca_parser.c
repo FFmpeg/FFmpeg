@@ -166,7 +166,6 @@ static int dca_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     /* read the duration and sample rate from the frame header */
     if (!dca_parse_params(buf, buf_size, &duration, &sample_rate, &pc1->framesize)) {
         s->duration        = duration;
-        avctx->sample_rate = sample_rate;
     } else
         s->duration = 0;
 

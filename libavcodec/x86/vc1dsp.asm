@@ -1,5 +1,6 @@
 ;******************************************************************************
-;* VC1 deblocking optimizations
+;* VC1 DSP optimizations
+;* Copyright (c) 2007 Christophe GISQUET <christophe.gisquet@free.fr>
 ;* Copyright (c) 2009 David Conrad
 ;*
 ;* This file is part of FFmpeg.
@@ -23,6 +24,7 @@
 
 cextern pw_4
 cextern pw_5
+cextern pw_9
 
 section .text
 
@@ -315,3 +317,81 @@ cglobal vc1_h_loop_filter8, 3,5,8
     START_H_FILTER 8
     VC1_H_LOOP_FILTER 8
     RET
+
+%if HAVE_MMX_INLINE
+; Compute the rounder 32-r or 8-r and unpacks it to m7
+%macro LOAD_ROUNDER_MMX 1 ; round
+    movd      m7, %1
+    punpcklwd m7, m7
+    punpckldq m7, m7
+%endmacro
+
+%macro SHIFT2_LINE 5 ; off, r0, r1, r2, r3
+    paddw          m%3, m%4
+    movh           m%2, [srcq + stride_neg2]
+    pmullw         m%3, m6
+    punpcklbw      m%2, m0
+    movh           m%5, [srcq + strideq]
+    psubw          m%3, m%2
+    punpcklbw      m%5, m0
+    paddw          m%3, m7
+    psubw          m%3, m%5
+    psraw          m%3, shift
+    movu   [dstq + %1], m%3
+    add           srcq, strideq
+%endmacro
+
+INIT_MMX mmx
+; void ff_vc1_put_ver_16b_shift2_mmx(int16_t *dst, const uint8_t *src,
+;                                    x86_reg stride, int rnd, int64_t shift)
+; Sacrificing m6 makes it possible to pipeline loads from src
+%if ARCH_X86_32
+cglobal vc1_put_ver_16b_shift2, 3,6,0, dst, src, stride
+    DECLARE_REG_TMP     3, 4, 5
+    %define rnd r3mp
+    %define shift qword r4m
+%else ; X86_64
+cglobal vc1_put_ver_16b_shift2, 4,7,0, dst, src, stride
+    DECLARE_REG_TMP     4, 5, 6
+    %define   rnd r3d
+    ; We need shift either in memory or in a mm reg as it's used in psraw
+    ; On WIN64, the arg is already on the stack
+    ; On UNIX64, m5 doesn't seem to be used
+%if WIN64
+    %define shift r4mp
+%else ; UNIX64
+    %define shift m5
+    mova shift, r4q
+%endif ; WIN64
+%endif ; X86_32
+%define stride_neg2 t0q
+%define stride_9minus4 t1q
+%define i t2q
+    mov       stride_neg2, strideq
+    neg       stride_neg2
+    add       stride_neg2, stride_neg2
+    lea    stride_9minus4, [strideq * 9 - 4]
+    mov                 i, 3
+    LOAD_ROUNDER_MMX  rnd
+    mova               m6, [pw_9]
+    pxor               m0, m0
+.loop:
+    movh               m2, [srcq]
+    add              srcq, strideq
+    movh               m3, [srcq]
+    punpcklbw          m2, m0
+    punpcklbw          m3, m0
+    SHIFT2_LINE         0, 1, 2, 3, 4
+    SHIFT2_LINE        24, 2, 3, 4, 1
+    SHIFT2_LINE        48, 3, 4, 1, 2
+    SHIFT2_LINE        72, 4, 1, 2, 3
+    SHIFT2_LINE        96, 1, 2, 3, 4
+    SHIFT2_LINE       120, 2, 3, 4, 1
+    SHIFT2_LINE       144, 3, 4, 1, 2
+    SHIFT2_LINE       168, 4, 1, 2, 3
+    sub              srcq, stride_9minus4
+    add              dstq, 8
+    dec                 i
+        jnz         .loop
+    REP_RET
+%endif ; HAVE_MMX_INLINE

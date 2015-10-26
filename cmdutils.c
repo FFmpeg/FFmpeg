@@ -1322,16 +1322,47 @@ static void print_codec(const AVCodec *c)
     printf("%s %s [%s]:\n", encoder ? "Encoder" : "Decoder", c->name,
            c->long_name ? c->long_name : "");
 
+    printf("    General capabilities: ");
+    if (c->capabilities & AV_CODEC_CAP_DRAW_HORIZ_BAND)
+        printf("horizband ");
+    if (c->capabilities & AV_CODEC_CAP_DR1)
+        printf("dr1 ");
+    if (c->capabilities & AV_CODEC_CAP_TRUNCATED)
+        printf("trunc ");
+    if (c->capabilities & AV_CODEC_CAP_DELAY)
+        printf("delay ");
+    if (c->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME)
+        printf("small ");
+    if (c->capabilities & AV_CODEC_CAP_SUBFRAMES)
+        printf("subframes ");
+    if (c->capabilities & AV_CODEC_CAP_EXPERIMENTAL)
+        printf("exp ");
+    if (c->capabilities & AV_CODEC_CAP_CHANNEL_CONF)
+        printf("chconf ");
+    if (c->capabilities & AV_CODEC_CAP_PARAM_CHANGE)
+        printf("small ");
+    if (c->capabilities & AV_CODEC_CAP_PARAM_CHANGE)
+        printf("variable ");
+    if (c->capabilities & (AV_CODEC_CAP_FRAME_THREADS |
+                           AV_CODEC_CAP_SLICE_THREADS |
+                           AV_CODEC_CAP_AUTO_THREADS))
+        printf("threads ");
+    if (!c->capabilities)
+        printf("none");
+    printf("\n");
+
     if (c->type == AVMEDIA_TYPE_VIDEO ||
         c->type == AVMEDIA_TYPE_AUDIO) {
         printf("    Threading capabilities: ");
         switch (c->capabilities & (AV_CODEC_CAP_FRAME_THREADS |
-                                   AV_CODEC_CAP_SLICE_THREADS)) {
+                                   AV_CODEC_CAP_SLICE_THREADS |
+                                   AV_CODEC_CAP_AUTO_THREADS)) {
         case AV_CODEC_CAP_FRAME_THREADS |
              AV_CODEC_CAP_SLICE_THREADS: printf("frame and slice"); break;
         case AV_CODEC_CAP_FRAME_THREADS: printf("frame");           break;
         case AV_CODEC_CAP_SLICE_THREADS: printf("slice");           break;
-        default:                      printf("no");              break;
+        case AV_CODEC_CAP_AUTO_THREADS : printf("auto");            break;
+        default:                         printf("none");            break;
         }
         printf("\n");
     }

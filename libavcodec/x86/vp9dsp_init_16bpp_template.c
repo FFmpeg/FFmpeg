@@ -35,12 +35,12 @@ decl_mc_funcs(4, sse2, int16_t, 16, BPC);
 decl_mc_funcs(8, sse2, int16_t, 16, BPC);
 decl_mc_funcs(16, avx2, int16_t, 16, BPC);
 
-mc_rep_funcs(16,  8, 16, sse2, int16_t, 16, BPC);
-mc_rep_funcs(32, 16, 32, sse2, int16_t, 16, BPC);
-mc_rep_funcs(64, 32, 64, sse2, int16_t, 16, BPC);
+mc_rep_funcs(16,  8, 16, sse2, int16_t, 16, BPC)
+mc_rep_funcs(32, 16, 32, sse2, int16_t, 16, BPC)
+mc_rep_funcs(64, 32, 64, sse2, int16_t, 16, BPC)
 #if HAVE_AVX2_EXTERNAL
-mc_rep_funcs(32, 16, 32, avx2, int16_t, 16, BPC);
-mc_rep_funcs(64, 32, 64, avx2, int16_t, 16, BPC);
+mc_rep_funcs(32, 16, 32, avx2, int16_t, 16, BPC)
+mc_rep_funcs(64, 32, 64, avx2, int16_t, 16, BPC)
 #endif
 
 filters_8tap_2d_fn2(put, 16, BPC, 2, sse2, sse2, 16bpp)
@@ -91,12 +91,12 @@ static void loop_filter_##dir##_16_##bpp##_##opt(uint8_t *dst, ptrdiff_t stride,
 }
 
 #define lpf_16_wrappers(bpp, opt) \
-lpf_16_wrapper(h, 8 * stride, bpp, opt); \
+lpf_16_wrapper(h, 8 * stride, bpp, opt) \
 lpf_16_wrapper(v, 16,         bpp, opt)
 
-lpf_16_wrappers(BPC, sse2);
-lpf_16_wrappers(BPC, ssse3);
-lpf_16_wrappers(BPC, avx);
+lpf_16_wrappers(BPC, sse2)
+lpf_16_wrappers(BPC, ssse3)
+lpf_16_wrappers(BPC, avx)
 
 #define lpf_mix2_wrapper(dir, off, wd1, wd2, bpp, opt) \
 static void loop_filter_##dir##_##wd1##wd2##_##bpp##_##opt(uint8_t *dst, ptrdiff_t stride, \
@@ -109,18 +109,18 @@ static void loop_filter_##dir##_##wd1##wd2##_##bpp##_##opt(uint8_t *dst, ptrdiff
 }
 
 #define lpf_mix2_wrappers(wd1, wd2, bpp, opt) \
-lpf_mix2_wrapper(h, 8 * stride, wd1, wd2, bpp, opt); \
+lpf_mix2_wrapper(h, 8 * stride, wd1, wd2, bpp, opt) \
 lpf_mix2_wrapper(v, 16,         wd1, wd2, bpp, opt)
 
 #define lpf_mix2_wrappers_set(bpp, opt) \
-lpf_mix2_wrappers(4, 4, bpp, opt); \
-lpf_mix2_wrappers(4, 8, bpp, opt); \
-lpf_mix2_wrappers(8, 4, bpp, opt); \
-lpf_mix2_wrappers(8, 8, bpp, opt); \
+lpf_mix2_wrappers(4, 4, bpp, opt) \
+lpf_mix2_wrappers(4, 8, bpp, opt) \
+lpf_mix2_wrappers(8, 4, bpp, opt) \
+lpf_mix2_wrappers(8, 8, bpp, opt) \
 
-lpf_mix2_wrappers_set(BPC, sse2);
-lpf_mix2_wrappers_set(BPC, ssse3);
-lpf_mix2_wrappers_set(BPC, avx);
+lpf_mix2_wrappers_set(BPC, sse2)
+lpf_mix2_wrappers_set(BPC, ssse3)
+lpf_mix2_wrappers_set(BPC, avx)
 
 decl_ipred_fns(tm, BPC, mmxext, sse2);
 

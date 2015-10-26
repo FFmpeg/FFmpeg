@@ -305,7 +305,7 @@ av_cold int av_sha_init(AVSHA *ctx, int bits)
         ctx->transform = sha256_transform;
         break;
     default:
-        return -1;
+        return AVERROR(EINVAL);
     }
     ctx->count = 0;
     return 0;

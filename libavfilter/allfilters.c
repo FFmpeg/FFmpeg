@@ -236,6 +236,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(SETTB,          settb,          vf);
     REGISTER_FILTER(SHOWINFO,       showinfo,       vf);
     REGISTER_FILTER(SHOWPALETTE,    showpalette,    vf);
+    REGISTER_FILTER(SHUFFLEFRAMES,  shuffleframes,  vf);
     REGISTER_FILTER(SHUFFLEPLANES,  shuffleplanes,  vf);
     REGISTER_FILTER(SIGNALSTATS,    signalstats,    vf);
     REGISTER_FILTER(SMARTBLUR,      smartblur,      vf);
@@ -267,6 +268,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(YADIF,          yadif,          vf);
     REGISTER_FILTER(ZMQ,            zmq,            vf);
     REGISTER_FILTER(ZOOMPAN,        zoompan,        vf);
+    REGISTER_FILTER(ZSCALE,         zscale,         vf);
 
     REGISTER_FILTER(ALLRGB,         allrgb,         vsrc);
     REGISTER_FILTER(ALLYUV,         allyuv,         vsrc);

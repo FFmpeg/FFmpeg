@@ -224,7 +224,7 @@ static void *async_buffer_task(void *arg)
         pthread_mutex_unlock(&c->mutex);
 
         to_copy = FFMIN(4096, fifo_space);
-        ret = ring_generic_write(ring, (void *)h, to_copy, (void *)wrapped_url_read);
+        ret = ring_generic_write(ring, (void *)h, to_copy, wrapped_url_read);
 
         pthread_mutex_lock(&c->mutex);
         if (ret <= 0) {

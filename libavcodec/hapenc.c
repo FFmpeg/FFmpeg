@@ -242,16 +242,19 @@ static av_cold int hap_init(AVCodecContext *avctx)
     case HAP_FMT_RGBDXT1:
         ratio = 8;
         avctx->codec_tag = MKTAG('H', 'a', 'p', '1');
+        avctx->bits_per_coded_sample = 24;
         ctx->tex_fun = ctx->dxtc.dxt1_block;
         break;
     case HAP_FMT_RGBADXT5:
         ratio = 4;
         avctx->codec_tag = MKTAG('H', 'a', 'p', '5');
+        avctx->bits_per_coded_sample = 32;
         ctx->tex_fun = ctx->dxtc.dxt5_block;
         break;
     case HAP_FMT_YCOCGDXT5:
         ratio = 4;
         avctx->codec_tag = MKTAG('H', 'a', 'p', 'Y');
+        avctx->bits_per_coded_sample = 24;
         ctx->tex_fun = ctx->dxtc.dxt5ys_block;
         break;
     default:

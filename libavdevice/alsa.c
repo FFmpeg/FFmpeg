@@ -89,7 +89,7 @@ MAKE_REORDER_FUNCS(5, out_50, \
         out[2] = in[3]; \
         out[3] = in[4]; \
         out[4] = in[2]; \
-        );
+        )
 
 MAKE_REORDER_FUNCS(6, out_51, \
         out[0] = in[0]; \
@@ -98,7 +98,7 @@ MAKE_REORDER_FUNCS(6, out_51, \
         out[3] = in[5]; \
         out[4] = in[2]; \
         out[5] = in[3]; \
-        );
+        )
 
 MAKE_REORDER_FUNCS(8, out_71, \
         out[0] = in[0]; \
@@ -109,7 +109,7 @@ MAKE_REORDER_FUNCS(8, out_71, \
         out[5] = in[3]; \
         out[6] = in[6]; \
         out[7] = in[7]; \
-        );
+        )
 
 #define FORMAT_I8  0
 #define FORMAT_I16 1

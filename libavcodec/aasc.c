@@ -101,7 +101,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     switch (avctx->codec_tag) {
     case MKTAG('A', 'A', 'S', '4'):
         bytestream2_init(&s->gb, buf - 4, buf_size + 4);
-        ff_msrle_decode(avctx, (AVPicture*)s->frame, 8, &s->gb);
+        ff_msrle_decode(avctx, s->frame, 8, &s->gb);
         break;
     case MKTAG('A', 'A', 'S', 'C'):
     switch (compr) {
@@ -117,7 +117,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         break;
     case 1:
         bytestream2_init(&s->gb, buf, buf_size);
-        ff_msrle_decode(avctx, (AVPicture*)s->frame, 8, &s->gb);
+        ff_msrle_decode(avctx, s->frame, 8, &s->gb);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown compression type %d\n", compr);

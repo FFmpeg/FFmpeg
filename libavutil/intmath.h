@@ -34,14 +34,7 @@
 #endif
 
 #if HAVE_FAST_CLZ
-#if defined( __INTEL_COMPILER )
-#ifndef ff_log2
-#   define ff_log2(x) (_bit_scan_reverse((x)|1))
-#   ifndef ff_log2_16bit
-#      define ff_log2_16bit av_log2
-#   endif
-#endif /* ff_log2 */
-#elif AV_GCC_VERSION_AT_LEAST(3,4)
+#if AV_GCC_VERSION_AT_LEAST(3,4)
 #ifndef ff_log2
 #   define ff_log2(x) (31 - __builtin_clz((x)|1))
 #   ifndef ff_log2_16bit
@@ -55,7 +48,6 @@ extern const uint8_t ff_log2_tab[256];
 
 #ifndef ff_log2
 #define ff_log2 ff_log2_c
-#if !defined( _MSC_VER )
 static av_always_inline av_const int ff_log2_c(unsigned int v)
 {
     int n = 0;
@@ -71,15 +63,6 @@ static av_always_inline av_const int ff_log2_c(unsigned int v)
 
     return n;
 }
-#else
-static av_always_inline av_const int ff_log2_c(unsigned int v)
-{
-    unsigned long n;
-    _BitScanReverse(&n, v|1);
-    return n;
-}
-#define ff_log2_16bit av_log2
-#endif
 #endif
 
 #ifndef ff_log2_16bit
@@ -106,11 +89,7 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
  */
 
 #if HAVE_FAST_CLZ
-#if defined( __INTEL_COMPILER )
-#ifndef ff_ctz
-#define ff_ctz(v) _bit_scan_forward(v)
-#endif
-#elif AV_GCC_VERSION_AT_LEAST(3,4)
+#if AV_GCC_VERSION_AT_LEAST(3,4)
 #ifndef ff_ctz
 #define ff_ctz(v) __builtin_ctz(v)
 #endif
@@ -128,7 +107,6 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
  * @param v  input value. If v is 0, the result is undefined.
  * @return   the number of trailing 0-bits
  */
-#if !defined( _MSC_VER )
 /* We use the De-Bruijn method outlined in:
  * http://supertech.csail.mit.edu/papers/debruijn.pdf. */
 static av_always_inline av_const int ff_ctz_c(int v)
@@ -139,14 +117,6 @@ static av_always_inline av_const int ff_ctz_c(int v)
     };
     return debruijn_ctz32[(uint32_t)((v & -v) * 0x077CB531U) >> 27];
 }
-#else
-static av_always_inline av_const int ff_ctz_c( int v )
-{
-    unsigned long c;
-    _BitScanForward(&c, v);
-    return c;
-}
-#endif
 #endif
 
 #ifndef ff_ctzll
@@ -161,7 +131,7 @@ static av_always_inline av_const int ff_ctzll_c(long long v)
         63, 52, 6, 26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
         51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12
     };
-    return debruijn_ctz64[(uint64_t)((v & -v) * 0x022FDD63CC95386D) >> 58];
+    return debruijn_ctz64[(uint64_t)((v & -v) * 0x022FDD63CC95386DU) >> 58];
 }
 #endif
 

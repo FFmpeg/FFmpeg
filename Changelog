@@ -19,6 +19,12 @@ version <next>:
 - displace filter
 - selectivecolor filter
 - extensive native AAC encoder improvements
+- ADPCM PSX decoder
+- genh, vag, xvag, ads, msf & svag demuxer
+- zscale filter
+- wve demuxer
+- zero-copy Intel QSV transcoding in ffmpeg
+- shuffleframes filter
 
 
 version 2.8:

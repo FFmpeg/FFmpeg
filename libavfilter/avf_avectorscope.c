@@ -220,7 +220,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 cx = sx * sqrtf(1 - 0.5*sy*sy);
                 cy = sy * sqrtf(1 - 0.5*sx*sx);
                 x = hw + hw * FFSIGN(cx + cy) * (cx - cy) * .7;
-                y = s->h - s->h * FFABS(cx + cy) * .7;
+                y = s->h - s->h * fabsf(cx + cy) * .7;
             }
 
             draw_dot(s, x, y);
@@ -244,7 +244,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 cx = sx * sqrtf(1 - 0.5 * sy * sy);
                 cy = sy * sqrtf(1 - 0.5 * sx * sx);
                 x = hw + hw * FFSIGN(cx + cy) * (cx - cy) * .7;
-                y = s->h - s->h * FFABS(cx + cy) * .7;
+                y = s->h - s->h * fabsf(cx + cy) * .7;
             }
 
             draw_dot(s, x, y);

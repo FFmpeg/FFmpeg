@@ -223,7 +223,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
     }
 
     if (key_bits != 128 && key_bits != 192 && key_bits != 256)
-        return -1;
+        return AVERROR(EINVAL);
 
     a->rounds = rounds;
 

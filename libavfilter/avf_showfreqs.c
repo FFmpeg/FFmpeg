@@ -163,7 +163,7 @@ static void generate_window_func(float *lut, int N, int win_func, float *overlap
         break;
     case WFUNC_BARTLETT:
         for (n = 0; n < N; n++)
-            lut[n] = 1.-FFABS((n-(N-1)/2.)/((N-1)/2.));
+            lut[n] = 1.-fabs((n-(N-1)/2.)/((N-1)/2.));
         *overlap = 0.5;
         break;
     case WFUNC_HANNING:
@@ -207,7 +207,7 @@ static void generate_window_func(float *lut, int N, int win_func, float *overlap
         break;
     case WFUNC_BHANN:
         for (n = 0; n < N; n++)
-            lut[n] = 0.62-0.48*FFABS(n/(double)(N-1)-.5)-0.38*cos(2*M_PI*n/(N-1));
+            lut[n] = 0.62-0.48*fabs(n/(double)(N-1)-.5)-0.38*cos(2*M_PI*n/(N-1));
         *overlap = 0.5;
         break;
     case WFUNC_SINE:
