@@ -12958,7 +12958,7 @@ This mode requires a build with @code{libswresample}.
 Treat mono input files as "dual mono". If a mono file is intended for playback
 on a stereo system, its EBU R128 measurement will be perceptually incorrect.
 If set to @code{true}, this option will compensate for this effect.
-Multi-channel input files are not effected by this option.
+Multi-channel input files are not affected by this option.
 
 @item panlaw
 Set a specific pan law to be used for the measurement of dual mono files.
