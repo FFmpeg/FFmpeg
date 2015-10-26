@@ -397,6 +397,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(LIBNUT,           libnut);
     REGISTER_DEMUXER (LIBQUVI,          libquvi);
     REGISTER_PROTOCOL(LIBRTMP,          librtmp);
+    REGISTER_PROTOCOL(LIBRTMFP,         librtmfp);
     REGISTER_PROTOCOL(LIBRTMPE,         librtmpe);
     REGISTER_PROTOCOL(LIBRTMPS,         librtmps);
     REGISTER_PROTOCOL(LIBRTMPT,         librtmpt);
