@@ -585,7 +585,7 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
             memset(frame->extended_data[i], 0, frame->linesize[0]);
         }
 
-        if (c->gain_i) {
+        if (c->gain_i && decoded_samples > 0) {
             c->fdsp->vector_fmul_scalar((float*)frame->extended_data[i],
                                        (float*)frame->extended_data[i],
                                        c->gain, FFALIGN(decoded_samples, 8));
