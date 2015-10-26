@@ -141,7 +141,9 @@ char *av_timecode_make_mpeg_tc_string(char *buf, uint32_t tc25bit)
 static int check_fps(int fps)
 {
     int i;
-    static const int supported_fps[] = {24, 25, 30, 48, 50, 60};
+    static const int supported_fps[] = {
+        24, 25, 30, 48, 50, 60, 100, 120, 150,
+    };
 
     for (i = 0; i < FF_ARRAY_ELEMS(supported_fps); i++)
         if (fps == supported_fps[i])
