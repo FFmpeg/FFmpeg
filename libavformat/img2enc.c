@@ -38,6 +38,7 @@ typedef struct VideoMuxData {
     int is_pipe;
     int split_planes;       /**< use independent file for each Y, U, V plane */
     char path[1024];
+    char tmp[1024];
     int update;
     int use_strftime;
     const char *muxer;
@@ -50,6 +51,7 @@ static int write_header(AVFormatContext *s)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
+    snprintf(img->tmp, sizeof(img->tmp), "%s.tmp", s->filename);
 
     /* find format */
     if (s->oformat->flags & AVFMT_NOFILE)
@@ -100,9 +102,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EINVAL);
         }
         for (i = 0; i < 4; i++) {
-            if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
+            if (avio_open2(&pb[i], img->tmp, AVIO_FLAG_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", filename);
+                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->tmp);
                 return AVERROR(EIO);
             }
 
@@ -167,6 +169,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_flush(pb[0]);
     if (!img->is_pipe) {
         avio_closep(&pb[0]);
+        ff_rename(img->tmp, filename, s);
     }
 
     img->img_number++;
