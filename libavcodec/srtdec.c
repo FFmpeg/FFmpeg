@@ -73,14 +73,13 @@ static int srt_decode_frame(AVCodecContext *avctx,
 
     av_bprint_init(&buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-        // TODO: reindent
-            // Do final divide-by-10 outside rescale to force rounding down.
-            ts_start = av_rescale_q(avpkt->pts,
-                                    avctx->time_base,
-                                    (AVRational){1,100});
-            ts_end   = av_rescale_q(avpkt->pts + avpkt->duration,
-                                    avctx->time_base,
-                                    (AVRational){1,100});
+    // Do final divide-by-10 outside rescale to force rounding down.
+    ts_start = av_rescale_q(avpkt->pts,
+                            avctx->time_base,
+                            (AVRational){1,100});
+    ts_end   = av_rescale_q(avpkt->pts + avpkt->duration,
+                            avctx->time_base,
+                            (AVRational){1,100});
 
     srt_to_ass(avctx, &buffer, avpkt->data, x1, y1, x2, y2);
     ret = ff_ass_add_rect_bprint(sub, &buffer, ts_start, ts_end-ts_start);
