@@ -42,6 +42,7 @@ typedef struct VideoMuxData {
     int update;
     int use_strftime;
     const char *muxer;
+    int use_rename;
 } VideoMuxData;
 
 static int write_header(AVFormatContext *s)
@@ -49,6 +50,7 @@ static int write_header(AVFormatContext *s)
     VideoMuxData *img = s->priv_data;
     AVStream *st = s->streams[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
+    const char *proto = avio_find_protocol_name(s->filename);
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
     snprintf(img->tmp, sizeof(img->tmp), "%s.tmp", s->filename);
@@ -70,6 +72,13 @@ static int write_header(AVFormatContext *s)
                              &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
                              && desc->nb_components >= 3;
     }
+
+    img->use_rename = proto && !strcmp(proto, "file");
+
+    //The current atomic rename implementation is not compatible with split planes
+    if (img->split_planes)
+        img->use_rename = 0;
+
     return 0;
 }
 
@@ -102,9 +111,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EINVAL);
         }
         for (i = 0; i < 4; i++) {
-            if (avio_open2(&pb[i], img->tmp, AVIO_FLAG_WRITE,
+            if (avio_open2(&pb[i], img->use_rename ? img->tmp : filename, AVIO_FLAG_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->tmp);
+                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->use_rename ? img->tmp : filename);
                 return AVERROR(EIO);
             }
 
@@ -169,7 +178,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_flush(pb[0]);
     if (!img->is_pipe) {
         avio_closep(&pb[0]);
-        ff_rename(img->tmp, filename, s);
+        if (img->use_rename)
+            ff_rename(img->tmp, filename, s);
     }
 
     img->img_number++;
