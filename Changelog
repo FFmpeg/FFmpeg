@@ -27,6 +27,7 @@ version <next>:
 - shuffleframes filter
 - SDX2 DPCM decoder
 - vibrato filter
+- innoHeim/Rsupport Screen Capture Codec decoder
 
 
 version 2.8:
