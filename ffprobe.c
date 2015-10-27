@@ -2056,7 +2056,7 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
                 while (pkt1.size && process_frame(w, fmt_ctx, frame, &pkt1) > 0);
             }
         }
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
     }
     av_init_packet(&pkt);
     pkt.data = NULL;
