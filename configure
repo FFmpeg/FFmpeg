@@ -5346,7 +5346,7 @@ enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
-enabled libkvazaar        && require_pkg_config "kvazaar >= 0.7.0" kvazaar.h kvz_api_get
+enabled libkvazaar        && require_pkg_config "kvazaar >= 0.7.1" kvazaar.h kvz_api_get
 enabled libmfx            && require_pkg_config libmfx "mfx/mfxvideo.h" MFXInit
 enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
