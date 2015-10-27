@@ -347,20 +347,19 @@ int ff_request_frame(AVFilterLink *link)
 
     if (link->closed)
         return AVERROR_EOF;
-    // TODO reindent
-        if (link->srcpad->request_frame)
-            ret = link->srcpad->request_frame(link);
-        else if (link->src->inputs[0])
-            ret = ff_request_frame(link->src->inputs[0]);
-        if (ret == AVERROR_EOF && link->partial_buf) {
-            AVFrame *pbuf = link->partial_buf;
-            link->partial_buf = NULL;
-            ret = ff_filter_frame_framed(link, pbuf);
-        }
-        if (ret < 0) {
-            if (ret == AVERROR_EOF)
-                link->closed = 1;
-        }
+    if (link->srcpad->request_frame)
+        ret = link->srcpad->request_frame(link);
+    else if (link->src->inputs[0])
+        ret = ff_request_frame(link->src->inputs[0]);
+    if (ret == AVERROR_EOF && link->partial_buf) {
+        AVFrame *pbuf = link->partial_buf;
+        link->partial_buf = NULL;
+        ret = ff_filter_frame_framed(link, pbuf);
+    }
+    if (ret < 0) {
+        if (ret == AVERROR_EOF)
+            link->closed = 1;
+    }
     return ret;
 }
 
