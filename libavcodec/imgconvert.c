@@ -195,6 +195,7 @@ static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
     return 1;
 }
 
+#if FF_API_AVPICTURE
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
                     enum AVPixelFormat pix_fmt, int top_band, int left_band)
 {
@@ -347,3 +348,4 @@ int main(void){
 }
 
 #endif
+#endif /* FF_API_AVPICTURE */

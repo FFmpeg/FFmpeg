@@ -3571,6 +3571,7 @@ typedef struct AVHWAccel {
  * @}
  */
 
+#if FF_API_AVPICTURE
 /**
  * @defgroup lavc_picture AVPicture
  *
@@ -3583,6 +3584,7 @@ typedef struct AVHWAccel {
  *
  * Up to four components can be stored into it, the last component is
  * alpha.
+ * @deprecated use AVFrame or imgutils functions instead
  */
 typedef struct AVPicture {
     uint8_t *data[AV_NUM_DATA_POINTERS];    ///< pointers to the image data planes
@@ -3592,6 +3594,7 @@ typedef struct AVPicture {
 /**
  * @}
  */
+#endif
 
 enum AVSubtitleType {
     SUBTITLE_NONE,
@@ -4722,119 +4725,70 @@ void av_resample_close(struct AVResampleContext *c);
  */
 #endif
 
+#if FF_API_AVPICTURE
 /**
  * @addtogroup lavc_picture
  * @{
  */
 
 /**
- * Allocate memory for the pixels of a picture and setup the AVPicture
- * fields for it.
- *
- * Call avpicture_free() to free it.
- *
- * @param picture            the picture structure to be filled in
- * @param pix_fmt            the pixel format of the picture
- * @param width              the width of the picture
- * @param height             the height of the picture
- * @return zero if successful, a negative error code otherwise
- *
- * @see av_image_alloc(), avpicture_fill()
+ * @deprecated unused
  */
+attribute_deprecated
 int avpicture_alloc(AVPicture *picture, enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
- * Free a picture previously allocated by avpicture_alloc().
- * The data buffer used by the AVPicture is freed, but the AVPicture structure
- * itself is not.
- *
- * @param picture the AVPicture to be freed
+ * @deprecated unused
  */
+attribute_deprecated
 void avpicture_free(AVPicture *picture);
 
 /**
- * Setup the picture fields based on the specified image parameters
- * and the provided image data buffer.
- *
- * The picture fields are filled in by using the image data buffer
- * pointed to by ptr.
- *
- * If ptr is NULL, the function will fill only the picture linesize
- * array and return the required size for the image buffer.
- *
- * To allocate an image buffer and fill the picture data in one call,
- * use avpicture_alloc().
- *
- * @param picture       the picture to be filled in
- * @param ptr           buffer where the image data is stored, or NULL
- * @param pix_fmt       the pixel format of the image
- * @param width         the width of the image in pixels
- * @param height        the height of the image in pixels
- * @return the size in bytes required for src, a negative error code
- * in case of failure
- *
- * @see av_image_fill_arrays()
+ * @deprecated use av_image_fill_arrays() instead.
  */
+attribute_deprecated
 int avpicture_fill(AVPicture *picture, const uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
- * Copy pixel data from an AVPicture into a buffer.
- *
- * avpicture_get_size() can be used to compute the required size for
- * the buffer to fill.
- *
- * @param src        source picture with filled data
- * @param pix_fmt    picture pixel format
- * @param width      picture width
- * @param height     picture height
- * @param dest       destination buffer
- * @param dest_size  destination buffer size in bytes
- * @return the number of bytes written to dest, or a negative value
- * (error code) on error, for example if the destination buffer is not
- * big enough
- *
- * @see av_image_copy_to_buffer()
+ * @deprecated use av_image_copy_to_buffer() instead.
  */
+attribute_deprecated
 int avpicture_layout(const AVPicture *src, enum AVPixelFormat pix_fmt,
                      int width, int height,
                      unsigned char *dest, int dest_size);
 
 /**
- * Calculate the size in bytes that a picture of the given width and height
- * would occupy if stored in the given picture format.
- *
- * @param pix_fmt    picture pixel format
- * @param width      picture width
- * @param height     picture height
- * @return the computed picture buffer size or a negative error code
- * in case of error
- *
- * @see av_image_get_buffer_size().
+ * @deprecated use av_image_get_buffer_size() instead.
  */
+attribute_deprecated
 int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
- * Copy image src to dst. Wraps av_image_copy().
+ * @deprecated av_image_copy() instead.
  */
+attribute_deprecated
 void av_picture_copy(AVPicture *dst, const AVPicture *src,
                      enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
- * Crop image top and left side.
+ * @deprecated unused
  */
+attribute_deprecated
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
                     enum AVPixelFormat pix_fmt, int top_band, int left_band);
 
 /**
- * Pad image.
+ * @deprecated unused
  */
+attribute_deprecated
 int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, enum AVPixelFormat pix_fmt,
             int padtop, int padbottom, int padleft, int padright, int *color);
 
 /**
  * @}
  */
+#endif
 
 /**
  * @defgroup lavc_misc Utility functions
