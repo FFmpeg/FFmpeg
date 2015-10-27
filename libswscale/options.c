@@ -66,9 +66,9 @@ static const AVOption swscale_options[] = {
     { NULL }
 };
 
-const AVClass sws_context_class = { "SWScaler", sws_context_to_name, swscale_options };
+const AVClass ff_sws_context_class = { "SWScaler", sws_context_to_name, swscale_options };
 
 const AVClass *sws_get_class(void)
 {
-    return &sws_context_class;
+    return &ff_sws_context_class;
 }

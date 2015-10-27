@@ -714,7 +714,7 @@ extern const uint8_t ff_dither_8x8_220[8][8];
 
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
 
-extern const AVClass sws_context_class;
+extern const AVClass ff_sws_context_class;
 
 /**
  * Set c->swscale to an unscaled converter if one exists for the specific
