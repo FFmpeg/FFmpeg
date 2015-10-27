@@ -157,6 +157,7 @@ static int get_aiff_header(AVFormatContext *s, int size,
             break;
         case AV_CODEC_ID_ADPCM_G726LE:
             codec->bits_per_coded_sample = 5;
+        case AV_CODEC_ID_ADPCM_IMA_WS:
         case AV_CODEC_ID_ADPCM_G722:
         case AV_CODEC_ID_MACE6:
         case AV_CODEC_ID_SDX2_DPCM:
