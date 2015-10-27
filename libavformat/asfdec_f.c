@@ -1538,7 +1538,6 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
 
         pts = pkt->dts;
 
-        av_packet_unref(pkt);
         if (pkt->flags & AV_PKT_FLAG_KEY) {
             i = pkt->stream_index;
 
@@ -1552,9 +1551,12 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
                                pos - start_pos[i] + 1, AVINDEX_KEYFRAME);
             start_pos[i] = asf_st->packet_pos + 1;
 
-            if (pkt->stream_index == stream_index)
+            if (pkt->stream_index == stream_index) {
+                av_packet_unref(pkt);
                 break;
+            }
         }
+        av_packet_unref(pkt);
     }
 
     *ppos = pos;
