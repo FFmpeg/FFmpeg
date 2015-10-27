@@ -405,7 +405,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 
 memfail:
-    av_free_packet(pkt);
+    av_packet_unref(pkt);
     av_freep(&buf2);
     av_freep(&state);
     av_freep(&zero);

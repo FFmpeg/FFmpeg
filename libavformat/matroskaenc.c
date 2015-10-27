@@ -1934,7 +1934,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         // for DASH audio, a CuePoint has to be added when there is a new cluster.
         ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt,
                                         mkv->is_dash ? start_new_cluster : 0);
-        av_free_packet(&mkv->cur_audio_pkt);
+        av_packet_unref(&mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Could not write cached audio packet ret:%d\n", ret);
@@ -1993,7 +1993,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
         ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt, 0);
-        av_free_packet(&mkv->cur_audio_pkt);
+        av_packet_unref(&mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Could not write cached audio packet ret:%d\n", ret);

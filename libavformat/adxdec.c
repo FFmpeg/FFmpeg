@@ -52,11 +52,11 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret != size) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
     if (AV_RB16(pkt->data) & 0x8000) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR_EOF;
     }
     pkt->size     = size;

@@ -204,7 +204,7 @@ int av_copy_packet_side_data(AVPacket *pkt, const AVPacket *src)
     return 0;
 
 failed_alloc:
-    av_free_packet(pkt);
+    av_packet_unref(pkt);
     return AVERROR(ENOMEM);
 }
 
@@ -234,6 +234,8 @@ void av_packet_free_side_data(AVPacket *pkt)
     pkt->side_data_elems = 0;
 }
 
+#if FF_API_AVPACKET_OLD_API
+FF_DISABLE_DEPRECATION_WARNINGS
 void av_free_packet(AVPacket *pkt)
 {
     if (pkt) {
@@ -245,6 +247,8 @@ void av_free_packet(AVPacket *pkt)
         av_packet_free_side_data(pkt);
     }
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
                                  int size)

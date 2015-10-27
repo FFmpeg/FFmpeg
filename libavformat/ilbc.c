@@ -112,7 +112,7 @@ static int ilbc_read_packet(AVFormatContext *s,
     pkt->pos = avio_tell(s->pb);
     pkt->duration = enc->block_align == 38 ? 160 : 240;
     if ((ret = avio_read(s->pb, pkt->data, enc->block_align)) != enc->block_align) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
 

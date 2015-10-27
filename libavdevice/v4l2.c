@@ -550,7 +550,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
         res = enqueue_buffer(s, &buf);
         if (res) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return res;
         }
     } else {

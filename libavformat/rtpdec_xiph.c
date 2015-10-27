@@ -141,7 +141,7 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                 data->split_buf = av_malloc(data->split_buf_size);
                 if (!data->split_buf) {
                     av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
-                    av_free_packet(pkt);
+                    av_packet_unref(pkt);
                     return AVERROR(ENOMEM);
                 }
             }

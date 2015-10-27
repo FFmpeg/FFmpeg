@@ -321,7 +321,7 @@ static int fourxm_read_packet(AVFormatContext *s,
             ret = avio_read(s->pb, &pkt->data[8], size);
 
             if (ret < 0) {
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
             } else {
                 packet_read = 1;
                 av_shrink_packet(pkt, ret + 8);

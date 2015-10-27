@@ -1693,7 +1693,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     *got_packet_ptr = 0;
 
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) && !frame) {
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
         av_init_packet(avpkt);
         return 0;
     }
@@ -1799,7 +1799,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     }
 
     if (ret < 0 || !*got_packet_ptr) {
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
         av_init_packet(avpkt);
         goto end;
     }
@@ -1839,7 +1839,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         avctx->stats_out[0] = '\0';
 
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) && !frame) {
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
         av_init_packet(avpkt);
         avpkt->size = 0;
         return 0;
@@ -1893,7 +1893,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     }
 
     if (ret < 0 || !*got_packet_ptr)
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
 
     emms_c();
     return ret;

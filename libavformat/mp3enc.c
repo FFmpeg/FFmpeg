@@ -365,7 +365,7 @@ static int mp3_queue_flush(AVFormatContext *s)
     while ((pktl = mp3->queue)) {
         if (write && (ret = mp3_write_audio_packet(s, &pktl->pkt)) < 0)
             write = 0;
-        av_free_packet(&pktl->pkt);
+        av_packet_unref(&pktl->pkt);
         mp3->queue = pktl->next;
         av_freep(&pktl);
     }

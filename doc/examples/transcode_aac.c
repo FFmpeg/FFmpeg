@@ -332,7 +332,7 @@ static int decode_audio_frame(AVFrame *frame,
                                        data_present, &input_packet)) < 0) {
         fprintf(stderr, "Could not decode frame (error '%s')\n",
                 get_error_text(error));
-        av_free_packet(&input_packet);
+        av_packet_unref(&input_packet);
         return error;
     }
 
@@ -342,7 +342,7 @@ static int decode_audio_frame(AVFrame *frame,
      */
     if (*finished && *data_present)
         *finished = 0;
-    av_free_packet(&input_packet);
+    av_packet_unref(&input_packet);
     return 0;
 }
 
@@ -571,7 +571,7 @@ static int encode_audio_frame(AVFrame *frame,
                                        frame, data_present)) < 0) {
         fprintf(stderr, "Could not encode frame (error '%s')\n",
                 get_error_text(error));
-        av_free_packet(&output_packet);
+        av_packet_unref(&output_packet);
         return error;
     }
 
@@ -580,11 +580,11 @@ static int encode_audio_frame(AVFrame *frame,
         if ((error = av_write_frame(output_format_context, &output_packet)) < 0) {
             fprintf(stderr, "Could not write frame (error '%s')\n",
                     get_error_text(error));
-            av_free_packet(&output_packet);
+            av_packet_unref(&output_packet);
             return error;
         }
 
-        av_free_packet(&output_packet);
+        av_packet_unref(&output_packet);
     }
 
     return 0;

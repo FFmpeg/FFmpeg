@@ -202,7 +202,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(pkt->data, cdxl->header, CDXL_HEADER_SIZE);
         ret = avio_read(pb, pkt->data + CDXL_HEADER_SIZE, video_size);
         if (ret < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         av_shrink_packet(pkt, CDXL_HEADER_SIZE + ret);
