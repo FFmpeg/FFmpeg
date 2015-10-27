@@ -173,7 +173,7 @@ static int flush_packet(AVFormatContext *s, AVPacket *new)
 
     avio_write(pb, pkt->data, pkt->size);
 
-    av_free_packet(gif->prev_pkt);
+    av_packet_unref(gif->prev_pkt);
     if (new)
         av_copy_packet(gif->prev_pkt, new);
 

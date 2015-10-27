@@ -612,7 +612,7 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             if (partial_packet) {
                 avpriv_request_sample(s, "video header followed by audio packet");
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 partial_packet = 0;
             }
 
@@ -736,7 +736,7 @@ get_video_packet:
     }
 
     if (ret < 0 && partial_packet)
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     return ret;
 }
 

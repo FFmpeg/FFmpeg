@@ -632,7 +632,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index = ffm->header[0];
         if ((unsigned)pkt->stream_index >= s->nb_streams) {
             av_log(s, AV_LOG_ERROR, "invalid stream index %d\n", pkt->stream_index);
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             ffm->read_state = READ_HEADER;
             return -1;
         }
@@ -643,7 +643,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         ffm->read_state = READ_HEADER;
         if (ffm_read_data(s, pkt->data, size, 0) != size) {
             /* bad case: desynchronized packet. we cancel all the packet loading */
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return -1;
         }
         pkt->pts = AV_RB64(ffm->header+8);

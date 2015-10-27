@@ -143,11 +143,11 @@ static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
                 }
             }
         }
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
         av_init_packet(&pkt);
     } while ((!end_of_stream || got_frame) && (no_seeking || (fr->pkt_pts + av_frame_get_pkt_duration(fr) <= ts_end)));
 
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
     av_freep(&byte_buffer);
 
     return 0;

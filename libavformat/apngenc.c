@@ -192,7 +192,7 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
     }
     ++apng->frame_number;
 
-    av_free_packet(apng->prev_packet);
+    av_packet_unref(apng->prev_packet);
     if (packet)
         av_copy_packet(apng->prev_packet, packet);
 }

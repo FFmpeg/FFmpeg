@@ -2353,7 +2353,7 @@ static int recode_subtitle(AVCodecContext *avctx,
         ret = FFMIN(AVERROR(errno), -1);
         av_log(avctx, AV_LOG_ERROR, "Unable to recode subtitle event \"%s\" "
                "from %s to UTF-8\n", inpkt->data, avctx->sub_charenc);
-        av_free_packet(&tmp);
+        av_packet_unref(&tmp);
         goto end;
     }
     outpkt->size -= outl;
@@ -2460,7 +2460,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 pkt_recoded.side_data = NULL;
                 pkt_recoded.side_data_elems = 0;
 
-                av_free_packet(&pkt_recoded);
+                av_packet_unref(&pkt_recoded);
             }
             if (avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB)
                 sub->format = 0;

@@ -956,12 +956,12 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos = idx_pkt.pos;
     pkt->stream_index = idx_pkt.stream_index;
 
-    av_free_packet(&idx_pkt);
+    av_packet_unref(&idx_pkt);
     return 0;
 
 fail:
-    av_free_packet(pkt);
-    av_free_packet(&idx_pkt);
+    av_packet_unref(pkt);
+    av_packet_unref(&idx_pkt);
     return ret;
 }
 

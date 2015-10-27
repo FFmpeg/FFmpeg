@@ -653,7 +653,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
      */
     if (!(avctx->codec_type == AVMEDIA_TYPE_VIDEO && avctx->codec)) {
         if (ost->frame_number >= ost->max_frames) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return;
         }
         ost->frame_number++;
@@ -700,7 +700,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         if (a > 0) {
             pkt->side_data = NULL;
             pkt->side_data_elems = 0;
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             new_pkt.buf = av_buffer_create(new_pkt.data, new_pkt.size,
                                            av_buffer_default_free, NULL, 0);
             if (!new_pkt.buf)
@@ -777,7 +777,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         main_return_code = 1;
         close_all_output_streams(ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
     }
-    av_free_packet(pkt);
+    av_packet_unref(pkt);
 }
 
 static void close_output_stream(OutputStream *ost)
@@ -1754,7 +1754,7 @@ static void flush_encoders(void)
                     break;
                 }
                 if (ost->finished & MUXER_FINISHED) {
-                    av_free_packet(&pkt);
+                    av_packet_unref(&pkt);
                     continue;
                 }
                 av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
@@ -3521,7 +3521,7 @@ static void *input_thread(void *arg)
                 av_log(f->ctx, AV_LOG_ERROR,
                        "Unable to send packet to main thread: %s\n",
                        av_err2str(ret));
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
             av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
             break;
         }
@@ -3542,7 +3542,7 @@ static void free_input_threads(void)
             continue;
         av_thread_message_queue_set_err_send(f->in_thread_queue, AVERROR_EOF);
         while (av_thread_message_queue_recv(f->in_thread_queue, &pkt, 0) >= 0)
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
 
         pthread_join(f->thread, NULL);
         f->joined = 1;
@@ -3945,7 +3945,7 @@ static int process_input(int file_index)
     process_input_packet(ist, &pkt, 0);
 
 discard_packet:
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
 
     return 0;
 }

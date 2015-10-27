@@ -1403,7 +1403,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         if (pkt->flags & AV_PKT_FLAG_KEY)
             st->skip_to_keyframe = 0;
         if (st->skip_to_keyframe) {
-            av_free_packet(&cur_pkt);
+            av_packet_unref(&cur_pkt);
             if (got_packet) {
                 *pkt = cur_pkt;
             }

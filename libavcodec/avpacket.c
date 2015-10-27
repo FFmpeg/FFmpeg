@@ -179,7 +179,7 @@ static int copy_packet_data(AVPacket *pkt, const AVPacket *src, int dup)
     return 0;
 
 failed_alloc:
-    av_free_packet(pkt);
+    av_packet_unref(pkt);
     return AVERROR(ENOMEM);
 }
 
@@ -342,7 +342,7 @@ int av_packet_merge_side_data(AVPacket *pkt){
         bytestream_put_be64(&p, FF_MERGE_MARKER);
         av_assert0(p-pkt->data == pkt->size);
         memset(p, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-        av_free_packet(&old);
+        av_packet_unref(&old);
         pkt->side_data_elems = 0;
         pkt->side_data = NULL;
         return 1;

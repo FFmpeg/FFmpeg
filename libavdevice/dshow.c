@@ -119,7 +119,7 @@ dshow_read_close(AVFormatContext *s)
     pktl = ctx->pktl;
     while (pktl) {
         AVPacketList *next = pktl->next;
-        av_free_packet(&pktl->pkt);
+        av_packet_unref(&pktl->pkt);
         av_free(pktl);
         pktl = next;
     }

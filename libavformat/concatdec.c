@@ -511,7 +511,7 @@ static int filter_packet(AVFormatContext *avf, ConcatStream *cs, AVPacket *pkt)
             ret = 1;
         }
         if (ret > 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             pkt2.buf = av_buffer_create(pkt2.data, pkt2.size,
                                         av_buffer_default_free, NULL, 0);
             if (!pkt2.buf) {

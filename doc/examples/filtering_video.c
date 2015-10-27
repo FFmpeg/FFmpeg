@@ -262,7 +262,7 @@ int main(int argc, char **argv)
                 av_frame_unref(frame);
             }
         }
-        av_free_packet(&packet);
+        av_packet_unref(&packet);
     }
 end:
     avfilter_graph_free(&filter_graph);

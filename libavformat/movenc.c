@@ -440,10 +440,10 @@ concatenate:
             return ret;
         if (info->num_blocks != 6)
             return 0;
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         if ((ret = av_copy_packet(pkt, &info->pkt)) < 0)
             return ret;
-        av_free_packet(&info->pkt);
+        av_packet_unref(&info->pkt);
         info->num_blocks = 0;
     }
 
@@ -498,7 +498,7 @@ static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
     av_free(buf);
 
 end:
-    av_free_packet(&info->pkt);
+    av_packet_unref(&info->pkt);
     av_freep(&track->eac3_priv);
 
     return size;
@@ -4606,7 +4606,7 @@ static int mov_write_subtitle_end_packet(AVFormatContext *s,
     end.stream_index = stream_index;
 
     ret = mov_write_single_packet(s, &end);
-    av_free_packet(&end);
+    av_packet_unref(&end);
 
     return ret;
 }

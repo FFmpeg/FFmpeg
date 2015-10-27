@@ -826,7 +826,7 @@ static int write_trailer(AVFormatContext *s)
 
     av_free(wctx->sp_pairs);
     av_free(wctx->st_pairs);
-    av_free_packet(&wctx->thumbnail);
+    av_packet_unref(&wctx->thumbnail);
     return 0;
 }
 

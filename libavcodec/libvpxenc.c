@@ -733,7 +733,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                                 AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                                 cx_frame->sz_alpha + 8);
             if(!side_data) {
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 av_free(pkt);
                 return AVERROR(ENOMEM);
             }
