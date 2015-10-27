@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/stereo3d.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "huffyuvencdsp.h"
@@ -233,6 +235,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     PNGEncContext *s       = avctx->priv_data;
+    AVFrameSideData *side_data;
     const AVFrame *const p = pict;
     int bit_depth, color_type, y, len, row_size, ret, is_progressive;
     int bits_per_pixel, pass_row_size, enc_row_size, max_packet_size;
@@ -368,6 +371,25 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (has_alpha) {
             png_write_chunk(&s->bytestream,
                             MKTAG('t', 'R', 'N', 'S'), s->buf + 256 * 3, 256);
+        }
+    }
+
+    /* write stereoscopic information */
+    side_data = av_frame_get_side_data(pict, AV_FRAME_DATA_STEREO3D);
+    if (side_data) {
+        AVStereo3D *stereo3d = (AVStereo3D *)side_data->data;
+        uint8_t sm;
+        switch (stereo3d->type) {
+        case AV_STEREO3D_SIDEBYSIDE:
+            sm = !(stereo3d->flags & AV_STEREO3D_FLAG_INVERT);
+            png_write_chunk(&s->bytestream, MKTAG('s', 'T', 'E', 'R'), &sm, 1);
+            break;
+        case AV_STEREO3D_2D:
+            break;
+        default:
+            av_log(avctx, AV_LOG_WARNING,
+                   "Only side-by-side stereo3d flag can be defined within sTER chunk\n");
+            break;
         }
     }
 
