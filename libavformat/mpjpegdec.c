@@ -153,9 +153,19 @@ static int parse_multipart_header(AVIOContext *pb, void *log_ctx)
     int found_content_type = 0;
     int ret, size = -1;
 
+    // get the CRLF as empty string
     ret = get_line(pb, line, sizeof(line));
     if (ret < 0)
         return ret;
+
+    /* some implementation do not provide the required
+     * initial CRLF (see rfc1341 7.2.1)
+     */
+    if (!line[0]) {
+        ret = get_line(pb, line, sizeof(line));
+        if (ret < 0)
+            return ret;
+    }
 
     if (strncmp(line, "--", 2))
         return AVERROR_INVALIDDATA;
@@ -215,9 +225,6 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0)
         return ret;
-
-    // trailing empty line
-    avio_skip(s->pb, 2);
 
     return 0;
 }
