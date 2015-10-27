@@ -1030,7 +1030,7 @@ SwsContext *sws_alloc_context(void)
     av_assert0(offsetof(SwsContext, redDither) + DITHER32_INT == offsetof(SwsContext, dither32));
 
     if (c) {
-        c->av_class = &sws_context_class;
+        c->av_class = &ff_sws_context_class;
         av_opt_set_defaults(c);
     }
 
