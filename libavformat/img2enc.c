@@ -75,10 +75,6 @@ static int write_header(AVFormatContext *s)
 
     img->use_rename = proto && !strcmp(proto, "file");
 
-    //The current atomic rename implementation is not compatible with split planes
-    if (img->split_planes)
-        img->use_rename = 0;
-
     return 0;
 }
 
