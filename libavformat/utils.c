@@ -683,6 +683,14 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
         }
 
+        if (!pkt->buf) {
+            AVPacket tmp = { 0 };
+            ret = av_packet_ref(&tmp, pkt);
+            if (ret < 0)
+                return ret;
+            *pkt = tmp;
+        }
+
         if ((s->flags & AVFMT_FLAG_DISCARD_CORRUPT) &&
             (pkt->flags & AV_PKT_FLAG_CORRUPT)) {
             av_log(s, AV_LOG_WARNING,

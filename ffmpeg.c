@@ -3507,7 +3507,6 @@ static void *input_thread(void *arg)
             av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
             break;
         }
-        av_dup_packet(&pkt);
         ret = av_thread_message_queue_send(f->in_thread_queue, &pkt, flags);
         if (flags && ret == AVERROR(EAGAIN)) {
             flags = 0;
