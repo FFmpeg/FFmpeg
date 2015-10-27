@@ -435,6 +435,7 @@ OBJS-$(CONFIG_TAK_DEMUXER)               += takdec.o apetag.o img2.o rawdec.o
 OBJS-$(CONFIG_TEDCAPTIONS_DEMUXER)       += tedcaptionsdec.o subtitles.o
 OBJS-$(CONFIG_TEE_MUXER)                 += tee.o
 OBJS-$(CONFIG_THP_DEMUXER)               += thp.o
+OBJS-$(CONFIG_THREEDOSTR_DEMUXER)        += 3dostr.o
 OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
 OBJS-$(CONFIG_MKVTIMESTAMP_V2_MUXER)     += mkvtimestamp_v2.o
 OBJS-$(CONFIG_TMV_DEMUXER)               += tmv.o

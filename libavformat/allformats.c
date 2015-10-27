@@ -303,6 +303,7 @@ void av_register_all(void)
     REGISTER_MUXER   (TG2,              tg2);
     REGISTER_MUXER   (TGP,              tgp);
     REGISTER_DEMUXER (THP,              thp);
+    REGISTER_DEMUXER (THREEDOSTR,       threedostr);
     REGISTER_DEMUXER (TIERTEXSEQ,       tiertexseq);
     REGISTER_MUXER   (MKVTIMESTAMP_V2,  mkvtimestamp_v2);
     REGISTER_DEMUXER (TMV,              tmv);
