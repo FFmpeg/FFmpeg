@@ -130,7 +130,7 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
  * 32-bit C version, and and&add trick by Michael Niedermayer
  */
 
-av_cold void sws_rgb2rgb_init(void)
+av_cold void ff_sws_rgb2rgb_init(void)
 {
     rgb2rgb_init_c();
     if (ARCH_X86)
