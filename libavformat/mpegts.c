@@ -2743,16 +2743,18 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
         ret = av_read_frame(s, &pkt);
         if (ret < 0)
             return AV_NOPTS_VALUE;
-        av_packet_unref(&pkt);
         if (pkt.dts != AV_NOPTS_VALUE && pkt.pos >= 0) {
             ff_reduce_index(s, pkt.stream_index);
             av_add_index_entry(s->streams[pkt.stream_index], pkt.pos, pkt.dts, 0, 0, AVINDEX_KEYFRAME /* FIXME keyframe? */);
             if (pkt.stream_index == stream_index && pkt.pos >= *ppos) {
+                int64_t dts = pkt.dts;
                 *ppos = pkt.pos;
-                return pkt.dts;
+                av_packet_unref(&pkt);
+                return dts;
             }
         }
         pos = pkt.pos;
+        av_packet_unref(&pkt);
     }
 
     return AV_NOPTS_VALUE;
