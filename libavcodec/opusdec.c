@@ -569,8 +569,8 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
         if (buffer_samples) {
             float *buf[2] = { c->out[2 * i + 0] ? c->out[2 * i + 0] : (float*)frame->extended_data[0],
                               c->out[2 * i + 1] ? c->out[2 * i + 1] : (float*)frame->extended_data[0] };
-            buf[0] += buffer_samples;
-            buf[1] += buffer_samples;
+            buf[0] += decoded_samples;
+            buf[1] += decoded_samples;
             ret = av_audio_fifo_write(c->sync_buffers[i], (void**)buf, buffer_samples);
             if (ret < 0)
                 return ret;
