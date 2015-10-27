@@ -795,7 +795,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         int nnal, s, i;
 
         s = x264_encoder_headers(x4->enc, &nal, &nnal);
-        avctx->extradata = p = av_malloc(s);
+        avctx->extradata = p = av_mallocz(s + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!p)
             return AVERROR(ENOMEM);
 
