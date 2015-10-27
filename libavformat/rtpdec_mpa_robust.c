@@ -166,7 +166,7 @@ static int mpa_robust_parse_packet(AVFormatContext *ctx, PayloadContext *data,
             "Received packet without a start fragment; dropping.\n");
         return AVERROR(EAGAIN);
     }
-    if (adu_size = data->adu_size ||
+    if (adu_size != data->adu_size ||
         data->timestamp != *timestamp) {
         ffio_free_dyn_buf(&data->fragment);
         av_log(ctx, AV_LOG_ERROR, "Invalid packet received\n");
