@@ -3181,10 +3181,12 @@ typedef struct AVHWAccel {
 /**
  * four components are given, that's all.
  * the last component is alpha
+ * @deprecated Use the imgutils functions
  */
-attribute_deprecated
 typedef struct AVPicture {
+    attribute_deprecated
     uint8_t *data[AV_NUM_DATA_POINTERS];
+    attribute_deprecated
     int linesize[AV_NUM_DATA_POINTERS];     ///< number of bytes per line
 } AVPicture;
 
