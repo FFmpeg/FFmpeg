@@ -69,8 +69,8 @@ typedef struct {
 static const AVOption sine_options[] = {
     OPT_DBL("frequency",         frequency,            440, 0, DBL_MAX,   "set the sine frequency",),
     OPT_DBL("f",                 frequency,            440, 0, DBL_MAX,   "set the sine frequency",),
-    OPT_DBL("beep_factor",       beep_factor,            0, 0, DBL_MAX,   "set the beep fequency factor",),
-    OPT_DBL("b",                 beep_factor,            0, 0, DBL_MAX,   "set the beep fequency factor",),
+    OPT_DBL("beep_factor",       beep_factor,            0, 0, DBL_MAX,   "set the beep frequency factor",),
+    OPT_DBL("b",                 beep_factor,            0, 0, DBL_MAX,   "set the beep frequency factor",),
     OPT_INT("sample_rate",       sample_rate,        44100, 1, INT_MAX,   "set the sample rate",),
     OPT_INT("r",                 sample_rate,        44100, 1, INT_MAX,   "set the sample rate",),
     OPT_DUR("duration",          duration,               0, 0, INT64_MAX, "set the audio duration",),
