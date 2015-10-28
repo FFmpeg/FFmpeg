@@ -3113,7 +3113,7 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS'
+        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS'
     elif $_cc 2>&1 | grep -q Intel; then
         _type=icl
         _ident=$($_cc 2>&1 | head -n1)
