@@ -39,9 +39,9 @@
 #include <windows.h>
 #include <process.h>
 
-/* MinGW requires the intrinsics header for the pthread_once fallback code */
 #if _WIN32_WINNT < 0x0600 && defined(__MINGW32__)
-#include <intrin.h>
+#undef MemoryBarrier
+#define MemoryBarrier __sync_synchronize
 #endif
 
 #include "libavutil/attributes.h"
