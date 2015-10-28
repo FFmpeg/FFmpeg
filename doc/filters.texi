@@ -13756,7 +13756,7 @@ Specify the transform count for every video frame. Default value is @code{6}.
 Acceptable range is @code{[1, 30]}.
 
 @item fcount
-Specify the the transform count for every single pixel. Default value is @code{0},
+Specify the transform count for every single pixel. Default value is @code{0},
 which makes it computed automatically. Acceptable range is @code{[0, 10]}.
 
 @item fontfile
