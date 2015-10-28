@@ -1125,7 +1125,7 @@ kilobits/s.
 
 @item vbr (@emph{vbr}, @emph{hard-cbr}, and @emph{cvbr})
 Set VBR mode. The FFmpeg @option{vbr} option has the following
-valid arguments, with the their @command{opusenc} equivalent options
+valid arguments, with the @command{opusenc} equivalent options
 in parentheses:
 
 @table @samp
