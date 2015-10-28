@@ -90,6 +90,7 @@ static int genh_read_header(AVFormatContext *s)
                  return ret;
              AV_WL16(st->codec->extradata, 3);
              st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;     break;
+    case 10: st->codec->codec_id = AV_CODEC_ID_ADPCM_AICA;       break;
     case 12: st->codec->codec_id = AV_CODEC_ID_ADPCM_THP;        break;
     case 13: st->codec->codec_id = AV_CODEC_ID_PCM_U8;           break;
     case 17: st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_QT;     break;

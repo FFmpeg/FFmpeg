@@ -887,6 +887,7 @@ following image formats are supported:
     @tab encoding supported through external library libfaac and libvo-aacenc
 @item AC-3                   @tab IX  @tab  IX
 @item ADPCM 4X Movie         @tab     @tab  X
+@item APDCM Yamaha AICA      @tab     @tab  X
 @item ADPCM CDROM XA         @tab     @tab  X
 @item ADPCM Creative Technology @tab     @tab  X
     @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2

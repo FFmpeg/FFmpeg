@@ -662,6 +662,7 @@ OBJS-$(CONFIG_ADPCM_4XM_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_ADX_DECODER)          += adxdec.o adx.o
 OBJS-$(CONFIG_ADPCM_ADX_ENCODER)          += adxenc.o adx.o
 OBJS-$(CONFIG_ADPCM_AFC_DECODER)          += adpcm.o adpcm_data.o
+OBJS-$(CONFIG_ADPCM_AICA_DECODER)         += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_CT_DECODER)           += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_DTK_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_EA_DECODER)           += adpcm.o adpcm_data.o
