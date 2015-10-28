@@ -299,6 +299,7 @@ library:
     @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item D-Cinema audio            @tab X @tab X
 @item Deluxe Paint Animation    @tab   @tab X
+@item DCSTR                     @tab   @tab X
 @item DFA                       @tab   @tab X
     @tab This format is used in Chronomaster game
 @item DirectDraw Surface        @tab   @tab X

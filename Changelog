@@ -20,7 +20,7 @@ version <next>:
 - selectivecolor filter
 - extensive native AAC encoder improvements
 - ADPCM PSX decoder
-- 3dostr, genh, vag, xvag, ads, msf & svag demuxer
+- 3dostr, dcstr, genh, vag, xvag, ads, msf & svag demuxer
 - zscale filter
 - wve demuxer
 - zero-copy Intel QSV transcoding in ffmpeg
