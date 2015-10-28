@@ -70,6 +70,7 @@ SWSCALEOBJS                             += sw_gbrp.o sw_range_convert.o sw_rgb.o
 CHECKASMOBJS-$(CONFIG_SWSCALE)  += $(SWSCALEOBJS)
 
 # libavutil tests
+AVUTILOBJS                              += aes.o
 AVUTILOBJS                              += av_tx.o
 AVUTILOBJS                              += fixed_dsp.o
 AVUTILOBJS                              += float_dsp.o
