@@ -1328,19 +1328,19 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         do_imdct(s, s->channels);
 
         if (downmix_output) {
-            s->ac3dsp.downmix(s->outptr, s->downmix_coeffs,
+            ff_ac3dsp_downmix(&s->ac3dsp, s->outptr, s->downmix_coeffs,
                               s->out_channels, s->fbw_channels, 256);
         }
     } else {
         if (downmix_output) {
-            s->ac3dsp.downmix(s->xcfptr + 1, s->downmix_coeffs,
+            ff_ac3dsp_downmix(&s->ac3dsp, s->xcfptr + 1, s->downmix_coeffs,
                               s->out_channels, s->fbw_channels, 256);
         }
 
         if (downmix_output && !s->downmixed) {
             s->downmixed = 1;
-            s->ac3dsp.downmix(s->dlyptr, s->downmix_coeffs, s->out_channels,
-                              s->fbw_channels, 128);
+            ff_ac3dsp_downmix(&s->ac3dsp, s->dlyptr, s->downmix_coeffs,
+                              s->out_channels, s->fbw_channels, 128);
         }
 
         do_imdct(s, s->out_channels);

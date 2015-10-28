@@ -71,7 +71,8 @@ MMX-OBJS-$(CONFIG_MPEG4_DECODER)       += x86/xvididct_mmx.o            \
                                           x86/xvididct_sse2.o
 
 # subsystems
-YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
+YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o                  \
+                                          x86/ac3dsp_downmix.o
 YASM-OBJS-$(CONFIG_AUDIODSP)           += x86/audiodsp.o
 YASM-OBJS-$(CONFIG_BSWAPDSP)           += x86/bswapdsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o

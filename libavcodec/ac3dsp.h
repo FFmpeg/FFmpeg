@@ -126,8 +126,9 @@ typedef struct AC3DSPContext {
 
     void (*extract_exponents)(uint8_t *exp, int32_t *coef, int nb_coefs);
 
-    void (*downmix)(float **samples, float **matrix, int out_ch,
-                    int in_ch, int len);
+    int out_channels;
+    int in_channels;
+    void (*downmix)(float **samples, float **matrix, int len);
 
     /**
      * Apply symmetric window in 16-bit fixed-point.
@@ -147,5 +148,9 @@ typedef struct AC3DSPContext {
 void ff_ac3dsp_init    (AC3DSPContext *c, int bit_exact);
 void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact);
 void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact);
+
+void ff_ac3dsp_downmix(AC3DSPContext *c, float **samples, float **matrix,
+                       int out_ch, int in_ch, int len);
+void ff_ac3dsp_set_downmix_x86(AC3DSPContext *c);
 
 #endif /* AVCODEC_AC3DSP_H */
