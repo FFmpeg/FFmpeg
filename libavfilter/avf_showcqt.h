@@ -79,7 +79,7 @@ typedef struct {
     float               *bar_v_buf;
     /* callback */
     void                (*cqt_calc)(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeffs,
-                                    int len, int fft_len);;
+                                    int len, int fft_len);
     void                (*draw_bar)(AVFrame *out, const float *h, const float *rcp_h,
                                     const ColorFloat *c, int bar_h);
     void                (*draw_axis)(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off);
