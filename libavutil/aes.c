@@ -208,6 +208,8 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
     uint8_t alog8[512];
 
     a->crypt = decrypt ? aes_decrypt : aes_encrypt;
+    if (ARCH_X86)
+        ff_init_aes_x86(a, decrypt);
 
     if (!enc_multbl[FF_ARRAY_ELEMS(enc_multbl) - 1][FF_ARRAY_ELEMS(enc_multbl[0]) - 1]) {
         j = 1;

@@ -1,5 +1,5 @@
 /*
- * copyright (c) 2015 rcombs
+ * Copyright (c) 2015 Rodger Combs <rodger.combs@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -18,28 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_AES_INTERNAL_H
-#define AVUTIL_AES_INTERNAL_H
+#include <stddef.h>
+#include "libavutil/aes_internal.h"
+#include "libavutil/x86/cpu.h"
 
-#include "mem_internal.h"
-#include <stdint.h>
+void ff_aes_decrypt_aesni(AVAES *a, uint8_t *dst, const uint8_t *src,
+                          int count, uint8_t *iv, int rounds);
+void ff_aes_encrypt_aesni(AVAES *a, uint8_t *dst, const uint8_t *src,
+                          int count, uint8_t *iv, int rounds);
 
-typedef union {
-    uint64_t u64[2];
-    uint32_t u32[4];
-    uint8_t u8x4[4][4];
-    uint8_t u8[16];
-} av_aes_block;
+void ff_init_aes_x86(AVAES *a, int decrypt)
+{
+    int cpu_flags = av_get_cpu_flags();
 
-typedef struct AVAES {
-    // Note: round_key[16] is accessed in the init code, but this only
-    // overwrites state, which does not matter (see also commit ba554c0).
-    DECLARE_ALIGNED(16, av_aes_block, round_key)[15];
-    DECLARE_ALIGNED(16, av_aes_block, state)[2];
-    int rounds;
-    void (*crypt)(struct AVAES *a, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int rounds);
-} AVAES;
-
-void ff_init_aes_x86(AVAES *a, int decrypt);
-
-#endif /* AVUTIL_AES_INTERNAL_H */
+    if (EXTERNAL_AESNI(cpu_flags))
+        a->crypt = decrypt ? ff_aes_decrypt_aesni : ff_aes_encrypt_aesni;
+}
