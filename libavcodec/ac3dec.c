@@ -332,47 +332,57 @@ static int parse_frame_header(AC3DecodeContext *s)
  * Set stereo downmixing coefficients based on frame header info.
  * reference: Section 7.8.2 Downmixing Into Two Channels
  */
-static void set_downmix_coeffs(AC3DecodeContext *s)
+static int set_downmix_coeffs(AC3DecodeContext *s)
 {
     int i;
     float cmix = gain_levels[s->  center_mix_level];
     float smix = gain_levels[s->surround_mix_level];
     float norm0, norm1;
 
+    if (!s->downmix_coeffs[0]) {
+        s->downmix_coeffs[0] = av_malloc(2 * AC3_MAX_CHANNELS *
+                                         sizeof(**s->downmix_coeffs));
+        if (!s->downmix_coeffs[0])
+            return AVERROR(ENOMEM);
+        s->downmix_coeffs[1] = s->downmix_coeffs[0] + AC3_MAX_CHANNELS;
+    }
+
     for (i = 0; i < s->fbw_channels; i++) {
-        s->downmix_coeffs[i][0] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
-        s->downmix_coeffs[i][1] = gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
+        s->downmix_coeffs[0][i] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
+        s->downmix_coeffs[1][i] = gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
     }
     if (s->channel_mode > 1 && s->channel_mode & 1) {
-        s->downmix_coeffs[1][0] = s->downmix_coeffs[1][1] = cmix;
+        s->downmix_coeffs[0][1] = s->downmix_coeffs[1][1] = cmix;
     }
     if (s->channel_mode == AC3_CHMODE_2F1R || s->channel_mode == AC3_CHMODE_3F1R) {
         int nf = s->channel_mode - 2;
-        s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf][1] = smix * LEVEL_MINUS_3DB;
+        s->downmix_coeffs[0][nf] = s->downmix_coeffs[1][nf] = smix * LEVEL_MINUS_3DB;
     }
     if (s->channel_mode == AC3_CHMODE_2F2R || s->channel_mode == AC3_CHMODE_3F2R) {
         int nf = s->channel_mode - 4;
-        s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf+1][1] = smix;
+        s->downmix_coeffs[0][nf] = s->downmix_coeffs[1][nf+1] = smix;
     }
 
     /* renormalize */
     norm0 = norm1 = 0.0;
     for (i = 0; i < s->fbw_channels; i++) {
-        norm0 += s->downmix_coeffs[i][0];
-        norm1 += s->downmix_coeffs[i][1];
+        norm0 += s->downmix_coeffs[0][i];
+        norm1 += s->downmix_coeffs[1][i];
     }
     norm0 = 1.0f / norm0;
     norm1 = 1.0f / norm1;
     for (i = 0; i < s->fbw_channels; i++) {
-        s->downmix_coeffs[i][0] *= norm0;
-        s->downmix_coeffs[i][1] *= norm1;
+        s->downmix_coeffs[0][i] *= norm0;
+        s->downmix_coeffs[1][i] *= norm1;
     }
 
     if (s->output_mode == AC3_CHMODE_MONO) {
         for (i = 0; i < s->fbw_channels; i++)
-            s->downmix_coeffs[i][0] = (s->downmix_coeffs[i][0] +
-                                       s->downmix_coeffs[i][1]) * LEVEL_MINUS_3DB;
+            s->downmix_coeffs[0][i] = (s->downmix_coeffs[0][i] +
+                                       s->downmix_coeffs[1][i]) * LEVEL_MINUS_3DB;
     }
+
+    return 0;
 }
 
 /**
@@ -1447,7 +1457,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         /* set downmixing coefficients if needed */
         if (s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
                 s->fbw_channels == s->out_channels)) {
-            set_downmix_coeffs(s);
+            if ((ret = set_downmix_coeffs(s)) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "error setting downmix coeffs\n");
+                return ret;
+            }
         }
     } else if (!s->channels) {
         av_log(avctx, AV_LOG_ERROR, "unable to determine channel mode\n");
@@ -1566,6 +1579,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
+    av_freep(&s->downmix_coeffs[0]);
 
     return 0;
 }
