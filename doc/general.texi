@@ -483,7 +483,6 @@ library:
 @item RTSP                      @tab X @tab X
 @item SAP                       @tab X @tab X
 @item SBG                       @tab   @tab X
-@item Screenpresso              @tab   @tab X
 @item SDP                       @tab   @tab X
 @item Sega FILM/CPK             @tab   @tab X
     @tab Used in many Sega Saturn console games.
@@ -816,6 +815,7 @@ following image formats are supported:
     @tab Texture dictionaries used by the Renderware Engine.
 @item RL2 video              @tab     @tab  X
     @tab used in some games by Entertainment Software Partners
+@item Screenpresso           @tab     @tab  X
 @item Sierra VMD video       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Silicon Graphics Motion Video Compressor 1 (MVC1)  @tab     @tab  X
