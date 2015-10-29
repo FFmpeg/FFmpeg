@@ -77,6 +77,9 @@ int avpriv_open(const char *filename, int flags, ...)
 #ifdef O_CLOEXEC
     flags |= O_CLOEXEC;
 #endif
+#ifdef O_NOINHERIT
+    flags |= O_NOINHERIT;
+#endif
 
     fd = open(filename, flags, mode);
 #if HAVE_FCNTL
