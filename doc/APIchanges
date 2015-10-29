@@ -20,6 +20,8 @@ API changes, most recent first:
            it resets the packet in a more consistent way.
   xxxxxx - Deprecate av_dup_packet(), it is a no-op for most cases.
            Use av_packet_ref() to make a non-refcounted AVPacket refcounted.
+  xxxxxx - Add av_packet_alloc(), av_packet_clone(), av_packet_free().
+           They match the AVFrame functions with the same name.
 
 2015-10-27 - xxxxxxx - lavu 55.5.100 - cpu.h
   Add AV_CPU_FLAG_AESNI.
