@@ -197,8 +197,8 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     av_des_init(av_des, n_val, 192, 1);
     while (datalen-- > 0) {
         av_des_crypt(av_des, oc->r_val, &enc_header[pos], 2, NULL, 1);
-        kset(s, oc->r_val, NULL, 16); {
-        if (!rprobe(s, enc_header, size, oc->r_val))
+        kset(s, oc->r_val, NULL, 16);
+        if (!rprobe(s, enc_header, size, oc->r_val)) {
             av_free(av_des);
             return 0;
         }
