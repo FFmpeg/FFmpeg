@@ -176,7 +176,7 @@ static float ssim_plane(SSIMDSPContext *dsp,
 
 static double ssim_db(double ssim, double weight)
 {
-    return 10 * (log(weight) / log(10) - log(weight - ssim) / log(10));
+    return 10 * log10(weight / (weight - ssim));
 }
 
 static AVFrame *do_ssim(AVFilterContext *ctx, AVFrame *main,
