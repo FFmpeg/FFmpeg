@@ -1547,7 +1547,7 @@ static void calculate_visual_weight(SnowContext *s, Plane *p){
                 }
             }
 
-            b->qlog= (int)(log(352256.0/sqrt(error)) / log(pow(2.0, 1.0/QROOT))+0.5);
+            b->qlog= (int)(QROOT * log2(352256.0/sqrt(error)) + 0.5);
         }
     }
 }
