@@ -963,7 +963,7 @@ following image formats are supported:
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
     @tab Used in various Interplay computer games.
-@item DPCM Squareroot-Delta-Exact
+@item DPCM Squareroot-Delta-Exact  @tab  @tab  X
     @tab Used in various games.
 @item DPCM Sierra Online     @tab     @tab  X
     @tab Used in Sierra Online game audio files.
