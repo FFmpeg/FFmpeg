@@ -72,7 +72,7 @@ static inline unsigned pow2(unsigned base)
 
 static inline double get_psnr(double mse, uint64_t nb_frames, int max)
 {
-    return 10.0 * log(pow2(max) / (mse / nb_frames)) / log(10.0);
+    return 10.0 * log10(pow2(max) / (mse / nb_frames));
 }
 
 static uint64_t sse_line_8bit(const uint8_t *main_line,  const uint8_t *ref_line, int outw)
