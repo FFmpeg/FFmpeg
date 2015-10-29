@@ -1244,7 +1244,7 @@ static void do_video_out(AVFormatContext *s,
 
 static double psnr(double d)
 {
-    return -10.0 * log(d) / log(10.0);
+    return -10.0 * log10(d);
 }
 
 static void do_video_stats(OutputStream *ost, int frame_size)
