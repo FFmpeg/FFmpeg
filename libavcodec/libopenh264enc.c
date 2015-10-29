@@ -39,6 +39,7 @@ typedef struct SVCContext {
     char *profile;
     int max_nal_size;
     int skip_frames;
+    int skipped;
 } SVCContext;
 
 #define OPENH264_VER_AT_LEAST(maj, min) \
@@ -95,6 +96,8 @@ static av_cold int svc_encode_close(AVCodecContext *avctx)
 
     if (s->encoder)
         WelsDestroySVCEncoder(s->encoder);
+    if (s->skipped > 0)
+        av_log(avctx, AV_LOG_WARNING, "%d frames skipped\n", s->skipped);
     return 0;
 }
 
@@ -252,6 +255,7 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return AVERROR_UNKNOWN;
     }
     if (fbi.eFrameType == videoFrameTypeSkip) {
+        s->skipped++;
         av_log(avctx, AV_LOG_DEBUG, "frame skipped\n");
         return 0;
     }
