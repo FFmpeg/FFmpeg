@@ -277,7 +277,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int lvl = 9;
 
     for(i=1; i<256; i++)
-        score_tab[i]= -i * log(i/(double)(ZMBV_BLOCK*ZMBV_BLOCK)) * (256/M_LN2);
+        score_tab[i]= -i * log2(i/(double)(ZMBV_BLOCK*ZMBV_BLOCK)) * 256;
 
     c->avctx = avctx;
 
