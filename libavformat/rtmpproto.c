@@ -1111,7 +1111,7 @@ static int rtmp_calc_swfhash(URLContext *s)
 {
     RTMPContext *rt = s->priv_data;
     uint8_t *in_data = NULL, *out_data = NULL, *swfdata;
-    int64_t in_size, out_size;
+    int64_t in_size;
     URLContext *stream;
     char swfhash[32];
     int swfsize;
@@ -1143,6 +1143,8 @@ static int rtmp_calc_swfhash(URLContext *s)
     }
 
     if (!memcmp(in_data, "CWS", 3)) {
+#if CONFIG_ZLIB
+        int64_t out_size;
         /* Decompress the SWF player file using Zlib. */
         if (!(out_data = av_malloc(8))) {
             ret = AVERROR(ENOMEM);
@@ -1152,18 +1154,17 @@ static int rtmp_calc_swfhash(URLContext *s)
         memcpy(out_data, in_data, 8);
         out_size = 8;
 
-#if CONFIG_ZLIB
         if ((ret = rtmp_uncompress_swfplayer(in_data + 8, in_size - 8,
                                              &out_data, &out_size)) < 0)
             goto fail;
+        swfsize = out_size;
+        swfdata = out_data;
 #else
         av_log(s, AV_LOG_ERROR,
                "Zlib is required for decompressing the SWF player file.\n");
         ret = AVERROR(EINVAL);
         goto fail;
 #endif
-        swfsize = out_size;
-        swfdata = out_data;
     } else {
         swfsize = in_size;
         swfdata = in_data;
