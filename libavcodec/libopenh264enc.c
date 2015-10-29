@@ -38,6 +38,7 @@ typedef struct SVCContext {
     int loopfilter;
     char *profile;
     int max_nal_size;
+    int skip_frames;
 } SVCContext;
 
 #define OPENH264_VER_AT_LEAST(maj, min) \
@@ -55,6 +56,7 @@ static const AVOption options[] = {
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "max_nal_size", "Set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { 0 }, 0, INT_MAX, VE },
+    { "allow_skip_frames", "Allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { NULL }
 };
 
@@ -144,7 +146,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     param.bEnableDenoise             = 0;
     param.bEnableBackgroundDetection = 1;
     param.bEnableAdaptiveQuant       = 1;
-    param.bEnableFrameSkip           = 0;
+    param.bEnableFrameSkip           = s->skip_frames;
     param.bEnableLongTermReference   = 0;
     param.iLtrMarkPeriod             = 30;
     param.uiIntraPeriod              = avctx->gop_size;
