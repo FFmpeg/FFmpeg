@@ -57,6 +57,8 @@ ogm_header(AVFormatContext *s, int idx)
             tag = bytestream2_get_le32(&p);
             st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag);
             st->codec->codec_tag = tag;
+            if (st->codec->codec_id == AV_CODEC_ID_MPEG4)
+                st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (bytestream2_peek_byte(&p) == 't') {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
             st->codec->codec_id = AV_CODEC_ID_TEXT;
