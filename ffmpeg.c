@@ -3698,7 +3698,8 @@ static int seek_to_start(InputFile *ifile, AVFormatContext *is)
                                         ifile->time_base);
     }
 
-    ifile->loop--;
+    if (ifile->loop > 0)
+        ifile->loop--;
 
     return ret;
 }
@@ -3726,7 +3727,7 @@ static int process_input(int file_index)
         ifile->eagain = 1;
         return ret;
     }
-    if ((ret < 0) && (ifile->loop > 1)) {
+    if (ret < 0 && ifile->loop) {
         if ((ret = seek_to_start(ifile, is)) < 0)
             return ret;
         ret = get_input_packet(ifile, &pkt);
