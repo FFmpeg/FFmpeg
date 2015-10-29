@@ -34,13 +34,11 @@
 #include "url.h"
 
 #include <librtmfp/librtmfp.h>
-//#include <librtmp/log.h>
 
-#define LibRTMFPContext unsigned int
-
-/*typedef struct LibRTMPContext {
+typedef struct LibRTMFPContext {
     const AVClass *class;
-    RTMP rtmp;
+    unsigned int id;
+    /*RTMP rtmp;
     char *app;
     char *conn;
     char *subscribe;
@@ -53,8 +51,8 @@
     char *client_buffer_time;
     int live;
     char *temp_filename;
-    int buffer_size;
-} LibRTMPContext;*/
+    int buffer_size;*/
+} LibRTMFPContext;
 
 static void rtmfp_log(int level, const char *message)
 {
@@ -79,7 +77,7 @@ static int rtmfp_close(URLContext *s)
     LibRTMFPContext *ctx = s->priv_data;
     //RTMP *r = &ctx->rtmp;
 
-    RTMFP_Close(*ctx);
+    RTMFP_Close(ctx->id);
     //av_freep(&ctx->temp_filename);
     return 0;
 }
@@ -263,9 +261,9 @@ fail:
 
     av_log(NULL, AV_LOG_INFO, "uri : %s\n", uri);
 
-    *ctx = RTMFP_Connect("127.0.0.1", 1935, uri, onSocketError, onStatusEvent, NULL);
+    ctx->id = RTMFP_Connect("127.0.0.1", 1935, uri, onSocketError, onStatusEvent, NULL);
 
-    av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", *ctx);
+    av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
 
     return rc;
 }
@@ -284,8 +282,8 @@ static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
     LibRTMFPContext *ctx = s->priv_data;
     //RTMP *r = &ctx->rtmp;
 
-    av_log(NULL, AV_LOG_INFO, "rtmfp read : %d\n", *ctx);
-    return RTMFP_Read(*ctx, buf, size);
+    av_log(NULL, AV_LOG_INFO, "RTMFP read called, size : %d\n", size);
+    return RTMFP_Read(ctx->id, buf, size);
 }
 
 /*static int rtmp_read_pause(URLContext *s, int pause)
@@ -371,64 +369,4 @@ URLProtocol ff_librtmfp_protocol = {
     .priv_data_class     = &librtmfp_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };
-
-/*RTMP_CLASS(rtmpt)
-URLProtocol ff_librtmpt_protocol = {
-    .name                = "rtmpt",
-    .url_open            = rtmp_open,
-    .url_read            = rtmp_read,
-    .url_write           = rtmp_write,
-    .url_close           = rtmp_close,
-    .url_read_pause      = rtmp_read_pause,
-    .url_read_seek       = rtmp_read_seek,
-    .url_get_file_handle = rtmp_get_file_handle,
-    .priv_data_size      = sizeof(LibRTMPContext),
-    .priv_data_class     = &librtmpt_class,
-    .flags               = URL_PROTOCOL_FLAG_NETWORK,
-};
-
-RTMP_CLASS(rtmpe)
-URLProtocol ff_librtmpe_protocol = {
-    .name                = "rtmpe",
-    .url_open            = rtmp_open,
-    .url_read            = rtmp_read,
-    .url_write           = rtmp_write,
-    .url_close           = rtmp_close,
-    .url_read_pause      = rtmp_read_pause,
-    .url_read_seek       = rtmp_read_seek,
-    .url_get_file_handle = rtmp_get_file_handle,
-    .priv_data_size      = sizeof(LibRTMPContext),
-    .priv_data_class     = &librtmpe_class,
-    .flags               = URL_PROTOCOL_FLAG_NETWORK,
-};
-
-RTMP_CLASS(rtmpte)
-URLProtocol ff_librtmpte_protocol = {
-    .name                = "rtmpte",
-    .url_open            = rtmp_open,
-    .url_read            = rtmp_read,
-    .url_write           = rtmp_write,
-    .url_close           = rtmp_close,
-    .url_read_pause      = rtmp_read_pause,
-    .url_read_seek       = rtmp_read_seek,
-    .url_get_file_handle = rtmp_get_file_handle,
-    .priv_data_size      = sizeof(LibRTMPContext),
-    .priv_data_class     = &librtmpte_class,
-    .flags               = URL_PROTOCOL_FLAG_NETWORK,
-};
-
-RTMP_CLASS(rtmps)
-URLProtocol ff_librtmps_protocol = {
-    .name                = "rtmps",
-    .url_open            = rtmp_open,
-    .url_read            = rtmp_read,
-    .url_write           = rtmp_write,
-    .url_close           = rtmp_close,
-    .url_read_pause      = rtmp_read_pause,
-    .url_read_seek       = rtmp_read_seek,
-    .url_get_file_handle = rtmp_get_file_handle,
-    .priv_data_size      = sizeof(LibRTMPContext),
-    .priv_data_class     = &librtmps_class,
-    .flags               = URL_PROTOCOL_FLAG_NETWORK,
-};*/
 
