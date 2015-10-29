@@ -130,6 +130,8 @@ int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size)
     return 0;
 }
 
+#if FF_API_AVPACKET_OLD_API
+FF_DISABLE_DEPRECATION_WARNINGS
 #define ALLOC_MALLOC(data, size) data = av_malloc(size)
 #define ALLOC_BUF(data, size)                \
 do {                                         \
@@ -207,6 +209,8 @@ failed_alloc:
     av_packet_unref(pkt);
     return AVERROR(ENOMEM);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 int av_dup_packet(AVPacket *pkt)
 {
