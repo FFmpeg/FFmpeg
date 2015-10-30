@@ -807,7 +807,8 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         if (dummy.pos == INT64_MAX)
             dummy.pos = 0;
-        sp = av_tree_find(nut->syncpoints, &dummy, (void *)ff_nut_sp_pos_cmp,
+        sp = av_tree_find(nut->syncpoints, &dummy,
+                          (int (*)(void *, const void *)) ff_nut_sp_pos_cmp,
                           NULL);
 
         nut->last_syncpoint_pos = avio_tell(bc);
