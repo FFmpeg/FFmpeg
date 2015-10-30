@@ -100,21 +100,21 @@ ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,     \
 }
 
 #define mc_rep_funcs(sz, hsz, opt, type, f_sz)     \
-    mc_rep_func(put, sz, hsz, h, opt, type, f_sz); \
-    mc_rep_func(avg, sz, hsz, h, opt, type, f_sz); \
-    mc_rep_func(put, sz, hsz, v, opt, type, f_sz); \
+    mc_rep_func(put, sz, hsz, h, opt, type, f_sz)  \
+    mc_rep_func(avg, sz, hsz, h, opt, type, f_sz)  \
+    mc_rep_func(put, sz, hsz, v, opt, type, f_sz)  \
     mc_rep_func(avg, sz, hsz, v, opt, type, f_sz)
 
-mc_rep_funcs(16, 8,  sse2,  int16_t,  8);
+mc_rep_funcs(16, 8,  sse2,  int16_t,  8)
 #if ARCH_X86_32
-mc_rep_funcs(16, 8,  ssse3, int8_t,  32);
+mc_rep_funcs(16, 8,  ssse3, int8_t,  32)
 #endif
-mc_rep_funcs(32, 16, sse2,  int16_t,  8);
-mc_rep_funcs(32, 16, ssse3, int8_t,  32);
-mc_rep_funcs(64, 32, sse2,  int16_t,  8);
-mc_rep_funcs(64, 32, ssse3, int8_t,  32);
+mc_rep_funcs(32, 16, sse2,  int16_t,  8)
+mc_rep_funcs(32, 16, ssse3, int8_t,  32)
+mc_rep_funcs(64, 32, sse2,  int16_t,  8)
+mc_rep_funcs(64, 32, ssse3, int8_t,  32)
 #if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
-mc_rep_funcs(64, 32, avx2,  int8_t,  32);
+mc_rep_funcs(64, 32, avx2,  int8_t,  32)
 #endif
 
 #undef mc_rep_funcs
