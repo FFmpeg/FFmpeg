@@ -267,7 +267,7 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     if (val < 0)
         return val;
 
-    status = vdctx->render(vdctx->decoder, surf, (void *)&pic_ctx->info,
+    status = vdctx->render(vdctx->decoder, surf, &pic_ctx->info,
                            pic_ctx->bitstream_buffers_used,
                            pic_ctx->bitstream_buffers);
 
