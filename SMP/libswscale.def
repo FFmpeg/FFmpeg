@@ -25,7 +25,6 @@ EXPORTS
     sws_isSupportedOutput
     sws_normalizeVec
     sws_printVec2
-    sws_rgb2rgb_init
     sws_scale
     sws_scaleVec
     sws_setColorspaceDetails
@@ -34,4 +33,3 @@ EXPORTS
     swscale_configuration
     swscale_license
     swscale_version
-    sws_context_class DATA

@@ -1734,6 +1734,9 @@
     <ClCompile Include="..\libavcodec\rpza.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\rscc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\rv10.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2649,6 +2652,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavcodec\avcodec.h">
+      <Filter>Header Files\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavcodec\avdct.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\avfft.h">

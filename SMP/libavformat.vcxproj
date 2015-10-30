@@ -194,6 +194,7 @@
     <ClCompile Include="..\libavformat\dashenc.c" />
     <ClCompile Include="..\libavformat\dauddec.c" />
     <ClCompile Include="..\libavformat\daudenc.c" />
+    <ClCompile Include="..\libavformat\dcstr.c" />
     <ClCompile Include="..\libavformat\dfa.c" />
     <ClCompile Include="..\libavformat\diracdec.c" />
     <ClCompile Include="..\libavformat\dnxhddec.c" />
@@ -414,6 +415,7 @@
     <ClCompile Include="..\libavformat\tedcaptionsdec.c" />
     <ClCompile Include="..\libavformat\tee.c" />
     <ClCompile Include="..\libavformat\thp.c" />
+    <ClCompile Include="..\libavformat\3dostr.c" />
     <ClCompile Include="..\libavformat\tiertexseq.c" />
     <ClCompile Include="..\libavformat\mkvtimestamp_v2.c" />
     <ClCompile Include="..\libavformat\tmv.c" />

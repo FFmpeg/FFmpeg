@@ -696,6 +696,7 @@
     <ClCompile Include="..\libavcodec\roqvideoenc.c" />
     <ClCompile Include="..\libavcodec\roqaudioenc.c" />
     <ClCompile Include="..\libavcodec\rpza.c" />
+    <ClCompile Include="..\libavcodec\rscc.c" />
     <ClCompile Include="..\libavcodec\rv10.c" />
     <ClCompile Include="..\libavcodec\rv10enc.c" />
     <ClCompile Include="..\libavcodec\rv20enc.c" />
@@ -1035,6 +1036,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavcodec\avcodec.h" />
+    <ClInclude Include="..\libavcodec\avdct.h" />
     <ClInclude Include="..\libavcodec\avfft.h" />
     <ClInclude Include="..\libavcodec\dv_profile.h" />
     <ClInclude Include="..\libavcodec\d3d11va.h" />
@@ -1318,6 +1320,7 @@
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -1399,6 +1402,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -1486,6 +1490,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -1577,6 +1582,7 @@ echo            These errors are the result of dead code elimination not being p
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -1669,6 +1675,7 @@ echo            These errors are the result of dead code elimination not being p
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -1760,6 +1767,7 @@ echo            These errors are the result of dead code elimination not being p
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -1852,6 +1860,7 @@ echo            These errors are the result of dead code elimination not being p
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -1939,6 +1948,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -2032,6 +2042,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -2124,6 +2135,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -2217,6 +2229,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -2309,6 +2322,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -2396,6 +2410,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
@@ -2483,6 +2498,7 @@ cd $(ProjectDir)
       <Command>mkdir $(OutDir)\include
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec

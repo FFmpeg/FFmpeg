@@ -60,7 +60,10 @@ EXPORTS
     av_mdct_end
     av_mdct_init
     av_new_packet
+    av_packet_alloc
+    av_packet_clone
     av_packet_copy_props
+    av_packet_free
     av_packet_free_side_data
     av_packet_from_data
     av_packet_get_side_data

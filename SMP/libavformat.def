@@ -168,9 +168,6 @@ EXPORTS
     ffio_set_buf_size
     ffurl_close
     ffurl_open
-    ffurl_read_complete
-    ffurl_seek
-    ffurl_size
     ffurl_write
     url_feof
     av_format_ffversion DATA
