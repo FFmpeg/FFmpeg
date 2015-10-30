@@ -989,6 +989,7 @@ following image formats are supported:
 @item iLBC (Internet Low Bitrate Codec) @tab  E  @tab  E
     @tab encoding and decoding supported through external library libilbc
 @item IMC (Intel Music Coder)  @tab     @tab  X
+@item Interplay ACM            @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X
 @item MLP (Meridian Lossless Packing)  @tab     @tab  X

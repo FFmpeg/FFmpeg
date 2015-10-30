@@ -496,6 +496,7 @@ enum AVCodecID {
     AV_CODEC_ID_DSD_LSBF_PLANAR,
     AV_CODEC_ID_DSD_MSBF_PLANAR,
     AV_CODEC_ID_4GV,
+    AV_CODEC_ID_INTERPLAY_ACM,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
