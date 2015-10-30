@@ -180,7 +180,10 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
     else
         ctx->mb_height = (avctx->height + 15) >> 4;
 
-    slice_count = AV_RB16(buf + 5);
+    // QT ignores the written value
+    // slice_count = AV_RB16(buf + 5);
+    slice_count = ctx->mb_height * ((ctx->mb_width >> log2_slice_mb_width) +
+                                    av_popcount(ctx->mb_width & (1 << log2_slice_mb_width) - 1));
 
     if (ctx->slice_count != slice_count || !ctx->slices) {
         av_freep(&ctx->slices);
