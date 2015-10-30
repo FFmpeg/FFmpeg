@@ -85,7 +85,7 @@ FATE_VIDEO-$(call DEMDEC, MPEGPS, CAVS) += fate-cavs
 fate-cavs: CMD = framecrc -i $(TARGET_SAMPLES)/cavs/cavs.mpg -an
 
 FATE_VIDEO-$(call DEMDEC, CDG, CDGRAPHICS) += fate-cdgraphics
-fate-cdgraphics: CMD = framecrc -i $(TARGET_SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24 -t 1
+fate-cdgraphics: CMD = framecrc -i $(TARGET_SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgba -t 1
 
 FATE_VIDEO-$(call DEMDEC, AVI, CLJR) += fate-cljr
 fate-cljr: CMD = framecrc -i $(TARGET_SAMPLES)/cljr/testcljr-partial.avi
