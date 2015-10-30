@@ -81,7 +81,7 @@ static int threedostr_read_header(AVFormatContext *s)
                 size -= 0x78;
                 if (avio_rl32(s->pb) == MKTAG('C','T','R','L') && size > 4) {
                     ctrl_size = avio_rb32(s->pb);
-                    size -= 4;;
+                    size -= 4;
                 }
             }
             break;
