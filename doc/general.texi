@@ -242,6 +242,8 @@ library:
     @tab Multimedia format used in game Heart Of Darkness.
 @item Apple HTTP Live Streaming @tab   @tab X
 @item Artworx Data Format       @tab   @tab X
+@item Interplay ACM             @tab   @tab X
+    @tab Audio only format used in some Interplay games.
 @item ADP                       @tab   @tab X
     @tab Audio format used on the Nintendo Gamecube.
 @item AFC                       @tab   @tab X
