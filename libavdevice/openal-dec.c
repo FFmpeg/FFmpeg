@@ -204,7 +204,7 @@ static int read_packet(AVFormatContext* ctx, AVPacket *pkt)
 fail:
     /* Handle failure */
     if (pkt->data)
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     if (error_msg)
         av_log(ctx, AV_LOG_ERROR, "Error: %s\n", error_msg);
     return error;

@@ -49,6 +49,7 @@
 #define CDG_INST_TILE_BLOCK        6
 #define CDG_INST_SCROLL_PRESET    20
 #define CDG_INST_SCROLL_COPY      24
+#define CDG_INST_TRANSPARENT_COL  28
 #define CDG_INST_LOAD_PAL_LO      30
 #define CDG_INST_LOAD_PAL_HIGH    31
 #define CDG_INST_TILE_BLOCK_XOR   38
@@ -67,6 +68,7 @@ typedef struct CDGraphicsContext {
     AVFrame *frame;
     int hscroll;
     int vscroll;
+    int transparency;
 } CDGraphicsContext;
 
 static av_cold int cdg_decode_init(AVCodecContext *avctx)
@@ -76,6 +78,7 @@ static av_cold int cdg_decode_init(AVCodecContext *avctx)
     cc->frame = av_frame_alloc();
     if (!cc->frame)
         return AVERROR(ENOMEM);
+    cc->transparency = -1;
 
     avctx->width   = CDG_FULL_WIDTH;
     avctx->height  = CDG_FULL_HEIGHT;
@@ -120,6 +123,8 @@ static void cdg_load_palette(CDGraphicsContext *cc, uint8_t *data, int low)
         g = ((color >> 4) & 0x000F) * 17;
         b = ((color     ) & 0x000F) * 17;
         palette[i + array_offset] = 0xFFU << 24 | r << 16 | g << 8 | b;
+        if (cc->transparency >= 0)
+            palette[cc->transparency] &= 0xFFFFFF;
     }
     cc->frame->palette_has_changed = 1;
 }
@@ -340,6 +345,9 @@ static int cdg_decode_frame(AVCodecContext *avctx,
             ret = av_frame_ref(cc->frame, frame);
             if (ret < 0)
                 return ret;
+            break;
+        case CDG_INST_TRANSPARENT_COL:
+            cc->transparency = cdg_data[0] & 0xF;
             break;
         default:
             break;

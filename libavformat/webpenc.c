@@ -140,7 +140,7 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
             avio_w8(s->pb, 0);
         }
         avio_write(s->pb, w->last_pkt.data + skip, w->last_pkt.size - skip);
-        av_free_packet(&w->last_pkt);
+        av_packet_unref(&w->last_pkt);
     }
 
     return 0;

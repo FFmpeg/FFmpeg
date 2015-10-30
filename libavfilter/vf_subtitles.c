@@ -444,7 +444,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
                 }
             }
         }
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
         avsubtitle_free(&sub);
     }
 

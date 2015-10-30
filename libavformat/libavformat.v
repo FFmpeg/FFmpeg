@@ -10,9 +10,6 @@ LIBAVFORMAT_$MAJOR {
                 ffio_set_buf_size;
                 ffurl_close;
                 ffurl_open;
-                ffurl_read_complete;
-                ffurl_seek;
-                ffurl_size;
                 ffurl_write;
                 #those are deprecated, remove on next bump
                 url_feof;

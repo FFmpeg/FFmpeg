@@ -223,6 +223,7 @@ library:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
+@item 3dostr                    @tab   @tab X
 @item 4xm                       @tab   @tab X
     @tab 4X Technologies format, used in some games.
 @item 8088flex TMV              @tab   @tab X
@@ -298,6 +299,7 @@ library:
     @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item D-Cinema audio            @tab X @tab X
 @item Deluxe Paint Animation    @tab   @tab X
+@item DCSTR                     @tab   @tab X
 @item DFA                       @tab   @tab X
     @tab This format is used in Chronomaster game
 @item DirectDraw Surface        @tab   @tab X
@@ -481,7 +483,6 @@ library:
 @item RTSP                      @tab X @tab X
 @item SAP                       @tab X @tab X
 @item SBG                       @tab   @tab X
-@item Screenpresso              @tab   @tab X
 @item SDP                       @tab   @tab X
 @item Sega FILM/CPK             @tab   @tab X
     @tab Used in many Sega Saturn console games.
@@ -814,6 +815,7 @@ following image formats are supported:
     @tab Texture dictionaries used by the Renderware Engine.
 @item RL2 video              @tab     @tab  X
     @tab used in some games by Entertainment Software Partners
+@item Screenpresso           @tab     @tab  X
 @item Sierra VMD video       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Silicon Graphics Motion Video Compressor 1 (MVC1)  @tab     @tab  X
@@ -886,6 +888,7 @@ following image formats are supported:
     @tab encoding supported through external library libfaac and libvo-aacenc
 @item AC-3                   @tab IX  @tab  IX
 @item ADPCM 4X Movie         @tab     @tab  X
+@item APDCM Yamaha AICA      @tab     @tab  X
 @item ADPCM CDROM XA         @tab     @tab  X
 @item ADPCM Creative Technology @tab     @tab  X
     @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
@@ -960,7 +963,7 @@ following image formats are supported:
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
     @tab Used in various Interplay computer games.
-@item DPCM Squareroot-Delta-Exact
+@item DPCM Squareroot-Delta-Exact  @tab  @tab  X
     @tab Used in various games.
 @item DPCM Sierra Online     @tab     @tab  X
     @tab Used in Sierra Online game audio files.

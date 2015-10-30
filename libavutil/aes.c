@@ -22,23 +22,9 @@
 
 #include "common.h"
 #include "aes.h"
+#include "aes_internal.h"
 #include "intreadwrite.h"
 #include "timer.h"
-
-typedef union {
-    uint64_t u64[2];
-    uint32_t u32[4];
-    uint8_t u8x4[4][4];
-    uint8_t u8[16];
-} av_aes_block;
-
-typedef struct AVAES {
-    // Note: round_key[16] is accessed in the init code, but this only
-    // overwrites state, which does not matter (see also commit ba554c0).
-    av_aes_block round_key[15];
-    av_aes_block state[2];
-    int rounds;
-} AVAES;
 
 const int av_aes_size= sizeof(AVAES);
 
@@ -140,29 +126,42 @@ static inline void aes_crypt(AVAES *a, int s, const uint8_t *sbox,
     subshift(&a->state[0], s, sbox);
 }
 
-void av_aes_crypt(AVAES *a, uint8_t *dst, const uint8_t *src,
-                  int count, uint8_t *iv, int decrypt)
+static void aes_encrypt(AVAES *a, uint8_t *dst, const uint8_t *src,
+                        int count, uint8_t *iv, int rounds)
 {
     while (count--) {
-        addkey_s(&a->state[1], src, &a->round_key[a->rounds]);
-        if (decrypt) {
-            aes_crypt(a, 0, inv_sbox, dec_multbl);
-            if (iv) {
-                addkey_s(&a->state[0], iv, &a->state[0]);
-                memcpy(iv, src, 16);
-            }
-            addkey_d(dst, &a->state[0], &a->round_key[0]);
-        } else {
-            if (iv)
-                addkey_s(&a->state[1], iv, &a->state[1]);
-            aes_crypt(a, 2, sbox, enc_multbl);
-            addkey_d(dst, &a->state[0], &a->round_key[0]);
-            if (iv)
-                memcpy(iv, dst, 16);
-        }
+        addkey_s(&a->state[1], src, &a->round_key[rounds]);
+        if (iv)
+            addkey_s(&a->state[1], iv, &a->state[1]);
+        aes_crypt(a, 2, sbox, enc_multbl);
+        addkey_d(dst, &a->state[0], &a->round_key[0]);
+        if (iv)
+            memcpy(iv, dst, 16);
         src += 16;
         dst += 16;
     }
+}
+
+static void aes_decrypt(AVAES *a, uint8_t *dst, const uint8_t *src,
+                        int count, uint8_t *iv, int rounds)
+{
+    while (count--) {
+        addkey_s(&a->state[1], src, &a->round_key[rounds]);
+        aes_crypt(a, 0, inv_sbox, dec_multbl);
+        if (iv) {
+            addkey_s(&a->state[0], iv, &a->state[0]);
+            memcpy(iv, src, 16);
+        }
+        addkey_d(dst, &a->state[0], &a->round_key[0]);
+        src += 16;
+        dst += 16;
+    }
+}
+
+void av_aes_crypt(AVAES *a, uint8_t *dst, const uint8_t *src,
+                  int count, uint8_t *iv, int decrypt)
+{
+    a->crypt(a, dst, src, count, iv, a->rounds);
 }
 
 static void init_multbl2(uint32_t tbl[][256], const int c[4],
@@ -199,6 +198,8 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
     int rounds = KC + 6;
     uint8_t log8[256];
     uint8_t alog8[512];
+
+    a->crypt = decrypt ? aes_decrypt : aes_encrypt;
 
     if (!enc_multbl[FF_ARRAY_ELEMS(enc_multbl)-1][FF_ARRAY_ELEMS(enc_multbl[0])-1]) {
         j = 1;
@@ -279,7 +280,7 @@ int main(int argc, char **argv)
         { 0x10, 0xa5, 0x88, 0x69, 0xd7, 0x4b, 0xe5, 0xa3,
           0x74, 0xcf, 0x86, 0x7c, 0xfb, 0x47, 0x38, 0x59 }
     };
-    uint8_t pt[16], rpt[2][16]= {
+    uint8_t pt[32], rpt[2][16]= {
         { 0x6a, 0x84, 0x86, 0x7c, 0xd7, 0x7e, 0x12, 0xad,
           0x07, 0xea, 0x1b, 0xe8, 0x95, 0xc5, 0x3f, 0xa3 },
         { 0 }
@@ -290,7 +291,8 @@ int main(int argc, char **argv)
         { 0x6d, 0x25, 0x1e, 0x69, 0x44, 0xb0, 0x51, 0xe0,
           0x4e, 0xaa, 0x6f, 0xb4, 0xdb, 0xf7, 0x84, 0x65 }
     };
-    uint8_t temp[16];
+    uint8_t temp[32];
+    uint8_t iv[2][16];
     int err = 0;
 
     av_log_set_level(AV_LOG_DEBUG);
@@ -316,16 +318,24 @@ int main(int argc, char **argv)
         av_lfg_init(&prng, 1);
 
         for (i = 0; i < 10000; i++) {
-            for (j = 0; j < 16; j++) {
+            for (j = 0; j < 32; j++) {
                 pt[j] = av_lfg_get(&prng);
+            }
+            for (j = 0; j < 16; j++) {
+                iv[0][j] = iv[1][j] = av_lfg_get(&prng);
             }
             {
                 START_TIMER;
-                av_aes_crypt(&ae, temp, pt, 1, NULL, 0);
+                av_aes_crypt(&ae, temp, pt, 2, iv[0], 0);
                 if (!(i & (i - 1)))
                     av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n",
                            temp[0], temp[5], temp[10], temp[15]);
-                av_aes_crypt(&ad, temp, temp, 1, NULL, 1);
+                av_aes_crypt(&ad, temp, temp, 2, iv[1], 1);
+                av_aes_crypt(&ae, temp, pt, 2, NULL, 0);
+                if (!(i & (i - 1)))
+                    av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n",
+                           temp[0], temp[5], temp[10], temp[15]);
+                av_aes_crypt(&ad, temp, temp, 2, NULL, 1);
                 STOP_TIMER("aes");
             }
             for (j = 0; j < 16; j++) {

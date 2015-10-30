@@ -487,7 +487,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 
     if (ret[0] <= 0 || ret[1] < 0 || ret[2] < 0) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         if (ret[0] < 0) {
             res = ret[0];
         } else if (ret[1] < 0) {

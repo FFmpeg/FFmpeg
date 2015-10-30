@@ -279,7 +279,7 @@ static int set_volume(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_VERBOSE, "volume_i:%d/255 ", vol->volume_i);
     }
     av_log(ctx, AV_LOG_VERBOSE, "volume:%f volume_dB:%f\n",
-           vol->volume, 20.0*log(vol->volume)/M_LN10);
+           vol->volume, 20.0*log10(vol->volume));
 
     volume_init(vol);
     return 0;

@@ -424,7 +424,7 @@ static int filter_packet(void *log_ctx, AVPacket *pkt,
         }
 
         if (ret > 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             new_pkt.buf = av_buffer_create(new_pkt.data, new_pkt.size,
                                            av_buffer_default_free, NULL, 0);
             if (!new_pkt.buf)

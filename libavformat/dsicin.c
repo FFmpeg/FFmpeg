@@ -200,7 +200,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         ret = avio_read(pb, &pkt->data[4], pkt_size);
         if (ret < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         if (ret < pkt_size)

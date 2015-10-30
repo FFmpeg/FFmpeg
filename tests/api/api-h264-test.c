@@ -134,13 +134,13 @@ static int video_decode_example(const char *input_filename)
                         fr->pkt_pts, fr->pkt_dts, av_frame_get_pkt_duration(fr),
                         number_of_written_bytes, av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes));
             }
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
             av_init_packet(&pkt);
         }
         i++;
     } while (!end_of_stream || got_frame);
 
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
     av_frame_free(&fr);
     avcodec_close(ctx);
     avformat_close_input(&fmt_ctx);

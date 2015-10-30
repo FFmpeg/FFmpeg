@@ -197,7 +197,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             max = FFMAX(max, src[i]);
 
         max = av_clipf(max, 0, 1);
-        values[VAR_VOLUME] = 20.0 * log(max) / M_LN10;
+        values[VAR_VOLUME] = 20.0 * log10(max);
         values[VAR_CHANNEL] = c;
         color = av_expr_eval(s->c_expr, values, NULL);
 

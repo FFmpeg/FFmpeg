@@ -326,7 +326,7 @@ int main (int argc, char **argv)
             pkt.data += ret;
             pkt.size -= ret;
         } while (pkt.size > 0);
-        av_free_packet(&orig_pkt);
+        av_packet_unref(&orig_pkt);
     }
 
     /* flush cached frames */

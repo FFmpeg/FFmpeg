@@ -24,6 +24,7 @@
  * Motion estimation template.
  */
 
+#include "libavutil/qsort.h"
 #include "mpegvideo.h"
 
 //Let us hope gcc will remove the unused vars ...(gcc 3.2.2 seems to do it ...)
@@ -723,7 +724,7 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
         j++;
     }
 
-    qsort(minima, j, sizeof(Minima), minima_cmp);
+    AV_QSORT(minima, j, Minima, minima_cmp);
 
     for(; j<minima_count; j++){
         minima[j].height=256*256*256*64;

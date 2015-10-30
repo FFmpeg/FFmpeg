@@ -412,7 +412,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             dst += size;
             avio_skip(s->pb, skip);
             if (ret != size) {
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 break;
             }
         }

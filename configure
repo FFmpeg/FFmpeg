@@ -368,6 +368,7 @@ Optimization options (experts only):
   --disable-fma3           disable FMA3 optimizations
   --disable-fma4           disable FMA4 optimizations
   --disable-avx2           disable AVX2 optimizations
+  --disable-aesni          disable AESNI optimizations
   --disable-armv5te        disable armv5te optimizations
   --disable-armv6          disable armv6 optimizations
   --disable-armv6t2        disable armv6t2 optimizations
@@ -1635,6 +1636,7 @@ ARCH_EXT_LIST_LOONGSON="
 "
 
 ARCH_EXT_LIST_X86_SIMD="
+    aesni
     amd3dnow
     amd3dnowext
     avx
@@ -2128,6 +2130,7 @@ sse3_deps="sse2"
 ssse3_deps="sse3"
 sse4_deps="ssse3"
 sse42_deps="sse4"
+aesni_deps="sse42"
 avx_deps="sse42"
 xop_deps="avx"
 fma3_deps="avx"
@@ -2344,6 +2347,7 @@ ra_144_encoder_select="audio_frame_queue lpc audiodsp"
 ra_144_decoder_select="audiodsp"
 ralf_decoder_select="golomb"
 rawvideo_decoder_select="bswapdsp"
+rscc_decoder_select="zlib"
 rtjpeg_decoder_select="me_cmp"
 rv10_decoder_select="h263_decoder"
 rv10_encoder_select="h263_encoder"
@@ -2828,7 +2832,7 @@ scale_filter_deps="swscale"
 scale2ref_filter_deps="swscale"
 select_filter_select="pixelutils"
 smartblur_filter_deps="gpl swscale"
-showcqt_filter_deps="avcodec"
+showcqt_filter_deps="avcodec swscale"
 showcqt_filter_select="fft"
 showfreqs_filter_deps="avcodec"
 showfreqs_filter_select="fft"
@@ -5346,7 +5350,7 @@ enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
-enabled libkvazaar        && require_pkg_config "kvazaar >= 0.7.0" kvazaar.h kvz_api_get
+enabled libkvazaar        && require_pkg_config "kvazaar >= 0.7.1" kvazaar.h kvz_api_get
 enabled libmfx            && require_pkg_config libmfx "mfx/mfxvideo.h" MFXInit
 enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
@@ -6010,6 +6014,7 @@ if enabled x86; then
     echo "3DNow! extended enabled   ${amd3dnowext-no}"
     echo "SSE enabled               ${sse-no}"
     echo "SSSE3 enabled             ${ssse3-no}"
+    echo "AESNI enabled             ${aesni-no}"
     echo "AVX enabled               ${avx-no}"
     echo "XOP enabled               ${xop-no}"
     echo "FMA3 enabled              ${fma3-no}"

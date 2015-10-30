@@ -206,7 +206,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
                 out_offset += out_frame_bytes;
             }
         }
-        av_free_packet(&enc_pkt);
+        av_packet_unref(&enc_pkt);
     }
 
     if (memcmp(raw_in, raw_out, out_frame_bytes * NUMBER_OF_FRAMES) != 0) {

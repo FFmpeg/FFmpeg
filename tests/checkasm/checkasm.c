@@ -117,6 +117,7 @@ static const struct {
     { "SSSE3",    "ssse3",    AV_CPU_FLAG_SSSE3|AV_CPU_FLAG_ATOM },
     { "SSE4.1",   "sse4",     AV_CPU_FLAG_SSE4 },
     { "SSE4.2",   "sse42",    AV_CPU_FLAG_SSE42 },
+    { "AES-NI",   "aesni",    AV_CPU_FLAG_AESNI },
     { "AVX",      "avx",      AV_CPU_FLAG_AVX },
     { "XOP",      "xop",      AV_CPU_FLAG_XOP },
     { "FMA3",     "fma3",     AV_CPU_FLAG_FMA3 },

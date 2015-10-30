@@ -143,6 +143,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     }
 
     switch(avctx->codec->id) {
+        case AV_CODEC_ID_ADPCM_AICA:
         case AV_CODEC_ID_ADPCM_IMA_QT:
         case AV_CODEC_ID_ADPCM_IMA_WAV:
         case AV_CODEC_ID_ADPCM_4XM:
@@ -521,6 +522,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_IMA_OKI:
     case AV_CODEC_ID_ADPCM_IMA_WS:
     case AV_CODEC_ID_ADPCM_YAMAHA:
+    case AV_CODEC_ID_ADPCM_AICA:
         nb_samples = buf_size * 2 / ch;
         break;
     }
@@ -1380,6 +1382,21 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             *samples++ = adpcm_yamaha_expand_nibble(&c->status[st], v >> 4  );
         }
         break;
+    case AV_CODEC_ID_ADPCM_AICA:
+        if (!c->has_status) {
+            for (channel = 0; channel < avctx->channels; channel++)
+                c->status[channel].step = 0;
+            c->has_status = 1;
+        }
+        for (channel = 0; channel < avctx->channels; channel++) {
+            samples = samples_p[channel];
+            for (n = nb_samples >> 1; n > 0; n--) {
+                int v = bytestream2_get_byteu(&gb);
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[channel], v & 0x0F);
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[channel], v >> 4  );
+            }
+        }
+        break;
     case AV_CODEC_ID_ADPCM_AFC:
     {
         int samples_per_block;
@@ -1642,6 +1659,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
 /* Note: Do not forget to add new entries to the Makefile as well. */
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_4XM,         sample_fmts_s16p, adpcm_4xm,         "ADPCM 4X Movie");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_AFC,         sample_fmts_s16p, adpcm_afc,         "ADPCM Nintendo Gamecube AFC");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_AICA,        sample_fmts_s16p, adpcm_aica,        "ADPCM Yamaha AICA");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_CT,          sample_fmts_s16,  adpcm_ct,          "ADPCM Creative Technology");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_DTK,         sample_fmts_s16p, adpcm_dtk,         "ADPCM Nintendo Gamecube DTK");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA,          sample_fmts_s16,  adpcm_ea,          "ADPCM Electronic Arts");

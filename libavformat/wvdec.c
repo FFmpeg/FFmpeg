@@ -273,25 +273,25 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     memcpy(pkt->data, wc->block_header, WV_HEADER_SIZE);
     ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->header.blocksize);
     if (ret != wc->header.blocksize) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
     while (!(wc->header.flags & WV_FLAG_FINAL_BLOCK)) {
         if ((ret = wv_read_block_header(s, s->pb)) < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
 
         off = pkt->size;
         if ((ret = av_grow_packet(pkt, WV_HEADER_SIZE + wc->header.blocksize)) < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         memcpy(pkt->data + off, wc->block_header, WV_HEADER_SIZE);
 
         ret = avio_read(s->pb, pkt->data + off + WV_HEADER_SIZE, wc->header.blocksize);
         if (ret != wc->header.blocksize) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return (ret < 0) ? ret : AVERROR_EOF;
         }
     }

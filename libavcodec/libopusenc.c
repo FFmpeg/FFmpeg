@@ -361,7 +361,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     discard_padding = opus->opts.packet_size - avpkt->duration;
     // Check if subtraction resulted in an overflow
     if ((discard_padding < opus->opts.packet_size) != (avpkt->duration > 0)) {
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
         av_free(avpkt);
         return AVERROR(EINVAL);
     }
@@ -370,7 +370,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
                                                      AV_PKT_DATA_SKIP_SAMPLES,
                                                      10);
         if(!side_data) {
-            av_free_packet(avpkt);
+            av_packet_unref(avpkt);
             av_free(avpkt);
             return AVERROR(ENOMEM);
         }

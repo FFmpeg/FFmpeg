@@ -173,14 +173,14 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
     return yop->audio_block_length;
 
 err_out:
-    av_free_packet(&yop->video_packet);
+    av_packet_unref(&yop->video_packet);
     return ret;
 }
 
 static int yop_read_close(AVFormatContext *s)
 {
     YopDecContext *yop = s->priv_data;
-    av_free_packet(&yop->video_packet);
+    av_packet_unref(&yop->video_packet);
     return 0;
 }
 
@@ -205,7 +205,7 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
     if (avio_seek(s->pb, frame_pos, SEEK_SET) < 0)
         return -1;
 
-    av_free_packet(&yop->video_packet);
+    av_packet_unref(&yop->video_packet);
     yop->odd_frame = timestamp & 1;
 
     return 0;

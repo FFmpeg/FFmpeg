@@ -190,12 +190,12 @@ static int video_decode(const char *input_filename)
                     return -1;
                 }
             }
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
             av_init_packet(&pkt);
         }
     } while (!end_of_stream || got_frame);
 
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
     av_frame_free(&fr);
     avcodec_close(ctx);
     avformat_close_input(&fmt_ctx);

@@ -295,7 +295,7 @@ static int wc3_read_close(AVFormatContext *s)
     Wc3DemuxContext *wc3 = s->priv_data;
 
     if (wc3->vpkt.size > 0)
-        av_free_packet(&wc3->vpkt);
+        av_packet_unref(&wc3->vpkt);
 
     return 0;
 }

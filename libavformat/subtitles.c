@@ -179,7 +179,7 @@ static void drop_dups(void *log_ctx, FFDemuxSubtitlesQueue *q)
             q->subs[i].stream_index == last->stream_index &&
             !strcmp(q->subs[i].data, last->data)) {
 
-            av_free_packet(&q->subs[i]);
+            av_packet_unref(&q->subs[i]);
             drop++;
         } else if (drop) {
             q->subs[last_id + 1] = q->subs[i];
@@ -302,7 +302,7 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
     int i;
 
     for (i = 0; i < q->nb_subs; i++)
-        av_free_packet(&q->subs[i]);
+        av_packet_unref(&q->subs[i]);
     av_freep(&q->subs);
     q->nb_subs = q->allocated_size = q->current_sub_idx = 0;
 }

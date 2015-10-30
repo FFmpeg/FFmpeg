@@ -490,7 +490,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     pkt_out_id = pkt->stream_index > movie->max_stream_index ? -1 :
                  movie->out_index[pkt->stream_index];
     if (pkt_out_id < 0) {
-        av_free_packet(&movie->pkt0);
+        av_packet_unref(&movie->pkt0);
         pkt->size = 0; /* ready for next run */
         pkt->data = NULL;
         return 0;
@@ -517,7 +517,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     if (ret < 0) {
         av_log(ctx, AV_LOG_WARNING, "Decode error: %s\n", av_err2str(ret));
         av_frame_free(&frame);
-        av_free_packet(&movie->pkt0);
+        av_packet_unref(&movie->pkt0);
         movie->pkt.size = 0;
         movie->pkt.data = NULL;
         return 0;
@@ -528,7 +528,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     pkt->data += ret;
     pkt->size -= ret;
     if (pkt->size <= 0) {
-        av_free_packet(&movie->pkt0);
+        av_packet_unref(&movie->pkt0);
         pkt->size = 0; /* ready for next run */
         pkt->data = NULL;
     }

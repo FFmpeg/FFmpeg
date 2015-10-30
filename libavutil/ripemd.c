@@ -85,7 +85,7 @@ static const int WB[80] = {
     12, 15, 10,  4,  1,  5,  8,  7,  6,  2, 13, 14,  0,  3,  9, 11
 };
 
-#define rol(value, bits) ((value << bits) | (value >> (32 - bits)))
+#define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
 #define ROUND128_0_TO_15(a,b,c,d,e,f,g,h)                               \
     a = rol(a + ((  b ^ c  ^ d)      + block[WA[n]]),         ROTA[n]); \

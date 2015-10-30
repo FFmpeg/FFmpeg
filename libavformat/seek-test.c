@@ -128,7 +128,7 @@ int main(int argc, char **argv)
                 ts_str(dts_buf, pkt.dts, st->time_base);
                 ts_str(ts_buf,  pkt.pts, st->time_base);
                 printf("ret:%-10s st:%2d flags:%d dts:%s pts:%s pos:%7" PRId64 " size:%6d", ret_str(ret), pkt.stream_index, pkt.flags, dts_buf, ts_buf, pkt.pos, pkt.size);
-                av_free_packet(&pkt);
+                av_packet_unref(&pkt);
             } else
                 printf("ret:%s", ret_str(ret)); // necessary to avoid trailing whitespace
             printf("\n");

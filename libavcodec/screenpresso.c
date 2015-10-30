@@ -80,6 +80,12 @@ static av_cold int screenpresso_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
 
+    /* Allocate maximum size possible, a full frame */
+    ctx->inflated_size = avctx->width * avctx->height * 3;
+    ctx->inflated_buf  = av_malloc(ctx->inflated_size);
+    if (!ctx->inflated_buf)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -100,6 +106,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
 {
     ScreenpressoContext *ctx = avctx->priv_data;
     AVFrame *frame = data;
+    uLongf length = ctx->inflated_size;
     int keyframe;
     int ret;
 
@@ -117,29 +124,17 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
     }
     keyframe = (avpkt->data[0] == 0x73);
 
-    /* Resize deflate buffer and frame on resolution change */
-    if (ctx->inflated_size != avctx->width * avctx->height * 3) {
-        av_frame_unref(ctx->current);
-        ret = ff_get_buffer(avctx, ctx->current, AV_GET_BUFFER_FLAG_REF);
-        if (ret < 0)
-            return ret;
-
-        /* If malloc fails, reset len to avoid preserving an invalid value */
-        ctx->inflated_size = avctx->width * avctx->height * 3;
-        ret = av_reallocp(&ctx->inflated_buf, ctx->inflated_size);
-        if (ret < 0) {
-            ctx->inflated_size = 0;
-            return ret;
-        }
-    }
-
     /* Inflate the frame after the 2 byte header */
-    ret = uncompress(ctx->inflated_buf, &ctx->inflated_size,
+    ret = uncompress(ctx->inflated_buf, &length,
                      avpkt->data + 2, avpkt->size - 2);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Deflate error %d.\n", ret);
         return AVERROR_UNKNOWN;
     }
+
+    ret = ff_reget_buffer(avctx, ctx->current);
+    if (ret < 0)
+        return ret;
 
     /* When a keyframe is found, copy it (flipped) */
     if (keyframe)

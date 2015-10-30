@@ -1007,6 +1007,12 @@ static int setup_hwaccel(AVCodecContext *avctx,
     AVHWAccel *hwa = find_hwaccel(avctx->codec_id, fmt);
     int ret        = 0;
 
+    if (avctx->active_thread_type & FF_THREAD_FRAME) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Hardware accelerated decoding with frame threading is not supported.\n");
+        return AVERROR(EINVAL);
+    }
+
     if (!hwa) {
         av_log(avctx, AV_LOG_ERROR,
                "Could not find an AVHWAccel for the pixel format: %s",
@@ -1687,7 +1693,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     *got_packet_ptr = 0;
 
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) && !frame) {
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
         av_init_packet(avpkt);
         return 0;
     }
@@ -1793,7 +1799,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     }
 
     if (ret < 0 || !*got_packet_ptr) {
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
         av_init_packet(avpkt);
         goto end;
     }
@@ -1833,7 +1839,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         avctx->stats_out[0] = '\0';
 
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) && !frame) {
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
         av_init_packet(avpkt);
         avpkt->size = 0;
         return 0;
@@ -1887,7 +1893,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     }
 
     if (ret < 0 || !*got_packet_ptr)
-        av_free_packet(avpkt);
+        av_packet_unref(avpkt);
 
     emms_c();
     return ret;
@@ -2347,7 +2353,7 @@ static int recode_subtitle(AVCodecContext *avctx,
         ret = FFMIN(AVERROR(errno), -1);
         av_log(avctx, AV_LOG_ERROR, "Unable to recode subtitle event \"%s\" "
                "from %s to UTF-8\n", inpkt->data, avctx->sub_charenc);
-        av_free_packet(&tmp);
+        av_packet_unref(&tmp);
         goto end;
     }
     outpkt->size -= outl;
@@ -2454,7 +2460,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 pkt_recoded.side_data = NULL;
                 pkt_recoded.side_data_elems = 0;
 
-                av_free_packet(&pkt_recoded);
+                av_packet_unref(&pkt_recoded);
             }
             if (avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB)
                 sub->format = 0;
@@ -2895,6 +2901,7 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
     case AV_CODEC_ID_ADPCM_IMA_WS:
     case AV_CODEC_ID_ADPCM_G722:
     case AV_CODEC_ID_ADPCM_YAMAHA:
+    case AV_CODEC_ID_ADPCM_AICA:
         return 4;
     case AV_CODEC_ID_DSD_LSBF:
     case AV_CODEC_ID_DSD_MSBF:

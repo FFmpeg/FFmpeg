@@ -1890,7 +1890,6 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             print_str("side_data_type", name ? name : "unknown");
             print_int("side_data_size", sd->size);
             if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
-                abort();
                 writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
                 print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
             }
@@ -2056,7 +2055,7 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
                 while (pkt1.size && process_frame(w, fmt_ctx, frame, &pkt1) > 0);
             }
         }
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
     }
     av_init_packet(&pkt);
     pkt.data = NULL;

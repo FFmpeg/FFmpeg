@@ -166,7 +166,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(c->curbits)
         avio_seek(s->pb, -4, SEEK_CUR);
     if(ret < size){
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
     pkt->size = ret + 4;
@@ -217,7 +217,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
             c->curframe = lastframe;
             return ret;
         }
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     }
     return 0;
 }

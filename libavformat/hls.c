@@ -243,7 +243,7 @@ static void free_playlist_list(HLSContext *c)
         av_dict_free(&pls->id3_initial);
         ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
         av_freep(&pls->init_sec_buf);
-        av_free_packet(&pls->pkt);
+        av_packet_unref(&pls->pkt);
         av_freep(&pls->pb.buffer);
         if (pls->input)
             ffurl_close(pls->input);
@@ -1824,7 +1824,7 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                         break;
                     }
                 }
-                av_free_packet(&pls->pkt);
+                av_packet_unref(&pls->pkt);
                 reset_packet(&pls->pkt);
             }
         }
@@ -1926,7 +1926,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
             ffurl_close(pls->input);
             pls->input = NULL;
         }
-        av_free_packet(&pls->pkt);
+        av_packet_unref(&pls->pkt);
         reset_packet(&pls->pkt);
         pls->pb.eof_reached = 0;
         /* Clear any buffered data */

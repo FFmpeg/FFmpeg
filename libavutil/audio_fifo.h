@@ -73,6 +73,7 @@ AVAudioFifo *av_audio_fifo_alloc(enum AVSampleFormat sample_fmt, int channels,
  * @param nb_samples  new allocation size, in samples
  * @return            0 if OK, or negative AVERROR code on failure
  */
+av_warn_unused_result
 int av_audio_fifo_realloc(AVAudioFifo *af, int nb_samples);
 
 /**

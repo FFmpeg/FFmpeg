@@ -1030,7 +1030,7 @@ SwsContext *sws_alloc_context(void)
     av_assert0(offsetof(SwsContext, redDither) + DITHER32_INT == offsetof(SwsContext, dither32));
 
     if (c) {
-        c->av_class = &sws_context_class;
+        c->av_class = &ff_sws_context_class;
         av_opt_set_defaults(c);
     }
 
@@ -1127,7 +1127,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     flags     = c->flags;
     emms_c();
     if (!rgb15to16)
-        sws_rgb2rgb_init();
+        ff_sws_rgb2rgb_init();
 
     unscaled = (srcW == dstW && srcH == dstH);
 

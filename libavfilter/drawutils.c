@@ -210,8 +210,8 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
     if ((draw->desc->flags & AV_PIX_FMT_FLAG_RGB) &&
         ff_fill_rgba_map(rgba_map, draw->format) >= 0) {
         if (draw->nb_planes == 1) {
-        for (i = 0; i < 4; i++)
-            color->comp[0].u8[rgba_map[i]] = rgba[i];
+            for (i = 0; i < 4; i++)
+                color->comp[0].u8[rgba_map[i]] = rgba[i];
         } else {
             for (i = 0; i < 4; i++)
                 color->comp[rgba_map[i]].u8[0] = rgba[i];

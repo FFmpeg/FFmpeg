@@ -280,6 +280,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(RL2,               rl2);
     REGISTER_ENCDEC (ROQ,               roq);
     REGISTER_DECODER(RPZA,              rpza);
+    REGISTER_DECODER(RSCC,              rscc);
     REGISTER_ENCDEC (RV10,              rv10);
     REGISTER_ENCDEC (RV20,              rv20);
     REGISTER_DECODER(RV30,              rv30);
@@ -487,6 +488,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(ADPCM_4XM,         adpcm_4xm);
     REGISTER_ENCDEC (ADPCM_ADX,         adpcm_adx);
     REGISTER_DECODER(ADPCM_AFC,         adpcm_afc);
+    REGISTER_DECODER(ADPCM_AICA,        adpcm_aica);
     REGISTER_DECODER(ADPCM_CT,          adpcm_ct);
     REGISTER_DECODER(ADPCM_DTK,         adpcm_dtk);
     REGISTER_DECODER(ADPCM_EA,          adpcm_ea);

@@ -318,7 +318,7 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
                        + s->mdct_out[i + NELLY_BUF_LEN] * s->mdct_out[i + NELLY_BUF_LEN];
         }
         cand[band] =
-            log(FFMAX(1.0, coeff_sum / (ff_nelly_band_sizes_table[band] << 7))) * 1024.0 / M_LN2;
+            log2(FFMAX(1.0, coeff_sum / (ff_nelly_band_sizes_table[band] << 7))) * 1024.0;
     }
 
     if (s->avctx->trellis) {

@@ -45,7 +45,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = 0;
     ret = ffio_read_partial(s->pb, pkt->data, size);
     if (ret < 0) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret;
     }
     av_shrink_packet(pkt, ret);

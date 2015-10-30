@@ -78,7 +78,7 @@ static int adp_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (ret != size) {
         if (ret < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         av_shrink_packet(pkt, ret);
