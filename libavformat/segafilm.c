@@ -247,6 +247,9 @@ static int film_read_header(AVFormatContext *s)
         }
     }
 
+    if (film->audio_type)
+        s->streams[film->audio_stream_index]->duration = audio_frame_counter;
+
     film->current_sample = 0;
 
     return 0;
