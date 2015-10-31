@@ -1159,6 +1159,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
         if (h->current_slice) {
+            if (h->max_contexts > 1) {
+                if (!h->single_decode_warning) {
+                    av_log(h->avctx, AV_LOG_WARNING, "Cannot decode multiple access units as slice threads\n");
+                    h->single_decode_warning = 1;
+                }
+                h->max_contexts = 1;
+                return SLICE_SINGLETHREAD;
+            }
+
             if (h->cur_pic_ptr && FIELD_PICTURE(h) && h->first_field) {
                 ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;
