@@ -1276,24 +1276,55 @@ static void matroska_convert_tags(AVFormatContext *s)
     for (i = 0; i < matroska->tags.nb_elem; i++) {
         if (tags[i].target.attachuid) {
             MatroskaAttachment *attachment = matroska->attachments.elem;
-            for (j = 0; j < matroska->attachments.nb_elem; j++)
+            int found = 0;
+            for (j = 0; j < matroska->attachments.nb_elem; j++) {
                 if (attachment[j].uid == tags[i].target.attachuid &&
-                    attachment[j].stream)
+                    attachment[j].stream) {
                     matroska_convert_tag(s, &tags[i].tag,
                                          &attachment[j].stream->metadata, NULL);
+                    found = 1;
+                }
+            }
+            if (!found) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "The tags at index %d refer to a "
+                       "non-existent attachment %"PRId64".\n",
+                       i, tags[i].target.attachuid);
+            }
         } else if (tags[i].target.chapteruid) {
             MatroskaChapter *chapter = matroska->chapters.elem;
-            for (j = 0; j < matroska->chapters.nb_elem; j++)
+            int found = 0;
+            for (j = 0; j < matroska->chapters.nb_elem; j++) {
                 if (chapter[j].uid == tags[i].target.chapteruid &&
-                    chapter[j].chapter)
+                    chapter[j].chapter) {
                     matroska_convert_tag(s, &tags[i].tag,
                                          &chapter[j].chapter->metadata, NULL);
+                    found = 1;
+                }
+            }
+            if (!found) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "The tags at index %d refer to a non-existent chapter "
+                       "%"PRId64".\n",
+                       i, tags[i].target.chapteruid);
+            }
         } else if (tags[i].target.trackuid) {
             MatroskaTrack *track = matroska->tracks.elem;
-            for (j = 0; j < matroska->tracks.nb_elem; j++)
-                if (track[j].uid == tags[i].target.trackuid && track[j].stream)
+            int found = 0;
+            for (j = 0; j < matroska->tracks.nb_elem; j++) {
+                if (track[j].uid == tags[i].target.trackuid &&
+                    track[j].stream) {
                     matroska_convert_tag(s, &tags[i].tag,
                                          &track[j].stream->metadata, NULL);
+                    found = 1;
+               }
+            }
+            if (!found) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "The tags at index %d refer to a non-existent track "
+                       "%"PRId64".\n",
+                       i, tags[i].target.trackuid);
+            }
         } else {
             matroska_convert_tag(s, &tags[i].tag, &s->metadata,
                                  tags[i].target.type);
