@@ -66,7 +66,7 @@ static const AVClass class = {
 };
 
 // Convert libopenh264 log level to equivalent ffmpeg log level.
-static int libopenh264_to_libav_log_level(int libopenh264_log_level)
+static int libopenh264_to_ffmpeg_log_level(int libopenh264_log_level)
 {
     if      (libopenh264_log_level >= WELS_LOG_DETAIL)  return AV_LOG_TRACE;
     else if (libopenh264_log_level >= WELS_LOG_DEBUG)   return AV_LOG_DEBUG;
@@ -86,8 +86,8 @@ static void libopenh264_trace_callback(void *ctx, int level, char const *msg)
 {
     // The message will be logged only if the requested EQUIVALENT ffmpeg log level is
     // less than or equal to the current ffmpeg log level.
-    int equiv_libav_log_level = libopenh264_to_libav_log_level(level);
-    av_log(ctx, equiv_libav_log_level, "%s\n", msg);
+    int equiv_ffmpeg_log_level = libopenh264_to_ffmpeg_log_level(level);
+    av_log(ctx, equiv_ffmpeg_log_level, "%s\n", msg);
 }
 
 static av_cold int svc_encode_close(AVCodecContext *avctx)
