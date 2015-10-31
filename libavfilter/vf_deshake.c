@@ -57,6 +57,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/qsort.h"
 
 #include "deshake.h"
 #include "deshake_opencl.h"
@@ -106,7 +107,7 @@ static double clean_mean(double *values, int count)
     int cut = count / 5;
     int x;
 
-    qsort(values, count, sizeof(double), cmp);
+    AV_QSORT(values, count, double, cmp);
 
     for (x = cut; x < count - cut; x++) {
         mean += values[x];

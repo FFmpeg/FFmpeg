@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "attributes.h"
 #include "opencl.h"
 
 #define FF_OPENCL_PARAM_INFO(a) ((void*)(&(a))), (sizeof(a))
@@ -30,4 +31,5 @@ typedef struct {
     void *ctx;
 } FFOpenclParam;
 
+av_warn_unused_result
 int avpriv_opencl_set_parameter(FFOpenclParam *opencl_param, ...);
