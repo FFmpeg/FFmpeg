@@ -313,8 +313,8 @@ static int init_cqt(ShowCQTContext *s)
 
         flen = 8.0 * s->fft_len / (tlength * rate);
         center = s->freq[k] * s->fft_len / rate;
-        start = fmax(0, ceil(center - 0.5 * flen));
-        end = fmin(s->fft_len, floor(center + 0.5 * flen));
+        start = FFMAX(0, ceil(center - 0.5 * flen));
+        end = FFMIN(s->fft_len, floor(center + 0.5 * flen));
 
         s->coeffs[m].start = start & ~(s->cqt_align - 1);
         s->coeffs[m].len = (end | (s->cqt_align - 1)) + 1 - s->coeffs[m].start;
@@ -665,9 +665,9 @@ static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len)
 {
     int x;
     for (x = 0; x < len; x++) {
-        c[x].rgb.r = 255.0f * calculate_gamma(fminf(1.0f, v[x].re), g);
-        c[x].rgb.g = 255.0f * calculate_gamma(fminf(1.0f, 0.5f * (v[x].re + v[x].im)), g);
-        c[x].rgb.b = 255.0f * calculate_gamma(fminf(1.0f, v[x].im), g);
+        c[x].rgb.r = 255.0f * calculate_gamma(FFMIN(1.0f, v[x].re), g);
+        c[x].rgb.g = 255.0f * calculate_gamma(FFMIN(1.0f, 0.5f * (v[x].re + v[x].im)), g);
+        c[x].rgb.b = 255.0f * calculate_gamma(FFMIN(1.0f, v[x].im), g);
     }
 }
 
@@ -676,9 +676,9 @@ static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int le
     int x;
     for (x = 0; x < len; x++) {
         float r, g, b;
-        r = calculate_gamma(fminf(1.0f, v[x].re), gamma);
-        g = calculate_gamma(fminf(1.0f, 0.5f * (v[x].re + v[x].im)), gamma);
-        b = calculate_gamma(fminf(1.0f, v[x].im), gamma);
+        r = calculate_gamma(FFMIN(1.0f, v[x].re), gamma);
+        g = calculate_gamma(FFMIN(1.0f, 0.5f * (v[x].re + v[x].im)), gamma);
+        b = calculate_gamma(FFMIN(1.0f, v[x].im), gamma);
         c[x].yuv.y = 16.0f + 65.481f * r + 128.553f * g + 24.966f * b;
         c[x].yuv.u = 128.0f - 37.797f * r - 74.203f * g + 112.0f * b;
         c[x].yuv.v = 128.0f + 112.0f * r - 93.786f * g - 18.214 * b;

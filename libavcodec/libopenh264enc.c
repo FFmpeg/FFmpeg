@@ -55,9 +55,9 @@ static const AVOption options[] = {
         { "auto", "automatic number of slices according to number of threads", 0, AV_OPT_TYPE_CONST, { .i64 = SM_AUTO_SLICE }, 0, 0, VE, "slice_mode" },
         { "dyn", "Dynamic slicing", 0, AV_OPT_TYPE_CONST, { .i64 = SM_DYN_SLICE }, 0, 0, VE, "slice_mode" },
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
-    { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
-    { "max_nal_size", "Set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { 0 }, 0, INT_MAX, VE },
-    { "allow_skip_frames", "Allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
+    { "max_nal_size", "Set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "allow_skip_frames", "Allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 
@@ -66,7 +66,7 @@ static const AVClass class = {
 };
 
 // Convert libopenh264 log level to equivalent ffmpeg log level.
-static int libopenh264_to_libav_log_level(int libopenh264_log_level)
+static int libopenh264_to_ffmpeg_log_level(int libopenh264_log_level)
 {
     if      (libopenh264_log_level >= WELS_LOG_DETAIL)  return AV_LOG_TRACE;
     else if (libopenh264_log_level >= WELS_LOG_DEBUG)   return AV_LOG_DEBUG;
@@ -86,8 +86,8 @@ static void libopenh264_trace_callback(void *ctx, int level, char const *msg)
 {
     // The message will be logged only if the requested EQUIVALENT ffmpeg log level is
     // less than or equal to the current ffmpeg log level.
-    int equiv_libav_log_level = libopenh264_to_libav_log_level(level);
-    av_log(ctx, equiv_libav_log_level, "%s\n", msg);
+    int equiv_ffmpeg_log_level = libopenh264_to_ffmpeg_log_level(level);
+    av_log(ctx, equiv_ffmpeg_log_level, "%s\n", msg);
 }
 
 static av_cold int svc_encode_close(AVCodecContext *avctx)
