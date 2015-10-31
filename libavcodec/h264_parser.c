@@ -532,7 +532,7 @@ static int h264_split(AVCodecContext *avctx,
     return 0;
 }
 
-static void close(AVCodecParserContext *s)
+static void h264_close(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
     H264Context      *h = &p->h;
@@ -562,6 +562,6 @@ AVCodecParser ff_h264_parser = {
     .priv_data_size = sizeof(H264ParseContext),
     .parser_init    = init,
     .parser_parse   = h264_parse,
-    .parser_close   = close,
+    .parser_close   = h264_close,
     .split          = h264_split,
 };
