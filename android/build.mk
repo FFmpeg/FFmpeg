@@ -104,5 +104,5 @@ LOCAL_CFLAGS += \
 	-Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized -fPIC
 
 LOCAL_LDFLAGS := -Wl,--no-fatal-warnings -Wl,-Bsymbolic
-
+LOCAL_CLANG := false
 LOCAL_SHARED_LIBRARIES := $(sort $(FFLIBS-yes:%=lib%) $(FFLIBS:%=lib%))
