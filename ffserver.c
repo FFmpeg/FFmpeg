@@ -2276,7 +2276,7 @@ static int http_prepare_data(HTTPContext *c)
             } else {
                 int source_index = pkt.stream_index;
                 /* update first pts if needed */
-                if (c->first_pts == AV_NOPTS_VALUE) {
+                if (c->first_pts == AV_NOPTS_VALUE && pkt.dts != AV_NOPTS_VALUE) {
                     c->first_pts = av_rescale_q(pkt.dts, c->fmt_in->streams[pkt.stream_index]->time_base, AV_TIME_BASE_Q);
                     c->start_time = cur_time;
                 }
@@ -2315,8 +2315,10 @@ static int http_prepare_data(HTTPContext *c)
                      * XXX: need more abstract handling */
                     if (c->is_packetized) {
                         /* compute send time and duration */
-                        c->cur_pts = av_rescale_q(pkt.dts, ist->time_base, AV_TIME_BASE_Q);
-                        c->cur_pts -= c->first_pts;
+                        if (pkt.dts != AV_NOPTS_VALUE) {
+                            c->cur_pts = av_rescale_q(pkt.dts, ist->time_base, AV_TIME_BASE_Q);
+                            c->cur_pts -= c->first_pts;
+                        }
                         c->cur_frame_duration = av_rescale_q(pkt.duration, ist->time_base, AV_TIME_BASE_Q);
                         /* find RTP context */
                         c->packet_stream_index = pkt.stream_index;
