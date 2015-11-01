@@ -431,10 +431,9 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     res = decode(ctx, quality, num_coeffs, !is_pframe);
     ff_thread_report_progress(&ctx->frames[ctx->cur_index], INT_MAX, 0);
     if (res < 0) {
-        if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
+        if (!(avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_release_buffer(avctx, &ctx->frames[ctx->cur_index]);
-            return res;
-        }
+        return res;
     }
 
     if ((res = av_frame_ref(data, ctx->frames[ctx->cur_index].f)) < 0)
