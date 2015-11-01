@@ -1559,6 +1559,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
         ret = add_to_pktbuf(&s->internal->packet_buffer, pkt,
                             &s->internal->packet_buffer_end, 1);
+        av_packet_unref(pkt);
         if (ret < 0)
             return ret;
     }
