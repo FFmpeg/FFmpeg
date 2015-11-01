@@ -1285,12 +1285,11 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
 
         compute_pkt_fields(s, st, st->parser, &out_pkt, next_dts, next_pts);
 
-        if ((ret = add_to_pktbuf(&s->internal->parse_queue, &out_pkt,
-                                 &s->internal->parse_queue_end,
-                                 1))) {
-            av_packet_unref(&out_pkt);
+        ret = add_to_pktbuf(&s->internal->parse_queue, &out_pkt,
+                            &s->internal->parse_queue_end, 1);
+        av_packet_unref(&out_pkt);
+        if (ret < 0)
             goto fail;
-        }
     }
 
     /* end of the stream => close and free the parser */
