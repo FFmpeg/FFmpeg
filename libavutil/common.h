@@ -298,6 +298,42 @@ static av_always_inline av_const double av_clipd_c(double a, double amin, double
     else               return a;
 }
 
+/**
+ * Clip and convert a double value into the long long amin-amax range.
+ * This function is needed because conversion of floating point to integers when
+ * it does not fit in the integer's representation does not necessarily saturate
+ * correctly (usually converted to a cvttsd2si on x86) which saturates numbers
+ * > INT64_MAX to INT64_MIN. The standard marks such conversions as undefined
+ * behavior, allowing this sort of mathematically bogus conversions. This provides
+ * a safe alternative that is slower obviously but assures safety and better
+ * mathematical behavior.
+ * @param a value to clip
+ * @param amin minimum value of the clip range
+ * @param amax maximum value of the clip range
+ * @return clipped value
+ */
+static av_always_inline av_const int64_t av_rint64_clip_c(double a, int64_t amin, int64_t amax)
+{
+    int64_t res;
+#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+    if (amin > amax) abort();
+#endif
+    // INT64_MAX+1,INT64_MIN are exactly representable as IEEE doubles
+    // do range checks first
+    if (a >=  9223372036854775808.0)
+        return amax;
+    if (a <= -9223372036854775808.0)
+       return amin;
+
+    // safe to call llrint and clip accordingly
+    res = llrint(a);
+    if (res > amax)
+        return amax;
+    if (res < amin)
+        return amin;
+    return res;
+}
+
 /** Compute ceil(log2(x)).
  * @param x value used to compute ceil(log2(x))
  * @return computed ceiling of log2(x)
@@ -510,6 +546,9 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #endif
 #ifndef av_clipd
 #   define av_clipd         av_clipd_c
+#endif
+#ifndef av_rint64_clip
+#   define av_rint64_clip   av_rint64_clip_c
 #endif
 #ifndef av_popcount
 #   define av_popcount      av_popcount_c
