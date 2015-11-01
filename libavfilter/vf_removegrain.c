@@ -83,10 +83,9 @@ static int mode01(int c, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
 
 static int cmp_int(const void *p1, const void *p2)
 {
-    int left = *(const int *)p1;
+    int left  = *(const int *)p1;
     int right = *(const int *)p2;
-
-    return ((left > right) - (left < right));
+    return FFDIFFSIGN(left, right);
 }
 
 static int mode02(int c, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8)
