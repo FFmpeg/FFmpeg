@@ -68,7 +68,7 @@ static int msnwc_tcp_probe(AVProbeData *p)
         }
     }
 
-    return -1;
+    return 0;
 }
 
 static int msnwc_tcp_read_header(AVFormatContext *ctx)
@@ -94,7 +94,7 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx)
 
     if (pb->eof_reached) {
         av_log(ctx, AV_LOG_ERROR, "Could not find valid start.");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
