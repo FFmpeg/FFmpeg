@@ -80,54 +80,50 @@ cglobal get_pixels, 3, 4, 5
     mova  [r0+0x70], m3
     RET
 
-INIT_MMX mmx
 ; void ff_diff_pixels_mmx(int16_t *block, const uint8_t *s1, const uint8_t *s2,
 ;                         int stride);
-cglobal diff_pixels, 4,5
-    movsxdifnidn r3, r3d
-    pxor         m7, m7
-    add          r0,  128
-    mov          r4, -128
-.loop:
-    mova         m0, [r1]
-    mova         m2, [r2]
-    mova         m1, m0
-    mova         m3, m2
-    punpcklbw    m0, m7
-    punpckhbw    m1, m7
-    punpcklbw    m2, m7
-    punpckhbw    m3, m7
-    psubw        m0, m2
-    psubw        m1, m3
-    mova  [r0+r4+0], m0
-    mova  [r0+r4+8], m1
-    add          r1, r3
-    add          r2, r3
-    add          r4, 16
-    jne .loop
-    REP_RET
-
-INIT_XMM sse2
-cglobal diff_pixels, 4, 5, 5
+%macro DIFF_PIXELS 0
+cglobal diff_pixels, 4,5,5
     movsxdifnidn r3, r3d
     pxor         m4, m4
     add          r0,  128
     mov          r4, -128
 .loop:
-    movh         m0, [r1]
-    movh         m2, [r2]
-    movh         m1, [r1+r3]
-    movh         m3, [r2+r3]
+    movq         m0, [r1]
+    movq         m2, [r2]
+%if mmsize == 8
+    movq         m1, m0
+    movq         m3, m2
+    punpcklbw    m0, m4
+    punpckhbw    m1, m4
+    punpcklbw    m2, m4
+    punpckhbw    m3, m4
+%else
+    movq         m1, [r1+r3]
+    movq         m3, [r2+r3]
     punpcklbw    m0, m4
     punpcklbw    m1, m4
     punpcklbw    m2, m4
     punpcklbw    m3, m4
+%endif
     psubw        m0, m2
     psubw        m1, m3
-    mova [r0+r4+0 ], m0
-    mova [r0+r4+16], m1
+    mova  [r0+r4+0], m0
+    mova  [r0+r4+mmsize], m1
+%if mmsize == 8
+    add          r1, r3
+    add          r2, r3
+%else
     lea          r1, [r1+r3*2]
     lea          r2, [r2+r3*2]
-    add          r4, 32
+%endif
+    add          r4, 2 * mmsize
     jne .loop
     RET
+%endmacro
+
+INIT_MMX mmx
+DIFF_PIXELS
+
+INIT_XMM sse2
+DIFF_PIXELS
