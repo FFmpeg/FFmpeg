@@ -156,7 +156,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
 
         /* send both the decode map and the video data together */
 
-        if (av_new_packet(pkt, s->decode_map_chunk_size + s->video_chunk_size))
+        if (av_new_packet(pkt, 2 + s->decode_map_chunk_size + s->video_chunk_size))
             return CHUNK_NOMEM;
 
         if (s->has_palette) {
@@ -178,7 +178,8 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
         avio_seek(pb, s->decode_map_chunk_offset, SEEK_SET);
         s->decode_map_chunk_offset = 0;
 
-        if (avio_read(pb, pkt->data, s->decode_map_chunk_size) !=
+        AV_WL16(pkt->data, s->decode_map_chunk_size);
+        if (avio_read(pb, pkt->data + 2, s->decode_map_chunk_size) !=
             s->decode_map_chunk_size) {
             av_packet_unref(pkt);
             return CHUNK_EOF;
@@ -187,7 +188,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
         avio_seek(pb, s->video_chunk_offset, SEEK_SET);
         s->video_chunk_offset = 0;
 
-        if (avio_read(pb, pkt->data + s->decode_map_chunk_size,
+        if (avio_read(pb, pkt->data + 2 + s->decode_map_chunk_size,
             s->video_chunk_size) != s->video_chunk_size) {
             av_packet_unref(pkt);
             return CHUNK_EOF;
