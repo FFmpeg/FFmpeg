@@ -30,6 +30,7 @@ version <next>:
 - innoHeim/Rsupport Screen Capture Codec decoder
 - ADPCM AICA decoder
 - Interplay ACM demuxer and audio decoder
+- XMA1 & XMA2 decoder
 
 
 version 2.8:

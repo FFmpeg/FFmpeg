@@ -1076,6 +1076,8 @@ following image formats are supported:
 @item Windows Media Audio Lossless @tab  @tab  X
 @item Windows Media Audio Pro @tab    @tab  X
 @item Windows Media Audio Voice @tab  @tab  X
+@item Xbox Media Audio 1     @tab     @tab  X
+@item Xbox Media Audio 2     @tab     @tab  X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
