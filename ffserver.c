@@ -2370,6 +2370,7 @@ static int http_prepare_data(HTTPContext *c)
 
                     av_freep(&c->pb_buffer);
                     len = avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
+                    ctx->pb = NULL;
                     c->cur_frame_bytes = len;
                     c->buffer_ptr = c->pb_buffer;
                     c->buffer_end = c->pb_buffer + len;
