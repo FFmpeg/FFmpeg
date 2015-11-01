@@ -339,12 +339,14 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     s->is_keyframe = (avpkt->flags & AV_PKT_FLAG_KEY) && (s->ver == 2);
     if (s->is_keyframe) {
         int err;
+        int nb_blocks = (v_blocks + !!v_part) *
+                        (h_blocks + !!h_part) * sizeof(s->blocks[0]);
         if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
             return err;
         memcpy(s->keyframedata, avpkt->data, avpkt->size);
-        if ((err = av_reallocp(&s->blocks, (v_blocks + !!v_part) *
-                               (h_blocks + !!h_part) * sizeof(s->blocks[0]))) < 0)
+        if ((err = av_reallocp(&s->blocks, nb_blocks)) < 0)
             return err;
+        memset(s->blocks, 0, nb_blocks);
     }
 
     ff_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
