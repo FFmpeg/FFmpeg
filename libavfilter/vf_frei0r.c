@@ -30,6 +30,7 @@
 #include "config.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
+#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
@@ -104,7 +105,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
         break;
 
     case F0R_PARAM_DOUBLE:
-        val.d = strtod(param, &tail);
+        val.d = av_strtod(param, &tail);
         if (*tail || val.d == HUGE_VAL)
             goto fail;
         break;
