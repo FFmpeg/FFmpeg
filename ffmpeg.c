@@ -2337,6 +2337,9 @@ static void print_sdp(void)
         }
     }
 
+    if (!j)
+        goto fail;
+
     av_sdp_create(avc, j, sdp, sizeof(sdp));
 
     if (!sdp_filename) {
@@ -2352,6 +2355,7 @@ static void print_sdp(void)
         }
     }
 
+fail:
     av_freep(&avc);
 }
 
