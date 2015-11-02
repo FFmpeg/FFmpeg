@@ -240,7 +240,7 @@ static int decode_unregistered_user_data(H264Context *h, int size)
     if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
         h->x264_build = 67;
 
-    if (h->avctx->debug & FF_DEBUG_BUGS)
+    if (strlen(user_data + 16) > 0)
         av_log(h->avctx, AV_LOG_DEBUG, "user data:\"%s\"\n", user_data + 16);
 
     for (; i < size; i++)
