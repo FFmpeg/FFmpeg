@@ -230,6 +230,7 @@ typedef struct MpegTSWriteStream {
 
     /* For Opus */
     int opus_queued_samples;
+    int opus_pending_trim_start;
 } MpegTSWriteStream;
 
 static void mpegts_write_pat(AVFormatContext *s)
@@ -824,6 +825,9 @@ static int mpegts_write_header(AVFormatContext *s)
             ret = avformat_write_header(ts_st->amux, NULL);
             if (ret < 0)
                 goto fail;
+        }
+        if (st->codec->codec_id == AV_CODEC_ID_OPUS) {
+            ts_st->opus_pending_trim_start = st->codec->initial_padding * 48000 / st->codec->sample_rate;
         }
     }
 
@@ -1513,17 +1517,38 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
         /* Add Opus control header */
         if ((AV_RB16(pkt->data) >> 5) != 0x3ff) {
+            uint8_t *side_data;
+            int side_data_size;
             int i, n;
+            int ctrl_header_size;
+            int trim_start = 0, trim_end = 0;
 
             opus_samples = opus_get_packet_samples(s, pkt);
 
-            data = av_malloc(pkt->size + 2 + pkt->size / 255 + 1);
+            side_data = av_packet_get_side_data(pkt,
+                                                AV_PKT_DATA_SKIP_SAMPLES,
+                                                &side_data_size);
+
+            if (side_data && side_data_size >= 10) {
+                trim_end = AV_RL32(side_data + 4) * 48000 / st->codec->sample_rate;
+            }
+
+            ctrl_header_size = pkt->size + 2 + pkt->size / 255 + 1;
+            if (ts_st->opus_pending_trim_start)
+              ctrl_header_size += 2;
+            if (trim_end)
+              ctrl_header_size += 2;
+
+            data = av_malloc(ctrl_header_size);
             if (!data)
                 return AVERROR(ENOMEM);
 
-            /* TODO: Write trim if needed */
             data[0] = 0x7f;
             data[1] = 0xe0;
+            if (ts_st->opus_pending_trim_start)
+                data[1] |= 0x10;
+            if (trim_end)
+                data[1] |= 0x08;
 
             n = pkt->size;
             i = 2;
@@ -1535,9 +1560,21 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
             av_assert0(2 + pkt->size / 255 + 1 == i);
 
+            if (ts_st->opus_pending_trim_start) {
+                trim_start = FFMIN(ts_st->opus_pending_trim_start, opus_samples);
+                AV_WB16(data + i, trim_start);
+                i += 2;
+                ts_st->opus_pending_trim_start -= trim_start;
+            }
+            if (trim_end) {
+                trim_end = FFMIN(trim_end, opus_samples - trim_start);
+                AV_WB16(data + i, trim_end);
+                i += 2;
+            }
+
             memcpy(data + i, pkt->data, pkt->size);
             buf     = data;
-            size    = pkt->size + 2 + pkt->size / 255 + 1;
+            size    = ctrl_header_size;
         } else {
             /* TODO: Can we get TS formatted data here? If so we will
              * need to count the samples of that too! */
