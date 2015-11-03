@@ -44,7 +44,7 @@ typedef struct ColorContext {
     const AVClass *class;
     int w, h;
     uint8_t color[4];
-    AVRational time_base;
+    AVRational frame_rate;
     uint8_t *line[4];
     int      line_step[4];
     int hsub, vsub;         ///< chroma subsampling values
@@ -65,13 +65,11 @@ static av_cold int color_init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (av_parse_video_rate(&frame_rate_q, color->framerate_str) < 0 ||
+    if (av_parse_video_rate(&color->frame_rate, color->framerate_str) < 0 ||
         frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", color->framerate_str);
         return AVERROR(EINVAL);
     }
-    color->time_base.num = frame_rate_q.den;
-    color->time_base.den = frame_rate_q.num;
 
     if ((ret = av_parse_color(color->color, color->color_str, -1, ctx)) < 0)
         return ret;
@@ -132,12 +130,13 @@ static int color_config_props(AVFilterLink *inlink)
                             inlink->format, rgba_color, &is_packed_rgba, NULL);
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d r:%d/%d color:0x%02x%02x%02x%02x[%s]\n",
-           color->w, color->h, color->time_base.den, color->time_base.num,
+           color->w, color->h, color->frame_rate.num, color->frame_rate.den,
            color->color[0], color->color[1], color->color[2], color->color[3],
            is_packed_rgba ? "rgba" : "yuva");
     inlink->w = color->w;
     inlink->h = color->h;
-    inlink->time_base = color->time_base;
+    inlink->time_base  = av_inv_q(color->frame_rate);
+    inlink->frame_rate = color->frame_rate;
 
     return 0;
 }
