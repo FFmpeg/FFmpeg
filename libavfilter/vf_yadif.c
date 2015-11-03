@@ -462,6 +462,10 @@ static int config_props(AVFilterLink *link)
     link->w             = link->src->inputs[0]->w;
     link->h             = link->src->inputs[0]->h;
 
+    if (s->mode & 1)
+        link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate,
+                                    (AVRational){2, 1});
+
     s->csp = av_pix_fmt_desc_get(link->format);
     if (s->csp->comp[0].depth > 8) {
         s->filter_line  = filter_line_c_16bit;
