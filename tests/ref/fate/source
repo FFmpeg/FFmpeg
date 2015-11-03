@@ -3,6 +3,7 @@ cmdutils_common_opts.h
 compat/avisynth/windowsPorts/basicDataTypeConversions.h
 compat/avisynth/windowsPorts/windows2linux.h
 libavcodec/file_open.c
+libavcodec/interplayacm.c
 libavcodec/log2_tab.c
 libavcodec/mathops.c
 libavcodec/reverse.c
