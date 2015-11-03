@@ -75,19 +75,18 @@ static void rtmfp_log(int level, const char *message)
 static int rtmfp_close(URLContext *s)
 {
     LibRTMFPContext *ctx = s->priv_data;
-    //RTMP *r = &ctx->rtmp;
 
+    av_log(NULL, AV_LOG_INFO, "Closing RTMFP connection...\n");
     RTMFP_Close(ctx->id);
-    //av_freep(&ctx->temp_filename);
     return 0;
 }
 
 static void onSocketError(const char* err) {
-  printf("Error on rtmfp socket : %s", err);
+  av_log(NULL, AV_LOG_INFO, "Error on RTMFP socket : %s\n", err);
 }
 
 static void onStatusEvent(const char* code, const char* description) {
-  printf("onStatusEvent : %s - %s", code, description);
+  av_log(NULL, AV_LOG_INFO, "onStatusEvent : %s - %s\n", code, description);
 }
 
 /**
@@ -105,167 +104,27 @@ static void onStatusEvent(const char* code, const char* description) {
 static int rtmfp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMFPContext *ctx = s->priv_data;
-    //RTMP *r = &ctx->rtmp;
-    int rc = 0, level;
-    char *filename = s->filename;
-    int len = strlen(s->filename) + 1;
+    int level;
 
-    /*switch (av_log_get_level()) {
-    default:
-    case AV_LOG_FATAL:   level = RTMP_LOGCRIT;    break;
-    case AV_LOG_ERROR:   level = RTMP_LOGERROR;   break;
-    case AV_LOG_WARNING: level = RTMP_LOGWARNING; break;
-    case AV_LOG_INFO:    level = RTMP_LOGINFO;    break;
-    case AV_LOG_VERBOSE: level = RTMP_LOGDEBUG;   break;
-    case AV_LOG_DEBUG:   level = RTMP_LOGDEBUG2;  break;
+    switch (av_log_get_level()) {
+        case AV_LOG_FATAL:   level = 1; break;
+        case AV_LOG_ERROR:   level = 3; break;
+        case AV_LOG_WARNING: level = 4; break;
+        default:
+        case AV_LOG_INFO:    level = 6; break;
+        case AV_LOG_DEBUG:   level = 7; break;
+        case AV_LOG_VERBOSE: level = 8; break;
     }
-    RTMP_LogSetLevel(level);*/
-
+    RTMFP_LogSetLevel(level);
     RTMFP_LogSetCallback(rtmfp_log);
 
-    /*if (ctx->app)      len += strlen(ctx->app)      + sizeof(" app=");
-    if (ctx->tcurl)    len += strlen(ctx->tcurl)    + sizeof(" tcUrl=");
-    if (ctx->pageurl)  len += strlen(ctx->pageurl)  + sizeof(" pageUrl=");
-    if (ctx->flashver) len += strlen(ctx->flashver) + sizeof(" flashver=");
-
-    if (ctx->conn) {
-        char *sep, *p = ctx->conn;
-        int options = 0;
-
-        while (p) {
-            options++;
-            p += strspn(p, " ");
-            if (!*p)
-                break;
-            sep = strchr(p, ' ');
-            if (sep)
-                p = sep + 1;
-            else
-                break;
-        }
-        len += options * sizeof(" conn=");
-        len += strlen(ctx->conn);
-    }
-
-    if (ctx->playpath)
-        len += strlen(ctx->playpath) + sizeof(" playpath=");
-    if (ctx->live)
-        len += sizeof(" live=1");
-    if (ctx->subscribe)
-        len += strlen(ctx->subscribe) + sizeof(" subscribe=");
-
-    if (ctx->client_buffer_time)
-        len += strlen(ctx->client_buffer_time) + sizeof(" buffer=");
-
-    if (ctx->swfurl || ctx->swfverify) {
-        len += sizeof(" swfUrl=");
-
-        if (ctx->swfverify)
-            len += strlen(ctx->swfverify) + sizeof(" swfVfy=1");
-        else
-            len += strlen(ctx->swfurl);
-    }
-
-    if (!(ctx->temp_filename = filename = av_malloc(len)))
-        return AVERROR(ENOMEM);
-
-    av_strlcpy(filename, s->filename, len);
-    if (ctx->app) {
-        av_strlcat(filename, " app=", len);
-        av_strlcat(filename, ctx->app, len);
-    }
-    if (ctx->tcurl) {
-        av_strlcat(filename, " tcUrl=", len);
-        av_strlcat(filename, ctx->tcurl, len);
-    }
-    if (ctx->pageurl) {
-        av_strlcat(filename, " pageUrl=", len);
-        av_strlcat(filename, ctx->pageurl, len);
-    }
-    if (ctx->swfurl) {
-        av_strlcat(filename, " swfUrl=", len);
-        av_strlcat(filename, ctx->swfurl, len);
-    }
-    if (ctx->flashver) {
-        av_strlcat(filename, " flashVer=", len);
-        av_strlcat(filename, ctx->flashver, len);
-    }
-    if (ctx->conn) {
-        char *sep, *p = ctx->conn;
-        while (p) {
-            av_strlcat(filename, " conn=", len);
-            p += strspn(p, " ");
-            if (!*p)
-                break;
-            sep = strchr(p, ' ');
-            if (sep)
-                *sep = '\0';
-            av_strlcat(filename, p, len);
-
-            if (sep)
-                p = sep + 1;
-        }
-    }
-    if (ctx->playpath) {
-        av_strlcat(filename, " playpath=", len);
-        av_strlcat(filename, ctx->playpath, len);
-    }
-    if (ctx->live)
-        av_strlcat(filename, " live=1", len);
-    if (ctx->subscribe) {
-        av_strlcat(filename, " subscribe=", len);
-        av_strlcat(filename, ctx->subscribe, len);
-    }
-    if (ctx->client_buffer_time) {
-        av_strlcat(filename, " buffer=", len);
-        av_strlcat(filename, ctx->client_buffer_time, len);
-    }
-    if (ctx->swfurl || ctx->swfverify) {
-        av_strlcat(filename, " swfUrl=", len);
-
-        if (ctx->swfverify) {
-            av_strlcat(filename, ctx->swfverify, len);
-            av_strlcat(filename, " swfVfy=1", len);
-        } else {
-            av_strlcat(filename, ctx->swfurl, len);
-        }
-    }
-
-    RTMP_Init(r);
-    if (!RTMP_SetupURL(r, filename)) {
-        rc = AVERROR_UNKNOWN;
-        goto fail;
-    }
-
-    if (flags & AVIO_FLAG_WRITE)
-        RTMP_EnableWrite(r);
-
-    if (!RTMP_Connect(r, NULL) || !RTMP_ConnectStream(r, 0)) {
-        rc = AVERROR_UNKNOWN;
-        goto fail;
-    }
-
-#if CONFIG_NETWORK
-    if (ctx->buffer_size >= 0 && (flags & AVIO_FLAG_WRITE)) {
-        int tmp = ctx->buffer_size;
-        setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp));
-    }
-#endif
-
+    //s->rw_timeout = 7000000;
+    ctx->id = RTMFP_Connect(uri, flags & AVIO_FLAG_WRITE,onSocketError, onStatusEvent, NULL);
+    //s->is_connected = 1;
     s->is_streamed = 1;
-    return 0;
-fail:
-    av_freep(&ctx->temp_filename);
-    if (rc)
-        RTMP_Close(r);*/
-
-    av_log(NULL, AV_LOG_INFO, "uri : %s\n", uri);
-
-    ctx->id = RTMFP_Connect("127.0.0.1", 1935, uri, onSocketError, onStatusEvent, NULL);
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
-
-    return rc;
+    return 0;
 }
 
 static int rtmfp_write(URLContext *s, const uint8_t *buf, int size)
@@ -281,9 +140,11 @@ static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
 {
     LibRTMFPContext *ctx = s->priv_data;
     //RTMP *r = &ctx->rtmp;
+    int res = 0;
 
-    av_log(NULL, AV_LOG_INFO, "RTMFP read called, size : %d\n", size);
-    return RTMFP_Read(ctx->id, buf, size);
+    res = RTMFP_Read(ctx->id, buf, size);
+    //av_log(NULL, AV_LOG_INFO, "RTMFP read called, %d/%d bytes read\n", res, size);
+    return res;
 }
 
 /*static int rtmp_read_pause(URLContext *s, int pause)
