@@ -41,6 +41,7 @@
 
 static const char *const var_names[] = {
     "E",           ///< Euler number
+    "FRAME_RATE",  ///< defined only for constant frame-rate video
     "INTERLACED",  ///< tell if the current frame is interlaced
     "N",           ///< frame / sample number (starting at zero)
     "PHI",         ///< golden ratio
@@ -59,6 +60,7 @@ static const char *const var_names[] = {
 
 enum var_name {
     VAR_E,
+    VAR_FRAME_RATE,
     VAR_INTERLACED,
     VAR_N,
     VAR_PHI,
@@ -114,6 +116,13 @@ static int config_input(AVFilterLink *inlink)
     if (inlink->type == AVMEDIA_TYPE_AUDIO) {
         setpts->var_values[VAR_SR] = inlink->sample_rate;
     }
+
+    setpts->var_values[VAR_FRAME_RATE] = inlink->frame_rate.num &&
+                                         inlink->frame_rate.den ?
+                                            av_q2d(inlink->frame_rate) : NAN;
+
+    // Indicate the output can be variable framerate.
+    inlink->frame_rate = (AVRational){1, 0};
 
     av_log(inlink->src, AV_LOG_VERBOSE, "TB:%f\n", setpts->var_values[VAR_TB]);
     return 0;
