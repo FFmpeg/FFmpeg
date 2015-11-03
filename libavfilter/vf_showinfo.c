@@ -140,12 +140,36 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+static int config_props(AVFilterContext *ctx, AVFilterLink *link, int is_out)
+{
+
+    av_log(ctx, AV_LOG_INFO, "config %s time_base: %d/%d, frame_rate: %d/%d\n",
+           is_out ? "out" : "in",
+           link->time_base.num, link->time_base.den,
+           link->frame_rate.num, link->frame_rate.den);
+
+    return 0;
+}
+
+static int config_props_in(AVFilterLink *link)
+{
+    AVFilterContext *ctx = link->dst;
+    return config_props(ctx, link, 0);
+}
+
+static int config_props_out(AVFilterLink *link)
+{
+    AVFilterContext *ctx = link->src;
+    return config_props(ctx, link, 1);
+}
+
 static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
+        .config_props     = config_props_in,
     },
     { NULL }
 };
@@ -153,7 +177,8 @@ static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
 static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
     {
         .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO
+        .type = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_props_out,
     },
     { NULL }
 };
