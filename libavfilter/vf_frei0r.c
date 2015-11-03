@@ -459,6 +459,7 @@ static int source_config_props(AVFilterLink *outlink)
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->time_base = s->time_base;
+    outlink->frame_rate = av_inv_q(s->time_base);
 
     if (s->destruct && s->instance)
         s->destruct(s->instance);
