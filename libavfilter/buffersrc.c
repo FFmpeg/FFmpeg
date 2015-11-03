@@ -44,6 +44,7 @@ typedef struct BufferSourceContext {
     const AVClass    *class;
     AVFifoBuffer     *fifo;
     AVRational        time_base;     ///< time_base to set in the output link
+    AVRational        frame_rate;    ///< frame_rate to set in the output link
 
     /* video only */
     int               h, w;
@@ -191,6 +192,7 @@ static const AVOption video_options[] = {
 #endif
     { "sar",           "sample aspect ratio",    OFFSET(pixel_aspect),     AV_OPT_TYPE_RATIONAL, { .dbl = 1 }, 0, DBL_MAX, V },
     { "time_base",     NULL,                     OFFSET(time_base),        AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
+    { "frame_rate",    NULL,                     OFFSET(frame_rate),       AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { NULL },
 };
 
@@ -308,6 +310,7 @@ static int config_props(AVFilterLink *link)
     }
 
     link->time_base = c->time_base;
+    link->frame_rate = c->frame_rate;
     return 0;
 }
 
