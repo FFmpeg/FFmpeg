@@ -109,8 +109,10 @@ static int config_out_props(AVFilterLink *outlink)
     outlink->w = inlink->w;
     outlink->h = inlink->h;
     outlink->time_base = inlink->time_base;
+    outlink->frame_rate = inlink->frame_rate;
     // half framerate
     outlink->time_base.num *= 2;
+    outlink->frame_rate.den *= 2;
 
 
     if (s->lowpass) {
