@@ -25,6 +25,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/stereo3d.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -1187,18 +1188,19 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             bytestream2_skip(&s->gb, length + 4);
             break;
         case MKTAG('s', 'T', 'E', 'R'): {
+            int mode = bytestream2_get_byte(&s->gb);
             AVStereo3D *stereo3d = av_stereo3d_create_side_data(p);
-            if (!stereo3d) {
+            if (!stereo3d)
                 goto fail;
-            } else if (*s->gb.buffer == 0) {
+
+            if (mode == 0 || mode == 1) {
                 stereo3d->type  = AV_STEREO3D_SIDEBYSIDE;
-                stereo3d->flags = AV_STEREO3D_FLAG_INVERT;
-            } else if (*s->gb.buffer == 1) {
-                stereo3d->type  = AV_STEREO3D_SIDEBYSIDE;
+                stereo3d->flags = mode ? 0 : AV_STEREO3D_FLAG_INVERT;
             } else {
-                 av_log(avctx, AV_LOG_WARNING, "Broken sTER chunk - unknown value\n");
+                 av_log(avctx, AV_LOG_WARNING,
+                        "Unknown value in sTER chunk (%d)\n", mode);
             }
-            bytestream2_skip(&s->gb, length + 4);
+            bytestream2_skip(&s->gb, 4); /* crc */
             break;
         }
         case MKTAG('I', 'E', 'N', 'D'):

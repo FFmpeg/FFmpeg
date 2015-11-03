@@ -224,13 +224,17 @@ static int decode_registered_user_data(H264Context *h, int size)
 
 static int decode_unregistered_user_data(H264Context *h, int size)
 {
-    uint8_t user_data[16 + 256];
+    uint8_t *user_data;
     int e, build, i;
 
-    if (size < 16)
+    if (size < 16 || size >= INT_MAX - 16)
         return AVERROR_INVALIDDATA;
 
-    for (i = 0; i < sizeof(user_data) - 1 && i < size; i++)
+    user_data = av_malloc(16 + size + 1);
+    if (!user_data)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < size + 16; i++)
         user_data[i] = get_bits(&h->gb, 8);
 
     user_data[i] = 0;
@@ -240,12 +244,10 @@ static int decode_unregistered_user_data(H264Context *h, int size)
     if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
         h->x264_build = 67;
 
-    if (h->avctx->debug & FF_DEBUG_BUGS)
+    if (strlen(user_data + 16) > 0)
         av_log(h->avctx, AV_LOG_DEBUG, "user data:\"%s\"\n", user_data + 16);
 
-    for (; i < size; i++)
-        skip_bits(&h->gb, 8);
-
+    av_free(user_data);
     return 0;
 }
 

@@ -560,8 +560,16 @@ static int hls_start(AVFormatContext *s)
     }
     av_dict_free(&options);
 
-    if (oc->oformat->priv_class && oc->priv_data)
+    /* We only require one PAT/PMT per segment. */
+    if (oc->oformat->priv_class && oc->priv_data) {
+        char period[21];
+
+        snprintf(period, sizeof(period), "%d", (INT_MAX / 2) - 1);
+
         av_opt_set(oc->priv_data, "mpegts_flags", "resend_headers", 0);
+        av_opt_set(oc->priv_data, "sdt_period", period, 0);
+        av_opt_set(oc->priv_data, "pat_period", period, 0);
+    }
 
     if (c->vtt_basename)
         avformat_write_header(vtt_oc,NULL);

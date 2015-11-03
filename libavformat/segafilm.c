@@ -93,6 +93,7 @@ static int film_read_header(AVFormatContext *s)
     int i, ret;
     unsigned int data_offset;
     unsigned int audio_frame_counter;
+    unsigned int video_frame_counter;
 
     film->sample_table = NULL;
 
@@ -211,7 +212,7 @@ static int film_read_header(AVFormatContext *s)
             avpriv_set_pts_info(st, 64, 1, film->audio_samplerate);
     }
 
-    audio_frame_counter = 0;
+    audio_frame_counter = video_frame_counter = 0;
     for (i = 0; i < film->sample_count; i++) {
         /* load the next sample record and transfer it to an internal struct */
         if (avio_read(pb, scratch, 16) != 16) {
@@ -239,8 +240,20 @@ static int film_read_header(AVFormatContext *s)
             film->sample_table[i].stream = film->video_stream_index;
             film->sample_table[i].pts = AV_RB32(&scratch[8]) & 0x7FFFFFFF;
             film->sample_table[i].keyframe = (scratch[8] & 0x80) ? 0 : 1;
+            video_frame_counter++;
+            av_add_index_entry(s->streams[film->video_stream_index],
+                               film->sample_table[i].sample_offset,
+                               film->sample_table[i].pts,
+                               film->sample_table[i].sample_size, 0,
+                               film->sample_table[i].keyframe);
         }
     }
+
+    if (film->audio_type)
+        s->streams[film->audio_stream_index]->duration = audio_frame_counter;
+
+    if (film->video_type)
+        s->streams[film->video_stream_index]->duration = video_frame_counter;
 
     film->current_sample = 0;
 
@@ -279,6 +292,21 @@ static int film_read_packet(AVFormatContext *s,
     return ret;
 }
 
+static int film_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+{
+    FilmDemuxContext *film = s->priv_data;
+    AVStream *st = s->streams[stream_index];
+    int index = av_index_search_timestamp(st, timestamp, flags);
+    if (index < 0)
+        return -1;
+    if (avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET) < 0)
+        return -1;
+
+    film->current_sample = index;
+
+    return 0;
+}
+
 AVInputFormat ff_segafilm_demuxer = {
     .name           = "film_cpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM / CPK"),
@@ -287,4 +315,5 @@ AVInputFormat ff_segafilm_demuxer = {
     .read_header    = film_read_header,
     .read_packet    = film_read_packet,
     .read_close     = film_read_close,
+    .read_seek      = film_read_seek,
 };
