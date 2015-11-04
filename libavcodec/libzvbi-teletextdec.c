@@ -229,7 +229,6 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
     int resx = page->columns * BITMAP_CHAR_WIDTH;
     int resy = (page->rows - chop_top) * BITMAP_CHAR_HEIGHT;
     uint8_t ci, cmax = 0;
-    int ret;
     vbi_char *vc = page->text + (chop_top * page->columns);
     vbi_char *vcend = page->text + (page->rows * page->columns);
 
