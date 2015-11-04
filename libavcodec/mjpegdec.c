@@ -1088,7 +1088,10 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                         dc = mjpeg_decode_dc(s, s->dc_index[i]);
                         if(dc == 0xFFFFF)
                             return -1;
-                        if(bits<=8){
+                        if (   h * mb_x + x >= s->width
+                            || v * mb_y + y >= s->height) {
+                            // Nothing to do
+                        } else if (bits<=8) {
                         ptr = s->picture_ptr->data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                         if(y==0 && toprow){
                             if(x==0 && leftcol){
@@ -1156,7 +1159,10 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                         dc = mjpeg_decode_dc(s, s->dc_index[i]);
                         if(dc == 0xFFFFF)
                             return -1;
-                        if(bits<=8){
+                        if (   h * mb_x + x >= s->width
+                            || v * mb_y + y >= s->height) {
+                            // Nothing to do
+                        } else if (bits<=8) {
                             ptr = s->picture_ptr->data[c] +
                               (linesize * (v * mb_y + y)) +
                               (h * mb_x + x); //FIXME optimize this crap
