@@ -2578,8 +2578,7 @@ static InputStream *get_input_stream(OutputStream *ost)
 
 static int compare_int64(const void *a, const void *b)
 {
-    int64_t va = *(int64_t *)a, vb = *(int64_t *)b;
-    return va < vb ? -1 : va > vb ? +1 : 0;
+    return FFDIFFSIGN(*(const int64_t *)a, *(const int64_t *)b);
 }
 
 static int init_output_stream(OutputStream *ost, char *error, int error_len)

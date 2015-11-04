@@ -239,12 +239,12 @@ static int config_props(AVFilterLink *outlink)
                            func1_names, func1, NULL, NULL, rot, 0, ctx);
     rot->var_values[VAR_OUT_W] = rot->var_values[VAR_OW] = res;
     rot->outw = res + 0.5;
-    SET_SIZE_EXPR(outh, "out_w");
+    SET_SIZE_EXPR(outh, "out_h");
     rot->var_values[VAR_OUT_H] = rot->var_values[VAR_OH] = res;
     rot->outh = res + 0.5;
 
     /* evaluate the width again, as it may depend on the evaluated output height */
-    SET_SIZE_EXPR(outw, "out_h");
+    SET_SIZE_EXPR(outw, "out_w");
     rot->var_values[VAR_OUT_W] = rot->var_values[VAR_OW] = res;
     rot->outw = res + 0.5;
 

@@ -399,6 +399,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(GSM_MS,            gsm_ms);
     REGISTER_DECODER(IAC,               iac);
     REGISTER_DECODER(IMC,               imc);
+    REGISTER_DECODER(INTERPLAY_ACM,     interplay_acm);
     REGISTER_DECODER(MACE3,             mace3);
     REGISTER_DECODER(MACE6,             mace6);
     REGISTER_DECODER(METASOUND,         metasound);
