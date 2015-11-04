@@ -202,6 +202,9 @@
     <ClCompile Include="..\libavformat\ac3dec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\acm.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\act.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

@@ -1395,6 +1395,9 @@
     <ClCompile Include="..\libavcodec\indeo5.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\interplayacm.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dpcm.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

@@ -127,6 +127,7 @@
     <ClCompile Include="..\libavformat\img2.c" />
     <ClCompile Include="..\libavformat\rawdec.c" />
     <ClCompile Include="..\libavformat\ac3dec.c" />
+    <ClCompile Include="..\libavformat\acm.c" />
     <ClCompile Include="..\libavformat\act.c" />
     <ClCompile Include="..\libavformat\bintext.c" />
     <ClCompile Include="..\libavformat\sauce.c" />

@@ -575,6 +575,7 @@
     <ClCompile Include="..\libavcodec\indeo4.c" />
     <ClCompile Include="..\libavcodec\ivi.c" />
     <ClCompile Include="..\libavcodec\indeo5.c" />
+    <ClCompile Include="..\libavcodec\interplayacm.c" />
     <ClCompile Include="..\libavcodec\dpcm.c" />
     <ClCompile Include="..\libavcodec\interplayvideo.c" />
     <ClCompile Include="..\libavcodec\jacosubdec.c" />
