@@ -568,7 +568,7 @@ static int read_extra_header(FFV1Context *f)
     }
 
     f->quant_table_count = get_symbol(c, state, 0);
-    if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES)
+    if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES || !f->quant_table_count)
         return AVERROR_INVALIDDATA;
 
     for (i = 0; i < f->quant_table_count; i++) {
