@@ -415,6 +415,7 @@ TESTPROGS = seek                                                        \
             srtp                                                        \
             url                                                         \
 
+TESTPROGS-$(CONFIG_MOV_MUXER)            += movenc
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy
 TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
 
