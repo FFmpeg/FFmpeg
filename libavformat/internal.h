@@ -419,11 +419,4 @@ static inline int ff_rename(const char *oldpath, const char *newpath)
     return 0;
 }
 
-/**
- * Add new side data to a stream. If a side data of this type already exists, it
- * is replaced.
- */
-uint8_t *ff_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
-                                 int size);
-
 #endif /* AVFORMAT_INTERNAL_H */

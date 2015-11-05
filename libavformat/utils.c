@@ -3140,7 +3140,7 @@ uint8_t *av_stream_get_side_data(AVStream *st, enum AVPacketSideDataType type,
     return NULL;
 }
 
-uint8_t *ff_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
+uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
                                  int size)
 {
     AVPacketSideData *sd, *tmp;
