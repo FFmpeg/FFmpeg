@@ -189,6 +189,10 @@ static int decode_uncompressed(AVCodecContext *avctx, GetBitContext *gb,
     *mode = !*mode;
     if (newmode != *mode) { //FIXME CHECK
         *(*runs)++ = 0;
+        if (*runs >= runend) {
+            av_log(avctx, AV_LOG_ERROR, "uncompressed run overrun\n");
+            return AVERROR_INVALIDDATA;
+        }
         *mode = newmode;
     }
     return 0;
