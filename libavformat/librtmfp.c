@@ -129,21 +129,25 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
 
 static int rtmfp_write(URLContext *s, const uint8_t *buf, int size)
 {
-    /*LibRTMPContext *ctx = s->priv_data;
-    RTMP *r = &ctx->rtmp;
+    LibRTMFPContext *ctx = s->priv_data;
+    int res = 0;
 
-    return RTMP_Write(r, buf, size);*/
-    return 0;
+    res = RTMFP_Write(ctx->id, buf, size);
+    //av_log(NULL, AV_LOG_INFO, "RTMFP write called, %d/%d bytes read\n", res, size);
+    if (res < 0)
+        return AVERROR_UNKNOWN;
+    return res;
 }
 
 static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
 {
     LibRTMFPContext *ctx = s->priv_data;
-    //RTMP *r = &ctx->rtmp;
     int res = 0;
 
     res = RTMFP_Read(ctx->id, buf, size);
     //av_log(NULL, AV_LOG_INFO, "RTMFP read called, %d/%d bytes read\n", res, size);
+    if (res < 0)
+        return AVERROR_UNKNOWN;
     return res;
 }
 
