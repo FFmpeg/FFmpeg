@@ -240,6 +240,11 @@ static int film_read_header(AVFormatContext *s)
             film->sample_table[i].stream = film->video_stream_index;
             film->sample_table[i].pts = AV_RB32(&scratch[8]) & 0x7FFFFFFF;
             film->sample_table[i].keyframe = (scratch[8] & 0x80) ? 0 : 1;
+            av_add_index_entry(s->streams[film->video_stream_index],
+                               film->sample_table[i].sample_offset,
+                               film->sample_table[i].pts,
+                               film->sample_table[i].sample_size, 0,
+                               film->sample_table[i].keyframe);
         }
     }
 
@@ -288,6 +293,23 @@ static int film_read_packet(AVFormatContext *s,
     return ret;
 }
 
+static int film_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+{
+    FilmDemuxContext *film = s->priv_data;
+    AVStream *st = s->streams[stream_index];
+    int ret = av_index_search_timestamp(st, timestamp, flags);
+    if (ret < 0)
+        return ret;
+
+    ret = avio_seek(s->pb, st->index_entries[ret].pos, SEEK_SET);
+    if (ret < 0)
+        return ret;
+
+    film->current_sample = ret;
+
+    return 0;
+}
+
 AVInputFormat ff_segafilm_demuxer = {
     .name           = "film_cpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM / CPK"),
@@ -296,4 +318,5 @@ AVInputFormat ff_segafilm_demuxer = {
     .read_header    = film_read_header,
     .read_packet    = film_read_packet,
     .read_close     = film_read_close,
+    .read_seek      = film_read_seek,
 };
