@@ -806,6 +806,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps->chroma_format_idc = get_ue_golomb_long(gb);
+    if (sps->chroma_format_idc > 3U) {
+        return AVERROR_INVALIDDATA;
+    }
 
     if (sps->chroma_format_idc == 3)
         sps->separate_colour_plane_flag = get_bits1(gb);
