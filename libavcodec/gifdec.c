@@ -295,6 +295,8 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     /* read the garbage data until end marker is found */
     ff_lzw_decode_tail(s->lzw);
 
+    bytestream2_skipu(&s->gb, bytestream2_get_bytes_left(&s->gb));
+
     /* Graphic Control Extension's scope is single frame.
      * Remove its influence. */
     s->transparent_color_index = -1;
