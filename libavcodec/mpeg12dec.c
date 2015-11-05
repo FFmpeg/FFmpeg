@@ -1949,7 +1949,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                     (left && show_bits(&s->gb, FFMIN(left, 23)) && !is_d10) ||
                     ((avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE)) && left > 8)) {
                     av_log(avctx, AV_LOG_ERROR, "end mismatch left=%d %0X\n",
-                           left, show_bits(&s->gb, FFMIN(left, 23)));
+                           left, left>0 ? show_bits(&s->gb, FFMIN(left, 23)) : 0);
                     return AVERROR_INVALIDDATA;
                 } else
                     goto eos;
