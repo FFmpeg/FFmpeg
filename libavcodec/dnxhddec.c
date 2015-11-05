@@ -57,7 +57,7 @@ typedef struct DNXHDContext {
     unsigned int width, height;
     enum AVPixelFormat pix_fmt;
     unsigned int mb_width, mb_height;
-    uint32_t *mb_scan_index;
+    uint32_t mb_scan_index[256];
     int data_offset;                    // End of mb_scan_index, where macroblocks start
     int cur_field;                      ///< current interlaced field
     VLC ac_vlc, dc_vlc, run_vlc;
@@ -164,7 +164,6 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     static const uint8_t header_prefixhr2[] = { 0x00, 0x00, 0x03, 0x8C, 0x03 };
     int i, cid, ret;
     int old_bit_depth = ctx->bit_depth, bitdepth;
-    int old_mb_height = ctx->mb_height;
 
     if (buf_size < 0x280) {
         av_log(ctx->avctx, AV_LOG_ERROR,
@@ -293,13 +292,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
-    if (ctx->mb_height != old_mb_height) {
-        av_freep(&ctx->mb_scan_index);
-
-        ctx->mb_scan_index = av_mallocz_array(ctx->mb_height, sizeof(uint32_t));
-        if (!ctx->mb_scan_index)
-            return AVERROR(ENOMEM);
-    }
+    av_assert0((unsigned)ctx->mb_height <= FF_ARRAY_ELEMS(ctx->mb_scan_index));
 
     for (i = 0; i < ctx->mb_height; i++) {
         ctx->mb_scan_index[i] = AV_RB32(buf + 0x170 + (i << 2));
@@ -681,7 +674,6 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
     ff_free_vlc(&ctx->dc_vlc);
     ff_free_vlc(&ctx->run_vlc);
 
-    av_freep(&ctx->mb_scan_index);
     av_freep(&ctx->rows);
 
     return 0;
