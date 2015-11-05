@@ -55,9 +55,9 @@ static const AVOption options[] = {
     { "auto", "Automatic number of slices according to number of threads", 0, AV_OPT_TYPE_CONST, { .i64 = SM_AUTO_SLICE }, 0, 0, VE, "slice_mode" },
     { "dyn", "Dynamic slicing", 0, AV_OPT_TYPE_CONST, { .i64 = SM_DYN_SLICE }, 0, 0, VE, "slice_mode" },
     { "loopfilter", "Enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
-    { "profile", "Set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
-    { "max_nal_size", "Set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { 0 }, 0, INT_MAX, VE },
-    { "allow_skip_frames", "Allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "profile", "Set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
+    { "max_nal_size", "Set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "allow_skip_frames", "Allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 
