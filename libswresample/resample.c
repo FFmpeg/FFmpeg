@@ -73,7 +73,7 @@ static double bessel(double x){
 static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale,
                         int filter_type, int kaiser_beta){
     int ph, i;
-    double x, y, w;
+    double x, y, w, t;
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
     const int center= (tap_count-1)/2;
 
@@ -100,7 +100,8 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
                 break;}
             case SWR_FILTER_TYPE_BLACKMAN_NUTTALL:
                 w = 2.0*x / (factor*tap_count) + M_PI;
-                y *= 0.3635819 - 0.4891775 * cos(w) + 0.1365995 * cos(2*w) - 0.0106411 * cos(3*w);
+                t = cos(w);
+                y *= 0.3635819 - 0.4891775 * t + 0.1365995 * (2*t*t-1) - 0.0106411 * (4*t*t*t - 3*t);
                 break;
             case SWR_FILTER_TYPE_KAISER:
                 w = 2.0*x / (factor*tap_count*M_PI);
