@@ -834,6 +834,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     }
 
     sps->chroma_format_idc = get_ue_golomb_long(gb);
+    if (sps->chroma_format_idc > 3U) {
+        av_log(avctx, AV_LOG_ERROR, "chroma_format_idc %d is invalid\n", sps->chroma_format_idc);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (sps->chroma_format_idc == 3)
         sps->separate_colour_plane_flag = get_bits1(gb);
