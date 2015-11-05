@@ -568,8 +568,10 @@ static int read_extra_header(FFV1Context *f)
     }
 
     f->quant_table_count = get_symbol(c, state, 0);
-    if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES || !f->quant_table_count)
+    if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES || !f->quant_table_count) {
+        av_log(f->avctx, AV_LOG_ERROR, "quant table count %d is invalid\n", f->quant_table_count);
         return AVERROR_INVALIDDATA;
+    }
 
     for (i = 0; i < f->quant_table_count; i++) {
         f->context_count[i] = read_quant_tables(c, f->quant_tables[i]);
