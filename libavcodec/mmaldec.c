@@ -355,6 +355,10 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
             format_in->encoding = MMAL_ENCODING_MP2V;
             av_log(avctx, AV_LOG_DEBUG, "Use MMAL MP2V encoding\n");
             break;
+        case AV_CODEC_ID_VC1:
+            format_in->encoding = MMAL_ENCODING_WVC1;
+            av_log(avctx, AV_LOG_DEBUG, "Use MMAL WVC1 encoding\n");
+            break;
         case AV_CODEC_ID_H264:
         default:
             format_in->encoding = MMAL_ENCODING_H264;
@@ -783,6 +787,13 @@ AVHWAccel ff_mpeg2_mmal_hwaccel = {
     .pix_fmt    = AV_PIX_FMT_MMAL,
 };
 
+AVHWAccel ff_vc1_mmal_hwaccel = {
+    .name       = "vc1_mmal",
+    .type       = AVMEDIA_TYPE_VIDEO,
+    .id         = AV_CODEC_ID_VC1,
+    .pix_fmt    = AV_PIX_FMT_MMAL,
+};
+
 static const AVOption options[]={
     {"extra_buffers", "extra buffers", offsetof(MMALDecodeContext, extra_buffers), AV_OPT_TYPE_INT, {.i64 = 10}, 0, 256, 0},
     {NULL}
@@ -817,3 +828,4 @@ static const AVOption options[]={
 
 FFMMAL_DEC(h264, AV_CODEC_ID_H264)
 FFMMAL_DEC(mpeg2, AV_CODEC_ID_MPEG2VIDEO)
+FFMMAL_DEC(vc1, AV_CODEC_ID_VC1)
