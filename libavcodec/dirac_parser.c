@@ -123,7 +123,7 @@ static int dirac_combine_frame(AVCodecParserContext *s, AVCodecContext *avctx,
     DiracParseContext *pc = s->priv_data;
 
     if (pc->overread_index) {
-        memcpy(pc->buffer, pc->buffer + pc->overread_index,
+        memmove(pc->buffer, pc->buffer + pc->overread_index,
                pc->index - pc->overread_index);
         pc->index         -= pc->overread_index;
         pc->overread_index = 0;
