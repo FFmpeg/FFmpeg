@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-11-xx - xxxxxxx - lavc 57.9.0 - avcodec.h
+  Add AV_PKT_DATA_FALLBACK_TRACK for making fallback associations between
+  streams.
+
 2015-11-xx - xxxxxxx - lavf 57.1.0 - avformat.h
   Add av_stream_new_side_data().
 

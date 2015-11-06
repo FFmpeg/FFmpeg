@@ -1129,6 +1129,14 @@ enum AVPacketSideDataType {
      * and FF_LAMBDA_MAX (bad).
      */
     AV_PKT_DATA_QUALITY_FACTOR,
+
+    /**
+     * This side data contains an integer value representing the stream index
+     * of a "fallback" track.  A fallback track indicates an alternate
+     * track to use when the current track can not be decoded for some reason.
+     * e.g. no decoder available for codec.
+     */
+    AV_PKT_DATA_FALLBACK_TRACK,
 };
 
 typedef struct AVPacketSideData {
