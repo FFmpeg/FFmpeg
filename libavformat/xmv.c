@@ -552,8 +552,11 @@ static int xmv_read_packet(AVFormatContext *s,
 
         result = xmv_fetch_audio_packet(s, pkt, xmv->current_stream - 1);
     }
-    if (result)
+    if (result) {
+        xmv->current_stream = 0;
+        xmv->video.current_frame = xmv->video.frame_count;
         return result;
+    }
 
 
     /* Increase our counters */
