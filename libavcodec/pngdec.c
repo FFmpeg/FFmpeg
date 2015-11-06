@@ -1016,7 +1016,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
             for (x = s->x_offset; x < s->x_offset + s->cur_w; ++x, foreground += s->bpp, background += s->bpp) {
                 size_t b;
                 uint8_t foreground_alpha, background_alpha, output_alpha;
-                uint8_t output[4];
+                uint8_t output[10];
 
                 // Since we might be blending alpha onto alpha, we use the following equations:
                 // output_alpha = foreground_alpha + (1 - foreground_alpha) * background_alpha
@@ -1055,6 +1055,8 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                 }
 
                 output_alpha = foreground_alpha + FAST_DIV255((255 - foreground_alpha) * background_alpha);
+
+                av_assert0(s->bpp <= 10);
 
                 for (b = 0; b < s->bpp - 1; ++b) {
                     if (output_alpha == 0) {
