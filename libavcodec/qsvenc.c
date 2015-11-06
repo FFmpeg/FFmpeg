@@ -338,7 +338,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     case MFX_RATECONTROL_VBR:
         q->param.mfx.InitialDelayInKB = avctx->rc_initial_buffer_occupancy / 1000;
         q->param.mfx.TargetKbps       = avctx->bit_rate / 1000;
-        q->param.mfx.MaxKbps          = avctx->bit_rate / 1000;
+        q->param.mfx.MaxKbps          = avctx->rc_max_rate / 1000;
         break;
     case MFX_RATECONTROL_CQP:
         quant = avctx->global_quality / FF_QP2LAMBDA;
