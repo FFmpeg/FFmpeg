@@ -164,6 +164,8 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
 
         /* Position */
         case 'P':
+            if (!*s)
+                break;
             tag.persistent = MICRODVD_PERSISTENT_ON;
             tag.data1 = (*s++ == '1');
             if (*s != '}')
