@@ -146,6 +146,83 @@ static int decode_pic_timing(HEVCContext *s)
     return 1;
 }
 
+static int decode_registered_user_data_closed_caption(HEVCContext *s, int size)
+{
+    int flag;
+    int user_data_type_code;
+    int cc_count;
+    int i;
+
+    GetBitContext *gb = &s->HEVClc->gb;
+
+    if (size < 3)
+       return AVERROR(EINVAL);
+
+    user_data_type_code = get_bits(gb, 8);
+    if (user_data_type_code == 0x3) {
+        skip_bits(gb, 1); // reserved
+
+        flag = get_bits(gb, 1); // process_cc_data_flag
+        if (flag) {
+            skip_bits(gb, 1);
+            cc_count = get_bits(gb, 5);
+            skip_bits(gb, 8); // reserved
+            size -= 2;
+
+            if (cc_count && size >= cc_count * 3) {
+                av_freep(&s->a53_caption);
+                s->a53_caption_size = cc_count * 3;
+
+                s->a53_caption = av_malloc(s->a53_caption_size);
+                if (!s->a53_caption)
+                    return(AVERROR(ENOMEM));
+
+                for (i = 0; i < s->a53_caption_size; i++) {
+                    s->a53_caption[i++] = get_bits(gb, 8);
+                }
+                skip_bits(gb, 8); // marker_bits
+            }
+        }
+    } else {
+        for (i = 0; i < size - 1; i++)
+            skip_bits(gb, 8);
+    }
+
+    return 0;
+}
+
+static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCContext *s, int size)
+{
+    uint32_t country_code;
+    uint32_t user_identifier;
+
+    GetBitContext *gb = &s->HEVClc->gb;
+
+    if (size < 7)
+        return AVERROR(EINVAL);
+    size -= 7;
+
+    country_code = get_bits(gb, 8);
+    if (country_code == 0xFF) {
+        skip_bits(gb, 8);
+        size--;
+    }
+
+    skip_bits(gb, 8);
+    skip_bits(gb, 8);
+
+    user_identifier = get_bits_long(gb, 32);
+
+    switch (user_identifier) {
+        case MKBETAG('G', 'A', '9', '4'):
+            return decode_registered_user_data_closed_caption(s, size);
+        default:
+            skip_bits_long(gb, size * 8);
+            break;
+    }
+    return 0;
+}
+
 static int active_parameter_sets(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -198,6 +275,8 @@ static int decode_nal_sei_prefix(HEVCContext *s, int type, int size)
         active_parameter_sets(s);
         av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
         return 0;
+    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
+        return decode_nal_sei_user_data_registered_itu_t_t35(s, size);
     default:
         av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
         skip_bits_long(gb, 8 * size);
