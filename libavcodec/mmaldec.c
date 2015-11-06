@@ -160,6 +160,9 @@ static void ffmmal_stop_decoder(AVCodecContext *avctx)
 
         ctx->waiting_buffers = buffer->next;
 
+        if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_FRAME_END)
+            avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, -1);
+
         av_buffer_unref(&buffer->ref);
         av_free(buffer);
     }
