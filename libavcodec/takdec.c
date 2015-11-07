@@ -656,7 +656,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
                 *p1++ = v;
             }
 
-            memcpy(s->residues, &s->residues[tmp], 2 * filter_order);
+            memmove(s->residues, &s->residues[tmp], 2 * filter_order);
         }
 
         emms_c();
