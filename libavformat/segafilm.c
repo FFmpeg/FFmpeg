@@ -241,11 +241,12 @@ static int film_read_header(AVFormatContext *s)
             film->sample_table[i].pts = AV_RB32(&scratch[8]) & 0x7FFFFFFF;
             film->sample_table[i].keyframe = (scratch[8] & 0x80) ? 0 : 1;
             video_frame_counter++;
-            av_add_index_entry(s->streams[film->video_stream_index],
-                               film->sample_table[i].sample_offset,
-                               film->sample_table[i].pts,
-                               film->sample_table[i].sample_size, 0,
-                               film->sample_table[i].keyframe);
+            if (film->video_type)
+                av_add_index_entry(s->streams[film->video_stream_index],
+                                   film->sample_table[i].sample_offset,
+                                   film->sample_table[i].pts,
+                                   film->sample_table[i].sample_size, 0,
+                                   film->sample_table[i].keyframe);
         }
     }
 
