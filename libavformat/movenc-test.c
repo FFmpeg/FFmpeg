@@ -538,6 +538,40 @@ int main(int argc, char **argv)
     finish();
 
 
+    // Test discontinously written fragments with b-frames (where the
+    // assumption of starting at pts=0 works) but not with audio preroll
+    // (which can't be guessed).
+    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash", 0);
+    init(1, 0);
+    mux_gops(1);
+    init_out("delay-moov-elst-init");
+    av_write_frame(ctx, NULL); // Output the moov
+    close_out();
+    memcpy(header, hash, HASH_SIZE);
+    av_write_frame(ctx, NULL); // Output the first fragment
+    init_out("delay-moov-elst-second-frag");
+    mux_gops(1);
+    av_write_frame(ctx, NULL); // Output the second fragment
+    close_out();
+    memcpy(content, hash, HASH_SIZE);
+    finish();
+
+    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash+frag_discont", 0);
+    av_dict_set(&opts, "fragment_index", "2", 0);
+    init(1, 0);
+    skip_gops(1);
+    mux_gops(1); // Write the second fragment
+    init_out("delay-moov-elst-init-discont");
+    av_write_frame(ctx, NULL); // Output the moov
+    close_out();
+    check(!memcmp(hash, header, HASH_SIZE), "discontinuously written header differs");
+    init_out("delay-moov-elst-second-frag-discont");
+    av_write_frame(ctx, NULL); // Output the second fragment
+    close_out();
+    check(!memcmp(hash, content, HASH_SIZE), "discontinuously written fragment differs");
+    finish();
+
+
     // Test VFR content, with sidx atoms (which declare the pts duration
     // of a fragment, forcing overriding the start pts of the next one).
     // Here, the fragment duration in pts is significantly different from
