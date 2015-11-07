@@ -220,7 +220,7 @@ select Kaiser windowed sinc
 @end table
 
 @item kaiser_beta
-For swr only, set Kaiser window beta value. Must be an integer in the
+For swr only, set Kaiser window beta value. Must be a double float value in the
 interval [2,16], default value is 9.
 
 @item output_sample_bits

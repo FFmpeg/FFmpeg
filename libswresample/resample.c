@@ -71,7 +71,7 @@ static double bessel(double x){
  * @return 0 on success, negative on error
  */
 static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale,
-                        int filter_type, int kaiser_beta){
+                        int filter_type, double kaiser_beta){
     int ph, i;
     double x, y, w, t;
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
@@ -212,7 +212,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
 }
 
 static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
-                                    double cutoff0, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta,
+                                    double cutoff0, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta,
                                     double precision, int cheby)
 {
     double cutoff = cutoff0? cutoff0 : 0.97;

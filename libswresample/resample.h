@@ -44,7 +44,7 @@ typedef struct ResampleContext {
     int phase_mask;
     int linear;
     enum SwrFilterType filter_type;
-    int kaiser_beta;
+    double kaiser_beta;
     double factor;
     enum AVSampleFormat format;
     int felem_size;
