@@ -940,7 +940,7 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
             LOCAL_ALIGNED_16(INTFLOAT, h_step, [2], [4]);
             int start = ps->border_position[e];
             int stop  = ps->border_position[e+1];
-            INTFLOAT width = Q30(1.f) / (stop - start);
+            INTFLOAT width = Q30(1.f) / ((stop - start) ? (stop - start) : 1);
 #if USE_FIXED
             width <<= 1;
 #endif
