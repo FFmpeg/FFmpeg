@@ -3157,6 +3157,46 @@ ffplay -f lavfi flite=text='No more be grieved for which that thou hast done.'
 For more information about libflite, check:
 @url{http://www.speech.cs.cmu.edu/flite/}
 
+@section anoisesrc
+
+Generate a noise audio signal.
+
+The filter accepts the following options:
+
+@table @option
+@item sample_rate, r
+Specify the sample rate. Default value is 48000 Hz.
+
+@item amplitude, a
+Specify the amplitude (0.0 - 1.0) of the generated audio stream. Default value
+is 1.0.
+
+@item duration, d
+Specify the duration of the generated audio stream. Not specifying this option
+results in noise with an infinite length.
+
+@item color, colour, c
+Specify the color of noise. Available noise colors are white, pink, and brown.
+Default color is white.
+
+@item seed, s
+Specify a value used to seed the PRNG.
+
+@item nb_samples, n
+Set the number of samples per each output frame, default is 1024.
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Generate 60 seconds of pink noise, with a 44.1 kHz sampling rate and an amplitude of 0.5:
+@example
+anoisesrc=d=60:c=pink:r=44100:a=0.5
+@end example
+@end itemize
+
 @section sine
 
 Generate an audio signal made of a sine wave with amplitude 1/8.
