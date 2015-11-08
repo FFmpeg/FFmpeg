@@ -718,8 +718,8 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
     }
 
     for (i = 1; i <= ch_data->bs_num_env; i++) {
-        if (ch_data->t_env[i-1] > ch_data->t_env[i]) {
-            av_log(ac->avctx, AV_LOG_ERROR, "Non monotone time borders\n");
+        if (ch_data->t_env[i-1] >= ch_data->t_env[i]) {
+            av_log(ac->avctx, AV_LOG_ERROR, "Not strictly monotone time borders\n");
             return -1;
         }
     }
