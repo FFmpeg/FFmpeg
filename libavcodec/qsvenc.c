@@ -266,10 +266,93 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
     }
 }
 
+static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
+{
+    const char *rc_desc;
+    mfxU16      rc_mode;
+
+    int want_la     = q->la_depth >= 0;
+    int want_qscale = !!(avctx->flags & AV_CODEC_FLAG_QSCALE);
+    int want_vcm    = q->vcm;
+
+    if (want_la && !QSV_HAVE_LA) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Lookahead ratecontrol mode requested, but is not supported by this SDK version\n");
+        return AVERROR(ENOSYS);
+    }
+    if (want_vcm && !QSV_HAVE_VCM) {
+        av_log(avctx, AV_LOG_ERROR,
+               "VCM ratecontrol mode requested, but is not supported by this SDK version\n");
+        return AVERROR(ENOSYS);
+    }
+
+    if (want_la + want_qscale + want_vcm > 1) {
+        av_log(avctx, AV_LOG_ERROR,
+               "More than one of: { constant qscale, lookahead, VCM } requested, "
+               "only one of them can be used at a time.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (want_qscale) {
+        rc_mode = MFX_RATECONTROL_CQP;
+        rc_desc = "constant quantization parameter (CQP)";
+    }
+#if QSV_HAVE_VCM
+    else if (want_vcm) {
+        rc_mode = MFX_RATECONTROL_VCM;
+        rc_desc = "video conferencing mode (VCM)";
+    }
+#endif
+#if QSV_HAVE_LA
+    else if (want_la) {
+        rc_mode = MFX_RATECONTROL_LA;
+        rc_desc = "VBR with lookahead (LA)";
+
+#if QSV_HAVE_ICQ
+        if (avctx->global_quality > 0) {
+            rc_mode = MFX_RATECONTROL_LA_ICQ;
+            rc_desc = "intelligent constant quality with lookahead (LA_ICQ)";
+        }
+#endif
+    }
+#endif
+#if QSV_HAVE_ICQ
+    else if (avctx->global_quality > 0) {
+        rc_mode = MFX_RATECONTROL_ICQ;
+        rc_desc = "intelligent constant quality (ICQ)";
+    }
+#endif
+    else if (avctx->rc_max_rate == avctx->bit_rate) {
+        rc_mode = MFX_RATECONTROL_CBR;
+        rc_desc = "constant bitrate (CBR)";
+    } else if (!avctx->rc_max_rate) {
+        rc_mode = MFX_RATECONTROL_AVBR;
+        rc_desc = "average variable bitrate (AVBR)";
+    } else {
+        rc_mode = MFX_RATECONTROL_VBR;
+        rc_desc = "variable bitrate (VBR)";
+    }
+
+    q->param.mfx.RateControlMethod = rc_mode;
+    av_log(avctx, AV_LOG_VERBOSE, "Using the %s ratecontrol method\n", rc_desc);
+
+    return 0;
+}
+
+static int rc_supported(QSVEncContext *q)
+{
+    mfxVideoParam param_out = { .mfx.CodecId = q->param.mfx.CodecId };
+    mfxStatus ret;
+
+    ret = MFXVideoENCODE_Query(q->session, &q->param, &param_out);
+    if (ret < 0 ||
+        param_out.mfx.RateControlMethod != q->param.mfx.RateControlMethod)
+        return 0;
+    return 1;
+}
+
 static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 {
-    const char *ratecontrol_desc;
-
     float quant;
     int ret;
 
@@ -317,25 +400,16 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.FrameInfo.FrameRateExtD  = avctx->time_base.num;
     }
 
-    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
-        q->param.mfx.RateControlMethod = MFX_RATECONTROL_CQP;
-        ratecontrol_desc = "constant quantization parameter (CQP)";
-    } else if (avctx->rc_max_rate == avctx->bit_rate) {
-        q->param.mfx.RateControlMethod = MFX_RATECONTROL_CBR;
-        ratecontrol_desc = "constant bitrate (CBR)";
-    } else if (!avctx->rc_max_rate) {
-        q->param.mfx.RateControlMethod = MFX_RATECONTROL_AVBR;
-        ratecontrol_desc = "average variable bitrate (AVBR)";
-    } else {
-        q->param.mfx.RateControlMethod = MFX_RATECONTROL_VBR;
-        ratecontrol_desc = "variable bitrate (VBR)";
-    }
-
-    av_log(avctx, AV_LOG_VERBOSE, "Using the %s ratecontrol method\n", ratecontrol_desc);
+    ret = select_rc_mode(avctx, q);
+    if (ret < 0)
+        return ret;
 
     switch (q->param.mfx.RateControlMethod) {
     case MFX_RATECONTROL_CBR:
     case MFX_RATECONTROL_VBR:
+#if QSV_HAVE_VCM
+    case MFX_RATECONTROL_VCM:
+#endif
         q->param.mfx.InitialDelayInKB = avctx->rc_initial_buffer_occupancy / 1000;
         q->param.mfx.TargetKbps       = avctx->bit_rate / 1000;
         q->param.mfx.MaxKbps          = avctx->rc_max_rate / 1000;
@@ -353,6 +427,19 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.Convergence = q->avbr_convergence;
         q->param.mfx.Accuracy    = q->avbr_accuracy;
         break;
+#if QSV_HAVE_LA
+    case MFX_RATECONTROL_LA:
+        q->param.mfx.TargetKbps  = avctx->bit_rate / 1000;
+        q->extco2.LookAheadDepth = q->la_depth;
+        break;
+#if QSV_HAVE_ICQ
+    case MFX_RATECONTROL_LA_ICQ:
+        q->extco2.LookAheadDepth = q->la_depth;
+    case MFX_RATECONTROL_ICQ:
+        q->param.mfx.ICQQuality  = avctx->global_quality;
+        break;
+#endif
+#endif
     }
 
     // the HEVC encoder plugin currently fails if coding options
@@ -364,6 +451,21 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
 
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco;
+
+#if QSV_HAVE_CO2
+        if (avctx->codec_id == AV_CODEC_ID_H264) {
+            q->extco2.Header.BufferId     = MFX_EXTBUFF_CODING_OPTION2;
+            q->extco2.Header.BufferSz     = sizeof(q->extco2);
+            q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
+        }
+#endif
+    }
+
+    if (!rc_supported(q)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Selected ratecontrol mode is not supported by the QSV "
+               "runtime. Choose a different mode.\n");
+        return AVERROR(ENOSYS);
     }
 
     return 0;

@@ -53,6 +53,8 @@
 { "fast",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_SPEED  },   INT_MIN, INT_MAX, VE, "preset" },                             \
 { "medium", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BALANCED  },     INT_MIN, INT_MAX, VE, "preset" },                             \
 { "slow",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },                             \
+{ "la_depth", "Number of frames to analyze before encoding.", OFFSET(qsv.la_depth), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT16_MAX, VE },        \
+{ "vcm",      "Use the video conferencing mode ratecontrol",  OFFSET(qsv.vcm),      AV_OPT_TYPE_INT, { .i64 = 0  },  0, 1,         VE },        \
 
 typedef struct QSVEncContext {
     AVCodecContext *avctx;
@@ -69,12 +71,15 @@ typedef struct QSVEncContext {
     mfxFrameAllocRequest req;
 
     mfxExtCodingOption  extco;
+#if QSV_HAVE_CO2
+    mfxExtCodingOption2 extco2;
+#endif
 
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
 
-    mfxExtBuffer  *extparam_internal[2];
+    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
@@ -88,6 +93,8 @@ typedef struct QSVEncContext {
     int preset;
     int avbr_accuracy;
     int avbr_convergence;
+    int la_depth;
+    int vcm;
 
     char *load_plugins;
 } QSVEncContext;
