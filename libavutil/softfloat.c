@@ -119,6 +119,15 @@ int main(void){
                 printf("av_cmp_sf failed at %d %d as %X\n", i, j, c);
             }
         }
+        sf1 = av_int2sf(1, i);
+        for(j = 0; j < 100; j++) {
+            int c;
+            sf2 = av_int2sf(1, j);
+            c = av_cmp_sf(sf2, sf1);
+            if (FFDIFFSIGN(i,j) != c && (FFDIFFSIGN(i,j)^c) < 0) {
+                printf("av_cmp_sf failed2 at %d %d as %X\n", i, j, c);
+            }
+        }
     }
 
 
