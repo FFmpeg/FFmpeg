@@ -109,6 +109,19 @@ int main(void){
     sf1 = av_div_sf(sf1, sf2);
     printf("test6 softfloat: %.10lf (0x%08x %d) %d %d\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp, i, j);
 
+    for(i= 0; i<100; i++) {
+        sf1= av_int2sf(i, 0);
+        for(j= 0; j<100; j++) {
+            int c;
+            sf2= av_int2sf(j, 0);
+            c = av_cmp_sf(sf1, sf2);
+            if (FFDIFFSIGN(i,j) != c && (FFDIFFSIGN(i,j)^c)<0) {
+                printf("av_cmp_sf failed at %d %d as %X\n", i, j, c);
+            }
+        }
+    }
+
+
     for(i= 0; i<4*36; i++){
         int s, c;
         double errs, errc;
