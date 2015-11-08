@@ -98,6 +98,15 @@ static void parse_avid(MJpegDecodeContext *s, uint8_t *buf, int len)
         av_log(s->avctx, AV_LOG_INFO, "AVID: len:%d %d\n", len, len > 14 ? buf[12] : -1);
 }
 
+static void init_idct(AVCodecContext *avctx)
+{
+    MJpegDecodeContext *s = avctx->priv_data;
+
+    ff_idctdsp_init(&s->idsp, avctx);
+    ff_init_scantable(s->idsp.idct_permutation, &s->scantable,
+                      ff_zigzag_direct);
+}
+
 av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
@@ -112,9 +121,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     ff_blockdsp_init(&s->bdsp, avctx);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
-    ff_idctdsp_init(&s->idsp, avctx);
-    ff_init_scantable(s->idsp.idct_permutation, &s->scantable,
-                      ff_zigzag_direct);
+    init_idct(avctx);
     s->buffer_size   = 0;
     s->buffer        = NULL;
     s->start_code    = -1;
@@ -267,7 +274,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     /* XXX: verify len field validity */
     len     = get_bits(&s->gb, 16);
-    s->avctx->bits_per_raw_sample =
     bits    = get_bits(&s->gb, 8);
 
     if (bits > 16 || bits < 1) {
@@ -275,6 +281,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->avctx->bits_per_raw_sample != bits) {
+        av_log(s->avctx, AV_LOG_INFO, "Changeing bps to %d\n", bits);
+        s->avctx->bits_per_raw_sample = bits;
+        init_idct(s->avctx);
+    }
     if (s->pegasus_rct)
         bits = 9;
     if (bits == 9 && !s->pegasus_rct)
@@ -1093,7 +1104,10 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                         dc = mjpeg_decode_dc(s, s->dc_index[i]);
                         if(dc == 0xFFFFF)
                             return -1;
-                        if(bits<=8){
+                        if (   h * mb_x + x >= s->width
+                            || v * mb_y + y >= s->height) {
+                            // Nothing to do
+                        } else if (bits<=8) {
                         ptr = s->picture_ptr->data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                         if(y==0 && toprow){
                             if(x==0 && leftcol){
@@ -1161,7 +1175,10 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                         dc = mjpeg_decode_dc(s, s->dc_index[i]);
                         if(dc == 0xFFFFF)
                             return -1;
-                        if(bits<=8){
+                        if (   h * mb_x + x >= s->width
+                            || v * mb_y + y >= s->height) {
+                            // Nothing to do
+                        } else if (bits<=8) {
                             ptr = s->picture_ptr->data[c] +
                               (linesize * (v * mb_y + y)) +
                               (h * mb_x + x); //FIXME optimize this crap

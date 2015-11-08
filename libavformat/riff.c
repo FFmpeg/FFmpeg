@@ -424,6 +424,8 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_WMAV2,           0x0161 },
     { AV_CODEC_ID_WMAPRO,          0x0162 },
     { AV_CODEC_ID_WMALOSSLESS,     0x0163 },
+    { AV_CODEC_ID_XMA1,            0x0165 },
+    { AV_CODEC_ID_XMA2,            0x0166 },
     { AV_CODEC_ID_ADPCM_CT,        0x0200 },
     { AV_CODEC_ID_ATRAC3,          0x0270 },
     { AV_CODEC_ID_ADPCM_G722,      0x028F },

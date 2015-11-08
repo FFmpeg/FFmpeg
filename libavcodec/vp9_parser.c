@@ -132,7 +132,7 @@ static int parse(AVCodecParserContext *ctx,
                     size -= sz; \
                 } \
                 parse_frame(ctx, *out_data, *out_size); \
-                return *out_size
+                return s->n_frames > 0 ? *out_size : full_size
 
                 case_n(1, *idx);
                 case_n(2, AV_RL16(idx));

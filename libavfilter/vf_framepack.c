@@ -268,25 +268,26 @@ static av_always_inline void spatial_frame_pack(AVFilterLink *outlink,
     }
 }
 
+static int try_push_frame(AVFilterContext *ctx);
+
 static int filter_frame_left(AVFilterLink *inlink, AVFrame *frame)
 {
     FramepackContext *s = inlink->dst->priv;
     s->input_views[LEFT] = frame;
-    return 0;
+    return try_push_frame(inlink->dst);
 }
 
 static int filter_frame_right(AVFilterLink *inlink, AVFrame *frame)
 {
     FramepackContext *s = inlink->dst->priv;
     s->input_views[RIGHT] = frame;
-    return 0;
+    return try_push_frame(inlink->dst);
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     FramepackContext *s = ctx->priv;
-    AVStereo3D *stereo;
     int ret, i;
 
     /* get a frame on the either input, stop as soon as a video ends */
@@ -297,7 +298,18 @@ static int request_frame(AVFilterLink *outlink)
                 return ret;
         }
     }
+    return 0;
+}
 
+static int try_push_frame(AVFilterContext *ctx)
+{
+    FramepackContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVStereo3D *stereo;
+    int ret, i;
+
+    if (!(s->input_views[0] && s->input_views[1]))
+        return 0;
     if (s->format == AV_STEREO3D_FRAMESEQUENCE) {
         if (s->double_pts == AV_NOPTS_VALUE)
             s->double_pts = s->input_views[LEFT]->pts;

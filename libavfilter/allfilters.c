@@ -61,6 +61,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(APAD,           apad,           af);
     REGISTER_FILTER(APERMS,         aperms,         af);
     REGISTER_FILTER(APHASER,        aphaser,        af);
+    REGISTER_FILTER(AREALTIME,      arealtime,      af);
     REGISTER_FILTER(ARESAMPLE,      aresample,      af);
     REGISTER_FILTER(AREVERSE,       areverse,       af);
     REGISTER_FILTER(ASELECT,        aselect,        af);
@@ -72,7 +73,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ASHOWINFO,      ashowinfo,      af);
     REGISTER_FILTER(ASPLIT,         asplit,         af);
     REGISTER_FILTER(ASTATS,         astats,         af);
-    REGISTER_FILTER(ASTREAMSYNC,    astreamsync,    af);
     REGISTER_FILTER(ASYNCTS,        asyncts,        af);
     REGISTER_FILTER(ATEMPO,         atempo,         af);
     REGISTER_FILTER(ATRIM,          atrim,          af);
@@ -218,6 +218,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(PULLUP,         pullup,         vf);
     REGISTER_FILTER(QP,             qp,             vf);
     REGISTER_FILTER(RANDOM,         random,         vf);
+    REGISTER_FILTER(REALTIME,       realtime,       vf);
     REGISTER_FILTER(REMOVEGRAIN,    removegrain,    vf);
     REGISTER_FILTER(REMOVELOGO,     removelogo,     vf);
     REGISTER_FILTER(REPEATFIELDS,   repeatfields,   vf);
@@ -285,6 +286,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(SMPTEBARS,      smptebars,      vsrc);
     REGISTER_FILTER(SMPTEHDBARS,    smptehdbars,    vsrc);
     REGISTER_FILTER(TESTSRC,        testsrc,        vsrc);
+    REGISTER_FILTER(TESTSRC2,       testsrc2,       vsrc);
 
     REGISTER_FILTER(NULLSINK,       nullsink,       vsink);
 

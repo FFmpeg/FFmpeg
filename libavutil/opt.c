@@ -26,6 +26,7 @@
  */
 
 #include "avutil.h"
+#include "avassert.h"
 #include "avstring.h"
 #include "channel_layout.h"
 #include "common.h"
@@ -639,6 +640,41 @@ int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, in
     return 0;
 }
 
+static void format_duration(char *buf, size_t size, int64_t d)
+{
+    char *e;
+
+    av_assert0(size >= 25);
+    if (d < 0 && d != INT64_MIN) {
+        *(buf++) = '-';
+        size--;
+        d = -d;
+    }
+    if (d == INT64_MAX)
+        snprintf(buf, size, "INT64_MAX");
+    else if (d == INT64_MIN)
+        snprintf(buf, size, "INT64_MIN");
+    else if (d > (int64_t)3600*1000000)
+        snprintf(buf, size, "%"PRId64":%02d:%02d.%06d", d / 3600000000,
+                 (int)((d / 60000000) % 60),
+                 (int)((d / 1000000) % 60),
+                 (int)(d % 1000000));
+    else if (d > 60*1000000)
+        snprintf(buf, size, "%d:%02d.%06d",
+                 (int)(d / 60000000),
+                 (int)((d / 1000000) % 60),
+                 (int)(d % 1000000));
+    else
+        snprintf(buf, size, "%d.%06d",
+                 (int)(d / 1000000),
+                 (int)(d % 1000000));
+    e = buf + strlen(buf);
+    while (e > buf && e[-1] == '0')
+        *(--e) = 0;
+    if (e > buf && e[-1] == '.')
+        *(--e) = 0;
+}
+
 int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
 {
     void *dst, *target_obj;
@@ -704,9 +740,8 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         break;
     case AV_OPT_TYPE_DURATION:
         i64 = *(int64_t *)dst;
-        ret = snprintf(buf, sizeof(buf), "%"PRIi64":%02d:%02d.%06d",
-                       i64 / 3600000000, (int)((i64 / 60000000) % 60),
-                       (int)((i64 / 1000000) % 60), (int)(i64 % 1000000));
+        format_duration(buf, sizeof(buf), i64);
+        ret = strlen(buf); // no overflow possible, checked by an assert
         break;
     case AV_OPT_TYPE_COLOR:
         ret = snprintf(buf, sizeof(buf), "0x%02x%02x%02x%02x",
@@ -1097,9 +1132,12 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 }
                 break;
             }
-            case AV_OPT_TYPE_DURATION:
-                log_value(av_log_obj, AV_LOG_INFO, opt->default_val.i64);
+            case AV_OPT_TYPE_DURATION: {
+                char buf[25];
+                format_duration(buf, sizeof(buf), opt->default_val.i64);
+                av_log(av_log_obj, AV_LOG_INFO, "%s", buf);
                 break;
+            }
             case AV_OPT_TYPE_INT:
             case AV_OPT_TYPE_INT64: {
                 const char *def_const = get_opt_const_name(obj, opt->unit, opt->default_val.i64);

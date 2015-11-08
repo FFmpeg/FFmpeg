@@ -139,8 +139,7 @@ static int request_frame(AVFilterLink *link)
     int nb_samples;
 
     s->got_output = 0;
-    while (ret >= 0 && !s->got_output)
-        ret = ff_request_frame(ctx->inputs[0]);
+    ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
     if (ret == AVERROR_EOF) {

@@ -201,7 +201,8 @@ static int return_audio_frame(AVFilterContext *ctx)
                     break;
                 } else if (ret < 0)
                     return ret;
-                av_assert0(s->root.next); // If ff_request_frame() succeeded then we should have a frame
+                if (!s->root.next)
+                    return 0;
             }
             head = s->root.next->frame;
 
@@ -237,7 +238,8 @@ static int request_frame(AVFilterLink *outlink)
                 return return_audio_frame(outlink->src);
             return ret;
         }
-        av_assert0(fifo->root.next);
+        if (!fifo->root.next)
+            return 0;
     }
 
     if (outlink->request_samples) {

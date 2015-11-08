@@ -534,6 +534,7 @@ OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1_block.o vc1_loopfilter.o 
                                           vc1dsp.o \
                                           msmpeg4dec.o msmpeg4.o msmpeg4data.o \
                                           wmv2dsp.o
+OBJS-$(CONFIG_VC1_MMAL_DECODER)        += mmaldec.o
 OBJS-$(CONFIG_VC1_QSV_DECODER)         += qsvdec_vc1.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdaudio.o
@@ -586,6 +587,8 @@ OBJS-$(CONFIG_XBM_ENCODER)             += xbmenc.o
 OBJS-$(CONFIG_XFACE_DECODER)           += xfacedec.o xface.o
 OBJS-$(CONFIG_XFACE_ENCODER)           += xfaceenc.o xface.o
 OBJS-$(CONFIG_XL_DECODER)              += xl.o
+OBJS-$(CONFIG_XMA1_DECODER)            += wmaprodec.o wma.o wma_common.o
+OBJS-$(CONFIG_XMA2_DECODER)            += wmaprodec.o wma.o wma_common.o
 OBJS-$(CONFIG_XSUB_DECODER)            += xsubdec.o
 OBJS-$(CONFIG_XSUB_ENCODER)            += xsubenc.o
 OBJS-$(CONFIG_XWD_DECODER)             += xwddec.o

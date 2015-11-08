@@ -76,6 +76,9 @@ static const struct {
     #if CONFIG_JPEG2000_DECODER
         { "jpeg2000dsp", checkasm_check_jpeg2000dsp },
     #endif
+    #if CONFIG_PIXBLOCKDSP
+        { "pixblockdsp", checkasm_check_pixblockdsp },
+    #endif
     #if CONFIG_V210_ENCODER
         { "v210enc", checkasm_check_v210enc },
     #endif

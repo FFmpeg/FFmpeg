@@ -227,6 +227,10 @@ typedef struct MpegTSWriteStream {
     uint8_t *payload;
     AVFormatContext *amux;
     AVRational user_tb;
+
+    /* For Opus */
+    int opus_queued_samples;
+    int opus_pending_trim_start;
 } MpegTSWriteStream;
 
 static void mpegts_write_pat(AVFormatContext *s)
@@ -314,6 +318,9 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AV_CODEC_ID_TRUEHD:
             stream_type = STREAM_TYPE_AUDIO_TRUEHD;
             break;
+        case AV_CODEC_ID_OPUS:
+            stream_type = STREAM_TYPE_PRIVATE_DATA;
+            break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
             break;
@@ -339,6 +346,82 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 'S';
                 *q++ = 'S';
                 *q++ = 'D';
+            }
+            if (st->codec->codec_id==AV_CODEC_ID_OPUS) {
+                /* 6 bytes registration descriptor, 4 bytes Opus audio descriptor */
+                if (q - data > SECTION_LENGTH - 6 - 4) {
+                    err = 1;
+                    break;
+                }
+
+                *q++ = 0x05; /* MPEG-2 registration descriptor*/
+                *q++ = 4;
+                *q++ = 'O';
+                *q++ = 'p';
+                *q++ = 'u';
+                *q++ = 's';
+
+                *q++ = 0x7f; /* DVB extension descriptor */
+                *q++ = 2;
+                *q++ = 0x80;
+
+                if (st->codec->extradata && st->codec->extradata_size >= 19) {
+                    if (st->codec->extradata[18] == 0 && st->codec->channels <= 2) {
+                        /* RTP mapping family */
+                        *q++ = st->codec->channels;
+                    } else if (st->codec->extradata[18] == 1 && st->codec->channels <= 8 &&
+                               st->codec->extradata_size >= 21 + st->codec->channels) {
+                        static const uint8_t coupled_stream_counts[9] = {
+                            1, 0, 1, 1, 2, 2, 2, 3, 3
+                        };
+                        static const uint8_t channel_map_a[8][8] = {
+                            {0},
+                            {0, 1},
+                            {0, 2, 1},
+                            {0, 1, 2, 3},
+                            {0, 4, 1, 2, 3},
+                            {0, 4, 1, 2, 3, 5},
+                            {0, 4, 1, 2, 3, 5, 6},
+                            {0, 6, 1, 2, 3, 4, 5, 7},
+                        };
+                        static const uint8_t channel_map_b[8][8] = {
+                            {0},
+                            {0, 1},
+                            {0, 1, 2},
+                            {0, 1, 2, 3},
+                            {0, 1, 2, 3, 4},
+                            {0, 1, 2, 3, 4, 5},
+                            {0, 1, 2, 3, 4, 5, 6},
+                            {0, 1, 2, 3, 4, 5, 6, 7},
+                        };
+                        /* Vorbis mapping family */
+
+                        if (st->codec->extradata[19] == st->codec->channels - coupled_stream_counts[st->codec->channels] &&
+                            st->codec->extradata[20] == coupled_stream_counts[st->codec->channels] &&
+                            memcmp(&st->codec->extradata[21], channel_map_a[st->codec->channels], st->codec->channels) == 0) {
+                            *q++ = st->codec->channels;
+                        } else if (st->codec->channels >= 2 && st->codec->extradata[19] == st->codec->channels &&
+                                   st->codec->extradata[20] == 0 &&
+                                   memcmp(&st->codec->extradata[21], channel_map_b[st->codec->channels], st->codec->channels) == 0) {
+                            *q++ = st->codec->channels | 0x80;
+                        } else {
+                            /* Unsupported, could write an extended descriptor here */
+                            av_log(s, AV_LOG_ERROR, "Unsupported Opus Vorbis-style channel mapping");
+                            *q++ = 0xff;
+                        }
+                    } else {
+                        /* Unsupported */
+                        av_log(s, AV_LOG_ERROR, "Unsupported Opus channel mapping for family %d", st->codec->extradata[18]);
+                        *q++ = 0xff;
+                    }
+                } else if (st->codec->channels <= 2) {
+                    /* Assume RTP mapping family */
+                    *q++ = st->codec->channels;
+                } else {
+                    /* Unsupported */
+                    av_log(s, AV_LOG_ERROR, "Unsupported Opus channel mapping");
+                    *q++ = 0xff;
+                }
             }
 
             if (lang) {
@@ -742,6 +825,9 @@ static int mpegts_write_header(AVFormatContext *s)
             ret = avformat_write_header(ts_st->amux, NULL);
             if (ret < 0)
                 goto fail;
+        }
+        if (st->codec->codec_id == AV_CODEC_ID_OPUS) {
+            ts_st->opus_pending_trim_start = st->codec->initial_padding * 48000 / st->codec->sample_rate;
         }
     }
 
@@ -1261,6 +1347,58 @@ static int check_hevc_startcode(AVFormatContext *s, const AVStream *st, const AV
     return 0;
 }
 
+/* Based on GStreamer's gst-plugins-base/ext/ogg/gstoggstream.c
+ * Released under the LGPL v2.1+, written by
+ * Vincent Penquerc'h <vincent.penquerch@collabora.co.uk>
+ */
+static int opus_get_packet_samples(AVFormatContext *s, AVPacket *pkt)
+{
+    static const int durations[32] = {
+      480, 960, 1920, 2880,       /* Silk NB */
+      480, 960, 1920, 2880,       /* Silk MB */
+      480, 960, 1920, 2880,       /* Silk WB */
+      480, 960,                   /* Hybrid SWB */
+      480, 960,                   /* Hybrid FB */
+      120, 240, 480, 960,         /* CELT NB */
+      120, 240, 480, 960,         /* CELT NB */
+      120, 240, 480, 960,         /* CELT NB */
+      120, 240, 480, 960,         /* CELT NB */
+    };
+    int toc, frame_duration, nframes, duration;
+
+    if (pkt->size < 1)
+        return 0;
+
+    toc = pkt->data[0];
+
+    frame_duration = durations[toc >> 3];
+    switch (toc & 3) {
+    case 0:
+        nframes = 1;
+        break;
+    case 1:
+        nframes = 2;
+        break;
+    case 2:
+        nframes = 2;
+        break;
+    case 3:
+        if (pkt->size < 2)
+            return 0;
+        nframes = pkt->data[1] & 63;
+        break;
+    }
+
+    duration = nframes * frame_duration;
+    if (duration > 5760) {
+        av_log(s, AV_LOG_WARNING,
+               "Opus packet duration > 120 ms, invalid");
+        return 0;
+    }
+
+    return duration;
+}
+
 static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
@@ -1271,6 +1409,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     MpegTSWriteStream *ts_st = st->priv_data;
     const int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE) * 2;
     int64_t dts = pkt->dts, pts = pkt->pts;
+    int opus_samples = 0;
 
     if (ts->reemit_pat_pmt) {
         av_log(s, AV_LOG_WARNING,
@@ -1370,6 +1509,77 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         int ret = check_hevc_startcode(s, st, pkt);
         if (ret < 0)
             return ret;
+    } else if (st->codec->codec_id == AV_CODEC_ID_OPUS) {
+        if (pkt->size < 2) {
+            av_log(s, AV_LOG_ERROR, "Opus packet too short\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        /* Add Opus control header */
+        if ((AV_RB16(pkt->data) >> 5) != 0x3ff) {
+            uint8_t *side_data;
+            int side_data_size;
+            int i, n;
+            int ctrl_header_size;
+            int trim_start = 0, trim_end = 0;
+
+            opus_samples = opus_get_packet_samples(s, pkt);
+
+            side_data = av_packet_get_side_data(pkt,
+                                                AV_PKT_DATA_SKIP_SAMPLES,
+                                                &side_data_size);
+
+            if (side_data && side_data_size >= 10) {
+                trim_end = AV_RL32(side_data + 4) * 48000 / st->codec->sample_rate;
+            }
+
+            ctrl_header_size = pkt->size + 2 + pkt->size / 255 + 1;
+            if (ts_st->opus_pending_trim_start)
+              ctrl_header_size += 2;
+            if (trim_end)
+              ctrl_header_size += 2;
+
+            data = av_malloc(ctrl_header_size);
+            if (!data)
+                return AVERROR(ENOMEM);
+
+            data[0] = 0x7f;
+            data[1] = 0xe0;
+            if (ts_st->opus_pending_trim_start)
+                data[1] |= 0x10;
+            if (trim_end)
+                data[1] |= 0x08;
+
+            n = pkt->size;
+            i = 2;
+            do {
+                data[i] = FFMIN(n, 255);
+                n -= 255;
+                i++;
+            } while (n >= 0);
+
+            av_assert0(2 + pkt->size / 255 + 1 == i);
+
+            if (ts_st->opus_pending_trim_start) {
+                trim_start = FFMIN(ts_st->opus_pending_trim_start, opus_samples);
+                AV_WB16(data + i, trim_start);
+                i += 2;
+                ts_st->opus_pending_trim_start -= trim_start;
+            }
+            if (trim_end) {
+                trim_end = FFMIN(trim_end, opus_samples - trim_start);
+                AV_WB16(data + i, trim_end);
+                i += 2;
+            }
+
+            memcpy(data + i, pkt->data, pkt->size);
+            buf     = data;
+            size    = ctrl_header_size;
+        } else {
+            /* TODO: Can we get TS formatted data here? If so we will
+             * need to count the samples of that too! */
+            av_log(s, AV_LOG_WARNING, "Got MPEG-TS formatted Opus data, unhandled");
+        }
     }
 
     if (pkt->dts != AV_NOPTS_VALUE) {
@@ -1390,11 +1600,13 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     if (ts_st->payload_size && (ts_st->payload_size + size > ts->pes_payload_size ||
         (dts != AV_NOPTS_VALUE && ts_st->payload_dts != AV_NOPTS_VALUE &&
          av_compare_ts(dts - ts_st->payload_dts, st->time_base,
-                       s->max_delay, AV_TIME_BASE_Q) >= 0))) {
+                       s->max_delay, AV_TIME_BASE_Q) >= 0) ||
+        ts_st->opus_queued_samples + opus_samples >= 5760 /* 120ms */)) {
         mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
                          ts_st->payload_pts, ts_st->payload_dts,
                          ts_st->payload_flags & AV_PKT_FLAG_KEY);
         ts_st->payload_size = 0;
+        ts_st->opus_queued_samples = 0;
     }
 
     if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO || size > ts->pes_payload_size) {
@@ -1402,6 +1614,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         // for video and subtitle, write a single pes packet
         mpegts_write_pes(s, st, buf, size, pts, dts,
                          pkt->flags & AV_PKT_FLAG_KEY);
+        ts_st->opus_queued_samples = 0;
         av_free(data);
         return 0;
     }
@@ -1414,6 +1627,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     memcpy(ts_st->payload + ts_st->payload_size, buf, size);
     ts_st->payload_size += size;
+    ts_st->opus_queued_samples += opus_samples;
 
     av_free(data);
 
@@ -1433,6 +1647,7 @@ static void mpegts_write_flush(AVFormatContext *s)
                              ts_st->payload_pts, ts_st->payload_dts,
                              ts_st->payload_flags & AV_PKT_FLAG_KEY);
             ts_st->payload_size = 0;
+            ts_st->opus_queued_samples = 0;
         }
     }
 }

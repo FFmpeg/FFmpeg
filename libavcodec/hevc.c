@@ -2566,6 +2566,16 @@ static int set_side_data(HEVCContext *s)
                                s->sei_hflip, s->sei_vflip);
     }
 
+    if (s->a53_caption) {
+        AVFrameSideData* sd = av_frame_new_side_data(out,
+                                                     AV_FRAME_DATA_A53_CC,
+                                                     s->a53_caption_size);
+        if (sd)
+            memcpy(sd->data, s->a53_caption, s->a53_caption_size);
+        av_freep(&s->a53_caption);
+        s->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+    }
+
     return 0;
 }
 

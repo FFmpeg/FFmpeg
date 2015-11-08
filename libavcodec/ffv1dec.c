@@ -569,8 +569,10 @@ static int read_extra_header(FFV1Context *f)
     }
 
     f->quant_table_count = get_symbol(c, state, 0);
-    if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES)
+    if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES || !f->quant_table_count) {
+        av_log(f->avctx, AV_LOG_ERROR, "quant table count %d is invalid\n", f->quant_table_count);
         return AVERROR_INVALIDDATA;
+    }
 
     for (i = 0; i < f->quant_table_count; i++) {
         f->context_count[i] = read_quant_tables(c, f->quant_tables[i]);
@@ -1134,4 +1136,5 @@ AVCodec ff_ffv1_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = AV_CODEC_CAP_DR1 /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/ |
                       AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP
 };
