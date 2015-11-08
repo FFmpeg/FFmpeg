@@ -119,15 +119,19 @@ static inline av_const SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
 
 static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
-    if(t<0) return (a.mant >> (-t)) -  b.mant      ;
-    else    return  a.mant          - (b.mant >> t);
+    if      (t <-31) return                  -  b.mant      ;
+    else if (t <  0) return (a.mant >> (-t)) -  b.mant      ;
+    else if (t < 32) return  a.mant          - (b.mant >> t);
+    else             return  a.mant                         ;
 }
 
 static inline av_const int av_gt_sf(SoftFloat a, SoftFloat b)
 {
     int t= a.exp - b.exp;
-    if(t<0) return (a.mant >> (-t)) >  b.mant      ;
-    else    return  a.mant          > (b.mant >> t);
+    if      (t <-31) return 0;
+    else if (t <  0) return (a.mant >> (-t)) >  b.mant      ;
+    else if (t < 32) return  a.mant          > (b.mant >> t);
+    else             return 1;
 }
 
 static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
