@@ -153,7 +153,12 @@ static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
  * @returns a SoftFloat with value v * 2^frac_bits
  */
 static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
-    return av_normalize_sf((SoftFloat){v, ONE_BITS + 1 - frac_bits});
+    int exp_offset = 0;
+    if(v == INT_MIN){
+        exp_offset = 1;
+        v>>=1;
+    }
+    return av_normalize_sf(av_normalize1_sf((SoftFloat){v, ONE_BITS + 1 - frac_bits + exp_offset}));
 }
 
 /**
