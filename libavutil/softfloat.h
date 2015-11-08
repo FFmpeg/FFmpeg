@@ -98,7 +98,10 @@ static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
     a.exp += b.exp;
     av_assert2((int32_t)((a.mant * (int64_t)b.mant) >> ONE_BITS) == (a.mant * (int64_t)b.mant) >> ONE_BITS);
     a.mant = (a.mant * (int64_t)b.mant) >> ONE_BITS;
-    return av_normalize1_sf((SoftFloat){a.mant, a.exp - 1});
+    a = av_normalize1_sf((SoftFloat){a.mant, a.exp - 1});
+    if (!a.mant || a.exp < MIN_EXP)
+        return FLOAT_0;
+    return a;
 }
 
 /**
