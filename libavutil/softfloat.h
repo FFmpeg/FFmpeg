@@ -181,10 +181,6 @@ static av_always_inline SoftFloat av_sqrt_sf(SoftFloat val)
             val.mant >>= 1;
 
         val.exp = (val.exp >> 1) + 1;
-        if (val.exp < MIN_EXP) {
-            val.exp = MIN_EXP;
-            val.mant= 0;
-        }
     }
 
     return val;
