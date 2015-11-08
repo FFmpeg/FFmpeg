@@ -36,7 +36,7 @@ typedef struct SoftFloat{
     int32_t  exp;
 }SoftFloat;
 
-static const SoftFloat FLOAT_0          = {          0,   0};
+static const SoftFloat FLOAT_0          = {          0,   MIN_EXP};
 static const SoftFloat FLOAT_05         = { 0x20000000,   0};
 static const SoftFloat FLOAT_1          = { 0x20000000,   1};
 static const SoftFloat FLOAT_EPSILON    = { 0x29F16B12, -16};
