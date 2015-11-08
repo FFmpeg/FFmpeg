@@ -179,6 +179,8 @@ static av_always_inline SoftFloat av_sqrt_sf(SoftFloat val)
 
     if (val.mant == 0)
         val.exp = MIN_EXP;
+    else if (val.mant < 0)
+        av_assert0(0);
     else
     {
         tabIndex = (val.mant - 0x20000000) >> 20;
