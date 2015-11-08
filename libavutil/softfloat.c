@@ -118,6 +118,10 @@ int main(void){
             if (FFDIFFSIGN(i,j) != c && (FFDIFFSIGN(i,j)^c)<0) {
                 printf("av_cmp_sf failed at %d %d as %X\n", i, j, c);
             }
+            c = av_gt_sf(sf1, sf2);
+            if ((i>j) != c) {
+                printf("av_gt_sf failed at %d %d as %X\n", i, j, c);
+            }
         }
         sf1 = av_int2sf(1, i);
         for(j = 0; j < 100; j++) {
@@ -126,6 +130,10 @@ int main(void){
             c = av_cmp_sf(sf2, sf1);
             if (FFDIFFSIGN(i,j) != c && (FFDIFFSIGN(i,j)^c) < 0) {
                 printf("av_cmp_sf failed2 at %d %d as %X\n", i, j, c);
+            }
+            c = av_gt_sf(sf1, sf2);
+            if ((i<j) != c) {
+                printf("av_gt_sf failed2 at %d %d as %X\n", i, j, c);
             }
         }
     }
