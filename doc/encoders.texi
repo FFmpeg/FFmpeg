@@ -834,4 +834,92 @@ by commas (,). See kvazaar documentation for a list of options.
 
 @end table
 
+@section QSV encoders
+
+The family of Intel QuickSync Video encoders (MPEG-2, H.264 and HEVC)
+
+The ratecontrol method is selected as follows:
+
+@itemize @bullet
+@item
+When @option{global_quality} is specified, a quality-based mode is used.
+Specifically this means either
+@itemize @minus
+@item
+@var{CQP} - constant quantizer scale, when the @option{qscale} codec flag is
+also set (the @option{-qscale} avconv option).
+
+@item
+@var{LA_ICQ} - intelligent constant quality with lookahead, when the
+@option{la_depth} option is also set.
+
+@item
+@var{ICQ} -- intelligent constant quality otherwise.
+@end itemize
+
+@item
+Otherwise, a bitrate-based mode is used. For all of those, you should specify at
+least the desired average bitrate with the @option{b} option.
+@itemize @minus
+@item
+@var{LA} - VBR with lookahead, when the @option{la_depth} option is specified.
+
+@item
+@var{VCM} - video conferencing mode, when the @option{vcm} option is set.
+
+@item
+@var{CBR} - constant bitrate, when @option{maxrate} is specified and equal to
+the average bitrate.
+
+@item
+@var{VBR} - variable bitrate, when @option{maxrate} is specified, but is higher
+than the average bitrate.
+
+@item
+@var{AVBR} - average VBR mode, when @option{maxrate} is not specified. This mode
+is further configured by the @option{avbr_accuracy} and
+@option{avbr_convergence} options.
+@end itemize
+@end itemize
+
+Note that depending on your system, a different mode than the one you specified
+may be selected by the encoder. Set the verbosity level to @var{verbose} or
+higher to see the actual settings used by the QSV runtime.
+
+Additional libavcodec global options are mapped to MSDK options as follows:
+
+@itemize
+@item
+@option{g/gop_size} -> @option{GopPicSize}
+
+@item
+@option{bf/max_b_frames}+1 -> @option{GopRefDist}
+
+@item
+@option{rc_init_occupancy/rc_initial_buffer_occupancy} ->
+@option{InitialDelayInKB}
+
+@item
+@option{slices} -> @option{NumSlice}
+
+@item
+@option{refs} -> @option{NumRefFrame}
+
+@item
+@option{b_strategy/b_frame_strategy} -> @option{BRefType}
+
+@item
+@option{cgop/CLOSED_GOP} codec flag -> @option{GopOptFlag}
+
+@item
+For the @var{CQP} mode, the @option{i_qfactor/i_qoffset} and
+@option{b_qfactor/b_qoffset} set the difference between @var{QPP} and @var{QPI},
+and @var{QPP} and @var{QPB} respectively.
+
+@item
+Setting the @option{coder} option to the value @var{vlc} will make the H.264
+encoder use CAVLC instead of CABAC.
+
+@end itemize
+
 @c man end VIDEO ENCODERS
