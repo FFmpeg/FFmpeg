@@ -119,6 +119,7 @@
     <ClCompile Include="..\libavfilter\f_perms.c" />
     <ClCompile Include="..\libavfilter\af_aphaser.c" />
     <ClCompile Include="..\libavfilter\generate_wave_table.c" />
+    <ClCompile Include="..\libavfilter\f_realtime.c" />
     <ClCompile Include="..\libavfilter\af_aresample.c" />
     <ClCompile Include="..\libavfilter\f_reverse.c" />
     <ClCompile Include="..\libavfilter\f_select.c" />
@@ -130,7 +131,6 @@
     <ClCompile Include="..\libavfilter\af_ashowinfo.c" />
     <ClCompile Include="..\libavfilter\split.c" />
     <ClCompile Include="..\libavfilter\af_astats.c" />
-    <ClCompile Include="..\libavfilter\af_astreamsync.c" />
     <ClCompile Include="..\libavfilter\af_atempo.c" />
     <ClCompile Include="..\libavfilter\trim.c" />
     <ClCompile Include="..\libavfilter\af_channelmap.c" />
