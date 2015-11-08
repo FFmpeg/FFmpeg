@@ -244,6 +244,7 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { "bf",        "3"     },
 
     { "flags",     "+cgop" },
+    { "b_strategy", "-1"   },
     { NULL },
 };
 

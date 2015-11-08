@@ -68,6 +68,21 @@ static const AVOption options[] = {
     QSV_COMMON_OPTS
 
     { "idr_interval", "Distance (in I-frames) between IDR frames", OFFSET(qsv.idr_interval), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "single_sei_nal_unit",    "Put all the SEI messages into one NALU",        OFFSET(qsv.single_sei_nal_unit),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },
+    { "max_dec_frame_buffering", "Maximum number of frames buffered in the DPB", OFFSET(qsv.max_dec_frame_buffering), AV_OPT_TYPE_INT, { .i64 = 0 },   0, UINT16_MAX, VE },
+
+    { "int_ref_type", "Intra refresh type",                                      OFFSET(qsv.int_ref_type),            AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT16_MAX, VE, "int_ref_type" },
+        { "none",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, .flags = VE, "int_ref_type" },
+        { "vertical", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, .flags = VE, "int_ref_type" },
+    { "int_ref_cycle_size", "Number of frames in the intra refresh cycle",       OFFSET(qsv.int_ref_cycle_size),      AV_OPT_TYPE_INT, { .i64 = -1 },               -1, UINT16_MAX, VE },
+    { "int_ref_qp_delta",   "QP difference for the refresh MBs",                 OFFSET(qsv.int_ref_qp_delta),        AV_OPT_TYPE_INT, { .i64 = INT16_MIN }, INT16_MIN,  INT16_MAX, VE },
+    { "recovery_point_sei", "Insert recovery point SEI messages",                OFFSET(qsv.recovery_point_sei),      AV_OPT_TYPE_INT, { .i64 = -1 },               -1,          1, VE },
+
+    { "trellis",             "Trellis quantization",                             OFFSET(qsv.trellis),                 AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, UINT_MAX, VE, "trellis" },
+        { "off", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TRELLIS_OFF }, .flags = VE, "trellis" },
+        { "I",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TRELLIS_I },   .flags = VE, "trellis" },
+        { "P",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TRELLIS_P },   .flags = VE, "trellis" },
+        { "B",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TRELLIS_B },   .flags = VE, "trellis" },
 
     { "profile", NULL, OFFSET(qsv.profile), AV_OPT_TYPE_INT, { .i64 = MFX_PROFILE_UNKNOWN }, 0, INT_MAX, VE, "profile" },
     { "unknown" , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_UNKNOWN      }, INT_MIN, INT_MAX,     VE, "profile" },
@@ -94,6 +109,7 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { "coder",     "ac"    },
 
     { "flags",     "+cgop" },
+    { "b_strategy", "-1"   },
     { NULL },
 };
 
