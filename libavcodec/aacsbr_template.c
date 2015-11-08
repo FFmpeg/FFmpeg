@@ -1414,7 +1414,7 @@ static void sbr_env_estimate(AAC_FLOAT (*e_curr)[48], INTFLOAT X_high[64][40][2]
 
             for (p = 0; p < sbr->n[ch_data->bs_freq_res[e + 1]]; p++) {
 #if USE_FIXED
-                SoftFloat sum = { 0, 0 };
+                SoftFloat sum = FLOAT_0;
                 const SoftFloat den = av_int2sf(0x20000000 / (env_size * (table[p + 1] - table[p])), 29);
                 for (k = table[p]; k < table[p + 1]; k++) {
                     sum = av_add_sf(sum, sbr->dsp.sum_square(X_high[k] + ilb, iub - ilb));
