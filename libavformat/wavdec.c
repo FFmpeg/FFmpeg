@@ -379,7 +379,7 @@ static int wav_read_header(AVFormatContext *s)
             got_xma2 = 1;
             break;
         case MKTAG('d', 'a', 't', 'a'):
-            if (!got_fmt && !got_xma2) {
+            if (!pb->seekable && !got_fmt && !got_xma2) {
                 av_log(s, AV_LOG_ERROR,
                        "found no 'fmt ' tag before the 'data' tag\n");
                 return AVERROR_INVALIDDATA;
@@ -474,6 +474,11 @@ static int wav_read_header(AVFormatContext *s)
     }
 
 break_loop:
+    if (!got_fmt && !got_xma2) {
+        av_log(s, AV_LOG_ERROR, "no 'fmt ' or 'XMA2' tag found\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (data_ofs < 0) {
         av_log(s, AV_LOG_ERROR, "no 'data' tag found\n");
         return AVERROR_INVALIDDATA;
