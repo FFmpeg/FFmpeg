@@ -2539,7 +2539,7 @@ const OptionDef options[] = {
     { "target",         HAS_ARG | OPT_PERFILE | OPT_OUTPUT,          { .func_arg = opt_target },
         "specify target file type (\"vcd\", \"svcd\", \"dvd\","
         " \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
-    { "vsync",          HAS_ARG | OPT_EXPERT,                        { opt_vsync },
+    { "vsync",          HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_vsync },
         "video sync method", "" },
     { "async",          HAS_ARG | OPT_INT | OPT_EXPERT,              { &audio_sync_method },
         "audio sync method", "" },
@@ -2619,9 +2619,9 @@ const OptionDef options[] = {
     { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(passlogfiles) },
         "select two pass log file name prefix", "prefix" },
-    { "vstats",       OPT_VIDEO | OPT_EXPERT ,                                   { &opt_vstats },
+    { "vstats",       OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = &opt_vstats },
         "dump video coding statistics to file" },
-    { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { opt_vstats_file },
+    { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { .func_arg = opt_vstats_file },
         "dump video coding statistics to file", "file" },
     { "vf",           OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_filters },
         "video filters", "filter list" },
