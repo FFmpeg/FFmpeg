@@ -471,13 +471,8 @@ static int open_next_file(AVFormatContext *avf)
     ConcatContext *cat = avf->priv_data;
     unsigned fileno = cat->cur_file - cat->files;
 
-    if (cat->cur_file->duration == AV_NOPTS_VALUE) {
-        cat->cur_file->duration = cat->avf->duration;
-        if (cat->cur_file->inpoint != AV_NOPTS_VALUE)
-            cat->cur_file->duration -= (cat->cur_file->inpoint - cat->cur_file->file_start_time);
-        if (cat->cur_file->outpoint != AV_NOPTS_VALUE)
-            cat->cur_file->duration -= cat->avf->duration - (cat->cur_file->outpoint - cat->cur_file->file_start_time);
-    }
+    if (cat->cur_file->duration == AV_NOPTS_VALUE)
+        cat->cur_file->duration = cat->avf->duration - (cat->cur_file->file_inpoint - cat->cur_file->file_start_time);
 
     if (++fileno >= cat->nb_files) {
         cat->eof = 1;
