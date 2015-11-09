@@ -482,7 +482,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
     sc->drefs_count = entries;
 
-    for (i = 0; i < sc->drefs_count; i++) {
+    for (i = 0; i < entries; i++) {
         MOVDref *dref = &sc->drefs[i];
         uint32_t size = avio_rb32(pb);
         int64_t next = avio_tell(pb) + size - 4;
@@ -577,6 +577,11 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 } else
                     avio_skip(pb, len);
             }
+        } else {
+            av_log(c->fc, AV_LOG_DEBUG, "Unknown dref type 0x08%x size %d\n",
+                   dref->type, size);
+            entries--;
+            i--;
         }
         avio_seek(pb, next, SEEK_SET);
     }
