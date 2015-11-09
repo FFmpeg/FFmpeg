@@ -144,24 +144,34 @@ static double bessel(double x) {
 static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale,
                         int filter_type, double kaiser_beta){
     int ph, i;
-    double x, y, w, t;
+    double x, y, w, t, s;
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
+    double *sin_lut = av_malloc_array(phase_count / 2 + 1, sizeof(*sin_lut));
     const int center= (tap_count-1)/2;
 
-    if (!tab)
-        return AVERROR(ENOMEM);
+    if (!tab || !sin_lut)
+        goto fail;
 
     /* if upsampling, only need to interpolate, no filter */
     if (factor > 1.0)
         factor = 1.0;
 
     av_assert0(phase_count == 1 || phase_count % 2 == 0);
+
+    if (factor == 1.0) {
+        for (ph = 0; ph <= phase_count / 2; ph++)
+            sin_lut[ph] = sin(M_PI * ph / phase_count);
+    }
     for(ph = 0; ph <= phase_count / 2; ph++) {
         double norm = 0;
+        s = sin_lut[ph];
         for(i=0;i<=tap_count;i++) {
             x = M_PI * ((double)(i - center) - (double)ph / phase_count) * factor;
             if (x == 0) y = 1.0;
-            else        y = sin(x) / x;
+            else if (factor == 1.0)
+                y = s / x;
+            else
+                y = sin(x) / x;
             switch(filter_type){
             case SWR_FILTER_TYPE_CUBIC:{
                 const float d= -0.5; //first order derivative = -0.5
@@ -183,6 +193,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             }
 
             tab[i] = y;
+            s = -s;
             if (i < tap_count)
                 norm += y;
         }
@@ -278,7 +289,9 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     }
 #endif
 
+fail:
     av_free(tab);
+    av_free(sin_lut);
     return 0;
 }
 
