@@ -2901,6 +2901,11 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
 
     spectral_to_sample(ac, samples);
 
+    if (!ac->frame->data[0] && samples) {
+        av_log(avctx, AV_LOG_ERROR, "no frame data found\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     ac->frame->nb_samples = samples;
     ac->frame->sample_rate = avctx->sample_rate;
     *got_frame_ptr = 1;
