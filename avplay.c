@@ -2940,7 +2940,7 @@ static const OptionDef options[] = {
     { "window_title", OPT_STRING | HAS_ARG, { &window_title }, "set window title", "window title" },
     { "vf", OPT_STRING | HAS_ARG, { &vfilters }, "video filters", "filter list" },
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, { &rdftspeed }, "rdft speed", "msecs" },
-    { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, { opt_default }, "generic catch all option", "" },
+    { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, { .func_arg = opt_default }, "generic catchall option", "" },
     { "i", 0, { NULL }, "avconv compatibility dummy option", ""},
     { "autorotate", OPT_BOOL, { &autorotate }, "automatically rotate video", "" },
     { "c", HAS_ARG | OPT_STRING | OPT_SPEC | OPT_INPUT, { .off = OFF(codec_names) }, "codec name", "codec" },
