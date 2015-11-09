@@ -538,7 +538,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 av_log(c->fc, AV_LOG_DEBUG, "type %d, len %d\n", type, len);
                 if (len&1)
                     len += 1;
-                if (type == 2 || type == 18) { // absolute path
+                if (type == 2) { // absolute path
                     av_free(dref->path);
                     dref->path = av_mallocz(len+1);
                     if (!dref->path)
@@ -549,15 +549,13 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                         av_freep(&dref->path);
                         return ret;
                     }
-                    if (type == 18) // no additional processing needed
-                        continue;
                     if (len > volume_len && !strncmp(dref->path, dref->volume, volume_len)) {
                         len -= volume_len;
                         memmove(dref->path, dref->path+volume_len, len);
                         dref->path[len] = 0;
                     }
                     for (j = 0; j < len; j++)
-                        if (dref->path[j] == ':')
+                        if (dref->path[j] == ':' || dref->path[j] == 0)
                             dref->path[j] = '/';
                     av_log(c->fc, AV_LOG_DEBUG, "path %s\n", dref->path);
                 } else if (type == 0) { // directory name
