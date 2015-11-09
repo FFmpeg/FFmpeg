@@ -97,6 +97,48 @@ int main(void){
     sf1 = av_int2sf(0xE0000001, 0);
     printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
 
+
+    sf1 = (SoftFloat){ 0x20000000,   MIN_EXP };
+    sf1 = av_mul_sf(sf1, sf1);
+    printf("test5 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+
+    sf1 = (SoftFloat){ 0x20000000,   MIN_EXP };
+    sf2 = (SoftFloat){ 0x20000000,   MAX_EXP };
+    i = av_cmp_sf(sf1, sf2);
+    j = av_cmp_sf(sf2, sf1);
+    sf1 = av_div_sf(sf1, sf2);
+    printf("test6 softfloat: %.10lf (0x%08x %d) %d %d\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp, i, j);
+
+    for(i= -50; i<50; i++) {
+        sf1= av_int2sf(i, 0);
+        for(j= -50; j<50; j++) {
+            int c;
+            sf2= av_int2sf(j, 0);
+            c = av_cmp_sf(sf1, sf2);
+            if (FFDIFFSIGN(i,j) != c && (FFDIFFSIGN(i,j)^c)<0) {
+                printf("av_cmp_sf failed at %d %d as %X\n", i, j, c);
+            }
+            c = av_gt_sf(sf1, sf2);
+            if ((i>j) != c) {
+                printf("av_gt_sf failed at %d %d as %X\n", i, j, c);
+            }
+        }
+        sf1 = av_int2sf(1, i);
+        for(j = -50; j < 50; j++) {
+            int c;
+            sf2 = av_int2sf(1, j);
+            c = av_cmp_sf(sf2, sf1);
+            if (FFDIFFSIGN(i,j) != c && (FFDIFFSIGN(i,j)^c) < 0) {
+                printf("av_cmp_sf failed2 at %d %d as %X\n", i, j, c);
+            }
+            c = av_gt_sf(sf1, sf2);
+            if ((i<j) != c) {
+                printf("av_gt_sf failed2 at %d %d as %X\n", i, j, c);
+            }
+        }
+    }
+
+
     for(i= 0; i<4*36; i++){
         int s, c;
         double errs, errc;

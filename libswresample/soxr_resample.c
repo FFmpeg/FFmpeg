@@ -30,7 +30,7 @@
 #include <soxr.h>
 
 static struct ResampleContext *create(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
-        double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta, double precision, int cheby){
+        double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta, double precision, int cheby){
     soxr_error_t error;
 
     soxr_datatype_t type =
