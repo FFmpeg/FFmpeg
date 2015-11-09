@@ -157,6 +157,7 @@
       <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_volumedetect.c" />
+    <ClCompile Include="..\libavfilter\asrc_anoisesrc.c" />
     <ClCompile Include="..\libavfilter\asrc_anullsrc.c" />
     <ClCompile Include="..\libavfilter\asrc_sine.c" />
     <ClCompile Include="..\libavfilter\asink_anullsink.c" />

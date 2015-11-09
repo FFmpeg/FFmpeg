@@ -285,6 +285,9 @@
     <ClCompile Include="..\libavfilter\af_volumedetect.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\asrc_anoisesrc.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\asrc_anullsrc.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
