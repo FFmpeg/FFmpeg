@@ -67,7 +67,7 @@ typedef struct Context {
 
 static int cmp(const void *key, const void *node)
 {
-    return (*(const int64_t *) key) - ((const CacheEntry *) node)->logical_pos;
+    return FFDIFFSIGN(*(const int64_t *)key, ((const CacheEntry *) node)->logical_pos);
 }
 
 static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **options)
