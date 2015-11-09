@@ -874,6 +874,21 @@ ffmpeg -i file.mpg -c copy \
      -y out.ts
 @end example
 
+@section mxf, mxf_d10
+
+MXF muxer.
+
+@subsection Options
+
+The muxer options are:
+
+@table @option
+@item store_user_comments @var{bool}
+Set if user comments should be stored if available or never.
+IRT D-10 does not allow user comments. The default is thus to write them for
+mxf but not for mxf_d10
+@end table
+
 @section null
 
 Null muxer.
