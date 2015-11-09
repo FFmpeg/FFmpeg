@@ -180,8 +180,8 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
                 else      y=                       d*(-4 + 8*x - 5*x*x + x*x*x);
                 break;}
             case SWR_FILTER_TYPE_BLACKMAN_NUTTALL:
-                w = 2.0*x / (factor*tap_count) + M_PI;
-                t = cos(w);
+                w = 2.0*x / (factor*tap_count);
+                t = -cos(w);
                 y *= 0.3635819 - 0.4891775 * t + 0.1365995 * (2*t*t-1) - 0.0106411 * (4*t*t*t - 3*t);
                 break;
             case SWR_FILTER_TYPE_KAISER:
