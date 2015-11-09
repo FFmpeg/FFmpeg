@@ -134,7 +134,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
 }
 
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
-                                    ScanTable *intra_scantable,
+                                    ScanTable *intra_scantable, int pred,
                                     uint16_t intra_matrix[64])
 {
     int chroma_h_shift, chroma_v_shift;
@@ -217,7 +217,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     put_bits(pb, 4, 1); /* DC huffman table index */
     put_bits(pb, 4, lossless ? 0 : 1); /* AC huffman table index */
 
-    put_bits(pb, 8, lossless ? avctx->prediction_method + 1 : 0); /* Ss (not used) */
+    put_bits(pb, 8, lossless ? pred : 0); /* Ss (not used) */
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MJPEG:  put_bits(pb, 8, 63); break; /* Se (not used) */

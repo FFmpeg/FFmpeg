@@ -193,7 +193,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     avctx->bits_per_coded_sample = s->bitstream_bpp;
     s->decorrelate = s->bitstream_bpp >= 24;
-    s->predictor = avctx->prediction_method;
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        s->predictor = avctx->prediction_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     s->interlaced = avctx->flags & AV_CODEC_FLAG_INTERLACED_ME ? 1 : 0;
     if (s->context) {
         if (s->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {
@@ -698,12 +703,34 @@ static av_cold int encode_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(HYuvContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
+#define HUFF_CLASS(variant)                  \
+static const AVClass variant ## _class = {   \
+    .class_name = # variant,                 \
+    .item_name  = av_default_item_name,      \
+    .option     = variant ## _options,       \
+    .version    = LIBAVUTIL_VERSION_INT,     \
+}
+
+#define FF_HUFFYUV_COMMON_OPTS \
+{ "pred", "Prediction method", OFFSET(predictor), AV_OPT_TYPE_INT, { .i64 = LEFT }, LEFT, MEDIAN, VE, "pred" }, \
+    { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LEFT },   INT_MIN, INT_MAX, VE, "pred" }, \
+    { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PLANE },  INT_MIN, INT_MAX, VE, "pred" }, \
+    { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MEDIAN }, INT_MIN, INT_MAX, VE, "pred" }
+
+static const AVOption huffyuv_options[] = {
+    FF_HUFFYUV_COMMON_OPTS,
+    { NULL},
+};
+
+HUFF_CLASS(huffyuv);
+
 AVCodec ff_huffyuv_encoder = {
     .name           = "huffyuv",
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HUFFYUV,
     .priv_data_size = sizeof(HYuvContext),
+    .priv_class     = &huffyuv_class,
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
@@ -717,16 +744,12 @@ AVCodec ff_huffyuv_encoder = {
 
 #if CONFIG_FFVHUFF_ENCODER
 static const AVOption ffhuffyuv_options[] = {
+    FF_HUFFYUV_COMMON_OPTS,
     { "context", "Set per-frame huffman tables", OFFSET(context), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 
-static const AVClass ffhuffyuv_class = {
-    .class_name = "ffhuffyuv encoder",
-    .item_name  = av_default_item_name,
-    .option     = ffhuffyuv_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+HUFF_CLASS(ffhuffyuv);
 
 AVCodec ff_ffvhuff_encoder = {
     .name           = "ffvhuff",

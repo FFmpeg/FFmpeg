@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/stereo3d.h"
 
 #include "avcodec.h"
@@ -35,6 +36,7 @@
 #define IOBUF_SIZE 4096
 
 typedef struct PNGEncContext {
+    AVClass *class;
     HuffYUVEncDSPContext hdsp;
 
     uint8_t *bytestream;
@@ -486,21 +488,48 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ff_huffyuvencdsp_init(&s->hdsp);
 
-    s->filter_type = av_clip(avctx->prediction_method,
-                             PNG_FILTER_VALUE_NONE,
-                             PNG_FILTER_VALUE_MIXED);
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        s->filter_type = av_clip(avctx->prediction_method,
+                                 PNG_FILTER_VALUE_NONE,
+                                 PNG_FILTER_VALUE_MIXED);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (avctx->pix_fmt == AV_PIX_FMT_MONOBLACK)
         s->filter_type = PNG_FILTER_VALUE_NONE;
 
     return 0;
 }
 
+#define OFFSET(x) offsetof(PNGEncContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+{ "pred", "Prediction method", OFFSET(filter_type), AV_OPT_TYPE_INT, { .i64 = PNG_FILTER_VALUE_NONE }, PNG_FILTER_VALUE_NONE, PNG_FILTER_VALUE_MIXED, VE, "pred" },
+    { "none",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_NONE },  INT_MIN, INT_MAX, VE, "pred" },
+    { "sub",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_SUB },   INT_MIN, INT_MAX, VE, "pred" },
+    { "up",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_UP },    INT_MIN, INT_MAX, VE, "pred" },
+    { "avg",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_AVG },   INT_MIN, INT_MAX, VE, "pred" },
+    { "paeth", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_PAETH }, INT_MIN, INT_MAX, VE, "pred" },
+    { "mixed", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_MIXED }, INT_MIN, INT_MAX, VE, "pred" },
+
+    { NULL},
+};
+
+static const AVClass png_class = {
+    .class_name = "png",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 AVCodec ff_png_encoder = {
     .name           = "png",
     .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PNG,
     .priv_data_size = sizeof(PNGEncContext),
+    .priv_class     = &png_class,
     .init           = png_enc_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) {

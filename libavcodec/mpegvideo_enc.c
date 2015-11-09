@@ -921,6 +921,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->brd_scale)
         s->brd_scale = avctx->brd_scale;
+
+    if (avctx->prediction_method)
+        s->pred = avctx->prediction_method + 1;
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -3583,7 +3586,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     case FMT_MJPEG:
         if (CONFIG_MJPEG_ENCODER)
             ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
-                                           s->intra_matrix);
+                                           s->pred, s->intra_matrix);
         break;
     case FMT_H261:
         if (CONFIG_H261_ENCODER)
