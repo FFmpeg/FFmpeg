@@ -673,6 +673,8 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         }
 
         if (ost->frame_rate.num && ost->is_cfr) {
+            if (pkt->duration > 0)
+                av_log(NULL, AV_LOG_WARNING, "Overriding packet duration by frame rate, this should not happen\n");
             pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
                                          ost->st->time_base);
         }
