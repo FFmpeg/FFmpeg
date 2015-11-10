@@ -424,6 +424,7 @@
     <ClCompile Include="..\libavformat\tty.c" />
     <ClCompile Include="..\libavformat\txd.c" />
     <ClCompile Include="..\libavformat\uncodedframecrcenc.c" />
+    <ClCompile Include="..\libavformat\v210.c" />
     <ClCompile Include="..\libavformat\vag.c" />
     <ClCompile Include="..\libavformat\vc1dec.c" />
     <ClCompile Include="..\libavformat\vc1test.c" />
