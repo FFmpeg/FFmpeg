@@ -599,14 +599,14 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     bytestream2_init(gbc, avpkt->data, avpkt->size);
 
     if (bytestream2_get_bytes_left(gbc) < 128) {
-        av_log(avctx, AV_LOG_ERROR, "Frame is too small (%d).",
+        av_log(avctx, AV_LOG_ERROR, "Frame is too small (%d).\n",
                bytestream2_get_bytes_left(gbc));
         return AVERROR_INVALIDDATA;
     }
 
     if (bytestream2_get_le32(gbc) != MKTAG('D', 'D', 'S', ' ') ||
         bytestream2_get_le32(gbc) != 124) { // header size
-        av_log(avctx, AV_LOG_ERROR, "Invalid DDS header.");
+        av_log(avctx, AV_LOG_ERROR, "Invalid DDS header.\n");
         return AVERROR_INVALIDDATA;
     }
 
