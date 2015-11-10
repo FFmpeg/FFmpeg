@@ -33,7 +33,7 @@ static const AVCodecTag rsd_tags[] = {
     { AV_CODEC_ID_ADPCM_IMA_WAV,   MKTAG('X','A','D','P') },
     { AV_CODEC_ID_PCM_S16BE,       MKTAG('P','C','M','B') },
     { AV_CODEC_ID_PCM_S16LE,       MKTAG('P','C','M',' ') },
-    { AV_CODEC_ID_XMA1,            MKTAG('X','M','A',' ') },
+    { AV_CODEC_ID_XMA2,            MKTAG('X','M','A',' ') },
     { AV_CODEC_ID_NONE, 0 },
 };
 
@@ -95,12 +95,12 @@ static int rsd_read_header(AVFormatContext *s)
     avio_skip(pb, 4); // Unknown
 
     switch (codec->codec_id) {
-    case AV_CODEC_ID_XMA1:
+    case AV_CODEC_ID_XMA2:
         codec->block_align = 2048;
-        ff_alloc_extradata(codec, 28);
+        ff_alloc_extradata(codec, 34);
         if (!codec->extradata)
             return AVERROR(ENOMEM);
-        memset(codec->extradata, 0, 28);
+        memset(codec->extradata, 0, 34);
         break;
     case AV_CODEC_ID_ADPCM_PSX:
         codec->block_align = 16 * codec->channels;
@@ -160,7 +160,7 @@ static int rsd_read_header(AVFormatContext *s)
     }
 
     avio_skip(pb, start - avio_tell(pb));
-    if (codec->codec_id == AV_CODEC_ID_XMA1) {
+    if (codec->codec_id == AV_CODEC_ID_XMA2) {
         avio_skip(pb, avio_rb32(pb) + avio_rb32(pb));
         st->duration = avio_rb32(pb);
     }
@@ -181,7 +181,7 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (codec->codec_id == AV_CODEC_ID_ADPCM_IMA_RAD ||
         codec->codec_id == AV_CODEC_ID_ADPCM_PSX     ||
         codec->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV ||
-        codec->codec_id == AV_CODEC_ID_XMA1) {
+        codec->codec_id == AV_CODEC_ID_XMA2) {
         ret = av_get_packet(s->pb, pkt, codec->block_align);
     } else if (codec->codec_tag == MKTAG('W','A','D','P') &&
                codec->channels > 1) {
