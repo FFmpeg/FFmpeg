@@ -671,6 +671,11 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
             else
                 ost->error[i] = -1;
         }
+
+        if (ost->frame_rate.num) {
+            pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
+                                         ost->st->time_base);
+        }
     }
 
     if (bsfc)
