@@ -44,7 +44,7 @@ static const struct {
 
 static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
 {
-    int i, again, skip = 0;
+    int i, again = 0, skip = 0;
 
     while (*p) {
 
