@@ -205,7 +205,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(s->pb, 1); // padding
 
     st->codec->sample_rate = bfstm ? read32(s) : read16(s);
-    if (!st->codec->sample_rate)
+    if (st->codec->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
 
     if (!bfstm)
