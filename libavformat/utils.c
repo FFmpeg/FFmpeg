@@ -3659,13 +3659,13 @@ void ff_free_stream(AVFormatContext *s, AVStream *st) {
     for (j = 0; j < st->nb_side_data; j++)
         av_freep(&st->side_data[j].data);
     av_freep(&st->side_data);
-    st->nb_side_data = 0;
 
-    if (st->parser) {
+    if (st->parser)
         av_parser_close(st->parser);
-    }
+
     if (st->attached_pic.data)
         av_packet_unref(&st->attached_pic);
+
     av_dict_free(&st->metadata);
     av_freep(&st->probe_data.buf);
     av_freep(&st->index_entries);
@@ -3694,9 +3694,10 @@ void avformat_free_context(AVFormatContext *s)
     if (s->oformat && s->oformat->priv_class && s->priv_data)
         av_opt_free(s->priv_data);
 
-    for (i = s->nb_streams - 1; i >= 0; i--) {
+    for (i = s->nb_streams - 1; i >= 0; i--)
         ff_free_stream(s, s->streams[i]);
-    }
+
+
     for (i = s->nb_programs - 1; i >= 0; i--) {
         av_dict_free(&s->programs[i]->metadata);
         av_freep(&s->programs[i]->stream_index);
