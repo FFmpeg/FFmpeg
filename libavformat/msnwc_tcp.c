@@ -104,6 +104,7 @@ static int msnwc_tcp_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     AVIOContext *pb = ctx->pb;
     uint16_t keyframe;
     uint32_t size, timestamp;
+    int ret;
 
     avio_skip(pb, 1); /* one byte has been read ahead */
     avio_skip(pb, 2);
@@ -114,8 +115,11 @@ static int msnwc_tcp_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     avio_skip(pb, 4);
     timestamp = avio_rl32(pb);
 
-    if(!size || av_get_packet(pb, pkt, size) != size)
-        return -1;
+    if (!size)
+        return AVERROR_INVALIDDATA;
+
+    if ((ret = av_get_packet(pb, pkt, size)) < 0)
+        return ret;
 
     avio_skip(pb, 1); /* Read ahead one byte of struct size like read_header */
 
