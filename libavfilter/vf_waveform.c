@@ -565,15 +565,14 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 const int c0 = c0_data[x] + 256;
                 const int c1 = FFABS(c1_data[x] - 128) + FFABS(c2_data[x] - 128);
                 uint8_t *target;
-                int p;
 
                 target = d0 + x + d0_signed_linesize * c0;
                 update(target, max, intensity);
+                target = d1 + x + d1_signed_linesize * (c0 - c1);
+                update(target, max, 1);
+                target = d1 + x + d1_signed_linesize * (c0 + c1);
+                update(target, max, 1);
 
-                for (p = c0 - c1; p < c0 + c1; p++) {
-                    target = d1 + x + d1_signed_linesize * p;
-                    update(target, max, 1);
-                }
                 c0_data += c0_linesize;
                 c1_data += c1_linesize;
                 c2_data += c2_linesize;
@@ -598,21 +597,20 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 int c0 = c0_data[x] + 256;
                 const int c1 = FFABS(c1_data[x] - 128) + FFABS(c2_data[x] - 128);
                 uint8_t *target;
-                int p;
 
-                if (mirror)
+                if (mirror) {
                     target = d0_data - c0;
-                else
+                    update(target, max, intensity);
+                    target = d1_data - (c0 - c1);
+                    update(target, max, 1);
+                    target = d1_data - (c0 + c1);
+                    update(target, max, 1);
+                } else {
                     target = d0_data + c0;
-
-                update(target, max, intensity);
-
-                for (p = c0 - c1; p < c0 + c1; p++) {
-                    if (mirror)
-                        target = d1_data - p;
-                    else
-                        target = d1_data + p;
-
+                    update(target, max, intensity);
+                    target = d1_data + (c0 - c1);
+                    update(target, max, 1);
+                    target = d1_data + (c0 + c1);
                     update(target, max, 1);
                 }
             }
@@ -669,30 +667,15 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 const int c1 = c1_data[x] - 128;
                 const int c2 = c2_data[x] - 128;
                 uint8_t *target;
-                int p;
 
                 target = d0 + x + d0_signed_linesize * c0;
                 update(target, max, intensity);
 
-                for (p = c0 + c1; p < c0; p++) {
-                    target = d1 + x + d1_signed_linesize * p;
-                    update(target, max, 1);
-                }
+                target = d1 + x + d1_signed_linesize * (c0 + c1);
+                update(target, max, 1);
 
-                for (p = c0 + c1 - 1; p > c0; p--) {
-                    target = d1 + x + d1_signed_linesize * p;
-                    update(target, max, 1);
-                }
-
-                for (p = c0 + c2; p < c0; p++) {
-                    target = d2 + x + d2_signed_linesize * p;
-                    update(target, max, 1);
-                }
-
-                for (p = c0 + c2 - 1; p > c0; p--) {
-                    target = d2 + x + d2_signed_linesize * p;
-                    update(target, max, 1);
-                }
+                target = d2 + x + d2_signed_linesize * (c0 + c2);
+                update(target, max, 1);
 
                 c0_data += c0_linesize;
                 c1_data += c1_linesize;
@@ -722,48 +705,20 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 const int c1 = c1_data[x] - 128;
                 const int c2 = c2_data[x] - 128;
                 uint8_t *target;
-                int p;
 
-                if (mirror)
+                if (mirror) {
                     target = d0_data - c0;
-                else
+                    update(target, max, intensity);
+                    target = d1_data - (c0 + c1);
+                    update(target, max, 1);
+                    target = d2_data - (c0 + c2);
+                    update(target, max, 1);
+                } else {
                     target = d0_data + c0;
-
-                update(target, max, intensity);
-
-                for (p = c0 + c1; p < c0; p++) {
-                    if (mirror)
-                        target = d1_data - p;
-                    else
-                        target = d1_data + p;
-
+                    update(target, max, intensity);
+                    target = d1_data + (c0 + c1);
                     update(target, max, 1);
-                }
-
-                for (p = c0 + 1; p < c0 + c1; p++) {
-                    if (mirror)
-                        target = d1_data - p;
-                    else
-                        target = d1_data + p;
-
-                    update(target, max, 1);
-                }
-
-                for (p = c0 + c2; p < c0; p++) {
-                    if (mirror)
-                        target = d2_data - p;
-                    else
-                        target = d2_data + p;
-
-                    update(target, max, 1);
-                }
-
-                for (p = c0 + 1; p < c0 + c2; p++) {
-                    if (mirror)
-                        target = d2_data - p;
-                    else
-                        target = d2_data + p;
-
+                    target = d2_data + (c0 + c2);
                     update(target, max, 1);
                 }
             }
@@ -809,12 +764,11 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             for (y = 0; y < src_h; y++) {
                 const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 128);
                 uint8_t *target;
-                int p;
 
-                for (p = 256 - sum; p < 256 + sum; p++) {
-                    target = dst + x + dst_signed_linesize * p;
-                    update(target, max, 1);
-                }
+                target = dst + x + dst_signed_linesize * (256 - sum);
+                update(target, max, intensity);
+                target = dst + x + dst_signed_linesize * (255 + sum);
+                update(target, max, intensity);
 
                 c0_data += c0_linesize;
                 c1_data += c1_linesize;
@@ -832,15 +786,17 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             for (x = 0; x < src_w; x++) {
                 const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 128);
                 uint8_t *target;
-                int p;
 
-                for (p = 256 - sum; p < 256 + sum; p++) {
-                    if (mirror)
-                        target = dst_data - p;
-                    else
-                        target = dst_data + p;
-
-                    update(target, max, 1);
+                if (mirror) {
+                    target = dst_data - (256 - sum);
+                    update(target, max, intensity);
+                    target = dst_data - (255 + sum);
+                    update(target, max, intensity);
+                } else {
+                    target = dst_data + (256 - sum);
+                    update(target, max, intensity);
+                    target = dst_data + (255 + sum);
+                    update(target, max, intensity);
                 }
             }
 
@@ -885,27 +841,12 @@ static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
                 const int c1 = c1_data[x] - 128;
                 const int c2 = c2_data[x] - 128;
                 uint8_t *target;
-                int p;
 
-                for (p = 128 + c1; p < 128; p++) {
-                    target = d1 + x + d1_signed_linesize * p;
-                    update(target, max, 1);
-                }
+                target = d1 + x + d1_signed_linesize * (128 + c1);
+                update(target, max, intensity);
 
-                for (p = 128 + c1 - 1; p > 128; p--) {
-                    target = d1 + x + d1_signed_linesize * p;
-                    update(target, max, 1);
-                }
-
-                for (p = 128 + c2; p < 128; p++) {
-                    target = d2 + x + d2_signed_linesize * p;
-                    update(target, max, 1);
-                }
-
-                for (p = 128 + c2 - 1; p > 128; p--) {
-                    target = d2 + x + d2_signed_linesize * p;
-                    update(target, max, 1);
-                }
+                target = d2 + x + d2_signed_linesize * (128 + c2);
+                update(target, max, intensity);
 
                 c1_data += c1_linesize;
                 c2_data += c2_linesize;
@@ -931,42 +872,17 @@ static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
                 const int c1 = c1_data[x] - 128;
                 const int c2 = c2_data[x] - 128;
                 uint8_t *target;
-                int p;
 
-                for (p = 128 + c1; p < 128; p++) {
-                    if (mirror)
-                        target = d1_data - p;
-                    else
-                        target = d1_data + p;
-
-                    update(target, max, 1);
-                }
-
-                for (p = 128 + 1; p < 128 + c1; p++) {
-                    if (mirror)
-                        target = d1_data - p;
-                    else
-                        target = d1_data + p;
-
-                    update(target, max, 1);
-                }
-
-                for (p = 128 + c2; p < 128; p++) {
-                    if (mirror)
-                        target = d2_data - p;
-                    else
-                        target = d2_data + p;
-
-                    update(target, max, 1);
-                }
-
-                for (p = 128 + 1; p < 128 + c2; p++) {
-                    if (mirror)
-                        target = d2_data - p;
-                    else
-                        target = d2_data + p;
-
-                    update(target, max, 1);
+                if (mirror) {
+                    target = d1_data - (128 + c1);
+                    update(target, max, intensity);
+                    target = d2_data - (128 + c2);
+                    update(target, max, intensity);
+                } else {
+                    target = d1_data + (128 + c1);
+                    update(target, max, intensity);
+                    target = d2_data + (128 + c2);
+                    update(target, max, intensity);
                 }
             }
 
