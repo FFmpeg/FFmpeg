@@ -672,7 +672,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                 ost->error[i] = -1;
         }
 
-        if (ost->frame_rate.num) {
+        if (ost->frame_rate.num && ost->is_cfr) {
             pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
                                          ost->st->time_base);
         }
@@ -1005,6 +1005,7 @@ static void do_video_out(AVFormatContext *s,
                 format_video_sync = VSYNC_VSCFR;
             }
         }
+        ost->is_cfr = (format_video_sync == VSYNC_CFR || format_video_sync == VSYNC_VSCFR);
 
         if (delta0 < 0 &&
             delta > 0 &&
