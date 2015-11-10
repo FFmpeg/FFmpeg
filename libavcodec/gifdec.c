@@ -130,7 +130,7 @@ static void gif_copy_img_rect(const uint32_t *src, uint32_t *dst,
 static int gif_read_image(GifState *s, AVFrame *frame)
 {
     int left, top, width, height, bits_per_pixel, code_size, flags, pw;
-    int is_interleaved, has_local_palette, y, pass, y1, linesize, pal_size;
+    int is_interleaved, has_local_palette, y, pass, y1, linesize, pal_size, lzwed_len;
     uint32_t *ptr, *pal, *px, *pr, *ptr1;
     int ret;
     uint8_t *idx;
@@ -293,7 +293,8 @@ static int gif_read_image(GifState *s, AVFrame *frame)
 
  decode_tail:
     /* read the garbage data until end marker is found */
-    ff_lzw_decode_tail(s->lzw);
+    lzwed_len = ff_lzw_decode_tail(s->lzw);
+    bytestream2_skipu(&s->gb, lzwed_len);
 
     /* Graphic Control Extension's scope is single frame.
      * Remove its influence. */
