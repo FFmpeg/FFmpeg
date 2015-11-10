@@ -297,13 +297,15 @@ static int film_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
 {
     FilmDemuxContext *film = s->priv_data;
     AVStream *st = s->streams[stream_index];
-    int index = av_index_search_timestamp(st, timestamp, flags);
-    if (index < 0)
-        return -1;
-    if (avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET) < 0)
-        return -1;
+    int ret = av_index_search_timestamp(st, timestamp, flags);
+    if (ret < 0)
+        return ret;
 
-    film->current_sample = index;
+    ret = avio_seek(s->pb, st->index_entries[ret].pos, SEEK_SET);
+    if (ret < 0)
+        return ret;
+
+    film->current_sample = ret;
 
     return 0;
 }
