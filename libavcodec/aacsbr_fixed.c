@@ -397,7 +397,8 @@ static void sbr_gain_calc(AACContext *ac, SpectralBandReplication *sbr,
         int delta = !((e == e_a[1]) || (e == e_a[0]));
         for (k = 0; k < sbr->n_lim; k++) {
             SoftFloat gain_boost, gain_max;
-            SoftFloat sum[2] = { FLOAT_0, FLOAT_0 };
+            SoftFloat sum[2];
+            sum[0] = sum[1] = FLOAT_0;
             for (m = sbr->f_tablelim[k] - sbr->kx[1]; m < sbr->f_tablelim[k + 1] - sbr->kx[1]; m++) {
                 const SoftFloat temp = av_div_sf(sbr->e_origmapped[e][m],
                                             av_add_sf(FLOAT_1, sbr->q_mapped[e][m]));
