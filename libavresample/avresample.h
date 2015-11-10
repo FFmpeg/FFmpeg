@@ -167,9 +167,13 @@ AVAudioResampleContext *avresample_alloc_context(void);
 /**
  * Initialize AVAudioResampleContext.
  * @note The context must be configured using the AVOption API.
+ * @note The fields "in_channel_layout", "out_channel_layout",
+ *       "in_sample_rate", "out_sample_rate", "in_sample_fmt",
+ *       "out_sample_fmt" must be set.
  *
  * @see av_opt_set_int()
  * @see av_opt_set_dict()
+ * @see av_get_default_channel_layout()
  *
  * @param avr  audio resample context
  * @return     0 on success, negative AVERROR code on failure

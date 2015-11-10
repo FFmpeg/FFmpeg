@@ -146,6 +146,49 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
     return 0;
 }
 
+static int wav_parse_xma2_tag(AVFormatContext *s, int64_t size, AVStream **st)
+{
+    AVIOContext *pb = s->pb;
+    int num_streams, i, channels = 0;
+
+    if (size < 44)
+        return AVERROR_INVALIDDATA;
+
+    *st = avformat_new_stream(s, NULL);
+    if (!*st)
+        return AVERROR(ENOMEM);
+
+    (*st)->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    (*st)->codec->codec_id   = AV_CODEC_ID_XMA2;
+    (*st)->need_parsing      = AVSTREAM_PARSE_FULL_RAW;
+
+    avio_skip(pb, 1);
+    num_streams = avio_r8(pb);
+    if (size < 40 + num_streams * 4)
+        return AVERROR_INVALIDDATA;
+    avio_skip(pb, 10);
+    (*st)->codec->sample_rate = avio_rb32(pb);
+    avio_skip(pb, 12);
+    (*st)->duration = avio_rb32(pb);
+    avio_skip(pb, 8);
+
+    for (i = 0; i < num_streams; i++) {
+        channels += avio_r8(pb);
+        avio_skip(pb, 3);
+    }
+    (*st)->codec->channels = channels;
+
+    if ((*st)->codec->channels <= 0 || (*st)->codec->sample_rate <= 0)
+        return AVERROR_INVALIDDATA;
+
+    avpriv_set_pts_info(*st, 64, 1, (*st)->codec->sample_rate);
+    if (ff_alloc_extradata((*st)->codec, 34))
+        return AVERROR(ENOMEM);
+    memset((*st)->codec->extradata, 0, 34);
+
+    return 0;
+}
+
 static inline int wav_parse_bext_string(AVFormatContext *s, const char *key,
                                         int length)
 {
@@ -254,7 +297,7 @@ static int wav_read_header(AVFormatContext *s)
     AVIOContext *pb      = s->pb;
     AVStream *st         = NULL;
     WAVDemuxContext *wav = s->priv_data;
-    int ret, got_fmt = 0;
+    int ret, got_fmt = 0, got_xma2 = 0;
     int64_t next_tag_ofs, data_ofs = -1;
 
     wav->unaligned = avio_tell(s->pb) & 1;
@@ -319,15 +362,24 @@ static int wav_read_header(AVFormatContext *s)
         switch (tag) {
         case MKTAG('f', 'm', 't', ' '):
             /* only parse the first 'fmt ' tag found */
-            if (!got_fmt && (ret = wav_parse_fmt_tag(s, size, &st)) < 0) {
+            if (!got_xma2 && !got_fmt && (ret = wav_parse_fmt_tag(s, size, &st)) < 0) {
                 return ret;
             } else if (got_fmt)
                 av_log(s, AV_LOG_WARNING, "found more than one 'fmt ' tag\n");
 
             got_fmt = 1;
             break;
+        case MKTAG('X', 'M', 'A', '2'):
+            /* only parse the first 'XMA2' tag found */
+            if (!got_fmt && !got_xma2 && (ret = wav_parse_xma2_tag(s, size, &st)) < 0) {
+                return ret;
+            } else if (got_xma2)
+                av_log(s, AV_LOG_WARNING, "found more than one 'XMA2' tag\n");
+
+            got_xma2 = 1;
+            break;
         case MKTAG('d', 'a', 't', 'a'):
-            if (!got_fmt) {
+            if (!pb->seekable && !got_fmt && !got_xma2) {
                 av_log(s, AV_LOG_ERROR,
                        "found no 'fmt ' tag before the 'data' tag\n");
                 return AVERROR_INVALIDDATA;
@@ -422,6 +474,11 @@ static int wav_read_header(AVFormatContext *s)
     }
 
 break_loop:
+    if (!got_fmt && !got_xma2) {
+        av_log(s, AV_LOG_ERROR, "no 'fmt ' or 'XMA2' tag found\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (data_ofs < 0) {
         av_log(s, AV_LOG_ERROR, "no 'data' tag found\n");
         return AVERROR_INVALIDDATA;

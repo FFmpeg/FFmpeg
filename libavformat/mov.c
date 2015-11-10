@@ -194,6 +194,14 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
     if (ret < 0)
         return ret;
 
+    if (pkt.size >= 8 && id != AV_CODEC_ID_BMP) {
+        if (AV_RB64(pkt.data) == 0x89504e470d0a1a0a) {
+            id = AV_CODEC_ID_PNG;
+        } else {
+            id = AV_CODEC_ID_MJPEG;
+        }
+    }
+
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
 
     st->attached_pic              = pkt;
@@ -453,6 +461,9 @@ static int mov_read_chpl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int i, nb_chapters, str_len, version;
     char str[256+1];
     int ret;
+
+    if (c->ignore_chapters)
+        return 0;
 
     if ((atom.size -= 5) < 0)
         return 0;
@@ -4627,7 +4638,7 @@ static int mov_read_header(AVFormatContext *s)
     av_log(mov->fc, AV_LOG_TRACE, "on_parse_exit_offset=%"PRId64"\n", avio_tell(pb));
 
     if (pb->seekable) {
-        if (mov->chapter_track > 0)
+        if (mov->chapter_track > 0 && !mov->ignore_chapters)
             mov_read_chapters(s);
         for (i = 0; i < s->nb_streams; i++)
             if (s->streams[i]->codec->codec_tag == AV_RL32("tmcd"))
@@ -5037,6 +5048,8 @@ static const AVOption mov_options[] = {
         OFFSET(seek_individually), AV_OPT_TYPE_INT, { .i64 = 1 },
         0, 1, FLAGS},
     {"ignore_editlist", "", OFFSET(ignore_editlist), AV_OPT_TYPE_INT, {.i64 = 0},
+        0, 1, FLAGS},
+    {"ignore_chapters", "", OFFSET(ignore_chapters), AV_OPT_TYPE_BOOL, {.i64 = 0},
         0, 1, FLAGS},
     {"use_mfra_for",
         "use mfra for fragment timestamps",

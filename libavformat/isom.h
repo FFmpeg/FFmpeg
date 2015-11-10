@@ -190,6 +190,7 @@ typedef struct MOVContext {
     int chapter_track;
     int use_absolute_path;
     int ignore_editlist;
+    int ignore_chapters;
     int seek_individually;
     int64_t next_root_atom; ///< offset of the next root atom
     int export_all;
