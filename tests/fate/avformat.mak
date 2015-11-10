@@ -61,6 +61,7 @@ FATE_LAVF += $(FATE_LAVF_PIXFMT-yes)
 
 $(FATE_LAVF): $(AREF) $(VREF)
 $(FATE_LAVF): CMD = lavftest
+$(FATE_LAVF): CMP =
 
 FATE_AVCONV += $(FATE_LAVF)
 fate-lavf:     $(FATE_LAVF)
