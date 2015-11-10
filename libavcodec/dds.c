@@ -666,6 +666,12 @@ static int dds_decode(AVCodecContext *avctx, void *data,
             frame->palette_has_changed = 1;
         }
 
+        if (bytestream2_get_bytes_left(gbc) < frame->height * linesize) {
+            av_log(avctx, AV_LOG_ERROR, "Buffer is too small (%d < %d).\n",
+                   bytestream2_get_bytes_left(gbc), frame->height * linesize);
+            return AVERROR_INVALIDDATA;
+        }
+
         av_image_copy_plane(frame->data[0], frame->linesize[0],
                             gbc->buffer, linesize,
                             linesize, frame->height);
