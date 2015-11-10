@@ -94,7 +94,7 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx)
 
     if(avio_feof(pb)) {
         av_log(ctx, AV_LOG_ERROR, "Could not find valid start.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
