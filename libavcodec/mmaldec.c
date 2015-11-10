@@ -476,6 +476,8 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt,
         if (!is_extradata)
             ctx->packets_sent++;
     } else {
+        if (ctx->eos_sent)
+            goto done;
         if (!ctx->packets_sent) {
             // Short-cut the flush logic to avoid upsetting MMAL.
             ctx->eos_sent = 1;

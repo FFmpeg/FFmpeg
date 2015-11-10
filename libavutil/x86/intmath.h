@@ -22,8 +22,12 @@
 #define AVUTIL_X86_INTMATH_H
 
 #include <stdint.h>
-#if HAVE_FAST_CLZ && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
-#include <immintrin.h>
+#if HAVE_FAST_CLZ
+#if defined(_MSC_VER)
+#include <intrin.h>
+#elif defined(__INTEL_COMPILER)
+#include <x86intrin.h>
+#endif
 #endif
 #include "config.h"
 
