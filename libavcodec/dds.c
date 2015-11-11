@@ -642,8 +642,17 @@ static int dds_decode(AVCodecContext *avctx, void *data,
         return ret;
 
     if (ctx->compressed) {
+        int size = (avctx->coded_height / TEXTURE_BLOCK_H) *
+                   (avctx->coded_width / TEXTURE_BLOCK_W) * ctx->tex_ratio;
         ctx->slice_count = av_clip(avctx->thread_count, 1,
                                    avctx->coded_height / TEXTURE_BLOCK_H);
+
+        if (bytestream2_get_bytes_left(gbc) < size) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Compressed Buffer is too small (%d < %d).\n",
+                   bytestream2_get_bytes_left(gbc), size);
+            return AVERROR_INVALIDDATA;
+        }
 
         /* Use the decompress function on the texture, one block per thread. */
         ctx->tex_data = gbc->buffer;
