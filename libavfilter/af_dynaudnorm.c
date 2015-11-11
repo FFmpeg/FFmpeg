@@ -227,8 +227,6 @@ static int cqueue_pop(cqueue *q)
     return 0;
 }
 
-static const double s_pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679;
-
 static void init_gaussian_filter(DynamicAudioNormalizerContext *s)
 {
     double total_weight = 0.0;
@@ -238,7 +236,7 @@ static void init_gaussian_filter(DynamicAudioNormalizerContext *s)
 
     // Pre-compute constants
     const int offset = s->filter_size / 2;
-    const double c1 = 1.0 / (sigma * sqrt(2.0 * s_pi));
+    const double c1 = 1.0 / (sigma * sqrt(2.0 * M_PI));
     const double c2 = 2.0 * pow(sigma, 2.0);
 
     // Compute weights
