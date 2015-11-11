@@ -355,6 +355,10 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     c->compensation_distance= 0;
     if(!av_reduce(&c->src_incr, &c->dst_incr, out_rate, in_rate * (int64_t)phase_count, INT32_MAX/2))
         goto error;
+    while (c->dst_incr < (1<<20) && c->src_incr < (1<<20)) {
+        c->dst_incr *= 2;
+        c->src_incr *= 2;
+    }
     c->ideal_dst_incr = c->dst_incr;
     c->dst_incr_div   = c->dst_incr / c->src_incr;
     c->dst_incr_mod   = c->dst_incr % c->src_incr;

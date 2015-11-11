@@ -366,16 +366,16 @@ fate-swr-resample_async-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_async-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
-fate-swr-resample_async-fltp-44100-8000: CMP_TARGET = 4031.48
+fate-swr-resample_async-fltp-44100-8000: CMP_TARGET = 4020.62
 fate-swr-resample_async-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_async-fltp-8000-44100: CMP_TARGET = 11185.34
+fate-swr-resample_async-fltp-8000-44100: CMP_TARGET = 11186.69
 fate-swr-resample_async-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_async-s16p-44100-8000: CMP_TARGET = 4031.59
+fate-swr-resample_async-s16p-44100-8000: CMP_TARGET = 4020.73
 fate-swr-resample_async-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_async-s16p-8000-44100: CMP_TARGET = 11185.65
+fate-swr-resample_async-s16p-8000-44100: CMP_TARGET = 11187.01
 fate-swr-resample_async-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
 $(call CROSS_TEST,$(SAMPLERATES),ARESAMPLE,s16p,s16le,s16)
