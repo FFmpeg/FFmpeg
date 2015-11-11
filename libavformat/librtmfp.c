@@ -25,8 +25,8 @@
  */
 
 /*#include "libavutil/avstring.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/opt.h"*/
+#include "libavutil/mathematics.h"*/
+#include "libavutil/opt.h"
 #include "avformat.h"
 #if CONFIG_NETWORK
 #include "network.h"
@@ -38,6 +38,8 @@
 typedef struct LibRTMFPContext {
     const AVClass *class;
     unsigned int id;
+    int audioUnbuffered;
+    int videoUnbuffered;
     /*RTMP rtmp;
     char *app;
     char *conn;
@@ -82,7 +84,7 @@ static int rtmfp_close(URLContext *s)
 }
 
 static void onSocketError(const char* err) {
-  av_log(NULL, AV_LOG_INFO, "Error on RTMFP socket : %s\n", err);
+  av_log(NULL, AV_LOG_ERROR, "Error on RTMFP socket : %s\n", err);
 }
 
 static void onStatusEvent(const char* code, const char* description) {
@@ -118,13 +120,11 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     RTMFP_LogSetLevel(level);
     RTMFP_LogSetCallback(rtmfp_log);
 
-    //s->rw_timeout = 7000000;
-    ctx->id = RTMFP_Connect(uri, flags & AVIO_FLAG_WRITE,onSocketError, onStatusEvent, NULL);
-    //s->is_connected = 1;
+    ctx->id = RTMFP_Connect(uri, flags & AVIO_FLAG_WRITE,onSocketError, onStatusEvent, NULL, !ctx->audioUnbuffered, !ctx->videoUnbuffered);
     s->is_streamed = 1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
-    return 0;
+    return (ctx->id > 0)? 0 : -1;
 }
 
 static int rtmfp_write(URLContext *s, const uint8_t *buf, int size)
@@ -188,11 +188,13 @@ static int rtmp_get_file_handle(URLContext *s)
     return RTMP_Socket(r);
 }*/
 
-/*#define OFFSET(x) offsetof(LibRTMPContext, x)
+#define OFFSET(x) offsetof(LibRTMFPContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmfp_audioUnbuffered", "Unbuffered audio mode (default to false)", OFFSET(audioUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
+    {"rtmfp_videoUnbuffered", "Unbuffered video mode (default to false)", OFFSET(videoUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
+    /*{"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_buffer", "Set buffer time in milliseconds. The default is 3000.", OFFSET(client_buffer_time), AV_OPT_TYPE_STRING, {.str = "3000"}, 0, 0, DEC|ENC},
     {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
@@ -208,15 +210,15 @@ static const AVOption options[] = {
     {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
 #if CONFIG_NETWORK
     {"rtmp_buffer_size", "set buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC|ENC },
-#endif
+#endif*/
     { NULL },
-};*/
+};
 
 //define RTMFP_CLASS(flavor)
 static const AVClass librtmfp_class = {
     .class_name = "librtmfp protocol",
     .item_name  = av_default_item_name,
-    //.option     = options,
+    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
