@@ -460,6 +460,7 @@ OBJS-$(CONFIG_VMD_DEMUXER)               += sierravmd.o
 OBJS-$(CONFIG_VOBSUB_DEMUXER)            += subtitles.o # mpeg demuxer is in the dependencies
 OBJS-$(CONFIG_VOC_DEMUXER)               += vocdec.o voc.o
 OBJS-$(CONFIG_VOC_MUXER)                 += vocenc.o voc.o
+OBJS-$(CONFIG_VPK_DEMUXER)               += vpk.o
 OBJS-$(CONFIG_VPLAYER_DEMUXER)           += vplayerdec.o subtitles.o
 OBJS-$(CONFIG_VQF_DEMUXER)               += vqf.o
 OBJS-$(CONFIG_W64_DEMUXER)               += wavdec.o w64.o pcm.o

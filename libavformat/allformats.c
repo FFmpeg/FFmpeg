@@ -324,6 +324,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (VMD,              vmd);
     REGISTER_DEMUXER (VOBSUB,           vobsub);
     REGISTER_MUXDEMUX(VOC,              voc);
+    REGISTER_DEMUXER (VPK,              vpk);
     REGISTER_DEMUXER (VPLAYER,          vplayer);
     REGISTER_DEMUXER (VQF,              vqf);
     REGISTER_MUXDEMUX(W64,              w64);
