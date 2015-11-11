@@ -476,8 +476,9 @@ static int config_props(AVFilterLink *link)
     link->w             = link->src->inputs[0]->w;
     link->h             = link->src->inputs[0]->h;
 
-    if(s->mode&1)
-        link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
+    if(s->mode & 1)
+        link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate,
+                                    (AVRational){2, 1});
 
     if (link->w < 3 || link->h < 3) {
         av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
