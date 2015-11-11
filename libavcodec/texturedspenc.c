@@ -181,7 +181,7 @@ static unsigned int match_colors(const uint8_t *block, ptrdiff_t stride,
     int x, y, k = 0;
     int c0_point, half_point, c3_point;
     uint8_t color[16];
-    const int indexMap[8] = {
+    static const int indexMap[8] = {
         0 << 30, 2 << 30, 0 << 30, 2 << 30,
         3 << 30, 3 << 30, 1 << 30, 1 << 30,
     };
@@ -359,8 +359,8 @@ static int refine_colors(const uint8_t *block, ptrdiff_t stride,
     /* Additional magic to save a lot of multiplies in the accumulating loop.
      * The tables contain precomputed products of weights for least squares
      * system, accumulated inside one 32-bit register */
-    const int w1tab[4] = { 3, 0, 2, 1 };
-    const int prods[4] = { 0x090000, 0x000900, 0x040102, 0x010402 };
+    static const int w1tab[4] = { 3, 0, 2, 1 };
+    static const int prods[4] = { 0x090000, 0x000900, 0x040102, 0x010402 };
 
     /* Check if all pixels have the same index */
     if ((mask ^ (mask << 2)) < 4) {

@@ -151,7 +151,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
     int32_t  r_gain = INT32_MIN, a_gain = INT32_MIN;
 
     MP3DecContext *mp3 = s->priv_data;
-    const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
+    static const int64_t xing_offtbl[2][2] = { { 32, 17 }, { 17, 9 } };
 
     /* Check for Xing / Info tag */
     avio_skip(s->pb, xing_offtbl[c->lsf == 1][c->nb_channels == 1]);

@@ -2345,7 +2345,7 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
 {
     int64_t pos = avio_tell(pb);
     int i;
-    const uint8_t uuid[] = {
+    static const uint8_t uuid[] = {
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
     };
@@ -2558,7 +2558,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
 static int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
-    const uint8_t uuid[] = {
+    static const uint8_t uuid[] = {
         0x6d, 0x1d, 0x9b, 0x05, 0x42, 0xd5, 0x44, 0xe6,
         0x80, 0xe2, 0x14, 0x1d, 0xaf, 0xf7, 0x57, 0xb2
     };
@@ -2581,7 +2581,7 @@ static int mov_write_tfrf_tag(AVIOContext *pb, MOVMuxContext *mov,
 {
     int n = track->nb_frag_info - 1 - entry, i;
     int size = 8 + 16 + 4 + 1 + 16*n;
-    const uint8_t uuid[] = {
+    static const uint8_t uuid[] = {
         0xd4, 0x80, 0x7e, 0xf2, 0xca, 0x39, 0x46, 0x95,
         0x8e, 0x54, 0x26, 0xcb, 0x9e, 0x46, 0xa7, 0x9f
     };
@@ -3677,7 +3677,7 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
         pkt.duration = end - pkt.dts;
 
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
-            const char encd[12] = {
+            static const char encd[12] = {
                 0x00, 0x00, 0x00, 0x0C,
                 'e',  'n',  'c',  'd',
                 0x00, 0x00, 0x01, 0x00 };
