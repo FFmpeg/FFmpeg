@@ -184,9 +184,14 @@ int ff_rtmpe_compute_secret_key(URLContext *h, const uint8_t *serverdata,
 static void rtmpe8_sig(const uint8_t *in, uint8_t *out, int key_id)
 {
     struct AVXTEA ctx;
+    uint8_t tmpbuf[8];
 
     av_xtea_init(&ctx, rtmpe8_keys[key_id]);
-    av_xtea_crypt(&ctx, out, in, 1, NULL, 0);
+    AV_WB32(tmpbuf, AV_RL32(in));
+    AV_WB32(tmpbuf + 4, AV_RL32(in + 4));
+    av_xtea_crypt(&ctx, tmpbuf, tmpbuf, 1, NULL, 0);
+    AV_WL32(out, AV_RB32(tmpbuf));
+    AV_WL32(out + 4, AV_RB32(tmpbuf + 4));
 }
 
 static void rtmpe9_sig(const uint8_t *in, uint8_t *out, int key_id)
