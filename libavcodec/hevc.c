@@ -2573,6 +2573,7 @@ static int set_side_data(HEVCContext *s)
         if (sd)
             memcpy(sd->data, s->a53_caption, s->a53_caption_size);
         av_freep(&s->a53_caption);
+        s->a53_caption_size = 0;
         s->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
