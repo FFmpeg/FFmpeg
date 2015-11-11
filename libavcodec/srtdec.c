@@ -192,7 +192,7 @@ static const char *read_ts(const char *buf, int *ts_start, int *ts_end,
     for (i=0; i<2; i++) {
         /* try to read timestamps in either the first or second line */
         int c = sscanf(buf, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d"
-                       "%*[ ]X1:%u X2:%u Y1:%u Y2:%u",
+                       "%*[ ]X1:%d X2:%d Y1:%d Y2:%d",
                        &hs, &ms, &ss, ts_start, &he, &me, &se, ts_end,
                        x1, x2, y1, y2);
         buf += strcspn(buf, "\n") + 1;

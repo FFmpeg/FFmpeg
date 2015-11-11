@@ -276,7 +276,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
     }
 
     if (!(strcmp(key, "TCON") && strcmp(key, "TCO"))                         &&
-        (sscanf(dst, "(%d)", &genre) == 1 || sscanf(dst, "%d", &genre) == 1) &&
+        (sscanf(dst, "(%u)", &genre) == 1 || sscanf(dst, "%u", &genre) == 1) &&
         genre <= ID3v1_GENRE_MAX) {
         av_freep(&dst);
         dst = av_strdup(ff_id3v1_genre_str[genre]);
