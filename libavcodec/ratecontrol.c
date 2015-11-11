@@ -35,10 +35,6 @@
 #include "mpegvideo.h"
 #include "libavutil/eval.h"
 
-#ifndef M_E
-#define M_E 2.718281828
-#endif
-
 static int init_pass2(MpegEncContext *s);
 static double get_qscale(MpegEncContext *s, RateControlEntry *rce,
                          double rate_factor, int frame_num);
