@@ -195,19 +195,16 @@ static void *async_buffer_task(void *arg)
 
         if (c->seek_request) {
             seek_ret = ffurl_seek(c->inner, c->seek_pos, c->seek_whence);
-            if (seek_ret < 0) {
-                c->io_eof_reached = 1;
-                c->io_error       = (int)seek_ret;
-            } else {
+            if (seek_ret >= 0) {
                 c->io_eof_reached = 0;
                 c->io_error       = 0;
+                ring_reset(ring);
             }
 
             c->seek_completed = 1;
             c->seek_ret       = seek_ret;
             c->seek_request   = 0;
 
-            ring_reset(ring);
 
             pthread_cond_signal(&c->cond_wakeup_main);
             pthread_mutex_unlock(&c->mutex);
