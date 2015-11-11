@@ -2674,8 +2674,8 @@ reconnect:
     qmark = strchr(path, '?');
     if (qmark && strstr(qmark, "slist=")) {
         char* amp;
-        // After slist we have the playpath, before the params, the app
-        av_strlcpy(rt->app, path + 1, FFMIN(qmark - path, APP_MAX_LENGTH));
+        // After slist we have the playpath, the full path is used as app
+        av_strlcpy(rt->app, path + 1, APP_MAX_LENGTH);
         fname = strstr(path, "slist=") + 6;
         // Strip any further query parameters from fname
         amp = strchr(fname, '&');
