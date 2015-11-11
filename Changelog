@@ -1,6 +1,47 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.2
+- lavf/mov: add support for sidx fragment indexes
+- avformat/mxfenc: Only store user comment related tags when needed
+- tests/fate/avformat: Fix fate-lavf
+- doc/ffmpeg: Clarify that the sdp_file option requires an rtp output.
+- ffmpeg: Don't try and write sdp info if none of the outputs had an rtp format.
+- apng: use correct size for output buffer
+- jvdec: avoid unsigned overflow in comparison
+- avcodec/jpeg2000dec: Clip all tile coordinates
+- avcodec/microdvddec: Check for string end in 'P' case
+- avcodec/dirac_parser: Fix undefined memcpy() use
+- avformat/xmv: Discard remainder of packet on error
+- avformat/xmv: factor return check out of if/else
+- avcodec/mpeg12dec: Do not call show_bits() with invalid bits
+- avcodec/faxcompr: Add missing runs check in decode_uncompressed()
+- libavutil/channel_layout: Check strtol*() for failure
+- avformat/mpegts: Only start probing data streams within probe_packets
+- avcodec/hevc_ps: Check chroma_format_idc
+- avcodec/ffv1dec: Check for 0 quant tables
+- avcodec/mjpegdec: Reinitialize IDCT on BPP changes
+- avcodec/mjpegdec: Check index in ljpeg_decode_yuv_scan() before using it
+- avutil/file_open: avoid file handle inheritance on Windows
+- avcodec/h264_slice: Disable slice threads if there are multiple access units in a packet
+- avformat/hls: update cookies on setcookie response
+- opusdec: Don't run vector_fmul_scalar on zero length arrays
+- avcodec/opusdec: Fix extra samples read index
+- avcodec/ffv1: Initialize vlc_state on allocation
+- avcodec/ffv1dec: update progress in case of broken pointer chains
+- avcodec/ffv1dec: Clear slice coordinates if they are invalid or slice header decoding fails for other reasons
+- rtsp: Allow $ as interleaved packet indicator before a complete response header
+- videodsp: don't overread edges in vfix3 emu_edge.
+- avformat/mp3dec: improve junk skipping heuristic
+- concatdec: fix file_start_time calculation regression
+- avcodec: loongson optimize h264dsp idct and loop filter with mmi
+- avcodec/jpeg2000dec: Clear properties in jpeg2000_dec_cleanup() too
+- avformat/hls: add support for EXT-X-MAP
+- avformat/hls: fix segment selection regression on track changes of live streams
+- configure: Require libkvazaar < 0.7.
+- avcodec/vp8: Do not use num_coeff_partitions in thread/buffer setup
+
+
 version 2.8.1:
 - swscale: fix ticket #4881
 - doc: fix spelling errors
