@@ -3651,13 +3651,16 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
-void ff_free_stream(AVFormatContext *s, AVStream *st) {
-    int j;
-    av_assert0(s->nb_streams>0);
-    av_assert0(s->streams[ s->nb_streams - 1 ] == st);
+static void free_stream(AVStream **pst)
+{
+    AVStream *st = *pst;
+    int i;
 
-    for (j = 0; j < st->nb_side_data; j++)
-        av_freep(&st->side_data[j].data);
+    if (!st)
+        return;
+
+    for (i = 0; i < st->nb_side_data; i++)
+        av_freep(&st->side_data[i].data);
     av_freep(&st->side_data);
 
     if (st->parser)
@@ -3678,7 +3681,16 @@ void ff_free_stream(AVFormatContext *s, AVStream *st) {
     av_freep(&st->info);
     av_freep(&st->recommended_encoder_configuration);
     av_freep(&st->priv_pts);
-    av_freep(&s->streams[ --s->nb_streams ]);
+
+    av_freep(pst);
+}
+
+void ff_free_stream(AVFormatContext *s, AVStream *st)
+{
+    av_assert0(s->nb_streams>0);
+    av_assert0(s->streams[ s->nb_streams - 1 ] == st);
+
+    free_stream(&s->streams[ --s->nb_streams ]);
 }
 
 void avformat_free_context(AVFormatContext *s)
