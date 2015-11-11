@@ -993,7 +993,7 @@ static int plot_cqt(AVFilterContext *ctx)
 {
     AVFilterLink *outlink = ctx->outputs[0];
     ShowCQTContext *s = ctx->priv;
-    int ret;
+    int ret = 0;
 
     memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
     av_fft_permute(s->fft_ctx, s->fft_result);
