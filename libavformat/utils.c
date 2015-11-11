@@ -3669,6 +3669,8 @@ static void free_stream(AVStream **pst)
     if (st->attached_pic.data)
         av_packet_unref(&st->attached_pic);
 
+    av_freep(&st->internal);
+
     av_dict_free(&st->metadata);
     av_freep(&st->probe_data.buf);
     av_freep(&st->index_entries);
@@ -3785,6 +3787,11 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
         av_free(st);
         return NULL;
     }
+
+    st->internal = av_mallocz(sizeof(*st->internal));
+    if (!st->internal)
+        goto fail;
+
     if (s->iformat) {
         /* no default bitrate if decoding */
         st->codec->bit_rate = 0;
@@ -3825,6 +3832,9 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 
     s->streams[s->nb_streams++] = st;
     return st;
+fail:
+    free_stream(&st);
+    return NULL;
 }
 
 AVProgram *av_new_program(AVFormatContext *ac, int id)

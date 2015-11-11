@@ -110,9 +110,21 @@ struct AVFormatInternal {
      */
     AVRational offset_timebase;
 
+#if FF_API_COMPUTE_PKT_FIELDS2
+    int missing_ts_warning;
+#endif
+
     int inject_global_side_data;
 
     int avoid_negative_ts_use_pts;
+};
+
+struct AVStreamInternal {
+    /**
+     * Set to 1 if the codec allows reordering, so pts can be different
+     * from dts.
+     */
+    int reorder;
 };
 
 #ifdef __GNUC__

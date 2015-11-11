@@ -807,6 +807,8 @@ typedef struct AVIndexEntry {
  */
 #define AV_DISPOSITION_ATTACHED_PIC      0x0400
 
+typedef struct AVStreamInternal AVStreamInternal;
+
 /**
  * To specify text track kind (different from subtitles default).
  */
@@ -1169,6 +1171,12 @@ typedef struct AVStream {
     AVRational display_aspect_ratio;
 
     struct FFFrac *priv_pts;
+
+    /**
+     * An opaque field for libavformat internal usage.
+     * Must not be accessed in any way by callers.
+     */
+    AVStreamInternal *internal;
 } AVStream;
 
 AVRational av_stream_get_r_frame_rate(const AVStream *s);
