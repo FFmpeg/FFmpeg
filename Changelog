@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.2
+- various fixes in the aac_fixed decoder
+- various fixes in softfloat
+- swresample/resample: increase precision for compensation
 - lavf/mov: add support for sidx fragment indexes
 - avformat/mxfenc: Only store user comment related tags when needed
 - tests/fate/avformat: Fix fate-lavf
@@ -72,7 +75,7 @@ version 2.8.1:
 - dnxhddec: decode and use interlace mb flag
 - swscale: fix ticket #4877
 - avcodec/rangecoder: Check e
-- avcodec/ffv1: seperate slice_count from max_slice_count
+- avcodec/ffv1: separate slice_count from max_slice_count
 - swscale: fix ticket 4850
 - cmdutils: Filter dst/srcw/h
 - avutil/log: fix zero length gnu_printf format string warning
