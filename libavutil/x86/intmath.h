@@ -26,7 +26,7 @@
 #if defined(_MSC_VER)
 #include <intrin.h>
 #elif defined(__INTEL_COMPILER)
-#include <x86intrin.h>
+#include <immintrin.h>
 #endif
 #endif
 #include "config.h"
