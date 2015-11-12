@@ -491,7 +491,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 
 #if FF_API_COMPUTE_PKT_FIELDS2
 //FIXME merge with compute_pkt_fields
-static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     int delay = FFMAX(st->codec->has_b_frames, st->codec->max_b_frames > 0);
     int num, den, i;
@@ -508,7 +508,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     }
 
     if (s->debug & FF_FDEBUG_TS)
-        av_log(s, AV_LOG_TRACE, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
+        av_log(s, AV_LOG_TRACE, "compute_muxer_pkt_fields: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
 
     if (pkt->duration < 0 && st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
@@ -783,7 +783,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     }
 
 #if FF_API_COMPUTE_PKT_FIELDS2
-    ret = compute_pkt_fields2(s, s->streams[pkt->stream_index], pkt);
+    ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
 
     if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
@@ -1013,7 +1013,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
 
 #if FF_API_COMPUTE_PKT_FIELDS2
-        if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+        if ((ret = compute_muxer_pkt_fields(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             goto fail;
 #endif
 
