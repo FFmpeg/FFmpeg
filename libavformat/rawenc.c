@@ -131,6 +131,19 @@ AVOutputFormat ff_g722_muxer = {
 };
 #endif
 
+#if CONFIG_G723_1_MUXER
+AVOutputFormat ff_g723_1_muxer = {
+    .name              = "g723_1",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw G.723.1"),
+    .mime_type         = "audio/g723",
+    .extensions        = "tco,rco",
+    .audio_codec       = AV_CODEC_ID_G723_1,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_H261_MUXER
 AVOutputFormat ff_h261_muxer = {
     .name              = "h261",

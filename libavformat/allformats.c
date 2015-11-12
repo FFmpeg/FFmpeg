@@ -111,7 +111,7 @@ void av_register_all(void)
     REGISTER_MUXER   (FRAMECRC,         framecrc);
     REGISTER_MUXER   (FRAMEMD5,         framemd5);
     REGISTER_MUXDEMUX(G722,             g722);
-    REGISTER_DEMUXER (G723_1,           g723_1);
+    REGISTER_MUXDEMUX(G723_1,           g723_1);
     REGISTER_MUXER   (GIF,              gif);
     REGISTER_DEMUXER (GSM,              gsm);
     REGISTER_MUXDEMUX(GXF,              gxf);
