@@ -239,6 +239,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     AVDictionary *tmp = NULL;
     AVCodecContext *codec = NULL;
     AVOutputFormat *of = s->oformat;
+    const AVCodecDescriptor *desc;
     AVDictionaryEntry *e;
 
     if (options)
@@ -334,6 +335,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             break;
         }
+
+        desc = avcodec_descriptor_get(codec->codec_id);
+        if (desc && desc->props & AV_CODEC_PROP_REORDER)
+            st->internal->reorder = 1;
 
         if (of->codec_tag) {
             if (   codec->codec_tag
@@ -484,12 +489,23 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 #define UNCODED_FRAME_PACKET_SIZE (INT_MIN / 3 * 2 + (int)sizeof(AVFrame))
 
 
+#if FF_API_COMPUTE_PKT_FIELDS2
 //FIXME merge with compute_pkt_fields
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     int delay = FFMAX(st->codec->has_b_frames, st->codec->max_b_frames > 0);
     int num, den, i;
     int frame_size;
+
+    if (!s->internal->missing_ts_warning &&
+        !(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
+        (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE)) {
+        av_log(s, AV_LOG_WARNING,
+               "Timestamps are unset in a packet for stream %d. "
+               "This is deprecated and will stop working in the future. "
+               "Fix your code to set the timestamps properly\n", st->index);
+        s->internal->missing_ts_warning = 1;
+    }
 
     if (s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_TRACE, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
@@ -579,6 +595,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     }
     return 0;
 }
+#endif
 
 /**
  * Make timestamps non negative, move side data from payload to internal struct, call muxer, and restore
@@ -693,11 +710,63 @@ static int check_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-int av_write_frame(AVFormatContext *s, AVPacket *pkt)
+static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
 
     ret = check_packet(s, pkt);
+    if (ret < 0)
+        return ret;
+
+#if !FF_API_COMPUTE_PKT_FIELDS2
+    /* sanitize the timestamps */
+    if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
+        AVStream *st = s->streams[pkt->stream_index];
+
+        /* when there is no reordering (so dts is equal to pts), but
+         * only one of them is set, set the other as well */
+        if (!st->internal->reorder) {
+            if (pkt->pts == AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE)
+                pkt->pts = pkt->dts;
+            if (pkt->dts == AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE)
+                pkt->dts = pkt->pts;
+        }
+
+        /* check that the timestamps are set */
+        if (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE) {
+            av_log(s, AV_LOG_ERROR,
+                   "Timestamps are unset in a packet for stream %d\n", st->index);
+            return AVERROR(EINVAL);
+        }
+
+        /* check that the dts are increasing (or at least non-decreasing,
+         * if the format allows it */
+        if (st->cur_dts != AV_NOPTS_VALUE &&
+            ((!(s->oformat->flags & AVFMT_TS_NONSTRICT) && st->cur_dts >= pkt->dts) ||
+             st->cur_dts > pkt->dts)) {
+            av_log(s, AV_LOG_ERROR,
+                   "Application provided invalid, non monotonically increasing "
+                   "dts to muxer in stream %d: %" PRId64 " >= %" PRId64 "\n",
+                   st->index, st->cur_dts, pkt->dts);
+            return AVERROR(EINVAL);
+        }
+
+        if (pkt->pts < pkt->dts) {
+            av_log(s, AV_LOG_ERROR, "pts %" PRId64 " < dts %" PRId64 " in stream %d\n",
+                   pkt->pts, pkt->dts, st->index);
+            return AVERROR(EINVAL);
+        }
+    }
+#endif
+
+    return 0;
+}
+
+int av_write_frame(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret;
+
+    ret = prepare_input_packet(s, pkt);
     if (ret < 0)
         return ret;
 
@@ -713,10 +782,12 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         return 1;
     }
 
+#if FF_API_COMPUTE_PKT_FIELDS2
     ret = compute_pkt_fields2(s, s->streams[pkt->stream_index], pkt);
 
     if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
+#endif
 
     ret = write_packet(s, pkt);
     if (ret >= 0 && s->pb && s->pb->error < 0)
@@ -930,7 +1001,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, flush = 0;
 
-    ret = check_packet(s, pkt);
+    ret = prepare_input_packet(s, pkt);
     if (ret < 0)
         goto fail;
 
@@ -941,8 +1012,10 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
 
+#if FF_API_COMPUTE_PKT_FIELDS2
         if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             goto fail;
+#endif
 
         if (pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
             ret = AVERROR(EINVAL);

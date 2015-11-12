@@ -421,6 +421,7 @@ typedef struct OutputStream {
 
     /* video only */
     AVRational frame_rate;
+    int is_cfr;
     int force_fps;
     int top_field_first;
     int rotate_overridden;

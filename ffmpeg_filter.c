@@ -1053,8 +1053,7 @@ int configure_filtergraph(FilterGraph *fg)
                      avcodec_get_name(ost->st->codec->codec_id), ost->file_index, ost->index);
             return AVERROR(EINVAL);
         }
-        if (ost &&
-            ost->enc->type == AVMEDIA_TYPE_AUDIO &&
+        if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
             !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                          ost->enc_ctx->frame_size);

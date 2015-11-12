@@ -353,7 +353,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             }
         }
     the_end:
-        if (offset1 >= 0) {
+        if (offset1 >= 0 && offset2 >= 0) {
             int w, h;
             uint8_t *bitmap;
 

@@ -599,14 +599,14 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     bytestream2_init(gbc, avpkt->data, avpkt->size);
 
     if (bytestream2_get_bytes_left(gbc) < 128) {
-        av_log(avctx, AV_LOG_ERROR, "Frame is too small (%d).",
+        av_log(avctx, AV_LOG_ERROR, "Frame is too small (%d).\n",
                bytestream2_get_bytes_left(gbc));
         return AVERROR_INVALIDDATA;
     }
 
     if (bytestream2_get_le32(gbc) != MKTAG('D', 'D', 'S', ' ') ||
         bytestream2_get_le32(gbc) != 124) { // header size
-        av_log(avctx, AV_LOG_ERROR, "Invalid DDS header.");
+        av_log(avctx, AV_LOG_ERROR, "Invalid DDS header.\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -642,8 +642,17 @@ static int dds_decode(AVCodecContext *avctx, void *data,
         return ret;
 
     if (ctx->compressed) {
+        int size = (avctx->coded_height / TEXTURE_BLOCK_H) *
+                   (avctx->coded_width / TEXTURE_BLOCK_W) * ctx->tex_ratio;
         ctx->slice_count = av_clip(avctx->thread_count, 1,
                                    avctx->coded_height / TEXTURE_BLOCK_H);
+
+        if (bytestream2_get_bytes_left(gbc) < size) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Compressed Buffer is too small (%d < %d).\n",
+                   bytestream2_get_bytes_left(gbc), size);
+            return AVERROR_INVALIDDATA;
+        }
 
         /* Use the decompress function on the texture, one block per thread. */
         ctx->tex_data = gbc->buffer;
@@ -664,6 +673,12 @@ static int dds_decode(AVCodecContext *avctx, void *data,
                 );
 
             frame->palette_has_changed = 1;
+        }
+
+        if (bytestream2_get_bytes_left(gbc) < frame->height * linesize) {
+            av_log(avctx, AV_LOG_ERROR, "Buffer is too small (%d < %d).\n",
+                   bytestream2_get_bytes_left(gbc), frame->height * linesize);
+            return AVERROR_INVALIDDATA;
         }
 
         av_image_copy_plane(frame->data[0], frame->linesize[0],

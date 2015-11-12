@@ -275,10 +275,9 @@ int avfilter_config_links(AVFilterContext *filter)
                     link->sample_aspect_ratio = inlink ?
                         inlink->sample_aspect_ratio : (AVRational){1,1};
 
-                if (inlink && !link->frame_rate.num && !link->frame_rate.den)
-                    link->frame_rate = inlink->frame_rate;
-
                 if (inlink) {
+                    if (!link->frame_rate.num && !link->frame_rate.den)
+                        link->frame_rate = inlink->frame_rate;
                     if (!link->w)
                         link->w = inlink->w;
                     if (!link->h)
