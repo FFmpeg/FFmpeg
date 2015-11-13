@@ -1797,6 +1797,7 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
     memset(s->properties, 0, sizeof(s->properties));
     memset(&s->poc  , 0, sizeof(s->poc));
     s->numXtiles = s->numYtiles = 0;
+    s->ncomponents = 0;
 }
 
 static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
@@ -1854,6 +1855,10 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 
         switch (marker) {
         case JPEG2000_SIZ:
+            if (s->ncomponents) {
+                av_log(s->avctx, AV_LOG_ERROR, "Duplicate SIZ\n");
+                return AVERROR_INVALIDDATA;
+            }
             ret = get_siz(s);
             if (!s->tile)
                 s->numXtiles = s->numYtiles = 0;
