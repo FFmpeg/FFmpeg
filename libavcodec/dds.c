@@ -141,6 +141,12 @@ static int parse_pixel_format(AVCodecContext *avctx)
     normal_map      = flags & DDPF_NORMALMAP;
     fourcc = bytestream2_get_le32(gbc);
 
+    if (ctx->compressed && ctx->paletted) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Disabling invalid palette flag for compressed dds.\n");
+        ctx->paletted = 0;
+    }
+
     bpp = bytestream2_get_le32(gbc); // rgbbitcount
     r   = bytestream2_get_le32(gbc); // rbitmask
     g   = bytestream2_get_le32(gbc); // gbitmask
