@@ -3263,7 +3263,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
                 return frame_bytes * 8 / bps;
         }
 
-        if (ch > 0) {
+        if (ch > 0 && ch < INT_MAX/16) {
             /* calc from frame_bytes and channels */
             switch (id) {
             case AV_CODEC_ID_ADPCM_AFC:
