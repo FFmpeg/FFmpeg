@@ -30,6 +30,7 @@
 
 #define BITSTREAM_READER_LE
 #include "libavutil/attributes.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/timer.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -310,7 +311,7 @@ av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg,
 
     ivi_free_buffers(planes);
 
-    if (cfg->pic_width < 1 || cfg->pic_height < 1 ||
+    if (av_image_check_size(cfg->pic_width, cfg->pic_height, 0, NULL) < 0 ||
         cfg->luma_bands < 1 || cfg->chroma_bands < 1)
         return AVERROR_INVALIDDATA;
 
