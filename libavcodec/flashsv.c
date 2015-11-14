@@ -413,6 +413,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 }
 
                 if (has_diff) {
+                    if (size < 3) {
+                        av_log(avctx, AV_LOG_ERROR, "size too small for diff\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     if (!s->keyframe) {
                         av_log(avctx, AV_LOG_ERROR,
                                "Inter frame without keyframe\n");
@@ -440,6 +444,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     int row = get_bits(&gb, 8);
                     av_log(avctx, AV_LOG_DEBUG, "%dx%d zlibprime_curr %dx%d\n",
                            i, j, col, row);
+                    if (size < 3) {
+                        av_log(avctx, AV_LOG_ERROR, "size too small for zlibprime_curr\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     size -= 2;
                     avpriv_request_sample(avctx, "zlibprime_curr");
                     return AVERROR_PATCHWELCOME;
