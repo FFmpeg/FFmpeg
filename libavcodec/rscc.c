@@ -221,6 +221,11 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Get pixels buffer, it may be deflated or just raw */
     if (pixel_size == packed_size) {
+        if (bytestream2_get_bytes_left(gbc) < pixel_size) {
+            av_log(avctx, AV_LOG_ERROR, "Insufficient input for %d\n", pixel_size);
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         pixels = gbc->buffer;
     } else {
         uLongf len = ctx->inflated_size;
