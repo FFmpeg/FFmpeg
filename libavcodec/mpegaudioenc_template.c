@@ -244,11 +244,11 @@ static void idct32(int *out, int *tab)
     do {
         int x1, x2, x3, x4;
 
-        x3 = MUL(t[16], FIX(SQRT2*0.5));
+        x3 = MUL(t[16], FIX(M_SQRT2*0.5));
         x4 = t[0] - x3;
         x3 = t[0] + x3;
 
-        x2 = MUL(-(t[24] + t[8]), FIX(SQRT2*0.5));
+        x2 = MUL(-(t[24] + t[8]), FIX(M_SQRT2*0.5));
         x1 = MUL((t[8] - x2), xp[0]);
         x2 = MUL((t[8] + x2), xp[1]);
 
