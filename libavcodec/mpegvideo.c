@@ -1870,8 +1870,8 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                     uint64_t u,v;
                     int y;
 #define COLOR(theta, r) \
-    u = (int)(128 + r * cos(theta * 3.141592 / 180)); \
-    v = (int)(128 + r * sin(theta * 3.141592 / 180));
+    u = (int)(128 + r * cos(theta * M_PI / 180)); \
+    v = (int)(128 + r * sin(theta * M_PI / 180));
 
 
                     u = v = 128;
