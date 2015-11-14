@@ -108,7 +108,7 @@ static int dxtory_decode_v1_420(AVCodecContext *avctx, AVFrame *pic,
     uint8_t *Y1, *Y2, *U, *V;
     int ret;
 
-    if (src_size < avctx->width * avctx->height * 3LL / 2) {
+    if (src_size < FFALIGN(avctx->width, 2) * FFALIGN(avctx->height, 2) * 3LL / 2) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
         return AVERROR_INVALIDDATA;
     }
