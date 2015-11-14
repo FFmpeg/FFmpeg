@@ -290,8 +290,8 @@ static int parse_object_segment(AVCodecContext *avctx,
     height = bytestream_get_be16(&buf);
 
     /* Make sure the bitmap is not too large */
-    if (avctx->width < width || avctx->height < height) {
-        av_log(avctx, AV_LOG_ERROR, "Bitmap dimensions larger than video.\n");
+    if (avctx->width < width || avctx->height < height || !width || !height) {
+        av_log(avctx, AV_LOG_ERROR, "Bitmap dimensions (%dx%d) invalid.\n", width, height);
         return AVERROR_INVALIDDATA;
     }
 
