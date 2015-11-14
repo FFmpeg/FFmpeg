@@ -132,6 +132,29 @@ static av_always_inline av_const int avpriv_isnan(double x)
         : avpriv_isnan(x))
 #endif /* HAVE_ISNAN */
 
+#if !HAVE_HYPOT
+#undef hypot
+static inline av_const double hypot(double x, double y)
+{
+    double ret, temp;
+    x = fabs(x);
+    y = fabs(y);
+
+    if (isinf(x) || isinf(y))
+        return av_int2double(0x7ff0000000000000);
+    if (x == 0 || y == 0)
+        return x + y;
+    if (x < y) {
+        temp = x;
+        x = y;
+        y = temp;
+    }
+
+    y = y/x;
+    return x*sqrt(1 + y*y);
+}
+#endif /* HAVE_HYPOT */
+
 #if !HAVE_LDEXPF
 #undef ldexpf
 #define ldexpf(x, exp) ((float)ldexp(x, exp))
