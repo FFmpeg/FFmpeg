@@ -36,6 +36,10 @@
 #define MAX_QUANT_TABLES 8
 #define MAX_CONTEXT_INPUTS 5
 
+#define AC_GOLOMB_RICE          0
+#define AC_RANGE_DEFAULT_TAB    1
+#define AC_RANGE_CUSTOM_TAB     2
+
 extern const uint8_t ff_log2_run[41];
 
 extern const int8_t ffv1_quant5_10bit[256];

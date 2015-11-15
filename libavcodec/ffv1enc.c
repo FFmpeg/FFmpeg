@@ -178,7 +178,7 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
     int run_count = 0;
     int run_mode  = 0;
 
-    if (s->ac) {
+    if (s->ac != AC_GOLOMB_RICE) {
         if (c->bytestream_end - c->bytestream < w * 20) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return AVERROR_INVALIDDATA;
@@ -203,7 +203,7 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
 
         diff = fold(diff, bits);
 
-        if (s->ac) {
+        if (s->ac != AC_GOLOMB_RICE) {
             if (s->flags & AV_CODEC_FLAG_PASS1) {
                 put_symbol_inline(c, p->state[context], diff, 1, s->rc_stat,
                                   s->rc_stat2[p->quant_table_index][context]);
@@ -388,7 +388,7 @@ static void write_header(FFV1Context *f)
     if (f->version < 2) {
         put_symbol(c, state, f->version, 0);
         put_symbol(c, state, f->ac, 0);
-        if (f->ac > 1) {
+        if (f->ac == AC_RANGE_CUSTOM_TAB) {
             for (i = 1; i < 256; i++)
                 put_symbol(c, state,
                            f->state_transition[i] - c->one_state[i], 1);
@@ -449,7 +449,7 @@ static int write_extradata(FFV1Context *f)
     }
 
     put_symbol(c, state, f->ac, 0);
-    if (f->ac > 1)
+    if (f->ac == AC_RANGE_CUSTOM_TAB)
         for (i = 1; i < 256; i++)
             put_symbol(c, state, f->state_transition[i] - c->one_state[i], 1);
 
@@ -587,7 +587,7 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    s->ac = avctx->coder_type > 0 ? 2 : 0;
+    s->ac = avctx->coder_type > 0 ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE;
 
     s->plane_count = 3;
     switch (avctx->pix_fmt) {
@@ -615,16 +615,10 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
             return AVERROR_INVALIDDATA;
         }
-        if (!s->ac && avctx->coder_type == -1) {
+        if (s->ac == AC_GOLOMB_RICE) {
             av_log(avctx, AV_LOG_INFO,
-                   "bits_per_raw_sample > 8, forcing coder 1\n");
-            s->ac = 2;
-        }
-        if (!s->ac) {
-            av_log(
-                avctx, AV_LOG_ERROR,
-                "bits_per_raw_sample of more than 8 needs -coder 1 currently\n");
-            return AVERROR_INVALIDDATA;
+                   "bits_per_raw_sample > 8, forcing range coder\n");
+            s->ac = AC_RANGE_CUSTOM_TAB;
         }
         s->version = FFMAX(s->version, 1);
     case AV_PIX_FMT_GRAY8:
@@ -679,7 +673,7 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (s->ac > 1)
+    if (s->ac == AC_RANGE_CUSTOM_TAB)
         for (i = 1; i < 256; i++)
             s->state_transition[i] = ffv1_ver2_state[i];
 
@@ -889,7 +883,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
     if (f->version > 2) {
         encode_slice_header(f, fs);
     }
-    if (!fs->ac) {
+    if (fs->ac == AC_GOLOMB_RICE) {
         if (f->version > 2)
             put_rac(&fs->c, (uint8_t[]) { 129 }, 0);
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate( &fs->c) : 0;
@@ -958,7 +952,7 @@ static int ffv1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         f->key_frame = 0;
     }
 
-    if (f->ac > 1) {
+    if (f->ac == AC_RANGE_CUSTOM_TAB) {
         int i;
         for (i = 1; i < 256; i++) {
             c->one_state[i]        = f->state_transition[i];
@@ -981,7 +975,7 @@ static int ffv1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         FFV1Context *fs = f->slice_context[i];
         int bytes;
 
-        if (fs->ac) {
+        if (fs->ac != AC_GOLOMB_RICE) {
             uint8_t state = 129;
             put_rac(&fs->c, &state, 0);
             bytes = ff_rac_terminate(&fs->c);

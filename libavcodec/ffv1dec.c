@@ -120,7 +120,7 @@ static av_always_inline void decode_line(FFV1Context *s, int w,
 
         av_assert2(context < p->context_count);
 
-        if (s->ac) {
+        if (s->ac != AC_GOLOMB_RICE) {
             diff = get_symbol_inline(c, p->state[context], 1);
         } else {
             if (context == 0 && run_mode == 0)
@@ -274,7 +274,7 @@ static int decode_slice_header(FFV1Context *f, FFV1Context *fs)
     unsigned ps, i, context_count;
     memset(state, 128, sizeof(state));
 
-    if (fs->ac > 1) {
+    if (fs->ac == AC_RANGE_CUSTOM_TAB) {
         for (i = 1; i < 256; i++) {
             fs->c.one_state[i]        = f->state_transition[i];
             fs->c.zero_state[256 - i] = 256 - fs->c.one_state[i];
@@ -364,7 +364,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     x      = fs->slice_x;
     y      = fs->slice_y;
 
-    if (!fs->ac) {
+    if (fs->ac == AC_GOLOMB_RICE) {
         if (f->version == 3 && f->minor_version > 1 || f->version > 3)
             get_rac(&fs->c, (uint8_t[]) { 129 });
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
@@ -401,7 +401,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
                                p->data[2] + ps * x + y * p->linesize[2] };
         decode_rgb_frame(fs, planes, width, height, p->linesize);
     }
-    if (fs->ac && f->version > 2) {
+    if (fs->ac != AC_GOLOMB_RICE && f->version > 2) {
         int v;
         get_rac(&fs->c, (uint8_t[]) { 129 });
         v = fs->c.bytestream_end - fs->c.bytestream - 2 - 5 * f->ec;
@@ -477,9 +477,9 @@ static int read_extra_header(FFV1Context *f)
         c->bytestream_end -= 4;
         f->minor_version   = get_symbol(c, state, 0);
     }
-    f->ac = f->avctx->coder_type = get_symbol(c, state, 0);
+    f->ac = get_symbol(c, state, 0);
 
-    if (f->ac > 1) {
+    if (f->ac == AC_RANGE_CUSTOM_TAB) {
         for (i = 1; i < 256; i++)
             f->state_transition[i] = get_symbol(c, state, 1) + c->one_state[i];
     }
@@ -559,9 +559,9 @@ static int read_header(FFV1Context *f)
         }
         f->version = v;
 
-        f->ac = f->avctx->coder_type = get_symbol(c, state, 0);
+        f->ac = get_symbol(c, state, 0);
 
-        if (f->ac > 1) {
+        if (f->ac == AC_RANGE_CUSTOM_TAB) {
             for (i = 1; i < 256; i++)
                 f->state_transition[i] =
                     get_symbol(c, state, 1) + c->one_state[i];
