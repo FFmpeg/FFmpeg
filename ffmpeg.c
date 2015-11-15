@@ -1013,20 +1013,19 @@ static void do_video_out(AVFormatContext *s,
             delta > 0 &&
             format_video_sync != VSYNC_PASSTHROUGH &&
             format_video_sync != VSYNC_DROP) {
-            double cor = FFMIN(-delta0, duration);
             if (delta0 < -0.6) {
                 av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
             } else
                 av_log(NULL, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
-            sync_ipts += cor;
-            duration -= cor;
-            delta0 += cor;
+            sync_ipts = ost->sync_opts;
+            duration += delta0;
+            delta0 = 0;
         }
 
         switch (format_video_sync) {
         case VSYNC_VSCFR:
-            if (ost->frame_number == 0 && delta - duration >= 0.5) {
-                av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta - duration));
+            if (ost->frame_number == 0 && delta0 >= 0.5) {
+                av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
                 delta = duration;
                 delta0 = 0;
                 ost->sync_opts = lrint(sync_ipts);
