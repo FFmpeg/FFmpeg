@@ -28,6 +28,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "jpeg2000.h"
@@ -461,7 +462,10 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                                    codsty->nreslevels2decode - 1,
                                    codsty->transform))
         return ret;
-    // component size comp->coord is uint16_t so ir cannot overflow
+
+    if (av_image_check_size(comp->coord[0][1] - comp->coord[0][0],
+                            comp->coord[1][1] - comp->coord[1][0], 0, avctx))
+        return AVERROR_INVALIDDATA;
     csize = (comp->coord[0][1] - comp->coord[0][0]) *
             (comp->coord[1][1] - comp->coord[1][0]);
 
