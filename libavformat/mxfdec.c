@@ -1669,6 +1669,16 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
                 continue;
             }
 
+        if (physical_track->edit_rate.num <= 0 ||
+            physical_track->edit_rate.den <= 0) {
+            av_log(mxf->fc, AV_LOG_WARNING,
+                   "Invalid edit rate (%d/%d) found on structural"
+                   " component #%d, defaulting to 25/1\n",
+                   physical_track->edit_rate.num,
+                   physical_track->edit_rate.den, i);
+            physical_track->edit_rate = (AVRational){25, 1};
+        }
+
             for (k = 0; k < physical_track->sequence->structural_components_count; k++) {
                 if (!(mxf_tc = mxf_resolve_timecode_component(mxf, &physical_track->sequence->structural_components_refs[k])))
                     continue;
