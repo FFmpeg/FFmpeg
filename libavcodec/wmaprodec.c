@@ -1619,6 +1619,11 @@ static int decode_packet(AVCodecContext *avctx, void *data,
             s->packet_done = 1;
     }
 
+    if (remaining_bits(s, gb) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Overread %d\n", -remaining_bits(s, gb));
+        s->packet_loss = 1;
+    }
+
     if (s->packet_done && !s->packet_loss &&
         remaining_bits(s, gb) > 0) {
         /** save the rest of the data so that it can be decoded
