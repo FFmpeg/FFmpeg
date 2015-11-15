@@ -709,10 +709,10 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
         Jpeg2000QuantStyle  *qntsty = tile->qntsty + compno;
         int ret; // global bandno
 
-        comp->coord_o[0][0] = av_clip(tilex       * s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
-        comp->coord_o[0][1] = av_clip((tilex + 1) * s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
-        comp->coord_o[1][0] = av_clip(tiley       * s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
-        comp->coord_o[1][1] = av_clip((tiley + 1) * s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
+        comp->coord_o[0][0] = av_clip(tilex       * (int64_t)s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
+        comp->coord_o[0][1] = av_clip((tilex + 1) * (int64_t)s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
+        comp->coord_o[1][0] = av_clip(tiley       * (int64_t)s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
+        comp->coord_o[1][1] = av_clip((tiley + 1) * (int64_t)s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
         if (compno) {
             comp->coord_o[0][0] /= s->cdx[compno];
             comp->coord_o[0][1] /= s->cdx[compno];
