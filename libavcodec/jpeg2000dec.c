@@ -30,6 +30,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
@@ -279,7 +280,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
         avpriv_request_sample(s->avctx, "Support for image offsets");
         return AVERROR_PATCHWELCOME;
     }
-    if (s->width > 32768U || s->height > 32768U) {
+    if (av_image_check_size(s->width, s->height, 0, s->avctx)) {
         avpriv_request_sample(s->avctx, "Large Dimensions");
         return AVERROR_PATCHWELCOME;
     }
