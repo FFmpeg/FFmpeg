@@ -830,10 +830,10 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
     if (!tile->comp)
         return AVERROR(ENOMEM);
 
-    tile->coord[0][0] = av_clip(tilex       * s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
-    tile->coord[0][1] = av_clip((tilex + 1) * s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
-    tile->coord[1][0] = av_clip(tiley       * s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
-    tile->coord[1][1] = av_clip((tiley + 1) * s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
+    tile->coord[0][0] = av_clip(tilex       * (int64_t)s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
+    tile->coord[0][1] = av_clip((tilex + 1) * (int64_t)s->tile_width  + s->tile_offset_x, s->image_offset_x, s->width);
+    tile->coord[1][0] = av_clip(tiley       * (int64_t)s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
+    tile->coord[1][1] = av_clip((tiley + 1) * (int64_t)s->tile_height + s->tile_offset_y, s->image_offset_y, s->height);
 
     for (compno = 0; compno < s->ncomponents; compno++) {
         Jpeg2000Component *comp = tile->comp + compno;
