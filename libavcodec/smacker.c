@@ -636,6 +636,11 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "sample format mismatch\n");
         return AVERROR(EINVAL);
     }
+    if (unp_size % (avctx->channels * (bits + 1))) {
+        av_log(avctx, AV_LOG_ERROR,
+               "The buffer does not contain an integer number of samples\n");
+        return AVERROR(EINVAL);
+    }
 
     /* get output buffer */
     frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
