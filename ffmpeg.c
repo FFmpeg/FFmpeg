@@ -984,11 +984,11 @@ static void do_video_out(AVFormatContext *s,
                                           ost->last_nb0_frames[1],
                                           ost->last_nb0_frames[2]);
     } else {
-        delta0 = sync_ipts - ost->sync_opts;
+        delta0 = sync_ipts - ost->sync_opts; // delta0 is the "drift" between the input frame (next_picture) and where it would fall in the output.
         delta  = delta0 + duration;
 
         /* by default, we output a single frame */
-        nb0_frames = 0;
+        nb0_frames = 0; // tracks the number of times the PREVIOUS frame should be duplicated, mostly for variable framerate (VFR)
         nb_frames = 1;
 
         format_video_sync = video_sync_method;
@@ -1017,7 +1017,7 @@ static void do_video_out(AVFormatContext *s,
             if (delta0 < -0.6) {
                 av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
             } else
-                av_log(NULL, AV_LOG_DEBUG, "Cliping frame in rate conversion by %f\n", -delta0);
+                av_log(NULL, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
             sync_ipts += cor;
             duration -= cor;
             delta0 += cor;
@@ -1066,22 +1066,22 @@ static void do_video_out(AVFormatContext *s,
             sizeof(ost->last_nb0_frames[0]) * (FF_ARRAY_ELEMS(ost->last_nb0_frames) - 1));
     ost->last_nb0_frames[0] = nb0_frames;
 
-    if (nb0_frames == 0 && ost->last_droped) {
+    if (nb0_frames == 0 && ost->last_dropped) {
         nb_frames_drop++;
         av_log(NULL, AV_LOG_VERBOSE,
                "*** dropping frame %d from stream %d at ts %"PRId64"\n",
                ost->frame_number, ost->st->index, ost->last_frame->pts);
     }
-    if (nb_frames > (nb0_frames && ost->last_droped) + (nb_frames > nb0_frames)) {
+    if (nb_frames > (nb0_frames && ost->last_dropped) + (nb_frames > nb0_frames)) {
         if (nb_frames > dts_error_threshold * 30) {
             av_log(NULL, AV_LOG_ERROR, "%d frame duplication too large, skipping\n", nb_frames - 1);
             nb_frames_drop++;
             return;
         }
-        nb_frames_dup += nb_frames - (nb0_frames && ost->last_droped) - (nb_frames > nb0_frames);
+        nb_frames_dup += nb_frames - (nb0_frames && ost->last_dropped) - (nb_frames > nb0_frames);
         av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
     }
-    ost->last_droped = nb_frames == nb0_frames && next_picture;
+    ost->last_dropped = nb_frames == nb0_frames && next_picture;
 
   /* duplicates frame if needed */
   for (i = 0; i < nb_frames; i++) {
@@ -1632,7 +1632,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             pts = FFMAX(pts, av_rescale_q(av_stream_get_end_pts(ost->st),
                                           ost->st->time_base, AV_TIME_BASE_Q));
         if (is_last_report)
-            nb_frames_drop += ost->last_droped;
+            nb_frames_drop += ost->last_dropped;
     }
 
     secs = FFABS(pts) / AV_TIME_BASE;
