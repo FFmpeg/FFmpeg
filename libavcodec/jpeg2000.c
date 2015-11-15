@@ -213,6 +213,11 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
     // component size comp->coord is uint16_t so ir cannot overflow
     csize = (comp->coord[0][1] - comp->coord[0][0]) *
             (comp->coord[1][1] - comp->coord[1][0]);
+    if (comp->coord[0][1] > 32768 ||
+        comp->coord[1][1] > 32768) {
+        av_log(avctx, AV_LOG_ERROR, "component size too large\n");
+        return AVERROR_PATCHWELCOME;
+    }
 
     if (codsty->transform == FF_DWT97) {
         csize += AV_INPUT_BUFFER_PADDING_SIZE / sizeof(*comp->f_data);
