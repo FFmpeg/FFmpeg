@@ -250,6 +250,10 @@ static int get_siz(Jpeg2000DecoderContext *s)
         avpriv_request_sample(s->avctx, "Support for image offsets");
         return AVERROR_PATCHWELCOME;
     }
+    if (s->width > 32768U || s->height > 32768U) {
+        avpriv_request_sample(s->avctx, "Large Dimensions");
+        return AVERROR_PATCHWELCOME;
+    }
 
     if (ncomponents <= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid number of components: %d\n",
