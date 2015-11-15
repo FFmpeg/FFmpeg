@@ -213,8 +213,8 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
     // component size comp->coord is uint16_t so ir cannot overflow
     csize = (comp->coord[0][1] - comp->coord[0][0]) *
             (comp->coord[1][1] - comp->coord[1][0]);
-    if (comp->coord[0][1] > 32768 ||
-        comp->coord[1][1] > 32768) {
+    if (comp->coord[0][1] - comp->coord[0][0] > 32768 ||
+        comp->coord[1][1] - comp->coord[1][0] > 32768) {
         av_log(avctx, AV_LOG_ERROR, "component size too large\n");
         return AVERROR_PATCHWELCOME;
     }
@@ -455,7 +455,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     return AVERROR(ENOMEM);
                 for (cblkno = 0; cblkno < nb_codeblocks; cblkno++) {
                     Jpeg2000Cblk *cblk = prec->cblk + cblkno;
-                    uint16_t Cx0, Cy0;
+                    int Cx0, Cy0;
 
                     /* Compute coordinates of codeblocks */
                     /* Compute Cx0*/
