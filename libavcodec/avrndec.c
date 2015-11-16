@@ -113,7 +113,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             int shift = p->height - avctx->height;
             int subsample_h, subsample_v;
 
-            av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &subsample_h, &subsample_v);
+            av_pix_fmt_get_chroma_sub_sample(p->format, &subsample_h, &subsample_v);
 
             p->data[0] += p->linesize[0] * shift;
             if (p->data[2]) {

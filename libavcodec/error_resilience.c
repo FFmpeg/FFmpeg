@@ -381,14 +381,19 @@ static void guess_mv(ERContext *s)
 #define MV_UNCHANGED 1
     const int mb_stride = s->mb_stride;
     const int mb_width  = s->mb_width;
-    const int mb_height = s->mb_height;
+    int mb_height = s->mb_height;
     int i, depth, num_avail;
     int mb_x, mb_y, mot_step, mot_stride;
+
+    if (s->last_pic.f && s->last_pic.f->data[0])
+        mb_height = FFMIN(mb_height, (s->last_pic.f->height+15)>>4);
+    if (s->next_pic.f && s->next_pic.f->data[0])
+        mb_height = FFMIN(mb_height, (s->next_pic.f->height+15)>>4);
 
     set_mv_strides(s, &mot_step, &mot_stride);
 
     num_avail = 0;
-    for (i = 0; i < s->mb_num; i++) {
+    for (i = 0; i < mb_width * mb_height; i++) {
         const int mb_xy = s->mb_index2xy[i];
         int f = 0;
         int error = s->error_status_table[mb_xy];
@@ -413,7 +418,7 @@ static void guess_mv(ERContext *s)
 
     if ((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) ||
         num_avail <= mb_width / 2) {
-        for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+        for (mb_y = 0; mb_y < mb_height; mb_y++) {
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 const int mb_xy = mb_x + mb_y * s->mb_stride;
                 int mv_dir = (s->last_pic.f && s->last_pic.f->data[0]) ? MV_DIR_FORWARD : MV_DIR_BACKWARD;
@@ -442,7 +447,7 @@ static void guess_mv(ERContext *s)
             int score_sum = 0;
 
             changed = 0;
-            for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+            for (mb_y = 0; mb_y < mb_height; mb_y++) {
                 for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                     const int mb_xy        = mb_x + mb_y * s->mb_stride;
                     int mv_predictor[8][2] = { { 0 } };
@@ -675,7 +680,7 @@ skip_last_mv:
         if (none_left)
             return;
 
-        for (i = 0; i < s->mb_num; i++) {
+        for (i = 0; i < mb_width * mb_height; i++) {
             int mb_xy = s->mb_index2xy[i];
             if (fixed[mb_xy])
                 fixed[mb_xy] = MV_FROZEN;

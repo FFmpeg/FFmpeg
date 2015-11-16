@@ -42,7 +42,7 @@ enum DWTType {
 
 typedef struct DWTContext {
     /// line lengths { horizontal, vertical } in consecutive decomposition levels
-    uint16_t linelen[FF_DWT_MAX_DECLVLS][2];
+    int linelen[FF_DWT_MAX_DECLVLS][2];
     uint8_t mod[FF_DWT_MAX_DECLVLS][2];  ///< coordinates (x0, y0) of decomp. levels mod 2
     uint8_t ndeclevels;                  ///< number of decomposition levels
     uint8_t type;                        ///< 0 for 9/7; 1 for 5/3
@@ -57,7 +57,7 @@ typedef struct DWTContext {
  * @param decomp_levels     number of decomposition levels
  * @param type              0 for DWT 9/7; 1 for DWT 5/3
  */
-int ff_jpeg2000_dwt_init(DWTContext *s, uint16_t border[2][2],
+int ff_jpeg2000_dwt_init(DWTContext *s, int border[2][2],
                          int decomp_levels, int type);
 
 int ff_dwt_encode(DWTContext *s, void *t);

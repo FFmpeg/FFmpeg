@@ -824,6 +824,7 @@ static void clear_context(MpegEncContext *s)
 
     s->parse_context.buffer = NULL;
     s->parse_context.buffer_size = 0;
+    s->parse_context.overread = 0;
     s->bitstream_buffer = NULL;
     s->allocated_bitstream_buffer_size = 0;
     s->picture          = NULL;
@@ -1870,8 +1871,8 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                     uint64_t u,v;
                     int y;
 #define COLOR(theta, r) \
-    u = (int)(128 + r * cos(theta * 3.141592 / 180)); \
-    v = (int)(128 + r * sin(theta * 3.141592 / 180));
+    u = (int)(128 + r * cos(theta * M_PI / 180)); \
+    v = (int)(128 + r * sin(theta * M_PI / 180));
 
 
                     u = v = 128;

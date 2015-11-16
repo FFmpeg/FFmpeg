@@ -53,6 +53,11 @@
  * from the input AVPacket.
  */
 #define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
+/**
+ * The decoder extracts and fills its parameters even if the frame is
+ * skiped due to the skip_frame setting.
+ */
+#define FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM  (1 << 3)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)

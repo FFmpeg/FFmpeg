@@ -297,6 +297,9 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AV_CODEC_ID_DIRAC:
             stream_type = STREAM_TYPE_VIDEO_DIRAC;
             break;
+        case AV_CODEC_ID_VC1:
+            stream_type = STREAM_TYPE_VIDEO_VC1;
+            break;
         case AV_CODEC_ID_MP2:
         case AV_CODEC_ID_MP3:
             stream_type = STREAM_TYPE_AUDIO_MPEG1;
@@ -551,6 +554,13 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 'r';
                 *q++ = 'a';
                 *q++ = 'c';
+            } else if (stream_type == STREAM_TYPE_VIDEO_VC1) {
+                *q++ = 0x05; /*MPEG-2 registration descriptor*/
+                *q++ = 4;
+                *q++ = 'V';
+                *q++ = 'C';
+                *q++ = '-';
+                *q++ = '1';
             }
             break;
         case AVMEDIA_TYPE_DATA:

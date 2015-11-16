@@ -534,7 +534,7 @@ static void dwt_decode97_int(DWTContext *s, int32_t *t)
         data[i] = (data[i] + ((1<<I_PRESHIFT)>>1)) >> I_PRESHIFT;
 }
 
-int ff_jpeg2000_dwt_init(DWTContext *s, uint16_t border[2][2],
+int ff_jpeg2000_dwt_init(DWTContext *s, int border[2][2],
                          int decomp_levels, int type)
 {
     int i, j, lev = decomp_levels, maxlen,
@@ -623,7 +623,7 @@ void ff_dwt_destroy(DWTContext *s)
 
 #define MAX_W 256
 
-static int test_dwt(int *array, int *ref, uint16_t border[2][2], int decomp_levels, int type, int max_diff) {
+static int test_dwt(int *array, int *ref, int border[2][2], int decomp_levels, int type, int max_diff) {
     int ret, j;
     DWTContext s1={{{0}}}, *s= &s1;
     int64_t err2 = 0;
@@ -662,7 +662,7 @@ static int test_dwt(int *array, int *ref, uint16_t border[2][2], int decomp_leve
     return 0;
 }
 
-static int test_dwtf(float *array, float *ref, uint16_t border[2][2], int decomp_levels, float max_diff) {
+static int test_dwtf(float *array, float *ref, int border[2][2], int decomp_levels, float max_diff) {
     int ret, j;
     DWTContext s1={{{0}}}, *s= &s1;
     double err2 = 0;
@@ -708,7 +708,7 @@ static float reff  [MAX_W * MAX_W];
 int main(void) {
     AVLFG prng;
     int i,j;
-    uint16_t border[2][2];
+    int border[2][2];
     int ret, decomp_levels;
 
     av_lfg_init(&prng, 1);
