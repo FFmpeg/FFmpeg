@@ -73,8 +73,8 @@
 #define AC3_SPX_BLEND(x)        (x)
 #define AC3_DYNAMIC_RANGE1      0
 
-#define INTFLOAT                int
-#define SHORTFLOAT              int16_t
+typedef int                     INTFLOAT;
+typedef int16_t                 SHORTFLOAT;
 
 #else /* USE_FIXED */
 
@@ -92,8 +92,8 @@
 #define AC3_SPX_BLEND(x)        (x)* (1.0f/32)
 #define AC3_DYNAMIC_RANGE1      1.0f
 
-#define INTFLOAT                float
-#define SHORTFLOAT              float
+typedef float                   INTFLOAT;
+typedef float                   SHORTFLOAT;
 
 #endif /* USE_FIXED */
 
