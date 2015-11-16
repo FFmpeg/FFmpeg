@@ -713,7 +713,7 @@ bool projectGenerator::passDynamicInclude( uint uiILength, StaticList & vInclude
 {
     //Find the dynamic identifier
     uint uiStartPos = m_sInLine.find_first_not_of( "$( \t", uiILength );
-    uint uiEndPos = m_sInLine.find( ')' );
+    uint uiEndPos = m_sInLine.find( ')', uiStartPos);
     string sIdent = m_sInLine.substr( uiStartPos, uiEndPos-uiStartPos );
     //Find the included obj
     uiStartPos = m_sInLine.find_first_not_of( "+=: \t", uiEndPos+1 );
