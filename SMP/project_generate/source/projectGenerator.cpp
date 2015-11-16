@@ -1299,7 +1299,7 @@ void projectGenerator::outputTemplateTags(const string& sProjectName, string & s
         uiFindPosFilt = sFiltersTemplate.find(sFFSearchTag, uiFindPosFilt + 1);
     }
 
-    //Change all occurance of template_shin with short project project name
+    //Change all occurance of template_shin with short project name
     const string sFFShortSearchTag = "template_shin";
     uiFindPos = sProjectTemplate.find(sFFShortSearchTag);
     string sProjectNameShort = sProjectName.substr(3); //The full name minus the lib prefix
@@ -2005,57 +2005,73 @@ bool projectGenerator::outputDependencyLibs(const string & sProjectName, string 
     StaticList vAddLibs;
     buildDependencies(sProjectName, m_vLibs, vAddLibs);
 
-    vector<string> vLibraries;
-    m_ConfigHelper.getConfigList("LIBRARY_LIST", vLibraries);
     if ((m_vLibs.size() > 0) || (vAddLibs.size() > 0)) {
+        //Create list of additional ffmpeg dependencies
+        string sAddFFmpegLibs[4]; //debug, release, debugDll, releaseDll
+        for (StaticList::iterator vitLib = m_mProjectLibs[sProjectName].begin(); vitLib < m_mProjectLibs[sProjectName].end(); vitLib++) {
+            sAddFFmpegLibs[0] += *vitLib;
+            sAddFFmpegLibs[0] += "d.lib;";
+            sAddFFmpegLibs[1] += *vitLib;
+            sAddFFmpegLibs[1] += ".lib;";
+            sAddFFmpegLibs[2] += vitLib->substr(3);
+            sAddFFmpegLibs[2] += "d.lib;";
+            sAddFFmpegLibs[3] += vitLib->substr(3);
+            sAddFFmpegLibs[3] += ".lib;";
+        }
+        //Create List of additional dependencies
+        string sAddDeps[4]; //debug, release, debugDll, releaseDll
+        for (StaticList::iterator vitLib = m_vLibs.begin() + m_mProjectLibs[sProjectName].size(); vitLib < m_vLibs.end(); vitLib++) {
+            sAddDeps[0] += *vitLib;
+            sAddDeps[0] += "d.lib;";
+            sAddDeps[1] += *vitLib;
+            sAddDeps[1] += ".lib;";
+            sAddDeps[2] += vitLib->substr(3);
+            sAddDeps[2] += "d.lib;";
+            sAddDeps[3] += vitLib->substr(3);
+            sAddDeps[3] += ".lib;";
+        }
+        //Create List of additional external dependencies
+        string sAddExternDeps;
+        for (StaticList::iterator vitLib = vAddLibs.begin(); vitLib < vAddLibs.end(); vitLib++) {
+            sAddExternDeps += *vitLib;
+            sAddExternDeps += ".lib;";
+        }
         //Add to Additional Dependencies
         string asLibLink2[2] = {"<Link>", "<Lib>"};
-        for (uint uiI = 0; uiI < ((bProgram) ? 1 : 2); uiI++) {
-            //The additional dependency should be within the Link/Lib section
-            string sAdditional[2]; //debug, release
-                                   //Add each dependency to the list
-            for (StaticList::iterator vitLib = m_vLibs.begin(); vitLib < m_vLibs.end(); vitLib++) {
-                if (uiI == 1) {
-                    //If the dependency is actually for one of input files then we can ignore it in static mode
-                    //  as this just causes unnecessary code bloat
-                    vector<string>::iterator vitLib2 = vLibraries.begin();
-                    for (vitLib2; vitLib2<vLibraries.end(); vitLib2++) {
-                        if (vitLib->compare("lib" + *vitLib2) == 0) {
-                            break;
-                        }
-                    }
-                    if (vitLib2 != vLibraries.end()) {
-                        continue;
-                    }
-                }
-
-                sAdditional[0] += *vitLib;
-                sAdditional[0] += "d.lib;";
-                sAdditional[1] += *vitLib;
-                sAdditional[1] += ".lib;";
-            }
-            //Add each additional lib to the list
-            for (StaticList::iterator vitLib = vAddLibs.begin(); vitLib < vAddLibs.end(); vitLib++) {
-                sAdditional[0] += *vitLib;
-                sAdditional[0] += ".lib;";
-                sAdditional[1] += *vitLib;
-                sAdditional[1] += ".lib;";
-            }
-            uint uiFindPos = sProjectTemplate.find(asLibLink2[uiI]);
+        for (uint uiLinkLib = 0; uiLinkLib < ((bProgram) ? 1 : 2); uiLinkLib++) {
             //loop over each debug/release sequence
-            for (uint uiJ = 0; uiJ < 2; uiJ++) {
-                uint uiMax = ((uiJ == 0) && (uiI == 1)) ? 2 : 4; //No LTO option in debug
-                for (uint uiK = 0; uiK < uiMax; uiK++) {
+            uint uiFindPos = sProjectTemplate.find(asLibLink2[uiLinkLib]);
+            for (uint uiDebugRelease = 0; uiDebugRelease < 2; uiDebugRelease++) {
+                uint uiMax = ((uiDebugRelease == 0) && (uiLinkLib == 1)) ? 2 : 4; //No LTO option in debug
+                //x86, x64, x86LTO/Static, x64LTO/Static
+                for (uint uiConf = 0; uiConf < uiMax; uiConf++) {
                     uiFindPos = sProjectTemplate.find("%(AdditionalDependencies)", uiFindPos);
                     if (uiFindPos == string::npos) {
                         cout << "  Error: Failed finding dependencies in template." << endl;
                         return false;
                     }
+                    uint uiAddIndex = uiDebugRelease;
+                    if ((uiLinkLib==0) && (uiConf < 2)) {
+                        //Use DLL libs
+                        uiAddIndex += 2;
+                    }
+                    string sAddString;
+                    if (uiLinkLib == 0) {
+                        //If the dependency is actually for one of the ffmpeg libs then we can ignore it in static linking mode
+                        //  as this just causes unnecessary code bloat
+                        if ((!bProgram) || (uiConf >= 2)) {
+                            sAddString = sAddFFmpegLibs[uiDebugRelease + 2]; //Always link ffmpeg libs to the dll even in DLLStatic
+                        }
+                        else if (bProgram) {
+                            sAddString = sAddFFmpegLibs[uiDebugRelease];
+                        }
+                    }
                     //Add to output
-                    sProjectTemplate.insert(uiFindPos, sAdditional[uiJ]);
-                    uiFindPos += sAdditional[uiJ].length();
+                    sAddString += sAddDeps[uiAddIndex] + sAddExternDeps;
+                    sProjectTemplate.insert(uiFindPos, sAddString);
+                    uiFindPos += sAddString.length();
                     //Get next
-                    uiFindPos = sProjectTemplate.find(asLibLink2[uiI], uiFindPos + 1);
+                    uiFindPos = sProjectTemplate.find(asLibLink2[uiLinkLib], uiFindPos + 1);
                 }
             }
         }

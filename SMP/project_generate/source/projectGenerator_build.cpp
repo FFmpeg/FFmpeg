@@ -140,10 +140,6 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 sLib = "libbz2";
             }
-            else if( vitLib->compare("zlib") == 0 )
-            {
-                sLib = "libz";
-            }
             else if( vitLib->compare( "libcdio" ) == 0 )
             {
                 sLib = "libcdio_paranoia";
@@ -163,7 +159,7 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             else if( vitLib->compare("openssl") == 0 )
             {
                 //Needs ws2_32 but libavformat needs this even if not using openssl so it is already included
-                sLib = "libopenssl";
+                sLib = "libssl";
             }
             else if( vitLib->compare("vfwcap_indev") == 0 )
             {
