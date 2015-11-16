@@ -213,6 +213,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         return AVERROR(EINVAL);
 
     buffer_size = s->buf_end - s->buffer;
+    // pos is the absolute position that the beginning of s->buffer corresponds to in the file
     pos = s->pos - (s->write_flag ? 0 : buffer_size);
 
     if (whence != SEEK_CUR && whence != SEEK_SET)
@@ -227,7 +228,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
     if (offset < 0)
         return AVERROR(EINVAL);
 
-    offset1 = offset - pos;
+    offset1 = offset - pos; // "offset1" is the relative offset from the beginning of s->buffer
     if (!s->must_flush && (!s->direct || !s->seek) &&
         offset1 >= 0 && offset1 <= buffer_size - s->write_flag) {
         /* can do the seek inside the buffer */
@@ -545,7 +546,8 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
         if (len > size)
             len = size;
         if (len == 0 || s->write_flag) {
-            if((s->direct || size > s->buffer_size) && !s->update_checksum){
+            if((s->direct || size > s->buffer_size) && !s->update_checksum) {
+                // bypass the buffer and read data directly into buf
                 if(s->read_packet)
                     len = s->read_packet(s->opaque, buf, size);
                 if (len <= 0) {
@@ -560,6 +562,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                     s->bytes_read += len;
                     size -= len;
                     buf += len;
+                    // reset the buffer
                     s->buf_ptr = s->buffer;
                     s->buf_end = s->buffer/* + len*/;
                 }
