@@ -14,7 +14,7 @@ Intel compiler can be used to add in the required C99 capability.
 
 The supplied project files are created using default configuration options as used by the ShiftMediaProject.
 These projects use Visual Studio 2013/2015 and require certain additional dependencies to be built and available at compile time.
-Required supplied project dependencies include:
+Required project dependencies include:
     bzlib
     iconv
     zlib
@@ -48,7 +48,7 @@ Required supplied project dependencies include:
     nvenc
 	libmfx
 
-All above dependencies are supplied as part of the ShiftMediaProject repositories.
+Most of the above dependencies are supplied as part of the ShiftMediaProject repositories.
 These repositories can be manually downloaded or automatically cloned using the supplied
   project_get_dependencies.bat file. This file can also be used to check for and download
   any dependency updates at any point after the first clone of the library.
