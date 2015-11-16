@@ -55,7 +55,7 @@
 #define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
 /**
  * The decoder extracts and fills its parameters even if the frame is
- * skiped due to the skip_frame setting.
+ * skipped due to the skip_frame setting.
  */
 #define FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM  (1 << 3)
 
