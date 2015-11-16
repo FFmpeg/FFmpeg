@@ -262,7 +262,7 @@ concat(){
     awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
 
     if [ "$mode" = "md5" ]; then
-      run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile > $packetfile
+      run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile | sed 's/\r//g' > $packetfile
       do_md5sum $packetfile
     else
       run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile
