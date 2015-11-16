@@ -430,6 +430,7 @@ retry:
             if (snprintf(str, str_size_alloc, "%f", val) >= str_size_alloc) {
                 av_log(c->fc, AV_LOG_ERROR,
                        "Failed to store the float32 number (%f) in string.\n", val);
+                av_free(str);
                 return AVERROR_INVALIDDATA;
             }
         } else {
