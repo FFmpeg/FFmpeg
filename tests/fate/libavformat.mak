@@ -18,5 +18,9 @@ FATE_LIBAVFORMAT-yes += fate-url
 fate-url: libavformat/url-test$(EXESUF)
 fate-url: CMD = run libavformat/url-test
 
+FATE_LIBAVFORMAT-$(CONFIG_MOV_MUXER) += fate-movenc
+fate-movenc: libavformat/movenc-test$(EXESUF)
+fate-movenc: CMD = run libavformat/movenc-test
+
 FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT-yes)
 fate-libavformat: $(FATE_LIBAVFORMAT)

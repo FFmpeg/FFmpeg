@@ -12,6 +12,7 @@ libavfilter/log2_tab.c
 libavformat/file_open.c
 libavformat/golomb_tab.c
 libavformat/log2_tab.c
+libavformat/movenc-test.c
 libavutil/x86_cpu.h
 libswresample/log2_tab.c
 libswscale/log2_tab.c
