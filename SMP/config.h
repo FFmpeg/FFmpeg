@@ -21,7 +21,7 @@
 
 #ifndef FFMPEG_CONFIG_H
 #define FFMPEG_CONFIG_H
-#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --enable-librtmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
+#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-librtmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "nonfree and unredistributable"
 #define CONFIG_THIS_YEAR 2015
 #define FFMPEG_DATADIR "."
@@ -555,6 +555,7 @@
 #define CONFIG_OPENCL 0
 #define CONFIG_OPENGL 1
 #define CONFIG_OPENSSL 0
+#define CONFIG_SCHANNEL 0
 #define CONFIG_SDL 1
 #define CONFIG_SECURETRANSPORT 0
 #define CONFIG_X11GRAB 0
@@ -2105,6 +2106,7 @@
 #define CONFIG_SRTP_PROTOCOL 1
 #define CONFIG_SUBFILE_PROTOCOL 1
 #define CONFIG_TCP_PROTOCOL 1
+#define CONFIG_TLS_SCHANNEL_PROTOCOL 0
 #define CONFIG_TLS_SECURETRANSPORT_PROTOCOL 0
 #define CONFIG_TLS_GNUTLS_PROTOCOL 1
 #define CONFIG_TLS_OPENSSL_PROTOCOL 0
