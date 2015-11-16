@@ -216,6 +216,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "bzlib", true );
     fastToggleConfigValue( "iconv", true );
     fastToggleConfigValue( "lzma", true );
+    fastToggleConfigValue( "schannel", true);
     fastToggleConfigValue( "sdl", true );
     fastToggleConfigValue( "zlib", true );
 
