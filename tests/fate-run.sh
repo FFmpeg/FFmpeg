@@ -251,7 +251,7 @@ gapless(){
 
 concat(){
     template=$1
-    sample=$(target_path $2)
+    sample=$2
     mode=$3
     extra_args=$4
 
