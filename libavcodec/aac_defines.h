@@ -34,11 +34,11 @@
 
 #define AAC_RENAME(x)       x ## _fixed
 #define AAC_RENAME_32(x)    x ## _fixed_32
-#define INTFLOAT int
-#define INT64FLOAT          int64_t
-#define SHORTFLOAT int16_t
-#define AAC_FLOAT SoftFloat
-#define AAC_SIGNE           int
+typedef int                 INTFLOAT;
+typedef int64_t             INT64FLOAT;
+typedef int16_t             SHORTFLOAT;
+typedef SoftFloat           AAC_FLOAT;
+typedef int                 AAC_SIGNE;
 #define FIXR(a)             ((int)((a) * 1 + 0.5))
 #define FIXR10(a)           ((int)((a) * 1024.0 + 0.5))
 #define Q23(a)              (int)((a) * 8388608.0 + 0.5)
@@ -82,11 +82,11 @@
 
 #define AAC_RENAME(x)       x
 #define AAC_RENAME_32(x)    x
-#define INTFLOAT float
-#define INT64FLOAT          float
-#define SHORTFLOAT float
-#define AAC_FLOAT float
-#define AAC_SIGNE           unsigned
+typedef float               INTFLOAT;
+typedef float               INT64FLOAT;
+typedef float               SHORTFLOAT;
+typedef float               AAC_FLOAT;
+typedef unsigned            AAC_SIGNE;
 #define FIXR(x)             ((float)(x))
 #define FIXR10(x)           ((float)(x))
 #define Q23(x)              x
