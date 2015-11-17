@@ -293,6 +293,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
         { "m4v",       AV_CODEC_ID_MPEG4,      AVMEDIA_TYPE_VIDEO },
         { "mp3",       AV_CODEC_ID_MP3,        AVMEDIA_TYPE_AUDIO },
         { "mpegvideo", AV_CODEC_ID_MPEG2VIDEO, AVMEDIA_TYPE_VIDEO },
+        { "truehd",    AV_CODEC_ID_TRUEHD,     AVMEDIA_TYPE_AUDIO },
         { 0 }
     };
     int score;
