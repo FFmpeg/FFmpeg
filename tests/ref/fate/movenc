@@ -16,5 +16,9 @@ ad43cfb415822a0d70db0f11a87ced66 2535 empty-moov-no-elst-no-adjust
 64e38d416e9344c8046e37426cdf2807 584 empty-moov-second-frag
 64e38d416e9344c8046e37426cdf2807 584 empty-moov-second-frag-discont
 64e38d416e9344c8046e37426cdf2807 584 delay-moov-second-frag-discont
+6256445b9595de78be493e0faf2bc5d7 1219 delay-moov-elst-init
+5bcd7237855218554de38044dbd31cda 704 delay-moov-elst-second-frag
+6256445b9595de78be493e0faf2bc5d7 1219 delay-moov-elst-init-discont
+5bcd7237855218554de38044dbd31cda 704 delay-moov-elst-second-frag-discont
 da0d89d03fa601b40f6a653c8314e333 3615 vfr
 da0d89d03fa601b40f6a653c8314e333 3615 vfr-noduration
