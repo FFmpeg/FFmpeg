@@ -215,7 +215,7 @@ static void mux_frames(int n)
     int end_frames = frames + n;
     while (1) {
         AVPacket pkt;
-        uint8_t pktdata[4];
+        uint8_t pktdata[8] = { 0 };
         av_init_packet(&pkt);
 
         if (av_compare_ts(audio_dts, audio_st->time_base, video_dts, video_st->time_base) < 0) {
@@ -257,9 +257,9 @@ static void mux_frames(int n)
 
         if (clear_duration)
             pkt.duration = 0;
-        AV_WB32(pktdata, pkt.pts);
+        AV_WB32(pktdata + 4, pkt.pts);
         pkt.data = pktdata;
-        pkt.size = 4;
+        pkt.size = 8;
         if (skip_write)
             continue;
         if (skip_write_audio && pkt.stream_index == 1)
