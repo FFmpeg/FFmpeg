@@ -1,5 +1,8 @@
 language: c
 sudo: false
+os:
+  - linux
+  - osx
 addons:
   apt:
     packages:
@@ -11,6 +14,10 @@ compiler:
 cache:
   directories:
     - libav-samples
+before_install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update --all; fi
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install yasm; fi
 script:
   - mkdir -p libav-samples
   - ./configure --samples=libav-samples --cc=$CC
