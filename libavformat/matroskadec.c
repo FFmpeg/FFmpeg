@@ -2967,6 +2967,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         tracks[i].audio.buf_timecode   = AV_NOPTS_VALUE;
         tracks[i].end_timecode         = 0;
         if (tracks[i].type == MATROSKA_TRACK_TYPE_SUBTITLE &&
+            tracks[i].stream &&
             tracks[i].stream->discard != AVDISCARD_ALL) {
             index_sub = av_index_search_timestamp(
                 tracks[i].stream, st->index_entries[index].timestamp,
