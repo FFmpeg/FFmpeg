@@ -28,6 +28,9 @@
 #include "flv.h"
 #include "internal.h"
 #include "metadata.h"
+#include "libavutil/opt.h"
+#include "libavcodec/put_bits.h"
+#include "libavcodec/aacenctab.h"
 
 
 static const AVCodecTag flv_video_codec_ids[] = {
@@ -58,6 +61,7 @@ static const AVCodecTag flv_audio_codec_ids[] = {
 };
 
 typedef struct FLVContext {
+    AVClass *av_class;
     int     reserved;
     int64_t duration_offset;
     int64_t filesize_offset;
@@ -68,6 +72,8 @@ typedef struct FLVContext {
     AVCodecContext *video_enc;
     double framerate;
     AVCodecContext *data_enc;
+
+    int flags;
 } FLVContext;
 
 typedef struct FLVStreamContext {
@@ -452,6 +458,31 @@ static int flv_write_header(AVFormatContext *s)
             if (enc->codec_id == AV_CODEC_ID_AAC) {
                 avio_w8(pb, get_audio_flags(s, enc));
                 avio_w8(pb, 0); // AAC sequence header
+
+                if (!enc->extradata_size && flv->flags & 1) {
+                    PutBitContext pbc;
+                    int samplerate_index;
+                    int channels = flv->audio_enc->channels - (flv->audio_enc->channels == 8 ? 1 : 0);
+                    uint8_t data[2];
+
+                    for (samplerate_index = 0; samplerate_index < 16; samplerate_index++)
+                        if (flv->audio_enc->sample_rate == mpeg4audio_sample_rates[samplerate_index])
+                            break;
+
+                    init_put_bits(&pbc, data, sizeof(data));
+                    put_bits(&pbc, 5, flv->audio_enc->profile + 1); //profile
+                    put_bits(&pbc, 4, samplerate_index); //sample rate index
+                    put_bits(&pbc, 4, channels);
+                    put_bits(&pbc, 1, 0); //frame length - 1024 samples
+                    put_bits(&pbc, 1, 0); //does not depend on core coder
+                    put_bits(&pbc, 1, 0); //is not extension
+                    flush_put_bits(&pbc);
+
+                    avio_w8(pb, data[0]);
+                    avio_w8(pb, data[1]);
+
+                    av_log(s, AV_LOG_WARNING, "AAC sequence header: %02x %02x.\n", data[0], data[1]);
+                }
                 avio_write(pb, enc->extradata, enc->extradata_size);
             } else {
                 avio_w8(pb, enc->codec_tag | FLV_FRAME_KEY); // flags
@@ -655,6 +686,19 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     return pb->error;
 }
 
+static const AVOption options[] = {
+    { "flvflags", "FLV muxer flags", offsetof(FLVContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
+    { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
+    { NULL },
+};
+
+static const AVClass flv_muxer_class = {
+    .class_name = "flv muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_flv_muxer = {
     .name           = "flv",
     .long_name      = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
@@ -671,4 +715,5 @@ AVOutputFormat ff_flv_muxer = {
                       },
     .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                       AVFMT_TS_NONSTRICT,
+    .priv_class     = &flv_muxer_class,
 };
