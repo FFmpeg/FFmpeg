@@ -235,6 +235,7 @@ typedef struct PESContext {
     int total_size;
     int pes_header_size;
     int extended_stream_id;
+    uint8_t stream_id;
     int64_t pts, dts;
     int64_t ts_packet_pos; /**< position of first TS packet of this PES packet */
     uint8_t header[MAX_PES_HEADER_SIZE];
@@ -862,8 +863,10 @@ static void reset_pes_packet_state(PESContext *pes)
     av_buffer_unref(&pes->buffer);
 }
 
-static void new_pes_packet(PESContext *pes, AVPacket *pkt)
+static int new_pes_packet(PESContext *pes, AVPacket *pkt)
 {
+    char *sd;
+
     av_init_packet(pkt);
 
     pkt->buf  = pes->buffer;
@@ -891,6 +894,13 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
 
     pes->buffer = NULL;
     reset_pes_packet_state(pes);
+
+    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_MPEGTS_STREAM_ID, 1);
+    if (!sd)
+        return AVERROR(ENOMEM);
+    *sd = pes->stream_id;
+
+    return 0;
 }
 
 static uint64_t get_ts64(GetBitContext *gb, int bits)
@@ -979,14 +989,16 @@ static int mpegts_push_data(MpegTSFilter *filter,
     PESContext *pes   = filter->u.pes_filter.opaque;
     MpegTSContext *ts = pes->ts;
     const uint8_t *p;
-    int len, code;
+    int ret, len, code;
 
     if (!ts->pkt)
         return 0;
 
     if (is_start) {
         if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
-            new_pes_packet(pes, ts->pkt);
+            ret = new_pes_packet(pes, ts->pkt);
+            if (ret < 0)
+                return ret;
             ts->stop_parse = 1;
         } else {
             reset_pes_packet_state(pes);
@@ -1014,6 +1026,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     code = pes->header[3] | 0x100;
                     av_log(pes->stream, AV_LOG_TRACE, "pid=%x pes_code=%#x\n", pes->pid,
                             code);
+                    pes->stream_id = pes->header[3];
 
                     if ((pes->st && pes->st->discard == AVDISCARD_ALL &&
                          (!pes->sub_st ||
@@ -1197,7 +1210,9 @@ skip:
             if (pes->buffer) {
                 if (pes->data_index > 0 &&
                     pes->data_index + buf_size > pes->total_size) {
-                    new_pes_packet(pes, ts->pkt);
+                    ret = new_pes_packet(pes, ts->pkt);
+                    if (ret < 0)
+                        return ret;
                     pes->total_size = MAX_PES_PAYLOAD;
                     pes->buffer = av_buffer_alloc(pes->total_size +
                                                   AV_INPUT_BUFFER_PADDING_SIZE);
@@ -1220,7 +1235,9 @@ skip:
                 if (!ts->stop_parse && pes->total_size < MAX_PES_PAYLOAD &&
                     pes->pes_header_size + pes->data_index == pes->total_size + PES_START_SIZE) {
                     ts->stop_parse = 1;
-                    new_pes_packet(pes, ts->pkt);
+                    ret = new_pes_packet(pes, ts->pkt);
+                    if (ret < 0)
+                        return ret;
                 }
             }
             buf_size = 0;
@@ -2663,7 +2680,9 @@ static int mpegts_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (ts->pids[i] && ts->pids[i]->type == MPEGTS_PES) {
                 PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
                 if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
-                    new_pes_packet(pes, pkt);
+                    ret = new_pes_packet(pes, pkt);
+                    if (ret < 0)
+                        return ret;
                     pes->state = MPEGTS_SKIP;
                     ret = 0;
                     break;

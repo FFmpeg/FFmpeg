@@ -1403,6 +1403,12 @@ enum AVPacketSideDataType {
      * side data includes updated metadata which appeared in the stream.
      */
     AV_PKT_DATA_METADATA_UPDATE,
+
+    /**
+     * MPEGTS stream ID, this is required to pass the stream ID
+     * information from the demuxer to the corresponding muxer.
+     */
+    AV_PKT_DATA_MPEGTS_STREAM_ID,
 };
 
 #define AV_PKT_DATA_QUALITY_FACTOR AV_PKT_DATA_QUALITY_STATS //DEPRECATED
