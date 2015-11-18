@@ -50,7 +50,6 @@ typedef struct SliceThreadContext {
     action_func2 *func2;
     void *args;
     int *rets;
-    int rets_count;
     int job_count;
     int job_size;
 
@@ -100,7 +99,7 @@ static void* attribute_align_arg worker(void *v)
         ret = c->func ? c->func(avctx, (char*)c->args + our_job*c->job_size):
                                 c->func2(avctx, c->args, our_job, self_id);
         if (c->rets)
-            c->rets[our_job%c->rets_count] = ret;
+            c->rets[our_job%c->job_count] = ret;
 
         pthread_mutex_lock(&c->current_job_lock);
         our_job = c->current_job++;
@@ -165,10 +164,8 @@ static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, i
     c->func = func;
     if (ret) {
         c->rets = ret;
-        c->rets_count = job_count;
     } else {
         c->rets = NULL;
-        c->rets_count = 1;
     }
     c->current_execute++;
     pthread_cond_broadcast(&c->current_job_cond);
