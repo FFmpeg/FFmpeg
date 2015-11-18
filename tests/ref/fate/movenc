@@ -20,5 +20,9 @@ a0165f4a26a409212b0946e981bdefb9 1584 delay-moov-content
 fcae8f40e015b59aabc8d4a99a759ca1 996 delay-moov-elst-second-frag
 6256445b9595de78be493e0faf2bc5d7 1219 delay-moov-elst-init-discont
 fcae8f40e015b59aabc8d4a99a759ca1 996 delay-moov-elst-second-frag-discont
+29f875e401df0fc3026995d12872ef21 1219 delay-moov-elst-signal-init
+aa5462cc0d2144f72154d9c309edb57d 996 delay-moov-elst-signal-second-frag
+29f875e401df0fc3026995d12872ef21 1219 delay-moov-elst-signal-init-discont
+aa5462cc0d2144f72154d9c309edb57d 996 delay-moov-elst-signal-second-frag-discont
 6cd6085f4f0ff536acfcb77cb658eb47 4935 vfr
 6cd6085f4f0ff536acfcb77cb658eb47 4935 vfr-noduration
