@@ -1163,6 +1163,9 @@ static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
                              INTFLOAT z[320], INTFLOAT W[2][32][32][2], int buf_idx)
 {
     int i;
+#if USE_FIXED
+    int j;
+#endif
     memcpy(x    , x+1024, (320-32)*sizeof(x[0]));
     memcpy(x+288, in,         1024*sizeof(x[0]));
     for (i = 0; i < 32; i++) { // numTimeSlots*RATE = 16*2 as 960 sample frames
@@ -1170,6 +1173,21 @@ static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
         dsp->vector_fmul_reverse(z, sbr_qmf_window_ds, x, 320);
         sbrdsp->sum64x5(z);
         sbrdsp->qmf_pre_shuffle(z);
+#if USE_FIXED
+        for (j = 64; j < 128; j++) {
+            if (z[j] > 1<<24) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "sbr_qmf_analysis: value %09d too large, setting to %09d\n",
+                       z[j], 1<<24);
+                z[j] = 1<<24;
+            } else if (z[j] < -(1<<24)) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "sbr_qmf_analysis: value %09d too small, setting to %09d\n",
+                       z[j], -(1<<24));
+                z[j] = -(1<<24);
+            }
+        }
+#endif
         mdct->imdct_half(mdct, z, z+64);
         sbrdsp->qmf_post_shuffle(W[buf_idx][i], z);
         x += 32;
