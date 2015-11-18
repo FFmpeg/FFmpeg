@@ -496,6 +496,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+    if (avctx->slices > 1 &&
+        (avctx->codec_id == AV_CODEC_ID_FLV1 || avctx->codec_id == AV_CODEC_ID_H261)) {
+        av_log(avctx, AV_LOG_ERROR, "Multiple slices are not supported by this codec\n");
+        return AVERROR(EINVAL);
+    }
+
     if (s->avctx->thread_count > 1         &&
         s->codec_id != AV_CODEC_ID_MPEG4      &&
         s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
