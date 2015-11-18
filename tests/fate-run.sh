@@ -251,7 +251,7 @@ gapless(){
 
 concat(){
     template=$1
-    sample=$(target_path $2)
+    sample=$2
     mode=$3
     extra_args=$4
 
@@ -262,7 +262,7 @@ concat(){
     awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
 
     if [ "$mode" = "md5" ]; then
-      run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile > $packetfile
+      run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile | tr -d '\r' > $packetfile
       do_md5sum $packetfile
     else
       run ffprobe${PROGSUF} -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile

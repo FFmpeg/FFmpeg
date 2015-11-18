@@ -213,6 +213,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         return AVERROR(EINVAL);
 
     buffer_size = s->buf_end - s->buffer;
+    // pos is the absolute position that the beginning of s->buffer corresponds to in the file
     pos = s->pos - (s->write_flag ? 0 : buffer_size);
 
     if (whence != SEEK_CUR && whence != SEEK_SET)
@@ -227,13 +228,13 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
     if (offset < 0)
         return AVERROR(EINVAL);
 
-    offset1 = offset - pos;
+    offset1 = offset - pos; // "offset1" is the relative offset from the beginning of s->buffer
     if (!s->must_flush && (!s->direct || !s->seek) &&
         offset1 >= 0 && offset1 <= buffer_size - s->write_flag) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
     } else if ((!s->seekable ||
-               offset1 <= s->buf_end + s->short_seek_threshold - s->buffer) &&
+               offset1 <= buffer_size + s->short_seek_threshold) &&
                !s->write_flag && offset1 >= 0 &&
                (!s->direct || !s->seek) &&
               (whence != SEEK_END || force)) {
@@ -241,7 +242,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
             fill_buffer(s);
         if (s->eof_reached)
             return AVERROR_EOF;
-        s->buf_ptr = s->buf_end + offset - s->pos;
+        s->buf_ptr = s->buf_end - (s->pos - offset);
     } else if(!s->write_flag && offset1 < 0 && -offset1 < buffer_size>>1 && s->seek && offset > 0) {
         int64_t res;
 
@@ -541,13 +542,13 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
 
     size1 = size;
     while (size > 0) {
-        len = s->buf_end - s->buf_ptr;
-        if (len > size)
-            len = size;
+        len = FFMIN(s->buf_end - s->buf_ptr, size);
         if (len == 0 || s->write_flag) {
-            if((s->direct || size > s->buffer_size) && !s->update_checksum){
+            if((s->direct || size > s->buffer_size) && !s->update_checksum) {
+                // bypass the buffer and read data directly into buf
                 if(s->read_packet)
                     len = s->read_packet(s->opaque, buf, size);
+
                 if (len <= 0) {
                     /* do not modify buffer if EOF reached so that a seek back can
                     be done without rereading data */
@@ -560,6 +561,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                     s->bytes_read += len;
                     size -= len;
                     buf += len;
+                    // reset the buffer
                     s->buf_ptr = s->buffer;
                     s->buf_end = s->buffer/* + len*/;
                 }

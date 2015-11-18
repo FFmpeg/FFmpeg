@@ -665,7 +665,10 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
                 break;
 
             default:
-                av_assert0(0);
+                avpriv_request_sample(avctx, "bit depth %d "
+                        "and color type %d with TRNS",
+                        s->bit_depth, s->color_type);
+                return AVERROR_INVALIDDATA;
             }
 
             s->bpp += byte_depth;

@@ -430,6 +430,7 @@ retry:
             if (snprintf(str, str_size_alloc, "%f", val) >= str_size_alloc) {
                 av_log(c->fc, AV_LOG_ERROR,
                        "Failed to store the float32 number (%f) in string.\n", val);
+                av_free(str);
                 return AVERROR_INVALIDDATA;
             }
         } else {
@@ -4935,7 +4936,7 @@ static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp
 
     for (i = 0; i < mov->fragment_index_count; i++) {
         if (mov->fragment_index_data[i]->track_id == st->id) {
-            MOVFragmentIndex *index = index = mov->fragment_index_data[i];
+            MOVFragmentIndex *index = mov->fragment_index_data[i];
             for (j = index->item_count - 1; j >= 0; j--) {
                 if (index->items[j].time <= timestamp) {
                     if (index->items[j].headers_read)

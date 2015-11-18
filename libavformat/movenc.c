@@ -4486,10 +4486,18 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->start_dts == AV_NOPTS_VALUE) {
         trk->start_dts = pkt->dts;
         if (trk->frag_discont) {
-            /* Pretend the whole stream started at dts=0, with earlier fragments
-             * already written, with a duration summing up to pkt->dts. */
-            trk->frag_start   = pkt->dts;
-            trk->start_dts    = 0;
+            if (mov->use_editlist) {
+                /* Pretend the whole stream started at pts=0, with earlier fragments
+                 * already written. If the stream started at pts=0, the duration sum
+                 * of earlier fragments would have been pkt->pts. */
+                trk->frag_start = pkt->pts;
+                trk->start_dts  = pkt->dts - pkt->pts;
+            } else {
+                /* Pretend the whole stream started at dts=0, with earlier fragments
+                 * already written, with a duration summing up to pkt->dts. */
+                trk->frag_start = pkt->dts;
+                trk->start_dts  = 0;
+            }
             trk->frag_discont = 0;
         } else if (pkt->dts && mov->moov_written)
             av_log(s, AV_LOG_WARNING,
