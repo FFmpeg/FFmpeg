@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2015-11-18 - lavu 55.7.100 - mem.h
+  Add av_fast_mallocz()
+
 2015-10-29 - lavc 57.12.100 / 57.8.0 - avcodec.h
   xxxxxx - Deprecate av_free_packet(). Use av_packet_unref() as replacement,
            it resets the packet in a more consistent way.
