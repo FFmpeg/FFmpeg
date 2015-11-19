@@ -32,6 +32,8 @@ static int genh_probe(AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('G','E','N','H'))
         return 0;
+    if (AV_RL32(p->buf+4) <= 0 || AV_RL32(p->buf+4) > 0xFFFF) // channels
+        return 0;
 
     return AVPROBE_SCORE_MAX / 3 * 2;
 }

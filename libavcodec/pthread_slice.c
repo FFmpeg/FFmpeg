@@ -80,6 +80,7 @@ static void* attribute_align_arg worker(void *v)
     pthread_mutex_lock(&c->current_job_lock);
     self_id = c->current_job++;
     for (;;){
+        int ret;
         while (our_job >= c->job_count) {
             if (c->current_job == thread_count + c->job_count)
                 pthread_cond_signal(&c->last_job_cond);
@@ -96,8 +97,10 @@ static void* attribute_align_arg worker(void *v)
         }
         pthread_mutex_unlock(&c->current_job_lock);
 
-        c->rets[our_job%c->rets_count] = c->func ? c->func(avctx, (char*)c->args + our_job*c->job_size):
-                                                   c->func2(avctx, c->args, our_job, self_id);
+        ret = c->func ? c->func(avctx, (char*)c->args + our_job*c->job_size):
+                                c->func2(avctx, c->args, our_job, self_id);
+        if (c->rets)
+            c->rets[our_job%c->rets_count] = ret;
 
         pthread_mutex_lock(&c->current_job_lock);
         our_job = c->current_job++;
@@ -146,7 +149,6 @@ static av_always_inline void thread_park_workers(SliceThreadContext *c, int thre
 static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, int *ret, int job_count, int job_size)
 {
     SliceThreadContext *c = avctx->internal->thread_ctx;
-    int dummy_ret;
 
     if (!(avctx->active_thread_type&FF_THREAD_SLICE) || avctx->thread_count <= 1)
         return avcodec_default_execute(avctx, func, arg, ret, job_count, job_size);
@@ -165,7 +167,7 @@ static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, i
         c->rets = ret;
         c->rets_count = job_count;
     } else {
-        c->rets = &dummy_ret;
+        c->rets = NULL;
         c->rets_count = 1;
     }
     c->current_execute++;

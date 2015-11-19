@@ -215,7 +215,7 @@ static void mux_frames(int n)
     int end_frames = frames + n;
     while (1) {
         AVPacket pkt;
-        uint8_t pktdata[4];
+        uint8_t pktdata[8] = { 0 };
         av_init_packet(&pkt);
 
         if (av_compare_ts(audio_dts, audio_st->time_base, video_dts, video_st->time_base) < 0) {
@@ -257,9 +257,9 @@ static void mux_frames(int n)
 
         if (clear_duration)
             pkt.duration = 0;
-        AV_WB32(pktdata, pkt.pts);
+        AV_WB32(pktdata + 4, pkt.pts);
         pkt.data = pktdata;
-        pkt.size = 4;
+        pkt.size = 8;
         if (skip_write)
             continue;
         if (skip_write_audio && pkt.stream_index == 1)
@@ -278,6 +278,23 @@ static void skip_gops(int n)
     skip_write = 1;
     mux_gops(n);
     skip_write = 0;
+}
+
+static void signal_init_ts(void)
+{
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    pkt.size = 0;
+    pkt.data = NULL;
+
+    pkt.stream_index = 0;
+    pkt.dts = video_dts;
+    pkt.pts = 0;
+    av_write_frame(ctx, &pkt);
+
+    pkt.stream_index = 1;
+    pkt.dts = pkt.pts = audio_dts;
+    av_write_frame(ctx, &pkt);
 }
 
 static void finish(void)
@@ -570,6 +587,40 @@ int main(int argc, char **argv)
     close_out();
     check(!memcmp(hash, header, HASH_SIZE), "discontinuously written header differs");
     init_out("delay-moov-elst-second-frag-discont");
+    av_write_frame(ctx, NULL); // Output the second fragment
+    close_out();
+    check(!memcmp(hash, content, HASH_SIZE), "discontinuously written fragment differs");
+    finish();
+
+
+    // Test discontinously written fragments with b-frames and audio preroll,
+    // properly signaled.
+    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash", 0);
+    init(1, 1);
+    mux_gops(1);
+    init_out("delay-moov-elst-signal-init");
+    av_write_frame(ctx, NULL); // Output the moov
+    close_out();
+    memcpy(header, hash, HASH_SIZE);
+    av_write_frame(ctx, NULL); // Output the first fragment
+    init_out("delay-moov-elst-signal-second-frag");
+    mux_gops(1);
+    av_write_frame(ctx, NULL); // Output the second fragment
+    close_out();
+    memcpy(content, hash, HASH_SIZE);
+    finish();
+
+    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash+frag_discont", 0);
+    av_dict_set(&opts, "fragment_index", "2", 0);
+    init(1, 1);
+    signal_init_ts();
+    skip_gops(1);
+    mux_gops(1); // Write the second fragment
+    init_out("delay-moov-elst-signal-init-discont");
+    av_write_frame(ctx, NULL); // Output the moov
+    close_out();
+    check(!memcmp(hash, header, HASH_SIZE), "discontinuously written header differs");
+    init_out("delay-moov-elst-signal-second-frag-discont");
     av_write_frame(ctx, NULL); // Output the second fragment
     close_out();
     check(!memcmp(hash, content, HASH_SIZE), "discontinuously written fragment differs");
