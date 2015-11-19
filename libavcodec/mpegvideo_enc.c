@@ -2720,10 +2720,14 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         }
                     }
 
+#if FF_API_RTP_CALLBACK
+FF_DISABLE_DEPRECATION_WARNINGS
                     if (s->avctx->rtp_callback){
                         int number_mb = (mb_y - s->resync_mb_y)*s->mb_width + mb_x - s->resync_mb_x;
                         s->avctx->rtp_callback(s->avctx, s->ptr_lastgob, current_packet_size, number_mb);
                     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
                     update_mb_info(s, 1);
 
                     switch(s->codec_id){
@@ -3198,6 +3202,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
     write_slice_end(s);
 
+#if FF_API_RTP_CALLBACK
+FF_DISABLE_DEPRECATION_WARNINGS
     /* Send the last GOB if RTP */
     if (s->avctx->rtp_callback) {
         int number_mb = (mb_y - s->resync_mb_y)*s->mb_width - s->resync_mb_x;
@@ -3206,6 +3212,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
         emms_c();
         s->avctx->rtp_callback(s->avctx, s->ptr_lastgob, pdif, number_mb);
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }
