@@ -3395,6 +3395,18 @@ static OutputStream *choose_output(void)
     return ost_min;
 }
 
+static void set_tty_echo(int on)
+{
+#if HAVE_TERMIOS_H
+    struct termios tty;
+    if (tcgetattr(0, &tty) == 0) {
+        if (on) tty.c_lflag |= ECHO;
+        else    tty.c_lflag &= ~ECHO;
+        tcsetattr(0, TCSANOW, &tty);
+    }
+#endif
+}
+
 static int check_keyboard_interaction(int64_t cur_time)
 {
     int i, ret, key;
@@ -3427,10 +3439,13 @@ static int check_keyboard_interaction(int64_t cur_time)
         int k, n = 0;
         fprintf(stderr, "\nEnter command: <target>|all <time>|-1 <command>[ <argument>]\n");
         i = 0;
+        set_tty_echo(1);
         while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf)-1)
             if (k > 0)
                 buf[i++] = k;
         buf[i] = 0;
+        set_tty_echo(0);
+        fprintf(stderr, "\n");
         if (k > 0 &&
             (n = sscanf(buf, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &time, command, arg)) >= 3) {
             av_log(NULL, AV_LOG_DEBUG, "Processing command target:%s time:%f command:%s arg:%s",
@@ -3469,10 +3484,13 @@ static int check_keyboard_interaction(int64_t cur_time)
             char buf[32];
             int k = 0;
             i = 0;
+            set_tty_echo(1);
             while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf)-1)
                 if (k > 0)
                     buf[i++] = k;
             buf[i] = 0;
+            set_tty_echo(0);
+            fprintf(stderr, "\n");
             if (k <= 0 || sscanf(buf, "%d", &debug)!=1)
                 fprintf(stderr,"error parsing debug value\n");
         }
