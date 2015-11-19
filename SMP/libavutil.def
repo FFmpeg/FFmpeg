@@ -101,6 +101,7 @@ EXPORTS
     av_expr_parse
     av_expr_parse_and_eval
     av_fast_malloc
+    av_fast_mallocz
     av_fast_realloc
     av_fifo_alloc
     av_fifo_alloc_array

@@ -268,6 +268,9 @@
     <ClCompile Include="..\libavformat\iv8.c" />
     <ClCompile Include="..\libavformat\ivfdec.c" />
     <ClCompile Include="..\libavformat\ivfenc.c" />
+    <ClCompile Include="..\libavformat\rmdec.c" />
+    <ClCompile Include="..\libavformat\rm.c" />
+    <ClCompile Include="..\libavformat\rmsipr.c" />
     <ClCompile Include="..\libavformat\jacosubdec.c" />
     <ClCompile Include="..\libavformat\jacosubenc.c" />
     <ClCompile Include="..\libavformat\jvdec.c" />
@@ -282,7 +285,6 @@
     <ClCompile Include="..\libavformat\m4vdec.c" />
     <ClCompile Include="..\libavformat\matroskadec.c" />
     <ClCompile Include="..\libavformat\matroska.c" />
-    <ClCompile Include="..\libavformat\rmsipr.c" />
     <ClCompile Include="..\libavformat\matroskaenc.c" />
     <ClCompile Include="..\libavformat\hevc.c" />
     <ClCompile Include="..\libavformat\wv.c" />
@@ -354,8 +356,6 @@
     <ClCompile Include="..\libavformat\realtextdec.c" />
     <ClCompile Include="..\libavformat\redspark.c" />
     <ClCompile Include="..\libavformat\rl2.c" />
-    <ClCompile Include="..\libavformat\rmdec.c" />
-    <ClCompile Include="..\libavformat\rm.c" />
     <ClCompile Include="..\libavformat\rmenc.c" />
     <ClCompile Include="..\libavformat\idroqdec.c" />
     <ClCompile Include="..\libavformat\idroqenc.c" />
