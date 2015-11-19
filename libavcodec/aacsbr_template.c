@@ -833,59 +833,33 @@ static void read_sbr_envelope(SpectralBandReplication *sbr, GetBitContext *gb,
         }
     }
 
-#if USE_FIXED
     for (i = 0; i < ch_data->bs_num_env; i++) {
         if (ch_data->bs_df_env[i]) {
             // bs_freq_res[0] == bs_freq_res[bs_num_env] from prev frame
             if (ch_data->bs_freq_res[i + 1] == ch_data->bs_freq_res[i]) {
                 for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                    ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i][j].mant + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i][j] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
             } else if (ch_data->bs_freq_res[i + 1]) {
                 for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
                     k = (j + odd) >> 1; // find k such that f_tablelow[k] <= f_tablehigh[j] < f_tablelow[k + 1]
-                    ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i][k].mant + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
                 }
             } else {
                 for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
                     k = j ? 2*j - odd : 0; // find k such that f_tablehigh[k] == f_tablelow[j]
-                    ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i][k].mant + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
                 }
             }
         } else {
-            ch_data->env_facs[i + 1][0].mant = delta * get_bits(gb, bits); // bs_env_start_value_balance
+            ch_data->env_facs_q[i + 1][0] = delta * get_bits(gb, bits); // bs_env_start_value_balance
             for (j = 1; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i + 1][j - 1].mant + delta * (get_vlc2(gb, f_huff, 9, 3) - f_lav);
+                ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i + 1][j - 1] + delta * (get_vlc2(gb, f_huff, 9, 3) - f_lav);
         }
     }
-#else
-    for (i = 0; i < ch_data->bs_num_env; i++) {
-        if (ch_data->bs_df_env[i]) {
-            // bs_freq_res[0] == bs_freq_res[bs_num_env] from prev frame
-            if (ch_data->bs_freq_res[i + 1] == ch_data->bs_freq_res[i]) {
-                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                    ch_data->env_facs[i + 1][j] = ch_data->env_facs[i][j] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
-            } else if (ch_data->bs_freq_res[i + 1]) {
-                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
-                    k = (j + odd) >> 1; // find k such that f_tablelow[k] <= f_tablehigh[j] < f_tablelow[k + 1]
-                    ch_data->env_facs[i + 1][j] = ch_data->env_facs[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
-                }
-            } else {
-                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
-                    k = j ? 2*j - odd : 0; // find k such that f_tablehigh[k] == f_tablelow[j]
-                    ch_data->env_facs[i + 1][j] = ch_data->env_facs[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
-                }
-            }
-        } else {
-            ch_data->env_facs[i + 1][0] = delta * get_bits(gb, bits); // bs_env_start_value_balance
-            for (j = 1; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                ch_data->env_facs[i + 1][j] = ch_data->env_facs[i + 1][j - 1] + delta * (get_vlc2(gb, f_huff, 9, 3) - f_lav);
-        }
-    }
-#endif /* USE_FIXED */
 
-    //assign 0th elements of env_facs from last elements
-    memcpy(ch_data->env_facs[0], ch_data->env_facs[ch_data->bs_num_env],
-           sizeof(ch_data->env_facs[0]));
+    //assign 0th elements of env_facs_q from last elements
+    memcpy(ch_data->env_facs_q[0], ch_data->env_facs_q[ch_data->bs_num_env],
+           sizeof(ch_data->env_facs_q[0]));
 }
 
 static int read_sbr_noise(AACContext *ac, SpectralBandReplication *sbr, GetBitContext *gb,
