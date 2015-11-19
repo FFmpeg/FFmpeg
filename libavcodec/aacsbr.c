@@ -93,8 +93,8 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
         }
         for (e = 1; e <= sbr->data[0].bs_num_noise; e++) {
             for (k = 0; k < sbr->n_q; k++) {
-                float temp1 = exp2f(NOISE_FLOOR_OFFSET - sbr->data[0].noise_facs[e][k] + 1);
-                float temp2 = exp2f(12 - sbr->data[1].noise_facs[e][k]);
+                float temp1 = exp2f(NOISE_FLOOR_OFFSET - sbr->data[0].noise_facs_q[e][k] + 1);
+                float temp2 = exp2f(12 - sbr->data[1].noise_facs_q[e][k]);
                 float fac;
                 if (temp1 > 1E20) {
                     av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
@@ -121,7 +121,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (e = 1; e <= sbr->data[ch].bs_num_noise; e++)
                 for (k = 0; k < sbr->n_q; k++)
                     sbr->data[ch].noise_facs[e][k] =
-                        exp2f(NOISE_FLOOR_OFFSET - sbr->data[ch].noise_facs[e][k]);
+                        exp2f(NOISE_FLOOR_OFFSET - sbr->data[ch].noise_facs_q[e][k]);
         }
     }
 }
