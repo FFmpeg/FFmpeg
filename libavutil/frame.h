@@ -354,6 +354,12 @@ typedef struct AVFrame {
     enum AVColorSpace colorspace;
 
     enum AVChromaLocation chroma_location;
+
+    /**
+     * For hwaccel-format frames, this should be a reference to the
+     * AVHWFramesContext describing the frame.
+     */
+    AVBufferRef *hw_frames_ctx;
 } AVFrame;
 
 /**

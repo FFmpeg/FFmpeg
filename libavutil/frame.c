@@ -251,6 +251,14 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
         }
     }
 
+    if (src->hw_frames_ctx) {
+        dst->hw_frames_ctx = av_buffer_ref(src->hw_frames_ctx);
+        if (!dst->hw_frames_ctx) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     /* duplicate extended data */
     if (src->extended_data != src->data) {
         int ch = av_get_channel_layout_nb_channels(src->channel_layout);
@@ -303,6 +311,9 @@ void av_frame_unref(AVFrame *frame)
     for (i = 0; i < frame->nb_extended_buf; i++)
         av_buffer_unref(&frame->extended_buf[i]);
     av_freep(&frame->extended_buf);
+
+    av_buffer_unref(&frame->hw_frames_ctx);
+
     get_frame_defaults(frame);
 }
 
