@@ -43,11 +43,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
     const AVFrame * const p = frame;
-    uint8_t *offsettab, *lengthtab, *in_buf, *encode_buf, *buf;
+    PutByteContext pbc;
+    uint8_t *in_buf, *encode_buf;
     int x, y, z, length, tablesize, ret;
     unsigned int width, height, depth, dimension;
     unsigned int bytes_per_channel, pixmax, put_be;
-    unsigned char *end_buf;
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -117,40 +117,41 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", length);
         return ret;
     }
-    buf     = pkt->data;
-    end_buf = pkt->data + pkt->size;
+
+    bytestream2_init_writer(&pbc, pkt->data, pkt->size);
 
     /* Encode header. */
-    bytestream_put_be16(&buf, SGI_MAGIC);
-    bytestream_put_byte(&buf, avctx->coder_type != FF_CODER_TYPE_RAW); /* RLE 1 - VERBATIM 0*/
-    bytestream_put_byte(&buf, bytes_per_channel);
-    bytestream_put_be16(&buf, dimension);
-    bytestream_put_be16(&buf, width);
-    bytestream_put_be16(&buf, height);
-    bytestream_put_be16(&buf, depth);
+    bytestream2_put_be16(&pbc, SGI_MAGIC);
+    bytestream2_put_byte(&pbc, avctx->coder_type != FF_CODER_TYPE_RAW); /* RLE 1 - VERBATIM 0 */
+    bytestream2_put_byte(&pbc, bytes_per_channel);
+    bytestream2_put_be16(&pbc, dimension);
+    bytestream2_put_be16(&pbc, width);
+    bytestream2_put_be16(&pbc, height);
+    bytestream2_put_be16(&pbc, depth);
 
-    bytestream_put_be32(&buf, 0L); /* pixmin */
-    bytestream_put_be32(&buf, pixmax);
-    bytestream_put_be32(&buf, 0L); /* dummy */
+    bytestream2_put_be32(&pbc, 0L); /* pixmin */
+    bytestream2_put_be32(&pbc, pixmax);
+    bytestream2_put_be32(&pbc, 0L); /* dummy */
 
     /* name */
-    memset(buf, 0, SGI_HEADER_SIZE);
-    buf += 80;
+    bytestream2_skip_p(&pbc, 80);
 
     /* colormap */
-    bytestream_put_be32(&buf, 0L);
+    bytestream2_put_be32(&pbc, 0L);
 
     /* The rest of the 512 byte header is unused. */
-    buf += 404;
-    offsettab = buf;
+    bytestream2_skip_p(&pbc, 404);
 
     if (avctx->coder_type != FF_CODER_TYPE_RAW) {
+        PutByteContext taboff_pcb, tablen_pcb;
+
         /* Skip RLE offset table. */
-        buf += tablesize;
-        lengthtab = buf;
+        bytestream2_init_writer(&taboff_pcb, pbc.buffer, tablesize);
+        bytestream2_skip_p(&pbc, tablesize);
 
         /* Skip RLE length table. */
-        buf += tablesize;
+        bytestream2_init_writer(&tablen_pcb, pbc.buffer, tablesize);
+        bytestream2_skip_p(&pbc, tablesize);
 
         /* Make an intermediate consecutive buffer. */
         if (!(encode_buf = av_malloc(width)))
@@ -160,18 +161,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
             in_buf = p->data[0] + p->linesize[0] * (height - 1) + z;
 
             for (y = 0; y < height; y++) {
-                bytestream_put_be32(&offsettab, buf - pkt->data);
+                bytestream2_put_be32(&taboff_pcb, bytestream2_tell_p(&pbc));
 
                 for (x = 0; x < width; x++)
                     encode_buf[x] = in_buf[depth * x];
 
-                if ((length = ff_rle_encode(buf, end_buf - buf - 1, encode_buf, 1, width, 0, 0, 0x80, 0)) < 1) {
+                length = ff_rle_encode(pbc.buffer,
+                                       bytestream2_get_bytes_left_p(&pbc),
+                                       encode_buf, 1, width, 0, 0, 0x80, 0);
+                if (length < 1) {
                     av_free(encode_buf);
                     return -1;
                 }
 
-                buf += length;
-                bytestream_put_be32(&lengthtab, length);
+                bytestream2_skip_p(&pbc, length);
+                bytestream2_put_be32(&tablen_pcb, length);
                 in_buf -= p->linesize[0];
             }
         }
@@ -184,12 +188,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width * depth; x += depth)
                     if (bytes_per_channel == 1)
-                        bytestream_put_byte(&buf, in_buf[x]);
+                        bytestream2_put_byte(&pbc, in_buf[x]);
                     else
                         if (put_be)
-                            bytestream_put_be16(&buf, ((uint16_t *)in_buf)[x]);
+                            bytestream2_put_be16(&pbc, ((uint16_t *)in_buf)[x]);
                         else
-                            bytestream_put_le16(&buf, ((uint16_t *)in_buf)[x]);
+                            bytestream2_put_le16(&pbc, ((uint16_t *)in_buf)[x]);
 
                 in_buf -= p->linesize[0];
             }
@@ -197,7 +201,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     /* total length */
-    pkt->size   = buf - pkt->data;
+    pkt->size   = bytestream2_tell_p(&pbc);
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
