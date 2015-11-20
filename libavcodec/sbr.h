@@ -99,7 +99,7 @@ typedef struct SBRData {
     uint8_t            env_facs_q[6][48];
     AAC_FLOAT          env_facs[6][48];
     ///Noise scalefactors
-    uint8_t            noise_facs_q[6][48];
+    uint8_t            noise_facs_q[3][5];
     AAC_FLOAT          noise_facs[3][5];
     ///Envelope time borders
     uint8_t            t_env[8];
