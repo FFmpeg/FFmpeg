@@ -521,6 +521,8 @@ library:
 @item VC-1 test bitstream       @tab X @tab X
 @item Vidvox Hap                @tab X @tab X
 @item Vivo                      @tab   @tab X
+@item VPK                       @tab   @tab X
+    @tab Audio format used in Sony PS games.
 @item WAV                       @tab X @tab X
 @item WavPack                   @tab X @tab X
 @item WebM                      @tab X @tab X

@@ -27,7 +27,7 @@
 
 static const AVCodecTag rsd_tags[] = {
     { AV_CODEC_ID_ADPCM_PSX,       MKTAG('V','A','G',' ') },
-    { AV_CODEC_ID_ADPCM_THP,       MKTAG('G','A','D','P') },
+    { AV_CODEC_ID_ADPCM_THP_LE,    MKTAG('G','A','D','P') },
     { AV_CODEC_ID_ADPCM_THP,       MKTAG('W','A','D','P') },
     { AV_CODEC_ID_ADPCM_IMA_RAD,   MKTAG('R','A','D','P') },
     { AV_CODEC_ID_ADPCM_IMA_WAV,   MKTAG('X','A','D','P') },
@@ -121,30 +121,27 @@ static int rsd_read_header(AVFormatContext *s)
         if (pb->seekable)
             st->duration = av_get_audio_frame_duration(codec, avio_size(pb) - start);
         break;
+    case AV_CODEC_ID_ADPCM_THP_LE:
+        /* RSD3GADP is mono, so only alloc enough memory
+           to store the coeff table for a single channel. */
+
+        start = avio_rl32(pb);
+
+        if ((ret = ff_get_extradata(codec, s->pb, 32)) < 0)
+            return ret;
+        if (pb->seekable)
+            st->duration = av_get_audio_frame_duration(codec, avio_size(pb) - start);
+        break;
     case AV_CODEC_ID_ADPCM_THP:
-        if (st->codec->codec_tag == MKTAG('G','A','D','P')) {
-            /* RSD3GADP is mono, so only alloc enough memory
-               to store the coeff table for a single channel. */
+        codec->block_align = 8 * codec->channels;
+        avio_skip(s->pb, 0x1A4 - avio_tell(s->pb));
 
-            start = avio_rl32(pb);
+        if ((ret = ff_alloc_extradata(st->codec, 32 * st->codec->channels)) < 0)
+            return ret;
 
-            if ((ret = ff_get_extradata(codec, s->pb, 32)) < 0)
-                return ret;
-
-            for (i = 0; i < 16; i++)
-                AV_WB16(codec->extradata + i * 2, AV_RL16(codec->extradata + i * 2));
-
-        } else {
-            codec->block_align = 8 * codec->channels;
-            avio_skip(s->pb, 0x1A4 - avio_tell(s->pb));
-
-            if ((ret = ff_alloc_extradata(st->codec, 32 * st->codec->channels)) < 0)
-                return ret;
-
-            for (i = 0; i < st->codec->channels; i++) {
-                avio_read(s->pb, st->codec->extradata + 32 * i, 32);
-                avio_skip(s->pb, 8);
-            }
+        for (i = 0; i < st->codec->channels; i++) {
+            avio_read(s->pb, st->codec->extradata + 32 * i, 32);
+            avio_skip(s->pb, 8);
         }
         if (pb->seekable)
             st->duration = (avio_size(pb) - start) / (8 * st->codec->channels) * 14;
