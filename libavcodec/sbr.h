@@ -137,6 +137,7 @@ typedef struct AACSBRContext {
 struct SpectralBandReplication {
     int                sample_rate;
     int                start;
+    int                ready_for_dequant;
     int                id_aac;
     int                reset;
     SpectrumParameters spectrum_params;

@@ -70,6 +70,7 @@ av_cold void AAC_RENAME(ff_aac_sbr_init)(void)
 /** Places SBR in pure upsampling mode. */
 static void sbr_turnoff(SpectralBandReplication *sbr) {
     sbr->start = 0;
+    sbr->ready_for_dequant = 0;
     // Init defults used in pure upsampling mode
     sbr->kx[1] = 32; //Typo in spec, kx' inits to 32
     sbr->m[1] = 0;
@@ -177,6 +178,7 @@ static unsigned int read_sbr_header(SpectralBandReplication *sbr, GetBitContext 
     SpectrumParameters old_spectrum_params;
 
     sbr->start = 1;
+    sbr->ready_for_dequant = 0;
 
     // Save last spectrum parameters variables to compare to new ones
     memcpy(&old_spectrum_params, &sbr->spectrum_params, sizeof(SpectrumParameters));
@@ -1032,6 +1034,7 @@ static unsigned int read_sbr_data(AACContext *ac, SpectralBandReplication *sbr,
     unsigned int cnt = get_bits_count(gb);
 
     sbr->id_aac = id_aac;
+    sbr->ready_for_dequant = 1;
 
     if (id_aac == TYPE_SCE || id_aac == TYPE_CCE) {
         if (read_sbr_single_channel_element(ac, sbr, gb)) {
@@ -1449,6 +1452,12 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
         sbr_turnoff(sbr);
     }
 
+    if (sbr->start && !sbr->ready_for_dequant) {
+        av_log(ac->avctx, AV_LOG_ERROR,
+               "No quantized data read for sbr_dequant.\n");
+        sbr_turnoff(sbr);
+    }
+
     if (!sbr->kx_and_m_pushed) {
         sbr->kx[0] = sbr->kx[1];
         sbr->m[0] = sbr->m[1];
@@ -1458,6 +1467,7 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
 
     if (sbr->start) {
         sbr_dequant(sbr, id_aac);
+        sbr->ready_for_dequant = 0;
     }
     for (ch = 0; ch < nch; ch++) {
         /* decode channel */
