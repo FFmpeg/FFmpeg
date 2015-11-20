@@ -731,6 +731,19 @@ static int ffm_probe(AVProbeData *p)
     return 0;
 }
 
+static const AVOption options[] = {
+    {"server_attached", NULL, offsetof(FFMContext, server_attached), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_EXPORT },
+    {"ffm_write_index", NULL, offsetof(FFMContext, write_index), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, 1, AV_OPT_FLAG_EXPORT },
+    {"ffm_file_size", NULL, offsetof(FFMContext, file_size), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, 1, AV_OPT_FLAG_EXPORT },
+    { NULL },
+};
+
+static const AVClass ffm_class = {
+    .class_name = "ffm demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 AVInputFormat ff_ffm_demuxer = {
     .name           = "ffm",
     .long_name      = NULL_IF_CONFIG_SMALL("FFM (FFserver live feed)"),
@@ -740,4 +753,5 @@ AVInputFormat ff_ffm_demuxer = {
     .read_packet    = ffm_read_packet,
     .read_close     = ffm_close,
     .read_seek      = ffm_seek,
+    .priv_class     = &ffm_class,
 };
