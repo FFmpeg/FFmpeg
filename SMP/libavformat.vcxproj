@@ -432,6 +432,7 @@
     <ClCompile Include="..\libavformat\vivo.c" />
     <ClCompile Include="..\libavformat\sierravmd.c" />
     <ClCompile Include="..\libavformat\vocenc.c" />
+    <ClCompile Include="..\libavformat\vpk.c" />
     <ClCompile Include="..\libavformat\vplayerdec.c" />
     <ClCompile Include="..\libavformat\vqf.c" />
     <ClCompile Include="..\libavformat\wavdec.c" />

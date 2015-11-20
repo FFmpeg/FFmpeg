@@ -1117,6 +1117,9 @@
     <ClCompile Include="..\libavformat\vocenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\vpk.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\vplayerdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
