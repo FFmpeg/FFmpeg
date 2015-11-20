@@ -192,10 +192,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
                 temp1.exp = NOISE_FLOOR_OFFSET - \
                     sbr->data[0].noise_facs_q[e][k] + 2;
                 temp1.mant = 0x20000000;
-                if (temp1.exp > 66) { // temp1 > 1E20
-                    av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
-                    temp1 = FLOAT_1;
-                }
+                av_assert0(temp1.exp <= 66);
                 temp2.exp = 12 - sbr->data[1].noise_facs_q[e][k] + 1;
                 temp2.mant = 0x20000000;
                 fac   = av_div_sf(temp1, av_add_sf(FLOAT_1, temp2));
