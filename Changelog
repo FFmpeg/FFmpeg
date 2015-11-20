@@ -47,6 +47,7 @@ version <next>:
 - zero-copy Intel QSV transcoding in avconv
 - libkvazaar HEVC encoder
 - innoHeim/Rsupport Screen Capture Codec decoder
+- support encoding 16-bit RLE SGI images
 
 
 version 11:

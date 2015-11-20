@@ -45,7 +45,10 @@ static int sgi_rle_encode(PutByteContext *pbc, const uint8_t *src,
     int val, count, x, start = bytestream2_tell_p(pbc);
     void (*bytestream2_put)(PutByteContext *, unsigned int);
 
-    bytestream2_put = bytestream2_put_byte;
+    if (bpp == 1)
+        bytestream2_put = bytestream2_put_byte;
+    else
+        bytestream2_put = bytestream2_put_be16;
 
     for (x = 0; x < w; x += count) {
         /* see if we can encode the next set of pixels with RLE */
@@ -54,7 +57,7 @@ static int sgi_rle_encode(PutByteContext *pbc, const uint8_t *src,
             if (bytestream2_get_bytes_left_p(pbc) < bpp * 2)
                 return AVERROR_INVALIDDATA;
 
-            val = *src;
+            val = bpp == 1 ? *src : AV_RB16(src);
             bytestream2_put(pbc, count);
             bytestream2_put(pbc, val);
         } else {
@@ -66,7 +69,7 @@ static int sgi_rle_encode(PutByteContext *pbc, const uint8_t *src,
 
             bytestream2_put(pbc, count + 0x80);
             for (i = 0; i < count; i++) {
-                val = src[i];
+                val = bpp == 1 ? src[i] : AV_RB16(src + i * bpp);
                 bytestream2_put(pbc, val);
             }
         }
@@ -116,7 +119,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_GRAY16LE:
         put_be = !HAVE_BIGENDIAN;
     case AV_PIX_FMT_GRAY16BE:
-        avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_SINGLE_CHAN;
@@ -125,7 +127,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_RGB48LE:
         put_be = !HAVE_BIGENDIAN;
     case AV_PIX_FMT_RGB48BE:
-        avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_MULTI_CHAN;
@@ -134,7 +135,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_RGBA64LE:
         put_be = !HAVE_BIGENDIAN;
     case AV_PIX_FMT_RGBA64BE:
-        avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_MULTI_CHAN;
@@ -192,19 +192,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
         bytestream2_skip_p(&pbc, tablesize);
 
         /* Make an intermediate consecutive buffer. */
-        if (!(encode_buf = av_malloc(width)))
+        if (!(encode_buf = av_malloc(width * bytes_per_channel)))
             return -1;
 
         for (z = 0; z < depth; z++) {
-            in_buf = p->data[0] + p->linesize[0] * (height - 1) + z;
+            in_buf = p->data[0] + p->linesize[0] * (height - 1) + z * bytes_per_channel;
 
             for (y = 0; y < height; y++) {
                 bytestream2_put_be32(&taboff_pcb, bytestream2_tell_p(&pbc));
 
-                for (x = 0; x < width; x++)
+                for (x = 0; x < width * bytes_per_channel; x += bytes_per_channel)
                     encode_buf[x] = in_buf[depth * x];
 
-                length = sgi_rle_encode(&pbc, encode_buf, width, 1);
+                length = sgi_rle_encode(&pbc, encode_buf, width,
+                                        bytes_per_channel);
                 if (length < 1) {
                     av_free(encode_buf);
                     return -1;
