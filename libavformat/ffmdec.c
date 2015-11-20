@@ -49,7 +49,10 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
     } else {
     if (pos == ffm->write_index) {
         /* exactly at the end of stream */
-        return AVERROR(EAGAIN);
+        if (ffm->server_attached)
+            return AVERROR(EAGAIN);
+        else
+            return AVERROR_INVALIDDATA;
     } else if (pos < ffm->write_index) {
         avail_size = ffm->write_index - pos;
     } else {
@@ -59,8 +62,10 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
     avail_size = (avail_size / ffm->packet_size) * (ffm->packet_size - FFM_HEADER_SIZE) + len;
     if (size <= avail_size)
         return 1;
-    else
+    else if (ffm->server_attached)
         return AVERROR(EAGAIN);
+    else
+        return AVERROR_INVALIDDATA;
 }
 
 static int ffm_resync(AVFormatContext *s, int state)
