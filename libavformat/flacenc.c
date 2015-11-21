@@ -187,7 +187,7 @@ static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 }
 
 static const AVOption flacenc_options[] = {
-    { "write_header", "Write the file header", offsetof(FlacMuxerContext, write_header), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "write_header", "Write the file header", offsetof(FlacMuxerContext, write_header), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

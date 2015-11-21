@@ -364,7 +364,7 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption mpjpeg_options[] = {
-    { "strict_mime_boundary",  "require MIME boundaries match", OFFSET(strict_mime_boundary), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
+    { "strict_mime_boundary",  "require MIME boundaries match", OFFSET(strict_mime_boundary), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
     { NULL }
 };
 
