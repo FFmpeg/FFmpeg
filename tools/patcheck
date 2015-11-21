@@ -143,7 +143,7 @@ fi
 
 $GREP '^+++ .*Changelog' $* >/dev/null || printf "\nMissing changelog entry (ignore if minor change)\n"
 
-cat $* | tr '\n' '@' | $EGREP --color=always -o '(fprintf|av_log|printf)\([^)]*\)[+ ;@]*\1'  >$TMP && printf "\nMergeable calls\n"
+cat $* | $GREP -v '^-' | tr '\n' '@' | $EGREP --color=always -o '(fprintf|av_log|printf)\([^)]*\)[+ ;@]*\1'  >$TMP && printf "\nMergeable calls\n"
 cat $TMP | tr '@' '\n'
 
 cat $* | tr '\n' '@' | $EGREP --color=always -o '\+ *if *\( *([A-Za-z0-9_]*) *[<>]=? *[0-9]* *\) * \1 *= *[0-9]* *;[ @\\+]*else *if *\( *\1 *[<>]=? *[0-9]* *\) *\1 *= *[0-9]* *;'  >$TMP && printf "\nav_clip / av_clip_uint8 / av_clip_int16 / ...\n"
