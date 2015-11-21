@@ -1316,7 +1316,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
 #define AD     AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "postfilter", "postfilter on/off", OFFSET(postfilter), AV_OPT_TYPE_INT,
+    { "postfilter", "enable postfilter", OFFSET(postfilter), AV_OPT_TYPE_BOOL,
       { .i64 = 1 }, 0, 1, AD },
     { NULL }
 };

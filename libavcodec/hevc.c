@@ -3324,9 +3324,9 @@ static const AVProfile profiles[] = {
 
 static const AVOption options[] = {
     { "apply_defdispwin", "Apply default display window from VUI", OFFSET(apply_defdispwin),
-        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+        AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
     { "strict-displaywin", "stricly apply default display window size", OFFSET(apply_defdispwin),
-        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+        AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
     { NULL },
 };
 

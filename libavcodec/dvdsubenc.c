@@ -467,7 +467,7 @@ static int dvdsub_encode(AVCodecContext *avctx,
 #define OFFSET(x) offsetof(DVDSubtitleContext, x)
 #define SE AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    {"even_rows_fix", "Make number of rows even (workaround for some players)", OFFSET(even_rows_fix), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, SE},
+    {"even_rows_fix", "Make number of rows even (workaround for some players)", OFFSET(even_rows_fix), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, SE},
     { NULL },
 };
 

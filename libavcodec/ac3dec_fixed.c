@@ -169,7 +169,7 @@ static void ac3_downmix_c_fixed16(int16_t **samples, int16_t (*matrix)[2],
 
 static const AVOption options[] = {
     { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 6.0, PAR },
-    { "heavy_compr", "heavy dynamic range compression enabled", OFFSET(heavy_compression), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, PAR },
+    { "heavy_compr", "enable heavy dynamic range compression", OFFSET(heavy_compression), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, PAR },
     { NULL},
 };
 
