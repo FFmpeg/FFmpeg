@@ -39,6 +39,7 @@ static int v210_read_header(AVFormatContext *ctx)
 {
     V210DemuxerContext *s = ctx->priv_data;
     AVStream *st;
+    int ret;
 
     st = avformat_new_stream(ctx, NULL);
     if (!st)
@@ -50,11 +51,15 @@ static int v210_read_header(AVFormatContext *ctx)
 
     avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
+    ret = av_image_check_size(s->width, s->height, 0, ctx);
+    if (ret < 0)
+        return ret;
     st->codec->width    = s->width;
     st->codec->height   = s->height;
     st->codec->pix_fmt  = ctx->iformat->raw_codec_id == AV_CODEC_ID_V210 ?
                           AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV422P16;
-    st->codec->bit_rate = av_rescale_q(GET_PACKET_SIZE(s->width, s->height),
+    ctx->packet_size    = GET_PACKET_SIZE(s->width, s->height);
+    st->codec->bit_rate = av_rescale_q(ctx->packet_size,
                                        (AVRational){8,1}, st->time_base);
 
     return 0;
@@ -63,18 +68,10 @@ static int v210_read_header(AVFormatContext *ctx)
 
 static int v210_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int packet_size, ret, width, height;
-    AVStream *st = s->streams[0];
+    int ret;
 
-    width = st->codec->width;
-    height = st->codec->height;
-
-    packet_size = GET_PACKET_SIZE(width, height);
-    if (packet_size < 0)
-        return -1;
-
-    ret = av_get_packet(s->pb, pkt, packet_size);
-    pkt->pts = pkt->dts = pkt->pos / packet_size;
+    ret = av_get_packet(s->pb, pkt, s->packet_size);
+    pkt->pts = pkt->dts = pkt->pos / s->packet_size;
 
     pkt->stream_index = 0;
     if (ret < 0)
