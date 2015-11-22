@@ -14,6 +14,9 @@ libavutil:     2015-08-28
 
 
 API changes, most recent first:
+2015-11-xx - xxxxxxx - lavf 57.19.100 - avformat.h
+  Add av_stream_new_side_data().
+
 2015-11-xx - xxxxxxx - lavu 55.8.100 - xtea.h
     Add av_xtea_le_init and av_xtea_le_crypt
 

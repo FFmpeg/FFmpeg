@@ -1940,6 +1940,16 @@ const AVClass *avformat_get_class(void);
 AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c);
 
 /**
+ * Allocate new information from stream.
+ *
+ * @param stream stream
+ * @param type desired side information type
+ * @param size side information size
+ * @return pointer to fresh allocated data or NULL otherwise
+ */
+uint8_t *av_stream_new_side_data(AVStream *stream,
+                                 enum AVPacketSideDataType type, int size);
+/**
  * Get side information from stream.
  *
  * @param stream stream

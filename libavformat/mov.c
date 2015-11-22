@@ -724,7 +724,7 @@ static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    ast = (enum AVAudioServiceType*)ff_stream_new_side_data(st, AV_PKT_DATA_AUDIO_SERVICE_TYPE,
+    ast = (enum AVAudioServiceType*)av_stream_new_side_data(st, AV_PKT_DATA_AUDIO_SERVICE_TYPE,
                                                             sizeof(*ast));
     if (!ast)
         return AVERROR(ENOMEM);
@@ -756,7 +756,7 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    ast = (enum AVAudioServiceType*)ff_stream_new_side_data(st, AV_PKT_DATA_AUDIO_SERVICE_TYPE,
+    ast = (enum AVAudioServiceType*)av_stream_new_side_data(st, AV_PKT_DATA_AUDIO_SERVICE_TYPE,
                                                             sizeof(*ast));
     if (!ast)
         return AVERROR(ENOMEM);
