@@ -45,17 +45,13 @@ in OutputDir* otherwise an error will be generated.
 
 Many of the possible FFmpeg dependencies (and there dependencies) are available in the ShiftMediaProject repositories.
 However the following is a list of extra dependency options that require external downloads:
-    1) sdl (requires SDL 1.2)
-		a) Download pre-built binaries from the sdl homepage.
-		b) Extract all the header files into OutputDir/include/SDL/*.
-		c) Extract the lib's to OutputDir/lib/x86(and x64)/* and the DLL's to OutputDir/bin/x86(and x64)/*.
-    2) opengl (requires glext)
+    1) opengl (requires glext)
 		a) Download glext from the glext homepage.
 		b) Extract all the header files into OutputDir/include/gl/*.
-    3) opencl (requires Intel or AMD OpenCL SDK, NVIDIAs does not support required features)
+    2) opencl (requires Intel or AMD OpenCL SDK, NVIDIAs does not support required features)
 		a) Download either the "Intel OpenCL SDK" or the "AMD OpenCL SDK" from their respective suppliers.
 		b) Install the downloaded SDK wherever desired.
-    4) nvenc (requires NVIDIA CUDA SDK)
+    3) nvenc (requires NVIDIA CUDA SDK)
 		a) Download the "NVIDIA CUDA SDK" from the NVIDIA website.
 		b) Install the downloaded SDK wherever desired.
 		c) Download the "NVIDIA Video Codec SDK" from the NVIDIA website.

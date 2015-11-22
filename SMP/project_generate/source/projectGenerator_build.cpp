@@ -170,10 +170,6 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 //doesnt need any additional libs
             }
-            else if( vitLib->compare("sdl") == 0 )
-            {
-                vAddLibs.push_back( "SDL" ); //Add the additional required libs
-            }
             else if( vitLib->compare( "opengl" ) == 0 )
             {
                 vAddLibs.push_back( "Opengl32" ); //Add the additional required libs
