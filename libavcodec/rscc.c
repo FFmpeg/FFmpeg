@@ -80,7 +80,11 @@ static av_cold int rscc_init(AVCodecContext *avctx)
     if (!ctx->reference)
         return AVERROR(ENOMEM);
 
-    avctx->pix_fmt = AV_PIX_FMT_BGRA;
+    if (avctx->codec_tag == MKTAG('I','S','C','C')) {
+        avctx->pix_fmt = AV_PIX_FMT_BGRA;
+    } else {
+        avctx->pix_fmt = AV_PIX_FMT_BGR0;
+    }
 
     /* Store the value to check for keyframes */
     ctx->inflated_size = avctx->width * avctx->height * 4;
