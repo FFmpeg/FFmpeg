@@ -2043,7 +2043,7 @@ bool projectGenerator::outputDependencyLibs(const string & sProjectName, string 
             uint uiFindPos = sProjectTemplate.find(asLibLink2[uiLinkLib]);
             for (uint uiDebugRelease = 0; uiDebugRelease < 2; uiDebugRelease++) {
                 uint uiMax = ((uiDebugRelease == 0) && (uiLinkLib == 1)) ? 2 : 4; //No LTO option in debug
-                //x86, x64, x86LTO/Static, x64LTO/Static
+                //x86, x64, x86LTO/Static, x64LTO/Static -- x86, x64, x86DLL, x64DLL (projects)
                 for (uint uiConf = 0; uiConf < uiMax; uiConf++) {
                     uiFindPos = sProjectTemplate.find("%(AdditionalDependencies)", uiFindPos);
                     if (uiFindPos == string::npos) {
@@ -2051,7 +2051,7 @@ bool projectGenerator::outputDependencyLibs(const string & sProjectName, string 
                         return false;
                     }
                     uint uiAddIndex = uiDebugRelease;
-                    if ((uiLinkLib==0) && (uiConf < 2)) {
+                    if ((uiLinkLib == 0) && (((!bProgram) && (uiConf < 2)) || ((bProgram) && (uiConf >= 2)))) {
                         //Use DLL libs
                         uiAddIndex += 2;
                     }
