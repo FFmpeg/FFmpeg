@@ -671,8 +671,11 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
 
     /* find out the channel configuration */
     ret = ff_opus_parse_extradata(avctx, c);
-    if (ret < 0)
+    if (ret < 0) {
+        av_freep(&c->channel_maps);
+        av_freep(&c->fdsp);
         return ret;
+    }
 
     /* allocate and init each independent decoder */
     c->streams = av_mallocz_array(c->nb_streams, sizeof(*c->streams));
