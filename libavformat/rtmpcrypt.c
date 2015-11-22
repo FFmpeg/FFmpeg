@@ -186,7 +186,7 @@ static void rtmpe8_sig(const uint8_t *in, uint8_t *out, int key_id)
     struct AVXTEA ctx;
 
     av_xtea_init(&ctx, rtmpe8_keys[key_id]);
-    av_xtea_crypt(&ctx, out, in, 1, NULL, 0);
+    av_xtea_le_crypt(&ctx, out, in, 1, NULL, 0);
 }
 
 static void rtmpe9_sig(const uint8_t *in, uint8_t *out, int key_id)
