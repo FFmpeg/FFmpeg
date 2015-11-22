@@ -136,7 +136,7 @@ static av_cold void ps_tableinit(void)
                 float pd2_im = ipdopd_sin[pd2];
                 float re_smooth = 0.25f * pd0_re + 0.5f * pd1_re + pd2_re;
                 float im_smooth = 0.25f * pd0_im + 0.5f * pd1_im + pd2_im;
-                float pd_mag = 1 / sqrt(im_smooth * im_smooth + re_smooth * re_smooth);
+                float pd_mag = 1 / hypot(im_smooth, re_smooth);
                 pd_re_smooth[pd0*64+pd1*8+pd2] = re_smooth * pd_mag;
                 pd_im_smooth[pd0*64+pd1*8+pd2] = im_smooth * pd_mag;
             }
