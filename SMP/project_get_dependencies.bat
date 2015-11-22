@@ -24,6 +24,7 @@ mfx_dispatch, ^
 modplug, ^
 opus, ^
 rtmpdump, ^
+sdl, ^
 soxr, ^
 speex, ^
 theora, ^
