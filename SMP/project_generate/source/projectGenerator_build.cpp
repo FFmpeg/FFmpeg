@@ -152,10 +152,6 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 sLib = "libxvidcore";
             }
-            else if( vitLib->compare( "libmfx" ) == 0 )
-            {
-                vAddLibs.push_back( "libmfx" ); //Only 1 lib for debug/release
-            }
             else if( vitLib->compare("openssl") == 0 )
             {
                 //Needs ws2_32 but libavformat needs this even if not using openssl so it is already included
@@ -283,15 +279,6 @@ void projectGenerator::buildDependencyDirs(const string & sProjectName, StaticLi
                     cout << "    NVENC requires CUDA to be installed with NVENC headers made available in the CUDA SDK include path." << endl;
                 }
                 vIncludeDirs.push_back("$(CUDA_PATH)\\include\\");
-            } else if (mitLib->first.compare("libmfx") == 0) {
-                if (!GetEnvironmentVariable("INTELMEDIASDKROOT", NULL, 0)) {
-                    cout << "  Warning: Could not find the Intel Media SDK environment variable." << endl;
-                    cout << "    Either the Intel Media is not installed or the environment variable is missing." << endl;
-                    cout << "    Using the default environment variable of 'INTELMEDIASDKROOT'." << endl;
-                }
-                vIncludeDirs.push_back("$(INTELMEDIASDKROOT)\\include\\");
-                vLib32Dirs.push_back("$(INTELMEDIASDKROOT)\\lib\\win32");
-                vLib64Dirs.push_back("$(INTELMEDIASDKROOT)\\lib\\x64");
             }
         }
     }
