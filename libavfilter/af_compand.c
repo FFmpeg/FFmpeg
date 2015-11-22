@@ -467,13 +467,13 @@ static int config_output(AVFilterLink *outlink)
         L(2).b = (L(0).y - L(2).y) / (L(0).x - L(2).x);
 
         theta = atan2(L(2).y - L(4).y, L(2).x - L(4).x);
-        len = sqrt(pow(L(2).x - L(4).x, 2.) + pow(L(2).y - L(4).y, 2.));
+        len = hypot(L(2).x - L(4).x, L(2).y - L(4).y);
         r = FFMIN(radius, len);
         L(3).x = L(2).x - r * cos(theta);
         L(3).y = L(2).y - r * sin(theta);
 
         theta = atan2(L(0).y - L(2).y, L(0).x - L(2).x);
-        len = sqrt(pow(L(0).x - L(2).x, 2.) + pow(L(0).y - L(2).y, 2.));
+        len = hypot(L(0).x - L(2).x, L(0).y - L(2).y);
         r = FFMIN(radius, len / 2);
         x = L(2).x + r * cos(theta);
         y = L(2).y + r * sin(theta);
