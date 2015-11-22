@@ -3421,9 +3421,8 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (width && height && sc->display_matrix) {
         double disp_transform[2];
 
-#define SQR(a) ((a)*(double)(a))
         for (i = 0; i < 2; i++)
-            disp_transform[i] = sqrt(SQR(display_matrix[i][0]) + SQR(display_matrix[i][1]));
+            disp_transform[i] = hypot(display_matrix[i][0], display_matrix[i][1]);
 
         if (disp_transform[0] > 0       && disp_transform[1] > 0 &&
             disp_transform[0] < (1<<24) && disp_transform[1] < (1<<24) &&
