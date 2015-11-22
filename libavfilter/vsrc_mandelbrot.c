@@ -291,7 +291,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
 
             use_zyklus= (x==0 || s->inner!=BLACK ||color[x-1 + y*linesize] == 0xFF000000);
             if(use_zyklus)
-                epsilon= scale*1*sqrt(SQR(x-s->w/2) + SQR(y-s->h/2))/s->w;
+                epsilon= scale*(abs(x-s->w/2) + abs(y-s->h/2))/s->w;
 
 #define Z_Z2_C(outr,outi,inr,ini)\
             outr= inr*inr - ini*ini + cr;\
