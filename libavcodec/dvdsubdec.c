@@ -220,7 +220,7 @@ static void reset_rects(AVSubtitle *sub_header)
 static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                                 const uint8_t *buf, int buf_size)
 {
-    int cmd_pos, pos, cmd, x1, y1, x2, y2, offset1, offset2, next_cmd_pos;
+    int cmd_pos, pos, cmd, x1, y1, x2, y2, next_cmd_pos;
     int big_offsets, offset_size, is_8bit = 0;
     const uint8_t *yuv_palette = NULL;
     uint8_t *colormap = ctx->colormap, *alpha = ctx->alpha;
@@ -228,6 +228,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
     int i;
     int is_menu = 0;
     uint32_t size;
+    int64_t offset1, offset2;
 
     if (buf_size < 10)
         return -1;
@@ -353,6 +354,9 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             }
         }
     the_end:
+        if (offset1 >= buf_size || offset2 >= buf_size)
+            goto fail;
+
         if (offset1 >= 0 && offset2 >= 0) {
             int w, h;
             uint8_t *bitmap;
