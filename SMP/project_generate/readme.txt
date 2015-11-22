@@ -68,8 +68,15 @@ However the following is a list of extra dependency options that require externa
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
     Note: There is a different OutputDir for 32/64bit configurations. Lib's and DLL's should be placed in the correct directory.
-	Any header files will need to be placed in both the 32 and the 64bit OutputDir's.
-	By default the 32bit OutputDir is "..\..\..\msvc32\" and 64bit is "..\..\..\msvc64\".
+	Any header files will need to be placed in the Output directories include folder OutputDir\include.
+	By default the 32bit lib OutputDir is "OutputDir/lib/x86" and 64bit is "OutputDir/lib/x64". DLLs followin a similar schemes
+    except using "OutputDir/bin/x86" and for 64bit "OutputDir/bin/x64".
+    The default value of OutputDir is "..\..\msvc" relative to the FFmpeg source directory. An example of the expetced 
+    directory structure is:
+        -  msvc          (OutputDir)
+        -> source
+            - FFmpeg
+            - ..Any other libraries source code..
 	
 
 *** Using the Supplied Dependency Projects ***
