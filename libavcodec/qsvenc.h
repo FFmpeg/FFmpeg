@@ -34,6 +34,17 @@
 #include "avcodec.h"
 #include "qsv_internal.h"
 
+#define QSV_HAVE_CO2 QSV_VERSION_ATLEAST(1, 6)
+#define QSV_HAVE_CO3 QSV_VERSION_ATLEAST(1, 11)
+
+#define QSV_HAVE_TRELLIS QSV_VERSION_ATLEAST(1, 8)
+
+#define QSV_HAVE_LA     QSV_VERSION_ATLEAST(1, 7)
+#define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
+#define QSV_HAVE_ICQ    QSV_VERSION_ATLEAST(1, 8)
+#define QSV_HAVE_VCM    QSV_VERSION_ATLEAST(1, 8)
+#define QSV_HAVE_QVBR   QSV_VERSION_ATLEAST(1, 11)
+
 typedef struct QSVEncContext {
     AVCodecContext *avctx;
 
