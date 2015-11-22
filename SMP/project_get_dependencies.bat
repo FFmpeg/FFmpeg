@@ -20,6 +20,7 @@ libilbc, ^
 liblzma, ^
 libssh, ^
 libvpx, ^
+mfx_dispatch, ^
 modplug, ^
 opus, ^
 rtmpdump, ^

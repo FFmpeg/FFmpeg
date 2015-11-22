@@ -71,11 +71,7 @@ However the following is a list of possible extra dependency options that requir
 		c) Download the "NVIDIA Video Codec SDK" from the NVIDIA website.
 		d) Copy 'nvEncodeAPI.h' from the "NVIDIA Video Codec SDK" into the installed %CUDA%\include folder 
 			(where %CUDA% is the location that the CUDA SDK was installed).
-	5) libmfx (requires Intel Media SDK)
-		a) Download the "Intel Media SDK" as part of the "Intel Integrated Native Developer Experience" from the Intel website.
-		b) Install the downloaded SDK wherever desired.
-		c) Copy the SDK headers found in the SDKs include directory into a new subdirectory named "mfx".
-    6) decklink (requires Blackmagic DeckLink SDK)
+    5) decklink (requires Blackmagic DeckLink SDK)
 		a) Download the "Blackmagic DeckLink SDK" from the Blackmagic website.
 		b) Extract the downloaded SDK wherever desired.
         c) Create a batch file in the extracted "Win/include" folder containing the following (Note: you may have to change 
