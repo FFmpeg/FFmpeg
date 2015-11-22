@@ -674,12 +674,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return -1;
     }
 
-    if (s->avctx->slices > 1 || s->avctx->thread_count > 1)
-        s->rtp_mode = 1;
-
-    if (s->avctx->thread_count > 1 && s->codec_id == AV_CODEC_ID_H263P)
-        s->h263_slice_structured = 1;
-
     if (!avctx->time_base.den || !avctx->time_base.num) {
         av_log(avctx, AV_LOG_ERROR, "framerate not set\n");
         return -1;
@@ -919,6 +913,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if ((CONFIG_H263P_ENCODER || CONFIG_RV20_ENCODER) && s->modified_quant)
         s->chroma_qscale_table = ff_h263_chroma_qscale_table;
+
+    if (s->slice_context_count > 1) {
+        s->rtp_mode = 1;
+
+        if (avctx->codec_id == AV_CODEC_ID_H263 || avctx->codec_id == AV_CODEC_ID_H263P)
+            s->h263_slice_structured = 1;
+    }
 
     s->quant_precision = 5;
 
