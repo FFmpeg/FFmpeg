@@ -1,5 +1,5 @@
 /*
- * G.723.1 compatible decoder data tables.
+ * G.723.1 common header and data tables
  * Copyright (c) 2006 Benjamin Larsson
  * Copyright (c) 2010 Mohamed Naufal Basheer
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * G.723.1 compatible decoder data tables
+ * G.723.1 types, functions and data tables
  */
 
 #ifndef AVCODEC_G723_1_H
@@ -43,6 +43,143 @@
 #define PULSE_MAX       6
 #define GAIN_LEVELS     24
 #define COS_TBL_SIZE    512
+
+/**
+ * Bitexact implementation of 2ab scaled by 1/2^16.
+ *
+ * @param a 32 bit multiplicand
+ * @param b 16 bit multiplier
+ */
+#define MULL2(a, b) \
+        ((((a) >> 16) * (b) << 1) + (((a) & 0xffff) * (b) >> 15))
+
+/**
+ * G723.1 frame types
+ */
+enum FrameType {
+    ACTIVE_FRAME,        ///< Active speech
+    SID_FRAME,           ///< Silence Insertion Descriptor frame
+    UNTRANSMITTED_FRAME
+};
+
+/**
+ * G723.1 rate values
+ */
+enum Rate {
+    RATE_6300,
+    RATE_5300
+};
+
+/**
+ * G723.1 unpacked data subframe
+ */
+typedef struct G723_1_Subframe {
+    int ad_cb_lag;     ///< adaptive codebook lag
+    int ad_cb_gain;
+    int dirac_train;
+    int pulse_sign;
+    int grid_index;
+    int amp_index;
+    int pulse_pos;
+} G723_1_Subframe;
+
+/**
+ * Pitch postfilter parameters
+ */
+typedef struct PPFParam {
+    int     index;    ///< postfilter backward/forward lag
+    int16_t opt_gain; ///< optimal gain
+    int16_t sc_gain;  ///< scaling gain
+} PPFParam;
+
+typedef struct g723_1_context {
+    AVClass *class;
+
+    G723_1_Subframe subframe[4];
+    enum FrameType cur_frame_type;
+    enum FrameType past_frame_type;
+    enum Rate cur_rate;
+    uint8_t lsp_index[LSP_BANDS];
+    int pitch_lag[2];
+    int erased_frames;
+
+    int16_t prev_lsp[LPC_ORDER];
+    int16_t sid_lsp[LPC_ORDER];
+    int16_t prev_excitation[PITCH_MAX];
+    int16_t excitation[PITCH_MAX + FRAME_LEN + 4];
+    int16_t synth_mem[LPC_ORDER];
+    int16_t fir_mem[LPC_ORDER];
+    int     iir_mem[LPC_ORDER];
+
+    int random_seed;
+    int cng_random_seed;
+    int interp_index;
+    int interp_gain;
+    int sid_gain;
+    int cur_gain;
+    int reflection_coef;
+    int pf_gain;
+    int postfilter;
+
+    int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX + 4];
+} G723_1_Context;
+
+
+/**
+ * Scale vector contents based on the largest of their absolutes.
+ */
+int ff_g723_1_scale_vector(int16_t *dst, const int16_t *vector, int length);
+
+/**
+ * Calculate the number of left-shifts required for normalizing the input.
+ *
+ * @param num   input number
+ * @param width width of the input, 16 bits(0) / 32 bits(1)
+ */
+int ff_g723_1_normalize_bits(int num, int width);
+
+int ff_g723_1_dot_product(const int16_t *a, const int16_t *b, int length);
+
+/**
+ * Get delayed contribution from the previous excitation vector.
+ */
+void ff_g723_1_get_residual(int16_t *residual, int16_t *prev_excitation,
+                            int lag);
+
+/**
+ * Generate a train of dirac functions with period as pitch lag.
+ */
+void ff_g723_1_gen_dirac_train(int16_t *buf, int pitch_lag);
+
+
+/**
+ * Generate adaptive codebook excitation.
+ */
+void ff_g723_1_gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
+                                  int pitch_lag, G723_1_Subframe *subfrm,
+                                  enum Rate cur_rate);
+/**
+ * Quantize LSP frequencies by interpolation and convert them to
+ * the corresponding LPC coefficients.
+ *
+ * @param lpc      buffer for LPC coefficients
+ * @param cur_lsp  the current LSP vector
+ * @param prev_lsp the previous LSP vector
+ */
+void ff_g723_1_lsp_interpolate(int16_t *lpc, int16_t *cur_lsp,
+                               int16_t *prev_lsp);
+
+/**
+ * Perform inverse quantization of LSP frequencies.
+ *
+ * @param cur_lsp    the current LSP vector
+ * @param prev_lsp   the previous LSP vector
+ * @param lsp_index  VQ indices
+ * @param bad_frame  bad frame flag
+ */
+void ff_g723_1_inverse_quant(int16_t *cur_lsp, int16_t *prev_lsp,
+                             uint8_t *lsp_index, int bad_frame);
+
 
 static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
 

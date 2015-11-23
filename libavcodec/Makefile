@@ -225,8 +225,8 @@ OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o
 OBJS-$(CONFIG_FRWU_DECODER)            += frwu.o
 OBJS-$(CONFIG_G2M_DECODER)             += g2meet.o elsdec.o
-OBJS-$(CONFIG_G723_1_DECODER)          += g723_1dec.o acelp_vectors.o \
-                                          celp_filters.o
+OBJS-$(CONFIG_G723_1_DECODER)          += g723_1dec.o g723_1.o \
+                                          acelp_vectors.o celp_filters.o
 OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
 OBJS-$(CONFIG_GIF_ENCODER)             += gif.o lzwenc.o
 OBJS-$(CONFIG_GSM_DECODER)             += gsmdec.o gsmdec_data.o msgsmdec.o
