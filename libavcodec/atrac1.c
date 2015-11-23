@@ -65,7 +65,7 @@ typedef struct AT1SUCtx {
     DECLARE_ALIGNED(32, float, spec2)[AT1_SU_SAMPLES];     ///< mdct buffer
     DECLARE_ALIGNED(32, float, fst_qmf_delay)[46];         ///< delay line for the 1st stacked QMF filter
     DECLARE_ALIGNED(32, float, snd_qmf_delay)[46];         ///< delay line for the 2nd stacked QMF filter
-    DECLARE_ALIGNED(32, float, last_qmf_delay)[256+23];    ///< delay line for the last stacked QMF filter
+    DECLARE_ALIGNED(32, float, last_qmf_delay)[256+39];    ///< delay line for the last stacked QMF filter
 } AT1SUCtx;
 
 /**
@@ -260,9 +260,9 @@ static void at1_subband_synthesis(AT1Ctx *q, AT1SUCtx* su, float *pOut)
     /* combine low and middle bands */
     ff_atrac_iqmf(q->bands[0], q->bands[1], 128, temp, su->fst_qmf_delay, iqmf_temp);
 
-    /* delay the signal of the high band by 23 samples */
-    memcpy( su->last_qmf_delay,    &su->last_qmf_delay[256], sizeof(float) *  23);
-    memcpy(&su->last_qmf_delay[23], q->bands[2],             sizeof(float) * 256);
+    /* delay the signal of the high band by 39 samples */
+    memcpy( su->last_qmf_delay,    &su->last_qmf_delay[256], sizeof(float) *  39);
+    memcpy(&su->last_qmf_delay[39], q->bands[2],             sizeof(float) * 256);
 
     /* combine (low + middle) and high bands */
     ff_atrac_iqmf(temp, su->last_qmf_delay, 256, pOut, su->snd_qmf_delay, iqmf_temp);

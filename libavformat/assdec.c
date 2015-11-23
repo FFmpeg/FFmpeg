@@ -39,6 +39,9 @@ static int ass_probe(AVProbeData *p)
     FFTextReader tr;
     ff_text_init_buf(&tr, p->buf, p->buf_size);
 
+    while (ff_text_peek_r8(&tr) == '\r' || ff_text_peek_r8(&tr) == '\n')
+        ff_text_r8(&tr);
+
     ff_text_read(&tr, buf, sizeof(buf));
 
     if (!memcmp(buf, "[Script Info]", 13))

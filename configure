@@ -1773,6 +1773,7 @@ MATH_FUNCS="
     exp2
     exp2f
     expf
+    hypot
     isinf
     isnan
     ldexpf
@@ -5308,6 +5309,7 @@ disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersi
 
 atan2f_args=2
 copysign_args=2
+hypot_args=2
 ldexpf_args=2
 powf_args=2
 

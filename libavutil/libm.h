@@ -83,24 +83,77 @@ static av_always_inline float cbrtf(float x)
 #endif /* HAVE_EXP2F */
 
 #if !HAVE_ISINF
-static av_always_inline av_const int isinf(float x)
+#undef isinf
+/* Note: these do not follow the BSD/Apple/GNU convention of returning -1 for
+-Inf, +1 for Inf, 0 otherwise, but merely follow the POSIX/ISO mandated spec of
+returning a non-zero value for +/-Inf, 0 otherwise. */
+static av_always_inline av_const int avpriv_isinff(float x)
 {
     uint32_t v = av_float2int(x);
     if ((v & 0x7f800000) != 0x7f800000)
         return 0;
     return !(v & 0x007fffff);
 }
+
+static av_always_inline av_const int avpriv_isinf(double x)
+{
+    uint64_t v = av_double2int(x);
+    if ((v & 0x7ff0000000000000) != 0x7ff0000000000000)
+        return 0;
+    return !(v & 0x000fffffffffffff);
+}
+
+#define isinf(x)                  \
+    (sizeof(x) == sizeof(float)   \
+        ? avpriv_isinff(x)        \
+        : avpriv_isinf(x))
 #endif /* HAVE_ISINF */
 
 #if !HAVE_ISNAN
-static av_always_inline av_const int isnan(float x)
+static av_always_inline av_const int avpriv_isnanf(float x)
 {
     uint32_t v = av_float2int(x);
     if ((v & 0x7f800000) != 0x7f800000)
         return 0;
     return v & 0x007fffff;
 }
+
+static av_always_inline av_const int avpriv_isnan(double x)
+{
+    uint64_t v = av_double2int(x);
+    if ((v & 0x7ff0000000000000) != 0x7ff0000000000000)
+        return 0;
+    return v & 0x000fffffffffffff;
+}
+
+#define isnan(x)                  \
+    (sizeof(x) == sizeof(float)   \
+        ? avpriv_isnanf(x)        \
+        : avpriv_isnan(x))
 #endif /* HAVE_ISNAN */
+
+#if !HAVE_HYPOT
+#undef hypot
+static inline av_const double hypot(double x, double y)
+{
+    double ret, temp;
+    x = fabs(x);
+    y = fabs(y);
+
+    if (isinf(x) || isinf(y))
+        return av_int2double(0x7ff0000000000000);
+    if (x == 0 || y == 0)
+        return x + y;
+    if (x < y) {
+        temp = x;
+        x = y;
+        y = temp;
+    }
+
+    y = y/x;
+    return x*sqrt(1 + y*y);
+}
+#endif /* HAVE_HYPOT */
 
 #if !HAVE_LDEXPF
 #undef ldexpf

@@ -44,20 +44,19 @@
 #define C5     0.55557024478912353515625000 /* cos(5 * PI / 16) */
 #define C6     0.38268342614173889160156250 /* cos(6 * PI / 16) */
 #define C7     0.19509032368659973144531250 /* cos(7 * PI / 16) */
-#define SQRT_2 1.41421353816986083984375000 /* sqrt(2)          */
 
 #define W0 -(2 * C2)
 #define W1  (2 * C6)
-#define W2 (SQRT_2 * C6)
-#define W3 (SQRT_2 * C3)
-#define W4 (SQRT_2 * (-C1 + C3 + C5 - C7))
-#define W5 (SQRT_2 *  (C1 + C3 - C5 + C7))
-#define W6 (SQRT_2 *  (C1 + C3 + C5 - C7))
-#define W7 (SQRT_2 *  (C1 + C3 - C5 - C7))
-#define W8 (SQRT_2 *  (C7 - C3))
-#define W9 (SQRT_2 * (-C1 - C3))
-#define WA (SQRT_2 * (-C3 - C5))
-#define WB (SQRT_2 *  (C5 - C3))
+#define W2 (M_SQRT2 * C6)
+#define W3 (M_SQRT2 * C3)
+#define W4 (M_SQRT2 * (-C1 + C3 + C5 - C7))
+#define W5 (M_SQRT2 *  (C1 + C3 - C5 + C7))
+#define W6 (M_SQRT2 *  (C1 + C3 + C5 - C7))
+#define W7 (M_SQRT2 *  (C1 + C3 - C5 - C7))
+#define W8 (M_SQRT2 *  (C7 - C3))
+#define W9 (M_SQRT2 * (-C1 - C3))
+#define WA (M_SQRT2 * (-C3 - C5))
+#define WB (M_SQRT2 *  (C5 - C3))
 
 static const vector float fdctconsts[3] = {
     { W0, W1, W2, W3 },

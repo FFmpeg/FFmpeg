@@ -299,7 +299,7 @@ static double eval_expr(Parser *p, AVExpr *e)
                 case e_add: return e->value * (d + d2);
                 case e_last:return e->value * d2;
                 case e_st : return e->value * (p->var[av_clip(d, 0, VARS-1)]= d2);
-                case e_hypot:return e->value * (sqrt(d*d + d2*d2));
+                case e_hypot:return e->value * hypot(d, d2);
                 case e_bitand: return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d & (long int)d2);
                 case e_bitor:  return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d | (long int)d2);
             }

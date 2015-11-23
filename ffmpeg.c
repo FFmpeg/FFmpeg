@@ -1804,7 +1804,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
-    int64_t ist_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ist->st->time_base);
     AVPicture pict;
     AVPacket opkt;
 
@@ -1814,13 +1813,13 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         !ost->copy_initial_nonkeyframes)
         return;
 
-    if (pkt->pts == AV_NOPTS_VALUE) {
-        if (!ost->frame_number && ist->pts < start_time &&
-            !ost->copy_prior_start)
-            return;
-    } else {
-        if (!ost->frame_number && pkt->pts < ist_tb_start_time &&
-            !ost->copy_prior_start)
+    if (!ost->frame_number && !ost->copy_prior_start) {
+        int64_t comp_start = start_time;
+        if (copy_ts && f->start_time != AV_NOPTS_VALUE)
+            comp_start = FFMAX(start_time, f->start_time + f->ts_offset);
+        if (pkt->pts == AV_NOPTS_VALUE ?
+            ist->pts < comp_start :
+            pkt->pts < av_rescale_q(comp_start, AV_TIME_BASE_Q, ist->st->time_base))
             return;
     }
 
@@ -2970,6 +2969,7 @@ static int transcode_init(void)
                 enc_ctx->audio_service_type = dec_ctx->audio_service_type;
                 enc_ctx->block_align        = dec_ctx->block_align;
                 enc_ctx->initial_padding    = dec_ctx->delay;
+                enc_ctx->profile            = dec_ctx->profile;
 #if FF_API_AUDIOENC_DELAY
                 enc_ctx->delay              = dec_ctx->delay;
 #endif

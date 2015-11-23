@@ -3511,7 +3511,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     }
 
     if (probesize)
-    estimate_timings(ic, old_offset);
+        estimate_timings(ic, old_offset);
 
     av_opt_set(ic, "skip_clear", "0", AV_OPT_SEARCH_CHILDREN);
 
@@ -4594,7 +4594,7 @@ uint8_t *av_stream_get_side_data(AVStream *st, enum AVPacketSideDataType type,
     return NULL;
 }
 
-uint8_t *ff_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
+uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
                                  int size)
 {
     AVPacketSideData *sd, *tmp;

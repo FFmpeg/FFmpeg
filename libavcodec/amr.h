@@ -28,9 +28,9 @@
 #include "avcodec.h"
 
 #ifdef AMR_USE_16BIT_TABLES
-#define R_TABLE_TYPE uint16_t
+typedef uint16_t R_TABLE_TYPE;
 #else
-#define R_TABLE_TYPE uint8_t
+typedef uint8_t R_TABLE_TYPE;
 #endif
 
 /**

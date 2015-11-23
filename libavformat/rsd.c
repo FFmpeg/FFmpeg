@@ -171,10 +171,12 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVCodecContext *codec = s->streams[0]->codec;
     int ret, size = 1024;
+    int64_t pos;
 
     if (avio_feof(s->pb))
         return AVERROR_EOF;
 
+    pos = avio_tell(s->pb);
     if (codec->codec_id == AV_CODEC_ID_ADPCM_IMA_RAD ||
         codec->codec_id == AV_CODEC_ID_ADPCM_PSX     ||
         codec->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV ||
@@ -198,6 +200,10 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = av_get_packet(s->pb, pkt, size);
     }
 
+    if (codec->codec_id == AV_CODEC_ID_XMA2 && pkt->size >= 1)
+        pkt->duration = (pkt->data[0] >> 2) * 512;
+
+    pkt->pos = pos;
     pkt->stream_index = 0;
 
     return ret;
@@ -211,4 +217,5 @@ AVInputFormat ff_rsd_demuxer = {
     .read_packet    =   rsd_read_packet,
     .extensions     =   "rsd",
     .codec_tag      =   (const AVCodecTag* const []){rsd_tags, 0},
+    .flags          =   AVFMT_GENERIC_INDEX,
 };

@@ -1,5 +1,8 @@
 language: c
 sudo: false
+os:
+  - linux
+  - osx
 addons:
   apt:
     packages:
@@ -11,6 +14,10 @@ compiler:
 cache:
   directories:
     - ffmpeg-samples
+before_install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update --all; fi
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install yasm; fi
 script:
   - mkdir -p ffmpeg-samples
   - ./configure --samples=ffmpeg-samples --cc=$CC
