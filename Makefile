@@ -1,6 +1,7 @@
 include config.mak
 
 vpath %.c    $(SRC_PATH)
+vpath %.m    $(SRC_PATH)
 vpath %.h    $(SRC_PATH)
 vpath %.S    $(SRC_PATH)
 vpath %.asm  $(SRC_PATH)
@@ -26,6 +27,8 @@ IFLAGS     := -I. -I$(SRC_PATH)
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
+OBJCFLAGS  += $(EOBJCFLAGS)
+OBJCCFLAGS  = $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 YASMFLAGS  += $(IFLAGS:%=%/) -Pconfig.asm
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
@@ -38,6 +41,7 @@ endef
 
 COMPILE_C = $(call COMPILE,CC)
 COMPILE_S = $(call COMPILE,AS)
+COMPILE_M = $(call COMPILE,OBJCC)
 COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 
 %.o: %.c
@@ -45,6 +49,9 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 
 %.o: %.S
 	$(COMPILE_S)
+
+%.o: %.m
+	$(COMPILE_M)
 
 %_host.o: %.c
 	$(COMPILE_HOSTC)

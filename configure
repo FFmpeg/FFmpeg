@@ -244,6 +244,7 @@ Toolchain options:
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
   --cc=CC                  use C compiler CC [$cc_default]
+  --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --ld=LD                  use linker LD
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
@@ -256,6 +257,7 @@ Toolchain options:
   --host-libs=HLIBS        use libs HLIBS when linking for host
   --host-os=OS             compiler host OS [$target_os]
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
+  --extra-objcflags=FLAGS  add FLAGS to OBJCFLAGS [$CFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
@@ -695,6 +697,10 @@ add_asflags(){
     append ASFLAGS $($asflags_filter "$@")
 }
 
+add_objcflags(){
+    append OBJCFLAGS $($objcflags_filter "$@")
+}
+
 add_ldflags(){
     append LDFLAGS $($ldflags_filter "$@")
 }
@@ -747,6 +753,13 @@ check_cc(){
     cat > $TMPC
     log_file $TMPC
     check_cmd $cc $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPC
+}
+
+check_objcc(){
+    log check_objcc "$@"
+    cat > $TMPC
+    log_file $TMPC
+    check_cmd $objcc $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPC
 }
 
 check_cpp(){
@@ -845,6 +858,19 @@ EOF
 check_cflags(){
     log check_cflags "$@"
     test_cflags "$@" && add_cflags "$@"
+}
+
+test_objcflags(){
+    log test_cflags "$@"
+    set -- $($cflags_filter "$@")
+    check_objcc "$@" <<EOF
+int x;
+EOF
+}
+
+check_objcflags(){
+    log check_cflags "$@"
+    test_objcflags "$@" && add_objcflags "$@"
 }
 
 test_ldflags(){
@@ -1710,6 +1736,7 @@ CMDLINE_SET="
     as
     build_suffix
     cc
+    objcc
     cpu
     cross_prefix
     custom_allocator
@@ -1742,6 +1769,7 @@ CMDLINE_SET="
 
 CMDLINE_APPEND="
     extra_cflags
+    extra_objcflags
     host_cppflags
 "
 
@@ -2417,6 +2445,9 @@ AS_O='-o $@'
 CC_C='-c'
 CC_E='-E -o $@'
 CC_O='-o $@'
+OBJCC_C='-c'
+OBJCC_E='-E -o $@'
+OBJCC_O='-o $@'
 LD_O='-o $@'
 LD_LIB='-l%'
 LD_PATH='-L'
@@ -2733,6 +2764,7 @@ fi
 
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
+occ_default="${cross_prefix}${occ_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
@@ -3179,15 +3211,21 @@ test -n "$cc_type" && enable $cc_type ||
     warn "Unknown C compiler $cc, unable to select optimal CFLAGS"
 
 : ${as_default:=$cc}
+: ${objcc_default:=$cc}
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 : ${host_ld_default:=$host_cc}
-set_default ar as dep_cc ld host_ld
+set_default ar as objcc dep_cc ld host_ld
 
 probe_cc as "$as"
 asflags_filter=$_flags_filter
 add_asflags $_flags $_cflags
 set_ccvars AS
+
+probe_cc objcc "$objcc"
+objcflags_filter=$_flags_filter
+add_objcflags $_flags $_cflags
+set_ccvars OBJC
 
 probe_cc ld "$ld"
 ldflags_filter=$_flags_filter
@@ -3224,6 +3262,7 @@ else
 fi
 
 add_cflags $extra_cflags
+add_objcflags $extra_objcflags
 add_asflags $extra_cflags
 
 if test -n "$sysroot"; then
@@ -4975,7 +5014,9 @@ CC_IDENT=$cc_ident
 ARCH=$arch
 INTRINSICS=$intrinsics
 CC=$cc
+OBJCC=$cc
 AS=$as
+OBJCC=$objcc
 LD=$ld
 DEPCC=$dep_cc
 DEPCCFLAGS=$DEPCCFLAGS \$(CPPFLAGS)
@@ -4991,9 +5032,13 @@ STRIP=$strip
 LN_S=$ln_s
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
+OBJCFLAGS=$OBJCFLAGS
 ASFLAGS=$ASFLAGS
 AS_C=$AS_C
 AS_O=$AS_O
+OBJCC_C=$OBJCC_C
+OBJCC_E=$OBJCC_E
+OBJCC_O=$OBJCC_O
 CC_C=$CC_C
 CC_E=$CC_E
 CC_O=$CC_O
