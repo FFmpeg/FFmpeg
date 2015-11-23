@@ -48,6 +48,7 @@ version <next>:
 - libkvazaar HEVC encoder
 - innoHeim/Rsupport Screen Capture Codec decoder
 - support encoding 16-bit RLE SGI images
+- support Apple AVFoundation video capture
 
 
 version 11:

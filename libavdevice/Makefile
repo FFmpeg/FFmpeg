@@ -9,6 +9,7 @@ OBJS    = alldevices.o                                                  \
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa_dec.o alsa.o
 OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa_enc.o alsa.o
+OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation_dec.o
 OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
 OBJS-$(CONFIG_DV1394_INDEV)              += dv1394.o
 OBJS-$(CONFIG_FBDEV_INDEV)               += fbdev.o

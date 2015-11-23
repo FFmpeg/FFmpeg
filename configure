@@ -1453,6 +1453,7 @@ HAVE_LIST_PUB="
 "
 
 HEADERS_LIST="
+    AVFoundation_AVFoundation_h
     alsa_asoundlib_h
     altivec_h
     arpa_inet_h
@@ -2264,6 +2265,7 @@ xwma_demuxer_select="riffdec"
 # indevs / outdevs
 alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
 alsa_outdev_deps="alsa_asoundlib_h"
+avfoundation_indev_deps="AVFoundation_AVFoundation_h"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
@@ -4559,6 +4561,11 @@ texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 check_header linux/fb.h
 check_header linux/videodev2.h
 check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
+
+check_header AVFoundation/AVFoundation.h &&
+    check_objcflags -fobjc-arc &&
+    add_extralibs -framework Foundation -framework AVFoundation -framework CoreMedia || \
+    disable AVFoundation_AVFoundation_h
 
 check_header sys/videoio.h
 
