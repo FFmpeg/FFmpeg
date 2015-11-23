@@ -6308,7 +6308,7 @@ For example:
 ffmpeg -i in.vob -vf "fieldorder=bff" out.dv
 @end example
 
-@section fifo
+@section fifo, afifo
 
 Buffer input images and send them when they are requested.
 
