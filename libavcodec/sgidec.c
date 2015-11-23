@@ -229,13 +229,13 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (s->bytes_per_channel != 1 && s->bytes_per_channel != 2) {
         av_log(avctx, AV_LOG_ERROR, "wrong channel number\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     /* Check for supported image dimensions. */
     if (dimension != 2 && dimension != 3) {
         av_log(avctx, AV_LOG_ERROR, "wrong dimension number\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (s->depth == SGI_GRAYSCALE) {
@@ -246,16 +246,17 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = s->bytes_per_channel == 2 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGBA;
     } else {
         av_log(avctx, AV_LOG_ERROR, "wrong picture format\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     ret = ff_set_dimensions(avctx, s->width, s->height);
     if (ret < 0)
         return ret;
 
-    if (ff_get_buffer(avctx, p, 0) < 0) {
+    ret = ff_get_buffer(avctx, p, 0);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed.\n");
-        return -1;
+        return ret;
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;

@@ -193,7 +193,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         /* Make an intermediate consecutive buffer. */
         if (!(encode_buf = av_malloc(width * bytes_per_channel)))
-            return -1;
+            return AVERROR(ENOMEM);
 
         for (z = 0; z < depth; z++) {
             in_buf = p->data[0] + p->linesize[0] * (height - 1) + z * bytes_per_channel;
@@ -208,7 +208,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                         bytes_per_channel);
                 if (length < 1) {
                     av_free(encode_buf);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 bytestream2_put_be32(&tablen_pcb, length);
