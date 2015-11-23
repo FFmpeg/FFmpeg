@@ -583,14 +583,10 @@ static void rgba2ycocg(uint8_t *dst, const uint8_t *pixel)
     int b =  pixel[2];
     int t = (2 + r + b) >> 2;
 
-    int y  = av_clip_uint8(g + t);
-    int co = av_clip_uint8(128 + ((r - b + 1) >> 1));
-    int cg = av_clip_uint8(128 + g - t);
-
-    dst[0] = (uint8_t) co;
-    dst[1] = (uint8_t) cg;
+    dst[0] = av_clip_uint8(128 + ((r - b + 1) >> 1));   /* Co */
+    dst[1] = av_clip_uint8(128 + g - t);                /* Cg */
     dst[2] = 0;
-    dst[3] = (uint8_t) y;
+    dst[3] = av_clip_uint8(g + t);                      /* Y */
 }
 
 /**
