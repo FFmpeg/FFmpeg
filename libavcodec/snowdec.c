@@ -104,8 +104,11 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
             avmv->h = block_h;
             avmv->dst_x = block_w*mb_x - block_w/2;
             avmv->dst_y = block_h*mb_y - block_h/2;
-            avmv->src_x = avmv->dst_x + (bn->mx * s->mv_scale)/8;
-            avmv->src_y = avmv->dst_y + (bn->my * s->mv_scale)/8;
+            avmv->motion_scale = 8;
+            avmv->motion_x = bn->mx * s->mv_scale;
+            avmv->motion_y = bn->my * s->mv_scale;
+            avmv->src_x = avmv->dst_x + avmv->motion_x / 8;
+            avmv->src_y = avmv->dst_y + avmv->motion_y / 8;
             avmv->source= -1 - bn->ref;
             avmv->flags = 0;
         }

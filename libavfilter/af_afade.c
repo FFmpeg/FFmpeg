@@ -493,6 +493,8 @@ static int acrossfade_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         av_audio_fifo_write(s->fifo[1], (void **)in->extended_data, in->nb_samples);
     } else if (av_audio_fifo_size(s->fifo[1]) >= s->nb_samples) {
+        av_audio_fifo_write(s->fifo[1], (void **)in->extended_data, in->nb_samples);
+
         if (s->overlap) {
             cf[0] = ff_get_audio_buffer(outlink, s->nb_samples);
             cf[1] = ff_get_audio_buffer(outlink, s->nb_samples);
