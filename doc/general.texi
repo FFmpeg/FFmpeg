@@ -874,7 +874,7 @@ following image formats are supported:
 @item DV audio               @tab     @tab  X
 @item Enhanced AC-3          @tab  X  @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
-@item G.723.1                @tab     @tab  X
+@item G.723.1                @tab  X  @tab  X
 @item GSM                    @tab  E  @tab  X
     @tab encoding supported through external library libgsm
 @item GSM Microsoft variant  @tab  E  @tab  X

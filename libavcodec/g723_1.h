@@ -33,6 +33,8 @@
 #define SUBFRAMES       4
 #define SUBFRAME_LEN    60
 #define FRAME_LEN       (SUBFRAME_LEN << 2)
+#define HALF_FRAME_LEN  (FRAME_LEN / 2)
+#define LPC_FRAME       (HALF_FRAME_LEN + SUBFRAME_LEN)
 #define LPC_ORDER       10
 #define LSP_BANDS       3
 #define LSP_CB_SIZE     256
@@ -92,6 +94,26 @@ typedef struct PPFParam {
     int16_t sc_gain;  ///< scaling gain
 } PPFParam;
 
+/**
+ * Harmonic filter parameters
+ */
+typedef struct HFParam {
+    int index;
+    int gain;
+} HFParam;
+
+/**
+ * Optimized fixed codebook excitation parameters
+ */
+typedef struct FCBParam {
+    int min_err;
+    int amp_index;
+    int grid_index;
+    int dirac_train;
+    int pulse_pos[PULSE_MAX];
+    int pulse_sign[PULSE_MAX];
+} FCBParam;
+
 typedef struct g723_1_context {
     AVClass *class;
 
@@ -122,6 +144,17 @@ typedef struct g723_1_context {
     int postfilter;
 
     int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX + 4];
+
+    /* encoder */
+    int16_t prev_data[HALF_FRAME_LEN];
+    int16_t prev_weight_sig[PITCH_MAX];
+
+    int16_t hpf_fir_mem;                   ///< highpass filter fir
+    int     hpf_iir_mem;                   ///< and iir memories
+    int16_t perf_fir_mem[LPC_ORDER];       ///< perceptual filter fir
+    int16_t perf_iir_mem[LPC_ORDER];       ///< and iir memories
+
+    int16_t harmonic_mem[PITCH_MAX];
 } G723_1_Context;
 
 
@@ -1327,6 +1360,55 @@ static const int16_t postfilter_tbl[2][LPC_ORDER] = {
     { 21299, 13844,  8999,  5849, 3802, 2471, 1606, 1044,  679,  441 },
     /* Pole */
     { 24576, 18432, 13824, 10368, 7776, 5832, 4374, 3281, 2460, 1845 }
+};
+
+
+/**
+ * Hamming window coefficients scaled by 2^15
+ */
+static const int16_t hamming_window[LPC_FRAME] = {
+     2621,  2631,  2659,  2705,  2770,  2853,  2955,  3074,  3212,  3367,
+     3541,  3731,  3939,  4164,  4405,  4663,  4937,  5226,  5531,  5851,
+     6186,  6534,  6897,  7273,  7661,  8062,  8475,  8899,  9334,  9780,
+    10235, 10699, 11172, 11653, 12141, 12636, 13138, 13645, 14157, 14673,
+    15193, 15716, 16242, 16769, 17298, 17827, 18356, 18884, 19411, 19935,
+    20457, 20975, 21489, 21999, 22503, 23002, 23494, 23978, 24455, 24924,
+    25384, 25834, 26274, 26704, 27122, 27529, 27924, 28306, 28675, 29031,
+    29373, 29700, 30012, 30310, 30592, 30857, 31107, 31340, 31557, 31756,
+    31938, 32102, 32249, 32377, 32488, 32580, 32654, 32710, 32747, 32766,
+    32766, 32747, 32710, 32654, 32580, 32488, 32377, 32249, 32102, 31938,
+    31756, 31557, 31340, 31107, 30857, 30592, 30310, 30012, 29700, 29373,
+    29031, 28675, 28306, 27924, 27529, 27122, 26704, 26274, 25834, 25384,
+    24924, 24455, 23978, 23494, 23002, 22503, 21999, 21489, 20975, 20457,
+    19935, 19411, 18884, 18356, 17827, 17298, 16769, 16242, 15716, 15193,
+    14673, 14157, 13645, 13138, 12636, 12141, 11653, 11172, 10699, 10235,
+     9780, 9334,   8899,  8475,  8062,  7661,  7273,  6897,  6534,  6186,
+     5851, 5531,   5226,  4937,  4663,  4405,  4164,  3939,  3731,  3541,
+     3367, 3212,   3074,  2955,  2853,  2770,  2705,  2659,  2631,  2621
+};
+
+/**
+ * Binomial window coefficients scaled by 2^15
+ */
+static const int16_t binomial_window[LPC_ORDER] = {
+    32749, 32695, 32604, 32477, 32315, 32118, 31887, 31622, 31324, 30995
+};
+
+/**
+ * 0.994^i scaled by 2^15
+ */
+static const int16_t bandwidth_expand[LPC_ORDER] = {
+    32571, 32376, 32182, 31989, 31797, 31606, 31416, 31228, 31040, 30854
+};
+
+/**
+ * 0.5^i scaled by 2^15
+ */
+static const int16_t percept_flt_tbl[2][LPC_ORDER] = {
+    /* Zero part */
+    {29491, 26542, 23888, 21499, 19349, 17414, 15673, 14106, 12695, 11425},
+    /* Pole part */
+    {16384,  8192,  4096,  2048,  1024,   512,   256,   128,    64,    32}
 };
 
 static const int cng_adaptive_cb_lag[4] = { 1, 0, 1, 3 };

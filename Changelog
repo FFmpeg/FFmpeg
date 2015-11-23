@@ -49,6 +49,7 @@ version <next>:
 - innoHeim/Rsupport Screen Capture Codec decoder
 - support encoding 16-bit RLE SGI images
 - support Apple AVFoundation video capture
+- G.723.1 encoder
 
 
 version 11:

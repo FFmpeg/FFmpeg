@@ -53,13 +53,8 @@ int ff_g723_1_normalize_bits(int num, int width)
 
 int ff_g723_1_dot_product(const int16_t *a, const int16_t *b, int length)
 {
-    int i, sum = 0;
-
-    for (i = 0; i < length; i++) {
-        int prod = a[i] * b[i];
-        sum = av_sat_dadd32(sum, prod);
-    }
-    return sum;
+    int sum = ff_dot_product(a, b, length);
+    return av_sat_add32(sum, sum);
 }
 
 void ff_g723_1_get_residual(int16_t *residual, int16_t *prev_excitation,
