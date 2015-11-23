@@ -232,6 +232,7 @@
     <ClCompile Include="..\libavformat\framehash.c" />
     <ClCompile Include="..\libavformat\md5enc.c" />
     <ClCompile Include="..\libavformat\frmdec.c" />
+    <ClCompile Include="..\libavformat\fsb.c" />
     <ClCompile Include="..\libavformat\gif.c" />
     <ClCompile Include="..\libavformat\gifdec.c" />
     <ClCompile Include="..\libavformat\gsmdec.c" />

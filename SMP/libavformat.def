@@ -68,6 +68,7 @@ EXPORTS
     av_stream_get_r_frame_rate
     av_stream_get_recommended_encoder_configuration
     av_stream_get_side_data
+    av_stream_new_side_data
     av_stream_set_r_frame_rate
     av_stream_set_recommended_encoder_configuration
     av_url_split

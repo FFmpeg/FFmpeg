@@ -517,6 +517,9 @@
     <ClCompile Include="..\libavformat\frmdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\fsb.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\gif.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
