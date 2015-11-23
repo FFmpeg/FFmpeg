@@ -25,8 +25,8 @@
  * G.723.1 compatible decoder data tables
  */
 
-#ifndef AVCODEC_G723_1_DATA_H
-#define AVCODEC_G723_1_DATA_H
+#ifndef AVCODEC_G723_1_H
+#define AVCODEC_G723_1_H
 
 #include <stdint.h>
 
@@ -1198,4 +1198,4 @@ static const int cng_filt[4] = { 273, 998, 499, 333 };
 
 static const int cng_bseg[3] = { 2048, 18432, 231233 };
 
-#endif /* AVCODEC_G723_1_DATA_H */
+#endif /* AVCODEC_G723_1_H */
