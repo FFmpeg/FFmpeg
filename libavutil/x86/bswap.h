@@ -25,6 +25,9 @@
 #define AVUTIL_X86_BSWAP_H
 
 #include <stdint.h>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
 #include "config.h"
 #include "libavutil/attributes.h"
 
