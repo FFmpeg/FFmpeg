@@ -386,7 +386,7 @@ static void lsp2lpc(int16_t *lpc)
 
     /* Calculate negative cosine */
     for (j = 0; j < LPC_ORDER; j++) {
-        int index     = lpc[j] >> 7;
+        int index     = (lpc[j] >> 7) & 0x1FF;
         int offset    = lpc[j] & 0x7f;
         int temp1     = cos_tab[index] << 16;
         int temp2     = (cos_tab[index + 1] - cos_tab[index]) *
