@@ -60,8 +60,8 @@ AVStream *video_st, *audio_st;
 int64_t audio_dts, video_dts;
 
 int bframes;
-int duration;
-int audio_duration;
+int64_t duration;
+int64_t audio_duration;
 int frames;
 int gop_size;
 int64_t next_p_pts;
@@ -196,9 +196,9 @@ static void init_fps(int bf, int audio_preroll, int fps)
     frames = 0;
     gop_size = 30;
     duration = video_st->time_base.den / fps;
-    audio_duration = 1024 * audio_st->time_base.den / audio_st->codec->sample_rate;
+    audio_duration = 1024LL * audio_st->time_base.den / audio_st->codec->sample_rate;
     if (audio_preroll)
-        audio_preroll = 2048 * audio_st->time_base.den / audio_st->codec->sample_rate;
+        audio_preroll = 2048LL * audio_st->time_base.den / audio_st->codec->sample_rate;
 
     bframes = bf;
     video_dts = bframes ? -duration : 0;
