@@ -101,10 +101,10 @@ Notes:
 
 @itemize
 
-@item Native MSYS building is discouraged, MSYS2 provides a full mingw-w64
-environment through @file{mingw64_shell.bat} or @file{mingw32_shell.bat}
-that should be used instead of the environment provides by
-@file{msys2_shell.bat}.
+@item Building for the MSYS environment is discouraged, MSYS2 provides a full
+MinGW-w64 environment through @file{mingw64_shell.bat} or
+@file{mingw32_shell.bat} that should be used instead of the environment
+provided by @file{msys2_shell.bat}.
 
 @item Building using MSYS2 can be sped up by disabling implicit rules in the
 Makefile by calling @code{make -r} instead of plain @code{make}. This
@@ -126,7 +126,8 @@ The MSYS2 MinGW-w64 environment provides ready to use toolchains and dependencie
 through @command{pacman}.
 
 Make sure to use @file{mingw64_shell.bat} or @file{mingw32_shell.bat} to have
-the correct MinGW-w64 environment.
+the correct MinGW-w64 environment. The default install provides shortcuts to
+them under @command{MinGW-w64 Win64 Shell} and @command{MinGW-w64 Win32 Shell}.
 
 @example
 # normal msys2 packages
