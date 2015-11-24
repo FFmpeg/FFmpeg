@@ -2695,6 +2695,8 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
     AVFrame *frame = av_frame_alloc();
     AVSubtitle subtitle;
     AVPacket pkt = *avpkt;
+    int do_skip_frame = 0;
+    enum AVDiscard skip_frame;
 
     if (!frame)
         return AVERROR(ENOMEM);
@@ -2733,6 +2735,12 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
         goto fail;
     }
 
+    if (st->codec->codec->caps_internal & FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM) {
+        do_skip_frame = 1;
+        skip_frame = st->codec->skip_frame;
+        st->codec->skip_frame = AVDISCARD_ALL;
+    }
+
     while ((pkt.size > 0 || (!pkt.data && got_picture)) &&
            ret >= 0 &&
            (!has_codec_parameters(st, NULL) || !has_decode_delay_been_guessed(st) ||
@@ -2768,6 +2776,10 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
         ret = -1;
 
 fail:
+    if (do_skip_frame) {
+        st->codec->skip_frame = skip_frame;
+    }
+
     av_frame_free(&frame);
     return ret;
 }
