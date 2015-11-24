@@ -34,6 +34,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
     ParseContext *pc = &s->pc;
     int len, i;
     int new_frame_start;
+    int got_frame = 0;
 
 get_next:
     i=END_NOT_FOUND;
@@ -51,6 +52,7 @@ get_next:
             if(len<=0){
                 i=END_NOT_FOUND;
             }else{
+                got_frame = 1;
                 s->state=0;
                 i-= s->header_size -1;
                 s->remaining_size = len;
@@ -76,6 +78,7 @@ get_next:
     if(s->codec_id)
         avctx->codec_id = s->codec_id;
 
+    if (got_frame) {
     /* Due to backwards compatible HE-AAC the sample rate, channel count,
        and total number of samples found in an AAC ADTS header are not
        reliable. Bit rate is still accurate because the total frame duration in
@@ -101,6 +104,7 @@ get_next:
     }
 
     avctx->bit_rate = s->bit_rate;
+    }
 
     return i;
 }
