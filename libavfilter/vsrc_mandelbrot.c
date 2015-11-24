@@ -334,11 +334,11 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                             switch(s->outer){
                             case            ITERATION_COUNT:
                                 zr = i;
-                                c = lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                                c = lrintf((sinf(zr)+1)*127) + lrintf((sinf(zr/1.234)+1)*127)*256*256 + lrintf((sinf(zr/100)+1)*127)*256;
                                 break;
                             case NORMALIZED_ITERATION_COUNT:
                                 zr = i + log2(log(s->bailout) / log(zr*zr + zi*zi));
-                                c = lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                                c = lrintf((sinf(zr)+1)*127) + lrintf((sinf(zr/1.234)+1)*127)*256*256 + lrintf((sinf(zr/100)+1)*127)*256;
                                 break;
                             case                      WHITE:
                                 c = 0xFFFFFF;
