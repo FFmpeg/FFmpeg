@@ -65,6 +65,21 @@ git clone git@@source.ffmpeg.org:ffmpeg <target>
 This will put the FFmpeg sources into the directory @var{<target>} and let
 you push back your changes to the remote repository.
 
+@example
+git clone gil@@ffmpeg.org:ffmpeg-web <target>
+@end example
+
+This will put the source of the FFmpeg website into the directory
+@var{<target>} and let you push back your changes to the remote repository.
+(Note that @var{gil} stands for GItoLite and is not a typo of @var{git}.)
+
+If you don't have write-access to the ffmpeg-web repository, you can
+create patches after making a read-only ffmpeg-web clone:
+
+@example
+git clone git://ffmpeg.org/ffmpeg-web <target>
+@end example
+
 Make sure that you do not have Windows line endings in your checkouts,
 otherwise you may experience spurious compilation failures. One way to
 achieve this is to run
