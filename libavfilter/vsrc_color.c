@@ -57,7 +57,6 @@ typedef struct ColorContext {
 static av_cold int color_init(AVFilterContext *ctx)
 {
     ColorContext *color = ctx->priv;
-    AVRational frame_rate_q;
     int ret;
 
     if (av_parse_video_size(&color->w, &color->h, color->size_str) < 0) {
@@ -65,8 +64,7 @@ static av_cold int color_init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (av_parse_video_rate(&color->frame_rate, color->framerate_str) < 0 ||
-        frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
+    if (av_parse_video_rate(&color->frame_rate, color->framerate_str) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", color->framerate_str);
         return AVERROR(EINVAL);
     }
