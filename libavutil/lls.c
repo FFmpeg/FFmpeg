@@ -55,7 +55,7 @@ void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order)
         for (j = i; j < count; j++) {
             double sum = covar[i][j];
 
-            for (k = i - 1; k >= 0; k--)
+            for (k = 0; k <= i-1; k++)
                 sum -= factor[i][k] * factor[j][k];
 
             if (i == j) {
@@ -71,7 +71,7 @@ void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order)
     for (i = 0; i < count; i++) {
         double sum = covar_y[i + 1];
 
-        for (k = i - 1; k >= 0; k--)
+        for (k = 0; k <= i-1; k++)
             sum -= factor[i][k] * m->coeff[0][k];
 
         m->coeff[0][i] = sum / factor[i][i];
