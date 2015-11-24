@@ -379,6 +379,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                     c= lrintf((s->zyklus[closest_index][0]/closest+1)*127+dv) + lrintf((s->zyklus[closest_index][1]/closest+1)*127+dv)*256;
                 }
             }
+            c |= 0xFF000000;
             color[x + y*linesize]= c;
             if(next_cidx < s->cache_allocated){
                 s->next_cache[next_cidx  ].p[0]= cr;
