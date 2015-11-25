@@ -79,31 +79,32 @@ get_next:
         avctx->codec_id = s->codec_id;
 
     if (got_frame) {
-    /* Due to backwards compatible HE-AAC the sample rate, channel count,
-       and total number of samples found in an AAC ADTS header are not
-       reliable. Bit rate is still accurate because the total frame duration in
-       seconds is still correct (as is the number of bits in the frame). */
-    if (avctx->codec_id != AV_CODEC_ID_AAC) {
-        avctx->sample_rate = s->sample_rate;
+        /* Due to backwards compatible HE-AAC the sample rate, channel count,
+           and total number of samples found in an AAC ADTS header are not
+           reliable. Bit rate is still accurate because the total frame
+           duration in seconds is still correct (as is the number of bits in
+           the frame). */
+        if (avctx->codec_id != AV_CODEC_ID_AAC) {
+            avctx->sample_rate = s->sample_rate;
 
-        /* (E-)AC-3: allow downmixing to stereo or mono */
-        if (s->channels > 1 &&
-            avctx->request_channel_layout == AV_CH_LAYOUT_MONO) {
-            avctx->channels       = 1;
-            avctx->channel_layout = AV_CH_LAYOUT_MONO;
-        } else if (s->channels > 2 &&
-                   avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
-            avctx->channels       = 2;
-            avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-        } else {
-            avctx->channels = s->channels;
-            avctx->channel_layout = s->channel_layout;
+            /* (E-)AC-3: allow downmixing to stereo or mono */
+            if (s->channels > 1 &&
+                avctx->request_channel_layout == AV_CH_LAYOUT_MONO) {
+                avctx->channels       = 1;
+                avctx->channel_layout = AV_CH_LAYOUT_MONO;
+            } else if (s->channels > 2 &&
+                       avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
+                avctx->channels       = 2;
+                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+            } else {
+                avctx->channels = s->channels;
+                avctx->channel_layout = s->channel_layout;
+            }
+            s1->duration = s->samples;
+            avctx->audio_service_type = s->service_type;
         }
-        s1->duration = s->samples;
-        avctx->audio_service_type = s->service_type;
-    }
 
-    avctx->bit_rate = s->bit_rate;
+        avctx->bit_rate = s->bit_rate;
     }
 
     return i;
