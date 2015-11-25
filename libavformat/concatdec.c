@@ -62,6 +62,7 @@ typedef struct {
     int eof;
     ConcatMatchMode stream_match_mode;
     unsigned auto_convert;
+    int segment_time_metadata;
 } ConcatContext;
 
 static int concat_probe(AVProbeData *probe)
@@ -316,6 +317,15 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
                            cat->files[fileno - 1].duration;
     file->file_start_time = (cat->avf->start_time == AV_NOPTS_VALUE) ? 0 : cat->avf->start_time;
     file->file_inpoint = (file->inpoint == AV_NOPTS_VALUE) ? file->file_start_time : file->inpoint;
+    if (file->duration == AV_NOPTS_VALUE && file->outpoint != AV_NOPTS_VALUE)
+        file->duration = file->outpoint - file->file_inpoint;
+
+    if (cat->segment_time_metadata) {
+        av_dict_set_int(&file->metadata, "lavf.concatdec.start_time", file->start_time, 0);
+        if (file->duration != AV_NOPTS_VALUE)
+            av_dict_set_int(&file->metadata, "lavf.concatdec.duration", file->duration, 0);
+    }
+
     if ((ret = match_streams(avf)) < 0)
         return ret;
     if (file->inpoint != AV_NOPTS_VALUE) {
@@ -469,13 +479,8 @@ static int open_next_file(AVFormatContext *avf)
     ConcatContext *cat = avf->priv_data;
     unsigned fileno = cat->cur_file - cat->files;
 
-    if (cat->cur_file->duration == AV_NOPTS_VALUE) {
-        cat->cur_file->duration = cat->avf->duration;
-        if (cat->cur_file->inpoint != AV_NOPTS_VALUE)
-            cat->cur_file->duration -= (cat->cur_file->inpoint - cat->cur_file->file_start_time);
-        if (cat->cur_file->outpoint != AV_NOPTS_VALUE)
-            cat->cur_file->duration -= cat->avf->duration - (cat->cur_file->outpoint - cat->cur_file->file_start_time);
-    }
+    if (cat->cur_file->duration == AV_NOPTS_VALUE)
+        cat->cur_file->duration = cat->avf->duration - (cat->cur_file->file_inpoint - cat->cur_file->file_start_time);
 
     if (++fileno >= cat->nb_files) {
         cat->eof = 1;
@@ -704,6 +709,8 @@ static const AVOption options[] = {
       OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
     { "auto_convert", "automatically convert bitstream format",
       OFFSET(auto_convert), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
+    { "segment_time_metadata", "output file segment start time and duration as packet metadata",
+      OFFSET(segment_time_metadata), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
     { NULL }
 };
 

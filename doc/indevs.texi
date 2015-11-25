@@ -121,7 +121,7 @@ Specify the audio device by its index. Overrides anything given in the input fil
 @item -pixel_format <FORMAT>
 Request the video device to use a specific pixel format.
 If the specified format is not supported, a list of available formats is given
-und the first one in this list is used instead. Available pixel formats are:
+and the first one in this list is used instead. Available pixel formats are:
 @code{monob, rgb555be, rgb555le, rgb565be, rgb565le, rgb24, bgr24, 0rgb, bgr0, 0bgr, rgb0,
  bgr48be, uyvy422, yuva444p, yuva444p16le, yuv444p, yuv422p16, yuv422p10, yuv444p10,
  yuv420p, nv12, yuyv422, gray}

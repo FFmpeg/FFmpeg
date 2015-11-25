@@ -39,6 +39,7 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     RawVideoDemuxerContext *s = ctx->priv_data;
     enum AVPixelFormat pix_fmt;
     AVStream *st;
+    int packet_size;
 
     st = avformat_new_stream(ctx, NULL);
     if (!st)
@@ -59,7 +60,11 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     st->codec->width  = s->width;
     st->codec->height = s->height;
     st->codec->pix_fmt = pix_fmt;
-    st->codec->bit_rate = av_rescale_q(avpicture_get_size(st->codec->pix_fmt, s->width, s->height),
+    packet_size = av_image_get_buffer_size(st->codec->pix_fmt, s->width, s->height, 1);
+    if (packet_size < 0)
+        return packet_size;
+    ctx->packet_size = packet_size;
+    st->codec->bit_rate = av_rescale_q(ctx->packet_size,
                                        (AVRational){8,1}, st->time_base);
 
     return 0;
@@ -68,18 +73,10 @@ static int rawvideo_read_header(AVFormatContext *ctx)
 
 static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int packet_size, ret, width, height;
-    AVStream *st = s->streams[0];
+    int ret;
 
-    width = st->codec->width;
-    height = st->codec->height;
-
-    packet_size = av_image_get_buffer_size(st->codec->pix_fmt, width, height, 1);
-    if (packet_size < 0)
-        return -1;
-
-    ret = av_get_packet(s->pb, pkt, packet_size);
-    pkt->pts = pkt->dts = pkt->pos / packet_size;
+    ret = av_get_packet(s->pb, pkt, s->packet_size);
+    pkt->pts = pkt->dts = pkt->pos / s->packet_size;
 
     pkt->stream_index = 0;
     if (ret < 0)

@@ -917,7 +917,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (s->slice_context_count > 1) {
         s->rtp_mode = 1;
 
-        if (avctx->codec_id == AV_CODEC_ID_H263 || avctx->codec_id == AV_CODEC_ID_H263P)
+        if (avctx->codec_id == AV_CODEC_ID_H263P)
             s->h263_slice_structured = 1;
     }
 
@@ -4681,7 +4681,6 @@ int ff_dct_quantize_c(MpegEncContext *s,
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption h263_options[] = {
     { "obmc",         "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
-    { "structured_slices","Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE},
     { "mb_info",      "emit macroblock info for RFC 2190 packetization, the parameter value is the maximum payload size", OFFSET(mb_info), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     FF_MPV_COMMON_OPTS
     { NULL },

@@ -82,6 +82,8 @@ static const char *const var_names[] = {
 
     "scene",
 
+    "concatdec_select",  ///< frame is within the interval set by the concat demuxer
+
     NULL
 };
 
@@ -131,6 +133,8 @@ enum var_name {
     VAR_POS,
 
     VAR_SCENE,
+
+    VAR_CONCATDEC_SELECT,
 
     VAR_VARS_NB
 };
@@ -278,6 +282,28 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
     return ret;
 }
 
+static double get_concatdec_select(AVFrame *frame, int64_t pts)
+{
+    AVDictionary *metadata = av_frame_get_metadata(frame);
+    AVDictionaryEntry *start_time_entry = av_dict_get(metadata, "lavf.concatdec.start_time", NULL, 0);
+    AVDictionaryEntry *duration_entry = av_dict_get(metadata, "lavf.concatdec.duration", NULL, 0);
+    if (start_time_entry) {
+        int64_t start_time = strtoll(start_time_entry->value, NULL, 10);
+        if (pts >= start_time) {
+            if (duration_entry) {
+              int64_t duration = strtoll(duration_entry->value, NULL, 10);
+              if (pts < start_time + duration)
+                  return -1;
+              else
+                  return 0;
+            }
+            return -1;
+        }
+        return 0;
+    }
+    return NAN;
+}
+
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 
@@ -297,6 +323,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_T  ] = TS2D(frame->pts) * av_q2d(inlink->time_base);
     select->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
     select->var_values[VAR_KEY] = frame->key_frame;
+    select->var_values[VAR_CONCATDEC_SELECT] = get_concatdec_select(frame, av_rescale_q(frame->pts, inlink->time_base, AV_TIME_BASE_Q));
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_AUDIO:
