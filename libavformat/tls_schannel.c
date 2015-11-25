@@ -28,6 +28,7 @@
 #include "tls.h"
 
 #define SECURITY_WIN32
+#include <windows.h>
 #include <security.h>
 #include <schnlsp.h>
 
