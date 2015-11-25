@@ -237,13 +237,13 @@ static void init_gaussian_filter(DynamicAudioNormalizerContext *s)
     // Pre-compute constants
     const int offset = s->filter_size / 2;
     const double c1 = 1.0 / (sigma * sqrt(2.0 * M_PI));
-    const double c2 = 2.0 * pow(sigma, 2.0);
+    const double c2 = 2.0 * sigma * sigma;
 
     // Compute weights
     for (i = 0; i < s->filter_size; i++) {
         const int x = i - offset;
 
-        s->weights[i] = c1 * exp(-(pow(x, 2.0) / c2));
+        s->weights[i] = c1 * exp(-x * x / c2);
         total_weight += s->weights[i];
     }
 
