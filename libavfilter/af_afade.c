@@ -92,6 +92,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static double fade_gain(int curve, int64_t index, int range)
 {
+#define CUBE(a) ((a)*(a)*(a))
     double gain;
 
     gain = av_clipd(1.0 * index / range, 0, 1.0);
@@ -101,22 +102,25 @@ static double fade_gain(int curve, int64_t index, int range)
         gain = sin(gain * M_PI / 2.0);
         break;
     case IQSIN:
-        gain = 0.636943 * asin(gain);
+        /* 0.6... = 2 / M_PI */
+        gain = 0.6366197723675814 * asin(gain);
         break;
     case ESIN:
-        gain = 1.0 - cos(M_PI / 4.0 * (pow(2.0*gain - 1, 3) + 1));
+        gain = 1.0 - cos(M_PI / 4.0 * (CUBE(2.0*gain - 1) + 1));
         break;
     case HSIN:
         gain = (1.0 - cos(gain * M_PI)) / 2.0;
         break;
     case IHSIN:
-        gain = 0.318471 * acos(1 - 2 * gain);
+        /* 0.3... = 1 / M_PI */
+        gain = 0.3183098861837907 * acos(1 - 2 * gain);
         break;
     case EXP:
-        gain = pow(0.1, (1 - gain) * 5.0);
+        /* -11.5... = 5*ln(0.1) */
+        gain = exp(-11.512925464970227 * (1 - gain));
         break;
     case LOG:
-        gain = av_clipd(0.0868589 * log(100000 * gain), 0, 1.0);
+        gain = av_clipd(1 + 0.2 * log10(gain), 0, 1.0);
         break;
     case PAR:
         gain = 1 - sqrt(1 - gain);
@@ -128,7 +132,7 @@ static double fade_gain(int curve, int64_t index, int range)
         gain *= gain;
         break;
     case CUB:
-        gain = gain * gain * gain;
+        gain = CUBE(gain);
         break;
     case SQU:
         gain = sqrt(gain);
@@ -137,10 +141,10 @@ static double fade_gain(int curve, int64_t index, int range)
         gain = cbrt(gain);
         break;
     case DESE:
-        gain = gain <= 0.5 ? pow(2 * gain, 1/3.) / 2: 1 - pow(2 * (1 - gain), 1/3.) / 2;
+        gain = gain <= 0.5 ? cbrt(2 * gain) / 2: 1 - cbrt(2 * (1 - gain)) / 2;
         break;
     case DESI:
-        gain = gain <= 0.5 ? pow(2 * gain, 3) / 2: 1 - pow(2 * (1 - gain), 3) / 2;
+        gain = gain <= 0.5 ? CUBE(2 * gain) / 2: 1 - CUBE(2 * (1 - gain)) / 2;
         break;
     }
 
