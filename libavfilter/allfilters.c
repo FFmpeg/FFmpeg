@@ -45,6 +45,7 @@ void avfilter_register_all(void)
         return;
     initialized = 1;
 
+    REGISTER_FILTER(ACOMPRESSOR,    acompressor,    af);
     REGISTER_FILTER(ACROSSFADE,     acrossfade,     af);
     REGISTER_FILTER(ADELAY,         adelay,         af);
     REGISTER_FILTER(AECHO,          aecho,          af);
