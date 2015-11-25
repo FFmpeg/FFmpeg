@@ -2383,6 +2383,10 @@ reduction. Default is @code{average}.
 @item detection
 Should the exact signal be taken in case of @code{peak} or an RMS one in case
 of @code{rms}. Default is @code{rms} which is mainly smoother.
+
+@item mix
+How much to use compressed signal in output. Default is 1.
+Range is between 0 and 1.
 @end table
 
 @subsection Examples
