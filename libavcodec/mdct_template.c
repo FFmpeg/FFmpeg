@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "libavutil/common.h"
+#include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
 #include "fft.h"
 #include "fft-internal.h"
@@ -82,8 +83,8 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     for(i=0;i<n4;i++) {
         alpha = 2 * M_PI * (i + theta) / n;
 #if FFT_FIXED_32
-        s->tcos[i*tstep] = (FFTSample)floor(-cos(alpha) * 2147483648.0 + 0.5);
-        s->tsin[i*tstep] = (FFTSample)floor(-sin(alpha) * 2147483648.0 + 0.5);
+        s->tcos[i*tstep] = lrint(-cos(alpha) * 2147483648.0);
+        s->tsin[i*tstep] = lrint(-sin(alpha) * 2147483648.0);
 #else
         s->tcos[i*tstep] = FIX15(-cos(alpha) * scale);
         s->tsin[i*tstep] = FIX15(-sin(alpha) * scale);
