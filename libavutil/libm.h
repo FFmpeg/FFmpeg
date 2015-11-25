@@ -123,7 +123,7 @@ static av_always_inline av_const int avpriv_isnan(double x)
     uint64_t v = av_double2int(x);
     if ((v & 0x7ff0000000000000) != 0x7ff0000000000000)
         return 0;
-    return v & 0x000fffffffffffff;
+    return (v & 0x000fffffffffffff) && 1;
 }
 
 #define isnan(x)                  \
