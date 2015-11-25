@@ -213,10 +213,10 @@ static int config_input(AVFilterLink *inlink)
         for (x = 0; x < w; x++){
             int u, v;
 
-            u = (int)floor(SUB_PIXELS * (x0 * x + x1 * y + x2) /
-                                        (x6 * x + x7 * y + x8) + 0.5);
-            v = (int)floor(SUB_PIXELS * (x3 * x + x4 * y + x5) /
-                                        (x6 * x + x7 * y + x8) + 0.5);
+            u =      lrint(SUB_PIXELS * (x0 * x + x1 * y + x2) /
+                                        (x6 * x + x7 * y + x8));
+            v =      lrint(SUB_PIXELS * (x3 * x + x4 * y + x5) /
+                                        (x6 * x + x7 * y + x8));
 
             s->pv[x + y * w][0] = u;
             s->pv[x + y * w][1] = v;
@@ -235,7 +235,7 @@ static int config_input(AVFilterLink *inlink)
             sum += temp[j];
 
         for (j = 0; j < 4; j++)
-            s->coeff[i][j] = (int)floor((1 << COEFF_BITS) * temp[j] / sum + 0.5);
+            s->coeff[i][j] = lrint((1 << COEFF_BITS) * temp[j] / sum);
     }
 
     return 0;
