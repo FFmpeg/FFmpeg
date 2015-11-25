@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #define CONFIG_HARDCODED_TABLES 0
 #include "mpegaudio_tablegen.h"
+#include "libavutil/tablegen.h"
 #include "tableprint.h"
 
 int main(void)
