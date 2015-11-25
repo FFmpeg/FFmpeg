@@ -23,7 +23,7 @@
 
 /**
  * @file
- * Mandelbrot fraktal renderer
+ * Mandelbrot fractal renderer
  */
 
 #include "avfilter.h"
