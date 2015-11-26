@@ -4649,13 +4649,13 @@ check_cflags -Wall
 check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
 check_cflags -Wredundant-decls
-check_cflags -Wcast-qual
 check_cflags -Wwrite-strings
 check_cflags -Wtype-limits
 check_cflags -Wundef
 check_cflags -Wmissing-prototypes
 check_cflags -Wstrict-prototypes
 enabled extra_warnings && check_cflags -Winline
+enabled extra_warnings && check_cflags -Wcast-qual
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}
