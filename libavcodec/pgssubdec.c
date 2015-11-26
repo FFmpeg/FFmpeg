@@ -543,16 +543,6 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
 
         sub->rects[i]->linesize[0] = object->w;
 
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
-        rect = sub->rects[i];
-        for (j = 0; j < 4; j++) {
-            rect->pict.data[j] = rect->data[j];
-            rect->pict.linesize[j] = rect->linesize[j];
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         if (object->rle) {
             if (object->rle_remaining_len) {
                 av_log(avctx, AV_LOG_ERROR, "RLE data length %u is %u bytes shorter than expected\n",
@@ -581,6 +571,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
             avsubtitle_free(sub);
             return AVERROR(ENOMEM);
         }
+
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+        rect = sub->rects[i];
+        for (j = 0; j < 4; j++) {
+            rect->pict.data[j] = rect->data[j];
+            rect->pict.linesize[j] = rect->linesize[j];
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         memcpy(sub->rects[i]->data[1], palette->clut, sub->rects[i]->nb_colors * sizeof(uint32_t));
 
