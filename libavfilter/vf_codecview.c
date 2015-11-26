@@ -236,7 +236,7 @@ static const AVFilterPad codecview_outputs[] = {
 
 AVFilter ff_vf_codecview = {
     .name          = "codecview",
-    .description   = NULL_IF_CONFIG_SMALL("Visualize information about some codecs"),
+    .description   = NULL_IF_CONFIG_SMALL("Visualize information about some codecs."),
     .priv_size     = sizeof(CodecViewContext),
     .query_formats = query_formats,
     .inputs        = codecview_inputs,

@@ -1155,15 +1155,16 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         memcpy(buf, s->buf_ptr, len);
         s->buf_ptr += len;
     } else {
+        int64_t target_end = s->end_off ? s->end_off : s->filesize;
         if ((!s->willclose || s->chunksize < 0) &&
-            s->filesize >= 0 && s->off >= s->filesize)
+            target_end >= 0 && s->off >= target_end)
             return AVERROR_EOF;
         len = ffurl_read(s->hd, buf, size);
         if (!len && (!s->willclose || s->chunksize < 0) &&
-            s->filesize >= 0 && s->off < s->filesize) {
+            target_end >= 0 && s->off < target_end) {
             av_log(h, AV_LOG_ERROR,
                    "Stream ends prematurely at %"PRId64", should be %"PRId64"\n",
-                   s->off, s->filesize
+                   s->off, target_end
                   );
             return AVERROR(EIO);
         }

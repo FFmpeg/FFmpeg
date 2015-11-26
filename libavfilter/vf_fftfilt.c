@@ -335,7 +335,7 @@ static const AVFilterPad fftfilt_outputs[] = {
 
 AVFilter ff_vf_fftfilt = {
     .name            = "fftfilt",
-    .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to samples in frequency domain"),
+    .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to samples in frequency domain."),
     .priv_size       = sizeof(FFTFILTContext),
     .priv_class      = &fftfilt_class,
     .inputs          = fftfilt_inputs,

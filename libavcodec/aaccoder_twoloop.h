@@ -691,8 +691,11 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             /** Check that there's no SF delta range violations */
             if (!sce->zeroes[w*16+g]) {
                 if (prev != -1) {
-                    int sfdiff = sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO;
+                    av_unused int sfdiff = sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO;
                     av_assert1(sfdiff >= 0 && sfdiff <= 2*SCALE_MAX_DIFF);
+                } else if (sce->zeroes[0]) {
+                    /** Set global gain to something useful */
+                    sce->sf_idx[0] = sce->sf_idx[w*16+g];
                 }
                 prev = sce->sf_idx[w*16+g];
             }

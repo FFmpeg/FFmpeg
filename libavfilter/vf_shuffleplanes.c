@@ -157,7 +157,7 @@ static const AVFilterPad shuffleplanes_outputs[] = {
 
 AVFilter ff_vf_shuffleplanes = {
     .name         = "shuffleplanes",
-    .description  = NULL_IF_CONFIG_SMALL("Shuffle video planes"),
+    .description  = NULL_IF_CONFIG_SMALL("Shuffle video planes."),
 
     .priv_size    = sizeof(ShufflePlanesContext),
     .priv_class   = &shuffleplanes_class,

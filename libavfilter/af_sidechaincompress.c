@@ -44,6 +44,7 @@ typedef struct SidechainCompressContext {
     double ratio;
     double threshold;
     double makeup;
+    double mix;
     double thres;
     double knee;
     double knee_start;
@@ -73,6 +74,7 @@ static const AVOption sidechaincompress_options[] = {
     { "detection", "set detection",    OFFSET(detection), AV_OPT_TYPE_INT,    {.i64=1},               0,    1, A|F, "detection" },
     {   "peak",    0,                  0,                 AV_OPT_TYPE_CONST,  {.i64=0},               0,    0, A|F, "detection" },
     {   "rms",     0,                  0,                 AV_OPT_TYPE_CONST,  {.i64=1},               0,    0, A|F, "detection" },
+    { "mix",       "set mix",          OFFSET(mix),       AV_OPT_TYPE_DOUBLE, {.dbl=1},               0,    1, A|F },
     { NULL }
 };
 
@@ -131,6 +133,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     AVFilterLink *sclink = ctx->inputs[1];
     AVFilterLink *outlink = ctx->outputs[0];
     const double makeup = s->makeup;
+    const double mix = s->mix;
     const double *scsrc;
     double *sample;
     int nb_samples;
@@ -177,7 +180,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
                                s->compressed_knee_stop, s->detection);
 
         for (c = 0; c < outlink->channels; c++)
-            sample[c] *= gain * makeup;
+            sample[c] *= (gain * makeup * mix + (1. - mix));
 
         sample += outlink->channels;
         scsrc += sclink->channels;

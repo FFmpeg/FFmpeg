@@ -312,7 +312,7 @@ static const AVFilterPad avfilter_af_asyncts_outputs[] = {
 
 AVFilter ff_af_asyncts = {
     .name        = "asyncts",
-    .description = NULL_IF_CONFIG_SMALL("Sync audio data to timestamps"),
+    .description = NULL_IF_CONFIG_SMALL("Sync audio data to timestamps."),
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(ASyncContext),

@@ -292,7 +292,13 @@ static void apply_mid_side_stereo(ChannelElement *cpe)
         for (w2 =  0; w2 < ics->group_len[w]; w2++) {
             int start = (w+w2) * 128;
             for (g = 0; g < ics->num_swb; g++) {
-                if (!cpe->ms_mask[w*16 + g] && !cpe->is_mask[w*16 + g]) {
+                /* ms_mask can be used for other purposes in PNS and I/S,
+                 * so must not apply M/S if any band uses either, even if
+                 * ms_mask is set.
+                 */
+                if (!cpe->ms_mask[w*16 + g] || cpe->is_mask[w*16 + g]
+                    || cpe->ch[0].band_type[w*16 + g] == NOISE_BT
+                    || cpe->ch[1].band_type[w*16 + g] == NOISE_BT) {
                     start += ics->swb_sizes[g];
                     continue;
                 }

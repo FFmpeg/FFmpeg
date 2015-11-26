@@ -887,8 +887,8 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
                     }
                     cpe->ms_mask[w*16+g] = dist2 <= dist1 && B1 < B0;
                     if (cpe->ms_mask[w*16+g]) {
-                        /* Setting the M/S mask is useful with I/S, but only the flag */
-                        if (!cpe->is_mask[w*16+g]) {
+                        /* Setting the M/S mask is useful with I/S or PNS, but only the flag */
+                        if (!cpe->is_mask[w*16+g] && sce0->band_type[w*16+g] != NOISE_BT && sce1->band_type[w*16+g] != NOISE_BT) {
                             sce0->sf_idx[w*16+g] = mididx;
                             sce1->sf_idx[w*16+g] = sididx;
                             sce0->band_type[w*16+g] = midcb;
