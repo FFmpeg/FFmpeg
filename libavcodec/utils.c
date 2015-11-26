@@ -2970,6 +2970,8 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             }
             if (av_log_get_level() >= AV_LOG_DEBUG) {
                 int g = av_gcd(enc->time_base.num, enc->time_base.den);
+                if (!g)
+                    g = 1;
                 snprintf(buf + strlen(buf), buf_size - strlen(buf),
                          ", %d/%d",
                          enc->time_base.num / g, enc->time_base.den / g);
