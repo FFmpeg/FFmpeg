@@ -72,29 +72,17 @@ void ff_aac_ltp_insert_new_frame(AACEncContext *s)
     }
 }
 
-/**
- * Process LTP parameters
- * @see Patent WO2006070265A1
- */
-void ff_aac_update_ltp(AACEncContext *s, SingleChannelElement *sce)
+static void get_lag(float *buf, const float *new, LongTermPrediction *ltp)
 {
-    int i, j, lag, samples_num;
-    float corr, max_ratio, max_corr;
-    float *pred_signal = &sce->ltp_state[0];
-    const float *samples = &s->planar_samples[s->cur_channel][1024];
-
-    if (s->profile != FF_PROFILE_AAC_LTP)
-        return;
-
-    /* Calculate lag */
-    max_corr = 0.0f;
+    int i, j, lag, max_corr = 0;
+    float max_ratio;
     for (i = 0; i < 2048; i++) {
-        float s0 = 0.0f, s1 = 0.0f;
+        float corr, s0 = 0.0f, s1 = 0.0f;
         const int start = FFMAX(0, i - 1024);
         for (j = start; j < 2048; j++) {
             const int idx = j - i + 1024;
-            s0 += samples[j]*pred_signal[idx];
-            s1 += pred_signal[idx]*pred_signal[idx];
+            s0 += new[j]*buf[idx];
+            s1 += buf[idx]*buf[idx];
         }
         corr = s1 > 0.0f ? s0/sqrt(s1) : 0.0f;
         if (corr > max_corr) {
@@ -103,19 +91,40 @@ void ff_aac_update_ltp(AACEncContext *s, SingleChannelElement *sce)
             max_ratio = corr/(2048-start);
         }
     }
+    ltp->lag = FFMAX(av_clip_uintp2(lag, 11), 0);
+    ltp->coef_idx = quant_array_idx(max_ratio, ltp_coef, 8);
+    ltp->coef = ltp_coef[ltp->coef_idx];
+}
 
-    if (lag < 1)
+static void generate_samples(float *buf, LongTermPrediction *ltp)
+{
+    int i, samples_num = 2048;
+    if (!ltp->lag) {
+        ltp->present = 0;
+        return;
+    } else if (ltp->lag < 1024) {
+        samples_num = ltp->lag + 1024;
+    }
+    for (i = 0; i < samples_num; i++)
+        buf[i] = ltp->coef*buf[i + 2048 - ltp->lag];
+    memset(&buf[i], 0, (2048 - i)*sizeof(float));
+}
+
+/**
+ * Process LTP parameters
+ * @see Patent WO2006070265A1
+ */
+void ff_aac_update_ltp(AACEncContext *s, SingleChannelElement *sce)
+{
+    float *pred_signal = &sce->ltp_state[0];
+    const float *samples = &s->planar_samples[s->cur_channel][1024];
+
+    if (s->profile != FF_PROFILE_AAC_LTP)
         return;
 
-    sce->ics.ltp.lag = lag = av_clip_uintp2(lag, 11);
-    sce->ics.ltp.coef_idx  = quant_array_idx(max_ratio, ltp_coef, 8);
-    sce->ics.ltp.coef      = ltp_coef[sce->ics.ltp.coef_idx];
-
-    /* Predict the new samples */
-    samples_num = 1024 + (lag < 1024 ? lag : 1024);
-    for (i = 1024; i < samples_num + 1024; i++)
-        pred_signal[i] = sce->ics.ltp.coef*pred_signal[i-lag];
-    memset(&pred_signal[samples_num], 0, (2048 - samples_num)*sizeof(float));
+    /* Calculate lag */
+    get_lag(pred_signal, samples, &sce->ics.ltp);
+    generate_samples(pred_signal, &sce->ics.ltp);
 }
 
 void ff_aac_adjust_common_ltp(AACEncContext *s, ChannelElement *cpe)
