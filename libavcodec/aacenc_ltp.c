@@ -135,8 +135,10 @@ void ff_aac_adjust_common_ltp(AACEncContext *s, ChannelElement *cpe)
 
     if (!cpe->common_window ||
         sce0->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE ||
-        sce1->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE)
+        sce1->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        sce0->ics.ltp.present = 0;
         return;
+    }
 
     for (sfb = 0; sfb < FFMIN(sce0->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++) {
         int sum = sce0->ics.ltp.used[sfb] + sce1->ics.ltp.used[sfb];
