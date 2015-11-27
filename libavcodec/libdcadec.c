@@ -42,7 +42,7 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
 {
     DCADecContext *s = avctx->priv_data;
     AVFrame *frame = data;
-    av_unused struct dcadec_exss_info *exss;
+    struct dcadec_exss_info *exss;
     int ret, i, k;
     int **samples, nsamples, channel_mask, sample_rate, bits_per_sample, profile;
     uint32_t mrk;
@@ -78,6 +78,8 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
                                      &sample_rate, &bits_per_sample, &profile)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "dcadec_context_filter() failed: %d (%s)\n", -ret, dcadec_strerror(ret));
         return AVERROR_EXTERNAL;
+    } else if (ret > 0) {
+        av_log(avctx, AV_LOG_WARNING, "dcadec_context_filter() warning: %d (%s)\n", ret, dcadec_strerror(ret));
     }
 
     avctx->channels       = av_get_channel_layout_nb_channels(channel_mask);
@@ -129,7 +131,6 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     } else
         avctx->bit_rate = 0;
 
-#if HAVE_STRUCT_DCADEC_EXSS_INFO_MATRIX_ENCODING
     if (exss = dcadec_context_get_exss_info(s->ctx)) {
         enum AVMatrixEncoding matrix_encoding = AV_MATRIX_ENCODING_NONE;
 
@@ -158,7 +159,6 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
             (ret = ff_side_data_update_matrix_encoding(frame, matrix_encoding)) < 0)
             return ret;
     }
-#endif
 
     frame->nb_samples = nsamples;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
