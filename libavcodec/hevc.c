@@ -2440,7 +2440,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
     HEVCLocalContext *lc = s->HEVClc;
     int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
     int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
-    int offset;
+    int64_t offset;
     int startheader, cmpt = 0;
     int i, j, res = 0;
 
@@ -2487,6 +2487,11 @@ static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
     }
     if (s->sh.num_entry_point_offsets != 0) {
         offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
+        if (length < offset) {
+            av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
+            res = AVERROR_INVALIDDATA;
+            goto error;
+        }
         s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
         s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
 
@@ -2513,6 +2518,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
         res += ret[i];
+error:
     av_free(ret);
     av_free(arg);
     return res;
