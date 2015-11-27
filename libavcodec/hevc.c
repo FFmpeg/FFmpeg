@@ -2430,11 +2430,9 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         return AVERROR(ENOMEM);
     }
 
+    ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
 
     if (!s->sList[1]) {
-        ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
-
-
         for (i = 1; i < s->threads_number; i++) {
             s->sList[i] = av_malloc(sizeof(HEVCContext));
             memcpy(s->sList[i], s, sizeof(HEVCContext));
