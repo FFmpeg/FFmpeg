@@ -38,8 +38,8 @@
 #include <stdint.h>
 
 /* NOTE:
- * Tables in this file are shared by the AAC decoders and encoder */
-*/
+ * Tables in this file are shared by the AAC decoders and encoder
+ */
 
 extern AVOnce aac_table_init; /* Protects ff_aac_tableinit() */
 
