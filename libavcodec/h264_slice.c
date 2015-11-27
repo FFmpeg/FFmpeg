@@ -2442,13 +2442,16 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     }
 
     if (h->pps.cabac) {
+        int ret;
         /* realign */
         align_get_bits(&h->gb);
 
         /* init cabac */
-        ff_init_cabac_decoder(&h->cabac,
+        ret = ff_init_cabac_decoder(&h->cabac,
                               h->gb.buffer + get_bits_count(&h->gb) / 8,
                               (get_bits_left(&h->gb) + 7) / 8);
+        if (ret < 0)
+            return ret;
 
         ff_h264_init_cabac_states(h);
 
