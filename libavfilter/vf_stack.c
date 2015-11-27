@@ -33,6 +33,7 @@ typedef struct StackContext {
     const AVClass *class;
     const AVPixFmtDescriptor *desc;
     int nb_inputs;
+    int shortest;
     int is_vertical;
     int nb_planes;
 
@@ -199,7 +200,7 @@ static int config_output(AVFilterLink *outlink)
         in[i].time_base = inlink->time_base;
         in[i].sync   = 1;
         in[i].before = EXT_STOP;
-        in[i].after  = EXT_INFINITY;
+        in[i].after  = s->shortest ? EXT_STOP : EXT_INFINITY;
     }
 
     return ff_framesync_configure(&s->fs);
@@ -222,6 +223,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption stack_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=2}, 2, INT_MAX, .flags = FLAGS },
+    { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
     { NULL },
 };
 

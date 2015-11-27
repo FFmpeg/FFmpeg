@@ -20,6 +20,14 @@ fate-api-seek: CMD = run $(APITESTSDIR)/api-seek-test $(TARGET_PATH)/tests/data/
 fate-api-seek: CMP = null
 fate-api-seek: REF = /dev/null
 
+FATE_API_SAMPLES_LIBAVFORMAT-yes += fate-api-png-codec-param
+fate-api-png-codec-param: $(APITESTSDIR)/api-codec-param-test$(EXESUF)
+fate-api-png-codec-param: CMD = run $(APITESTSDIR)/api-codec-param-test $(TARGET_SAMPLES)/png1/lena-rgba.png
+
+FATE_API_SAMPLES_LIBAVFORMAT-yes += fate-api-jpeg-codec-param
+fate-api-jpeg-codec-param: $(APITESTSDIR)/api-codec-param-test$(EXESUF)
+fate-api-jpeg-codec-param: CMD = run $(APITESTSDIR)/api-codec-param-test $(TARGET_SAMPLES)/exif/image_small.jpg
+
 FATE_API_SAMPLES-$(CONFIG_AVFORMAT) += $(FATE_API_SAMPLES_LIBAVFORMAT-yes)
 
 ifdef SAMPLES

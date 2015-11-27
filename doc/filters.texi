@@ -7154,6 +7154,10 @@ The filter accept the following option:
 @table @option
 @item inputs
 Set number of input streams. Default is 2.
+
+@item shortest
+If set to 1, force the output to terminate when the shortest input
+terminates. Default value is 0.
 @end table
 
 @section hue
@@ -11598,6 +11602,10 @@ The filter accept the following option:
 @table @option
 @item inputs
 Set number of input streams. Default is 2.
+
+@item shortest
+If set to 1, force the output to terminate when the shortest input
+terminates. Default value is 0.
 @end table
 
 @section w3fdif
