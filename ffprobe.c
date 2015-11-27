@@ -2148,10 +2148,16 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             }
         }
 
-        if (dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
+        if (!do_bitexact && dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
             print_str("profile", profile);
-        else
-            print_str_opt("profile", "unknown");
+        else {
+            if (dec_ctx->profile != FF_PROFILE_UNKNOWN) {
+                char profile_num[12];
+                snprintf(profile_num, sizeof(profile_num), "%d", dec_ctx->profile);
+                print_str("profile", profile_num);
+            } else
+                print_str_opt("profile", "unknown");
+        }
 
         s = av_get_media_type_string(dec_ctx->codec_type);
         if (s) print_str    ("codec_type", s);
