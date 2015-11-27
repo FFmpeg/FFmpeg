@@ -540,6 +540,9 @@ int ff_jpeg2000_dwt_init(DWTContext *s, uint16_t border[2][2],
 
 int ff_dwt_encode(DWTContext *s, void *t)
 {
+    if (s->ndeclevels == 0)
+        return 0;
+
     switch(s->type){
         case FF_DWT97:
             dwt_encode97_float(s, t); break;
