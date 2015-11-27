@@ -888,6 +888,11 @@ alloc_fail:
     return AVERROR(ENOMEM);
 }
 
+static av_cold void aac_encode_init_tables(void)
+{
+    ff_aac_tableinit();
+}
+
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
@@ -989,7 +994,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (HAVE_MIPSDSPR1)
         ff_aac_coder_init_mips(s);
 
-    if ((ret = ff_thread_once(&aac_table_init, &ff_aac_tableinit)) != 0)
+    if ((ret = ff_thread_once(&aac_table_init, &aac_encode_init_tables)) != 0)
         return AVERROR_UNKNOWN;
 
     ff_af_queue_init(avctx, &s->afq);
