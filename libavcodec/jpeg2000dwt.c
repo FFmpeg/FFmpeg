@@ -555,6 +555,9 @@ int ff_dwt_encode(DWTContext *s, void *t)
 
 int ff_dwt_decode(DWTContext *s, void *t)
 {
+    if (s->ndeclevels == 0)
+        return 0;
+
     switch (s->type) {
     case FF_DWT97:
         dwt_decode97_float(s, t);
