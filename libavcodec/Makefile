@@ -920,7 +920,6 @@ SLIBOBJS-$(HAVE_GNU_WINDRES)           += avcodecres.o
 
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
-                                          aac_tablegen_decl.h           \
                                           fft-internal.h                \
                                           tableprint.h                  \
                                           tableprint_vlc.h              \
@@ -964,8 +963,7 @@ TESTOBJS = dctref.o
 
 TOOLS = fourcc2pixfmt
 
-HOSTPROGS = aac_tablegen                                                \
-            aacps_tablegen                                              \
+HOSTPROGS = aacps_tablegen                                              \
             aacps_fixed_tablegen                                        \
             aacsbr_tablegen                                             \
             aacsbr_fixed_tablegen                                       \
@@ -999,7 +997,7 @@ $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=0
 endif
 
 GEN_HEADERS = cbrt_tables.h cbrt_fixed_tables.h aacps_tables.h aacps_fixed_tables.h aacsbr_tables.h \
-              aacsbr_fixed_tables.h aac_tables.h dsd_tables.h dv_tables.h     \
+              aacsbr_fixed_tables.h dsd_tables.h dv_tables.h     \
               sinewin_tables.h sinewin_fixed_tables.h mpegaudio_tables.h motionpixels_tables.h \
               pcm_tables.h qdm2_tables.h
 GEN_HEADERS := $(addprefix $(SUBDIR), $(GEN_HEADERS))
@@ -1014,7 +1012,6 @@ $(SUBDIR)aacps_float.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aacps_fixed.o: $(SUBDIR)aacps_fixed_tables.h
 $(SUBDIR)aacsbr.o: $(SUBDIR)aacsbr_tables.h
 $(SUBDIR)aacsbr_fixed.o: $(SUBDIR)aacsbr_fixed_tables.h
-$(SUBDIR)aactab.o: $(SUBDIR)aac_tables.h
 $(SUBDIR)aactab_fixed.o: $(SUBDIR)aac_fixed_tables.h
 $(SUBDIR)dsddec.o: $(SUBDIR)dsd_tables.h
 $(SUBDIR)dvenc.o: $(SUBDIR)dv_tables.h
