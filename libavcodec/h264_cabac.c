@@ -1999,6 +1999,7 @@ decode_intra_mb:
         const int mb_size = ff_h264_mb_sizes[h->sps.chroma_format_idc] *
                             h->sps.bit_depth_luma >> 3;
         const uint8_t *ptr;
+        int ret;
 
         // We assume these blocks are very rare so we do not optimize it.
         // FIXME The two following lines get the bitstream position in the cabac
@@ -2015,7 +2016,9 @@ decode_intra_mb:
         h->intra_pcm_ptr = ptr;
         ptr += mb_size;
 
-        ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
+        ret = ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
+        if (ret < 0)
+            return ret;
 
         // All blocks are present
         h->cbp_table[mb_xy] = 0xf7ef;
