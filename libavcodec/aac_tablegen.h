@@ -37,7 +37,7 @@ av_cold void ff_aac_tableinit(void)
     int i;
 
     /* 2^(i/16) for 0 <= i <= 15 */
-    const float exp2_lut[] = {
+    static const float exp2_lut[] = {
         1.00000000000000000000,
         1.04427378242741384032,
         1.09050773266525765921,
