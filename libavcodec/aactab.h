@@ -30,7 +30,6 @@
 #ifndef AVCODEC_AACTAB_H
 #define AVCODEC_AACTAB_H
 
-#include "libavutil/thread.h"
 #include "libavutil/mem.h"
 #include "aac.h"
 #include "aac_tablegen_decl.h"
@@ -40,8 +39,6 @@
 /* NOTE:
  * Tables in this file are shared by the AAC decoders and encoder
  */
-
-extern AVOnce aac_table_init; /* Protects ff_aac_tableinit() */
 
 /* @name ltp_coef
  * Table of the LTP coefficients

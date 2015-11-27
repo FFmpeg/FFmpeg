@@ -29,6 +29,7 @@
  * add sane pulse detection
  ***********************************/
 
+#include "libavutil/thread.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -45,6 +46,8 @@
 #include "aacenc_utils.h"
 
 #include "psymodel.h"
+
+static AVOnce aac_table_init = AV_ONCE_INIT;
 
 /**
  * Make AAC audio config object.

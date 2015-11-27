@@ -27,14 +27,11 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#include "libavutil/thread.h"
 #include "libavutil/mem.h"
 #include "aac.h"
 #include "aac_tablegen.h"
 
 #include <stdint.h>
-
-AVOnce aac_table_init = AV_ONCE_INIT;
 
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_1024)[1024];
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];
