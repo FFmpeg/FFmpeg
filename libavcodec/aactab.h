@@ -30,11 +30,14 @@
 #ifndef AVCODEC_AACTAB_H
 #define AVCODEC_AACTAB_H
 
+#include "libavutil/thread.h"
 #include "libavutil/mem.h"
 #include "aac.h"
 #include "aac_tablegen_decl.h"
 
 #include <stdint.h>
+
+extern AVOnce aac_table_init; /* Protects ff_aac_tableinit() */
 
 /* NOTE:
  * Tables in this file are used by the AAC decoder and will be used by the AAC

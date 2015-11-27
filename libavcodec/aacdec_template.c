@@ -1103,14 +1103,12 @@ static av_cold void aac_static_table_init(void)
     AAC_RENAME(cbrt_tableinit)();
 }
 
-static AVOnce aac_init = AV_ONCE_INIT;
-
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
     int ret;
 
-    ret = ff_thread_once(&aac_init, &aac_static_table_init);
+    ret = ff_thread_once(&aac_table_init, &aac_static_table_init);
     if (ret != 0)
         return AVERROR_UNKNOWN;
 
