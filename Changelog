@@ -1,6 +1,43 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.3
+- avcodec/cabac: Check initial cabac decoder state
+- avcodec/cabac_functions: Fix "left shift of negative value -31767"
+- avcodec/h264_slice: Limit max_contexts when slice_context_count is initialized
+- rtmpcrypt: Do the xtea decryption in little endian mode
+- avformat/matroskadec: Check subtitle stream before dereferencing
+- avcodec/pngdec: Replace assert by request for sample for unsupported TRNS cases
+- avformat/utils: Do not init parser if probing is unfinished
+- avcodec/jpeg2000dec: Fix potential integer overflow with tile dimensions
+- avcodec/jpeg2000: Use av_image_check_size() in ff_jpeg2000_init_component()
+- avcodec/wmaprodec: Check for overread in decode_packet()
+- avcodec/smacker: Check that the data size is a multiple of a sample vector
+- avcodec/takdec: Skip last p2 sample (which is unused)
+- avcodec/dxtory: Fix input size check in dxtory_decode_v1_410()
+- avcodec/dxtory: Fix input size check in dxtory_decode_v1_420()
+- avcodec/error_resilience: avoid accessing previous or next frames tables beyond height
+- avcodec/dpx: Move need_align to act per line
+- avcodec/flashsv: Check size before updating it
+- avcodec/ivi: Check image dimensions
+- avcodec/utils: Better check for channels in av_get_audio_frame_duration()
+- avcodec/jpeg2000dec: Check for duplicate SIZ marker
+- aacsbr: don't call sbr_dequant twice without intermediate read_sbr_data
+- hqx: correct type and size check of info_offset
+- mxfdec: check edit_rate also for physical_track
+- avcodec/jpeg2000: Change coord to 32bit to support larger than 32k width or height
+- avcodec/jpeg2000dec: Check SIZ dimensions to be within the supported range
+- avcodec/jpeg2000: Check comp coords to be within the supported size
+- mpegvideo: clear overread in clear_context
+- avcodec/avrndec: Use the AVFrame format instead of the context
+- dds: disable palette flag for compressed images
+- dds: validate compressed source buffer size
+- dds: validate source buffer size before copying
+- dvdsubdec: validate offset2 similar to offset1
+- brstm: reject negative sample rate
+- aacps: avoid division by zero in stereo_processing
+- softfloat: assert when the argument of av_sqrt_sf is negative
+
 version 2.8.2
 - various fixes in the aac_fixed decoder
 - various fixes in softfloat
