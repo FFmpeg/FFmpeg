@@ -256,7 +256,7 @@ redo:
         if (avio_feof(s->pb))
             return AVERROR_EOF;
         // FIXME we should remember header_state
-        return AVERROR(EAGAIN);
+        return FFERROR_REDO;
     }
 
     if (startcode == PACK_START_CODE)
