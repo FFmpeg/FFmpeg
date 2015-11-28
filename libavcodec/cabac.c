@@ -175,7 +175,7 @@ void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size){
  *
  * @param buf_size size of buf in bits
  */
-void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
+int ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
     c->bytestream_start=
     c->bytestream= buf;
     c->bytestream_end= buf + buf_size;
@@ -188,6 +188,9 @@ void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
 #endif
     c->low+= ((*c->bytestream++)<<2) + 2;
     c->range= 0x1FE;
+    if ((c->range<<(CABAC_BITS+1)) < c->low)
+        return AVERROR_INVALIDDATA;
+    return 0;
 }
 
 #ifdef TEST

@@ -29,6 +29,7 @@
  * add sane pulse detection
  ***********************************/
 
+#include "libavutil/thread.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -45,6 +46,8 @@
 #include "aacenc_utils.h"
 
 #include "psymodel.h"
+
+static AVOnce aac_table_init = AV_ONCE_INIT;
 
 /**
  * Make AAC audio config object.
@@ -885,6 +888,11 @@ alloc_fail:
     return AVERROR(ENOMEM);
 }
 
+static av_cold void aac_encode_init_tables(void)
+{
+    ff_aac_tableinit();
+}
+
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
@@ -986,7 +994,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (HAVE_MIPSDSPR1)
         ff_aac_coder_init_mips(s);
 
-    ff_aac_tableinit();
+    if ((ret = ff_thread_once(&aac_table_init, &aac_encode_init_tables)) != 0)
+        return AVERROR_UNKNOWN;
 
     ff_af_queue_init(avctx, &s->afq);
 
@@ -1029,6 +1038,7 @@ AVCodec ff_aac_encoder = {
     .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
     .supported_samplerates = mpeg4audio_sample_rates,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,

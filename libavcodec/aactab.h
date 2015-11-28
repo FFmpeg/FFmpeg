@@ -37,8 +37,7 @@
 #include <stdint.h>
 
 /* NOTE:
- * Tables in this file are used by the AAC decoder and will be used by the AAC
- * encoder.
+ * Tables in this file are shared by the AAC decoders and encoder
  */
 
 /* @name ltp_coef

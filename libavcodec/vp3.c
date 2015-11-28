@@ -2018,17 +2018,20 @@ static int vp3_decode_frame(AVCodecContext *avctx,
             vp3_decode_end(avctx);
             ret = theora_decode_header(avctx, &gb);
 
+            if (ret >= 0)
+                ret = vp3_decode_init(avctx);
             if (ret < 0) {
                 vp3_decode_end(avctx);
-            } else
-                ret = vp3_decode_init(avctx);
+            }
             return ret;
         } else if (type == 2) {
+            vp3_decode_end(avctx);
             ret = theora_decode_tables(avctx, &gb);
+            if (ret >= 0)
+                ret = vp3_decode_init(avctx);
             if (ret < 0) {
                 vp3_decode_end(avctx);
-            } else
-                ret = vp3_decode_init(avctx);
+            }
             return ret;
         }
 

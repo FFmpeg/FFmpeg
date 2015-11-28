@@ -37,6 +37,7 @@
 #include "pthread_internal.h"
 #include "thread.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
@@ -276,11 +277,19 @@ int ff_alloc_entries(AVCodecContext *avctx, int count)
 
     if (avctx->active_thread_type & FF_THREAD_SLICE)  {
         SliceThreadContext *p = avctx->internal->thread_ctx;
+
+        if (p->entries) {
+            av_assert0(p->thread_count == avctx->thread_count);
+            av_freep(&p->entries);
+        }
+
         p->thread_count  = avctx->thread_count;
         p->entries       = av_mallocz_array(count, sizeof(int));
 
-        p->progress_mutex = av_malloc_array(p->thread_count, sizeof(pthread_mutex_t));
-        p->progress_cond  = av_malloc_array(p->thread_count, sizeof(pthread_cond_t));
+        if (!p->progress_mutex) {
+            p->progress_mutex = av_malloc_array(p->thread_count, sizeof(pthread_mutex_t));
+            p->progress_cond  = av_malloc_array(p->thread_count, sizeof(pthread_cond_t));
+        }
 
         if (!p->entries || !p->progress_mutex || !p->progress_cond) {
             av_freep(&p->entries);
