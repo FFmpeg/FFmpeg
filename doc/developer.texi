@@ -65,6 +65,9 @@ rejected by the git repository.
 @item
 You should try to limit your code lines to 80 characters; however, do so if
 and only if this improves readability.
+
+@item
+K&R coding style is used.
 @end itemize
 The presentation is one inspired by 'indent -i4 -kr -nut'.
 
