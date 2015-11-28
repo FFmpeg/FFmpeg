@@ -62,6 +62,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(APAD,           apad,           af);
     REGISTER_FILTER(APERMS,         aperms,         af);
     REGISTER_FILTER(APHASER,        aphaser,        af);
+    REGISTER_FILTER(APULSATOR,      apulsator,      af);
     REGISTER_FILTER(AREALTIME,      arealtime,      af);
     REGISTER_FILTER(ARESAMPLE,      aresample,      af);
     REGISTER_FILTER(AREVERSE,       areverse,       af);
