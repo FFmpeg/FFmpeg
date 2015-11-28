@@ -852,11 +852,11 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st = pcr_st->priv_data;
 
     if (ts->mux_rate > 1) {
-        service->pcr_packet_period = (ts->mux_rate * ts->pcr_period) /
+        service->pcr_packet_period = (int64_t)ts->mux_rate * ts->pcr_period /
                                      (TS_PACKET_SIZE * 8 * 1000);
-        ts->sdt_packet_period      = (ts->mux_rate * SDT_RETRANS_TIME) /
+        ts->sdt_packet_period      = (int64_t)ts->mux_rate * SDT_RETRANS_TIME /
                                      (TS_PACKET_SIZE * 8 * 1000);
-        ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
+        ts->pat_packet_period      = (int64_t)ts->mux_rate * PAT_RETRANS_TIME /
                                      (TS_PACKET_SIZE * 8 * 1000);
 
         if (ts->copyts < 1)
