@@ -555,9 +555,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
 
     while (1) {
         ret = av_read_frame(cat->avf, pkt);
-        if (ret == AVERROR_EOF || packet_after_outpoint(cat, pkt)) {
-            if (ret == 0)
-                av_packet_unref(pkt);
+        if (ret == AVERROR_EOF) {
             if ((ret = open_next_file(avf)) < 0)
                 return ret;
             continue;
@@ -567,6 +565,12 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         if ((ret = match_streams(avf)) < 0) {
             av_packet_unref(pkt);
             return ret;
+        }
+        if (packet_after_outpoint(cat, pkt)) {
+            av_packet_unref(pkt);
+            if ((ret = open_next_file(avf)) < 0)
+                return ret;
+            continue;
         }
         cs = &cat->cur_file->streams[pkt->stream_index];
         if (cs->out_stream_index < 0) {
