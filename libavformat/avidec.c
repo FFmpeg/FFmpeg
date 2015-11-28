@@ -995,7 +995,7 @@ start_sync:
             goto start_sync;
         }
 
-        n = avi->dv_demux ? 0 : get_stream_idx(d);
+        n = get_stream_idx(d);
 
         if (!((i - avi->last_pkt_pos) & 1) &&
             get_stream_idx(d + 1) < s->nb_streams)
@@ -1006,6 +1006,9 @@ start_sync:
             avio_skip(pb, size);
             goto start_sync;
         }
+
+        if (avi->dv_demux && n != 0)
+            continue;
 
         // parse ##dc/##wb
         if (n < s->nb_streams) {
