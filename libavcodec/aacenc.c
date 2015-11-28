@@ -744,7 +744,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ERROR_IF(avctx->profile != FF_PROFILE_UNKNOWN && avctx->profile != FF_PROFILE_AAC_LOW,
              "Unsupported profile %d\n", avctx->profile);
     ERROR_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
-             "Too many bits per frame requested\n");
+             "Too many bits %f > %d per frame requested\n",
+             1024.0 * avctx->bit_rate / avctx->sample_rate,
+             6144 * s->channels);
 
     s->samplerate_index = i;
 
