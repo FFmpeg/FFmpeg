@@ -2025,6 +2025,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
             }
             return ret;
         } else if (type == 2) {
+            vp3_decode_end(avctx);
             ret = theora_decode_tables(avctx, &gb);
             if (ret >= 0)
                 ret = vp3_decode_init(avctx);
