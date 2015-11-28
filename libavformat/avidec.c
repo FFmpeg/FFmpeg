@@ -367,6 +367,7 @@ static int avi_read_header(AVFormatContext *s)
     int avih_width      = 0, avih_height = 0;
     int amv_file_format = 0;
     uint64_t list_end   = 0;
+    int64_t pos;
     int ret;
 
     avi->stream_index = -1;
@@ -759,12 +760,12 @@ static int avi_read_header(AVFormatContext *s)
             }
             break;
         case MKTAG('i', 'n', 'd', 'x'):
-            i = avio_tell(pb);
+            pos = avio_tell(pb);
             if (pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
                 read_braindead_odml_indx(s, 0) < 0 &&
                 (s->error_recognition & AV_EF_EXPLODE))
                 goto fail;
-            avio_seek(pb, i + size, SEEK_SET);
+            avio_seek(pb, pos + size, SEEK_SET);
             break;
         case MKTAG('v', 'p', 'r', 'p'):
             if (stream_index < (unsigned)s->nb_streams && size > 9 * 4) {
