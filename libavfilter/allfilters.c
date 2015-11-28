@@ -23,6 +23,13 @@
 #include "config.h"
 #include "opencl_allkernels.h"
 
+#if CONFIG_DYNAMIC_FILTER
+#include <dlfcn.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <string.h>
+#include <sys/types.h>
+#endif
 
 #define REGISTER_FILTER(X, x, y)                                        \
     {                                                                   \
@@ -315,5 +322,51 @@ void avfilter_register_all(void)
     REGISTER_FILTER_UNCONDITIONAL(vsink_buffer);
     REGISTER_FILTER_UNCONDITIONAL(af_afifo);
     REGISTER_FILTER_UNCONDITIONAL(vf_fifo);
+
+#if CONFIG_DYNAMIC_FILTER
+    do {
+        void *handle;
+        AVFilter *ld_filter;
+
+        char *dyndir, dynfile[PATH_MAX + 1], dynname[PATH_MAX + 1], *p;
+        DIR *dir;
+        struct dirent *dircur;
+
+
+        if ((dyndir = getenv("FFMPEG_DYN_FILTERS")) == NULL)
+            break;
+
+        if ((dir = opendir(dyndir)) == NULL)
+            break;
+
+        while ((dircur = readdir(dir)) != NULL) {
+            /* current item isn't a normal file */
+            if ((dircur->d_type == DT_REG) == 0) {
+                continue;
+            }
+            dynfile[PATH_MAX] = '\0';
+            strncpy(dynfile, dyndir, PATH_MAX);
+            strncat(dynfile, "/", PATH_MAX);
+            strncat(dynfile, dircur->d_name, PATH_MAX);
+
+            /* copy the file name and remove the extension suffix */
+            dynname[PATH_MAX] = '\0';
+            strncpy(dynname, "ff_", PATH_MAX);
+            strncat(dynname, dircur->d_name, PATH_MAX);
+            if ((p = strrchr(dynname, '.')) != NULL)
+                *p = '\0';
+
+            if (!(handle = dlopen(dynfile, RTLD_NOW|RTLD_LOCAL))) {
+                av_log(NULL, AV_LOG_WARNING, "dynamic filters: '%s' load failed\n", dynfile);
+                continue;
+            }
+            if ((ld_filter = (AVFilter *)dlsym(handle, dynname)) == NULL) {
+                av_log(NULL, AV_LOG_WARNING, "dynamic filters: symbol '%s' not found in '%s' file\n", dynname, dynfile);
+                continue;
+            }
+            avfilter_register(ld_filter);
+        } while (0);
+    } while (0);
+#endif
     ff_opencl_register_filter_kernel_code_all();
 }

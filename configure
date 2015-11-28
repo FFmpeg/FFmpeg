@@ -199,6 +199,7 @@ External library support:
   --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
   --enable-fontconfig      enable fontconfig, useful for drawtext filter [no]
   --enable-frei0r          enable frei0r video filtering [no]
+  --enable-dynamic-filter  enable dynamic filters loading for development purpose [no]
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
@@ -1570,6 +1571,7 @@ CONFIG_LIST="
     thumb
     valgrind_backtrace
     xmm_clobber_test
+    dynamic_filter
 "
 
 THREADS_LIST="
@@ -2807,6 +2809,8 @@ flite_filter_deps="libflite"
 find_rect_filter_deps="avcodec avformat gpl"
 frei0r_filter_deps="frei0r dlopen"
 frei0r_src_filter_deps="frei0r dlopen"
+dynamic_filter_filter_deps="dlopen"
+dynamic_filter_src_filter_deps="dlopen"
 fspp_filter_deps="gpl"
 geq_filter_deps="gpl"
 histeq_filter_deps="gpl"
@@ -5106,6 +5110,8 @@ fi
 
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
+dynamic_filter_filter_extralibs='$ldl'
+dynamic_filter_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
 nvenc_encoder_extralibs='$ldl'
 
@@ -5327,6 +5333,7 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled dynamic_filter    && { check_header dlfcn.h || die "ERROR: dlfcn.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883

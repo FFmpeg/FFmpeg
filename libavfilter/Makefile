@@ -1,5 +1,12 @@
 include $(SUBDIR)../config.mak
 
+ifneq ($(CONFIG_DYNAMIC_FILTER),yes)
+SHFLAGS=-shared -Wl,-soname,$$(@F) -Wl,-Bsymbolic -Wl,--version-script,$(SUBDIR)lib$(NAME).ver
+else
+SHFLAGS=-shared -Wl,-soname,$$(@F) -Wl,-Bsymbolic
+endif
+
+
 NAME = avfilter
 
 HEADERS = avfilter.h                                                    \
