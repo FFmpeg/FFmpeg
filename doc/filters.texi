@@ -732,36 +732,46 @@ Shorter signals than the chosen attack time will be left untouched.
 @table @option
 @item level_in
 Set input level before filtering.
+Default is 1. Allowed range is from 0.015625 to 64.
 
 @item range
 Set the level of gain reduction when the signal is below the threshold.
+Default is 0.06125. Allowed range is from 0 to 1.
 
 @item threshold
 If a signal rises above this level the gain reduction is released.
+Default is 0.125. Allowed range is from 0 to 1.
 
 @item ratio
 Set a ratio about which the signal is reduced.
+Default is 2. Allowed range is from 1 to 9000.
 
 @item attack
 Amount of milliseconds the signal has to rise above the threshold before gain
 reduction stops.
+Default is 20 milliseconds. Allowed range is from 0.01 to 9000.
 
 @item release
 Amount of milliseconds the signal has to fall below the threshold before the
-reduction is increased again.
+reduction is increased again. Default is 250 milliseconds.
+Allowed range is from 0.01 to 9000.
 
 @item makeup
 Set amount of amplification of signal after processing.
+Default is 1. Allowed range is from 1 to 64.
 
 @item knee
 Curve the sharp knee around the threshold to enter gain reduction more softly.
+Default is 2.828427125. Allowed range is from 1 to 8.
 
 @item detection
 Choose if exact signal should be taken for detection or an RMS like one.
+Default is peak. Can be peak or rms.
 
 @item link
 Choose if the average level between all channels or the louder channel affects
 the reduction.
+Default is average. Can be average or maximum.
 @end table
 
 @section alimiter
