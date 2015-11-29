@@ -57,6 +57,7 @@
 { "slow",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_3  },            INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "slower",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_2  },            INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "veryslow",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },                                                \
+{ "vcm",      "Use the video conferencing mode ratecontrol",  OFFSET(qsv.vcm),      AV_OPT_TYPE_INT, { .i64 = 0  },  0, 1,         VE },                                \
 
 typedef struct QSVEncContext {
     AVCodecContext *avctx;
@@ -74,7 +75,7 @@ typedef struct QSVEncContext {
     mfxFrameAllocRequest req;
 
     mfxExtCodingOption  extco;
-#if QSV_VERSION_ATLEAST(1,6)
+#if QSV_HAVE_CO2
     mfxExtCodingOption2 extco2;
 #endif
 
@@ -82,7 +83,7 @@ typedef struct QSVEncContext {
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
 
-    mfxExtBuffer  *extparam_internal[3];
+    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
@@ -100,6 +101,7 @@ typedef struct QSVEncContext {
     int look_ahead;
     int look_ahead_depth;
     int look_ahead_downsampling;
+    int vcm;
 
     char *load_plugins;
 } QSVEncContext;
