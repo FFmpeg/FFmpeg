@@ -9,6 +9,7 @@ fontconfig, ^
 freetype2, ^
 fribidi, ^
 game-music-emu, ^
+gmp, ^
 gnutls, ^
 lame, ^
 libass, ^
@@ -23,7 +24,6 @@ libvpx, ^
 mfx_dispatch, ^
 modplug, ^
 opus, ^
-rtmpdump, ^
 sdl, ^
 soxr, ^
 speex, ^

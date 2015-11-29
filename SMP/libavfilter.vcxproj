@@ -103,6 +103,7 @@
     <ClCompile Include="..\libavfilter\opencl_allkernels.c" />
     <ClCompile Include="..\libavfilter\transform.c" />
     <ClCompile Include="..\libavfilter\video.c" />
+    <ClCompile Include="..\libavfilter\af_sidechaincompress.c" />
     <ClCompile Include="..\libavfilter\af_afade.c" />
     <ClCompile Include="..\libavfilter\af_adelay.c" />
     <ClCompile Include="..\libavfilter\af_aecho.c" />
@@ -137,6 +138,7 @@
     <ClCompile Include="..\libavfilter\af_channelsplit.c" />
     <ClCompile Include="..\libavfilter\af_chorus.c" />
     <ClCompile Include="..\libavfilter\af_compand.c" />
+    <ClCompile Include="..\libavfilter\af_compensationdelay.c" />
     <ClCompile Include="..\libavfilter\af_dcshift.c" />
     <ClCompile Include="..\libavfilter\af_dynaudnorm.c" />
     <ClCompile Include="..\libavfilter\af_earwax.c" />
@@ -146,7 +148,6 @@
     <ClCompile Include="..\libavfilter\af_join.c" />
     <ClCompile Include="..\libavfilter\af_pan.c" />
     <ClCompile Include="..\libavfilter\af_replaygain.c" />
-    <ClCompile Include="..\libavfilter\af_sidechaincompress.c" />
     <ClCompile Include="..\libavfilter\af_silencedetect.c" />
     <ClCompile Include="..\libavfilter\af_silenceremove.c" />
     <ClCompile Include="..\libavfilter\af_stereotools.c" />

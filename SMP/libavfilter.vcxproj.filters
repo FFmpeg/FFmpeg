@@ -129,6 +129,9 @@
     <ClCompile Include="..\libavfilter\video.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_sidechaincompress.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_afade.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -231,6 +234,9 @@
     <ClCompile Include="..\libavfilter\af_compand.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_compensationdelay.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_dcshift.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -256,9 +262,6 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_replaygain.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\af_sidechaincompress.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_silencedetect.c">

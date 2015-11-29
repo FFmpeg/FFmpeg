@@ -21,7 +21,7 @@
 
 #ifndef FFMPEG_CONFIG_H
 #define FFMPEG_CONFIG_H
-#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-librtmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
+#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "nonfree and unredistributable"
 #define CONFIG_THIS_YEAR 2015
 #define FFMPEG_DATADIR "."
@@ -481,6 +481,8 @@
 #define CONFIG_CRYSTALHD 0
 #define CONFIG_DECKLINK 0
 #define CONFIG_FREI0R 0
+#define CONFIG_GCRYPT 0
+#define CONFIG_GMP 1
 #define CONFIG_GNUTLS 1
 #define CONFIG_ICONV 1
 #define CONFIG_LADSPA 0
@@ -516,7 +518,7 @@
 #define CONFIG_LIBOPUS 1
 #define CONFIG_LIBPULSE 0
 #define CONFIG_LIBQUVI 0
-#define CONFIG_LIBRTMP 1
+#define CONFIG_LIBRTMP 0
 #define CONFIG_LIBRUBBERBAND 0
 #define CONFIG_LIBSCHROEDINGER 0
 #define CONFIG_LIBSHINE 0
@@ -641,8 +643,6 @@
 #define CONFIG_FMTCONVERT 1
 #define CONFIG_FRAME_THREAD_ENCODER 1
 #define CONFIG_G722DSP 1
-#define CONFIG_GCRYPT 1
-#define CONFIG_GMP 1
 #define CONFIG_GOLOMB 1
 #define CONFIG_GPLV3 1
 #define CONFIG_H263DSP 1
@@ -1574,6 +1574,7 @@
 #define CONFIG_HEVC_QSV_ENCODER 1
 #define CONFIG_LIBKVAZAAR_ENCODER 0
 #define CONFIG_MPEG2_QSV_ENCODER 1
+#define CONFIG_ACOMPRESSOR_FILTER 1
 #define CONFIG_ACROSSFADE_FILTER 1
 #define CONFIG_ADELAY_FILTER 1
 #define CONFIG_AECHO_FILTER 1
@@ -1615,6 +1616,7 @@
 #define CONFIG_CHANNELSPLIT_FILTER 1
 #define CONFIG_CHORUS_FILTER 1
 #define CONFIG_COMPAND_FILTER 1
+#define CONFIG_COMPENSATIONDELAY_FILTER 1
 #define CONFIG_DCSHIFT_FILTER 1
 #define CONFIG_DYNAUDNORM_FILTER 1
 #define CONFIG_EARWAX_FILTER 1
@@ -2085,8 +2087,8 @@
 #define CONFIG_CONCAT_PROTOCOL 1
 #define CONFIG_CRYPTO_PROTOCOL 1
 #define CONFIG_DATA_PROTOCOL 1
-#define CONFIG_FFRTMPCRYPT_PROTOCOL 0
-#define CONFIG_FFRTMPHTTP_PROTOCOL 0
+#define CONFIG_FFRTMPCRYPT_PROTOCOL 1
+#define CONFIG_FFRTMPHTTP_PROTOCOL 1
 #define CONFIG_FILE_PROTOCOL 1
 #define CONFIG_FTP_PROTOCOL 1
 #define CONFIG_GOPHER_PROTOCOL 1
@@ -2099,12 +2101,12 @@
 #define CONFIG_MMST_PROTOCOL 1
 #define CONFIG_MD5_PROTOCOL 1
 #define CONFIG_PIPE_PROTOCOL 1
-#define CONFIG_RTMP_PROTOCOL 0
-#define CONFIG_RTMPE_PROTOCOL 0
-#define CONFIG_RTMPS_PROTOCOL 0
-#define CONFIG_RTMPT_PROTOCOL 0
-#define CONFIG_RTMPTE_PROTOCOL 0
-#define CONFIG_RTMPTS_PROTOCOL 0
+#define CONFIG_RTMP_PROTOCOL 1
+#define CONFIG_RTMPE_PROTOCOL 1
+#define CONFIG_RTMPS_PROTOCOL 1
+#define CONFIG_RTMPT_PROTOCOL 1
+#define CONFIG_RTMPTE_PROTOCOL 1
+#define CONFIG_RTMPTS_PROTOCOL 1
 #define CONFIG_RTP_PROTOCOL 1
 #define CONFIG_SCTP_PROTOCOL 0
 #define CONFIG_SRTP_PROTOCOL 1
@@ -2117,11 +2119,11 @@
 #define CONFIG_UDP_PROTOCOL 1
 #define CONFIG_UDPLITE_PROTOCOL 1
 #define CONFIG_UNIX_PROTOCOL 0
-#define CONFIG_LIBRTMP_PROTOCOL 1
-#define CONFIG_LIBRTMPE_PROTOCOL 1
-#define CONFIG_LIBRTMPS_PROTOCOL 1
-#define CONFIG_LIBRTMPT_PROTOCOL 1
-#define CONFIG_LIBRTMPTE_PROTOCOL 1
+#define CONFIG_LIBRTMP_PROTOCOL 0
+#define CONFIG_LIBRTMPE_PROTOCOL 0
+#define CONFIG_LIBRTMPS_PROTOCOL 0
+#define CONFIG_LIBRTMPT_PROTOCOL 0
+#define CONFIG_LIBRTMPTE_PROTOCOL 0
 #define CONFIG_LIBSSH_PROTOCOL 1
 #define CONFIG_LIBSMBCLIENT_PROTOCOL 0
 #endif /* FFMPEG_CONFIG_H */
