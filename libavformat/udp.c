@@ -258,7 +258,9 @@ static struct addrinfo *udp_resolve_host(URLContext *h,
     hints.ai_flags = flags;
     if ((error = getaddrinfo(node, service, &hints, &res))) {
         res = NULL;
-        av_log(h, AV_LOG_ERROR, "udp_resolve_host: %s\n",
+        av_log(h, AV_LOG_ERROR, "getaddrinfo(%s, %s): %s\n",
+               node ? node : "unknown",
+               service ? service : "unknown",
                gai_strerror(error));
     }
 
