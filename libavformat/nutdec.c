@@ -603,7 +603,9 @@ static int decode_info_header(NUTContext *nut)
         }
 
         if (stream_id_plus1 > s->nb_streams) {
-            av_log(s, AV_LOG_ERROR, "invalid stream id for info packet\n");
+            av_log(s, AV_LOG_WARNING,
+                   "invalid stream id %d for info packet\n",
+                   stream_id_plus1);
             continue;
         }
 
@@ -712,7 +714,7 @@ static int find_and_decode_index(NUTContext *nut)
     avio_seek(bc, filesize - 12, SEEK_SET);
     avio_seek(bc, filesize - avio_rb64(bc), SEEK_SET);
     if (avio_rb64(bc) != INDEX_STARTCODE) {
-        av_log(s, AV_LOG_ERROR, "no index at the end\n");
+        av_log(s, AV_LOG_WARNING, "no index at the end\n");
 
         if(s->duration<=0)
             s->duration = find_duration(nut, filesize);
