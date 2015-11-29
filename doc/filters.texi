@@ -14302,13 +14302,13 @@ Set video rate.
 Set border width, allowed range is [0, 5]. Default is 1.
 
 @item w
-Set channel width, allowed range is [40, 1080]. Default is 400.
+Set channel width, allowed range is [80, 1080]. Default is 400.
 
 @item h
 Set channel height, allowed range is [1, 100]. Default is 20.
 
 @item f
-Set fade, allowed range is [1, 255]. Default is 20.
+Set fade, allowed range is [0.001, 1]. Default is 0.95.
 
 @item c
 Set volume color expression.
@@ -14325,6 +14325,9 @@ Current channel number, starting from 0.
 
 @item t
 If set, displays channel names. Default is enabled.
+
+@item v
+If set, displays volume values. Default is enabled.
 @end table
 
 @section showwaves
