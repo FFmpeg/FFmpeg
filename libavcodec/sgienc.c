@@ -207,7 +207,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                         bytes_per_channel);
                 if (length < 1) {
                     av_free(encode_buf);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 bytestream2_put_be32(&tablen_pcb, length);
