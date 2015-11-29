@@ -450,6 +450,21 @@ to 1 (-1 means automatic setting, 1 means enabled, 0 means
 disabled). Default value is -1.
 @end table
 
+@section mpjpeg
+
+MJPEG encapsulated in multi-part MIME demuxer.
+
+This demuxer allows reading of MJPEG, where each frame is represented as a part of
+multipart/x-mixed-replace stream.
+@table @option
+
+@item strict_mime_boundary
+Default implementation applies a relaxed standard to multi-part MIME boundary detection,
+to prevent regression with numerous existing endpoints not generating a proper MIME
+MJPEG stream. Turning this option on by setting it to 1 will result in a stricter check
+of the boundary value.
+@end table
+
 @section rawvideo
 
 Raw video demuxer.

@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 #include "avformat.h"
 #include "internal.h"
@@ -28,9 +29,11 @@
 
 
 typedef struct MPJPEGDemuxContext {
+    const AVClass *class;
     char       *boundary;
     char       *searchstr;
     int         searchstr_len;
+    int         strict_mime_boundary;
 } MPJPEGDemuxContext;
 
 
@@ -242,6 +245,41 @@ static int parse_multipart_header(AVIOContext *pb,
 }
 
 
+static char* mpjpeg_get_boundary(AVIOContext* pb)
+{
+    uint8_t *mime_type = NULL;
+    uint8_t *start;
+    uint8_t *end;
+    uint8_t *res = NULL;
+    int     len;
+
+    /* get MIME type, and skip to the first parameter */
+    av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
+    start = mime_type;
+    while (start != NULL && *start != '\0') {
+        start = strchr(start, ';');
+        if (start)
+            start = start+1;
+
+        while (av_isspace(*start))
+            start++;
+
+        if (!av_stristart(start, "boundary=", &start)) {
+            end = strchr(start, ';');
+            if (end)
+                len = end - start - 1;
+            else
+                len = strlen(start);
+            res = av_strndup(start, len);
+            break;
+        }
+    }
+
+    av_freep(&mime_type);
+    return res;
+}
+
+
 static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int size;
@@ -249,8 +287,17 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     MPJPEGDemuxContext *mpjpeg = s->priv_data;
     if (mpjpeg->boundary == NULL) {
-        mpjpeg->boundary = av_strdup("--");
-        mpjpeg->searchstr = av_strdup("\r\n--");
+        uint8_t* boundary = NULL;
+        if (mpjpeg->strict_mime_boundary) {
+            boundary = mpjpeg_get_boundary(s->pb);
+        }
+        if (boundary != NULL) {
+            mpjpeg->boundary = boundary;
+            mpjpeg->searchstr = av_asprintf( "\r\n%s\r\n", boundary );
+        } else {
+            mpjpeg->boundary = av_strdup("--");
+            mpjpeg->searchstr = av_strdup("\r\n--");
+        }
         if (!mpjpeg->boundary || !mpjpeg->searchstr) {
             av_freep(&mpjpeg->boundary);
             av_freep(&mpjpeg->searchstr);
@@ -309,6 +356,22 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+#define OFFSET(x) offsetof(MPJPEGDemuxContext, x)
+
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+const AVOption mpjpeg_options[] = {
+    { "strict_mime_boundary",  "require MIME boundaries match", OFFSET(strict_mime_boundary), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
+    { NULL }
+};
+
+
+static const AVClass mpjpeg_demuxer_class = {
+    .class_name     = "MPJPEG demuxer",
+    .item_name      = av_default_item_name,
+    .option         = mpjpeg_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_mpjpeg_demuxer = {
     .name              = "mpjpeg",
     .long_name         = NULL_IF_CONFIG_SMALL("MIME multipart JPEG"),
@@ -318,5 +381,8 @@ AVInputFormat ff_mpjpeg_demuxer = {
     .read_probe        = mpjpeg_read_probe,
     .read_header       = mpjpeg_read_header,
     .read_packet       = mpjpeg_read_packet,
-    .read_close        = mpjpeg_read_close
+    .read_close        = mpjpeg_read_close,
+    .priv_class        = &mpjpeg_demuxer_class
 };
+
+
