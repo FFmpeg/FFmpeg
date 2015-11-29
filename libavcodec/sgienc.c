@@ -40,6 +40,44 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static int sgi_rle_encode(PutByteContext *pbc, const uint8_t *src,
+                          int w, int bpp)
+{
+    int val, count, x, start = bytestream2_tell_p(pbc);
+    void (*bytestream2_put)(PutByteContext *, unsigned int);
+
+    bytestream2_put = bytestream2_put_byte;
+
+    for (x = 0; x < w; x += count) {
+        /* see if we can encode the next set of pixels with RLE */
+        count = ff_rle_count_pixels(src, w - x, bpp, 1);
+        if (count > 1) {
+            if (bytestream2_get_bytes_left_p(pbc) < bpp * 2)
+                return AVERROR_INVALIDDATA;
+
+            val = *src;
+            bytestream2_put(pbc, count);
+            bytestream2_put(pbc, val);
+        } else {
+            int i;
+            /* fall back on uncompressed */
+            count = ff_rle_count_pixels(src, w - x, bpp, 0);
+            if (bytestream2_get_bytes_left_p(pbc) < bpp * (count + 1))
+                return AVERROR_INVALIDDATA;
+
+            bytestream2_put(pbc, count + 0x80);
+            for (i = 0; i < count; i++) {
+                val = src[i];
+                bytestream2_put(pbc, val);
+            }
+        }
+
+        src += count * bpp;
+    }
+
+    return bytestream2_tell_p(pbc) - start;
+}
+
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
@@ -111,7 +149,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     length = SGI_HEADER_SIZE;
     if (avctx->coder_type == FF_CODER_TYPE_RAW)
         length += depth * height * width;
-    else // assume ff_rl_encode() produces at most 2x size of input
+    else // assume sgi_rle_encode() produces at most 2x size of input
         length += tablesize * 2 + depth * height * (2 * width + 1);
 
     if ((ret = ff_alloc_packet2(avctx, pkt, bytes_per_channel * length, 0)) < 0)
@@ -165,15 +203,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 for (x = 0; x < width; x++)
                     encode_buf[x] = in_buf[depth * x];
 
-                length = ff_rle_encode(pbc.buffer,
-                                       bytestream2_get_bytes_left_p(&pbc),
-                                       encode_buf, 1, width, 0, 0, 0x80, 0);
+                length = sgi_rle_encode(&pbc, encode_buf, width, 1);
                 if (length < 1) {
                     av_free(encode_buf);
                     return -1;
                 }
 
-                bytestream2_skip_p(&pbc, length);
                 bytestream2_put_be32(&tablen_pcb, length);
                 in_buf -= p->linesize[0];
             }
