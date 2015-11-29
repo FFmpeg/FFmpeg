@@ -170,8 +170,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 }
 
                 buf += length;
-                bytestream_put_byte(&buf, 0);
-                bytestream_put_be32(&lengthtab, length + 1);
+                bytestream_put_be32(&lengthtab, length);
                 in_buf -= p->linesize[0];
             }
         }
