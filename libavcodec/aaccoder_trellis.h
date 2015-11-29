@@ -45,8 +45,6 @@
 #include "aacenc.h"
 #include "aactab.h"
 #include "aacenctab.h"
-#include "aac_tablegen_decl.h"
-
 
 /**
  * structure used in optimal codebook search

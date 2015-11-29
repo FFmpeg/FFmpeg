@@ -237,7 +237,8 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
     return 0;
 }
 
-static struct addrinfo* udp_resolve_host(const char *hostname, int port,
+static struct addrinfo *udp_resolve_host(URLContext *h,
+                                         const char *hostname, int port,
                                          int type, int family, int flags)
 {
     struct addrinfo hints = { 0 }, *res = 0;
@@ -257,13 +258,17 @@ static struct addrinfo* udp_resolve_host(const char *hostname, int port,
     hints.ai_flags = flags;
     if ((error = getaddrinfo(node, service, &hints, &res))) {
         res = NULL;
-        av_log(NULL, AV_LOG_ERROR, "udp_resolve_host: %s\n", gai_strerror(error));
+        av_log(h, AV_LOG_ERROR, "getaddrinfo(%s, %s): %s\n",
+               node ? node : "unknown",
+               service ? service : "unknown",
+               gai_strerror(error));
     }
 
     return res;
 }
 
-static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
+static int udp_set_multicast_sources(URLContext *h,
+                                     int sockfd, struct sockaddr *addr,
                                      int addr_len, char **sources,
                                      int nb_sources, int include)
 {
@@ -274,7 +279,7 @@ static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
     for (i = 0; i < nb_sources; i++) {
         struct group_source_req mreqs;
         int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
-        struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
+        struct addrinfo *sourceaddr = udp_resolve_host(h, sources[i], 0,
                                                        SOCK_DGRAM, AF_UNSPEC,
                                                        0);
         if (!sourceaddr)
@@ -304,7 +309,7 @@ static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
     }
     for (i = 0; i < nb_sources; i++) {
         struct ip_mreq_source mreqs;
-        struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
+        struct addrinfo *sourceaddr = udp_resolve_host(h, sources[i], 0,
                                                        SOCK_DGRAM, AF_UNSPEC,
                                                        0);
         if (!sourceaddr)
@@ -336,13 +341,14 @@ static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
 #endif
     return 0;
 }
-static int udp_set_url(struct sockaddr_storage *addr,
+static int udp_set_url(URLContext *h,
+                       struct sockaddr_storage *addr,
                        const char *hostname, int port)
 {
     struct addrinfo *res0;
     int addr_len;
 
-    res0 = udp_resolve_host(hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
+    res0 = udp_resolve_host(h, hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
     if (!res0) return AVERROR(EIO);
     memcpy(addr, res0->ai_addr, res0->ai_addrlen);
     addr_len = res0->ai_addrlen;
@@ -351,16 +357,18 @@ static int udp_set_url(struct sockaddr_storage *addr,
     return addr_len;
 }
 
-static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
+static int udp_socket_create(URLContext *h, struct sockaddr_storage *addr,
                              socklen_t *addr_len, const char *localaddr)
 {
+    UDPContext *s = h->priv_data;
     int udp_fd = -1;
     struct addrinfo *res0, *res;
     int family = AF_UNSPEC;
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
         family = ((struct sockaddr *) &s->dest_addr)->sa_family;
-    res0 = udp_resolve_host((localaddr && localaddr[0]) ? localaddr : NULL, s->local_port,
+    res0 = udp_resolve_host(h, (localaddr && localaddr[0]) ? localaddr : NULL,
+                            s->local_port,
                             SOCK_DGRAM, family, AI_PASSIVE);
     if (!res0)
         goto fail;
@@ -431,7 +439,7 @@ int ff_udp_set_remote_url(URLContext *h, const char *uri)
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
 
     /* set the destination address */
-    s->dest_addr_len = udp_set_url(&s->dest_addr, hostname, port);
+    s->dest_addr_len = udp_set_url(h, &s->dest_addr, hostname, port);
     if (s->dest_addr_len < 0) {
         return AVERROR(EIO);
     }
@@ -686,9 +694,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         s->local_port = port;
 
     if (localaddr[0])
-        udp_fd = udp_socket_create(s, &my_addr, &len, localaddr);
+        udp_fd = udp_socket_create(h, &my_addr, &len, localaddr);
     else
-        udp_fd = udp_socket_create(s, &my_addr, &len, s->localaddr);
+        udp_fd = udp_socket_create(h, &my_addr, &len, s->localaddr);
     if (udp_fd < 0)
         goto fail;
 
@@ -760,14 +768,22 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                 goto fail;
             }
             if (num_include_sources) {
-                if (udp_set_multicast_sources(udp_fd, (struct sockaddr *)&s->dest_addr, s->dest_addr_len, include_sources, num_include_sources, 1) < 0)
+                if (udp_set_multicast_sources(h, udp_fd,
+                                              (struct sockaddr *)&s->dest_addr,
+                                              s->dest_addr_len,
+                                              include_sources,
+                                              num_include_sources, 1) < 0)
                     goto fail;
             } else {
                 if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage) < 0)
                     goto fail;
             }
             if (num_exclude_sources) {
-                if (udp_set_multicast_sources(udp_fd, (struct sockaddr *)&s->dest_addr, s->dest_addr_len, exclude_sources, num_exclude_sources, 0) < 0)
+                if (udp_set_multicast_sources(h, udp_fd,
+                                              (struct sockaddr *)&s->dest_addr,
+                                              s->dest_addr_len,
+                                              exclude_sources,
+                                              num_exclude_sources, 0) < 0)
                     goto fail;
             }
         }

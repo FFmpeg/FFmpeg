@@ -29,8 +29,8 @@
 #define AVCODEC_AACENC_UTILS_H
 
 #include "aac.h"
-#include "aac_tablegen_decl.h"
 #include "aacenctab.h"
+#include "aactab.h"
 
 #define ROUND_STANDARD 0.4054f
 #define ROUND_TO_ZERO 0.1054f

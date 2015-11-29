@@ -38,6 +38,8 @@
 #define QSV_HAVE_CO3 QSV_VERSION_ATLEAST(1, 11)
 
 #define QSV_HAVE_TRELLIS QSV_VERSION_ATLEAST(1, 8)
+#define QSV_HAVE_MAX_SLICE_SIZE QSV_VERSION_ATLEAST(1, 9)
+#define QSV_HAVE_BREF_TYPE      QSV_VERSION_ATLEAST(1, 8)
 
 #define QSV_HAVE_LA     QSV_VERSION_ATLEAST(1, 7)
 #define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
@@ -57,6 +59,15 @@
 { "slow",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_3  },            INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "slower",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_2  },            INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "veryslow",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },                                                \
+{ "vcm",      "Use the video conferencing mode ratecontrol",  OFFSET(qsv.vcm),      AV_OPT_TYPE_INT, { .i64 = 0  },  0, 1,         VE },                                \
+{ "rdo",            "Enable rate distortion optimization",    OFFSET(qsv.rdo),            AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
+{ "max_frame_size", "Maximum encoded frame size in bytes",    OFFSET(qsv.max_frame_size), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT16_MAX, VE },                         \
+{ "max_slice_size", "Maximum encoded slice size in bytes",    OFFSET(qsv.max_slice_size), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT16_MAX, VE },                         \
+{ "bitrate_limit",  "Toggle bitrate limitations",             OFFSET(qsv.bitrate_limit),  AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
+{ "mbbrc",          "MB level bitrate control",               OFFSET(qsv.mbbrc),          AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
+{ "extbrc",         "Extended bitrate control",               OFFSET(qsv.extbrc),         AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
+{ "adaptive_i",     "Adaptive I-frame placement",             OFFSET(qsv.adaptive_i),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
+{ "adaptive_b",     "Adaptive B-frame placement",             OFFSET(qsv.adaptive_b),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
 
 typedef struct QSVEncContext {
     AVCodecContext *avctx;
@@ -74,7 +85,7 @@ typedef struct QSVEncContext {
     mfxFrameAllocRequest req;
 
     mfxExtCodingOption  extco;
-#if QSV_VERSION_ATLEAST(1,6)
+#if QSV_HAVE_CO2
     mfxExtCodingOption2 extco2;
 #endif
 
@@ -82,7 +93,7 @@ typedef struct QSVEncContext {
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
 
-    mfxExtBuffer  *extparam_internal[3];
+    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
@@ -100,6 +111,25 @@ typedef struct QSVEncContext {
     int look_ahead;
     int look_ahead_depth;
     int look_ahead_downsampling;
+    int vcm;
+    int rdo;
+    int max_frame_size;
+    int max_slice_size;
+
+    int single_sei_nal_unit;
+    int max_dec_frame_buffering;
+    int trellis;
+
+    int bitrate_limit;
+    int mbbrc;
+    int extbrc;
+    int adaptive_i;
+    int adaptive_b;
+
+    int int_ref_type;
+    int int_ref_cycle_size;
+    int int_ref_qp_delta;
+    int recovery_point_sei;
 
     char *load_plugins;
 } QSVEncContext;

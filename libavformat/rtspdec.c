@@ -151,7 +151,7 @@ static inline int rtsp_read_request(AVFormatContext *s,
             return ret;
         if (rbuflen > 1) {
             av_log(s, AV_LOG_TRACE, "Parsing[%d]: %s\n", rbuflen, rbuf);
-            ff_rtsp_parse_line(request, rbuf, rt, method);
+            ff_rtsp_parse_line(s, request, rbuf, rt, method);
         }
     } while (rbuflen > 0);
     if (request->seq != rt->seq + 1) {

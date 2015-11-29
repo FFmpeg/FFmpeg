@@ -2452,6 +2452,15 @@ static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
         return AVERROR(ENOMEM);
     }
 
+    if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * s->ps.sps->ctb_width >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
+        av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
+            s->sh.slice_ctb_addr_rs, s->sh.num_entry_point_offsets,
+            s->ps.sps->ctb_width, s->ps.sps->ctb_height
+        );
+        res = AVERROR_INVALIDDATA;
+        goto error;
+    }
+
     ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
 
     if (!s->sList[1]) {

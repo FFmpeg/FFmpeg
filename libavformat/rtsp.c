@@ -184,12 +184,19 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
     }
 }
 
-static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
+static int get_sockaddr(AVFormatContext *s,
+                        const char *buf, struct sockaddr_storage *sock)
 {
     struct addrinfo hints = { 0 }, *ai = NULL;
+    int ret;
+
     hints.ai_flags = AI_NUMERICHOST;
-    if (getaddrinfo(buf, NULL, &hints, &ai))
+    if ((ret = getaddrinfo(buf, NULL, &hints, &ai))) {
+        av_log(s, AV_LOG_ERROR, "getaddrinfo(%s): %s\n",
+               buf,
+               gai_strerror(ret));
         return -1;
+    }
     memcpy(sock, ai->ai_addr, FFMIN(sizeof(*sock), ai->ai_addrlen));
     freeaddrinfo(ai);
     return 0;
@@ -397,7 +404,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         if (strcmp(buf1, "IP4") && strcmp(buf1, "IP6"))
             return;
         get_word_sep(buf1, sizeof(buf1), "/", &p);
-        if (get_sockaddr(buf1, &sdp_ip))
+        if (get_sockaddr(s, buf1, &sdp_ip))
             return;
         ttl = 16;
         if (*p == '/') {
@@ -861,7 +868,8 @@ static void rtsp_parse_range(int *min_ptr, int *max_ptr, const char **pp)
 }
 
 /* XXX: only one transport specification is parsed */
-static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
+static void rtsp_parse_transport(AVFormatContext *s,
+                                 RTSPMessageHeader *reply, const char *p)
 {
     char transport_protocol[16];
     char profile[16];
@@ -953,7 +961,7 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                 if (*p == '=') {
                     p++;
                     get_word_sep(buf, sizeof(buf), ";,", &p);
-                    get_sockaddr(buf, &th->destination);
+                    get_sockaddr(s, buf, &th->destination);
                 }
             } else if (!strcmp(parameter, "source")) {
                 if (*p == '=') {
@@ -1040,7 +1048,8 @@ static void rtsp_parse_rtp_info(RTSPState *rt, const char *p)
         handle_rtp_info(rt, url, seq, rtptime);
 }
 
-void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
+void ff_rtsp_parse_line(AVFormatContext *s,
+                        RTSPMessageHeader *reply, const char *buf,
                         RTSPState *rt, const char *method)
 {
     const char *p;
@@ -1057,7 +1066,7 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
     } else if (av_stristart(p, "Content-Length:", &p)) {
         reply->content_length = strtol(p, NULL, 10);
     } else if (av_stristart(p, "Transport:", &p)) {
-        rtsp_parse_transport(reply, p);
+        rtsp_parse_transport(s, reply, p);
     } else if (av_stristart(p, "CSeq:", &p)) {
         reply->seq = strtol(p, NULL, 10);
     } else if (av_stristart(p, "Range:", &p)) {
@@ -1186,7 +1195,7 @@ start:
                 request = 1;
             }
         } else {
-            ff_rtsp_parse_line(reply, p, rt, method);
+            ff_rtsp_parse_line(s, reply, p, rt, method);
             av_strlcat(rt->last_reply, p,    sizeof(rt->last_reply));
             av_strlcat(rt->last_reply, "\n", sizeof(rt->last_reply));
         }
@@ -2285,8 +2294,14 @@ static int sdp_read_header(AVFormatContext *s)
         if (!(rt->rtsp_flags & RTSP_FLAG_CUSTOM_IO)) {
             AVDictionary *opts = map_to_opts(rt);
 
-            getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip, sizeof(rtsp_st->sdp_ip),
-                        namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+            err = getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip,
+                              sizeof(rtsp_st->sdp_ip),
+                              namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+            if (err) {
+                av_log(s, AV_LOG_ERROR, "getnameinfo: %s\n", gai_strerror(err));
+                err = AVERROR(EIO);
+                goto fail;
+            }
             ff_url_join(url, sizeof(url), "rtp", NULL,
                         namebuf, rtsp_st->sdp_port,
                         "?localport=%d&ttl=%d&connect=%d&write_to_source=%d",

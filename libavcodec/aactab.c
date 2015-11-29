@@ -29,9 +29,11 @@
 
 #include "libavutil/mem.h"
 #include "aac.h"
-#include "aac_tablegen.h"
 
 #include <stdint.h>
+
+float ff_aac_pow2sf_tab[428];
+float ff_aac_pow34sf_tab[428];
 
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_1024)[1024];
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];

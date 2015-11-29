@@ -32,13 +32,13 @@
 
 #include "texturedsp.h"
 
-const static uint8_t expand5[32] = {
+static const uint8_t expand5[32] = {
       0,   8,  16,  24,  33,  41,  49,  57,  66,  74,  82,  90,
      99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189,
     198, 206, 214, 222, 231, 239, 247, 255,
 };
 
-const static uint8_t expand6[64] = {
+static const uint8_t expand6[64] = {
       0,   4,   8,  12,  16,  20,  24,  28,  32,  36,  40,  44,
      48,  52,  56,  60,  65,  69,  73,  77,  81,  85,  89,  93,
      97, 101, 105, 109, 113, 117, 121, 125, 130, 134, 138, 142,
@@ -47,7 +47,7 @@ const static uint8_t expand6[64] = {
     243, 247, 251, 255,
 };
 
-const static uint8_t match5[256][2] = {
+static const uint8_t match5[256][2] = {
     {  0,  0 }, {  0,  0 }, {  0,  1 }, {  0,  1 }, {  1,  0 }, {  1,  0 },
     {  1,  0 }, {  1,  1 }, {  1,  1 }, {  2,  0 }, {  2,  0 }, {  0,  4 },
     {  2,  1 }, {  2,  1 }, {  2,  1 }, {  3,  0 }, {  3,  0 }, {  3,  0 },
@@ -93,7 +93,7 @@ const static uint8_t match5[256][2] = {
     { 31, 30 }, { 31, 30 }, { 31, 31 }, { 31, 31 },
 };
 
-const static uint8_t match6[256][2] = {
+static const uint8_t match6[256][2] = {
     {  0,  0 }, {  0,  1 }, {  1,  0 }, {  1,  0 }, {  1,  1 }, {  2,  0 },
     {  2,  1 }, {  3,  0 }, {  3,  0 }, {  3,  1 }, {  4,  0 }, {  4,  0 },
     {  4,  1 }, {  5,  0 }, {  5,  1 }, {  6,  0 }, {  6,  0 }, {  6,  1 },
@@ -583,14 +583,10 @@ static void rgba2ycocg(uint8_t *dst, const uint8_t *pixel)
     int b =  pixel[2];
     int t = (2 + r + b) >> 2;
 
-    int y  = av_clip_uint8(g + t);
-    int co = av_clip_uint8(128 + ((r - b + 1) >> 1));
-    int cg = av_clip_uint8(128 + g - t);
-
-    dst[0] = (uint8_t) co;
-    dst[1] = (uint8_t) cg;
+    dst[0] = av_clip_uint8(128 + ((r - b + 1) >> 1));   /* Co */
+    dst[1] = av_clip_uint8(128 + g - t);                /* Cg */
     dst[2] = 0;
-    dst[3] = (uint8_t) y;
+    dst[3] = av_clip_uint8(g + t);                      /* Y */
 }
 
 /**

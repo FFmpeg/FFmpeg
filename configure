@@ -199,6 +199,10 @@ External library support:
   --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
   --enable-fontconfig      enable fontconfig, useful for drawtext filter [no]
   --enable-frei0r          enable frei0r video filtering [no]
+  --enable-gcrypt          enable gcrypt, needed for rtmp(t)e support
+                           if openssl, librtmp or gmp is not used [no]
+  --enable-gmp             enable gmp, needed for rtmp(t)e support
+                           if openssl or librtmp is not used [no]
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
@@ -1395,6 +1399,8 @@ EXTERNAL_LIBRARY_LIST="
     crystalhd
     decklink
     frei0r
+    gcrypt
+    gmp
     gnutls
     iconv
     ladspa
@@ -1946,8 +1952,6 @@ CONFIG_EXTRA="
     fmtconvert
     frame_thread_encoder
     g722dsp
-    gcrypt
-    gmp
     golomb
     gplv3
     h263dsp
@@ -4418,6 +4422,9 @@ case $target_os in
         enabled_any pic shared x86_64 ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         ;;
+    msys*)
+        die "Native MSYS builds are discouraged, please use the MINGW environment.";
+        ;;
     mingw32*|mingw64*)
         if test $target_os = "mingw32ce"; then
             disable network
@@ -4760,6 +4767,7 @@ die_license_disabled nonfree nvenc
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
 enabled gpl && die_license_disabled_gpl nonfree openssl
 
+die_license_disabled version3 gmp
 die_license_disabled version3 libopencore_amrnb
 die_license_disabled version3 libopencore_amrwb
 die_license_disabled version3 libsmbclient
@@ -5327,6 +5335,8 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled gcrypt            && require2 gcrypt gcrypt.h gcry_mpi_new -lgcrypt
+enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
@@ -5474,11 +5484,6 @@ enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -l
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
 enabled qtkit_indev      && { check_header_oc QTKit/QTKit.h || disable qtkit_indev; }
-
-if enabled gnutls; then
-    { check_lib2 gmp.h mpz_export -lgmp && enable gmp; } ||
-    { check_lib gcrypt.h gcry_mpi_new -lgcrypt && enable gcrypt; }
-fi
 
 # libdc1394 check
 if enabled libdc1394; then

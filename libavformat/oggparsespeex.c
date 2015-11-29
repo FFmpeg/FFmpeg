@@ -47,6 +47,8 @@ static int speex_header(AVFormatContext *s, int idx) {
 
     if (!spxp) {
         spxp = av_mallocz(sizeof(*spxp));
+        if (!spxp)
+            return AVERROR(ENOMEM);
         os->private = spxp;
     }
 

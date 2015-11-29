@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/eval.h"
 #include "libavutil/intreadwrite.h"
@@ -30,16 +31,22 @@
 #include "video.h"
 #include "internal.h"
 
+static const char *const var_names[] = {   "VOLUME",   "CHANNEL",        NULL };
+enum                                   { VAR_VOLUME, VAR_CHANNEL, VAR_VARS_NB };
+
 typedef struct ShowVolumeContext {
     const AVClass *class;
     int w, h;
-    int f, b;
+    int b;
+    double f;
     AVRational frame_rate;
     char *color;
 
     AVFrame *out;
     AVExpr *c_expr;
     int draw_text;
+    int draw_volume;
+    double *values;
 } ShowVolumeContext;
 
 #define OFFSET(x) offsetof(ShowVolumeContext, x)
@@ -49,18 +56,16 @@ static const AVOption showvolume_options[] = {
     { "rate", "set video rate",  OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, 0, FLAGS },
     { "r",    "set video rate",  OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, 0, FLAGS },
     { "b", "set border width",   OFFSET(b), AV_OPT_TYPE_INT, {.i64=1}, 0, 5, FLAGS },
-    { "w", "set channel width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=400}, 40, 1080, FLAGS },
+    { "w", "set channel width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=400}, 80, 1080, FLAGS },
     { "h", "set channel height", OFFSET(h), AV_OPT_TYPE_INT, {.i64=20}, 1, 100, FLAGS },
-    { "f", "set fade",           OFFSET(f), AV_OPT_TYPE_INT, {.i64=20}, 1, 255, FLAGS },
-    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="if(gte(VOLUME,-2), if(gte(VOLUME,-1),0xff0000ff, 0xff00ffff),0xff00ff00)"}, 0, 0, FLAGS },
+    { "f", "set fade",           OFFSET(f), AV_OPT_TYPE_DOUBLE, {.dbl=0.95}, 0.001, 1, FLAGS },
+    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="if(gte(VOLUME,-6), if(gte(VOLUME,-2), if(gte(VOLUME,-1), if(gt(VOLUME,0), 0xff0000ff, 0xff0066ff), 0xff00ffff),0xff00ff00),0xffff0000)"}, 0, 0, FLAGS },
     { "t", "display channel names", OFFSET(draw_text), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "v", "display volume value", OFFSET(draw_volume), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(showvolume);
-
-static const char *const var_names[] = {   "VOLUME",   "CHANNEL",        NULL };
-enum                                   { VAR_VOLUME, VAR_CHANNEL, VAR_VARS_NB };
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -116,7 +121,9 @@ static int config_input(AVFilterLink *inlink)
     inlink->partial_buf_size =
     inlink->min_samples =
     inlink->max_samples = nb_samples;
-
+    s->values = av_calloc(inlink->channels * VAR_VARS_NB, sizeof(double));
+    if (!s->values)
+        return AVERROR(ENOMEM);
     return 0;
 }
 
@@ -162,7 +169,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterLink *outlink = ctx->outputs[0];
     ShowVolumeContext *s = ctx->priv;
     int c, i, j, k;
-    double values[VAR_VARS_NB];
+    AVFrame *out;
 
     if (!s->out || s->out->width  != outlink->w ||
                    s->out->height != outlink->h) {
@@ -181,10 +188,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     for (j = 0; j < outlink->h; j++) {
         uint8_t *dst = s->out->data[0] + j * s->out->linesize[0];
         for (k = 0; k < s->w; k++) {
-            dst[k * 4 + 0] = FFMAX(dst[k * 4 + 0] - s->f, 0);
-            dst[k * 4 + 1] = FFMAX(dst[k * 4 + 1] - s->f, 0);
-            dst[k * 4 + 2] = FFMAX(dst[k * 4 + 2] - s->f, 0);
-            dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] - s->f, 0);
+            dst[k * 4 + 0] = FFMAX(dst[k * 4 + 0] * s->f, 0);
+            dst[k * 4 + 1] = FFMAX(dst[k * 4 + 1] * s->f, 0);
+            dst[k * 4 + 2] = FFMAX(dst[k * 4 + 2] * s->f, 0);
+            dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] * s->f, 0);
         }
     }
 
@@ -196,10 +203,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         for (i = 0; i < insamples->nb_samples; i++)
             max = FFMAX(max, src[i]);
 
+        s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
         max = av_clipf(max, 0, 1);
-        values[VAR_VOLUME] = 20.0 * log10(max);
-        values[VAR_CHANNEL] = c;
-        color = av_expr_eval(s->c_expr, values, NULL);
+        s->values[c * VAR_VARS_NB + VAR_CHANNEL] = c;
+        color = av_expr_eval(s->c_expr, &s->values[c * VAR_VARS_NB], NULL);
 
         for (j = 0; j < s->h; j++) {
             uint8_t *dst = s->out->data[0] + (c * s->h + c * s->b + j) * s->out->linesize[0];
@@ -214,8 +221,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 
     av_frame_free(&insamples);
+    out = av_frame_clone(s->out);
+    if (!out)
+        return AVERROR(ENOMEM);
+    av_frame_make_writable(out);
 
-    return ff_filter_frame(outlink, av_frame_clone(s->out));
+    for (c = 0; c < inlink->channels && s->draw_volume; c++) {
+        if (s->h >= 8) {
+            char buf[16];
+
+            snprintf(buf, sizeof(buf), "%.2f", s->values[c * VAR_VARS_NB + VAR_VOLUME]);
+            drawtext(out, FFMAX(0, s->w - 8 * (int)strlen(buf)), c * (s->h + s->b) + (s->h - 8) / 2, buf);
+        }
+    }
+
+    return ff_filter_frame(outlink, out);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -224,6 +244,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_frame_free(&s->out);
     av_expr_free(s->c_expr);
+    av_freep(&s->values);
 }
 
 static const AVFilterPad showvolume_inputs[] = {

@@ -107,8 +107,13 @@ Notes:
 
 @itemize
 
-@item Building natively using MSYS2 can be sped up by disabling implicit rules
-in the Makefile by calling @code{make -r} instead of plain @code{make}. This
+@item Native MSYS building is discouraged, MSYS2 provides a full mingw-w64
+environment through @file{mingw64_shell.bat} or @file{mingw32_shell.bat}
+that should be used instead of the environment provides by
+@file{msys2_shell.bat}.
+
+@item Building using MSYS2 can be sped up by disabling implicit rules in the
+Makefile by calling @code{make -r} instead of plain @code{make}. This
 speed up is close to non-existent for normal one-off builds and is only
 noticeable when running make for a second time (for example during
 @code{make install}).
@@ -121,6 +126,24 @@ you can build the FFmpeg libraries (e.g. libavutil, libavcodec,
 libavformat) as DLLs.
 
 @end itemize
+
+@subsection Native Windows compilation using MSYS2
+
+The MSYS2 MinGW-w64 environment provides ready to use toolchains and dependencies
+through @command{pacman}.
+
+Make sure to use @file{mingw64_shell.bat} or @file{mingw32_shell.bat} to have
+the correct MinGW-w64 environment.
+
+@example
+# normal msys2 packages
+pacman -S make pkgconf diffutils
+
+# mingw-w64 packages and toolchains
+pacman -S mingw-w64-x86_64-yasm mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL
+@end example
+
+To target 32bit replace the @code{x86_64} with @code{i686} in the command above.
 
 @section Microsoft Visual C++ or Intel C++ Compiler for Windows
 

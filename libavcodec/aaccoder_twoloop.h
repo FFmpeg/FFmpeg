@@ -49,7 +49,6 @@
 #include "aacenc.h"
 #include "aactab.h"
 #include "aacenctab.h"
-#include "aac_tablegen_decl.h"
 
 /** Frequency in Hz for lower limit of noise substitution **/
 #define NOISE_LOW_LIMIT 4000

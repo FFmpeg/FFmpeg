@@ -264,7 +264,9 @@ static int decode_main_header(NUTContext *nut)
         GET_V(nut->time_base[i].num, tmp > 0 && tmp < (1ULL << 31));
         GET_V(nut->time_base[i].den, tmp > 0 && tmp < (1ULL << 31));
         if (av_gcd(nut->time_base[i].num, nut->time_base[i].den) != 1) {
-            av_log(s, AV_LOG_ERROR, "time base invalid\n");
+            av_log(s, AV_LOG_ERROR, "invalid time base %d/%d\n",
+                   nut->time_base[i].num,
+                   nut->time_base[i].den);
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
@@ -315,7 +317,8 @@ static int decode_main_header(NUTContext *nut)
             goto fail;
         }
         if (tmp_stream >= stream_count) {
-            av_log(s, AV_LOG_ERROR, "illegal stream number\n");
+            av_log(s, AV_LOG_ERROR, "illegal stream number %d >= %d\n",
+                   tmp_stream, stream_count);
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
@@ -344,12 +347,14 @@ static int decode_main_header(NUTContext *nut)
         for (i = 1; i < nut->header_count; i++) {
             uint8_t *hdr;
             GET_V(nut->header_len[i], tmp > 0 && tmp < 256);
-            rem -= nut->header_len[i];
-            if (rem < 0) {
-                av_log(s, AV_LOG_ERROR, "invalid elision header\n");
+            if (rem < nut->header_len[i]) {
+                av_log(s, AV_LOG_ERROR,
+                       "invalid elision header %d : %d > %d\n",
+                       i, nut->header_len[i], rem);
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
+            rem -= nut->header_len[i];
             hdr = av_malloc(nut->header_len[i]);
             if (!hdr) {
                 ret = AVERROR(ENOMEM);
@@ -598,7 +603,9 @@ static int decode_info_header(NUTContext *nut)
         }
 
         if (stream_id_plus1 > s->nb_streams) {
-            av_log(s, AV_LOG_ERROR, "invalid stream id for info packet\n");
+            av_log(s, AV_LOG_WARNING,
+                   "invalid stream id %d for info packet\n",
+                   stream_id_plus1);
             continue;
         }
 
@@ -707,7 +714,7 @@ static int find_and_decode_index(NUTContext *nut)
     avio_seek(bc, filesize - 12, SEEK_SET);
     avio_seek(bc, filesize - avio_rb64(bc), SEEK_SET);
     if (avio_rb64(bc) != INDEX_STARTCODE) {
-        av_log(s, AV_LOG_ERROR, "no index at the end\n");
+        av_log(s, AV_LOG_WARNING, "no index at the end\n");
 
         if(s->duration<=0)
             s->duration = find_duration(nut, filesize);

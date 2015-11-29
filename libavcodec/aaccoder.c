@@ -44,7 +44,6 @@
 #include "aacenctab.h"
 #include "aacenc_utils.h"
 #include "aacenc_quantization.h"
-#include "aac_tablegen_decl.h"
 
 #include "aacenc_is.h"
 #include "aacenc_tns.h"

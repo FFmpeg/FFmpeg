@@ -34,6 +34,9 @@ version <next>:
 - realtime filter
 - anoisesrc audio filter source
 - IVR demuxer
+- compensationdelay filter
+- acompressor filter
+- support encoding 16-bit RLE SGI images
 
 
 version 2.8:
