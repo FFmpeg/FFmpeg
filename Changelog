@@ -38,6 +38,7 @@ version <next>:
 - acompressor filter
 - support encoding 16-bit RLE SGI images
 - apulsator filter
+- sidechaingate audio filter
 
 
 version 2.8:
