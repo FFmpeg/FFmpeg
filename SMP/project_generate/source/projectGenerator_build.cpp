@@ -289,6 +289,8 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["decklink"] = (sProjectName.compare("libavdevice") == 0);
     mProjectDeps["libfontconfig"] = ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["frei0r"] = ( sProjectName.compare("libavfilter") == 0 );
+    mProjectDeps["gcrypt"] = (sProjectName.compare("libavformat") == 0);
+    mProjectDeps["gmp"] = (sProjectName.compare("libavformat") == 0);
     mProjectDeps["gnutls"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["iconv"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["ladspa"] = ( sProjectName.compare("libavfilter") == 0 );
@@ -359,6 +361,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
         || (sProjectName.compare("ffplay") == 0) || (sProjectName.compare("avplay") == 0) || (sProjectName.compare("ffprobe") == 0) || (sProjectName.compare("avprobe") == 0);
     mProjectDeps["opengl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
     mProjectDeps["openssl"] = ( sProjectName.compare( "libavformat" ) == 0 );
+    mProjectDeps["schannel"] = (sProjectName.compare("libavformat") == 0);
     mProjectDeps["sdl"] = ( sProjectName.compare( "libavdevice" ) == 0 ) || (sProjectName.compare("ffplay") == 0) || (sProjectName.compare("avplay") == 0);
     //mProjectDeps["x11grab"] = ( sProjectName.compare("libavdevice") == 0 );//Always disabled on Win32
     mProjectDeps["zlib"] = ( sProjectName.compare("libavformat") == 0 ) || ( sProjectName.compare("libavcodec") == 0 );

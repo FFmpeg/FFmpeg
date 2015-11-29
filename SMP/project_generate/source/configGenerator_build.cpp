@@ -480,12 +480,6 @@ void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & 
     {
         CHECKFORCEDENABLES( "qsv" );
     }
-    else if( sOptionLower.compare( "gnutls" ) == 0 )
-    {
-        CHECKFORCEDENABLES( "nettle" );//deprecated
-        CHECKFORCEDENABLES( "gcrypt" );
-        CHECKFORCEDENABLES( "gmp" );
-    }
     else if( sOptionLower.compare( "dcadec" ) == 0 )
     {
         CHECKFORCEDENABLES( "struct_dcadec_exss_info_matrix_encoding" );
