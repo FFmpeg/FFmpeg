@@ -1165,12 +1165,12 @@ static int dca_subframe_footer(DCAContext *s, int base_channel)
             align_get_bits(&s->gb); // byte align
             skip_bits(&s->gb, 16);  // nAUXCRC16
 
-            // additional data (reserved, cf. ETSI TS 102 114 V1.4.1)
-            if ((reserved = (aux_data_end - get_bits_count(&s->gb))) < 0) {
-                av_log(s->avctx, AV_LOG_ERROR,
-                       "Overread auxiliary data by %d bits\n", -reserved);
-                return AVERROR_INVALIDDATA;
-            } else if (reserved) {
+            /*
+             * additional data (reserved, cf. ETSI TS 102 114 V1.4.1)
+             *
+             * Note: don't check for overreads, aux_data_count can't be trusted.
+             */
+            if ((reserved = (aux_data_end - get_bits_count(&s->gb))) > 0) {
                 avpriv_request_sample(s->avctx,
                                       "Core auxiliary data reserved content");
                 skip_bits_long(&s->gb, reserved);
