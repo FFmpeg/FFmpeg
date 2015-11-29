@@ -36,6 +36,7 @@ version <next>:
 - IVR demuxer
 - compensationdelay filter
 - acompressor filter
+- support encoding 16-bit RLE SGI images
 
 
 version 2.8:
