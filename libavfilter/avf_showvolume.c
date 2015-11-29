@@ -231,7 +231,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             char buf[16];
 
             snprintf(buf, sizeof(buf), "%.2f", s->values[c * VAR_VARS_NB + VAR_VOLUME]);
-            drawtext(out, FFMAX(0, s->w - 8 * strlen(buf)), c * (s->h + s->b) + (s->h - 8) / 2, buf);
+            drawtext(out, FFMAX(0, s->w - 8 * (int)strlen(buf)), c * (s->h + s->b) + (s->h - 8) / 2, buf);
         }
     }
 
