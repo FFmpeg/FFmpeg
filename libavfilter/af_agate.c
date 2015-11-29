@@ -149,46 +149,29 @@ static double output_gain(double lin_slope, double ratio, double thres,
     return 1.;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+static void gate(AudioGateContext *s, const double *src, double *dst, const double *scsrc,
+                 int nb_samples, AVFilterLink *inlink, AVFilterLink *sclink)
 {
-    AVFilterContext *ctx = inlink->dst;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AudioGateContext *s = ctx->priv;
-    const double *src = (const double *)in->data[0];
     const double makeup = s->makeup;
     const double attack_coeff = s->attack_coeff;
     const double release_coeff = s->release_coeff;
     const double level_in = s->level_in;
-    AVFrame *out;
-    double *dst;
     int n, c;
 
-    if (av_frame_is_writable(in)) {
-        out = in;
-    } else {
-        out = ff_get_audio_buffer(inlink, in->nb_samples);
-        if (!out) {
-            av_frame_free(&in);
-            return AVERROR(ENOMEM);
-        }
-        av_frame_copy_props(out, in);
-    }
-    dst = (double *)out->data[0];
-
-    for (n = 0; n < in->nb_samples; n++, src += inlink->channels, dst += inlink->channels) {
-        double abs_sample = fabs(src[0]), gain = 1.0;
+    for (n = 0; n < nb_samples; n++, src += inlink->channels, dst += inlink->channels, scsrc += sclink->channels) {
+        double abs_sample = fabs(scsrc[0]), gain = 1.0;
 
         for (c = 0; c < inlink->channels; c++)
             dst[c] = src[c] * level_in;
 
         if (s->link == 1) {
-            for (c = 1; c < inlink->channels; c++)
-                abs_sample = FFMAX(fabs(src[c]), abs_sample);
+            for (c = 1; c < sclink->channels; c++)
+                abs_sample = FFMAX(fabs(scsrc[c]), abs_sample);
         } else {
-            for (c = 1; c < inlink->channels; c++)
-                abs_sample += fabs(src[c]);
+            for (c = 1; c < sclink->channels; c++)
+                abs_sample += fabs(scsrc[c]);
 
-            abs_sample /= inlink->channels;
+            abs_sample /= sclink->channels;
         }
 
         if (s->detection)
@@ -203,6 +186,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (c = 0; c < inlink->channels; c++)
             dst[c] *= gain * makeup;
     }
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    const double *src = (const double *)in->data[0];
+    AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AudioGateContext *s = ctx->priv;
+    AVFrame *out;
+    double *dst;
+
+    if (av_frame_is_writable(in)) {
+        out = in;
+    } else {
+        out = ff_get_audio_buffer(inlink, in->nb_samples);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
+        }
+        av_frame_copy_props(out, in);
+    }
+    dst = (double *)out->data[0];
+
+    gate(s, src, dst, src, in->nb_samples, inlink, inlink);
 
     if (out != in)
         av_frame_free(&in);
