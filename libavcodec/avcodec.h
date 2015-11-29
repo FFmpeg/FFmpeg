@@ -2607,13 +2607,19 @@ typedef struct AVCodecContext {
      */
     int64_t timecode_frame_start;
 
+#if FF_API_RTP_CALLBACK
+    /**
+     * @deprecated unused
+     */
     /* The RTP callback: This function is called    */
     /* every time the encoder has a packet to send. */
     /* It depends on the encoder if the data starts */
     /* with a Start Code (it should). H.263 does.   */
     /* mb_nb contains the number of macroblocks     */
     /* encoded in the RTP payload.                  */
+    attribute_deprecated
     void (*rtp_callback)(struct AVCodecContext *avctx, void *data, int size, int mb_nb);
+#endif
 
     int rtp_payload_size;   /* The size of the RTP payload: the coder will  */
                             /* do its best to deliver a chunk with size     */
