@@ -50,6 +50,7 @@ typedef struct SidechainCompressContext {
     double knee_start;
     double knee_stop;
     double lin_knee_start;
+    double adj_knee_start;
     double compressed_knee_stop;
     int link;
     int detection;
@@ -87,6 +88,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->thres = log(s->threshold);
     s->lin_knee_start = s->threshold / sqrt(s->knee);
+    s->adj_knee_start = s->lin_knee_start * s->lin_knee_start;
     s->knee_start = log(s->lin_knee_start);
     s->knee_stop = log(s->threshold * sqrt(s->knee));
     s->compressed_knee_stop = (s->knee_stop - s->thres) / s->ratio + s->thres;
@@ -166,7 +168,7 @@ static void compressor(SidechainCompressContext *s,
 
         s->lin_slope += (abs_sample - s->lin_slope) * (abs_sample > s->lin_slope ? s->attack_coeff : s->release_coeff);
 
-        if (s->lin_slope > 0.0 && s->lin_slope > s->lin_knee_start)
+        if (s->lin_slope > 0.0 && s->lin_slope > (s->detection ? s->adj_knee_start : s->lin_knee_start))
             gain = output_gain(s->lin_slope, s->ratio, s->thres, s->knee,
                                s->knee_start, s->knee_stop,
                                s->compressed_knee_stop, s->detection);
