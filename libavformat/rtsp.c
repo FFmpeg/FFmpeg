@@ -2285,8 +2285,14 @@ static int sdp_read_header(AVFormatContext *s)
         if (!(rt->rtsp_flags & RTSP_FLAG_CUSTOM_IO)) {
             AVDictionary *opts = map_to_opts(rt);
 
-            getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip, sizeof(rtsp_st->sdp_ip),
-                        namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+            err = getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip,
+                              sizeof(rtsp_st->sdp_ip),
+                              namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+            if (err) {
+                av_log(s, AV_LOG_ERROR, "getnameinfo: %s\n", gai_strerror(err));
+                err = AVERROR(EIO);
+                goto fail;
+            }
             ff_url_join(url, sizeof(url), "rtp", NULL,
                         namebuf, rtsp_st->sdp_port,
                         "?localport=%d&ttl=%d&connect=%d&write_to_source=%d",
