@@ -4418,6 +4418,9 @@ case $target_os in
         enabled_any pic shared x86_64 ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         ;;
+    msys*)
+        die "Native MSYS builds are discouraged, please use the MINGW environment.";
+        ;;
     mingw32*|mingw64*)
         if test $target_os = "mingw32ce"; then
             disable network
