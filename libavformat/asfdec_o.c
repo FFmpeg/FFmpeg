@@ -1276,8 +1276,16 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
                 break;
             }
         }
-        if (!asf_pkt)
-            return AVERROR_INVALIDDATA;
+        if (!asf_pkt) {
+            if (asf->packet_offset + asf->packet_size <= asf->data_offset + asf->data_size) {
+                avio_seek(pb, asf->packet_offset + asf->packet_size, SEEK_SET);
+                av_log(s, AV_LOG_WARNING, "Skipping the stream with the invalid stream index %d.\n",
+                       asf->stream_index);
+                return AVERROR(EAGAIN);
+            } else
+                return AVERROR_INVALIDDATA;
+        }
+
         if (stream_num >> 7)
             asf_pkt->flags |= AV_PKT_FLAG_KEY;
         READ_LEN(asf->prop_flags & ASF_PL_MASK_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_SIZE,
@@ -1418,8 +1426,14 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             else
                 asf->state = READ_MULTI;
         }
-        if ((ret = asf_read_payload(s, pkt)) < 0)
+        ret = asf_read_payload(s, pkt);
+        if (ret == AVERROR(EAGAIN)) {
+            asf->state = PARSE_PACKET_HEADER;
+            continue;
+        }
+        else if (ret < 0)
             return ret;
+
         switch (asf->state) {
         case READ_SINGLE:
             if (!asf->sub_left)
