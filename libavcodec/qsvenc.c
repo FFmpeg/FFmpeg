@@ -203,7 +203,7 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
            print_threestate(co->RecoveryPointSEI), co2->IntRefType, co2->IntRefCycleSize, co2->IntRefQPDelta);
 
     av_log(avctx, AV_LOG_VERBOSE, "MaxFrameSize: %"PRIu16"; ", co2->MaxFrameSize);
-#if QSV_VERSION_ATLEAST(1, 9)
+#if QSV_HAVE_MAX_SLICE_SIZE
     av_log(avctx, AV_LOG_VERBOSE, "MaxSliceSize: %"PRIu16"; ", co2->MaxSliceSize);
 #endif
     av_log(avctx, AV_LOG_VERBOSE, "\n");
@@ -465,12 +465,62 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extco.PicTimingSEI         = q->pic_timing_sei ?
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
 
+        if (q->rdo >= 0)
+            q->extco.RateDistortionOpt = q->rdo > 0 ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+
+        if (avctx->codec_id == AV_CODEC_ID_H264) {
+            if (avctx->strict_std_compliance != FF_COMPLIANCE_NORMAL)
+                q->extco.NalHrdConformance = avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL ?
+                                             MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+
+            if (q->single_sei_nal_unit >= 0)
+                q->extco.SingleSeiNalUnit = q->single_sei_nal_unit ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            if (q->recovery_point_sei >= 0)
+                q->extco.RecoveryPointSEI = q->recovery_point_sei ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            q->extco.MaxDecFrameBuffering = q->max_dec_frame_buffering;
+        }
+
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco;
 
 #if QSV_HAVE_CO2
         if (avctx->codec_id == AV_CODEC_ID_H264) {
             q->extco2.Header.BufferId     = MFX_EXTBUFF_CODING_OPTION2;
             q->extco2.Header.BufferSz     = sizeof(q->extco2);
+
+            if (q->int_ref_type >= 0)
+                q->extco2.IntRefType = q->int_ref_type;
+            if (q->int_ref_cycle_size >= 0)
+                q->extco2.IntRefCycleSize = q->int_ref_cycle_size;
+            if (q->int_ref_qp_delta != INT16_MIN)
+                q->extco2.IntRefQPDelta = q->int_ref_qp_delta;
+
+            if (q->bitrate_limit >= 0)
+                q->extco2.BitrateLimit = q->bitrate_limit ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            if (q->mbbrc >= 0)
+                q->extco2.MBBRC = q->mbbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            if (q->extbrc >= 0)
+                q->extco2.ExtBRC = q->extbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+
+            if (q->max_frame_size >= 0)
+                q->extco2.MaxFrameSize = q->max_frame_size;
+#if QSV_HAVE_MAX_SLICE_SIZE
+            if (q->max_slice_size >= 0)
+                q->extco2.MaxSliceSize = q->max_slice_size;
+#endif
+
+#if QSV_HAVE_TRELLIS
+            q->extco2.Trellis = q->trellis;
+#endif
+
+#if QSV_HAVE_BREF_TYPE
+            if (avctx->b_frame_strategy >= 0)
+                q->extco2.BRefType = avctx->b_frame_strategy ? MFX_B_REF_PYRAMID : MFX_B_REF_OFF;
+            if (q->adaptive_i >= 0)
+                q->extco2.AdaptiveI = q->adaptive_i ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            if (q->adaptive_b >= 0)
+                q->extco2.AdaptiveB = q->adaptive_b ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+#endif
+
             q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
 
 #if QSV_VERSION_ATLEAST(1,8)
