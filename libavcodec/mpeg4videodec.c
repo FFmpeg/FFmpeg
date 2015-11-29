@@ -1873,6 +1873,10 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 int last = 0;
                 for (i = 0; i < 64; i++) {
                     int j;
+                    if (get_bits_left(gb) < 8) {
+                        av_log(s->avctx, AV_LOG_ERROR, "insufficient data for custom matrix\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     v = get_bits(gb, 8);
                     if (v == 0)
                         break;
@@ -1896,6 +1900,10 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 int last = 0;
                 for (i = 0; i < 64; i++) {
                     int j;
+                    if (get_bits_left(gb) < 8) {
+                        av_log(s->avctx, AV_LOG_ERROR, "insufficient data for custom matrix\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     v = get_bits(gb, 8);
                     if (v == 0)
                         break;
