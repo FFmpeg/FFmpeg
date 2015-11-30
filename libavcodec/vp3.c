@@ -2299,7 +2299,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
             return AVERROR_INVALIDDATA;
         }
         skip_bits(gb, 3); /* reserved */
-    }
+    } else
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
 //    align_get_bits(gb);
 
