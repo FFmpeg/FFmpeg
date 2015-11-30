@@ -350,6 +350,9 @@ hard edge at the threshold in the range of the chosen decibels.
 The filter accepts the following options:
 
 @table @option
+@item level_in
+Set input gain. Default is 1. Range is between 0.015625 and 64.
+
 @item threshold
 If a signal of second stream rises above this level it will affect the gain
 reduction of the first stream.
@@ -2479,6 +2482,9 @@ processing. See @ref{pan} and @ref{amerge} filter.
 The filter accepts the following options:
 
 @table @option
+@item level_in
+Set input gain. Default is 1. Range is between 0.015625 and 64.
+
 @item threshold
 If a signal of second stream raises above this level it will affect the gain
 reduction of first stream.
@@ -2513,6 +2519,9 @@ reduction. Default is @code{average}.
 @item detection
 Should the exact signal be taken in case of @code{peak} or an RMS one in case
 of @code{rms}. Default is @code{rms} which is mainly smoother.
+
+@item level_sc
+Set sidechain gain. Default is 1. Range is between 0.015625 and 64.
 
 @item mix
 How much to use compressed signal in output. Default is 1.

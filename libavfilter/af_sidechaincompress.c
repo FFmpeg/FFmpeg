@@ -38,6 +38,8 @@
 typedef struct SidechainCompressContext {
     const AVClass *class;
 
+    double level_in;
+    double level_sc;
     double attack, attack_coeff;
     double release, release_coeff;
     double lin_slope;
@@ -63,19 +65,21 @@ typedef struct SidechainCompressContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption options[] = {
-    { "threshold", "set threshold",    OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=0.125}, 0.000976563,    1, A|F },
-    { "ratio",     "set ratio",        OFFSET(ratio),     AV_OPT_TYPE_DOUBLE, {.dbl=2},               1,   20, A|F },
-    { "attack",    "set attack",       OFFSET(attack),    AV_OPT_TYPE_DOUBLE, {.dbl=20},           0.01, 2000, A|F },
-    { "release",   "set release",      OFFSET(release),   AV_OPT_TYPE_DOUBLE, {.dbl=250},          0.01, 9000, A|F },
-    { "makeup",    "set make up gain", OFFSET(makeup),    AV_OPT_TYPE_DOUBLE, {.dbl=2},               1,   64, A|F },
-    { "knee",      "set knee",         OFFSET(knee),      AV_OPT_TYPE_DOUBLE, {.dbl=2.82843},         1,    8, A|F },
-    { "link",      "set link type",    OFFSET(link),      AV_OPT_TYPE_INT,    {.i64=0},               0,    1, A|F, "link" },
-    {   "average", 0,                  0,                 AV_OPT_TYPE_CONST,  {.i64=0},               0,    0, A|F, "link" },
-    {   "maximum", 0,                  0,                 AV_OPT_TYPE_CONST,  {.i64=1},               0,    0, A|F, "link" },
-    { "detection", "set detection",    OFFSET(detection), AV_OPT_TYPE_INT,    {.i64=1},               0,    1, A|F, "detection" },
-    {   "peak",    0,                  0,                 AV_OPT_TYPE_CONST,  {.i64=0},               0,    0, A|F, "detection" },
-    {   "rms",     0,                  0,                 AV_OPT_TYPE_CONST,  {.i64=1},               0,    0, A|F, "detection" },
-    { "mix",       "set mix",          OFFSET(mix),       AV_OPT_TYPE_DOUBLE, {.dbl=1},               0,    1, A|F },
+    { "level_in",  "set input gain",     OFFSET(level_in),  AV_OPT_TYPE_DOUBLE, {.dbl=1},        0.015625,   64, A|F },
+    { "threshold", "set threshold",      OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=0.125}, 0.000976563,    1, A|F },
+    { "ratio",     "set ratio",          OFFSET(ratio),     AV_OPT_TYPE_DOUBLE, {.dbl=2},               1,   20, A|F },
+    { "attack",    "set attack",         OFFSET(attack),    AV_OPT_TYPE_DOUBLE, {.dbl=20},           0.01, 2000, A|F },
+    { "release",   "set release",        OFFSET(release),   AV_OPT_TYPE_DOUBLE, {.dbl=250},          0.01, 9000, A|F },
+    { "makeup",    "set make up gain",   OFFSET(makeup),    AV_OPT_TYPE_DOUBLE, {.dbl=2},               1,   64, A|F },
+    { "knee",      "set knee",           OFFSET(knee),      AV_OPT_TYPE_DOUBLE, {.dbl=2.82843},         1,    8, A|F },
+    { "link",      "set link type",      OFFSET(link),      AV_OPT_TYPE_INT,    {.i64=0},               0,    1, A|F, "link" },
+    {   "average", 0,                    0,                 AV_OPT_TYPE_CONST,  {.i64=0},               0,    0, A|F, "link" },
+    {   "maximum", 0,                    0,                 AV_OPT_TYPE_CONST,  {.i64=1},               0,    0, A|F, "link" },
+    { "detection", "set detection",      OFFSET(detection), AV_OPT_TYPE_INT,    {.i64=1},               0,    1, A|F, "detection" },
+    {   "peak",    0,                    0,                 AV_OPT_TYPE_CONST,  {.i64=0},               0,    0, A|F, "detection" },
+    {   "rms",     0,                    0,                 AV_OPT_TYPE_CONST,  {.i64=1},               0,    0, A|F, "detection" },
+    { "level_sc",  "set sidechain gain", OFFSET(level_sc),  AV_OPT_TYPE_DOUBLE, {.dbl=1},        0.015625,   64, A|F },
+    { "mix",       "set mix",            OFFSET(mix),       AV_OPT_TYPE_DOUBLE, {.dbl=1},               0,    1, A|F },
     { NULL }
 };
 
@@ -142,6 +146,7 @@ static int compressor_config_output(AVFilterLink *outlink)
 
 static void compressor(SidechainCompressContext *s,
                        double *sample, const double *scsrc, int nb_samples,
+                       double level_in, double level_sc,
                        AVFilterLink *inlink, AVFilterLink *sclink)
 {
     const double makeup = s->makeup;
@@ -151,14 +156,14 @@ static void compressor(SidechainCompressContext *s,
     for (i = 0; i < nb_samples; i++) {
         double abs_sample, gain = 1.0;
 
-        abs_sample = fabs(scsrc[0]);
+        abs_sample = fabs(scsrc[0] * level_sc);
 
         if (s->link == 1) {
             for (c = 1; c < sclink->channels; c++)
-                abs_sample = FFMAX(fabs(scsrc[c]), abs_sample);
+                abs_sample = FFMAX(fabs(scsrc[c] * level_sc), abs_sample);
         } else {
             for (c = 1; c < sclink->channels; c++)
-                abs_sample += fabs(scsrc[c]);
+                abs_sample += fabs(scsrc[c] * level_sc);
 
             abs_sample /= sclink->channels;
         }
@@ -174,7 +179,7 @@ static void compressor(SidechainCompressContext *s,
                                s->compressed_knee_stop, s->detection);
 
         for (c = 0; c < inlink->channels; c++)
-            sample[c] *= (gain * makeup * mix + (1. - mix));
+            sample[c] *= level_in * (gain * makeup * mix + (1. - mix));
 
         sample += inlink->channels;
         scsrc += sclink->channels;
@@ -208,6 +213,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     scsrc = (const double *)s->input_frame[1]->data[0];
 
     compressor(s, sample, scsrc, nb_samples,
+               s->level_in, s->level_sc,
                ctx->inputs[0], ctx->inputs[1]);
     ret = ff_filter_frame(outlink, s->input_frame[0]);
 
@@ -343,6 +349,7 @@ static int acompressor_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     sample = (double *)frame->data[0];
     compressor(s, sample, sample, frame->nb_samples,
+               s->level_in, s->level_in,
                inlink, inlink);
 
     return ff_filter_frame(outlink, frame);
