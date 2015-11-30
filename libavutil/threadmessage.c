@@ -40,6 +40,7 @@ struct AVThreadMessageQueue {
     int err_send;
     int err_recv;
     unsigned elsize;
+    void (*free_func)(void *msg);
 #else
     int dummy;
 #endif
@@ -81,10 +82,17 @@ int av_thread_message_queue_alloc(AVThreadMessageQueue **mq,
 #endif /* HAVE_THREADS */
 }
 
+void av_thread_message_queue_set_free_func(AVThreadMessageQueue *mq,
+                                           void (*free_func)(void *msg))
+{
+    mq->free_func = free_func;
+}
+
 void av_thread_message_queue_free(AVThreadMessageQueue **mq)
 {
 #if HAVE_THREADS
     if (*mq) {
+        av_thread_message_flush(*mq);
         av_fifo_freep(&(*mq)->fifo);
         pthread_cond_destroy(&(*mq)->cond);
         pthread_mutex_destroy(&(*mq)->lock);
@@ -178,6 +186,29 @@ void av_thread_message_queue_set_err_recv(AVThreadMessageQueue *mq,
 #if HAVE_THREADS
     pthread_mutex_lock(&mq->lock);
     mq->err_recv = err;
+    pthread_cond_broadcast(&mq->cond);
+    pthread_mutex_unlock(&mq->lock);
+#endif /* HAVE_THREADS */
+}
+
+static void free_func_wrap(void *arg, void *msg, int size)
+{
+    AVThreadMessageQueue *mq = arg;
+    mq->free_func(msg);
+}
+
+void av_thread_message_flush(AVThreadMessageQueue *mq)
+{
+#if HAVE_THREADS
+    int used, off;
+    void *free_func = mq->free_func;
+
+    pthread_mutex_lock(&mq->lock);
+    used = av_fifo_size(mq->fifo);
+    if (free_func)
+        for (off = 0; off < used; off += mq->elsize)
+            av_fifo_generic_peek_at(mq->fifo, mq, off, mq->elsize, free_func_wrap);
+    av_fifo_drain(mq->fifo, used);
     pthread_cond_broadcast(&mq->cond);
     pthread_mutex_unlock(&mq->lock);
 #endif /* HAVE_THREADS */

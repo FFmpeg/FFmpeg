@@ -88,4 +88,20 @@ void av_thread_message_queue_set_err_send(AVThreadMessageQueue *mq,
 void av_thread_message_queue_set_err_recv(AVThreadMessageQueue *mq,
                                           int err);
 
+/**
+ * Set the optional free message callback function which will be called if an
+ * operation is removing messages from the queue.
+ */
+void av_thread_message_queue_set_free_func(AVThreadMessageQueue *mq,
+                                           void (*free_func)(void *msg));
+
+/**
+ * Flush the message queue
+ *
+ * This function is mostly equivalent to reading and free-ing every message
+ * except that it will be done in a single operation (no lock/unlock between
+ * reads).
+ */
+void av_thread_message_flush(AVThreadMessageQueue *mq);
+
 #endif /* AVUTIL_THREADMESSAGE_H */
