@@ -510,17 +510,12 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->dequant_coeff_pps = h1->dequant_coeff_pps;
 
     // POC timing
-    copy_fields(h, h1, poc_lsb, default_ref_list);
-
-    // reference lists
-    copy_fields(h, h1, short_ref, current_slice);
+    copy_fields(h, h1, poc_lsb, current_slice);
 
     copy_picture_range(h->short_ref, h1->short_ref, 32, h, h1);
     copy_picture_range(h->long_ref, h1->long_ref, 32, h, h1);
     copy_picture_range(h->delayed_pic, h1->delayed_pic,
                        MAX_DELAYED_PIC_COUNT + 2, h, h1);
-
-    h->last_slice_type = h1->last_slice_type;
 
     if (!h->cur_pic_ptr)
         return 0;
@@ -1032,7 +1027,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     unsigned int pps_id;
     int ret;
     unsigned int slice_type, tmp, i, j;
-    int default_ref_list_done = 0;
     int last_pic_structure, last_pic_droppable;
     int needs_reinit = 0;
     int field_pic_flag, bottom_field_flag;
@@ -1073,10 +1067,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         sl->slice_type_fixed = 0;
 
     slice_type = golomb_to_pict_type[slice_type];
-    if (slice_type == AV_PICTURE_TYPE_I ||
-        (h->current_slice != 0 && slice_type == h->last_slice_type)) {
-        default_ref_list_done = 1;
-    }
     sl->slice_type     = slice_type;
     sl->slice_type_nos = slice_type & 3;
 
@@ -1491,11 +1481,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     ret = ff_set_ref_count(h, sl);
     if (ret < 0)
         return ret;
-    else if (ret == 1)
-        default_ref_list_done = 0;
-
-    if (!default_ref_list_done)
-        ff_h264_fill_default_ref_list(h, sl);
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
        ret = ff_h264_decode_ref_pic_list_reordering(h, sl);
@@ -1635,7 +1620,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                           h->pps.chroma_qp_index_offset[1]) +
                    6 * (h->sps.bit_depth_luma - 8);
 
-    h->last_slice_type = slice_type;
     sl->slice_num       = ++h->current_slice;
     if (sl->slice_num >= MAX_SLICES) {
         av_log(h->avctx, AV_LOG_ERROR,

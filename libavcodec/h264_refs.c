@@ -119,7 +119,7 @@ static int add_sorted(H264Picture **sorted, H264Picture **src, int len, int limi
     return out_i;
 }
 
-int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl)
+static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
 {
     int i, len;
 
@@ -138,52 +138,51 @@ int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl)
             len += add_sorted(sorted + len, h->short_ref, h->short_ref_count, cur_poc, 0 ^ list);
             assert(len <= 32);
 
-            len  = build_def_list(h->default_ref_list[list], FF_ARRAY_ELEMS(h->default_ref_list[0]),
+            len  = build_def_list(sl->ref_list[list], FF_ARRAY_ELEMS(sl->ref_list[0]),
                                   sorted, len, 0, h->picture_structure);
-            len += build_def_list(h->default_ref_list[list] + len,
-                                  FF_ARRAY_ELEMS(h->default_ref_list[0]) - len,
+            len += build_def_list(sl->ref_list[list] + len,
+                                  FF_ARRAY_ELEMS(sl->ref_list[0]) - len,
                                   h->long_ref, 16, 1, h->picture_structure);
 
             if (len < sl->ref_count[list])
-                memset(&h->default_ref_list[list][len], 0, sizeof(H264Ref) * (sl->ref_count[list] - len));
+                memset(&sl->ref_list[list][len], 0, sizeof(H264Ref) * (sl->ref_count[list] - len));
             lens[list] = len;
         }
 
         if (lens[0] == lens[1] && lens[1] > 1) {
             for (i = 0; i < lens[0] &&
-                        h->default_ref_list[0][i].parent->f->buf[0]->buffer ==
-                        h->default_ref_list[1][i].parent->f->buf[0]->buffer; i++);
+                        sl->ref_list[0][i].parent->f->buf[0]->buffer ==
+                        sl->ref_list[1][i].parent->f->buf[0]->buffer; i++);
             if (i == lens[0]) {
-                FFSWAP(H264Ref, h->default_ref_list[1][0], h->default_ref_list[1][1]);
+                FFSWAP(H264Ref, sl->ref_list[1][0], sl->ref_list[1][1]);
             }
         }
     } else {
-        len  = build_def_list(h->default_ref_list[0], FF_ARRAY_ELEMS(h->default_ref_list[0]),
+        len  = build_def_list(sl->ref_list[0], FF_ARRAY_ELEMS(sl->ref_list[0]),
                               h->short_ref, h->short_ref_count, 0, h->picture_structure);
-        len += build_def_list(h->default_ref_list[0] + len,
-                              FF_ARRAY_ELEMS(h->default_ref_list[0]) - len,
+        len += build_def_list(sl->ref_list[0] + len,
+                              FF_ARRAY_ELEMS(sl->ref_list[0]) - len,
                               h-> long_ref, 16, 1, h->picture_structure);
 
         if (len < sl->ref_count[0])
-            memset(&h->default_ref_list[0][len], 0, sizeof(H264Ref) * (sl->ref_count[0] - len));
+            memset(&sl->ref_list[0][len], 0, sizeof(H264Ref) * (sl->ref_count[0] - len));
     }
 #ifdef TRACE
     for (i = 0; i < sl->ref_count[0]; i++) {
         ff_tlog(h->avctx, "List0: %s fn:%d 0x%p\n",
-                (h->default_ref_list[0][i].long_ref ? "LT" : "ST"),
-                h->default_ref_list[0][i].pic_id,
-                h->default_ref_list[0][i].f->data[0]);
+                (sl->ref_list[0][i].long_ref ? "LT" : "ST"),
+                sl->ref_list[0][i].pic_id,
+                sl->ref_list[0][i].f->data[0]);
     }
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         for (i = 0; i < sl->ref_count[1]; i++) {
             ff_tlog(h->avctx, "List1: %s fn:%d 0x%p\n",
-                    (h->default_ref_list[1][i].long_ref ? "LT" : "ST"),
-                    h->default_ref_list[1][i].pic_id,
-                    h->default_ref_list[1][i].f->data[0]);
+                    (sl->ref_list[1][i].long_ref ? "LT" : "ST"),
+                    sl->ref_list[1][i].pic_id,
+                    sl->ref_list[1][i].f->data[0]);
         }
     }
 #endif
-    return 0;
 }
 
 static void print_short_term(H264Context *h);
@@ -219,9 +218,9 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
     print_short_term(h);
     print_long_term(h);
 
-    for (list = 0; list < sl->list_count; list++) {
-        memcpy(sl->ref_list[list], h->default_ref_list[list], sl->ref_count[list] * sizeof(sl->ref_list[0][0]));
+    h264_initialise_ref_list(h, sl);
 
+    for (list = 0; list < sl->list_count; list++) {
         if (get_bits1(&sl->gb)) {    // ref_pic_list_modification_flag_l[01]
             int pred = h->curr_pic_num;
 
@@ -326,10 +325,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
         for (index = 0; index < sl->ref_count[list]; index++) {
             if (!sl->ref_list[list][index].parent) {
                 av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture\n");
-                if (h->default_ref_list[list][0].parent)
-                    sl->ref_list[list][index] = h->default_ref_list[list][0];
-                else
-                    return -1;
+                return -1;
             }
         }
     }
