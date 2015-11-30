@@ -27,12 +27,6 @@
 #include "libavutil/internal.h"
 #include "ac3.h"
 
-#if CONFIG_HARDCODED_TABLES
-#   define HCONST const
-#else
-#   define HCONST
-#endif
-
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];
 extern av_export const uint16_t avpriv_ac3_channel_layout_tab[8];
@@ -54,7 +48,7 @@ extern const int16_t  ff_ac3_floor_tab[8];
 extern const uint16_t ff_ac3_fast_gain_tab[8];
 extern const uint16_t ff_eac3_default_chmap[8];
 extern const uint8_t  ff_ac3_band_start_tab[AC3_CRITICAL_BANDS+1];
-extern HCONST uint8_t ff_ac3_bin_to_band_tab[253];
+extern const uint8_t  ff_ac3_bin_to_band_tab[253];
 
 /** Custom channel map locations bitmask
  *  Other channels described in documentation:
