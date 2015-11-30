@@ -587,7 +587,12 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    s->ac = avctx->coder_type > 0 ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE;
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->coder_type != -1)
+        s->ac = avctx->coder_type > 0 ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     s->plane_count = 3;
     switch (avctx->pix_fmt) {
@@ -1068,6 +1073,15 @@ static av_cold int ffv1_encode_close(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "slicecrc", "Protect slices with CRCs", OFFSET(ec), AV_OPT_TYPE_INT,
              { .i64 = -1 }, -1, 1, VE },
+    { "coder", "Coder type", OFFSET(ac), AV_OPT_TYPE_INT,
+            { .i64 = AC_GOLOMB_RICE }, 0, 2, VE, "coder" },
+        { "rice", "Golomb rice", 0, AV_OPT_TYPE_CONST,
+            { .i64 = AC_GOLOMB_RICE }, INT_MIN, INT_MAX, VE, "coder" },
+        { "range_def", "Range with default table", 0, AV_OPT_TYPE_CONST,
+            { .i64 = AC_RANGE_DEFAULT_TAB }, INT_MIN, INT_MAX, VE, "coder" },
+        { "range_tab", "Range with custom table", 0, AV_OPT_TYPE_CONST,
+            { .i64 = AC_RANGE_CUSTOM_TAB }, INT_MIN, INT_MAX, VE, "coder" },
+
     { NULL }
 };
 
@@ -1078,10 +1092,12 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+#if FF_API_CODER_TYPE
 static const AVCodecDefault ffv1_defaults[] = {
     { "coder", "-1" },
     { NULL },
 };
+#endif
 
 AVCodec ff_ffv1_encoder = {
     .name           = "ffv1",
@@ -1106,6 +1122,8 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_NONE
 
     },
+#if FF_API_CODER_TYPE
     .defaults       = ffv1_defaults,
+#endif
     .priv_class     = &class,
 };

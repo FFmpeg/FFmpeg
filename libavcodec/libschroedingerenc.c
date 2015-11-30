@@ -33,6 +33,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -71,6 +72,9 @@ typedef struct SchroEncoderParams {
 
     /* counter for frames submitted to encoder, used as dts */
     int64_t dts;
+
+    /** enable noarith */
+    int noarith;
 } SchroEncoderParams;
 
 /**
@@ -165,9 +169,15 @@ static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
                                          "gop_structure",
                                          SCHRO_ENCODER_GOP_INTRA_ONLY);
 
-        if (avctx->coder_type == FF_CODER_TYPE_VLC)
-            schro_encoder_setting_set_double(p_schro_params->encoder,
-                                             "enable_noarith", 1);
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (avctx->coder_type != FF_CODER_TYPE_VLC)
+            p_schro_params->noarith = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        schro_encoder_setting_set_double(p_schro_params->encoder,
+                                         "enable_noarith",
+                                         p_schro_params->noarith);
     } else {
         schro_encoder_setting_set_double(p_schro_params->encoder,
                                          "au_distance", avctx->gop_size);
@@ -442,6 +452,20 @@ static int libschroedinger_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(SchroEncoderParams, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "noarith", "Enable noarith", OFFSET(noarith), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+
+    { NULL },
+};
+
+static const AVClass libschroedinger_class = {
+    .class_name = "libschroedinger",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_libschroedinger_encoder = {
     .name           = "libschroedinger",
@@ -449,6 +473,7 @@ AVCodec ff_libschroedinger_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(SchroEncoderParams),
+    .priv_class     = &libschroedinger_class,
     .init           = libschroedinger_encode_init,
     .encode2        = libschroedinger_encode_frame,
     .close          = libschroedinger_encode_close,

@@ -183,5 +183,8 @@
 #ifndef FF_API_VBV_DELAY
 #define FF_API_VBV_DELAY         (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_CODER_TYPE
+#define FF_API_CODER_TYPE        (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
 
 #endif /* AVCODEC_VERSION_H */
