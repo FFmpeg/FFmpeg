@@ -1051,6 +1051,21 @@ int main(void){ $func(); }
 EOF
 }
 
+check_complexfunc(){
+    log check_complexfunc "$@"
+    func=$1
+    narg=$2
+    shift 2
+    test $narg = 2 && args="f, g" || args="f * I"
+    disable $func
+    check_ld "cc" "$@" <<EOF && enable $func
+#include <complex.h>
+#include <math.h>
+float foo(complex float f, complex float g) { return $func($args); }
+int main(void){ return (int) foo; }
+EOF
+}
+
 check_mathfunc(){
     log check_mathfunc "$@"
     func=$1
@@ -1768,6 +1783,11 @@ INTRINSICS_LIST="
     intrinsics_neon
 "
 
+COMPLEX_FUNCS="
+    cabs
+    cexp
+"
+
 MATH_FUNCS="
     atanf
     atan2f
@@ -1903,6 +1923,7 @@ HAVE_LIST="
     $ARCH_FEATURES
     $ATOMICS_LIST
     $BUILTIN_LIST
+    $COMPLEX_FUNCS
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $HEADERS_LIST
@@ -2785,6 +2806,7 @@ unix_protocol_deps="sys_un_h"
 unix_protocol_select="network"
 
 # filters
+aemphasis_filter_deps="cabs cexp"
 amovie_filter_deps="avcodec avformat"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
@@ -5322,6 +5344,10 @@ powf_args=2
 
 for func in $MATH_FUNCS; do
     eval check_mathfunc $func \${${func}_args:-1}
+done
+
+for func in $COMPLEX_FUNCS; do
+    eval check_complexfunc $func \${${func}_args:-1}
 done
 
 # these are off by default, so fail if requested and not available

@@ -528,6 +528,52 @@ aecho=0.8:0.9:1000|1800:0.3|0.25
 @end example
 @end itemize
 
+@section aemphasis
+Audio emphasis filter creates or restores material directly taken from LPs or
+emphased CDs with different filter curves. E.g. to store music on vinyl the
+signal has to be altered by a filter first to even out the disadvantages of
+this recording medium.
+Once the material is played back the inverse filter has to be applied to
+restore the distortion of the frequency response.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set input gain.
+
+@item level_out
+Set output gain.
+
+@item mode
+Set filter mode. For restoring material use @code{reproduction} mode, otherwise
+use @code{production} mode. Default is @code{reproduction} mode.
+
+@item type
+Set filter type. Selects medium. Can be one of the following:
+
+@table @option
+@item col
+select Columbia.
+@item emi
+select EMI.
+@item bsi
+select BSI (78RPM).
+@item riaa
+select RIAA.
+@item cd
+select Compact Disc (CD).
+@item 50fm
+select 50µs (FM).
+@item 75fm
+select 75µs (FM).
+@item 50kf
+select 50µs (FM-KF).
+@item 75kf
+select 75µs (FM-KF).
+@end table
+@end table
+
 @section aeval
 
 Modify an audio signal according to the specified expressions.

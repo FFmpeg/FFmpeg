@@ -40,6 +40,7 @@ version <next>:
 - apulsator filter
 - sidechaingate audio filter
 - mipsdspr1 option has been renamed to mipsdsp
+- aemphasis filter
 
 
 version 2.8:
