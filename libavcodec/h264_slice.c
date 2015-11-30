@@ -290,6 +290,33 @@ static int find_unused_picture(H264Context *h)
     return i;
 }
 
+static int initialize_cur_frame(H264Context *h)
+{
+    H264Picture *cur;
+    int ret;
+
+    release_unused_pictures(h, 1);
+    ff_h264_unref_picture(h, &h->cur_pic);
+    h->cur_pic_ptr = NULL;
+
+    ret = find_unused_picture(h);
+    if (ret < 0) {
+        av_log(h->avctx, AV_LOG_ERROR, "no frame buffer available\n");
+        return ret;
+    }
+    cur = &h->DPB[ret];
+
+    ret = alloc_picture(h, cur);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_h264_ref_picture(h, &h->cur_pic, cur);
+    if (ret < 0)
+        return ret;
+    h->cur_pic_ptr = cur;
+
+    return 0;
+}
 
 static void init_dequant8_coeff_table(H264Context *h)
 {
@@ -540,16 +567,11 @@ static int h264_frame_start(H264Context *h)
     int i, ret;
     const int pixel_shift = h->pixel_shift;
 
-    release_unused_pictures(h, 1);
-    h->cur_pic_ptr = NULL;
+    ret = initialize_cur_frame(h);
+    if (ret < 0)
+        return ret;
 
-    i = find_unused_picture(h);
-    if (i < 0) {
-        av_log(h->avctx, AV_LOG_ERROR, "no frame buffer available\n");
-        return i;
-    }
-    pic = &h->DPB[i];
-
+    pic = h->cur_pic_ptr;
     pic->reference              = h->droppable ? 0 : h->picture_structure;
     pic->f->coded_picture_number = h->coded_picture_number++;
     pic->field_picture          = h->picture_structure != PICT_FRAME;
@@ -562,14 +584,6 @@ static int h264_frame_start(H264Context *h)
     pic->f->key_frame = 0;
     pic->mmco_reset  = 0;
     pic->recovered   = 0;
-
-    if ((ret = alloc_picture(h, pic)) < 0)
-        return ret;
-
-    h->cur_pic_ptr = pic;
-    ff_h264_unref_picture(h, &h->cur_pic);
-    if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
-        return ret;
 
     if (CONFIG_ERROR_RESILIENCE && h->enable_er)
         ff_er_frame_start(&h->slice_ctx[0].er);
@@ -1336,7 +1350,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             H264Picture *prev = h->short_ref_count ? h->short_ref[0] : NULL;
             av_log(h->avctx, AV_LOG_DEBUG, "Frame num gap %d %d\n",
                    h->frame_num, h->prev_frame_num);
-            ret = h264_frame_start(h);
+            ret = initialize_cur_frame(h);
             if (ret < 0) {
                 h->first_field = 0;
                 return ret;
