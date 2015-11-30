@@ -3413,6 +3413,7 @@ static int rtp_new_av_stream(HTTPContext *c,
         return -1;
     }
     avio_close_dyn_buf(ctx->pb, &dummy_buf);
+    ctx->pb = NULL;
     av_free(dummy_buf);
 
     c->rtp_ctx[stream_index] = ctx;
