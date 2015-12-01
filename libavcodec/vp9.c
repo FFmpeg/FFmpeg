@@ -69,6 +69,7 @@ typedef struct VP9Context {
     uint8_t ss_h, ss_v;
     uint8_t last_bpp, bpp, bpp_index, bytesperpixel;
     uint8_t last_keyframe;
+    enum AVPixelFormat pix_fmt, last_fmt;
     ThreadFrame next_refs[8];
 
     struct {
@@ -211,7 +212,7 @@ static int vp9_ref_frame(AVCodecContext *ctx, VP9Frame *dst, VP9Frame *src)
     return 0;
 }
 
-static int update_size(AVCodecContext *ctx, int w, int h, enum AVPixelFormat fmt)
+static int update_size(AVCodecContext *ctx, int w, int h)
 {
     VP9Context *s = ctx->priv_data;
     uint8_t *p;
@@ -219,12 +220,12 @@ static int update_size(AVCodecContext *ctx, int w, int h, enum AVPixelFormat fmt
 
     av_assert0(w > 0 && h > 0);
 
-    if (s->intra_pred_data[0] && w == ctx->width && h == ctx->height && ctx->pix_fmt == fmt)
+    if (s->intra_pred_data[0] && w == ctx->width && h == ctx->height && s->pix_fmt == s->last_fmt)
         return 0;
 
     if ((res = ff_set_dimensions(ctx, w, h)) < 0)
         return res;
-    ctx->pix_fmt = fmt;
+    s->last_fmt  = ctx->pix_fmt = s->pix_fmt;
     s->sb_cols   = (w + 63) >> 6;
     s->sb_rows   = (h + 63) >> 6;
     s->cols      = (w + 7) >> 3;
@@ -383,14 +384,13 @@ static int update_prob(VP56RangeCoder *c, int p)
                     255 - inv_recenter_nonneg(inv_map_table[d], 255 - p);
 }
 
-static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
+static int read_colorspace_details(AVCodecContext *ctx)
 {
     static const enum AVColorSpace colorspaces[8] = {
         AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_BT470BG, AVCOL_SPC_BT709, AVCOL_SPC_SMPTE170M,
         AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_RESERVED, AVCOL_SPC_RGB,
     };
     VP9Context *s = ctx->priv_data;
-    enum AVPixelFormat res;
     int bits = ctx->profile <= 1 ? 0 : 1 + get_bits1(&s->gb); // 0:8, 1:10, 2:12
 
     s->bpp_index = bits;
@@ -401,10 +401,10 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
         static const enum AVPixelFormat pix_fmt_rgb[3] = {
             AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12
         };
+        s->ss_h = s->ss_v = 0;
+        ctx->color_range = AVCOL_RANGE_JPEG;
+        s->pix_fmt = pix_fmt_rgb[bits];
         if (ctx->profile & 1) {
-            s->ss_h = s->ss_v = 0;
-            res = pix_fmt_rgb[bits];
-            ctx->color_range = AVCOL_RANGE_JPEG;
             if (get_bits1(&s->gb)) {
                 av_log(ctx, AV_LOG_ERROR, "Reserved bit set in RGB\n");
                 return AVERROR_INVALIDDATA;
@@ -427,7 +427,8 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
         if (ctx->profile & 1) {
             s->ss_h = get_bits1(&s->gb);
             s->ss_v = get_bits1(&s->gb);
-            if ((res = pix_fmt_for_ss[bits][s->ss_v][s->ss_h]) == AV_PIX_FMT_YUV420P) {
+            s->pix_fmt = pix_fmt_for_ss[bits][s->ss_v][s->ss_h];
+            if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
                 av_log(ctx, AV_LOG_ERROR, "YUV 4:2:0 not supported in profile %d\n",
                        ctx->profile);
                 return AVERROR_INVALIDDATA;
@@ -438,11 +439,11 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
             }
         } else {
             s->ss_h = s->ss_v = 1;
-            res = pix_fmt_for_ss[bits][1][1];
+            s->pix_fmt = pix_fmt_for_ss[bits][1][1];
         }
     }
 
-    return res;
+    return 0;
 }
 
 static int decode_frame_header(AVCodecContext *ctx,
@@ -450,7 +451,6 @@ static int decode_frame_header(AVCodecContext *ctx,
 {
     VP9Context *s = ctx->priv_data;
     int c, i, j, k, l, m, n, w, h, max, size2, res, sharp;
-    enum AVPixelFormat fmt = ctx->pix_fmt;
     int last_invisible;
     const uint8_t *data2;
 
@@ -486,8 +486,8 @@ static int decode_frame_header(AVCodecContext *ctx,
             av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
             return AVERROR_INVALIDDATA;
         }
-        if ((fmt = read_colorspace_details(ctx)) < 0)
-            return fmt;
+        if ((res = read_colorspace_details(ctx)) < 0)
+            return res;
         // for profile 1, here follows the subsampling bits
         s->s.h.refreshrefmask = 0xff;
         w = get_bits(&s->gb, 16) + 1;
@@ -503,14 +503,14 @@ static int decode_frame_header(AVCodecContext *ctx,
                 return AVERROR_INVALIDDATA;
             }
             if (ctx->profile >= 1) {
-                if ((fmt = read_colorspace_details(ctx)) < 0)
-                    return fmt;
+                if ((res = read_colorspace_details(ctx)) < 0)
+                    return res;
             } else {
                 s->ss_h = s->ss_v = 1;
                 s->bpp = 8;
                 s->bpp_index = 0;
                 s->bytesperpixel = 1;
-                fmt = AV_PIX_FMT_YUV420P;
+                s->pix_fmt = AV_PIX_FMT_YUV420P;
                 ctx->colorspace = AVCOL_SPC_BT470BG;
                 ctx->color_range = AVCOL_RANGE_JPEG;
             }
@@ -578,11 +578,11 @@ static int decode_frame_header(AVCodecContext *ctx,
                 AVFrame *ref = s->s.refs[s->s.h.refidx[i]].f;
                 int refw = ref->width, refh = ref->height;
 
-                if (ref->format != fmt) {
+                if (ref->format != s->pix_fmt) {
                     av_log(ctx, AV_LOG_ERROR,
                            "Ref pixfmt (%s) did not match current frame (%s)",
                            av_get_pix_fmt_name(ref->format),
-                           av_get_pix_fmt_name(fmt));
+                           av_get_pix_fmt_name(s->pix_fmt));
                     return AVERROR_INVALIDDATA;
                 } else if (refw == w && refh == h) {
                     s->mvscale[i][0] = s->mvscale[i][1] = 0;
@@ -721,8 +721,9 @@ static int decode_frame_header(AVCodecContext *ctx,
     }
 
     /* tiling info */
-    if ((res = update_size(ctx, w, h, fmt)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to initialize decoder for %dx%d @ %d\n", w, h, fmt);
+    if ((res = update_size(ctx, w, h)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize decoder for %dx%d @ %d\n",
+               w, h, s->pix_fmt);
         return res;
     }
     for (s->s.h.tiling.log2_tile_cols = 0;
