@@ -183,9 +183,18 @@ uint32_t av_q2intfloat(AVRational q) {
 }
 
 #ifdef TEST
+
+#include "integer.h"
+
 int main(void)
 {
     AVRational a,b,r;
+    int i,j,k;
+    static const int64_t numlist[] = {
+        INT64_MIN, INT64_MIN+1, INT64_MAX, INT32_MIN, INT32_MAX, 1,0,-1,
+        123456789, INT32_MAX-1, INT32_MAX+1LL, UINT32_MAX-1, UINT32_MAX, UINT32_MAX+1LL
+    };
+
     for (a.num = -2; a.num <= 2; a.num++) {
         for (a.den = -2; a.den <= 2; a.den++) {
             for (b.num = -2; b.num <= 2; b.num++) {
@@ -203,6 +212,41 @@ int main(void)
                     if(b.den && (r.num*a.den != a.num*r.den || !r.num != !a.num || !r.den != !a.den))
                         av_log(NULL, AV_LOG_ERROR, "%d/%d ", r.num, r.den);
                 }
+            }
+        }
+    }
+
+    for (i = 0; i < FF_ARRAY_ELEMS(numlist); i++) {
+        int64_t a = numlist[i];
+
+        for (j = 0; j < FF_ARRAY_ELEMS(numlist); j++) {
+            int64_t b = numlist[j];
+            if (b<=0)
+                continue;
+            for (k = 0; k < FF_ARRAY_ELEMS(numlist); k++) {
+                int64_t c = numlist[k];
+                int64_t res;
+                AVInteger ai;
+
+                if (c<=0)
+                    continue;
+                res = av_rescale_rnd(a,b,c, AV_ROUND_ZERO);
+
+                ai = av_mul_i(av_int2i(a), av_int2i(b));
+                ai = av_div_i(ai, av_int2i(c));
+
+                if (av_cmp_i(ai, av_int2i(INT64_MAX)) > 0 && res == INT64_MIN)
+                    continue;
+                if (av_cmp_i(ai, av_int2i(INT64_MIN)) < 0 && res == INT64_MIN)
+                    continue;
+                if (av_cmp_i(ai, av_int2i(res)) == 0)
+                    continue;
+
+                // Special exception for INT64_MIN, remove this in case INT64_MIN is handled without off by 1 error
+                if (av_cmp_i(ai, av_int2i(res-1)) == 0 && a == INT64_MIN)
+                    continue;
+
+                av_log(NULL, AV_LOG_ERROR, "%"PRId64" * %"PRId64" / %"PRId64" = %"PRId64" or %"PRId64"\n", a,b,c, res, av_i2int(ai));
             }
         }
     }

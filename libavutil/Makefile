@@ -106,6 +106,7 @@ OBJS = adler32.o                                                        \
        hash.o                                                           \
        hmac.o                                                           \
        imgutils.o                                                       \
+       integer.o                                                        \
        intmath.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
