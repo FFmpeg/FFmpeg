@@ -4568,7 +4568,7 @@ check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
 
 check_header AVFoundation/AVFoundation.h &&
     check_objcflags -fobjc-arc &&
-    add_extralibs -framework Foundation -framework AVFoundation -framework CoreMedia || \
+    add_extralibs -framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia ||
     disable AVFoundation_AVFoundation_h
 
 check_header sys/videoio.h
