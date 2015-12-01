@@ -3334,7 +3334,17 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
             param_write_int(pb, "DisplayHeight", track->enc->height);
         } else {
             if (track->enc->codec_id == AV_CODEC_ID_AAC) {
-                param_write_string(pb, "FourCC", "AACL");
+                switch (track->enc->profile)
+                {
+                    case FF_PROFILE_AAC_HE_V2:
+                        param_write_string(pb, "FourCC", "AACP");
+                        break;
+                    case FF_PROFILE_AAC_HE:
+                        param_write_string(pb, "FourCC", "AACH");
+                        break;
+                    default:
+                        param_write_string(pb, "FourCC", "AACL");
+                }
             } else if (track->enc->codec_id == AV_CODEC_ID_WMAPRO) {
                 param_write_string(pb, "FourCC", "WMAP");
             }
