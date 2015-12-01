@@ -496,7 +496,7 @@ void av_dump_format(AVFormatContext *ic, int index,
         av_log(NULL, AV_LOG_INFO, "  Duration: ");
         if (ic->duration != AV_NOPTS_VALUE) {
             int hours, mins, secs, us;
-            int64_t duration = ic->duration + 5000;
+            int64_t duration = ic->duration + (ic->duration <= INT64_MAX - 5000 ? 5000 : 0);
             secs  = duration / AV_TIME_BASE;
             us    = duration % AV_TIME_BASE;
             mins  = secs / 60;
