@@ -77,7 +77,7 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
     }
 
     if (a < 0)
-        return -av_rescale_rnd(-FFMAX(a, -INT64_MAX), b, c, rnd ^ ((rnd >> 1) & 1));
+        return -(uint64_t)av_rescale_rnd(-FFMAX(a, -INT64_MAX), b, c, rnd ^ ((rnd >> 1) & 1));
 
     if (rnd == AV_ROUND_NEAR_INF)
         r = c / 2;
@@ -87,8 +87,13 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
     if (b <= INT_MAX && c <= INT_MAX) {
         if (a <= INT_MAX)
             return (a * b + r) / c;
-        else
-            return a / c * b + (a % c * b + r) / c;
+        else {
+            int64_t ad = a / c;
+            int64_t a2 = (a % c * b + r) / c;
+            if (ad >= INT32_MAX && ad > (INT64_MAX - a2) / b)
+                return INT64_MIN;
+            return ad * b + a2;
+        }
     } else {
 #if 1
         uint64_t a0  = a & 0xFFFFFFFF;
@@ -112,6 +117,8 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
                 t1++;
             }
         }
+        if (t1 > INT64_MAX)
+            return INT64_MIN;
         return t1;
     }
 #else
