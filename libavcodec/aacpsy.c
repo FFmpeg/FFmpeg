@@ -305,7 +305,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     float prev, minscale, minath, minsnr, pe_min;
     int chan_bitrate = ctx->avctx->bit_rate / ((ctx->avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : ctx->avctx->channels);
 
-    const int bandwidth    = ctx->avctx->cutoff ? ctx->avctx->cutoff : AAC_CUTOFF(ctx->avctx);
+    const int bandwidth    = ctx->cutoff ? ctx->cutoff : AAC_CUTOFF(ctx->avctx);
     const float num_bark   = calc_bark((float)bandwidth);
 
     ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));
@@ -595,26 +595,30 @@ static float calc_reduced_thr_3gpp(AacPsyBand *band, float min_snr,
 
 #ifndef calc_thr_3gpp
 static void calc_thr_3gpp(const FFPsyWindowInfo *wi, const int num_bands, AacPsyChannel *pch,
-                          const uint8_t *band_sizes, const float *coefs)
+                          const uint8_t *band_sizes, const float *coefs, const int cutoff)
 {
     int i, w, g;
-    int start = 0;
+    int start = 0, wstart = 0;
     for (w = 0; w < wi->num_windows*16; w += 16) {
+        wstart = 0;
         for (g = 0; g < num_bands; g++) {
             AacPsyBand *band = &pch->band[w+g];
 
             float form_factor = 0.0f;
             float Temp;
             band->energy = 0.0f;
-            for (i = 0; i < band_sizes[g]; i++) {
-                band->energy += coefs[start+i] * coefs[start+i];
-                form_factor  += sqrtf(fabs(coefs[start+i]));
+            if (wstart < cutoff) {
+                for (i = 0; i < band_sizes[g]; i++) {
+                    band->energy += coefs[start+i] * coefs[start+i];
+                    form_factor  += sqrtf(fabs(coefs[start+i]));
+                }
             }
             Temp = band->energy > 0 ? sqrtf((float)band_sizes[g] / band->energy) : 0;
             band->thr      = band->energy * 0.001258925f;
             band->nz_lines = form_factor * sqrtf(Temp);
 
             start += band_sizes[g];
+            wstart += band_sizes[g];
         }
     }
 }
@@ -655,9 +659,11 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
     const uint8_t *band_sizes  = ctx->bands[wi->num_windows == 8];
     AacPsyCoeffs  *coeffs      = pctx->psy_coef[wi->num_windows == 8];
     const float avoid_hole_thr = wi->num_windows == 8 ? PSY_3GPP_AH_THR_SHORT : PSY_3GPP_AH_THR_LONG;
+    const int bandwidth        = ctx->cutoff ? ctx->cutoff : AAC_CUTOFF(ctx->avctx);
+    const int cutoff           = bandwidth * 2048 / wi->num_windows / ctx->avctx->sample_rate;
 
     //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
-    calc_thr_3gpp(wi, num_bands, pch, band_sizes, coefs);
+    calc_thr_3gpp(wi, num_bands, pch, band_sizes, coefs, cutoff);
 
     //modify thresholds and energies - spread, threshold in quiet, pre-echo control
     for (w = 0; w < wi->num_windows*16; w += 16) {

@@ -93,6 +93,7 @@ typedef struct FFPsyContext {
     FFPsyChannel      *ch;            ///< single channel information
     FFPsyChannelGroup *group;         ///< channel group information
     int num_groups;                   ///< number of channel groups
+    int cutoff;                       ///< lowpass frequency cutoff for analysis
 
     uint8_t **bands;                  ///< scalefactor band sizes for possible frame sizes
     int     *num_bands;               ///< number of scalefactor bands for possible frame sizes
