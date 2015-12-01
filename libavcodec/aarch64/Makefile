@@ -16,7 +16,8 @@ OBJS-$(CONFIG_VORBIS_DECODER)           += aarch64/vorbisdsp_init.o
 
 ARMV8-OBJS-$(CONFIG_VIDEODSP)           += aarch64/videodsp.o
 
-NEON-OBJS-$(CONFIG_DCA_DECODER)         += aarch64/dcadsp_neon.o
+NEON-OBJS-$(CONFIG_DCA_DECODER)         += aarch64/dcadsp_neon.o               \
+                                           aarch64/synth_filter_neon.o
 NEON-OBJS-$(CONFIG_FFT)                 += aarch64/fft_neon.o
 NEON-OBJS-$(CONFIG_H264CHROMA)          += aarch64/h264cmc_neon.o
 NEON-OBJS-$(CONFIG_H264DSP)             += aarch64/h264dsp_neon.o              \
