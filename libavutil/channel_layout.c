@@ -94,7 +94,7 @@ static const struct {
     { "6.0(front)",  6,  AV_CH_LAYOUT_6POINT0_FRONT },
     { "hexagonal",   6,  AV_CH_LAYOUT_HEXAGONAL },
     { "6.1",         7,  AV_CH_LAYOUT_6POINT1 },
-    { "6.1",         7,  AV_CH_LAYOUT_6POINT1_BACK },
+    { "6.1(back)",   7,  AV_CH_LAYOUT_6POINT1_BACK },
     { "6.1(front)",  7,  AV_CH_LAYOUT_6POINT1_FRONT },
     { "7.0",         7,  AV_CH_LAYOUT_7POINT0 },
     { "7.0(front)",  7,  AV_CH_LAYOUT_7POINT0_FRONT },
