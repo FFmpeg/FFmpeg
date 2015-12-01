@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
@@ -90,9 +91,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         s->pts[s->in_frames] = frame->pts;
         s->in_frames++;
         ret = 0;
-    }
-
-    if (s->in_frames == s->nb_frames) {
+    } else if (s->in_frames == s->nb_frames) {
         int n, x;
 
         for (n = 0; n < s->nb_frames; n++) {
@@ -109,7 +108,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
         for (n = 0; n < s->nb_frames; n++)
             av_frame_free(&s->frames[n]);
-    }
+    } else
+        av_assert0(0);
 
     return ret;
 }
