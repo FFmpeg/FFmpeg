@@ -4146,7 +4146,7 @@ within the parameter list.
 @item
 Show the text at the center of the video frame:
 @example
-drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h-line_h)/2"
+drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h)/2"
 @end example
 
 @item
