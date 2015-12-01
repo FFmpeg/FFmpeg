@@ -56,7 +56,7 @@ static void ts_str(char buffer[60], int64_t ts, AVRational base)
 int main(int argc, char **argv)
 {
     const char *filename;
-    AVFormatContext *ic = NULL;
+    AVFormatContext *ic = avformat_alloc_context();
     int i, ret, stream_id;
     int j;
     int64_t timestamp;
@@ -76,8 +76,10 @@ int main(int argc, char **argv)
             frame_count = atoi(argv[i+1]);
         } else if(!strcmp(argv[i], "-duration")){
             duration = atoi(argv[i+1]);
-        } else if(!strcmp(argv[i], "-usetoc")) {
-            av_dict_set(&format_opts, "usetoc", argv[i+1], 0);
+        } else if(!strcmp(argv[i], "-fastseek")) {
+            if (atoi(argv[i+1])) {
+                ic->flags |= AVFMT_FLAG_FAST_SEEK;
+            }
         } else {
             argc = 1;
         }
