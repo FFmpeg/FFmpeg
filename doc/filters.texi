@@ -7121,109 +7121,42 @@ Compute and draw a color distribution histogram for the input video.
 The computed histogram is a representation of the color component
 distribution in an image.
 
-The filter accepts the following options:
-
-@table @option
-@item mode
-Set histogram mode.
-
-It accepts the following values:
-@table @samp
-@item levels
-Standard histogram that displays the color components distribution in an
-image. Displays color graph for each color component. Shows distribution of
+Standard histogram displays the color components distribution in an image.
+Displays color graph for each color component. Shows distribution of
 the Y, U, V, A or R, G, B components, depending on input format, in the
 current frame. Below each graph a color component scale meter is shown.
 
-@item color
-Displays chroma values (U/V color placement) in a two dimensional
-graph (which is called a vectorscope). The brighter a pixel in the
-vectorscope, the more pixels of the input frame correspond to that pixel
-(i.e., more pixels have this chroma value). The V component is displayed on
-the horizontal (X) axis, with the leftmost side being V = 0 and the rightmost
-side being V = 255. The U component is displayed on the vertical (Y) axis,
-with the top representing U = 0 and the bottom representing U = 255.
+The filter accepts the following options:
 
-The position of a white pixel in the graph corresponds to the chroma value of
-a pixel of the input clip. The graph can therefore be used to read the hue
-(color flavor) and the saturation (the dominance of the hue in the color). As
-the hue of a color changes, it moves around the square. At the center of the
-square the saturation is zero, which means that the corresponding pixel has no
-color. If the amount of a specific color is increased (while leaving the other
-colors unchanged) the saturation increases, and the indicator moves towards
-the edge of the square.
-
-@item color2
-Chroma values in vectorscope, similar as @code{color} but actual chroma values
-are displayed.
-
-@item waveform
-Per row/column color component graph. In row mode, the graph on the left side
-represents color component value 0 and the right side represents value = 255.
-In column mode, the top side represents color component value = 0 and bottom
-side represents value = 255.
-@end table
-Default value is @code{levels}.
-
+@table @option
 @item level_height
-Set height of level in @code{levels}. Default value is @code{200}.
+Set height of level. Default value is @code{200}.
 Allowed range is [50, 2048].
 
 @item scale_height
-Set height of color scale in @code{levels}. Default value is @code{12}.
+Set height of color scale. Default value is @code{12}.
 Allowed range is [0, 40].
 
-@item step
-Set step for @code{waveform} mode. Smaller values are useful to find out how
-many values of the same luminance are distributed across input rows/columns.
-Default value is @code{10}. Allowed range is [1, 255].
-
-@item waveform_mode
-Set mode for @code{waveform}. Can be either @code{row}, or @code{column}.
-Default is @code{row}.
-
-@item waveform_mirror
-Set mirroring mode for @code{waveform}. @code{0} means unmirrored, @code{1}
-means mirrored. In mirrored mode, higher values will be represented on the left
-side for @code{row} mode and at the top for @code{column} mode. Default is
-@code{0} (unmirrored).
-
 @item display_mode
-Set display mode for @code{waveform} and @code{levels}.
+Set display mode.
 It accepts the following values:
 @table @samp
 @item parade
-Display separate graph for the color components side by side in
-@code{row} waveform mode or one below the other in @code{column} waveform mode
-for @code{waveform} histogram mode. For @code{levels} histogram mode,
-per color component graphs are placed below each other.
-
-Using this display mode in @code{waveform} histogram mode makes it easy to
-spot color casts in the highlights and shadows of an image, by comparing the
-contours of the top and the bottom graphs of each waveform. Since whites,
-grays, and blacks are characterized by exactly equal amounts of red, green,
-and blue, neutral areas of the picture should display three waveforms of
-roughly equal width/height. If not, the correction is easy to perform by
-making level adjustments the three waveforms.
+Per color component graphs are placed below each other.
 
 @item overlay
 Presents information identical to that in the @code{parade}, except
 that the graphs representing color components are superimposed directly
 over one another.
-
-This display mode in @code{waveform} histogram mode makes it easier to spot
-relative differences or similarities in overlapping areas of the color
-components that are supposed to be identical, such as neutral whites, grays,
-or blacks.
 @end table
 Default is @code{parade}.
 
 @item levels_mode
-Set mode for @code{levels}. Can be either @code{linear}, or @code{logarithmic}.
+Set mode. Can be either @code{linear}, or @code{logarithmic}.
 Default is @code{linear}.
 
 @item components
-Set what color components to display for mode @code{levels}.
+Set what color components to display.
 Default is @code{7}.
 @end table
 
