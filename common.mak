@@ -67,7 +67,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(COMPILE_M)
 
 %.s: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -S -o $@ $<
+	$(CC) $(CCFLAGS) -S -o $@ $<
 
 %.o: %.S
 	$(COMPILE_S)
