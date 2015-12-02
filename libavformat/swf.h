@@ -23,6 +23,12 @@
 #ifndef AVFORMAT_SWF_H
 #define AVFORMAT_SWF_H
 
+#include "config.h"
+
+#if CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
 #include "libavutil/fifo.h"
 #include "avformat.h"
 #include "avio.h"
@@ -77,6 +83,13 @@ typedef struct SWFContext {
     AVFifoBuffer *audio_fifo;
     AVCodecContext *audio_enc, *video_enc;
     AVStream *video_st;
+#if CONFIG_ZLIB
+#define ZBUF_SIZE 4096
+    AVIOContext *zpb;
+    uint8_t *zbuf_in;
+    uint8_t *zbuf_out;
+    z_stream zstream;
+#endif
 } SWFContext;
 
 extern const AVCodecTag ff_swf_codec_tags[];

@@ -50,6 +50,7 @@ version <next>:
 - support encoding 16-bit RLE SGI images
 - support Apple AVFoundation video capture
 - G.723.1 muxer and encoder
+- compressed SWF
 
 
 version 11:
