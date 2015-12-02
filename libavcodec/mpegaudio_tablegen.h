@@ -62,7 +62,7 @@ static av_cold void mpegaudio_tableinit(void)
         double f, fm;
         int e, m;
         double value = i / 4;
-        if (i & 3 == 0)
+        if ((i & 3) == 0)
             pow43_val = value / IMDCT_SCALAR * cbrt(value);
         f  = pow43_val * exp2_lut[i & 3];
         fm = frexp(f, &e);
@@ -74,7 +74,7 @@ static av_cold void mpegaudio_tableinit(void)
         table_4_3_exp[i]   = -e;
     }
     for (exponent = 0; exponent < 512; exponent++) {
-        if (exponent && exponent & 3 == 0)
+        if (exponent && (exponent & 3) == 0)
             exp2_base *= 2;
         exp2_val = exp2_base * exp2_lut[exponent & 3] / IMDCT_SCALAR;
         for (value = 0; value < 16; value++) {
