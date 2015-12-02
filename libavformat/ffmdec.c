@@ -423,7 +423,7 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             break;
         case MKBETAG('S', '2', 'V', 'I'):
-            if (f_stvi++) {
+            if (f_stvi++ || !size) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
@@ -438,7 +438,7 @@ static int ffm2_read_header(AVFormatContext *s)
                 goto fail;
             break;
         case MKBETAG('S', '2', 'A', 'U'):
-            if (f_stau++) {
+            if (f_stau++ || !size) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
