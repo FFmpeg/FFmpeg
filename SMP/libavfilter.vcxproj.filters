@@ -180,6 +180,9 @@
     <ClCompile Include="..\libavfilter\generate_wave_table.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_apulsator.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\f_realtime.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

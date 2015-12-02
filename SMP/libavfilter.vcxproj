@@ -120,6 +120,7 @@
     <ClCompile Include="..\libavfilter\f_perms.c" />
     <ClCompile Include="..\libavfilter\af_aphaser.c" />
     <ClCompile Include="..\libavfilter\generate_wave_table.c" />
+    <ClCompile Include="..\libavfilter\af_apulsator.c" />
     <ClCompile Include="..\libavfilter\f_realtime.c" />
     <ClCompile Include="..\libavfilter\af_aresample.c" />
     <ClCompile Include="..\libavfilter\f_reverse.c" />
