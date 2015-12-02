@@ -1883,7 +1883,6 @@ TYPES_LIST="
     CONDITION_VARIABLE_Ptr
     socklen_t
     struct_addrinfo
-    struct_dcadec_exss_info_matrix_encoding
     struct_group_source_req
     struct_ip_mreq_source
     struct_ipv6_mreq
@@ -5348,8 +5347,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
-enabled libdcadec         && require_pkg_config dcadec libdcadec/dca_context.h dcadec_context_create &&
-                             check_struct libdcadec/dca_context.h "struct dcadec_exss_info" matrix_encoding
+enabled libdcadec         && require_pkg_config "dcadec >= 0.1.0" libdcadec/dca_context.h dcadec_context_create
 enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&

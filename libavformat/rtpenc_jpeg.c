@@ -36,6 +36,7 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
     int off = 0; /* fragment offset of the current JPEG frame */
     int len;
     int i;
+    int default_huffman_tables = 0;
 
     s->buf_ptr   = s->buf;
     s->timestamp = s->cur_timestamp;
@@ -90,23 +91,66 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
                 return;
             }
         } else if (buf[i + 1] == DHT) {
-            if (   AV_RB16(&buf[i + 2]) < 418
-                || i + 420 >= size
-                || buf[i +   4] != 0x00
-                || buf[i +  33] != 0x01
-                || buf[i +  62] != 0x10
-                || buf[i + 241] != 0x11
-                || memcmp(buf + i +   5, avpriv_mjpeg_bits_dc_luminance   + 1, 16)
-                || memcmp(buf + i +  21, avpriv_mjpeg_val_dc, 12)
-                || memcmp(buf + i +  34, avpriv_mjpeg_bits_dc_chrominance + 1, 16)
-                || memcmp(buf + i +  50, avpriv_mjpeg_val_dc, 12)
-                || memcmp(buf + i +  63, avpriv_mjpeg_bits_ac_luminance   + 1, 16)
-                || memcmp(buf + i +  79, avpriv_mjpeg_val_ac_luminance, 162)
-                || memcmp(buf + i + 242, avpriv_mjpeg_bits_ac_chrominance + 1, 16)
-                || memcmp(buf + i + 258, avpriv_mjpeg_val_ac_chrominance, 162)) {
-                av_log(s1, AV_LOG_ERROR,
-                       "RFC 2435 requires standard Huffman tables for jpeg\n");
-                return;
+            int dht_size = AV_RB16(&buf[i + 2]);
+            default_huffman_tables |= 1 << 4;
+            i += 3;
+            dht_size -= 2;
+            if (i + dht_size >= size)
+                continue;
+            while (dht_size > 0)
+                switch (buf[i + 1]) {
+                case 0x00:
+                    if (   dht_size >= 29
+                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_dc_luminance + 1, 16)
+                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_dc, 12)) {
+                        default_huffman_tables |= 1;
+                        i += 29;
+                        dht_size -= 29;
+                    } else {
+                        i += dht_size;
+                        dht_size = 0;
+                    }
+                    break;
+                case 0x01:
+                    if (   dht_size >= 29
+                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_dc_chrominance + 1, 16)
+                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_dc, 12)) {
+                        default_huffman_tables |= 1 << 1;
+                        i += 29;
+                        dht_size -= 29;
+                    } else {
+                        i += dht_size;
+                        dht_size = 0;
+                    }
+                    break;
+                case 0x10:
+                    if (   dht_size >= 179
+                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_ac_luminance   + 1, 16)
+                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_ac_luminance, 162)) {
+                        default_huffman_tables |= 1 << 2;
+                        i += 179;
+                        dht_size -= 179;
+                    } else {
+                        i += dht_size;
+                        dht_size = 0;
+                    }
+                    break;
+                case 0x11:
+                    if (   dht_size >= 179
+                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_ac_chrominance + 1, 16)
+                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_ac_chrominance, 162)) {
+                        default_huffman_tables |= 1 << 3;
+                        i += 179;
+                        dht_size -= 179;
+                    } else {
+                        i += dht_size;
+                        dht_size = 0;
+                    }
+                    break;
+                default:
+                    i += dht_size;
+                    dht_size = 0;
+                    continue;
             }
         } else if (buf[i + 1] == SOS) {
             /* SOS is last marker in the header */
@@ -118,6 +162,11 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
             }
             break;
         }
+    }
+    if (default_huffman_tables && default_huffman_tables != 31) {
+        av_log(s1, AV_LOG_ERROR,
+               "RFC 2435 requires standard Huffman tables for jpeg\n");
+        return;
     }
     if (nb_qtables && nb_qtables != 2)
         av_log(s1, AV_LOG_WARNING,

@@ -39,6 +39,7 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     ctx->group     = av_mallocz_array(sizeof(ctx->group[0]), num_groups);
     ctx->bands     = av_malloc_array (sizeof(ctx->bands[0]),      num_lens);
     ctx->num_bands = av_malloc_array (sizeof(ctx->num_bands[0]),  num_lens);
+    ctx->cutoff    = avctx->cutoff;
 
     if (!ctx->ch || !ctx->group || !ctx->bands || !ctx->num_bands) {
         ff_psy_end(ctx);

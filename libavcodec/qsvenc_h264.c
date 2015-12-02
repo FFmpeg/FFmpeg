@@ -40,10 +40,75 @@ typedef struct QSVH264EncContext {
     QSVEncContext qsv;
 } QSVH264EncContext;
 
+static int qsv_h264_set_encode_ctrl(AVCodecContext *avctx,
+                                    const AVFrame *frame, mfxEncodeCtrl* enc_ctrl)
+{
+    AVFrameSideData *side_data = NULL;
+    QSVH264EncContext *qh264 = avctx->priv_data;
+    QSVEncContext *q = &qh264->qsv;
+
+    if (q->a53_cc && frame) {
+        side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
+        if (side_data) {
+
+            int sei_payload_size = 0;
+            mfxU8* sei_data = NULL;
+            mfxPayload* payload = NULL;
+
+            sei_payload_size = side_data->size + 13;
+
+            sei_data = av_mallocz(sei_payload_size);
+            if (!sei_data) {
+                av_log(avctx, AV_LOG_ERROR, "No memory for CC, skipping...\n");
+                return AVERROR(ENOMEM);
+            }
+
+            // SEI header
+            sei_data[0] = 4;
+            sei_data[1] = sei_payload_size - 2; // size of SEI data
+
+            // country code
+            sei_data[2] = 181;
+            sei_data[3] = 0;
+            sei_data[4] = 49;
+
+            // ATSC_identifier - using 'GA94' only
+            AV_WL32(sei_data + 5,
+                MKTAG('G', 'A', '9', '4'));
+            sei_data[9] = 3;
+            sei_data[10] =
+                ((side_data->size/3) & 0x1f) | 0xC0;
+
+            sei_data[11] = 0xFF; // reserved
+
+            memcpy(sei_data + 12, side_data->data, side_data->size);
+
+            sei_data[side_data->size+12] = 255;
+
+            payload = av_mallocz(sizeof(mfxPayload));
+            if (!payload) {
+                av_log(avctx, AV_LOG_ERROR, "No memory, skipping captions\n");
+                av_freep(&sei_data);
+                return AVERROR(ENOMEM);
+            }
+            payload->BufSize = side_data->size + 13;
+            payload->NumBit = payload->BufSize * 8;
+            payload->Type = 4;
+            payload->Data = sei_data;
+
+            enc_ctrl->NumExtParam = 0;
+            enc_ctrl->NumPayload = 1;
+            enc_ctrl->Payload[0] = payload;
+        }
+    }
+    return 0;
+}
+
 static av_cold int qsv_enc_init(AVCodecContext *avctx)
 {
     QSVH264EncContext *q = avctx->priv_data;
 
+    q->qsv.set_encode_ctrl_cb = qsv_h264_set_encode_ctrl;
     return ff_qsv_enc_init(avctx, &q->qsv);
 }
 
@@ -103,6 +168,7 @@ static const AVOption options[] = {
     { "main"    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_AVC_MAIN     }, INT_MIN, INT_MAX,     VE, "profile" },
     { "high"    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_AVC_HIGH     }, INT_MIN, INT_MAX,     VE, "profile" },
 
+    { "a53cc" , "Use A53 Closed Captions (if available)", OFFSET(qsv.a53_cc), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, VE},
     { NULL },
 };
 

@@ -45,14 +45,28 @@ static float expval_table_float[512][16];
 static av_cold void mpegaudio_tableinit(void)
 {
     int i, value, exponent;
+    static const double exp2_lut[4] = {
+        1.00000000000000000000, /* 2 ^ (0 * 0.25) */
+        1.18920711500272106672, /* 2 ^ (1 * 0.25) */
+        M_SQRT2               , /* 2 ^ (2 * 0.25) */
+        1.68179283050742908606, /* 2 ^ (3 * 0.25) */
+    };
+    static double pow43_lut[16];
+    double exp2_base = 2.11758236813575084767080625169910490512847900390625e-22; // 2^(-72)
+    double exp2_val;
+    double pow43_val = 0;
+    for (i = 0; i < 16; ++i)
+        pow43_lut[i] = i * cbrt(i);
+
     for (i = 1; i < TABLE_4_3_SIZE; i++) {
-        double value = i / 4;
         double f, fm;
         int e, m;
-        /* cbrtf() isn't available on all systems, so we use powf(). */
-        f  = value / IMDCT_SCALAR * pow(value, 1.0 / 3.0) * pow(2, (i & 3) * 0.25);
+        double value = i / 4;
+        if ((i & 3) == 0)
+            pow43_val = value / IMDCT_SCALAR * cbrt(value);
+        f  = pow43_val * exp2_lut[i & 3];
         fm = frexp(f, &e);
-        m  = (uint32_t)(fm * (1LL << 31) + 0.5);
+        m  = llrint(fm * (1LL << 31));
         e += FRAC_BITS - 31 + 5 - 100;
 
         /* normalized to FRAC_BITS */
@@ -60,11 +74,12 @@ static av_cold void mpegaudio_tableinit(void)
         table_4_3_exp[i]   = -e;
     }
     for (exponent = 0; exponent < 512; exponent++) {
+        if (exponent && (exponent & 3) == 0)
+            exp2_base *= 2;
+        exp2_val = exp2_base * exp2_lut[exponent & 3] / IMDCT_SCALAR;
         for (value = 0; value < 16; value++) {
-            /* cbrtf() isn't available on all systems, so we use powf(). */
-            double f = (double)value * pow(value, 1.0 / 3.0) * pow(2, (exponent - 400) * 0.25 + FRAC_BITS + 5) / IMDCT_SCALAR;
-            /* llrint() isn't always available, so round and cast manually. */
-            expval_table_fixed[exponent][value] = (long long int) (f < 0xFFFFFFFF ? floor(f + 0.5) : 0xFFFFFFFF);
+            double f = pow43_lut[value] * exp2_val;
+            expval_table_fixed[exponent][value] = (f < 0xFFFFFFFF ? llrint(f) : 0xFFFFFFFF);
             expval_table_float[exponent][value] = f;
         }
         exp_table_fixed[exponent] = expval_table_fixed[exponent][1];

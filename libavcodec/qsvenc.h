@@ -69,6 +69,8 @@
 { "adaptive_i",     "Adaptive I-frame placement",             OFFSET(qsv.adaptive_i),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
 { "adaptive_b",     "Adaptive B-frame placement",             OFFSET(qsv.adaptive_b),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
 
+typedef int SetEncodeCtrlCB (AVCodecContext *avctx,
+                             const AVFrame *frame, mfxEncodeCtrl* enc_ctrl);
 typedef struct QSVEncContext {
     AVCodecContext *avctx;
 
@@ -131,7 +133,9 @@ typedef struct QSVEncContext {
     int int_ref_qp_delta;
     int recovery_point_sei;
 
+    int a53_cc;
     char *load_plugins;
+    SetEncodeCtrlCB *set_encode_ctrl_cb;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);

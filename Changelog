@@ -37,6 +37,7 @@ version <next>:
 - compensationdelay filter
 - acompressor filter
 - support encoding 16-bit RLE SGI images
+- apulsator filter
 
 
 version 2.8:

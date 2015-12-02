@@ -118,6 +118,11 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
             av_log(ctx->avctx, AV_LOG_ERROR, "bit depth mismatches %d %d\n", ff_dnxhd_cid_table[index].bit_depth, bitdepth);
             return AVERROR_INVALIDDATA;
         }
+        if (bitdepth > 10) {
+            avpriv_request_sample(ctx->avctx, "DNXHR 12-bit");
+            if (ctx->avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL)
+                return AVERROR_PATCHWELCOME;
+        }
         ctx->cid_table = &ff_dnxhd_cid_table[index];
         av_log(ctx->avctx, AV_LOG_VERBOSE, "Profile cid %d.\n", cid);
 

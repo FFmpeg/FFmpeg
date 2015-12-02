@@ -30,6 +30,7 @@
 #include "libavutil/log.h"
 #include "libavutil/time.h"
 #include "libavutil/imgutils.h"
+#include "libavcodec/bytestream.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -753,12 +754,26 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     return 0;
 }
 
+static void free_encoder_ctrl_payloads(mfxEncodeCtrl* enc_ctrl)
+{
+    if (enc_ctrl) {
+        int i;
+        for (i = 0; i < enc_ctrl->NumPayload && i < QSV_MAX_ENC_PAYLOAD; i++) {
+            mfxPayload* pay = enc_ctrl->Payload[i];
+            av_free(enc_ctrl->Payload[i]->Data);
+            av_free(pay);
+        }
+        enc_ctrl->NumPayload = 0;
+    }
+}
+
 static void clear_unused_frames(QSVEncContext *q)
 {
     QSVFrame *cur = q->work_frames;
     while (cur) {
         if (cur->surface && !cur->surface->Data.Locked) {
             cur->surface = NULL;
+            free_encoder_ctrl_payloads(&cur->enc_ctrl);
             av_frame_unref(cur->frame);
         }
         cur = cur->next;
@@ -791,6 +806,11 @@ static int get_free_frame(QSVEncContext *q, QSVFrame **f)
         av_freep(&frame);
         return AVERROR(ENOMEM);
     }
+    frame->enc_ctrl.Payload = av_mallocz(sizeof(mfxPayload*) * QSV_MAX_ENC_PAYLOAD);
+    if (!frame->enc_ctrl.Payload) {
+        av_freep(&frame);
+        return AVERROR(ENOMEM);
+    }
     *last = frame;
 
     *f = frame;
@@ -799,7 +819,7 @@ static int get_free_frame(QSVEncContext *q, QSVFrame **f)
 }
 
 static int submit_frame(QSVEncContext *q, const AVFrame *frame,
-                        mfxFrameSurface1 **surface)
+                        QSVFrame **new_frame)
 {
     QSVFrame *qf;
     int ret;
@@ -860,7 +880,7 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
 
     qf->surface->Data.TimeStamp = av_rescale_q(frame->pts, q->avctx->time_base, (AVRational){1, 90000});
 
-    *surface = qf->surface;
+    *new_frame = qf;
 
     return 0;
 }
@@ -885,14 +905,20 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
 
     mfxFrameSurface1 *surf = NULL;
     mfxSyncPoint sync      = NULL;
+    QSVFrame *qsv_frame = NULL;
+    mfxEncodeCtrl* enc_ctrl = NULL;
     int ret;
 
     if (frame) {
-        ret = submit_frame(q, frame, &surf);
+        ret = submit_frame(q, frame, &qsv_frame);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error submitting the frame for encoding.\n");
             return ret;
         }
+    }
+    if (qsv_frame) {
+        surf = qsv_frame->surface;
+        enc_ctrl = &qsv_frame->enc_ctrl;
     }
 
     ret = av_new_packet(&new_pkt, q->packet_size);
@@ -909,8 +935,12 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
     bs->Data      = new_pkt.data;
     bs->MaxLength = new_pkt.size;
 
+    if (q->set_encode_ctrl_cb) {
+        q->set_encode_ctrl_cb(avctx, frame, &qsv_frame->enc_ctrl);
+    }
+
     do {
-        ret = MFXVideoENCODE_EncodeFrameAsync(q->session, NULL, surf, bs, &sync);
+        ret = MFXVideoENCODE_EncodeFrameAsync(q->session, enc_ctrl, surf, bs, &sync);
         if (ret == MFX_WRN_DEVICE_BUSY) {
             av_usleep(500);
             continue;
@@ -1010,6 +1040,7 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     while (cur) {
         q->work_frames = cur->next;
         av_frame_free(&cur->frame);
+        av_free(cur->enc_ctrl.Payload);
         av_freep(&cur);
         cur = q->work_frames;
     }

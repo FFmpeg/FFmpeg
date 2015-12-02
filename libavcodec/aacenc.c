@@ -793,7 +793,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             s->lambda = FFMIN(s->lambda * ratio, 65536.f);
 
             /* Keep iterating if we must reduce and lambda is in the sky */
-            if ((s->lambda < 300.f || ratio > 0.9f) && (s->lambda > 10.f || ratio < 1.1f)) {
+            if (ratio > 0.9f && ratio < 1.1f) {
                 break;
             } else {
                 if (is_mode || ms_mode || tns_mode || pred_mode) {

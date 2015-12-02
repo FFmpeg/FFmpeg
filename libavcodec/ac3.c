@@ -39,8 +39,6 @@ const uint8_t ff_ac3_band_start_tab[AC3_CRITICAL_BANDS+1] = {
      79,  85, 97, 109, 121, 133, 157, 181, 205, 229, 253
 };
 
-#if CONFIG_HARDCODED_TABLES
-
 /**
  * Map each frequency coefficient bin to the critical band that contains it.
  */
@@ -68,10 +66,6 @@ const uint8_t ff_ac3_bin_to_band_tab[253] = {
     49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49,
     49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49
 };
-
-#else /* CONFIG_HARDCODED_TABLES */
-uint8_t ff_ac3_bin_to_band_tab[253];
-#endif
 
 static inline int calc_lowcomp1(int a, int b0, int b1, int c)
 {
@@ -213,22 +207,4 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
         }
     }
     return 0;
-}
-
-/**
- * Initialize some tables.
- * note: This function must remain thread safe because it is called by the
- *       AVParser init code.
- */
-av_cold void ff_ac3_common_init(void)
-{
-#if !CONFIG_HARDCODED_TABLES
-    /* compute ff_ac3_bin_to_band_tab from ff_ac3_band_start_tab */
-    int bin = 0, band;
-    for (band = 0; band < AC3_CRITICAL_BANDS; band++) {
-        int band_end = ff_ac3_band_start_tab[band+1];
-        while (bin < band_end)
-            ff_ac3_bin_to_band_tab[bin++] = band;
-    }
-#endif /* !CONFIG_HARDCODED_TABLES */
 }

@@ -54,7 +54,7 @@
 
 /* Parameter of f(x) = a*(lambda/100), defines the maximum fourier spread
  * beyond which no PNS is used (since the SFBs contain tone rather than noise) */
-#define NOISE_SPREAD_THRESHOLD 0.5073f
+#define NOISE_SPREAD_THRESHOLD 0.9f
 
 /* Parameter of f(x) = a*(100/lambda), defines how much PNS is allowed to
  * replace low energy non zero bands */
@@ -591,6 +591,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     int bandwidth, cutoff;
     float *PNS = &s->scoefs[0*128], *PNS34 = &s->scoefs[1*128];
     float *NOR34 = &s->scoefs[3*128];
+    uint8_t nextband[128];
     const float lambda = s->lambda;
     const float freq_mult = avctx->sample_rate*0.5f/wlen;
     const float thr_mult = NOISE_LAMBDA_REPLACE*(100.0f/lambda);
@@ -604,6 +605,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
 
     /** Keep this in sync with twoloop's cutoff selection */
     float rate_bandwidth_multiplier = 1.5f;
+    int prev = -1000, prev_sf = -1;
     int frame_bit_rate = (avctx->flags & CODEC_FLAG_QSCALE)
         ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
         : (avctx->bit_rate / avctx->channels);
@@ -619,6 +621,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     cutoff = bandwidth * 2 * wlen / avctx->sample_rate;
 
     memcpy(sce->band_alt, sce->band_type, sizeof(sce->band_type));
+    ff_init_nextband_map(sce, nextband);
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         int wstart = w*128;
         for (g = 0;  g < sce->ics.num_swb; g++) {
@@ -655,16 +658,27 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
              *
              * At this stage, point 2 is relaxed for zeroed bands near the noise threshold (hole avoidance is more important)
              */
-            if (((sce->zeroes[w*16+g] || !sce->band_alt[w*16+g]) && sfb_energy < threshold*sqrtf(1.5f/freq_boost)) || spread < spread_threshold ||
+            if ((!sce->zeroes[w*16+g] && !ff_sfdelta_can_remove_band(sce, nextband, prev_sf, w*16+g)) ||
+                ((sce->zeroes[w*16+g] || !sce->band_alt[w*16+g]) && sfb_energy < threshold*sqrtf(1.0f/freq_boost)) || spread < spread_threshold ||
                 (!sce->zeroes[w*16+g] && sce->band_alt[w*16+g] && sfb_energy > threshold*thr_mult*freq_boost) ||
                 min_energy < pns_transient_energy_r * max_energy ) {
                 sce->pns_ener[w*16+g] = sfb_energy;
+                if (!sce->zeroes[w*16+g])
+                    prev_sf = sce->sf_idx[w*16+g];
                 continue;
             }
 
             pns_tgt_energy = sfb_energy*FFMIN(1.0f, spread*spread);
             noise_sfi = av_clip(roundf(log2f(pns_tgt_energy)*2), -100, 155); /* Quantize */
             noise_amp = -ff_aac_pow2sf_tab[noise_sfi + POW_SF2_ZERO];    /* Dequantize */
+            if (prev != -1000) {
+                int noise_sfdiff = noise_sfi - prev + SCALE_DIFF_ZERO;
+                if (noise_sfdiff < 0 || noise_sfdiff > 2*SCALE_MAX_DIFF) {
+                    if (!sce->zeroes[w*16+g])
+                        prev_sf = sce->sf_idx[w*16+g];
+                    continue;
+                }
+            }
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 float band_energy, scale, pns_senergy;
                 const int start_c = (w+w2)*128+sce->ics.swb_offset[g];
@@ -697,7 +711,10 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             if (sce->zeroes[w*16+g] || !sce->band_alt[w*16+g] || (energy_ratio > 0.85f && energy_ratio < 1.25f && dist2 < dist1)) {
                 sce->band_type[w*16+g] = NOISE_BT;
                 sce->zeroes[w*16+g] = 0;
+                prev = noise_sfi;
             }
+            if (!sce->zeroes[w*16+g])
+                prev_sf = sce->sf_idx[w*16+g];
         }
     }
 }
@@ -775,7 +792,8 @@ static void mark_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelEleme
 
 static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
 {
-    int start = 0, i, w, w2, g, sid_sf_boost;
+    int start = 0, i, w, w2, g, sid_sf_boost, prev_mid, prev_side;
+    uint8_t nextband0[128], nextband1[128];
     float M[128], S[128];
     float *L34 = s->scoefs, *R34 = s->scoefs + 128, *M34 = s->scoefs + 128*2, *S34 = s->scoefs + 128*3;
     const float lambda = s->lambda;
@@ -784,21 +802,19 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
     SingleChannelElement *sce1 = &cpe->ch[1];
     if (!cpe->common_window)
         return;
-    for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
-        int min_sf_idx_mid = SCALE_MAX_POS;
-        int min_sf_idx_side = SCALE_MAX_POS;
-        for (g = 0; g < sce0->ics.num_swb; g++) {
-            if (!sce0->zeroes[w*16+g] && sce0->band_type[w*16+g] < RESERVED_BT)
-                min_sf_idx_mid = FFMIN(min_sf_idx_mid, sce0->sf_idx[w*16+g]);
-            if (!sce1->zeroes[w*16+g] && sce1->band_type[w*16+g] < RESERVED_BT)
-                min_sf_idx_side = FFMIN(min_sf_idx_side, sce1->sf_idx[w*16+g]);
-        }
 
+    /** Scout out next nonzero bands */
+    ff_init_nextband_map(sce0, nextband0);
+    ff_init_nextband_map(sce1, nextband1);
+
+    prev_mid = sce0->sf_idx[0];
+    prev_side = sce1->sf_idx[0];
+    for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
         start = 0;
         for (g = 0;  g < sce0->ics.num_swb; g++) {
             float bmax = bval2bmax(g * 17.0f / sce0->ics.num_swb) / 0.0045f;
             cpe->ms_mask[w*16+g] = 0;
-            if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g]) {
+            if (!sce0->zeroes[w*16+g] && !sce1->zeroes[w*16+g]) {
                 float Mmax = 0.0f, Smax = 0.0f;
 
                 /* Must compute mid/side SF and book for the whole window group */
@@ -825,15 +841,17 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
                     int midcb, sidcb;
 
                     minidx = FFMIN(sce0->sf_idx[w*16+g], sce1->sf_idx[w*16+g]);
-                    mididx = av_clip(minidx, min_sf_idx_mid, min_sf_idx_mid + SCALE_MAX_DIFF);
-                    sididx = av_clip(minidx - sid_sf_boost * 3, min_sf_idx_side, min_sf_idx_side + SCALE_MAX_DIFF);
-                    midcb = find_min_book(Mmax, mididx);
-                    sidcb = find_min_book(Smax, sididx);
-
-                    if ((mididx > minidx) || (sididx > minidx)) {
+                    mididx = av_clip(minidx, 0, SCALE_MAX_POS - SCALE_DIV_512);
+                    sididx = av_clip(minidx - sid_sf_boost * 3, 0, SCALE_MAX_POS - SCALE_DIV_512);
+                    if (!cpe->is_mask[w*16+g] && sce0->band_type[w*16+g] != NOISE_BT && sce1->band_type[w*16+g] != NOISE_BT
+                        && (   !ff_sfdelta_can_replace(sce0, nextband0, prev_mid, mididx, w*16+g)
+                            || !ff_sfdelta_can_replace(sce1, nextband1, prev_side, sididx, w*16+g))) {
                         /* scalefactor range violation, bad stuff, will decrease quality unacceptably */
                         continue;
                     }
+
+                    midcb = find_min_book(Mmax, mididx);
+                    sidcb = find_min_book(Smax, sididx);
 
                     /* No CB can be zero */
                     midcb = FFMAX(1,midcb);
@@ -900,6 +918,10 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
                     }
                 }
             }
+            if (!sce0->zeroes[w*16+g] && sce0->band_type[w*16+g] < RESERVED_BT)
+                prev_mid = sce0->sf_idx[w*16+g];
+            if (!sce1->zeroes[w*16+g] && !cpe->is_mask[w*16+g] && sce1->band_type[w*16+g] < RESERVED_BT)
+                prev_side = sce1->sf_idx[w*16+g];
             start += sce0->ics.swb_sizes[g];
         }
     }

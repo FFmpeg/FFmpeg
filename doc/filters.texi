@@ -350,6 +350,9 @@ hard edge at the threshold in the range of the chosen decibels.
 The filter accepts the following options:
 
 @table @option
+@item level_in
+Set input gain. Default is 1. Range is between 0.015625 and 64.
+
 @item threshold
 If a signal of second stream rises above this level it will affect the gain
 reduction of the first stream.
@@ -1025,6 +1028,63 @@ It accepts the following values:
 @item triangular, t
 @item sinusoidal, s
 @end table
+@end table
+
+@section apulsator
+
+Audio pulsator is something between an autopanner and a tremolo.
+But it can produce funny stereo effects as well. Pulsator changes the volume
+of the left and right channel based on a LFO (low frequency oscillator) with
+different waveforms and shifted phases.
+This filter have the ability to define an offset between left and right
+channel. An offset of 0 means that both LFO shapes match each other.
+The left and right channel are altered equally - a conventional tremolo.
+An offset of 50% means that the shape of the right channel is exactly shifted
+in phase (or moved backwards about half of the frequency) - pulsator acts as
+an autopanner. At 1 both curves match again. Every setting in between moves the
+phase shift gapless between all stages and produces some "bypassing" sounds with
+sine and triangle waveforms. The more you set the offset near 1 (starting from
+the 0.5) the faster the signal passes from the left to the right speaker.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set input gain. By default it is 1. Range is [0.015625 - 64].
+
+@item level_out
+Set output gain. By default it is 1. Range is [0.015625 - 64].
+
+@item mode
+Set waveform shape the LFO will use. Can be one of: sine, triangle, square,
+sawup or sawdown. Default is sine.
+
+@item amount
+Set modulation. Define how much of original signal is affected by the LFO.
+
+@item offset_l
+Set left channel offset. Default is 0. Allowed range is [0 - 1].
+
+@item offset_r
+Set right channel offset. Default is 0.5. Allowed range is [0 - 1].
+
+@item width
+Set pulse width. Default is 1. Allowed range is [0 - 2].
+
+@item timing
+Set possible timing mode. Can be one of: bpm, ms or hz. Default is hz.
+
+@item bpm
+Set bpm. Default is 120. Allowed range is [30 - 300]. Only used if timing
+is set to bpm.
+
+@item ms
+Set ms. Default is 500. Allowed range is [10 - 2000]. Only used if timing
+is set to ms.
+
+@item hz
+Set frequency in Hz. Default is 2. Allowed range is [0.01 - 100]. Only used
+if timing is set to hz.
 @end table
 
 @anchor{aresample}
@@ -2479,6 +2539,9 @@ processing. See @ref{pan} and @ref{amerge} filter.
 The filter accepts the following options:
 
 @table @option
+@item level_in
+Set input gain. Default is 1. Range is between 0.015625 and 64.
+
 @item threshold
 If a signal of second stream raises above this level it will affect the gain
 reduction of first stream.
@@ -2513,6 +2576,9 @@ reduction. Default is @code{average}.
 @item detection
 Should the exact signal be taken in case of @code{peak} or an RMS one in case
 of @code{rms}. Default is @code{rms} which is mainly smoother.
+
+@item level_sc
+Set sidechain gain. Default is 1. Range is between 0.015625 and 64.
 
 @item mix
 How much to use compressed signal in output. Default is 1.
@@ -5596,7 +5662,7 @@ within the parameter list.
 @item
 Show the text at the center of the video frame:
 @example
-drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h-line_h)/2"
+drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h)/2"
 @end example
 
 @item
@@ -7112,109 +7178,42 @@ Compute and draw a color distribution histogram for the input video.
 The computed histogram is a representation of the color component
 distribution in an image.
 
-The filter accepts the following options:
-
-@table @option
-@item mode
-Set histogram mode.
-
-It accepts the following values:
-@table @samp
-@item levels
-Standard histogram that displays the color components distribution in an
-image. Displays color graph for each color component. Shows distribution of
+Standard histogram displays the color components distribution in an image.
+Displays color graph for each color component. Shows distribution of
 the Y, U, V, A or R, G, B components, depending on input format, in the
 current frame. Below each graph a color component scale meter is shown.
 
-@item color
-Displays chroma values (U/V color placement) in a two dimensional
-graph (which is called a vectorscope). The brighter a pixel in the
-vectorscope, the more pixels of the input frame correspond to that pixel
-(i.e., more pixels have this chroma value). The V component is displayed on
-the horizontal (X) axis, with the leftmost side being V = 0 and the rightmost
-side being V = 255. The U component is displayed on the vertical (Y) axis,
-with the top representing U = 0 and the bottom representing U = 255.
+The filter accepts the following options:
 
-The position of a white pixel in the graph corresponds to the chroma value of
-a pixel of the input clip. The graph can therefore be used to read the hue
-(color flavor) and the saturation (the dominance of the hue in the color). As
-the hue of a color changes, it moves around the square. At the center of the
-square the saturation is zero, which means that the corresponding pixel has no
-color. If the amount of a specific color is increased (while leaving the other
-colors unchanged) the saturation increases, and the indicator moves towards
-the edge of the square.
-
-@item color2
-Chroma values in vectorscope, similar as @code{color} but actual chroma values
-are displayed.
-
-@item waveform
-Per row/column color component graph. In row mode, the graph on the left side
-represents color component value 0 and the right side represents value = 255.
-In column mode, the top side represents color component value = 0 and bottom
-side represents value = 255.
-@end table
-Default value is @code{levels}.
-
+@table @option
 @item level_height
-Set height of level in @code{levels}. Default value is @code{200}.
+Set height of level. Default value is @code{200}.
 Allowed range is [50, 2048].
 
 @item scale_height
-Set height of color scale in @code{levels}. Default value is @code{12}.
+Set height of color scale. Default value is @code{12}.
 Allowed range is [0, 40].
 
-@item step
-Set step for @code{waveform} mode. Smaller values are useful to find out how
-many values of the same luminance are distributed across input rows/columns.
-Default value is @code{10}. Allowed range is [1, 255].
-
-@item waveform_mode
-Set mode for @code{waveform}. Can be either @code{row}, or @code{column}.
-Default is @code{row}.
-
-@item waveform_mirror
-Set mirroring mode for @code{waveform}. @code{0} means unmirrored, @code{1}
-means mirrored. In mirrored mode, higher values will be represented on the left
-side for @code{row} mode and at the top for @code{column} mode. Default is
-@code{0} (unmirrored).
-
 @item display_mode
-Set display mode for @code{waveform} and @code{levels}.
+Set display mode.
 It accepts the following values:
 @table @samp
 @item parade
-Display separate graph for the color components side by side in
-@code{row} waveform mode or one below the other in @code{column} waveform mode
-for @code{waveform} histogram mode. For @code{levels} histogram mode,
-per color component graphs are placed below each other.
-
-Using this display mode in @code{waveform} histogram mode makes it easy to
-spot color casts in the highlights and shadows of an image, by comparing the
-contours of the top and the bottom graphs of each waveform. Since whites,
-grays, and blacks are characterized by exactly equal amounts of red, green,
-and blue, neutral areas of the picture should display three waveforms of
-roughly equal width/height. If not, the correction is easy to perform by
-making level adjustments the three waveforms.
+Per color component graphs are placed below each other.
 
 @item overlay
 Presents information identical to that in the @code{parade}, except
 that the graphs representing color components are superimposed directly
 over one another.
-
-This display mode in @code{waveform} histogram mode makes it easier to spot
-relative differences or similarities in overlapping areas of the color
-components that are supposed to be identical, such as neutral whites, grays,
-or blacks.
 @end table
 Default is @code{parade}.
 
 @item levels_mode
-Set mode for @code{levels}. Can be either @code{linear}, or @code{logarithmic}.
+Set mode. Can be either @code{linear}, or @code{logarithmic}.
 Default is @code{linear}.
 
 @item components
-Set what color components to display for mode @code{levels}.
+Set what color components to display.
 Default is @code{7}.
 @end table
 
