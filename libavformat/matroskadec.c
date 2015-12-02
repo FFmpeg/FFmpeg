@@ -1525,6 +1525,31 @@ static int matroska_parse_flac(AVFormatContext *s,
     return 0;
 }
 
+static void mkv_stereo_mode_display_mul(int stereo_mode,
+                                        int *h_width, int *h_height)
+{
+    switch (stereo_mode) {
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_MONO:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_CHECKERBOARD_RL:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_CHECKERBOARD_LR:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_RL:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_LR:
+        break;
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_LEFT_RIGHT:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_COL_INTERLEAVED_RL:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_COL_INTERLEAVED_LR:
+        *h_width = 2;
+        break;
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_BOTTOM_TOP:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_ROW_INTERLEAVED_RL:
+    case MATROSKA_VIDEO_STEREOMODE_TYPE_ROW_INTERLEAVED_LR:
+        *h_height = 2;
+        break;
+    }
+}
+
 static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -1810,14 +1835,21 @@ static int matroska_parse_tracks(AVFormatContext *s)
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
+            int display_width_mul  = 1;
+            int display_height_mul = 1;
+
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_tag  = track->video.fourcc;
             st->codec->width      = track->video.pixel_width;
             st->codec->height     = track->video.pixel_height;
+
+            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
+                mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
+
             av_reduce(&st->sample_aspect_ratio.num,
                       &st->sample_aspect_ratio.den,
-                      st->codec->height * track->video.display_width,
-                      st->codec->width  * track->video.display_height,
+                      st->codec->height * track->video.display_width  * display_width_mul,
+                      st->codec->width  * track->video.display_height * display_height_mul,
                       255);
             if (st->codec->codec_id != AV_CODEC_ID_H264 &&
                 st->codec->codec_id != AV_CODEC_ID_HEVC)
