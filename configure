@@ -4163,6 +4163,7 @@ elif enabled mips; then
             add_asflags "-mfp64"
         ;;
         i6400)
+            disable mips32r2
             disable mipsdsp
             disable mipsdspr2
             check_cflags "-mtune=i6400 -mabi=64" &&
