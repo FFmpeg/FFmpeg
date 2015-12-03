@@ -5157,6 +5157,12 @@ static int mov_write_header(AVFormatContext *s)
         mov->nb_streams += mov->nb_meta_tmcd;
     }
 
+    // Reserve an extra stream for chapters for the case where chapters
+    // are written in the trailer
+    mov->tracks = av_mallocz_array((mov->nb_streams + 1), sizeof(*mov->tracks));
+    if (!mov->tracks)
+        return AVERROR(ENOMEM);
+    
     if (mov->encryption_scheme_str != NULL && strcmp(mov->encryption_scheme_str, "none") != 0) {
         if (strcmp(mov->encryption_scheme_str, "cenc-aes-ctr") == 0) {
             mov->encryption_scheme = MOV_ENC_CENC_AES_CTR;
@@ -5182,12 +5188,6 @@ static int mov_write_header(AVFormatContext *s)
             goto error;
         }
     }
-
-    // Reserve an extra stream for chapters for the case where chapters
-    // are written in the trailer
-    mov->tracks = av_mallocz_array((mov->nb_streams + 1), sizeof(*mov->tracks));
-    if (!mov->tracks)
-        return AVERROR(ENOMEM);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st= s->streams[i];
