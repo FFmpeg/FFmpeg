@@ -87,7 +87,7 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                       AVCodecContext *codec, int size, int big_endian)
 {
     int id;
-    uint64_t bitrate;
+    uint64_t bitrate = 0;
 
     if (size < 14) {
         avpriv_request_sample(codec, "wav header size < 14");
