@@ -401,11 +401,11 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 
                         if (st->codec->extradata[19] == st->codec->channels - coupled_stream_counts[st->codec->channels] &&
                             st->codec->extradata[20] == coupled_stream_counts[st->codec->channels] &&
-                            memcmp(&st->codec->extradata[21], channel_map_a[st->codec->channels], st->codec->channels) == 0) {
+                            memcmp(&st->codec->extradata[21], channel_map_a[st->codec->channels-1], st->codec->channels) == 0) {
                             *q++ = st->codec->channels;
                         } else if (st->codec->channels >= 2 && st->codec->extradata[19] == st->codec->channels &&
                                    st->codec->extradata[20] == 0 &&
-                                   memcmp(&st->codec->extradata[21], channel_map_b[st->codec->channels], st->codec->channels) == 0) {
+                                   memcmp(&st->codec->extradata[21], channel_map_b[st->codec->channels-1], st->codec->channels) == 0) {
                             *q++ = st->codec->channels | 0x80;
                         } else {
                             /* Unsupported, could write an extended descriptor here */
