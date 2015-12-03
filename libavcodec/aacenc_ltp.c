@@ -167,7 +167,7 @@ void ff_aac_search_for_ltp(AACEncContext *s, SingleChannelElement *sce,
 
     if (sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         if (sce->ics.ltp.lag) {
-            memset(&sce->lcoeffs[0], 0.0f, 3072*sizeof(sce->lcoeffs[0]));
+            memset(&sce->ltp_state[0], 0, 3072*sizeof(sce->ltp_state[0]));
             memset(&sce->ics.ltp, 0, sizeof(LongTermPrediction));
         }
         return;
