@@ -39,10 +39,12 @@ typedef struct MPJPEGDemuxContext {
 
 static void trim_right(char *p)
 {
+    char *end;
+
     if (!p || !*p)
         return;
 
-    char *end = p + strlen(p);
+    end = p + strlen(p);
     while (end > p && av_isspace(*(end-1)))
         *(--end) = '\0';
 }
@@ -330,8 +332,10 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         while ((ret = av_append_packet(s->pb, pkt, read_chunk - remaining)) >= 0) {
             /* scan the new data */
+            char *start;
+
             len = ret + remaining;
-            char *start = pkt->data + pkt->size - len;
+            start = pkt->data + pkt->size - len;
             do {
                 if (!memcmp(start, mpjpeg->searchstr, mpjpeg->searchstr_len)) {
                     // got the boundary! rewind the stream
