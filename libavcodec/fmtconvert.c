@@ -46,7 +46,12 @@ av_cold void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx)
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
     c->int32_to_float_fmul_array8 = int32_to_float_fmul_array8_c;
 
-    if (ARCH_ARM) ff_fmt_convert_init_arm(c, avctx);
-    if (ARCH_PPC) ff_fmt_convert_init_ppc(c, avctx);
-    if (ARCH_X86) ff_fmt_convert_init_x86(c, avctx);
+    if (ARCH_AARCH64)
+        ff_fmt_convert_init_aarch64(c, avctx);
+    if (ARCH_ARM)
+        ff_fmt_convert_init_arm(c, avctx);
+    if (ARCH_PPC)
+        ff_fmt_convert_init_ppc(c, avctx);
+    if (ARCH_X86)
+        ff_fmt_convert_init_x86(c, avctx);
 }
