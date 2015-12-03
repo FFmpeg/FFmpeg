@@ -83,6 +83,9 @@ static const AVOption options[] = {
     { "fragment_index", "Fragment number of the next fragment", offsetof(MOVMuxContext, fragments), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mov_gamma", "gamma value for gama atom", offsetof(MOVMuxContext, gamma), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 10, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_interleave", "Interleave samples within fragments (max number of consecutive samples, lower is tighter interleaving, but with more overhead)", offsetof(MOVMuxContext, frag_interleave), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "encryption_scheme",    "Configures the encryption scheme, allowed values are none, cenc-aes-ctr", offsetof(MOVMuxContext, encryption_scheme_str),   AV_OPT_TYPE_STRING, {.str = NULL}, .flags = AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
+    { "encryption_key", "The media encryption key (hex)", offsetof(MOVMuxContext, encryption_key), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
+    { "encryption_kid", "The media encryption key identifier (hex)", offsetof(MOVMuxContext, encryption_kid), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
     { NULL },
 };
 
@@ -891,7 +894,7 @@ static int get_samples_per_packet(MOVTrack *track)
     return first_duration;
 }
 
-static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_audio_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     int version = 0;
@@ -912,7 +915,12 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
     }
 
     avio_wb32(pb, 0); /* size */
-    avio_wl32(pb, tag); // store it byteswapped
+    if (mov->encryption_scheme != MOV_ENC_NONE) {
+        ffio_wfourcc(pb, "enca");
+    }
+    else {
+        avio_wl32(pb, tag); // store it byteswapped
+    }
     avio_wb32(pb, 0); /* Reserved */
     avio_wb16(pb, 0); /* Reserved */
     avio_wb16(pb, 1); /* Data-reference index, XXX  == 1 */
@@ -999,6 +1007,10 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
 
     if (track->mode == MODE_MOV && track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_chan_tag(pb, track);
+
+    if (mov->encryption_scheme != MOV_ENC_NONE) {
+        ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid);
+    }
 
     return update_size(pb, pos);
 }
@@ -1659,7 +1671,12 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     int avid = 0;
 
     avio_wb32(pb, 0); /* size */
-    avio_wl32(pb, track->tag); // store it byteswapped
+    if (mov->encryption_scheme != MOV_ENC_NONE) {
+        ffio_wfourcc(pb, "encv");
+    }
+    else {
+        avio_wl32(pb, track->tag); // store it byteswapped
+    }
     avio_wb32(pb, 0); /* Reserved */
     avio_wb16(pb, 0); /* Reserved */
     avio_wb16(pb, 1); /* Data-reference index */
@@ -1748,6 +1765,10 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
         track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {
         mov_write_pasp_tag(pb, track);
+    }
+
+    if (mov->encryption_scheme != MOV_ENC_NONE) {
+        ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid);
     }
 
     /* extra padding for avid stsd */
@@ -1848,9 +1869,9 @@ static int mov_write_stsd_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tra
     avio_wb32(pb, 0); /* version & flags */
     avio_wb32(pb, 1); /* entry count */
     if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO)
-        mov_write_video_tag(pb, mov,  track);
+        mov_write_video_tag(pb, mov, track);
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
-        mov_write_audio_tag(pb, track);
+        mov_write_audio_tag(pb, mov, track);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
         mov_write_subtitle_tag(pb, track);
     else if (track->enc->codec_tag == MKTAG('r','t','p',' '))
@@ -1980,6 +2001,9 @@ static int mov_write_stbl_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tra
     mov_write_stsc_tag(pb, track);
     mov_write_stsz_tag(pb, track);
     mov_write_stco_tag(pb, track);
+    if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+        ff_mov_cenc_write_stbl_atoms(&track->cenc, pb);
+    }
     return update_size(pb, pos);
 }
 
@@ -4409,7 +4433,16 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                                        &size);
             avio_write(pb, reformatted_data, size);
         } else {
-            size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+            if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+                size = ff_mov_cenc_avc_parse_nal_units(&trk->cenc, pb, pkt->data, size);
+                if (size < 0) {
+                    ret = size;
+                    goto err;
+                }
+            }
+            else {
+                size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+            }
         }
     } else if (enc->codec_id == AV_CODEC_ID_HEVC && trk->vos_len > 6 &&
                (AV_RB24(trk->vos_data) == 1 || AV_RB32(trk->vos_data) == 1)) {
@@ -4430,7 +4463,22 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb, pkt->data, size);
 #endif
     } else {
-        avio_write(pb, pkt->data, size);
+        if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+            if (enc->codec_id == AV_CODEC_ID_H264 && enc->extradata_size > 4) {
+                int nal_size_length = (enc->extradata[4] & 0x3) + 1;
+                ret = ff_mov_cenc_avc_write_nal_units(s, &trk->cenc, nal_size_length, pb, pkt->data, size);
+            }
+            else {
+                ret = ff_mov_cenc_write_packet(&trk->cenc, pb, pkt->data, size);
+            }
+
+            if (ret) {
+                goto err;
+            }
+        }
+        else {
+            avio_write(pb, pkt->data, size);
+        }
     }
 
     if ((enc->codec_id == AV_CODEC_ID_DNXHD ||
@@ -4903,6 +4951,8 @@ static void mov_free(AVFormatContext *s)
 
         if (mov->tracks[i].vos_len)
             av_freep(&mov->tracks[i].vos_data);
+
+        ff_mov_cenc_free(&mov->tracks[i].cenc);
     }
 
     av_freep(&mov->tracks);
@@ -5107,6 +5157,32 @@ static int mov_write_header(AVFormatContext *s)
         mov->nb_streams += mov->nb_meta_tmcd;
     }
 
+    if (mov->encryption_scheme_str != NULL && strcmp(mov->encryption_scheme_str, "none") != 0) {
+        if (strcmp(mov->encryption_scheme_str, "cenc-aes-ctr") == 0) {
+            mov->encryption_scheme = MOV_ENC_CENC_AES_CTR;
+
+            if (mov->encryption_key_len != AES_CTR_KEY_SIZE) {
+                av_log(s, AV_LOG_ERROR, "Invalid encryption key len %d expected %d\n",
+                    mov->encryption_key_len, AES_CTR_KEY_SIZE);
+                ret = AVERROR(EINVAL);
+                goto error;
+            }
+
+            if (mov->encryption_kid_len != CENC_KID_SIZE) {
+                av_log(s, AV_LOG_ERROR, "Invalid encryption kid len %d expected %d\n",
+                    mov->encryption_kid_len, CENC_KID_SIZE);
+                ret = AVERROR(EINVAL);
+                goto error;
+            }
+        }
+        else {
+            av_log(s, AV_LOG_ERROR, "unsupported encryption scheme %s\n",
+                mov->encryption_scheme_str);
+            ret = AVERROR(EINVAL);
+            goto error;
+        }
+    }
+
     // Reserve an extra stream for chapters for the case where chapters
     // are written in the trailer
     mov->tracks = av_mallocz_array((mov->nb_streams + 1), sizeof(*mov->tracks));
@@ -5229,6 +5305,14 @@ static int mov_write_header(AVFormatContext *s)
                     goto error;
                 }
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);
+            }
+        }
+
+        if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+            ret = ff_mov_cenc_init(&track->cenc, mov->encryption_key,
+                track->enc->codec_id == AV_CODEC_ID_H264);
+            if (ret) {
+                goto error;
             }
         }
     }
