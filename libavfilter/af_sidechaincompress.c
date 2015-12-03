@@ -86,20 +86,6 @@ static const AVOption options[] = {
 #define sidechaincompress_options options
 AVFILTER_DEFINE_CLASS(sidechaincompress);
 
-static av_cold int init(AVFilterContext *ctx)
-{
-    SidechainCompressContext *s = ctx->priv;
-
-    s->thres = log(s->threshold);
-    s->lin_knee_start = s->threshold / sqrt(s->knee);
-    s->adj_knee_start = s->lin_knee_start * s->lin_knee_start;
-    s->knee_start = log(s->lin_knee_start);
-    s->knee_stop = log(s->threshold * sqrt(s->knee));
-    s->compressed_knee_stop = (s->knee_stop - s->thres) / s->ratio + s->thres;
-
-    return 0;
-}
-
 // A fake infinity value (because real infinity may break some hosts)
 #define FAKE_INFINITY (65536.0 * 65536.0)
 
@@ -137,6 +123,13 @@ static int compressor_config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     SidechainCompressContext *s = ctx->priv;
+
+    s->thres = log(s->threshold);
+    s->lin_knee_start = s->threshold / sqrt(s->knee);
+    s->adj_knee_start = s->lin_knee_start * s->lin_knee_start;
+    s->knee_start = log(s->lin_knee_start);
+    s->knee_stop = log(s->threshold * sqrt(s->knee));
+    s->compressed_knee_stop = (s->knee_stop - s->thres) / s->ratio + s->thres;
 
     s->attack_coeff = FFMIN(1., 1. / (s->attack * outlink->sample_rate / 4000.));
     s->release_coeff = FFMIN(1., 1. / (s->release * outlink->sample_rate / 4000.));
@@ -333,7 +326,6 @@ AVFilter ff_af_sidechaincompress = {
     .description    = NULL_IF_CONFIG_SMALL("Sidechain compressor."),
     .priv_size      = sizeof(SidechainCompressContext),
     .priv_class     = &sidechaincompress_class,
-    .init           = init,
     .query_formats  = query_formats,
     .inputs         = sidechaincompress_inputs,
     .outputs        = sidechaincompress_outputs,
@@ -427,7 +419,6 @@ AVFilter ff_af_acompressor = {
     .description    = NULL_IF_CONFIG_SMALL("Audio compressor."),
     .priv_size      = sizeof(SidechainCompressContext),
     .priv_class     = &acompressor_class,
-    .init           = init,
     .query_formats  = acompressor_query_formats,
     .inputs         = acompressor_inputs,
     .outputs        = acompressor_outputs,
