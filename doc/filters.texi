@@ -2656,6 +2656,9 @@ Default is peak. Can be peak or rms.
 Choose if the average level between all channels or the louder channel affects
 the reduction.
 Default is average. Can be average or maximum.
+
+@item level_sc
+Set sidechain gain. Default is 1. Range is from 0.015625 to 64.
 @end table
 
 @section silencedetect

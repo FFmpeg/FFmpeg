@@ -35,6 +35,7 @@ typedef struct AudioGateContext {
     const AVClass *class;
 
     double level_in;
+    double level_sc;
     double attack;
     double release;
     double threshold;
@@ -74,6 +75,7 @@ static const AVOption options[] = {
     { "link",      "set link",               OFFSET(link),      AV_OPT_TYPE_INT,    {.i64=0},           0,    1, A, "link" },
     {   "average", 0,                        0,                 AV_OPT_TYPE_CONST,  {.i64=0},           0,    0, A, "link" },
     {   "maximum", 0,                        0,                 AV_OPT_TYPE_CONST,  {.i64=1},           0,    0, A, "link" },
+    { "level_sc",  "set sidechain gain",     OFFSET(level_sc),  AV_OPT_TYPE_DOUBLE, {.dbl=1},           0.015625,   64, A },
     { NULL }
 };
 
@@ -158,27 +160,25 @@ static double output_gain(double lin_slope, double ratio, double thres,
     return 1.;
 }
 
-static void gate(AudioGateContext *s, const double *src, double *dst, const double *scsrc,
-                 int nb_samples, AVFilterLink *inlink, AVFilterLink *sclink)
+static void gate(AudioGateContext *s,
+                 const double *src, double *dst, const double *scsrc,
+                 int nb_samples, double level_in, double level_sc,
+                 AVFilterLink *inlink, AVFilterLink *sclink)
 {
     const double makeup = s->makeup;
     const double attack_coeff = s->attack_coeff;
     const double release_coeff = s->release_coeff;
-    const double level_in = s->level_in;
     int n, c;
 
     for (n = 0; n < nb_samples; n++, src += inlink->channels, dst += inlink->channels, scsrc += sclink->channels) {
-        double abs_sample = fabs(scsrc[0]), gain = 1.0;
-
-        for (c = 0; c < inlink->channels; c++)
-            dst[c] = src[c] * level_in;
+        double abs_sample = fabs(scsrc[0] * level_sc), gain = 1.0;
 
         if (s->link == 1) {
             for (c = 1; c < sclink->channels; c++)
-                abs_sample = FFMAX(fabs(scsrc[c]), abs_sample);
+                abs_sample = FFMAX(fabs(scsrc[c] * level_sc), abs_sample);
         } else {
             for (c = 1; c < sclink->channels; c++)
-                abs_sample += fabs(scsrc[c]);
+                abs_sample += fabs(scsrc[c] * level_sc);
 
             abs_sample /= sclink->channels;
         }
@@ -193,7 +193,7 @@ static void gate(AudioGateContext *s, const double *src, double *dst, const doub
                                s->lin_knee_stop, s->range);
 
         for (c = 0; c < inlink->channels; c++)
-            dst[c] *= gain * makeup;
+            dst[c] = src[c] * level_in * gain * makeup;
     }
 }
 
@@ -218,7 +218,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     dst = (double *)out->data[0];
 
-    gate(s, src, dst, src, in->nb_samples, inlink, inlink);
+    gate(s, src, dst, src, in->nb_samples,
+         s->level_in, s->level_in, inlink, inlink);
 
     if (out != in)
         av_frame_free(&in);
@@ -284,6 +285,7 @@ static int scfilter_frame(AVFilterLink *link, AVFrame *in)
     scsrc = (const double *)s->input_frame[1]->data[0];
 
     gate(s, sample, sample, scsrc, nb_samples,
+         s->level_in, s->level_sc,
          ctx->inputs[0], ctx->inputs[1]);
     ret = ff_filter_frame(outlink, s->input_frame[0]);
 
