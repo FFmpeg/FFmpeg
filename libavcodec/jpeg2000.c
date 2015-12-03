@@ -38,11 +38,11 @@
 /* tag tree routines */
 
 /* allocate the memory for tag tree */
-static int32_t tag_tree_size(uint16_t w, uint16_t h)
+static int32_t tag_tree_size(int w, int h)
 {
-    uint32_t res = 0;
+    int64_t res = 0;
     while (w > 1 || h > 1) {
-        res += w * h;
+        res += w * (int64_t)h;
         av_assert0(res + 1 < INT32_MAX);
         w = (w + 1) >> 1;
         h = (h + 1) >> 1;
