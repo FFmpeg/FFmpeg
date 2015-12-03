@@ -153,7 +153,7 @@ static int check_fps(int fps)
 
 static int check_timecode(void *log_ctx, AVTimecode *tc)
 {
-    if (tc->fps <= 0) {
+    if ((int)tc->fps <= 0) {
         av_log(log_ctx, AV_LOG_ERROR, "Timecode frame rate must be specified\n");
         return AVERROR(EINVAL);
     }
