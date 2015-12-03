@@ -4161,7 +4161,6 @@ elif enabled mips; then
         i6400)
             disable mipsdsp
             disable mipsdspr2
-            disable mipsfpu
             check_cflags "-mtune=i6400 -mabi=64" &&
             check_cflags "-mfp64 -msched-weight -mload-store-pairs -funroll-loops" &&
             check_ldflags "-mabi=64" &&
