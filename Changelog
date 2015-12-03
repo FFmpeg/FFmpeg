@@ -41,6 +41,7 @@ version <next>:
 - sidechaingate audio filter
 - mipsdspr1 option has been renamed to mipsdsp
 - aemphasis filter
+- mips32r5 option has been removed
 
 
 version 2.8:

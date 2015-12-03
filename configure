@@ -382,7 +382,6 @@ Optimization options (experts only):
   --disable-neon           disable NEON optimizations
   --disable-inline-asm     disable use of inline assembly
   --disable-yasm           disable use of nasm/yasm assembly
-  --disable-mips32r5       disable MIPS32R5 optimizations
   --disable-mips64r6       disable MIPS64R6 optimizations
   --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
@@ -1646,7 +1645,6 @@ ARCH_EXT_LIST_ARM="
 ARCH_EXT_LIST_MIPS="
     mipsfpu
     mips32r2
-    mips32r5
     mips64r6
     mipsdsp
     mipsdspr2
@@ -2130,7 +2128,6 @@ mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 mips32r2_deps="mips"
-mips32r5_deps="mips"
 mips64r6_deps="mips"
 msa_deps="mips"
 mmi_deps="mips"
@@ -4087,7 +4084,6 @@ elif enabled mips; then
 
     case $cpu in
         24kc)
-            disable mips32r5
             disable mips64r6
             disable mipsfpu
             disable mipsdsp
@@ -4095,33 +4091,28 @@ elif enabled mips; then
             disable msa
         ;;
         24kf*)
-            disable mips32r5
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
             disable msa
         ;;
         24kec|34kc|1004kc)
-            disable mips32r5
             disable mips64r6
             disable mipsfpu
             disable mipsdspr2
             disable msa
         ;;
         24kef*|34kf*|1004kf*)
-            disable mips32r5
             disable mips64r6
             disable mipsdspr2
             disable msa
         ;;
         74kc)
-            disable mips32r5
             disable mips64r6
             disable mipsfpu
             disable msa
         ;;
         74kf)
-            disable mips32r5
             disable mips64r6
             disable msa
         ;;
@@ -4133,7 +4124,6 @@ elif enabled mips; then
             check_cflags "-mtune=p5600"
         ;;
         i6400)
-            disable mips32r5
             disable mipsdsp
             disable mipsdspr2
             disable mipsfpu
@@ -4144,7 +4134,6 @@ elif enabled mips; then
         loongson*)
             disable mipsfpu
             disable mips32r2
-            disable mips32r5
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
@@ -4169,14 +4158,12 @@ elif enabled mips; then
             esac
         ;;
         generic)
-            disable mips32r5
             disable mips64r6
             disable msa
         ;;
         *)
             disable mipsfpu
             disable mips32r2
-            disable mips32r5
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
@@ -4983,14 +4970,11 @@ elif enabled mips; then
     elif enabled mipsdsp || enabled mipsdspr2; then
         add_cflags "-mips32r2 -mfp32"
         add_asflags "-mips32r2 -mfp32"
-    elif enabled mips32r5 || enabled mips64r6; then
+    elif enabled mips64r6; then
         check_cflags "-mfp64"
         check_ldflags "-mfp64"
     fi
 
-    enabled mips32r5  && check_cflags "-mips32r5 -msched-weight -mload-store-pairs -funroll-loops" &&
-     check_ldflags "-mips32r5" &&
-     check_inline_asm mips32r5  '"ulw $t0, ($t1)"'
     enabled mips64r6  && check_cflags "-mips64r6 -msched-weight -mload-store-pairs -funroll-loops" &&
      check_ldflags "-mips64r6" &&
      check_inline_asm mips64r6  '"aui $t0, $t1, 1"'
@@ -5003,7 +4987,6 @@ elif enabled mips; then
     enabled msa       && check_cflags "-mmsa" && check_ldflags "-mmsa" &&
      check_inline_asm msa       '"addvi.b $w0, $w1, 1"'
 
-    enabled mips32r5 && add_asflags "-mips32r5 -mfp64"
     enabled mips64r6 && add_asflags "-mips64r6 -mfp64"
     enabled msa && add_asflags "-mmsa"
 
@@ -6075,7 +6058,6 @@ if enabled arm; then
 fi
 if enabled mips; then
     echo "MIPS FPU enabled          ${mipsfpu-no}"
-    echo "MIPS32R5 enabled          ${mips32r5-no}"
     echo "MIPS64R6 enabled          ${mips64r6-no}"
     echo "MIPS DSP R1 enabled       ${mipsdsp-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
