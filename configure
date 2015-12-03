@@ -4198,11 +4198,11 @@ elif enabled mips; then
             add_asflags "-mfp64"
         ;;
         loongson*)
-            disable mipsfpu
             disable mips32r2
             disable mips32r6
             disable mips64r2
             disable mips64r6
+            disable mipsfpu
             disable mipsdsp
             disable mipsdspr2
             disable msa
