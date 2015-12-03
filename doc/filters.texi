@@ -769,7 +769,7 @@ Default is 2.828427125. Allowed range is from 1 to 8.
 
 @item detection
 Choose if exact signal should be taken for detection or an RMS like one.
-Default is peak. Can be peak or rms.
+Default is rms. Can be peak or rms.
 
 @item link
 Choose if the average level between all channels or the louder channel affects
@@ -2650,7 +2650,7 @@ Default is 2.828427125. Allowed range is from 1 to 8.
 
 @item detection
 Choose if exact signal should be taken for detection or an RMS like one.
-Default is peak. Can be peak or rms.
+Default is rms. Can be peak or rms.
 
 @item link
 Choose if the average level between all channels or the louder channel affects
