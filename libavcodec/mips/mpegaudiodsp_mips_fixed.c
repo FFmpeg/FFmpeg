@@ -901,7 +901,7 @@ static void ff_imdct36_blocks_mips_fixed(int *out, int *buf, int *in,
     }
 }
 
-void ff_mpadsp_init_mipsdspr1(MPADSPContext *s)
+void ff_mpadsp_init_mipsdsp(MPADSPContext *s)
 {
     s->apply_window_fixed   = ff_mpadsp_apply_window_mips_fixed;
     s->imdct36_blocks_fixed = ff_imdct36_blocks_mips_fixed;

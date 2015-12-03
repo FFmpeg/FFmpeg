@@ -60,7 +60,7 @@ void ff_mpadsp_init_arm(MPADSPContext *s);
 void ff_mpadsp_init_ppc(MPADSPContext *s);
 void ff_mpadsp_init_x86(MPADSPContext *s);
 void ff_mpadsp_init_mipsfpu(MPADSPContext *s);
-void ff_mpadsp_init_mipsdspr1(MPADSPContext *s);
+void ff_mpadsp_init_mipsdsp(MPADSPContext *s);
 
 void ff_mpa_synth_init_float(float *window);
 void ff_mpa_synth_init_fixed(int32_t *window);
