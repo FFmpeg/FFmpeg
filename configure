@@ -1665,6 +1665,7 @@ ARCH_EXT_LIST_ARM="
 ARCH_EXT_LIST_MIPS="
     mipsfpu
     mips32r2
+    mips64r2
     mips64r6
     mipsdsp
     mipsdspr2
@@ -2150,6 +2151,7 @@ mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 mips32r2_deps="mips"
+mips64r2_deps="mips"
 mips64r6_deps="mips"
 msa_deps="mips"
 mmi_deps="mips"
@@ -4122,6 +4124,7 @@ elif enabled mips; then
 
     case $cpu in
         24kc)
+            disable mips64r2
             disable mips64r6
             disable mipsfpu
             disable mipsdsp
@@ -4129,32 +4132,38 @@ elif enabled mips; then
             disable msa
         ;;
         24kf*)
+            disable mips64r2
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
             disable msa
         ;;
         24kec|34kc|1004kc)
+            disable mips64r2
             disable mips64r6
             disable mipsfpu
             disable mipsdspr2
             disable msa
         ;;
         24kef*|34kf*|1004kf*)
+            disable mips64r2
             disable mips64r6
             disable mipsdspr2
             disable msa
         ;;
         74kc)
+            disable mips64r2
             disable mips64r6
             disable mipsfpu
             disable msa
         ;;
         74kf)
+            disable mips64r2
             disable mips64r6
             disable msa
         ;;
         p5600)
+            disable mips64r2
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
@@ -4164,6 +4173,7 @@ elif enabled mips; then
         ;;
         i6400)
             disable mips32r2
+            disable mips64r2
             disable mipsdsp
             disable mipsdspr2
             check_cflags "-mtune=i6400 -mabi=64" &&
@@ -4174,6 +4184,7 @@ elif enabled mips; then
         loongson*)
             disable mipsfpu
             disable mips32r2
+            disable mips64r2
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
@@ -4204,6 +4215,7 @@ elif enabled mips; then
         *)
             disable mipsfpu
             disable mips32r2
+            disable mips64r2
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
