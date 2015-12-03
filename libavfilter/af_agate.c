@@ -79,35 +79,6 @@ static const AVOption options[] = {
     { NULL }
 };
 
-#define agate_options options
-AVFILTER_DEFINE_CLASS(agate);
-
-static int query_formats(AVFilterContext *ctx)
-{
-    AVFilterFormats *formats = NULL;
-    AVFilterChannelLayouts *layouts;
-    int ret;
-
-    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL)) < 0)
-        return ret;
-    ret = ff_set_common_formats(ctx, formats);
-    if (ret < 0)
-        return ret;
-
-    layouts = ff_all_channel_counts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_channel_layouts(ctx, layouts);
-    if (ret < 0)
-        return ret;
-
-    formats = ff_all_samplerates();
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_samplerates(ctx, formats);
-}
-
 static int agate_config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -197,6 +168,37 @@ static void gate(AudioGateContext *s,
     }
 }
 
+#if CONFIG_AGATE_FILTER
+
+#define agate_options options
+AVFILTER_DEFINE_CLASS(agate);
+
+static int query_formats(AVFilterContext *ctx)
+{
+    AVFilterFormats *formats = NULL;
+    AVFilterChannelLayouts *layouts;
+    int ret;
+
+    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL)) < 0)
+        return ret;
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
+
+    layouts = ff_all_channel_counts();
+    if (!layouts)
+        return AVERROR(ENOMEM);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
+
+    formats = ff_all_samplerates();
+    if (!formats)
+        return AVERROR(ENOMEM);
+
+    return ff_set_common_samplerates(ctx, formats);
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     const double *src = (const double *)in->data[0];
@@ -253,6 +255,8 @@ AVFilter ff_af_agate = {
     .inputs         = inputs,
     .outputs        = outputs,
 };
+
+#endif /* CONFIG_AGATE_FILTER */
 
 #if CONFIG_SIDECHAINGATE_FILTER
 
