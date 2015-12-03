@@ -4120,8 +4120,9 @@ elif enabled mips; then
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
-
-            check_cflags "-mtune=p5600"
+            check_cflags "-mtune=p5600" &&
+            check_cflags "-mfp64 -msched-weight -mload-store-pairs -funroll-loops" &&
+            add_asflags "-mfp64"
         ;;
         i6400)
             disable mipsdsp
