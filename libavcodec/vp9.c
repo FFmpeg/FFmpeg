@@ -240,7 +240,7 @@ fail:
 
 static int update_size(AVCodecContext *ctx, int w, int h)
 {
-#define HWACCEL_MAX (0)
+#define HWACCEL_MAX (CONFIG_VP9_DXVA2_HWACCEL + CONFIG_VP9_D3D11VA_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
     VP9Context *s = ctx->priv_data;
     uint8_t *p;
@@ -253,6 +253,15 @@ static int update_size(AVCodecContext *ctx, int w, int h)
 
     if ((res = ff_set_dimensions(ctx, w, h)) < 0)
         return res;
+
+    if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
+#if CONFIG_VP9_DXVA2_HWACCEL
+        *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
+#endif
+#if CONFIG_VP9_D3D11VA_HWACCEL
+        *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
+#endif
+    }
 
     *fmtp++ = s->pix_fmt;
     *fmtp = AV_PIX_FMT_NONE;
