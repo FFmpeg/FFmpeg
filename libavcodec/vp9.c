@@ -168,6 +168,15 @@ static const uint8_t bwh_tab[2][N_BS_SIZES][2] = {
     }
 };
 
+static void vp9_unref_frame(AVCodecContext *ctx, VP9Frame *f)
+{
+    ff_thread_release_buffer(ctx, &f->tf);
+    av_buffer_unref(&f->extradata);
+    av_buffer_unref(&f->hwaccel_priv_buf);
+    f->segmentation_map = NULL;
+    f->hwaccel_picture_private = NULL;
+}
+
 static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
 {
     VP9Context *s = ctx->priv_data;
@@ -177,21 +186,28 @@ static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
         return ret;
     sz = 64 * s->sb_cols * s->sb_rows;
     if (!(f->extradata = av_buffer_allocz(sz * (1 + sizeof(struct VP9mvrefPair))))) {
-        ff_thread_release_buffer(ctx, &f->tf);
-        return AVERROR(ENOMEM);
+        goto fail;
     }
 
     f->segmentation_map = f->extradata->data;
     f->mv = (struct VP9mvrefPair *) (f->extradata->data + sz);
 
-    return 0;
-}
+    if (ctx->hwaccel) {
+        const AVHWAccel *hwaccel = ctx->hwaccel;
+        av_assert0(!f->hwaccel_picture_private);
+        if (hwaccel->frame_priv_data_size) {
+            f->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
+            if (!f->hwaccel_priv_buf)
+                goto fail;
+            f->hwaccel_picture_private = f->hwaccel_priv_buf->data;
+        }
+    }
 
-static void vp9_unref_frame(AVCodecContext *ctx, VP9Frame *f)
-{
-    ff_thread_release_buffer(ctx, &f->tf);
-    av_buffer_unref(&f->extradata);
-    f->segmentation_map = NULL;
+    return 0;
+
+fail:
+    vp9_unref_frame(ctx, f);
+    return AVERROR(ENOMEM);
 }
 
 static int vp9_ref_frame(AVCodecContext *ctx, VP9Frame *dst, VP9Frame *src)
@@ -201,19 +217,31 @@ static int vp9_ref_frame(AVCodecContext *ctx, VP9Frame *dst, VP9Frame *src)
     if ((res = ff_thread_ref_frame(&dst->tf, &src->tf)) < 0) {
         return res;
     } else if (!(dst->extradata = av_buffer_ref(src->extradata))) {
-        vp9_unref_frame(ctx, dst);
-        return AVERROR(ENOMEM);
+        goto fail;
     }
 
     dst->segmentation_map = src->segmentation_map;
     dst->mv = src->mv;
     dst->uses_2pass = src->uses_2pass;
 
+    if (src->hwaccel_picture_private) {
+        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
+        if (!dst->hwaccel_priv_buf)
+            goto fail;
+        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
+    }
+
     return 0;
+
+fail:
+    vp9_unref_frame(ctx, dst);
+    return AVERROR(ENOMEM);
 }
 
 static int update_size(AVCodecContext *ctx, int w, int h)
 {
+#define HWACCEL_MAX (0)
+    enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
     VP9Context *s = ctx->priv_data;
     uint8_t *p;
     int bytesperpixel = s->bytesperpixel, res;
@@ -225,7 +253,16 @@ static int update_size(AVCodecContext *ctx, int w, int h)
 
     if ((res = ff_set_dimensions(ctx, w, h)) < 0)
         return res;
-    s->last_fmt  = ctx->pix_fmt = s->pix_fmt;
+
+    *fmtp++ = s->pix_fmt;
+    *fmtp = AV_PIX_FMT_NONE;
+
+    res = ff_thread_get_format(ctx, pix_fmts);
+    if (res < 0)
+        return res;
+
+    ctx->pix_fmt = res;
+    s->last_fmt  = s->pix_fmt;
     s->sb_cols   = (w + 63) >> 6;
     s->sb_rows   = (h + 63) >> 6;
     s->cols      = (w + 7) >> 3;
@@ -573,32 +610,6 @@ static int decode_frame_header(AVCodecContext *ctx,
                     s->s.h.varcompref[1] = 2;
                 }
             }
-
-            for (i = 0; i < 3; i++) {
-                AVFrame *ref = s->s.refs[s->s.h.refidx[i]].f;
-                int refw = ref->width, refh = ref->height;
-
-                if (ref->format != s->pix_fmt) {
-                    av_log(ctx, AV_LOG_ERROR,
-                           "Ref pixfmt (%s) did not match current frame (%s)",
-                           av_get_pix_fmt_name(ref->format),
-                           av_get_pix_fmt_name(s->pix_fmt));
-                    return AVERROR_INVALIDDATA;
-                } else if (refw == w && refh == h) {
-                    s->mvscale[i][0] = s->mvscale[i][1] = 0;
-                } else {
-                    if (w * 2 < refw || h * 2 < refh || w > 16 * refw || h > 16 * refh) {
-                        av_log(ctx, AV_LOG_ERROR,
-                               "Invalid ref frame dimensions %dx%d for frame size %dx%d\n",
-                               refw, refh, w, h);
-                        return AVERROR_INVALIDDATA;
-                    }
-                    s->mvscale[i][0] = (refw << 14) / w;
-                    s->mvscale[i][1] = (refh << 14) / h;
-                    s->mvstep[i][0] = 16 * s->mvscale[i][0] >> 14;
-                    s->mvstep[i][1] = 16 * s->mvscale[i][1] >> 14;
-                }
-            }
         }
     }
     s->s.h.refreshctx   = s->s.h.errorres ? 0 : get_bits1(&s->gb);
@@ -746,6 +757,35 @@ static int decode_frame_header(AVCodecContext *ctx,
         if (!s->c_b) {
             av_log(ctx, AV_LOG_ERROR, "Ran out of memory during range coder init\n");
             return AVERROR(ENOMEM);
+        }
+    }
+
+    /* check reference frames */
+    if (!s->s.h.keyframe && !s->s.h.intraonly) {
+        for (i = 0; i < 3; i++) {
+            AVFrame *ref = s->s.refs[s->s.h.refidx[i]].f;
+            int refw = ref->width, refh = ref->height;
+
+            if (ref->format != ctx->pix_fmt) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Ref pixfmt (%s) did not match current frame (%s)",
+                       av_get_pix_fmt_name(ref->format),
+                       av_get_pix_fmt_name(ctx->pix_fmt));
+                return AVERROR_INVALIDDATA;
+            } else if (refw == w && refh == h) {
+                s->mvscale[i][0] = s->mvscale[i][1] = 0;
+            } else {
+                if (w * 2 < refw || h * 2 < refh || w > 16 * refw || h > 16 * refh) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "Invalid ref frame dimensions %dx%d for frame size %dx%d\n",
+                           refw, refh, w, h);
+                    return AVERROR_INVALIDDATA;
+                }
+                s->mvscale[i][0] = (refw << 14) / w;
+                s->mvscale[i][1] = (refh << 14) / h;
+                s->mvstep[i][0] = 16 * s->mvscale[i][0] >> 14;
+                s->mvstep[i][1] = 16 * s->mvscale[i][1] >> 14;
+            }
         }
     }
 
@@ -3979,6 +4019,19 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
             return res;
     }
 
+    if (ctx->hwaccel) {
+        res = ctx->hwaccel->start_frame(ctx, NULL, 0);
+        if (res < 0)
+            return res;
+        res = ctx->hwaccel->decode_slice(ctx, pkt->data, pkt->size);
+        if (res < 0)
+            return res;
+        res = ctx->hwaccel->end_frame(ctx);
+        if (res < 0)
+            return res;
+        goto finish;
+    }
+
     // main tile decode loop
     bytesperpixel = s->bytesperpixel;
     memset(s->above_partition_ctx, 0, s->cols);
@@ -4148,6 +4201,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     } while (s->pass++ == 1);
     ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
 
+finish:
     // ref frame setup
     for (i = 0; i < 8; i++) {
         if (s->s.refs[i].f->buf[0])
