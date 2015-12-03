@@ -912,7 +912,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     AVStream *st       = s->streams[stream_index];
     AVPacketList *pktl = s->internal->packet_buffer ? s->internal->packet_buffer : s->internal->parse_queue;
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
-    int64_t shift;
+    uint64_t shift;
     int i, delay;
 
     if (st->first_dts != AV_NOPTS_VALUE ||
@@ -924,7 +924,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     delay         = st->codec->has_b_frames;
     st->first_dts = dts - (st->cur_dts - RELATIVE_TS_BASE);
     st->cur_dts   = dts;
-    shift         = st->first_dts - RELATIVE_TS_BASE;
+    shift         = (uint64_t)st->first_dts - RELATIVE_TS_BASE;
 
     for (i = 0; i<MAX_REORDER_DELAY+1; i++)
         pts_buffer[i] = AV_NOPTS_VALUE;
