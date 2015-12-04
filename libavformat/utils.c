@@ -680,6 +680,11 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_init_packet(pkt);
         ret = s->iformat->read_packet(s, pkt);
         if (ret < 0) {
+            /* Some demuxers return FFERROR_REDO when they consume
+               data and discard it (ignored streams, junk, extradata).
+               We must re-call the demuxer to get the real packet. */
+            if (ret == FFERROR_REDO)
+                continue;
             if (!pktl || ret == AVERROR(EAGAIN))
                 return ret;
             for (i = 0; i < s->nb_streams; i++) {
@@ -907,7 +912,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     AVStream *st       = s->streams[stream_index];
     AVPacketList *pktl = s->internal->packet_buffer ? s->internal->packet_buffer : s->internal->parse_queue;
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
-    int64_t shift;
+    uint64_t shift;
     int i, delay;
 
     if (st->first_dts != AV_NOPTS_VALUE ||
@@ -919,7 +924,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     delay         = st->codec->has_b_frames;
     st->first_dts = dts - (st->cur_dts - RELATIVE_TS_BASE);
     st->cur_dts   = dts;
-    shift         = st->first_dts - RELATIVE_TS_BASE;
+    shift         = (uint64_t)st->first_dts - RELATIVE_TS_BASE;
 
     for (i = 0; i<MAX_REORDER_DELAY+1; i++)
         pts_buffer[i] = AV_NOPTS_VALUE;
@@ -2342,11 +2347,11 @@ static void update_stream_timings(AVFormatContext *ic)
                     start_time_text = start_time1;
             } else
                 start_time = FFMIN(start_time, start_time1);
-            end_time1   = AV_NOPTS_VALUE;
-            if (st->duration != AV_NOPTS_VALUE) {
-                end_time1 = start_time1 +
-                            av_rescale_q(st->duration, st->time_base,
-                                         AV_TIME_BASE_Q);
+            end_time1 = av_rescale_q_rnd(st->duration, st->time_base,
+                                         AV_TIME_BASE_Q,
+                                         AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+            if (end_time1 != AV_NOPTS_VALUE) {
+                end_time1 += start_time1;
                 end_time = FFMAX(end_time, end_time1);
             }
             for (p = NULL; (p = av_find_program_from_stream(ic, p, i)); ) {
@@ -2889,7 +2894,10 @@ enum AVCodecID av_codec_get_id(const AVCodecTag *const *tags, unsigned int tag)
 static void compute_chapters_end(AVFormatContext *s)
 {
     unsigned int i, j;
-    int64_t max_time = s->duration +
+    int64_t max_time = 0;
+
+    if (s->duration > 0)
+        max_time = s->duration +
                        ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time);
 
     for (i = 0; i < s->nb_chapters; i++)

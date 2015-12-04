@@ -305,7 +305,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (stream > 1) {
         av_log(s, AV_LOG_WARNING,
                "got packet with illegal stream index %"PRIu32"\n", stream);
-        return AVERROR(EAGAIN);
+        return FFERROR_REDO;
     }
 
     if (stream == 1 && s->nb_streams < 2) {

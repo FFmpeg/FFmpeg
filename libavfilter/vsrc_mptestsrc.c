@@ -121,7 +121,7 @@ static void idct(uint8_t *dst, int dst_linesize, int src[64])
             for (k = 0; k < 8; k++)
                 sum += c[k*8+i]*tmp[8*k+j];
 
-            dst[dst_linesize*i + j] = av_clip_uint8((int)floor(sum+0.5));
+            dst[dst_linesize*i + j] = av_clip_uint8(lrint(sum));
         }
     }
 }

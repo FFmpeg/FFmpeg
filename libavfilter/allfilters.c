@@ -105,6 +105,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(RESAMPLE,       resample,       af);
     REGISTER_FILTER(RUBBERBAND,     rubberband,     af);
     REGISTER_FILTER(SIDECHAINCOMPRESS, sidechaincompress, af);
+    REGISTER_FILTER(SIDECHAINGATE,  sidechaingate,  af);
     REGISTER_FILTER(SILENCEDETECT,  silencedetect,  af);
     REGISTER_FILTER(SILENCEREMOVE,  silenceremove,  af);
     REGISTER_FILTER(STEREOTOOLS,    stereotools,    af);

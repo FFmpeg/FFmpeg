@@ -137,6 +137,10 @@ void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *
     if (h->picture_structure == PICT_FRAME) {
         int cur_poc  = h->cur_pic_ptr->poc;
         int *col_poc = sl->ref_list[1][0].parent->field_poc;
+        if (col_poc[0] == INT_MAX && col_poc[1] == INT_MAX) {
+            av_log(h->avctx, AV_LOG_ERROR, "co located POCs unavailable\n");
+            sl->col_parity = 1;
+        } else
         sl->col_parity = (FFABS(col_poc[0] - cur_poc) >=
                           FFABS(col_poc[1] - cur_poc));
         ref1sidx =

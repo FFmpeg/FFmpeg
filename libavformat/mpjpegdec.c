@@ -20,16 +20,38 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 #include "avformat.h"
 #include "internal.h"
+#include "avio_internal.h"
+
+
+
+typedef struct MPJPEGDemuxContext {
+    const AVClass *class;
+    char       *boundary;
+    char       *searchstr;
+    int         searchstr_len;
+    int         strict_mime_boundary;
+} MPJPEGDemuxContext;
+
+
+static void trim_right(char *p)
+{
+    char *end;
+
+    if (!p || !*p)
+        return;
+
+    end = p + strlen(p);
+    while (end > p && av_isspace(*(end-1)))
+        *(--end) = '\0';
+}
 
 static int get_line(AVIOContext *pb, char *line, int line_size)
 {
-    int i = ff_get_line(pb, line, line_size);
-
-    if (i > 1 && line[i - 2] == '\r')
-        line[i - 2] = '\0';
+    ff_get_line(pb, line, line_size);
 
     if (pb->error)
         return pb->error;
@@ -37,21 +59,11 @@ static int get_line(AVIOContext *pb, char *line, int line_size)
     if (pb->eof_reached)
         return AVERROR_EOF;
 
+    trim_right(line);
     return 0;
 }
 
 
-static void trim_right(char* p)
-{
-    char *end;
-    if (!p || !*p)
-        return;
-    end = p + strlen(p) - 1;
-    while (end != p && av_isspace(*end)) {
-        *end = '\0';
-        end--;
-    }
-}
 
 static int split_tag_value(char **tag, char **value, char *line)
 {
@@ -86,12 +98,24 @@ static int split_tag_value(char **tag, char **value, char *line)
     return 0;
 }
 
-static int parse_multipart_header(AVIOContext *pb, void *log_ctx);
+static int parse_multipart_header(AVIOContext *pb,
+                                    int* size,
+                                    const char* expected_boundary,
+                                    void *log_ctx);
+
+static int mpjpeg_read_close(AVFormatContext *s)
+{
+    MPJPEGDemuxContext *mpjpeg = s->priv_data;
+    av_freep(&mpjpeg->boundary);
+    av_freep(&mpjpeg->searchstr);
+    return 0;
+}
 
 static int mpjpeg_read_probe(AVProbeData *p)
 {
     AVIOContext *pb;
     int ret = 0;
+    int size = 0;
 
     if (p->buf_size < 2 || p->buf[0] != '-' || p->buf[1] != '-')
         return 0;
@@ -100,7 +124,7 @@ static int mpjpeg_read_probe(AVProbeData *p)
     if (!pb)
         return 0;
 
-    ret = (parse_multipart_header(pb, NULL)>0)?AVPROBE_SCORE_MAX:0;
+    ret = (parse_multipart_header(pb, &size, "--", NULL) > 0) ? AVPROBE_SCORE_MAX : 0;
 
     av_free(pb);
 
@@ -110,14 +134,15 @@ static int mpjpeg_read_probe(AVProbeData *p)
 static int mpjpeg_read_header(AVFormatContext *s)
 {
     AVStream *st;
-    char boundary[70 + 2 + 1];
+    char boundary[70 + 2 + 1] = {0};
     int64_t pos = avio_tell(s->pb);
     int ret;
 
-
-    ret = get_line(s->pb, boundary, sizeof(boundary));
-    if (ret < 0)
-        return ret;
+    do {
+        ret = get_line(s->pb, boundary, sizeof(boundary));
+        if (ret < 0)
+            return ret;
+    } while (!boundary[0]);
 
     if (strncmp(boundary, "--", 2))
         return AVERROR_INVALIDDATA;
@@ -147,11 +172,16 @@ static int parse_content_length(const char *value)
     return val;
 }
 
-static int parse_multipart_header(AVIOContext *pb, void *log_ctx)
+static int parse_multipart_header(AVIOContext *pb,
+                            int* size,
+                            const char* expected_boundary,
+                            void *log_ctx)
 {
     char line[128];
     int found_content_type = 0;
-    int ret, size = -1;
+    int ret;
+
+    *size = -1;
 
     // get the CRLF as empty string
     ret = get_line(pb, line, sizeof(line));
@@ -161,14 +191,21 @@ static int parse_multipart_header(AVIOContext *pb, void *log_ctx)
     /* some implementation do not provide the required
      * initial CRLF (see rfc1341 7.2.1)
      */
-    if (!line[0]) {
+    while (!line[0]) {
         ret = get_line(pb, line, sizeof(line));
         if (ret < 0)
             return ret;
     }
 
-    if (strncmp(line, "--", 2))
+    if (!av_strstart(line, expected_boundary, NULL)) {
+        av_log(log_ctx,
+            AV_LOG_ERROR,
+            "Expected boundary '%s' not found, instead found a line of %zu bytes\n",
+            expected_boundary,
+            strlen(line));
+
         return AVERROR_INVALIDDATA;
+    }
 
     while (!pb->eof_reached) {
         char *tag, *value;
@@ -191,50 +228,165 @@ static int parse_multipart_header(AVIOContext *pb, void *log_ctx)
 
         if (!av_strcasecmp(tag, "Content-type")) {
             if (av_strcasecmp(value, "image/jpeg")) {
-                if (log_ctx) {
-                    av_log(log_ctx, AV_LOG_ERROR,
+                av_log(log_ctx, AV_LOG_ERROR,
                            "Unexpected %s : %s\n",
                            tag, value);
-                }
-
                 return AVERROR_INVALIDDATA;
             } else
                 found_content_type = 1;
         } else if (!av_strcasecmp(tag, "Content-Length")) {
-            size = parse_content_length(value);
-            if (size < 0)
-                return size;
+            *size = parse_content_length(value);
+            if ( *size < 0 )
+                av_log(log_ctx, AV_LOG_WARNING,
+                           "Invalid Content-Length value : %s\n",
+                           value);
         }
     }
 
-    if (!found_content_type || size < 0) {
-        return AVERROR_INVALIDDATA;
+    return found_content_type ? 0 : AVERROR_INVALIDDATA;
+}
+
+
+static char* mpjpeg_get_boundary(AVIOContext* pb)
+{
+    uint8_t *mime_type = NULL;
+    const char *start;
+    const char *end;
+    uint8_t *res = NULL;
+    int     len;
+
+    /* get MIME type, and skip to the first parameter */
+    av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
+    start = mime_type;
+    while (start != NULL && *start != '\0') {
+        start = strchr(start, ';');
+        if (start)
+            start = start+1;
+
+        while (av_isspace(*start))
+            start++;
+
+        if (!av_stristart(start, "boundary=", &start)) {
+            end = strchr(start, ';');
+            if (end)
+                len = end - start - 1;
+            else
+                len = strlen(start);
+            res = av_strndup(start, len);
+            break;
+        }
     }
 
-    return size;
+    av_freep(&mime_type);
+    return res;
 }
+
 
 static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    int size;
     int ret;
-    int size = parse_multipart_header(s->pb, s);
 
-    if (size < 0)
-        return size;
+    MPJPEGDemuxContext *mpjpeg = s->priv_data;
+    if (mpjpeg->boundary == NULL) {
+        uint8_t* boundary = NULL;
+        if (mpjpeg->strict_mime_boundary) {
+            boundary = mpjpeg_get_boundary(s->pb);
+        }
+        if (boundary != NULL) {
+            mpjpeg->boundary = boundary;
+            mpjpeg->searchstr = av_asprintf( "\r\n%s\r\n", boundary );
+        } else {
+            mpjpeg->boundary = av_strdup("--");
+            mpjpeg->searchstr = av_strdup("\r\n--");
+        }
+        if (!mpjpeg->boundary || !mpjpeg->searchstr) {
+            av_freep(&mpjpeg->boundary);
+            av_freep(&mpjpeg->searchstr);
+            return AVERROR(ENOMEM);
+        }
+        mpjpeg->searchstr_len = strlen(mpjpeg->searchstr);
+    }
 
-    ret = av_get_packet(s->pb, pkt, size);
+    ret = parse_multipart_header(s->pb, &size, mpjpeg->boundary, s);
+
+
     if (ret < 0)
         return ret;
 
-    return 0;
+    if (size > 0) {
+        /* size has been provided to us in MIME header */
+        ret = av_get_packet(s->pb, pkt, size);
+    } else {
+        /* no size was given -- we read until the next boundary or end-of-file */
+        int remaining = 0, len;
+
+        const int read_chunk = 2048;
+        av_init_packet(pkt);
+        pkt->data = NULL;
+        pkt->size = 0;
+        pkt->pos  = avio_tell(s->pb);
+
+        /* we may need to return as much as all we've read back to the buffer */
+        ffio_ensure_seekback(s->pb, read_chunk);
+
+        while ((ret = av_append_packet(s->pb, pkt, read_chunk - remaining)) >= 0) {
+            /* scan the new data */
+            char *start;
+
+            len = ret + remaining;
+            start = pkt->data + pkt->size - len;
+            do {
+                if (!memcmp(start, mpjpeg->searchstr, mpjpeg->searchstr_len)) {
+                    // got the boundary! rewind the stream
+                    avio_seek(s->pb, -(len-2), SEEK_CUR);
+                    pkt->size -= (len-2);
+                    return pkt->size;
+                }
+                len--;
+                start++;
+            } while (len >= mpjpeg->searchstr_len);
+            remaining = len;
+        }
+
+        /* error or EOF occurred */
+        if (ret == AVERROR_EOF) {
+            ret = pkt->size > 0 ? pkt->size : AVERROR_EOF;
+        } else {
+            av_packet_unref(pkt);
+        }
+    }
+
+    return ret;
 }
+
+#define OFFSET(x) offsetof(MPJPEGDemuxContext, x)
+
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+const AVOption mpjpeg_options[] = {
+    { "strict_mime_boundary",  "require MIME boundaries match", OFFSET(strict_mime_boundary), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
+    { NULL }
+};
+
+
+static const AVClass mpjpeg_demuxer_class = {
+    .class_name     = "MPJPEG demuxer",
+    .item_name      = av_default_item_name,
+    .option         = mpjpeg_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
 
 AVInputFormat ff_mpjpeg_demuxer = {
     .name              = "mpjpeg",
     .long_name         = NULL_IF_CONFIG_SMALL("MIME multipart JPEG"),
     .mime_type         = "multipart/x-mixed-replace",
     .extensions        = "mjpg",
+    .priv_data_size    = sizeof(MPJPEGDemuxContext),
     .read_probe        = mpjpeg_read_probe,
     .read_header       = mpjpeg_read_header,
     .read_packet       = mpjpeg_read_packet,
+    .read_close        = mpjpeg_read_close,
+    .priv_class        = &mpjpeg_demuxer_class
 };
+
+

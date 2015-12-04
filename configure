@@ -384,7 +384,7 @@ Optimization options (experts only):
   --disable-yasm           disable use of nasm/yasm assembly
   --disable-mips32r5       disable MIPS32R5 optimizations
   --disable-mips64r6       disable MIPS64R6 optimizations
-  --disable-mipsdspr1      disable MIPS DSP ASE R1 optimizations
+  --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
   --disable-mipsfpu        disable floating point MIPS optimizations
@@ -1633,7 +1633,7 @@ ARCH_EXT_LIST_MIPS="
     mips32r2
     mips32r5
     mips64r6
-    mipsdspr1
+    mipsdsp
     mipsdspr2
     msa
 "
@@ -2106,7 +2106,7 @@ setend_deps="arm"
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
 mipsfpu_deps="mips"
-mipsdspr1_deps="mips"
+mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 mips32r2_deps="mips"
 mips32r5_deps="mips"
@@ -4068,14 +4068,14 @@ elif enabled mips; then
             disable mips32r5
             disable mips64r6
             disable mipsfpu
-            disable mipsdspr1
+            disable mipsdsp
             disable mipsdspr2
             disable msa
         ;;
         24kf*)
             disable mips32r5
             disable mips64r6
-            disable mipsdspr1
+            disable mipsdsp
             disable mipsdspr2
             disable msa
         ;;
@@ -4105,14 +4105,14 @@ elif enabled mips; then
         ;;
         p5600)
             disable mips64r6
-            disable mipsdspr1
+            disable mipsdsp
             disable mipsdspr2
 
             check_cflags "-mtune=p5600"
         ;;
         i6400)
             disable mips32r5
-            disable mipsdspr1
+            disable mipsdsp
             disable mipsdspr2
             disable mipsfpu
 
@@ -4124,7 +4124,7 @@ elif enabled mips; then
             disable mips32r2
             disable mips32r5
             disable mips64r6
-            disable mipsdspr1
+            disable mipsdsp
             disable mipsdspr2
             disable msa
             enable local_aligned_8 local_aligned_16 local_aligned_32
@@ -4156,7 +4156,7 @@ elif enabled mips; then
             disable mips32r2
             disable mips32r5
             disable mips64r6
-            disable mipsdspr1
+            disable mipsdsp
             disable mipsdspr2
             disable msa
         ;;
@@ -4952,13 +4952,13 @@ elif enabled mips; then
     enabled mmi && check_inline_asm mmi '"punpcklhw $f0, $f0, $f0"'
 
     # Enable minimum ISA based on selected options
-    if enabled mips64 && (enabled mipsdspr1 || enabled mipsdspr2); then
+    if enabled mips64 && (enabled mipsdsp || enabled mipsdspr2); then
         add_cflags "-mips64r2"
         add_asflags "-mips64r2"
     elif enabled mips64 && enabled mipsfpu && disabled loongson2 && disabled loongson3; then
         add_cflags "-mips64"
         add_asflags "-mips64"
-    elif enabled mipsdspr1 || enabled mipsdspr2; then
+    elif enabled mipsdsp || enabled mipsdspr2; then
         add_cflags "-mips32r2 -mfp32"
         add_asflags "-mips32r2 -mfp32"
     elif enabled mips32r5 || enabled mips64r6; then
@@ -4972,8 +4972,8 @@ elif enabled mips; then
     enabled mips64r6  && check_cflags "-mips64r6 -msched-weight -mload-store-pairs -funroll-loops" &&
      check_ldflags "-mips64r6" &&
      check_inline_asm mips64r6  '"aui $t0, $t1, 1"'
-    enabled mipsdspr1 && add_cflags "-mdsp" && add_asflags "-mdsp" &&
-     check_inline_asm mipsdspr1 '"addu.qb $t0, $t1, $t2"'
+    enabled mipsdsp && add_cflags "-mdsp" && add_asflags "-mdsp" &&
+     check_inline_asm mipsdsp '"addu.qb $t0, $t1, $t2"'
     enabled mipsdspr2 && add_cflags "-mdspr2" && add_asflags "-mdspr2" &&
      check_inline_asm mipsdspr2 '"absq_s.qb $t0, $t1"'
     enabled mipsfpu   && add_cflags "-mhard-float" && add_asflags "-mhard-float" &&
@@ -6051,7 +6051,7 @@ if enabled mips; then
     echo "MIPS FPU enabled          ${mipsfpu-no}"
     echo "MIPS32R5 enabled          ${mips32r5-no}"
     echo "MIPS64R6 enabled          ${mips64r6-no}"
-    echo "MIPS DSP R1 enabled       ${mipsdspr1-no}"
+    echo "MIPS DSP R1 enabled       ${mipsdsp-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
     echo "MIPS MSA enabled          ${msa-no}"
     echo "LOONGSON MMI enabled      ${mmi-no}"

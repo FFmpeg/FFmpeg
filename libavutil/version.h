@@ -108,6 +108,9 @@
 #ifndef FF_API_ERROR_FRAME
 #define FF_API_ERROR_FRAME              (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_CRC_BIG_TABLE
+#define FF_API_CRC_BIG_TABLE            (LIBAVUTIL_VERSION_MAJOR < 56)
+#endif
 
 
 /**

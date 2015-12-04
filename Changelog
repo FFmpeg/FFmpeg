@@ -38,6 +38,8 @@ version <next>:
 - acompressor filter
 - support encoding 16-bit RLE SGI images
 - apulsator filter
+- sidechaingate audio filter
+- mipsdspr1 option has been renamed to mipsdsp
 
 
 version 2.8:

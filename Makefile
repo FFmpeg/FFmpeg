@@ -85,7 +85,7 @@ SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                HEADERS ARCH_HEADERS BUILT_HEADERS SKIPHEADERS            \
                ARMV5TE-OBJS ARMV6-OBJS ARMV8-OBJS VFP-OBJS NEON-OBJS     \
                ALTIVEC-OBJS MMX-OBJS YASM-OBJS                           \
-               MIPSFPU-OBJS MIPSDSPR2-OBJS MIPSDSPR1-OBJS MSA-OBJS       \
+               MIPSFPU-OBJS MIPSDSPR2-OBJS MIPSDSP-OBJS MSA-OBJS         \
                MMI-OBJS OBJS SLIBOBJS HOSTOBJS TESTOBJS
 
 define RESET
@@ -181,6 +181,7 @@ clean::
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
 	$(RM) config.* .config libavutil/avconfig.h .version avversion.h version.h libavutil/ffversion.h libavcodec/codec_names.h
+	$(RM) -rf doc/examples/pc-uninstalled
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)

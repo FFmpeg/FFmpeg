@@ -882,7 +882,7 @@ retry:
         }
 
         if (size == 0) {
-            ret = AVERROR(EAGAIN);
+            ret = FFERROR_REDO;
             goto leave;
         }
 
@@ -927,13 +927,13 @@ retry:
                    type, size, flags);
 skip:
             avio_seek(s->pb, next, SEEK_SET);
-            ret = AVERROR(EAGAIN);
+            ret = FFERROR_REDO;
             goto leave;
         }
 
         /* skip empty data packets */
         if (!size) {
-            ret = AVERROR(EAGAIN);
+            ret = FFERROR_REDO;
             goto leave;
         }
 
@@ -973,7 +973,7 @@ skip:
             || st->discard >= AVDISCARD_ALL
         ) {
             avio_seek(s->pb, next, SEEK_SET);
-            ret = AVERROR(EAGAIN);
+            ret = FFERROR_REDO;
             goto leave;
         }
 
@@ -1068,7 +1068,7 @@ retry_duration:
             if (st->codec->extradata) {
                 if ((ret = flv_queue_extradata(flv, s->pb, stream_type, size)) < 0)
                     return ret;
-                ret = AVERROR(EAGAIN);
+                ret = FFERROR_REDO;
                 goto leave;
             }
             if ((ret = flv_get_extradata(s, st, size)) < 0)
@@ -1095,14 +1095,14 @@ retry_duration:
                 }
             }
 
-            ret = AVERROR(EAGAIN);
+            ret = FFERROR_REDO;
             goto leave;
         }
     }
 
     /* skip empty data packets */
     if (!size) {
-        ret = AVERROR(EAGAIN);
+        ret = FFERROR_REDO;
         goto leave;
     }
 

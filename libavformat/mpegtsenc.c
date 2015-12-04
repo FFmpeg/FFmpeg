@@ -401,11 +401,11 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 
                         if (st->codec->extradata[19] == st->codec->channels - coupled_stream_counts[st->codec->channels] &&
                             st->codec->extradata[20] == coupled_stream_counts[st->codec->channels] &&
-                            memcmp(&st->codec->extradata[21], channel_map_a[st->codec->channels], st->codec->channels) == 0) {
+                            memcmp(&st->codec->extradata[21], channel_map_a[st->codec->channels-1], st->codec->channels) == 0) {
                             *q++ = st->codec->channels;
                         } else if (st->codec->channels >= 2 && st->codec->extradata[19] == st->codec->channels &&
                                    st->codec->extradata[20] == 0 &&
-                                   memcmp(&st->codec->extradata[21], channel_map_b[st->codec->channels], st->codec->channels) == 0) {
+                                   memcmp(&st->codec->extradata[21], channel_map_b[st->codec->channels-1], st->codec->channels) == 0) {
                             *q++ = st->codec->channels | 0x80;
                         } else {
                             /* Unsupported, could write an extended descriptor here */
@@ -852,11 +852,11 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st = pcr_st->priv_data;
 
     if (ts->mux_rate > 1) {
-        service->pcr_packet_period = (ts->mux_rate * ts->pcr_period) /
+        service->pcr_packet_period = (int64_t)ts->mux_rate * ts->pcr_period /
                                      (TS_PACKET_SIZE * 8 * 1000);
-        ts->sdt_packet_period      = (ts->mux_rate * SDT_RETRANS_TIME) /
+        ts->sdt_packet_period      = (int64_t)ts->mux_rate * SDT_RETRANS_TIME /
                                      (TS_PACKET_SIZE * 8 * 1000);
-        ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
+        ts->pat_packet_period      = (int64_t)ts->mux_rate * PAT_RETRANS_TIME /
                                      (TS_PACKET_SIZE * 8 * 1000);
 
         if (ts->copyts < 1)

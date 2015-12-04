@@ -205,7 +205,7 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
         for (i = 0; i < nb_samples; i++) {
             update_volume(cp, fabs(src[i]));
 
-            dst[i] = av_clipd(src[i] * get_volume(s, cp->volume), -1, 1);
+            dst[i] = src[i] * get_volume(s, cp->volume);
         }
     }
 
@@ -266,8 +266,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
                 }
 
                 dst = (double *)out_frame->extended_data[chan];
-                dst[oindex++] = av_clipd(dbuf[dindex] *
-                        get_volume(s, cp->volume), -1, 1);
+                dst[oindex++] = dbuf[dindex] * get_volume(s, cp->volume);
             } else {
                 count++;
             }
@@ -315,8 +314,7 @@ static int compand_drain(AVFilterLink *outlink)
 
         dindex = s->delay_index;
         for (i = 0; i < frame->nb_samples; i++) {
-            dst[i] = av_clipd(dbuf[dindex] * get_volume(s, cp->volume),
-                    -1, 1);
+            dst[i] = dbuf[dindex] * get_volume(s, cp->volume);
             dindex = MOD(dindex + 1, s->delay_samples);
         }
     }
@@ -450,14 +448,14 @@ static int config_output(AVFilterLink *outlink)
             S(j) = S(j + 1);
     }
 
-    for (i = 0; !i || s->segments[i - 2].x; i += 2) {
+    for (i = 0; i < s->nb_segments; i += 2) {
         s->segments[i].y += s->gain_dB;
         s->segments[i].x *= M_LN10 / 20;
         s->segments[i].y *= M_LN10 / 20;
     }
 
 #define L(x) s->segments[i - (x)]
-    for (i = 4; s->segments[i - 2].x; i += 2) {
+    for (i = 4; i < s->nb_segments; i += 2) {
         double x, y, cx, cy, in1, in2, out1, out2, theta, len, r;
 
         L(4).a = 0;

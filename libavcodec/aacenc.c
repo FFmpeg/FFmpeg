@@ -991,7 +991,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->psypp = ff_psy_preprocess_init(avctx);
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
 
-    if (HAVE_MIPSDSPR1)
+    if (HAVE_MIPSDSP)
         ff_aac_coder_init_mips(s);
 
     if ((ret = ff_thread_once(&aac_table_init, &aac_encode_init_tables)) != 0)

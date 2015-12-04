@@ -2670,7 +2670,7 @@ static int mpegts_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!ret && pkt->size < 0)
-        ret = AVERROR(EINTR);
+        ret = AVERROR_INVALIDDATA;
     return ret;
 }
 

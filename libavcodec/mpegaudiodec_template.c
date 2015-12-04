@@ -1172,9 +1172,9 @@ found2:
 #   include "mips/compute_antialias_float.h"
 #endif /* HAVE_MIPSFPU */
 #else
-#if HAVE_MIPSDSPR1
+#if HAVE_MIPSDSP
 #   include "mips/compute_antialias_fixed.h"
-#endif /* HAVE_MIPSDSPR1 */
+#endif /* HAVE_MIPSDSP */
 #endif /* USE_FLOATS */
 
 #ifndef compute_antialias
