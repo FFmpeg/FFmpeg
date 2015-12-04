@@ -92,6 +92,7 @@ typedef struct MpegTSWrite {
     int pmt_start_pid;
     int start_pid;
     int m2ts_mode;
+    int tts_mode;
 
     int reemit_pat_pmt; // backward compatibility
 
@@ -682,9 +683,9 @@ static int64_t get_pcr(const MpegTSWrite *ts, AVIOContext *pb)
 static void mpegts_prefix_m2ts_header(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
-    if (ts->m2ts_mode) {
+    if (ts->m2ts_mode || ts->tts_mode) {
         int64_t pcr = get_pcr(s->priv_data, s->pb);
-        uint32_t tp_extra_header = pcr % 0x3fffffff;
+        uint32_t tp_extra_header = pcr % (ts->m2ts_mode) ? 0x3fffffff : 0xffffffff;
         tp_extra_header = AV_RB32(&tp_extra_header);
         avio_write(s->pb, (unsigned char *) &tp_extra_header,
                    sizeof(tp_extra_header));
@@ -913,6 +914,14 @@ static int mpegts_write_header(AVFormatContext *s)
             ts->m2ts_mode = 1;
         } else {
             ts->m2ts_mode = 0;
+        }
+    }
+
+    if(ts->tts_mode == -1) {
+        if (av_match_ext(s->filename, "tts")) {
+            ts->tts_mode = 1;
+        } else {
+            ts->tts_mode = 0;
         }
     }
 
@@ -1175,7 +1184,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 *q++ = 0xc0;
             } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                         st->codec->codec_id == AV_CODEC_ID_AC3 &&
-                        ts->m2ts_mode) {
+                        (ts->m2ts_mode || ts->tts_mode) ) {
                 *q++ = 0xfd;
             } else {
                 *q++ = 0xbd;
@@ -1211,7 +1220,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             /* for Blu-ray AC3 Audio the PES Extension flag should be as follow
              * otherwise it will not play sound on blu-ray
              */
-            if (ts->m2ts_mode &&
+            if ((ts->m2ts_mode || ts->tts_mode) &&
                 st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                 st->codec->codec_id == AV_CODEC_ID_AC3) {
                         /* set PES_extension_flag */
@@ -1260,7 +1269,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 *q++ = 0x00 | 0x60;
             }
             /* For Blu-ray AC3 Audio Setting extended flags */
-          if (ts->m2ts_mode &&
+          if ( (ts->m2ts_mode || ts->tts_mode) &&
               pes_extension &&
               st->codec->codec_id == AV_CODEC_ID_AC3) {
                       flags = 0x01; /* set PES_extension_flag_2 */
@@ -1744,6 +1753,9 @@ static const AVOption options[] = {
       { .i64 = 0x0100 }, 0x0020, 0x0f00, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_m2ts_mode", "Enable m2ts mode.",
       offsetof(MpegTSWrite, m2ts_mode), AV_OPT_TYPE_BOOL,
+      { .i64 = -1 }, -1, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "mpegts_tts_mode", "Enable tts mode.",
+      offsetof(MpegTSWrite, tts_mode), AV_OPT_TYPE_INT,
       { .i64 = -1 }, -1, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "muxrate", NULL,
       offsetof(MpegTSWrite, mux_rate), AV_OPT_TYPE_INT,
