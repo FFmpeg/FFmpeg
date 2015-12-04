@@ -3733,6 +3733,7 @@ static int process_input(int file_index)
     AVPacket pkt;
     int ret, i, j;
     int64_t duration;
+    int64_t pkt_dts;
 
     is  = ifile->ctx;
     ret = get_input_packet(ifile, &pkt);
@@ -3879,11 +3880,11 @@ static int process_input(int file_index)
     if (pkt.dts != AV_NOPTS_VALUE)
         pkt.dts *= ist->ts_scale;
 
+    pkt_dts = av_rescale_q_rnd(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
     if ((ist->dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
          ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
-        pkt.dts != AV_NOPTS_VALUE && ist->next_dts == AV_NOPTS_VALUE && !copy_ts
+        pkt_dts != AV_NOPTS_VALUE && ist->next_dts == AV_NOPTS_VALUE && !copy_ts
         && (is->iformat->flags & AVFMT_TS_DISCONT) && ifile->last_ts != AV_NOPTS_VALUE) {
-        int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
         int64_t delta   = pkt_dts - ifile->last_ts;
         if (delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
             delta >  1LL*dts_delta_threshold*AV_TIME_BASE){
@@ -3907,11 +3908,11 @@ static int process_input(int file_index)
     if (pkt.dts != AV_NOPTS_VALUE)
         pkt.dts += duration;
 
+    pkt_dts = av_rescale_q_rnd(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
     if ((ist->dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
          ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
-         pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE &&
+         pkt_dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE &&
         !copy_ts) {
-        int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
         int64_t delta   = pkt_dts - ist->next_dts;
         if (is->iformat->flags & AVFMT_TS_DISCONT) {
             if (delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
