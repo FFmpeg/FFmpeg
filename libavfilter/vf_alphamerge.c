@@ -61,13 +61,23 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     if (!(main_formats = ff_make_format_list(main_fmts)) ||
-        !(alpha_formats = ff_make_format_list(alpha_fmts)))
-        return AVERROR(ENOMEM);
+        !(alpha_formats = ff_make_format_list(alpha_fmts))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     if ((ret = ff_formats_ref(main_formats , &ctx->inputs[0]->out_formats)) < 0 ||
         (ret = ff_formats_ref(alpha_formats, &ctx->inputs[1]->out_formats)) < 0 ||
         (ret = ff_formats_ref(main_formats , &ctx->outputs[0]->in_formats)) < 0)
-        return ret;
+            goto fail;
     return 0;
+fail:
+    if (main_formats)
+        av_freep(&main_formats->formats);
+    av_freep(&main_formats);
+    if (alpha_formats)
+        av_freep(&alpha_formats->formats);
+    av_freep(&alpha_formats);
+    return ret;
 }
 
 static int config_input_main(AVFilterLink *inlink)
