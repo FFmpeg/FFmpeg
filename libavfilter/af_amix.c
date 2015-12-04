@@ -519,20 +519,23 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     layouts = ff_all_channel_layouts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
+    if (!layouts) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
-    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT)) < 0)
-        return ret;
-    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLTP)) < 0)
-        return ret;
-    ret = ff_set_common_formats(ctx, formats);
-    if (ret < 0)
-        return ret;
-    ret = ff_set_common_channel_layouts(ctx, layouts);
-    if (ret < 0)
-        return ret;
-    return ff_set_common_samplerates(ctx, ff_all_samplerates());
+    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT ))          < 0 ||
+        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLTP))          < 0 ||
+        (ret = ff_set_common_formats        (ctx, formats))          < 0 ||
+        (ret = ff_set_common_channel_layouts(ctx, layouts))          < 0 ||
+        (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
+        goto fail;
+    return 0;
+fail:
+    if (layouts)
+        av_freep(&layouts->channel_layouts);
+    av_freep(&layouts);
+    return ret;
 }
 
 static const AVFilterPad avfilter_af_amix_outputs[] = {
