@@ -2300,6 +2300,7 @@ static int sdp_read_header(AVFormatContext *s)
             if (err) {
                 av_log(s, AV_LOG_ERROR, "getnameinfo: %s\n", gai_strerror(err));
                 err = AVERROR(EIO);
+                av_dict_free(&opts);
                 goto fail;
             }
             ff_url_join(url, sizeof(url), "rtp", NULL,
