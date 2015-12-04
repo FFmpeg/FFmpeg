@@ -33,7 +33,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
-#define RGBA(r,g,b,a) (((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
+#define RGBA(r,g,b,a) (((unsigned)(a) << 24) | ((r) << 16) | ((g) << 8) | (b))
 #define MAX_EPOCH_PALETTES 8   // Max 8 allowed per PGS epoch
 #define MAX_EPOCH_OBJECTS  64  // Max 64 allowed per PGS epoch
 #define MAX_OBJECT_REFS    2   // Max objects per display set
