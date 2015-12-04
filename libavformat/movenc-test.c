@@ -137,6 +137,7 @@ static void check_func(int value, int line, const char *msg, ...)
         vprintf(msg, ap);
         printf("\n");
         check_faults++;
+        va_end(ap);
     }
 }
 #define check(value, ...) check_func(value, __LINE__, __VA_ARGS__)
