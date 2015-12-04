@@ -499,7 +499,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     }
     while (idx) {
         sce->sf_idx[bandaddr[idx]] = minq + q0;
-        minq = paths[idx][minq].prev;
+        minq = FFMAX(paths[idx][minq].prev, 0);
         idx--;
     }
     //set the same quantizers inside window groups
