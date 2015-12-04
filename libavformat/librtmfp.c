@@ -40,6 +40,7 @@ typedef struct LibRTMFPContext {
     unsigned int id;
     int audioUnbuffered;
     int videoUnbuffered;
+    char* publication;
     /*RTMP rtmp;
     char *app;
     char *conn;
@@ -106,7 +107,9 @@ static void onStatusEvent(const char* code, const char* description) {
 static int rtmfp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMFPContext *ctx = s->priv_data;
-    int level;
+    int level = 0, res = 0;
+    char *url = av_malloc(strlen(uri)+1);
+    snprintf(url, strlen(uri)+1, uri);
 
     switch (av_log_get_level()) {
         case AV_LOG_FATAL:   level = 1; break;
@@ -119,12 +122,25 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     }
     RTMFP_LogSetLevel(level);
     RTMFP_LogSetCallback(rtmfp_log);
+    RTMFP_InterruptSetCallback(s->interrupt_callback.callback, s->interrupt_callback.opaque);
 
-    ctx->id = RTMFP_Connect(uri, flags & AVIO_FLAG_WRITE,onSocketError, onStatusEvent, NULL, !ctx->audioUnbuffered, !ctx->videoUnbuffered);
-    s->is_streamed = 1;
+    RTMFP_GetPublicationAndUrlFromUri(url, &ctx->publication);
+
+    if ((ctx->id = RTMFP_Connect(url, onSocketError, onStatusEvent, NULL, 1)) == 0)
+        return -1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
-    return (ctx->id > 0)? 0 : -1;
+
+    if (flags & AVIO_FLAG_WRITE)
+        res = RTMFP_Publish(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered);
+    else
+        res = RTMFP_Play(ctx->id, ctx->publication);
+
+    if (!res)
+        return -1;
+
+    s->is_streamed = 1;
+    return 0;
 }
 
 static int rtmfp_write(URLContext *s, const uint8_t *buf, int size)
@@ -194,23 +210,6 @@ static int rtmp_get_file_handle(URLContext *s)
 static const AVOption options[] = {
     {"rtmfp_audioUnbuffered", "Unbuffered audio mode (default to false)", OFFSET(audioUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"rtmfp_videoUnbuffered", "Unbuffered video mode (default to false)", OFFSET(videoUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
-    /*{"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-    {"rtmp_buffer", "Set buffer time in milliseconds. The default is 3000.", OFFSET(client_buffer_time), AV_OPT_TYPE_STRING, {.str = "3000"}, 0, 0, DEC|ENC},
-    {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-    {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-    {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
-    {"any", "both", 0, AV_OPT_TYPE_CONST, {.i64 = -2}, 0, 0, DEC, "rtmp_live"},
-    {"live", "live stream", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, DEC, "rtmp_live"},
-    {"recorded", "recorded stream", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, DEC, "rtmp_live"},
-    {"rtmp_pageurl", "URL of the web page in which the media was embedded. By default no value will be sent.", OFFSET(pageurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
-    {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-    {"rtmp_subscribe", "Name of live stream to subscribe to. Defaults to rtmp_playpath.", OFFSET(subscribe), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
-    {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-    {"rtmp_swfverify", "URL to player swf file, compute hash/size automatically. (unimplemented)", OFFSET(swfverify), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
-    {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-#if CONFIG_NETWORK
-    {"rtmp_buffer_size", "set buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC|ENC },
-#endif*/
     { NULL },
 };
 
