@@ -318,7 +318,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                     goto fail;
                 offset1 = AV_RB16(buf + pos);
                 offset2 = AV_RB16(buf + pos + 2);
-                ff_dlog(NULL, "offset1=0x%04"PRIx64" offset2=0x%04%"PRIx64"\n", offset1, offset2);
+                ff_dlog(NULL, "offset1=0x%04"PRIx64" offset2=0x%04"PRIx64"\n", offset1, offset2);
                 pos += 4;
                 break;
             case 0x86:
