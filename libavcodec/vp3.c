@@ -206,8 +206,8 @@ typedef struct Vp3DecodeContext {
     int16_t *dct_tokens[3][64];
     int16_t *dct_tokens_base;
 #define TOKEN_EOB(eob_run)              ((eob_run) << 2)
-#define TOKEN_ZERO_RUN(coeff, zero_run) (((coeff) << 9) + ((zero_run) << 2) + 1)
-#define TOKEN_COEFF(coeff)              (((coeff) << 2) + 2)
+#define TOKEN_ZERO_RUN(coeff, zero_run) (((coeff) * 512) + ((zero_run) << 2) + 1)
+#define TOKEN_COEFF(coeff)              (((coeff) * 4) + 2)
 
     /**
      * number of blocks that contain DCT coefficients at
