@@ -250,8 +250,8 @@ static int parse_multipart_header(AVIOContext *pb,
 static char* mpjpeg_get_boundary(AVIOContext* pb)
 {
     uint8_t *mime_type = NULL;
-    uint8_t *start;
-    uint8_t *end;
+    const char *start;
+    const char *end;
     uint8_t *res = NULL;
     int     len;
 
