@@ -960,7 +960,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         avctx->profile = FF_PROFILE_AAC_MAIN;
         WARN_IF(1,
                 "Chainging profile to \"aac_main\"\n");
-        ERROR_IF(s->options.pred,
+        ERROR_IF(s->options.ltp,
                  "LTP prediction unavailable in the \"aac_main\" profile\n");
     }
     s->profile = avctx->profile;
