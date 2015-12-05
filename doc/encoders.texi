@@ -1085,7 +1085,7 @@ configuration. You need to explicitly configure the build with
 @code{--enable-libvo-aacenc --enable-version3}.
 
 This encoder is considered to be worse than the
-@ref{aacenc,,native experimental FFmpeg AAC encoder}, according to
+@ref{aacenc,,native FFmpeg AAC encoder}, according to
 multiple sources.
 
 @subsection Options
