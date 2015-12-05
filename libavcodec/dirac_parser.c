@@ -114,6 +114,15 @@ static int unpack_parse_unit(DiracParseUnit *pu, DiracParseContext *pc,
     if (pu->pu_type == 0x10 && pu->next_pu_offset == 0)
         pu->next_pu_offset = 13;
 
+    if (pu->next_pu_offset && pu->next_pu_offset < 13) {
+        av_log(NULL, AV_LOG_ERROR, "next_pu_offset %d is invalid\n", pu->next_pu_offset);
+        return 0;
+    }
+    if (pu->prev_pu_offset && pu->prev_pu_offset < 13) {
+        av_log(NULL, AV_LOG_ERROR, "prev_pu_offset %d is invalid\n", pu->prev_pu_offset);
+        return 0;
+    }
+
     return 1;
 }
 
