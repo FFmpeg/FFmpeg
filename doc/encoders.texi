@@ -84,19 +84,20 @@ Not recommended.
 @end table
 
 @item aac_ms
-Sets mid/side coding mode. The default value of "-1" will automatically use
+Sets mid/side coding mode. The default value of auto will automatically use
 M/S with bands which will benefit from such coding. Can be forced for all bands
-using the value "1", which is mainly useful for debugging or disabled using "0".
+using the value "enable", which is mainly useful for debugging or disabled using
+"disable".
 
 @item aac_is
 Sets intensity stereo coding tool usage. By default, it's enabled and will
 automatically toggle IS for similar pairs of stereo bands if it's benefitial.
-Can be disabled for debugging by setting the value to "0".
+Can be disabled for debugging by setting the value to "disable".
 
 @item aac_pns
 Uses perceptual noise substitution to replace low entropy high frequency bands
 with imperceivable white noise during the decoding process. By default, it's
-enabled, but can be disabled for debugging purposes by using "0".
+enabled, but can be disabled for debugging purposes by using "disable".
 
 @item aac_tns
 Enables the use of a multitap FIR filter which spans through the high frequency
@@ -104,7 +105,7 @@ bands to hide quantization noise during the encoding process and is reverted
 by the decoder. As well as decreasing unpleasant artifacts in the high range
 this also reduces the entropy in the high bands and allows for more bits to
 be used by the mid-low bands. By default it's enabled but can be disabled for
-debugging by setting the option to "0".
+debugging by setting the option to "disable".
 
 @item aac_ltp
 Enables the use of the long term prediction extension which increases coding
