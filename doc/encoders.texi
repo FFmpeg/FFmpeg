@@ -130,15 +130,14 @@ The default, AAC "Low-complexity" profile. Is the most compatible and produces
 decent quality.
 
 @item mpeg2_aac_low
-This profile disables aac_is and aac_pns which were introduced with the MPEG4
-specifications and could cause incompatibility with very old devices. Will
-reduce quality and is therefore not recommended unless necessary.
+Equivalent to -profile:a aac_low -aac_pns 0. PNS was introduced with the MPEG4
+specifications.
 
 @item aac_ltp
 Long term prediction profile, is enabled by and will enable the aac_ltp option.
 Introduced in MPEG4.
 
-@item aac_ltp
+@item aac_pred
 Main-type prediction profile, is enabled by and will enable the aac_pred option.
 Introduced in MPEG2.
 
