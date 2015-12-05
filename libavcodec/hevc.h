@@ -622,7 +622,7 @@ typedef struct SliceHeader {
 
     unsigned int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
 
-    int *entry_point_offset;
+    unsigned *entry_point_offset;
     int * offset;
     int * size;
     int num_entry_point_offsets;

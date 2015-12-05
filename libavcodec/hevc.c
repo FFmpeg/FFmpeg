@@ -744,7 +744,7 @@ static int hls_slice_header(HEVCContext *s)
             av_freep(&sh->entry_point_offset);
             av_freep(&sh->offset);
             av_freep(&sh->size);
-            sh->entry_point_offset = av_malloc_array(sh->num_entry_point_offsets, sizeof(int));
+            sh->entry_point_offset = av_malloc_array(sh->num_entry_point_offsets, sizeof(unsigned));
             sh->offset = av_malloc_array(sh->num_entry_point_offsets, sizeof(int));
             sh->size = av_malloc_array(sh->num_entry_point_offsets, sizeof(int));
             if (!sh->entry_point_offset || !sh->offset || !sh->size) {
@@ -2443,7 +2443,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
     int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
     int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
     int64_t offset;
-    int startheader, cmpt = 0;
+    int64_t startheader, cmpt = 0;
     int i, j, res = 0;
 
     if (!ret || !arg) {
