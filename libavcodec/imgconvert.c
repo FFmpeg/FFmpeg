@@ -340,5 +340,5 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     return 0;
 }
 
-FF_DISABLE_DEPRECATION_WARNINGS
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_AVPICTURE */
