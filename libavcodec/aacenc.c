@@ -967,6 +967,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->coder = &ff_aac_coders[s->options.coder];
 
     if (s->options.coder != AAC_CODER_TWOLOOP) {
+        ERROR_IF(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
+                 "Coders other than twoloop require -strict -2 and some may be removed in the future\n");
         WARN_IF(s->options.coder == AAC_CODER_FAAC,
                 "The FAAC-like coder will be removed in the near future, please use twoloop!\n");
         s->options.intensity_stereo = 0;
