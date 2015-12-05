@@ -18,7 +18,7 @@ version <next>:
 - ffplay dynamic volume control
 - displace filter
 - selectivecolor filter
-- extensive native AAC encoder improvements
+- extensive native AAC encoder improvements and removal of experimental flag
 - ADPCM PSX decoder
 - 3dostr, dcstr, fsb, genh, vag, xvag, ads, msf, svag & vpk demuxer
 - zscale filter
