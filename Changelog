@@ -1,6 +1,46 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.4
+- libvpxenc: remove some unused ctrl id mappings
+- avcodec/vp3: ensure header is parsed successfully before tables
+- avcodec/jpeg2000dec: Check bpno in decode_cblk()
+- avcodec/pgssubdec: Fix left shift of 255 by 24 places cannot be represented in type int
+- swscale/utils: Fix for runtime error: left shift of negative value -1
+- avcodec/hevc: Fix integer overflow of entry_point_offset
+- avcodec/dirac_parser: Check that there is a previous PU before accessing it
+- avcodec/dirac_parser: Add basic validity checks for next_pu_offset and prev_pu_offset
+- avcodec/dirac_parser: Fix potential overflows in pointer checks
+- avcodec/wmaprodec: Check bits per sample to be within the range not causing integer overflows
+- avcodec/wmaprodec: Fix overflow of cutoff
+- avformat/smacker: fix integer overflow with pts_inc
+- avcodec/vp3: Fix "runtime error: left shift of negative value"
+- avformat/riffdec: Initialize bitrate
+- mpegencts: Fix overflow in cbr mode period calculations
+- avutil/timecode: Fix fps check
+- avutil/mathematics: return INT64_MIN (=AV_NOPTS_VALUE) from av_rescale_rnd() for overflows
+- avcodec/apedec: Check length in long_filter_high_3800()
+- avcodec/vp3: always set pix_fmt in theora_decode_header()
+- avcodec/mpeg4videodec: Check available data before reading custom matrix
+- avutil/mathematics: Do not treat INT64_MIN as positive in av_rescale_rnd
+- avutil/integer: Fix av_mod_i() with negative dividend
+- avformat/dump: Fix integer overflow in av_dump_format()
+- avcodec/h264_refs: Check that long references match before use
+- avcodec/utils: Clear dimensions in ff_get_buffer() on failure
+- avcodec/utils: Use 64bit for aspect ratio calculation in avcodec_string()
+- avcodec/hevc: Check max ctb addresses for WPP
+- avcodec/vp3: Clear context on reinitialization failure
+- avcodec/hevc: allocate entries unconditionally
+- avcodec/hevc_cabac: Fix multiple integer overflows
+- avcodec/jpeg2000dwt: Check ndeclevels before calling dwt_encode*()
+- avcodec/jpeg2000dwt: Check ndeclevels before calling dwt_decode*()
+- avcodec/hevc: Check entry_point_offsets
+- lavf/rtpenc_jpeg: Less strict check for standard Huffman tables.
+- avcodec/ffv1dec: Clear quant_table_count if its invalid
+- avcodec/ffv1dec: Print an error if the quant table count is invalid
+- doc/filters/drawtext: fix centering example
+
+
 version 2.8.3
 - avcodec/cabac: Check initial cabac decoder state
 - avcodec/cabac_functions: Fix "left shift of negative value -31767"
