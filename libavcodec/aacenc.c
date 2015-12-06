@@ -574,6 +574,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->num_windows        = wi[ch].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
             ics->num_swb            = tag == TYPE_LFE ? ics->num_swb : s->psy.num_bands[ics->num_windows == 8];
+            ics->max_sfb            = FFMIN(ics->max_sfb, ics->num_swb);
             ics->swb_offset         = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
                                         ff_swb_offset_128 [s->samplerate_index]:
                                         ff_swb_offset_1024[s->samplerate_index];
