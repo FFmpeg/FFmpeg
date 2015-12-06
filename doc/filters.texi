@@ -833,9 +833,14 @@ that the delay it produces is the attack time you set.
 The filter accepts the following options:
 
 @table @option
+@item level_in
+Set input gain. Default is 1.
+
+@item level_out
+Set output gain. Default is 1.
+
 @item limit
-Don't let signals above this level pass the limiter. The removed amplitude is
-added automatically. Default is 1.
+Don't let signals above this level pass the limiter. Default is 1.
 
 @item attack
 The limiter will reach its attenuation level in this amount of time in
@@ -853,6 +858,10 @@ time.
 @item asc_level
 Select how much the release time is affected by ASC, 0 means nearly no changes
 in release time while 1 produces higher release times.
+
+@item level
+Auto level output signal. Default is enabled.
+This normalizes audio back to 0dB if enabled.
 @end table
 
 Depending on picked setting it is recommended to upsample input 2x or 4x times
