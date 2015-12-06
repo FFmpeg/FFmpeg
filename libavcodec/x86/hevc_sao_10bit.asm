@@ -252,7 +252,7 @@ cglobal hevc_sao_edge_filter_%2_%1, 1, 6, 8, 5*mmsize, dst, src, dststride, a_st
 
 %endif ; ARCH
 
-%if cpuflag(avx2)
+%if mmsize > 16
     SPLATW            m8, [offsetq+2]
     SPLATW            m9, [offsetq+4]
     SPLATW           m10, [offsetq+0]
@@ -352,11 +352,18 @@ HEVC_SAO_EDGE_FILTER 12, 48, 6
 HEVC_SAO_EDGE_FILTER 12, 64, 8
 
 %if HAVE_AVX2_EXTERNAL
+INIT_XMM avx2
+HEVC_SAO_EDGE_FILTER 10,  8, 1
 INIT_YMM avx2
+HEVC_SAO_EDGE_FILTER 10, 16, 1
 HEVC_SAO_EDGE_FILTER 10, 32, 2
 HEVC_SAO_EDGE_FILTER 10, 48, 3
 HEVC_SAO_EDGE_FILTER 10, 64, 4
 
+INIT_XMM avx2
+HEVC_SAO_EDGE_FILTER 12,  8, 1
+INIT_YMM avx2
+HEVC_SAO_EDGE_FILTER 12, 16, 1
 HEVC_SAO_EDGE_FILTER 12, 32, 2
 HEVC_SAO_EDGE_FILTER 12, 48, 3
 HEVC_SAO_EDGE_FILTER 12, 64, 4
