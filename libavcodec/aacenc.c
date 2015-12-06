@@ -678,14 +678,14 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (ch = 0; ch < chans; ch++) { /* TNS and PNS */
                 sce = &cpe->ch[ch];
                 s->cur_channel = start_ch + ch;
-                if (s->options.pns && s->coder->search_for_pns)
-                    s->coder->search_for_pns(s, avctx, sce);
                 if (s->options.tns && s->coder->search_for_tns)
                     s->coder->search_for_tns(s, sce);
                 if (s->options.tns && s->coder->apply_tns_filt)
                     s->coder->apply_tns_filt(s, sce);
                 if (sce->tns.present)
                     tns_mode = 1;
+                if (s->options.pns && s->coder->search_for_pns)
+                    s->coder->search_for_pns(s, avctx, sce);
             }
             s->cur_channel = start_ch;
             if (s->options.intensity_stereo) { /* Intensity Stereo */
