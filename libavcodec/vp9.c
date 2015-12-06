@@ -4228,7 +4228,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     // detect size changes in other threads
     if (s->intra_pred_data[0] &&
         (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols ||
-         s->rows != ssrc->rows || s->bpp != ssrc->bpp)) {
+         s->rows != ssrc->rows || s->bpp != ssrc->bpp || s->pix_fmt != ssrc->pix_fmt)) {
         free_buffers(s);
     }
 
@@ -4260,6 +4260,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->bytesperpixel = ssrc->bytesperpixel;
     s->bpp = ssrc->bpp;
     s->bpp_index = ssrc->bpp_index;
+    s->pix_fmt = ssrc->pix_fmt;
     memcpy(&s->prob_ctx, &ssrc->prob_ctx, sizeof(s->prob_ctx));
     memcpy(&s->s.h.lf_delta, &ssrc->s.h.lf_delta, sizeof(s->s.h.lf_delta));
     memcpy(&s->s.h.segmentation.feat, &ssrc->s.h.segmentation.feat,
