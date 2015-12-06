@@ -24,6 +24,7 @@ such as audio, video, subtitles and related metadata.
 * [ffserver](https://ffmpeg.org/ffserver.html) is a multimedia streaming server
   for live broadcasts.
 * Additional small tools such as `aviocat`, `ismindex` and `qt-faststart`.
+* [rtsp-ffmpeg nodejs package](https://github.com/agsh/rtsp-ffmpeg) is nodejs video streaming package base on ffmpeg with easy example. Just in case you prefer nodejs or local machine using windows os which can not use ffserver.
 
 ## Documentation
 
