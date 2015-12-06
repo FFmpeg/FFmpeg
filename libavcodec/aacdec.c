@@ -1005,7 +1005,7 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
                                     sizeof(ff_aac_spectral_codes[num][0]), \
         size);
 
-static av_cold void aac_static_table_init()
+static av_cold void aac_static_table_init(void)
 {
     AAC_INIT_VLC_STATIC( 0, 304);
     AAC_INIT_VLC_STATIC( 1, 270);
