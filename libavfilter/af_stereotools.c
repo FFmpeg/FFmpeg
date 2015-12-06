@@ -110,7 +110,7 @@ static int config_input(AVFilterLink *inlink)
     StereoToolsContext *s = ctx->priv;
 
     s->length = 2 * inlink->sample_rate * 0.05;
-    if (s->length <= 1 && s->length & 1) {
+    if (s->length <= 1 || s->length & 1) {
         av_log(ctx, AV_LOG_ERROR, "sample rate is too small\n");
         return AVERROR(EINVAL);
     }
