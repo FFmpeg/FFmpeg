@@ -35,17 +35,14 @@
 #define TNS_Q_BITS 4
 
 /* Coefficient resolution in short windows */
-#define TNS_Q_BITS_IS8 4
+#define TNS_Q_BITS_IS8 3
 
-/* Define this to save a bit, be warned decoders can't deal with it
- * so it is not lossless despite what the specifications say */
-// #define TNS_ENABLE_COEF_COMPRESSION
+/* We really need the bits we save here elsewhere */
+#define TNS_ENABLE_COEF_COMPRESSION
 
 /* TNS will only be used if the LPC gain is within these margins */
-#define TNS_GAIN_THRESHOLD_LOW  1.477f
-#define TNS_GAIN_THRESHOLD_HIGH 7.0f
-#define TNS_GAIN_THRESHOLD_LOW_IS8  0.16f*TNS_GAIN_THRESHOLD_LOW
-#define TNS_GAIN_THRESHOLD_HIGH_IS8 0.26f*TNS_GAIN_THRESHOLD_HIGH
+#define TNS_GAIN_THRESHOLD_LOW      1.4f
+#define TNS_GAIN_THRESHOLD_HIGH     1.16f*TNS_GAIN_THRESHOLD_LOW
 
 static inline int compress_coeffs(int *coef, int order, int c_bits)
 {
@@ -71,8 +68,8 @@ static inline int compress_coeffs(int *coef, int order, int c_bits)
  */
 void ff_aac_encode_tns_info(AACEncContext *s, SingleChannelElement *sce)
 {
-    int i, w, filt, coef_compress = 0, coef_len;
     TemporalNoiseShaping *tns = &sce->tns;
+    int i, w, filt, coef_compress = 0, coef_len;
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
     const int c_bits = is8 ? TNS_Q_BITS_IS8 == 4 : TNS_Q_BITS == 4;
 
@@ -152,7 +149,7 @@ static inline void quantize_coefs(double *coef, int *idx, float *lpc, int order,
     int i;
     const float *quant_arr = tns_tmp2_map[c_bits];
     for (i = 0; i < order; i++) {
-        idx[i] = quant_array_idx((float)coef[i], quant_arr, c_bits ? 16 : 8);
+        idx[i] = quant_array_idx(coef[i], quant_arr, c_bits ? 16 : 8);
         lpc[i] = quant_arr[idx[i]];
     }
 }
@@ -163,36 +160,37 @@ static inline void quantize_coefs(double *coef, int *idx, float *lpc, int order,
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 {
     TemporalNoiseShaping *tns = &sce->tns;
-    double gain, coefs[MAX_LPC_ORDER];
     int w, w2, g, count = 0;
+    double gain, coefs[MAX_LPC_ORDER];
     const int mmm = FFMIN(sce->ics.tns_max_bands, sce->ics.max_sfb);
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
     const int c_bits = is8 ? TNS_Q_BITS_IS8 == 4 : TNS_Q_BITS == 4;
+    const int sfb_start = av_clip(tns_min_sfb[is8][s->samplerate_index], 0, mmm);
+    const int sfb_end   = av_clip(sce->ics.num_swb, 0, mmm);
+    const int order = is8 ? 7 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
     const int slant = sce->ics.window_sequence[0] == LONG_STOP_SEQUENCE  ? 1 :
                       sce->ics.window_sequence[0] == LONG_START_SEQUENCE ? 0 : 2;
 
-    int sfb_start = av_clip(tns_min_sfb[is8][s->samplerate_index], 0, mmm);
-    int sfb_end   = av_clip(sce->ics.num_swb, 0, mmm);
-    int order = is8 ? 5 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
-
     for (w = 0; w < sce->ics.num_windows; w++) {
         float en[2] = {0.0f, 0.0f};
+        int oc_start = 0, os_start = 0;
         int coef_start = w*sce->ics.num_swb + sce->ics.swb_offset[sfb_start];
         int coef_len = sce->ics.swb_offset[sfb_end] - sce->ics.swb_offset[sfb_start];
+        const int sfb_len = sfb_end - sfb_start;
 
         for (g = 0;  g < sce->ics.num_swb; g++) {
             if (w*16+g < sfb_start || w*16+g > sfb_end)
                 continue;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                if ((w+w2)*16+g > sfb_start + ((sfb_end - sfb_start)/2))
+                if ((w+w2)*16+g > sfb_start + (sfb_len/2))
                     en[1] += band->energy;
                 else
                     en[0] += band->energy;
             }
         }
 
-        if (coef_len <= 0 || (sfb_end - sfb_start) <= 0)
+        if (coef_len <= 0 || sfb_len <= 0)
             continue;
 
         /* LPC */
@@ -201,30 +199,18 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 
         if (!order || gain < TNS_GAIN_THRESHOLD_LOW || gain > TNS_GAIN_THRESHOLD_HIGH)
             continue;
-        if (is8 && (gain < TNS_GAIN_THRESHOLD_LOW_IS8 || gain > TNS_GAIN_THRESHOLD_HIGH_IS8))
-                continue;
-        if (is8 || order < 2) {
-            tns->n_filt[w] = 1;
-            for (g = 0; g < tns->n_filt[w]; g++) {
-                tns->length[w][g] = sfb_end - sfb_start;
-                tns->direction[w][g] = slant != 2 ? slant : en[0] < en[1];
-                tns->order[w][g] = order;
-                quantize_coefs(coefs, tns->coef_idx[w][g], tns->coef[w][g],
-                               order, c_bits);
-            }
-        } else {  /* 2 filters due to energy disbalance */
-            tns->n_filt[w] = 2;
-            for (g = 0; g < tns->n_filt[w]; g++) {
-                tns->direction[w][g] = slant != 2 ? slant : en[g] < en[!g];
-                tns->order[w][g] = !g ? order/2 : order - tns->order[w][g-1];
-                tns->length[w][g] = !g ? (sfb_end - sfb_start)/2 : \
-                                    (sfb_end - sfb_start) - tns->length[w][g-1];
-                quantize_coefs(&coefs[!g ? 0 : order - tns->order[w][g-1]],
-                               tns->coef_idx[w][g], tns->coef[w][g],
-                               tns->order[w][g], c_bits);
-            }
+
+        tns->n_filt[w] = is8 ? 1 : order != TNS_MAX_ORDER ? 2 : 3;
+        for (g = 0; g < tns->n_filt[w]; g++) {
+            tns->direction[w][g] = slant != 2 ? slant : en[g] < en[!g];
+            tns->order[w][g] = g < tns->n_filt[w] ? order/tns->n_filt[w] : order - oc_start;
+            tns->length[w][g] = g < tns->n_filt[w] ? sfb_len/tns->n_filt[w] : sfb_len - os_start;
+            quantize_coefs(&coefs[oc_start], tns->coef_idx[w][g], tns->coef[w][g],
+                            tns->order[w][g], c_bits);
+            oc_start += tns->order[w][g];
+            os_start += tns->length[w][g];
         }
-        count += tns->n_filt[w];
+        count++;
     }
     sce->tns.present = !!count;
 }
