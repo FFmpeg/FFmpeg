@@ -22,12 +22,11 @@
  * Thread message API test
  */
 
-#include <pthread.h>
-
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/frame.h"
 #include "libavutil/threadmessage.h"
+#include "libavutil/thread.h" // not public
 
 struct sender_data {
     int id;

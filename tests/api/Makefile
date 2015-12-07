@@ -3,7 +3,7 @@ APITESTPROGS-$(call DEMDEC, H264, H264) += api-h264
 APITESTPROGS-yes += api-seek
 APITESTPROGS-yes += api-codec-param
 APITESTPROGS-$(call DEMDEC, H263, H263) += api-band
-APITESTPROGS-$(HAVE_PTHREADS) += api-threadmessage
+APITESTPROGS-$(HAVE_THREADS) += api-threadmessage
 APITESTPROGS += $(APITESTPROGS-yes)
 
 APITESTOBJS  := $(APITESTOBJS:%=$(APITESTSDIR)%) $(APITESTPROGS:%=$(APITESTSDIR)/%-test.o)
