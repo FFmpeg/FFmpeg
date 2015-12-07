@@ -53,7 +53,7 @@ int ff_g723_1_normalize_bits(int num, int width)
 
 int ff_g723_1_dot_product(const int16_t *a, const int16_t *b, int length)
 {
-    int sum = ff_dot_product(a,b,length);
+    int sum = ff_dot_product(a, b, length);
     return av_sat_add32(sum, sum);
 }
 

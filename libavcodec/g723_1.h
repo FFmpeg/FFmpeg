@@ -145,9 +145,10 @@ typedef struct g723_1_context {
     int postfilter;
 
     int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX + 4];
+
+    /* encoder */
     int16_t prev_data[HALF_FRAME_LEN];
     int16_t prev_weight_sig[PITCH_MAX];
-
 
     int16_t hpf_fir_mem;                   ///< highpass filter fir
     int     hpf_iir_mem;                   ///< and iir memories
