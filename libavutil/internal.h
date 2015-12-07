@@ -281,7 +281,7 @@ static av_always_inline av_const int64_t ff_rint64_clip(double a, int64_t amin, 
     if (a >=  9223372036854775808.0)
         return amax;
     if (a <= -9223372036854775808.0)
-       return amin;
+        return amin;
 
     // safe to call llrint and clip accordingly
     res = llrint(a);
