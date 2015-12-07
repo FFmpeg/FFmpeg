@@ -202,11 +202,13 @@ void av_thread_message_queue_set_err_recv(AVThreadMessageQueue *mq,
 #endif /* HAVE_THREADS */
 }
 
+#if HAVE_THREADS
 static void free_func_wrap(void *arg, void *msg, int size)
 {
     AVThreadMessageQueue *mq = arg;
     mq->free_func(msg);
 }
+#endif
 
 void av_thread_message_flush(AVThreadMessageQueue *mq)
 {
