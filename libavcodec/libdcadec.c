@@ -34,7 +34,6 @@ typedef struct DCADecContext {
     struct dcadec_context *ctx;
     uint8_t *buffer;
     int buffer_size;
-    int downmix_warned;
 } DCADecContext;
 
 static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
@@ -134,17 +133,6 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     if (exss = dcadec_context_get_exss_info(s->ctx)) {
         enum AVMatrixEncoding matrix_encoding = AV_MATRIX_ENCODING_NONE;
 
-        if (!s->downmix_warned) {
-            uint64_t layout = avctx->request_channel_layout;
-
-            if (((layout == AV_CH_LAYOUT_STEREO_DOWNMIX || layout == AV_CH_LAYOUT_STEREO) && !exss->embedded_stereo) ||
-                ( layout == AV_CH_LAYOUT_5POINT1 && !exss->embedded_6ch))
-                av_log(avctx, AV_LOG_WARNING, "%s downmix was requested but no custom coefficients are available, "
-                                              "this may result in clipping\n",
-                                              layout == AV_CH_LAYOUT_5POINT1 ? "5.1" : "Stereo");
-            s->downmix_warned = 1;
-        }
-
         switch(exss->matrix_encoding) {
         case DCADEC_MATRIX_ENCODING_SURROUND:
             matrix_encoding = AV_MATRIX_ENCODING_DOLBY;
@@ -209,20 +197,17 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     if (avctx->flags & AV_CODEC_FLAG_BITEXACT)
         flags |= DCADEC_FLAG_CORE_BIT_EXACT;
 
-    if (avctx->request_channel_layout > 0 && avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE) {
+    if (avctx->request_channel_layout) {
         switch (avctx->request_channel_layout) {
         case AV_CH_LAYOUT_STEREO:
         case AV_CH_LAYOUT_STEREO_DOWNMIX:
-            /* libdcadec ignores the 2ch flag if used alone when no custom downmix coefficients
-               are available, silently outputting a 5.1 downmix if possible instead.
-               Using both the 2ch and 6ch flags together forces a 2ch downmix using default
-               coefficients in such cases. This matches the behavior of the 6ch flag when used
-               alone, where a 5.1 downmix is generated if possible, regardless of custom
-               coefficients being available or not. */
-            flags |= DCADEC_FLAG_KEEP_DMIX_2CH | DCADEC_FLAG_KEEP_DMIX_6CH;
+            flags |= DCADEC_FLAG_KEEP_DMIX_2CH;
             break;
         case AV_CH_LAYOUT_5POINT1:
             flags |= DCADEC_FLAG_KEEP_DMIX_6CH;
+            break;
+        case AV_CH_LAYOUT_NATIVE:
+            flags |= DCADEC_FLAG_NATIVE_LAYOUT;
             break;
         default:
             av_log(avctx, AV_LOG_WARNING, "Invalid request_channel_layout\n");
