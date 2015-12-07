@@ -36,6 +36,33 @@ typedef struct DCADecContext {
     int buffer_size;
 } DCADecContext;
 
+static void my_log_cb(int level, const char *file, int line,
+                      const char *message, void *cbarg)
+{
+    int av_level;
+
+    switch (level) {
+    case DCADEC_LOG_ERROR:
+        av_level = AV_LOG_ERROR;
+        break;
+    case DCADEC_LOG_WARNING:
+        av_level = AV_LOG_WARNING;
+        break;
+    case DCADEC_LOG_INFO:
+        av_level = AV_LOG_INFO;
+        break;
+    case DCADEC_LOG_VERBOSE:
+        av_level = AV_LOG_VERBOSE;
+        break;
+    case DCADEC_LOG_DEBUG:
+    default:
+        av_level = AV_LOG_DEBUG;
+        break;
+    }
+
+    av_log(cbarg, av_level, "%s\n", message);
+}
+
 static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -77,8 +104,6 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
                                      &sample_rate, &bits_per_sample, &profile)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "dcadec_context_filter() failed: %d (%s)\n", -ret, dcadec_strerror(ret));
         return AVERROR_EXTERNAL;
-    } else if (ret > 0) {
-        av_log(avctx, AV_LOG_WARNING, "dcadec_context_filter() warning: %d (%s)\n", ret, dcadec_strerror(ret));
     }
 
     avctx->channels       = av_get_channel_layout_nb_channels(channel_mask);
@@ -218,6 +243,8 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     s->ctx = dcadec_context_create(flags);
     if (!s->ctx)
         return AVERROR(ENOMEM);
+
+    dcadec_context_set_log_cb(s->ctx, my_log_cb, avctx);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
     avctx->bits_per_raw_sample = 24;
