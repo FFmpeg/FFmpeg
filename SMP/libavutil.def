@@ -1,4 +1,5 @@
 EXPORTS
+    av_add_i
     av_add_q
     av_add_stable
     av_adler32_update
@@ -60,6 +61,7 @@ EXPORTS
     av_cast5_init
     av_channel_layout_extract_channel
     av_chroma_location_name
+    av_cmp_i
     av_color_primaries_name
     av_color_range_name
     av_color_space_name
@@ -90,6 +92,7 @@ EXPORTS
     av_display_matrix_flip
     av_display_rotation_get
     av_display_rotation_set
+    av_div_i
     av_div_q
     av_downmix_info_update_side_data
     av_dynarray2_add
@@ -216,6 +219,7 @@ EXPORTS
     av_hmac_free
     av_hmac_init
     av_hmac_update
+    av_i2int
     av_image_alloc
     av_image_check_sar
     av_image_check_size
@@ -228,11 +232,13 @@ EXPORTS
     av_image_fill_pointers
     av_image_get_buffer_size
     av_image_get_linesize
+    av_int2i
     av_int_list_length_for_size
     av_lfg_init
     av_log
     av_log2
     av_log2_16bit
+    av_log2_i
     av_log_default_callback
     av_log_format_line
     av_log_get_flags
@@ -253,6 +259,8 @@ EXPORTS
     av_md5_update
     av_memcpy_backptr
     av_memdup
+    av_mod_i
+    av_mul_i
     av_mul_q
     av_murmur3_alloc
     av_murmur3_final
@@ -360,6 +368,7 @@ EXPORTS
     av_sha_final
     av_sha_init
     av_sha_update
+    av_shr_i
     av_small_strptime
     av_stereo3d_alloc
     av_stereo3d_create_side_data
@@ -377,6 +386,7 @@ EXPORTS
     av_strstart
     av_strtod
     av_strtok
+    av_sub_i
     av_sub_q
     av_tea_alloc
     av_tea_crypt

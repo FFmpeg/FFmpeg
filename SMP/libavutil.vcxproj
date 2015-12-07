@@ -106,6 +106,7 @@
     <ClCompile Include="..\libavutil\hash.c" />
     <ClCompile Include="..\libavutil\hmac.c" />
     <ClCompile Include="..\libavutil\imgutils.c" />
+    <ClCompile Include="..\libavutil\integer.c" />
     <ClCompile Include="..\libavutil\intmath.c" />
     <ClCompile Include="..\libavutil\lfg.c" />
     <ClCompile Include="..\libavutil\lls.c">

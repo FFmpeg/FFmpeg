@@ -138,6 +138,9 @@
     <ClCompile Include="..\libavutil\imgutils.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\integer.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\intmath.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
