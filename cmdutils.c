@@ -52,6 +52,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ffversion.h"
+#include "libavutil/version.h"
 #include "cmdutils.h"
 #if CONFIG_NETWORK
 #include "libavformat/network.h"
@@ -1058,7 +1059,8 @@ static int warned_cfg = 0;
                    LIB##LIBNAME##_VERSION_MAJOR,                        \
                    LIB##LIBNAME##_VERSION_MINOR,                        \
                    LIB##LIBNAME##_VERSION_MICRO,                        \
-                   version >> 16, version >> 8 & 0xff, version & 0xff); \
+                   AV_VERSION_MAJOR(version), AV_VERSION_MINOR(version),\
+                   AV_VERSION_MICRO(version));                          \
         }                                                               \
         if (flags & SHOW_CONFIG) {                                      \
             const char *cfg = libname##_configuration();                \
