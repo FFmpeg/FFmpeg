@@ -66,8 +66,6 @@ public:
 
     bool passConfig( );
 
-    bool passConfigFile( const string & stConfigFile );
-
     bool changeConfig( const string & stOption );
 
     bool outputConfig( );

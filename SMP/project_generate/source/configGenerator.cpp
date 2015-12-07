@@ -190,20 +190,6 @@ bool configGenerator::passConfig( )
     return buildDefaultValues( );
 }
 
-bool configGenerator::passConfigFile( const string & stConfigFile )
-{
-    //Just pass in the config file that is passed in
-
-    //Also need to get the avconfig file
-    //??????? as currently this will use options from config.h but the prefix will be wrong so finding them write values wont work
-
-    //Mark the end of the config list. Any elements added after this are considered temporary and should not be exported
-    m_uiConfigValuesEnd = m_vConfigValues.size( ); //must be uint in case of realloc
-
-    cout << "  Error: Directly passing pre-built config files is not supported yet!" << endl;
-    return false;
-}
-
 bool configGenerator::changeConfig( const string & stOption )
 {
     if( stOption.compare("--disable-devices") == 0 )
