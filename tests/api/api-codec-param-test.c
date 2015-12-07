@@ -129,6 +129,12 @@ static int find_video_stream_info(AVFormatContext *fmt_ctx, int decode)
 end:
     av_packet_unref(&pkt);
 
+    /* close all codecs opened in try_decode_video_frame */
+    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+        AVStream *st = fmt_ctx->streams[i];
+        avcodec_close(st->codec);
+    }
+
     return ret < 0;
 }
 
