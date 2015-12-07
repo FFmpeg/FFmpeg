@@ -225,6 +225,9 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     if (avctx->flags & AV_CODEC_FLAG_BITEXACT)
         flags |= DCADEC_FLAG_CORE_BIT_EXACT;
 
+    if (avctx->err_recognition & AV_EF_EXPLODE)
+        flags |= DCADEC_FLAG_STRICT;
+
     if (avctx->request_channel_layout) {
         switch (avctx->request_channel_layout) {
         case AV_CH_LAYOUT_STEREO:
