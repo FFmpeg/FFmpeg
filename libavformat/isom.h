@@ -37,6 +37,8 @@ extern const AVCodecTag ff_codec_movsubtitle_tags[];
 int ff_mov_iso639_to_lang(const char lang[4], int mp4);
 int ff_mov_lang_to_iso639(unsigned code, char to[4]);
 
+struct AVAESCTR;
+
 /* the QuickTime file format is quite convoluted...
  * it has lots of index tables, each indexing something in another one...
  * Here we just use what is needed to read the chunks
@@ -168,6 +170,15 @@ typedef struct MOVStreamContext {
     int64_t duration_for_fps;
 
     int32_t *display_matrix;
+    uint32_t format;
+
+    struct {
+        int use_subsamples;
+        uint8_t* auxiliary_info;
+        uint8_t* auxiliary_info_end;
+        uint8_t* auxiliary_info_pos;
+        struct AVAESCTR* aes_ctr;
+    } cenc;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -214,6 +225,8 @@ typedef struct MOVContext {
     void *audible_fixed_key;
     int audible_fixed_key_size;
     struct AVAES *aes_decrypt;
+    uint8_t *decryption_key;
+    int decryption_key_len;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
