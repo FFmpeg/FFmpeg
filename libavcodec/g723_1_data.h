@@ -125,10 +125,8 @@ static const int16_t dc_lsp[LPC_ORDER] = {
     0x6c46
 };
 
-/**
- * Cosine table scaled by 2^14
- */
-static const int16_t cos_tab[COS_TBL_SIZE+1] = {
+/* Cosine table scaled by 2^14 */
+static const int16_t cos_tab[COS_TBL_SIZE + 1] = {
     16384,  16383,  16379,  16373,  16364,  16353,  16340,  16324,
     16305,  16284,  16261,  16235,  16207,  16176,  16143,  16107,
     16069,  16029,  15986,  15941,  15893,  15843,  15791,  15736,
