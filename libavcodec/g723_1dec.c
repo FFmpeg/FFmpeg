@@ -34,7 +34,7 @@
 #include "acelp_vectors.h"
 #include "celp_filters.h"
 #include "celp_math.h"
-#include "g723_1_data.h"
+#include "g723_1.h"
 #include "internal.h"
 
 #define CNG_RANDOM_SEED 12345
