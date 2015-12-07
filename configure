@@ -5711,6 +5711,7 @@ check_cflags -Wno-pointer-to-int-cast
 check_cflags -Wstrict-prototypes
 check_cflags -Wempty-body
 enabled extra_warnings && check_cflags -Winline
+enabled extra_warnings && check_cflags -Wcast-qual
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}
