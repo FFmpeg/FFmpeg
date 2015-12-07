@@ -93,7 +93,9 @@ int av_thread_message_queue_alloc(AVThreadMessageQueue **mq,
 void av_thread_message_queue_set_free_func(AVThreadMessageQueue *mq,
                                            void (*free_func)(void *msg))
 {
+#if HAVE_THREADS
     mq->free_func = free_func;
+#endif
 }
 
 void av_thread_message_queue_free(AVThreadMessageQueue **mq)
