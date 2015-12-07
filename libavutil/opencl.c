@@ -26,15 +26,7 @@
 #include "log.h"
 #include "avassert.h"
 #include "opt.h"
-
-#if HAVE_THREADS
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#endif
+#include "thread.h"
 #include "atomic.h"
 
 static pthread_mutex_t * volatile atomic_opencl_lock = NULL;

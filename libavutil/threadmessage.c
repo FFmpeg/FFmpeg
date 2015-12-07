@@ -20,17 +20,7 @@
 
 #include "fifo.h"
 #include "threadmessage.h"
-#if HAVE_THREADS
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#else
-#error "Unknown threads implementation"
-#endif
-#endif
+#include "thread.h"
 
 struct AVThreadMessageQueue {
 #if HAVE_THREADS

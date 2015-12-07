@@ -27,19 +27,12 @@
 #define AVCODEC_VP8_H
 
 #include "libavutil/buffer.h"
+#include "libavutil/thread.h"
 
 #include "h264pred.h"
 #include "thread.h"
 #include "vp56.h"
 #include "vp8dsp.h"
-
-#if HAVE_PTHREADS
-#   include <pthread.h>
-#elif HAVE_OS2THREADS
-#   include "compat/os2threads.h"
-#elif HAVE_W32THREADS
-#   include "compat/w32pthreads.h"
-#endif
 
 #define VP8_MAX_QUANT 127
 
