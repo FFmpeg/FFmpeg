@@ -31,9 +31,12 @@
 #include "internal.h"
 
 typedef struct DCADecContext {
+    const AVClass *class;
     struct dcadec_context *ctx;
     uint8_t *buffer;
     int buffer_size;
+    int lfe_filter;
+    int core_only;
 } DCADecContext;
 
 static void my_log_cb(int level, const char *file, int line,
@@ -240,6 +243,20 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
         }
     }
 
+    if (s->core_only)
+        flags |= DCADEC_FLAG_CORE_ONLY;
+
+    switch (s->lfe_filter) {
+#if DCADEC_API_VERSION >= DCADEC_VERSION_CODE(0, 1, 0)
+    case 1:
+        flags |= DCADEC_FLAG_CORE_LFE_IIR;
+        break;
+#endif
+    case 2:
+        flags |= DCADEC_FLAG_CORE_LFE_FIR;
+        break;
+    }
+
     s->ctx = dcadec_context_create(flags);
     if (!s->ctx)
         return AVERROR(ENOMEM);
@@ -251,6 +268,26 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
 
     return 0;
 }
+
+#define OFFSET(x) offsetof(DCADecContext, x)
+#define PARAM AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption dcadec_options[] = {
+    { "lfe_filter", "Lossy LFE channel interpolation filter", OFFSET(lfe_filter), AV_OPT_TYPE_INT,   { .i64 = 0 }, 0,       2,       PARAM, "lfe_filter" },
+    { "default",    "Library default",                        0,                  AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, PARAM, "lfe_filter" },
+    { "iir",        "IIR filter",                             0,                  AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, PARAM, "lfe_filter" },
+    { "fir",        "FIR filter",                             0,                  AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, PARAM, "lfe_filter" },
+    { "core_only",  "Decode core only without extensions",    OFFSET(core_only),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0,       1,       PARAM },
+    { NULL }
+};
+
+static const AVClass dcadec_class = {
+    .class_name = "libdcadec decoder",
+    .item_name  = av_default_item_name,
+    .option     = dcadec_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DECODER,
+};
 
 static const AVProfile profiles[] = {
     { FF_PROFILE_DTS,         "DTS"         },
@@ -275,5 +312,6 @@ AVCodec ff_libdcadec_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
+    .priv_class     = &dcadec_class,
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),
 };
