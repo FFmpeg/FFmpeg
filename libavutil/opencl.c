@@ -26,6 +26,8 @@
 #include "log.h"
 #include "avassert.h"
 #include "opt.h"
+
+#if HAVE_THREADS
 #include "thread.h"
 #include "atomic.h"
 
