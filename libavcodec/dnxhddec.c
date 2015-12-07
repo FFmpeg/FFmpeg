@@ -361,7 +361,7 @@ static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
         LAST_SKIP_BITS(bs, &row->gb, len);
         sign  = ~level >> 31;
         level = (NEG_USR32(sign ^ level, len) ^ sign) - sign;
-        row->last_dc[component] += level << dc_shift;
+        row->last_dc[component] += level * (1 << dc_shift);
     }
     block[0] = row->last_dc[component];
 

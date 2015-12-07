@@ -169,7 +169,7 @@ typedef struct {
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "max_extra_cb_iterations", "Max extra codebook recalculation passes, more is better and slower", OFFSET(max_extra_cb_iterations), AV_OPT_TYPE_INT, { .i64 = 2 }, 0, INT_MAX, VE },
-    { "skip_empty_cb", "Avoid wasting bytes, ignore vintage MacOS decoder", OFFSET(skip_empty_cb), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "skip_empty_cb", "Avoid wasting bytes, ignore vintage MacOS decoder", OFFSET(skip_empty_cb), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "max_strips", "Limit strips/frame, vintage compatible is 1..3, otherwise the more the better", OFFSET(max_max_strips), AV_OPT_TYPE_INT, { .i64 = 3 }, MIN_STRIPS, MAX_STRIPS, VE },
     { "min_strips", "Enforce min strips/frame, more is worse and faster, must be <= max_strips", OFFSET(min_min_strips), AV_OPT_TYPE_INT, { .i64 = MIN_STRIPS }, MIN_STRIPS, MAX_STRIPS, VE },
     { "strip_number_adaptivity", "How fast the strip number adapts, more is slightly better, much slower", OFFSET(strip_number_delta_range), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, MAX_STRIPS-MIN_STRIPS, VE },

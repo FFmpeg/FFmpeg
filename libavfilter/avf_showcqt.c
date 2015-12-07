@@ -466,7 +466,7 @@ static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
     double *freq = NULL;
     int x, y, ret;
 
-    if (s->basefreq != BASEFREQ || s->endfreq != ENDFREQ) {
+    if (s->basefreq != (double) BASEFREQ || s->endfreq != (double) ENDFREQ) {
         av_log(s->ctx, AV_LOG_WARNING, "font axis rendering is not implemented in non-default frequency range,"
                " please use axisfile option instead.\n");
         return AVERROR(EINVAL);

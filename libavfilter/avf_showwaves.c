@@ -436,7 +436,7 @@ AVFilter ff_avf_showwaves = {
 static const AVOption showwavespic_options[] = {
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "600x240"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "600x240"}, 0, 0, FLAGS },
-    { "split_channels", "draw channels separately", OFFSET(split_channels), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
+    { "split_channels", "draw channels separately", OFFSET(split_channels), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { NULL }
 };
 

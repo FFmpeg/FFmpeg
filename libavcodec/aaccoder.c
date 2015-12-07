@@ -261,9 +261,9 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     }
 
     //minimum scalefactor index is when minimum nonzero coefficient after quantizing is not clipped
-    q0 = coef2minsf(q0f);
+    q0 = av_clip(coef2minsf(q0f), 0, SCALE_MAX_POS-1);
     //maximum scalefactor index is when maximum coefficient after quantizing is still not zero
-    q1 = coef2maxsf(q1f);
+    q1 = av_clip(coef2maxsf(q1f), 1, SCALE_MAX_POS);
     if (q1 - q0 > 60) {
         int q0low  = q0;
         int q1high = q1;
@@ -278,6 +278,12 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
             q0 -= q1 - q1high;
             q1  = q1high;
         }
+    }
+    // q0 == q1 isn't really a legal situation
+    if (q0 == q1) {
+        // the following is indirect but guarantees q1 != q0 && q1 near q0
+        q1 = av_clip(q0+1, 1, SCALE_MAX_POS);
+        q0 = av_clip(q1-1, 0, SCALE_MAX_POS - 1);
     }
 
     for (i = 0; i < TRELLIS_STATES; i++) {
@@ -327,6 +333,10 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                 maxscale = coef2maxsf(qmax);
                 minscale = av_clip(minscale - q0, 0, TRELLIS_STATES - 1);
                 maxscale = av_clip(maxscale - q0, 0, TRELLIS_STATES);
+                if (minscale == maxscale) {
+                    maxscale = av_clip(minscale+1, 1, TRELLIS_STATES);
+                    minscale = av_clip(maxscale-1, 0, TRELLIS_STATES - 1);
+                }
                 maxval = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], s->scoefs+start);
                 for (q = minscale; q < maxscale; q++) {
                     float dist = 0;
@@ -370,7 +380,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     }
     while (idx) {
         sce->sf_idx[bandaddr[idx]] = minq + q0;
-        minq = paths[idx][minq].prev;
+        minq = FFMAX(paths[idx][minq].prev, 0);
         idx--;
     }
     //set the same quantizers inside window groups

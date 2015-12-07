@@ -191,7 +191,7 @@ static int theora_packet(AVFormatContext *s, int idx)
         os->lastpts = os->lastdts   = theora_gptopts(s, idx, os->granule, NULL) - duration;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
-            if (s->streams[idx]->duration)
+            if (s->streams[idx]->duration > 0)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;
         }
     }

@@ -316,6 +316,7 @@ Toolchain options:
   --yasmexe=EXE            use yasm-compatible assembler EXE [$yasmexe_default]
   --cc=CC                  use C compiler CC [$cc_default]
   --cxx=CXX                use C compiler CXX [$cxx_default]
+  --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --ld=LD                  use linker LD [$ld_default]
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
@@ -331,6 +332,7 @@ Toolchain options:
   --host-os=OS             compiler host OS [$target_os]
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
   --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
+  --extra-objcflags=FLAGS  add FLAGS to OBJCFLAGS [$CFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
   --extra-ldlibflags=ELDFLAGS add ELDFLAGS to LDLIBFLAGS [$LDLIBFLAGS]
@@ -382,7 +384,6 @@ Optimization options (experts only):
   --disable-neon           disable NEON optimizations
   --disable-inline-asm     disable use of inline assembly
   --disable-yasm           disable use of nasm/yasm assembly
-  --disable-mips32r5       disable MIPS32R5 optimizations
   --disable-mips64r6       disable MIPS64R6 optimizations
   --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
@@ -806,6 +807,10 @@ add_asflags(){
     append ASFLAGS $($asflags_filter "$@")
 }
 
+add_objcflags(){
+    append OBJCFLAGS $($objcflags_filter "$@")
+}
+
 add_ldflags(){
     append LDFLAGS $($ldflags_filter "$@")
 }
@@ -876,11 +881,11 @@ check_cxx(){
     check_cmd $cxx $CPPFLAGS $CFLAGS $CXXFLAGS "$@" $CXX_C -o $TMPO $TMPCPP
 }
 
-check_oc(){
-    log check_oc "$@"
+check_objcc(){
+    log check_objcc "$@"
     cat > $TMPM
     log_file $TMPM
-    check_cmd $cc -Werror=missing-prototypes $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPM
+    check_cmd $objcc -Werror=missing-prototypes $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPM
 }
 
 check_cpp(){
@@ -991,6 +996,19 @@ int x;
 EOF
 }
 
+test_objcflags(){
+    log test_cflags "$@"
+    set -- $($cflags_filter "$@")
+    check_objcc "$@" <<EOF
+int x;
+EOF
+}
+
+check_objcflags(){
+    log check_cflags "$@"
+    test_objcflags "$@" && add_objcflags "$@"
+}
+
 test_ldflags(){
     log test_ldflags "$@"
     check_ld "cc" "$@" <<EOF
@@ -1028,8 +1046,8 @@ int x;
 EOF
 }
 
-check_header_oc(){
-    log check_header_oc "$@"
+check_header_objcc(){
+    log check_header_objcc "$@"
     rm -f -- "$TMPO"
     header=$1
     shift
@@ -1037,7 +1055,7 @@ check_header_oc(){
     {
        echo "#include <$header>"
        echo "int main(void) { return 0; }"
-    } | check_oc && check_stat "$TMPO" && enable_safe $headers
+    } | check_objcc && check_stat "$TMPO" && enable_safe $headers
 }
 
 check_func(){
@@ -1048,6 +1066,21 @@ check_func(){
     check_ld "cc" "$@" <<EOF && enable $func
 extern int $func();
 int main(void){ $func(); }
+EOF
+}
+
+check_complexfunc(){
+    log check_complexfunc "$@"
+    func=$1
+    narg=$2
+    shift 2
+    test $narg = 2 && args="f, g" || args="f * I"
+    disable $func
+    check_ld "cc" "$@" <<EOF && enable $func
+#include <complex.h>
+#include <math.h>
+float foo(complex float f, complex float g) { return $func($args); }
+int main(void){ return (int) foo; }
 EOF
 }
 
@@ -1631,7 +1664,6 @@ ARCH_EXT_LIST_ARM="
 ARCH_EXT_LIST_MIPS="
     mipsfpu
     mips32r2
-    mips32r5
     mips64r6
     mipsdsp
     mipsdspr2
@@ -1766,6 +1798,11 @@ HEADERS_LIST="
 
 INTRINSICS_LIST="
     intrinsics_neon
+"
+
+COMPLEX_FUNCS="
+    cabs
+    cexp
 "
 
 MATH_FUNCS="
@@ -1903,6 +1940,7 @@ HAVE_LIST="
     $ARCH_FEATURES
     $ATOMICS_LIST
     $BUILTIN_LIST
+    $COMPLEX_FUNCS
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $HEADERS_LIST
@@ -2042,6 +2080,7 @@ CMDLINE_SET="
     assert_level
     build_suffix
     cc
+    objcc
     cpu
     cross_prefix
     custom_allocator
@@ -2086,6 +2125,7 @@ CMDLINE_SET="
 CMDLINE_APPEND="
     extra_cflags
     extra_cxxflags
+    extra_objcflags
     host_cppflags
 "
 
@@ -2109,7 +2149,6 @@ mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 mips32r2_deps="mips"
-mips32r5_deps="mips"
 mips64r6_deps="mips"
 msa_deps="mips"
 mmi_deps="mips"
@@ -2785,6 +2824,7 @@ unix_protocol_deps="sys_un_h"
 unix_protocol_select="network"
 
 # filters
+aemphasis_filter_deps="cabs cexp"
 amovie_filter_deps="avcodec avformat"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
@@ -3007,6 +3047,9 @@ CC_E='-E -o $@'
 CC_O='-o $@'
 CXX_C='-c'
 CXX_O='-o $@'
+OBJCC_C='-c'
+OBJCC_E='-E -o $@'
+OBJCC_O='-o $@'
 LD_O='-o $@'
 LD_LIB='-l%'
 LD_PATH='-L'
@@ -3831,15 +3874,21 @@ test -n "$cc_type" && enable $cc_type ||
     warn "Unknown C compiler $cc, unable to select optimal CFLAGS"
 
 : ${as_default:=$cc}
+: ${objcc_default:=$cc}
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 : ${host_ld_default:=$host_cc}
-set_default ar as dep_cc ld host_ld windres
+set_default ar as objcc dep_cc ld host_ld windres
 
 probe_cc as "$as"
 asflags_filter=$_flags_filter
 add_asflags $_flags $_cflags
 set_ccvars AS
+
+probe_cc objcc "$objcc"
+objcflags_filter=$_flags_filter
+add_objcflags $_flags $_cflags
+set_ccvars OBJC
 
 probe_cc ld "$ld"
 ldflags_filter=$_flags_filter
@@ -3880,6 +3929,7 @@ fi
 
 add_cflags $extra_cflags
 add_cxxflags $extra_cxxflags
+add_objcflags $extra_objcflags
 add_asflags $extra_cflags
 
 if test -n "$sysroot"; then
@@ -4065,7 +4115,6 @@ elif enabled mips; then
 
     case $cpu in
         24kc)
-            disable mips32r5
             disable mips64r6
             disable mipsfpu
             disable mipsdsp
@@ -4073,33 +4122,28 @@ elif enabled mips; then
             disable msa
         ;;
         24kf*)
-            disable mips32r5
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
             disable msa
         ;;
         24kec|34kc|1004kc)
-            disable mips32r5
             disable mips64r6
             disable mipsfpu
             disable mipsdspr2
             disable msa
         ;;
         24kef*|34kf*|1004kf*)
-            disable mips32r5
             disable mips64r6
             disable mipsdspr2
             disable msa
         ;;
         74kc)
-            disable mips32r5
             disable mips64r6
             disable mipsfpu
             disable msa
         ;;
         74kf)
-            disable mips32r5
             disable mips64r6
             disable msa
         ;;
@@ -4107,11 +4151,11 @@ elif enabled mips; then
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
-
-            check_cflags "-mtune=p5600"
+            check_cflags "-mtune=p5600" &&
+            check_cflags "-mfp64 -msched-weight -mload-store-pairs -funroll-loops" &&
+            add_asflags "-mfp64"
         ;;
         i6400)
-            disable mips32r5
             disable mipsdsp
             disable mipsdspr2
             disable mipsfpu
@@ -4122,7 +4166,6 @@ elif enabled mips; then
         loongson*)
             disable mipsfpu
             disable mips32r2
-            disable mips32r5
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
@@ -4147,14 +4190,12 @@ elif enabled mips; then
             esac
         ;;
         generic)
-            disable mips32r5
             disable mips64r6
             disable msa
         ;;
         *)
             disable mipsfpu
             disable mips32r2
-            disable mips32r5
             disable mips64r6
             disable mipsdsp
             disable mipsdspr2
@@ -4961,14 +5002,11 @@ elif enabled mips; then
     elif enabled mipsdsp || enabled mipsdspr2; then
         add_cflags "-mips32r2 -mfp32"
         add_asflags "-mips32r2 -mfp32"
-    elif enabled mips32r5 || enabled mips64r6; then
+    elif enabled mips64r6; then
         check_cflags "-mfp64"
         check_ldflags "-mfp64"
     fi
 
-    enabled mips32r5  && check_cflags "-mips32r5 -msched-weight -mload-store-pairs -funroll-loops" &&
-     check_ldflags "-mips32r5" &&
-     check_inline_asm mips32r5  '"ulw $t0, ($t1)"'
     enabled mips64r6  && check_cflags "-mips64r6 -msched-weight -mload-store-pairs -funroll-loops" &&
      check_ldflags "-mips64r6" &&
      check_inline_asm mips64r6  '"aui $t0, $t1, 1"'
@@ -4981,7 +5019,6 @@ elif enabled mips; then
     enabled msa       && check_cflags "-mmsa" && check_ldflags "-mmsa" &&
      check_inline_asm msa       '"addvi.b $w0, $w1, 1"'
 
-    enabled mips32r5 && add_asflags "-mips32r5 -mfp64"
     enabled mips64r6 && add_asflags "-mips64r6 -mfp64"
     enabled msa && add_asflags "-mmsa"
 
@@ -5324,8 +5361,12 @@ for func in $MATH_FUNCS; do
     eval check_mathfunc $func \${${func}_args:-1}
 done
 
+for func in $COMPLEX_FUNCS; do
+    eval check_complexfunc $func \${${func}_args:-1}
+done
+
 # these are off by default, so fail if requested and not available
-enabled avfoundation_indev && { check_header_oc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
+enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
                                 check_lib2 ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
 enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
@@ -5481,7 +5522,7 @@ enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -l
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
-enabled qtkit_indev      && { check_header_oc QTKit/QTKit.h || disable qtkit_indev; }
+enabled qtkit_indev      && { check_header_objcc QTKit/QTKit.h || disable qtkit_indev; }
 
 # libdc1394 check
 if enabled libdc1394; then
@@ -6049,7 +6090,6 @@ if enabled arm; then
 fi
 if enabled mips; then
     echo "MIPS FPU enabled          ${mipsfpu-no}"
-    echo "MIPS32R5 enabled          ${mips32r5-no}"
     echo "MIPS64R6 enabled          ${mips64r6-no}"
     echo "MIPS DSP R1 enabled       ${mipsdsp-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
@@ -6145,6 +6185,7 @@ INTRINSICS=$intrinsics
 CC=$cc
 CXX=$cxx
 AS=$as
+OBJCC=$objcc
 LD=$ld
 DEPCC=$dep_cc
 DEPCCFLAGS=$DEPCCFLAGS \$(CPPFLAGS)
@@ -6162,9 +6203,13 @@ LN_S=$ln_s
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
 CXXFLAGS=$CXXFLAGS
+OBJCFLAGS=$OBJCFLAGS
 ASFLAGS=$ASFLAGS
 AS_C=$AS_C
 AS_O=$AS_O
+OBJCC_C=$OBJCC_C
+OBJCC_E=$OBJCC_E
+OBJCC_O=$OBJCC_O
 CC_C=$CC_C
 CC_E=$CC_E
 CC_O=$CC_O

@@ -643,7 +643,7 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "ctype= %.4s (0x%08x)\n", (char*)&ctype, ctype);
     av_log(c->fc, AV_LOG_TRACE, "stype= %.4s\n", (char*)&type);
 
-    if (c->fc->nb_streams < 1) {  // meta before first trak
+    if (c->trak_index < 0) {  // meta not inside a trak
         if (type == MKTAG('m','d','t','a')) {
             c->found_hdlr_mdta = 1;
         }
@@ -3073,9 +3073,12 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->priv_data = sc;
     st->codec->codec_type = AVMEDIA_TYPE_DATA;
     sc->ffindex = st->index;
+    c->trak_index = st->index;
 
     if ((ret = mov_read_default(c, pb, atom)) < 0)
         return ret;
+
+    c->trak_index = -1;
 
     /* sanity checks */
     if (sc->chunk_count && (!sc->stts_count || !sc->stsc_count ||
@@ -4617,6 +4620,7 @@ static int mov_read_header(AVFormatContext *s)
     int i;
 
     mov->fc = s;
+    mov->trak_index = -1;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
     if (pb->seekable)
         atom.size = avio_size(pb);
@@ -5044,13 +5048,13 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 static const AVOption mov_options[] = {
     {"use_absolute_path",
         "allow using absolute path when opening alias, this is a possible security issue",
-        OFFSET(use_absolute_path), AV_OPT_TYPE_INT, {.i64 = 0},
+        OFFSET(use_absolute_path), AV_OPT_TYPE_BOOL, {.i64 = 0},
         0, 1, FLAGS},
     {"seek_streams_individually",
         "Seek each stream individually to the to the closest point",
-        OFFSET(seek_individually), AV_OPT_TYPE_INT, { .i64 = 1 },
+        OFFSET(seek_individually), AV_OPT_TYPE_BOOL, { .i64 = 1 },
         0, 1, FLAGS},
-    {"ignore_editlist", "", OFFSET(ignore_editlist), AV_OPT_TYPE_INT, {.i64 = 0},
+    {"ignore_editlist", "", OFFSET(ignore_editlist), AV_OPT_TYPE_BOOL, {.i64 = 0},
         0, 1, FLAGS},
     {"ignore_chapters", "", OFFSET(ignore_chapters), AV_OPT_TYPE_BOOL, {.i64 = 0},
         0, 1, FLAGS},

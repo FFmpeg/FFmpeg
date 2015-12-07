@@ -549,7 +549,7 @@ static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption ff_img_options[] = {
     { "framerate",    "set the video framerate",             OFFSET(framerate),    AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0,   DEC },
-    { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, 1,       DEC },
+    { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_BOOL,   {.i64 = 0   }, 0, 1,       DEC },
 
     { "pattern_type", "set pattern type",                    OFFSET(pattern_type), AV_OPT_TYPE_INT,    {.i64=PT_GLOB_SEQUENCE}, 0,       INT_MAX, DEC, "pattern_type"},
     { "glob_sequence","select glob/sequence pattern type",   0, AV_OPT_TYPE_CONST,  {.i64=PT_GLOB_SEQUENCE}, INT_MIN, INT_MAX, DEC, "pattern_type" },

@@ -52,7 +52,7 @@ typedef struct RawVideoContext {
 } RawVideoContext;
 
 static const AVOption options[]={
-{"top", "top field first", offsetof(RawVideoContext, tff), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM|AV_OPT_FLAG_VIDEO_PARAM},
+{"top", "top field first", offsetof(RawVideoContext, tff), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM|AV_OPT_FLAG_VIDEO_PARAM},
 {NULL}
 };
 

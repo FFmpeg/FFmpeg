@@ -27,7 +27,6 @@
  * libavcodec/mpegvideo.c.
  *
  * TODO: segmentation
- * TODO: quantization
  */
 
 #include "libavutil/imgutils.h"
@@ -43,6 +42,8 @@
 typedef struct {
     const AVClass *class;
     unsigned mv;
+    int hsub, vsub;
+    int qp;
 } CodecViewContext;
 
 #define OFFSET(x) offsetof(CodecViewContext, x)
@@ -52,6 +53,7 @@ static const AVOption codecview_options[] = {
         {"pf", "forward predicted MVs of P-frames",  0, AV_OPT_TYPE_CONST, {.i64 = MV_P_FOR },  INT_MIN, INT_MAX, FLAGS, "mv"},
         {"bf", "forward predicted MVs of B-frames",  0, AV_OPT_TYPE_CONST, {.i64 = MV_B_FOR },  INT_MIN, INT_MAX, FLAGS, "mv"},
         {"bb", "backward predicted MVs of B-frames", 0, AV_OPT_TYPE_CONST, {.i64 = MV_B_BACK }, INT_MIN, INT_MAX, FLAGS, "mv"},
+    { "qp", NULL, OFFSET(qp), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
     { NULL }
 };
 
@@ -198,22 +200,60 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     CodecViewContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
 
-    AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-    if (sd) {
-        int i;
-        const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
-        for (i = 0; i < sd->size / sizeof(*mvs); i++) {
-            const AVMotionVector *mv = &mvs[i];
-            const int direction = mv->source > 0;
-            if ((direction == 0 && (s->mv & MV_P_FOR)  && frame->pict_type == AV_PICTURE_TYPE_P) ||
-                (direction == 0 && (s->mv & MV_B_FOR)  && frame->pict_type == AV_PICTURE_TYPE_B) ||
-                (direction == 1 && (s->mv & MV_B_BACK) && frame->pict_type == AV_PICTURE_TYPE_B))
-                draw_arrow(frame->data[0], mv->dst_x, mv->dst_y, mv->src_x, mv->src_y,
-                           frame->width, frame->height, frame->linesize[0],
-                           100, 0, mv->source > 0);
+    if (s->qp) {
+        int qstride, qp_type;
+        int8_t *qp_table = av_frame_get_qp_table(frame, &qstride, &qp_type);
+
+        if (qp_table) {
+            int x, y;
+            const int w = FF_CEIL_RSHIFT(frame->width,  s->hsub);
+            const int h = FF_CEIL_RSHIFT(frame->height, s->vsub);
+            uint8_t *pu = frame->data[1];
+            uint8_t *pv = frame->data[2];
+            const int lzu = frame->linesize[1];
+            const int lzv = frame->linesize[2];
+
+            for (y = 0; y < h; y++) {
+                for (x = 0; x < w; x++) {
+                    const int qp = ff_norm_qscale(qp_table[(y >> 3) * qstride + (x >> 3)], qp_type) * 128/31;
+                    pu[x] = pv[x] = qp;
+                }
+                pu += lzu;
+                pv += lzv;
+            }
         }
     }
+
+    if (s->mv) {
+        AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+        if (sd) {
+            int i;
+            const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
+            for (i = 0; i < sd->size / sizeof(*mvs); i++) {
+                const AVMotionVector *mv = &mvs[i];
+                const int direction = mv->source > 0;
+                if ((direction == 0 && (s->mv & MV_P_FOR)  && frame->pict_type == AV_PICTURE_TYPE_P) ||
+                    (direction == 0 && (s->mv & MV_B_FOR)  && frame->pict_type == AV_PICTURE_TYPE_B) ||
+                    (direction == 1 && (s->mv & MV_B_BACK) && frame->pict_type == AV_PICTURE_TYPE_B))
+                    draw_arrow(frame->data[0], mv->dst_x, mv->dst_y, mv->src_x, mv->src_y,
+                               frame->width, frame->height, frame->linesize[0],
+                               100, 0, mv->source > 0);
+            }
+        }
+    }
+
     return ff_filter_frame(outlink, frame);
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    CodecViewContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
+    return 0;
 }
 
 static const AVFilterPad codecview_inputs[] = {
@@ -221,6 +261,7 @@ static const AVFilterPad codecview_inputs[] = {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
         .filter_frame   = filter_frame,
+        .config_props   = config_input,
         .needs_writable = 1,
     },
     { NULL }

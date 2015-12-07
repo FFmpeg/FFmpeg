@@ -100,7 +100,10 @@ static int ffm_read_data(AVFormatContext *s,
             len = size;
         if (len == 0) {
             if (avio_tell(pb) == ffm->file_size)
-                avio_seek(pb, ffm->packet_size, SEEK_SET);
+                if (ffm->server_attached)
+                    avio_seek(pb, ffm->packet_size, SEEK_SET);
+                else
+                    return AVERROR_EOF;
     retry_read:
             if (pb->buffer_size != ffm->packet_size) {
                 int64_t tell = avio_tell(pb);
@@ -420,7 +423,7 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             break;
         case MKBETAG('S', '2', 'V', 'I'):
-            if (f_stvi++) {
+            if (f_stvi++ || !size) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
@@ -435,7 +438,7 @@ static int ffm2_read_header(AVFormatContext *s)
                 goto fail;
             break;
         case MKBETAG('S', '2', 'A', 'U'):
-            if (f_stau++) {
+            if (f_stau++ || !size) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }

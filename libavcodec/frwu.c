@@ -103,7 +103,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 }
 
 static const AVOption frwu_options[] = {
-    {"change_field_order", "Change field order", offsetof(FRWUContext, change_field_order), AV_OPT_TYPE_INT,
+    {"change_field_order", "Change field order", offsetof(FRWUContext, change_field_order), AV_OPT_TYPE_BOOL,
      {.i64 = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM},
     {NULL}
 };

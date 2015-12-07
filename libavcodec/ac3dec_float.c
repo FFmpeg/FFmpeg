@@ -33,7 +33,7 @@
 
 static const AVOption options[] = {
     { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 6.0, PAR },
-    { "heavy_compr", "heavy dynamic range compression enabled", OFFSET(heavy_compression), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, PAR },
+    { "heavy_compr", "enable heavy dynamic range compression", OFFSET(heavy_compression), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, PAR },
     { "target_level", "target level in -dBFS (0 not applied)", OFFSET(target_level), AV_OPT_TYPE_INT, {.i64 = 0 }, -31, 0, PAR },
 
 {"dmix_mode", "Preferred Stereo Downmix Mode", OFFSET(preferred_stereo_downmix), AV_OPT_TYPE_INT, {.i64 = -1 }, -1, 2, 0, "dmix_mode"},

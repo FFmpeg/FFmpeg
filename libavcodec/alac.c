@@ -601,7 +601,7 @@ static int init_thread_copy(AVCodecContext *avctx)
 
 static const AVOption options[] = {
     { "extra_bits_bug", "Force non-standard decoding process",
-      offsetof(ALACContext, extra_bit_bug), AV_OPT_TYPE_INT, { .i64 = 0 },
+      offsetof(ALACContext, extra_bit_bug), AV_OPT_TYPE_BOOL, { .i64 = 0 },
       0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };

@@ -30,81 +30,119 @@ follows.
 
 Advanced Audio Coding (AAC) encoder.
 
-This encoder is an experimental FFmpeg-native AAC encoder. Currently only the
-low complexity (AAC-LC) profile is supported. To use this encoder, you must set
-@option{strict} option to @samp{experimental} or lower.
-
-As this encoder is experimental, unexpected behavior may exist from time to
-time. For a more stable AAC encoder, see @ref{libvo-aacenc}. However, be warned
-that it has a worse quality reported by some users.
-
-@c todo @ref{libaacplus}
-See also @ref{libfdk-aac-enc,,libfdk_aac} and @ref{libfaac}.
+This encoder is the default AAC encoder, natively implemented into FFmpeg. Its
+quality is on par or better than libfdk_aac at the default bitrate of 128kbps.
+This encoder also implements more options, profiles and samplerates than
+other encoders (with only the AAC-HE profile pending to be implemented) so this
+encoder has become the default and is the recommended choice.
 
 @subsection Options
 
 @table @option
 @item b
 Set bit rate in bits/s. Setting this automatically activates constant bit rate
-(CBR) mode.
+(CBR) mode. If this option is unspecified it is set to 128kbps.
 
 @item q
 Set quality for variable bit rate (VBR) mode. This option is valid only using
 the @command{ffmpeg} command-line tool. For library interface users, use
 @option{global_quality}.
 
-@item stereo_mode
-Set stereo encoding mode. Possible values:
-
-@table @samp
-@item auto
-Automatically selected by the encoder.
-
-@item ms_off
-Disable middle/side encoding. This is the default.
-
-@item ms_force
-Force middle/side encoding.
-@end table
+@item cutoff
+Set cutoff frequency. If unspecified will allow the encoder to dynamically
+adjust the cutoff to improve clarity on low bitrates.
 
 @item aac_coder
 Set AAC encoder coding method. Possible values:
 
 @table @samp
-@item faac
-FAAC-inspired method.
-
-This method is a simplified reimplementation of the method used in FAAC, which
-sets thresholds proportional to the band energies, and then decreases all the
-thresholds with quantizer steps to find the appropriate quantization with
-distortion below threshold band by band.
-
-The quality of this method is comparable to the two loop searching method
-described below, but somewhat a little better and slower.
-
-@item anmr
-Average noise to mask ratio (ANMR) trellis-based solution.
-
-This has a theoretic best quality out of all the coding methods, but at the
-cost of the slowest speed.
-
 @item twoloop
 Two loop searching (TLS) method.
 
 This method first sets quantizers depending on band thresholds and then tries
 to find an optimal combination by adding or subtracting a specific value from
 all quantizers and adjusting some individual quantizer a little.
+Will tune itself based on whether aac_is/aac_ms/aac_pns are enabled.
+This is the default choice for a coder.
 
-This method produces similar quality with the FAAC method and is the default.
+@item anmr
+Average noise to mask ratio (ANMR) trellis-based solution.
+
+This is an experimental coder which currently produces a lower quality, is more
+unstable and is slower than the default twoloop coder but has potential.
+Currently has no support for the @option{aac_is} or @option{aac_pns} options.
+Not currently recommended.
 
 @item fast
 Constant quantizer method.
 
 This method sets a constant quantizer for all bands. This is the fastest of all
-the methods, yet produces the worst quality.
+the methods and has no rate control or support for @option{aac_is} or
+@option{aac_pns}.
+Not recommended.
 
 @end table
 
+@item aac_ms
+Sets mid/side coding mode. The default value of auto will automatically use
+M/S with bands which will benefit from such coding. Can be forced for all bands
+using the value "enable", which is mainly useful for debugging or disabled using
+"disable".
+
+@item aac_is
+Sets intensity stereo coding tool usage. By default, it's enabled and will
+automatically toggle IS for similar pairs of stereo bands if it's benefitial.
+Can be disabled for debugging by setting the value to "disable".
+
+@item aac_pns
+Uses perceptual noise substitution to replace low entropy high frequency bands
+with imperceivable white noise during the decoding process. By default, it's
+enabled, but can be disabled for debugging purposes by using "disable".
+
+@item aac_tns
+Enables the use of a multitap FIR filter which spans through the high frequency
+bands to hide quantization noise during the encoding process and is reverted
+by the decoder. As well as decreasing unpleasant artifacts in the high range
+this also reduces the entropy in the high bands and allows for more bits to
+be used by the mid-low bands. By default it's enabled but can be disabled for
+debugging by setting the option to "disable".
+
+@item aac_ltp
+Enables the use of the long term prediction extension which increases coding
+efficiency in very low bandwidth situations such as encoding of voice or
+solo piano music by extending constant harmonic peaks in bands throughout
+frames. This option is implied by profile:a aac_low and is incompatible with
+aac_pred. Use in conjunction with @option{-ar} to decrease the samplerate.
+
+@item aac_pred
+Enables the use of a more traditional style of prediction where the spectral
+coefficients transmitted are replaced by the difference of the current
+coefficients minus the previous "predicted" coefficients. In theory and sometimes
+in practice this can improve quality for low to mid bitrate audio.
+This option implies the aac_main profile and is incompatible with aac_ltp.
+
+@item profile
+Sets the encoding profile, possible values:
+
+@table @samp
+@item aac_low
+The default, AAC "Low-complexity" profile. Is the most compatible and produces
+decent quality.
+
+@item mpeg2_aac_low
+Equivalent to -profile:a aac_low -aac_pns 0. PNS was introduced with the MPEG4
+specifications.
+
+@item aac_ltp
+Long term prediction profile, is enabled by and will enable the aac_ltp option.
+Introduced in MPEG4.
+
+@item aac_pred
+Main-type prediction profile, is enabled by and will enable the aac_pred option.
+Introduced in MPEG2.
+
+If this option is unspecified it is set to @samp{aac_low}.
+@end table
 @end table
 
 @section ac3 and ac3_fixed
@@ -578,15 +616,13 @@ and slightly improves compression.
 
 libfaac AAC (Advanced Audio Coding) encoder wrapper.
 
-Requires the presence of the libfaac headers and library during
-configuration. You need to explicitly configure the build with
+This encoder is of much lower quality and is more unstable than any other AAC
+encoders, so it's highly recommended to instead use other encoders, like
+@ref{aacenc,,the native FFmpeg AAC encoder}.
+
+This encoder also requires the presence of the libfaac headers and library
+during configuration. You need to explicitly configure the build with
 @code{--enable-libfaac --enable-nonfree}.
-
-This encoder is considered to be of higher quality with respect to the
-@ref{aacenc,,the native experimental FFmpeg AAC encoder}.
-
-For more information see the libfaac project at
-@url{http://www.audiocoding.com/faac.html/}.
 
 @subsection Options
 
@@ -694,9 +730,10 @@ configuration. You need to explicitly configure the build with
 so if you allow the use of GPL, you should configure with
 @code{--enable-gpl --enable-nonfree --enable-libfdk-aac}.
 
-This encoder is considered to be of higher quality with respect to
-both @ref{aacenc,,the native experimental FFmpeg AAC encoder} and
-@ref{libfaac}.
+This encoder is considered to produce output on par or worse at 128kbps to the
+@ref{aacenc,,the native FFmpeg AAC encoder} but can often produce better
+sounding audio at identical or lower bitrates and has support for the
+AAC-HE profiles.
 
 VBR encoding, enabled through the @option{vbr} or @option{flags
 +qscale} options, is experimental and only works with some
@@ -1048,7 +1085,7 @@ configuration. You need to explicitly configure the build with
 @code{--enable-libvo-aacenc --enable-version3}.
 
 This encoder is considered to be worse than the
-@ref{aacenc,,native experimental FFmpeg AAC encoder}, according to
+@ref{aacenc,,native FFmpeg AAC encoder}, according to
 multiple sources.
 
 @subsection Options

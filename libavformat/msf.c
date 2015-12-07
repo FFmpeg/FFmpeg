@@ -51,7 +51,7 @@ static int msf_read_header(AVFormatContext *s)
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     codec                  = avio_rb32(s->pb);
     st->codec->channels    = avio_rb32(s->pb);
-    if (st->codec->channels <= 0)
+    if (st->codec->channels <= 0 || st->codec->channels >= INT_MAX / 1024)
         return AVERROR_INVALIDDATA;
     size = avio_rb32(s->pb);
     st->codec->sample_rate = avio_rb32(s->pb);

@@ -45,7 +45,7 @@
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "nitris_compat", "encode with Avid Nitris compatibility",
-        offsetof(DNXHDEncContext, nitris_compat), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+        offsetof(DNXHDEncContext, nitris_compat), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "ibias", "intra quant bias",
         offsetof(DNXHDEncContext, intra_quant_bias), AV_OPT_TYPE_INT,
         { .i64 = 0 }, INT_MIN, INT_MAX, VE },

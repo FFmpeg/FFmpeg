@@ -37,6 +37,14 @@
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 
 /**
+ * Extract version components from the full ::AV_VERSION_INT int as returned
+ * by functions like ::avformat_version() and ::avcodec_version()
+ */
+#define AV_VERSION_MAJOR(a) ((a) >> 16)
+#define AV_VERSION_MINOR(a) (((a) & 0x00FF00) >> 8)
+#define AV_VERSION_MICRO(a) ((a) & 0xFF)
+
+/**
  * @}
  */
 
@@ -56,7 +64,7 @@
  */
 
 #define LIBAVUTIL_VERSION_MAJOR  55
-#define LIBAVUTIL_VERSION_MINOR   9
+#define LIBAVUTIL_VERSION_MINOR  10
 #define LIBAVUTIL_VERSION_MICRO 100
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \

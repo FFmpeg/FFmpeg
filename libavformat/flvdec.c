@@ -858,7 +858,7 @@ retry:
         orig_size =
         size = avio_rb24(s->pb);
         dts  = avio_rb24(s->pb);
-        dts |= avio_r8(s->pb) << 24;
+        dts |= (unsigned)avio_r8(s->pb) << 24;
         av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
         if (avio_feof(s->pb))
             return AVERROR_EOF;
@@ -1162,7 +1162,7 @@ static int flv_read_seek(AVFormatContext *s, int stream_index,
 #define OFFSET(x) offsetof(FLVContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "flv_metadata", "Allocate streams according to the onMetaData array", OFFSET(trust_metadata), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VD },
+    { "flv_metadata", "Allocate streams according to the onMetaData array", OFFSET(trust_metadata), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { NULL }
 };
 

@@ -678,14 +678,14 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (ch = 0; ch < chans; ch++) { /* TNS and PNS */
                 sce = &cpe->ch[ch];
                 s->cur_channel = start_ch + ch;
-                if (s->options.pns && s->coder->search_for_pns)
-                    s->coder->search_for_pns(s, avctx, sce);
                 if (s->options.tns && s->coder->search_for_tns)
                     s->coder->search_for_tns(s, sce);
                 if (s->options.tns && s->coder->apply_tns_filt)
                     s->coder->apply_tns_filt(s, sce);
                 if (sce->tns.present)
                     tns_mode = 1;
+                if (s->options.pns && s->coder->search_for_pns)
+                    s->coder->search_for_pns(s, avctx, sce);
             }
             s->cur_channel = start_ch;
             if (s->options.intensity_stereo) { /* Intensity Stereo */
@@ -960,13 +960,17 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         avctx->profile = FF_PROFILE_AAC_MAIN;
         WARN_IF(1,
                 "Chainging profile to \"aac_main\"\n");
-        ERROR_IF(s->options.pred,
+        ERROR_IF(s->options.ltp,
                  "LTP prediction unavailable in the \"aac_main\" profile\n");
     }
     s->profile = avctx->profile;
     s->coder = &ff_aac_coders[s->options.coder];
 
     if (s->options.coder != AAC_CODER_TWOLOOP) {
+        ERROR_IF(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
+                 "Coders other than twoloop require -strict -2 and some may be removed in the future\n");
+        WARN_IF(s->options.coder == AAC_CODER_FAAC,
+                "The FAAC-like coder will be removed in the near future, please use twoloop!\n");
         s->options.intensity_stereo = 0;
         s->options.pns = 0;
     }
@@ -1039,8 +1043,7 @@ AVCodec ff_aac_encoder = {
     .close          = aac_encode_end,
     .supported_samplerates = mpeg4audio_sample_rates,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY |
-                      AV_CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &aacenc_class,

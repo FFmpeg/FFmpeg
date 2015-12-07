@@ -22,7 +22,8 @@
 
 #ifndef AVCODEC_AACSBR_TABLEGEN_COMMON_H
 #define AVCODEC_AACSBR_TABLEGEN_COMMON_H
-#include "aac.h"
+#include "aac_defines.h"
+#include "libavutil/mem.h"
 
 #if CONFIG_HARDCODED_TABLES
 #define aacsbr_tableinit()

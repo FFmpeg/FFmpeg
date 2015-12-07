@@ -27,6 +27,7 @@ OBJS-$(CONFIG_ACOMPRESSOR_FILTER)            += af_sidechaincompress.o
 OBJS-$(CONFIG_ACROSSFADE_FILTER)             += af_afade.o
 OBJS-$(CONFIG_ADELAY_FILTER)                 += af_adelay.o
 OBJS-$(CONFIG_AECHO_FILTER)                  += af_aecho.o
+OBJS-$(CONFIG_AEMPHASIS_FILTER)              += af_aemphasis.o
 OBJS-$(CONFIG_AEVAL_FILTER)                  += aeval.o
 OBJS-$(CONFIG_AFADE_FILTER)                  += af_afade.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o

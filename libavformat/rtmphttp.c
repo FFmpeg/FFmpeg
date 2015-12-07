@@ -254,7 +254,7 @@ fail:
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption ffrtmphttp_options[] = {
-    {"ffrtmphttp_tls", "Use a HTTPS tunneling connection (RTMPTS).", OFFSET(tls), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC},
+    {"ffrtmphttp_tls", "Use a HTTPS tunneling connection (RTMPTS).", OFFSET(tls), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC},
     { NULL },
 };
 

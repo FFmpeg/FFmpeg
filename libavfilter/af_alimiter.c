@@ -41,7 +41,10 @@ typedef struct AudioLimiterContext {
     double attack;
     double release;
     double att;
+    double level_in;
+    double level_out;
     int auto_release;
+    int auto_level;
     double asc;
     int asc_c;
     int asc_pos;
@@ -64,11 +67,14 @@ typedef struct AudioLimiterContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption alimiter_options[] = {
-    { "limit",     "set limit",     OFFSET(limit),        AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.0625,    1, A|F },
-    { "attack",    "set attack",    OFFSET(attack),       AV_OPT_TYPE_DOUBLE, {.dbl=5},    0.1,   80, A|F },
-    { "release",   "set release",   OFFSET(release),      AV_OPT_TYPE_DOUBLE, {.dbl=50},     1, 8000, A|F },
-    { "asc",       "enable asc",    OFFSET(auto_release), AV_OPT_TYPE_BOOL,   {.i64=0},      0,    1, A|F },
-    { "asc_level", "set asc level", OFFSET(asc_coeff),    AV_OPT_TYPE_DOUBLE, {.dbl=0.5},    0,    1, A|F },
+    { "level_in",  "set input level",  OFFSET(level_in),     AV_OPT_TYPE_DOUBLE, {.dbl=1},.015625,   64, A|F },
+    { "level_out", "set output level", OFFSET(level_out),    AV_OPT_TYPE_DOUBLE, {.dbl=1},.015625,   64, A|F },
+    { "limit",     "set limit",        OFFSET(limit),        AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.0625,    1, A|F },
+    { "attack",    "set attack",       OFFSET(attack),       AV_OPT_TYPE_DOUBLE, {.dbl=5},    0.1,   80, A|F },
+    { "release",   "set release",      OFFSET(release),      AV_OPT_TYPE_DOUBLE, {.dbl=50},     1, 8000, A|F },
+    { "asc",       "enable asc",       OFFSET(auto_release), AV_OPT_TYPE_BOOL,   {.i64=0},      0,    1, A|F },
+    { "asc_level", "set asc level",    OFFSET(asc_coeff),    AV_OPT_TYPE_DOUBLE, {.dbl=0.5},    0,    1, A|F },
+    { "level",     "auto level",       OFFSET(auto_level),   AV_OPT_TYPE_BOOL,   {.i64=1},      0,    1, A|F },
     { NULL }
 };
 
@@ -118,6 +124,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const double release = s->release;
     const double limit = s->limit;
     double *nextdelta = s->nextdelta;
+    double level = s->auto_level ? 1 / limit : 1;
+    const double level_out = s->level_out;
+    const double level_in = s->level_in;
     int *nextpos = s->nextpos;
     AVFrame *out;
     double *buf;
@@ -139,7 +148,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         double peak = 0;
 
         for (c = 0; c < channels; c++) {
-            double sample = src[c];
+            double sample = src[c] * level_in;
 
             buffer[s->pos + c] = sample;
             peak = FFMAX(peak, fabs(sample));
@@ -255,7 +264,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->delta = 0.;
 
         for (c = 0; c < channels; c++)
-            dst[c] = av_clipd(dst[c], -limit, limit);
+            dst[c] = av_clipd(dst[c], -limit, limit) * level * level_out;
 
         s->pos = (s->pos + channels) % buffer_size;
         src += channels;
