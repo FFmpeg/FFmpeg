@@ -27,6 +27,7 @@
 #include "checkasm.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/random_seed.h"
 
 #if HAVE_IO_H
@@ -150,6 +151,78 @@ static struct {
 
 /* PRNG state */
 AVLFG checkasm_lfg;
+
+/* float compare support code */
+static int is_negative(union av_intfloat32 u)
+{
+    return u.i >> 31;
+}
+
+int float_near_ulp(float a, float b, unsigned max_ulp)
+{
+    union av_intfloat32 x, y;
+
+    x.f = a;
+    y.f = b;
+
+    if (is_negative(x) != is_negative(y)) {
+        // handle -0.0 == +0.0
+        return a == b;
+    }
+
+    if (abs(x.i - y.i) <= max_ulp)
+        return 1;
+
+    return 0;
+}
+
+int float_near_ulp_array(const float *a, const float *b, unsigned max_ulp,
+                         unsigned len)
+{
+    unsigned i;
+
+    for (i = 0; i < len; i++) {
+        if (!float_near_ulp(a[i], b[i], max_ulp))
+            return 0;
+    }
+    return 1;
+}
+
+int float_near_abs_eps(float a, float b, float eps)
+{
+    float abs_diff = fabsf(a - b);
+
+    return abs_diff < eps;
+}
+
+int float_near_abs_eps_array(const float *a, const float *b, float eps,
+                         unsigned len)
+{
+    unsigned i;
+
+    for (i = 0; i < len; i++) {
+        if (!float_near_abs_eps(a[i], b[i], eps))
+            return 0;
+    }
+    return 1;
+}
+
+int float_near_abs_eps_ulp(float a, float b, float eps, unsigned max_ulp)
+{
+    return float_near_ulp(a, b, max_ulp) || float_near_abs_eps(a, b, eps);
+}
+
+int float_near_abs_eps_array_ulp(const float *a, const float *b, float eps,
+                         unsigned max_ulp, unsigned len)
+{
+    unsigned i;
+
+    for (i = 0; i < len; i++) {
+        if (!float_near_abs_eps_ulp(a[i], b[i], eps, max_ulp))
+            return 0;
+    }
+    return 1;
+}
 
 /* Print colored text to stderr if the terminal supports it */
 static void color_printf(int color, const char *fmt, ...)

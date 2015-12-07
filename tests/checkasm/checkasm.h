@@ -42,6 +42,17 @@ void checkasm_fail_func(const char *msg, ...) av_printf_format(1, 2);
 void checkasm_update_bench(int iterations, uint64_t cycles);
 void checkasm_report(const char *name, ...) av_printf_format(1, 2);
 
+/* float compare utilities */
+int float_near_ulp(float a, float b, unsigned max_ulp);
+int float_near_abs_eps(float a, float b, float eps);
+int float_near_abs_eps_ulp(float a, float b, float eps, unsigned max_ulp);
+int float_near_ulp_array(const float *a, const float *b, unsigned max_ulp,
+                         unsigned len);
+int float_near_abs_eps_array(const float *a, const float *b, float eps,
+                             unsigned len);
+int float_near_abs_eps_array_ulp(const float *a, const float *b, float eps,
+                                 unsigned max_ulp, unsigned len);
+
 extern AVLFG checkasm_lfg;
 #define rnd() av_lfg_get(&checkasm_lfg)
 
