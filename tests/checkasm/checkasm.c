@@ -61,6 +61,9 @@ static const struct {
 #if CONFIG_BSWAPDSP
     { "bswapdsp", checkasm_check_bswapdsp },
 #endif
+#if CONFIG_DCA_DECODER
+    { "dcadsp", checkasm_check_dcadsp },
+#endif
 #if CONFIG_H264PRED
     { "h264pred", checkasm_check_h264pred },
 #endif
