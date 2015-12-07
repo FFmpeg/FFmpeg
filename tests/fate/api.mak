@@ -28,7 +28,7 @@ FATE_API_SAMPLES_LIBAVFORMAT-yes += fate-api-jpeg-codec-param
 fate-api-jpeg-codec-param: $(APITESTSDIR)/api-codec-param-test$(EXESUF)
 fate-api-jpeg-codec-param: CMD = run $(APITESTSDIR)/api-codec-param-test $(TARGET_SAMPLES)/exif/image_small.jpg
 
-FATE_API-$(CONFIG_AVUTIL) += fate-api-threadmessage
+FATE_API-$(HAVE_PTHREADS) += fate-api-threadmessage
 fate-api-threadmessage: $(APITESTSDIR)/api-threadmessage-test$(EXESUF)
 fate-api-threadmessage: CMD = run $(APITESTSDIR)/api-threadmessage-test 3 10 30 50 2 20 40
 fate-api-threadmessage: CMP = null
