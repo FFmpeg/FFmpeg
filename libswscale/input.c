@@ -679,6 +679,46 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
     nvXXtoUV_c(dstV, dstU, src1, width);
 }
 
+static void p010LEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1,
+                        const uint8_t *unused2, int width, uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        AV_WN16(dst + i * 2, AV_RL16(src + i * 2) >> 6);
+    }
+}
+
+static void p010BEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1,
+                        const uint8_t *unused2, int width, uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        AV_WN16(dst + i * 2, AV_RB16(src + i * 2) >> 6);
+    }
+}
+
+static void p010LEToUV_c(uint8_t *dstU, uint8_t *dstV,
+                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
+                       int width, uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        AV_WN16(dstU + i * 2, AV_RL16(src1 + i * 4 + 0) >> 6);
+        AV_WN16(dstV + i * 2, AV_RL16(src1 + i * 4 + 2) >> 6);
+    }
+}
+
+static void p010BEToUV_c(uint8_t *dstU, uint8_t *dstV,
+                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
+                       int width, uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        AV_WN16(dstU + i * 2, AV_RB16(src1 + i * 4 + 0) >> 6);
+        AV_WN16(dstV + i * 2, AV_RB16(src1 + i * 4 + 2) >> 6);
+    }
+}
+
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
 static void bgr24ToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
@@ -1016,6 +1056,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
 #endif
     case AV_PIX_FMT_AYUV64LE:
         c->chrToYV12 = read_ayuv64le_UV_c;
+        break;
+    case AV_PIX_FMT_P010LE:
+        c->chrToYV12 = p010LEToUV_c;
+        break;
+    case AV_PIX_FMT_P010BE:
+        c->chrToYV12 = p010BEToUV_c;
         break;
     }
     if (c->chrSrcHSubSample) {
@@ -1402,6 +1448,13 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         break;
     case AV_PIX_FMT_BGRA64LE:
         c->lumToYV12 = bgr64LEToY_c;
+        break;
+    case AV_PIX_FMT_P010LE:
+        c->lumToYV12 = p010LEToY_c;
+        break;
+    case AV_PIX_FMT_P010BE:
+        c->lumToYV12 = p010BEToY_c;
+        break;
     }
     if (c->alpPixBuf) {
         if (is16BPS(srcFormat) || isNBPS(srcFormat)) {
