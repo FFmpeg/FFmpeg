@@ -1556,8 +1556,6 @@ again:
                 // "recovered".
                 if (h->nal_unit_type == NAL_IDR_SLICE)
                     h->frame_recovered |= FRAME_RECOVERED_IDR;
-                h->frame_recovered |= 3*!!(avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL);
-                h->frame_recovered |= 3*!!(avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT);
 #if 1
                 h->cur_pic_ptr->recovered |= h->frame_recovered;
 #else
@@ -1863,7 +1861,8 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
         /* Wait for second field. */
         *got_frame = 0;
-        if (h->next_output_pic && (
+        if (h->next_output_pic && ((avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) ||
+                                   (avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL) ||
                                    h->next_output_pic->recovered)) {
             if (!h->next_output_pic->recovered)
                 h->next_output_pic->f->flags |= AV_FRAME_FLAG_CORRUPT;
