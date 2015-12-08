@@ -858,7 +858,7 @@ static void fill_border(int xleft, int ytop, int width, int height, int x, int y
 
 #define BPP 1
 
-static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, int imgh)
+static void blend_subrect(uint8_t **data, int *linesize, const AVSubtitleRect *rect, int imgw, int imgh)
 {
     int x, y, Y, U, V, A;
     uint8_t *lum, *cb, *cr;
@@ -869,9 +869,9 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     dsth = av_clip(rect->h, 0, imgh);
     dstx = av_clip(rect->x, 0, imgw - dstw);
     dsty = av_clip(rect->y, 0, imgh - dsth);
-    lum = dst->data[0] + dstx + dsty * dst->linesize[0];
-    cb  = dst->data[1] + dstx/2 + (dsty >> 1) * dst->linesize[1];
-    cr  = dst->data[2] + dstx/2 + (dsty >> 1) * dst->linesize[2];
+    lum = data[0] + dstx + dsty * linesize[0];
+    cb  = data[1] + dstx/2 + (dsty >> 1) * linesize[1];
+    cr  = data[2] + dstx/2 + (dsty >> 1) * linesize[2];
 
     for (y = 0; y<dsth; y++) {
         for (x = 0; x<dstw; x++) {
@@ -880,7 +880,7 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
             lum[0] = ALPHA_BLEND(A, lum[0], Y, 0);
             lum++;
         }
-        lum += dst->linesize[0] - dstw;
+        lum += linesize[0] - dstw;
     }
 
     for (y = 0; y<dsth/2; y++) {
@@ -896,8 +896,8 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
             cb++;
             cr++;
         }
-        cb += dst->linesize[1] - dstw/2;
-        cr += dst->linesize[2] - dstw/2;
+        cb += linesize[1] - dstw/2;
+        cr += linesize[2] - dstw/2;
     }
 }
 
@@ -944,7 +944,6 @@ static void video_image_display(VideoState *is)
 {
     Frame *vp;
     Frame *sp;
-    AVPicture pict;
     SDL_Rect rect;
     int i;
 
@@ -955,18 +954,21 @@ static void video_image_display(VideoState *is)
                 sp = frame_queue_peek(&is->subpq);
 
                 if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
+                    uint8_t *data[4];
+                    int linesize[4];
+
                     SDL_LockYUVOverlay (vp->bmp);
 
-                    pict.data[0] = vp->bmp->pixels[0];
-                    pict.data[1] = vp->bmp->pixels[2];
-                    pict.data[2] = vp->bmp->pixels[1];
+                    data[0] = vp->bmp->pixels[0];
+                    data[1] = vp->bmp->pixels[2];
+                    data[2] = vp->bmp->pixels[1];
 
-                    pict.linesize[0] = vp->bmp->pitches[0];
-                    pict.linesize[1] = vp->bmp->pitches[2];
-                    pict.linesize[2] = vp->bmp->pitches[1];
+                    linesize[0] = vp->bmp->pitches[0];
+                    linesize[1] = vp->bmp->pitches[2];
+                    linesize[2] = vp->bmp->pitches[1];
 
                     for (i = 0; i < sp->sub.num_rects; i++)
-                        blend_subrect(&pict, sp->subrects[i],
+                        blend_subrect(data, linesize, sp->subrects[i],
                                       vp->bmp->w, vp->bmp->h);
 
                     SDL_UnlockYUVOverlay (vp->bmp);
@@ -1760,22 +1762,23 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
 
     /* if the frame is not skipped, then display it */
     if (vp->bmp) {
-        AVPicture pict = { { 0 } };
+        uint8_t *data[4];
+        int linesize[4];
 
         /* get a pointer on the bitmap */
         SDL_LockYUVOverlay (vp->bmp);
 
-        pict.data[0] = vp->bmp->pixels[0];
-        pict.data[1] = vp->bmp->pixels[2];
-        pict.data[2] = vp->bmp->pixels[1];
+        data[0] = vp->bmp->pixels[0];
+        data[1] = vp->bmp->pixels[2];
+        data[2] = vp->bmp->pixels[1];
 
-        pict.linesize[0] = vp->bmp->pitches[0];
-        pict.linesize[1] = vp->bmp->pitches[2];
-        pict.linesize[2] = vp->bmp->pitches[1];
+        linesize[0] = vp->bmp->pitches[0];
+        linesize[1] = vp->bmp->pitches[2];
+        linesize[2] = vp->bmp->pitches[1];
 
 #if CONFIG_AVFILTER
         // FIXME use direct rendering
-        av_picture_copy(&pict, (AVPicture *)src_frame,
+        av_image_copy(data, linesize, (const uint8_t **)src_frame->data, src_frame->linesize,
                         src_frame->format, vp->width, vp->height);
 #else
         {
@@ -1798,7 +1801,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
             exit(1);
         }
         sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
-                  0, vp->height, pict.data, pict.linesize);
+                  0, vp->height, data, linesize);
 #endif
         /* workaround SDL PITCH_WORKAROUND */
         duplicate_right_border_pixels(vp->bmp);
