@@ -87,7 +87,10 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
                  (rce->i_tex_bits + rce->p_tex_bits + rce->misc_bits + 7) / 8,
                  (rce->header_bits + rce->mv_bits + 7) / 8);
 
-        write(fd, tmp, strlen(tmp));
+        if (strlen(tmp) > write(fd, tmp, strlen(tmp))) {
+            av_log(s, AV_LOG_ERROR, "Cannot write to temporary pass2 file.\n");
+            return AVERROR(EIO);
+        }
     }
 
     close(fd);
