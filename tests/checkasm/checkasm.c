@@ -65,6 +65,9 @@ static const struct {
     { "dcadsp", checkasm_check_dcadsp },
     { "synth_filter", checkasm_check_synth_filter },
 #endif
+#if CONFIG_FMTCONVERT
+    { "fmtconvert", checkasm_check_fmtconvert },
+#endif
 #if CONFIG_H264PRED
     { "h264pred", checkasm_check_h264pred },
 #endif

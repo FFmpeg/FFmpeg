@@ -1,6 +1,7 @@
 # libavcodec tests
 AVCODECOBJS-$(CONFIG_BSWAPDSP) += bswapdsp.o
 AVCODECOBJS-$(CONFIG_DCA_DECODER) += dcadsp.o synth_filter.o
+AVCODECOBJS-$(CONFIG_FMTCONVERT)   += fmtconvert.o
 AVCODECOBJS-$(CONFIG_H264PRED) += h264pred.o
 AVCODECOBJS-$(CONFIG_H264QPEL) += h264qpel.o
 AVCODECOBJS-$(CONFIG_HEVC_DECODER) += hevc_mc.o
