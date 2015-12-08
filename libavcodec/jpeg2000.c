@@ -192,6 +192,21 @@ void ff_jpeg2000_set_significance(Jpeg2000T1Context *t1, int x, int y,
 
 // static const uint8_t lut_gain[2][4] = { { 0, 0, 0, 0 }, { 0, 1, 1, 2 } }; (unused)
 
+static inline float exp2fi(int x) {
+    /* Normal range */
+    if (-126 <= x && x <= 128)
+        return av_int2float(x+127 << 23);
+    /* Too large */
+    else if (x > 128)
+        return INFINITY;
+    /* Subnormal numbers */
+    else if (x > -150)
+        return av_int2float(1 << (x+149));
+    /* Negligibly small */
+    else
+        return 0;
+}
+
 static void init_band_stepsize(AVCodecContext *avctx,
                                Jpeg2000Band *band,
                                Jpeg2000CodingStyle *codsty,
@@ -221,7 +236,7 @@ static void init_band_stepsize(AVCodecContext *avctx,
          * R_b = R_I + log2 (gain_b )
          * see ISO/IEC 15444-1:2002 E.1.1 eqn. E-3 and E-4 */
         gain            = cbps;
-        band->f_stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
+        band->f_stepsize  = exp2fi(gain - qntsty->expn[gbandno]);
         band->f_stepsize *= qntsty->mant[gbandno] / 2048.0 + 1.0;
         break;
     default:
