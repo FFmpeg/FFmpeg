@@ -3193,6 +3193,16 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         sample_time = FFMAX(sample_time, 0);
 
         if (t->fake_index) {
+            /* The first frames may not be keyframes in presentation order, so
+             * we have to advance the target to be able to find the first
+             * keyframe backwards... */
+            if (!(flags & AVSEEK_FLAG_ANY) &&
+                (flags & AVSEEK_FLAG_BACKWARD) &&
+                t->ptses[0] != AV_NOPTS_VALUE &&
+                sample_time < t->ptses[0] &&
+                (t->fake_index[t->ptses[0]].flags & AVINDEX_KEYFRAME))
+                sample_time = t->ptses[0];
+
             /* behave as if we have a proper index */
             if ((sample_time = ff_index_search_timestamp(t->fake_index, t->nb_ptses, sample_time, flags)) < 0)
                 return sample_time;

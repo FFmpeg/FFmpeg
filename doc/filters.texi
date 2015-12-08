@@ -1823,6 +1823,72 @@ than the signal (making it, in some ways, similar to squelch):
 @example
 compand=.1|.1:.1|.1:-45.1/-45.1|-45/-900|0/-900:.01:45:-90:.1
 @end example
+
+@item
+2:1 compression starting at -6dB:
+@example
+compand=points=-80/-80|-6/-6|0/-3.8|20/3.5
+@end example
+
+@item
+2:1 compression starting at -9dB:
+@example
+compand=points=-80/-80|-9/-9|0/-5.3|20/2.9
+@end example
+
+@item
+2:1 compression starting at -12dB:
+@example
+compand=points=-80/-80|-12/-12|0/-6.8|20/1.9
+@end example
+
+@item
+2:1 compression starting at -18dB:
+@example
+compand=points=-80/-80|-18/-18|0/-9.8|20/0.7
+@end example
+
+@item
+3:1 compression starting at -15dB:
+@example
+compand=points=-80/-80|-15/-15|0/-10.8|20/-5.2
+@end example
+
+@item
+Compressor/Gate:
+@example
+compand=points=-80/-105|-62/-80|-15.4/-15.4|0/-12|20/-7.6
+@end example
+
+@item
+Expander:
+@example
+compand=attacks=0:points=-80/-169|-54/-80|-49.5/-64.6|-41.1/-41.1|-25.8/-15|-10.8/-4.5|0/0|20/8.3
+@end example
+
+@item
+Hard limiter at -6dB:
+@example
+compand=attacks=0:points=-80/-80|-6/-6|20/-6
+@end example
+
+@item
+Hard limiter at -12dB:
+@example
+compand=attacks=0:points=-80/-80|-12/-12|20/-12
+@end example
+
+@item
+Hard noise gate at -35 dB:
+@example
+compand=attacks=0:points=-80/-115|-35.1/-80|-35/-35|20/20
+@end example
+
+@item
+Soft limiter:
+@example
+compand=attacks=0:points=-80/-80|-12.4/-12.4|-6/-8|0/-6.8|20/-2.8
+@end example
 @end itemize
 
 @section compensationdelay

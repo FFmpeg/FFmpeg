@@ -2567,6 +2567,10 @@ vc1_mmal_hwaccel_deps="mmal"
 vc1_mmal_decoder_select="vc1_decoder"
 vc1_qsv_hwaccel_deps="libmfx"
 vc1_qsv_hwaccel_select="qsvdec_vc1"
+vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
+vp9_d3d11va_hwaccel_select="vp9_decoder"
+vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
+vp9_dxva2_hwaccel_select="vp9_decoder"
 wmv3_crystalhd_decoder_select="crystalhd"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
@@ -5297,6 +5301,7 @@ check_lib "CoreServices/CoreServices.h" UTGetOSTypeFromString "-framework CoreSe
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
+check_type "windows.h dxva.h" "DXVA_PicParams_VP9" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
@@ -5706,6 +5711,7 @@ check_cflags -Wno-pointer-to-int-cast
 check_cflags -Wstrict-prototypes
 check_cflags -Wempty-body
 enabled extra_warnings && check_cflags -Winline
+enabled extra_warnings && check_cflags -Wcast-qual
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}

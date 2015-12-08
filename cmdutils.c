@@ -52,6 +52,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ffversion.h"
+#include "libavutil/version.h"
 #include "cmdutils.h"
 #if CONFIG_NETWORK
 #include "libavformat/network.h"
@@ -1058,7 +1059,8 @@ static int warned_cfg = 0;
                    LIB##LIBNAME##_VERSION_MAJOR,                        \
                    LIB##LIBNAME##_VERSION_MINOR,                        \
                    LIB##LIBNAME##_VERSION_MICRO,                        \
-                   version >> 16, version >> 8 & 0xff, version & 0xff); \
+                   AV_VERSION_MAJOR(version), AV_VERSION_MINOR(version),\
+                   AV_VERSION_MICRO(version));                          \
         }                                                               \
         if (flags & SHOW_CONFIG) {                                      \
             const char *cfg = libname##_configuration();                \
@@ -1077,15 +1079,15 @@ static int warned_cfg = 0;
 
 static void print_all_libs_info(int flags, int level)
 {
-    PRINT_LIB_INFO(avutil,   AVUTIL,   flags, level);
-    PRINT_LIB_INFO(avcodec,  AVCODEC,  flags, level);
-    PRINT_LIB_INFO(avformat, AVFORMAT, flags, level);
-    PRINT_LIB_INFO(avdevice, AVDEVICE, flags, level);
-    PRINT_LIB_INFO(avfilter, AVFILTER, flags, level);
+    PRINT_LIB_INFO(avutil,     AVUTIL,     flags, level);
+    PRINT_LIB_INFO(avcodec,    AVCODEC,    flags, level);
+    PRINT_LIB_INFO(avformat,   AVFORMAT,   flags, level);
+    PRINT_LIB_INFO(avdevice,   AVDEVICE,   flags, level);
+    PRINT_LIB_INFO(avfilter,   AVFILTER,   flags, level);
     PRINT_LIB_INFO(avresample, AVRESAMPLE, flags, level);
-    PRINT_LIB_INFO(swscale,  SWSCALE,  flags, level);
-    PRINT_LIB_INFO(swresample,SWRESAMPLE,  flags, level);
-    PRINT_LIB_INFO(postproc, POSTPROC, flags, level);
+    PRINT_LIB_INFO(swscale,    SWSCALE,    flags, level);
+    PRINT_LIB_INFO(swresample, SWRESAMPLE, flags, level);
+    PRINT_LIB_INFO(postproc,   POSTPROC,   flags, level);
 }
 
 static void print_program_info(int flags, int level)

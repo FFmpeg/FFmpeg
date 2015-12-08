@@ -46,3 +46,9 @@ fate-unknown_layout-ac3: $(AREF)
 fate-unknown_layout-ac3: CMD = md5 \
   -guess_layout_max 0 -f s16le -ac 1 -ar 44100 -i $(TARGET_PATH)/$(AREF) \
   -f ac3 -flags +bitexact -c ac3_fixed
+
+FATE_SAMPLES_FFMPEG-$(call DEMMUX, OGG, OGG) += fate-limited_input_seek fate-limited_input_seek-copyts
+fate-limited_input_seek: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
+fate-limited_input_seek: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -fflags +bitexact -f ogg
+fate-limited_input_seek-copyts: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
+fate-limited_input_seek-copyts: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -copyts -fflags +bitexact -f ogg

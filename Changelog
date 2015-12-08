@@ -42,6 +42,7 @@ version <next>:
 - mipsdspr1 option has been renamed to mipsdsp
 - aemphasis filter
 - mips32r5 option has been removed
+- DXVA2-accelerated VP9 decoding
 
 
 version 2.8:

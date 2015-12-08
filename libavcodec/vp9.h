@@ -129,6 +129,9 @@ typedef struct VP9Frame {
     uint8_t *segmentation_map;
     struct VP9mvrefPair *mv;
     int uses_2pass;
+
+    AVBufferRef *hwaccel_priv_buf;
+    void *hwaccel_picture_private;
 } VP9Frame;
 
 typedef struct VP9BitstreamHeader {

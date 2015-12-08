@@ -41,6 +41,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/dict.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "libavutil/opt.h"
 #include "me_cmp.h"
@@ -57,14 +58,6 @@
 #include <float.h>
 #if CONFIG_ICONV
 # include <iconv.h>
-#endif
-
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
 #endif
 
 #include "libavutil/ffversion.h"

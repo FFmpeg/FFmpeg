@@ -1,5 +1,5 @@
 /*
- * G723.1 compatible decoder data tables.
+ * G.723.1 common header and data tables
  * Copyright (c) 2006 Benjamin Larsson
  * Copyright (c) 2010 Mohamed Naufal Basheer
  *
@@ -22,11 +22,11 @@
 
 /**
  * @file
- * G723.1 compatible decoder data tables
+ * G.723.1 types, functions and data tables
  */
 
-#ifndef AVCODEC_G723_1_DATA_H
-#define AVCODEC_G723_1_DATA_H
+#ifndef AVCODEC_G723_1_H
+#define AVCODEC_G723_1_H
 
 #include <stdint.h>
 
@@ -47,20 +47,30 @@
 #define COS_TBL_SIZE    512
 
 /**
+ * Bitexact implementation of 2ab scaled by 1/2^16.
+ *
+ * @param a 32 bit multiplicand
+ * @param b 16 bit multiplier
+ */
+#define MULL2(a, b) \
+        ((((a) >> 16) * (b) << 1) + (((a) & 0xffff) * (b) >> 15))
+
+/**
  * G723.1 frame types
  */
-typedef enum FrameType {
+enum FrameType {
     ACTIVE_FRAME,        ///< Active speech
     SID_FRAME,           ///< Silence Insertion Descriptor frame
     UNTRANSMITTED_FRAME
-} FrameType;
+};
 
-static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
-
-typedef enum Rate {
+/**
+ * G723.1 rate values
+ */
+enum Rate {
     RATE_6300,
     RATE_5300
-} Rate;
+};
 
 /**
  * G723.1 unpacked data subframe
@@ -104,6 +114,108 @@ typedef struct FCBParam {
     int pulse_sign[PULSE_MAX];
 } FCBParam;
 
+typedef struct g723_1_context {
+    AVClass *class;
+
+    G723_1_Subframe subframe[4];
+    enum FrameType cur_frame_type;
+    enum FrameType past_frame_type;
+    enum Rate cur_rate;
+    uint8_t lsp_index[LSP_BANDS];
+    int pitch_lag[2];
+    int erased_frames;
+
+    int16_t prev_lsp[LPC_ORDER];
+    int16_t sid_lsp[LPC_ORDER];
+    int16_t prev_excitation[PITCH_MAX];
+    int16_t excitation[PITCH_MAX + FRAME_LEN + 4];
+    int16_t synth_mem[LPC_ORDER];
+    int16_t fir_mem[LPC_ORDER];
+    int     iir_mem[LPC_ORDER];
+
+    int random_seed;
+    int cng_random_seed;
+    int interp_index;
+    int interp_gain;
+    int sid_gain;
+    int cur_gain;
+    int reflection_coef;
+    int pf_gain;                 ///< formant postfilter
+                                 ///< gain scaling unit memory
+    int postfilter;
+
+    int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX + 4];
+
+    /* encoder */
+    int16_t prev_data[HALF_FRAME_LEN];
+    int16_t prev_weight_sig[PITCH_MAX];
+
+    int16_t hpf_fir_mem;                   ///< highpass filter fir
+    int     hpf_iir_mem;                   ///< and iir memories
+    int16_t perf_fir_mem[LPC_ORDER];       ///< perceptual filter fir
+    int16_t perf_iir_mem[LPC_ORDER];       ///< and iir memories
+
+    int16_t harmonic_mem[PITCH_MAX];
+} G723_1_Context;
+
+
+/**
+ * Scale vector contents based on the largest of their absolutes.
+ */
+int ff_g723_1_scale_vector(int16_t *dst, const int16_t *vector, int length);
+
+/**
+ * Calculate the number of left-shifts required for normalizing the input.
+ *
+ * @param num   input number
+ * @param width width of the input, 16 bits(0) / 32 bits(1)
+ */
+int ff_g723_1_normalize_bits(int num, int width);
+
+int ff_g723_1_dot_product(const int16_t *a, const int16_t *b, int length);
+
+/**
+ * Get delayed contribution from the previous excitation vector.
+ */
+void ff_g723_1_get_residual(int16_t *residual, int16_t *prev_excitation,
+                            int lag);
+
+/**
+ * Generate a train of dirac functions with period as pitch lag.
+ */
+void ff_g723_1_gen_dirac_train(int16_t *buf, int pitch_lag);
+
+
+/**
+ * Generate adaptive codebook excitation.
+ */
+void ff_g723_1_gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
+                                  int pitch_lag, G723_1_Subframe *subfrm,
+                                  enum Rate cur_rate);
+/**
+ * Quantize LSP frequencies by interpolation and convert them to
+ * the corresponding LPC coefficients.
+ *
+ * @param lpc      buffer for LPC coefficients
+ * @param cur_lsp  the current LSP vector
+ * @param prev_lsp the previous LSP vector
+ */
+void ff_g723_1_lsp_interpolate(int16_t *lpc, int16_t *cur_lsp,
+                               int16_t *prev_lsp);
+
+/**
+ * Perform inverse quantization of LSP frequencies.
+ *
+ * @param cur_lsp    the current LSP vector
+ * @param prev_lsp   the previous LSP vector
+ * @param lsp_index  VQ indices
+ * @param bad_frame  bad frame flag
+ */
+void ff_g723_1_inverse_quant(int16_t *cur_lsp, int16_t *prev_lsp,
+                             uint8_t *lsp_index, int bad_frame);
+
+static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
+
 /**
  * Postfilter gain weighting factors scaled by 2^15
  */
@@ -125,10 +237,8 @@ static const int16_t dc_lsp[LPC_ORDER] = {
     0x6c46
 };
 
-/**
- * Cosine table scaled by 2^14
- */
-static const int16_t cos_tab[COS_TBL_SIZE+1] = {
+/* Cosine table scaled by 2^14 */
+static const int16_t cos_tab[COS_TBL_SIZE + 1] = {
     16384,  16383,  16379,  16373,  16364,  16353,  16340,  16324,
     16305,  16284,  16261,  16235,  16207,  16176,  16143,  16107,
     16069,  16029,  15986,  15941,  15893,  15843,  15791,  15736,
@@ -1326,4 +1436,4 @@ static const int cng_filt[4] = { 273, 998, 499, 333 };
 
 static const int cng_bseg[3] = { 2048, 18432, 231233 };
 
-#endif /* AVCODEC_G723_1_DATA_H */
+#endif /* AVCODEC_G723_1_H */
