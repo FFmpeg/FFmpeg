@@ -49,7 +49,7 @@
  * @param error Error code to be converted
  * @return Corresponding error text (not thread-safe)
  */
-static char *const get_error_text(const int error)
+static char *get_error_text(const int error)
 {
     static char error_buffer[255];
     av_strerror(error, error_buffer, sizeof(error_buffer));
