@@ -73,7 +73,8 @@ static int write_header(AVFormatContext *s)
                              && desc->nb_components >= 3;
     }
 
-    img->use_rename = proto && !strcmp(proto, "file");
+    img->use_rename = img->use_rename < 0 ? proto && !strcmp(proto, "file")
+                                          : img->use_rename;
 
     return 0;
 }
@@ -206,6 +207,7 @@ static const AVOption muxoptions[] = {
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
+    { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, ENC },
     { NULL },
 };
 
