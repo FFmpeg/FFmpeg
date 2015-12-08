@@ -209,7 +209,7 @@ fate-aac-ltp-encode: CMD = enc_dec_pcm adts wav s16le $(TARGET_SAMPLES)/audio-re
 fate-aac-ltp-encode: CMP = stddev
 fate-aac-ltp-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-aac-ltp-encode: CMP_SHIFT = -4096
-fate-aac-ltp-encode: CMP_TARGET = 1273
+fate-aac-ltp-encode: CMP_TARGET = 1270
 fate-aac-ltp-encode: SIZE_TOLERANCE = 3560
 fate-aac-ltp-encode: FUZZ = 17
 

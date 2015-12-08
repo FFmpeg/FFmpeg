@@ -173,7 +173,7 @@ void ff_aac_search_for_ltp(AACEncContext *s, SingleChannelElement *sce,
         return;
     }
 
-    if (!sce->ics.ltp.lag)
+    if (!sce->ics.ltp.lag || s->lambda > 120.0f)
         return;
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
