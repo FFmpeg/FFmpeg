@@ -35,7 +35,7 @@
 #define TNS_Q_BITS 4
 
 /* Coefficient resolution in short windows */
-#define TNS_Q_BITS_IS8 3
+#define TNS_Q_BITS_IS8 4
 
 /* We really need the bits we save here elsewhere */
 #define TNS_ENABLE_COEF_COMPRESSION
