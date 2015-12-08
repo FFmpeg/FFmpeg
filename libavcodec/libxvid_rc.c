@@ -68,7 +68,7 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
 
     fd = ff_tempfile("xvidrc.", &tmp_name);
     if (fd < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Can't create temporary pass2 file.\n");
+        av_log(s, AV_LOG_ERROR, "Cannot create temporary pass2 file.\n");
         return fd;
     }
 
@@ -106,7 +106,7 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
 
     if (xvid_plugin_2pass2(NULL, XVID_PLG_CREATE, &xvid_plg_create,
                            &s->rc_context.non_lavc_opaque) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "xvid_plugin_2pass2 failed\n");
+        av_log(s, AV_LOG_ERROR, "xvid_plugin_2pass2 failed\n");
         return -1;
     }
     return 0;
@@ -141,7 +141,7 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             xvid_plg_data.type          = s->last_pict_type;
             if (xvid_plugin_2pass2(s->rc_context.non_lavc_opaque,
                                    XVID_PLG_AFTER, &xvid_plg_data, NULL)) {
-                av_log(s->avctx, AV_LOG_ERROR,
+                av_log(s, AV_LOG_ERROR,
                        "xvid_plugin_2pass2(handle, XVID_PLG_AFTER, ...) FAILED\n");
                 return -1;
             }
@@ -151,7 +151,7 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         xvid_plg_data.quant               = 0;
         if (xvid_plugin_2pass2(s->rc_context.non_lavc_opaque,
                                XVID_PLG_BEFORE, &xvid_plg_data, NULL)) {
-            av_log(s->avctx, AV_LOG_ERROR,
+            av_log(s, AV_LOG_ERROR,
                    "xvid_plugin_2pass2(handle, XVID_PLG_BEFORE, ...) FAILED\n");
             return -1;
         }
