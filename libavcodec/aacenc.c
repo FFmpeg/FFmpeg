@@ -926,7 +926,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ERROR_IF(s->channels > AAC_MAX_CHANNELS || s->channels == 7,
              "Unsupported number of channels: %d\n", s->channels);
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
-             "Too many bits per frame requested, clamping to max\n");
+             "Too many bits %f > %d per frame requested, clamping to max\n",
+             1024.0 * avctx->bit_rate / avctx->sample_rate,
+             6144 * s->channels);
 
     for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++)
         if (avctx->profile == aacenc_profiles[i])
