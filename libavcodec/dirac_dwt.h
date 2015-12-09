@@ -30,21 +30,21 @@ typedef short IDWTELEM;
 #define MAX_DECOMPOSITIONS 8
 
 typedef struct DWTCompose {
-    IDWTELEM *b[MAX_DWT_SUPPORT];
+    uint8_t *b[MAX_DWT_SUPPORT];
     int y;
 } DWTCompose;
 
 struct DWTContext;
 
 // Possible prototypes for vertical_compose functions
-typedef void (*vertical_compose_2tap)(IDWTELEM *b0, IDWTELEM *b1, int width);
-typedef void (*vertical_compose_3tap)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width);
-typedef void (*vertical_compose_5tap)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, int width);
-typedef void (*vertical_compose_9tap)(IDWTELEM *dst, IDWTELEM *b[8], int width);
+typedef void (*vertical_compose_2tap)(uint8_t *b0, uint8_t *b1, int width);
+typedef void (*vertical_compose_3tap)(uint8_t *b0, uint8_t *b1, uint8_t *b2, int width);
+typedef void (*vertical_compose_5tap)(uint8_t *b0, uint8_t *b1, uint8_t *b2, uint8_t *b3, uint8_t *b4, int width);
+typedef void (*vertical_compose_9tap)(uint8_t *dst, uint8_t *b[8], int width);
 
 typedef struct DWTContext {
-    IDWTELEM *buffer;
-    IDWTELEM *temp;
+    uint8_t *buffer;
+    uint8_t *temp;
     int width;
     int height;
     int stride;
@@ -57,7 +57,7 @@ typedef struct DWTContext {
     void (*vertical_compose_l1)(void);
     void (*vertical_compose_h1)(void);
     void (*vertical_compose)(void);     ///< one set of lowpass and highpass combined
-    void (*horizontal_compose)(IDWTELEM *b, IDWTELEM *tmp, int width);
+    void (*horizontal_compose)(uint8_t *b, uint8_t *tmp, int width);
 
     DWTCompose cs[MAX_DECOMPOSITIONS];
 } DWTContext;
@@ -76,9 +76,9 @@ enum dwt_type {
 };
 
 // -1 if an error occurred, e.g. the dwt_type isn't recognized
-int ff_spatial_idwt_init2(DWTContext *d, IDWTELEM *buffer, int width, int height,
+int ff_spatial_idwt_init2(DWTContext *d, uint8_t *buffer, int width, int height,
                           int stride, enum dwt_type type, int decomposition_count,
-                          IDWTELEM *temp);
+                          uint8_t *temp, int bit_depth);
 
 void ff_spatial_idwt_slice2(DWTContext *d, int y);
 

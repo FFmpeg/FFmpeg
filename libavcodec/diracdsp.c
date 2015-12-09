@@ -135,9 +135,10 @@ ADD_OBMC(8)
 ADD_OBMC(16)
 ADD_OBMC(32)
 
-static void put_signed_rect_clamped_c(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height)
+static void put_signed_rect_clamped_8bit_c(uint8_t *dst, int dst_stride, const uint8_t *_src, int src_stride, int width, int height)
 {
     int x, y;
+    int16_t *src = (int16_t *)_src;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=4) {
             dst[x  ] = av_clip_uint8(src[x  ] + 128);
@@ -146,7 +147,24 @@ static void put_signed_rect_clamped_c(uint8_t *dst, int dst_stride, const int16_
             dst[x+3] = av_clip_uint8(src[x+3] + 128);
         }
         dst += dst_stride;
-        src += src_stride;
+        src += src_stride >> 1;
+    }
+}
+
+static void put_signed_rect_clamped_10bit_c(uint8_t *_dst, int dst_stride, const uint8_t *_src, int src_stride, int width, int height)
+{
+    int x, y;
+    uint16_t *dst = (uint16_t *)_dst;
+    int32_t *src = (int32_t *)_src;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x+=4) {
+            dst[x  ] = av_clip(src[x  ] + 512, 0, (1 << 10) - 1);
+            dst[x+1] = av_clip(src[x+1] + 512, 0, (1 << 10) - 1);
+            dst[x+2] = av_clip(src[x+2] + 512, 0, (1 << 10) - 1);
+            dst[x+3] = av_clip(src[x+3] + 512, 0, (1 << 10) - 1);
+        }
+        dst += dst_stride >> 1;
+        src += src_stride >> 2;
     }
 }
 
@@ -177,7 +195,8 @@ av_cold void ff_diracdsp_init(DiracDSPContext *c)
 {
     c->dirac_hpel_filter = dirac_hpel_filter;
     c->add_rect_clamped = add_rect_clamped_c;
-    c->put_signed_rect_clamped = put_signed_rect_clamped_c;
+    c->put_signed_rect_clamped[0] = put_signed_rect_clamped_8bit_c;
+    c->put_signed_rect_clamped[1] = put_signed_rect_clamped_10bit_c;
 
     c->add_dirac_obmc[0] = add_obmc8_c;
     c->add_dirac_obmc[1] = add_obmc16_c;

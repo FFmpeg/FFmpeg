@@ -1687,16 +1687,16 @@ static int dirac_decode_frame_internal(DiracContext *s)
             memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
             decode_component(s, comp); /* [DIRAC_STD] 13.4.1 core_transform_data() */
         }
-        ret = ff_spatial_idwt_init2(&d, (int16_t*)p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride >> 1,
-                                    s->wavelet_idx+2, s->wavelet_depth, (int16_t*)p->idwt_tmp);
+        ret = ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
+                                    s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp, s->bit_depth);
         if (ret < 0)
             return ret;
 
         if (!s->num_refs) { /* intra */
             for (y = 0; y < p->height; y += 16) {
                 ff_spatial_idwt_slice2(&d, y+16); /* decode */
-                s->diracdsp.put_signed_rect_clamped(frame + y*p->stride, p->stride,
-                                                   (int16_t*)(p->idwt_buf) + y*(p->idwt_stride >> 1), (p->idwt_stride >> 1), p->width, 16);
+                s->diracdsp.put_signed_rect_clamped[s->pshift](frame + y*p->stride, p->stride,
+                                                               p->idwt_buf + y*p->idwt_stride, p->idwt_stride, p->width, 16);
             }
         } else { /* inter */
             int rowheight = p->ybsep*p->stride;

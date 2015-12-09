@@ -130,7 +130,7 @@ void ff_diracdsp_init_mmx(DiracDSPContext* c)
     c->add_dirac_obmc[2] = ff_add_dirac_obmc32_mmx;
     c->dirac_hpel_filter = dirac_hpel_filter_mmx;
     c->add_rect_clamped = ff_add_rect_clamped_mmx;
-    c->put_signed_rect_clamped = ff_put_signed_rect_clamped_mmx;
+    c->put_signed_rect_clamped[0] = (void *)ff_put_signed_rect_clamped_mmx;
 #endif
     PIXFUNC(put, 0, mmx);
     PIXFUNC(avg, 0, mmx);
@@ -143,7 +143,7 @@ void ff_diracdsp_init_mmx(DiracDSPContext* c)
     if (EXTERNAL_SSE2(mm_flags)) {
         c->dirac_hpel_filter = dirac_hpel_filter_sse2;
         c->add_rect_clamped = ff_add_rect_clamped_sse2;
-        c->put_signed_rect_clamped = ff_put_signed_rect_clamped_sse2;
+        c->put_signed_rect_clamped[0] = (void *)ff_put_signed_rect_clamped_sse2;
 
         c->add_dirac_obmc[1] = ff_add_dirac_obmc16_sse2;
         c->add_dirac_obmc[2] = ff_add_dirac_obmc32_sse2;

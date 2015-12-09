@@ -25,17 +25,20 @@
 #include "dirac_dwt.h"
 
 #define COMPOSE_VERTICAL(ext, align) \
-void ff_vertical_compose53iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width); \
-void ff_vertical_compose_dirac53iH0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width); \
-void ff_vertical_compose_dd137iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, int width); \
-void ff_vertical_compose_dd97iH0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, int width); \
-void ff_vertical_compose_haar##ext(IDWTELEM *b0, IDWTELEM *b1, int width); \
-void ff_horizontal_compose_haar0i##ext(IDWTELEM *b, IDWTELEM *tmp, int w);\
-void ff_horizontal_compose_haar1i##ext(IDWTELEM *b, IDWTELEM *tmp, int w);\
+void ff_vertical_compose53iL0##ext(int16_t *b0, int16_t *b1, int16_t *b2, int width); \
+void ff_vertical_compose_dirac53iH0##ext(int16_t *b0, int16_t *b1, int16_t *b2, int width); \
+void ff_vertical_compose_dd137iL0##ext(int16_t *b0, int16_t *b1, int16_t *b2, int16_t *b3, int16_t *b4, int width); \
+void ff_vertical_compose_dd97iH0##ext(int16_t *b0, int16_t *b1, int16_t *b2, int16_t *b3, int16_t *b4, int width); \
+void ff_vertical_compose_haar##ext(int16_t *b0, int16_t *b1, int width); \
+void ff_horizontal_compose_haar0i##ext(int16_t *b, int16_t *tmp, int w);\
+void ff_horizontal_compose_haar1i##ext(int16_t *b, int16_t *tmp, int w);\
 \
-static void vertical_compose53iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width) \
+static void vertical_compose53iL0##ext(uint8_t *_b0, uint8_t *_b1, uint8_t *_b2, int width) \
 { \
     int i, width_align = width&~(align-1); \
+    int16_t *b0 = (int16_t *)_b0; \
+    int16_t *b1 = (int16_t *)_b1; \
+    int16_t *b2 = (int16_t *)_b2; \
 \
     for(i=width_align; i<width; i++) \
         b1[i] = COMPOSE_53iL0(b0[i], b1[i], b2[i]); \
@@ -43,9 +46,12 @@ static void vertical_compose53iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
     ff_vertical_compose53iL0##ext(b0, b1, b2, width_align); \
 } \
 \
-static void vertical_compose_dirac53iH0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width) \
+static void vertical_compose_dirac53iH0##ext(uint8_t *_b0, uint8_t *_b1, uint8_t *_b2, int width) \
 { \
     int i, width_align = width&~(align-1); \
+    int16_t *b0 = (int16_t *)_b0; \
+    int16_t *b1 = (int16_t *)_b1; \
+    int16_t *b2 = (int16_t *)_b2; \
 \
     for(i=width_align; i<width; i++) \
         b1[i] = COMPOSE_DIRAC53iH0(b0[i], b1[i], b2[i]); \
@@ -53,10 +59,15 @@ static void vertical_compose_dirac53iH0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELE
     ff_vertical_compose_dirac53iH0##ext(b0, b1, b2, width_align); \
 } \
 \
-static void vertical_compose_dd137iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, \
-                                           IDWTELEM *b3, IDWTELEM *b4, int width) \
+static void vertical_compose_dd137iL0##ext(uint8_t *_b0, uint8_t *_b1, uint8_t *_b2, \
+                                           uint8_t *_b3, uint8_t *_b4, int width) \
 { \
     int i, width_align = width&~(align-1); \
+    int16_t *b0 = (int16_t *)_b0; \
+    int16_t *b1 = (int16_t *)_b1; \
+    int16_t *b2 = (int16_t *)_b2; \
+    int16_t *b3 = (int16_t *)_b3; \
+    int16_t *b4 = (int16_t *)_b4; \
 \
     for(i=width_align; i<width; i++) \
         b2[i] = COMPOSE_DD137iL0(b0[i], b1[i], b2[i], b3[i], b4[i]); \
@@ -64,19 +75,26 @@ static void vertical_compose_dd137iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM 
     ff_vertical_compose_dd137iL0##ext(b0, b1, b2, b3, b4, width_align); \
 } \
 \
-static void vertical_compose_dd97iH0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, \
-                                          IDWTELEM *b3, IDWTELEM *b4, int width) \
+static void vertical_compose_dd97iH0##ext(uint8_t *_b0, uint8_t *_b1, uint8_t *_b2, \
+                                          uint8_t *_b3, uint8_t *_b4, int width) \
 { \
     int i, width_align = width&~(align-1); \
+    int16_t *b0 = (int16_t *)_b0; \
+    int16_t *b1 = (int16_t *)_b1; \
+    int16_t *b2 = (int16_t *)_b2; \
+    int16_t *b3 = (int16_t *)_b3; \
+    int16_t *b4 = (int16_t *)_b4; \
 \
     for(i=width_align; i<width; i++) \
         b2[i] = COMPOSE_DD97iH0(b0[i], b1[i], b2[i], b3[i], b4[i]); \
 \
     ff_vertical_compose_dd97iH0##ext(b0, b1, b2, b3, b4, width_align); \
 } \
-static void vertical_compose_haar##ext(IDWTELEM *b0, IDWTELEM *b1, int width) \
+static void vertical_compose_haar##ext(uint8_t *_b0, uint8_t *_b1, int width) \
 { \
     int i, width_align = width&~(align-1); \
+    int16_t *b0 = (int16_t *)_b0; \
+    int16_t *b1 = (int16_t *)_b1; \
 \
     for(i=width_align; i<width; i++) { \
         b0[i] = COMPOSE_HAARiL0(b0[i], b1[i]); \
@@ -85,10 +103,13 @@ static void vertical_compose_haar##ext(IDWTELEM *b0, IDWTELEM *b1, int width) \
 \
     ff_vertical_compose_haar##ext(b0, b1, width_align); \
 } \
-static void horizontal_compose_haar0i##ext(IDWTELEM *b, IDWTELEM *tmp, int w)\
+static void horizontal_compose_haar0i##ext(uint8_t *_b, uint8_t *_tmp, int w)\
 {\
     int w2= w>>1;\
     int x= w2 - (w2&(align-1));\
+    int16_t *b = (int16_t *)_b; \
+    int16_t *tmp = (int16_t *)_tmp; \
+\
     ff_horizontal_compose_haar0i##ext(b, tmp, w);\
 \
     for (; x < w2; x++) {\
@@ -96,10 +117,13 @@ static void horizontal_compose_haar0i##ext(IDWTELEM *b, IDWTELEM *tmp, int w)\
         b[2*x+1] = COMPOSE_HAARiH0(b[x+w2], tmp[x]);\
     }\
 }\
-static void horizontal_compose_haar1i##ext(IDWTELEM *b, IDWTELEM *tmp, int w)\
+static void horizontal_compose_haar1i##ext(uint8_t *_b, uint8_t *_tmp, int w)\
 {\
     int w2= w>>1;\
     int x= w2 - (w2&(align-1));\
+    int16_t *b = (int16_t *)_b; \
+    int16_t *tmp = (int16_t *)_tmp; \
+\
     ff_horizontal_compose_haar1i##ext(b, tmp, w);\
 \
     for (; x < w2; x++) {\
@@ -116,12 +140,15 @@ COMPOSE_VERTICAL(_mmx, 4)
 COMPOSE_VERTICAL(_sse2, 8)
 
 
-void ff_horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w);
+void ff_horizontal_compose_dd97i_ssse3(int16_t *_b, int16_t *_tmp, int w);
 
-static void horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w)
+static void horizontal_compose_dd97i_ssse3(uint8_t *_b, uint8_t *_tmp, int w)
 {
     int w2= w>>1;
     int x= w2 - (w2&7);
+    int16_t *b = (int16_t *)_b;
+    int16_t *tmp = (int16_t *)_tmp;
+
     ff_horizontal_compose_dd97i_ssse3(b, tmp, w);
 
     for (; x < w2; x++) {
