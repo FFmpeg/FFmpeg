@@ -118,7 +118,7 @@ static const enum AVPixelFormat dirac_pix_fmt[2][3] = {
 /* [DIRAC_STD] 10.3 Parse Source Parameters.
  * source_parameters(base_video_format) */
 static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
-                                   dirac_source_params *source)
+                                   dirac_source_params *source, int *bit_depth)
 {
     AVRational frame_rate = { 0, 0 };
     unsigned luma_depth = 8, luma_offset = 16;
@@ -239,6 +239,9 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     if (luma_depth > 8)
         av_log(avctx, AV_LOG_WARNING, "Bitdepth greater than 8\n");
 
+
+    *bit_depth = luma_depth;
+
     avctx->pix_fmt = dirac_pix_fmt[!luma_offset][source->chroma_format];
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift, &chroma_y_shift);
     if ((source->width % (1<<chroma_x_shift)) || (source->height % (1<<chroma_y_shift))) {
@@ -290,7 +293,8 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
 
 /* [DIRAC_STD] 10. Sequence Header. sequence_header() */
 int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
-                                       dirac_source_params *source)
+                                       dirac_source_params *source,
+                                       int *bit_depth)
 {
     unsigned version_major;
     unsigned video_format, picture_coding_mode;
@@ -318,7 +322,7 @@ int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
 
     /* [DIRAC_STD] 10.3 Source Parameters
      * Override the defaults. */
-    if (ret = parse_source_parameters(avctx, gb, source))
+    if (ret = parse_source_parameters(avctx, gb, source, bit_depth))
         return ret;
 
     ret = ff_set_dimensions(avctx, source->width, source->height);

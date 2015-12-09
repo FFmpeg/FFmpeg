@@ -97,11 +97,12 @@ typedef struct {
 typedef struct SubBand {
     int level;
     int orientation;
-    int stride;
+    int stride; /* in bytes */
     int width;
     int height;
+    int pshift;
     int quant;
-    IDWTELEM *ibuf;
+    uint8_t *ibuf;
     struct SubBand *parent;
 
     /* for low delay */
@@ -117,9 +118,9 @@ typedef struct Plane {
     int idwt_width;
     int idwt_height;
     int idwt_stride;
-    IDWTELEM *idwt_buf;
-    IDWTELEM *idwt_buf_base;
-    IDWTELEM *idwt_tmp;
+    uint8_t *idwt_buf;
+    uint8_t *idwt_buf_base;
+    uint8_t *idwt_tmp;
 
     /* block length */
     uint8_t xblen;
@@ -146,6 +147,9 @@ typedef struct DiracContext {
     Plane plane[3];
     int chroma_x_shift;
     int chroma_y_shift;
+
+    int bit_depth;              /* bit depth                                 */
+    int pshift;                 /* pixel shift = bit_depth > 8               */
 
     int zero_res;               /* zero residue flag                         */
     int is_arith;               /* whether coeffs use arith or golomb coding */
@@ -339,9 +343,9 @@ static int alloc_sequence_buffers(DiracContext *s)
         w = FFALIGN(CALC_PADDING(w, MAX_DWT_LEVELS), 8); /* FIXME: Should this be 16 for SSE??? */
         h = top_padding + CALC_PADDING(h, MAX_DWT_LEVELS) + max_yblen/2;
 
-        s->plane[i].idwt_buf_base = av_mallocz_array((w+max_xblen), h * sizeof(IDWTELEM));
-        s->plane[i].idwt_tmp      = av_malloc_array((w+16), sizeof(IDWTELEM));
-        s->plane[i].idwt_buf      = s->plane[i].idwt_buf_base + top_padding*w;
+        s->plane[i].idwt_buf_base = av_mallocz_array((w+max_xblen), h * (2 << s->pshift));
+        s->plane[i].idwt_tmp      = av_malloc_array((w+16), 2 << s->pshift);
+        s->plane[i].idwt_buf      = s->plane[i].idwt_buf_base + (top_padding*w)*(2 << s->pshift);
         if (!s->plane[i].idwt_buf_base || !s->plane[i].idwt_tmp)
             return AVERROR(ENOMEM);
     }
@@ -462,38 +466,6 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
 
 #define SIGN_CTX(x) (CTX_SIGN_ZERO + ((x) > 0) - ((x) < 0))
 
-static inline void coeff_unpack_arith(DiracArith *c, int qfactor, int qoffset,
-                                      SubBand *b, IDWTELEM *buf, int x, int y)
-{
-    int coeff, sign;
-    int sign_pred = 0;
-    int pred_ctx = CTX_ZPZN_F1;
-
-    /* Check if the parent subband has a 0 in the corresponding position */
-    if (b->parent)
-        pred_ctx += !!b->parent->ibuf[b->parent->stride * (y>>1) + (x>>1)] << 1;
-
-    if (b->orientation == subband_hl)
-        sign_pred = buf[-b->stride];
-
-    /* Determine if the pixel has only zeros in its neighbourhood */
-    if (x) {
-        pred_ctx += !(buf[-1] | buf[-b->stride] | buf[-1-b->stride]);
-        if (b->orientation == subband_lh)
-            sign_pred = buf[-1];
-    } else {
-        pred_ctx += !buf[-b->stride];
-    }
-
-    coeff = dirac_get_arith_uint(c, pred_ctx, CTX_COEFF_DATA);
-    if (coeff) {
-        coeff = (coeff * qfactor + qoffset + 2) >> 2;
-        sign  = dirac_get_arith_bit(c, SIGN_CTX(sign_pred));
-        coeff = (coeff ^ -sign) + sign;
-    }
-    *buf = coeff;
-}
-
 static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffset)
 {
     int sign, coeff;
@@ -507,6 +479,38 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
     return coeff;
 }
 
+#define UNPACK_ARITH(n, type) \
+    static inline void coeff_unpack_arith_##n(DiracArith *c, int qfactor, int qoffset, \
+                                              SubBand *b, type *buf, int x, int y) \
+    { \
+        int coeff, sign, sign_pred = 0, pred_ctx = CTX_ZPZN_F1; \
+        const int mstride = -(b->stride >> (1+b->pshift)); \
+        if (b->parent) { \
+            const type *pbuf = (type *)b->parent->ibuf; \
+            const int stride = b->parent->stride >> (1+b->parent->pshift); \
+            pred_ctx += !!pbuf[stride * (y>>1) + (x>>1)] << 1; \
+        } \
+        if (b->orientation == subband_hl) \
+            sign_pred = buf[mstride]; \
+        if (x) { \
+            pred_ctx += !(buf[-1] | buf[mstride] | buf[-1 + mstride]); \
+            if (b->orientation == subband_lh) \
+                sign_pred = buf[-1]; \
+        } else { \
+            pred_ctx += !buf[mstride]; \
+        } \
+        coeff = dirac_get_arith_uint(c, pred_ctx, CTX_COEFF_DATA); \
+        if (coeff) { \
+            coeff = (coeff * qfactor + qoffset + 2) >> 2; \
+            sign  = dirac_get_arith_bit(c, SIGN_CTX(sign_pred)); \
+            coeff = (coeff ^ -sign) + sign; \
+        } \
+        *buf = coeff; \
+    } \
+
+UNPACK_ARITH(8, int16_t)
+UNPACK_ARITH(10, int32_t)
+
 /**
  * Decode the coeffs in the rectangle defined by left, right, top, bottom
  * [DIRAC_STD] 13.4.3.2 Codeblock unpacking loop. codeblock()
@@ -518,7 +522,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
 {
     int x, y, zero_block;
     int qoffset, qfactor;
-    IDWTELEM *buf;
+    uint8_t *buf;
 
     /* check for any coded coefficients in this codeblock */
     if (!blockcnt_one) {
@@ -554,41 +558,59 @@ static inline void codeblock(DiracContext *s, SubBand *b,
         qoffset = qoffset_inter_tab[b->quant];
 
     buf = b->ibuf + top * b->stride;
-    for (y = top; y < bottom; y++) {
-        for (x = left; x < right; x++) {
-            /* [DIRAC_STD] 13.4.4 Subband coefficients. coeff_unpack() */
-            if (is_arith)
-                coeff_unpack_arith(c, qfactor, qoffset, b, buf+x, x, y);
-            else
-                buf[x] = coeff_unpack_golomb(gb, qfactor, qoffset);
+    if (is_arith) {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                if (b->pshift) {
+                    coeff_unpack_arith_10(c, qfactor, qoffset, b, (int32_t*)(buf)+x, x, y);
+                } else {
+                    coeff_unpack_arith_8(c, qfactor, qoffset, b, (int16_t*)(buf)+x, x, y);
+                }
+            }
+            buf += b->stride;
         }
-        buf += b->stride;
-    }
+    } else {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                int val = coeff_unpack_golomb(gb, qfactor, qoffset);
+                if (b->pshift) {
+                    AV_WN32(&buf[4*x], val);
+                } else {
+                    AV_WN16(&buf[2*x], val);
+                }
+            }
+            buf += b->stride;
+         }
+     }
 }
 
 /**
  * Dirac Specification ->
  * 13.3 intra_dc_prediction(band)
  */
-static inline void intra_dc_prediction(SubBand *b)
-{
-    IDWTELEM *buf = b->ibuf;
-    int x, y;
+#define INTRA_DC_PRED(n, type) \
+    static inline void intra_dc_prediction_##n(SubBand *b) \
+    { \
+        type *buf = (type*)b->ibuf; \
+        int x, y; \
+        \
+        for (x = 1; x < b->width; x++) \
+            buf[x] += buf[x-1]; \
+        buf += (b->stride >> (1+b->pshift)); \
+        \
+        for (y = 1; y < b->height; y++) { \
+            buf[0] += buf[-(b->stride >> (1+b->pshift))]; \
+            \
+            for (x = 1; x < b->width; x++) { \
+                int pred = buf[x - 1] + buf[x - (b->stride >> (1+b->pshift))] + buf[x - (b->stride >> (1+b->pshift))-1]; \
+                buf[x]  += divide3(pred); \
+            } \
+            buf += (b->stride >> (1+b->pshift)); \
+        } \
+    } \
 
-    for (x = 1; x < b->width; x++)
-        buf[x] += buf[x-1];
-    buf += b->stride;
-
-    for (y = 1; y < b->height; y++) {
-        buf[0] += buf[-b->stride];
-
-        for (x = 1; x < b->width; x++) {
-            int pred = buf[x - 1] + buf[x - b->stride] + buf[x - b->stride-1];
-            buf[x]  += divide3(pred);
-        }
-        buf += b->stride;
-    }
-}
+INTRA_DC_PRED(8, int16_t)
+INTRA_DC_PRED(10, int32_t)
 
 /**
  * Dirac Specification ->
@@ -623,8 +645,13 @@ static av_always_inline void decode_subband_internal(DiracContext *s, SubBand *b
         top = bottom;
     }
 
-    if (b->orientation == subband_ll && s->num_refs == 0)
-        intra_dc_prediction(b);
+    if (b->orientation == subband_ll && s->num_refs == 0) {
+        if (s->pshift) {
+            intra_dc_prediction_10(b);
+        } else {
+            intra_dc_prediction_8(b);
+        }
+    }
 }
 
 static int decode_subband_arith(AVCodecContext *avctx, void *b)
@@ -680,6 +707,18 @@ static void decode_component(DiracContext *s, int comp)
         avctx->execute(avctx, decode_subband_golomb, bands, NULL, num_bands, sizeof(SubBand*));
 }
 
+#define PARSE_VALUES(type, x, gb, ebits, buf1, buf2) \
+    type *buf = (type *)buf1; \
+    buf[x] = coeff_unpack_golomb(gb, qfactor, qoffset); \
+    if (get_bits_count(gb) >= ebits) \
+        return; \
+    if (buf2) { \
+        buf = (type *)buf2; \
+        buf[x] = coeff_unpack_golomb(gb, qfactor, qoffset); \
+        if (get_bits_count(gb) >= ebits) \
+            return; \
+    } \
+
 /* [DIRAC_STD] 13.5.5.2 Luma slice subband data. luma_slice_band(level,orient,sx,sy) --> if b2 == NULL */
 /* [DIRAC_STD] 13.5.5.3 Chroma slice subband data. chroma_slice_band(level,orient,sx,sy) --> if b2 != NULL */
 static void lowdelay_subband(DiracContext *s, GetBitContext *gb, int quant,
@@ -694,28 +733,33 @@ static void lowdelay_subband(DiracContext *s, GetBitContext *gb, int quant,
     int qfactor = qscale_tab[FFMIN(quant, MAX_QUANT)];
     int qoffset = qoffset_intra_tab[FFMIN(quant, MAX_QUANT)];
 
-    IDWTELEM *buf1 =      b1->ibuf + top * b1->stride;
-    IDWTELEM *buf2 = b2 ? b2->ibuf + top * b2->stride : NULL;
+    uint8_t *buf1 =      b1->ibuf + top * b1->stride;
+    uint8_t *buf2 = b2 ? b2->ibuf + top * b2->stride: NULL;
     int x, y;
     /* we have to constantly check for overread since the spec explicitly
        requires this, with the meaning that all remaining coeffs are set to 0 */
     if (get_bits_count(gb) >= bits_end)
         return;
 
-    for (y = top; y < bottom; y++) {
-        for (x = left; x < right; x++) {
-            buf1[x] = coeff_unpack_golomb(gb, qfactor, qoffset);
-            if (get_bits_count(gb) >= bits_end)
-                return;
-            if (buf2) {
-                buf2[x] = coeff_unpack_golomb(gb, qfactor, qoffset);
-                if (get_bits_count(gb) >= bits_end)
-                    return;
+    if (s->pshift) {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                PARSE_VALUES(int32_t, x, gb, bits_end, buf1, buf2);
             }
+            buf1 += b1->stride;
+            if (buf2)
+                buf2 += b2->stride;
         }
-        buf1 += b1->stride;
-        if (buf2)
-            buf2 += b2->stride;
+    }
+    else {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                PARSE_VALUES(int16_t, x, gb, bits_end, buf1, buf2);
+            }
+            buf1 += b1->stride;
+            if (buf2)
+                buf2 += b2->stride;
+        }
     }
 }
 
@@ -810,9 +854,15 @@ static int decode_lowdelay(DiracContext *s)
 
     avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
                    sizeof(struct lowdelay_slice)); /* [DIRAC_STD] 13.5.2 Slices */
-    intra_dc_prediction(&s->plane[0].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
-    intra_dc_prediction(&s->plane[1].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
-    intra_dc_prediction(&s->plane[2].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+    if (s->pshift) {
+        intra_dc_prediction_10(&s->plane[0].band[0][0]);
+        intra_dc_prediction_10(&s->plane[1].band[0][0]);
+        intra_dc_prediction_10(&s->plane[2].band[0][0]);
+    } else {
+        intra_dc_prediction_8(&s->plane[0].band[0][0]);
+        intra_dc_prediction_8(&s->plane[1].band[0][0]);
+        intra_dc_prediction_8(&s->plane[2].band[0][0]);
+    }
     av_free(slices);
     return 0;
 }
@@ -828,7 +878,7 @@ static void init_planes(DiracContext *s)
         p->height      = s->source.height >> (i ? s->chroma_y_shift : 0);
         p->idwt_width  = w = CALC_PADDING(p->width , s->wavelet_depth);
         p->idwt_height = h = CALC_PADDING(p->height, s->wavelet_depth);
-        p->idwt_stride = FFALIGN(p->idwt_width, 8);
+        p->idwt_stride = FFALIGN(p->idwt_width << (1 + s->pshift), 8);
 
         for (level = s->wavelet_depth-1; level >= 0; level--) {
             w = w>>1;
@@ -836,6 +886,7 @@ static void init_planes(DiracContext *s)
             for (orientation = !!level; orientation < 4; orientation++) {
                 SubBand *b = &p->band[level][orientation];
 
+                b->pshift = s->pshift;
                 b->ibuf   = p->idwt_buf;
                 b->level  = level;
                 b->stride = p->idwt_stride << (s->wavelet_depth - level);
@@ -844,9 +895,9 @@ static void init_planes(DiracContext *s)
                 b->orientation = orientation;
 
                 if (orientation & 1)
-                    b->ibuf += w;
+                    b->ibuf += w << (1+b->pshift);
                 if (orientation > 1)
-                    b->ibuf += b->stride>>1;
+                    b->ibuf += (b->stride>>1);
 
                 if (level)
                     b->parent = &p->band[level-1][orientation];
@@ -1615,7 +1666,7 @@ static int dirac_decode_frame_internal(DiracContext *s)
         /* [DIRAC_STD] 13.5.1 low_delay_transform_data() */
         for (comp = 0; comp < 3; comp++) {
             Plane *p = &s->plane[comp];
-            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
+            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
         }
         if (!s->zero_res) {
             if ((ret = decode_lowdelay(s)) < 0)
@@ -1633,11 +1684,11 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
         if (!s->zero_res && !s->low_delay)
         {
-            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
+            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
             decode_component(s, comp); /* [DIRAC_STD] 13.4.1 core_transform_data() */
         }
-        ret = ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
-                                    s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp);
+        ret = ff_spatial_idwt_init2(&d, (int16_t*)p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride >> 1,
+                                    s->wavelet_idx+2, s->wavelet_depth, (int16_t*)p->idwt_tmp);
         if (ret < 0)
             return ret;
 
@@ -1645,7 +1696,7 @@ static int dirac_decode_frame_internal(DiracContext *s)
             for (y = 0; y < p->height; y += 16) {
                 ff_spatial_idwt_slice2(&d, y+16); /* decode */
                 s->diracdsp.put_signed_rect_clamped(frame + y*p->stride, p->stride,
-                                                    p->idwt_buf + y*p->idwt_stride, p->idwt_stride, p->width, 16);
+                                                   (int16_t*)(p->idwt_buf) + y*(p->idwt_stride >> 1), (p->idwt_stride >> 1), p->width, 16);
             }
         } else { /* inter */
             int rowheight = p->ybsep*p->stride;
@@ -1681,8 +1732,10 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
                 mctmp += (start - dsty)*p->stride + p->xoffset;
                 ff_spatial_idwt_slice2(&d, start + h); /* decode */
+                /* NOTE: add_rect_clamped hasn't been templated hence the shifts.
+                 * idwt_stride is passed as pixels, not in bytes as in the rest of the decoder */
                 s->diracdsp.add_rect_clamped(frame + start*p->stride, mctmp, p->stride,
-                                             p->idwt_buf + start*p->idwt_stride, p->idwt_stride, p->width, h);
+                                             (int16_t*)(p->idwt_buf) + start*(p->idwt_stride >> 1), (p->idwt_stride >> 1), p->width, h);
 
                 dsty += p->ybsep;
             }
@@ -1860,9 +1913,12 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return 0;
 
         /* [DIRAC_STD] 10. Sequence header */
-        ret = avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source);
+        ret = avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source,
+                                                 &s->bit_depth);
         if (ret < 0)
             return ret;
+
+        s->pshift = s->bit_depth > 8;
 
         avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
 

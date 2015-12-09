@@ -55,6 +55,7 @@ typedef struct dirac_source_params {
 } dirac_source_params;
 
 int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
-                                       dirac_source_params *source);
+                                       dirac_source_params *source,
+                                       int *bit_depth);
 
 #endif /* AVCODEC_DIRAC_H */
