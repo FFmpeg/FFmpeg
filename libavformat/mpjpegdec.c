@@ -260,8 +260,10 @@ static char* mpjpeg_get_boundary(AVIOContext* pb)
     start = mime_type;
     while (start != NULL && *start != '\0') {
         start = strchr(start, ';');
-        if (start)
-            start = start+1;
+        if (!start)
+            break;
+
+        start = start+1;
 
         while (av_isspace(*start))
             start++;
