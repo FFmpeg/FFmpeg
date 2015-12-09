@@ -1677,7 +1677,7 @@ static void celt_denormalize(CeltContext *s, CeltFrame *frame, float *data)
 
     for (i = s->startband; i < s->endband; i++) {
         float *dst = data + (celt_freq_bands[i] << s->duration);
-        float norm = pow(2, frame->energy[i] + celt_mean_energy[i]);
+        float norm = exp2(frame->energy[i] + celt_mean_energy[i]);
 
         for (j = 0; j < celt_freq_range[i] << s->duration; j++)
             dst[j] *= norm;
@@ -1857,7 +1857,7 @@ static void process_anticollapse(CeltContext *s, CeltFrame *frame, float *X)
 
         /* r needs to be multiplied by 2 or 2*sqrt(2) depending on LM because
         short blocks don't have the same energy as long */
-        r = pow(2, 1 - Ediff);
+        r = exp2(1 - Ediff);
         if (s->duration == 3)
             r *= M_SQRT2;
         r = FFMIN(thresh, r) * sqrt_1;
