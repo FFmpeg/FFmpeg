@@ -34,6 +34,28 @@
 #include "avcodec.h"
 #include "get_bits.h"
 
+/**
+ * Parse code values:
+ *
+ * Dirac Specification ->
+ * 9.6.1  Table 9.1
+ *
+ * VC-2 Specification  ->
+ * 10.4.1 Table 10.1
+ */
+
+enum DiracParseCodes {
+    DIRAC_PCODE_SEQ_HEADER      = 0x00,
+    DIRAC_PCODE_END_SEQ         = 0x10,
+    DIRAC_PCODE_AUX             = 0x20,
+    DIRAC_PCODE_PAD             = 0x30,
+    DIRAC_PCODE_PICTURE_CODED   = 0x08,
+    DIRAC_PCODE_PICTURE_RAW     = 0x48,
+    DIRAC_PCODE_PICTURE_LOW_DEL = 0xC8,
+    DIRAC_PCODE_PICTURE_HQ      = 0xE8,
+    DIRAC_PCODE_MAGIC           = 0x42424344,
+};
+
 typedef struct DiracVersionInfo {
     int major;
     int minor;

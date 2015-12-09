@@ -230,17 +230,6 @@ typedef struct DiracContext {
     DiracFrame all_frames[MAX_FRAMES];
 } DiracContext;
 
-/**
- * Dirac Specification ->
- * Parse code values. 9.6.1 Table 9.1
- */
-enum dirac_parse_code {
-    pc_seq_header         = 0x00,
-    pc_eos                = 0x10,
-    pc_aux_data           = 0x20,
-    pc_padding            = 0x30,
-};
-
 enum dirac_subband {
     subband_ll = 0,
     subband_hl = 1,
@@ -1945,7 +1934,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 
     init_get_bits(&s->gb, &buf[13], 8*(size - DATA_UNIT_HEADER_SIZE));
 
-    if (parse_code == pc_seq_header) {
+    if (parse_code == DIRAC_PCODE_SEQ_HEADER) {
         if (s->seen_sequence_header)
             return 0;
 
@@ -1964,10 +1953,10 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return ret;
 
         s->seen_sequence_header = 1;
-    } else if (parse_code == pc_eos) { /* [DIRAC_STD] End of Sequence */
+    } else if (parse_code == DIRAC_PCODE_END_SEQ) { /* [DIRAC_STD] End of Sequence */
         free_sequence_buffers(s);
         s->seen_sequence_header = 0;
-    } else if (parse_code == pc_aux_data) {
+    } else if (parse_code == DIRAC_PCODE_AUX) {
         if (buf[13] == 1) {     /* encoder implementation/version */
             int ver[3];
             /* versions older than 1.0.8 don't store quant delta for
