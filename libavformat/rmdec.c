@@ -1179,7 +1179,7 @@ static int ivr_probe(AVProbeData *p)
 static int ivr_read_header(AVFormatContext *s)
 {
     unsigned tag, type, len, tlen, value;
-    int i, j, n, count, nb_streams, ret;
+    int i, j, n, count, nb_streams = 0, ret;
     uint8_t key[256], val[256];
     AVIOContext *pb = s->pb;
     AVStream *st;
