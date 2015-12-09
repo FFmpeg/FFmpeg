@@ -21,7 +21,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION .rodata
+SECTION_RODATA
 
 pw_1023: times 8 dw 1023
 
