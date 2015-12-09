@@ -154,7 +154,11 @@ typedef struct DiracContext {
 
     int zero_res;               /* zero residue flag                         */
     int is_arith;               /* whether coeffs use arith or golomb coding */
+    int core_syntax;            /* use core syntax only                      */
     int low_delay;              /* use the low delay syntax                  */
+    int hq_picture;             /* high quality picture, enables low_delay   */
+    int ld_picture;             /* use low delay picture, turns on low_delay */
+    int dc_prediction;          /* has dc prediction                         */
     int globalmc_flag;          /* use global motion compensation            */
     int num_refs;               /* number of reference pictures              */
 
@@ -871,14 +875,16 @@ static int decode_lowdelay(DiracContext *s)
 
     avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
                    sizeof(struct DiracSlice)); /* [DIRAC_STD] 13.5.2 Slices */
-    if (s->pshift) {
-        intra_dc_prediction_10(&s->plane[0].band[0][0]);
-        intra_dc_prediction_10(&s->plane[1].band[0][0]);
-        intra_dc_prediction_10(&s->plane[2].band[0][0]);
-    } else {
-        intra_dc_prediction_8(&s->plane[0].band[0][0]);
-        intra_dc_prediction_8(&s->plane[1].band[0][0]);
-        intra_dc_prediction_8(&s->plane[2].band[0][0]);
+    if (s->dc_prediction) {
+        if (s->pshift) {
+            intra_dc_prediction_10(&s->plane[0].band[0][0]); /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+            intra_dc_prediction_10(&s->plane[1].band[0][0]); /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+            intra_dc_prediction_10(&s->plane[2].band[0][0]); /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+        } else {
+            intra_dc_prediction_8(&s->plane[0].band[0][0]);
+            intra_dc_prediction_8(&s->plane[1].band[0][0]);
+            intra_dc_prediction_8(&s->plane[2].band[0][0]);
+        }
     }
     av_free(slices);
     return 0;
@@ -1130,6 +1136,19 @@ static int dirac_unpack_idwt_params(DiracContext *s)
                     if (s->wavelet_idx == 3)
                         s->lowdelay.quant[level][i] += 4*(s->wavelet_depth-1 - level);
                 }
+        }
+    }
+    /* Codeblock parameters (core syntax only) */
+    if (s->core_syntax) {
+        if (get_bits1(gb)) {
+            for (i = 0; i <= s->wavelet_depth; i++) {
+                CHECKEDREAD(s->codeblock[i].width , tmp < 1 || tmp > (s->avctx->width >>s->wavelet_depth-i), "codeblock width invalid\n")
+                CHECKEDREAD(s->codeblock[i].height, tmp < 1 || tmp > (s->avctx->height>>s->wavelet_depth-i), "codeblock height invalid\n")
+            }
+            CHECKEDREAD(s->codeblock_mode, tmp > 1, "unknown codeblock mode\n")
+        } else {
+            for (i = 0; i <= s->wavelet_depth; i++)
+                s->codeblock[i].width = s->codeblock[i].height = 1;
         }
     }
     return 0;
@@ -1915,7 +1934,8 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 {
     DiracContext *s   = avctx->priv_data;
     DiracFrame *pic   = NULL;
-    int ret, i, parse_code;
+    int ret, i;
+    uint8_t parse_code;
     unsigned tmp;
 
     if (size < DATA_UNIT_HEADER_SIZE)
@@ -1979,12 +1999,19 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             av_log(avctx, AV_LOG_ERROR, "num_refs of 3\n");
             return AVERROR_INVALIDDATA;
         }
-        s->num_refs    = tmp;
-        s->is_arith    = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()      */
-        s->low_delay   = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()  */
-        pic->reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
-        pic->avframe->key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
-        pic->avframe->pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
+        s->num_refs      = tmp;
+        s->is_arith      = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()            */
+        s->low_delay     = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()        */
+        s->core_syntax   = (parse_code & 0x88) == 0x08;          /* [DIRAC_STD] is_core_syntax()      */
+        s->ld_picture    = (parse_code & 0xF8) == 0xC8;          /* [DIRAC_STD] is_ld_picture()       */
+        s->hq_picture    = (parse_code & 0xF8) == 0xE8;          /* [DIRAC_STD] is_hq_picture()       */
+        s->dc_prediction = (parse_code & 0x28) == 0x08;          /* [DIRAC_STD] using_dc_prediction() */
+        pic->reference   = (parse_code & 0x0C) == 0x0C;          /* [DIRAC_STD] is_reference()        */
+        pic->avframe->key_frame = s->num_refs == 0;              /* [DIRAC_STD] is_intra()            */
+        pic->avframe->pict_type = s->num_refs + 1;               /* Definition of AVPictureType in avutil.h */
+
+        if (s->version.minor == 2 && parse_code == 0x88)
+            s->ld_picture = 1;
 
         if ((ret = get_buffer_with_edge(avctx, pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
             return ret;
