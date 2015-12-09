@@ -297,22 +297,21 @@ int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
                                        DiracVersionInfo *version,
                                        int *bit_depth)
 {
-    unsigned version_major;
     unsigned video_format, picture_coding_mode;
     int ret;
 
     /* [DIRAC_SPEC] 10.1 Parse Parameters. parse_parameters() */
-    version_major  = svq3_get_ue_golomb(gb);
-    svq3_get_ue_golomb(gb); /* version_minor */
-    avctx->profile = svq3_get_ue_golomb(gb);
-    avctx->level   = svq3_get_ue_golomb(gb);
+    version->major  = svq3_get_ue_golomb(gb);
+    version->minor  = svq3_get_ue_golomb(gb);
+    avctx->profile  = svq3_get_ue_golomb(gb);
+    avctx->level    = svq3_get_ue_golomb(gb);
     /* [DIRAC_SPEC] sequence_header() -> base_video_format as defined in
      * 10.2 Base Video Format, table 10.1 Dirac predefined video formats */
-    video_format   = svq3_get_ue_golomb(gb);
+    video_format    = svq3_get_ue_golomb(gb);
 
-    if (version_major < 2)
+    if (version->major < 2)
         av_log(avctx, AV_LOG_WARNING, "Stream is old and may not work\n");
-    else if (version_major > 2)
+    else if (version->major > 2)
         av_log(avctx, AV_LOG_WARNING, "Stream may have unhandled features\n");
 
     if (video_format > 20U)
