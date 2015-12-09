@@ -184,6 +184,7 @@ typedef struct MOVContext {
     MOVTrackExt *trex_data;
     unsigned trex_count;
     int itunes_metadata;  ///< metadata are itunes style
+    int handbrake_version;
     int chapter_track;
     int use_absolute_path;
     int ignore_editlist;
