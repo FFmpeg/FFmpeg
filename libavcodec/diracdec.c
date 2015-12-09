@@ -2002,6 +2002,11 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         if (s->version.minor == 2 && parse_code == 0x88)
             s->ld_picture = 1;
 
+        if (s->low_delay && !(s->ld_picture || s->hq_picture) ) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid low delay flag\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         if ((ret = get_buffer_with_edge(avctx, pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
             return ret;
         s->current_picture = pic;
