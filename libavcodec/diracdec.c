@@ -719,11 +719,9 @@ static void decode_component(DiracContext *s, int comp)
             return; \
     } \
 
-/* [DIRAC_STD] 13.5.5.2 Luma slice subband data. luma_slice_band(level,orient,sx,sy) --> if b2 == NULL */
-/* [DIRAC_STD] 13.5.5.3 Chroma slice subband data. chroma_slice_band(level,orient,sx,sy) --> if b2 != NULL */
-static void lowdelay_subband(DiracContext *s, GetBitContext *gb, int quant,
-                             int slice_x, int slice_y, int bits_end,
-                             SubBand *b1, SubBand *b2)
+static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
+                           int slice_x, int slice_y, int bits_end,
+                           SubBand *b1, SubBand *b2)
 {
     int left   = b1->width  * slice_x    / s->lowdelay.num_x;
     int right  = b1->width  *(slice_x+1) / s->lowdelay.num_x;
@@ -792,8 +790,8 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
     for (level = 0; level < s->wavelet_depth; level++)
         for (orientation = !!level; orientation < 4; orientation++) {
             quant = FFMAX(quant_base - s->lowdelay.quant[level][orientation], 0);
-            lowdelay_subband(s, gb, quant, slice->slice_x, slice->slice_y, luma_end,
-                             &s->plane[0].band[level][orientation], NULL);
+            decode_subband(s, gb, quant, slice->slice_x, slice->slice_y, luma_end,
+                           &s->plane[0].band[level][orientation], NULL);
         }
 
     /* consume any unused bits from luma */
@@ -805,9 +803,9 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
     for (level = 0; level < s->wavelet_depth; level++)
         for (orientation = !!level; orientation < 4; orientation++) {
             quant = FFMAX(quant_base - s->lowdelay.quant[level][orientation], 0);
-            lowdelay_subband(s, gb, quant, slice->slice_x, slice->slice_y, chroma_end,
-                             &s->plane[1].band[level][orientation],
-                             &s->plane[2].band[level][orientation]);
+            decode_subband(s, gb, quant, slice->slice_x, slice->slice_y, chroma_end,
+                           &s->plane[1].band[level][orientation],
+                           &s->plane[2].band[level][orientation]);
         }
 
     return 0;
