@@ -187,6 +187,11 @@ typedef struct DiracContext {
     } lowdelay;
 
     struct {
+        unsigned prefix_bytes;
+        unsigned size_scaler;
+    } highquality;
+
+    struct {
         int pan_tilt[2];        /* pan/tilt vector                           */
         int zrs[2][2];          /* zoom/rotate/shear matrix                  */
         int perspective[2];     /* perspective vector                        */
@@ -824,6 +829,44 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
 }
 
 /**
+ * VC-2 Specification ->
+ * 13.5.3 hq_slice(sx,sy)
+ */
+static int decode_hq_slice(DiracContext *s, GetBitContext *gb,
+                           int slice_x, int slice_y)
+{
+    int i, quant, level, orientation, quant_idx;
+    uint8_t quants[MAX_DWT_LEVELS][4];
+
+    skip_bits_long(gb, 8*s->highquality.prefix_bytes);
+    quant_idx = get_bits(gb, 8);
+
+    /* Slice quantization (slice_quantizers() in the specs) */
+    for (level = 0; level < s->wavelet_depth; level++) {
+        for (orientation = !!level; orientation < 4; orientation++) {
+            quant = FFMAX(quant_idx - s->lowdelay.quant[level][orientation], 0);
+            quants[level][orientation] = quant;
+        }
+    }
+
+    /* Luma + 2 Chroma planes */
+    for (i = 0; i < 3; i++) {
+        int length = s->highquality.size_scaler * get_bits(gb, 8);
+        int bits_left = 8 * length;
+        int bits_end = get_bits_count(gb) + bits_left;
+        for (level = 0; level < s->wavelet_depth; level++) {
+            for (orientation = !!level; orientation < 4; orientation++) {
+                decode_subband(s, gb, quants[level][orientation], slice_x, slice_y, bits_end,
+                               &s->plane[i].band[level][orientation], NULL);
+            }
+        }
+        skip_bits_long(gb, bits_end - get_bits_count(gb));
+    }
+
+    return 0;
+}
+
+/**
  * Dirac Specification ->
  * 13.5.1 low_delay_transform_data()
  */
@@ -844,26 +887,34 @@ static int decode_lowdelay(DiracContext *s)
     buf = s->gb.buffer + get_bits_count(&s->gb)/8;
     bufsize = get_bits_left(&s->gb);
 
-    for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
-        for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
-            bytes = (slice_num+1) * s->lowdelay.bytes.num / s->lowdelay.bytes.den
-                - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
-            slices[slice_num].bytes   = bytes;
-            slices[slice_num].slice_x = slice_x;
-            slices[slice_num].slice_y = slice_y;
-            init_get_bits(&slices[slice_num].gb, buf, bufsize);
-            slice_num++;
-
-            buf     += bytes;
-            if (bufsize/8 >= bytes)
-                bufsize -= bytes*8;
-            else
-                bufsize = 0;
+    if (s->hq_picture) {
+        for (slice_y = 0; slice_y < s->num_y; slice_y++) {
+            for (slice_x = 0; slice_x < s->num_x; slice_x++) {
+                decode_hq_slice(s, &s->gb, slice_x, slice_y);
+            }
         }
+    } else {
+        for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
+            for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
+                bytes = (slice_num+1) * s->lowdelay.bytes.num / s->lowdelay.bytes.den
+                    - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
+                slices[slice_num].bytes   = bytes;
+                slices[slice_num].slice_x = slice_x;
+                slices[slice_num].slice_y = slice_y;
+                init_get_bits(&slices[slice_num].gb, buf, bufsize);
+                slice_num++;
+
+                buf     += bytes;
+                if (bufsize/8 >= bytes)
+                    bufsize -= bytes*8;
+                else
+                    bufsize = 0;
+            }
+        }
+        avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
+                       sizeof(DiracSlice)); /* [DIRAC_STD] 13.5.2 Slices */
     }
 
-    avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
-                   sizeof(struct DiracSlice)); /* [DIRAC_STD] 13.5.2 Slices */
     if (s->dc_prediction) {
         if (s->pshift) {
             intra_dc_prediction_10(&s->plane[0].band[0][0]); /* [DIRAC_STD] 13.3 intra_dc_prediction() */
@@ -1077,29 +1128,19 @@ static int dirac_unpack_idwt_params(DiracContext *s)
 
     CHECKEDREAD(s->wavelet_depth, tmp > MAX_DWT_LEVELS || tmp < 1, "invalid number of DWT decompositions\n")
 
-    if (!s->low_delay) {
-        /* Codeblock parameters (core syntax only) */
-        if (get_bits1(gb)) {
-            for (i = 0; i <= s->wavelet_depth; i++) {
-                CHECKEDREAD(s->codeblock[i].width , tmp < 1 || tmp > (s->avctx->width >>s->wavelet_depth-i), "codeblock width invalid\n")
-                CHECKEDREAD(s->codeblock[i].height, tmp < 1 || tmp > (s->avctx->height>>s->wavelet_depth-i), "codeblock height invalid\n")
+    if (s->low_delay) {
+        s->num_x        = svq3_get_ue_golomb(gb);
+        s->num_y        = svq3_get_ue_golomb(gb);
+        if (s->ld_picture) {
+            s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
+            s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
+            if (s->lowdelay.bytes.den <= 0) {
+                av_log(s->avctx,AV_LOG_ERROR,"Invalid lowdelay.bytes.den\n");
+                return AVERROR_INVALIDDATA;
             }
-
-            CHECKEDREAD(s->codeblock_mode, tmp > 1, "unknown codeblock mode\n")
-        } else
-            for (i = 0; i <= s->wavelet_depth; i++)
-                s->codeblock[i].width = s->codeblock[i].height = 1;
-    } else {
-        /* Slice parameters + quantization matrix*/
-        /*[DIRAC_STD] 11.3.4 Slice coding Parameters (low delay syntax only). slice_parameters() */
-        s->num_x     = svq3_get_ue_golomb(gb);
-        s->num_y     = svq3_get_ue_golomb(gb);
-        s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
-        s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
-
-        if (s->lowdelay.bytes.den <= 0) {
-            av_log(s->avctx,AV_LOG_ERROR,"Invalid lowdelay.bytes.den\n");
-            return AVERROR_INVALIDDATA;
+        } else if (s->hq_picture) {
+            s->highquality.prefix_bytes = svq3_get_ue_golomb(gb);
+            s->highquality.size_scaler  = svq3_get_ue_golomb(gb);
         }
 
         /* [DIRAC_STD] 11.3.5 Quantisation matrices (low-delay syntax). quant_matrix() */
