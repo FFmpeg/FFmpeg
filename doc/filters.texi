@@ -2889,6 +2889,35 @@ silenceremove=1:5:0.02
 @end example
 @end itemize
 
+@section sofalizer
+
+SOFAlizer uses head-related transfer functions (HRTFs) to create virtual
+loudspeakers around the user for binaural listening via headphones (audio
+formats up to 9 channels supported).
+The HRTFs are stored in SOFA files (see www.sofacoustics.org for a database).
+SOFAlizer is developed at the Acoustics Research Institute (ARI) of the
+Austrian Academy of Sciences.
+
+The filter accepts the following options:
+
+@table @option
+@item sofa
+Set the SOFA file used for rendering.
+
+@item gain
+Set gain applied to audio. Value is in dB. Default is 0.
+
+@item rotation
+Set rotation of virtual loudspeakers in deg. Default is 0.
+
+@item elevation
+Set elevation of virtual speakers in deg. Default is 0.
+
+@item radius
+Set distance in meters between loudspeakers and the listener with near-field
+HRTFs. Default is 1.
+@end table
+
 @section stereotools
 
 This filter has some handy utilities to manage stereo signals, for converting
