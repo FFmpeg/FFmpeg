@@ -168,14 +168,15 @@ typedef struct DiracContext {
     unsigned old_delta_quant;
     unsigned codeblock_mode;
 
+    unsigned num_x;              /* number of horizontal slices               */
+    unsigned num_y;              /* number of vertical slices                 */
+
     struct {
         unsigned width;
         unsigned height;
     } codeblock[MAX_DWT_LEVELS+1];
 
     struct {
-        unsigned num_x;         /* number of horizontal slices               */
-        unsigned num_y;         /* number of vertical slices                 */
         AVRational bytes;       /* average bytes per slice                   */
         uint8_t quant[MAX_DWT_LEVELS][4]; /* [DIRAC_STD] E.1 */
     } lowdelay;
@@ -723,10 +724,10 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
                            int slice_x, int slice_y, int bits_end,
                            SubBand *b1, SubBand *b2)
 {
-    int left   = b1->width  * slice_x    / s->lowdelay.num_x;
-    int right  = b1->width  *(slice_x+1) / s->lowdelay.num_x;
-    int top    = b1->height * slice_y    / s->lowdelay.num_y;
-    int bottom = b1->height *(slice_y+1) / s->lowdelay.num_y;
+    int left   = b1->width  * slice_x    / s->num_x;
+    int right  = b1->width  *(slice_x+1) / s->num_x;
+    int top    = b1->height * slice_y    / s->num_y;
+    int bottom = b1->height *(slice_y+1) / s->num_y;
 
     int qfactor = qscale_tab[FFMIN(quant, MAX_QUANT)];
     int qoffset = qoffset_intra_tab[FFMIN(quant, MAX_QUANT)];
@@ -761,12 +762,13 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
     }
 }
 
-struct lowdelay_slice {
+/* Used by Low Delay and High Quality profiles */
+typedef struct DiracSlice {
     GetBitContext gb;
     int slice_x;
     int slice_y;
     int bytes;
-};
+} DiracSlice;
 
 
 /**
@@ -776,7 +778,7 @@ struct lowdelay_slice {
 static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
 {
     DiracContext *s = avctx->priv_data;
-    struct lowdelay_slice *slice = arg;
+    DiracSlice *slice = arg;
     GetBitContext *gb = &slice->gb;
     enum dirac_subband orientation;
     int level, quant, chroma_bits, chroma_end;
@@ -820,10 +822,10 @@ static int decode_lowdelay(DiracContext *s)
     AVCodecContext *avctx = s->avctx;
     int slice_x, slice_y, bytes, bufsize;
     const uint8_t *buf;
-    struct lowdelay_slice *slices;
+    DiracSlice *slices;
     int slice_num = 0;
 
-    slices = av_mallocz_array(s->lowdelay.num_x, s->lowdelay.num_y * sizeof(struct lowdelay_slice));
+    slices = av_mallocz_array(s->num_x, s->num_y * sizeof(DiracSlice));
     if (!slices)
         return AVERROR(ENOMEM);
 
@@ -832,11 +834,10 @@ static int decode_lowdelay(DiracContext *s)
     buf = s->gb.buffer + get_bits_count(&s->gb)/8;
     bufsize = get_bits_left(&s->gb);
 
-    for (slice_y = 0; bufsize > 0 && slice_y < s->lowdelay.num_y; slice_y++)
-        for (slice_x = 0; bufsize > 0 && slice_x < s->lowdelay.num_x; slice_x++) {
+    for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
+        for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
             bytes = (slice_num+1) * s->lowdelay.bytes.num / s->lowdelay.bytes.den
                 - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
-
             slices[slice_num].bytes   = bytes;
             slices[slice_num].slice_x = slice_x;
             slices[slice_num].slice_y = slice_y;
@@ -849,9 +850,10 @@ static int decode_lowdelay(DiracContext *s)
             else
                 bufsize = 0;
         }
+    }
 
     avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
-                   sizeof(struct lowdelay_slice)); /* [DIRAC_STD] 13.5.2 Slices */
+                   sizeof(struct DiracSlice)); /* [DIRAC_STD] 13.5.2 Slices */
     if (s->pshift) {
         intra_dc_prediction_10(&s->plane[0].band[0][0]);
         intra_dc_prediction_10(&s->plane[1].band[0][0]);
@@ -1078,8 +1080,8 @@ static int dirac_unpack_idwt_params(DiracContext *s)
     } else {
         /* Slice parameters + quantization matrix*/
         /*[DIRAC_STD] 11.3.4 Slice coding Parameters (low delay syntax only). slice_parameters() */
-        s->lowdelay.num_x     = svq3_get_ue_golomb(gb);
-        s->lowdelay.num_y     = svq3_get_ue_golomb(gb);
+        s->num_x     = svq3_get_ue_golomb(gb);
+        s->num_y     = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
 
