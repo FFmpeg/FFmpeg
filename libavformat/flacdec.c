@@ -263,9 +263,9 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
                 break;
         }
         av_init_packet(&out_pkt);
-        ret = av_parser_parse2(parser, st->codec,
-                               &out_pkt.data, &out_pkt.size, pkt.data, pkt.size,
-                               pkt.pts, pkt.dts, *ppos);
+        av_parser_parse2(parser, st->codec,
+                         &out_pkt.data, &out_pkt.size, pkt.data, pkt.size,
+                         pkt.pts, pkt.dts, *ppos);
 
         av_packet_unref(&pkt);
         if (out_pkt.size){
