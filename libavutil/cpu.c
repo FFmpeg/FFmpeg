@@ -124,6 +124,7 @@ int av_parse_cpu_flags(const char *s)
         { "armv6",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV6    },    .unit = "flags" },
         { "armv6t2",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV6T2  },    .unit = "flags" },
         { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
+        { "vfp_vm",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP_VM   },    .unit = "flags" },
         { "vfpv3",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFPV3    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
 #elif ARCH_AARCH64
@@ -204,6 +205,7 @@ static const struct {
     { AV_CPU_FLAG_ARMV6,     "armv6"      },
     { AV_CPU_FLAG_ARMV6T2,   "armv6t2"    },
     { AV_CPU_FLAG_VFP,       "vfp"        },
+    { AV_CPU_FLAG_VFP_VM,    "vfp_vm"     },
     { AV_CPU_FLAG_VFPV3,     "vfpv3"      },
     { AV_CPU_FLAG_NEON,      "neon"       },
 #elif ARCH_PPC

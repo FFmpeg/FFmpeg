@@ -89,6 +89,7 @@ static const struct {
     { "ARMV6",    "armv6",    AV_CPU_FLAG_ARMV6 },
     { "ARMV6T2",  "armv6t2",  AV_CPU_FLAG_ARMV6T2 },
     { "VFP",      "vfp",      AV_CPU_FLAG_VFP },
+    { "VFP_VM",   "vfp_vm",   AV_CPU_FLAG_VFP_VM },
     { "VFPV3",    "vfp3",     AV_CPU_FLAG_VFPV3 },
     { "NEON",     "neon",     AV_CPU_FLAG_NEON },
 #elif ARCH_PPC

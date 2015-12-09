@@ -62,6 +62,7 @@
 #define AV_CPU_FLAG_VFPV3        (1 << 4)
 #define AV_CPU_FLAG_NEON         (1 << 5)
 #define AV_CPU_FLAG_ARMV8        (1 << 6)
+#define AV_CPU_FLAG_VFP_VM       (1 << 7) ///< VFPv2 vector mode, deprecated in ARMv7-A and unavailable in various CPUs implementations
 
 /**
  * Return the flags which specify extensions supported by the CPU.
