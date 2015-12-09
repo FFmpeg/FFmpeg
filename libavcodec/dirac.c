@@ -294,6 +294,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
 /* [DIRAC_STD] 10. Sequence Header. sequence_header() */
 int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
                                        dirac_source_params *source,
+                                       DiracVersionInfo *version,
                                        int *bit_depth)
 {
     unsigned version_major;

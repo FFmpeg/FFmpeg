@@ -140,6 +140,7 @@ typedef struct DiracContext {
     MpegvideoEncDSPContext mpvencdsp;
     VideoDSPContext vdsp;
     DiracDSPContext diracdsp;
+    DiracVersionInfo version;
     GetBitContext gb;
     dirac_source_params source;
     int seen_sequence_header;
@@ -1914,7 +1915,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 
         /* [DIRAC_STD] 10. Sequence header */
         ret = avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source,
-                                                 &s->bit_depth);
+                                                 &s->version, &s->bit_depth);
         if (ret < 0)
             return ret;
 

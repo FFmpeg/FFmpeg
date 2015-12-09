@@ -34,6 +34,11 @@
 #include "avcodec.h"
 #include "get_bits.h"
 
+typedef struct DiracVersionInfo {
+    int major;
+    int minor;
+} DiracVersionInfo;
+
 typedef struct dirac_source_params {
     unsigned width;
     unsigned height;
@@ -56,6 +61,7 @@ typedef struct dirac_source_params {
 
 int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
                                        dirac_source_params *source,
+                                       DiracVersionInfo *version,
                                        int *bit_depth);
 
 #endif /* AVCODEC_DIRAC_H */
