@@ -711,7 +711,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
                 /* Estimate rd on average as 5 bits for SF, 4 for the CB, plus spread energy * lambda/thr */
                 dist2 += band->energy/(band->spread*band->spread)*lambda*dist_thresh/band->threshold;
             }
-            if (g && sce->sf_idx[(w+w2)*16+g-1] == NOISE_BT) {
+            if (g && sce->band_type[w*16+g-1] == NOISE_BT) {
                 dist2 += 5;
             } else {
                 dist2 += 9;
