@@ -110,8 +110,6 @@ private:
     ValuesList::iterator getConfigOptionPrefixed( const string & sOption );
 
     bool passDependencyCheck( const ValuesList::iterator vitOption );
-
-    void getFileHeader( string & sHeader );
 };
 
 #endif

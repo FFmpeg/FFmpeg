@@ -95,7 +95,6 @@ void deleteFolder(const string & sDestinationFolder)
 string getCopywriteHeader(const string& sDecription)
 {
     return "/** " + sDecription + "\n\
- * Copyright (c) 2015 Matthew Oliver\n\
  *\n\
  * Permission is hereby granted, free of charge, to any person obtaining a copy\n\
  * of this software and associated documentation files (the \"Software\"), to deal\n\
