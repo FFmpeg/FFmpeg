@@ -2114,6 +2114,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options);
  */
 AVProgram *av_find_program_from_stream(AVFormatContext *ic, AVProgram *last, int s);
 
+void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
+
 /**
  * Find the "best" stream in the file.
  * The best stream is determined according to various heuristics as the most

@@ -3915,7 +3915,7 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base,
     return chapter;
 }
 
-void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned idx)
+void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned idx)
 {
     int i, j;
     AVProgram *program = NULL;

@@ -14,6 +14,9 @@ libavutil:     2015-08-28
 
 
 API changes, most recent first:
+2015-12-11 - xxxxxxx - lavf 57.20.100 - avformat.h
+  Add av_program_add_stream_index()
+
 2015-11-29 - xxxxxxx - lavc 57.16.101 - avcodec.h
   Deprecate rtp_callback without replacement, i.e. it won't be possible to
   get image slices before the full frame is encoded any more. The libavformat
