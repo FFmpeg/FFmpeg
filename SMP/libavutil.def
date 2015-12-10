@@ -392,12 +392,14 @@ EXPORTS
     av_tea_crypt
     av_tea_init
     av_tempfile
+    av_thread_message_flush
     av_thread_message_queue_alloc
     av_thread_message_queue_free
     av_thread_message_queue_recv
     av_thread_message_queue_send
     av_thread_message_queue_set_err_recv
     av_thread_message_queue_set_err_send
+    av_thread_message_queue_set_free_func
     av_timecode_adjust_ntsc_framenum2
     av_timecode_check_frame_rate
     av_timecode_get_smpte_from_framenum
