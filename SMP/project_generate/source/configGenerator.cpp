@@ -614,6 +614,10 @@ bool configGenerator::outputConfig( )
 
     //Output avconfig.h
     cout << "  Outputting avconfig.h..." << endl;
+    if (!makeDirectory("../../libavutil")) {
+        cout << "  Error: Failed creating local libavutil directory" << endl;
+        return false;
+    }
     string sAVConfigFile = "../../libavutil/avconfig.h";
     ofstream ofAVConfigFile( sAVConfigFile );
     if( !ofAVConfigFile.is_open( ) )
