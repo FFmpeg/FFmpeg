@@ -355,6 +355,11 @@ To set the language of the first audio stream:
 ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
 
+@item -program [title=@var{title}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
+
+Creates a program with the specified @var{title} and adds the specified
+@var{stream}(s) to it.
+
 @item -target @var{type} (@emph{output})
 Specify target file type (@code{vcd}, @code{svcd}, @code{dvd}, @code{dv},
 @code{dv50}). @var{type} may be prefixed with @code{pal-}, @code{ntsc-} or
