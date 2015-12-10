@@ -42,6 +42,10 @@ bool copyFile(const string & sSourceFile, const string & sDestinationFile);
 void deleteFile(const string & sDestinationFile);
 
 void deleteFolder(const string & sDestinationFolder);
+
+string getCopywriteHeader(const string& sDecription);
+
+bool makeDirectory(const string& sDirectory);
 };
 
 using namespace project_generate;

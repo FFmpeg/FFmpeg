@@ -38,11 +38,14 @@ private:
     StaticList      m_vCIncludes;
     StaticList      m_vYASMIncludes;
     StaticList      m_vHIncludes;
+    UnknownList     m_mReplaceIncludes;
     StaticList      m_vLibs;
     UnknownList     m_mUnknowns;
     string          m_sProjectDir;
 
     map<string,StaticList> m_mProjectLibs;
+
+    configGenerator::DefaultValuesList m_ReplaceValues;
 
 public:
 
@@ -120,7 +123,11 @@ private:
 
     void buildProjectGUIDs( map<string, string> & mKeys );
 
-    bool checkProjectFiles();
+    bool checkProjectFiles(const string& sProjectName);
+
+    bool createReplaceFiles(const StaticList& vReplaceIncludes, StaticList& vExistingIncludes, const string& sProjectName);
+
+    bool findProjectFiles(const StaticList& vIncludes, StaticList& vCIncludes, StaticList& vCPPIncludes, StaticList& vASMIncludes, StaticList& vHIncludes);
 
     void outputTemplateTags(const string& sProjectName, string& sProjectTemplate, string& sFilterTemplate);
 
