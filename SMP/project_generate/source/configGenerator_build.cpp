@@ -308,6 +308,18 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define HAVE_STRUCT_POLLFD 0\n\
 #endif";
+    mReplaceValues["CONFIG_VP9_D3D11VA_HWACCEL"] = "#include <sdkddkver.h>\n\
+#if defined(NTDDI_WIN10_TH2)\n\
+#   define CONFIG_VP9_D3D11VA_HWACCEL 1\n\
+#else\n\
+#   define CONFIG_VP9_D3D11VA_HWACCEL 0\n\
+#endif";
+    mReplaceValues["CONFIG_VP9_DXVA2_HWACCEL"] = "#include <sdkddkver.h>\n\
+#if defined(NTDDI_WIN10_TH2)\n\
+#   define CONFIG_VP9_DXVA2_HWACCEL 1\n\
+#else\n\
+#   define CONFIG_VP9_DXVA2_HWACCEL 0\n\
+#endif";
 
     //Build replace values for all inline asm
     vector<string> vInlineList;
@@ -387,6 +399,7 @@ void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalD
     mAdditionalDependencies["CreateDIBSection"] = true;
     mAdditionalDependencies["dv1394"] = false;
     mAdditionalDependencies["DXVA_PicParams_HEVC"] = true;
+    mAdditionalDependencies["DXVA_PicParams_VP9"] = true;
     mAdditionalDependencies["dxva2api_h"] = true;
     mAdditionalDependencies["jack_jack_h"] = false;
     mAdditionalDependencies["IBaseFilter"] = true;
