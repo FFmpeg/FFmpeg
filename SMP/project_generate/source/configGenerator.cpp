@@ -1151,12 +1151,12 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 if( vitTemp == m_vConfigValues.end( ) )
                 {
                     DependencyList::iterator mitDep = mAdditionalDependencies.find( *vitCheckItem  );
-                    if( mitDep == mAdditionalDependencies.end( ) )
-                    {
+                    if (mitDep == mAdditionalDependencies.end()) {
                         cout << "  Warning: Unknown option in ifa dependency (" << *vitCheckItem << ") for option (" << sOptionLower << ")" << endl;
-                        continue;
+                        bEnabled = false;
+                    } else {
+                        bEnabled = mitDep->second ^ bToggle;
                     }
-                    bEnabled = mitDep->second ^ bToggle;
                 }
                 else
                 {
@@ -1202,12 +1202,12 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 if( vitTemp == m_vConfigValues.end( ) )
                 {
                     DependencyList::iterator mitDep = mAdditionalDependencies.find( *vitCheckItem  );
-                    if( mitDep == mAdditionalDependencies.end( ) )
-                    {
+                    if (mitDep == mAdditionalDependencies.end()) {
                         cout << "  Warning: Unknown option in if dependency (" << *vitCheckItem << ") for option (" << sOptionLower << ")" << endl;
-                        continue;
+                        bAllEnabled = false;
+                    } else {
+                        bAllEnabled = mitDep->second ^ bToggle;
                     }
-                    bAllEnabled = mitDep->second ^ bToggle;
                 }
                 else
                 {
@@ -1253,12 +1253,12 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 if( vitTemp == m_vConfigValues.end( ) )
                 {
                     DependencyList::iterator mitDep = mAdditionalDependencies.find( *vitCheckItem  );
-                    if( mitDep == mAdditionalDependencies.end( ) )
-                    {
+                    if (mitDep == mAdditionalDependencies.end()) {
                         cout << "  Warning: Unknown option in dependency (" << *vitCheckItem << ") for option (" << sOptionLower << ")" << endl;
-                        continue;
+                        bEnabled = false;
+                    } else {
+                        bEnabled = mitDep->second ^ bToggle;
                     }
-                    bEnabled = mitDep->second ^ bToggle;
                 }
                 else
                 {
@@ -1304,12 +1304,12 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 if( vitTemp == m_vConfigValues.end( ) )
                 {
                     DependencyList::iterator mitDep = mAdditionalDependencies.find( *vitCheckItem  );
-                    if( mitDep == mAdditionalDependencies.end( ) )
-                    {
+                    if (mitDep == mAdditionalDependencies.end()) {
                         cout << "  Warning: Unknown option in any dependency (" << *vitCheckItem << ") for option (" << sOptionLower << ")" << endl;
-                        continue;
+                        bAnyEnabled = false;
+                    } else {
+                        bAnyEnabled = mitDep->second ^ bToggle;
                     }
-                    bAnyEnabled = mitDep->second ^ bToggle;
                 }
                 else
                 {
