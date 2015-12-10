@@ -334,7 +334,6 @@
     <ClCompile Include="..\libavfilter\avf_showwaves.c" />
     <ClCompile Include="..\libavfilter\src_movie.c" />
     <ClCompile Include="..\libavfilter\pthread.c" />
-    <ClCompile Include="..\libavfilter\log2_tab.c" />
     <ClCompile Include="..\libavfilter\x86\vf_blend_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_eq.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_eq.obj</ObjectFileName>
@@ -361,6 +360,7 @@
     <ClCompile Include="..\libavfilter\x86\af_volume_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_w3fdif_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_yadif_init.c" />
+    <ClCompile Include="libavfilter\log2_tab_wrap.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavfilter\avfilter.h" />

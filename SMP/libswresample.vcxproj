@@ -87,10 +87,10 @@
     <ClCompile Include="..\libswresample\swresample.c" />
     <ClCompile Include="..\libswresample\swresample_frame.c" />
     <ClCompile Include="..\libswresample\soxr_resample.c" />
-    <ClCompile Include="..\libswresample\log2_tab.c" />
     <ClCompile Include="..\libswresample\x86\audio_convert_init.c" />
     <ClCompile Include="..\libswresample\x86\rematrix_init.c" />
     <ClCompile Include="..\libswresample\x86\resample_init.c" />
+    <ClCompile Include="libswresample\log2_tab_wrap.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libswresample\swresample.h" />

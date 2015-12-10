@@ -69,9 +69,6 @@
     <ClCompile Include="..\libswresample\soxr_resample.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
-    <ClCompile Include="..\libswresample\log2_tab.c">
-      <Filter>Source Files\libswresample</Filter>
-    </ClCompile>
     <ClCompile Include="..\libswresample\x86\audio_convert_init.c">
       <Filter>Source Files\libswresample\x86</Filter>
     </ClCompile>
@@ -80,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="..\libswresample\x86\resample_init.c">
       <Filter>Source Files\libswresample\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="libswresample\log2_tab_wrap.c">
+      <Filter>Source Files\libswresample</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

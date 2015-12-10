@@ -84,9 +84,6 @@
     <ClCompile Include="..\libswscale\gamma.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
-    <ClCompile Include="..\libswscale\log2_tab.c">
-      <Filter>Source Files\libswscale</Filter>
-    </ClCompile>
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
       <Filter>Source Files\libswscale\x86</Filter>
     </ClCompile>
@@ -98,6 +95,9 @@
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\hscale_fast_bilinear_simd.c">
       <Filter>Source Files\libswscale\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="libswscale\log2_tab_wrap.c">
+      <Filter>Source Files\libswscale</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

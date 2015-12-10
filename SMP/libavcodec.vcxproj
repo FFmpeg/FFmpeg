@@ -288,8 +288,6 @@
     <ClCompile Include="..\libavcodec\rv34dsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_rv34dsp.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\log2_tab.c" />
-    <ClCompile Include="..\libavcodec\reverse.c" />
     <ClCompile Include="..\libavcodec\sinewin.c" />
     <ClCompile Include="..\libavcodec\sinewin_fixed.c" />
     <ClCompile Include="..\libavcodec\snappy.c" />
@@ -1036,6 +1034,9 @@
     <ClCompile Include="..\libavcodec\x86\snowdsp.c" />
     <ClCompile Include="..\libavcodec\x86\vc1dsp_mmx.c" />
     <ClCompile Include="..\libavcodec\x86\diracdsp_mmx.c" />
+    <ClCompile Include="libavcodec\dxva2_vp9_wrap.c" />
+    <ClCompile Include="libavcodec\log2_tab_wrap.c" />
+    <ClCompile Include="libavcodec\reverse_wrap.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavcodec\avcodec.h" />

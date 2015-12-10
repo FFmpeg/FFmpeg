@@ -92,7 +92,6 @@
     <ClCompile Include="..\libswscale\hscale.c" />
     <ClCompile Include="..\libswscale\vscale.c" />
     <ClCompile Include="..\libswscale\gamma.c" />
-    <ClCompile Include="..\libswscale\log2_tab.c" />
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
       <ObjectFileName>$(IntDir)\libswscale_x86_rgb2rgb.obj</ObjectFileName>
     </ClCompile>
@@ -103,6 +102,7 @@
       <ObjectFileName>$(IntDir)\libswscale_x86_yuv2rgb.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\hscale_fast_bilinear_simd.c" />
+    <ClCompile Include="libswscale\log2_tab_wrap.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libswscale\swscale.h" />

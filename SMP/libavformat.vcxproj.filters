@@ -172,12 +172,6 @@
     <ClCompile Include="..\libavformat\rtpenc_chain.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\log2_tab.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\golomb_tab.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavformat\a64.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -1289,6 +1283,12 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\file_open.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="libavformat\golomb_tab_wrap.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="libavformat\log2_tab_wrap.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
   </ItemGroup>

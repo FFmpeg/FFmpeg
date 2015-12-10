@@ -582,12 +582,6 @@
     <ClCompile Include="..\libavcodec\rv34dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\log2_tab.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\reverse.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2657,6 +2651,15 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\diracdsp_mmx.c">
       <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="libavcodec\dxva2_vp9_wrap.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="libavcodec\log2_tab_wrap.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="libavcodec\reverse_wrap.c">
+      <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

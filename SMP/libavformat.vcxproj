@@ -117,8 +117,6 @@
     <ClCompile Include="..\libavformat\rtpdec_xiph.c" />
     <ClCompile Include="..\libavformat\srtp.c" />
     <ClCompile Include="..\libavformat\rtpenc_chain.c" />
-    <ClCompile Include="..\libavformat\log2_tab.c" />
-    <ClCompile Include="..\libavformat\golomb_tab.c" />
     <ClCompile Include="..\libavformat\a64.c" />
     <ClCompile Include="..\libavformat\rawenc.c" />
     <ClCompile Include="..\libavformat\aadec.c" />
@@ -490,6 +488,8 @@
     <ClCompile Include="..\libavformat\tls.c" />
     <ClCompile Include="..\libavformat\udp.c" />
     <ClCompile Include="..\libavformat\file_open.c" />
+    <ClCompile Include="libavformat\golomb_tab_wrap.c" />
+    <ClCompile Include="libavformat\log2_tab_wrap.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavformat\avformat.h" />
