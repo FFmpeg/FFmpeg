@@ -1127,19 +1127,6 @@ static int dirac_unpack_idwt_params(DiracContext *s)
                 }
         }
     }
-    /* Codeblock parameters (core syntax only) */
-    if (s->core_syntax) {
-        if (get_bits1(gb)) {
-            for (i = 0; i <= s->wavelet_depth; i++) {
-                CHECKEDREAD(s->codeblock[i].width , tmp < 1 || tmp > (s->avctx->width >>s->wavelet_depth-i), "codeblock width invalid\n")
-                CHECKEDREAD(s->codeblock[i].height, tmp < 1 || tmp > (s->avctx->height>>s->wavelet_depth-i), "codeblock height invalid\n")
-            }
-            CHECKEDREAD(s->codeblock_mode, tmp > 1, "unknown codeblock mode\n")
-        } else {
-            for (i = 0; i <= s->wavelet_depth; i++)
-                s->codeblock[i].width = s->codeblock[i].height = 1;
-        }
-    }
     return 0;
 }
 
