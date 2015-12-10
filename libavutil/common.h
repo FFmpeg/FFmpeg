@@ -36,6 +36,7 @@
 #include <string.h>
 
 #include "attributes.h"
+#include "macros.h"
 #include "version.h"
 #include "libavutil/avconfig.h"
 
@@ -59,7 +60,6 @@
 
 #define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
-#define FFALIGN(x, a) (((x)+(a)-1)&~((a)-1))
 
 /* misc math functions */
 

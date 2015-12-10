@@ -37,6 +37,7 @@
 #include "config.h"
 #include "attributes.h"
 #include "dict.h"
+#include "macros.h"
 #include "pixfmt.h"
 
 #if ARCH_X86
