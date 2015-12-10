@@ -22,6 +22,7 @@
 #define _HELPERFUNCTIONS_H_
 
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -46,6 +47,10 @@ void deleteFolder(const string & sDestinationFolder);
 string getCopywriteHeader(const string& sDecription);
 
 bool makeDirectory(const string& sDirectory);
+
+bool findFile(const string & sFileName, string & sRetFileName);
+
+bool findFiles(const string & sFileSearch, vector<string> & vRetFiles);
 };
 
 using namespace project_generate;

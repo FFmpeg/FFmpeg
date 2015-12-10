@@ -123,4 +123,61 @@ bool makeDirectory(const string & sDirectory)
     return ((iRet == 0) || (errno == EEXIST));
 }
 
+bool findFile(const string & sFileName, string & sRetFileName)
+{
+    WIN32_FIND_DATA SearchFile;
+    HANDLE SearchHandle = FindFirstFile(sFileName.c_str(), &SearchFile);
+    if (SearchHandle != INVALID_HANDLE_VALUE) {
+        //Update the return filename
+        sRetFileName = SearchFile.cFileName;
+        FindClose(SearchHandle);
+        return true;
+    }
+    return false;
+}
+
+bool findFiles(const string & sFileSearch, vector<string> & vRetFiles)
+{
+    WIN32_FIND_DATA SearchFile;
+    uint uiStartSize = vRetFiles.size();
+    uint uiPos = sFileSearch.rfind('\\');
+    if (sFileSearch.rfind('/') != string::npos) {
+        return false;
+    }
+    string sPath;
+    string sSearchTerm = sFileSearch;
+    if (uiPos != string::npos) {
+        ++uiPos;
+        sPath = sFileSearch.substr(0, uiPos);
+        sSearchTerm = sFileSearch.substr(uiPos);
+    }
+    HANDLE SearchHandle = FindFirstFile(sFileSearch.c_str(), &SearchFile);
+    if (SearchHandle != INVALID_HANDLE_VALUE) {
+        //Update the return filename list
+        vRetFiles.push_back(sPath + SearchFile.cFileName);
+        while (FindNextFile(SearchHandle, &SearchFile) != 0) {
+            vRetFiles.push_back(sPath + SearchFile.cFileName);
+        }
+        FindClose(SearchHandle);
+    }
+    //Search all sub directories as well
+    string sSearch = sPath + "*";
+    SearchHandle = FindFirstFile(sSearch.c_str(), &SearchFile);
+    if (SearchHandle != INVALID_HANDLE_VALUE) {
+        BOOL bCont = TRUE;
+        while (bCont == TRUE) {
+            if (SearchFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                // this is a directory
+                if (strcmp(SearchFile.cFileName, ".") != 0 && strcmp(SearchFile.cFileName, "..") != 0) {
+                    string sNewPath = sPath + SearchFile.cFileName + '\\' + sSearchTerm;
+                    findFiles(sNewPath, vRetFiles);
+                }
+            }
+            bCont = FindNextFile(SearchHandle, &SearchFile);
+        }
+        FindClose(SearchHandle);
+    }
+    return (vRetFiles.size() - uiStartSize) > 0;
+}
+
 };
