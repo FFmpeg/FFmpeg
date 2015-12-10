@@ -75,7 +75,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     for (i=0 ; i<NELLY_BANDS ; i++) {
         if (i > 0)
             val += ff_nelly_delta_table[get_bits(&s->gb, 5)];
-        pval = -pow(2, val/2048) * s->scale_bias;
+        pval = -exp2(val/2048) * s->scale_bias;
         for (j = 0; j < ff_nelly_band_sizes_table[i]; j++) {
             *bptr++ = val;
             *pptr++ = pval;
