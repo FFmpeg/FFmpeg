@@ -926,14 +926,18 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->initial_padding && codec->codec_id == AV_CODEC_ID_OPUS) {
+        int64_t codecdelay = av_rescale_q(codec->initial_padding,
+                                          (AVRational){ 1, codec->sample_rate },
+                                          (AVRational){ 1, 1000000000 });
+        if (codecdelay < 0) {
+            av_log(s, AV_LOG_ERROR, "Initial padding is invalid\n");
+            return AVERROR(EINVAL);
+        }
 //         mkv->tracks[i].ts_offset = av_rescale_q(codec->initial_padding,
 //                                                 (AVRational){ 1, codec->sample_rate },
 //                                                 st->time_base);
 
-        put_ebml_uint(pb, MATROSKA_ID_CODECDELAY,
-                      av_rescale_q(codec->initial_padding,
-                                   (AVRational){ 1, codec->sample_rate },
-                                   (AVRational){ 1, 1000000000 }));
+        put_ebml_uint(pb, MATROSKA_ID_CODECDELAY, codecdelay);
     }
     if (codec->codec_id == AV_CODEC_ID_OPUS) {
         put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);

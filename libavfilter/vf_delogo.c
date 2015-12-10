@@ -61,7 +61,7 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                          unsigned int band, int show, int direct)
 {
     int x, y;
-    uint64_t interp, weightl, weightr, weightt, weightb;
+    uint64_t interp, weightl, weightr, weightt, weightb, weight;
     uint8_t *xdst, *xsrc;
 
     uint8_t *topleft, *botleft, *topright;
@@ -125,7 +125,8 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                 (botleft[x-logo_x1]    +
                  botleft[x-logo_x1-1]  +
                  botleft[x-logo_x1+1]) * weightb;
-            interp /= (weightl + weightr + weightt + weightb) * 3U;
+            weight = (weightl + weightr + weightt + weightb) * 3U;
+            interp = ROUNDED_DIV(interp, weight);
 
             if (y >= logo_y+band && y < logo_y+logo_h-band &&
                 x >= logo_x+band && x < logo_x+logo_w-band) {

@@ -574,6 +574,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->num_windows        = wi[ch].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
             ics->num_swb            = tag == TYPE_LFE ? ics->num_swb : s->psy.num_bands[ics->num_windows == 8];
+            ics->max_sfb            = FFMIN(ics->max_sfb, ics->num_swb);
             ics->swb_offset         = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
                                         ff_swb_offset_128 [s->samplerate_index]:
                                         ff_swb_offset_1024[s->samplerate_index];
@@ -926,7 +927,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ERROR_IF(s->channels > AAC_MAX_CHANNELS || s->channels == 7,
              "Unsupported number of channels: %d\n", s->channels);
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
-             "Too many bits per frame requested, clamping to max\n");
+             "Too many bits %f > %d per frame requested, clamping to max\n",
+             1024.0 * avctx->bit_rate / avctx->sample_rate,
+             6144 * s->channels);
 
     for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++)
         if (avctx->profile == aacenc_profiles[i])

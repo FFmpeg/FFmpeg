@@ -25,8 +25,4 @@
 
 #include "aacsbr_tablegen_common.h"
 
-#if CONFIG_HARDCODED_TABLES
-#include "libavcodec/aacsbr_fixed_tables.h"
-#endif /* CONFIG_HARDCODED_TABLES */
-
 #endif /* AVCODEC_AACSBR_FIXED_TABLEGEN_H */

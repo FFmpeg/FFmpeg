@@ -227,8 +227,9 @@ static void generate_window_func(float *lut, int N, int win_func, float *overlap
         *overlap = 0.75;
         break;
     case WFUNC_GAUSS:
+#define SQR(x) ((x)*(x))
         for (n = 0; n < N; n++)
-            lut[n] = pow(M_E,-0.5*pow((n-(N-1)/2)/(0.4*(N-1)/2.f),2));
+            lut[n] = exp(-0.5 * SQR((n-(N-1)/2)/(0.4*(N-1)/2.f)));
         *overlap = 0.75;
         break;
     default:

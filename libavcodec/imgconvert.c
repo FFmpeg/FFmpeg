@@ -38,6 +38,7 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
 
 void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
@@ -196,6 +197,8 @@ static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
 }
 
 #if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
                     enum AVPixelFormat pix_fmt, int top_band, int left_band)
 {
@@ -348,4 +351,5 @@ int main(void){
 }
 
 #endif
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_AVPICTURE */

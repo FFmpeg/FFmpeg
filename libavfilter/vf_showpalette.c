@@ -50,14 +50,22 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *in  = ff_make_format_list(in_fmts);
     AVFilterFormats *out = ff_make_format_list(out_fmts);
     if (!in || !out) {
-        av_freep(&in);
-        av_freep(&out);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
+
     if ((ret = ff_formats_ref(in , &ctx->inputs[0]->out_formats)) < 0 ||
         (ret = ff_formats_ref(out, &ctx->outputs[0]->in_formats)) < 0)
-        return ret;
+        goto fail;
     return 0;
+fail:
+    if (in)
+        av_freep(&in->formats);
+    av_freep(&in);
+    if (out)
+        av_freep(&out->formats);
+    av_freep(&out);
+    return ret;
 }
 
 static int config_output(AVFilterLink *outlink)

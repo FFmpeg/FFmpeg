@@ -252,23 +252,31 @@ static int query_formats(AVFilterContext *ctx)
     switch (s->format) {
     case OVERLAY_FORMAT_YUV420:
         if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv420)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv420)))
-            return AVERROR(ENOMEM);
+            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv420))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         break;
     case OVERLAY_FORMAT_YUV422:
         if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv422)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv422)))
-            return AVERROR(ENOMEM);
+            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv422))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         break;
     case OVERLAY_FORMAT_YUV444:
         if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv444)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv444)))
-            return AVERROR(ENOMEM);
+            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv444))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         break;
     case OVERLAY_FORMAT_RGB:
         if (!(main_formats    = ff_make_format_list(main_pix_fmts_rgb)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_rgb)))
-            return AVERROR(ENOMEM);
+            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_rgb))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         break;
     default:
         av_assert0(0);
@@ -277,9 +285,17 @@ static int query_formats(AVFilterContext *ctx)
     if ((ret = ff_formats_ref(main_formats   , &ctx->inputs[MAIN]->out_formats   )) < 0 ||
         (ret = ff_formats_ref(overlay_formats, &ctx->inputs[OVERLAY]->out_formats)) < 0 ||
         (ret = ff_formats_ref(main_formats   , &ctx->outputs[MAIN]->in_formats   )) < 0)
-        return ret;
+            goto fail;
 
     return 0;
+fail:
+    if (main_formats)
+        av_freep(&main_formats->formats);
+    av_freep(&main_formats);
+    if (overlay_formats)
+        av_freep(&overlay_formats->formats);
+    av_freep(&overlay_formats);
+    return ret;
 }
 
 static const enum AVPixelFormat alpha_pix_fmts[] = {

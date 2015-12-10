@@ -32,10 +32,10 @@ consult @url{https://ffmpeg.org/legal.html}.
 
 @section Contributing
 
-There are 3 ways by which code gets into ffmpeg.
+There are 3 ways by which code gets into FFmpeg.
 @itemize @bullet
-@item Submitting Patches to the main developer mailing list
-      see @ref{Submitting patches} for details.
+@item Submitting patches to the main developer mailing list.
+      See @ref{Submitting patches} for details.
 @item Directly committing changes to the main tree.
 @item Committing changes to a git clone, for example on github.com or
       gitorious.org. And asking us to merge these changes.
@@ -397,8 +397,8 @@ or obfuscates the code.
 Make sure that no parts of the codebase that you maintain are missing from the
 @file{MAINTAINERS} file. If something that you want to maintain is missing add it with
 your name after it.
-If at some point you no longer want to maintain some code, then please help
-finding a new maintainer and also don't forget updating the @file{MAINTAINERS} file.
+If at some point you no longer want to maintain some code, then please help in
+finding a new maintainer and also don't forget to update the @file{MAINTAINERS} file.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
@@ -410,7 +410,7 @@ First, read the @ref{Coding Rules} above if you did not yet, in particular
 the rules regarding patch submission.
 
 When you submit your patch, please use @code{git format-patch} or
-@code{git send-email}. We cannot read other diffs :-)
+@code{git send-email}. We cannot read other diffs :-).
 
 Also please do not submit a patch which contains several unrelated changes.
 Split it into separate, self-contained pieces. This does not mean splitting
@@ -570,7 +570,7 @@ If the patch fixes a bug, did you provide a verbose analysis of the bug?
 If the patch fixes a bug, did you provide enough information, including
 a sample, so the bug can be reproduced and the fix can be verified?
 Note please do not attach samples >100k to mails but rather provide a
-URL, you can upload to ftp://upload.ffmpeg.org
+URL, you can upload to ftp://upload.ffmpeg.org.
 
 @item
 Did you provide a verbose summary about what the patch does change?
@@ -599,10 +599,10 @@ Lines with similar content should be aligned vertically when doing so
 improves readability.
 
 @item
-Consider to add a regression test for your code.
+Consider adding a regression test for your code.
 
 @item
-If you added YASM code please check that things still work with --disable-yasm
+If you added YASM code please check that things still work with --disable-yasm.
 
 @item
 Make sure you check the return values of function and return appropriate
@@ -666,7 +666,6 @@ bandwidth and disk space requirements.
 Once you have a working fate test and fate sample, provide in the commit
 message or introductory message for the patch series that you post to
 the ffmpeg-devel mailing list, a direct link to download the sample media.
-
 
 @subsection Visualizing Test Coverage
 
@@ -806,7 +805,7 @@ with a news entry for the website.
 Publish the news entry.
 
 @item
-Send announcement to the mailing list.
+Send an announcement to the mailing list.
 @end enumerate
 
 @bye

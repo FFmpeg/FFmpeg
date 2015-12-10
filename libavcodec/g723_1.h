@@ -30,6 +30,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/log.h"
+
 #define SUBFRAMES       4
 #define SUBFRAME_LEN    60
 #define FRAME_LEN       (SUBFRAME_LEN << 2)
