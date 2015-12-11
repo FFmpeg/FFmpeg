@@ -94,9 +94,9 @@ static int ape_probe(AVProbeData * p)
     return 0;
 }
 
+#ifdef DEBUG
 static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
 {
-#ifdef DEBUG
     int i;
 
     av_log(s, AV_LOG_DEBUG, "Descriptor Block:\n\n");
@@ -154,8 +154,10 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
     av_log(s, AV_LOG_DEBUG, "junklength           = %"PRIu32"\n", ape_ctx->junklength);
     av_log(s, AV_LOG_DEBUG, "firstframe           = %"PRIu32"\n", ape_ctx->firstframe);
     av_log(s, AV_LOG_DEBUG, "totalsamples         = %"PRIu32"\n", ape_ctx->totalsamples);
-#endif
 }
+#else
+#define ape_dumpinfo(s, ape_ctx) do {} while(0)
+#endif
 
 static int ape_read_header(AVFormatContext * s)
 {
