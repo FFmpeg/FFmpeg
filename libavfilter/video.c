@@ -32,31 +32,45 @@
 #include "internal.h"
 #include "video.h"
 
+#define BUFFER_ALIGN 32
+
+
 AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h)
 {
     return ff_get_video_buffer(link->dst->outputs[0], w, h);
 }
 
-/* TODO: set the buffer's priv member to a context structure for the whole
- * filter chain.  This will allow for a buffer pool instead of the constant
- * alloc & free cycle currently implemented. */
 AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
 {
-    AVFrame *frame = av_frame_alloc();
-    int ret;
+    int pool_width = 0;
+    int pool_height = 0;
+    int pool_align = 0;
+    enum AVPixelFormat pool_format = AV_PIX_FMT_NONE;
 
-    if (!frame)
-        return NULL;
+    if (!link->video_frame_pool) {
+        link->video_frame_pool = ff_video_frame_pool_init(av_buffer_allocz, w, h,
+                                                          link->format, BUFFER_ALIGN);
+        if (!link->video_frame_pool)
+            return NULL;
+    } else {
+        if (ff_video_frame_pool_get_config(link->video_frame_pool,
+                                           &pool_width, &pool_height,
+                                           &pool_format, &pool_align) < 0) {
+            return NULL;
+        }
 
-    frame->width  = w;
-    frame->height = h;
-    frame->format = link->format;
+        if (pool_width != w || pool_height != h ||
+            pool_format != link->format || pool_align != BUFFER_ALIGN) {
 
-    ret = av_frame_get_buffer(frame, 32);
-    if (ret < 0)
-        av_frame_free(&frame);
+            ff_video_frame_pool_uninit((FFVideoFramePool **)&link->video_frame_pool);
+            link->video_frame_pool = ff_video_frame_pool_init(av_buffer_allocz, w, h,
+                                                              link->format, BUFFER_ALIGN);
+            if (!link->video_frame_pool)
+                return NULL;
+        }
+    }
 
-    return frame;
+    return ff_video_frame_pool_get(link->video_frame_pool);
 }
 
 AVFrame *ff_get_video_buffer(AVFilterLink *link, int w, int h)
