@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include "config.h"
 #include "libavutil/avstring.h"
+#include "libavutil/cpu.h"
 #include "libavutil/lfg.h"
 #include "libavutil/timer.h"
 
@@ -54,6 +55,7 @@ static av_unused void *func_ref, *func_new;
 /* Declare the function prototype. The first argument is the return value, the remaining
  * arguments are the function parameters. Naming parameters is optional. */
 #define declare_func(ret, ...) declare_new(ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
+#define declare_func_emms(cpu_flags, ret, ...) declare_new_emms(cpu_flags, ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
 
 /* Indicate that the current test has failed */
 #define fail() checkasm_fail_func("%s:%d", av_basename(__FILE__), __LINE__)
@@ -65,8 +67,12 @@ static av_unused void *func_ref, *func_new;
 #define call_ref(...) ((func_type *)func_ref)(__VA_ARGS__)
 
 #if ARCH_X86 && HAVE_YASM
-/* Verifies that clobbered callee-saved registers are properly saved and restored */
+/* Verifies that clobbered callee-saved registers are properly saved and restored
+ * and that either no MMX registers are touched or emms is issued */
 void checkasm_checked_call(void *func, ...);
+/* Verifies that clobbered callee-saved registers are properly saved and restored
+ * and issues emms for asm functions which are not required to do so */
+void checkasm_checked_call_emms(void *func, ...);
 
 #if ARCH_X86_64
 /* Evil hack: detect incorrect assumptions that 32-bit ints are zero-extended to 64-bit.
@@ -81,16 +87,24 @@ void checkasm_checked_call(void *func, ...);
 void checkasm_stack_clobber(uint64_t clobber, ...);
 #define declare_new(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__)\
                               = (void *)checkasm_checked_call;
+#define declare_new_emms(cpu_flags, ret, ...) \
+    ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__) = \
+        ((cpu_flags) & av_get_cpu_flags()) ? (void *)checkasm_checked_call_emms : \
+                                             (void *)checkasm_checked_call;
 #define CLOB (UINT64_C(0xdeadbeefdeadbeef))
 #define call_new(...) (checkasm_stack_clobber(CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,\
                                               CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB),\
                       checked_call(func_new, 0, 0, 0, 0, 0, __VA_ARGS__))
 #elif ARCH_X86_32
 #define declare_new(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call;
+#define declare_new_emms(cpu_flags, ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = \
+        ((cpu_flags) & av_get_cpu_flags()) ? (void *)checkasm_checked_call_emms :        \
+                                             (void *)checkasm_checked_call;
 #define call_new(...) checked_call(func_new, __VA_ARGS__)
 #endif
 #else
 #define declare_new(ret, ...)
+#define declare_new_emms(cpu_flags, ret, ...)
 /* Call the function */
 #define call_new(...) ((func_type *)func_new)(__VA_ARGS__)
 #endif
