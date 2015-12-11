@@ -449,10 +449,10 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
     return i;
 }
 
-#define get_ue_golomb(a) get_ue(a, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_se_golomb(a) get_se(a, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_te_golomb(a, r)  get_te(a, r, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_te0_golomb(a, r) get_te(a, r, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define get_ue_golomb(a) get_ue(a, __FILE__, __func__, __LINE__)
+#define get_se_golomb(a) get_se(a, __FILE__, __func__, __LINE__)
+#define get_te_golomb(a, r)  get_te(a, r, __FILE__, __func__, __LINE__)
+#define get_te0_golomb(a, r) get_te(a, r, __FILE__, __func__, __LINE__)
 
 #endif /* TRACE */
 
