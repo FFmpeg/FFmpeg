@@ -246,9 +246,9 @@ typedef struct ALSBlockData {
 } ALSBlockData;
 
 
+#ifdef DEBUG
 static av_cold void dprint_specific_config(ALSDecContext *ctx)
 {
-#ifdef DEBUG
     AVCodecContext *avctx    = ctx->avctx;
     ALSSpecificConfig *sconf = &ctx->sconf;
 
@@ -270,8 +270,10 @@ static av_cold void dprint_specific_config(ALSDecContext *ctx)
     ff_dlog(avctx, "chan_sort = %i\n",            sconf->chan_sort);
     ff_dlog(avctx, "RLSLMS = %i\n",               sconf->rlslms);
     ff_dlog(avctx, "chan_config_info = %i\n",     sconf->chan_config_info);
-#endif
 }
+#else
+#define dprint_specific_config(x) do {} while(0)
+#endif
 
 
 /** Read an ALSSpecificConfig from a buffer into the output struct.
