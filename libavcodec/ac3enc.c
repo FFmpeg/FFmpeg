@@ -42,6 +42,7 @@
 #include "ac3dsp.h"
 #include "ac3.h"
 #include "fft.h"
+#include "internal.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 
