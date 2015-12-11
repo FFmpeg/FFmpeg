@@ -122,7 +122,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     if (memcmp(buf, header_prefix, 5) && memcmp(buf, header_prefix444, 5)) {
         av_log(ctx->avctx, AV_LOG_ERROR,
-               "unknown header 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n",
+               "unknown header 0x%02"PRIX8" 0x%02"PRIX8" 0x%02"PRIX8" 0x%02"PRIX8" 0x%02"PRIX8"\n",
                buf[0], buf[1], buf[2], buf[3], buf[4]);
         return AVERROR_INVALIDDATA;
     }
@@ -131,7 +131,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         frame->interlaced_frame = 1;
         frame->top_field_first  = first_field ^ ctx->cur_field;
         av_log(ctx->avctx, AV_LOG_DEBUG,
-               "interlaced %d, cur field %d\n", buf[5] & 3, ctx->cur_field);
+               "interlaced %"PRId8", cur field %d\n", buf[5] & 3, ctx->cur_field);
     }
     ctx->mbaff = buf[0x6] & 32;
 
@@ -157,7 +157,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         ctx->decode_dct_block = dnxhd_decode_dct_block_8;
     } else {
-        av_log(ctx->avctx, AV_LOG_ERROR, "invalid bit depth value (%d).\n",
+        av_log(ctx->avctx, AV_LOG_ERROR, "invalid bit depth value (%"PRId8").\n",
                buf[0x21]);
         return AVERROR_INVALIDDATA;
     }
@@ -208,10 +208,10 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     for (i = 0; i < ctx->mb_height; i++) {
         ctx->mb_scan_index[i] = AV_RB32(buf + 0x170 + (i << 2));
-        ff_dlog(ctx->avctx, "mb scan index %d\n", ctx->mb_scan_index[i]);
+        ff_dlog(ctx->avctx, "mb scan index %"PRIu32"\n", ctx->mb_scan_index[i]);
         if (buf_size < ctx->mb_scan_index[i] + 0x280) {
             av_log(ctx->avctx, AV_LOG_ERROR,
-                   "invalid mb scan index (%d < %d).\n",
+                   "invalid mb scan index (%d < %"PRIu32").\n",
                    buf_size, ctx->mb_scan_index[i] + 0x280);
             return AVERROR_INVALIDDATA;
         }

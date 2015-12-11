@@ -247,7 +247,8 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 alpha[1] = buf[pos + 1] >> 4;
                 alpha[0] = buf[pos + 1] & 0x0f;
                 pos += 2;
-            ff_dlog(NULL, "alpha=%x%x%x%x\n", alpha[0],alpha[1],alpha[2],alpha[3]);
+                ff_dlog(NULL, "alpha=%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"\n",
+                        alpha[0], alpha[1], alpha[2], alpha[3]);
                 break;
             case 0x05:
             case 0x85:
@@ -267,7 +268,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                     goto fail;
                 offset1 = AV_RB16(buf + pos);
                 offset2 = AV_RB16(buf + pos + 2);
-                ff_dlog(NULL, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
+                ff_dlog(NULL, "offset1=0x%04"PRIx64" offset2=0x%04"PRIx64"\n", offset1, offset2);
                 pos += 4;
                 break;
             case 0x86:
@@ -275,7 +276,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                     goto fail;
                 offset1 = AV_RB32(buf + pos);
                 offset2 = AV_RB32(buf + pos + 4);
-                ff_dlog(NULL, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
+                ff_dlog(NULL, "offset1=0x%04"PRIx64" offset2=0x%04"PRIx64"\n", offset1, offset2);
                 pos += 8;
                 break;
 
@@ -515,7 +516,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
         goto no_subtitle;
 
 #if defined(DEBUG)
-    ff_dlog(NULL, "start=%d ms end =%d ms\n",
+    ff_dlog(NULL, "start=%"PRIu32" ms end =%"PRIu32" ms\n",
             sub->start_display_time,
             sub->end_display_time);
     ppm_save("/tmp/a.ppm", sub->rects[0]->data[0],

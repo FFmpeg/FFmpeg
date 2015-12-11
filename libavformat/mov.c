@@ -517,7 +517,8 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (ret < 0)
                 return ret;
             dref->volume[volume_len] = 0;
-            av_log(c->fc, AV_LOG_DEBUG, "volume %s, len %d\n", dref->volume, volume_len);
+            av_log(c->fc, AV_LOG_DEBUG, "volume %s, len %"PRIu16"\n",
+                   dref->volume, volume_len);
 
             avio_skip(pb, 12);
 
@@ -527,14 +528,15 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (ret < 0)
                 return ret;
             dref->filename[len] = 0;
-            av_log(c->fc, AV_LOG_DEBUG, "filename %s, len %d\n", dref->filename, len);
+            av_log(c->fc, AV_LOG_DEBUG, "filename %s, len %"PRIu16"\n",
+                   dref->filename, len);
 
             avio_skip(pb, 16);
 
             /* read next level up_from_alias/down_to_target */
             dref->nlvl_from = avio_rb16(pb);
             dref->nlvl_to   = avio_rb16(pb);
-            av_log(c->fc, AV_LOG_DEBUG, "nlvl from %d, nlvl to %d\n",
+            av_log(c->fc, AV_LOG_DEBUG, "nlvl from %"PRId16", nlvl to %"PRId16"\n",
                    dref->nlvl_from, dref->nlvl_to);
 
             avio_skip(pb, 16);
@@ -544,7 +546,8 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     return AVERROR_EOF;
                 type = avio_rb16(pb);
                 len = avio_rb16(pb);
-                av_log(c->fc, AV_LOG_DEBUG, "type %d, len %d\n", type, len);
+                av_log(c->fc, AV_LOG_DEBUG, "type %"PRId16", len %"PRIu16"\n",
+                       type, len);
                 if (len&1)
                     len += 1;
                 if (type == 2) { // absolute path
@@ -594,7 +597,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     avio_skip(pb, len);
             }
         } else {
-            av_log(c->fc, AV_LOG_DEBUG, "Unknown dref type 0x08%x size %d\n",
+            av_log(c->fc, AV_LOG_DEBUG, "Unknown dref type 0x08%"PRIx32" size %"PRIu32"\n",
                    dref->type, size);
             entries--;
             i--;
@@ -1535,7 +1538,7 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
     st->codecpar->sample_rate = ((avio_rb32(pb) >> 16));
 
     // Read QT version 1 fields. In version 0 these do not exist.
-    av_log(c->fc, AV_LOG_TRACE, "version =%d, isom =%d\n", version, c->isom);
+    av_log(c->fc, AV_LOG_TRACE, "version =%"PRIu16", isom =%d\n", version, c->isom);
     if (!c->isom) {
         if (version == 1) {
             sc->samples_per_frame = avio_rb32(pb);
@@ -1832,7 +1835,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         id = mov_codec_id(st, format);
 
         av_log(c->fc, AV_LOG_TRACE,
-               "size=%"PRId64" format=0x%08x codec_type=%d\n",
+               "size=%"PRId64" format=0x%08"PRIx32" codec_type=%d\n",
                size, format, st->codecpar->codec_type);
 
         if (st->codecpar->codec_type==AVMEDIA_TYPE_VIDEO) {
@@ -2575,14 +2578,14 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (mov_open_dref(c->fc, &sc->pb, c->fc->filename, dref) < 0)
                 av_log(c->fc, AV_LOG_ERROR,
                        "stream %d, error opening alias: path='%s', dir='%s', "
-                       "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
+                       "filename='%s', volume='%s', nlvl_from=%"PRId16", nlvl_to=%"PRId16"\n",
                        st->index, dref->path, dref->dir, dref->filename,
                        dref->volume, dref->nlvl_from, dref->nlvl_to);
         } else {
             av_log(c->fc, AV_LOG_WARNING,
                    "Skipped opening external track: "
                    "stream %d, alias: path='%s', dir='%s', "
-                   "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d."
+                   "filename='%s', volume='%s', nlvl_from=%"PRId16", nlvl_to=%"PRId16"."
                    "Set enable_drefs to allow this.\n",
                    st->index, dref->path, dref->dir, dref->filename,
                    dref->volume, dref->nlvl_from, dref->nlvl_to);
@@ -3231,8 +3234,8 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             a.size = avio_rb32(pb);
             a.type = avio_rl32(pb);
         }
-        av_log(c->fc, AV_LOG_TRACE, "type: %08x '%.4s' parent:'%.4s' sz: %"PRId64" %"PRId64" %"PRId64"\n",
-                a.type, (char*)&a.type, (char*)&atom.type, a.size, total_size, atom.size);
+        av_log(c->fc, AV_LOG_TRACE, "type: %08"PRIx32" '%.4s' parent:'%.4s' sz: %"PRId64" %"PRId64" %"PRId64"\n",
+               a.type, (char*)&a.type, (char*)&atom.type, a.size, total_size, atom.size);
         total_size += 8;
         if (a.size == 1) { /* 64 bit extended size */
             a.size = avio_rb64(pb) - 8;

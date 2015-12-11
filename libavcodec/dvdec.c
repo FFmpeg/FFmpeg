@@ -270,7 +270,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             }
             if (mb->pos >= 64 && mb->pos < 127)
                 av_log(avctx, AV_LOG_ERROR,
-                       "AC EOB marker is absent pos=%d\n", mb->pos);
+                       "AC EOB marker is absent pos=%"PRIu8"\n", mb->pos);
             block += 64;
             mb++;
         }

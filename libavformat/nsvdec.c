@@ -229,7 +229,7 @@ static int nsv_resync(AVFormatContext *s)
         v <<= 8;
         v |= avio_r8(pb);
         if (i < 8) {
-            av_log(s, AV_LOG_TRACE, "NSV resync: [%d] = %02x\n", i, v & 0x0FF);
+            av_log(s, AV_LOG_TRACE, "NSV resync: [%d] = %02"PRIx32"\n", i, v & 0x0FF);
         }
 
         if ((v & 0x0000ffff) == 0xefbe) { /* BEEF */
@@ -398,7 +398,8 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
     nsv->avsync = avio_rl16(pb);
     nsv->framerate = framerate;
 
-    av_log(s, AV_LOG_TRACE, "NSV NSVs vsize %dx%d\n", vwidth, vheight);
+    av_log(s, AV_LOG_TRACE, "NSV NSVs vsize %"PRIu16"x%"PRIu16"\n",
+           vwidth, vheight);
 
     /* XXX change to ap != NULL ? */
     if (s->nb_streams == 0) { /* streams not yet published, let's do that */
@@ -543,7 +544,8 @@ null_chunk_retry:
     asize = avio_rl16(pb);
     vsize = (vsize << 4) | (auxcount >> 4);
     auxcount &= 0x0f;
-    av_log(s, AV_LOG_TRACE, "NSV CHUNK %d aux, %u bytes video, %d bytes audio\n", auxcount, vsize, asize);
+    av_log(s, AV_LOG_TRACE, "NSV CHUNK %"PRIu8" aux, %"PRIu32" bytes video, %"PRIu16" bytes audio\n",
+           auxcount, vsize, asize);
     /* skip aux stuff */
     for (i = 0; i < auxcount; i++) {
         uint32_t av_unused auxtag;
@@ -574,7 +576,8 @@ null_chunk_retry:
         pkt->dts = nst->frame_offset;
         pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? AV_PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
         for (i = 0; i < FFMIN(8, vsize); i++)
-            av_log(s, AV_LOG_TRACE, "NSV video: [%d] = %02x\n", i, pkt->data[i]);
+            av_log(s, AV_LOG_TRACE, "NSV video: [%d] = %02"PRIx8"\n",
+                   i, pkt->data[i]);
     }
     if(st[NSV_ST_VIDEO])
         ((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset++;
@@ -594,11 +597,12 @@ null_chunk_retry:
             if (!channels || !samplerate)
                 return AVERROR_INVALIDDATA;
             asize-=4;
-            av_log(s, AV_LOG_TRACE, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
+            av_log(s, AV_LOG_TRACE, "NSV RAWAUDIO: bps %"PRIu8", nchan %"PRIu8", srate %"PRIu16"\n",
+                   bps, channels, samplerate);
             if (fill_header) {
                 st[NSV_ST_AUDIO]->need_parsing = AVSTREAM_PARSE_NONE; /* we know everything */
                 if (bps != 16) {
-                    av_log(s, AV_LOG_TRACE, "NSV AUDIO bit/sample != 16 (%d)!!!\n", bps);
+                    av_log(s, AV_LOG_TRACE, "NSV AUDIO bit/sample != 16 (%"PRIu8")!!!\n", bps);
                 }
                 bps /= channels; // ???
                 if (bps == 8)
@@ -607,7 +611,8 @@ null_chunk_retry:
                 channels = 1;
                 st[NSV_ST_AUDIO]->codecpar->channels = channels;
                 st[NSV_ST_AUDIO]->codecpar->sample_rate = samplerate;
-                av_log(s, AV_LOG_TRACE, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
+                av_log(s, AV_LOG_TRACE, "NSV RAWAUDIO: bps %"PRIu8", nchan %"PRIu8", srate %"PRIu16"\n",
+                       bps, channels, samplerate);
             }
         }
         av_get_packet(pb, pkt, asize);
@@ -618,7 +623,8 @@ null_chunk_retry:
             pkt->dts = (((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset-1);
             pkt->dts *= (int64_t)1000        * nsv->framerate.den;
             pkt->dts += (int64_t)nsv->avsync * nsv->framerate.num;
-            av_log(s, AV_LOG_TRACE, "NSV AUDIO: sync:%d, dts:%"PRId64, nsv->avsync, pkt->dts);
+            av_log(s, AV_LOG_TRACE, "NSV AUDIO: sync:%"PRId16", dts:%"PRId64,
+                   nsv->avsync, pkt->dts);
         }
         nst->frame_offset++;
     }

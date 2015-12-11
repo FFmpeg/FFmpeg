@@ -182,7 +182,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
         n      = codes[i].bits;
         code   = codes[i].code;
         symbol = codes[i].symbol;
-        ff_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
+        ff_dlog(NULL, "i=%d n=%d code=0x%"PRIx32"\n", i, n, code);
         if (n <= table_nb_bits) {
             /* no need to add another table */
             j = code >> (32 - table_nb_bits);
