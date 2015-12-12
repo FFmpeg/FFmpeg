@@ -86,6 +86,7 @@ typedef struct MpegTSWrite {
     int pcr_period;
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
+#define MPEGTS_FLAG_SYSTEM_B        0x04
     int flags;
 } MpegTSWrite;
 
@@ -284,7 +285,9 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             stream_type = STREAM_TYPE_AUDIO_AAC_LATM;
             break;
         case AV_CODEC_ID_AC3:
-            stream_type = STREAM_TYPE_AUDIO_AC3;
+            stream_type = (ts->flags & MPEGTS_FLAG_SYSTEM_B)
+                          ? STREAM_TYPE_PRIVATE_DATA
+                          : STREAM_TYPE_AUDIO_AC3;
             break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
@@ -298,6 +301,12 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch (st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
+            if (st->codec->codec_id == AV_CODEC_ID_AC3 && (ts->flags & MPEGTS_FLAG_SYSTEM_B)) {
+                *q++ = 0x6a; /* ETSI EN 300 468 AC-3 descriptor */
+                *q++ = 1;
+                *q++ = 0x00;
+            }
+
             if (lang) {
                 char *p;
                 char *next = lang->value;
@@ -1251,6 +1260,9 @@ static const AVOption options[] = {
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     { "latm", "Use LATM packetization for AAC",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_AAC_LATM }, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
+    { "system_b", "Conform to System B (DVB) instead of System A (ATSC)",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_SYSTEM_B }, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
