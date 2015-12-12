@@ -289,6 +289,7 @@ Codecs:
   vp8                                   David Conrad, Jason Garrett-Glaser, Ronald Bultje
   vp9                                   Ronald Bultje, Clément Bœsch
   vqavideo.c                            Mike Melanson
+  vtenc.c                               Rick Kern
   wavpack.c                             Kostya Shishkov
   wmaprodec.c                           Sascha Sommer
   wmavoice.c                            Ronald S. Bultje

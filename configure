@@ -287,6 +287,7 @@ External library support:
   --disable-sdl            disable sdl [autodetect]
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
+  --enable-vtenc           enable VideoToolbox encoder [no]
   --enable-x11grab         enable X11 grabbing (legacy) [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
@@ -1505,6 +1506,7 @@ EXTERNAL_LIBRARY_LIST="
     schannel
     sdl
     securetransport
+    vtenc
     x11grab
     xlib
     zlib
@@ -5605,6 +5607,7 @@ enabled openssl           && { use_pkg_config openssl openssl/ssl.h SSL_library_
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
 enabled qtkit_indev      && { check_header_objcc QTKit/QTKit.h || disable qtkit_indev; }
+enabled vtenc             && require VideoToolbox VideoToolbox/VTCompressionSession.h VTCompressionSessionPrepareToEncodeFrames -framework VideoToolbox
 
 # libdc1394 check
 if enabled libdc1394; then
