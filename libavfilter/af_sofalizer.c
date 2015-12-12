@@ -108,7 +108,7 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     char *sofa_conventions;
     char dim_name[NC_MAX_NAME];   /* names of netCDF dimensions */
     size_t *dim_length;           /* lengths of netCDF dimensions */
-    char *psz_conventions;
+    char *text;
     unsigned int sample_rate;
     int data_delay_dim_id[2];
     int samplingrate_id;
@@ -170,21 +170,54 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     }
 
     /* check whether file is SOFA file */
-    psz_conventions = av_malloc(att_len + 1);
-    if (!psz_conventions) {
+    text = av_malloc(att_len + 1);
+    if (!text) {
         nc_close(ncid);
         return AVERROR(ENOMEM);
     }
 
-    nc_get_att_text(ncid, NC_GLOBAL, "Conventions", psz_conventions);
-    *(psz_conventions + att_len) = 0;
-    if (strncmp("SOFA", psz_conventions, 4)) {
+    nc_get_att_text(ncid, NC_GLOBAL, "Conventions", text);
+    *(text + att_len) = 0;
+    if (strncmp("SOFA", text, 4)) {
         av_log(ctx, AV_LOG_ERROR, "Not a SOFA file!\n");
-        av_freep(&psz_conventions);
+        av_freep(&text);
         nc_close(ncid);
         return AVERROR(EINVAL);
     }
-    av_freep(&psz_conventions);
+    av_freep(&text);
+
+    status = nc_inq_attlen(ncid, NC_GLOBAL, "License", &att_len);
+    if (status == NC_NOERR) {
+        text = av_malloc(att_len + 1);
+        if (text) {
+            nc_get_att_text(ncid, NC_GLOBAL, "License", text);
+            *(text + att_len) = 0;
+            av_log(ctx, AV_LOG_INFO, "SOFA file License: %s\n", text);
+            av_freep(&text);
+        }
+    }
+
+    status = nc_inq_attlen(ncid, NC_GLOBAL, "SourceDescription", &att_len);
+    if (status == NC_NOERR) {
+        text = av_malloc(att_len + 1);
+        if (text) {
+            nc_get_att_text(ncid, NC_GLOBAL, "SourceDescription", text);
+            *(text + att_len) = 0;
+            av_log(ctx, AV_LOG_INFO, "SOFA file SourceDescription: %s\n", text);
+            av_freep(&text);
+        }
+    }
+
+    status = nc_inq_attlen(ncid, NC_GLOBAL, "Comment", &att_len);
+    if (status == NC_NOERR) {
+        text = av_malloc(att_len + 1);
+        if (text) {
+            nc_get_att_text(ncid, NC_GLOBAL, "Comment", text);
+            *(text + att_len) = 0;
+            av_log(ctx, AV_LOG_INFO, "SOFA file Comment: %s\n", text);
+            av_freep(&text);
+        }
+    }
 
     status = nc_inq_attlen(ncid, NC_GLOBAL, "SOFAConventions", &att_len);
     if (status != NC_NOERR) {
