@@ -2,6 +2,11 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.4
+- avcodec/aarch64/neon.S: Update neon.s for transpose_4x4H
+- avformat/utils: estimate_timings_from_pts - increase retry counter, fixes invalid duration for ts files with hevc codec
+- avformat/matroskaenc: Check codecdelay before use
+- avutil/mathematics: Fix division by 0
+- mjpegdec: consider chroma subsampling in size check
 - libvpxenc: remove some unused ctrl id mappings
 - avcodec/vp3: ensure header is parsed successfully before tables
 - avcodec/jpeg2000dec: Check bpno in decode_cblk()
