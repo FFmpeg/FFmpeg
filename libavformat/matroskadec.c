@@ -1853,6 +1853,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (ret < 0)
                 return ret;
             codec_id         = st->codec->codec_id;
+            fourcc           = st->codec->codec_tag;
             extradata_offset = FFMIN(track->codec_priv.size, 18);
         } else if (!strcmp(track->codec_id, "A_QUICKTIME")
                    && (track->codec_priv.size >= 86)
@@ -2124,6 +2125,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+            st->codec->codec_tag   = fourcc;
             st->codec->sample_rate = track->audio.out_samplerate;
             st->codec->channels    = track->audio.channels;
             if (!st->codec->bits_per_coded_sample)
