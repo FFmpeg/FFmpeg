@@ -937,7 +937,7 @@ following image formats are supported:
 @item ADPCM Sound Blaster Pro 2-bit  @tab     @tab  X
 @item ADPCM Sound Blaster Pro 2.6-bit  @tab     @tab  X
 @item ADPCM Sound Blaster Pro 4-bit  @tab     @tab  X
-@item ADPCM VIMA
+@item ADPCM VIMA             @tab     @tab  X
     @tab Used in LucasArts SMUSH animations.
 @item ADPCM Westwood Studios IMA @tab     @tab  X
     @tab Used in Westwood Studios games like Command and Conquer.
