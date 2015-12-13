@@ -55,6 +55,7 @@ EXPORTS
     av_probe_input_format
     av_probe_input_format2
     av_probe_input_format3
+    av_program_add_stream_index
     av_read_frame
     av_read_pause
     av_read_play
