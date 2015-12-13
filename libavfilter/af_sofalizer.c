@@ -55,7 +55,8 @@ typedef struct SOFAlizerContext {
 
     const int8_t *reorder;      /* reorder in SOFA channel order */
     int sample_rate;            /* sample rate from SOFA file */
-    float *speaker_pos;         /* positions of the virtual loudspekaers */
+    float *speaker_azim;        /* azimuth of the virtual loudspeakers */
+    float *speaker_elev;        /* elevation of the virtual loudspeakers */
     float gain_lfe;             /* gain applied to LFE channel */
 
     int n_conv;                 /* number of channels to convolute */
@@ -373,11 +374,13 @@ static const int8_t reorder[18][9] = {
     { 0,  1,  4,  5,  2,  6,  3, -1, -1 },
 };
 
-static int get_speaker_pos(AVFilterContext *ctx, float *speaker_pos)
+static int get_speaker_pos(AVFilterContext *ctx,
+                           float *speaker_azim, float *speaker_elev)
 {
     struct SOFAlizerContext *s = ctx->priv;
     uint64_t channels_layout = ctx->inputs[0]->channel_layout;
-    float pos_temp[9];
+    float azim[9] = { 0 };
+    float elev[9] = { 0 };
     int nb_input_channels = ctx->inputs[0]->channels; /* get no. input channels */
     int n_conv = nb_input_channels;
 
@@ -389,103 +392,103 @@ static int get_speaker_pos(AVFilterContext *ctx, float *speaker_pos)
     /* set speaker positions according to input channel configuration: */
     switch (channels_layout) {
     case AV_CH_LAYOUT_MONO:
-                            pos_temp[0] = 0;
+                            azim[0] = 0;
                             break;
     case AV_CH_LAYOUT_STEREO:
     case AV_CH_LAYOUT_2POINT1:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
+                            azim[0] = 30;
+                            azim[1] = 330;
                             break;
     case AV_CH_LAYOUT_SURROUND:
     case AV_CH_LAYOUT_3POINT1:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 0;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 0;
                             break;
     case AV_CH_LAYOUT_2_1:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 180;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 180;
                             break;
     case AV_CH_LAYOUT_2_2:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 90;
-                            pos_temp[3] = 270;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 90;
+                            azim[3] = 270;
                             break;
     case AV_CH_LAYOUT_QUAD:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 120;
-                            pos_temp[3] = 240;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 120;
+                            azim[3] = 240;
                             break;
     case AV_CH_LAYOUT_4POINT0:
     case AV_CH_LAYOUT_4POINT1:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 0;
-                            pos_temp[3] = 180;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 0;
+                            azim[3] = 180;
                             break;
     case AV_CH_LAYOUT_5POINT0:
     case AV_CH_LAYOUT_5POINT1:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 90;
-                            pos_temp[3] = 270;
-                            pos_temp[4] = 0;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 90;
+                            azim[3] = 270;
+                            azim[4] = 0;
                             break;
     case AV_CH_LAYOUT_5POINT0_BACK:
     case AV_CH_LAYOUT_5POINT1_BACK:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 120;
-                            pos_temp[3] = 240;
-                            pos_temp[4] = 0;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 120;
+                            azim[3] = 240;
+                            azim[4] = 0;
                             break;
     case AV_CH_LAYOUT_6POINT0:
     case AV_CH_LAYOUT_6POINT1:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 90;
-                            pos_temp[3] = 270;
-                            pos_temp[4] = 0;
-                            pos_temp[5] = 180;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 90;
+                            azim[3] = 270;
+                            azim[4] = 0;
+                            azim[5] = 180;
                             break;
     case AV_CH_LAYOUT_6POINT1_BACK:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 120;
-                            pos_temp[3] = 240;
-                            pos_temp[4] = 0;
-                            pos_temp[4] = 180;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 120;
+                            azim[3] = 240;
+                            azim[4] = 0;
+                            azim[4] = 180;
                             break;
     case AV_CH_LAYOUT_HEXAGONAL:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 120;
-                            pos_temp[3] = 240;
-                            pos_temp[4] = 0;
-                            pos_temp[5] = 180;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 120;
+                            azim[3] = 240;
+                            azim[4] = 0;
+                            azim[5] = 180;
                             break;
     case AV_CH_LAYOUT_7POINT0:
     case AV_CH_LAYOUT_7POINT1:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 90;
-                            pos_temp[3] = 270;
-                            pos_temp[4] = 150;
-                            pos_temp[5] = 210;
-                            pos_temp[6] = 0;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 90;
+                            azim[3] = 270;
+                            azim[4] = 150;
+                            azim[5] = 210;
+                            azim[6] = 0;
                             break;
     case AV_CH_LAYOUT_OCTAGONAL:
-                            pos_temp[0] = 30;
-                            pos_temp[1] = 330;
-                            pos_temp[2] = 0;
-                            pos_temp[3] = 150;
-                            pos_temp[4] = 210;
-                            pos_temp[5] = 180;
-                            pos_temp[6] = 90;
-                            pos_temp[7] = 270;
+                            azim[0] = 30;
+                            azim[1] = 330;
+                            azim[2] = 0;
+                            azim[3] = 150;
+                            azim[4] = 210;
+                            azim[5] = 180;
+                            azim[6] = 90;
+                            azim[7] = 270;
                             break;
     default:
                             return -1;
@@ -551,7 +554,8 @@ static int get_speaker_pos(AVFilterContext *ctx, float *speaker_pos)
                             return -1;
     }
 
-    memcpy(speaker_pos, pos_temp, n_conv * sizeof(float));
+    memcpy(speaker_azim, azim, n_conv * sizeof(float));
+    memcpy(speaker_elev, elev, n_conv * sizeof(float));
 
     return 0;
 
@@ -818,7 +822,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
     float *data_ir_r = NULL;
     int offset = 0; /* used for faster pointer arithmetics in for-loop */
     int m[s->n_conv]; /* measurement index m of IR closest to required source positions */
-    int i, j, azim_orig = azim;
+    int i, j, azim_orig = azim, elev_orig = elev;
 
     if (!s->sofa.ncid) { /* if an invalid SOFA file has been selected */
         av_log(ctx, AV_LOG_ERROR, "Selected SOFA file is invalid. Please select valid SOFA file.\n");
@@ -836,7 +840,8 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
 
     for (i = 0; i < s->n_conv; i++) {
         /* load and store IRs and corresponding delays */
-        azim = (int)(s->speaker_pos[i] + azim_orig) % 360;
+        azim = (int)(s->speaker_azim[i] + azim_orig) % 360;
+        elev = (int)(s->speaker_elev[i] + elev_orig) % 90;
         /* get id of IR closest to desired position */
         m[i] = find_m(s, azim, elev, radius);
 
@@ -956,18 +961,19 @@ static int config_input(AVFilterLink *inlink)
     s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
     s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
     /* length: number of channels to convolute */
-    s->speaker_pos = av_malloc_array(s->n_conv, sizeof(*s->speaker_pos));
+    s->speaker_azim = av_calloc(s->n_conv, sizeof(*s->speaker_azim));
+    s->speaker_elev = av_calloc(s->n_conv, sizeof(*s->speaker_elev));
 
     /* memory allocation failed: */
     if (!s->data_ir[0] || !s->data_ir[1] || !s->delay[1] ||
         !s->delay[0] || !s->ringbuffer[0] || !s->ringbuffer[1] ||
-        !s->speaker_pos)
+        !s->speaker_azim || !s->speaker_elev)
         return AVERROR(ENOMEM);
 
     compensate_volume(ctx);
 
     /* get speaker positions */
-    if ((ret = get_speaker_pos(ctx, s->speaker_pos)) < 0) {
+    if ((ret = get_speaker_pos(ctx, s->speaker_azim, s->speaker_elev)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Couldn't get speaker positions. Input channel configuration not supported.\n");
         return ret;
     }
@@ -999,7 +1005,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->data_ir[1]);
     av_freep(&s->ringbuffer[0]);
     av_freep(&s->ringbuffer[1]);
-    av_freep(&s->speaker_pos);
+    av_freep(&s->speaker_azim);
+    av_freep(&s->speaker_elev);
     av_freep(&s->temp_src[0]);
     av_freep(&s->temp_src[1]);
     av_freep(&s->fdsp);
