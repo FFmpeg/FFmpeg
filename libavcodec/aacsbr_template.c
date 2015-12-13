@@ -720,8 +720,8 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
     }
 
     for (i = 1; i <= ch_data->bs_num_env; i++) {
-        if (ch_data->t_env[i-1] > ch_data->t_env[i]) {
-            av_log(ac->avctx, AV_LOG_ERROR, "Non monotone time borders\n");
+        if (ch_data->t_env[i-1] >= ch_data->t_env[i]) {
+            av_log(ac->avctx, AV_LOG_ERROR, "Not strictly monotone time borders\n");
             return -1;
         }
     }
@@ -793,7 +793,7 @@ static void read_sbr_invf(SpectralBandReplication *sbr, GetBitContext *gb,
         ch_data->bs_invf_mode[0][i] = get_bits(gb, 2);
 }
 
-static void read_sbr_envelope(SpectralBandReplication *sbr, GetBitContext *gb,
+static int read_sbr_envelope(AACContext *ac, SpectralBandReplication *sbr, GetBitContext *gb,
                               SBRData *ch_data, int ch)
 {
     int bits;
@@ -833,59 +833,53 @@ static void read_sbr_envelope(SpectralBandReplication *sbr, GetBitContext *gb,
         }
     }
 
-#if USE_FIXED
     for (i = 0; i < ch_data->bs_num_env; i++) {
         if (ch_data->bs_df_env[i]) {
             // bs_freq_res[0] == bs_freq_res[bs_num_env] from prev frame
             if (ch_data->bs_freq_res[i + 1] == ch_data->bs_freq_res[i]) {
-                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                    ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i][j].mant + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
+                    ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i][j] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    if (ch_data->env_facs_q[i + 1][j] > 127U) {
+                        av_log(ac->avctx, AV_LOG_ERROR, "env_facs_q %d is invalid\n", ch_data->env_facs_q[i + 1][j]);
+                        return AVERROR_INVALIDDATA;
+                    }
+                }
             } else if (ch_data->bs_freq_res[i + 1]) {
                 for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
                     k = (j + odd) >> 1; // find k such that f_tablelow[k] <= f_tablehigh[j] < f_tablelow[k + 1]
-                    ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i][k].mant + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    if (ch_data->env_facs_q[i + 1][j] > 127U) {
+                        av_log(ac->avctx, AV_LOG_ERROR, "env_facs_q %d is invalid\n", ch_data->env_facs_q[i + 1][j]);
+                        return AVERROR_INVALIDDATA;
+                    }
                 }
             } else {
                 for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
                     k = j ? 2*j - odd : 0; // find k such that f_tablehigh[k] == f_tablelow[j]
-                    ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i][k].mant + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+                    if (ch_data->env_facs_q[i + 1][j] > 127U) {
+                        av_log(ac->avctx, AV_LOG_ERROR, "env_facs_q %d is invalid\n", ch_data->env_facs_q[i + 1][j]);
+                        return AVERROR_INVALIDDATA;
+                    }
                 }
             }
         } else {
-            ch_data->env_facs[i + 1][0].mant = delta * get_bits(gb, bits); // bs_env_start_value_balance
-            for (j = 1; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                ch_data->env_facs[i + 1][j].mant = ch_data->env_facs[i + 1][j - 1].mant + delta * (get_vlc2(gb, f_huff, 9, 3) - f_lav);
-        }
-    }
-#else
-    for (i = 0; i < ch_data->bs_num_env; i++) {
-        if (ch_data->bs_df_env[i]) {
-            // bs_freq_res[0] == bs_freq_res[bs_num_env] from prev frame
-            if (ch_data->bs_freq_res[i + 1] == ch_data->bs_freq_res[i]) {
-                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                    ch_data->env_facs[i + 1][j] = ch_data->env_facs[i][j] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
-            } else if (ch_data->bs_freq_res[i + 1]) {
-                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
-                    k = (j + odd) >> 1; // find k such that f_tablelow[k] <= f_tablehigh[j] < f_tablelow[k + 1]
-                    ch_data->env_facs[i + 1][j] = ch_data->env_facs[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
-                }
-            } else {
-                for (j = 0; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
-                    k = j ? 2*j - odd : 0; // find k such that f_tablehigh[k] == f_tablelow[j]
-                    ch_data->env_facs[i + 1][j] = ch_data->env_facs[i][k] + delta * (get_vlc2(gb, t_huff, 9, 3) - t_lav);
+            ch_data->env_facs_q[i + 1][0] = delta * get_bits(gb, bits); // bs_env_start_value_balance
+            for (j = 1; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++) {
+                ch_data->env_facs_q[i + 1][j] = ch_data->env_facs_q[i + 1][j - 1] + delta * (get_vlc2(gb, f_huff, 9, 3) - f_lav);
+                if (ch_data->env_facs_q[i + 1][j] > 127U) {
+                    av_log(ac->avctx, AV_LOG_ERROR, "env_facs_q %d is invalid\n", ch_data->env_facs_q[i + 1][j]);
+                    return AVERROR_INVALIDDATA;
                 }
             }
-        } else {
-            ch_data->env_facs[i + 1][0] = delta * get_bits(gb, bits); // bs_env_start_value_balance
-            for (j = 1; j < sbr->n[ch_data->bs_freq_res[i + 1]]; j++)
-                ch_data->env_facs[i + 1][j] = ch_data->env_facs[i + 1][j - 1] + delta * (get_vlc2(gb, f_huff, 9, 3) - f_lav);
         }
     }
-#endif /* USE_FIXED */
 
-    //assign 0th elements of env_facs from last elements
-    memcpy(ch_data->env_facs[0], ch_data->env_facs[ch_data->bs_num_env],
-           sizeof(ch_data->env_facs[0]));
+    //assign 0th elements of env_facs_q from last elements
+    memcpy(ch_data->env_facs_q[0], ch_data->env_facs_q[ch_data->bs_num_env],
+           sizeof(ch_data->env_facs_q[0]));
+
+    return 0;
 }
 
 static int read_sbr_noise(AACContext *ac, SpectralBandReplication *sbr, GetBitContext *gb,
@@ -979,7 +973,8 @@ static int read_sbr_single_channel_element(AACContext *ac,
         return -1;
     read_sbr_dtdf(sbr, gb, &sbr->data[0]);
     read_sbr_invf(sbr, gb, &sbr->data[0]);
-    read_sbr_envelope(sbr, gb, &sbr->data[0], 0);
+    if((ret = read_sbr_envelope(ac, sbr, gb, &sbr->data[0], 0)) < 0)
+        return ret;
     if((ret = read_sbr_noise(ac, sbr, gb, &sbr->data[0], 0)) < 0)
         return ret;
 
@@ -1007,10 +1002,12 @@ static int read_sbr_channel_pair_element(AACContext *ac,
         read_sbr_invf(sbr, gb, &sbr->data[0]);
         memcpy(sbr->data[1].bs_invf_mode[1], sbr->data[1].bs_invf_mode[0], sizeof(sbr->data[1].bs_invf_mode[0]));
         memcpy(sbr->data[1].bs_invf_mode[0], sbr->data[0].bs_invf_mode[0], sizeof(sbr->data[1].bs_invf_mode[0]));
-        read_sbr_envelope(sbr, gb, &sbr->data[0], 0);
+        if((ret = read_sbr_envelope(ac, sbr, gb, &sbr->data[0], 0)) < 0)
+            return ret;
         if((ret = read_sbr_noise(ac, sbr, gb, &sbr->data[0], 0)) < 0)
             return ret;
-        read_sbr_envelope(sbr, gb, &sbr->data[1], 1);
+        if((ret = read_sbr_envelope(ac, sbr, gb, &sbr->data[1], 1)) < 0)
+            return ret;
         if((ret = read_sbr_noise(ac, sbr, gb, &sbr->data[1], 1)) < 0)
             return ret;
     } else {
@@ -1021,8 +1018,10 @@ static int read_sbr_channel_pair_element(AACContext *ac,
         read_sbr_dtdf(sbr, gb, &sbr->data[1]);
         read_sbr_invf(sbr, gb, &sbr->data[0]);
         read_sbr_invf(sbr, gb, &sbr->data[1]);
-        read_sbr_envelope(sbr, gb, &sbr->data[0], 0);
-        read_sbr_envelope(sbr, gb, &sbr->data[1], 1);
+        if((ret = read_sbr_envelope(ac, sbr, gb, &sbr->data[0], 0)) < 0)
+            return ret;
+        if((ret = read_sbr_envelope(ac, sbr, gb, &sbr->data[1], 1)) < 0)
+            return ret;
         if((ret = read_sbr_noise(ac, sbr, gb, &sbr->data[0], 0)) < 0)
             return ret;
         if((ret = read_sbr_noise(ac, sbr, gb, &sbr->data[1], 1)) < 0)
@@ -1163,6 +1162,9 @@ static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
                              INTFLOAT z[320], INTFLOAT W[2][32][32][2], int buf_idx)
 {
     int i;
+#if USE_FIXED
+    int j;
+#endif
     memcpy(x    , x+1024, (320-32)*sizeof(x[0]));
     memcpy(x+288, in,         1024*sizeof(x[0]));
     for (i = 0; i < 32; i++) { // numTimeSlots*RATE = 16*2 as 960 sample frames
@@ -1170,6 +1172,21 @@ static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
         dsp->vector_fmul_reverse(z, sbr_qmf_window_ds, x, 320);
         sbrdsp->sum64x5(z);
         sbrdsp->qmf_pre_shuffle(z);
+#if USE_FIXED
+        for (j = 64; j < 128; j++) {
+            if (z[j] > 1<<24) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "sbr_qmf_analysis: value %09d too large, setting to %09d\n",
+                       z[j], 1<<24);
+                z[j] = 1<<24;
+            } else if (z[j] < -(1<<24)) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "sbr_qmf_analysis: value %09d too small, setting to %09d\n",
+                       z[j], -(1<<24));
+                z[j] = -(1<<24);
+            }
+        }
+#endif
         mdct->imdct_half(mdct, z, z+64);
         sbrdsp->qmf_post_shuffle(W[buf_idx][i], z);
         x += 32;

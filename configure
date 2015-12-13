@@ -279,6 +279,7 @@ External library support:
   --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagic DeckLink I/O support [no]
   --enable-mmal            enable decoding via MMAL [no]
+  --enable-netcdf          enable NetCDF, needed for sofalizer filter [no]
   --enable-nvenc           enable NVIDIA NVENC support [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
@@ -384,7 +385,6 @@ Optimization options (experts only):
   --disable-neon           disable NEON optimizations
   --disable-inline-asm     disable use of inline assembly
   --disable-yasm           disable use of nasm/yasm assembly
-  --disable-mips64r6       disable MIPS64R6 optimizations
   --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
@@ -1504,6 +1504,7 @@ EXTERNAL_LIBRARY_LIST="
     libzvbi
     lzma
     mmal
+    netcdf
     nvenc
     openal
     opencl
@@ -2891,6 +2892,7 @@ showfreqs_filter_deps="avcodec"
 showfreqs_filter_select="fft"
 showspectrum_filter_deps="avcodec"
 showspectrum_filter_select="rdft"
+sofalizer_filter_deps="netcdf"
 spp_filter_deps="gpl avcodec"
 spp_filter_select="fft idctdsp fdctdsp me_cmp pixblockdsp"
 stereo3d_filter_deps="gpl"
@@ -4162,10 +4164,10 @@ elif enabled mips; then
         i6400)
             disable mipsdsp
             disable mipsdspr2
-            disable mipsfpu
-
-            check_cflags "-mtune=i6400 -mabi=64"
-            check_ldflags "-mabi=64"
+            check_cflags "-mtune=i6400 -mabi=64" &&
+            check_cflags "-mfp64 -msched-weight -mload-store-pairs -funroll-loops" &&
+            check_ldflags "-mabi=64" &&
+            add_asflags "-mfp64"
         ;;
         loongson*)
             disable mipsfpu
@@ -5006,14 +5008,8 @@ elif enabled mips; then
     elif enabled mipsdsp || enabled mipsdspr2; then
         add_cflags "-mips32r2 -mfp32"
         add_asflags "-mips32r2 -mfp32"
-    elif enabled mips64r6; then
-        check_cflags "-mfp64"
-        check_ldflags "-mfp64"
     fi
 
-    enabled mips64r6  && check_cflags "-mips64r6 -msched-weight -mload-store-pairs -funroll-loops" &&
-     check_ldflags "-mips64r6" &&
-     check_inline_asm mips64r6  '"aui $t0, $t1, 1"'
     enabled mipsdsp && add_cflags "-mdsp" && add_asflags "-mdsp" &&
      check_inline_asm mipsdsp '"addu.qb $t0, $t1, $t2"'
     enabled mipsdspr2 && add_cflags "-mdspr2" && add_asflags "-mdspr2" &&
@@ -5023,7 +5019,6 @@ elif enabled mips; then
     enabled msa       && check_cflags "-mmsa" && check_ldflags "-mmsa" &&
      check_inline_asm msa       '"addvi.b $w0, $w1, 1"'
 
-    enabled mips64r6 && add_asflags "-mips64r6 -mfp64"
     enabled msa && add_asflags "-mmsa"
 
 elif enabled parisc; then
@@ -5502,6 +5497,7 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
                                die "ERROR: mmal not found"; }
+enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
 enabled nvenc             && { check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."; } &&
                              { check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
                                die "ERROR: NVENC API version 4 or older is not supported"; } &&
@@ -6096,7 +6092,6 @@ if enabled arm; then
 fi
 if enabled mips; then
     echo "MIPS FPU enabled          ${mipsfpu-no}"
-    echo "MIPS64R6 enabled          ${mips64r6-no}"
     echo "MIPS DSP R1 enabled       ${mipsdsp-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
     echo "MIPS MSA enabled          ${msa-no}"

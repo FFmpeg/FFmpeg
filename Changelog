@@ -42,7 +42,9 @@ version <next>:
 - mipsdspr1 option has been renamed to mipsdsp
 - aemphasis filter
 - mips32r5 option has been removed
+- mips64r6 option has been removed
 - DXVA2-accelerated VP9 decoding
+- SOFAlizer: virtual binaural acoustics filter
 
 
 version 2.8:

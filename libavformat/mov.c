@@ -447,6 +447,12 @@ retry:
             snprintf(key2, sizeof(key2), "%s-%s", key, language);
             av_dict_set(&c->fc->metadata, key2, str, 0);
         }
+        if (!strcmp(key, "encoder")) {
+            int major, minor, micro;
+            if (sscanf(str, "HandBrake %d.%d.%d", &major, &minor, &micro) == 3) {
+                c->handbrake_version = 1000000*major + 1000*minor + micro;
+            }
+        }
     }
     av_log(c->fc, AV_LOG_TRACE, "lang \"%3s\" ", language);
     av_log(c->fc, AV_LOG_TRACE, "tag \"%s\" value \"%s\" atom \"%.4s\" %d %"PRId64"\n",
@@ -4692,6 +4698,13 @@ static int mov_read_header(AVFormatContext *s)
                 if ((err = mov_rewrite_dvd_sub_extradata(st)) < 0)
                     return err;
             }
+        }
+        if (mov->handbrake_version &&
+            mov->handbrake_version <= 1000000*0 + 1000*10 + 0 &&  // 0.10.0
+            st->codec->codec_id == AV_CODEC_ID_MP3
+        ) {
+            av_log(s, AV_LOG_VERBOSE, "Forcing full parsing for mp3 stream\n");
+            st->need_parsing = AVSTREAM_PARSE_FULL;
         }
     }
 

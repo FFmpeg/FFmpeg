@@ -79,6 +79,7 @@ static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
         a.mant>>=1;
     }
     av_assert2(a.mant < 0x40000000 && a.mant > -0x40000000);
+    av_assert2(a.exp <= MAX_EXP);
     return a;
 #elif 1
     int t= a.mant + 0x40000000 < 0;

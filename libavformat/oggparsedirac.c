@@ -30,8 +30,9 @@ static int dirac_header(AVFormatContext *s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     dirac_source_params source;
+    DiracVersionInfo version;
     GetBitContext gb;
-    int ret;
+    int ret, bit_depth;
 
     // already parsed the header
     if (st->codec->codec_id == AV_CODEC_ID_DIRAC)
@@ -41,7 +42,8 @@ static int dirac_header(AVFormatContext *s, int idx)
     if (ret < 0)
         return ret;
 
-    ret = avpriv_dirac_parse_sequence_header(st->codec, &gb, &source);
+    ret = avpriv_dirac_parse_sequence_header(st->codec, &gb, &source, &version,
+                                             &bit_depth);
     if (ret < 0)
         return ret;
 

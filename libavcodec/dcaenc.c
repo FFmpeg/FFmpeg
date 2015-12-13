@@ -169,8 +169,16 @@ static int encode_init(AVCodecContext *avctx)
     if (!cos_table[0]) {
         int j, k;
 
-        for (i = 0; i < 2048; i++) {
+        cos_table[0] = 0x7fffffff;
+        cos_table[512] = 0;
+        cos_table[1024] = -cos_table[0];
+        for (i = 1; i < 512; i++) {
             cos_table[i]   = (int32_t)(0x7fffffff * cos(M_PI * i / 1024));
+            cos_table[1024-i] = -cos_table[i];
+            cos_table[1024+i] = -cos_table[i];
+            cos_table[2048-i] = cos_table[i];
+        }
+        for (i = 0; i < 2048; i++) {
             cb_to_level[i] = (int32_t)(0x7fffffff * pow(10, -0.005 * i));
         }
 

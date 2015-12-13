@@ -41,8 +41,8 @@ typedef struct {
     void (*put_dirac_pixels_tab[3][4])(uint8_t *dst, const uint8_t *src[5], int stride, int h);
     void (*avg_dirac_pixels_tab[3][4])(uint8_t *dst, const uint8_t *src[5], int stride, int h);
 
-    void (*put_signed_rect_clamped)(uint8_t *dst/*align 16*/, int dst_stride, const int16_t *src/*align 16*/, int src_stride, int width, int height/*mod 2*/);
-    void (*put_rect_clamped)(uint8_t *dst/*align 16*/, int dst_stride, const int16_t *src/*align 16*/, int src_stride, int width, int height/*mod 2*/);
+    void (*put_signed_rect_clamped[3])(uint8_t *dst/*align 16*/, int dst_stride, const uint8_t *src/*align 16*/, int src_stride, int width, int height/*mod 2*/);
+    void (*put_rect_clamped)(uint8_t *dst/*align 16*/, int dst_stride, const uint8_t *src/*align 16*/, int src_stride, int width, int height/*mod 2*/);
     void (*add_rect_clamped)(uint8_t *dst/*align 16*/, const uint16_t *src/*align 16*/, int stride, const int16_t *idwt/*align 16*/, int idwt_stride, int width, int height/*mod 2*/);
     void (*add_dirac_obmc[3])(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
 

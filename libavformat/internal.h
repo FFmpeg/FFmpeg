@@ -156,8 +156,6 @@ char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
  */
 int ff_hex_to_data(uint8_t *data, const char *p);
 
-void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
-
 /**
  * Add packet to AVFormatContext->packet_buffer list, determining its
  * interleaved position using compare() function argument.

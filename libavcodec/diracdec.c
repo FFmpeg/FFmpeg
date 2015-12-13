@@ -57,7 +57,7 @@
 #define MAX_REFERENCE_FRAMES 8
 #define MAX_DELAY 5         /* limit for main profile for frame coding (TODO: field coding) */
 #define MAX_FRAMES (MAX_REFERENCE_FRAMES + MAX_DELAY + 1)
-#define MAX_QUANT 68        /* max quant for VC-2 */
+#define MAX_QUANT 255        /* max quant for VC-2 */
 #define MAX_BLOCKSIZE 32    /* maximum xblen/yblen we support */
 
 /**
@@ -97,11 +97,12 @@ typedef struct {
 typedef struct SubBand {
     int level;
     int orientation;
-    int stride;
+    int stride; /* in bytes */
     int width;
     int height;
+    int pshift;
     int quant;
-    IDWTELEM *ibuf;
+    uint8_t *ibuf;
     struct SubBand *parent;
 
     /* for low delay */
@@ -117,9 +118,9 @@ typedef struct Plane {
     int idwt_width;
     int idwt_height;
     int idwt_stride;
-    IDWTELEM *idwt_buf;
-    IDWTELEM *idwt_buf_base;
-    IDWTELEM *idwt_tmp;
+    uint8_t *idwt_buf;
+    uint8_t *idwt_buf_base;
+    uint8_t *idwt_tmp;
 
     /* block length */
     uint8_t xblen;
@@ -139,6 +140,7 @@ typedef struct DiracContext {
     MpegvideoEncDSPContext mpvencdsp;
     VideoDSPContext vdsp;
     DiracDSPContext diracdsp;
+    DiracVersionInfo version;
     GetBitContext gb;
     dirac_source_params source;
     int seen_sequence_header;
@@ -147,9 +149,16 @@ typedef struct DiracContext {
     int chroma_x_shift;
     int chroma_y_shift;
 
+    int bit_depth;              /* bit depth                                 */
+    int pshift;                 /* pixel shift = bit_depth > 8               */
+
     int zero_res;               /* zero residue flag                         */
     int is_arith;               /* whether coeffs use arith or golomb coding */
+    int core_syntax;            /* use core syntax only                      */
     int low_delay;              /* use the low delay syntax                  */
+    int hq_picture;             /* high quality picture, enables low_delay   */
+    int ld_picture;             /* use low delay picture, turns on low_delay */
+    int dc_prediction;          /* has dc prediction                         */
     int globalmc_flag;          /* use global motion compensation            */
     int num_refs;               /* number of reference pictures              */
 
@@ -164,14 +173,15 @@ typedef struct DiracContext {
     unsigned old_delta_quant;
     unsigned codeblock_mode;
 
+    unsigned num_x;              /* number of horizontal slices               */
+    unsigned num_y;              /* number of vertical slices                 */
+
     struct {
         unsigned width;
         unsigned height;
     } codeblock[MAX_DWT_LEVELS+1];
 
     struct {
-        unsigned num_x;         /* number of horizontal slices               */
-        unsigned num_y;         /* number of vertical slices                 */
         AVRational bytes;       /* average bytes per slice                   */
         uint8_t quant[MAX_DWT_LEVELS][4]; /* [DIRAC_STD] E.1 */
     } lowdelay;
@@ -220,17 +230,6 @@ typedef struct DiracContext {
     DiracFrame all_frames[MAX_FRAMES];
 } DiracContext;
 
-/**
- * Dirac Specification ->
- * Parse code values. 9.6.1 Table 9.1
- */
-enum dirac_parse_code {
-    pc_seq_header         = 0x00,
-    pc_eos                = 0x10,
-    pc_aux_data           = 0x20,
-    pc_padding            = 0x30,
-};
-
 enum dirac_subband {
     subband_ll = 0,
     subband_hl = 1,
@@ -249,26 +248,42 @@ static const uint8_t default_qmat[][4][4] = {
     { { 3,  1,  1,  0}, { 0,  4,  4,  2}, { 0,  6,  6,  5}, { 0,  9,  9,  7} },
 };
 
-static const int qscale_tab[MAX_QUANT+1] = {
-    4,     5,     6,     7,     8,    10,    11,    13,
-    16,    19,    23,    27,    32,    38,    45,    54,
-    64,    76,    91,   108,   128,   152,   181,   215,
-    256,   304,   362,   431,   512,   609,   724,   861,
-    1024,  1218,  1448,  1722,  2048,  2435,  2896,  3444,
-    4096,  4871,  5793,  6889,  8192,  9742, 11585, 13777,
-    16384, 19484, 23170, 27554, 32768, 38968, 46341, 55109,
-    65536, 77936
+static const int32_t qscale_tab[128] = {
+        4,         5,         6,         7,          8,        10,        11,        13,
+       16,        19,        23,        27,         32,        38,        45,        54,
+       64,        76,        91,       108,        128,       152,       181,       215,
+      256,       304,       362,       431,        512,       609,       724,       861,
+     1024,      1218,      1448,      1722,       2048,      2435,      2896,      3444,
+     4096,      4871,      5793,      6889,       8192,      9742,     11585,     13777,
+    16384,     19484,    -13317,     27554,      32768,     -1581,      9853,    -10518,
+    65536,     -3164,    -16782,    -21037,     131072,     -6328,      2922,     23552,
+   262144,    -12658,      5844,    -18524,     524288,     15232,     11689,     28578,
+  1048576,    -10085,    -13110,     -8471,    2097152,    -20170,     10267,    -16943,
+  4194304,       208,    -15954,     31741,    8388608,       416,      4579,     -2146,
+ 16777216,       832,      9158,     -4293,   33554432,      1663,    -18172,     -8587,
+ 67108864,      3326,       143,    -17175,   134217728,     6653,       285,     31276,
+268435456,     13306,       570,     -3075,   536870912,   -13938,      1140,     -6152,
+1073741824,    12672,      2281,    -12304, -2147483648,   -15205,      4561,    -24610,
+         0,    10138,      9122,     16407,           0,   -20274,    -18243,    -32813,
 };
 
-static const int qoffset_intra_tab[MAX_QUANT+1] = {
-    1,     2,     3,     4,     4,     5,     6,     7,
-    8,    10,    12,    14,    16,    19,    23,    27,
-    32,    38,    46,    54,    64,    76,    91,   108,
-    128,   152,   181,   216,   256,   305,   362,   431,
-    512,   609,   724,   861,  1024,  1218,  1448,  1722,
-    2048,  2436,  2897,  3445,  4096,  4871,  5793,  6889,
-    8192,  9742, 11585, 13777, 16384, 19484, 23171, 27555,
-    32768, 38968
+static const int32_t qoffset_intra_tab[128] = {
+        1,         2,         3,         4,         4,         5,         6,         7,
+        8,        10,        12,        14,          16,        19,        23,        27,
+       32,        38,        46,        54,          64,        76,        91,       108,
+      128,       152,       181,       216,         256,       305,       362,       431,
+      512,       609,       724,       861,        1024,      1218,      1448,      1722,
+     2048,      2436,      2897,      3445,        4096,      4871,      5793,      6889,
+     8192,      9742,     -6658,     13777,       16384,      -790,      4927,     -5258,
+    32768,     -1581,     -8390,    -10518,       65536,     -3163,      1461,     11776,
+   131072,     -6328,      2922,     -9261,      262144,      7616,      5845,     14289,
+   524288,     -5042,     -6554,     -4235,     1048576,    -10084,      5134,     -8471,
+  2097152,       104,     -7976,     15871,     4194304,       208,      2290,     -1072,
+  8388608,       416,      4579,     -2146,    16777216,       832,     -9085,     -4293,
+ 33554432,      1663,        72,     -8587,    67108864,      3327,       143,     15638,
+134217728,      6653,       285,     -1537,   268435456,     -6968,       570,     -3075,
+536870912,      6336,      1141,     -6151, -1073741823,     -7602,      2281,    -12304,
+        0,      5069,      4561,      8204,           0,    -10136,     -9121,    -16406,
 };
 
 static const int qoffset_inter_tab[MAX_QUANT+1] = {
@@ -339,9 +354,9 @@ static int alloc_sequence_buffers(DiracContext *s)
         w = FFALIGN(CALC_PADDING(w, MAX_DWT_LEVELS), 8); /* FIXME: Should this be 16 for SSE??? */
         h = top_padding + CALC_PADDING(h, MAX_DWT_LEVELS) + max_yblen/2;
 
-        s->plane[i].idwt_buf_base = av_mallocz_array((w+max_xblen), h * sizeof(IDWTELEM));
-        s->plane[i].idwt_tmp      = av_malloc_array((w+16), sizeof(IDWTELEM));
-        s->plane[i].idwt_buf      = s->plane[i].idwt_buf_base + top_padding*w;
+        s->plane[i].idwt_buf_base = av_mallocz_array((w+max_xblen), h * (2 << s->pshift));
+        s->plane[i].idwt_tmp      = av_malloc_array((w+16), 2 << s->pshift);
+        s->plane[i].idwt_buf      = s->plane[i].idwt_buf_base + (top_padding*w)*(2 << s->pshift);
         if (!s->plane[i].idwt_buf_base || !s->plane[i].idwt_tmp)
             return AVERROR(ENOMEM);
     }
@@ -462,38 +477,6 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
 
 #define SIGN_CTX(x) (CTX_SIGN_ZERO + ((x) > 0) - ((x) < 0))
 
-static inline void coeff_unpack_arith(DiracArith *c, int qfactor, int qoffset,
-                                      SubBand *b, IDWTELEM *buf, int x, int y)
-{
-    int coeff, sign;
-    int sign_pred = 0;
-    int pred_ctx = CTX_ZPZN_F1;
-
-    /* Check if the parent subband has a 0 in the corresponding position */
-    if (b->parent)
-        pred_ctx += !!b->parent->ibuf[b->parent->stride * (y>>1) + (x>>1)] << 1;
-
-    if (b->orientation == subband_hl)
-        sign_pred = buf[-b->stride];
-
-    /* Determine if the pixel has only zeros in its neighbourhood */
-    if (x) {
-        pred_ctx += !(buf[-1] | buf[-b->stride] | buf[-1-b->stride]);
-        if (b->orientation == subband_lh)
-            sign_pred = buf[-1];
-    } else {
-        pred_ctx += !buf[-b->stride];
-    }
-
-    coeff = dirac_get_arith_uint(c, pred_ctx, CTX_COEFF_DATA);
-    if (coeff) {
-        coeff = (coeff * qfactor + qoffset + 2) >> 2;
-        sign  = dirac_get_arith_bit(c, SIGN_CTX(sign_pred));
-        coeff = (coeff ^ -sign) + sign;
-    }
-    *buf = coeff;
-}
-
 static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffset)
 {
     int sign, coeff;
@@ -507,6 +490,38 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
     return coeff;
 }
 
+#define UNPACK_ARITH(n, type) \
+    static inline void coeff_unpack_arith_##n(DiracArith *c, int qfactor, int qoffset, \
+                                              SubBand *b, type *buf, int x, int y) \
+    { \
+        int coeff, sign, sign_pred = 0, pred_ctx = CTX_ZPZN_F1; \
+        const int mstride = -(b->stride >> (1+b->pshift)); \
+        if (b->parent) { \
+            const type *pbuf = (type *)b->parent->ibuf; \
+            const int stride = b->parent->stride >> (1+b->parent->pshift); \
+            pred_ctx += !!pbuf[stride * (y>>1) + (x>>1)] << 1; \
+        } \
+        if (b->orientation == subband_hl) \
+            sign_pred = buf[mstride]; \
+        if (x) { \
+            pred_ctx += !(buf[-1] | buf[mstride] | buf[-1 + mstride]); \
+            if (b->orientation == subband_lh) \
+                sign_pred = buf[-1]; \
+        } else { \
+            pred_ctx += !buf[mstride]; \
+        } \
+        coeff = dirac_get_arith_uint(c, pred_ctx, CTX_COEFF_DATA); \
+        if (coeff) { \
+            coeff = (coeff * qfactor + qoffset + 2) >> 2; \
+            sign  = dirac_get_arith_bit(c, SIGN_CTX(sign_pred)); \
+            coeff = (coeff ^ -sign) + sign; \
+        } \
+        *buf = coeff; \
+    } \
+
+UNPACK_ARITH(8, int16_t)
+UNPACK_ARITH(10, int32_t)
+
 /**
  * Decode the coeffs in the rectangle defined by left, right, top, bottom
  * [DIRAC_STD] 13.4.3.2 Codeblock unpacking loop. codeblock()
@@ -518,7 +533,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
 {
     int x, y, zero_block;
     int qoffset, qfactor;
-    IDWTELEM *buf;
+    uint8_t *buf;
 
     /* check for any coded coefficients in this codeblock */
     if (!blockcnt_one) {
@@ -554,41 +569,59 @@ static inline void codeblock(DiracContext *s, SubBand *b,
         qoffset = qoffset_inter_tab[b->quant];
 
     buf = b->ibuf + top * b->stride;
-    for (y = top; y < bottom; y++) {
-        for (x = left; x < right; x++) {
-            /* [DIRAC_STD] 13.4.4 Subband coefficients. coeff_unpack() */
-            if (is_arith)
-                coeff_unpack_arith(c, qfactor, qoffset, b, buf+x, x, y);
-            else
-                buf[x] = coeff_unpack_golomb(gb, qfactor, qoffset);
+    if (is_arith) {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                if (b->pshift) {
+                    coeff_unpack_arith_10(c, qfactor, qoffset, b, (int32_t*)(buf)+x, x, y);
+                } else {
+                    coeff_unpack_arith_8(c, qfactor, qoffset, b, (int16_t*)(buf)+x, x, y);
+                }
+            }
+            buf += b->stride;
         }
-        buf += b->stride;
-    }
+    } else {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                int val = coeff_unpack_golomb(gb, qfactor, qoffset);
+                if (b->pshift) {
+                    AV_WN32(&buf[4*x], val);
+                } else {
+                    AV_WN16(&buf[2*x], val);
+                }
+            }
+            buf += b->stride;
+         }
+     }
 }
 
 /**
  * Dirac Specification ->
  * 13.3 intra_dc_prediction(band)
  */
-static inline void intra_dc_prediction(SubBand *b)
-{
-    IDWTELEM *buf = b->ibuf;
-    int x, y;
+#define INTRA_DC_PRED(n, type) \
+    static inline void intra_dc_prediction_##n(SubBand *b) \
+    { \
+        type *buf = (type*)b->ibuf; \
+        int x, y; \
+        \
+        for (x = 1; x < b->width; x++) \
+            buf[x] += buf[x-1]; \
+        buf += (b->stride >> (1+b->pshift)); \
+        \
+        for (y = 1; y < b->height; y++) { \
+            buf[0] += buf[-(b->stride >> (1+b->pshift))]; \
+            \
+            for (x = 1; x < b->width; x++) { \
+                int pred = buf[x - 1] + buf[x - (b->stride >> (1+b->pshift))] + buf[x - (b->stride >> (1+b->pshift))-1]; \
+                buf[x]  += divide3(pred); \
+            } \
+            buf += (b->stride >> (1+b->pshift)); \
+        } \
+    } \
 
-    for (x = 1; x < b->width; x++)
-        buf[x] += buf[x-1];
-    buf += b->stride;
-
-    for (y = 1; y < b->height; y++) {
-        buf[0] += buf[-b->stride];
-
-        for (x = 1; x < b->width; x++) {
-            int pred = buf[x - 1] + buf[x - b->stride] + buf[x - b->stride-1];
-            buf[x]  += divide3(pred);
-        }
-        buf += b->stride;
-    }
-}
+INTRA_DC_PRED(8, int16_t)
+INTRA_DC_PRED(10, int32_t)
 
 /**
  * Dirac Specification ->
@@ -623,8 +656,13 @@ static av_always_inline void decode_subband_internal(DiracContext *s, SubBand *b
         top = bottom;
     }
 
-    if (b->orientation == subband_ll && s->num_refs == 0)
-        intra_dc_prediction(b);
+    if (b->orientation == subband_ll && s->num_refs == 0) {
+        if (s->pshift) {
+            intra_dc_prediction_10(b);
+        } else {
+            intra_dc_prediction_8(b);
+        }
+    }
 }
 
 static int decode_subband_arith(AVCodecContext *avctx, void *b)
@@ -680,51 +718,67 @@ static void decode_component(DiracContext *s, int comp)
         avctx->execute(avctx, decode_subband_golomb, bands, NULL, num_bands, sizeof(SubBand*));
 }
 
-/* [DIRAC_STD] 13.5.5.2 Luma slice subband data. luma_slice_band(level,orient,sx,sy) --> if b2 == NULL */
-/* [DIRAC_STD] 13.5.5.3 Chroma slice subband data. chroma_slice_band(level,orient,sx,sy) --> if b2 != NULL */
-static void lowdelay_subband(DiracContext *s, GetBitContext *gb, int quant,
-                             int slice_x, int slice_y, int bits_end,
-                             SubBand *b1, SubBand *b2)
+#define PARSE_VALUES(type, x, gb, ebits, buf1, buf2) \
+    type *buf = (type *)buf1; \
+    buf[x] = coeff_unpack_golomb(gb, qfactor, qoffset); \
+    if (get_bits_count(gb) >= ebits) \
+        return; \
+    if (buf2) { \
+        buf = (type *)buf2; \
+        buf[x] = coeff_unpack_golomb(gb, qfactor, qoffset); \
+        if (get_bits_count(gb) >= ebits) \
+            return; \
+    } \
+
+static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
+                           int slice_x, int slice_y, int bits_end,
+                           SubBand *b1, SubBand *b2)
 {
-    int left   = b1->width  * slice_x    / s->lowdelay.num_x;
-    int right  = b1->width  *(slice_x+1) / s->lowdelay.num_x;
-    int top    = b1->height * slice_y    / s->lowdelay.num_y;
-    int bottom = b1->height *(slice_y+1) / s->lowdelay.num_y;
+    int left   = b1->width  * slice_x    / s->num_x;
+    int right  = b1->width  *(slice_x+1) / s->num_x;
+    int top    = b1->height * slice_y    / s->num_y;
+    int bottom = b1->height *(slice_y+1) / s->num_y;
 
-    int qfactor = qscale_tab[FFMIN(quant, MAX_QUANT)];
-    int qoffset = qoffset_intra_tab[FFMIN(quant, MAX_QUANT)];
+    int qfactor = qscale_tab[quant & 0x7f];
+    int qoffset = qoffset_intra_tab[quant & 0x7f];
 
-    IDWTELEM *buf1 =      b1->ibuf + top * b1->stride;
-    IDWTELEM *buf2 = b2 ? b2->ibuf + top * b2->stride : NULL;
+    uint8_t *buf1 =      b1->ibuf + top * b1->stride;
+    uint8_t *buf2 = b2 ? b2->ibuf + top * b2->stride: NULL;
     int x, y;
     /* we have to constantly check for overread since the spec explicitly
        requires this, with the meaning that all remaining coeffs are set to 0 */
     if (get_bits_count(gb) >= bits_end)
         return;
 
-    for (y = top; y < bottom; y++) {
-        for (x = left; x < right; x++) {
-            buf1[x] = coeff_unpack_golomb(gb, qfactor, qoffset);
-            if (get_bits_count(gb) >= bits_end)
-                return;
-            if (buf2) {
-                buf2[x] = coeff_unpack_golomb(gb, qfactor, qoffset);
-                if (get_bits_count(gb) >= bits_end)
-                    return;
+    if (s->pshift) {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                PARSE_VALUES(int32_t, x, gb, bits_end, buf1, buf2);
             }
+            buf1 += b1->stride;
+            if (buf2)
+                buf2 += b2->stride;
         }
-        buf1 += b1->stride;
-        if (buf2)
-            buf2 += b2->stride;
+    }
+    else {
+        for (y = top; y < bottom; y++) {
+            for (x = left; x < right; x++) {
+                PARSE_VALUES(int16_t, x, gb, bits_end, buf1, buf2);
+            }
+            buf1 += b1->stride;
+            if (buf2)
+                buf2 += b2->stride;
+        }
     }
 }
 
-struct lowdelay_slice {
+/* Used by Low Delay and High Quality profiles */
+typedef struct DiracSlice {
     GetBitContext gb;
     int slice_x;
     int slice_y;
     int bytes;
-};
+} DiracSlice;
 
 
 /**
@@ -734,7 +788,7 @@ struct lowdelay_slice {
 static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
 {
     DiracContext *s = avctx->priv_data;
-    struct lowdelay_slice *slice = arg;
+    DiracSlice *slice = arg;
     GetBitContext *gb = &slice->gb;
     enum dirac_subband orientation;
     int level, quant, chroma_bits, chroma_end;
@@ -748,8 +802,8 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
     for (level = 0; level < s->wavelet_depth; level++)
         for (orientation = !!level; orientation < 4; orientation++) {
             quant = FFMAX(quant_base - s->lowdelay.quant[level][orientation], 0);
-            lowdelay_subband(s, gb, quant, slice->slice_x, slice->slice_y, luma_end,
-                             &s->plane[0].band[level][orientation], NULL);
+            decode_subband(s, gb, quant, slice->slice_x, slice->slice_y, luma_end,
+                           &s->plane[0].band[level][orientation], NULL);
         }
 
     /* consume any unused bits from luma */
@@ -761,9 +815,9 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
     for (level = 0; level < s->wavelet_depth; level++)
         for (orientation = !!level; orientation < 4; orientation++) {
             quant = FFMAX(quant_base - s->lowdelay.quant[level][orientation], 0);
-            lowdelay_subband(s, gb, quant, slice->slice_x, slice->slice_y, chroma_end,
-                             &s->plane[1].band[level][orientation],
-                             &s->plane[2].band[level][orientation]);
+            decode_subband(s, gb, quant, slice->slice_x, slice->slice_y, chroma_end,
+                           &s->plane[1].band[level][orientation],
+                           &s->plane[2].band[level][orientation]);
         }
 
     return 0;
@@ -778,10 +832,10 @@ static int decode_lowdelay(DiracContext *s)
     AVCodecContext *avctx = s->avctx;
     int slice_x, slice_y, bytes, bufsize;
     const uint8_t *buf;
-    struct lowdelay_slice *slices;
+    DiracSlice *slices;
     int slice_num = 0;
 
-    slices = av_mallocz_array(s->lowdelay.num_x, s->lowdelay.num_y * sizeof(struct lowdelay_slice));
+    slices = av_mallocz_array(s->num_x, s->num_y * sizeof(DiracSlice));
     if (!slices)
         return AVERROR(ENOMEM);
 
@@ -790,11 +844,10 @@ static int decode_lowdelay(DiracContext *s)
     buf = s->gb.buffer + get_bits_count(&s->gb)/8;
     bufsize = get_bits_left(&s->gb);
 
-    for (slice_y = 0; bufsize > 0 && slice_y < s->lowdelay.num_y; slice_y++)
-        for (slice_x = 0; bufsize > 0 && slice_x < s->lowdelay.num_x; slice_x++) {
+    for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
+        for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
             bytes = (slice_num+1) * s->lowdelay.bytes.num / s->lowdelay.bytes.den
                 - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
-
             slices[slice_num].bytes   = bytes;
             slices[slice_num].slice_x = slice_x;
             slices[slice_num].slice_y = slice_y;
@@ -807,12 +860,21 @@ static int decode_lowdelay(DiracContext *s)
             else
                 bufsize = 0;
         }
+    }
 
     avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
-                   sizeof(struct lowdelay_slice)); /* [DIRAC_STD] 13.5.2 Slices */
-    intra_dc_prediction(&s->plane[0].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
-    intra_dc_prediction(&s->plane[1].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
-    intra_dc_prediction(&s->plane[2].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+                   sizeof(struct DiracSlice)); /* [DIRAC_STD] 13.5.2 Slices */
+    if (s->dc_prediction) {
+        if (s->pshift) {
+            intra_dc_prediction_10(&s->plane[0].band[0][0]); /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+            intra_dc_prediction_10(&s->plane[1].band[0][0]); /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+            intra_dc_prediction_10(&s->plane[2].band[0][0]); /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+        } else {
+            intra_dc_prediction_8(&s->plane[0].band[0][0]);
+            intra_dc_prediction_8(&s->plane[1].band[0][0]);
+            intra_dc_prediction_8(&s->plane[2].band[0][0]);
+        }
+    }
     av_free(slices);
     return 0;
 }
@@ -828,7 +890,7 @@ static void init_planes(DiracContext *s)
         p->height      = s->source.height >> (i ? s->chroma_y_shift : 0);
         p->idwt_width  = w = CALC_PADDING(p->width , s->wavelet_depth);
         p->idwt_height = h = CALC_PADDING(p->height, s->wavelet_depth);
-        p->idwt_stride = FFALIGN(p->idwt_width, 8);
+        p->idwt_stride = FFALIGN(p->idwt_width << (1 + s->pshift), 8);
 
         for (level = s->wavelet_depth-1; level >= 0; level--) {
             w = w>>1;
@@ -836,6 +898,7 @@ static void init_planes(DiracContext *s)
             for (orientation = !!level; orientation < 4; orientation++) {
                 SubBand *b = &p->band[level][orientation];
 
+                b->pshift = s->pshift;
                 b->ibuf   = p->idwt_buf;
                 b->level  = level;
                 b->stride = p->idwt_stride << (s->wavelet_depth - level);
@@ -844,9 +907,9 @@ static void init_planes(DiracContext *s)
                 b->orientation = orientation;
 
                 if (orientation & 1)
-                    b->ibuf += w;
+                    b->ibuf += w << (1+b->pshift);
                 if (orientation > 1)
-                    b->ibuf += b->stride>>1;
+                    b->ibuf += (b->stride>>1);
 
                 if (level)
                     b->parent = &p->band[level-1][orientation];
@@ -1029,8 +1092,8 @@ static int dirac_unpack_idwt_params(DiracContext *s)
     } else {
         /* Slice parameters + quantization matrix*/
         /*[DIRAC_STD] 11.3.4 Slice coding Parameters (low delay syntax only). slice_parameters() */
-        s->lowdelay.num_x     = svq3_get_ue_golomb(gb);
-        s->lowdelay.num_y     = svq3_get_ue_golomb(gb);
+        s->num_x     = svq3_get_ue_golomb(gb);
+        s->num_y     = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
 
@@ -1615,7 +1678,7 @@ static int dirac_decode_frame_internal(DiracContext *s)
         /* [DIRAC_STD] 13.5.1 low_delay_transform_data() */
         for (comp = 0; comp < 3; comp++) {
             Plane *p = &s->plane[comp];
-            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
+            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
         }
         if (!s->zero_res) {
             if ((ret = decode_lowdelay(s)) < 0)
@@ -1633,19 +1696,19 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
         if (!s->zero_res && !s->low_delay)
         {
-            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
+            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
             decode_component(s, comp); /* [DIRAC_STD] 13.4.1 core_transform_data() */
         }
         ret = ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
-                                    s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp);
+                                    s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp, s->bit_depth);
         if (ret < 0)
             return ret;
 
         if (!s->num_refs) { /* intra */
             for (y = 0; y < p->height; y += 16) {
                 ff_spatial_idwt_slice2(&d, y+16); /* decode */
-                s->diracdsp.put_signed_rect_clamped(frame + y*p->stride, p->stride,
-                                                    p->idwt_buf + y*p->idwt_stride, p->idwt_stride, p->width, 16);
+                s->diracdsp.put_signed_rect_clamped[s->pshift](frame + y*p->stride, p->stride,
+                                                               p->idwt_buf + y*p->idwt_stride, p->idwt_stride, p->width, 16);
             }
         } else { /* inter */
             int rowheight = p->ybsep*p->stride;
@@ -1681,8 +1744,10 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
                 mctmp += (start - dsty)*p->stride + p->xoffset;
                 ff_spatial_idwt_slice2(&d, start + h); /* decode */
+                /* NOTE: add_rect_clamped hasn't been templated hence the shifts.
+                 * idwt_stride is passed as pixels, not in bytes as in the rest of the decoder */
                 s->diracdsp.add_rect_clamped(frame + start*p->stride, mctmp, p->stride,
-                                             p->idwt_buf + start*p->idwt_stride, p->idwt_stride, p->width, h);
+                                             (int16_t*)(p->idwt_buf) + start*(p->idwt_stride >> 1), (p->idwt_stride >> 1), p->width, h);
 
                 dsty += p->ybsep;
             }
@@ -1845,7 +1910,8 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 {
     DiracContext *s   = avctx->priv_data;
     DiracFrame *pic   = NULL;
-    int ret, i, parse_code;
+    int ret, i;
+    uint8_t parse_code;
     unsigned tmp;
 
     if (size < DATA_UNIT_HEADER_SIZE)
@@ -1855,14 +1921,17 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 
     init_get_bits(&s->gb, &buf[13], 8*(size - DATA_UNIT_HEADER_SIZE));
 
-    if (parse_code == pc_seq_header) {
+    if (parse_code == DIRAC_PCODE_SEQ_HEADER) {
         if (s->seen_sequence_header)
             return 0;
 
         /* [DIRAC_STD] 10. Sequence header */
-        ret = avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source);
+        ret = avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source,
+                                                 &s->version, &s->bit_depth);
         if (ret < 0)
             return ret;
+
+        s->pshift = s->bit_depth > 8;
 
         avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
 
@@ -1871,10 +1940,10 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return ret;
 
         s->seen_sequence_header = 1;
-    } else if (parse_code == pc_eos) { /* [DIRAC_STD] End of Sequence */
+    } else if (parse_code == DIRAC_PCODE_END_SEQ) { /* [DIRAC_STD] End of Sequence */
         free_sequence_buffers(s);
         s->seen_sequence_header = 0;
-    } else if (parse_code == pc_aux_data) {
+    } else if (parse_code == DIRAC_PCODE_AUX) {
         if (buf[13] == 1) {     /* encoder implementation/version */
             int ver[3];
             /* versions older than 1.0.8 don't store quant delta for
@@ -1906,12 +1975,24 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             av_log(avctx, AV_LOG_ERROR, "num_refs of 3\n");
             return AVERROR_INVALIDDATA;
         }
-        s->num_refs    = tmp;
-        s->is_arith    = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()      */
-        s->low_delay   = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()  */
-        pic->reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
-        pic->avframe->key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
-        pic->avframe->pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
+        s->num_refs      = tmp;
+        s->is_arith      = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()            */
+        s->low_delay     = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()        */
+        s->core_syntax   = (parse_code & 0x88) == 0x08;          /* [DIRAC_STD] is_core_syntax()      */
+        s->ld_picture    = (parse_code & 0xF8) == 0xC8;          /* [DIRAC_STD] is_ld_picture()       */
+        s->hq_picture    = (parse_code & 0xF8) == 0xE8;          /* [DIRAC_STD] is_hq_picture()       */
+        s->dc_prediction = (parse_code & 0x28) == 0x08;          /* [DIRAC_STD] using_dc_prediction() */
+        pic->reference   = (parse_code & 0x0C) == 0x0C;          /* [DIRAC_STD] is_reference()        */
+        pic->avframe->key_frame = s->num_refs == 0;              /* [DIRAC_STD] is_intra()            */
+        pic->avframe->pict_type = s->num_refs + 1;               /* Definition of AVPictureType in avutil.h */
+
+        if (s->version.minor == 2 && parse_code == 0x88)
+            s->ld_picture = 1;
+
+        if (s->low_delay && !(s->ld_picture || s->hq_picture) ) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid low delay flag\n");
+            return AVERROR_INVALIDDATA;
+        }
 
         if ((ret = get_buffer_with_edge(avctx, pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
             return ret;

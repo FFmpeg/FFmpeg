@@ -163,7 +163,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (k = 0; k < sbr->n[sbr->data[0].bs_freq_res[e]]; k++) {
                 SoftFloat temp1, temp2, fac;
 
-                temp1.exp = sbr->data[0].env_facs[e][k].mant * alpha + 14;
+                temp1.exp = sbr->data[0].env_facs_q[e][k] * alpha + 14;
                 if (temp1.exp & 1)
                   temp1.mant = 759250125;
                 else
@@ -174,7 +174,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
                     temp1 = FLOAT_1;
                 }
 
-                temp2.exp = (pan_offset - sbr->data[1].env_facs[e][k].mant) * alpha;
+                temp2.exp = (pan_offset - sbr->data[1].env_facs_q[e][k]) * alpha;
                 if (temp2.exp & 1)
                   temp2.mant = 759250125;
                 else
@@ -207,7 +207,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
                 for (k = 0; k < sbr->n[sbr->data[ch].bs_freq_res[e]]; k++){
                     SoftFloat temp1;
 
-                    temp1.exp = alpha * sbr->data[ch].env_facs[e][k].mant + 12;
+                    temp1.exp = alpha * sbr->data[ch].env_facs_q[e][k] + 12;
                     if (temp1.exp & 1)
                         temp1.mant = 759250125;
                     else

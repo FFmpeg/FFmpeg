@@ -40,9 +40,9 @@ cglobal maskedmerge8, 10, 11, 7, 0, bsrc, osrc, msrc, dst, blinesize, olinesize,
     add      msrcq, wq
     add       dstq, wq
     neg         wq
-.nextrow:
-    mov       r10q, wq
     %define      x  r10q
+.nextrow:
+    mov          x, wq
 
     .loop:
         movh            m0, [bsrcq + x]

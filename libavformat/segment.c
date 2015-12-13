@@ -183,6 +183,7 @@ static int set_segment_filename(AVFormatContext *s)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     size_t size;
+    int ret;
 
     if (seg->segment_idx_wrap)
         seg->segment_idx %= seg->segment_idx_wrap;
@@ -206,9 +207,8 @@ static int set_segment_filename(AVFormatContext *s)
     if (seg->entry_prefix)
         size += strlen(seg->entry_prefix);
 
-    seg->cur_entry.filename = av_mallocz(size);
-    if (!seg->cur_entry.filename)
-        return AVERROR(ENOMEM);
+    if ((ret = av_reallocp(&seg->cur_entry.filename, size)) < 0)
+        return ret;
     snprintf(seg->cur_entry.filename, size, "%s%s",
              seg->entry_prefix ? seg->entry_prefix : "",
              av_basename(oc->filename));

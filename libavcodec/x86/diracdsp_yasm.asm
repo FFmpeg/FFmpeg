@@ -150,7 +150,7 @@ cglobal put_signed_rect_clamped_%1, 5,9,3, dst, dst_stride, src, src_stride, w, 
 %endif
 
 .loopy:
-    lea     src2q, [srcq+src_strideq*2]
+    lea     src2q, [srcq+src_strideq]
     lea     dst2q, [dstq+dst_strideq]
 .loopx:
     sub      wd, mmsize
@@ -164,7 +164,7 @@ cglobal put_signed_rect_clamped_%1, 5,9,3, dst, dst_stride, src, src_stride, w, 
     mova    [dst2q+wq], m2
     jg      .loopx
 
-    lea   srcq, [srcq+src_strideq*4]
+    lea   srcq, [srcq+src_strideq*2]
     lea   dstq, [dstq+dst_strideq*2]
     sub     hd, 2
     mov     wd, wspill

@@ -1668,7 +1668,7 @@ static int hls_read_header(AVFormatContext *s)
             for (k = 0; k < pls->ctx->nb_streams; k++) {
                 struct AVStream *st = s->streams[pls->stream_offset + k];
 
-                ff_program_add_stream_index(s, i, pls->stream_offset + k);
+                av_program_add_stream_index(s, i, pls->stream_offset + k);
 
                 /* Set variant_bitrate for streams unique to this variant */
                 if (!is_shared && v->bandwidth)

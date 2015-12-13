@@ -273,6 +273,12 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         MpegTSWriteStream *ts_st = st->priv_data;
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
 
+        if (s->nb_programs) {
+            AVProgram *program = av_find_program_from_stream(s, NULL, i);
+            if (program->id != service->sid)
+                continue;
+        }
+
         if (q - data > SECTION_LENGTH - 32) {
             err = 1;
             break;
@@ -719,22 +725,43 @@ static int mpegts_write_header(AVFormatContext *s)
 
     ts->tsid = ts->transport_stream_id;
     ts->onid = ts->original_network_id;
-    /* allocate a single DVB service */
-    title = av_dict_get(s->metadata, "service_name", NULL, 0);
-    if (!title)
-        title = av_dict_get(s->metadata, "title", NULL, 0);
-    service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
-    provider      = av_dict_get(s->metadata, "service_provider", NULL, 0);
-    provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
-    service       = mpegts_add_service(ts, ts->service_id,
-                                       provider_name, service_name);
+    if (!s->nb_programs) {
+        /* allocate a single DVB service */
+        title = av_dict_get(s->metadata, "service_name", NULL, 0);
+        if (!title)
+            title = av_dict_get(s->metadata, "title", NULL, 0);
+        service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
+        provider      = av_dict_get(s->metadata, "service_provider", NULL, 0);
+        provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
+        service       = mpegts_add_service(ts, ts->service_id,
+                                           provider_name, service_name);
 
-    if (!service)
-        return AVERROR(ENOMEM);
+        if (!service)
+            return AVERROR(ENOMEM);
 
-    service->pmt.write_packet = section_write_packet;
-    service->pmt.opaque       = s;
-    service->pmt.cc           = 15;
+        service->pmt.write_packet = section_write_packet;
+        service->pmt.opaque       = s;
+        service->pmt.cc           = 15;
+    } else {
+        for (i = 0; i < s->nb_programs; i++) {
+            AVProgram *program = s->programs[i];
+            title = av_dict_get(program->metadata, "service_name", NULL, 0);
+            if (!title)
+                title = av_dict_get(program->metadata, "title", NULL, 0);
+            service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
+            provider      = av_dict_get(program->metadata, "service_provider", NULL, 0);
+            provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
+            service       = mpegts_add_service(ts, program->id,
+                                               provider_name, service_name);
+
+            if (!service)
+                return AVERROR(ENOMEM);
+
+            service->pmt.write_packet = section_write_packet;
+            service->pmt.opaque       = s;
+            service->pmt.cc           = 15;
+        }
+    }
 
     ts->pat.pid          = PAT_PID;
     /* Initialize at 15 so that it wraps and is equal to 0 for the
