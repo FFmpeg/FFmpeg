@@ -459,7 +459,7 @@ static int huf_build_dec_table(const uint64_t *hcode, int im,
         lc += 8;                                                              \
 }
 
-#define get_code(po, rlc, c, lc, gb, out, oe)                                 \
+#define get_code(po, rlc, c, lc, gb, out, oe, outb)                           \
 {                                                                             \
         if (po == rlc) {                                                      \
             if (lc < 8)                                                       \
@@ -468,7 +468,7 @@ static int huf_build_dec_table(const uint64_t *hcode, int im,
                                                                               \
             cs = c >> lc;                                                     \
                                                                               \
-            if (out + cs > oe)                                                \
+            if (out + cs > oe || out == outb)                                 \
                 return AVERROR_INVALIDDATA;                                   \
                                                                               \
             s = out[-1];                                                      \
@@ -501,7 +501,7 @@ static int huf_decode(const uint64_t *hcode, const HufDec *hdecod,
 
             if (pl.len) {
                 lc -= pl.len;
-                get_code(pl.lit, rlc, c, lc, gb, out, oe);
+                get_code(pl.lit, rlc, c, lc, gb, out, oe, outb);
             } else {
                 int j;
 
@@ -518,7 +518,7 @@ static int huf_decode(const uint64_t *hcode, const HufDec *hdecod,
                         if ((hcode[pl.p[j]] >> 6) ==
                             ((c >> (lc - l)) & ((1LL << l) - 1))) {
                             lc -= l;
-                            get_code(pl.p[j], rlc, c, lc, gb, out, oe);
+                            get_code(pl.p[j], rlc, c, lc, gb, out, oe, outb);
                             break;
                         }
                     }
@@ -539,7 +539,7 @@ static int huf_decode(const uint64_t *hcode, const HufDec *hdecod,
 
         if (pl.len) {
             lc -= pl.len;
-            get_code(pl.lit, rlc, c, lc, gb, out, oe);
+            get_code(pl.lit, rlc, c, lc, gb, out, oe, outb);
         } else {
             return AVERROR_INVALIDDATA;
         }
