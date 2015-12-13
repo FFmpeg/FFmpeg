@@ -99,6 +99,7 @@ typedef struct MpegTSWrite {
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
 #define MPEGTS_FLAG_PAT_PMT_AT_FRAMES           0x04
+#define MPEGTS_FLAG_SYSTEM_B        0x08
     int flags;
     int copyts;
     int tables_version;
@@ -319,7 +320,14 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             stream_type = STREAM_TYPE_AUDIO_AAC_LATM;
             break;
         case AV_CODEC_ID_AC3:
-            stream_type = STREAM_TYPE_AUDIO_AC3;
+            stream_type = (ts->flags & MPEGTS_FLAG_SYSTEM_B)
+                          ? STREAM_TYPE_PRIVATE_DATA
+                          : STREAM_TYPE_AUDIO_AC3;
+            break;
+        case AV_CODEC_ID_EAC3:
+            stream_type = (ts->flags & MPEGTS_FLAG_SYSTEM_B)
+                          ? STREAM_TYPE_PRIVATE_DATA
+                          : STREAM_TYPE_AUDIO_EAC3;
             break;
         case AV_CODEC_ID_DTS:
             stream_type = STREAM_TYPE_AUDIO_DTS;
@@ -343,7 +351,12 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch (st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if (st->codec->codec_id==AV_CODEC_ID_EAC3) {
+            if (st->codec->codec_id==AV_CODEC_ID_AC3 && (ts->flags & MPEGTS_FLAG_SYSTEM_B)) {
+                *q++=0x6a; // AC3 descriptor see A038 DVB SI
+                *q++=1; // 1 byte, all flags sets to 0
+                *q++=0; // omit all fields...
+            }
+            if (st->codec->codec_id==AV_CODEC_ID_EAC3 && (ts->flags & MPEGTS_FLAG_SYSTEM_B)) {
                 *q++=0x7a; // EAC3 descriptor see A038 DVB SI
                 *q++=1; // 1 byte, all flags sets to 0
                 *q++=0; // omit all fields...
@@ -1789,6 +1802,9 @@ static const AVOption options[] = {
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     { "pat_pmt_at_frames", "Reemit PAT and PMT at each video frame",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_PAT_PMT_AT_FRAMES}, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
+    { "system_b", "Conform to System B (DVB) instead of System A (ATSC)",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_SYSTEM_B }, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
