@@ -571,8 +571,11 @@ static int hls_start(AVFormatContext *s)
         av_opt_set(oc->priv_data, "pat_period", period, 0);
     }
 
-    if (c->vtt_basename)
-        avformat_write_header(vtt_oc,NULL);
+    if (c->vtt_basename) {
+        err = avformat_write_header(vtt_oc,NULL);
+        if (err < 0)
+            return err;
+    }
 
     return 0;
 fail:
