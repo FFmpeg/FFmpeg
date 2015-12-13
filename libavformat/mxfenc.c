@@ -2211,6 +2211,10 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         mxf->edit_units_count++;
     } else if (!mxf->edit_unit_byte_count && st->index == 1) {
+        if (!mxf->edit_units_count) {
+            av_log(s, AV_LOG_ERROR, "No packets in first stream\n");
+            return AVERROR_PATCHWELCOME;
+        }
         mxf->index_entries[mxf->edit_units_count-1].slice_offset =
             mxf->body_offset - mxf->index_entries[mxf->edit_units_count-1].offset;
     }
