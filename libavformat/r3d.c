@@ -352,7 +352,7 @@ static int r3d_read_packet(AVFormatContext *s, AVPacket *pkt)
         case MKTAG('R','E','D','A'):
             if (!r3d->audio_channels)
                 return -1;
-            if (s->streams[1]->discard == AVDISCARD_ALL)
+            if (s->nb_streams >= 2 && s->streams[1]->discard == AVDISCARD_ALL)
                 goto skip;
             if (!(err = r3d_read_reda(s, pkt, &atom)))
                 return 0;
