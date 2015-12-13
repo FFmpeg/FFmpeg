@@ -654,15 +654,15 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int n_samples = s->sofa.n_samples; /* length of one IR */
     const float *src = (const float *)in->data[0]; /* get pointer to audio input buffer */
     float *dst = (float *)out->data[0]; /* get pointer to audio output buffer */
-    int in_channels = in->channels; /* number of input channels */
+    const int in_channels = in->channels; /* number of input channels */
     /* ring buffer length is: longest IR plus max. delay -> next power of 2 */
-    int buffer_length = s->buffer_length;
+    const int buffer_length = s->buffer_length;
     /* -1 for AND instead of MODULO (applied to powers of 2): */
-    uint32_t modulo = (uint32_t)buffer_length - 1;
+    const uint32_t modulo = (uint32_t)buffer_length - 1;
     float *buffer[10]; /* holds ringbuffer for each input channel */
     int wr = *write;
     int read;
-    int i, j, l;
+    int i, l;
 
     dst += offset;
     for (l = 0; l < in_channels; l++) {
@@ -688,8 +688,12 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
              * (mod buffer length) */
             read = (wr - *(delay + l) - (n_samples - 1) + buffer_length) & modulo;
 
-            for (j = 0; j < n_samples; j++)
-                temp_src[j] = bptr[(read + j) & modulo];
+            if (read + n_samples < buffer_length) {
+                memcpy(temp_src, bptr + read, n_samples * sizeof(*temp_src));
+            } else {
+                memcpy(temp_src, bptr + read, (buffer_length - read) * sizeof(*temp_src));
+                memcpy(temp_src + (buffer_length - read), bptr, (read - n_samples) * sizeof(*temp_src));
+            }
 
             /* multiply signal and IR, and add up the results */
             dst[0] += s->fdsp->scalarproduct_float(temp_ir, temp_src, n_samples);
