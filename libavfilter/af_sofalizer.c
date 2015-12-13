@@ -652,8 +652,10 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
             if (read + n_samples < buffer_length) {
                 memcpy(temp_src, bptr + read, n_samples * sizeof(*temp_src));
             } else {
-                memcpy(temp_src, bptr + read, (buffer_length - read) * sizeof(*temp_src));
-                memcpy(temp_src + (buffer_length - read), bptr, (read - n_samples) * sizeof(*temp_src));
+                int len = FFMIN(n_samples - (read % n_samples), buffer_length - read);
+
+                memcpy(temp_src, bptr + read, len * sizeof(*temp_src));
+                memcpy(temp_src + len, bptr, (n_samples - len) * sizeof(*temp_src));
             }
 
             /* multiply signal and IR, and add up the results */
