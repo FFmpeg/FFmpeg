@@ -548,8 +548,11 @@ static int hls_start(AVFormatContext *s)
     if (oc->oformat->priv_class && oc->priv_data)
         av_opt_set(oc->priv_data, "mpegts_flags", "resend_headers", 0);
 
-    if (c->vtt_basename)
-        avformat_write_header(vtt_oc,NULL);
+    if (c->vtt_basename) {
+        err = avformat_write_header(vtt_oc,NULL);
+        if (err < 0)
+            return err;
+    }
 
     return 0;
 }
