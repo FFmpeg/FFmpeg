@@ -154,8 +154,8 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
         return AVERROR(EINVAL);
     }
 
-    n_samples = dim_length[n_dim_id]; /* get number of measurements */
-    m_dim     = dim_length[m_dim_id]; /* get length of one IR */
+    n_samples = dim_length[n_dim_id]; /* get length of one IR */
+    m_dim     = dim_length[m_dim_id]; /* get number of measurements */
 
     av_freep(&dim_length);
 
