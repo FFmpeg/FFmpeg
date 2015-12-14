@@ -693,8 +693,12 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
                 float band_energy, scale, pns_senergy;
                 const int start_c = (w+w2)*128+sce->ics.swb_offset[g];
                 band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                for (i = 0; i < sce->ics.swb_sizes[g]; i++)
-                    PNS[i] = s->random_state = lcg_random(s->random_state);
+                for (i = 0; i < sce->ics.swb_sizes[g]; i+=2) {
+                    double rnd[2];
+                    av_bmg_get(&s->lfg, rnd);
+                    PNS[i+0] = (float)rnd[0];
+                    PNS[i+1] = (float)rnd[1];
+                }
                 band_energy = s->fdsp->scalarproduct_float(PNS, PNS, sce->ics.swb_sizes[g]);
                 scale = noise_amp/sqrtf(band_energy);
                 s->fdsp->vector_fmul_scalar(PNS, PNS, scale, sce->ics.swb_sizes[g]);
