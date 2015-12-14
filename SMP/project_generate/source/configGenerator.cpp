@@ -192,144 +192,37 @@ bool configGenerator::passConfig( )
 
 bool configGenerator::changeConfig( const string & stOption )
 {
-    if( stOption.compare("--disable-devices") == 0 )
-    {
-        //Disable INDEV_LIST
-        vector<string> vList;
-        if( !getConfigList( "INDEV_LIST", vList ) )
-        {
-            return false;
-        }
-        //Disable all in list
-        vector<string>::iterator vitValues = vList.begin( );
-        for( vitValues; vitValues<vList.end( ); vitValues++ )
-        {
-            toggleConfigValue( *vitValues, false );
-        }
-        //Disable OUTDEV_LIST
-        vList.resize(0);
-        if( !getConfigList( "OUTDEV_LIST", vList ) )
-        {
-            return false;
-        }
-        //Disable all in list
-        vitValues = vList.begin( );
-        for( vitValues; vitValues<vList.end( ); vitValues++ )
-        {
-            toggleConfigValue( *vitValues, false );
-        }
-    }
-    else if( stOption.compare("--disable-programs") == 0 )
-    {
-        //Disable PROGRAM_LIST
-        vector<string> vList;
-        if( !getConfigList( "PROGRAM_LIST", vList ) )
-        {
-            return false;
-        }
-        //Disable all in list
-        vector<string>::iterator vitValues = vList.begin( );
-        for( vitValues; vitValues<vList.end( ); vitValues++ )
-        {
-            toggleConfigValue( *vitValues, false );
-        }
-    }
-    else if( stOption.compare("--disable-everything") == 0 )
-    {
-        //Disable ALL_COMPONENTS
-        vector<string> vList;
-        if( !getConfigList( "ALL_COMPONENTS", vList ) )
-        {
-            return false;
-        }
-        //Disable all in list
-        vector<string>::iterator vitValues = vList.begin( );
-        for( vitValues; vitValues<vList.end( ); vitValues++ )
-        {
-            toggleConfigValue( *vitValues, false );
-        }
-    }
-    else if( stOption.compare("--disable-all") == 0 )
-    {
-        //Disable ALL_COMPONENTS
-        vector<string> vList;
-        if( !getConfigList( "ALL_COMPONENTS", vList ) )
-        {
-            return false;
-        }
-        //Disable all in list
-        vector<string>::iterator vitValues = vList.begin( );
-        for( vitValues; vitValues<vList.end( ); vitValues++ )
-        {
-            toggleConfigValue( *vitValues, false );
-        }
-        //Disable LIBRARY_LIST
-        vList.resize(0);
-        if( !getConfigList( "LIBRARY_LIST", vList ) )
-        {
-            return false;
-        }
-        //Disable all in list
-        vitValues = vList.begin( );
-        for( vitValues; vitValues<vList.end( ); vitValues++ )
-        {
-            toggleConfigValue( *vitValues, false );
-        }
-        //Disable PROGRAM_LIST
-        vList.resize(0);
-        if( !getConfigList( "PROGRAM_LIST", vList ) )
-        {
-            return false;
-        }
-        //Disable all in list
-        vitValues = vList.begin( );
-        for( vitValues; vitValues<vList.end( ); vitValues++ )
-        {
-            toggleConfigValue( *vitValues, false );
-        }
-    }
-    else if( stOption.find("--toolchain") == 0 )
-    {
+    if (stOption.find("--toolchain") == 0) {
         //A tool chain has been specified
-        string sToolChain = stOption.substr( 12 );
-        if( sToolChain.compare("msvc") == 0 )
-        {
+        string sToolChain = stOption.substr(12);
+        if (sToolChain.compare("msvc") == 0) {
             //Dont disable inline as the configure header will auto header guard it our anyway. This allows for changing on the fly afterwards
-        }
-        else if ( sToolChain.compare("icl") == 0 )
-        {
+        } else if (sToolChain.compare("icl") == 0) {
             //This is the default so dont have to do anything
             // Inline asm by default is turned on
-        }
-        else
-        {
+        } else {
             cout << "  Error: Unknown toolchain option (" << sToolChain << ")" << endl;
             cout << "  Excepted toolchains (msvc, icl)" << endl;
             return false;
         }
         m_sToolchain = sToolChain;
-    }
-    else
-    {
+    } else {
         bool bEnable;
         string sOption;
-        if( stOption.find("--enable-") == 0 )
-        {
+        if (stOption.find("--enable-") == 0) {
             bEnable = true;
             //Find remainder of option
-            sOption = stOption.substr( 9 );
-        }
-        else if( stOption.find("--disable-") == 0 )
-        {
+            sOption = stOption.substr(9);
+        } else if (stOption.find("--disable-") == 0) {
             bEnable = false;
             //Find remainder of option
-            sOption = stOption.substr( 10 );
+            sOption = stOption.substr(10);
         }
-        else
-        {
+        else {
             cout << "  Error: Unknown command line option (" << stOption << ")" << endl;
             return false;
         }
+
         //Replace any '-'s with '_'
         replace( sOption.begin(), sOption.end(), '-', '_' );
         //Check and make sure that a reserved item is not being changed
@@ -364,54 +257,117 @@ bool configGenerator::changeConfig( const string & stOption )
         }
         else
         {
-            //Check if the option is a component
-            vector<string> vList;
-            getConfigList( "COMPONENT_LIST", vList );
-            vector<string>::iterator vitComponent = find( vList.begin(), vList.end(), sOption );
-            if( vitComponent != vList.end() )
-            {
-                //This is a component
-                string sOption2 = sOption.substr( 0, sOption.length()-1 ); //Need to remove the s from end
-                //Get the specific list
-                vList.resize( 0 );
-                transform( sOption2.begin( ), sOption2.end( ), sOption2.begin( ), ::toupper );
-                getConfigList( sOption2 + "_LIST", vList );
-                for( vitComponent = vList.begin(); vitComponent<vList.end(); vitComponent++ )
-                {
-                    toggleConfigValue( *vitComponent, bEnable );
-                }
-            }
-            else
-            {
-                //If not one of above components then check if it exists as standalone option
-                ValuesList::iterator vitOption = getConfigOption( sOption );
-                if( vitOption == m_vConfigValues.end( ) )
-                {
-                    cout << "  Error: Unknown option (" << sOption << ") in command line option (" << stOption << ")" << endl;
+            // Check for changes to entire list
+            if (sOption.compare("devices") == 0) {
+                //Change INDEV_LIST
+                vector<string> vList;
+                if (!getConfigList("INDEV_LIST", vList)) {
                     return false;
                 }
-                //Check if this option has a component list
-                string sOption2 = sOption;
-                transform( sOption2.begin( ), sOption2.end( ), sOption2.begin( ), ::toupper );
-                sOption2 += "_COMPONENTS";
-                vList.resize( 0 );
-                getConfigList( sOption2, vList, false );
-                for( vitComponent = vList.begin(); vitComponent<vList.end(); vitComponent++ )
-                {
+                vector<string>::iterator vitValues = vList.begin();
+                for (vitValues; vitValues < vList.end(); vitValues++) {
+                    toggleConfigValue(*vitValues, bEnable);
+                }
+                //Change OUTDEV_LIST
+                vList.resize(0);
+                if (!getConfigList("OUTDEV_LIST", vList)) {
+                    return false;
+                }
+                vitValues = vList.begin();
+                for (vitValues; vitValues < vList.end(); vitValues++) {
+                    toggleConfigValue(*vitValues, bEnable);
+                }
+            } else if (sOption.compare("programs") == 0) {
+                //Change PROGRAM_LIST
+                vector<string> vList;
+                if (!getConfigList("PROGRAM_LIST", vList)) {
+                    return false;
+                }
+                vector<string>::iterator vitValues = vList.begin();
+                for (vitValues; vitValues < vList.end(); vitValues++) {
+                    toggleConfigValue(*vitValues, bEnable);
+                }
+            } else if (sOption.compare("everything") == 0) {
+                //Change ALL_COMPONENTS
+                vector<string> vList;
+                if (!getConfigList("ALL_COMPONENTS", vList)) {
+                    return false;
+                }
+                vector<string>::iterator vitValues = vList.begin();
+                for (vitValues; vitValues < vList.end(); vitValues++) {
+                    toggleConfigValue(*vitValues, bEnable);
+                }
+            } else if (sOption.compare("all") == 0) {
+                //Change ALL_COMPONENTS
+                vector<string> vList;
+                if (!getConfigList("ALL_COMPONENTS", vList)) {
+                    return false;
+                }
+                vector<string>::iterator vitValues = vList.begin();
+                for (vitValues; vitValues < vList.end(); vitValues++) {
+                    toggleConfigValue(*vitValues, bEnable);
+                }
+                //Change LIBRARY_LIST
+                vList.resize(0);
+                if (!getConfigList("LIBRARY_LIST", vList)) {
+                    return false;
+                }
+                vitValues = vList.begin();
+                for (vitValues; vitValues < vList.end(); vitValues++) {
+                    toggleConfigValue(*vitValues, bEnable);
+                }
+                //Change PROGRAM_LIST
+                vList.resize(0);
+                if (!getConfigList("PROGRAM_LIST", vList)) {
+                    return false;
+                }
+                vitValues = vList.begin();
+                for (vitValues; vitValues < vList.end(); vitValues++) {
+                    toggleConfigValue(*vitValues, bEnable);
+                }
+            } else {
+                //Check if the option is a component
+                vector<string> vList;
+                getConfigList("COMPONENT_LIST", vList);
+                vector<string>::iterator vitComponent = find(vList.begin(), vList.end(), sOption);
+                if (vitComponent != vList.end()) {
                     //This is a component
-                    sOption2 = vitComponent->substr( 0, vitComponent->length()-1 ); //Need to remove the s from end
-                    //Get the specific list
-                    vector<string> vList2;
-                    transform( sOption2.begin( ), sOption2.end( ), sOption2.begin( ), ::toupper );
-                    getConfigList( sOption2 + "_LIST", vList2 );
-                    vector<string>::iterator vitComponent2;
-                    for( vitComponent2 = vList2.begin(); vitComponent2<vList2.end(); vitComponent2++ )
-                    {
-                        toggleConfigValue( *vitComponent2, bEnable );
+                    string sOption2 = sOption.substr(0, sOption.length() - 1); //Need to remove the s from end
+                                                                               //Get the specific list
+                    vList.resize(0);
+                    transform(sOption2.begin(), sOption2.end(), sOption2.begin(), ::toupper);
+                    getConfigList(sOption2 + "_LIST", vList);
+                    for (vitComponent = vList.begin(); vitComponent<vList.end(); vitComponent++) {
+                        toggleConfigValue(*vitComponent, bEnable);
+                    }
+                } else {
+                    //If not one of above components then check if it exists as standalone option
+                    ValuesList::iterator vitOption = getConfigOption(sOption);
+                    if (vitOption == m_vConfigValues.end()) {
+                        cout << "  Error: Unknown option (" << sOption << ") in command line option (" << stOption << ")" << endl;
+                        return false;
+                    }
+                    //Check if this option has a component list
+                    string sOption2 = sOption;
+                    transform(sOption2.begin(), sOption2.end(), sOption2.begin(), ::toupper);
+                    sOption2 += "_COMPONENTS";
+                    vList.resize(0);
+                    getConfigList(sOption2, vList, false);
+                    for (vitComponent = vList.begin(); vitComponent<vList.end(); vitComponent++) {
+                        //This is a component
+                        sOption2 = vitComponent->substr(0, vitComponent->length() - 1); //Need to remove the s from end
+                                                                                        //Get the specific list
+                        vector<string> vList2;
+                        transform(sOption2.begin(), sOption2.end(), sOption2.begin(), ::toupper);
+                        getConfigList(sOption2 + "_LIST", vList2);
+                        vector<string>::iterator vitComponent2;
+                        for (vitComponent2 = vList2.begin(); vitComponent2<vList2.end(); vitComponent2++) {
+                            toggleConfigValue(*vitComponent2, bEnable);
+                        }
                     }
                 }
+                toggleConfigValue(sOption, bEnable);
             }
-            toggleConfigValue( sOption, bEnable );
         }
     }
     //Add to the internal configuration variable
