@@ -3981,6 +3981,17 @@ if test "$cpu" = host; then
             }
             cpu=$(check_native -march || check_native -mcpu)
         ;;
+        clang)
+            check_native(){
+                $cc $1=native -v -c -o $TMPO $TMPC >$TMPE 2>&1 || return
+                sed -n "/cc1.*-target-cpu /{
+                            s/.*-target-cpu \\([^ ]*\\).*/\\1/
+                            p
+                            q
+                        }" $TMPE
+            }
+            cpu=$(check_native -march)
+        ;;
     esac
 
     test "${cpu:-host}" = host &&
