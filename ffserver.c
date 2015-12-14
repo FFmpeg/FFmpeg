@@ -3423,6 +3423,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 /********************************************************************/
 /* ffserver initialization */
 
+/* FIXME: This code should use avformat_new_stream() */
 static AVStream *add_av_stream1(FFServerStream *stream,
                                 AVCodecContext *codec, int copy)
 {
@@ -3448,6 +3449,7 @@ static AVStream *add_av_stream1(FFServerStream *stream,
         fst->codec = codec;
 
     fst->priv_data = av_mallocz(sizeof(FeedData));
+    fst->internal = av_mallocz(sizeof(*fst->internal));
     fst->index = stream->nb_streams;
     avpriv_set_pts_info(fst, 33, 1, 90000);
     fst->sample_aspect_ratio = codec->sample_aspect_ratio;
