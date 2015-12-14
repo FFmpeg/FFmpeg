@@ -362,12 +362,21 @@ static int config_output(AVFilterLink *outlink)
     DecimateContext *dm = ctx->priv;
     const AVFilterLink *inlink =
         ctx->inputs[dm->ppsrc ? INPUT_CLEANSRC : INPUT_MAIN];
+    const AVFilterLink *inlink_main =
+        ctx->inputs[INPUT_MAIN];
     AVRational fps = inlink->frame_rate;
 
     if (!fps.num || !fps.den) {
         av_log(ctx, AV_LOG_ERROR, "The input needs a constant frame rate; "
                "current rate of %d/%d is invalid\n", fps.num, fps.den);
         return AVERROR(EINVAL);
+    }
+
+    if (inlink->w != inlink_main->w ||
+        inlink->h != inlink_main->h ||
+        inlink->format != inlink_main->format) {
+        av_log(ctx, AV_LOG_ERROR, "frame parameters differ between inputs\n");
+        return AVERROR_PATCHWELCOME;
     }
     fps = av_mul_q(fps, (AVRational){dm->cycle - 1, dm->cycle});
     av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> %d/%d\n",
