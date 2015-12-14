@@ -101,8 +101,8 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
              xdst = dst+logo_x1+1,
              xsrc = src+logo_x1+1; x < logo_x2-1; x++, xdst++, xsrc++) {
 
-            if (show && (y == logo_y+1 || y == logo_y+logo_h-2 ||
-                         x == logo_x+1 || x == logo_x+logo_w-2)) {
+            if (show && (y == logo_y1+1 || y == logo_y2-2 ||
+                         x == logo_x1+1 || x == logo_x2-2)) {
                 *xdst = 0;
                 continue;
             }
