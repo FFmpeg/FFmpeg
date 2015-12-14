@@ -42,7 +42,7 @@ typedef struct {
     AVFrame *last;          ///< last frame from the previous queue
     AVFrame **clean_src;    ///< frame queue for the clean source
     int got_frame[2];       ///< frame request flag for each input stream
-    double ts_unit;         ///< timestamp units for the output frames
+    AVRational ts_unit;     ///< timestamp units for the output frames
     int64_t start_pts;      ///< base for output timestamps
     uint32_t eof;           ///< bitmask for end of stream
     int hsub, vsub;         ///< chroma subsampling values
@@ -217,7 +217,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 av_frame_free(&frame);
                 frame = dm->clean_src[i];
             }
-            frame->pts = outlink->frame_count * dm->ts_unit +
+            frame->pts = av_rescale_q(outlink->frame_count, dm->ts_unit, (AVRational){1,0}) +
                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
             ret = ff_filter_frame(outlink, frame);
             if (ret < 0)
@@ -377,7 +377,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->w = inlink->w;
     outlink->h = inlink->h;
-    dm->ts_unit = av_q2d(av_inv_q(av_mul_q(fps, outlink->time_base)));
+    dm->ts_unit = av_inv_q(av_mul_q(fps, outlink->time_base));
     return 0;
 }
 
