@@ -206,6 +206,30 @@ bool configGenerator::changeConfig( const string & stOption )
             return false;
         }
         m_sToolchain = sToolChain;
+    } else if (stOption.find("--list-") == 0) {
+        string sOption = stOption.substr(7);
+        string sOptionList = sOption;
+        if (sOptionList.back() == 's') {
+            sOptionList = sOptionList.substr(0, sOptionList.length() - 1);//Remove the trailing s
+        }
+        transform(sOptionList.begin(), sOptionList.end(), sOptionList.begin(), ::toupper);
+        sOptionList += "_LIST";
+        vector<string> vList;
+        if (!getConfigList(sOptionList, vList)) {
+            cout << "  Error: Unknown list option (" << sOption << ")" << endl;
+            return false;
+        }
+        cout << sOption << ": " << endl;
+        for (vector<string>::iterator itIt = vList.begin(); itIt < vList.end(); itIt++) {
+            //cut off any trailing type
+            uint uiPos = itIt->rfind('_');
+            if (uiPos != string::npos) {
+                *itIt = itIt->substr(0, uiPos);
+            }
+            transform(itIt->begin(), itIt->end(), itIt->begin(), ::tolower);
+            cout << "  " << *itIt << endl;
+        }
+        return false;
     } else {
         bool bEnable;
         string sOption;
