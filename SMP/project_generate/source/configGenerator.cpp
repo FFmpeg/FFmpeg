@@ -192,7 +192,43 @@ bool configGenerator::passConfig( )
 
 bool configGenerator::changeConfig( const string & stOption )
 {
-    if (stOption.find("--toolchain") == 0) {
+    if (stOption.compare("--help") == 0) {
+        uint uiStart = m_sConfigureFile.find("show_help(){");
+        if (uiStart == string::npos) {
+            cout << "  Error: Failed finding help list in config file" << endl;
+            return false;
+        }
+        // Find first 'EOF'
+        uiStart = m_sConfigureFile.find("EOF", uiStart) + 2;
+        if (uiStart == string::npos) {
+            cout << "  Error: Incompatible help list in config file" << endl;
+            return false;
+        }
+        uint uiEnd = m_sConfigureFile.find("EOF", uiStart);
+        string sHelpOptions = m_sConfigureFile.substr(uiStart, uiEnd - uiStart);
+        // Search through help options and remove any values not supported
+        string sRemoveSections[] = {"Standard options:", "Documentation options:", "Toolchain options:",
+            "Advanced options (experts only):", "Developer options (useful when working on FFmpeg itself):", "NOTE:"};
+        for (string sSection : sRemoveSections) {
+            uiStart = sHelpOptions.find(sSection);
+            if (uiStart != string::npos) {
+                uiEnd = sHelpOptions.find("\n\n", uiStart + sSection.length() + 1);
+                sHelpOptions = sHelpOptions.erase(uiStart, uiEnd - uiStart + 2);
+            }
+        }
+        cout << sHelpOptions << endl;
+        // Add in custom toolchain string
+        cout << "Toolchain options:" << endl;
+        cout << "  --toolchain=NAME         set tool defaults according to NAME" << endl;
+        // Add in reserved values
+        vector<string> vReservedItems;
+        buildReservedValues(vReservedItems);
+        cout << "\nReserved options (auto handled and cannot be set explicitly):" << endl;
+        for ( string sResVal : vReservedItems) {
+            cout << "  " << sResVal << endl;
+        }
+        return false;
+    } else if (stOption.find("--toolchain") == 0) {
         //A tool chain has been specified
         string sToolChain = stOption.substr(12);
         if (sToolChain.compare("msvc") == 0) {
@@ -217,6 +253,7 @@ bool configGenerator::changeConfig( const string & stOption )
         vector<string> vList;
         if (!getConfigList(sOptionList, vList)) {
             cout << "  Error: Unknown list option (" << sOption << ")" << endl;
+            cout << "  Use --help to get available options" << endl;
             return false;
         }
         cout << sOption << ": " << endl;
@@ -244,6 +281,7 @@ bool configGenerator::changeConfig( const string & stOption )
         }
         else {
             cout << "  Error: Unknown command line option (" << stOption << ")" << endl;
+            cout << "  Use --help to get available options" << endl;
             return false;
         }
 
@@ -275,6 +313,7 @@ bool configGenerator::changeConfig( const string & stOption )
             if( vitOption == m_vConfigValues.end( ) )
             {
                 cout << "  Error: Unknown option (" << sOption << ") in command line option (" << stOption << ")" << endl;
+                cout << "  Use --help to get available options" << endl;
                 return false;
             }
             toggleConfigValue( sOption, bEnable );
@@ -369,6 +408,7 @@ bool configGenerator::changeConfig( const string & stOption )
                     ValuesList::iterator vitOption = getConfigOption(sOption);
                     if (vitOption == m_vConfigValues.end()) {
                         cout << "  Error: Unknown option (" << sOption << ") in command line option (" << stOption << ")" << endl;
+                        cout << "  Use --help to get available options" << endl;
                         return false;
                     }
                     //Check if this option has a component list
