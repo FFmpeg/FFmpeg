@@ -843,10 +843,10 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         ctx->encode_config.rcParams.initialRCQP.qpInterP  = qp_inter_p;
 
         if(avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
-            ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p * fabs(avctx->i_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpIntra += avctx->i_quant_offset;
-            ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p * fabs(avctx->b_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpInterB += avctx->b_quant_offset;
+            ctx->encode_config.rcParams.initialRCQP.qpIntra = av_clip(
+                qp_inter_p * fabs(avctx->i_quant_factor) + avctx->i_quant_offset, 0, 51);
+            ctx->encode_config.rcParams.initialRCQP.qpInterB = av_clip(
+                qp_inter_p * fabs(avctx->b_quant_factor) + avctx->b_quant_offset, 0, 51);
         } else {
             ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p;
             ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p;
