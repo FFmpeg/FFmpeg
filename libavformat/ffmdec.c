@@ -243,6 +243,7 @@ static int ffm2_read_header(AVFormatContext *s)
     AVStream *st;
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
+    const AVCodecDescriptor *codec_desc;
     int ret;
 
     ffm->packet_size = avio_rb32(pb);
@@ -289,7 +290,20 @@ static int ffm2_read_header(AVFormatContext *s)
             codec = st->codec;
             /* generic info */
             codec->codec_id = avio_rb32(pb);
+            codec_desc = avcodec_descriptor_get(codec->codec_id);
+            if (!codec_desc) {
+                av_log(s, AV_LOG_ERROR, "Invalid codec id: %d\n", codec->codec_id);
+                codec->codec_id = AV_CODEC_ID_NONE;
+                goto fail;
+            }
             codec->codec_type = avio_r8(pb);
+            if (codec->codec_type != codec_desc->type) {
+                av_log(s, AV_LOG_ERROR, "Codec type mismatch: expected %d, found %d\n",
+                       codec_desc->type, codec->codec_type);
+                codec->codec_id = AV_CODEC_ID_NONE;
+                codec->codec_type = AVMEDIA_TYPE_UNKNOWN;
+                goto fail;
+            }
             codec->bit_rate = avio_rb32(pb);
             codec->flags = avio_rb32(pb);
             codec->flags2 = avio_rb32(pb);
@@ -389,6 +403,7 @@ static int ffm_read_header(AVFormatContext *s)
     AVStream *st;
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
+    const AVCodecDescriptor *codec_desc;
     int i, nb_streams;
     uint32_t tag;
 
@@ -426,7 +441,20 @@ static int ffm_read_header(AVFormatContext *s)
         codec = st->codec;
         /* generic info */
         codec->codec_id = avio_rb32(pb);
+        codec_desc = avcodec_descriptor_get(codec->codec_id);
+        if (!codec_desc) {
+            av_log(s, AV_LOG_ERROR, "Invalid codec id: %d\n", codec->codec_id);
+            codec->codec_id = AV_CODEC_ID_NONE;
+            goto fail;
+        }
         codec->codec_type = avio_r8(pb); /* codec_type */
+        if (codec->codec_type != codec_desc->type) {
+            av_log(s, AV_LOG_ERROR, "Codec type mismatch: expected %d, found %d\n",
+                   codec_desc->type, codec->codec_type);
+            codec->codec_id = AV_CODEC_ID_NONE;
+            codec->codec_type = AVMEDIA_TYPE_UNKNOWN;
+            goto fail;
+        }
         codec->bit_rate = avio_rb32(pb);
         codec->flags = avio_rb32(pb);
         codec->flags2 = avio_rb32(pb);
