@@ -131,10 +131,13 @@ static int decimate_frame(AVFilterContext *ctx,
                         cur->data[plane], cur->linesize[plane],
                         ref->data[plane], ref->linesize[plane],
                         FF_CEIL_RSHIFT(ref->width,  hsub),
-                        FF_CEIL_RSHIFT(ref->height, vsub)))
+                        FF_CEIL_RSHIFT(ref->height, vsub))) {
+            emms_c();
             return 0;
+        }
     }
 
+    emms_c();
     return 1;
 }
 
