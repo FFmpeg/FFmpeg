@@ -1887,10 +1887,9 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
     for (h=0; h < height; h++) {
         int w;
 
-        if (width >= 16
+        if (width >= 16) {
 #if COMPILE_TEMPLATE_SSE2
-            && !((((intptr_t)src1) | ((intptr_t)src2) | ((intptr_t)dest))&15)
-            )
+            if (!((((intptr_t)src1) | ((intptr_t)src2) | ((intptr_t)dest))&15)) {
         __asm__(
             "xor              %%"REG_a", %%"REG_a"  \n\t"
             "1:                                     \n\t"
@@ -1909,8 +1908,8 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
             ::"r"(dest), "r"(src1), "r"(src2), "r" ((x86_reg)width-15)
             : "memory", XMM_CLOBBERS("xmm0", "xmm1", "xmm2",) "%"REG_a
         );
-#else
-            )
+            } else
+#endif
         __asm__(
             "xor %%"REG_a", %%"REG_a"               \n\t"
             "1:                                     \n\t"
@@ -1936,7 +1935,8 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
             ::"r"(dest), "r"(src1), "r"(src2), "r" ((x86_reg)width-15)
             : "memory", "%"REG_a
         );
-#endif
+
+        }
         for (w= (width&(~15)); w < width; w++) {
             dest[2*w+0] = src1[w];
             dest[2*w+1] = src2[w];
@@ -1946,9 +1946,7 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
         src2 += src2Stride;
     }
     __asm__(
-#if !COMPILE_TEMPLATE_SSE2
             EMMS"       \n\t"
-#endif
             SFENCE"     \n\t"
             ::: "memory"
             );
