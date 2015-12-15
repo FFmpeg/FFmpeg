@@ -47,53 +47,47 @@ void projectGenerator::buildInterDependenciesHelper( const StaticList & vConfigO
         }
     }
 }
-void projectGenerator::buildInterDependencies( const string & sProjectName, StaticList & vLibs )
+void projectGenerator::buildInterDependencies(const string & sProjectName, StaticList & vLibs)
 {
     //Get the lib dependencies from the configure file
-    string sLibName = sProjectName.substr( 3 ) + "_deps";
+    string sLibName = sProjectName.substr(3) + "_deps";
     vector<string> vLibDeps;
-    if( m_ConfigHelper.getConfigList( sLibName, vLibDeps, false ) )
-    {
-        for( vector<string>::iterator itI = vLibDeps.begin( ); itI < vLibDeps.end( ); itI++ )
-        {
+    if (m_ConfigHelper.getConfigList(sLibName, vLibDeps, false)) {
+        for (vector<string>::iterator itI = vLibDeps.begin(); itI < vLibDeps.end(); itI++) {
             string sSearchTag = "lib" + *itI;
-            if( find( vLibs.begin( ), vLibs.end( ), sSearchTag ) == vLibs.end( ) )
-            {
-                vLibs.push_back( sSearchTag );
+            if (find(vLibs.begin(), vLibs.end(), sSearchTag) == vLibs.end()) {
+                vLibs.push_back(sSearchTag);
             }
         }
     }
 
     //Hard coded configuration checks for inter dependencies between different source libs.
-    if( sProjectName.compare( "libavfilter" ) == 0 )
-    {
-        buildInterDependenciesHelper( { "amovie_filter" }, { "avformat", "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "aresample_filter" }, { "swresample" }, vLibs );
-        buildInterDependenciesHelper( { "asyncts_filter" }, { "avresample" }, vLibs );
-        buildInterDependenciesHelper( { "atempo_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "ebur128_filter", "swresample" }, { "swresample" }, vLibs );
-        buildInterDependenciesHelper( { "elbg_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "fftfilt_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "mcdeint_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "movie_filter" }, { "avformat", "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "pan_filter" }, { "swresample" }, vLibs );
-        buildInterDependenciesHelper( { "pp_filter" }, { "postproc" }, vLibs );
-        buildInterDependenciesHelper( { "removelogo_filter" }, { "avformat", "avcodec", "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "resample_filter" }, { "avresample" }, vLibs );
-        buildInterDependenciesHelper( { "sab_filter" }, { "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "scale_filter" }, { "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "showspectrum_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "smartblur_filter" }, { "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "subtitles_filter" }, { "avformat", "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "scale2ref_filter" }, { "swscale" }, vLibs );
-    }
-    else if( sProjectName.compare( "libavdevice" ) == 0 )
-    {
-        buildInterDependenciesHelper( { "lavfi_indev" }, { "avfilter" }, vLibs );
-    }
-    else if( sProjectName.compare( "libavcodec" ) == 0 )
-    {
-        buildInterDependenciesHelper( { "opus_decoder" }, { "swresample" }, vLibs );
+    if (sProjectName.compare("libavfilter") == 0) {
+        buildInterDependenciesHelper({"amovie_filter"}, {"avformat", "avcodec"}, vLibs);
+        buildInterDependenciesHelper({"aresample_filter"}, {"swresample"}, vLibs);
+        buildInterDependenciesHelper({"asyncts_filter"}, {"avresample"}, vLibs);
+        buildInterDependenciesHelper({"atempo_filter"}, {"avcodec"}, vLibs);
+        buildInterDependenciesHelper({"ebur128_filter", "swresample"}, {"swresample"}, vLibs);
+        buildInterDependenciesHelper({"elbg_filter"}, {"avcodec"}, vLibs);
+        buildInterDependenciesHelper({"fftfilt_filter"}, {"avcodec"}, vLibs);
+        buildInterDependenciesHelper({"mcdeint_filter"}, {"avcodec"}, vLibs);
+        buildInterDependenciesHelper({"movie_filter"}, {"avformat", "avcodec"}, vLibs);
+        buildInterDependenciesHelper({"pan_filter"}, {"swresample"}, vLibs);
+        buildInterDependenciesHelper({"pp_filter"}, {"postproc"}, vLibs);
+        buildInterDependenciesHelper({"removelogo_filter"}, {"avformat", "avcodec", "swscale"}, vLibs);
+        buildInterDependenciesHelper({"resample_filter"}, {"avresample"}, vLibs);
+        buildInterDependenciesHelper({"sab_filter"}, {"swscale"}, vLibs);
+        buildInterDependenciesHelper({"scale_filter"}, {"swscale"}, vLibs);
+        buildInterDependenciesHelper({"showspectrum_filter"}, {"avcodec"}, vLibs);
+        buildInterDependenciesHelper({"smartblur_filter"}, {"swscale"}, vLibs);
+        buildInterDependenciesHelper({"subtitles_filter"}, {"avformat", "avcodec"}, vLibs);
+        buildInterDependenciesHelper({"scale2ref_filter"}, {"swscale"}, vLibs);
+        buildInterDependenciesHelper({"sofalizer_filter"}, {"avcodec"}, vLibs);
+        buildInterDependenciesHelper({"showfreqs_filter"}, {"avcodec"}, vLibs);
+    } else if (sProjectName.compare("libavdevice") == 0) {
+        buildInterDependenciesHelper({"lavfi_indev"}, {"avfilter"}, vLibs);
+    } else if (sProjectName.compare("libavcodec") == 0) {
+        buildInterDependenciesHelper({"opus_decoder"}, {"swresample"}, vLibs);
     }
 }
 
