@@ -218,7 +218,7 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
     /* sanity check for correct layer ID */
     if (lid) {
         /* future scalable or 3D video coding extensions */
-        avpriv_report_missing_feature(ctx, "Multi-layer HEVC coding\n");
+        avpriv_report_missing_feature(ctx, "Multi-layer HEVC coding");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -330,7 +330,7 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
     /* PACI packet */
     case 50:
         /* Temporal scalability control information (TSCI) */
-        avpriv_report_missing_feature(ctx, "PACI packets for RTP/HEVC\n");
+        avpriv_report_missing_feature(ctx, "PACI packets for RTP/HEVC");
         res = AVERROR_PATCHWELCOME;
         break;
     }

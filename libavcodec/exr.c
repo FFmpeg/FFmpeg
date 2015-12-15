@@ -1092,8 +1092,7 @@ static int decode_header(EXRContext *s)
 
                 current_pixel_type = bytestream2_get_le32(&ch_gb);
                 if (current_pixel_type >= EXR_UNKNOWN) {
-                    avpriv_report_missing_feature(s->avctx,
-                                                  "Pixel type %d.\n",
+                    avpriv_report_missing_feature(s->avctx, "Pixel type %d",
                                                   current_pixel_type);
                     return AVERROR_PATCHWELCOME;
                 }
