@@ -226,13 +226,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     vsubl.u8            q15, d2, d10                                   @ q15 = V - 128
 .endif
 
-.ifc \precision,16
-    process_16px_16     \ofmt
-.endif
-
-.ifc \precision,32
-    process_16px_32     \ofmt
-.endif
+    process_16px_\precision \ofmt
 
     subs                r8, r8, #16                                    @ width -= 16
     bgt                 2b
