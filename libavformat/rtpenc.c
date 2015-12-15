@@ -140,7 +140,7 @@ static int rtp_write_header(AVFormatContext *s1)
     } else
         s1->packet_size = s1->pb->max_packet_size;
     if (s1->packet_size <= 12) {
-        av_log(s1, AV_LOG_ERROR, "Max packet size %d too low\n", s1->packet_size);
+        av_log(s1, AV_LOG_ERROR, "Max packet size %u too low\n", s1->packet_size);
         return AVERROR(EIO);
     }
     s->buf = av_malloc(s1->packet_size);

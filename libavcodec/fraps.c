@@ -164,7 +164,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (version > 5) {
         av_log(avctx, AV_LOG_ERROR,
-               "This file is encoded with Fraps version %d. " \
+               "This file is encoded with Fraps version %u. "
                "This codec can only decode versions <= 5.\n", version);
         return AVERROR_PATCHWELCOME;
     }

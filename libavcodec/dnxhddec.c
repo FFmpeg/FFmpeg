@@ -138,7 +138,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     ctx->height = AV_RB16(buf + 0x18);
     ctx->width  = AV_RB16(buf + 0x1a);
 
-    ff_dlog(ctx->avctx, "width %d, height %d\n", ctx->width, ctx->height);
+    ff_dlog(ctx->avctx, "width %u, height %u\n", ctx->width, ctx->height);
 
     if (buf[0x21] == 0x58) { /* 10 bit */
         ctx->bit_depth = ctx->avctx->bits_per_raw_sample = 10;
@@ -185,7 +185,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     }
 
     if (buf_size < ctx->cid_table->coding_unit_size) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "incorrect frame size (%d < %d).\n",
+        av_log(ctx->avctx, AV_LOG_ERROR, "incorrect frame size (%d < %u).\n",
                buf_size, ctx->cid_table->coding_unit_size);
         return AVERROR_INVALIDDATA;
     }
@@ -194,7 +194,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     ctx->mb_height = buf[0x16d];
 
     ff_dlog(ctx->avctx,
-            "mb width %d, mb height %d\n", ctx->mb_width, ctx->mb_height);
+            "mb width %u, mb height %u\n", ctx->mb_width, ctx->mb_height);
 
     if ((ctx->height + 15) >> 4 == ctx->mb_height && frame->interlaced_frame)
         ctx->height <<= 1;
@@ -202,7 +202,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if (ctx->mb_height > 68 ||
         (ctx->mb_height << frame->interlaced_frame) > (ctx->height + 15) >> 4) {
         av_log(ctx->avctx, AV_LOG_ERROR,
-               "mb height too big: %d\n", ctx->mb_height);
+               "mb height too big: %u\n", ctx->mb_height);
         return AVERROR_INVALIDDATA;
     }
 
@@ -442,7 +442,7 @@ decode_coding_unit:
 
     if ((avctx->width || avctx->height) &&
         (ctx->width != avctx->width || ctx->height != avctx->height)) {
-        av_log(avctx, AV_LOG_WARNING, "frame size changed: %dx%d -> %dx%d\n",
+        av_log(avctx, AV_LOG_WARNING, "frame size changed: %dx%d -> %ux%u\n",
                avctx->width, avctx->height, ctx->width, ctx->height);
         first_field = 1;
     }
