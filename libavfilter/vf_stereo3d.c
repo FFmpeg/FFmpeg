@@ -614,24 +614,61 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         ileft = iright = inpicref;
     };
 
-    out = oleft = oright = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&s->prev);
-        av_frame_free(&inpicref);
-        return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(out, inpicref);
-
-    if (s->out.format == ALTERNATING_LR ||
-        s->out.format == ALTERNATING_RL) {
-        oright = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!oright) {
+    if ((s->out.format == ALTERNATING_LR ||
+         s->out.format == ALTERNATING_RL) &&
+        (s->in.format == SIDE_BY_SIDE_LR ||
+         s->in.format == SIDE_BY_SIDE_RL ||
+         s->in.format == SIDE_BY_SIDE_2_LR ||
+         s->in.format == SIDE_BY_SIDE_2_RL ||
+         s->in.format == ABOVE_BELOW_LR ||
+         s->in.format == ABOVE_BELOW_RL ||
+         s->in.format == ABOVE_BELOW_2_LR ||
+         s->in.format == ABOVE_BELOW_2_RL)) {
+        oright = av_frame_clone(inpicref);
+        oleft  = av_frame_clone(inpicref);
+        if (!oright || !oleft) {
+            av_frame_free(&oright);
             av_frame_free(&oleft);
             av_frame_free(&s->prev);
             av_frame_free(&inpicref);
             return AVERROR(ENOMEM);
         }
-        av_frame_copy_props(oright, inpicref);
+    } else if ((s->out.format == MONO_L ||
+                s->out.format == MONO_R) &&
+        (s->in.format == SIDE_BY_SIDE_LR ||
+         s->in.format == SIDE_BY_SIDE_RL ||
+         s->in.format == SIDE_BY_SIDE_2_LR ||
+         s->in.format == SIDE_BY_SIDE_2_RL ||
+         s->in.format == ABOVE_BELOW_LR ||
+         s->in.format == ABOVE_BELOW_RL ||
+         s->in.format == ABOVE_BELOW_2_LR ||
+         s->in.format == ABOVE_BELOW_2_RL)) {
+        out = oleft = oright = av_frame_clone(inpicref);
+        if (!out) {
+            av_frame_free(&s->prev);
+            av_frame_free(&inpicref);
+            return AVERROR(ENOMEM);
+        }
+    } else {
+        out = oleft = oright = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            av_frame_free(&s->prev);
+            av_frame_free(&inpicref);
+            return AVERROR(ENOMEM);
+        }
+        av_frame_copy_props(out, inpicref);
+
+        if (s->out.format == ALTERNATING_LR ||
+            s->out.format == ALTERNATING_RL) {
+            oright = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+            if (!oright) {
+                av_frame_free(&oleft);
+                av_frame_free(&s->prev);
+                av_frame_free(&inpicref);
+                return AVERROR(ENOMEM);
+            }
+            av_frame_copy_props(oright, inpicref);
+        }
     }
 
     for (i = 0; i < 4; i++) {
@@ -644,6 +681,32 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
 
     switch (s->out.format) {
+    case ALTERNATING_LR:
+    case ALTERNATING_RL:
+        switch (s->in.format) {
+        case ABOVE_BELOW_LR:
+        case ABOVE_BELOW_RL:
+        case ABOVE_BELOW_2_LR:
+        case ABOVE_BELOW_2_RL:
+        case SIDE_BY_SIDE_LR:
+        case SIDE_BY_SIDE_RL:
+        case SIDE_BY_SIDE_2_LR:
+        case SIDE_BY_SIDE_2_RL:
+            oleft->width   = outlink->w;
+            oright->width  = outlink->w;
+            oleft->height  = outlink->h;
+            oright->height = outlink->h;
+
+            for (i = 0; i < s->nb_planes; i++) {
+                oleft->data[i]  += s->in_off_left[i];
+                oright->data[i] += s->in_off_right[i];
+            }
+            break;
+        default:
+            goto copy;
+            break;
+        }
+        break;
     case HDMI:
         for (i = 0; i < s->nb_planes; i++) {
             int j, h = s->height >> ((i == 1 || i == 2) ? s->vsub : 0);
@@ -652,8 +715,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
             for (j = h; j < h + b; j++)
                 memset(oleft->data[i] + j * s->linesize[i], 0, s->linesize[i]);
         }
-    case ALTERNATING_LR:
-    case ALTERNATING_RL:
     case SIDE_BY_SIDE_LR:
     case SIDE_BY_SIDE_RL:
     case SIDE_BY_SIDE_2_LR:
@@ -664,6 +725,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ABOVE_BELOW_2_RL:
     case INTERLEAVE_ROWS_LR:
     case INTERLEAVE_ROWS_RL:
+copy:
         for (i = 0; i < s->nb_planes; i++) {
             av_image_copy_plane(oleft->data[i] + out_off_left[i],
                                 oleft->linesize[i] * s->out.row_step,
@@ -680,11 +742,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case MONO_L:
         iright = ileft;
     case MONO_R:
-        for (i = 0; i < s->nb_planes; i++) {
-            av_image_copy_plane(out->data[i], out->linesize[i],
-                                iright->data[i] + s->in_off_left[i],
-                                iright->linesize[i] * s->in.row_step,
-                                s->linesize[i], s->pheight[i]);
+        switch (s->in.format) {
+        case ABOVE_BELOW_LR:
+        case ABOVE_BELOW_RL:
+        case ABOVE_BELOW_2_LR:
+        case ABOVE_BELOW_2_RL:
+        case SIDE_BY_SIDE_LR:
+        case SIDE_BY_SIDE_RL:
+        case SIDE_BY_SIDE_2_LR:
+        case SIDE_BY_SIDE_2_RL:
+            out->width  = outlink->w;
+            out->height = outlink->h;
+
+            for (i = 0; i < s->nb_planes; i++) {
+                out->data[i] += s->in_off_left[i];
+            }
+            break;
+        default:
+            for (i = 0; i < s->nb_planes; i++) {
+                av_image_copy_plane(out->data[i], out->linesize[i],
+                                    iright->data[i] + s->in_off_left[i],
+                                    iright->linesize[i] * s->in.row_step,
+                                    s->linesize[i], s->pheight[i]);
+            }
+            break;
         }
         break;
     case ANAGLYPH_RB_GRAY:
