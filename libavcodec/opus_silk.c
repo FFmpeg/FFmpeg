@@ -824,7 +824,7 @@ static inline void silk_stabilize_lsf(int16_t nlsf[16], int order, const uint16_
 
             /* upper extent */
             for (i = order; i > k; i--)
-                max_center -= min_delta[k];
+                max_center -= min_delta[i];
             max_center -= min_delta[k] >> 1;
 
             /* move apart */
