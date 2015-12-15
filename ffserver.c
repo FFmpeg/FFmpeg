@@ -443,7 +443,7 @@ static void start_children(FFServerStream *feed)
         feed->pid = fork();
         if (feed->pid < 0) {
             http_log("Unable to create children: %s\n", strerror(errno));
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         if (feed->pid)
