@@ -1125,6 +1125,11 @@ static int config_input(AVFilterLink *inlink)
         av_fft_end(s->ifft[1]);
         s->ifft[0] = av_fft_init(log2(s->n_fft), 1);
         s->ifft[1] = av_fft_init(log2(s->n_fft), 1);
+
+        if (!s->fft[0] || !s->fft[1] || !s->ifft[0] || !s->ifft[1]) {
+            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts.\n");
+            return AVERROR(ENOMEM);
+        }
     }
 
     /* Allocate memory for the impulse responses, delays and the ringbuffers */
