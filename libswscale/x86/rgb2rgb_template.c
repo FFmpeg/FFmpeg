@@ -1887,8 +1887,10 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
     for (h=0; h < height; h++) {
         int w;
 
-        if (width >= 16)
+        if (width >= 16
 #if COMPILE_TEMPLATE_SSE2
+            && !((((intptr_t)src1) | ((intptr_t)src2) | ((intptr_t)dest))&15)
+            )
         __asm__(
             "xor              %%"REG_a", %%"REG_a"  \n\t"
             "1:                                     \n\t"
@@ -1908,6 +1910,7 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
             : "memory", XMM_CLOBBERS("xmm0", "xmm1", "xmm2",) "%"REG_a
         );
 #else
+            )
         __asm__(
             "xor %%"REG_a", %%"REG_a"               \n\t"
             "1:                                     \n\t"
