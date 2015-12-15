@@ -103,7 +103,8 @@
     vmovl.u8            q15, \y1                                       @ 8px of y
 
     vdup.16             q5, r9                                         @ q5  = y_offset
-    vdup.16             q7, r10                                        @ q7  = y_coeff
+    vmov                d14, d0                                        @ q7  = y_coeff
+    vmov                d15, d0                                        @ q7  = y_coeff
 
     vsub.s16            q14, q5
     vsub.s16            q15, q5
@@ -184,7 +185,7 @@
     compute_8px_32      r11, d30, \ofmt
 .endm
 
-.macro load_args
+.macro load_args_nvx
     push                {r4-r12, lr}
     vpush               {q4-q7}
     ldr                 r4, [sp, #104]                                 @ r4  = srcY
@@ -206,9 +207,42 @@
     sub                 r7, r7, r0                                     @ r7 = linesizeC     - width     (paddingC)
 .endm
 
+.macro load_args_yuv420p
+    push                {r4-r12, lr}
+    vpush               {q4-q7}
+    ldr                 r4, [sp, #104]                                 @ r4  = srcY
+    ldr                 r5, [sp, #108]                                 @ r5  = linesizeY
+    ldr                 r6, [sp, #112]                                 @ r6  = srcU
+    ldr                 r8, [sp, #128]                                 @ r8  = table
+    ldr                 r9, [sp, #132]                                 @ r9  = y_offset
+    ldr                 r10,[sp, #136]                                 @ r10 = y_coeff
+    vdup.16             d0, r10                                        @ d0  = y_coeff
+    vld1.16             {d1}, [r8]                                     @ d1  = *table
+    add                 r11, r2, r3                                    @ r11 = dst + linesize (dst2)
+    add                 r12, r4, r5                                    @ r12 = srcY + linesizeY (srcY2)
+    lsl                 r3, r3, #1
+    lsl                 r5, r5, #1
+    lsl                 r8, r0, #2
+    sub                 r3, r3, r8                                     @ r3 = linesize  * 2 - width * 4 (padding)
+    sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
+    ldr                 r10,[sp, #120]                                 @ r10 = srcV
+.endm
+
 .macro declare_func ifmt ofmt precision
 function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
-    load_args
+
+.ifc \ifmt,nv12
+    load_args_nvx
+.endif
+
+.ifc \ifmt,nv21
+    load_args_nvx
+.endif
+
+.ifc \ifmt,yuv420p
+    load_args_yuv420p
+.endif
+
 1:
     mov                 r8, r0                                         @ r8 = width
 2:
@@ -216,15 +250,29 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     pld [r4, #64*3]
     pld [r12, #64*3]
 
-    vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
     vmov.i8             d10, #128
+
 .ifc \ifmt,nv12
+    vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
-.else
+.endif
+
+.ifc \ifmt,nv21
+    vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
     vsubl.u8            q14, d3, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d2, d10                                   @ q15 = V - 128
 .endif
+
+.ifc \ifmt,yuv420p
+    pld [r10, #64*3]
+
+    vld1.8              d2, [r6]!                                      @ d2: chroma red line
+    vld1.8              d3, [r10]!                                     @ d3: chroma blue line
+    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
+    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+.endif
+
 
     process_16px_\precision \ofmt
 
@@ -235,7 +283,24 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     add                 r4, r4, r5                                     @ srcY  += paddingY
     add                 r11, r11, r3                                   @ dst2  += padding
     add                 r12, r12, r5                                   @ srcY2 += paddingY
+
+.ifc \ifmt,nv12
     add                 r6, r6, r7                                     @ srcC  += paddingC
+.endif
+
+.ifc \ifmt,nv21
+    add                 r6, r6, r7                                     @ srcC  += paddingC
+.endif
+
+.ifc \ifmt,yuv420p
+    ldr                 r7, [sp, #116]                                 @ r7     = linesizeU
+    sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeU - width / 2 (paddingU)
+    add                 r6, r6, r7                                     @ srcU  += paddingU
+
+    ldr                 r7, [sp, #124]                                 @ r7     = linesizeV
+    sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeV - width / 2 (paddingV)
+    add                 r10, r10, r7                                   @ srcU  += paddingV
+.endif
 
     subs                r1, r1, #2                                     @ height -= 2
     bgt                 1b
@@ -257,3 +322,5 @@ declare_rgb_funcs nv12, 16
 declare_rgb_funcs nv21, 16
 declare_rgb_funcs nv12, 32
 declare_rgb_funcs nv21, 32
+declare_rgb_funcs yuv420p, 16
+declare_rgb_funcs yuv420p, 32
