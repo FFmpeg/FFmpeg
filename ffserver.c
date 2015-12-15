@@ -3622,7 +3622,7 @@ static void build_file_streams(void)
 }
 
 /* compute the needed AVStream for each feed */
-static void build_feed_streams(void)
+static int build_feed_streams(void)
 {
     FFServerStream *stream, *feed;
     int i;
@@ -3658,7 +3658,7 @@ static void build_feed_streams(void)
                 int ret = ffio_set_buf_size(s->pb, FFM_PACKET_SIZE);
                 if (ret < 0) {
                     http_log("Failed to set buffer size\n");
-                    exit(1);
+                    goto bail;
                 }
 
                 /* Now see if it matches */
@@ -3723,7 +3723,7 @@ static void build_feed_streams(void)
                 if (feed->readonly) {
                     http_log("Unable to delete feed file '%s' as it is marked readonly\n",
                         feed->feed_filename);
-                    exit(1);
+                    goto bail;
                 }
                 unlink(feed->feed_filename);
             }
@@ -3733,27 +3733,27 @@ static void build_feed_streams(void)
 
             if (!s) {
                 http_log("Failed to allocate context\n");
-                exit(1);
+                goto bail;
             }
 
             if (feed->readonly) {
                 http_log("Unable to create feed file '%s' as it is marked readonly\n",
                     feed->feed_filename);
-                exit(1);
+                goto bail;
             }
 
             /* only write the header of the ffm file */
             if (avio_open(&s->pb, feed->feed_filename, AVIO_FLAG_WRITE) < 0) {
                 http_log("Could not open output feed file '%s'\n",
                          feed->feed_filename);
-                exit(1);
+                goto bail;
             }
             s->oformat = feed->fmt;
             s->nb_streams = feed->nb_streams;
             s->streams = feed->streams;
             if (avformat_write_header(s, NULL) < 0) {
                 http_log("Container doesn't support the required parameters\n");
-                exit(1);
+                goto bail;
             }
             /* XXX: need better API */
             av_freep(&s->priv_data);
@@ -3767,7 +3767,7 @@ static void build_feed_streams(void)
         if (fd < 0) {
             http_log("Could not open output feed file '%s'\n",
                     feed->feed_filename);
-            exit(1);
+            goto bail;
         }
 
         feed->feed_write_index = FFMAX(ffm_read_write_index(fd), FFM_PACKET_SIZE);
@@ -3778,6 +3778,10 @@ static void build_feed_streams(void)
 
         close(fd);
     }
+    return 0;
+
+bail:
+    return -1;
 }
 
 /* compute the bandwidth used by each stream */
@@ -3858,7 +3862,9 @@ static const OptionDef options[] = {
 int main(int argc, char **argv)
 {
     struct sigaction sigact = { { 0 } };
-    int ret = 0;
+    int cfg_parsed;
+    int ret = EXIT_FAILURE;
+
 
     config.filename = av_strdup("/etc/ffserver.conf");
 
@@ -3880,13 +3886,11 @@ int main(int argc, char **argv)
     sigact.sa_flags = SA_NOCLDSTOP | SA_RESTART;
     sigaction(SIGCHLD, &sigact, 0);
 
-    if ((ret = ffserver_parse_ffconfig(config.filename, &config)) < 0) {
+    if ((cfg_parsed = ffserver_parse_ffconfig(config.filename, &config)) < 0) {
         fprintf(stderr, "Error reading configuration file '%s': %s\n",
-                config.filename, av_err2str(ret));
-        av_freep(&config.filename);
-        exit(1);
+                config.filename, av_err2str(cfg_parsed));
+        goto bail;
     }
-    av_freep(&config.filename);
 
     /* open log file if needed */
     if (config.logfilename[0] != '\0') {
@@ -3899,7 +3903,10 @@ int main(int argc, char **argv)
 
     build_file_streams();
 
-    build_feed_streams();
+    if (build_feed_streams() < 0) {
+        http_log("Could not setup feed streams\n");
+        goto bail;
+    }
 
     compute_bandwidth();
 
@@ -3908,8 +3915,13 @@ int main(int argc, char **argv)
 
     if (http_server() < 0) {
         http_log("Could not start server\n");
-        exit(1);
+        goto bail;
     }
 
-    return 0;
+    ret=EXIT_SUCCESS;
+
+bail:
+    av_freep (&config.filename);
+    avformat_network_deinit();
+    return ret;
 }
