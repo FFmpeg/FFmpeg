@@ -3807,7 +3807,8 @@ static void compute_bandwidth(void)
 static void handle_child_exit(int sig)
 {
     pid_t pid;
-    int status, uptime;
+    int status;
+    time_t uptime;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
         FFServerStream *feed;
@@ -3819,7 +3820,8 @@ static void handle_child_exit(int sig)
             uptime = time(0) - feed->pid_start;
             feed->pid = 0;
             fprintf(stderr,
-                    "%s: Pid %"PRId64" exited with status %d after %d seconds\n",
+                    "%s: Pid %"PRId64" exited with status %d after %"PRId64" "
+                        "seconds\n",
                     feed->filename, (int64_t) pid, status, uptime);
 
             if (uptime < 30)
