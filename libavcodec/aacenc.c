@@ -904,7 +904,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     s->channels = avctx->channels;
     s->chan_map = aac_chan_configs[s->channels-1];
-    s->random_state = 0x1f2e3d4c;
     s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
     avctx->extradata_size = 5;
     avctx->frame_size = 1024;
@@ -997,6 +996,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto fail;
     s->psypp = ff_psy_preprocess_init(avctx);
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
+    av_lfg_init(&s->lfg, 0x72adca55);
 
     if (HAVE_MIPSDSP)
         ff_aac_coder_init_mips(s);

@@ -2916,6 +2916,12 @@ Set elevation of virtual speakers in deg. Default is 0.
 @item radius
 Set distance in meters between loudspeakers and the listener with near-field
 HRTFs. Default is 1.
+
+@item type
+Set processing type. Can be @var{time} or @var{freq}. @var{time} is
+processing audio in time domain which is slow but gives high quality output.
+@var{freq} is processing audio in frequency domain which is fast but gives
+mediocre output. Default is @var{freq}.
 @end table
 
 @section stereotools

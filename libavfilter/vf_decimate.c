@@ -42,7 +42,7 @@ typedef struct {
     AVFrame *last;          ///< last frame from the previous queue
     AVFrame **clean_src;    ///< frame queue for the clean source
     int got_frame[2];       ///< frame request flag for each input stream
-    double ts_unit;         ///< timestamp units for the output frames
+    AVRational ts_unit;     ///< timestamp units for the output frames
     int64_t start_pts;      ///< base for output timestamps
     uint32_t eof;           ///< bitmask for end of stream
     int hsub, vsub;         ///< chroma subsampling values
@@ -217,7 +217,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 av_frame_free(&frame);
                 frame = dm->clean_src[i];
             }
-            frame->pts = outlink->frame_count * dm->ts_unit +
+            frame->pts = av_rescale_q(outlink->frame_count, dm->ts_unit, (AVRational){1,1}) +
                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
             ret = ff_filter_frame(outlink, frame);
             if (ret < 0)
@@ -362,12 +362,21 @@ static int config_output(AVFilterLink *outlink)
     DecimateContext *dm = ctx->priv;
     const AVFilterLink *inlink =
         ctx->inputs[dm->ppsrc ? INPUT_CLEANSRC : INPUT_MAIN];
+    const AVFilterLink *inlink_main =
+        ctx->inputs[INPUT_MAIN];
     AVRational fps = inlink->frame_rate;
 
     if (!fps.num || !fps.den) {
         av_log(ctx, AV_LOG_ERROR, "The input needs a constant frame rate; "
                "current rate of %d/%d is invalid\n", fps.num, fps.den);
         return AVERROR(EINVAL);
+    }
+
+    if (inlink->w != inlink_main->w ||
+        inlink->h != inlink_main->h ||
+        inlink->format != inlink_main->format) {
+        av_log(ctx, AV_LOG_ERROR, "frame parameters differ between inputs\n");
+        return AVERROR_PATCHWELCOME;
     }
     fps = av_mul_q(fps, (AVRational){dm->cycle - 1, dm->cycle});
     av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> %d/%d\n",
@@ -377,7 +386,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->w = inlink->w;
     outlink->h = inlink->h;
-    dm->ts_unit = av_q2d(av_inv_q(av_mul_q(fps, outlink->time_base)));
+    dm->ts_unit = av_inv_q(av_mul_q(fps, outlink->time_base));
     return 0;
 }
 

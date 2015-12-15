@@ -183,16 +183,6 @@ static av_always_inline float bval2bmax(float b)
 }
 
 /*
- * linear congruential pseudorandom number generator, copied from the decoder
- */
-static inline int lcg_random(unsigned previous_val)
-{
-    union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
-    return v.s;
-}
-
-
-/*
  * Compute a nextband map to be used with SF delta constraint utilities.
  * The nextband array should contain 128 elements, and positions that don't
  * map to valid, nonzero bands of the form w*16+g (with w being the initial

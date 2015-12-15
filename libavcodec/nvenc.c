@@ -843,10 +843,10 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         ctx->encode_config.rcParams.initialRCQP.qpInterP  = qp_inter_p;
 
         if(avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
-            ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p * fabs(avctx->i_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpIntra += avctx->i_quant_offset;
-            ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p * fabs(avctx->b_quant_factor);
-            ctx->encode_config.rcParams.initialRCQP.qpInterB += avctx->b_quant_offset;
+            ctx->encode_config.rcParams.initialRCQP.qpIntra = av_clip(
+                qp_inter_p * fabs(avctx->i_quant_factor) + avctx->i_quant_offset, 0, 51);
+            ctx->encode_config.rcParams.initialRCQP.qpInterB = av_clip(
+                qp_inter_p * fabs(avctx->b_quant_factor) + avctx->b_quant_offset, 0, 51);
         } else {
             ctx->encode_config.rcParams.initialRCQP.qpIntra = qp_inter_p;
             ctx->encode_config.rcParams.initialRCQP.qpInterB = qp_inter_p;
@@ -875,6 +875,9 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         ctx->encode_config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = avctx->color_trc;
 
         ctx->encode_config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = avctx->color_range == AVCOL_RANGE_JPEG;
+
+        ctx->encode_config.encodeCodecConfig.h264Config.sliceMode = 3;
+        ctx->encode_config.encodeCodecConfig.h264Config.sliceModeData = 1;
 
         ctx->encode_config.encodeCodecConfig.h264Config.disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
         ctx->encode_config.encodeCodecConfig.h264Config.repeatSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
@@ -940,6 +943,9 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         break;
     case AV_CODEC_ID_H265:
+        ctx->encode_config.encodeCodecConfig.hevcConfig.sliceMode = 3;
+        ctx->encode_config.encodeCodecConfig.hevcConfig.sliceModeData = 1;
+
         ctx->encode_config.encodeCodecConfig.hevcConfig.disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
         ctx->encode_config.encodeCodecConfig.hevcConfig.repeatSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
 
