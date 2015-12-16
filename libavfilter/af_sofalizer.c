@@ -567,7 +567,7 @@ static int compensate_volume(AVFilterContext *ctx)
     float compensate;
     float energy = 0;
     float *ir;
-    int m, j;
+    int m;
 
     if (s->sofa.ncid) {
         /* find IR at front center position in the SOFA file (IR closest to 0°,0°,1m) */
@@ -575,15 +575,17 @@ static int compensate_volume(AVFilterContext *ctx)
         m = find_m(s, 0, 0, 1);
         /* get energy of that IR and compensate volume */
         ir = sofa->data_ir + 2 * m * sofa->n_samples;
-        for (j = 0; j < sofa->n_samples; j++) {
-            energy += *(ir + j) * *(ir + j);
+        if (sofa->n_samples & 31) {
+            energy = avpriv_scalarproduct_float_c(ir, ir, sofa->n_samples);
+        } else {
+            energy = s->fdsp->scalarproduct_float(ir, ir, sofa->n_samples);
         }
         compensate = 256 / (sofa->n_samples * sqrt(energy));
         av_log(ctx, AV_LOG_DEBUG, "Compensate-factor: %f\n", compensate);
         ir = sofa->data_ir;
-        for (j = 0; j < sofa->n_samples * sofa->m_dim * 2; j++) {
-            ir[j] *= compensate; /* apply volume compensation to IRs */
-        }
+        /* apply volume compensation to IRs */
+        s->fdsp->vector_fmul_scalar(ir, ir, compensate, sofa->n_samples * sofa->m_dim * 2);
+        emms_c();
     }
 
     return 0;
