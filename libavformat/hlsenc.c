@@ -430,7 +430,7 @@ static int hls_window(AVFormatContext *s, int last)
         }
 
         if (hls->flags & HLS_ROUND_DURATIONS)
-            avio_printf(out, "#EXTINF:%d,\n",  (int)round(en->duration));
+            avio_printf(out, "#EXTINF:%ld,\n",  lrint(en->duration));
         else
             avio_printf(out, "#EXTINF:%f,\n", en->duration);
         if (hls->flags & HLS_SINGLE_FILE)
