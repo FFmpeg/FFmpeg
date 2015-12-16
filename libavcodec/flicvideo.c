@@ -116,7 +116,7 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         case 15 : avctx->pix_fmt = AV_PIX_FMT_RGB555; break;
         case 16 : avctx->pix_fmt = AV_PIX_FMT_RGB565; break;
         case 24 : avctx->pix_fmt = AV_PIX_FMT_BGR24; /* Supposedly BGR, but no files to test with */
-                  av_log(avctx, AV_LOG_ERROR, "24Bpp FLC/FLX is unsupported due to no test files.\n");
+                  avpriv_request_sample(avctx, "24bpp FLC/FLX");
                   return AVERROR_PATCHWELCOME;
         default :
                   av_log(avctx, AV_LOG_ERROR, "Unknown FLC/FLX depth of %d Bpp is unsupported.\n",depth);
@@ -695,14 +695,6 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int flic_decode_frame_24BPP(AVCodecContext *avctx,
-                                   void *data, int *got_frame,
-                                   const uint8_t *buf, int buf_size)
-{
-  av_log(avctx, AV_LOG_ERROR, "24Bpp FLC Unsupported due to lack of test files.\n");
-  return AVERROR_PATCHWELCOME;
-}
-
 static int flic_decode_frame(AVCodecContext *avctx,
                              void *data, int *got_frame,
                              AVPacket *avpkt)
@@ -719,8 +711,8 @@ static int flic_decode_frame(AVCodecContext *avctx,
                                         buf, buf_size);
     }
     else if (avctx->pix_fmt == AV_PIX_FMT_BGR24) {
-      return flic_decode_frame_24BPP(avctx, data, got_frame,
-                                     buf, buf_size);
+        avpriv_request_sample(avctx, "24bpp FLC");
+        return AVERROR_PATCHWELCOME;
     }
 
     /* Should not get  here, ever as the pix_fmt is processed */
