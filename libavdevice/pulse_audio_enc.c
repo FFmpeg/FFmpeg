@@ -23,6 +23,7 @@
 #include <pulse/error.h>
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/log.h"
@@ -333,7 +334,7 @@ static int pulse_set_volume(PulseData *s, double volume)
     pa_volume_t vol;
     const pa_sample_spec *ss = pa_stream_get_sample_spec(s->stream);
 
-    vol = pa_sw_volume_multiply(lround(volume * PA_VOLUME_NORM), s->base_volume);
+    vol = pa_sw_volume_multiply(lrint(volume * PA_VOLUME_NORM), s->base_volume);
     pa_cvolume_set(&cvol, ss->channels, PA_VOLUME_NORM);
     pa_sw_cvolume_multiply_scalar(&cvol, &cvol, vol);
     pa_threaded_mainloop_lock(s->mainloop);
