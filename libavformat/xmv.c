@@ -573,6 +573,7 @@ static int xmv_read_packet(AVFormatContext *s,
 AVInputFormat ff_xmv_demuxer = {
     .name           = "xmv",
     .long_name      = NULL_IF_CONFIG_SMALL("Microsoft XMV"),
+    .extensions     = "xmv",
     .priv_data_size = sizeof(XMVDemuxContext),
     .read_probe     = xmv_probe,
     .read_header    = xmv_read_header,
