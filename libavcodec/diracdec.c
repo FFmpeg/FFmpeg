@@ -1128,7 +1128,22 @@ static int dirac_unpack_idwt_params(DiracContext *s)
 
     CHECKEDREAD(s->wavelet_depth, tmp > MAX_DWT_LEVELS || tmp < 1, "invalid number of DWT decompositions\n")
 
-    if (s->low_delay) {
+    if (!s->low_delay) {
+        /* Codeblock parameters (core syntax only) */
+        if (get_bits1(gb)) {
+            for (i = 0; i <= s->wavelet_depth; i++) {
+                CHECKEDREAD(s->codeblock[i].width , tmp < 1 || tmp > (s->avctx->width >>s->wavelet_depth-i), "codeblock width invalid\n")
+                CHECKEDREAD(s->codeblock[i].height, tmp < 1 || tmp > (s->avctx->height>>s->wavelet_depth-i), "codeblock height invalid\n")
+            }
+
+            CHECKEDREAD(s->codeblock_mode, tmp > 1, "unknown codeblock mode\n")
+        }
+        else {
+            for (i = 0; i <= s->wavelet_depth; i++)
+                s->codeblock[i].width = s->codeblock[i].height = 1;
+        }
+    }
+    else {
         s->num_x        = svq3_get_ue_golomb(gb);
         s->num_y        = svq3_get_ue_golomb(gb);
         if (s->ld_picture) {
