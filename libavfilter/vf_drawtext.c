@@ -814,7 +814,7 @@ static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
         if (isnan(pts)) {
             av_bprintf(bp, " ??:??:??.???");
         } else {
-            int64_t ms = round(pts * 1000);
+            int64_t ms = llrint(pts * 1000);
             char sign = ' ';
             if (ms < 0) {
                 sign = '-';
