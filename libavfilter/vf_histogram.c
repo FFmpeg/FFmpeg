@@ -281,7 +281,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             int col_height;
 
             if (h->levels_mode)
-                col_height = round(h->level_height * (1. - (log2(h->histogram[i] + 1) / max_hval_log)));
+                col_height = lrint(h->level_height * (1. - (log2(h->histogram[i] + 1) / max_hval_log)));
             else
                 col_height = h->level_height - (h->histogram[i] * (int64_t)h->level_height + max_hval - 1) / max_hval;
 
