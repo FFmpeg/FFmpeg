@@ -164,9 +164,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return 0;
     dm->got_frame[INPUT_MAIN] = dm->got_frame[INPUT_CLEANSRC] = 0;
 
+    if (dm->ppsrc)
+        in = dm->clean_src[dm->fid];
+
     if (in) {
         /* update frame metrics */
-        prv = dm->fid ? dm->queue[dm->fid - 1].frame : dm->last;
+        prv = dm->fid ? (dm->ppsrc ? dm->clean_src[dm->fid - 1] : dm->queue[dm->fid - 1].frame) : dm->last;
         if (!prv) {
             dm->queue[dm->fid].maxbdiff = INT64_MAX;
             dm->queue[dm->fid].totdiff  = INT64_MAX;
