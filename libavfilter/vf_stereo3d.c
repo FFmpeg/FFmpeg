@@ -148,7 +148,6 @@ typedef struct Stereo3DContext {
     int hsub, vsub;
     int pixstep[4];
     AVFrame *prev;
-    double ts_unit;
     int blanks;
     int in_off_left[4], in_off_right[4];
     Stereo3DDSPContext dsp;
@@ -544,7 +543,6 @@ static int config_output(AVFilterLink *outlink)
         return ret;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     av_image_fill_max_pixsteps(s->pixstep, NULL, desc);
-    s->ts_unit = av_q2d(av_inv_q(av_mul_q(outlink->frame_rate, outlink->time_base)));
     s->pheight[1] = s->pheight[2] = FF_CEIL_RSHIFT(s->height, desc->log2_chroma_h);
     s->pheight[0] = s->pheight[3] = s->height;
     s->hsub = desc->log2_chroma_w;
@@ -593,10 +591,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *oleft, *oright, *ileft, *iright;
     int out_off_left[4], out_off_right[4];
-    int i;
+    int i, ret;
 
     if (s->in.format == s->out.format)
         return ff_filter_frame(outlink, inpicref);
+
+    switch (s->out.format) {
+    case ALTERNATING_LR:
+    case ALTERNATING_RL:
+        if (!s->prev) {
+            s->prev = inpicref;
+            return 0;
+        }
+        break;
+    };
 
     switch (s->in.format) {
     case ALTERNATING_LR:
@@ -624,8 +632,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
          s->in.format == ABOVE_BELOW_RL ||
          s->in.format == ABOVE_BELOW_2_LR ||
          s->in.format == ABOVE_BELOW_2_RL)) {
-        oright = av_frame_clone(inpicref);
-        oleft  = av_frame_clone(inpicref);
+        oright = av_frame_clone(s->prev);
+        oleft  = av_frame_clone(s->prev);
         if (!oright || !oleft) {
             av_frame_free(&oright);
             av_frame_free(&oleft);
@@ -649,6 +657,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
             av_frame_free(&inpicref);
             return AVERROR(ENOMEM);
         }
+    } else if ((s->out.format == MONO_L && s->in.format == ALTERNATING_LR) ||
+               (s->out.format == MONO_R && s->in.format == ALTERNATING_RL)) {
+        s->prev->pts /= 2;
+        ret = ff_filter_frame(outlink, s->prev);
+        av_frame_free(&inpicref);
+        s->prev = NULL;
+        return ret;
+    } else if ((s->out.format == MONO_L && s->in.format == ALTERNATING_RL) ||
+               (s->out.format == MONO_R && s->in.format == ALTERNATING_LR)) {
+        av_frame_free(&s->prev);
+        inpicref->pts /= 2;
+        return ff_filter_frame(outlink, inpicref);
+    } else if ((s->out.format == ALTERNATING_LR && s->in.format == ALTERNATING_RL) ||
+               (s->out.format == ALTERNATING_RL && s->in.format == ALTERNATING_LR)) {
+        FFSWAP(int64_t, s->prev->pts, inpicref->pts);
+        ff_filter_frame(outlink, inpicref);
+        ret = ff_filter_frame(outlink, s->prev);
+        s->prev = NULL;
+        return ret;
     } else {
         out = oleft = oright = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
@@ -667,7 +694,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                 av_frame_free(&inpicref);
                 return AVERROR(ENOMEM);
             }
-            av_frame_copy_props(oright, inpicref);
+            av_frame_copy_props(oright, s->prev);
         }
     }
 
@@ -902,18 +929,23 @@ copy:
         av_assert0(0);
     }
 
-    av_frame_free(&inpicref);
-    av_frame_free(&s->prev);
     if (oright != oleft) {
         if (s->out.format == ALTERNATING_LR)
             FFSWAP(AVFrame *, oleft, oright);
-        oright->pts = outlink->frame_count * s->ts_unit;
+        oright->pts = s->prev->pts * 2;
         ff_filter_frame(outlink, oright);
         out = oleft;
-        oleft->pts = outlink->frame_count * s->ts_unit;
+        oleft->pts = s->prev->pts + inpicref->pts;
+        av_frame_free(&s->prev);
+        s->prev = inpicref;
     } else if (s->in.format == ALTERNATING_LR ||
                s->in.format == ALTERNATING_RL) {
-        out->pts = outlink->frame_count * s->ts_unit;
+        out->pts = s->prev->pts / 2;
+        av_frame_free(&s->prev);
+        av_frame_free(&inpicref);
+    } else {
+        av_frame_free(&s->prev);
+        av_frame_free(&inpicref);
     }
     return ff_filter_frame(outlink, out);
 }
