@@ -409,7 +409,7 @@ static av_cold int init(AVFilterContext *ctx)
     memset(idet->history, UNDETERMINED, HIST_SIZE);
 
     if( idet->half_life > 0 )
-        idet->decay_coefficient = (uint64_t) round( PRECISION * exp2(-1.0 / idet->half_life) );
+        idet->decay_coefficient = lrint( PRECISION * exp2(-1.0 / idet->half_life) );
     else
         idet->decay_coefficient = PRECISION;
 
