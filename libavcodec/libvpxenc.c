@@ -34,6 +34,7 @@
 #include "libvpx.h"
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -477,7 +478,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     enccfg.rc_dropframe_thresh = avctx->frame_skip_threshold;
 
     //0-100 (0 => CBR, 100 => VBR)
-    enccfg.rc_2pass_vbr_bias_pct           = round(avctx->qcompress * 100);
+    enccfg.rc_2pass_vbr_bias_pct           = lrint(avctx->qcompress * 100);
     if (avctx->bit_rate)
         enccfg.rc_2pass_vbr_minsection_pct =
             avctx->rc_min_rate * 100LL / avctx->bit_rate;
@@ -497,7 +498,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     if (avctx->rc_buffer_aggressivity != 1.0) {
         av_log(avctx, AV_LOG_WARNING, "The rc_buffer_aggressivity option is "
                "deprecated, use the undershoot-pct private option instead.\n");
-        enccfg.rc_undershoot_pct = round(avctx->rc_buffer_aggressivity * 100);
+        enccfg.rc_undershoot_pct = lrint(avctx->rc_buffer_aggressivity * 100);
     }
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
