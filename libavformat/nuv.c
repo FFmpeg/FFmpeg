@@ -172,6 +172,15 @@ static int nuv_header(AVFormatContext *s)
     if (aspect > 0.9999 && aspect < 1.0001)
         aspect = 4.0 / 3.0;
     fps = av_int2double(avio_rl64(pb));
+    if (fps < 0.0f) {
+        if (s->error_recognition & AV_EF_EXPLODE) {
+            av_log(s, AV_LOG_ERROR, "Invalid frame rate %f\n", fps);
+            return AVERROR_INVALIDDATA;
+        } else {
+            av_log(s, AV_LOG_WARNING, "Invalid frame rate %f, setting to 0.\n", fps);
+            fps = 0.0f;
+        }
+    }
 
     // number of packets per stream type, -1 means unknown, e.g. streaming
     v_packs = avio_rl32(pb);
