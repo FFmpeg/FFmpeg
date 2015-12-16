@@ -123,9 +123,9 @@ static int opus_packet(AVFormatContext *avf, int idx)
         skip = FFMIN(skip, os->pduration);
         if (skip > 0) {
             os->pduration = skip < os->pduration ? os->pduration - skip : 1;
-            av_log(avf, AV_LOG_WARNING,
-                   "Last packet is truncated to %d (because of unimplemented end trim support).\n",
-                   os->pduration);
+            avpriv_report_missing_feature(avf,
+                                          "Last packet truncated to %u since end trim support",
+                                          os->pduration);
             return AVERROR_PATCHWELCOME;
         }
     }

@@ -163,9 +163,7 @@ static int decode_frame(AVCodecContext *avctx,
     prev_pic_bit = header & (1U << 31); /* bit 31 means same as previous pic */
 
     if (version > 5) {
-        av_log(avctx, AV_LOG_ERROR,
-               "This file is encoded with Fraps version %u. "
-               "This codec can only decode versions <= 5.\n", version);
+        avpriv_report_missing_feature(avctx, "Fraps version %u", version);
         return AVERROR_PATCHWELCOME;
     }
 

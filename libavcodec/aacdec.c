@@ -1246,8 +1246,7 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 return AVERROR_INVALIDDATA;
             } else {
                 if (aot == AOT_ER_AAC_LD) {
-                    av_log(ac->avctx, AV_LOG_ERROR,
-                           "LTP in ER AAC LD not yet implemented.\n");
+                    avpriv_report_missing_feature(ac->avctx, "LTP in ER AAC LD");
                     return AVERROR_PATCHWELCOME;
                 }
                 if ((ics->ltp.present = get_bits(gb, 1)))

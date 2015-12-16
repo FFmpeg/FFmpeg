@@ -657,13 +657,12 @@ static int map_pixel_format(AVCodecContext *avctx, HEVCSPS *sps)
         case 9:  sps->pix_fmt = AV_PIX_FMT_YUV420P9;  break;
         case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
         default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
-                   sps->bit_depth);
+            avpriv_report_missing_feature(avctx, "Bit depth %d",
+                                          sps->bit_depth);
             return AVERROR_PATCHWELCOME;
         }
     } else {
-        av_log(avctx, AV_LOG_ERROR,
-               "non-4:2:0 support is currently unspecified.\n");
+        avpriv_report_missing_feature(avctx, "Non-4:2:0 support");
         return AVERROR_PATCHWELCOME;
     }
 

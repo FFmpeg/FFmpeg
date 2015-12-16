@@ -266,7 +266,7 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
     bps = alac->sample_size - alac->extra_bits + channels - 1;
     if (bps > 32) {
-        av_log(avctx, AV_LOG_ERROR, "bps is unsupported: %d\n", bps);
+        avpriv_report_missing_feature(avctx, "bps %d", bps);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -424,7 +424,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
             break;
         }
         if (element > TYPE_CPE && element != TYPE_LFE) {
-            av_log(avctx, AV_LOG_ERROR, "syntax element unsupported: %d", element);
+            avpriv_report_missing_feature(avctx, "Syntax element %d", element);
             return AVERROR_PATCHWELCOME;
         }
 
@@ -568,8 +568,8 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
             avctx->channels = alac->channels;
     }
     if (avctx->channels > ALAC_MAX_CHANNELS) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported channel count: %d\n",
-               avctx->channels);
+        avpriv_report_missing_feature(avctx, "Channel count %d",
+                                      avctx->channels);
         return AVERROR_PATCHWELCOME;
     }
     avctx->channel_layout = ff_alac_channel_layouts[alac->channels - 1];

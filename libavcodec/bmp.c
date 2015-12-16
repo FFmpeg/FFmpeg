@@ -98,7 +98,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         height = bytestream_get_le16(&buf);
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "unsupported BMP file, patch welcome\n");
+        avpriv_report_missing_feature(avctx, "Information header size %u",
+                                      ihsize);
         return AVERROR_PATCHWELCOME;
     }
 

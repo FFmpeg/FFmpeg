@@ -108,15 +108,14 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     }
 
     if (ident != data->ident) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Unimplemented Xiph SDP configuration change detected\n");
+        avpriv_report_missing_feature(ctx, "Xiph SDP configuration change");
         return AVERROR_PATCHWELCOME;
     }
 
     if (tdt) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Unimplemented RTP Xiph packet settings (%d,%d,%d)\n",
-               fragmented, tdt, num_pkts);
+        avpriv_report_missing_feature(ctx,
+                                      "RTP Xiph packet settings (%d,%d,%d)",
+                                      fragmented, tdt, num_pkts);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -246,9 +245,8 @@ parse_packed_headers(AVFormatContext *s,
     length2            = get_base128(&packed_headers, packed_headers_end);
 
     if (num_packed != 1 || num_headers > 3) {
-        av_log(s, AV_LOG_ERROR,
-               "Unimplemented number of headers: %u packed headers, %u headers\n",
-               num_packed, num_headers);
+        avpriv_report_missing_feature(s, "%u packed headers, %u headers",
+                                      num_packed, num_headers);
         return AVERROR_PATCHWELCOME;
     }
 

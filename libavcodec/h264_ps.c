@@ -700,9 +700,8 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     sps = (SPS*)ps->sps_list[pps->sps_id]->data;
 
     if (sps->bit_depth_luma > 10) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Unimplemented luma bit depth=%d (max=10)\n",
-               sps->bit_depth_luma);
+        avpriv_report_missing_feature(avctx, "Luma bit depth=%d (max=10)",
+                                      sps->bit_depth_luma);
         ret = AVERROR_PATCHWELCOME;
         goto fail;
     }

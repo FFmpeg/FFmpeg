@@ -147,7 +147,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (pixformat != XWD_Z_PIXMAP) {
-        av_log(avctx, AV_LOG_ERROR, "pixmap format %"PRIu32" unsupported\n", pixformat);
+        avpriv_report_missing_feature(avctx, "Pixmap format %"PRIu32, pixformat);
         return AVERROR_PATCHWELCOME;
     }
 

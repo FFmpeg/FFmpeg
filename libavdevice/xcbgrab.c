@@ -500,7 +500,7 @@ static int pixfmt_from_pixmap_format(AVFormatContext *s, int depth,
 
         fmt++;
     }
-    av_log(s, AV_LOG_ERROR, "Pixmap format not mappable.\n");
+    avpriv_report_missing_feature(s, "Mapping this pixmap format");
 
     return AVERROR_PATCHWELCOME;
 }

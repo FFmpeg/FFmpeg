@@ -230,7 +230,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     len -= 8;
 
     if (type > 1) {
-        av_log(ctx, AV_LOG_ERROR, "Unimplemented RTP/JPEG type %"PRIu8"\n", type);
+        avpriv_report_missing_feature(ctx, "RTP/JPEG type %"PRIu8, type);
         return AVERROR_PATCHWELCOME;
     }
 

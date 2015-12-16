@@ -102,10 +102,10 @@ static int qcp_read_header(AVFormatContext *s)
     if (is_qcelp_13k_guid(buf)) {
         st->codecpar->codec_id = AV_CODEC_ID_QCELP;
     } else if (!memcmp(buf, guid_evrc, 16)) {
-        av_log(s, AV_LOG_ERROR, "EVRC codec is not supported.\n");
+        avpriv_report_missing_feature(s, "EVRC codec");
         return AVERROR_PATCHWELCOME;
     } else if (!memcmp(buf, guid_smv, 16)) {
-        av_log(s, AV_LOG_ERROR, "SMV codec is not supported.\n");
+        avpriv_report_missing_feature(s, "SMV codec");
         return AVERROR_PATCHWELCOME;
     } else {
         av_log(s, AV_LOG_ERROR, "Unknown codec GUID.\n");

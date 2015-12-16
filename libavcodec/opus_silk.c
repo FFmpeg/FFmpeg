@@ -1530,7 +1530,7 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
 
         redundancy[i] = opus_rc_p2model(rc, 1);
         if (redundancy[i]) {
-            av_log(s->avctx, AV_LOG_ERROR, "LBRR frames present; this is unsupported\n");
+            avpriv_report_missing_feature(s->avctx, "LBRR frames");
             return AVERROR_PATCHWELCOME;
         }
     }
