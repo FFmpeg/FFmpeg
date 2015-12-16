@@ -34,7 +34,7 @@
 #include "sbr.h"
 
 #define ENVELOPE_ADJUSTMENT_OFFSET 2
-#define NOISE_FLOOR_OFFSET FIXR(6.0f)
+#define NOISE_FLOOR_OFFSET 6
 
 /**
  * SBR VLC tables
