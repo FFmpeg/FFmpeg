@@ -5,6 +5,14 @@ EXPORTS
     av_adler32_update
     av_aes_alloc
     av_aes_crypt
+    av_aes_ctr_alloc
+    av_aes_ctr_crypt
+    av_aes_ctr_free
+    av_aes_ctr_get_iv
+    av_aes_ctr_increment_iv
+    av_aes_ctr_init
+    av_aes_ctr_set_iv
+    av_aes_ctr_set_random_iv
     av_aes_init
     av_append_path_component
     av_asprintf

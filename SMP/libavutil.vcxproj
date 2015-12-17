@@ -78,6 +78,7 @@
   <ItemGroup>
     <ClCompile Include="..\libavutil\adler32.c" />
     <ClCompile Include="..\libavutil\aes.c" />
+    <ClCompile Include="..\libavutil\aes_ctr.c" />
     <ClCompile Include="..\libavutil\audio_fifo.c" />
     <ClCompile Include="..\libavutil\avstring.c" />
     <ClCompile Include="..\libavutil\base64.c" />
@@ -157,6 +158,7 @@
   <ItemGroup>
     <ClInclude Include="..\libavutil\adler32.h" />
     <ClInclude Include="..\libavutil\aes.h" />
+    <ClInclude Include="..\libavutil\aes_ctr.h" />
     <ClInclude Include="..\libavutil\attributes.h" />
     <ClInclude Include="..\libavutil\audio_fifo.h" />
     <ClInclude Include="..\libavutil\avassert.h" />
@@ -496,6 +498,7 @@
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -629,6 +632,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -768,6 +772,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -911,6 +916,7 @@ echo            These errors are the result of dead code elimination not being p
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -1055,6 +1061,7 @@ echo            These errors are the result of dead code elimination not being p
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -1198,6 +1205,7 @@ echo            These errors are the result of dead code elimination not being p
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -1342,6 +1350,7 @@ echo            These errors are the result of dead code elimination not being p
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -1481,6 +1490,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -1626,6 +1636,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -1770,6 +1781,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -1915,6 +1927,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -2059,6 +2072,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -2198,6 +2212,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil
@@ -2337,6 +2352,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavutil
 copy ..\libavutil\adler32.h $(OutDir)\include\libavutil
 copy ..\libavutil\aes.h $(OutDir)\include\libavutil
+copy ..\libavutil\aes_ctr.h $(OutDir)\include\libavutil
 copy ..\libavutil\attributes.h $(OutDir)\include\libavutil
 copy ..\libavutil\audio_fifo.h $(OutDir)\include\libavutil
 copy ..\libavutil\avassert.h $(OutDir)\include\libavutil

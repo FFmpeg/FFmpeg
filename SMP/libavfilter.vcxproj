@@ -98,6 +98,7 @@
     <ClCompile Include="..\libavfilter\drawutils.c" />
     <ClCompile Include="..\libavfilter\fifo.c" />
     <ClCompile Include="..\libavfilter\formats.c" />
+    <ClCompile Include="..\libavfilter\framepool.c" />
     <ClCompile Include="..\libavfilter\graphdump.c" />
     <ClCompile Include="..\libavfilter\graphparser.c" />
     <ClCompile Include="..\libavfilter\opencl_allkernels.c" />

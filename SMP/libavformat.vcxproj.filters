@@ -715,6 +715,9 @@
     <ClCompile Include="..\libavformat\movenchint.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\movenccenc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mp3enc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
