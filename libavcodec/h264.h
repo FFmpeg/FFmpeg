@@ -669,7 +669,6 @@ typedef struct H264Context {
      */
     int max_pic_num;
 
-    H264Ref default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
     H264Picture *short_ref[32];
     H264Picture *long_ref[32];
     H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
@@ -714,8 +713,6 @@ typedef struct H264Context {
 
     enum AVPictureType pict_type;
 
-    int last_slice_type;
-    unsigned int last_ref_count[2];
     /** @} */
 
     /**
@@ -896,11 +893,6 @@ int ff_h264_get_slice_type(const H264SliceContext *sl);
  * needs width/height
  */
 int ff_h264_alloc_tables(H264Context *h);
-
-/**
- * Fill the default_ref_list.
- */
-int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl);
 
 int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl);
 void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl);
