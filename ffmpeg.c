@@ -2656,6 +2656,28 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             exit_program(1);
         }
 
+        if (ost->enc_ctx->nb_coded_side_data) {
+            int i;
+
+            ost->st->side_data = av_realloc_array(NULL, ost->enc_ctx->nb_coded_side_data,
+                                                  sizeof(*ost->st->side_data));
+            if (!ost->st->side_data)
+                return AVERROR(ENOMEM);
+
+            for (i = 0; i < ost->enc_ctx->nb_coded_side_data; i++) {
+                const AVPacketSideData *sd_src = &ost->enc_ctx->coded_side_data[i];
+                AVPacketSideData *sd_dst = &ost->st->side_data[i];
+
+                sd_dst->data = av_malloc(sd_src->size);
+                if (!sd_dst->data)
+                    return AVERROR(ENOMEM);
+                memcpy(sd_dst->data, sd_src->data, sd_src->size);
+                sd_dst->size = sd_src->size;
+                sd_dst->type = sd_src->type;
+                ost->st->nb_side_data++;
+            }
+        }
+
         // copy timebase while removing common factors
         ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
         ost->st->codec->codec= ost->enc_ctx->codec;
