@@ -108,6 +108,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     int err = AVERROR_UNKNOWN;
     int log_level;
     WelsTraceCallback callback_function;
+    AVCPBProperties *props;
 
     // Mingw GCC < 4.7 on x86_32 uses an incorrect/buggy ABI for the WelsGetCodecVersion
     // function (for functions returning larger structs), thus skip the check in those
@@ -222,6 +223,14 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         avctx->extradata_size = size;
         memcpy(avctx->extradata, fbi.sLayerInfo[0].pBsBuf, size);
     }
+
+    props = ff_add_cpb_side_data(avctx);
+    if (!props) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+    props->max_bitrate = param.iMaxBitrate;
+    props->avg_bitrate = param.iTargetBitrate;
 
     return 0;
 

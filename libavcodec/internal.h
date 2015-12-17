@@ -323,6 +323,11 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
  */
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
 
+/**
+ * Add a CPB properties side data to an encoding context.
+ */
+AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
+
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
 
 #endif /* AVCODEC_INTERNAL_H */
