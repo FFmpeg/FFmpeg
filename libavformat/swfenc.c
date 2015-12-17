@@ -256,6 +256,10 @@ static int swf_write_header(AVFormatContext *s)
                                       (will be patched if not streamed) */
 
     put_swf_rect(pb, 0, width * 20, 0, height * 20);
+    if ((rate * 256LL) / rate_base >= (1<<16)) {
+        av_log(s, AV_LOG_ERROR, "Invalid (too large) frame rate %d/%d\n", rate, rate_base);
+        return AVERROR(EINVAL);
+    }
     avio_wl16(pb, (rate * 256) / rate_base); /* frame rate */
     swf->duration_pos = avio_tell(pb);
     avio_wl16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / rate_base)); /* frame count */
