@@ -408,6 +408,14 @@ Will produce the playlist, @file{out.m3u8}, and a single segment file,
 @item hls_flags delete_segments
 Segment files removed from the playlist are deleted after a period of time
 equal to the duration of the segment plus the duration of the playlist.
+
+@item hls_playlist_type event
+Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces
+@option{hls_list_size} to 0; the playlist can only be appended to.
+
+@item hls_playlist_type vod
+Emit @code{#EXT-X-PLAYLIST-TYPE:VOD} in the m3u8 header. Forces
+@option{hls_list_size} to 0; the playlist must not change.
 @end table
 
 @anchor{ico}
