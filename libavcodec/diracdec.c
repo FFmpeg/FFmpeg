@@ -1989,7 +1989,12 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return ret;
         }
 
-        ff_set_dimensions(avctx, dsh->width, dsh->height);
+        ret = ff_set_dimensions(avctx, dsh->width, dsh->height);
+        if (ret < 0) {
+            av_freep(&dsh);
+            return ret;
+        }
+
         ff_set_sar(avctx, dsh->sample_aspect_ratio);
         avctx->pix_fmt         = dsh->pix_fmt;
         avctx->color_range     = dsh->color_range;
