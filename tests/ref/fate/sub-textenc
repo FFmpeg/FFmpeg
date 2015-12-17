@@ -1,0 +1,213 @@
+1
+00:00:00,000 --> 00:00:00,000
+Don't show this text it may be used to insert hidden data
+
+2
+00:00:01,500 --> 00:00:04,500
+SubRip subtitles capability tester 1.3o by ale5000
+Use VLC 1.1 or higher as reference for most things and MPC Home Cinema for others
+This text should be blue
+This text should be red
+This text should be black
+If you see this with the normal font, the player don't (fully) support font face
+
+3
+00:00:04,500 --> 00:00:04,500
+Hidden
+
+4
+00:00:04,501 --> 00:00:07,501
+This text should be small
+This text should be normal
+This text should be big
+
+5
+00:00:07,501 --> 00:00:11,501
+This should be an E with an accent: È
+日本語
+This text should be bold, italics and underline
+This text should be small and green
+This text should be small and red
+This text should be big and brown
+
+6
+00:00:11,501 --> 00:00:14,501
+This line should be bold
+This line should be italics
+This line should be underline
+This line should be strikethrough
+Both lines
+should be underline
+
+7
+00:00:14,501 --> 00:00:17,501
+>
+It would be a good thing to
+hide invalid html tags that are closed and show the text in them
+<invalid_tag_unclosed>but show un-closed invalid html tags
+Show not opened tags</invalid_tag_not_opened>
+<
+
+8
+00:00:17,501 --> 00:00:20,501
+and also
+hide invalid html tags with parameters that are closed and show the text in them
+<invalid_tag_uc par=5>but show un-closed invalid html tags
+This text should be showed underlined without problems also: 2<3,5>1,4<6
+This shouldn't be underlined
+
+9
+00:00:20,501 --> 00:00:21,501
+This text should be in the normal position...
+
+10
+00:00:21,501 --> 00:00:22,501
+This text should NOT be in the normal position
+
+11
+00:00:22,501 --> 00:00:24,501
+Implementation is the same of the ASS tag
+This text should be at the
+top and horizontally centered
+
+12
+00:00:22,501 --> 00:00:24,501
+This text should be at the
+middle and horizontally centered
+
+13
+00:00:22,501 --> 00:00:24,501
+This text should be at the
+bottom and horizontally centered
+
+14
+00:00:24,501 --> 00:00:26,501
+This text should be at the
+top and horizontally at the left
+
+15
+00:00:24,501 --> 00:00:26,501
+This text should be at the
+middle and horizontally at the left
+(The second position must be ignored)
+
+16
+00:00:24,501 --> 00:00:26,501
+This text should be at the
+bottom and horizontally at the left
+
+17
+00:00:26,501 --> 00:00:28,501
+This text should be at the
+top and horizontally at the right
+
+18
+00:00:26,501 --> 00:00:28,501
+This text should be at the
+middle and horizontally at the right
+
+19
+00:00:26,501 --> 00:00:28,501
+This text should be at the
+bottom and horizontally at the right
+
+20
+00:00:28,501 --> 00:00:31,501
+This could be the most difficult thing to implement
+
+21
+00:00:31,501 --> 00:00:50,501
+First text
+
+22
+00:00:33,500 --> 00:00:35,500
+Second, it shouldn't overlap first
+
+23
+00:00:35,501 --> 00:00:37,501
+Third, it should replace second
+
+24
+00:00:36,501 --> 00:00:50,501
+Fourth, it shouldn't overlap first and third
+
+25
+00:00:40,501 --> 00:00:45,501
+Fifth, it should replace third
+
+26
+00:00:45,501 --> 00:00:50,501
+Sixth, it shouldn't be
+showed overlapped
+
+27
+00:00:50,501 --> 00:00:52,501
+TEXT 1 (bottom)
+
+28
+00:00:50,501 --> 00:00:52,501
+text 2
+
+29
+00:00:52,501 --> 00:00:54,501
+Hide these tags:
+also hide these tags:
+but show this: {normal text}
+
+30
+00:00:54,501 --> 00:01:00,501
+
+\ N is a forced line break
+\ h is a hard space
+Normal spaces at the start and at the end of the line are trimmed while hard spaces are not trimmed.
+The\hline\hwill\hnever\hbreak\hautomatically\hright\hbefore\hor\hafter\ha\hhard\hspace.\h:-D
+
+31
+00:00:54,501 --> 00:00:56,501
+
+\h\h\h\h\hA (05 hard spaces followed by a letter)
+A (Normal  spaces followed by a letter)
+A (No hard spaces followed by a letter)
+
+32
+00:00:56,501 --> 00:00:58,501
+\h\h\h\h\hA (05 hard spaces followed by a letter)
+A (Normal  spaces followed by a letter)
+A (No hard spaces followed by a letter)
+Show this: \TEST and this: \-)
+
+33
+00:00:58,501 --> 00:01:00,501
+
+A letter followed by 05 hard spaces: A\h\h\h\h\h
+A letter followed by normal  spaces: A
+A letter followed by no hard spaces: A
+05 hard  spaces between letters: A\h\h\h\h\hA
+5 normal spaces between letters: A     A
+
+^--Forced line break
+
+34
+00:01:00,501 --> 00:01:02,501
+Both line should be strikethrough,
+yes.
+Correctly closed tags
+should be hidden.
+
+35
+00:01:02,501 --> 00:01:04,501
+It shouldn't be strikethrough,
+not opened tag showed as text.</s>
+Not opened tag showed as text.</xxxxx>
+
+36
+00:01:04,501 --> 00:01:06,501
+Three lines should be strikethrough,
+yes.
+<yyyy>Not closed tags showed as text
+
+37
+00:01:06,501 --> 00:01:08,501
+Both line should be strikethrough but
+the wrong closing tag should be showed</b>
+

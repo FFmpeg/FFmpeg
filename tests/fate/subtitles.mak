@@ -76,6 +76,9 @@ fate-sub-webvtt2: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/WebVTT_extended_t
 FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER WEBVTT_ENCODER WEBVTT_MUXER) += fate-sub-webvttenc
 fate-sub-webvttenc: CMD = fmtstdout webvtt -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
+FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER TEXT_ENCODER SRT_MUXER) += fate-sub-textenc
+fate-sub-textenc: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt -c:s text
+
 FATE_SUBTITLES_ASS-$(call ALLYES, MICRODVD_DEMUXER MICRODVD_DECODER ICONV) += fate-sub-charenc
 fate-sub-charenc: CMD = fmtstdout ass -sub_charenc cp1251 -i $(TARGET_SAMPLES)/sub/cp1251-subtitles.sub
 
