@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/dirac.h"
 #include "avformat.h"
@@ -51,6 +52,8 @@ static int dirac_header(AVFormatContext *s, int idx)
     st->codec->colorspace      = dsh->colorspace;
     st->codec->profile         = dsh->profile;
     st->codec->level           = dsh->level;
+    if (av_image_check_sar(st->codec->width, st->codec->height, dsh->sample_aspect_ratio) >= 0)
+        st->sample_aspect_ratio = dsh->sample_aspect_ratio;
 
     // dirac in ogg always stores timestamps as though the video were interlaced
     avpriv_set_pts_info(st, 64, dsh->framerate.den, 2 * dsh->framerate.num);
