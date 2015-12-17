@@ -325,7 +325,10 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
         for (index = 0; index < sl->ref_count[list]; index++) {
             if (!sl->ref_list[list][index].parent) {
                 av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture\n");
-                return -1;
+                if (index == 0 || h->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
+                else
+                    sl->ref_list[list][index] = sl->ref_list[list][index - 1];
             }
         }
     }
