@@ -26,6 +26,7 @@
 
 #include <dlfcn.h>
 #include <ladspa.h>
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
@@ -144,6 +145,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     int i, h, p;
 
+    av_assert0(in->channels == s->nb_inputs);
+
     if (!s->nb_outputs ||
         (av_frame_is_writable(in) && s->nb_inputs == s->nb_outputs &&
         !(s->desc->Properties & LADSPA_PROPERTY_INPLACE_BROKEN))) {
@@ -156,6 +159,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
         av_frame_copy_props(out, in);
     }
+
+    av_assert0(!s->nb_outputs || out->channels == s->nb_outputs);
 
     for (h = 0; h < s->nb_handles; h++) {
         for (i = 0; i < s->nb_inputs; i++) {
@@ -298,6 +303,7 @@ static int config_input(AVFilterLink *inlink)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    LADSPAContext *s = ctx->priv;
     int ret;
 
     if (ctx->nb_inputs) {
@@ -305,7 +311,7 @@ static int config_output(AVFilterLink *outlink)
 
         outlink->format      = inlink->format;
         outlink->sample_rate = inlink->sample_rate;
-        if (ctx->nb_inputs == ctx->nb_outputs) {
+        if (s->nb_inputs == s->nb_outputs) {
             outlink->channel_layout = inlink->channel_layout;
             outlink->channels = inlink->channels;
         }
@@ -644,7 +650,7 @@ static int query_formats(AVFilterContext *ctx)
 
         if (s->nb_inputs >= 1) {
             AVFilterLink *inlink = ctx->inputs[0];
-            int64_t inlayout = FF_COUNT2LAYOUT(s->nb_inputs);
+            uint64_t inlayout = FF_COUNT2LAYOUT(s->nb_inputs);
 
             layouts = NULL;
             ret = ff_add_channel_layout(&layouts, inlayout);
@@ -662,7 +668,7 @@ static int query_formats(AVFilterContext *ctx)
         }
 
         if (s->nb_outputs >= 1) {
-            int64_t outlayout = FF_COUNT2LAYOUT(s->nb_outputs);
+            uint64_t outlayout = FF_COUNT2LAYOUT(s->nb_outputs);
 
             layouts = NULL;
             ret = ff_add_channel_layout(&layouts, outlayout);

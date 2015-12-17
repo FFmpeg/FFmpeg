@@ -17,6 +17,7 @@ OBJS = allfilters.o                                                     \
        drawutils.o                                                      \
        fifo.o                                                           \
        formats.o                                                        \
+       framepool.o                                                      \
        graphdump.o                                                      \
        graphparser.o                                                    \
        opencl_allkernels.o                                              \

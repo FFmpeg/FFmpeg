@@ -442,8 +442,9 @@ static void start_children(FFServerStream *feed)
 
         feed->pid = fork();
         if (feed->pid < 0) {
-            http_log("Unable to create children\n");
-            exit(1);
+            http_log("Unable to create children: %s\n", strerror(errno));
+            av_free (pathname);
+            exit(EXIT_FAILURE);
         }
 
         if (feed->pid)
@@ -3423,6 +3424,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 /********************************************************************/
 /* ffserver initialization */
 
+/* FIXME: This code should use avformat_new_stream() */
 static AVStream *add_av_stream1(FFServerStream *stream,
                                 AVCodecContext *codec, int copy)
 {
@@ -3448,6 +3450,7 @@ static AVStream *add_av_stream1(FFServerStream *stream,
         fst->codec = codec;
 
     fst->priv_data = av_mallocz(sizeof(FeedData));
+    fst->internal = av_mallocz(sizeof(*fst->internal));
     fst->index = stream->nb_streams;
     avpriv_set_pts_info(fst, 33, 1, 90000);
     fst->sample_aspect_ratio = codec->sample_aspect_ratio;
@@ -3804,7 +3807,8 @@ static void compute_bandwidth(void)
 static void handle_child_exit(int sig)
 {
     pid_t pid;
-    int status, uptime;
+    int status;
+    time_t uptime;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
         FFServerStream *feed;
@@ -3816,7 +3820,8 @@ static void handle_child_exit(int sig)
             uptime = time(0) - feed->pid_start;
             feed->pid = 0;
             fprintf(stderr,
-                    "%s: Pid %"PRId64" exited with status %d after %d seconds\n",
+                    "%s: Pid %"PRId64" exited with status %d after %"PRId64" "
+                        "seconds\n",
                     feed->filename, (int64_t) pid, status, uptime);
 
             if (uptime < 30)

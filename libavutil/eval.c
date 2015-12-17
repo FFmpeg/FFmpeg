@@ -57,27 +57,31 @@ typedef struct Parser {
 
 static const AVClass eval_class = { "Eval", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT, offsetof(Parser,log_offset), offsetof(Parser,log_ctx) };
 
-static const int8_t si_prefixes['z' - 'E' + 1] = {
-    ['y'-'E']= -24,
-    ['z'-'E']= -21,
-    ['a'-'E']= -18,
-    ['f'-'E']= -15,
-    ['p'-'E']= -12,
-    ['n'-'E']= - 9,
-    ['u'-'E']= - 6,
-    ['m'-'E']= - 3,
-    ['c'-'E']= - 2,
-    ['d'-'E']= - 1,
-    ['h'-'E']=   2,
-    ['k'-'E']=   3,
-    ['K'-'E']=   3,
-    ['M'-'E']=   6,
-    ['G'-'E']=   9,
-    ['T'-'E']=  12,
-    ['P'-'E']=  15,
-    ['E'-'E']=  18,
-    ['Z'-'E']=  21,
-    ['Y'-'E']=  24,
+static const struct {
+    double bin_val;
+    double dec_val;
+    int8_t exp;
+} si_prefixes['z' - 'E' + 1] = {
+    ['y'-'E']= { 8.271806125530276749e-25, 1e-24, -24 },
+    ['z'-'E']= { 8.4703294725430034e-22, 1e-21, -21 },
+    ['a'-'E']= { 8.6736173798840355e-19, 1e-18, -18 },
+    ['f'-'E']= { 8.8817841970012523e-16, 1e-15, -15 },
+    ['p'-'E']= { 9.0949470177292824e-13, 1e-12, -12 },
+    ['n'-'E']= { 9.3132257461547852e-10, 1e-9,  -9 },
+    ['u'-'E']= { 9.5367431640625e-7, 1e-6, -6 },
+    ['m'-'E']= { 9.765625e-4, 1e-3, -3 },
+    ['c'-'E']= { 9.8431332023036951e-3, 1e-2, -2 },
+    ['d'-'E']= { 9.921256574801246e-2, 1e-1, -1 },
+    ['h'-'E']= { 1.0159366732596479e2, 1e2, 2 },
+    ['k'-'E']= { 1.024e3, 1e3, 3 },
+    ['K'-'E']= { 1.024e3, 1e3, 3 },
+    ['M'-'E']= { 1.048576e6, 1e6, 6 },
+    ['G'-'E']= { 1.073741824e9, 1e9, 9 },
+    ['T'-'E']= { 1.099511627776e12, 1e12, 12 },
+    ['P'-'E']= { 1.125899906842624e15, 1e15, 15 },
+    ['E'-'E']= { 1.152921504606847e18, 1e18, 18 },
+    ['Z'-'E']= { 1.1805916207174113e21, 1e21, 21 },
+    ['Y'-'E']= { 1.2089258196146292e24, 1e24, 24 },
 };
 
 static const struct {
@@ -105,13 +109,13 @@ double av_strtod(const char *numstr, char **tail)
             d = pow(10, d / 20);
             next += 2;
         } else if (*next >= 'E' && *next <= 'z') {
-            int e= si_prefixes[*next - 'E'];
+            int e= si_prefixes[*next - 'E'].exp;
             if (e) {
                 if (next[1] == 'i') {
-                    d*= pow( 2, e/0.3);
+                    d*= si_prefixes[*next - 'E'].bin_val;
                     next+=2;
                 } else {
-                    d*= pow(10, e);
+                    d*= si_prefixes[*next - 'E'].dec_val;
                     next++;
                 }
             }

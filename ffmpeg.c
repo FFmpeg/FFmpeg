@@ -1533,10 +1533,12 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     AVCodecContext *enc;
     int frame_number, vid, i;
     double bitrate;
+    double speed;
     int64_t pts = INT64_MIN + 1;
     static int64_t last_time = -1;
     static int qp_histogram[52];
     int hours, mins, secs, us;
+    float t;
 
     if (!print_stats && !is_last_report && !progress_avio)
         return;
@@ -1550,6 +1552,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             return;
         last_time = cur_time;
     }
+
+    t = (cur_time-timer_start) / 1000000.0;
 
 
     oc = output_files[0]->ctx;
@@ -1574,7 +1578,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                        ost->file_index, ost->index, q);
         }
         if (!vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-            float fps, t = (cur_time-timer_start) / 1000000.0;
+            float fps;
 
             frame_number = ost->frame_number;
             fps = t > 1 ? frame_number / t : 0;
@@ -1642,6 +1646,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     mins %= 60;
 
     bitrate = pts && total_size >= 0 ? total_size * 8 / (pts / 1000.0) : -1;
+    speed = t != 0.0 ? (double)pts / AV_TIME_BASE / t : -1;
 
     if (total_size < 0) snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
                                  "size=N/A time=");
@@ -1672,6 +1677,14 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                 nb_frames_dup, nb_frames_drop);
     av_bprintf(&buf_script, "dup_frames=%d\n", nb_frames_dup);
     av_bprintf(&buf_script, "drop_frames=%d\n", nb_frames_drop);
+
+    if (speed < 0) {
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf)," speed=N/A");
+        av_bprintf(&buf_script, "speed=N/A\n");
+    } else {
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf)," speed=%4.3gx", speed);
+        av_bprintf(&buf_script, "speed=%4.3gx\n", speed);
+    }
 
     if (print_stats || is_last_report) {
         const char end = is_last_report ? '\n' : '\r';

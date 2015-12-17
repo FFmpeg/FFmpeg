@@ -1423,7 +1423,9 @@ a fixed number of slices
 @item rowmb
 one slice per row of macroblocks
 @item auto
-automatic number of slices according to number of thread
+automatic number of slices according to number of threads
+@item dyn
+dynamic slicing
 @end table
 
 Default value is @samp{auto}.
@@ -1435,6 +1437,12 @@ set a value of 0.
 @item profile
 Set profile restrictions. If set to the value of @samp{main} enable
 CABAC (set the @code{SEncParamExt.iEntropyCodingModeFlag} flag to 1).
+
+@item max_nal_size
+Set maximum NAL size in bytes.
+
+@item allow_skip_frames
+Allow skipping frames to hit the target bitrate if set to 1.
 @end table
 
 @section jpeg2000

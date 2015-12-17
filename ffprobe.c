@@ -1827,6 +1827,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                        AVFormatContext *fmt_ctx)
 {
     AVBPrint pbuf;
+    char val_str[128];
     const char *s;
     int i;
 
@@ -1849,7 +1850,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     print_duration_time("pkt_duration_time", av_frame_get_pkt_duration(frame), &stream->time_base);
     if (av_frame_get_pkt_pos (frame) != -1) print_fmt    ("pkt_pos", "%"PRId64, av_frame_get_pkt_pos(frame));
     else                      print_str_opt("pkt_pos", "N/A");
-    if (av_frame_get_pkt_size(frame) != -1) print_fmt    ("pkt_size", "%d", av_frame_get_pkt_size(frame));
+    if (av_frame_get_pkt_size(frame) != -1) print_val    ("pkt_size", av_frame_get_pkt_size(frame), unit_byte_str);
     else                       print_str_opt("pkt_size", "N/A");
 
     switch (stream->codec->codec_type) {

@@ -109,10 +109,11 @@ static const struct {
     { AVCOL_PRI_BT709,     AVCOL_SPC_BT709,   AVCOL_TRC_UNSPECIFIED /* DCinema */ },
 };
 
-/* [DIRAC_STD] Table 10.2 Supported chroma sampling formats + luma Offset */
-static const enum AVPixelFormat dirac_pix_fmt[2][3] = {
-    { AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P  },
-    { AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P },
+/* [DIRAC_STD] Table 10.2 Supported chroma sampling formats */
+static const enum AVPixelFormat dirac_pix_fmt[][3] = {
+    {AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12},
+    {AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12},
+    {AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12},
 };
 
 /* [DIRAC_STD] 10.3 Parse Source Parameters.
@@ -236,13 +237,9 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
         avctx->color_range = pixel_range_presets[idx].color_range;
     }
 
-    if (luma_depth > 8)
-        av_log(avctx, AV_LOG_WARNING, "Bitdepth greater than 8\n");
-
-
     *bit_depth = luma_depth;
 
-    avctx->pix_fmt = dirac_pix_fmt[!luma_offset][source->chroma_format];
+    avctx->pix_fmt = dirac_pix_fmt[source->chroma_format][source->pixel_range_index-2];
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift, &chroma_y_shift);
     if ((source->width % (1<<chroma_x_shift)) || (source->height % (1<<chroma_y_shift))) {
         av_log(avctx, AV_LOG_ERROR, "Dimensions must be an integer multiple of the chroma subsampling\n");

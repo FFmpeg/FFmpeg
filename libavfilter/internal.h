@@ -28,6 +28,7 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "formats.h"
+#include "framepool.h"
 #include "thread.h"
 #include "version.h"
 #include "video.h"
