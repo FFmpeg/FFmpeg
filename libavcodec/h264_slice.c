@@ -595,6 +595,7 @@ static int h264_frame_start(H264Context *h)
     pic->reference              = h->droppable ? 0 : h->picture_structure;
     pic->f->coded_picture_number = h->coded_picture_number++;
     pic->field_picture          = h->picture_structure != PICT_FRAME;
+    pic->frame_num               = h->frame_num;
 
     /*
      * Zero key_frame here; IDR markings per slice in frame or fields are ORed
@@ -1664,9 +1665,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                 (h->mb_height * h->mb_stride - 1) * sizeof(*h->slice_table));
         }
     }
-
-    if (!h->setup_finished)
-        h->cur_pic_ptr->frame_num = h->frame_num; // FIXME frame_num cleanup
 
     av_assert1(h->mb_num == h->mb_width * h->mb_height);
     if (first_mb_in_slice << FIELD_OR_MBAFF_PICTURE(h) >= h->mb_num ||
