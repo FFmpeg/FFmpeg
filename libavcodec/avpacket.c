@@ -280,7 +280,7 @@ int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     int elems = pkt->side_data_elems;
 
     if ((unsigned)elems + 1 > INT_MAX / sizeof(*pkt->side_data))
-        return AVERROR(EOVERFLOW);
+        return AVERROR(ERANGE);
 
     pkt->side_data = av_realloc(pkt->side_data,
                                 (elems + 1) * sizeof(*pkt->side_data));
