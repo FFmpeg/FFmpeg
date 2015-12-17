@@ -1982,6 +1982,7 @@ CONFIG_EXTRA="
     blockdsp
     bswapdsp
     cabac
+    dirac_parse
     dvprofile
     exif
     faandct
@@ -2216,6 +2217,7 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 dct_select="rdft"
+dirac_parse_select="golomb"
 error_resilience_select="me_cmp"
 faandct_deps="faan fdctdsp"
 faanidct_deps="faan idctdsp"
@@ -2272,7 +2274,7 @@ cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="fmtconvert mdct"
 dds_decoder_select="texturedsp"
-dirac_decoder_select="dwt golomb videodsp mpegvideoenc"
+dirac_decoder_select="dirac_parse dwt golomb videodsp mpegvideoenc"
 dnxhd_decoder_select="blockdsp idctdsp"
 dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
 dvvideo_decoder_select="dvprofile idctdsp"
@@ -2706,7 +2708,7 @@ mxf_opatom_muxer_select="mxf_muxer"
 nut_muxer_select="riffenc"
 nuv_demuxer_select="riffdec"
 oga_muxer_select="ogg_muxer"
-ogg_demuxer_select="golomb"
+ogg_demuxer_select="dirac_parse"
 opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"

@@ -142,7 +142,7 @@ typedef struct DiracContext {
     DiracDSPContext diracdsp;
     DiracVersionInfo version;
     GetBitContext gb;
-    dirac_source_params source;
+    AVDiracSeqHeader seq;
     int seen_sequence_header;
     int frame_number;           /* number of the next frame to display       */
     Plane plane[3];
@@ -339,16 +339,16 @@ static int add_frame(DiracFrame *framelist[], int maxframes, DiracFrame *frame)
 
 static int alloc_sequence_buffers(DiracContext *s)
 {
-    int sbwidth  = DIVRNDUP(s->source.width,  4);
-    int sbheight = DIVRNDUP(s->source.height, 4);
+    int sbwidth  = DIVRNDUP(s->seq.width,  4);
+    int sbheight = DIVRNDUP(s->seq.height, 4);
     int i, w, h, top_padding;
 
     /* todo: think more about this / use or set Plane here */
     for (i = 0; i < 3; i++) {
         int max_xblen = MAX_BLOCKSIZE >> (i ? s->chroma_x_shift : 0);
         int max_yblen = MAX_BLOCKSIZE >> (i ? s->chroma_y_shift : 0);
-        w = s->source.width  >> (i ? s->chroma_x_shift : 0);
-        h = s->source.height >> (i ? s->chroma_y_shift : 0);
+        w = s->seq.width  >> (i ? s->chroma_x_shift : 0);
+        h = s->seq.height >> (i ? s->chroma_y_shift : 0);
 
         /* we allocate the max we support here since num decompositions can
          * change from frame to frame. Stride is aligned to 16 for SIMD, and
@@ -377,8 +377,8 @@ static int alloc_sequence_buffers(DiracContext *s)
 
 static int alloc_buffers(DiracContext *s, int stride)
 {
-    int w = s->source.width;
-    int h = s->source.height;
+    int w = s->seq.width;
+    int h = s->seq.height;
 
     av_assert0(stride >= w);
     stride += 64;
@@ -937,8 +937,8 @@ static void init_planes(DiracContext *s)
     for (i = 0; i < 3; i++) {
         Plane *p = &s->plane[i];
 
-        p->width       = s->source.width  >> (i ? s->chroma_x_shift : 0);
-        p->height      = s->source.height >> (i ? s->chroma_y_shift : 0);
+        p->width       = s->seq.width  >> (i ? s->chroma_x_shift : 0);
+        p->height      = s->seq.height >> (i ? s->chroma_y_shift : 0);
         p->idwt_width  = w = CALC_PADDING(p->width , s->wavelet_depth);
         p->idwt_height = h = CALC_PADDING(p->height, s->wavelet_depth);
         p->idwt_stride = FFALIGN(p->idwt_width << (1 + s->pshift), 8);
@@ -1370,8 +1370,8 @@ static int dirac_unpack_block_motion_data(DiracContext *s)
     align_get_bits(gb);
 
     /* [DIRAC_STD] 11.2.4 and 12.2.1 Number of blocks and superblocks */
-    s->sbwidth  = DIVRNDUP(s->source.width,  4*s->plane[0].xbsep);
-    s->sbheight = DIVRNDUP(s->source.height, 4*s->plane[0].ybsep);
+    s->sbwidth  = DIVRNDUP(s->seq.width,  4*s->plane[0].xbsep);
+    s->sbheight = DIVRNDUP(s->seq.height, 4*s->plane[0].ybsep);
     s->blwidth  = 4 * s->sbwidth;
     s->blheight = 4 * s->sbheight;
 
@@ -1966,6 +1966,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 {
     DiracContext *s   = avctx->priv_data;
     DiracFrame *pic   = NULL;
+    AVDiracSeqHeader *dsh;
     int ret, i;
     uint8_t parse_code;
     unsigned tmp;
@@ -1982,10 +1983,24 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return 0;
 
         /* [DIRAC_STD] 10. Sequence header */
-        ret = avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source,
-                                                 &s->version, &s->bit_depth);
-        if (ret < 0)
+        ret = av_dirac_parse_sequence_header(&dsh, buf + DATA_UNIT_HEADER_SIZE, size - DATA_UNIT_HEADER_SIZE, avctx);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "error parsing sequence header");
             return ret;
+        }
+
+        ff_set_dimensions(avctx, dsh->width, dsh->height);
+        avctx->pix_fmt         = dsh->pix_fmt;
+        avctx->color_range     = dsh->color_range;
+        avctx->color_trc       = dsh->color_trc;
+        avctx->color_primaries = dsh->color_primaries;
+        avctx->colorspace      = dsh->colorspace;
+        avctx->profile         = dsh->profile;
+        avctx->level           = dsh->level;
+        avctx->framerate       = dsh->framerate;
+        s->bit_depth           = dsh->bit_depth;
+        s->seq                 = *dsh;
+        av_freep(&dsh);
 
         s->pshift = s->bit_depth > 8;
 

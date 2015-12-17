@@ -14,10 +14,12 @@ libavutil:     2015-08-28
 
 
 API changes, most recent first:
-2015-12-17 - lavc 57.18.100 / 57.11.0 - avcodec.h
+2015-12-17 - lavc 57.18.100 / 57.11.0 - avcodec.h dirac.h
   xxxxxxx - Add av_packet_add_side_data().
   xxxxxxx - Add AVCodecContext.coded_side_data.
   xxxxxxx - Add AVCPBProperties API.
+  xxxxxxx - Add a new public header dirac.h containing
+            av_dirac_parse_sequence_header()
 
 2015-12-11 - xxxxxxx - lavf 57.20.100 - avformat.h
   Add av_program_add_stream_index()
