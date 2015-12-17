@@ -286,6 +286,7 @@ av_cold int ff_dct_encode_init(MpegEncContext *s) {
 av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
+    AVCPBProperties *cpb_props;
     int i, ret, format_supported;
 
     mpv_encode_defaults(s);
@@ -1035,6 +1036,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return ret;
         }
     }
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+    cpb_props->max_bitrate = avctx->rc_max_rate;
+    cpb_props->min_bitrate = avctx->rc_min_rate;
+    cpb_props->avg_bitrate = avctx->bit_rate;
+    cpb_props->buffer_size = avctx->rc_buffer_size;
 
     return 0;
 fail:
