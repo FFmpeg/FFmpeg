@@ -242,6 +242,9 @@ static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
 static int rtp_new_av_stream(HTTPContext *c,
                              int stream_index, struct sockaddr_in *dest_addr,
                              HTTPContext *rtsp_c);
+/* utils */
+static inline int check_codec_match(AVCodecContext *ccf, AVCodecContext *ccs,
+                                    int stream);
 
 static const char *my_program_name;
 
@@ -3624,11 +3627,46 @@ static void build_file_streams(void)
     }
 }
 
+static inline
+int check_codec_match(AVCodecContext *ccf, AVCodecContext *ccs, int stream)
+{
+    int matches = 1;
+
+#define CHECK_CODEC(x)  (ccf->x != ccs->x)
+    if (CHECK_CODEC(codec_id) || CHECK_CODEC(codec_type)) {
+        http_log("Codecs do not match for stream %d\n", stream);
+        matches = 0;
+    } else if (CHECK_CODEC(bit_rate) || CHECK_CODEC(flags)) {
+        http_log("Codec bitrates do not match for stream %d\n", stream);
+        matches = 0;
+    } else if (ccf->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (CHECK_CODEC(time_base.den) ||
+            CHECK_CODEC(time_base.num) ||
+            CHECK_CODEC(width) ||
+            CHECK_CODEC(height)) {
+            http_log("Codec width, height or framerate do not match for stream %d\n", stream);
+            matches = 0;
+        }
+    } else if (ccf->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (CHECK_CODEC(sample_rate) ||
+            CHECK_CODEC(channels) ||
+            CHECK_CODEC(frame_size)) {
+            http_log("Codec sample_rate, channels, frame_size do not match for stream %d\n", stream);
+            matches = 0;
+        }
+    } else {
+        http_log("Unknown codec type for stream %d\n", stream);
+        matches = 0;
+    }
+
+    return matches;
+}
+
 /* compute the needed AVStream for each feed */
 static int build_feed_streams(void)
 {
     FFServerStream *stream, *feed;
-    int i;
+    int i, fd;
 
     /* gather all streams */
     for(stream = config.first_stream; stream; stream = stream->next) {
@@ -3639,98 +3677,77 @@ static int build_feed_streams(void)
         if (stream->is_feed) {
             for(i=0;i<stream->nb_streams;i++)
                 stream->feed_streams[i] = i;
-        } else {
-            /* we handle a stream coming from a feed */
-            for(i=0;i<stream->nb_streams;i++)
-                stream->feed_streams[i] = add_av_stream(feed,
-                                                        stream->streams[i]);
+            continue;
         }
+        /* we handle a stream coming from a feed */
+        for(i=0;i<stream->nb_streams;i++)
+            stream->feed_streams[i] = add_av_stream(feed, stream->streams[i]);
     }
 
     /* create feed files if needed */
     for(feed = config.first_feed; feed; feed = feed->next_feed) {
-        int fd;
 
         if (avio_check(feed->feed_filename, AVIO_FLAG_READ) > 0) {
-            /* See if it matches */
             AVFormatContext *s = NULL;
             int matches = 0;
 
-            if (avformat_open_input(&s, feed->feed_filename, NULL, NULL) >= 0) {
-                /* set buffer size */
-                int ret = ffio_set_buf_size(s->pb, FFM_PACKET_SIZE);
-                if (ret < 0) {
-                    http_log("Failed to set buffer size\n");
-                    goto bail;
+            /* See if it matches */
+
+            if (avformat_open_input(&s, feed->feed_filename, NULL, NULL) < 0) {
+                http_log("Deleting feed file '%s' as it appears "
+                            "to be corrupt\n",
+                         feed->feed_filename);
+                goto drop;
+            }
+
+            /* set buffer size */
+            if (ffio_set_buf_size(s->pb, FFM_PACKET_SIZE) < 0) {
+                http_log("Failed to set buffer size\n");
+                avformat_close_input(&s);
+                goto bail;
+            }
+
+            /* Now see if it matches */
+            if (s->nb_streams != feed->nb_streams) {
+                http_log("Deleting feed file '%s' as stream counts "
+                            "differ (%d != %d)\n",
+                         feed->feed_filename, s->nb_streams, feed->nb_streams);
+                goto drop;
+            }
+
+            matches = 1;
+            for(i=0;i<s->nb_streams;i++) {
+                AVStream *sf, *ss;
+
+                sf = feed->streams[i];
+                ss = s->streams[i];
+
+                if (sf->index != ss->index || sf->id != ss->id) {
+                    http_log("Index & Id do not match for stream %d (%s)\n",
+                             i, feed->feed_filename);
+                    matches = 0;
+                    break;
                 }
 
-                /* Now see if it matches */
-                if (s->nb_streams == feed->nb_streams) {
-                    matches = 1;
-                    for(i=0;i<s->nb_streams;i++) {
-                        AVStream *sf, *ss;
-                        sf = feed->streams[i];
-                        ss = s->streams[i];
+                matches = check_codec_match (sf->codec, ss->codec, i);
+                if (!matches)
+                    break;
+            }
 
-                        if (sf->index != ss->index ||
-                            sf->id != ss->id) {
-                            http_log("Index & Id do not match for stream %d (%s)\n",
-                                   i, feed->feed_filename);
-                            matches = 0;
-                        } else {
-                            AVCodecContext *ccf, *ccs;
-
-                            ccf = sf->codec;
-                            ccs = ss->codec;
-#define CHECK_CODEC(x)  (ccf->x != ccs->x)
-
-                            if (CHECK_CODEC(codec_id) || CHECK_CODEC(codec_type)) {
-                                http_log("Codecs do not match for stream %d\n", i);
-                                matches = 0;
-                            } else if (CHECK_CODEC(bit_rate) || CHECK_CODEC(flags)) {
-                                http_log("Codec bitrates do not match for stream %d\n", i);
-                                matches = 0;
-                            } else if (ccf->codec_type == AVMEDIA_TYPE_VIDEO) {
-                                if (CHECK_CODEC(time_base.den) ||
-                                    CHECK_CODEC(time_base.num) ||
-                                    CHECK_CODEC(width) ||
-                                    CHECK_CODEC(height)) {
-                                    http_log("Codec width, height and framerate do not match for stream %d\n", i);
-                                    matches = 0;
-                                }
-                            } else if (ccf->codec_type == AVMEDIA_TYPE_AUDIO) {
-                                if (CHECK_CODEC(sample_rate) ||
-                                    CHECK_CODEC(channels) ||
-                                    CHECK_CODEC(frame_size)) {
-                                    http_log("Codec sample_rate, channels, frame_size do not match for stream %d\n", i);
-                                    matches = 0;
-                                }
-                            } else {
-                                http_log("Unknown codec type\n");
-                                matches = 0;
-                            }
-                        }
-                        if (!matches)
-                            break;
-                    }
-                } else
-                    http_log("Deleting feed file '%s' as stream counts differ (%d != %d)\n",
-                        feed->feed_filename, s->nb_streams, feed->nb_streams);
-
+drop:
+            if (s)
                 avformat_close_input(&s);
-            } else
-                http_log("Deleting feed file '%s' as it appears to be corrupt\n",
-                        feed->feed_filename);
 
             if (!matches) {
                 if (feed->readonly) {
-                    http_log("Unable to delete feed file '%s' as it is marked readonly\n",
-                        feed->feed_filename);
+                    http_log("Unable to delete read-only feed file '%s'\n",
+                             feed->feed_filename);
                     goto bail;
                 }
                 unlink(feed->feed_filename);
             }
         }
+
         if (avio_check(feed->feed_filename, AVIO_FLAG_WRITE) <= 0) {
             AVFormatContext *s = avformat_alloc_context();
 
@@ -3740,8 +3757,10 @@ static int build_feed_streams(void)
             }
 
             if (feed->readonly) {
-                http_log("Unable to create feed file '%s' as it is marked readonly\n",
-                    feed->feed_filename);
+                http_log("Unable to create feed file '%s' as it is "
+                            "marked readonly\n",
+                         feed->feed_filename);
+                avformat_free_context(s);
                 goto bail;
             }
 
@@ -3749,6 +3768,7 @@ static int build_feed_streams(void)
             if (avio_open(&s->pb, feed->feed_filename, AVIO_FLAG_WRITE) < 0) {
                 http_log("Could not open output feed file '%s'\n",
                          feed->feed_filename);
+                avformat_free_context(s);
                 goto bail;
             }
             s->oformat = feed->fmt;
@@ -3756,6 +3776,8 @@ static int build_feed_streams(void)
             s->streams = feed->streams;
             if (avformat_write_header(s, NULL) < 0) {
                 http_log("Container doesn't support the required parameters\n");
+                avio_closep(&s->pb);
+                avformat_free_context(s);
                 goto bail;
             }
             /* XXX: need better API */
@@ -3765,6 +3787,7 @@ static int build_feed_streams(void)
             s->nb_streams = 0;
             avformat_free_context(s);
         }
+
         /* get feed size and write index */
         fd = open(feed->feed_filename, O_RDONLY);
         if (fd < 0) {
@@ -3773,7 +3796,8 @@ static int build_feed_streams(void)
             goto bail;
         }
 
-        feed->feed_write_index = FFMAX(ffm_read_write_index(fd), FFM_PACKET_SIZE);
+        feed->feed_write_index = FFMAX(ffm_read_write_index(fd),
+                                       FFM_PACKET_SIZE);
         feed->feed_size = lseek(fd, 0, SEEK_END);
         /* ensure that we do not wrap before the end of file */
         if (feed->feed_max_size && feed->feed_max_size < feed->feed_size)
