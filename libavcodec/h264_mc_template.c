@@ -158,6 +158,7 @@ static void MCFUNC(hl_motion)(const H264Context *h, H264SliceContext *sl,
         }
     }
 
-    prefetch_motion(h, sl, 1, PIXEL_SHIFT, CHROMA_IDC);
+    if (USES_LIST(mb_type, 1))
+        prefetch_motion(h, sl, 1, PIXEL_SHIFT, CHROMA_IDC);
 }
 
