@@ -228,12 +228,6 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     buf += 8;
     len -= 8;
 
-    /* Parse the restart marker header. */
-    if (type > 63) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Unimplemented RTP/JPEG restart marker header.\n");
-        return AVERROR_PATCHWELCOME;
-    }
     if (type > 1) {
         av_log(ctx, AV_LOG_ERROR, "Unimplemented RTP/JPEG type %d\n", type);
         return AVERROR_PATCHWELCOME;
