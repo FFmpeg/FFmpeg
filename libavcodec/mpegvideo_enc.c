@@ -1948,6 +1948,9 @@ vbv_retry:
             s->out_format == FMT_MPEG1                     &&
             90000LL * (avctx->rc_buffer_size - 1) <=
                 s->avctx->rc_max_rate * 0xFFFFLL) {
+            AVCPBProperties *props;
+            size_t props_size;
+
             int vbv_delay, min_delay;
             double inbits  = s->avctx->rc_max_rate *
                              av_q2d(s->avctx->time_base);
@@ -1974,7 +1977,17 @@ vbv_retry:
             s->vbv_delay_ptr[1]  = vbv_delay >> 5;
             s->vbv_delay_ptr[2] &= 0x07;
             s->vbv_delay_ptr[2] |= vbv_delay << 3;
+
+            props = av_cpb_properties_alloc(&props_size);
+            if (!props)
+                return AVERROR(ENOMEM);
+            props->vbv_delay = vbv_delay * 300;
+
+#if FF_API_VBV_DELAY
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->vbv_delay     = vbv_delay * 300;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         }
         s->total_bits     += s->frame_bits;
         avctx->frame_bits  = s->frame_bits;
