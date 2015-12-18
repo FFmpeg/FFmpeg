@@ -650,7 +650,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
          s->in.format == ABOVE_BELOW_LR ||
          s->in.format == ABOVE_BELOW_RL ||
          s->in.format == ABOVE_BELOW_2_LR ||
-         s->in.format == ABOVE_BELOW_2_RL)) {
+         s->in.format == ABOVE_BELOW_2_RL ||
+         s->in.format == INTERLEAVE_ROWS_LR ||
+         s->in.format == INTERLEAVE_ROWS_RL)) {
         out = oleft = oright = av_frame_clone(inpicref);
         if (!out) {
             av_frame_free(&s->prev);
@@ -776,6 +778,12 @@ copy:
         iright = ileft;
     case MONO_R:
         switch (s->in.format) {
+        case INTERLEAVE_ROWS_LR:
+        case INTERLEAVE_ROWS_RL:
+            for (i = 0; i < s->nb_planes; i++) {
+                oleft->linesize[i]  *= 2;
+                oright->linesize[i] *= 2;
+            }
         case ABOVE_BELOW_LR:
         case ABOVE_BELOW_RL:
         case ABOVE_BELOW_2_LR:
