@@ -1082,7 +1082,8 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
     ret = av_new_packet(pkt, size + nut->header_len[header_idx]);
     if (ret < 0)
         return ret;
-    memcpy(pkt->data, nut->header[header_idx], nut->header_len[header_idx]);
+    if (nut->header[header_idx])
+        memcpy(pkt->data, nut->header[header_idx], nut->header_len[header_idx]);
     pkt->pos = avio_tell(bc); // FIXME
     if (stc->last_flags & FLAG_SM_DATA) {
         int sm_size;
