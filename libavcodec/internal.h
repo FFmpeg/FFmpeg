@@ -62,7 +62,7 @@
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
 #else
-#   define ff_tlog(ctx, ...) do {} while(0)
+#   define ff_tlog(ctx, ...) do { } while(0)
 #endif
 
 
