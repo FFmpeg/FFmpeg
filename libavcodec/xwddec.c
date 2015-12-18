@@ -141,7 +141,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (bytestream2_get_bytes_left(&gb) < ncolors * XWD_CMAP_SIZE + avctx->height * lsize) {
+    if (bytestream2_get_bytes_left(&gb) < ncolors * XWD_CMAP_SIZE + (uint64_t)avctx->height * lsize) {
         av_log(avctx, AV_LOG_ERROR, "input buffer too small\n");
         return AVERROR_INVALIDDATA;
     }
