@@ -21,66 +21,6 @@
 
 #include "libavutil/aarch64/asm.S"
 
-function ff_decode_hf_neon, export=1
-        add             x2,  x2,  x3
-        add             x0,  x0,  x5, lsl #5
-        add             x1,  x1,  x5, lsl #2
-        add             x4,  x4,  x5, lsl #3
-        sub             x6,  x6,  x5
-        ldr             w7,  [x1], #4
-        add             x7,  x2,  x7, lsl #5
-        subs            x6,  x6,  #1
-        b.eq            1f
-        b.gt            2f
-        ret
-2:
-        ldr             w8,  [x1], #4
-        subs            x6,  x6,  #2
-        add             x8,  x2,  x8, lsl #5
-        ld1             {v2.4s},  [x4], #16
-        ld1             {v0.8b},  [x7]
-        ld1             {v4.8b},  [x8]
-        sxtl            v3.8h,  v0.8b
-        sxtl            v7.8h,  v4.8b
-        scvtf           v2.4s,  v2.4s,  #4
-        sxtl            v0.4s,  v3.4h
-        sxtl2           v1.4s,  v3.8h
-        sxtl            v4.4s,  v7.4h
-        sxtl2           v5.4s,  v7.8h
-        scvtf           v0.4s,  v0.4s
-        scvtf           v1.4s,  v1.4s
-        scvtf           v4.4s,  v4.4s
-        scvtf           v5.4s,  v5.4s
-        fmul            v0.4s,  v0.4s,  v2.s[0]
-        fmul            v1.4s,  v1.4s,  v2.s[0]
-        fmul            v4.4s,  v4.4s,  v2.s[2]
-        fmul            v5.4s,  v5.4s,  v2.s[2]
-        b.lt            10f
-
-        ldr             w7,  [x1], #4
-        add             x7,  x2,  x7, lsl #5
-        st1             {v0.4s,v1.4s},  [x0], #32
-        st1             {v4.4s,v5.4s},  [x0], #32
-        b.gt            2b
-1:
-        ldr             w9,  [x4]
-        ld1             {v0.8b},  [x7]
-        scvtf           s2,  w9,  #4
-        sxtl            v3.8h,  v0.8b
-        sxtl            v0.4s,  v3.4h
-        sxtl2           v1.4s,  v3.8h
-        scvtf           v0.4s,  v0.4s
-        scvtf           v1.4s,  v1.4s
-        fmul            v0.4s,  v0.4s,  v2.s[0]
-        fmul            v1.4s,  v1.4s,  v2.s[0]
-        st1             {v0.4s,v1.4s},  [x0]
-        ret
-10:
-        st1             {v0.4s,v1.4s},  [x0], #32
-        st1             {v4.4s,v5.4s},  [x0]
-        ret
-endfunc
-
 function ff_dca_lfe_fir0_neon, export=1
         mov             x3,  #32                // decifactor
         sub             x1,  x1,  #7*4

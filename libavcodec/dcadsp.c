@@ -27,29 +27,11 @@
 #include "dcadsp.h"
 #include "dcamath.h"
 
-static void decode_hf_c(float dst[DCA_SUBBANDS][8],
+static void decode_hf_c(int32_t dst[DCA_SUBBANDS][8],
                         const int32_t vq_num[DCA_SUBBANDS],
                         const int8_t hf_vq[1024][32], intptr_t vq_offset,
                         int32_t scale[DCA_SUBBANDS][2],
                         intptr_t start, intptr_t end)
-{
-    int i, l;
-
-    for (l = start; l < end; l++) {
-        /* 1 vector -> 32 samples but we only need the 8 samples
-         * for this subsubframe. */
-        const int8_t *ptr = &hf_vq[vq_num[l]][vq_offset];
-        float fscale = scale[l][0] * (1 / 16.0);
-        for (i = 0; i < 8; i++)
-            dst[l][i] = ptr[i] * fscale;
-    }
-}
-
-static void decode_hf_int_c(int32_t dst[DCA_SUBBANDS][8],
-                            const int32_t vq_num[DCA_SUBBANDS],
-                            const int8_t hf_vq[1024][32], intptr_t vq_offset,
-                            int32_t scale[DCA_SUBBANDS][2],
-                            intptr_t start, intptr_t end)
 {
     int i, j;
 
@@ -141,7 +123,6 @@ av_cold void ff_dcadsp_init(DCADSPContext *s)
     s->lfe_fir[1]      = dca_lfe_fir1_c;
     s->qmf_32_subbands = dca_qmf_32_subbands;
     s->decode_hf       = decode_hf_c;
-    s->decode_hf_int   = decode_hf_int_c;
     s->dequantize      = dequantize_c;
 
     if (ARCH_AARCH64)

@@ -913,12 +913,12 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
                 s->debug_flag |= 0x01;
             }
 
-            s->dcadsp.decode_hf_int(subband_samples, s->dca_chan[k].high_freq_vq,
-                                    ff_dca_high_freq_vq, subsubframe * SAMPLES_PER_SUBBAND,
-                                    s->dca_chan[k].scale_factor,
-                                    s->audio_header.vq_start_subband[k],
-                                    s->audio_header.subband_activity[k]);
-
+            s->dcadsp.decode_hf(subband_samples, s->dca_chan[k].high_freq_vq,
+                                ff_dca_high_freq_vq,
+                                subsubframe * SAMPLES_PER_SUBBAND,
+                                s->dca_chan[k].scale_factor,
+                                s->audio_header.vq_start_subband[k],
+                                s->audio_header.subband_activity[k]);
         }
     }
 

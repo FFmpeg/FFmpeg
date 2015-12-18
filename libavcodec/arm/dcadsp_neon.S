@@ -20,35 +20,6 @@
 
 #include "libavutil/arm/asm.S"
 
-function ff_decode_hf_neon, export=1
-        push            {r4-r5,lr}
-        add             r2,  r2,  r3
-        ldr             r3,       [sp, #12]
-        ldrd            r4,  r5,  [sp, #16]
-        add             r3,  r3,  r4, lsl #3
-        add             r1,  r1,  r4, lsl #2
-        add             r0,  r0,  r4, lsl #5
-
-1:      ldr_post        lr,  r1,  #4
-        add             r4,  r4,  #1
-        add             lr,  r2,  lr, lsl #5
-        cmp             r4,  r5
-        vld1.32         {d7},     [r3]!
-        vld1.8          {d0},     [lr,:64]
-        vcvt.f32.s32    d7,  d7,  #4
-        vmovl.s8        q1,  d0
-        vmovl.s16       q0,  d2
-        vmovl.s16       q1,  d3
-        vcvt.f32.s32    q0,  q0
-        vcvt.f32.s32    q1,  q1
-        vmul.f32        q0,  q0,  d7[0]
-        vmul.f32        q1,  q1,  d7[0]
-        vst1.32         {q0-q1},  [r0,:128]!
-        bne             1b
-
-        pop             {r4-r5,pc}
-endfunc
-
 function ff_dca_lfe_fir0_neon, export=1
         push            {r4-r6,lr}
         mov             r3,  #32                @ decifactor
