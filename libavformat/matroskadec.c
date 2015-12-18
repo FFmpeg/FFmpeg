@@ -2063,7 +2063,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
             MatroskaTrackPlane *planes = track->operation.combine_planes.elem;
-            int display_width_mul = 1;
+            int display_width_mul  = 1;
             int display_height_mul = 1;
 
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -2078,7 +2078,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
             av_reduce(&st->sample_aspect_ratio.num,
                       &st->sample_aspect_ratio.den,
-                      st->codec->height * track->video.display_width * display_width_mul,
+                      st->codec->height * track->video.display_width  * display_width_mul,
                       st->codec->width  * track->video.display_height * display_height_mul,
                       255);
             if (st->codec->codec_id != AV_CODEC_ID_HEVC)
