@@ -1987,6 +1987,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return AVERROR(ENOMEM);
             props->vbv_delay = vbv_delay * 300;
 
+            ret = av_packet_add_side_data(pkt, AV_PKT_DATA_CPB_PROPERTIES,
+                                          (uint8_t*)props, props_size);
+            if (ret < 0) {
+                av_freep(&props);
+                return ret;
+            }
+
 #if FF_API_VBV_DELAY
 FF_DISABLE_DEPRECATION_WARNINGS
             avctx->vbv_delay     = vbv_delay * 300;
