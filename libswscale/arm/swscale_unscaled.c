@@ -100,7 +100,6 @@ DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, bgra, precision)                              
 
 #define DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nvx)                                 \
 DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nvx, 16)                                                   \
-DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nvx, 32)                                                   \
 
 DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nv12)
 DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nv21)
@@ -113,9 +112,9 @@ DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nv21)
     if (c->srcFormat == AV_PIX_FMT_##IFMT                                                   \
         && c->dstFormat == AV_PIX_FMT_##OFMT                                                \
         && !(c->srcH & 1)                                                                   \
-        && !(c->srcW & 15)) {                                                               \
-        c->swscale = (accurate_rnd) ? ifmt##_to_##ofmt##_neon_wrapper_32 :                  \
-                                      ifmt##_to_##ofmt##_neon_wrapper_16 ;                  \
+        && !(c->srcW & 15)                                                                  \
+        && !accurate_rnd) {                                                                 \
+        c->swscale = ifmt##_to_##ofmt##_neon_wrapper_16;                                    \
     }                                                                                       \
 } while (0)
 
