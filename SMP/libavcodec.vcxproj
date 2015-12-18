@@ -157,6 +157,7 @@
     <ClCompile Include="..\libavcodec\bitstream_filter.c" />
     <ClCompile Include="..\libavcodec\codec_desc.c" />
     <ClCompile Include="..\libavcodec\d3d11va.c" />
+    <ClCompile Include="..\libavcodec\dirac.c" />
     <ClCompile Include="..\libavcodec\dv_profile.c" />
     <ClCompile Include="..\libavcodec\imgconvert.c" />
     <ClCompile Include="..\libavcodec\mathtables.c" />
@@ -441,7 +442,6 @@
     <ClCompile Include="..\libavcodec\dcaenc.c" />
     <ClCompile Include="..\libavcodec\dds.c" />
     <ClCompile Include="..\libavcodec\diracdec.c" />
-    <ClCompile Include="..\libavcodec\dirac.c" />
     <ClCompile Include="..\libavcodec\diracdsp.c" />
     <ClCompile Include="..\libavcodec\dirac_arith.c" />
     <ClCompile Include="..\libavcodec\dirac_dwt.c" />
@@ -1044,6 +1044,7 @@
     <ClInclude Include="..\libavcodec\avfft.h" />
     <ClInclude Include="..\libavcodec\dv_profile.h" />
     <ClInclude Include="..\libavcodec\d3d11va.h" />
+    <ClInclude Include="..\libavcodec\dirac.h" />
     <ClInclude Include="..\libavcodec\dxva2.h" />
     <ClInclude Include="..\libavcodec\qsv.h" />
     <ClInclude Include="..\libavcodec\vaapi.h" />
@@ -1331,6 +1332,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -1412,6 +1414,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -1499,6 +1502,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -1590,6 +1594,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -1682,6 +1687,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -1773,6 +1779,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -1865,6 +1872,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -1952,6 +1960,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2045,6 +2054,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2137,6 +2147,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2230,6 +2241,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2322,6 +2334,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2409,6 +2422,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2496,6 +2510,7 @@ copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec

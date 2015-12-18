@@ -26,10 +26,12 @@ EXPORTS
     av_codec_set_seek_preroll
     av_copy_packet
     av_copy_packet_side_data
+    av_cpb_properties_alloc
     av_d3d11va_alloc_context
     av_dct_calc
     av_dct_end
     av_dct_init
+    av_dirac_parse_sequence_header
     av_dup_packet
     av_dv_codec_profile
     av_dv_codec_profile2
@@ -60,6 +62,7 @@ EXPORTS
     av_mdct_end
     av_mdct_init
     av_new_packet
+    av_packet_add_side_data
     av_packet_alloc
     av_packet_clone
     av_packet_copy_props
@@ -168,7 +171,6 @@ EXPORTS
     avpriv_copy_bits
     avpriv_copy_pce_data
     avpriv_dca_convert_bitstream
-    avpriv_dirac_parse_sequence_header
     avpriv_dnxhd_get_frame_size
     avpriv_dnxhd_get_interlaced
     avpriv_do_elbg
