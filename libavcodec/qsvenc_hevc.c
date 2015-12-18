@@ -240,8 +240,8 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { "b",         "1M"    },
     { "refs",      "0"     },
     // same as the x264 default
-    { "g",         "250"   },
-    { "bf",        "3"     },
+    { "g",         "248"   },
+    { "bf",        "8"     },
 
     { "flags",     "+cgop" },
     { "b_strategy", "-1"   },
