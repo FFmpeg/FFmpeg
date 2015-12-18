@@ -10790,8 +10790,47 @@ Default value is @samp{sbsl}.
 @item out
 Set stereoscopic image format of output.
 
-Available values for output image formats are all the input formats as well as:
 @table @samp
+@item sbsl
+side by side parallel (left eye left, right eye right)
+
+@item sbsr
+side by side crosseye (right eye left, left eye right)
+
+@item sbs2l
+side by side parallel with half width resolution
+(left eye left, right eye right)
+
+@item sbs2r
+side by side crosseye with half width resolution
+(right eye left, left eye right)
+
+@item abl
+above-below (left eye above, right eye below)
+
+@item abr
+above-below (right eye above, left eye below)
+
+@item ab2l
+above-below with half height resolution
+(left eye above, right eye below)
+
+@item ab2r
+above-below with half height resolution
+(right eye above, left eye below)
+
+@item al
+alternating frames (left eye first, right eye second)
+
+@item ar
+alternating frames (right eye first, left eye second)
+
+@item irl
+interleaved rows (left eye has top row, right eye starts on next row)
+
+@item irr
+interleaved rows (right eye has top row, left eye starts on next row)
+
 @item arbg
 anaglyph red/blue gray
 (red filter on left eye, blue filter on right eye)
