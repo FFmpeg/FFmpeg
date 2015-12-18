@@ -704,8 +704,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
 FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->coder_type != -1)
         s->ac = avctx->coder_type > 0 ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE;
+    else
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+    if (s->ac == 1) // Compatbility with common command line usage
+        s->ac = AC_RANGE_CUSTOM_TAB;
+    else if (s->ac == AC_RANGE_DEFAULT_TAB_FORCE)
+        s->ac = AC_RANGE_DEFAULT_TAB;
 
     s->plane_count = 3;
     switch(avctx->pix_fmt) {
@@ -1352,13 +1357,15 @@ static av_cold int encode_close(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "slicecrc", "Protect slices with CRCs", OFFSET(ec), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VE },
     { "coder", "Coder type", OFFSET(ac), AV_OPT_TYPE_INT,
-            { .i64 = AC_GOLOMB_RICE }, 0, 2, VE, "coder" },
+            { .i64 = 0 }, -2, 2, VE, "coder" },
         { "rice", "Golomb rice", 0, AV_OPT_TYPE_CONST,
             { .i64 = AC_GOLOMB_RICE }, INT_MIN, INT_MAX, VE, "coder" },
         { "range_def", "Range with default table", 0, AV_OPT_TYPE_CONST,
-            { .i64 = AC_RANGE_DEFAULT_TAB }, INT_MIN, INT_MAX, VE, "coder" },
+            { .i64 = AC_RANGE_DEFAULT_TAB_FORCE }, INT_MIN, INT_MAX, VE, "coder" },
         { "range_tab", "Range with custom table", 0, AV_OPT_TYPE_CONST,
             { .i64 = AC_RANGE_CUSTOM_TAB }, INT_MIN, INT_MAX, VE, "coder" },
+        { "ac", "Range with custom table (the ac option exists for compatibility and is deprecated)", 0, AV_OPT_TYPE_CONST,
+            { .i64 = 1 }, INT_MIN, INT_MAX, VE, "coder" },
 
     { NULL }
 };

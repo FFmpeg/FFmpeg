@@ -56,6 +56,7 @@
 #define AC_GOLOMB_RICE          0
 #define AC_RANGE_DEFAULT_TAB    1
 #define AC_RANGE_CUSTOM_TAB     2
+#define AC_RANGE_DEFAULT_TAB_FORCE -2
 
 typedef struct VlcState {
     int16_t drift;
