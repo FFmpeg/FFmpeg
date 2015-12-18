@@ -62,6 +62,15 @@ static av_always_inline float cbrtf(float x)
 }
 #endif
 
+#if !HAVE_COPYSIGN
+static av_always_inline double copysign(double x, double y)
+{
+    uint64_t vx = av_double2int(x);
+    uint64_t vy = av_double2int(y);
+    return av_int2double((vx & UINT64_C(0x7fffffffffffffff)) | (vy & UINT64_C(0x8000000000000000)));
+}
+#endif
+
 #if !HAVE_COSF
 #undef cosf
 #define cosf(x) ((float)cos(x))
