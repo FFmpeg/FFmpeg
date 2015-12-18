@@ -818,7 +818,13 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
+
+#if FF_API_STAT_BITS
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->frame_bits = put_bits_count(&s->pb);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     s->lambda_sum += s->lambda;
     s->lambda_count++;
 
