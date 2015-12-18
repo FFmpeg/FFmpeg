@@ -83,9 +83,8 @@ static int ifmt##_to_##ofmt##_neon_wrapper_##precision(SwsContext *c, const uint
     };                                                                                      \
                                                                                             \
     ff_##ifmt##_to_##ofmt##_neon_##precision(c->srcW, srcSliceH,                            \
-                                 dst[0] +  srcSliceY      * dstStride[0], dstStride[0],     \
-                                 src[0] +  srcSliceY      * srcStride[0], srcStride[0],     \
-                                 src[1] + (srcSliceY / 2) * srcStride[1], srcStride[1],     \
+                                 dst[0] + srcSliceY * dstStride[0], dstStride[0],           \
+                                 src[0], srcStride[0], src[1], srcStride[1],                \
                                  yuv2rgb_table,                                             \
                                  c->yuv2rgb_y_offset >> 9,                                  \
                                  c->yuv2rgb_y_coeff / ((precision) == 16 ? 1 << 7 : 1));    \
