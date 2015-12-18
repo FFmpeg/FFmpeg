@@ -631,7 +631,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
          s->in.format == ABOVE_BELOW_LR ||
          s->in.format == ABOVE_BELOW_RL ||
          s->in.format == ABOVE_BELOW_2_LR ||
-         s->in.format == ABOVE_BELOW_2_RL)) {
+         s->in.format == ABOVE_BELOW_2_RL ||
+         s->in.format == INTERLEAVE_ROWS_LR ||
+         s->in.format == INTERLEAVE_ROWS_RL)) {
         oright = av_frame_clone(s->prev);
         oleft  = av_frame_clone(s->prev);
         if (!oright || !oleft) {
@@ -711,6 +713,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ALTERNATING_LR:
     case ALTERNATING_RL:
         switch (s->in.format) {
+        case INTERLEAVE_ROWS_LR:
+        case INTERLEAVE_ROWS_RL:
+            for (i = 0; i < s->nb_planes; i++) {
+                oleft->linesize[i]  *= 2;
+                oright->linesize[i] *= 2;
+            }
         case ABOVE_BELOW_LR:
         case ABOVE_BELOW_RL:
         case ABOVE_BELOW_2_LR:
