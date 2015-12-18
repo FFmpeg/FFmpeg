@@ -649,7 +649,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                         sce->band_type[w] = 0;
             }
             s->psy.bitres.alloc = -1;
-            s->psy.bitres.bits = avctx->frame_bits / s->channels;
+            s->psy.bitres.bits = s->last_frame_pb_count / s->channels;
             s->psy.model->analyze(&s->psy, start_ch, coeffs, wi);
             if (s->psy.bitres.alloc > 0) {
                 /* Lambda unused here on purpose, we need to take psy's unscaled allocation */
@@ -819,11 +819,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
 
-#if FF_API_STAT_BITS
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->frame_bits = put_bits_count(&s->pb);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
+    s->last_frame_pb_count = put_bits_count(&s->pb);
 
     s->lambda_sum += s->lambda;
     s->lambda_count++;
@@ -911,6 +907,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->channels = avctx->channels;
     s->chan_map = aac_chan_configs[s->channels-1];
     s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
+    s->last_frame_pb_count = 0;
     avctx->extradata_size = 5;
     avctx->frame_size = 1024;
     avctx->initial_padding = 1024;

@@ -118,6 +118,7 @@ typedef struct AACEncContext {
     int last_frame;
     int random_state;
     float lambda;
+    int last_frame_pb_count;                     ///< number of bits for the previous frame
     float lambda_sum;                            ///< sum(lambda), for Qvg reporting
     int lambda_count;                            ///< count(lambda), for Qvg reporting
     enum RawDataBlockType cur_type;              ///< channel group type cur_channel belongs to
