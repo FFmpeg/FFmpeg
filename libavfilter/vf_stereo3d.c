@@ -781,8 +781,7 @@ copy:
         case INTERLEAVE_ROWS_LR:
         case INTERLEAVE_ROWS_RL:
             for (i = 0; i < s->nb_planes; i++) {
-                oleft->linesize[i]  *= 2;
-                oright->linesize[i] *= 2;
+                out->linesize[i] *= 2;
             }
         case ABOVE_BELOW_LR:
         case ABOVE_BELOW_RL:
