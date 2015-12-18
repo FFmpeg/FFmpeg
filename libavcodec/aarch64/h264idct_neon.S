@@ -37,8 +37,8 @@ function ff_h264_idct_add_neon, export=1
         sub             v7.4H,  v16.4H, v3.4H
         add             v0.4H,  v4.4H,  v6.4H
         add             v1.4H,  v5.4H,  v7.4H
-        sub             v2.4H,  v4.4H,  v6.4H
-        sub             v3.4H,  v5.4H,  v7.4H
+        sub             v3.4H,  v4.4H,  v6.4H
+        sub             v2.4H,  v5.4H,  v7.4H
 
         transpose_4x4H  v0, v1, v2, v3, v4, v5, v6, v7
 
