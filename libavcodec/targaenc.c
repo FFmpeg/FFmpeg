@@ -24,11 +24,18 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "rle.h"
 #include "targa.h"
+
+typedef struct TargaContext {
+    AVClass *class;
+
+    int rle;
+} TargaContext;
 
 /**
  * RLE compress the image, with maximum size of out_size
@@ -78,6 +85,7 @@ static int targa_encode_normal(uint8_t *outbuf, const AVFrame *pic, int bpp, int
 static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *p, int *got_packet)
 {
+    TargaContext *s = avctx->priv_data;
     int bpp, picsize, datasize = -1, ret, i;
     uint8_t *out;
 
@@ -147,8 +155,16 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     bpp = pkt->data[16] >> 3;
 
+
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->coder_type == FF_CODER_TYPE_RAW)
+        s->rle = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     /* try RLE compression */
-    if (avctx->coder_type != FF_CODER_TYPE_RAW)
+    if (s->rle)
         datasize = targa_encode_rle(out, picsize, p, bpp, avctx->width, avctx->height);
 
     /* if that worked well, mark the picture as RLE compressed */
@@ -184,11 +200,28 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
+#define OFFSET(x) offsetof(TargaContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "rle", "Use run-length compression", OFFSET(rle), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+
+    { NULL },
+};
+
+static const AVClass targa_class = {
+    .class_name = "targa",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_targa_encoder = {
     .name           = "targa",
     .long_name      = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TARGA,
+    .priv_data_size = sizeof(TargaContext),
+    .priv_class     = &targa_class,
     .init           = targa_encode_init,
     .encode2        = targa_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
