@@ -550,6 +550,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     GUID encoder_preset = NV_ENC_PRESET_HQ_GUID;
     GUID codec;
     NVENCSTATUS nv_status = NV_ENC_SUCCESS;
+    AVCPBProperties *cpb_props;
     int surfaceCount = 0;
     int i, num_mbs;
     int isLL = 0;
@@ -1094,6 +1095,13 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
     if (ctx->encode_config.rcParams.averageBitRate > 0)
         avctx->bit_rate = ctx->encode_config.rcParams.averageBitRate;
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+    cpb_props->max_bitrate = ctx->encode_config.rcParams.maxBitRate;
+    cpb_props->avg_bitrate = avctx->bit_rate;
+    cpb_props->buffer_size = ctx->encode_config.rcParams.vbvBufferSize;
 
     return 0;
 

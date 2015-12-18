@@ -452,6 +452,7 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
 static av_cold int X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
+    AVCPBProperties *cpb_props;
     int sw,sh;
 
     if (avctx->global_quality > 0)
@@ -815,6 +816,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         avctx->extradata_size = p - avctx->extradata;
     }
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+    cpb_props->buffer_size = x4->params.rc.i_vbv_buffer_size * 1000;
+    cpb_props->max_bitrate = x4->params.rc.i_vbv_max_bitrate * 1000;
+    cpb_props->avg_bitrate = x4->params.rc.i_bitrate         * 1000;
 
     return 0;
 }

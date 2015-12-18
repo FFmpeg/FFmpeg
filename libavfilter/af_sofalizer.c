@@ -830,7 +830,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     emms_c();
 
-    /* display error message if clipping occured */
+    /* display error message if clipping occurred */
     if (n_clippings[0] + n_clippings[1] > 0) {
         av_log(ctx, AV_LOG_WARNING, "%d of %d samples clipped. Please reduce gain.\n",
                n_clippings[0] + n_clippings[1], out->nb_samples * 2);

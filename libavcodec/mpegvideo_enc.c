@@ -286,6 +286,7 @@ av_cold int ff_dct_encode_init(MpegEncContext *s) {
 av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
+    AVCPBProperties *cpb_props;
     int i, ret, format_supported;
 
     mpv_encode_defaults(s);
@@ -1035,6 +1036,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return ret;
         }
     }
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+    cpb_props->max_bitrate = avctx->rc_max_rate;
+    cpb_props->min_bitrate = avctx->rc_min_rate;
+    cpb_props->avg_bitrate = avctx->bit_rate;
+    cpb_props->buffer_size = avctx->rc_buffer_size;
 
     return 0;
 fail:
@@ -1939,6 +1948,9 @@ vbv_retry:
             s->out_format == FMT_MPEG1                     &&
             90000LL * (avctx->rc_buffer_size - 1) <=
                 s->avctx->rc_max_rate * 0xFFFFLL) {
+            AVCPBProperties *props;
+            size_t props_size;
+
             int vbv_delay, min_delay;
             double inbits  = s->avctx->rc_max_rate *
                              av_q2d(s->avctx->time_base);
@@ -1965,7 +1977,17 @@ vbv_retry:
             s->vbv_delay_ptr[1]  = vbv_delay >> 5;
             s->vbv_delay_ptr[2] &= 0x07;
             s->vbv_delay_ptr[2] |= vbv_delay << 3;
+
+            props = av_cpb_properties_alloc(&props_size);
+            if (!props)
+                return AVERROR(ENOMEM);
+            props->vbv_delay = vbv_delay * 300;
+
+#if FF_API_VBV_DELAY
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->vbv_delay     = vbv_delay * 300;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         }
         s->total_bits     += s->frame_bits;
         avctx->frame_bits  = s->frame_bits;

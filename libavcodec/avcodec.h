@@ -1185,6 +1185,44 @@ typedef struct AVPanScan{
     int16_t position[3][2];
 }AVPanScan;
 
+/**
+ * This structure describes the bitrate properties of an encoded bitstream. It
+ * roughly corresponds to a subset the VBV parameters for MPEG-2 or HRD
+ * parameters for H.264/HEVC.
+ */
+typedef struct AVCPBProperties {
+    /**
+     * Maximum bitrate of the stream, in bits per second.
+     * Zero if unknown or unspecified.
+     */
+    int max_bitrate;
+    /**
+     * Minimum bitrate of the stream, in bits per second.
+     * Zero if unknown or unspecified.
+     */
+    int min_bitrate;
+    /**
+     * Average bitrate of the stream, in bits per second.
+     * Zero if unknown or unspecified.
+     */
+    int avg_bitrate;
+
+    /**
+     * The size of the buffer to which the ratecontrol is applied, in bits.
+     * Zero if unknown or unspecified.
+     */
+    int buffer_size;
+
+    /**
+     * The delay between the time the packet this structure is associated with
+     * is received and the time when it should be decoded, in periods of a 27MHz
+     * clock.
+     *
+     * UINT64_MAX when unknown or unspecified.
+     */
+    uint64_t vbv_delay;
+} AVCPBProperties;
+
 #if FF_API_QSCALE_TYPE
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1
@@ -1291,6 +1329,11 @@ enum AVPacketSideDataType {
      * e.g. no decoder available for codec.
      */
     AV_PKT_DATA_FALLBACK_TRACK,
+
+    /**
+     * This side data corresponds to the AVCPBProperties struct.
+     */
+    AV_PKT_DATA_CPB_PROPERTIES,
 
     /**
      * Recommmends skipping the specified number of samples
@@ -3119,13 +3162,18 @@ typedef struct AVCodecContext {
     int error_rate;
 #endif
 
+#if FF_API_VBV_DELAY
     /**
      * VBV delay coded in the last frame (in periods of a 27 MHz clock).
      * Used for compliant TS muxing.
      * - encoding: Set by libavcodec.
      * - decoding: unused.
+     * @deprecated this value is now exported as a part of
+     * AV_PKT_DATA_CPB_PROPERTIES packet side data
      */
+    attribute_deprecated
     uint64_t vbv_delay;
+#endif
 
 #if FF_API_SIDEDATA_ONLY_PKT
     /**
@@ -3301,6 +3349,16 @@ typedef struct AVCodecContext {
     unsigned properties;
 #define FF_CODEC_PROPERTY_LOSSLESS        0x00000001
 #define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
+
+    /**
+     * Additional data associated with the entire coded stream.
+     *
+     * - decoding: unused
+     * - encoding: may be set by libavcodec after avcodec_open2().
+     */
+    AVPacketSideData *coded_side_data;
+    int            nb_coded_side_data;
+
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
@@ -3995,6 +4053,22 @@ void av_free_packet(AVPacket *pkt);
  */
 uint8_t* av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
                                  int size);
+
+/**
+ * Wrap an existing array as a packet side data.
+ *
+ * @param pkt packet
+ * @param type side information type
+ * @param data the side data array. It must be allocated with the av_malloc()
+ *             family of functions. The ownership of the data is transferred to
+ *             pkt.
+ * @param size side information size
+ * @return a non-negative number on success, a negative AVERROR code on
+ *         failure. On failure, the packet is unchanged and the data remains
+ *         owned by the caller.
+ */
+int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                            uint8_t *data, size_t size);
 
 /**
  * Shrink the already allocated side data buffer
@@ -5300,6 +5374,17 @@ const AVCodecDescriptor *avcodec_descriptor_next(const AVCodecDescriptor *prev);
  *         exists.
  */
 const AVCodecDescriptor *avcodec_descriptor_get_by_name(const char *name);
+
+/**
+ * Allocate a CPB properties structure and initialize its fields to default
+ * values.
+ *
+ * @param size if non-NULL, the size of the allocated struct will be written
+ *             here. This is useful for embedding it in side data.
+ *
+ * @return the newly allocated struct or NULL on failure
+ */
+AVCPBProperties *av_cpb_properties_alloc(size_t *size);
 
 /**
  * @}

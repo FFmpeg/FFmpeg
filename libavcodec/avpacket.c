@@ -274,29 +274,47 @@ void av_free_packet(AVPacket *pkt)
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-                                 int size)
+int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                            uint8_t *data, size_t size)
 {
     int elems = pkt->side_data_elems;
 
     if ((unsigned)elems + 1 > INT_MAX / sizeof(*pkt->side_data))
-        return NULL;
-    if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
-        return NULL;
+        return AVERROR(ERANGE);
 
     pkt->side_data = av_realloc(pkt->side_data,
                                 (elems + 1) * sizeof(*pkt->side_data));
     if (!pkt->side_data)
-        return NULL;
+        return AVERROR(ENOMEM);
 
-    pkt->side_data[elems].data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!pkt->side_data[elems].data)
-        return NULL;
+    pkt->side_data[elems].data = data;
     pkt->side_data[elems].size = size;
     pkt->side_data[elems].type = type;
     pkt->side_data_elems++;
 
-    return pkt->side_data[elems].data;
+    return 0;
+}
+
+
+uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                                 int size)
+{
+    int ret;
+    uint8_t *data;
+
+    if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+        return NULL;
+    data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!data)
+        return NULL;
+
+    ret = av_packet_add_side_data(pkt, type, data, size);
+    if (ret < 0) {
+        av_freep(&data);
+        return NULL;
+    }
+
+    return data;
 }
 
 uint8_t *av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,

@@ -2507,12 +2507,13 @@ void avsubtitle_free(AVSubtitle *sub)
 
 av_cold int avcodec_close(AVCodecContext *avctx)
 {
+    int i;
+
     if (!avctx)
         return 0;
 
     if (avcodec_is_open(avctx)) {
         FramePool *pool = avctx->internal->pool;
-        int i;
         if (CONFIG_FRAME_THREAD_ENCODER &&
             avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
             ff_frame_thread_encoder_free(avctx);
@@ -2534,6 +2535,11 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
         av_freep(&avctx->internal);
     }
+
+    for (i = 0; i < avctx->nb_coded_side_data; i++)
+        av_freep(&avctx->coded_side_data[i].data);
+    av_freep(&avctx->coded_side_data);
+    avctx->nb_coded_side_data = 0;
 
     if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
         av_opt_free(avctx->priv_data);
@@ -3481,4 +3487,44 @@ const uint8_t *avpriv_find_start_code(const uint8_t *av_restrict p,
     *state = AV_RB32(p);
 
     return p + 4;
+}
+
+AVCPBProperties *av_cpb_properties_alloc(size_t *size)
+{
+    AVCPBProperties *props = av_mallocz(sizeof(AVCPBProperties));
+    if (!props)
+        return NULL;
+
+    if (size)
+        *size = sizeof(*props);
+
+    props->vbv_delay = UINT64_MAX;
+
+    return props;
+}
+
+AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx)
+{
+    AVPacketSideData *tmp;
+    AVCPBProperties  *props;
+    size_t size;
+
+    props = av_cpb_properties_alloc(&size);
+    if (!props)
+        return NULL;
+
+    tmp = av_realloc_array(avctx->coded_side_data, avctx->nb_coded_side_data + 1, sizeof(*tmp));
+    if (!tmp) {
+        av_freep(&props);
+        return NULL;
+    }
+
+    avctx->coded_side_data = tmp;
+    avctx->nb_coded_side_data++;
+
+    avctx->coded_side_data[avctx->nb_coded_side_data - 1].type = AV_PKT_DATA_CPB_PROPERTIES;
+    avctx->coded_side_data[avctx->nb_coded_side_data - 1].data = (uint8_t*)props;
+    avctx->coded_side_data[avctx->nb_coded_side_data - 1].size = size;
+
+    return props;
 }

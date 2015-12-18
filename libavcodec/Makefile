@@ -7,6 +7,7 @@ HEADERS = avcodec.h                                                     \
           avfft.h                                                       \
           dv_profile.h                                                  \
           d3d11va.h                                                     \
+          dirac.h                                                       \
           dxva2.h                                                       \
           qsv.h                                                         \
           vaapi.h                                                       \
@@ -26,6 +27,7 @@ OBJS = allcodecs.o                                                      \
        bitstream_filter.o                                               \
        codec_desc.o                                                     \
        d3d11va.o                                                        \
+       dirac.o                                                          \
        dv_profile.o                                                     \
        imgconvert.o                                                     \
        mathtables.o                                                     \

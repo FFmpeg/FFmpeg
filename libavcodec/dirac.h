@@ -32,7 +32,6 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
 
 /**
  * Parse code values:
@@ -61,7 +60,7 @@ typedef struct DiracVersionInfo {
     int minor;
 } DiracVersionInfo;
 
-typedef struct dirac_source_params {
+typedef struct AVDiracSeqHeader {
     unsigned width;
     unsigned height;
     uint8_t chroma_format;          ///< 0: 444  1: 422  2: 420
@@ -79,11 +78,36 @@ typedef struct dirac_source_params {
 
     uint8_t pixel_range_index;      ///< index into dirac_pixel_range_presets[]
     uint8_t color_spec_index;       ///< index into dirac_color_spec_presets[]
-} dirac_source_params;
 
-int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
-                                       dirac_source_params *source,
-                                       DiracVersionInfo *version,
-                                       int *bit_depth);
+    int profile;
+    int level;
+
+    AVRational framerate;
+    AVRational sample_aspect_ratio;
+
+    enum AVPixelFormat pix_fmt;
+    enum AVColorRange color_range;
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace colorspace;
+
+    DiracVersionInfo version;
+    int bit_depth;
+} AVDiracSeqHeader;
+
+/**
+ * Parse a Dirac sequence header.
+ *
+ * @param dsh this function will allocate and fill an AVDiracSeqHeader struct
+ *            and write it into this pointer. The caller must free it with
+ *            av_free().
+ * @param buf the data buffer
+ * @param buf_size the size of the data buffer in bytes
+ * @param log_ctx if non-NULL, this function will log errors here
+ * @return 0 on success, a negative AVERROR code on failure
+ */
+int av_dirac_parse_sequence_header(AVDiracSeqHeader **dsh,
+                                   const uint8_t *buf, size_t buf_size,
+                                   void *log_ctx);
 
 #endif /* AVCODEC_DIRAC_H */

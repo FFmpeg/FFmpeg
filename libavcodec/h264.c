@@ -906,18 +906,11 @@ static void decode_postinit(H264Context *h, int setup_finished)
     // FIXME do something with unavailable reference frames
 
     /* Sort B-frames into display order */
-
-    if (h->sps.bitstream_restriction_flag &&
-        h->avctx->has_b_frames < h->sps.num_reorder_frames) {
-        h->avctx->has_b_frames = h->sps.num_reorder_frames;
-        h->low_delay           = 0;
+    if (h->sps.bitstream_restriction_flag ||
+        h->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
+        h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, h->sps.num_reorder_frames);
     }
-
-    if (h->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT &&
-        !h->sps.bitstream_restriction_flag) {
-        h->avctx->has_b_frames = MAX_DELAYED_PIC_COUNT - 1;
-        h->low_delay           = 0;
-    }
+    h->low_delay = !h->avctx->has_b_frames;
 
     for (i = 0; 1; i++) {
         if(i == MAX_DELAYED_PIC_COUNT || cur->poc < h->last_pocs[i]){
