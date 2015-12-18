@@ -27,6 +27,8 @@
 #include "sunrast.h"
 
 typedef struct SUNRASTContext {
+    AVClass *class;
+
     PutByteContext p;
     int depth;      ///< depth of pixel
     int length;     ///< length (bytes) of image
@@ -215,7 +217,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass utvideo_class = {
+static const AVClass sunrast_class = {
     .class_name = "sunrast",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -240,6 +242,7 @@ AVCodec ff_sunrast_encoder = {
 #if FF_API_CODER_TYPE
     .defaults       = sunrast_defaults,
 #endif
+    .priv_class     = &sunrast_class,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24,
                                                   AV_PIX_FMT_PAL8,
                                                   AV_PIX_FMT_GRAY8,
