@@ -919,7 +919,9 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         av_fifo_generic_read(q->async_fifo, &sync,    sizeof(sync),    NULL);
         av_fifo_generic_read(q->async_fifo, &bs,      sizeof(bs),      NULL);
 
-        MFXVideoCORE_SyncOperation(q->session, sync, 60000);
+        do {
+            ret = MFXVideoCORE_SyncOperation(q->session, sync, 1000);
+        } while (ret == MFX_WRN_IN_EXECUTION);
 
         new_pkt.dts  = av_rescale_q(bs->DecodeTimeStamp, (AVRational){1, 90000}, avctx->time_base);
         new_pkt.pts  = av_rescale_q(bs->TimeStamp,       (AVRational){1, 90000}, avctx->time_base);
