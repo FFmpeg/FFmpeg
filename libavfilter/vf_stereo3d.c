@@ -496,14 +496,12 @@ static int config_output(AVFilterLink *outlink)
         s->out.row_step  = 2;
         s->out.height    = s->height * 2;
         s->out.off_rstep = 1;
-        s->in.off_rstep  = s->in.format != INTERLEAVE_ROWS_RL;
         break;
     case INTERLEAVE_ROWS_RL:
         s->in.row_step   = 1 + (s->in.format == INTERLEAVE_ROWS_LR);
         s->out.row_step  = 2;
         s->out.height    = s->height * 2;
         s->out.off_lstep = 1;
-        s->in.off_lstep  = s->in.format != INTERLEAVE_ROWS_LR;
         break;
     case MONO_R:
         s->in.off_left   = s->in.off_right;
