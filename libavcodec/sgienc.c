@@ -96,7 +96,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVFrame * const p = frame;
     PutByteContext pbc;
     uint8_t *in_buf, *encode_buf;
-    int x, y, z, length, tablesize, ret;
+    int x, y, z, length, tablesize, ret, i;
     unsigned int width, height, depth, dimension;
     unsigned int bytes_per_channel, pixmax, put_be;
 
@@ -187,13 +187,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream2_put_be32(&pbc, 0L); /* dummy */
 
     /* name */
-    bytestream2_skip_p(&pbc, 80);
+    for (i = 0; i < 80; i++)
+        bytestream2_put_byte(&pbc, 0L);
 
     /* colormap */
     bytestream2_put_be32(&pbc, 0L);
 
     /* The rest of the 512 byte header is unused. */
-    bytestream2_skip_p(&pbc, 404);
+    for (i = 0; i < 404; i++)
+        bytestream2_put_byte(&pbc, 0L);
 
     if (s->rle) {
         PutByteContext taboff_pcb, tablen_pcb;
