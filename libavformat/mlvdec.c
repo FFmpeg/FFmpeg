@@ -363,6 +363,11 @@ static int read_header(AVFormatContext *avctx)
     if (ast)
         ast->duration = ast->nb_index_entries;
 
+    if ((vst && !vst->nb_index_entries) || (ast && !ast->nb_index_entries)) {
+        av_log(avctx, AV_LOG_ERROR, "no index entries found\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (vst && ast)
         avio_seek(pb, FFMIN(vst->index_entries[0].pos, ast->index_entries[0].pos), SEEK_SET);
     else if (vst)
