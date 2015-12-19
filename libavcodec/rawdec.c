@@ -258,7 +258,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         buf += buf_size - context->frame_size;
 
     len = context->frame_size - (avctx->pix_fmt==AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
-    if (buf_size < len && (avctx->codec_tag & 0xFFFFFF) != MKTAG('B','I','T', 0)) {
+    if (buf_size < len && ((avctx->codec_tag & 0xFFFFFF) != MKTAG('B','I','T', 0) || !need_copy)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected frame_size %d\n", buf_size, len);
         av_buffer_unref(&frame->buf[0]);
         return AVERROR(EINVAL);
