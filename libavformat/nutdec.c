@@ -927,7 +927,7 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
                 return ret;
             }
             value_len = ffio_read_varlen(bc);
-            if (avio_tell(bc) + value_len >= maxpos)
+            if (value_len < 0 || value_len >= maxpos - avio_tell(bc))
                 return AVERROR_INVALIDDATA;
             if (!strcmp(name, "Palette")) {
                 dst = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, value_len);
