@@ -2577,6 +2577,8 @@ vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
 vp9_d3d11va_hwaccel_select="vp9_decoder"
 vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
 vp9_dxva2_hwaccel_select="vp9_decoder"
+vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9"
+vp9_vaapi_hwaccel_select="vp9_decoder"
 wmv3_crystalhd_decoder_select="crystalhd"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
@@ -5319,6 +5321,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "va/va.h" "VAPictureParameterBufferHEVC"
+check_type "va/va.h" "VADecPictureParameterBufferVP9"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
