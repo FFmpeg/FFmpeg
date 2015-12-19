@@ -2561,6 +2561,7 @@ typedef struct AVCodecContext {
      */
     int rc_initial_buffer_occupancy;
 
+#if FF_API_CODER_TYPE
 #define FF_CODER_TYPE_VLC       0
 #define FF_CODER_TYPE_AC        1
 #define FF_CODER_TYPE_RAW       2
@@ -2569,11 +2570,11 @@ typedef struct AVCodecContext {
 #define FF_CODER_TYPE_DEFLATE   4
 #endif /* FF_API_UNUSED_MEMBERS */
     /**
-     * coder type
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     int coder_type;
+#endif /* FF_API_CODER_TYPE */
 
     /**
      * context model
@@ -2671,22 +2672,29 @@ typedef struct AVCodecContext {
                             /* This doesn't take account of any particular  */
                             /* headers inside the transmitted RTP payload.  */
 
+#if FF_API_STAT_BITS
     /* statistics, used for 2-pass encoding */
+    attribute_deprecated
     int mv_bits;
+    attribute_deprecated
     int header_bits;
+    attribute_deprecated
     int i_tex_bits;
+    attribute_deprecated
     int p_tex_bits;
+    attribute_deprecated
     int i_count;
+    attribute_deprecated
     int p_count;
+    attribute_deprecated
     int skip_count;
+    attribute_deprecated
     int misc_bits;
 
-    /**
-     * number of bits used for the previously encoded frame
-     * - encoding: Set by libavcodec.
-     * - decoding: unused
-     */
+    /** @deprecated this field is unused */
+    attribute_deprecated
     int frame_bits;
+#endif
 
     /**
      * pass1 encoding statistics output buffer

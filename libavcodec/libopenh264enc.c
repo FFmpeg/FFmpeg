@@ -25,6 +25,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 
@@ -40,6 +41,7 @@ typedef struct SVCContext {
     int max_nal_size;
     int skip_frames;
     int skipped;
+    int cabac;
 } SVCContext;
 
 #define OPENH264_VER_AT_LEAST(maj, min) \
@@ -58,6 +60,7 @@ static const AVOption options[] = {
     { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
     { "max_nal_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "allow_skip_frames", "allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "cabac", "Enable cabac", OFFSET(cabac), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 
@@ -139,6 +142,13 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 
     (*s->encoder)->GetDefaultParams(s->encoder, &param);
 
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (!s->cabac)
+        s->cabac = avctx->coder_type == FF_CODER_TYPE_AC;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     param.fMaxFrameRate              = 1/av_q2d(avctx->time_base);
     param.iPicWidth                  = avctx->width;
     param.iPicHeight                 = avctx->height;
@@ -165,7 +175,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     param.iMultipleThreadIdc         = avctx->thread_count;
     if (s->profile && !strcmp(s->profile, "main"))
         param.iEntropyCodingModeFlag = 1;
-    else if (!s->profile && avctx->coder_type == FF_CODER_TYPE_AC)
+    else if (!s->profile && s->cabac)
         param.iEntropyCodingModeFlag = 1;
 
     param.sSpatialLayers[0].iVideoWidth         = param.iPicWidth;

@@ -1835,6 +1835,8 @@ vbv_retry:
         if (ret < 0)
             return -1;
 
+#if FF_API_STAT_BITS
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->header_bits = s->header_bits;
         avctx->mv_bits     = s->mv_bits;
         avctx->misc_bits   = s->misc_bits;
@@ -1844,6 +1846,8 @@ vbv_retry:
         // FIXME f/b_count in avctx
         avctx->p_count     = s->mb_num - s->i_count - s->skip_count;
         avctx->skip_count  = s->skip_count;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         frame_end(s);
 
@@ -1905,9 +1909,9 @@ vbv_retry:
                                        s->pict_type);
 
         if (s->avctx->flags & AV_CODEC_FLAG_PASS1)
-            assert(avctx->header_bits + avctx->mv_bits + avctx->misc_bits +
-                   avctx->i_tex_bits + avctx->p_tex_bits ==
-                       put_bits_count(&s->pb));
+            assert(put_bits_count(&s->pb) == s->header_bits + s->mv_bits +
+                                             s->misc_bits + s->i_tex_bits +
+                                             s->p_tex_bits);
         flush_put_bits(&s->pb);
         s->frame_bits  = put_bits_count(&s->pb);
 
@@ -1983,6 +1987,13 @@ vbv_retry:
                 return AVERROR(ENOMEM);
             props->vbv_delay = vbv_delay * 300;
 
+            ret = av_packet_add_side_data(pkt, AV_PKT_DATA_CPB_PROPERTIES,
+                                          (uint8_t*)props, props_size);
+            if (ret < 0) {
+                av_freep(&props);
+                return ret;
+            }
+
 #if FF_API_VBV_DELAY
 FF_DISABLE_DEPRECATION_WARNINGS
             avctx->vbv_delay     = vbv_delay * 300;
@@ -1990,7 +2001,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         }
         s->total_bits     += s->frame_bits;
+#if FF_API_STAT_BITS
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->frame_bits  = s->frame_bits;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
 
         pkt->pts = s->current_picture.f->pts;
         if (!s->low_delay && s->pict_type != AV_PICTURE_TYPE_B) {

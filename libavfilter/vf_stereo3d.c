@@ -496,14 +496,12 @@ static int config_output(AVFilterLink *outlink)
         s->out.row_step  = 2;
         s->out.height    = s->height * 2;
         s->out.off_rstep = 1;
-        s->in.off_rstep  = s->in.format != INTERLEAVE_ROWS_RL;
         break;
     case INTERLEAVE_ROWS_RL:
         s->in.row_step   = 1 + (s->in.format == INTERLEAVE_ROWS_LR);
         s->out.row_step  = 2;
         s->out.height    = s->height * 2;
         s->out.off_lstep = 1;
-        s->in.off_lstep  = s->in.format != INTERLEAVE_ROWS_LR;
         break;
     case MONO_R:
         s->in.off_left   = s->in.off_right;
@@ -631,7 +629,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
          s->in.format == ABOVE_BELOW_LR ||
          s->in.format == ABOVE_BELOW_RL ||
          s->in.format == ABOVE_BELOW_2_LR ||
-         s->in.format == ABOVE_BELOW_2_RL)) {
+         s->in.format == ABOVE_BELOW_2_RL ||
+         s->in.format == INTERLEAVE_ROWS_LR ||
+         s->in.format == INTERLEAVE_ROWS_RL)) {
         oright = av_frame_clone(s->prev);
         oleft  = av_frame_clone(s->prev);
         if (!oright || !oleft) {
@@ -650,7 +650,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
          s->in.format == ABOVE_BELOW_LR ||
          s->in.format == ABOVE_BELOW_RL ||
          s->in.format == ABOVE_BELOW_2_LR ||
-         s->in.format == ABOVE_BELOW_2_RL)) {
+         s->in.format == ABOVE_BELOW_2_RL ||
+         s->in.format == INTERLEAVE_ROWS_LR ||
+         s->in.format == INTERLEAVE_ROWS_RL)) {
         out = oleft = oright = av_frame_clone(inpicref);
         if (!out) {
             av_frame_free(&s->prev);
@@ -711,6 +713,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ALTERNATING_LR:
     case ALTERNATING_RL:
         switch (s->in.format) {
+        case INTERLEAVE_ROWS_LR:
+        case INTERLEAVE_ROWS_RL:
+            for (i = 0; i < s->nb_planes; i++) {
+                oleft->linesize[i]  *= 2;
+                oright->linesize[i] *= 2;
+            }
         case ABOVE_BELOW_LR:
         case ABOVE_BELOW_RL:
         case ABOVE_BELOW_2_LR:
@@ -770,6 +778,11 @@ copy:
         iright = ileft;
     case MONO_R:
         switch (s->in.format) {
+        case INTERLEAVE_ROWS_LR:
+        case INTERLEAVE_ROWS_RL:
+            for (i = 0; i < s->nb_planes; i++) {
+                out->linesize[i] *= 2;
+            }
         case ABOVE_BELOW_LR:
         case ABOVE_BELOW_RL:
         case ABOVE_BELOW_2_LR:
@@ -886,37 +899,37 @@ copy:
 
                 switch (s->pixstep[i]) {
                 case 1:
-                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=2, p++, b++) {
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=2, p++, b+=2) {
                         dst[x  ] =   b&1  ? left[p] : right[p];
                         dst[x+1] = !(b&1) ? left[p] : right[p];
                     }
                     break;
                 case 2:
-                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=4, p+=2, b++) {
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=4, p+=2, b+=2) {
                         AV_WN16(&dst[x  ],   b&1  ? AV_RN16(&left[p]) : AV_RN16(&right[p]));
                         AV_WN16(&dst[x+2], !(b&1) ? AV_RN16(&left[p]) : AV_RN16(&right[p]));
                     }
                     break;
                 case 3:
-                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=6, p+=3, b++) {
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=6, p+=3, b+=2) {
                         AV_WB24(&dst[x  ],   b&1  ? AV_RB24(&left[p]) : AV_RB24(&right[p]));
                         AV_WB24(&dst[x+3], !(b&1) ? AV_RB24(&left[p]) : AV_RB24(&right[p]));
                     }
                     break;
                 case 4:
-                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=8, p+=4, b++) {
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=8, p+=4, b+=2) {
                         AV_WN32(&dst[x  ],   b&1  ? AV_RN32(&left[p]) : AV_RN32(&right[p]));
                         AV_WN32(&dst[x+4], !(b&1) ? AV_RN32(&left[p]) : AV_RN32(&right[p]));
                     }
                     break;
                 case 6:
-                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=12, p+=6, b++) {
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=12, p+=6, b+=2) {
                         AV_WB48(&dst[x  ],   b&1  ? AV_RB48(&left[p]) : AV_RB48(&right[p]));
                         AV_WB48(&dst[x+6], !(b&1) ? AV_RB48(&left[p]) : AV_RB48(&right[p]));
                     }
                     break;
                 case 8:
-                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=16, p+=8, b++) {
+                    for (x = 0, b = 0, p = 0; x < s->linesize[i] * 2; x+=16, p+=8, b+=2) {
                         AV_WN64(&dst[x  ],   b&1 ?  AV_RN64(&left[p]) : AV_RN64(&right[p]));
                         AV_WN64(&dst[x+8], !(b&1) ? AV_RN64(&left[p]) : AV_RN64(&right[p]));
                     }

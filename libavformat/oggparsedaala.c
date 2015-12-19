@@ -42,6 +42,7 @@ static const struct DaalaPixFmtMap list_fmts[] = {
 
 typedef struct DaalaInfoHeader {
     int init_d;
+    int fpr;
     int gpshift;
     int gpmask;
     int version_maj;
@@ -125,6 +126,9 @@ static int daala_header(AVFormatContext *s, int idx)
         hdr->gpmask  = (1 << hdr->gpshift) - 1;
 
         hdr->format.depth  = 8 + 2*(bytestream2_get_byte(&gb)-1);
+
+        hdr->fpr = bytestream2_get_byte(&gb);
+
         hdr->format.planes = bytestream2_get_byte(&gb);
         for (i = 0; i < hdr->format.planes; i++) {
             hdr->format.xdec[i] = bytestream2_get_byte(&gb);

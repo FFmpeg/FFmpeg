@@ -84,7 +84,9 @@ typedef struct X264Context {
     int avcintra_class;
     int motion_est;
     int forced_idr;
+    int coder;
     int a53_cc;
+
     char *x264_params;
 } X264Context;
 
@@ -582,8 +584,12 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
     if (avctx->keyint_min >= 0)
         x4->params.i_keyint_min = avctx->keyint_min;
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->coder_type >= 0)
-        x4->params.b_cabac = avctx->coder_type == FF_CODER_TYPE_AC;
+        x4->coder = avctx->coder_type == FF_CODER_TYPE_AC;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     if (avctx->me_cmp >= 0)
         x4->params.analyse.b_chroma_me = avctx->me_cmp & FF_CMP_CHROMA;
 
@@ -700,6 +706,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
+
+    if (x4->coder >= 0)
+        x4->params.b_cabac = x4->coder;
 
     if (x4->profile)
         if (x264_param_apply_profile(&x4->params, x4->profile) < 0) {
@@ -940,6 +949,11 @@ static const AVOption options[] = {
     { "esa",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_ESA },  INT_MIN, INT_MAX, VE, "motion-est" },
     { "tesa",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_TESA }, INT_MIN, INT_MAX, VE, "motion-est" },
     { "forced-idr",   "If forcing keyframes, force them as IDR frames.",                                  OFFSET(forced_idr),  AV_OPT_TYPE_BOOL,   { .i64 = -1 }, -1, 1, VE },
+    { "coder",    "Coder type",                                           OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, "coder" },
+    { "default",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, INT_MIN, INT_MAX, VE, "coder" },
+    { "cavlc",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "coder" },
+    { "cabac",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "coder" },
+
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
 };
@@ -968,7 +982,9 @@ static const AVCodecDefault x264_defaults[] = {
     { "subq",             "-1" },
     { "b_strategy",       "-1" },
     { "keyint_min",       "-1" },
+#if FF_API_CODER_TYPE
     { "coder",            "-1" },
+#endif
     { "cmp",              "-1" },
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { "thread_type",      "0" },

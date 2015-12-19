@@ -75,13 +75,13 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
     yclipb = FFMAX(logo_y+logo_h-h, 0);
 
     logo_x1 = logo_x + xclipl;
-    logo_x2 = logo_x + logo_w - xclipr;
+    logo_x2 = logo_x + logo_w - xclipr - 1;
     logo_y1 = logo_y + yclipt;
-    logo_y2 = logo_y + logo_h - yclipb;
+    logo_y2 = logo_y + logo_h - yclipb - 1;
 
-    topleft  = src+logo_y1     * src_linesize+logo_x1;
-    topright = src+logo_y1     * src_linesize+logo_x2-1;
-    botleft  = src+(logo_y2-1) * src_linesize+logo_x1;
+    topleft  = src+logo_y1 * src_linesize+logo_x1;
+    topright = src+logo_y1 * src_linesize+logo_x2;
+    botleft  = src+logo_y2 * src_linesize+logo_x1;
 
     if (!direct)
         av_image_copy_plane(dst, dst_linesize, src, src_linesize, w, h);
@@ -89,7 +89,7 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
     dst += (logo_y1 + 1) * dst_linesize;
     src += (logo_y1 + 1) * src_linesize;
 
-    for (y = logo_y1+1; y < logo_y2-1; y++) {
+    for (y = logo_y1+1; y < logo_y2; y++) {
         left_sample = topleft[src_linesize*(y-logo_y1)]   +
                       topleft[src_linesize*(y-logo_y1-1)] +
                       topleft[src_linesize*(y-logo_y1+1)];
@@ -99,19 +99,19 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
 
         for (x = logo_x1+1,
              xdst = dst+logo_x1+1,
-             xsrc = src+logo_x1+1; x < logo_x2-1; x++, xdst++, xsrc++) {
+             xsrc = src+logo_x1+1; x < logo_x2; x++, xdst++, xsrc++) {
 
-            if (show && (y == logo_y1+1 || y == logo_y2-2 ||
-                         x == logo_x1+1 || x == logo_x2-2)) {
+            if (show && (y == logo_y1+1 || y == logo_y2-1 ||
+                         x == logo_x1+1 || x == logo_x2-1)) {
                 *xdst = 0;
                 continue;
             }
 
             /* Weighted interpolation based on relative distances, taking SAR into account */
-            weightl = (uint64_t)              (logo_x2-1-x) * (y-logo_y1) * (logo_y2-1-y) * sar.den;
-            weightr = (uint64_t)(x-logo_x1)                 * (y-logo_y1) * (logo_y2-1-y) * sar.den;
-            weightt = (uint64_t)(x-logo_x1) * (logo_x2-1-x)               * (logo_y2-1-y) * sar.num;
-            weightb = (uint64_t)(x-logo_x1) * (logo_x2-1-x) * (y-logo_y1)                 * sar.num;
+            weightl = (uint64_t)              (logo_x2-x) * (y-logo_y1) * (logo_y2-y) * sar.den;
+            weightr = (uint64_t)(x-logo_x1)               * (y-logo_y1) * (logo_y2-y) * sar.den;
+            weightt = (uint64_t)(x-logo_x1) * (logo_x2-x)               * (logo_y2-y) * sar.num;
+            weightb = (uint64_t)(x-logo_x1) * (logo_x2-x) * (y-logo_y1)               * sar.num;
 
             interp =
                 left_sample * weightl
