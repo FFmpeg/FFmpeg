@@ -155,6 +155,10 @@ static void find_best_state(uint8_t best_state[256][256],
             double occ[256] = { 0 };
             double len      = 0;
             occ[j] = 1.0;
+
+            if (!one_state[j])
+                continue;
+
             for (k = 0; k < 256; k++) {
                 double newocc[256] = { 0 };
                 for (m = 1; m < 256; m++)
@@ -821,9 +825,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
 
-    if (s->ac == AC_RANGE_CUSTOM_TAB)
+    if (s->ac == AC_RANGE_CUSTOM_TAB) {
         for (i = 1; i < 256; i++)
             s->state_transition[i] = ver2_state[i];
+    } else {
+        RangeCoder c;
+        ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
+        for (i = 1; i < 256; i++)
+            s->state_transition[i] = c.one_state[i];
+    }
 
     for (i = 0; i < 256; i++) {
         s->quant_table_count = 2;
@@ -934,7 +944,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (p[0] == 0)
                 break;
         }
-        sort_stt(s, s->state_transition);
+        if (s->ac == AC_RANGE_CUSTOM_TAB)
+            sort_stt(s, s->state_transition);
 
         find_best_state(best_state, s->state_transition);
 
