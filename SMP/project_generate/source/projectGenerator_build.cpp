@@ -224,30 +224,30 @@ void projectGenerator::buildDependencyDirs(const string & sProjectName, StaticLi
         if (mitLib->second && m_ConfigHelper.getConfigOption(mitLib->first)->m_sValue.compare("1") == 0) {
             //Add in the additional include directories
             if (mitLib->first.compare("libopus") == 0) {
-                vIncludeDirs.push_back("$(OutDir)\\include\\opus");
+                vIncludeDirs.push_back("$(OutDir)/include/opus");
             } else if (mitLib->first.compare("libfreetype") == 0) {
-                vIncludeDirs.push_back("$(OutDir)\\include\\freetype2");
+                vIncludeDirs.push_back("$(OutDir)/include/freetype2");
             } else if (mitLib->first.compare("libfribidi") == 0) {
-                vIncludeDirs.push_back("$(OutDir)\\include\\fribidi");
+                vIncludeDirs.push_back("$(OutDir)/include/fribidi");
             } else if (mitLib->first.compare("sdl") == 0) {
-                vIncludeDirs.push_back("$(OutDir)\\include\\SDL");
+                vIncludeDirs.push_back("$(OutDir)/include/SDL");
             } else if (mitLib->first.compare("opengl") == 0) {
                 //Requires glext headers to be installed in include dir (does not require the libs)
             } else if (mitLib->first.compare("opencl") == 0) {
                 //Need to check for the existence of environment variables
                 if (GetEnvironmentVariable("AMDAPPSDKROOT", NULL, 0)) {
-                    vIncludeDirs.push_back("$(AMDAPPSDKROOT)\\include\\");
-                    vLib32Dirs.push_back("$(AMDAPPSDKROOT)\\lib\\Win32");
-                    vLib64Dirs.push_back("$(AMDAPPSDKROOT)\\lib\\x64");
+                    vIncludeDirs.push_back("$(AMDAPPSDKROOT)/include/");
+                    vLib32Dirs.push_back("$(AMDAPPSDKROOT)/lib/Win32");
+                    vLib64Dirs.push_back("$(AMDAPPSDKROOT)/lib/x64");
                 } else if (GetEnvironmentVariable("INTELOCLSDKROOT", NULL, 0)) {
-                    vIncludeDirs.push_back("$(INTELOCLSDKROOT)\\include\\");
-                    vLib32Dirs.push_back("$(INTELOCLSDKROOT)\\lib\\x86");
-                    vLib64Dirs.push_back("$(INTELOCLSDKROOT)\\lib\\x64");
+                    vIncludeDirs.push_back("$(INTELOCLSDKROOT)/include/");
+                    vLib32Dirs.push_back("$(INTELOCLSDKROOT)/lib/x86");
+                    vLib64Dirs.push_back("$(INTELOCLSDKROOT)/lib/x64");
                 } else if (GetEnvironmentVariable("CUDA_PATH", NULL, 0)) {
                     cout << "  Warning: NVIDIA OpenCl currently is only 1.1. OpenCl 1.2 is needed for FFMpeg support" << endl;
-                    vIncludeDirs.push_back("$(CUDA_PATH)\\include\\");
-                    vLib32Dirs.push_back("$(CUDA_PATH)\\lib\\Win32");
-                    vLib64Dirs.push_back("$(CUDA_PATH)\\lib\\x64");
+                    vIncludeDirs.push_back("$(CUDA_PATH)/include/");
+                    vLib32Dirs.push_back("$(CUDA_PATH)/lib/Win32");
+                    vLib64Dirs.push_back("$(CUDA_PATH)/lib/x64");
                 } else {
                     cout << "  Warning: Could not find an OpenCl SDK environment variable." << endl;
                     cout << "    Either an OpenCL SDK is not installed or the environment variables are missing." << endl;
@@ -258,9 +258,9 @@ void projectGenerator::buildDependencyDirs(const string & sProjectName, StaticLi
                     cout << "    Either the OpenAL SDK is not installed or the environment variable is missing." << endl;
                     cout << "    Using the default environment variable of 'OPENAL_SDK'." << endl;
                 }
-                vIncludeDirs.push_back("$(OPENAL_SDK)\\include\\");
-                vLib32Dirs.push_back("$(OPENAL_SDK)\\libs\\Win32");
-                vLib64Dirs.push_back("$(CUDA_PATH)\\lib\\Win64");
+                vIncludeDirs.push_back("$(OPENAL_SDK)/include/");
+                vLib32Dirs.push_back("$(OPENAL_SDK)/libs/Win32");
+                vLib64Dirs.push_back("$(CUDA_PATH)/lib/Win64");
             } else if (mitLib->first.compare("nvenc") == 0) {
                 //Need to check for the existence of environment variables
                 if (!GetEnvironmentVariable("CUDA_PATH", NULL, 0)) {
@@ -268,7 +268,7 @@ void projectGenerator::buildDependencyDirs(const string & sProjectName, StaticLi
                     cout << "    Either the CUDA SDK is not installed or the environment variable is missing." << endl;
                     cout << "    NVENC requires CUDA to be installed with NVENC headers made available in the CUDA SDK include path." << endl;
                 }
-                vIncludeDirs.push_back("$(CUDA_PATH)\\include\\");
+                vIncludeDirs.push_back("$(CUDA_PATH)/include/");
             }
         }
     }

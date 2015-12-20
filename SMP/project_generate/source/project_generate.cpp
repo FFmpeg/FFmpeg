@@ -28,19 +28,9 @@ int main( int argc, char** argv )
     cout << "Project generator..." << endl;
     //Pass the input configuration
     projectGenerator ProjectHelper;
-    if( !ProjectHelper.m_ConfigHelper.passConfig( ) )
-    {
+    if (!ProjectHelper.m_ConfigHelper.passConfig(argc, argv)) {
         system("pause");
-        exit( 1 );
-    }
-    //Pass input arguments
-    for( int i=1; i<argc; i++ )
-    {
-        if( !ProjectHelper.m_ConfigHelper.changeConfig( argv[i] ) )
-        {
-            system("pause");
-            exit( 1 );
-        }
+        exit(1);
     }
 
     //Delete any previously generated files

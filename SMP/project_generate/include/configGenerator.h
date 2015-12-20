@@ -57,6 +57,9 @@ private:
     string m_sToolchain;
     bool m_bLibav;
     string m_sProjectName;
+    string m_sRootDirectory;
+    string m_sProjectDirectory;
+    string m_sOutDirectory;
 
     const string m_sWhiteSpace;
 
@@ -64,15 +67,17 @@ private:
 public:
     configGenerator( );
 
-    bool passConfig( );
+    bool passConfig(int argc, char** argv);
 
-    bool changeConfig( const string & stOption );
+    bool outputConfig();
 
-    bool outputConfig( );
-
-    static void deleteCreatedFiles();
+    void deleteCreatedFiles();
 
 private:
+    bool passConfigureFile();
+
+    bool changeConfig(const string & stOption);
+
     void buildFixedValues( DefaultValuesList & mFixedValues );
 
     void buildReplaceValues( DefaultValuesList & mReplaceValues, DefaultValuesList & mASMReplaceValues );

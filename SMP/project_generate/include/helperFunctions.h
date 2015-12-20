@@ -53,6 +53,8 @@ bool findFile(const string & sFileName, string & sRetFileName);
 bool findFiles(const string & sFileSearch, vector<string> & vRetFiles, bool bRecursive = true);
 
 bool findFolders(const string & sFolderSearch, vector<string>& vRetFolders, bool bRecursive = true);
+
+void makePathsRelative(const string& sPath, const string& sMakeRelativeTo, string& sRetPath);
 };
 
 using namespace project_generate;

@@ -32,14 +32,63 @@ configGenerator::configGenerator( ) :
 {
 }
 
-bool configGenerator::passConfig( )
+bool configGenerator::passConfig(int argc, char** argv)
+{
+    //Check for initial input arguments
+    for (int i = 1; i < argc; i++) {
+        string stOption = string(argv[i]);
+        if(stOption.find("--rootdir") == 0) {
+            if (!changeConfig(stOption)) {
+                return false;
+            }
+        }
+    }
+    if (!passConfigureFile()) {
+        return false;
+    }
+    //Pass input arguments
+    for (int i = 1; i < argc; i++) {
+        if (!changeConfig(argv[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool configGenerator::passConfigureFile()
 {
     //Generate a new config file by scanning existing build chain files
-    cout << "  Generating config files..." << endl;
-    //Open configure file
-    string sConfigFile = "../../../configure";
-    if (!loadFromFile(sConfigFile, m_sConfigureFile)) {
-        return false;
+    cout << "  Passing configure file..." << endl;
+
+    //Setup initial directories
+    if (m_sRootDirectory.length() == 0) {
+        string sPathList[] = {"../../../", "./", "../", "../../ffmpeg", "../../libav"};
+        uint uiPathCount = 0;
+        uint uiNumPaths = sizeof(sPathList) / sizeof(string);
+        for (uiPathCount; uiPathCount < uiNumPaths; uiPathCount++) {
+            m_sRootDirectory = sPathList[uiPathCount];
+            string sConfigFile = m_sRootDirectory + "configure";
+            if (loadFromFile(sConfigFile, m_sConfigureFile)) {
+                break;
+            }
+        }
+        if (uiPathCount == uiNumPaths) {
+            cout << "  Error: failed to find a 'configure' file" << endl;
+            return false;
+        }
+    } else {
+        //Open configure file
+        string sConfigFile = m_sRootDirectory + "configure";
+        if (!loadFromFile(sConfigFile, m_sConfigureFile)) {
+            cout << "  Error: failed to find a 'configure' file in specified root diretory" << endl;
+            return false;
+        }
+    }
+    if (m_sProjectDirectory.length() == 0) {
+        m_sProjectDirectory = m_sRootDirectory + "SMP/";
+    }
+    if (m_sOutDirectory.length() == 0) {
+        m_sOutDirectory = "../../../msvc/";
     }
 
     //Search for start of config.h file parameters
@@ -217,6 +266,14 @@ bool configGenerator::changeConfig( const string & stOption )
             }
         }
         cout << sHelpOptions << endl;
+        // Add in custom standard string
+        cout << "Standard options:" << endl;
+        cout << "  --prefix=PREFIX          install in PREFIX [../../../msvc/]" << endl;
+        //cout << "  --bindir=DIR             install binaries in DIR [PREFIX/bin]" << endl;
+        //cout << "  --libdir=DIR             install libs in DIR [PREFIX/lib]" << endl;
+        //cout << "  --incdir=DIR             install includes in DIR [PREFIX/include]" << endl;
+        cout << "  --rootdir=DIR            location of source configure file [auto]" << endl;
+        cout << "  --projdir=DIR            location of output proect files [ROOT/SMP]" << endl;
         // Add in custom toolchain string
         cout << "Toolchain options:" << endl;
         cout << "  --toolchain=NAME         set tool defaults according to NAME" << endl;
@@ -242,6 +299,30 @@ bool configGenerator::changeConfig( const string & stOption )
             return false;
         }
         m_sToolchain = sToolChain;
+    } else if (stOption.find("--prefix") == 0) {
+        //A output dir has been specified
+        if (stOption.at(8) != '=') {
+            cout << "  Error: Must specify a prefix value." << endl;
+        }
+        string sValue = stOption.substr(9);
+        m_sOutDirectory = sValue;
+    } else if (stOption.find("--rootdir") == 0) {
+        //A output dir has been specified
+        if (stOption.at(9) != '=') {
+            cout << "  Error: Must specify a rootdir value." << endl;
+        }
+        string sValue = stOption.substr(10);
+        m_sRootDirectory = sValue;
+        if (m_sProjectDirectory.length() == 0) {
+            m_sProjectDirectory = m_sRootDirectory + "SMP/";
+        }
+    } else if (stOption.find("--projdir") == 0) {
+        //A output dir has been specified
+        if (stOption.at(9) != '=') {
+            cout << "  Error: Must specify a projdir value." << endl;
+        }
+        string sValue = stOption.substr(10);
+        m_sProjectDirectory = sValue;
     } else if (stOption.find("--list-") == 0) {
         string sOption = stOption.substr(7);
         string sOptionList = sOption;
@@ -514,7 +595,7 @@ bool configGenerator::outputConfig( )
     }
 
     //Open configure output file
-    string sConfigFile = "../../config.h";
+    string sConfigFile = m_sProjectDirectory + "config.h";
     ofstream ofConfigureFile( sConfigFile );
     if( !ofConfigureFile.is_open( ) )
     {
@@ -579,7 +660,7 @@ bool configGenerator::outputConfig( )
     }
 
     //Open asm configure output file
-    sConfigFile = "../../config.asm";
+    sConfigFile = m_sProjectDirectory + "config.asm";
     ofstream ofASMConfigureFile( sConfigFile );
     if( !ofASMConfigureFile.is_open( ) )
     {
@@ -631,11 +712,11 @@ bool configGenerator::outputConfig( )
 
     //Output avconfig.h
     cout << "  Outputting avconfig.h..." << endl;
-    if (!makeDirectory("../../libavutil")) {
+    if (!makeDirectory(m_sProjectDirectory + "libavutil")) {
         cout << "  Error: Failed creating local libavutil directory" << endl;
         return false;
     }
-    string sAVConfigFile = "../../libavutil/avconfig.h";
+    string sAVConfigFile = m_sProjectDirectory + "libavutil/avconfig.h";
     ofstream ofAVConfigFile( sAVConfigFile );
     if( !ofAVConfigFile.is_open( ) )
     {
@@ -667,7 +748,7 @@ bool configGenerator::outputConfig( )
     //Output ffversion.h
     cout << "  Outputting ffversion.h..." << endl;
     //Open VERSION file and get version string
-    string sVersionDefFile = "../../../RELEASE";
+    string sVersionDefFile = m_sRootDirectory + "RELEASE";
     ifstream ifVersionDefFile( sVersionDefFile );
     if( !ifVersionDefFile.is_open( ) )
     {
@@ -679,7 +760,7 @@ bool configGenerator::outputConfig( )
     getline( ifVersionDefFile, sVersion );
     ifVersionDefFile.close( );
     //Open output file
-    string sVersionFile = "../../libavutil/ffversion.h";
+    string sVersionFile = m_sProjectDirectory + "libavutil/ffversion.h";
     ofstream ofVersionFile( sVersionFile );
     if( !ofVersionFile.is_open( ) )
     {
@@ -704,13 +785,13 @@ void configGenerator::deleteCreatedFiles()
 {
     //Delete any previously generated files
     vector<string> vExistingFiles;
-    findFiles("../../config.h", vExistingFiles, false);
-    findFiles("../../config.asm", vExistingFiles, false);
+    findFiles(m_sProjectDirectory + "config.h", vExistingFiles, false);
+    findFiles(m_sProjectDirectory + "config.asm", vExistingFiles, false);
     for (vector<string>::iterator itIt = vExistingFiles.begin(); itIt < vExistingFiles.end(); itIt++) {
         deleteFile(*itIt);
     }
     vector<string> vExistingFolders;
-    findFolders("../../libavutil", vExistingFolders);
+    findFolders(m_sProjectDirectory + "libavutil", vExistingFolders, false);
     for (vector<string>::iterator itIt = vExistingFolders.begin(); itIt < vExistingFolders.end(); itIt++) {
         deleteFolder(*itIt);
     }
@@ -862,7 +943,7 @@ bool configGenerator::getConfigList(const string & sList, vector<string> & vRetu
 bool configGenerator::passFindThings( const string & sParam1, const string & sParam2, const string & sParam3, vector<string> & vReturn )
 {
     //Need to find and open the specified file
-    string sFile = "../../../" + sParam3;
+    string sFile = m_sRootDirectory + sParam3;
     string sFindFile;
     if (!loadFromFile(sFile, sFindFile)) {
         return false;

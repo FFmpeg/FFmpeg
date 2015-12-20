@@ -26,6 +26,7 @@
 
 #include <Windows.h>
 #include <algorithm>
+#include "Shlwapi.h"
 
 namespace project_generate {
 bool loadFromFile(const string& sFileName, string & sRetString, bool bBinary)
@@ -131,6 +132,7 @@ bool findFile(const string & sFileName, string & sRetFileName)
         //Update the return filename
         sRetFileName = SearchFile.cFileName;
         FindClose(SearchHandle);
+        replace(sRetFileName.begin(), sRetFileName.end(), '\\', '/');
         return true;
     }
     return false;
@@ -140,22 +142,21 @@ bool findFiles(const string & sFileSearch, vector<string> & vRetFiles, bool bRec
 {
     WIN32_FIND_DATA SearchFile;
     uint uiStartSize = vRetFiles.size();
-    string sFileSearchT = sFileSearch;
-    replace(sFileSearchT.begin(), sFileSearchT.end(), '/', '\\');
-    uint uiPos = sFileSearchT.rfind('\\');
     string sPath;
-    string sSearchTerm = sFileSearchT;
+    string sSearchTerm = sFileSearch;
+    uint uiPos = sSearchTerm.rfind('/');
     if (uiPos != string::npos) {
         ++uiPos;
-        sPath = sFileSearchT.substr(0, uiPos);
-        sSearchTerm = sFileSearchT.substr(uiPos);
+        sPath = sFileSearch.substr(0, uiPos);
+        sSearchTerm = sFileSearch.substr(uiPos);
     }
-    HANDLE SearchHandle = FindFirstFile(sFileSearchT.c_str(), &SearchFile);
+    HANDLE SearchHandle = FindFirstFile(sFileSearch.c_str(), &SearchFile);
     if (SearchHandle != INVALID_HANDLE_VALUE) {
         //Update the return filename list
         vRetFiles.push_back(sPath + SearchFile.cFileName);
         while (FindNextFile(SearchHandle, &SearchFile) != 0) {
             vRetFiles.push_back(sPath + SearchFile.cFileName);
+            replace(vRetFiles.back().begin(), vRetFiles.back().end(), '\\', '/');
         }
         FindClose(SearchHandle);
     }
@@ -169,7 +170,7 @@ bool findFiles(const string & sFileSearch, vector<string> & vRetFiles, bool bRec
                 if (SearchFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
                     // this is a directory
                     if (strcmp(SearchFile.cFileName, ".") != 0 && strcmp(SearchFile.cFileName, "..") != 0) {
-                        string sNewPath = sPath + SearchFile.cFileName + '\\' + sSearchTerm;
+                        string sNewPath = sPath + SearchFile.cFileName + '/' + sSearchTerm;
                         findFiles(sNewPath, vRetFiles);
                     }
                 }
@@ -185,22 +186,27 @@ bool findFolders(const string & sFolderSearch, vector<string>& vRetFolders, bool
 {
     WIN32_FIND_DATA SearchFile;
     uint uiStartSize = vRetFolders.size();
-    string ssFolderSearchT = sFolderSearch;
-    replace(ssFolderSearchT.begin(), ssFolderSearchT.end(), '/', '\\');
-    uint uiPos = ssFolderSearchT.rfind('\\');
     string sPath;
-    string sSearchTerm = ssFolderSearchT;
+    string sSearchTerm = sFolderSearch;
+    uint uiPos = sSearchTerm.rfind('/');
+    if (uiPos == (sSearchTerm.length() - 1)) {
+        uiPos = sSearchTerm.find_last_not_of('/');
+        uiPos = sSearchTerm.rfind('/', uiPos - 1);
+    }
     if (uiPos != string::npos) {
         ++uiPos;
-        sPath = ssFolderSearchT.substr(0, uiPos);
-        sSearchTerm = ssFolderSearchT.substr(uiPos);
+        sPath = sFolderSearch.substr(0, uiPos);
+        sSearchTerm = sFolderSearch.substr(uiPos);
     }
-    HANDLE SearchHandle = FindFirstFile(ssFolderSearchT.c_str(), &SearchFile);
+    HANDLE SearchHandle = FindFirstFile(sFolderSearch.c_str(), &SearchFile);
     if (SearchHandle != INVALID_HANDLE_VALUE) {
         //Update the return filename list
         vRetFolders.push_back(sPath + SearchFile.cFileName);
         while (FindNextFile(SearchHandle, &SearchFile) != 0) {
-            vRetFolders.push_back(sPath + SearchFile.cFileName);
+            if (SearchFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                vRetFolders.push_back(sPath + SearchFile.cFileName);
+                replace(vRetFolders.back().begin(), vRetFolders.back().end(), '\\', '/');
+            }
         }
         FindClose(SearchHandle);
     }
@@ -214,8 +220,8 @@ bool findFolders(const string & sFolderSearch, vector<string>& vRetFolders, bool
                 if (SearchFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
                     // this is a directory
                     if (strcmp(SearchFile.cFileName, ".") != 0 && strcmp(SearchFile.cFileName, "..") != 0) {
-                        string sNewPath = sPath + SearchFile.cFileName + '\\' + sSearchTerm;
-                        findFiles(sNewPath, vRetFolders);
+                        string sNewPath = sPath + SearchFile.cFileName + '/' + sSearchTerm;
+                        findFolders(sNewPath, vRetFolders);
                     }
                 }
                 bCont = FindNextFile(SearchHandle, &SearchFile);
@@ -224,6 +230,20 @@ bool findFolders(const string & sFolderSearch, vector<string>& vRetFolders, bool
         }
     }
     return (vRetFolders.size() - uiStartSize) > 0;
+}
+
+void makePathsRelative(const string& sPath, const string& sMakeRelativeTo, string& sRetPath)
+{
+    sRetPath.reserve(MAX_PATH);
+    sRetPath.resize(MAX_PATH);
+    string sFromT, sToT;
+    sFromT.reserve(MAX_PATH);
+    sToT.reserve(MAX_PATH);
+    GetFullPathName(sPath.c_str(), MAX_PATH, const_cast<char*>(sFromT.data()), NULL);
+    GetFullPathName(sMakeRelativeTo.c_str(), MAX_PATH, const_cast<char*>(sToT.data()), NULL);
+    PathRelativePathTo(const_cast<char*>(sRetPath.data()), sToT.c_str(), FILE_ATTRIBUTE_DIRECTORY, sFromT.c_str(), FILE_ATTRIBUTE_NORMAL);
+    sRetPath.resize(strlen(sRetPath.c_str()));
+    replace(sRetPath.begin(), sRetPath.end(), '\\', '/');
 }
 
 };

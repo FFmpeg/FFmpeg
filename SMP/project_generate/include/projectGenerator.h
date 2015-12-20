@@ -53,7 +53,7 @@ public:
 
     bool passAllMake( );
 
-    static void deleteCreatedFiles();
+    void deleteCreatedFiles();
 
 private:
 
@@ -107,7 +107,9 @@ private:
 
     bool findSourceFiles( const string & sFile, const string & sExtension, vector<string> & vRetFiles );
 
-    void makeFileProjectRelative( const string & sFileName, string & sRetFileName );
+    void makeFileProjectRelative(const string & sFileName, string & sRetFileName);
+
+    void makeFileGeneratorRelative(const string & sFileName, string & sRetFileName);
 
     void buildInterDependenciesHelper( const StaticList & vConfigOptions, const StaticList & vAddDeps, StaticList & vLibs );
 

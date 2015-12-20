@@ -26,9 +26,9 @@
 bool projectGenerator::passAllMake( )
 {
     //Copy the required header files to output directory
-    bool bCopy = copyFile("../templates/compat.h", "../../compat.h");
-    bCopy &= copyFile("../templates/math.h", "../../math.h");
-    bCopy &= copyFile("../templates/unistd.h", "../../unistd.h");
+    bool bCopy = copyFile("../templates/compat.h", m_ConfigHelper.m_sProjectDirectory + "compat.h");
+    bCopy &= copyFile("../templates/math.h", m_ConfigHelper.m_sProjectDirectory + "math.h");
+    bCopy &= copyFile("../templates/unistd.h", m_ConfigHelper.m_sProjectDirectory + "unistd.h");
     if (!bCopy) {
         cout << "Error: Missing required template files. Try re-downloading required files." << endl;
     }
@@ -45,7 +45,7 @@ bool projectGenerator::passAllMake( )
         //Check if library is enabled
         if( m_ConfigHelper.getConfigOption( *vitLib )->m_sValue.compare("1") == 0 )
         {
-            m_sProjectDir = "..\\..\\..\\lib" + *vitLib + "\\";
+            m_sProjectDir = m_ConfigHelper.m_sRootDirectory + "lib" + *vitLib + "/";
             //Locate the project dir for specified library
             string sRetFileName;
             if( !findFile( m_sProjectDir + "MakeFile", sRetFileName ) )
@@ -59,7 +59,7 @@ bool projectGenerator::passAllMake( )
                 return false;
             }
             //Check for any sub directories
-            m_sProjectDir += "x86\\";
+            m_sProjectDir += "x86/";
             if( findFile( m_sProjectDir + "MakeFile", sRetFileName ) )
             {
                 //Pass the sub directory
@@ -97,19 +97,19 @@ void projectGenerator::deleteCreatedFiles()
 {
     //Delete any previously generated files
     vector<string> vExistingFiles;
-    findFiles("../../*.vcxproj", vExistingFiles, false);
-    findFiles("../../*.filters", vExistingFiles, false);
-    findFiles("../../*.def", vExistingFiles, false);
-    findFiles("../../ffmpeg.sln", vExistingFiles, false);
-    findFiles("../../libav.sln", vExistingFiles, false);
-    findFiles("../../compat.h", vExistingFiles, false);
-    findFiles("../../math.h", vExistingFiles, false);
-    findFiles("../../unistd.h", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "*.vcxproj", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "*.filters", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "*.def", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "ffmpeg.sln", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "libav.sln", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "compat.h", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "math.h", vExistingFiles, false);
+    findFiles(m_ConfigHelper.m_sProjectDirectory + "unistd.h", vExistingFiles, false);
     for (vector<string>::iterator itIt = vExistingFiles.begin(); itIt < vExistingFiles.end(); itIt++) {
         deleteFile(*itIt);
     }
     vector<string> vExistingFolders;
-    findFolders("../../lib*", vExistingFolders);
+    findFolders(m_ConfigHelper.m_sProjectDirectory + "lib*", vExistingFolders);
     for (vector<string>::iterator itIt = vExistingFolders.begin(); itIt < vExistingFolders.end(); itIt++) {
         deleteFolder(*itIt);
     }
@@ -118,7 +118,7 @@ void projectGenerator::deleteCreatedFiles()
 bool projectGenerator::outputProject()
 {
     //Output the generated files
-    uint uiSPos = m_sProjectDir.rfind( '\\', m_sProjectDir.length( ) - 2 ) + 1;
+    uint uiSPos = m_sProjectDir.rfind( '/', m_sProjectDir.length( ) - 2 ) + 1;
     string sProjectName = m_sProjectDir.substr( uiSPos, m_sProjectDir.length( ) - 1 - uiSPos );
 
     //Check all files are correctly located
@@ -166,13 +166,13 @@ bool projectGenerator::outputProject()
     outputLibDirs(vLib32Dirs, vLib64Dirs, sProjectFile);
 
     //Write output project
-    string sOutProjectFile = "../../" + sProjectName + ".vcxproj";
+    string sOutProjectFile = m_ConfigHelper.m_sProjectDirectory + sProjectName + ".vcxproj";
     if (!writeToFile(sOutProjectFile, sProjectFile)) {
         return false;
     }
 
     //Write output filters
-    string sOutFiltersFile = "../../" + sProjectName + ".vcxproj.filters";
+    string sOutFiltersFile = m_ConfigHelper.m_sProjectDirectory + sProjectName + ".vcxproj.filters";
     if (!writeToFile(sOutFiltersFile, sFiltersFile)) {
         return false;
     }
@@ -258,7 +258,7 @@ bool projectGenerator::outputProgramProject(const string& sProjectName, const st
 bool projectGenerator::outputSolution()
 {
     cout << "  Generating solution file..." << endl;
-    m_sProjectDir = "..\\..\\..\\";
+    m_sProjectDir = m_ConfigHelper.m_sRootDirectory;
     //Open the input temp project file
     string sSolutionFile;
     loadFromFile("../templates/template_in.sln", sSolutionFile);
@@ -359,8 +359,8 @@ bool projectGenerator::outputSolution()
     while( mitPrograms != mProgramList.end( ) )
     {
         //Check if program is enabled
-        const string sDestinationFile = "../../" + mitPrograms->first + ".vcxproj";
-        const string sDestinationFilterFile = "../../" + mitPrograms->first + ".vcxproj.filters";
+        const string sDestinationFile = m_ConfigHelper.m_sProjectDirectory + mitPrograms->first + ".vcxproj";
+        const string sDestinationFilterFile = m_ConfigHelper.m_sProjectDirectory + mitPrograms->first + ".vcxproj.filters";
         if( m_ConfigHelper.getConfigOptionPrefixed( mitPrograms->second )->m_sValue.compare("1") == 0 )
         {
             //Create project files for program
@@ -524,7 +524,7 @@ bool projectGenerator::outputSolution()
     //Write output solution
     string sProjectName = m_ConfigHelper.m_sProjectName;
     transform( sProjectName.begin( ), sProjectName.end( ), sProjectName.begin( ), ::tolower );
-    const string sOutSolutionFile = "../../" + sProjectName + ".sln";
+    const string sOutSolutionFile = m_ConfigHelper.m_sProjectDirectory + sProjectName + ".sln";
     if (!writeToFile(sOutSolutionFile, sSolutionFile)) {
         return false;
     }
@@ -1133,7 +1133,7 @@ bool projectGenerator::passProgramMake(const string & sProjectName)
         m_vIncludes.push_back(sProjectName);
         return true;
     }
-    cout << "  Error: could not open open MakeFile (.\\MakeFile)" << endl;
+    cout << "  Error: could not open open MakeFile (./MakeFile)" << endl;
     return false;
 }
 
@@ -1144,7 +1144,7 @@ bool projectGenerator::findSourceFile( const string & sFile, const string & sExt
     if( !findFile( sRetFileName, sFileName ) )
     {
         // Check if this is a built file
-        uint uiSPos = m_sProjectDir.rfind( '\\', m_sProjectDir.length( ) - 2 );
+        uint uiSPos = m_sProjectDir.rfind( '/', m_sProjectDir.length( ) - 2 );
         string sProjectName = m_sProjectDir.substr( uiSPos );
         sRetFileName = m_sProjectDir.substr( 0, uiSPos + 1 ) + "SMP" + sProjectName + sFile + sExtension;
         return findFile( sRetFileName, sFileName );
@@ -1158,13 +1158,40 @@ bool projectGenerator::findSourceFiles( const string & sFile, const string & sEx
     return findFiles( sFileName, vRetFiles );
 }
 
-void projectGenerator::makeFileProjectRelative( const string & sFileName, string & sRetFileName)
+void projectGenerator::makeFileProjectRelative(const string & sFileName, string & sRetFileName)
 {
-    sRetFileName = sFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
-    if( sRetFileName.find( "..\\SMP" ) == 0 )
-    {
-        sRetFileName = sRetFileName.substr( 7 ); //Remove the preceding ..\SMP
+    string sPath;
+    string sFile = sFileName;
+    uint uiPos = sFile.rfind('/');
+    if (uiPos != string::npos) {
+        ++uiPos;
+        sPath = sFileName.substr(0, uiPos);
+        sFile = sFileName.substr(uiPos);
     }
+    makePathsRelative(sPath, m_ConfigHelper.m_sProjectDirectory, sRetFileName);
+    //Check if relative to project dir
+    if (sRetFileName.find("./") == 0) {
+        sRetFileName = sRetFileName.substr(2);
+    }
+    sRetFileName += sFile;
+}
+
+void projectGenerator::makeFileGeneratorRelative(const string & sFileName, string & sRetFileName)
+{
+    string sPath;
+    string sFile = sFileName;
+    uint uiPos = sFile.rfind('/');
+    if (uiPos != string::npos) {
+        ++uiPos;
+        sPath = sFileName.substr(0, uiPos);
+        sFile = sFileName.substr(uiPos);
+    }
+    makePathsRelative(m_ConfigHelper.m_sProjectDirectory + sPath, "./", sRetFileName);
+    //Check if relative to current dir
+    if (sRetFileName.find("./") == 0) {
+        sRetFileName = sRetFileName.substr(2);
+    }
+    sRetFileName += sFile;
 }
 
 bool projectGenerator::checkProjectFiles(const string& sProjectName)
@@ -1251,7 +1278,7 @@ bool projectGenerator::createReplaceFiles(const StaticList& vReplaceIncludes, St
         }
         //Convert file to format required to search ReplaceIncludes
         uint uiExtPos = itIt->rfind('.');
-        uint uiCutPos = itIt->rfind('\\') + 1;
+        uint uiCutPos = itIt->rfind('/') + 1;
         string sFilename = itIt->substr(uiCutPos, uiExtPos - uiCutPos);
         string sExtension = itIt->substr(uiExtPos);
         //Get the files dynamic config requirement
@@ -1264,7 +1291,6 @@ bool projectGenerator::createReplaceFiles(const StaticList& vReplaceIncludes, St
         }
         //Create new file to wrap input object
         string sPrettyFile = "../" + *itIt;
-        replace(sPrettyFile.begin(), sPrettyFile.end(), '\\', '/');
         string sNewFile = getCopywriteHeader(sFilename + sExtension + " file wrapper for " + sProjectName);
         sNewFile += "\n\
 \n\
@@ -1273,11 +1299,11 @@ bool projectGenerator::createReplaceFiles(const StaticList& vReplaceIncludes, St
 #   include \"" + sPrettyFile + "\"\n\
 #endif";
         //Write output project
-        if (!makeDirectory("../../" + sProjectName)) {
+        if (!makeDirectory(m_ConfigHelper.m_sProjectDirectory + sProjectName)) {
             cout << "  Error: Failed creating local " + sProjectName + " directory" << endl;
             return false;
         }
-        string sOutFile = "../../" + sProjectName + "/" + sFilename + "_wrap" + sExtension;
+        string sOutFile = m_ConfigHelper.m_sProjectDirectory + sProjectName + "/" + sFilename + "_wrap" + sExtension;
         if (!writeToFile(sOutFile, sNewFile)) {
             return false;
         }
@@ -1425,24 +1451,25 @@ void projectGenerator::outputSourceFileType(StaticList& vFileList, const string&
             sTypeFilesFilt += sTypeInclude;
 
             //Add the fileName
-            replace(vitInclude->begin(), vitInclude->end(), '/', '\\');
-            sTypeFiles += *vitInclude;
-            sTypeFilesFilt += *vitInclude;
+            string sFile = *vitInclude;
+            replace(sFile.begin(), sFile.end(), '/', '\\');
+            sTypeFiles += sFile;
+            sTypeFilesFilt += sFile;
 
             //Get object name without path or extension
-            uint uiPos = vitInclude->rfind('\\') + 1;
+            uint uiPos = vitInclude->rfind('/') + 1;
             string sObjectName = vitInclude->substr(uiPos);
             uint uiPos2 = sObjectName.rfind('.');
             sObjectName.resize(uiPos2);
 
             //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
-            uiPos = vitInclude->rfind("..\\");
+            uiPos = vitInclude->rfind("../");
             uiPos = (uiPos == string::npos) ? 0 : uiPos + 3;
             sTypeFilesFilt += sIncludeClose;
             if (bCheckExisting) {
                 if (find(vFoundObjects.begin(), vFoundObjects.end(), sObjectName) != vFoundObjects.end()) {
                     sObjectName = vitInclude->substr(uiPos);
-                    replace(sObjectName.begin(), sObjectName.end(), '\\', '_');
+                    replace(sObjectName.begin(), sObjectName.end(), '/', '_');
                     //Replace the extension with obj
                     uiPos2 = sObjectName.rfind('.');
                     sObjectName.resize(uiPos2);
@@ -1464,9 +1491,9 @@ void projectGenerator::outputSourceFileType(StaticList& vFileList, const string&
 
             //Add the filters Filter
             sTypeFilesFilt += sFilterSource;
-            uint uiFolderLength = vitInclude->rfind('\\') - uiPos;
+            uint uiFolderLength = vitInclude->rfind('/') - uiPos;
             if ((int)uiFolderLength != -1) {
-                string sFolderName = vitInclude->substr(uiPos, uiFolderLength);
+                string sFolderName = sFile.substr(uiPos, uiFolderLength);
                 sFolderName = "\\" + sFolderName;
                 vFoundFilters.insert(sSource + sFolderName);
                 sTypeFilesFilt += sFolderName;
@@ -1544,7 +1571,7 @@ void projectGenerator::outputSourceFiles(const string & sProjectName, string & s
 bool projectGenerator::outputProjectExports(const string& sProjectName, const StaticList& vIncludeDirs)
 {
     string sExportList;
-    if (!findFile(this->m_sProjectDir + "\\*.v", sExportList)) {
+    if (!findFile(this->m_sProjectDir + "/*.v", sExportList)) {
         cout << "  Error: Failed finding project exports (" << sProjectName << ")" << endl;
         return false;
     }
@@ -1589,7 +1616,8 @@ bool projectGenerator::outputProjectExports(const string& sProjectName, const St
     }
 
     //Create a test file to read in definitions
-    string sOutDir = "../../../../../msvc/";
+    string sOutDir = m_ConfigHelper.m_sOutDirectory;
+    makeFileGeneratorRelative(sOutDir, sOutDir);
     string sCLExtra = "/I\"" + sOutDir + "include/\"";
     for (StaticList::const_iterator vitIt = vIncludeDirs.cbegin(); vitIt < vIncludeDirs.cend(); vitIt++) {
         string sIncludeDir = *vitIt;
@@ -1597,7 +1625,6 @@ bool projectGenerator::outputProjectExports(const string& sProjectName, const St
         if (uiFindPos2 != string::npos) {
             sIncludeDir.replace(uiFindPos2, 9, sOutDir);
         }
-        replace(sIncludeDir.begin(), sIncludeDir.end(), '\\', '/');
         uiFindPos2 = sIncludeDir.find("$(");
         if (uiFindPos2 != string::npos) {
             sIncludeDir.replace(uiFindPos2, 2, "%");
@@ -1613,18 +1640,18 @@ bool projectGenerator::outputProjectExports(const string& sProjectName, const St
     map<string, StaticList> mDirectoryObjects;
     for (StaticList::iterator itI = m_vCIncludes.begin(); itI < m_vCIncludes.end(); itI++) {
         //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
-        uint uiPos = itI->rfind("..\\");
+        uint uiPos = itI->rfind("../");
         uiPos = (uiPos == string::npos) ? 0 : uiPos + 3;
-        uint uiPos2 = itI->rfind('\\');
+        uint uiPos2 = itI->rfind('/');
         uiPos2 = (uiPos2 == string::npos) ? string::npos : uiPos2 - uiPos;
         string sFolderName = itI->substr(uiPos, uiPos2);
         mDirectoryObjects[sFolderName].push_back(*itI);
     }
     for (StaticList::iterator itI = m_vCPPIncludes.begin(); itI < m_vCPPIncludes.end(); itI++) {
         //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
-        uint uiPos = itI->rfind("..\\");
+        uint uiPos = itI->rfind("../");
         uiPos = (uiPos == string::npos) ? 0 : uiPos + 3;
-        uint uiPos2 = itI->rfind('\\');
+        uint uiPos2 = itI->rfind('/');
         uiPos2 = (uiPos2 == string::npos) ? string::npos : uiPos2 - uiPos;
         string sFolderName = itI->substr(uiPos, uiPos2);
         mDirectoryObjects[sFolderName].push_back(*itI);
@@ -1649,11 +1676,11 @@ exit /b 1 \n\
 ) \n\
 :MSVCVarsDone \n";
     string sProjectNameShort = sProjectName.substr(3); //The full name minus the lib prefix
-    sCLLaunchBat += "mkdir " + sProjectNameShort + " > nul 2>&1\n";
+    sCLLaunchBat += "mkdir \"" + sProjectNameShort + "\" > nul 2>&1\n";
     for (map<string, StaticList>::iterator itI = mDirectoryObjects.begin(); itI != mDirectoryObjects.end(); itI++) {
         //Need to make output directory so cl doesnt fail outputting objs
-        string sDirName = sProjectNameShort + "\\" + itI->first;
-        sCLLaunchBat += "mkdir " + sDirName + " > nul 2>&1\n";
+        string sDirName = sProjectNameShort + "/" + itI->first;
+        sCLLaunchBat += "mkdir \"" + sDirName + "\" > nul 2>&1\n";
         const uint uiRowSize = 32;
         uint uiNumCLCalls = (uint)ceilf((float)itI->second.size() / (float)uiRowSize);
         uint uiTotalPos = 0;
@@ -1661,10 +1688,11 @@ exit /b 1 \n\
         //Split calls into groups of 50 to prevent batch file length limit
         for (uint uiI = 0; uiI < uiNumCLCalls; uiI++) {
             sCLLaunchBat += "cl.exe";
-            sCLLaunchBat += " /I\"../../\" /I\"../../../\" " + sCLExtra + " /Fo\"" + sDirName + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /FI\"compat.h\" /FR\"" + sDirName + "/\" /c /MP /w /nologo";
+            sCLLaunchBat += " /I\"" + m_ConfigHelper.m_sRootDirectory + "\" /I\"" + m_ConfigHelper.m_sProjectDirectory + "\" " + sCLExtra + " /Fo\"" + sDirName + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /FI\"compat.h\" /FR\"" + sDirName + "/\" /c /MP /w /nologo";
             uint uiStartPos = uiTotalPos;
             for (uiTotalPos; uiTotalPos < min(uiStartPos + uiRowSize, itI->second.size()); uiTotalPos++) {
-                sCLLaunchBat += " \"../../" + itI->second[uiTotalPos] + "\"";
+                makeFileGeneratorRelative(itI->second[uiTotalPos], itI->second[uiTotalPos]);
+                sCLLaunchBat += " \"" + itI->second[uiTotalPos] + "\"";
             }
             sCLLaunchBat += " > log.txt\nif %errorlevel% neq 0 goto exitFail\n";
         }
@@ -1690,7 +1718,7 @@ exit /b 1 \n\
     StaticList vSBRFiles;
     StaticList vModuleExports;
     StaticList vModuleDataExports;
-    findFiles(sProjectNameShort + "\\*.sbr", vSBRFiles);
+    findFiles(sProjectNameShort + "/*.sbr", vSBRFiles);
     for (StaticList::iterator itSBR = vSBRFiles.begin(); itSBR < vSBRFiles.end(); itSBR++) {
         string sSBRFile;
         loadFromFile(*itSBR, sSBRFile, true);
@@ -1799,7 +1827,7 @@ exit /b 1 \n\
     //Check for any exported functions in asm files
     for (StaticList::iterator itASM = m_vYASMIncludes.begin(); itASM < m_vYASMIncludes.end(); itASM++) {
         string sASMFile;
-        loadFromFile("../../" + *itASM, sASMFile);
+        loadFromFile(m_ConfigHelper.m_sProjectDirectory + *itASM, sASMFile);
 
         //Search through file for module exports
         for (StaticList::iterator itI = vExportStrings.begin(); itI < vExportStrings.end(); itI++) {
@@ -1852,7 +1880,7 @@ exit /b 1 \n\
         sModuleFile += "    " + *itI + " DATA\n";
     }
 
-    string sDestinationFile = "../../" + sProjectName + ".def";
+    string sDestinationFile = m_ConfigHelper.m_sProjectDirectory + sProjectName + ".def";
     if (!writeToFile(sDestinationFile, sModuleFile)) {
         return false;
     }
@@ -1919,8 +1947,9 @@ cd $(ProjectDir)\n\
         sAdditional += sProjectName;
         for (StaticList::iterator vitHeaders = m_vHIncludes.begin(); vitHeaders<m_vHIncludes.end(); vitHeaders++) {
             sAdditional += sCopy;
-            replace(vitHeaders->begin(), vitHeaders->end(), '/', '\\');
-            sAdditional += *vitHeaders;
+            string sHeader = *vitHeaders;
+            replace(sHeader.begin(), sHeader.end(), '/', '\\');
+            sAdditional += sHeader;
             sAdditional += sCopyEnd;
             sAdditional += sProjectName;
         }
@@ -1958,6 +1987,7 @@ void projectGenerator::outputIncludeDirs(const StaticList & vIncludeDirs, string
         for (StaticList::const_iterator vitIt = vIncludeDirs.cbegin(); vitIt < vIncludeDirs.cend(); vitIt++) {
             sAddInclude += *vitIt + ";";
         }
+        replace(sAddInclude.begin(), sAddInclude.end(), '/', '\\');
         const string sAddIncludeDir = "<AdditionalIncludeDirectories>";
         uint uiFindPos = sProjectTemplate.find(sAddIncludeDir);
         while (uiFindPos != string::npos) {
@@ -1982,6 +2012,8 @@ void projectGenerator::outputLibDirs(const StaticList & vLib32Dirs, const Static
         for (StaticList::const_iterator vitIt = vLib64Dirs.cbegin(); vitIt < vLib64Dirs.cend(); vitIt++) {
             sAddLibs[1] += *vitIt + ";";
         }
+        replace(sAddLibs[0].begin(), sAddLibs[0].end(), '/', '\\');
+        replace(sAddLibs[1].begin(), sAddLibs[1].end(), '/', '\\');
         const string sAddLibDir = "<AdditionalLibraryDirectories>";
         uint ui32Or64 = 0; //start with 32 (assumes projects are ordered 32 then 64 recursive)
         uint uiFindPos = sProjectTemplate.find(sAddLibDir);
