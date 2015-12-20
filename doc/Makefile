@@ -124,11 +124,12 @@ $(DOCS) doc/doxy/html: | doc/
 $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
-DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c) $(LIB_EXAMPLES:%$(EXESUF)=%.c))
+DOXY_INPUT      = $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c) $(LIB_EXAMPLES:%$(EXESUF)=%.c)
+DOXY_INPUT_DEPS = $(addprefix $(SRC_PATH)/, $(DOXY_INPUT))
 
 doc/doxy/html: TAG = DOXY
-doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(SRC_PATH)/doc/doxy-wrapper.sh $(DOXY_INPUT)
-	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $< $(DOXYGEN) $(DOXY_INPUT)
+doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(SRC_PATH)/doc/doxy-wrapper.sh $(DOXY_INPUT_DEPS)
+	$(M)OUT_DIR=$$PWD/doc/doxy; cd $(SRC_PATH); ./doc/doxy-wrapper.sh $$OUT_DIR $< $(DOXYGEN) $(DOXY_INPUT);
 
 install-doc: install-html install-man
 
