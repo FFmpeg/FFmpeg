@@ -1468,10 +1468,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass flac_encoder_class = {
-    "FLAC encoder",
-    av_default_item_name,
-    options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "FLAC encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_flac_encoder = {
