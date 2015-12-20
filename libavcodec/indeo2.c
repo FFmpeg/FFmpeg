@@ -165,7 +165,8 @@ static int ir2_decode_frame(AVCodecContext *avctx,
         buf[i] = ff_reverse[buf[i]];
 #endif
 
-    init_get_bits(&s->gb, buf + start, (buf_size - start) * 8);
+    if ((ret = init_get_bits8(&s->gb, buf + start, buf_size - start)) < 0)
+        return ret;
 
     if (s->decode_delta) { /* intraframe */
         if ((ret = ir2_decode_plane(s, avctx->width, avctx->height,
