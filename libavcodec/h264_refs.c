@@ -301,7 +301,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
 
                     long_idx = pic_num_extract(h, pic_id, &pic_structure);
 
-                    if (long_idx > 31) {
+                    if (long_idx > 31U) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "long_term_pic_idx overflow\n");
                         return AVERROR_INVALIDDATA;

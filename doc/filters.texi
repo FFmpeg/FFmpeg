@@ -10784,6 +10784,12 @@ interleaved rows (left eye has top row, right eye starts on next row)
 @item irr
 interleaved rows (right eye has top row, left eye starts on next row)
 
+@item icl
+interleaved columns, left eye first
+
+@item icr
+interleaved columns, right eye first
+
 Default value is @samp{sbsl}.
 @end table
 

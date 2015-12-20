@@ -33,6 +33,7 @@
 #include "aacsbrdata.h"
 #include "aacsbr_tablegen.h"
 #include "fft.h"
+#include "internal.h"
 #include "aacps.h"
 #include "sbrdsp.h"
 #include "libavutil/internal.h"
@@ -73,15 +74,22 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
 {
     int k, e;
     int ch;
-
+    static const double exp2_tab[2] = {1, M_SQRT2};
     if (id_aac == TYPE_CPE && sbr->bs_coupling) {
-        float alpha      = sbr->data[0].bs_amp_res ?  1.0f :  0.5f;
-        float pan_offset = sbr->data[0].bs_amp_res ? 12.0f : 24.0f;
+        int pan_offset = sbr->data[0].bs_amp_res ? 12 : 24;
         for (e = 1; e <= sbr->data[0].bs_num_env; e++) {
             for (k = 0; k < sbr->n[sbr->data[0].bs_freq_res[e]]; k++) {
-                float temp1 = exp2f(sbr->data[0].env_facs_q[e][k] * alpha + 7.0f);
-                float temp2 = exp2f((pan_offset - sbr->data[1].env_facs_q[e][k]) * alpha);
-                float fac;
+                float temp1, temp2, fac;
+                if (sbr->data[0].bs_amp_res) {
+                    temp1 = ff_exp2fi(sbr->data[0].env_facs_q[e][k] + 7);
+                    temp2 = ff_exp2fi(pan_offset - sbr->data[1].env_facs_q[e][k]);
+                }
+                else {
+                    temp1 = ff_exp2fi((sbr->data[0].env_facs_q[e][k]>>1) + 7) *
+                            exp2_tab[sbr->data[0].env_facs_q[e][k] & 1];
+                    temp2 = ff_exp2fi((pan_offset - sbr->data[1].env_facs_q[e][k])>>1) *
+                            exp2_tab[(pan_offset - sbr->data[1].env_facs_q[e][k]) & 1];
+                }
                 if (temp1 > 1E20) {
                     av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
                     temp1 = 1;
@@ -93,8 +101,8 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
         }
         for (e = 1; e <= sbr->data[0].bs_num_noise; e++) {
             for (k = 0; k < sbr->n_q; k++) {
-                float temp1 = exp2f(NOISE_FLOOR_OFFSET - sbr->data[0].noise_facs_q[e][k] + 1);
-                float temp2 = exp2f(12 - sbr->data[1].noise_facs_q[e][k]);
+                float temp1 = ff_exp2fi(NOISE_FLOOR_OFFSET - sbr->data[0].noise_facs_q[e][k] + 1);
+                float temp2 = ff_exp2fi(12 - sbr->data[1].noise_facs_q[e][k]);
                 float fac;
                 av_assert0(temp1 <= 1E20);
                 fac = temp1 / (1.0f + temp2);
@@ -104,11 +112,13 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
         }
     } else { // SCE or one non-coupled CPE
         for (ch = 0; ch < (id_aac == TYPE_CPE) + 1; ch++) {
-            float alpha = sbr->data[ch].bs_amp_res ? 1.0f : 0.5f;
             for (e = 1; e <= sbr->data[ch].bs_num_env; e++)
                 for (k = 0; k < sbr->n[sbr->data[ch].bs_freq_res[e]]; k++){
-                    sbr->data[ch].env_facs[e][k] =
-                        exp2f(alpha * sbr->data[ch].env_facs_q[e][k] + 6.0f);
+                    if (sbr->data[ch].bs_amp_res)
+                        sbr->data[ch].env_facs[e][k] = ff_exp2fi(sbr->data[ch].env_facs_q[e][k] + 6);
+                    else
+                        sbr->data[ch].env_facs[e][k] = ff_exp2fi((sbr->data[ch].env_facs_q[e][k]>>1) + 6)
+                                                       * exp2_tab[sbr->data[ch].env_facs_q[e][k] & 1];
                     if (sbr->data[ch].env_facs[e][k] > 1E20) {
                         av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
                         sbr->data[ch].env_facs[e][k] = 1;
@@ -118,7 +128,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (e = 1; e <= sbr->data[ch].bs_num_noise; e++)
                 for (k = 0; k < sbr->n_q; k++)
                     sbr->data[ch].noise_facs[e][k] =
-                        exp2f(NOISE_FLOOR_OFFSET - sbr->data[ch].noise_facs_q[e][k]);
+                        ff_exp2fi(NOISE_FLOOR_OFFSET - sbr->data[ch].noise_facs_q[e][k]);
         }
     }
 }

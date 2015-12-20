@@ -162,7 +162,7 @@ static cqueue *cqueue_create(int size)
     q->nb_elements = 0;
     q->first = 0;
 
-    q->elements = av_malloc(sizeof(double) * size);
+    q->elements = av_malloc_array(size, sizeof(double));
     if (!q->elements) {
         av_free(q);
         return NULL;
@@ -266,16 +266,16 @@ static int config_input(AVFilterLink *inlink)
     inlink->partial_buf_size = frame_size(inlink->sample_rate, s->frame_len_msec);
     av_log(ctx, AV_LOG_DEBUG, "frame len %d\n", s->frame_len);
 
-    s->fade_factors[0] = av_malloc(s->frame_len * sizeof(*s->fade_factors[0]));
-    s->fade_factors[1] = av_malloc(s->frame_len * sizeof(*s->fade_factors[1]));
+    s->fade_factors[0] = av_malloc_array(s->frame_len, sizeof(*s->fade_factors[0]));
+    s->fade_factors[1] = av_malloc_array(s->frame_len, sizeof(*s->fade_factors[1]));
 
-    s->prev_amplification_factor = av_malloc(inlink->channels * sizeof(*s->prev_amplification_factor));
+    s->prev_amplification_factor = av_malloc_array(inlink->channels, sizeof(*s->prev_amplification_factor));
     s->dc_correction_value = av_calloc(inlink->channels, sizeof(*s->dc_correction_value));
     s->compress_threshold = av_calloc(inlink->channels, sizeof(*s->compress_threshold));
     s->gain_history_original = av_calloc(inlink->channels, sizeof(*s->gain_history_original));
     s->gain_history_minimum = av_calloc(inlink->channels, sizeof(*s->gain_history_minimum));
     s->gain_history_smoothed = av_calloc(inlink->channels, sizeof(*s->gain_history_smoothed));
-    s->weights = av_malloc(s->filter_size * sizeof(*s->weights));
+    s->weights = av_malloc_array(s->filter_size, sizeof(*s->weights));
     if (!s->prev_amplification_factor || !s->dc_correction_value ||
         !s->compress_threshold || !s->fade_factors[0] || !s->fade_factors[1] ||
         !s->gain_history_original || !s->gain_history_minimum ||

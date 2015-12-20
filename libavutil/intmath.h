@@ -96,6 +96,9 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
 #ifndef ff_ctzll
 #define ff_ctzll(v) __builtin_ctzll(v)
 #endif
+#ifndef ff_clz
+#define ff_clz(v) __builtin_clz(v)
+#endif
 #endif
 #endif
 
@@ -132,6 +135,21 @@ static av_always_inline av_const int ff_ctzll_c(long long v)
         51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12
     };
     return debruijn_ctz64[(uint64_t)((v & -v) * 0x022FDD63CC95386DU) >> 58];
+}
+#endif
+
+#ifndef ff_clz
+#define ff_clz ff_clz_c
+static av_always_inline av_const unsigned ff_clz_c(unsigned x)
+{
+    unsigned i = sizeof(x) * 8;
+
+    while (x) {
+        x >>= 1;
+        i--;
+    }
+
+    return i;
 }
 #endif
 
