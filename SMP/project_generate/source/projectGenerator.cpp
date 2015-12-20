@@ -25,6 +25,14 @@
 
 bool projectGenerator::passAllMake( )
 {
+    //Copy the required header files to output directory
+    bool bCopy = copyFile("../templates/compat.h", "../../compat.h");
+    bCopy &= copyFile("../templates/math.h", "../../math.h");
+    bCopy &= copyFile("../templates/unistd.h", "../../unistd.h");
+    if (!bCopy) {
+        cout << "Error: Missing required template files. Try re-downloading required files." << endl;
+    }
+
     //Initialise internal values
     configGenerator::DefaultValuesList Unneeded;
     m_ConfigHelper.buildReplaceValues(m_ReplaceValues, Unneeded);
@@ -94,6 +102,9 @@ void projectGenerator::deleteCreatedFiles()
     findFiles("../../*.def", vExistingFiles, false);
     findFiles("../../ffmpeg.sln", vExistingFiles, false);
     findFiles("../../libav.sln", vExistingFiles, false);
+    findFiles("../../compat.h", vExistingFiles, false);
+    findFiles("../../math.h", vExistingFiles, false);
+    findFiles("../../unistd.h", vExistingFiles, false);
     for (vector<string>::iterator itIt = vExistingFiles.begin(); itIt < vExistingFiles.end(); itIt++) {
         deleteFile(*itIt);
     }
