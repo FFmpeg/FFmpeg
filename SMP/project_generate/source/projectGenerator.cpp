@@ -85,7 +85,26 @@ bool projectGenerator::passAllMake( )
     return outputSolution( );
 }
 
-bool projectGenerator::outputProject( )
+void projectGenerator::deleteCreatedFiles()
+{
+    //Delete any previously generated files
+    vector<string> vExistingFiles;
+    findFiles("../../*.vcxproj", vExistingFiles, false);
+    findFiles("../../*.filters", vExistingFiles, false);
+    findFiles("../../*.def", vExistingFiles, false);
+    findFiles("../../ffmpeg.sln", vExistingFiles, false);
+    findFiles("../../libav.sln", vExistingFiles, false);
+    for (vector<string>::iterator itIt = vExistingFiles.begin(); itIt < vExistingFiles.end(); itIt++) {
+        deleteFile(*itIt);
+    }
+    vector<string> vExistingFolders;
+    findFolders("../../lib*", vExistingFolders);
+    for (vector<string>::iterator itIt = vExistingFolders.begin(); itIt < vExistingFolders.end(); itIt++) {
+        deleteFolder(*itIt);
+    }
+}
+
+bool projectGenerator::outputProject()
 {
     //Output the generated files
     uint uiSPos = m_sProjectDir.rfind( '\\', m_sProjectDir.length( ) - 2 ) + 1;
@@ -367,12 +386,6 @@ bool projectGenerator::outputSolution()
             }
             sProjectAdd += sDependClose;
             sProjectAdd += sProjectClose;
-        }
-        else
-        {
-            //Delete any existing to avoid pollution
-            deleteFile( sDestinationFile );
-            deleteFile( sDestinationFilterFile );
         }
         //next
         ++mitPrograms;
@@ -1194,14 +1207,6 @@ bool projectGenerator::checkProjectFiles(const string& sProjectName)
         return false;
     }
 
-    //Delete any previously existing replace files
-    vector<string> vExistingRepFiles;
-    findFiles("../../" + sProjectName + "/*.c", vExistingRepFiles);
-    findFiles("../../" + sProjectName + "/*.cpp", vExistingRepFiles);
-    findFiles("../../" + sProjectName + "/*.asm", vExistingRepFiles);
-    for (vector<string>::iterator itIt = vExistingRepFiles.begin(); itIt < vExistingRepFiles.end(); itIt++) {
-        deleteFile(*itIt);
-    }
     //Check all source files associated with replaced config values
     StaticList vReplaceIncludes, vReplaceCPPIncludes, vReplaceCIncludes, vReplaceYASMIncludes;
     for (UnknownList::iterator itIt = m_mReplaceIncludes.begin(); itIt != m_mReplaceIncludes.end(); itIt++) {

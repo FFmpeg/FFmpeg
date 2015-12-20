@@ -700,7 +700,23 @@ bool configGenerator::outputConfig( )
     return true;
 }
 
-bool configGenerator::getConfigList( const string & sList, vector<string> & vReturn, bool bForce, uint uiCurrentFilePos )
+void configGenerator::deleteCreatedFiles()
+{
+    //Delete any previously generated files
+    vector<string> vExistingFiles;
+    findFiles("../../config.h", vExistingFiles, false);
+    findFiles("../../config.asm", vExistingFiles, false);
+    for (vector<string>::iterator itIt = vExistingFiles.begin(); itIt < vExistingFiles.end(); itIt++) {
+        deleteFile(*itIt);
+    }
+    vector<string> vExistingFolders;
+    findFolders("../../libavutil", vExistingFolders);
+    for (vector<string>::iterator itIt = vExistingFolders.begin(); itIt < vExistingFolders.end(); itIt++) {
+        deleteFolder(*itIt);
+    }
+}
+
+bool configGenerator::getConfigList(const string & sList, vector<string> & vReturn, bool bForce, uint uiCurrentFilePos)
 {
     //Find List name in file (searches backwards so that it finds the closest definition to where we currently are)
     //   This is in case a list is redefined

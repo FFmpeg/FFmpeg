@@ -70,6 +70,8 @@ public:
 
     bool outputConfig( );
 
+    static void deleteCreatedFiles();
+
 private:
     void buildFixedValues( DefaultValuesList & mFixedValues );
 

@@ -53,6 +53,8 @@ public:
 
     bool passAllMake( );
 
+    static void deleteCreatedFiles();
+
 private:
 
     bool outputProject( );

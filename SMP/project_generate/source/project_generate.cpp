@@ -43,6 +43,10 @@ int main( int argc, char** argv )
         }
     }
 
+    //Delete any previously generated files
+    configGenerator::deleteCreatedFiles();
+    projectGenerator::deleteCreatedFiles();
+
     //Output config.h and avutil.h
     if( !ProjectHelper.m_ConfigHelper.outputConfig( ) )
     {
