@@ -2841,6 +2841,7 @@ unix_protocol_select="network"
 
 # filters
 amovie_filter_deps="avcodec avformat"
+anequalizer_filter_deps="cabs cexp"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
 asyncts_filter_deps="avresample"
