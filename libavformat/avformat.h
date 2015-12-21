@@ -2283,6 +2283,7 @@ void avformat_close_input(AVFormatContext **s);
  *
  * @see av_opt_find, av_dict_set, avio_open, av_oformat_next.
  */
+av_warn_unused_result
 int avformat_write_header(AVFormatContext *s, AVDictionary **options);
 
 /**
