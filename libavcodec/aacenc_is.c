@@ -117,7 +117,7 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                 cpe->ch[1].band_type[w*16+g] != NOISE_BT && !cpe->ch[1].zeroes[w*16+g] &&
                 ff_sfdelta_can_remove_band(sce1, nextband1, prev_sf1, w*16+g)) {
                 float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f, ener01p = 0.0f;
-                struct AACISError ph_err1, ph_err2, *erf;
+                struct AACISError ph_err1, ph_err2, *best;
                 if (sce0->band_type[w*16+g] == NOISE_BT ||
                     sce1->band_type[w*16+g] == NOISE_BT) {
                     start += sce0->ics.swb_sizes[g];
@@ -137,13 +137,13 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                                                  ener0, ener1, ener01p, 0, -1);
                 ph_err2 = ff_aac_is_encoding_err(s, cpe, start, w, g,
                                                  ener0, ener1, ener01, 0, +1);
-                erf = (ph_err1.pass && ph_err1.error < ph_err2.error) ? &ph_err1 : &ph_err2;
-                if (erf->pass) {
+                best = (ph_err1.pass && ph_err1.error < ph_err2.error) ? &ph_err1 : &ph_err2;
+                if (best->pass) {
                     cpe->is_mask[w*16+g] = 1;
                     cpe->ms_mask[w*16+g] = 0;
-                    cpe->ch[0].is_ener[w*16+g] = sqrt(ener0 / erf->ener01);
+                    cpe->ch[0].is_ener[w*16+g] = sqrt(ener0 / best->ener01);
                     cpe->ch[1].is_ener[w*16+g] = ener0/ener1;
-                    cpe->ch[1].band_type[w*16+g] = (erf->phase > 0) ? INTENSITY_BT : INTENSITY_BT2;
+                    cpe->ch[1].band_type[w*16+g] = (best->phase > 0) ? INTENSITY_BT : INTENSITY_BT2;
                     count++;
                 }
             }
