@@ -610,12 +610,6 @@ static av_cold int init(AVFilterContext *ctx)
             return err;
     }
 
-#if CONFIG_LIBFRIBIDI
-    if (s->text_shaping)
-        if ((err = shape_text(ctx)) < 0)
-            return err;
-#endif
-
     if (s->reload && !s->textfile)
         av_log(ctx, AV_LOG_WARNING, "No file to reload\n");
 
@@ -635,6 +629,12 @@ static av_cold int init(AVFilterContext *ctx)
                "Either text, a valid file or a timecode must be provided\n");
         return AVERROR(EINVAL);
     }
+
+#if CONFIG_LIBFRIBIDI
+    if (s->text_shaping)
+        if ((err = shape_text(ctx)) < 0)
+            return err;
+#endif
 
     if ((err = FT_Init_FreeType(&(s->library)))) {
         av_log(ctx, AV_LOG_ERROR,
