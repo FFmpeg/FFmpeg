@@ -145,7 +145,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     int i, h, p;
 
-    av_assert0(in->channels == s->nb_inputs);
+    av_assert0(in->channels == (s->nb_inputs * s->nb_handles));
 
     if (!s->nb_outputs ||
         (av_frame_is_writable(in) && s->nb_inputs == s->nb_outputs &&
@@ -160,7 +160,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    av_assert0(!s->nb_outputs || out->channels == s->nb_outputs);
+    av_assert0(!s->nb_outputs || out->channels == (s->nb_outputs * s->nb_handles));
 
     for (h = 0; h < s->nb_handles; h++) {
         for (i = 0; i < s->nb_inputs; i++) {
