@@ -1,6 +1,83 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+
+version 2.7.4
+- nuv: sanitize negative fps rate
+- rawdec: only exempt BIT0 with need_copy from buffer sanity check
+- mlvdec: check that index_entries exist
+- nutdec: reject negative value_len in read_sm_data
+- xwddec: prevent overflow of lsize * avctx->height
+- nutdec: only copy the header if it exists
+- exr: fix out of bounds read in get_code
+- on2avc: limit number of bits to 30 in get_egolomb
+- avcodec/mpeg4videodec: also for empty partitioned slices
+- avcodec/h264_refs: Fix long_idx check
+- avcodec/h264_mc_template: prefetch list1 only if it is used in the MB
+- avcodec/h264_slice: Simplify ref2frm indexing
+- Revert "avcodec/aarch64/neon.S: Update neon.s for transpose_4x4H"
+- avfilter/vf_mpdecimate: Add missing emms_c()
+- sonic: make sure num_taps * channels is not larger than frame_size
+- opus_silk: fix typo causing overflow in silk_stabilize_lsf
+- ffm: reject invalid codec_id and codec_type
+- golomb: always check for invalid UE golomb codes in get_ue_golomb
+- aaccoder: prevent crash of anmr coder
+- ffmdec: reject zero-sized chunks
+- swscale/x86/rgb2rgb_template: Fallback to mmx in interleaveBytes() if the alignment is insufficient for SSE*
+- swscale/x86/rgb2rgb_template: Do not crash on misaligend stride
+- avformat/mxfenc: Do not crash if there is no packet in the first stream
+- avcodec/aarch64/neon.S: Update neon.s for transpose_4x4H
+- avformat/utils: estimate_timings_from_pts - increase retry counter, fixes invalid duration for ts files with hevc codec
+- avformat/matroskaenc: Check codecdelay before use
+- avutil/mathematics: Fix division by 0
+- mjpegdec: consider chroma subsampling in size check
+- avcodec/hevc: Check max ctb addresses for WPP
+- avcodec/vp3: ensure header is parsed successfully before tables
+- avcodec/jpeg2000dec: Check bpno in decode_cblk()
+- avcodec/pgssubdec: Fix left shift of 255 by 24 places cannot be represented in type int
+- swscale/utils: Fix for runtime error: left shift of negative value -1
+- avcodec/hevc: Fix integer overflow of entry_point_offset
+- avcodec/dirac_parser: Check that there is a previous PU before accessing it
+- avcodec/dirac_parser: Add basic validity checks for next_pu_offset and prev_pu_offset
+- avcodec/dirac_parser: Fix potential overflows in pointer checks
+- avcodec/wmaprodec: Check bits per sample to be within the range not causing integer overflows
+- avcodec/wmaprodec: Fix overflow of cutoff
+- avformat/smacker: fix integer overflow with pts_inc
+- avcodec/vp3: Fix "runtime error: left shift of negative value"
+- mpegencts: Fix overflow in cbr mode period calculations
+- avutil/timecode: Fix fps check
+- avutil/mathematics: return INT64_MIN (=AV_NOPTS_VALUE) from av_rescale_rnd() for overflows
+- avcodec/apedec: Check length in long_filter_high_3800()
+- avcodec/vp3: always set pix_fmt in theora_decode_header()
+- avcodec/mpeg4videodec: Check available data before reading custom matrix
+- avutil/mathematics: Do not treat INT64_MIN as positive in av_rescale_rnd
+- avutil/integer: Fix av_mod_i() with negative dividend
+- avformat/dump: Fix integer overflow in av_dump_format()
+- avcodec/h264_refs: Check that long references match before use
+- avcodec/utils: Clear dimensions in ff_get_buffer() on failure
+- avcodec/utils: Use 64bit for aspect ratio calculation in avcodec_string()
+- avcodec/vp3: Clear context on reinitialization failure
+- avcodec/hevc: allocate entries unconditionally
+- avcodec/hevc_cabac: Fix multiple integer overflows
+- avcodec/jpeg2000dwt: Check ndeclevels before calling dwt_encode*()
+- avcodec/jpeg2000dwt: Check ndeclevels before calling dwt_decode*()
+- avcodec/hevc: Check entry_point_offsets
+- avcodec/cabac: Check initial cabac decoder state
+- avcodec/cabac_functions: Fix "left shift of negative value -31767"
+- avcodec/h264_slice: Limit max_contexts when slice_context_count is initialized
+- avcodec/vp8: Do not use num_coeff_partitions in thread/buffer setup
+- avcodec/ffv1dec: Clear quant_table_count if its invalid
+- avcodec/ffv1dec: Print an error if the quant table count is invalid
+- doc/filters/drawtext: fix centering example
+- hqx: correct type and size check of info_offset
+- mxfdec: check edit_rate also for physical_track
+- mpegvideo: clear overread in clear_context
+- dvdsubdec: validate offset2 similar to offset1
+- aacdec: don't return frames without data from aac_decode_er_frame
+- avcodec/takdec: Use memove, avoid undefined memcpy() use
+- riffdec: prevent negative bit rate
+
+
 version 2.7.3:
 - rtmpcrypt: Do the xtea decryption in little endian mode
 - Update versions for 2.7.3
