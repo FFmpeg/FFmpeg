@@ -145,9 +145,9 @@
     <ClCompile Include="..\libavutil\xtea.c" />
     <ClCompile Include="..\libavutil\tea.c" />
     <ClCompile Include="..\libavutil\lzo.c" />
-    <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c" />
-    <ClCompile Include="..\libavutil\..\compat\strtod.c" />
-    <ClCompile Include="..\libavutil\..\compat\getopt.c" />
+    <ClCompile Include="..\compat\msvcrt\snprintf.c" />
+    <ClCompile Include="..\compat\strtod.c" />
+    <ClCompile Include="..\compat\getopt.c" />
     <ClCompile Include="..\libavutil\x86\cpu.c">
       <ObjectFileName>$(IntDir)\libavutil_x86_cpu.obj</ObjectFileName>
     </ClCompile>
