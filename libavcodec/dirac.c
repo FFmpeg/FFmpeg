@@ -262,6 +262,9 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
 
     dsh->bit_depth = luma_depth;
 
+    if (dsh->pixel_range_index < 2U)
+        return AVERROR_INVALIDDATA;
+
     dsh->pix_fmt = dirac_pix_fmt[dsh->chroma_format][dsh->pixel_range_index-2];
     avcodec_get_chroma_sub_sample(dsh->pix_fmt, &chroma_x_shift, &chroma_y_shift);
     if ((dsh->width % (1<<chroma_x_shift)) || (dsh->height % (1<<chroma_y_shift))) {
