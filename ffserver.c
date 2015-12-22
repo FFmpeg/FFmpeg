@@ -1758,8 +1758,12 @@ static int http_parse_request(HTTPContext *c)
                   "HTTP/1.0 404 Not Found\r\n"
                   "Content-type: text/html\r\n"
                   "\r\n"
+                  "<!DOCTYPE html>\n"
                   "<html>\n"
-                  "<head><title>404 Not Found</title></head>\n"
+                  "<head>\n"
+                  "<meta charset="UTF-8">\n"
+                  "<title>404 Not Found</title>\n"
+                  "</head>\n"
                   "<body>%s</body>\n"
                   "</html>\n", msg);
     q += strlen(q);
