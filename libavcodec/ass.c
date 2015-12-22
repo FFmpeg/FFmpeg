@@ -161,6 +161,8 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     sub->rects = rects;
     sub->end_display_time = FFMAX(sub->end_display_time, 10 * duration);
     rects[sub->num_rects]       = av_mallocz(sizeof(*rects[0]));
+    if (!rects[sub->num_rects])
+        goto errnomem;
     rects[sub->num_rects]->type = SUBTITLE_ASS;
     ret = av_bprint_finalize(&buf, &rects[sub->num_rects]->ass);
     if (ret < 0)
