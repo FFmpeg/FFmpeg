@@ -18,8 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <complex.h>
-
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -189,14 +187,15 @@ static inline void set_lp_rbj(BiquadD2 *bq, double fc, double q, double sr, doub
 
 static double freq_gain(BiquadCoeffs *c, double freq, double sr)
 {
-    double complex z, w;
+    double zr, zi;
 
     freq *= 2.0 * M_PI / sr;
-    w = 0 + I * freq;
-    z = 1.0 / cexp(w);
+    zr = cos(freq);
+    zi = -sin(freq);
 
-    return cabs(((double complex)c->a0 + c->a1 * z + c->a2 * z*z) /
-                ((double complex)1.0 + c->b1 * z + c->b2 * z*z));
+    /* |(a0 + a1*z + a2*z^2)/(1 + b1*z + b2*z^2)| */
+    return hypot(c->a0 + c->a1*zr + c->a2*(zr*zr-zi*zi), c->a1*zi + 2*c->a2*zr*zi) /
+           hypot(1 + c->b1*zr + c->b2*(zr*zr-zi*zi), c->b1*zi + 2*c->b2*zr*zi);
 }
 
 static int config_input(AVFilterLink *inlink)

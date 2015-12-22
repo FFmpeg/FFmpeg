@@ -2836,7 +2836,6 @@ unix_protocol_deps="sys_un_h"
 unix_protocol_select="network"
 
 # filters
-aemphasis_filter_deps="cabs cexp"
 amovie_filter_deps="avcodec avformat"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
