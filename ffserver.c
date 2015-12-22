@@ -243,6 +243,8 @@ static int rtp_new_av_stream(HTTPContext *c,
                              int stream_index, struct sockaddr_in *dest_addr,
                              HTTPContext *rtsp_c);
 /* utils */
+static size_t htmlencode (const char *src, char **dest);
+static inline void cp_html_entity (char *buffer, const char *entity);
 static inline int check_codec_match(AVCodecContext *ccf, AVCodecContext *ccs,
                                     int stream);
 
@@ -263,12 +265,79 @@ static AVLFG random_state;
 
 static FILE *logfile = NULL;
 
-static void htmlstrip(char *s) {
-    while (s && *s) {
-        s += strspn(s, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,. ");
-        if (*s)
-            *s++ = '?';
+static inline void cp_html_entity (char *buffer, const char *entity) {
+    if (!buffer || !entity)
+        return;
+    while (*entity)
+        *buffer++ = *entity++;
+}
+
+/**
+ * Substitutes known conflicting chars on a text string with
+ * their corresponding HTML entities.
+ *
+ * Returns the number of bytes in the 'encoded' representation
+ * not including the terminating NUL.
+ */
+static size_t htmlencode (const char *src, char **dest) {
+    const char *amp = "&amp;";
+    const char *lt  = "&lt;";
+    const char *gt  = "&gt;";
+    const char *start;
+    char *tmp;
+    size_t final_size = 0;
+
+    if (!src)
+        return 0;
+
+    start = src;
+
+    /* Compute needed dest size */
+    while (*src != '\0') {
+        switch(*src) {
+            case 38: /* & */
+                final_size += 5;
+                break;
+            case 60: /* < */
+            case 62: /* > */
+                final_size += 4;
+                break;
+            default:
+                final_size++;
+        }
+        src++;
     }
+
+    src = start;
+    *dest = av_mallocz(final_size + 1);
+    if (!*dest)
+        return 0;
+
+    /* Build dest */
+    tmp = *dest;
+    while (*src != '\0') {
+        switch(*src) {
+            case 38: /* & */
+                cp_html_entity (tmp, amp);
+                tmp += 5;
+                break;
+            case 60: /* < */
+                cp_html_entity (tmp, lt);
+                tmp += 4;
+                break;
+            case 62: /* > */
+                cp_html_entity (tmp, gt);
+                tmp += 4;
+                break;
+            default:
+                *tmp = *src;
+                tmp += 1;
+        }
+        src++;
+    }
+    *tmp = '\0';
+
+    return final_size;
 }
 
 static int64_t ffm_read_write_index(int fd)
@@ -1356,6 +1425,7 @@ static int http_parse_request(HTTPContext *c)
     char url[1024], *q;
     char protocol[32];
     char msg[1024];
+    char *encoded_msg = NULL;
     const char *mime_type;
     FFServerStream *stream;
     int i;
@@ -1753,7 +1823,9 @@ static int http_parse_request(HTTPContext *c)
  send_error:
     c->http_error = 404;
     q = c->buffer;
-    htmlstrip(msg);
+    if (!htmlencode(msg, &encoded_msg)) {
+        http_log("Could not encode filename '%s' as HTML\n", msg);
+    }
     snprintf(q, c->buffer_size,
                   "HTTP/1.0 404 Not Found\r\n"
                   "Content-type: text/html\r\n"
@@ -1761,16 +1833,17 @@ static int http_parse_request(HTTPContext *c)
                   "<!DOCTYPE html>\n"
                   "<html>\n"
                   "<head>\n"
-                  "<meta charset="UTF-8">\n"
+                  "<meta charset=\"UTF-8\">\n"
                   "<title>404 Not Found</title>\n"
                   "</head>\n"
                   "<body>%s</body>\n"
-                  "</html>\n", msg);
+                  "</html>\n", encoded_msg? encoded_msg : "File not found");
     q += strlen(q);
     /* prepare output buffer */
     c->buffer_ptr = c->buffer;
     c->buffer_end = q;
     c->state = HTTPSTATE_SEND_HEADER;
+    av_freep(&encoded_msg);
     return 0;
  send_status:
     compute_status(c);
