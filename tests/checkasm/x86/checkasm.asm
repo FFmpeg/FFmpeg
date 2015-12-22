@@ -98,7 +98,7 @@ cglobal stack_clobber, 1,2
 ; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
 INIT_XMM
-%macro check_call 0-1
+%macro CHECKED_CALL 0-1
 cglobal checked_call%1, 2,15,16,max_args*8+8
     mov  t0, r0
 
@@ -171,9 +171,8 @@ cglobal checked_call%1, 2,15,16,max_args*8+8
 .clobber_ok:
 %ifnid %1, _emms
     fstenv [rsp]
-    mov  r9h, [rsp + 8]
-    add  r9h, 1
-    jz   .emms_ok
+    cmp  word [rsp + 8], 0xffff
+    je   .emms_ok
     report_fail error_message_emms
     emms
 .emms_ok:
@@ -201,7 +200,7 @@ cglobal checked_call%1, 2,15,16,max_args*8+8
     mov  eax, r3
 %endmacro
 
-%macro check_call 0-1
+%macro CHECKED_CALL 0-1
 ;-----------------------------------------------------------------------------
 ; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
@@ -225,10 +224,9 @@ cglobal checked_call%1, 1,7
     report_fail error_message
 .clobber_ok:
 %ifnid %1, _emms
-    fstenv [rsp]
-    mov  r3h, [rsp + 8]
-    add  r3h, 1
-    jz   .emms_ok
+    fstenv [esp]
+    cmp  word [esp + 8], 0xffff
+    je   .emms_ok
     report_fail error_message_emms
     emms
 .emms_ok:
@@ -241,5 +239,5 @@ cglobal checked_call%1, 1,7
 
 %endif ; ARCH_X86_64
 
-check_call
-check_call _emms
+CHECKED_CALL
+CHECKED_CALL _emms
