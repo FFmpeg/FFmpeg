@@ -14438,6 +14438,17 @@ Default is @code{1}, which means time averaging is disabled.
 Specify list of colors separated by space or by '|' which will be used to
 draw channel frequencies. Unrecognized or missing colors will be replaced
 by white color.
+
+@item cmode
+Set channel display mode.
+
+It accepts the following values:
+@table @samp
+@item combined
+@item separate
+@end table
+Default is @code{combined}.
+
 @end table
 
 @section showspectrum

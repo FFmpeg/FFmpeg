@@ -1045,9 +1045,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_hevc_bi_qpel_hv64_10_avx2;
             }
             SAO_BAND_INIT(10, avx2);
-            c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_32_10_avx2;
-            c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_48_10_avx2;
-            c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_64_10_avx2;
+            SAO_EDGE_INIT(10, avx2);
 
             c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
             c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
@@ -1101,9 +1099,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[3] = ff_hevc_idct32x32_dc_12_avx2;
 
             SAO_BAND_INIT(12, avx2);
-            c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_32_12_avx2;
-            c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_48_12_avx2;
-            c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_64_12_avx2;
+            SAO_EDGE_INIT(12, avx2);
         }
     }
 }

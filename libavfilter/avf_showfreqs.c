@@ -34,6 +34,7 @@
 #include "internal.h"
 
 enum DisplayMode    { LINE, BAR, DOT, NB_MODES };
+enum ChannelMode    { COMBINED, SEPARATE, NB_CMODES };
 enum FrequencyScale { FS_LINEAR, FS_LOG, FS_RLOG, NB_FSCALES };
 enum AmplitudeScale { AS_LINEAR, AS_SQRT, AS_CBRT, AS_LOG, NB_ASCALES };
 enum WindowFunc     { WFUNC_RECT, WFUNC_HANNING, WFUNC_HAMMING, WFUNC_BLACKMAN,
@@ -45,6 +46,7 @@ typedef struct ShowFreqsContext {
     const AVClass *class;
     int w, h;
     int mode;
+    int cmode;
     int fft_bits;
     int ascale, fscale;
     int avg;
@@ -115,6 +117,9 @@ static const AVOption showfreqs_options[] = {
     { "overlap",  "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl=1.}, 0., 1., FLAGS },
     { "averaging", "set time averaging", OFFSET(avg), AV_OPT_TYPE_INT, {.i64=1}, 0, INT32_MAX, FLAGS },
     { "colors", "set channels colors", OFFSET(colors), AV_OPT_TYPE_STRING, {.str = "red|green|blue|yellow|orange|lime|pink|magenta|brown" }, 0, 0, FLAGS },
+    { "cmode", "set channel mode", OFFSET(cmode), AV_OPT_TYPE_INT, {.i64=COMBINED}, 0, NB_CMODES-1, FLAGS, "cmode" },
+        { "combined", "show all channels in same window",  0, AV_OPT_TYPE_CONST, {.i64=COMBINED}, 0, 0, FLAGS, "cmode" },
+        { "separate", "show each channel in own window",   0, AV_OPT_TYPE_CONST, {.i64=SEPARATE}, 0, 0, FLAGS, "cmode" },
     { NULL }
 };
 
@@ -358,6 +363,7 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
     const float avg = s->avg_data[ch][f];
     const float bsize = get_bsize(s, f);
     const int sx = get_sx(s, f);
+    int end = outlink->h;
     int x, y, i;
 
     switch(s->ascale) {
@@ -374,7 +380,16 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
         a = 1.0 - a;
         break;
     }
-    y = a * outlink->h - 1;
+
+    switch (s->cmode) {
+    case COMBINED:
+        y = a * outlink->h - 1;
+        break;
+    case SEPARATE:
+        end = (outlink->h / s->nb_channels) * (ch + 1);
+        y = (outlink->h / s->nb_channels) * ch + a * (outlink->h / s->nb_channels) - 1;
+        break;
+    }
     if (y < 0)
         return;
 
@@ -410,7 +425,7 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
         break;
     case BAR:
         for (x = sx; x < sx + bsize && x < w; x++)
-            for (i = y; i < outlink->h; i++)
+            for (i = y; i < end; i++)
                 draw_dot(out, x, i, fg);
         break;
     case DOT:

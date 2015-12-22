@@ -221,8 +221,14 @@ static const ASSCodesCallbacks srt_callbacks = {
     .end              = srt_end_cb,
 };
 
-static int srt_encode_frame(AVCodecContext *avctx,
-                            unsigned char *buf, int bufsize, const AVSubtitle *sub)
+static const ASSCodesCallbacks text_callbacks = {
+    .text             = srt_text_cb,
+    .new_line         = srt_new_line_cb,
+};
+
+static int encode_frame(AVCodecContext *avctx,
+                        unsigned char *buf, int bufsize, const AVSubtitle *sub,
+                        const ASSCodesCallbacks *cb)
 {
     SRTContext *s = avctx->priv_data;
     ASSDialog *dialog;
@@ -241,7 +247,7 @@ static int srt_encode_frame(AVCodecContext *avctx,
         for (; dialog && num--; dialog++) {
             s->alignment_applied = 0;
             srt_style_apply(s, dialog->style);
-            ff_ass_split_override_codes(&srt_callbacks, s, dialog->text);
+            ff_ass_split_override_codes(cb, s, dialog->text);
         }
     }
 
@@ -257,6 +263,18 @@ static int srt_encode_frame(AVCodecContext *avctx,
     memcpy(buf, s->buffer.str, s->buffer.len);
 
     return s->buffer.len;
+}
+
+static int srt_encode_frame(AVCodecContext *avctx,
+                               unsigned char *buf, int bufsize, const AVSubtitle *sub)
+{
+    return encode_frame(avctx, buf, bufsize, sub, &srt_callbacks);
+}
+
+static int text_encode_frame(AVCodecContext *avctx,
+                             unsigned char *buf, int bufsize, const AVSubtitle *sub)
+{
+    return encode_frame(avctx, buf, bufsize, sub, &text_callbacks);
 }
 
 static int srt_encode_close(AVCodecContext *avctx)
@@ -290,6 +308,19 @@ AVCodec ff_subrip_encoder = {
     .priv_data_size = sizeof(SRTContext),
     .init           = srt_encode_init,
     .encode_sub     = srt_encode_frame,
+    .close          = srt_encode_close,
+};
+#endif
+
+#if CONFIG_TEXT_ENCODER
+AVCodec ff_text_encoder = {
+    .name           = "text",
+    .long_name      = NULL_IF_CONFIG_SMALL("Raw text subtitle"),
+    .type           = AVMEDIA_TYPE_SUBTITLE,
+    .id             = AV_CODEC_ID_TEXT,
+    .priv_data_size = sizeof(SRTContext),
+    .init           = srt_encode_init,
+    .encode_sub     = text_encode_frame,
     .close          = srt_encode_close,
 };
 #endif

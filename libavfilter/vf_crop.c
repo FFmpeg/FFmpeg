@@ -126,7 +126,7 @@ static inline int normalize_double(int *n, double d)
         *n = d > INT_MAX ? INT_MAX : INT_MIN;
         ret = AVERROR(EINVAL);
     } else
-        *n = round(d);
+        *n = lrint(d);
 
     return ret;
 }
