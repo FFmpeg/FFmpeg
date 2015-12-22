@@ -726,9 +726,10 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
                 sce->band_type[w*16+g] = NOISE_BT;
                 sce->zeroes[w*16+g] = 0;
                 prev = noise_sfi;
+            } else {
+                if (!sce->zeroes[w*16+g])
+                    prev_sf = sce->sf_idx[w*16+g];
             }
-            if (!sce->zeroes[w*16+g])
-                prev_sf = sce->sf_idx[w*16+g];
         }
     }
 }
