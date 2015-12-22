@@ -4700,7 +4700,7 @@ static int mov_read_header(AVFormatContext *s)
             }
         }
         if (mov->handbrake_version &&
-            mov->handbrake_version <= 1000000*0 + 1000*10 + 0 &&  // 0.10.0
+            mov->handbrake_version <= 1000000*0 + 1000*10 + 2 &&  // 0.10.2
             st->codec->codec_id == AV_CODEC_ID_MP3
         ) {
             av_log(s, AV_LOG_VERBOSE, "Forcing full parsing for mp3 stream\n");
