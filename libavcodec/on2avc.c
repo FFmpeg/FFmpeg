@@ -22,6 +22,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "fft.h"
@@ -934,9 +935,9 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
                "Stereo mode support is not good, patch is welcome\n");
 
     for (i = 0; i < 20; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 16) / 32;
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 16) / 32;
     for (; i < 128; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 0.5);
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 0.5);
 
     if (avctx->sample_rate < 32000 || avctx->channels == 1)
         memcpy(c->long_win, ff_on2avc_window_long_24000,
