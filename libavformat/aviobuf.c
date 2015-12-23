@@ -968,7 +968,7 @@ int avio_closep(AVIOContext **s)
 int avio_printf(AVIOContext *s, const char *fmt, ...)
 {
     va_list ap;
-    char buf[4096];
+    char buf[4096]; /* update doc entry in avio.h if changed */
     int ret;
 
     va_start(ap, fmt);
