@@ -818,6 +818,7 @@ static void http_send_too_busy_reply(int fd)
                        "HTTP/1.0 503 Server too busy\r\n"
                        "Content-type: text/html\r\n"
                        "\r\n"
+                       "<!DOCTYPE html>\n"
                        "<html><head><title>Too busy</title></head><body>\r\n"
                        "<p>The server is too busy to serve your request at "
                        "this time.</p>\r\n"
@@ -1527,6 +1528,7 @@ static int http_parse_request(HTTPContext *c)
                       "Location: %s\r\n"
                       "Content-type: text/html\r\n"
                       "\r\n"
+                      "<!DOCTYPE html>\n"
                       "<html><head><title>Moved</title></head><body>\r\n"
                       "You should be <a href=\"%s\">redirected</a>.\r\n"
                       "</body></html>\r\n",
@@ -1566,6 +1568,7 @@ static int http_parse_request(HTTPContext *c)
                       "HTTP/1.0 503 Server too busy\r\n"
                       "Content-type: text/html\r\n"
                       "\r\n"
+                      "<!DOCTYPE html>\n"
                       "<html><head><title>Too busy</title></head><body>\r\n"
                       "<p>The server is too busy to serve your request at "
                       "this time.</p>\r\n"
@@ -1931,6 +1934,7 @@ static void compute_status(HTTPContext *c)
     avio_printf(pb, "Pragma: no-cache\r\n");
     avio_printf(pb, "\r\n");
 
+    avio_printf(pb, "<!DOCTYPE html>\n");
     avio_printf(pb, "<html><head><title>%s Status</title>\n", program_name);
     if (c->stream->feed_filename[0])
         avio_printf(pb, "<link rel=\"shortcut icon\" href=\"%s\">\n",
