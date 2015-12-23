@@ -219,7 +219,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         const int idx = s->map[i];
         AVFrame *out;
 
-        if (outlink->closed)
+        if (outlink->status)
             continue;
 
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);

@@ -1324,7 +1324,7 @@ static void heap_bubble_up(AVFilterGraph *graph,
 
     while (index) {
         int parent = (index - 1) >> 1;
-        if (links[parent]->current_pts >= link->current_pts)
+        if (links[parent]->current_pts_us >= link->current_pts_us)
             break;
         links[index] = links[parent];
         links[index]->age_index = index;
@@ -1346,9 +1346,9 @@ static void heap_bubble_down(AVFilterGraph *graph,
         if (child >= graph->sink_links_count)
             break;
         if (child + 1 < graph->sink_links_count &&
-            links[child + 1]->current_pts < links[child]->current_pts)
+            links[child + 1]->current_pts_us < links[child]->current_pts_us)
             child++;
-        if (link->current_pts < links[child]->current_pts)
+        if (link->current_pts_us < links[child]->current_pts_us)
             break;
         links[index] = links[child];
         links[index]->age_index = index;
@@ -1367,11 +1367,14 @@ void ff_avfilter_graph_update_heap(AVFilterGraph *graph, AVFilterLink *link)
 
 int avfilter_graph_request_oldest(AVFilterGraph *graph)
 {
+    AVFilterLink *oldest = graph->sink_links[0];
+    int r;
+
     while (graph->sink_links_count) {
-        AVFilterLink *oldest = graph->sink_links[0];
-        int r = ff_request_frame(oldest);
+        oldest = graph->sink_links[0];
+        r = ff_request_frame(oldest);
         if (r != AVERROR_EOF)
-            return r;
+            break;
         av_log(oldest->dst, AV_LOG_DEBUG, "EOF on sink link %s:%s.\n",
                oldest->dst ? oldest->dst->name : "unknown",
                oldest->dstpad ? oldest->dstpad->name : "unknown");
@@ -1381,5 +1384,52 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
                              oldest->age_index);
         oldest->age_index = -1;
     }
-    return AVERROR_EOF;
+    if (!graph->sink_links_count)
+        return AVERROR_EOF;
+    av_assert1(oldest->age_index >= 0);
+    while (oldest->frame_wanted_out) {
+        r = ff_filter_graph_run_once(graph);
+        if (r < 0)
+            return r;
+    }
+    return 0;
+}
+
+static AVFilterLink *graph_run_once_find_filter(AVFilterGraph *graph)
+{
+    unsigned i, j;
+    AVFilterContext *f;
+
+    /* TODO: replace scanning the graph with a priority list */
+    for (i = 0; i < graph->nb_filters; i++) {
+        f = graph->filters[i];
+        for (j = 0; j < f->nb_outputs; j++)
+            if (f->outputs[j]->frame_wanted_in)
+                return f->outputs[j];
+    }
+    for (i = 0; i < graph->nb_filters; i++) {
+        f = graph->filters[i];
+        for (j = 0; j < f->nb_outputs; j++)
+            if (f->outputs[j]->frame_wanted_out)
+                return f->outputs[j];
+    }
+    return NULL;
+}
+
+int ff_filter_graph_run_once(AVFilterGraph *graph)
+{
+    AVFilterLink *link;
+    int ret;
+
+    link = graph_run_once_find_filter(graph);
+    if (!link) {
+        av_log(NULL, AV_LOG_WARNING, "Useless run of a filter graph\n");
+        return AVERROR(EAGAIN);
+    }
+    ret = ff_request_frame_to_filter(link);
+    if (ret == AVERROR_EOF)
+        /* local EOF will be forwarded through request_frame() /
+           set_status() until it reaches the sink */
+        ret = 0;
+    return ret < 0 ? ret : 1;
 }

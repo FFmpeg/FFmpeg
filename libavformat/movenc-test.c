@@ -44,7 +44,7 @@ static const uint8_t aac_extradata[] = {
 };
 
 
-const char *format = "mp4";
+static const char *format = "mp4";
 AVFormatContext *ctx;
 uint8_t iobuf[32768];
 AVDictionary *opts;

@@ -1376,7 +1376,7 @@ static int ivr_read_packet(AVFormatContext *s, AVPacket *pkt)
                     return AVERROR_EOF;
                 }
             } else {
-                av_log(s, AV_LOG_ERROR, "Unsupported opcode=%d at %lX\n", opcode, avio_tell(pb) - 1);
+                av_log(s, AV_LOG_ERROR, "Unsupported opcode=%d at %"PRIX64"\n", opcode, avio_tell(pb) - 1);
                 return AVERROR(EIO);
             }
         }
