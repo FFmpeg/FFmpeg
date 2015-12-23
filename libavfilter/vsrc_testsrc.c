@@ -615,7 +615,7 @@ static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     if (seg_size >= 1 && height >= 13 * seg_size) {
         int64_t p10decimals = 1;
         double time = av_q2d(test->time_base) * test->nb_frame *
-                      pow(10, test->nb_decimals);
+                      ff_exp10(test->nb_decimals);
         if (time >= INT_MAX)
             return;
 
