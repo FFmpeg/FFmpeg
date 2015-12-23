@@ -40,6 +40,8 @@ typedef struct LibRTMFPContext {
     unsigned int id;
     int audioUnbuffered;
     int videoUnbuffered;
+    int p2pPublishing;
+    char* peerId;
     char* publication;
     /*RTMP rtmp;
     char *app;
@@ -131,7 +133,11 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
 
-    if (flags & AVIO_FLAG_WRITE)
+    if (ctx->peerId)
+        res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication);
+    else if (ctx->p2pPublishing)
+        res = RTMFP_PublishP2P(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered);
+    else if (flags & AVIO_FLAG_WRITE)
         res = RTMFP_Publish(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered);
     else
         res = RTMFP_Play(ctx->id, ctx->publication);
@@ -210,6 +216,8 @@ static int rtmp_get_file_handle(URLContext *s)
 static const AVOption options[] = {
     {"rtmfp_audioUnbuffered", "Unbuffered audio mode (default to false)", OFFSET(audioUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"rtmfp_videoUnbuffered", "Unbuffered video mode (default to false)", OFFSET(videoUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
+    {"rtmfp_peerId", "Connect to a peer for playing", OFFSET(peerId), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmfp_p2pPublishing", "Publish the stream in p2p mode (default to false)", OFFSET(p2pPublishing), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     { NULL },
 };
 
