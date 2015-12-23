@@ -35,6 +35,7 @@ cglobal maskedmerge8, 10, 11, 7, 0, bsrc, osrc, msrc, dst, blinesize, olinesize,
     mova        m4, [pw_256]
     mova        m5, [pw_128]
     pxor        m6, m6
+    movsxdifnidn wq, wd
     add      bsrcq, wq
     add      osrcq, wq
     add      msrcq, wq
