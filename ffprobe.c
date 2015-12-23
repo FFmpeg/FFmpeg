@@ -218,8 +218,19 @@ static AVInputFormat *iformat = NULL;
 
 static struct AVHashContext *hash;
 
-static const char *const binary_unit_prefixes [] = { "", "Ki", "Mi", "Gi", "Ti", "Pi" };
-static const char *const decimal_unit_prefixes[] = { "", "K" , "M" , "G" , "T" , "P"  };
+static const struct {
+    double bin_val;
+    double dec_val;
+    const char *bin_str;
+    const char *dec_str;
+} si_prefixes[] = {
+    { 1.0, 1.0, "", "" },
+    { 1.024e3, 1e3, "Ki", "K" },
+    { 1.048576e6, 1e6, "Mi", "M" },
+    { 1.073741824e9, 1e9, "Gi", "G" },
+    { 1.099511627776e12, 1e12, "Ti", "T" },
+    { 1.125899906842624e15, 1e15, "Pi", "P" },
+};
 
 static const char unit_second_str[]         = "s"    ;
 static const char unit_hertz_str[]          = "Hz"   ;
@@ -273,14 +284,14 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
 
             if (uv.unit == unit_byte_str && use_byte_value_binary_prefix) {
                 index = (long long int) (log2(vald)) / 10;
-                index = av_clip(index, 0, FF_ARRAY_ELEMS(binary_unit_prefixes) - 1);
-                vald /= exp2(index * 10);
-                prefix_string = binary_unit_prefixes[index];
+                index = av_clip(index, 0, FF_ARRAY_ELEMS(si_prefixes) - 1);
+                vald /= si_prefixes[index].bin_val;
+                prefix_string = si_prefixes[index].bin_str;
             } else {
                 index = (long long int) (log10(vald)) / 3;
-                index = av_clip(index, 0, FF_ARRAY_ELEMS(decimal_unit_prefixes) - 1);
-                vald /= pow(10, index * 3);
-                prefix_string = decimal_unit_prefixes[index];
+                index = av_clip(index, 0, FF_ARRAY_ELEMS(si_prefixes) - 1);
+                vald /= si_prefixes[index].dec_val;
+                prefix_string = si_prefixes[index].dec_str;
             }
             vali = vald;
         }
