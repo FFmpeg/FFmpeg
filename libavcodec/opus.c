@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "libavutil/error.h"
+#include "libavutil/internal.h"
 
 #include "opus.h"
 #include "vorbis.h"
@@ -333,7 +334,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
 
     s->gain_i = AV_RL16(extradata + 16);
     if (s->gain_i)
-        s->gain = pow(10, s->gain_i / (20.0 * 256));
+        s->gain = ff_exp10(s->gain_i / (20.0 * 256));
 
     map_type = extradata[18];
     if (!map_type) {
