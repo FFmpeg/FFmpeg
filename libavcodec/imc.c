@@ -137,8 +137,8 @@ static av_cold void iac_generate_tabs(IMCContext *q, int sampling_rate)
 
         if (i > 0) {
             tb = bark - prev_bark;
-            q->weights1[i - 1] = pow(10.0, -1.0 * tb);
-            q->weights2[i - 1] = pow(10.0, -2.7 * tb);
+            q->weights1[i - 1] = ff_exp10(-1.0 * tb);
+            q->weights2[i - 1] = ff_exp10(-2.7 * tb);
         }
         prev_bark = bark;
 
