@@ -15,7 +15,10 @@ These options can be used to disable/enable specific options that define how FFm
 a new project can be built using these options.
 
 To generate a custom project using different configuration options simply build ffmpeg_generator and then run it by
-passing in the desired config options.
+passing in the desired config options. In order for the generator to run it must have access to the ffmpeg source files
+that should be built into the new generated project. The generator will search for the source 'configure' file in order to 
+find what options are avilable for the current sources. This file must be accessible for the program to run, if the generator 
+cannot find the configure files location then the input command option "--rootdir=" can be used to specify its location.
 
 For example to build FFmpeg without any additional dependencies:
 
@@ -28,6 +31,9 @@ such as --disable-ffprobe which will prevent a project file being generated for 
 
 The generator is designed to automatically resolve dependencies so if a configure option is disabled all options that depend on it will 
 also be disabled accordingly.
+
+For a complete list of available commands the "--help" option can be passed to the generator. This will give the complete list 
+of accepted options based on the current sources.
 
 By default the generator will build a project using the latest available toolchain detected on the host computer. This can be changed by 
 hand in the generated projects properties "Project Configuration->General->Platform Toolset" if an older toolset is desired. The generator 
@@ -61,7 +67,7 @@ However the following is a list of extra dependency options that require externa
 *OutputDir is the "Output Directory" specified in the project properties. 
     Note: There is a different OutputDir for 32/64bit configurations. Lib's and DLL's should be placed in the correct directory.
 	Any header files will need to be placed in the Output directories include folder OutputDir\include.
-	By default the 32bit lib OutputDir is "OutputDir/lib/x86" and 64bit is "OutputDir/lib/x64". DLLs followin a similar schemes
+	By default the 32bit lib OutputDir is "OutputDir/lib/x86" and 64bit is "OutputDir/lib/x64". DLLs follow a similar scheme
     except using "OutputDir/bin/x86" and for 64bit "OutputDir/bin/x64".
     The default value of OutputDir is "..\..\msvc" relative to the FFmpeg source directory. An example of the expetced 
     directory structure is:

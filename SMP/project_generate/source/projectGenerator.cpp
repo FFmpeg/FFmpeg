@@ -1424,6 +1424,21 @@ void projectGenerator::outputTemplateTags(const string& sProjectName, string & s
         uiFindPos += sGUID.length();
         sProjectTemplate.replace(uiFindPos, mKeys[sProjectName].length(), mKeys[sProjectName]);
     }
+
+    //Change all occurance of template_outdir with configured output directory
+    string sOutDir = m_ConfigHelper.m_sOutDirectory;
+    replace(sOutDir.begin(), sOutDir.end(), '/', '\\');
+    if (sOutDir.at(0) == '.') {
+        sOutDir = "$(ProjectDir)" + sOutDir; //Make any relative paths based on project dir
+    }
+    const string sFFOutSearchTag = "template_outdir";
+    uiFindPos = sProjectTemplate.find(sFFOutSearchTag);
+    while (uiFindPos != string::npos) {
+        //Replace
+        sProjectTemplate.replace(uiFindPos, sFFOutSearchTag.length(), sOutDir);
+        //Get next
+        uiFindPos = sProjectTemplate.find(sFFOutSearchTag, uiFindPos + 1);
+    }
 }
 
 void projectGenerator::outputSourceFileType(StaticList& vFileList, const string& sType, const string& sFilterType, string & sProjectTemplate, string & sFilterTemplate, StaticList& vFoundObjects, set<string>& vFoundFilters, bool bCheckExisting)

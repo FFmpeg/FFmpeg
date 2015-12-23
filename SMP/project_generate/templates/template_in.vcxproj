@@ -206,75 +206,75 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
     <TargetName>template_shind</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <TargetName>template_shind</TargetName>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'">
     <TargetName>template_shind</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'">
     <TargetName>template_shind</TargetName>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
     <TargetName>template_shin</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
     <TargetName>template_shin</TargetName>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|Win32'">
     <TargetName>template_shin</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|x64'">
     <TargetName>template_shin</TargetName>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>template_ind</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>template_ind</TargetName>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>template_in</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>template_in</TargetName>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'">
     <TargetName>template_in</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'">
     <TargetName>template_in</TargetName>
-    <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
+    <OutDir>template_outdir</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
