@@ -22,7 +22,6 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
 SECTION_RODATA
 
 pw_128: times 8 dw 128
@@ -31,24 +30,33 @@ pw_256: times 8 dw 256
 SECTION .text
 
 INIT_XMM sse2
-cglobal maskedmerge8, 10, 11, 7, 0, bsrc, osrc, msrc, dst, blinesize, olinesize, mlinesize, dlinesize, w, h
+%if ARCH_X86_64
+cglobal maskedmerge8, 8, 11, 7, bsrc, osrc, msrc, dst, blinesize, olinesize, mlinesize, dlinesize, w, h, x
+    mov         wd, dword wm
+    mov         hd, dword hm
+%else
+cglobal maskedmerge8, 5, 7, 7, bsrc, osrc, msrc, dst, blinesize, w, x
+    mov         wd, r8m
+%define olinesizeq r5mp
+%define mlinesizeq r6mp
+%define dlinesizeq r7mp
+%define hd r9mp
+%endif
     mova        m4, [pw_256]
     mova        m5, [pw_128]
     pxor        m6, m6
-    movsxdifnidn wq, wd
     add      bsrcq, wq
     add      osrcq, wq
     add      msrcq, wq
     add       dstq, wq
     neg         wq
-    %define      x  r10q
 .nextrow:
-    mov          x, wq
+    mov         xq, wq
 
     .loop:
-        movh            m0, [bsrcq + x]
-        movh            m1, [osrcq + x]
-        movh            m3, [msrcq + x]
+        movh            m0, [bsrcq + xq]
+        movh            m1, [osrcq + xq]
+        movh            m3, [msrcq + xq]
         mova            m2, m4
         punpcklbw       m0, m6
         punpcklbw       m1, m6
@@ -60,8 +68,8 @@ cglobal maskedmerge8, 10, 11, 7, 0, bsrc, osrc, msrc, dst, blinesize, olinesize,
         paddw           m1, m5
         psrlw           m1, 8
         packuswb        m1, m1
-        movh    [dstq + x], m1
-        add           r10q, mmsize / 2
+        movh   [dstq + xq], m1
+        add             xq, mmsize / 2
     jl .loop
 
     add         bsrcq, blinesizeq
@@ -71,4 +79,3 @@ cglobal maskedmerge8, 10, 11, 7, 0, bsrc, osrc, msrc, dst, blinesize, olinesize,
     sub         hd, 1
     jg .nextrow
 REP_RET
-%endif
