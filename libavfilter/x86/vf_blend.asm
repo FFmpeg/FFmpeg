@@ -176,7 +176,7 @@ BLEND_INIT phoenix, 4
     jl .loop
 BLEND_END
 
-INIT_XMM ssse3
+%macro BLEND_ABS 0
 BLEND_INIT difference, 3
     pxor       m2, m2
 .nextrow:
@@ -188,7 +188,7 @@ BLEND_INIT difference, 3
         punpcklbw       m0, m2
         punpcklbw       m1, m2
         psubw           m0, m1
-        pabsw           m0, m0
+        ABS1            m0, m1
         packuswb        m0, m0
         movh   [dstq + xq], m0
         add             xq, mmsize / 2
@@ -209,7 +209,7 @@ BLEND_INIT negation, 5
         mova            m3, m4
         psubw           m3, m0
         psubw           m3, m1
-        pabsw           m3, m3
+        ABS1            m3, m1
         mova            m0, m4
         psubw           m0, m3
         packuswb        m0, m0
@@ -217,3 +217,9 @@ BLEND_INIT negation, 5
         add             xq, mmsize / 2
     jl .loop
 BLEND_END
+%endmacro
+
+INIT_XMM sse2
+BLEND_ABS
+INIT_XMM ssse3
+BLEND_ABS
