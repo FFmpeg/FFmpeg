@@ -292,6 +292,25 @@ static av_always_inline av_const int64_t ff_rint64_clip(double a, int64_t amin, 
     return res;
 }
 
+/**
+ * Compute 10^x for floating point values. Note: this function is by no means
+ * "correctly rounded", and is meant as a fast, reasonably accurate approximation.
+ * For instance, maximum relative error for the double precision variant is
+ * ~ 1e-13 for very small and very large values.
+ * This is ~2x faster than GNU libm's approach, which is still off by 2ulp on
+ * some inputs.
+ * @param x exponent
+ * @return 10^x
+ */
+static av_always_inline double ff_exp10(double x)
+{
+    return exp2(M_LOG2_10 * x);
+}
+
+static av_always_inline float ff_exp10f(float x)
+{
+    return exp2f(M_LOG2_10 * x);
+}
 
 /**
  * A wrapper for open() setting O_CLOEXEC.
