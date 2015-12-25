@@ -607,7 +607,7 @@ static int config_input(AVFilterLink *inlink)
             s->filters[s->nb_filters].channel >= inlink->channels)
             s->filters[s->nb_filters].ignore = 1;
 
-        av_clip(s->filters[s->nb_filters].type, 0, NB_TYPES - 1);
+        s->filters[s->nb_filters].type = av_clip(s->filters[s->nb_filters].type, 0, NB_TYPES - 1);
         ret = add_filter(s, inlink);
         if (ret < 0)
             break;
