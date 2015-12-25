@@ -44,6 +44,8 @@
 
 /** libschroedinger encoder private data */
 typedef struct SchroEncoderParams {
+    AVClass        *class;
+
     /** Schroedinger video format */
     SchroVideoFormat *format;
 

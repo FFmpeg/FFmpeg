@@ -198,7 +198,7 @@ void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q)
           q->sort == SUB_SORT_TS_POS ? cmp_pkt_sub_ts_pos
                                      : cmp_pkt_sub_pos_ts);
     for (i = 0; i < q->nb_subs; i++)
-        if (q->subs[i].duration == -1 && i < q->nb_subs - 1)
+        if (q->subs[i].duration < 0 && i < q->nb_subs - 1)
             q->subs[i].duration = q->subs[i + 1].pts - q->subs[i].pts;
 
     if (!q->keep_duplicates)

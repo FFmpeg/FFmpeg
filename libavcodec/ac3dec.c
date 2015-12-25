@@ -411,7 +411,8 @@ static void set_downmix_coeffs(AC3DecodeContext *s)
  * Decode the grouped exponents according to exponent strategy.
  * reference: Section 7.1.3 Exponent Decoding
  */
-static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
+static int decode_exponents(AC3DecodeContext *s,
+                            GetBitContext *gbc, int exp_strategy, int ngrps,
                             uint8_t absexp, int8_t *dexps)
 {
     int i, j, grp, group_size;
@@ -431,8 +432,10 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
     prevexp = absexp;
     for (i = 0, j = 0; i < ngrps * 3; i++) {
         prevexp += dexp[i] - 2;
-        if (prevexp > 24U)
+        if (prevexp > 24U) {
+            av_log(s->avctx, AV_LOG_ERROR, "exponent %d is out-of-range\n", prevexp);
             return -1;
+        }
         switch (group_size) {
         case 4: dexps[j++] = prevexp;
                 dexps[j++] = prevexp;
@@ -1141,10 +1144,9 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     for (ch = !cpl_in_use; ch <= s->channels; ch++) {
         if (s->exp_strategy[blk][ch] != EXP_REUSE) {
             s->dexps[ch][0] = get_bits(gbc, 4) << !ch;
-            if (decode_exponents(gbc, s->exp_strategy[blk][ch],
+            if (decode_exponents(s, gbc, s->exp_strategy[blk][ch],
                                  s->num_exp_groups[ch], s->dexps[ch][0],
                                  &s->dexps[ch][s->start_freq[ch]+!!ch])) {
-                av_log(s->avctx, AV_LOG_ERROR, "exponent out-of-range\n");
                 return AVERROR_INVALIDDATA;
             }
             if (ch != CPL_CH && ch != s->lfe_ch)

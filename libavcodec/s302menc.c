@@ -180,9 +180,9 @@ AVCodec ff_s302m_encoder = {
                                                             AV_SAMPLE_FMT_NONE },
     .capabilities          = AV_CODEC_CAP_VARIABLE_FRAME_SIZE | AV_CODEC_CAP_EXPERIMENTAL,
     .supported_samplerates = (const int[]) { 48000, 0 },
-    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_STEREO,
+ /* .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_STEREO,
                                                   AV_CH_LAYOUT_QUAD,
                                                   AV_CH_LAYOUT_5POINT1_BACK,
                                                   AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX,
-                                                  0 },
+                                                  0 }, */
 };

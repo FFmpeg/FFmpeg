@@ -1803,6 +1803,9 @@ fail: // FIXME replace things by appropriate error codes
         int tmpH = sqrt(srcH * (int64_t)dstH);
         enum AVPixelFormat tmpFormat = AV_PIX_FMT_YUV420P;
 
+        if (isALPHA(srcFormat))
+            tmpFormat = AV_PIX_FMT_YUVA420P;
+
         if (srcW*(int64_t)srcH <= 4LL*dstW*dstH)
             return AVERROR(EINVAL);
 
