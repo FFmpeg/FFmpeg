@@ -1817,8 +1817,6 @@ MATH_FUNCS="
     copysign
     cosf
     erf
-    exp10
-    exp10f
     exp2
     exp2f
     expf

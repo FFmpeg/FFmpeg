@@ -293,24 +293,6 @@ static inline double erf(double z)
 #define exp2f(x) ((float)exp2(x))
 #endif /* HAVE_EXP2F */
 
-/* Somewhat inaccurate fallbacks, relative error ~ 1e-13 concentrated on very
-small and very large values. For perfection accuracy-wise, should use pow.
-Speed benefits (>2x average, with no super slow paths) deemed to be worth the
-accuracy tradeoff */
-#if !HAVE_EXP10
-static av_always_inline double exp10(double x)
-{
-    return exp2(M_LOG2_10 * x);
-}
-#endif /* HAVE_EXP10 */
-
-#if !HAVE_EXP10F
-static av_always_inline float exp10f(float x)
-{
-    return exp2f(M_LOG2_10 * x);
-}
-#endif /* HAVE_EXP10F */
-
 #if !HAVE_ISINF
 #undef isinf
 /* Note: these do not follow the BSD/Apple/GNU convention of returning -1 for
