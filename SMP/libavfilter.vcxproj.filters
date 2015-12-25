@@ -144,6 +144,9 @@
     <ClCompile Include="..\libavfilter\af_aecho.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_aemphasis.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\aeval.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
