@@ -858,6 +858,8 @@ Reemit PAT/PMT before writing the next packet.
 Use LATM packetization for AAC.
 @item pat_pmt_at_frames
 Reemit PAT and PMT at each video frame.
+@item system_b
+Conform to System B (DVB) instead of System A (ATSC).
 @end table
 
 @subsection Example
