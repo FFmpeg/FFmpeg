@@ -448,7 +448,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                      (outlink->h - 1) * outpicref->linesize[plane] +
                      s->xpos;
         for (y = 0; y < outlink->h; y++) {
-            *p = rint(FFMAX(0, FFMIN(s->combine_buffer[3 * y + plane], 255)));
+            *p = lrint(FFMAX(0, FFMIN(s->combine_buffer[3 * y + plane], 255)));
             p -= outpicref->linesize[plane];
         }
     }
