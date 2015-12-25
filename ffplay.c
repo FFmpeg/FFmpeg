@@ -927,10 +927,10 @@ static void calculate_display_rect(SDL_Rect *rect,
 
     /* XXX: we suppose the screen has a 1.0 pixel ratio */
     height = scr_height;
-    width = ((int)rint(height * aspect_ratio)) & ~1;
+    width = lrint(height * aspect_ratio) & ~1;
     if (width > scr_width) {
         width = scr_width;
-        height = ((int)rint(width / aspect_ratio)) & ~1;
+        height = lrint(width / aspect_ratio) & ~1;
     }
     x = (scr_width - width) / 2;
     y = (scr_height - height) / 2;
