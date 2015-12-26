@@ -391,7 +391,12 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for (i = 0; i < 3; i++) {
-            if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
+            if (s1->pb &&
+                !strcmp(filename_bytes, s->path) &&
+                !s->loop &&
+                !s->split_planes) {
+                f[i] = s1->pb;
+            } else if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
                            &s1->interrupt_callback, NULL) < 0) {
                 if (i >= 1)
                     break;
@@ -479,7 +484,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                     ret[i] = avio_read(f[i], pkt->data + pkt->size, size[i]);
                 }
             }
-            if (!s->is_pipe)
+            if (!s->is_pipe && f[i] != s1->pb)
                 avio_closep(&f[i]);
             if (ret[i] > 0)
                 pkt->size += ret[i];
@@ -508,7 +513,8 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 fail:
     if (!s->is_pipe) {
         for (i = 0; i < 3; i++) {
-            avio_closep(&f[i]);
+            if (f[i] != s1->pb)
+                avio_closep(&f[i]);
         }
     }
     return res;
