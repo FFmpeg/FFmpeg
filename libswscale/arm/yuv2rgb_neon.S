@@ -299,7 +299,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
 
     ldr                 r7, [sp, #124]                                 @ r7     = linesizeV
     sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeV - width / 2 (paddingV)
-    add                 r10, r10, r7                                   @ srcU  += paddingV
+    add                 r10, r10, r7                                   @ srcV  += paddingV
 .endif
 
     subs                r1, r1, #2                                     @ height -= 2
