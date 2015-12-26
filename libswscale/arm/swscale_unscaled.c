@@ -69,8 +69,8 @@ static int rgbx_to_nv12_neon_16_wrapper(SwsContext *context, const uint8_t *src[
         c->yuv2rgb_v2g_coeff / ((precision) == 16 ? 1 << 7 : 1),                            \
         c->yuv2rgb_u2b_coeff / ((precision) == 16 ? 1 << 7 : 1),                            \
 
-#define DECLARE_FF_YUV420P_TO_RGBX_FUNCS(ofmt, precision)                                   \
-int ff_yuv420p_to_##ofmt##_neon_##precision(int w, int h,                                   \
+#define DECLARE_FF_YUVX_TO_RGBX_FUNCS(ifmt, ofmt, precision)                                \
+int ff_##ifmt##_to_##ofmt##_neon_##precision(int w, int h,                                  \
                                  uint8_t *dst, int linesize,                                \
                                  const uint8_t *srcY, int linesizeY,                        \
                                  const uint8_t *srcU, int linesizeU,                        \
@@ -79,12 +79,12 @@ int ff_yuv420p_to_##ofmt##_neon_##precision(int w, int h,                       
                                  int y_offset,                                              \
                                  int y_coeff);                                              \
                                                                                             \
-static int yuv420p_to_##ofmt##_neon_wrapper_##precision(SwsContext *c, const uint8_t *src[],\
+static int ifmt##_to_##ofmt##_neon_wrapper_##precision(SwsContext *c, const uint8_t *src[], \
                                            int srcStride[], int srcSliceY, int srcSliceH,   \
                                            uint8_t *dst[], int dstStride[]) {               \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE(precision) };                        \
                                                                                             \
-    ff_yuv420p_to_##ofmt##_neon_##precision(c->srcW, srcSliceH,                             \
+    ff_##ifmt##_to_##ofmt##_neon_##precision(c->srcW, srcSliceH,                            \
                                  dst[0] + srcSliceY * dstStride[0], dstStride[0],           \
                                  src[0], srcStride[0],                                      \
                                  src[1], srcStride[1],                                      \
@@ -96,16 +96,17 @@ static int yuv420p_to_##ofmt##_neon_wrapper_##precision(SwsContext *c, const uin
     return 0;                                                                               \
 }                                                                                           \
 
-#define DECLARE_FF_YUV420P_TO_ALL_RGBX_FUNCS(precision)                                     \
-DECLARE_FF_YUV420P_TO_RGBX_FUNCS(argb, precision)                                           \
-DECLARE_FF_YUV420P_TO_RGBX_FUNCS(rgba, precision)                                           \
-DECLARE_FF_YUV420P_TO_RGBX_FUNCS(abgr, precision)                                           \
-DECLARE_FF_YUV420P_TO_RGBX_FUNCS(bgra, precision)                                           \
+#define DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuvx, precision)                                  \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, argb, precision)                                        \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, rgba, precision)                                        \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, abgr, precision)                                        \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, bgra, precision)                                        \
 
-#define DECLARE_FF_YUV420P_TO_ALL_RGBX_ALL_PRECISION_FUNCS                                  \
-DECLARE_FF_YUV420P_TO_ALL_RGBX_FUNCS(16)                                                    \
+#define DECLARE_FF_YUVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(yuvx)                               \
+DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuvx, 16)                                                 \
 
-DECLARE_FF_YUV420P_TO_ALL_RGBX_ALL_PRECISION_FUNCS
+DECLARE_FF_YUVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(yuv420p)
+DECLARE_FF_YUVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(yuv422p)
 
 #define DECLARE_FF_NVX_TO_RGBX_FUNCS(ifmt, ofmt, precision)                                 \
 int ff_##ifmt##_to_##ofmt##_neon_##precision(int w, int h,                                  \
@@ -178,6 +179,7 @@ static void get_unscaled_swscale_neon(SwsContext *c) {
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv12, NV12, accurate_rnd);
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv21, NV21, accurate_rnd);
     SET_FF_NVX_TO_ALL_RGBX_FUNC(yuv420p, YUV420P, accurate_rnd);
+    SET_FF_NVX_TO_ALL_RGBX_FUNC(yuv422p, YUV422P, accurate_rnd);
 }
 
 void ff_get_unscaled_swscale_arm(SwsContext *c)
