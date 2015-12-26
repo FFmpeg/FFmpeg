@@ -103,7 +103,7 @@ static int is_glob(const char *path)
  * @param start_index  minimum accepted value for the first index in the range
  * @return -1 if no image file could be found
  */
-static int find_image_range(int *pfirst_index, int *plast_index,
+static int find_image_range(AVIOContext *pb, int *pfirst_index, int *plast_index,
                             const char *path, int start_index, int start_index_range)
 {
     char buf[1024];
@@ -114,7 +114,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0) {
             *pfirst_index =
             *plast_index  = 1;
-            if (avio_check(buf, AVIO_FLAG_READ) > 0)
+            if (pb || avio_check(buf, AVIO_FLAG_READ) > 0)
                 return 0;
             return -1;
         }
@@ -260,7 +260,7 @@ int ff_img_read_header(AVFormatContext *s1)
         }
         }
         if ((s->pattern_type == PT_GLOB_SEQUENCE && !s->use_glob) || s->pattern_type == PT_SEQUENCE) {
-            if (find_image_range(&first_index, &last_index, s->path,
+            if (find_image_range(s1->pb, &first_index, &last_index, s->path,
                                  s->start_number, s->start_number_range) < 0) {
                 av_log(s1, AV_LOG_ERROR,
                        "Could find no file with path '%s' and index in the range %d-%d\n",
