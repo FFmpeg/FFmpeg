@@ -912,23 +912,7 @@ static av_cold void on2avc_free_vlcs(On2AVCContext *c)
 static av_cold int on2avc_decode_init(AVCodecContext *avctx)
 {
     On2AVCContext *c = avctx->priv_data;
-    int i, ph;
-    /* 10^(i*0.1) for 0 <= i < 10 */
-    /* TODO: possibly statically allocate scale_tab; this may help with FATE
-     * and reproducibility if the binary size is not impacted much */
-    static const double exp10_lut[] = {
-        1,
-        1.2589254117941673,
-        1.5848931924611136,
-        1.9952623149688795,
-        2.5118864315095806,
-        3.1622776601683795,
-        3.9810717055349727,
-        5.0118723362727229,
-        6.3095734448019334,
-        7.9432823472428158,
-    };
-    int64_t exp10_base = 10;
+    int i;
 
     if (avctx->channels > 2U) {
         avpriv_request_sample(avctx, "Decoding more than 2 channels");
@@ -950,23 +934,13 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_WARNING,
                "Stereo mode support is not good, patch is welcome\n");
 
-
-    /* Fast and more accurate way of doing for (i = 0; i < 20; i++)
-        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 16) / 32;
+    // We add -0.01 before ceil() to avoid any values to fall at exactly the
+    // midpoint between different ceil values. The results are identical to
+    // using pow(10, i / 10.0) without such bias
+    for (i = 0; i < 20; i++)
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 16 - 0.01) / 32;
     for (; i < 128; i++)
-        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 0.5); */
-    for (i = 0; i < 10; i++) {
-        c->scale_tab[i] = ceil(exp10_lut[i] * 16) / 32;
-        c->scale_tab[i+10] = ceil(exp10_lut[i] * 160) / 32;
-    }
-
-    for (i = 20, ph = 0; i < 128; i++, ph++) {
-        if (i % 10 == 0) {
-            exp10_base *= 10;
-            ph = 0;
-        }
-        c->scale_tab[i] = ceil(exp10_base * exp10_lut[ph] * 0.5);
-    }
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 0.5 - 0.01);
 
     if (avctx->sample_rate < 32000 || avctx->channels == 1)
         memcpy(c->long_win, ff_on2avc_window_long_24000,
