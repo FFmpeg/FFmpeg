@@ -2969,6 +2969,10 @@ at the beginning of each period of silence.
 For example, if you want to remove long pauses between words but do not want
 to remove the pauses completely. Default value is @code{0}.
 
+@item detection
+Set how is silence detected. Can be @code{rms} or @code{peak}. Second is faster
+and works better with digital silence which is exactly 0.
+Default value is @code{rms}.
 @end table
 
 @subsection Examples
