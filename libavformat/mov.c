@@ -1755,9 +1755,12 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
                                  AVStream *st, MOVStreamContext *sc)
 {
     uint8_t codec_name[32];
-    unsigned int color_depth, len, j;
-    int color_greyscale;
-    int color_table_id;
+    int64_t stsd_start;
+    unsigned int len;
+
+    /* The first 16 bytes of the video sample description are already
+     * read in ff_mov_read_stsd_entries() */
+    stsd_start = avio_tell(pb) - 16;
 
     avio_rb16(pb); /* version */
     avio_rb16(pb); /* revision level */
@@ -1795,74 +1798,11 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
         st->codec->codec_id = AV_CODEC_ID_FLV1;
 
     st->codec->bits_per_coded_sample = avio_rb16(pb); /* depth */
-    color_table_id = avio_rb16(pb); /* colortable id */
-    av_log(c->fc, AV_LOG_TRACE, "depth %d, ctab id %d\n",
-            st->codec->bits_per_coded_sample, color_table_id);
-    /* figure out the palette situation */
-    color_depth     = st->codec->bits_per_coded_sample & 0x1F;
-    color_greyscale = st->codec->bits_per_coded_sample & 0x20;
-    /* Do not create a greyscale palette for cinepak */
-    if (color_greyscale && st->codec->codec_id == AV_CODEC_ID_CINEPAK)
-        return;
 
-    /* if the depth is 2, 4, or 8 bpp, file is palettized */
-    if ((color_depth == 2) || (color_depth == 4) || (color_depth == 8)) {
-        /* for palette traversal */
-        unsigned int color_start, color_count, color_end;
-        unsigned int a, r, g, b;
+    avio_seek(pb, stsd_start, SEEK_SET);
 
-        if (color_greyscale) {
-            int color_index, color_dec;
-            /* compute the greyscale palette */
-            st->codec->bits_per_coded_sample = color_depth;
-            color_count = 1 << color_depth;
-            color_index = 255;
-            color_dec   = 256 / (color_count - 1);
-            for (j = 0; j < color_count; j++) {
-                r = g = b = color_index;
-                sc->palette[j] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
-                color_index -= color_dec;
-                if (color_index < 0)
-                    color_index = 0;
-            }
-        } else if (color_table_id) {
-            const uint8_t *color_table;
-            /* if flag bit 3 is set, use the default palette */
-            color_count = 1 << color_depth;
-            if (color_depth == 2)
-                color_table = ff_qt_default_palette_4;
-            else if (color_depth == 4)
-                color_table = ff_qt_default_palette_16;
-            else
-                color_table = ff_qt_default_palette_256;
-
-            for (j = 0; j < color_count; j++) {
-                r = color_table[j * 3 + 0];
-                g = color_table[j * 3 + 1];
-                b = color_table[j * 3 + 2];
-                sc->palette[j] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
-            }
-        } else {
-            /* load the palette from the file */
-            color_start = avio_rb32(pb);
-            color_count = avio_rb16(pb);
-            color_end   = avio_rb16(pb);
-            if ((color_start <= 255) && (color_end <= 255)) {
-                for (j = color_start; j <= color_end; j++) {
-                    /* each A, R, G, or B component is 16 bits;
-                        * only use the top 8 bits */
-                    a = avio_r8(pb);
-                    avio_r8(pb);
-                    r = avio_r8(pb);
-                    avio_r8(pb);
-                    g = avio_r8(pb);
-                    avio_r8(pb);
-                    b = avio_r8(pb);
-                    avio_r8(pb);
-                    sc->palette[j] = (a << 24 ) | (r << 16) | (g << 8) | (b);
-                }
-            }
-        }
+    if (ff_get_qtpalette(st->codec->codec_id, pb, sc->palette)) {
+        st->codec->bits_per_coded_sample &= 0x1F;
         sc->has_palette = 1;
     }
 }
