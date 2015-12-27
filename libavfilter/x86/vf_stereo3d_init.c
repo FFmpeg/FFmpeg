@@ -31,7 +31,7 @@ void ff_stereo3d_init_x86(Stereo3DDSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags)) {
+    if (EXTERNAL_SSE4(cpu_flags)) {
         dsp->anaglyph = ff_anaglyph_sse4;
     }
 }

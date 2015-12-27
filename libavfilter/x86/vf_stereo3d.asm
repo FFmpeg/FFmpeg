@@ -22,8 +22,6 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
-
 SECTION_RODATA
 
 ; rgbrgbrgbrgb
@@ -37,10 +35,33 @@ ex_b: db 2,-1,-1,-1,5,-1,-1,-1,8,-1,-1,-1,11,-1,-1,-1
 SECTION .text
 
 INIT_XMM sse4
+%if ARCH_X86_64
 cglobal anaglyph, 6, 10, 14, 2*6*mmsize, dst, lsrc, rsrc, dst_linesize, l_linesize, r_linesize, width, height, o, cnt
 %define ana_matrix_rq r6q
 %define ana_matrix_gq r7q
 %define ana_matrix_bq r8q
+
+%else ; ARCH_X86_32
+%if HAVE_ALIGNED_STACK
+cglobal anaglyph, 3, 7, 8, 2*9*mmsize, dst, lsrc, rsrc, dst_linesize, l_linesize, o, cnt
+%else
+cglobal anaglyph, 3, 6, 8, 2*9*mmsize, dst, lsrc, rsrc, dst_linesize, o, cnt
+%define l_linesizeq r4mp
+%endif ; HAVE_ALIGNED_STACK
+%define ana_matrix_rq r3q
+%define ana_matrix_gq r4q
+%define ana_matrix_bq r5q
+%define r_linesizeq r5mp
+%define widthd  r6mp
+%define heightd r7mp
+%define  m8 [rsp+mmsize*12]
+%define  m9 [rsp+mmsize*13]
+%define m10 [rsp+mmsize*14]
+%define m11 [rsp+mmsize*15]
+%define m12 [rsp+mmsize*16]
+%define m13 [rsp+mmsize*17]
+%endif ; ARCH
+
     mov        ana_matrix_rq, r8m
     mov        ana_matrix_gq, r9m
     mov        ana_matrix_bq, r10m
@@ -74,6 +95,7 @@ cglobal anaglyph, 6, 10, 14, 2*6*mmsize, dst, lsrc, rsrc, dst_linesize, l_linesi
     mova     [rsp+mmsize*10], m4
     mova     [rsp+mmsize*11], m5
 
+%if ARCH_X86_64
     movu                 m11, [ana_matrix_bq+ 0]
     movq                 m13, [ana_matrix_bq+16]
     pshufd                m8, m11, q0000
@@ -84,6 +106,26 @@ cglobal anaglyph, 6, 10, 14, 2*6*mmsize, dst, lsrc, rsrc, dst_linesize, l_linesi
     pshufd               m13, m13, q1111
     mov               widthd, dword widthm
     mov              heightd, dword heightm
+%else
+    movu                  m3, [ana_matrix_bq+ 0]
+    movq                  m5, [ana_matrix_bq+16]
+    pshufd                m0, m3, q0000
+    pshufd                m1, m3, q1111
+    pshufd                m2, m3, q2222
+    pshufd                m3, m3, q3333
+    pshufd                m4, m5, q0000
+    pshufd                m5, m5, q1111
+    mova     [rsp+mmsize*12], m0
+    mova     [rsp+mmsize*13], m1
+    mova     [rsp+mmsize*14], m2
+    mova     [rsp+mmsize*15], m3
+    mova     [rsp+mmsize*16], m4
+    mova     [rsp+mmsize*17], m5
+    mov        dst_linesizeq, r3m
+%if HAVE_ALIGNED_STACK
+    mov          l_linesizeq, r4m
+%endif
+%endif ; ARCH
 
 .nextrow:
     mov                   od, widthd
@@ -172,4 +214,3 @@ cglobal anaglyph, 6, 10, 14, 2*6*mmsize, dst, lsrc, rsrc, dst_linesize, l_linesi
     sub       heightd, 1
     jg .nextrow
 REP_RET
-%endif
