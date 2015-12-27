@@ -256,6 +256,7 @@ static void free_playlist_list(HLSContext *c)
     av_freep(&c->playlists);
     av_freep(&c->cookies);
     av_freep(&c->user_agent);
+    av_freep(&c->headers);
     c->n_playlists = 0;
 }
 
