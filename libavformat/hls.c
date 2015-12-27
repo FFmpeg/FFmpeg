@@ -196,6 +196,7 @@ typedef struct HLSContext {
     char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
     char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
     char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
+    char *http_proxy;                    ///< holds the address of the HTTP proxy server
     AVDictionary *avio_opts;
     int strict_std_compliance;
 } HLSContext;
@@ -257,6 +258,7 @@ static void free_playlist_list(HLSContext *c)
     av_freep(&c->cookies);
     av_freep(&c->user_agent);
     av_freep(&c->headers);
+    av_freep(&c->http_proxy);
     c->n_playlists = 0;
 }
 
@@ -655,6 +657,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         av_dict_set(&opts, "user-agent", c->user_agent, 0);
         av_dict_set(&opts, "cookies", c->cookies, 0);
         av_dict_set(&opts, "headers", c->headers, 0);
+        av_dict_set(&opts, "http_proxy", c->http_proxy, 0);
 
         ret = avio_open2(&in, url, AVIO_FLAG_READ,
                          c->interrupt_callback, &opts);
@@ -1068,6 +1071,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
     av_dict_set(&opts, "user-agent", c->user_agent, 0);
     av_dict_set(&opts, "cookies", c->cookies, 0);
     av_dict_set(&opts, "headers", c->headers, 0);
+    av_dict_set(&opts, "http_proxy", c->http_proxy, 0);
     av_dict_set(&opts, "seekable", "0", 0);
 
     if (seg->size >= 0) {
@@ -1468,7 +1472,9 @@ static int select_cur_seq_no(HLSContext *c, struct playlist *pls)
 static int save_avio_options(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
-    const char *opts[] = { "headers", "user_agent", "user-agent", "cookies", NULL }, **opt = opts;
+    const char *opts[] = {
+        "headers", "http_proxy", "user_agent", "user-agent", "cookies", NULL };
+    const char **opt = opts;
     uint8_t *buf;
     int ret = 0;
 
@@ -1508,6 +1514,9 @@ static int hls_read_header(AVFormatContext *s)
 
         // get the previous headers & set back to null if string size is zero
         update_options(&c->headers, "headers", u->priv_data);
+
+        // get the previous http proxt & set back to null if string size is zero
+        update_options(&c->http_proxy, "http_proxy", u->priv_data);
     }
 
     if ((ret = parse_playlist(c, s->filename, NULL, s->pb)) < 0)
