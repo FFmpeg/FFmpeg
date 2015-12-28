@@ -256,8 +256,8 @@ silence_trim:
                 for (j = 0; j < inlink->channels; j++) {
                     s->update(s, *ibuf);
                     s->start_holdoff[s->start_holdoff_end++] = *ibuf++;
-                    nb_samples_read++;
                 }
+                nb_samples_read += inlink->channels;
 
                 if (s->start_holdoff_end >= s->start_duration * inlink->channels) {
                     if (++s->start_found_periods >= s->start_periods) {
@@ -334,9 +334,9 @@ silence_copy:
                     for (j = 0; j < inlink->channels; j++) {
                         s->update(s, *ibuf);
                         *obuf++ = *ibuf++;
-                        nb_samples_read++;
-                        nb_samples_written++;
                     }
+                    nb_samples_read    += inlink->channels;
+                    nb_samples_written += inlink->channels;
                 } else if (!threshold) {
                     for (j = 0; j < inlink->channels; j++) {
                         s->update(s, *ibuf);
@@ -346,8 +346,8 @@ silence_copy:
                         }
 
                         s->stop_holdoff[s->stop_holdoff_end++] = *ibuf++;
-                        nb_samples_read++;
                     }
+                    nb_samples_read += inlink->channels;
 
                     if (s->stop_holdoff_end >= s->stop_duration * inlink->channels) {
                         if (++s->stop_found_periods >= s->stop_periods) {
