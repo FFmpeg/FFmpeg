@@ -2989,6 +2989,13 @@ pressing the record button and the start of the performance:
 @example
 silenceremove=1:5:0.02
 @end example
+
+@item
+Trim all silence encountered from begining to end where there is more than 1
+second of silence in audio:
+@example
+silenceremove=0:0:0:-1:1:-90dB
+@end example
 @end itemize
 
 @section sofalizer
