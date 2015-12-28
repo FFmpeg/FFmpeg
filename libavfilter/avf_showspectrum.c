@@ -33,11 +33,11 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "window_func.h"
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
-enum WindowFunc   { WFUNC_NONE, WFUNC_HANN, WFUNC_HAMMING, WFUNC_BLACKMAN, NB_WFUNC };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 
 typedef struct {
@@ -57,6 +57,7 @@ typedef struct {
     FFTSample **rdft_data;      ///< bins holder for each (displayed) channels
     float *window_func_lut;     ///< Window function LUT
     int win_func;
+    float overlap;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
 } ShowSpectrumContext;
 
@@ -83,10 +84,22 @@ static const AVOption showspectrum_options[] = {
         { "log",  "logarithmic", 0, AV_OPT_TYPE_CONST, {.i64=LOG},    0, 0, FLAGS, "scale" },
         { "lin",  "linear",      0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "scale" },
     { "saturation", "color saturation multiplier", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl = 1}, -10, 10, FLAGS },
-    { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANN}, 0, NB_WFUNC-1, FLAGS, "win_func" },
-        { "hann",     "Hann window",     0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HANN},     0, 0, FLAGS, "win_func" },
-        { "hamming",  "Hamming window",  0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HAMMING},  0, 0, FLAGS, "win_func" },
-        { "blackman", "Blackman window", 0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_BLACKMAN}, 0, 0, FLAGS, "win_func" },
+    { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANNING}, 0, NB_WFUNC-1, FLAGS, "win_func" },
+        { "rect",     "Rectangular",      0, AV_OPT_TYPE_CONST, {.i64=WFUNC_RECT},     0, 0, FLAGS, "win_func" },
+        { "bartlett", "Bartlett",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BARTLETT}, 0, 0, FLAGS, "win_func" },
+        { "hann",     "Hann",             0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HANNING},  0, 0, FLAGS, "win_func" },
+        { "hanning",  "Hanning",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HANNING},  0, 0, FLAGS, "win_func" },
+        { "hamming",  "Hamming",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HAMMING},  0, 0, FLAGS, "win_func" },
+        { "blackman", "Blackman",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BLACKMAN}, 0, 0, FLAGS, "win_func" },
+        { "welch",    "Welch",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_WELCH},    0, 0, FLAGS, "win_func" },
+        { "flattop",  "Flat-top",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_FLATTOP},  0, 0, FLAGS, "win_func" },
+        { "bharris",  "Blackman-Harris",  0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BHARRIS},  0, 0, FLAGS, "win_func" },
+        { "bnuttall", "Blackman-Nuttall", 0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BNUTTALL}, 0, 0, FLAGS, "win_func" },
+        { "bhann",    "Bartlett-Hann",    0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BHANN},    0, 0, FLAGS, "win_func" },
+        { "sine",     "Sine",             0, AV_OPT_TYPE_CONST, {.i64=WFUNC_SINE},     0, 0, FLAGS, "win_func" },
+        { "nuttall",  "Nuttall",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_NUTTALL},  0, 0, FLAGS, "win_func" },
+        { "lanczos",  "Lanczos",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_LANCZOS},  0, 0, FLAGS, "win_func" },
+        { "gauss",    "Gauss",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_GAUSS},    0, 0, FLAGS, "win_func" },
     { NULL }
 };
 
@@ -203,27 +216,7 @@ static int config_output(AVFilterLink *outlink)
                          sizeof(*s->window_func_lut));
         if (!s->window_func_lut)
             return AVERROR(ENOMEM);
-        switch (s->win_func) {
-        case WFUNC_NONE:
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = 1.;
-            break;
-        case WFUNC_HANN:
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = .5f * (1 - cos(2*M_PI*i / (win_size-1)));
-            break;
-        case WFUNC_HAMMING:
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = .54f - .46f * cos(2*M_PI*i / (win_size-1));
-            break;
-        case WFUNC_BLACKMAN: {
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = .42f - .5f*cos(2*M_PI*i / (win_size-1)) + .08f*cos(4*M_PI*i / (win_size-1));
-            break;
-        }
-        default:
-            av_assert0(0);
-        }
+        ff_generate_window_func(s->window_func_lut, win_size, s->win_func, &s->overlap);
 
         /* prepare the initial picref buffer (black frame) */
         av_frame_free(&s->outpicref);

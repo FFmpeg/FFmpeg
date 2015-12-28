@@ -14647,14 +14647,21 @@ Set window function.
 
 It accepts the following values:
 @table @samp
-@item none
-No samples pre-processing (do not expect this to be faster)
+@item rect
+@item bartlett
 @item hann
-Hann window
+@item hanning
 @item hamming
-Hamming window
 @item blackman
-Blackman window
+@item welch
+@item flattop
+@item bharris
+@item bnuttall
+@item bhann
+@item sine
+@item nuttall
+@item lanczos
+@item gauss
 @end table
 
 Default value is @code{hann}.
