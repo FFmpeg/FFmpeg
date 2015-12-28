@@ -391,8 +391,8 @@ static void chebyshev1_bp_filter(EqualizatorFilter *f,
 
     epsilon = sqrt((G*G - Gb*Gb) / (Gb*Gb - G0*G0));
     g0 = pow(G0,1.0/N);
-    alfa = pow(1.0/epsilon    + sqrt(1 + pow(epsilon,-2.0)), 1.0/N);
-    beta = pow(G/epsilon + Gb * sqrt(1 + pow(epsilon,-2.0)), 1.0/N);
+    alfa = pow(1.0/epsilon    + sqrt(1 + 1/(epsilon*epsilon)), 1.0/N);
+    beta = pow(G/epsilon + Gb * sqrt(1 + 1/(epsilon*epsilon)), 1.0/N);
     a = 0.5 * (alfa - 1.0/alfa);
     b = 0.5 * (beta - g0*g0*(1/beta));
     tetta_b = tan(wb/2);
