@@ -240,6 +240,9 @@ If set to 1 use chunked Transfer-Encoding for posts, default is 1.
 @item content_type
 Set a specific content type for the POST messages.
 
+@item http_proxy
+set HTTP proxy to tunnel through e.g. http://example.com:1234
+
 @item headers
 Set custom HTTP headers, can override built in default headers. The
 value must be a string encoding the headers.
