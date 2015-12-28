@@ -67,6 +67,7 @@ typedef struct HTTPContext {
     char *location;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
+    char *http_proxy;
     char *headers;
     char *mime_type;
     char *user_agent;
@@ -126,6 +127,7 @@ typedef struct HTTPContext {
 static const AVOption options[] = {
     { "seekable", "control seekability of connection", OFFSET(seekable), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, D },
     { "chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
+    { "http_proxy", "set HTTP proxy to tunnel through", OFFSET(http_proxy), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "headers", "set custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "content_type", "set a specific content type for the POST messages", OFFSET(content_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
@@ -186,7 +188,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
                  path1, sizeof(path1), s->location);
     ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
 
-    proxy_path = getenv("http_proxy");
+    proxy_path = s->http_proxy ? s->http_proxy : getenv("http_proxy");
     use_proxy  = !ff_http_match_no_proxy(getenv("no_proxy"), hostname) &&
                  proxy_path && av_strstart(proxy_path, "http://", NULL);
 

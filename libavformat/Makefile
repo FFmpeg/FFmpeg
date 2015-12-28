@@ -18,6 +18,7 @@ OBJS = allformats.o         \
        mux.o                \
        options.o            \
        os_support.o         \
+       qtpalette.o          \
        riff.o               \
        sdp.o                \
        url.o                \

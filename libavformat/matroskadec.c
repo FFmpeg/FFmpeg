@@ -64,6 +64,8 @@
 #include <zlib.h>
 #endif
 
+#include "qtpalette.h"
+
 typedef enum {
     EBML_NONE,
     EBML_UINT,
@@ -312,6 +314,9 @@ typedef struct MatroskaDemuxContext {
 
     /* WebM DASH Manifest live flag/ */
     int is_live;
+
+    uint32_t palette[AVPALETTE_COUNT];
+    int has_palette;
 } MatroskaDemuxContext;
 
 typedef struct MatroskaBlock {
@@ -1856,7 +1861,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             fourcc           = st->codec->codec_tag;
             extradata_offset = FFMIN(track->codec_priv.size, 18);
         } else if (!strcmp(track->codec_id, "A_QUICKTIME")
-                   && (track->codec_priv.size >= 86)
+                   && (track->codec_priv.size >= 36)
                    && (track->codec_priv.data)) {
             fourcc = AV_RL32(track->codec_priv.data + 4);
             codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
@@ -1880,6 +1885,16 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 av_get_codec_tag_string(buf, sizeof(buf), fourcc);
                 av_log(matroska->ctx, AV_LOG_ERROR,
                        "mov FourCC not found %s.\n", buf);
+            }
+            if (track->codec_priv.size >= 86) {
+                bit_depth = AV_RB16(track->codec_priv.data + 82);
+                ffio_init_context(&b, track->codec_priv.data,
+                                  track->codec_priv.size,
+                                  0, NULL, NULL, NULL, NULL);
+                if (ff_get_qtpalette(codec_id, &b, matroska->palette)) {
+                    bit_depth &= 0x1F;
+                    matroska->has_palette = 1;
+                }
             }
         } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
@@ -2326,6 +2341,15 @@ static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
     if (matroska->num_packets > 0) {
         memcpy(pkt, matroska->packets[0], sizeof(AVPacket));
         av_freep(&matroska->packets[0]);
+        if (matroska->has_palette) {
+            uint8_t *pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
+            if (!pal) {
+                av_log(matroska->ctx, AV_LOG_ERROR, "Cannot append palette to packet\n");
+            } else {
+                memcpy(pal, matroska->palette, AVPALETTE_SIZE);
+            }
+            matroska->has_palette = 0;
+        }
         if (matroska->num_packets > 1) {
             void *newpackets;
             memmove(&matroska->packets[0], &matroska->packets[1],

@@ -506,7 +506,7 @@ static int config_output(AVFilterLink *outlink)
             cp->decay = 1.0 - exp(-1.0 / (sample_rate * cp->decay));
         else
             cp->decay = 1.0;
-        cp->volume = pow(10.0, s->initial_volume / 20);
+        cp->volume = ff_exp10(s->initial_volume / 20);
     }
 
     s->delay_samples = s->delay * sample_rate;

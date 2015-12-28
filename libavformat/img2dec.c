@@ -103,7 +103,7 @@ static int is_glob(const char *path)
  * @param start_index  minimum accepted value for the first index in the range
  * @return -1 if no image file could be found
  */
-static int find_image_range(int *pfirst_index, int *plast_index,
+static int find_image_range(AVIOContext *pb, int *pfirst_index, int *plast_index,
                             const char *path, int start_index, int start_index_range)
 {
     char buf[1024];
@@ -114,7 +114,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0) {
             *pfirst_index =
             *plast_index  = 1;
-            if (avio_check(buf, AVIO_FLAG_READ) > 0)
+            if (pb || avio_check(buf, AVIO_FLAG_READ) > 0)
                 return 0;
             return -1;
         }
@@ -260,7 +260,7 @@ int ff_img_read_header(AVFormatContext *s1)
         }
         }
         if ((s->pattern_type == PT_GLOB_SEQUENCE && !s->use_glob) || s->pattern_type == PT_SEQUENCE) {
-            if (find_image_range(&first_index, &last_index, s->path,
+            if (find_image_range(s1->pb, &first_index, &last_index, s->path,
                                  s->start_number, s->start_number_range) < 0) {
                 av_log(s1, AV_LOG_ERROR,
                        "Could find no file with path '%s' and index in the range %d-%d\n",
@@ -391,7 +391,12 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for (i = 0; i < 3; i++) {
-            if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
+            if (s1->pb &&
+                !strcmp(filename_bytes, s->path) &&
+                !s->loop &&
+                !s->split_planes) {
+                f[i] = s1->pb;
+            } else if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
                            &s1->interrupt_callback, NULL) < 0) {
                 if (i >= 1)
                     break;
@@ -479,7 +484,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                     ret[i] = avio_read(f[i], pkt->data + pkt->size, size[i]);
                 }
             }
-            if (!s->is_pipe)
+            if (!s->is_pipe && f[i] != s1->pb)
                 avio_closep(&f[i]);
             if (ret[i] > 0)
                 pkt->size += ret[i];
@@ -508,7 +513,8 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 fail:
     if (!s->is_pipe) {
         for (i = 0; i < 3; i++) {
-            avio_closep(&f[i]);
+            if (f[i] != s1->pb)
+                avio_closep(&f[i]);
         }
     }
     return res;

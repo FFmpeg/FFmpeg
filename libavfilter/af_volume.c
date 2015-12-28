@@ -376,7 +376,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             av_log(inlink->dst, AV_LOG_VERBOSE,
                    "Using gain %f dB from replaygain side data.\n", g);
 
-            vol->volume   = pow(10, (g + vol->replaygain_preamp) / 20);
+            vol->volume   = ff_exp10((g + vol->replaygain_preamp) / 20);
             if (vol->replaygain_noclip)
                 vol->volume = FFMIN(vol->volume, 1.0 / p);
             vol->volume_i = (int)(vol->volume * 256 + 0.5);

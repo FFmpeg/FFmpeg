@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "internal.h"
@@ -112,7 +113,7 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
 
     if (avpkt->size) {
         int dbov = -avpkt->data[0];
-        p->target_energy = 1081109975 * pow(10, dbov / 10.0) * 0.75;
+        p->target_energy = 1081109975 * ff_exp10(dbov / 10.0) * 0.75;
         memset(p->target_refl_coef, 0, p->order * sizeof(*p->target_refl_coef));
         for (i = 0; i < FFMIN(avpkt->size - 1, p->order); i++) {
             p->target_refl_coef[i] = (avpkt->data[1 + i] - 127) / 128.0;

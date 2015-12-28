@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/intmath.h"
+#include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -1470,7 +1471,7 @@ static void update_last_header_values(SnowContext *s){
 }
 
 static int qscale2qlog(int qscale){
-    return rint(QROOT*log2(qscale / (float)FF_QP2LAMBDA))
+    return lrint(QROOT*log2(qscale / (float)FF_QP2LAMBDA))
            + 61*QROOT/8; ///< 64 > 60
 }
 

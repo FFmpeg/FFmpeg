@@ -89,6 +89,7 @@
 #include <inttypes.h>
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -1350,7 +1351,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
                 const int exp = s->channel[c].quant_step -
                             (s->channel[c].max_scale_factor - *sf++) *
                             s->channel[c].scale_factor_step;
-                const float quant = pow(10.0, exp / 20.0);
+                const float quant = ff_exp10(exp / 20.0);
                 int start = s->cur_sfb_offsets[b];
                 s->fdsp->vector_fmul_scalar(s->tmp + start,
                                            s->channel[c].coeffs + start,

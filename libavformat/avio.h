@@ -458,7 +458,7 @@ attribute_deprecated
 int url_feof(AVIOContext *s);
 #endif
 
-/** @warning currently size is limited */
+/** @warning Writes up to 4 KiB per call */
 int avio_printf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);
 
 /**

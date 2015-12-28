@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "dca.h"
 #include "dcadata.h"
@@ -179,7 +180,7 @@ static int encode_init(AVCodecContext *avctx)
             cos_table[2048-i] = cos_table[i];
         }
         for (i = 0; i < 2048; i++) {
-            cb_to_level[i] = (int32_t)(0x7fffffff * pow(10, -0.005 * i));
+            cb_to_level[i] = (int32_t)(0x7fffffff * ff_exp10(-0.005 * i));
         }
 
         for (k = 0; k < 32; k++) {
@@ -205,7 +206,7 @@ static int encode_init(AVCodecContext *avctx)
         }
 
         for (i = 0; i < 256; i++) {
-            double add = 1 + pow(10, -0.01 * i);
+            double add = 1 + ff_exp10(-0.01 * i);
             cb_to_add[i] = (int32_t)(100 * log10(add));
         }
         for (j = 0; j < 8; j++) {

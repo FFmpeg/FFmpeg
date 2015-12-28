@@ -106,7 +106,7 @@ double av_strtod(const char *numstr, char **tail)
     if (next!=numstr) {
         if (next[0] == 'd' && next[1] == 'B') {
             /* treat dB as decibels instead of decibytes */
-            d = pow(10, d / 20);
+            d = ff_exp10(d / 20);
             next += 2;
         } else if (*next >= 'E' && *next <= 'z') {
             int e= si_prefixes[*next - 'E'].exp;

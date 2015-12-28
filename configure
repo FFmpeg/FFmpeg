@@ -1777,6 +1777,8 @@ HEADERS_LIST="
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
     malloc_h
+    openjpeg_2_1_openjpeg_h
+    openjpeg_2_0_openjpeg_h
     openjpeg_1_5_openjpeg_h
     OpenGL_gl3_h
     poll_h
@@ -1815,8 +1817,6 @@ MATH_FUNCS="
     copysign
     cosf
     erf
-    exp10
-    exp10f
     exp2
     exp2f
     expf
@@ -2839,6 +2839,7 @@ unix_protocol_select="network"
 
 # filters
 amovie_filter_deps="avcodec avformat"
+anequalizer_filter_deps="cabs cexp"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
 asyncts_filter_deps="avresample"
@@ -5434,7 +5435,8 @@ enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader
 enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { check_lib openjpeg.h opj_version -lopenmj2 -DOPJ_STATIC ||
+enabled libopenjpeg       && { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC ||
+                               check_lib openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC ||
                                check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
                                check_lib openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
                                die "ERROR: libopenjpeg not found"; }

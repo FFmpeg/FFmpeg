@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
@@ -508,7 +509,7 @@ static void run_postproc(AVCodecContext *avctx, AVFrame *frame)
 
             int d = (255 * 255 - x * x - y * y) / 2;
             if (d > 0)
-                z = rint(sqrtf(d));
+                z = lrint(sqrtf(d));
 
             src[0] = x;
             src[1] = y;

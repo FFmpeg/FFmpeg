@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/internal.h"
 #include "libavutil/libm.h"
 
 #include "avcodec.h"
@@ -349,10 +350,10 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         for (g = 0; g < ctx->num_bands[j] - 1; g++) {
             AacPsyCoeffs *coeff = &coeffs[g];
             float bark_width = coeffs[g+1].barks - coeffs->barks;
-            coeff->spread_low[0] = pow(10.0, -bark_width * PSY_3GPP_THR_SPREAD_LOW);
-            coeff->spread_hi [0] = pow(10.0, -bark_width * PSY_3GPP_THR_SPREAD_HI);
-            coeff->spread_low[1] = pow(10.0, -bark_width * en_spread_low);
-            coeff->spread_hi [1] = pow(10.0, -bark_width * en_spread_hi);
+            coeff->spread_low[0] = ff_exp10(-bark_width * PSY_3GPP_THR_SPREAD_LOW);
+            coeff->spread_hi [0] = ff_exp10(-bark_width * PSY_3GPP_THR_SPREAD_HI);
+            coeff->spread_low[1] = ff_exp10(-bark_width * en_spread_low);
+            coeff->spread_hi [1] = ff_exp10(-bark_width * en_spread_hi);
             pe_min = bark_pe * bark_width;
             minsnr = exp2(pe_min / band_sizes[g]) - 1.5f;
             coeff->min_snr = av_clipf(1.0f / minsnr, PSY_SNR_25DB, PSY_SNR_1DB);

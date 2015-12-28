@@ -22,6 +22,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/internal.h"
 #include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
@@ -132,7 +133,7 @@ float ff_amr_set_fixed_gain(float fixed_gain_factor, float fixed_mean_energy,
     // ^g_c = ^gamma_gc * 100.05 (predicted dB + mean dB - dB of fixed vector)
     // Note 10^(0.05 * -10log(average x2)) = 1/sqrt((average x2)).
     float val = fixed_gain_factor *
-        exp2f(M_LOG2_10 * 0.05 *
+        ff_exp10(0.05 *
               (avpriv_scalarproduct_float_c(pred_table, prediction_error, 4) +
                energy_mean)) /
         sqrtf(fixed_mean_energy);

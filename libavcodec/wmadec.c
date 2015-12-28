@@ -34,6 +34,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/internal.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -626,7 +627,7 @@ static int wma_decode_block(WMACodecContext *s)
             coefs1    = s->coefs1[ch];
             exponents = s->exponents[ch];
             esize     = s->exponents_bsize[ch];
-            mult      = pow(10, total_gain * 0.05) / s->max_exponent[ch];
+            mult      = ff_exp10(total_gain * 0.05) / s->max_exponent[ch];
             mult     *= mdct_norm;
             coefs     = s->coefs[ch];
             if (s->use_noise_coding) {
@@ -674,7 +675,7 @@ static int wma_decode_block(WMACodecContext *s)
                         /* use noise with specified power */
                         mult1 = sqrt(exp_power[j] / exp_power[last_high_band]);
                         /* XXX: use a table */
-                        mult1  = mult1 * pow(10, s->high_band_values[ch][j] * 0.05);
+                        mult1  = mult1 * ff_exp10(s->high_band_values[ch][j] * 0.05);
                         mult1  = mult1 / (s->max_exponent[ch] * s->noise_mult);
                         mult1 *= mdct_norm;
                         for (i = 0; i < n; i++) {

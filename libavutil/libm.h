@@ -38,31 +38,31 @@
 #if !HAVE_ATANF
 #undef atanf
 #define atanf(x) ((float)atan(x))
-#endif
+#endif /* HAVE_ATANF */
 
 #if !HAVE_ATAN2F
 #undef atan2f
 #define atan2f(y, x) ((float)atan2(y, x))
-#endif
+#endif /* HAVE_ATAN2F */
 
 #if !HAVE_POWF
 #undef powf
 #define powf(x, y) ((float)pow(x, y))
-#endif
+#endif /* HAVE_POWF */
 
 #if !HAVE_CBRT
 static av_always_inline double cbrt(double x)
 {
     return x < 0 ? -pow(-x, 1.0 / 3.0) : pow(x, 1.0 / 3.0);
 }
-#endif
+#endif /* HAVE_CBRT */
 
 #if !HAVE_CBRTF
 static av_always_inline float cbrtf(float x)
 {
     return x < 0 ? -powf(-x, 1.0 / 3.0) : powf(x, 1.0 / 3.0);
 }
-#endif
+#endif /* HAVE_CBRTF */
 
 #if !HAVE_COPYSIGN
 static av_always_inline double copysign(double x, double y)
@@ -71,12 +71,12 @@ static av_always_inline double copysign(double x, double y)
     uint64_t vy = av_double2int(y);
     return av_int2double((vx & UINT64_C(0x7fffffffffffffff)) | (vy & UINT64_C(0x8000000000000000)));
 }
-#endif
+#endif /* HAVE_COPYSIGN */
 
 #if !HAVE_COSF
 #undef cosf
 #define cosf(x) ((float)cos(x))
-#endif
+#endif /* HAVE_COSF */
 
 #if !HAVE_ERF
 static inline double ff_eval_poly(const double *coeff, int size, double x) {
@@ -276,40 +276,22 @@ static inline double erf(double z)
     else
         return 1;
 }
-#endif
+#endif /* HAVE_ERF */
 
 #if !HAVE_EXPF
 #undef expf
 #define expf(x) ((float)exp(x))
-#endif
+#endif /* HAVE_EXPF */
 
 #if !HAVE_EXP2
 #undef exp2
-#define exp2(x) exp((x) * 0.693147180559945)
+#define exp2(x) exp((x) * M_LN2)
 #endif /* HAVE_EXP2 */
 
 #if !HAVE_EXP2F
 #undef exp2f
 #define exp2f(x) ((float)exp2(x))
 #endif /* HAVE_EXP2F */
-
-/* Somewhat inaccurate fallbacks, relative error ~ 1e-13 concentrated on very
-small and very large values. For perfection accuracy-wise, should use pow.
-Speed benefits (>2x average, with no super slow paths) deemed to be worth the
-accuracy tradeoff */
-#if !HAVE_EXP10
-static av_always_inline double exp10(double x)
-{
-    return exp2(M_LOG2_10 * x);
-}
-#endif /* HAVE_EXP10 */
-
-#if !HAVE_EXP10F
-static av_always_inline float exp10f(float x)
-{
-    return exp2f(M_LOG2_10 * x);
-}
-#endif /* HAVE_EXP10F */
 
 #if !HAVE_ISINF
 #undef isinf
@@ -362,7 +344,6 @@ static av_always_inline av_const int avpriv_isnan(double x)
 #endif /* HAVE_ISNAN */
 
 #if !HAVE_HYPOT
-#undef hypot
 static inline av_const double hypot(double x, double y)
 {
     double ret, temp;
@@ -387,7 +368,7 @@ static inline av_const double hypot(double x, double y)
 #if !HAVE_LDEXPF
 #undef ldexpf
 #define ldexpf(x, exp) ((float)ldexp(x, exp))
-#endif
+#endif /* HAVE_LDEXPF */
 
 #if !HAVE_LLRINT
 #undef llrint
@@ -412,12 +393,12 @@ static inline av_const double hypot(double x, double y)
 #if !HAVE_LOG10F
 #undef log10f
 #define log10f(x) ((float)log10(x))
-#endif
+#endif /* HAVE_LOG10F */
 
 #if !HAVE_SINF
 #undef sinf
 #define sinf(x) ((float)sin(x))
-#endif
+#endif /* HAVE_SINF */
 
 #if !HAVE_RINT
 static inline double rint(double x)
