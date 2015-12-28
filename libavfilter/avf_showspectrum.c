@@ -390,7 +390,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 float y, u, v;
                 int i;
 
-                for (i = 1; i < sizeof(intensity_color_table) / sizeof(*intensity_color_table) - 1; i++)
+                for (i = 1; i < FF_ARRAY_ELEMS(intensity_color_table) - 1; i++)
                     if (intensity_color_table[i].a >= a)
                         break;
                 // i now is the first item >= the color
