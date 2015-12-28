@@ -380,7 +380,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 a = cbrt(a);
                 break;
             case LOG:
-                a = 1 + log10(FFMAX(FFMIN(1, a), 1e-6)) / 6; // zero = -120dBFS
+                a = 1 + log10(FFMAX(FFMIN(1, a), 1e-6)) / 5; // zero = -120dBFS
                 break;
             default:
                 av_assert0(0);
