@@ -60,6 +60,7 @@ typedef struct {
     FFTSample **rdft_data;      ///< bins holder for each (displayed) channels
     float *window_func_lut;     ///< Window function LUT
     int win_func;
+    double win_scale;
     float overlap;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
 } ShowSpectrumContext;
@@ -231,6 +232,11 @@ static int config_output(AVFilterLink *outlink)
             return AVERROR(ENOMEM);
         ff_generate_window_func(s->window_func_lut, win_size, s->win_func, &s->overlap);
 
+        for (s->win_scale = 0, i = 0; i < win_size; i++) {
+            s->win_scale += s->window_func_lut[i] * s->window_func_lut[i];
+        }
+        s->win_scale = 1. / (sqrt(s->win_scale) * 32768.);
+
         /* prepare the initial picref buffer (black frame) */
         av_frame_free(&s->outpicref);
         s->outpicref = outpicref =
@@ -315,7 +321,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
      * height (or half the RDFT window size) */
     const int nb_freq = 1 << (s->rdft_bits - 1);
     const int win_size = nb_freq << 1;
-    const double w = 1. / (sqrt(nb_freq) * 32768.);
+    const double w = s->win_scale;
     int h = s->orientation == VERTICAL ? s->channel_height : s->channel_width;
 
     int ch, plane, n, x, y;
