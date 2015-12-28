@@ -2973,6 +2973,10 @@ to remove the pauses completely. Default value is @code{0}.
 Set how is silence detected. Can be @code{rms} or @code{peak}. Second is faster
 and works better with digital silence which is exactly 0.
 Default value is @code{rms}.
+
+@item window
+Set ratio used to calculate size of window for detecting silence.
+Default value is @code{0.02}. Allowed range is from @code{0} to @code{10}.
 @end table
 
 @subsection Examples
