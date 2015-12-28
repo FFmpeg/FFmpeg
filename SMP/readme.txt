@@ -58,8 +58,8 @@ However the following is a list of possible extra dependency options that requir
     1) opengl (requires glext)
 		a) Download glext from the glext homepage.
 		b) Extract all the header files into OutputDir/include/gl/*.
-    2) opencl (requires Intel or AMD OpenCL SDK, NVIDIAs does not support required features)
-		a) Download either the "Intel OpenCL SDK" or the "AMD OpenCL SDK" from their respective suppliers.
+    2) opencl (requires latest Intel/AMD or NVIDIA OpenCL SDK)
+		a) Download either the "Intel OpenCL SDK", "AMD OpenCL SDK" or the "NVIDIA CUDA SDK" from their respective suppliers.
 		b) Install the downloaded SDK wherever desired.
     3) nvenc (requires NVIDIA CUDA SDK)
 		a) Download the "NVIDIA CUDA SDK" from the NVIDIA website.
