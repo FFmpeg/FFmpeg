@@ -316,9 +316,9 @@ static void butterworth_bp_filter(EqualizatorFilter *f,
         return;
     }
 
-    G  = pow(10, G/20);
-    Gb = pow(10, Gb/20);
-    G0 = pow(10, G0/20);
+    G  = ff_exp10(G/20);
+    Gb = ff_exp10(Gb/20);
+    G0 = ff_exp10(G0/20);
 
     epsilon = sqrt((G * G - Gb * Gb) / (Gb * Gb - G0 * G0));
     g  = pow(G,  1.0 / N);
@@ -385,9 +385,9 @@ static void chebyshev1_bp_filter(EqualizatorFilter *f,
         return;
     }
 
-    G  = pow(10, G/20);
-    Gb = pow(10, Gb/20);
-    G0 = pow(10, G0/20);
+    G  = ff_exp10(G/20);
+    Gb = ff_exp10(Gb/20);
+    G0 = ff_exp10(G0/20);
 
     epsilon = sqrt((G*G - Gb*Gb) / (Gb*Gb - G0*G0));
     g0 = pow(G0,1.0/N);
@@ -458,9 +458,9 @@ static void chebyshev2_bp_filter(EqualizatorFilter *f,
         return;
     }
 
-    G  = pow(10, G/20);
-    Gb = pow(10, Gb/20);
-    G0 = pow(10, G0/20);
+    G  = ff_exp10(G/20);
+    Gb = ff_exp10(Gb/20);
+    G0 = ff_exp10(G0/20);
 
     epsilon = sqrt((G*G - Gb*Gb) / (Gb*Gb - G0*G0));
     g  = pow(G, 1.0 / N);
