@@ -64,6 +64,9 @@
     <ClCompile Include="..\libavformat\os_support.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\qtpalette.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\riff.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

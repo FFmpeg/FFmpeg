@@ -81,6 +81,7 @@
     <ClCompile Include="..\libavformat\mux.c" />
     <ClCompile Include="..\libavformat\options.c" />
     <ClCompile Include="..\libavformat\os_support.c" />
+    <ClCompile Include="..\libavformat\qtpalette.c" />
     <ClCompile Include="..\libavformat\riff.c" />
     <ClCompile Include="..\libavformat\sdp.c" />
     <ClCompile Include="..\libavformat\url.c" />
