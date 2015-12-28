@@ -28,7 +28,7 @@ $(SUBDIR)x86/%$(DEFAULT_YASMD).asm: $(SUBDIR)x86/%.asm
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%$(YASMD).asm
 	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
-	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $<
+	$(Q)cd $(SRC_PATH); $(subst @,,$(YASM)) $(YASMFLAGS) -I $(<D)/ -o $(DST_PATH)/$@ $(subst $(SRC_PATH)/,,$<)
 	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 LIBOBJS := $(OBJS) $(SUBDIR)%.h.o $(TESTOBJS)

@@ -6251,6 +6251,7 @@ SRC_PATH=$source_path
 ifndef MAIN_MAKEFILE
 SRC_PATH:=\$(SRC_PATH:.%=..%)
 endif
+DST_PATH=$(pwd)
 CC_IDENT=$cc_ident
 ARCH=$arch
 INTRINSICS=$intrinsics
