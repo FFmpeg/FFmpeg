@@ -38,7 +38,7 @@ enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
 enum WindowFunc   { WFUNC_NONE, WFUNC_HANN, WFUNC_HAMMING, WFUNC_BLACKMAN, NB_WFUNC };
-enum SlideMode    { REPLACE, SCROLL, FULLFRAME, NB_SLIDES };
+enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 
 typedef struct {
     const AVClass *class;
@@ -66,9 +66,10 @@ typedef struct {
 static const AVOption showspectrum_options[] = {
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x512"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x512"}, 0, 0, FLAGS },
-    { "slide", "set sliding mode", OFFSET(sliding), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_SLIDES, FLAGS, "slide" },
+    { "slide", "set sliding mode", OFFSET(sliding), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_SLIDES-1, FLAGS, "slide" },
         { "replace", "replace old columns with new", 0, AV_OPT_TYPE_CONST, {.i64=REPLACE}, 0, 0, FLAGS, "slide" },
         { "scroll", "scroll from right to left", 0, AV_OPT_TYPE_CONST, {.i64=SCROLL}, 0, 0, FLAGS, "slide" },
+        { "rscroll", "scroll from left to right", 0, AV_OPT_TYPE_CONST, {.i64=RSCROLL}, 0, 0, FLAGS, "slide" },
         { "fullframe", "return full frames", 0, AV_OPT_TYPE_CONST, {.i64=FULLFRAME}, 0, 0, FLAGS, "slide" },
     { "mode", "set channel display mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=COMBINED}, COMBINED, NB_MODES-1, FLAGS, "mode" },
         { "combined", "combined mode", 0, AV_OPT_TYPE_CONST, {.i64=COMBINED}, 0, 0, FLAGS, "mode" },
@@ -442,6 +443,15 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             }
         }
         s->xpos = outlink->w - 1;
+    } else if (s->sliding == RSCROLL) {
+        for (plane = 0; plane < 3; plane++) {
+            for (y = 0; y < outlink->h; y++) {
+                uint8_t *p = outpicref->data[plane] +
+                             y * outpicref->linesize[plane];
+                memmove(p + 1, p, outlink->w - 1);
+            }
+        }
+        s->xpos = 0;
     }
     for (plane = 0; plane < 3; plane++) {
         uint8_t *p = outpicref->data[plane] +
