@@ -26,6 +26,11 @@
 #include <stdint.h>
 #include "avformat.h"
 
+static const uint8_t ff_qt_default_palette_2[2 * 3] = {
+  0xFF, 0xFF, 0xFF,
+  0x00, 0x00, 0x00
+};
+
 static const uint8_t ff_qt_default_palette_4[4 * 3] = {
   0x93, 0x65, 0x5E,
   0xFF, 0xFF, 0xFF,
