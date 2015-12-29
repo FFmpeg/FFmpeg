@@ -14677,6 +14677,11 @@ Default value is @code{hann}.
 @item orientation
 Set orientation of time vs frequency axis. Can be @code{vertical} or
 @code{horizontal}. Default is @code{vertical}.
+
+@item overlap
+Set ratio of overlap window. Default value is @code{0}.
+When value is @code{1} overlap is set to recommended size for specific
+window function currently used.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2012-2013 Clément Bœsch
  * Copyright (c) 2013 Rudolf Polzer <divverent@xonotic.org>
+ * Copyright (c) 2015 Paul B Mahol
  *
  * This file is part of FFmpeg.
  *
@@ -28,9 +29,12 @@
 #include <math.h>
 
 #include "libavcodec/avfft.h"
+#include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
+#include "audio.h"
+#include "video.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "window_func.h"
@@ -62,7 +66,10 @@ typedef struct {
     int win_func;
     double win_scale;
     float overlap;
+    int skip_samples;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
+    AVAudioFifo *fifo;
+    int64_t pts;
 } ShowSpectrumContext;
 
 #define OFFSET(x) offsetof(ShowSpectrumContext, x)
@@ -111,6 +118,7 @@ static const AVOption showspectrum_options[] = {
     { "orientation", "set orientation", OFFSET(orientation), AV_OPT_TYPE_INT, {.i64=VERTICAL}, 0, NB_ORIENTATIONS-1, FLAGS, "orientation" },
         { "vertical",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=VERTICAL},   0, 0, FLAGS, "orientation" },
         { "horizontal", NULL, 0, AV_OPT_TYPE_CONST, {.i64=HORIZONTAL}, 0, 0, FLAGS, "orientation" },
+    { "overlap", "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl = 0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -178,6 +186,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->rdft_data);
     av_freep(&s->window_func_lut);
     av_frame_free(&s->outpicref);
+    av_audio_fifo_free(s->fifo);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -217,6 +226,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
     ShowSpectrumContext *s = ctx->priv;
     int i, rdft_bits, win_size, h, w;
+    float overlap;
 
     outlink->w = s->w;
     outlink->h = s->h;
@@ -271,7 +281,14 @@ static int config_output(AVFilterLink *outlink)
                          sizeof(*s->window_func_lut));
         if (!s->window_func_lut)
             return AVERROR(ENOMEM);
-        ff_generate_window_func(s->window_func_lut, win_size, s->win_func, &s->overlap);
+        ff_generate_window_func(s->window_func_lut, win_size, s->win_func, &overlap);
+        if (s->overlap == 1)
+            s->overlap = overlap;
+        s->skip_samples = (1. - s->overlap) * win_size;
+        if (s->skip_samples < 1) {
+            av_log(ctx, AV_LOG_ERROR, "overlap %f too big\n", s->overlap);
+            return AVERROR(EINVAL);
+        }
 
         for (s->win_scale = 0, i = 0; i < win_size; i++) {
             s->win_scale += s->window_func_lut[i] * s->window_func_lut[i];
@@ -296,14 +313,11 @@ static int config_output(AVFilterLink *outlink)
         (s->orientation == HORIZONTAL && s->xpos >= outlink->h))
         s->xpos = 0;
 
-    outlink->frame_rate = av_make_q(inlink->sample_rate, win_size);
+    outlink->frame_rate = av_make_q(inlink->sample_rate, win_size * (1.-s->overlap));
     if (s->orientation == VERTICAL && s->sliding == FULLFRAME)
         outlink->frame_rate.den *= outlink->w;
     if (s->orientation == HORIZONTAL && s->sliding == FULLFRAME)
         outlink->frame_rate.den *= outlink->h;
-
-    inlink->min_samples = inlink->max_samples = inlink->partial_buf_size =
-        win_size;
 
     if (s->orientation == VERTICAL) {
         s->combine_buffer =
@@ -317,6 +331,11 @@ static int config_output(AVFilterLink *outlink)
 
     av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d RDFT window size:%d\n",
            s->w, s->h, win_size);
+
+    av_audio_fifo_free(s->fifo);
+    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, win_size);
+    if (!s->fifo)
+        return AVERROR(ENOMEM);
     return 0;
 }
 
@@ -516,6 +535,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         }
     }
 
+    av_frame_make_writable(s->outpicref);
     /* copy to output */
     if (s->orientation == VERTICAL) {
         if (s->sliding == SCROLL) {
@@ -598,13 +618,33 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterContext *ctx = inlink->dst;
     ShowSpectrumContext *s = ctx->priv;
     unsigned win_size = 1 << s->rdft_bits;
+    AVFrame *fin = NULL;
     int ret = 0;
 
-    av_assert0(insamples->nb_samples <= win_size);
-    if (insamples->nb_samples == win_size)
-        ret = plot_spectrum_column(inlink, insamples);
-
+    av_audio_fifo_write(s->fifo, (void **)insamples->extended_data, insamples->nb_samples);
     av_frame_free(&insamples);
+    while (av_audio_fifo_size(s->fifo) >= win_size) {
+        fin = ff_get_audio_buffer(inlink, win_size);
+        if (!fin) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        fin->pts = s->pts;
+        s->pts += s->skip_samples;
+        ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, win_size);
+        if (ret < 0)
+            goto fail;
+
+        ret = plot_spectrum_column(inlink, fin);
+        av_frame_free(&fin);
+        av_audio_fifo_drain(s->fifo, s->skip_samples);
+        if (ret < 0)
+            goto fail;
+    }
+
+fail:
+    av_frame_free(&fin);
     return ret;
 }
 
