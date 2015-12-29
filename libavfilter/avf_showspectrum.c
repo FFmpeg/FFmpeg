@@ -37,7 +37,7 @@
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
-enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
+enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
@@ -82,6 +82,7 @@ static const AVOption showspectrum_options[] = {
     { "color", "set channel coloring", OFFSET(color_mode), AV_OPT_TYPE_INT, {.i64=CHANNEL}, CHANNEL, NB_CLMODES-1, FLAGS, "color" },
         { "channel",   "separate color for each channel", 0, AV_OPT_TYPE_CONST, {.i64=CHANNEL},   0, 0, FLAGS, "color" },
         { "intensity", "intensity based coloring",        0, AV_OPT_TYPE_CONST, {.i64=INTENSITY}, 0, 0, FLAGS, "color" },
+        { "rainbow",   "rainbow based coloring",          0, AV_OPT_TYPE_CONST, {.i64=RAINBOW}, 0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=SQRT}, LINEAR, NB_SCALES-1, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
         { "cbrt", "cubic root",  0, AV_OPT_TYPE_CONST, {.i64=CBRT},   0, 0, FLAGS, "scale" },
@@ -112,9 +113,10 @@ static const AVOption showspectrum_options[] = {
 
 AVFILTER_DEFINE_CLASS(showspectrum);
 
-static const struct {
+static const struct ColorTable {
     float a, y, u, v;
-} intensity_color_table[] = {
+} color_table[][8] = {
+    [INTENSITY] = {
     {    0,                  0,                  0,                   0 },
     { 0.13, .03587126228984074,  .1573300977624594, -.02548747583751842 },
     { 0.30, .18572281794568020,  .1772436246393981,  .17475554840414750 },
@@ -122,7 +124,16 @@ static const struct {
     { 0.73, .65830621175547810, -.3716070802232764,  .24352759331252930 },
     { 0.78, .76318535758242900, -.4307467689263783,  .16866496622310430 },
     { 0.91, .95336363636363640, -.2045454545454546,  .03313636363636363 },
-    {    1,                  1,                  0,                   0 }
+    {    1,                  1,                  0,                   0 }},
+    [RAINBOW] = {
+    {    0,                  0,                  0,                   0 },
+    { 0.13,            44/256.,     (189-128)/256.,      (138-128)/256. },
+    { 0.25,            29/256.,     (186-128)/256.,      (119-128)/256. },
+    { 0.38,           119/256.,     (194-128)/256.,       (53-128)/256. },
+    { 0.60,           111/256.,      (73-128)/256.,       (59-128)/256. },
+    { 0.73,           205/256.,      (19-128)/256.,      (149-128)/256. },
+    { 0.86,           135/256.,      (83-128)/256.,      (200-128)/256. },
+    {    1,            73/256.,      (95-128)/256.,      (225-128)/256. }},
 };
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -369,6 +380,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             // reduce range by channel count
             yf = 256.0f / s->nb_display_channels;
             switch (s->color_mode) {
+            case RAINBOW:
             case INTENSITY:
                 uf = yf;
                 vf = yf;
@@ -430,33 +442,35 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 av_assert0(0);
             }
 
-            if (s->color_mode == INTENSITY) {
+            if (s->color_mode == INTENSITY ||
+                s->color_mode == RAINBOW) {
+                const int cm = s->color_mode;
                 float y, u, v;
                 int i;
 
-                for (i = 1; i < FF_ARRAY_ELEMS(intensity_color_table) - 1; i++)
-                    if (intensity_color_table[i].a >= a)
+                for (i = 1; i < FF_ARRAY_ELEMS(color_table[cm]) - 1; i++)
+                    if (color_table[cm][i].a >= a)
                         break;
                 // i now is the first item >= the color
                 // now we know to interpolate between item i - 1 and i
-                if (a <= intensity_color_table[i - 1].a) {
-                    y = intensity_color_table[i - 1].y;
-                    u = intensity_color_table[i - 1].u;
-                    v = intensity_color_table[i - 1].v;
-                } else if (a >= intensity_color_table[i].a) {
-                    y = intensity_color_table[i].y;
-                    u = intensity_color_table[i].u;
-                    v = intensity_color_table[i].v;
+                if (a <= color_table[cm][i - 1].a) {
+                    y = color_table[cm][i - 1].y;
+                    u = color_table[cm][i - 1].u;
+                    v = color_table[cm][i - 1].v;
+                } else if (a >= color_table[cm][i].a) {
+                    y = color_table[cm][i].y;
+                    u = color_table[cm][i].u;
+                    v = color_table[cm][i].v;
                 } else {
-                    float start = intensity_color_table[i - 1].a;
-                    float end = intensity_color_table[i].a;
+                    float start = color_table[cm][i - 1].a;
+                    float end = color_table[cm][i].a;
                     float lerpfrac = (a - start) / (end - start);
-                    y = intensity_color_table[i - 1].y * (1.0f - lerpfrac)
-                      + intensity_color_table[i].y * lerpfrac;
-                    u = intensity_color_table[i - 1].u * (1.0f - lerpfrac)
-                      + intensity_color_table[i].u * lerpfrac;
-                    v = intensity_color_table[i - 1].v * (1.0f - lerpfrac)
-                      + intensity_color_table[i].v * lerpfrac;
+                    y = color_table[cm][i - 1].y * (1.0f - lerpfrac)
+                      + color_table[cm][i].y * lerpfrac;
+                    u = color_table[cm][i - 1].u * (1.0f - lerpfrac)
+                      + color_table[cm][i].u * lerpfrac;
+                    v = color_table[cm][i - 1].v * (1.0f - lerpfrac)
+                      + color_table[cm][i].v * lerpfrac;
                 }
 
                 out[0] += y * yf;
