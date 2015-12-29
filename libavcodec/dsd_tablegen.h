@@ -29,10 +29,6 @@
 #define HTAPS   48                /** number of FIR constants */
 #define CTABLES ((HTAPS + 7) / 8) /** number of "8 MACs" lookup tables */
 
-#if CONFIG_HARDCODED_TABLES
-#define dsd_ctables_tableinit()
-#include "libavcodec/dsd_tables.h"
-#else
 #include "libavutil/common.h"
 
 /*
@@ -91,6 +87,5 @@ static av_cold void dsd_ctables_tableinit(void)
             ctables[CTABLES - 1 - t][e] = acc[t];
     }
 }
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_DSD_TABLEGEN_H */
