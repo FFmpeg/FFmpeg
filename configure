@@ -5419,7 +5419,6 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
-enabled gcrypt            && require2 gcrypt gcrypt.h gcry_mpi_new -lgcrypt
 enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
@@ -5575,6 +5574,17 @@ if enabled libdc1394; then
         enable libdc1394_1; } ||
     die "ERROR: No version of libdc1394 found "
 fi
+
+if enabled gcrypt; then
+    GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
+    if "${GCRYPT_CONFIG}" --version > /dev/null 2>&1; then
+        gcrypt_libs=$("${GCRYPT_CONFIG}" --libs)
+        require2 gcrypt gcrypt.h gcry_mpi_new $gcrypt_libs
+    else
+        require2 gcrypt gcrypt.h gcry_mpi_new -lgcrypt
+    fi
+fi
+
 if ! disabled sdl; then
     SDL_CONFIG="${cross_prefix}sdl-config"
     if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
