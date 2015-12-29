@@ -352,6 +352,7 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     if (cat->avf)
         avformat_close_input(&cat->avf);
 
+    avf->bit_rate = new_avf->bit_rate;
     cat->avf      = new_avf;
     cat->cur_file = file;
     if (file->start_time == AV_NOPTS_VALUE)
