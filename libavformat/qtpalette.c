@@ -28,15 +28,6 @@
 #include "libavutil/intreadwrite.h"
 #include "qtpalette.h"
 
-/**
- * Retrieve the palette (or "color table" in QuickTime terms), either
- * from the video sample description, or from the default Macintosh
- * palette.
- *
- * The file offset of the AVIOContext pointed to by the 'pb' variable
- * should be the start of the video sample description (the sample
- * description size and the data format).
- */
 int ff_get_qtpalette(int codec_id, AVIOContext *pb, uint32_t *palette)
 {
     int tmp, bit_depth, color_table_id, greyscale, i;

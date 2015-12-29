@@ -33,12 +33,12 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "window_func.h"
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
-enum WindowFunc   { WFUNC_NONE, WFUNC_HANN, WFUNC_HAMMING, WFUNC_BLACKMAN, NB_WFUNC };
-enum SlideMode    { REPLACE, SCROLL, FULLFRAME, NB_SLIDES };
+enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 
 typedef struct {
     const AVClass *class;
@@ -57,6 +57,7 @@ typedef struct {
     FFTSample **rdft_data;      ///< bins holder for each (displayed) channels
     float *window_func_lut;     ///< Window function LUT
     int win_func;
+    float overlap;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
 } ShowSpectrumContext;
 
@@ -66,9 +67,10 @@ typedef struct {
 static const AVOption showspectrum_options[] = {
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x512"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x512"}, 0, 0, FLAGS },
-    { "slide", "set sliding mode", OFFSET(sliding), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_SLIDES, FLAGS, "slide" },
+    { "slide", "set sliding mode", OFFSET(sliding), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_SLIDES-1, FLAGS, "slide" },
         { "replace", "replace old columns with new", 0, AV_OPT_TYPE_CONST, {.i64=REPLACE}, 0, 0, FLAGS, "slide" },
         { "scroll", "scroll from right to left", 0, AV_OPT_TYPE_CONST, {.i64=SCROLL}, 0, 0, FLAGS, "slide" },
+        { "rscroll", "scroll from left to right", 0, AV_OPT_TYPE_CONST, {.i64=RSCROLL}, 0, 0, FLAGS, "slide" },
         { "fullframe", "return full frames", 0, AV_OPT_TYPE_CONST, {.i64=FULLFRAME}, 0, 0, FLAGS, "slide" },
     { "mode", "set channel display mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=COMBINED}, COMBINED, NB_MODES-1, FLAGS, "mode" },
         { "combined", "combined mode", 0, AV_OPT_TYPE_CONST, {.i64=COMBINED}, 0, 0, FLAGS, "mode" },
@@ -82,10 +84,22 @@ static const AVOption showspectrum_options[] = {
         { "log",  "logarithmic", 0, AV_OPT_TYPE_CONST, {.i64=LOG},    0, 0, FLAGS, "scale" },
         { "lin",  "linear",      0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "scale" },
     { "saturation", "color saturation multiplier", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl = 1}, -10, 10, FLAGS },
-    { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANN}, 0, NB_WFUNC-1, FLAGS, "win_func" },
-        { "hann",     "Hann window",     0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HANN},     0, 0, FLAGS, "win_func" },
-        { "hamming",  "Hamming window",  0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HAMMING},  0, 0, FLAGS, "win_func" },
-        { "blackman", "Blackman window", 0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_BLACKMAN}, 0, 0, FLAGS, "win_func" },
+    { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANNING}, 0, NB_WFUNC-1, FLAGS, "win_func" },
+        { "rect",     "Rectangular",      0, AV_OPT_TYPE_CONST, {.i64=WFUNC_RECT},     0, 0, FLAGS, "win_func" },
+        { "bartlett", "Bartlett",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BARTLETT}, 0, 0, FLAGS, "win_func" },
+        { "hann",     "Hann",             0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HANNING},  0, 0, FLAGS, "win_func" },
+        { "hanning",  "Hanning",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HANNING},  0, 0, FLAGS, "win_func" },
+        { "hamming",  "Hamming",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HAMMING},  0, 0, FLAGS, "win_func" },
+        { "blackman", "Blackman",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BLACKMAN}, 0, 0, FLAGS, "win_func" },
+        { "welch",    "Welch",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_WELCH},    0, 0, FLAGS, "win_func" },
+        { "flattop",  "Flat-top",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_FLATTOP},  0, 0, FLAGS, "win_func" },
+        { "bharris",  "Blackman-Harris",  0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BHARRIS},  0, 0, FLAGS, "win_func" },
+        { "bnuttall", "Blackman-Nuttall", 0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BNUTTALL}, 0, 0, FLAGS, "win_func" },
+        { "bhann",    "Bartlett-Hann",    0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BHANN},    0, 0, FLAGS, "win_func" },
+        { "sine",     "Sine",             0, AV_OPT_TYPE_CONST, {.i64=WFUNC_SINE},     0, 0, FLAGS, "win_func" },
+        { "nuttall",  "Nuttall",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_NUTTALL},  0, 0, FLAGS, "win_func" },
+        { "lanczos",  "Lanczos",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_LANCZOS},  0, 0, FLAGS, "win_func" },
+        { "gauss",    "Gauss",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_GAUSS},    0, 0, FLAGS, "win_func" },
     { NULL }
 };
 
@@ -202,27 +216,7 @@ static int config_output(AVFilterLink *outlink)
                          sizeof(*s->window_func_lut));
         if (!s->window_func_lut)
             return AVERROR(ENOMEM);
-        switch (s->win_func) {
-        case WFUNC_NONE:
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = 1.;
-            break;
-        case WFUNC_HANN:
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = .5f * (1 - cos(2*M_PI*i / (win_size-1)));
-            break;
-        case WFUNC_HAMMING:
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = .54f - .46f * cos(2*M_PI*i / (win_size-1));
-            break;
-        case WFUNC_BLACKMAN: {
-            for (i = 0; i < win_size; i++)
-                s->window_func_lut[i] = .42f - .5f*cos(2*M_PI*i / (win_size-1)) + .08f*cos(4*M_PI*i / (win_size-1));
-            break;
-        }
-        default:
-            av_assert0(0);
-        }
+        ff_generate_window_func(s->window_func_lut, win_size, s->win_func, &s->overlap);
 
         /* prepare the initial picref buffer (black frame) */
         av_frame_free(&s->outpicref);
@@ -386,7 +380,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 a = cbrt(a);
                 break;
             case LOG:
-                a = 1 + log10(FFMAX(FFMIN(1, a), 1e-6)) / 6; // zero = -120dBFS
+                a = 1 + log10(FFMAX(FFMIN(1, a), 1e-6)) / 5; // zero = -120dBFS
                 break;
             default:
                 av_assert0(0);
@@ -396,7 +390,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 float y, u, v;
                 int i;
 
-                for (i = 1; i < sizeof(intensity_color_table) / sizeof(*intensity_color_table) - 1; i++)
+                for (i = 1; i < FF_ARRAY_ELEMS(intensity_color_table) - 1; i++)
                     if (intensity_color_table[i].a >= a)
                         break;
                 // i now is the first item >= the color
@@ -442,6 +436,15 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             }
         }
         s->xpos = outlink->w - 1;
+    } else if (s->sliding == RSCROLL) {
+        for (plane = 0; plane < 3; plane++) {
+            for (y = 0; y < outlink->h; y++) {
+                uint8_t *p = outpicref->data[plane] +
+                             y * outpicref->linesize[plane];
+                memmove(p + 1, p, outlink->w - 1);
+            }
+        }
+        s->xpos = 0;
     }
     for (plane = 0; plane < 3; plane++) {
         uint8_t *p = outpicref->data[plane] +

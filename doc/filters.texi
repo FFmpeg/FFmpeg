@@ -2973,6 +2973,10 @@ to remove the pauses completely. Default value is @code{0}.
 Set how is silence detected. Can be @code{rms} or @code{peak}. Second is faster
 and works better with digital silence which is exactly 0.
 Default value is @code{rms}.
+
+@item window
+Set ratio used to calculate size of window for detecting silence.
+Default value is @code{0.02}. Allowed range is from @code{0} to @code{10}.
 @end table
 
 @subsection Examples
@@ -2984,6 +2988,13 @@ that does not contain the delay at the start which usually occurs between
 pressing the record button and the start of the performance:
 @example
 silenceremove=1:5:0.02
+@end example
+
+@item
+Trim all silence encountered from begining to end where there is more than 1
+second of silence in audio:
+@example
+silenceremove=0:0:0:-1:1:-90dB
 @end example
 @end itemize
 
@@ -14574,6 +14585,8 @@ It accepts the following values:
 the samples start again on the left when they reach the right
 @item scroll
 the samples scroll from right to left
+@item rscroll
+the samples scroll from left to right
 @item fullframe
 frames are only produced when the samples reach the right
 @end table
@@ -14634,14 +14647,21 @@ Set window function.
 
 It accepts the following values:
 @table @samp
-@item none
-No samples pre-processing (do not expect this to be faster)
+@item rect
+@item bartlett
 @item hann
-Hann window
+@item hanning
 @item hamming
-Hamming window
 @item blackman
-Blackman window
+@item welch
+@item flattop
+@item bharris
+@item bnuttall
+@item bhann
+@item sine
+@item nuttall
+@item lanczos
+@item gauss
 @end table
 
 Default value is @code{hann}.

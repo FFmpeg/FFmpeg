@@ -845,9 +845,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     int j, ret;
     AVDictionaryEntry *tag;
 
-    // ms precision is the de-facto standard timescale for mkv files
-    avpriv_set_pts_info(st, 64, 1, 1000);
-
     if (codec->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
         mkv->have_attachments = 1;
         return 0;
@@ -1391,11 +1388,6 @@ static int mkv_write_header(AVFormatContext *s)
         mkv->mode = MODE_WEBM;
     else
         mkv->mode = MODE_MATROSKAv2;
-
-    if (s->avoid_negative_ts < 0) {
-        s->avoid_negative_ts = 1;
-        s->internal->avoid_negative_ts_use_pts = 1;
-    }
 
     if (mkv->mode != MODE_WEBM ||
         av_dict_get(s->metadata, "stereo_mode", NULL, 0) ||
@@ -2102,6 +2094,35 @@ static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
     return 0;
 }
 
+static int mkv_init(struct AVFormatContext *s)
+{
+    int i;
+
+    if (s->avoid_negative_ts < 0) {
+        s->avoid_negative_ts = 1;
+        s->internal->avoid_negative_ts_use_pts = 1;
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        // ms precision is the de-facto standard timescale for mkv files
+        avpriv_set_pts_info(s->streams[i], 64, 1, 1000);
+    }
+
+    return 0;
+}
+
+static int mkv_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    int ret = 1;
+    AVStream *st = s->streams[pkt->stream_index];
+
+    if (st->codec->codec_id == AV_CODEC_ID_AAC)
+        if (pkt->size > 2 && (AV_RB16(pkt->data) & 0xfff0) == 0xfff0)
+            ret = ff_stream_add_bitstream_filter(st, "aac_adtstoasc", NULL);
+
+    return ret;
+}
+
 static const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_ALAC,      0XFFFFFFFF },
     { AV_CODEC_ID_EAC3,      0XFFFFFFFF },
@@ -2164,6 +2185,7 @@ AVOutputFormat ff_matroska_muxer = {
                          AV_CODEC_ID_VORBIS : AV_CODEC_ID_AC3,
     .video_codec       = CONFIG_LIBX264_ENCODER ?
                          AV_CODEC_ID_H264 : AV_CODEC_ID_MPEG4,
+    .init              = mkv_init,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
@@ -2175,6 +2197,7 @@ AVOutputFormat ff_matroska_muxer = {
     },
     .subtitle_codec    = AV_CODEC_ID_ASS,
     .query_codec       = mkv_query_codec,
+    .check_bitstream   = mkv_check_bitstream,
     .priv_class        = &matroska_class,
 };
 #endif
@@ -2196,9 +2219,11 @@ AVOutputFormat ff_webm_muxer = {
     .audio_codec       = CONFIG_LIBOPUS_ENCODER ? AV_CODEC_ID_OPUS : AV_CODEC_ID_VORBIS,
     .video_codec       = CONFIG_LIBVPX_VP9_ENCODER? AV_CODEC_ID_VP9 : AV_CODEC_ID_VP8,
     .subtitle_codec    = AV_CODEC_ID_WEBVTT,
+    .init              = mkv_init,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
+    .check_bitstream   = mkv_check_bitstream,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                          AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
     .priv_class        = &webm_class,
@@ -2221,9 +2246,11 @@ AVOutputFormat ff_matroska_audio_muxer = {
     .audio_codec       = CONFIG_LIBVORBIS_ENCODER ?
                          AV_CODEC_ID_VORBIS : AV_CODEC_ID_AC3,
     .video_codec       = AV_CODEC_ID_NONE,
+    .init              = mkv_init,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
+    .check_bitstream   = mkv_check_bitstream,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT |
                          AVFMT_ALLOW_FLUSH,
     .codec_tag         = (const AVCodecTag* const []){

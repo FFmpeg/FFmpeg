@@ -18,20 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/x86/cpu.h"
 
-#include "libavfilter/stereo3d.h"
+#ifndef AVFILTER_WINDOW_FUNC_H
+#define AVFILTER_WINDOW_FUNC_H
 
-void ff_anaglyph_sse4(uint8_t *dst, uint8_t *lsrc, uint8_t *rsrc,
-                      ptrdiff_t dst_linesize, ptrdiff_t l_linesize, ptrdiff_t r_linesize,
-                      int width, int height,
-                      const int *ana_matrix_r, const int *ana_matrix_g, const int *ana_matrix_b);
+enum WindowFunc     { WFUNC_RECT, WFUNC_HANNING, WFUNC_HAMMING, WFUNC_BLACKMAN,
+                      WFUNC_BARTLETT, WFUNC_WELCH, WFUNC_FLATTOP,
+                      WFUNC_BHARRIS, WFUNC_BNUTTALL, WFUNC_SINE, WFUNC_NUTTALL,
+                      WFUNC_BHANN, WFUNC_LANCZOS, WFUNC_GAUSS, NB_WFUNC };
 
-void ff_stereo3d_init_x86(Stereo3DDSPContext *dsp)
-{
-    int cpu_flags = av_get_cpu_flags();
+void ff_generate_window_func(float *lut, int N, int win_func, float *overlap);
 
-    if (EXTERNAL_SSE4(cpu_flags)) {
-        dsp->anaglyph = ff_anaglyph_sse4;
-    }
-}
+#endif /* AVFILTER_WINDOW_FUNC_H */

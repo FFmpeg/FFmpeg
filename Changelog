@@ -48,6 +48,7 @@ version <next>:
 - SOFAlizer: virtual binaural acoustics filter
 - VAAPI VP9 hwaccel
 - audio high-order multiband parametric equalizer
+- automatic bitstream filtering
 
 
 version 2.8:

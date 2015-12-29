@@ -1905,7 +1905,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     char sws_flags_str[512] = "";
     char buffersrc_args[256];
     int ret;
-    AVFilterContext *filt_src = NULL, *filt_out = NULL, *head_filter, *last_filter = NULL;
+    AVFilterContext *filt_src = NULL, *filt_out = NULL, *last_filter = NULL;
     AVCodecContext *codec = is->video_st->codec;
     AVRational fr = av_guess_frame_rate(is->ic, is->video_st, NULL);
     AVDictionaryEntry *e = NULL;
@@ -1945,7 +1945,6 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         goto fail;
 
     last_filter = filt_out;
-    head_filter = filt_src;
 
 /* Note: this macro adds a filter before the lastly added filter, so the
  * processing order of the filters is in reverse */
@@ -1958,11 +1957,11 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     if (ret < 0)                                                             \
         goto fail;                                                           \
                                                                              \
-    ret = avfilter_link(head_filter, 0, filt_ctx, 0);                        \
+    ret = avfilter_link(filt_ctx, 0, last_filter, 0);                        \
     if (ret < 0)                                                             \
         goto fail;                                                           \
                                                                              \
-    head_filter = filt_ctx;                                                  \
+    last_filter = filt_ctx;                                                  \
 } while (0)
 
     /* SDL YUV code is not handling odd width/height for some driver
@@ -1986,7 +1985,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         }
     }
 
-    if ((ret = configure_filtergraph(graph, vfilters, head_filter, last_filter)) < 0)
+    if ((ret = configure_filtergraph(graph, vfilters, filt_src, last_filter)) < 0)
         goto fail;
 
     is->in_video_filter  = filt_src;

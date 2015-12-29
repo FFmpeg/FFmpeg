@@ -61,6 +61,7 @@ typedef struct SilenceRemoveContext {
     size_t stop_holdoff_end;
     int    stop_found_periods;
 
+    double window_ratio;
     double *window;
     double *window_current;
     double *window_end;
@@ -89,6 +90,7 @@ static const AVOption silenceremove_options[] = {
     { "detection",       NULL, OFFSET(detection),       AV_OPT_TYPE_INT,      {.i64=1},     0,       1, FLAGS, "detection" },
     {   "peak",          0,    0,                       AV_OPT_TYPE_CONST,    {.i64=0},     0,       0, FLAGS, "detection" },
     {   "rms",           0,    0,                       AV_OPT_TYPE_CONST,    {.i64=1},     0,       0, FLAGS, "detection" },
+    { "window",          NULL, OFFSET(window_ratio),    AV_OPT_TYPE_DOUBLE,   {.dbl=0.02},  0,      10, FLAGS },
     { NULL }
 };
 
@@ -175,7 +177,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     SilenceRemoveContext *s = ctx->priv;
 
-    s->window_size = (inlink->sample_rate / 50) * inlink->channels;
+    s->window_size = FFMAX((inlink->sample_rate * s->window_ratio), 1) * inlink->channels;
     s->window = av_malloc_array(s->window_size, sizeof(*s->window));
     if (!s->window)
         return AVERROR(ENOMEM);
@@ -256,8 +258,8 @@ silence_trim:
                 for (j = 0; j < inlink->channels; j++) {
                     s->update(s, *ibuf);
                     s->start_holdoff[s->start_holdoff_end++] = *ibuf++;
-                    nb_samples_read++;
                 }
+                nb_samples_read += inlink->channels;
 
                 if (s->start_holdoff_end >= s->start_duration * inlink->channels) {
                     if (++s->start_found_periods >= s->start_periods) {
@@ -334,9 +336,9 @@ silence_copy:
                     for (j = 0; j < inlink->channels; j++) {
                         s->update(s, *ibuf);
                         *obuf++ = *ibuf++;
-                        nb_samples_read++;
-                        nb_samples_written++;
                     }
+                    nb_samples_read    += inlink->channels;
+                    nb_samples_written += inlink->channels;
                 } else if (!threshold) {
                     for (j = 0; j < inlink->channels; j++) {
                         s->update(s, *ibuf);
@@ -346,8 +348,8 @@ silence_copy:
                         }
 
                         s->stop_holdoff[s->stop_holdoff_end++] = *ibuf++;
-                        nb_samples_read++;
                     }
+                    nb_samples_read += inlink->channels;
 
                     if (s->stop_holdoff_end >= s->stop_duration * inlink->channels) {
                         if (++s->stop_found_periods >= s->stop_periods) {

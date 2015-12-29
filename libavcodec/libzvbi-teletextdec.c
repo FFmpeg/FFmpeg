@@ -412,7 +412,7 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
         }
     }
 
-    if (avctx->pkt_timebase.den && pkt->pts != AV_NOPTS_VALUE)
+    if (avctx->pkt_timebase.num && pkt->pts != AV_NOPTS_VALUE)
         ctx->pts = av_rescale_q(pkt->pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
 
     if (pkt->size) {

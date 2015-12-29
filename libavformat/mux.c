@@ -405,6 +405,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
          *options = tmp;
     }
 
+    if (s->oformat->init && (ret = s->oformat->init(s)) < 0) {
+        s->oformat->deinit(s);
+        goto fail;
+    }
+
     return 0;
 
 fail:
@@ -456,7 +461,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     if ((ret = init_muxer(s, options)) < 0)
         return ret;
 
-    if (s->oformat->write_header) {
+    if (s->oformat->write_header && !s->oformat->check_bitstream) {
         ret = s->oformat->write_header(s);
         if (ret >= 0 && s->pb && s->pb->error < 0)
             ret = s->pb->error;
@@ -464,6 +469,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             return ret;
         if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
             avio_flush(s->pb);
+        s->internal->header_written = 1;
     }
 
     if ((ret = init_pts(s)) < 0)
@@ -668,6 +674,18 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     did_split = av_packet_split_side_data(pkt);
+
+    if (!s->internal->header_written && s->oformat->write_header) {
+        ret = s->oformat->write_header(s);
+        if (ret >= 0 && s->pb && s->pb->error < 0)
+            ret = s->pb->error;
+        if (ret < 0)
+            goto fail;
+        if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
+            avio_flush(s->pb);
+        s->internal->header_written = 1;
+    }
+
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
         AVFrame *frame = (AVFrame *)pkt->data;
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
@@ -684,7 +702,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             ret = s->pb->error;
     }
 
-
+fail:
     if (did_split)
         av_packet_merge_side_data(pkt);
 
@@ -1021,6 +1039,17 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             ret = AVERROR(EINVAL);
             goto fail;
         }
+
+        if (s->oformat->check_bitstream) {
+            if (!st->internal->bitstream_checked) {
+                if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
+                    goto fail;
+                else if (ret == 1)
+                    st->internal->bitstream_checked = 1;
+            }
+        }
+
+        av_apply_bitstream_filters(st->codec, pkt, st->internal->bsfc);
     } else {
         av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
         flush = 1;
@@ -1077,13 +1106,27 @@ int av_write_trailer(AVFormatContext *s)
             goto fail;
     }
 
+    if (!s->internal->header_written && s->oformat->write_header) {
+        ret = s->oformat->write_header(s);
+        if (ret >= 0 && s->pb && s->pb->error < 0)
+            ret = s->pb->error;
+        if (ret < 0)
+            goto fail;
+        if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
+            avio_flush(s->pb);
+        s->internal->header_written = 1;
+    }
+
 fail:
-    if (s->oformat->write_trailer)
+    if ((s->internal->header_written || !s->oformat->write_header) && s->oformat->write_trailer)
         if (ret >= 0) {
         ret = s->oformat->write_trailer(s);
         } else {
             s->oformat->write_trailer(s);
         }
+
+    if (s->oformat->deinit)
+        s->oformat->deinit(s);
 
     if (s->pb)
        avio_flush(s->pb);

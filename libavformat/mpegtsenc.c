@@ -717,7 +717,7 @@ static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
     avio_write(ctx->pb, packet, TS_PACKET_SIZE);
 }
 
-static int mpegts_write_header(AVFormatContext *s)
+static int mpegts_init(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
     MpegTSWriteStream *ts_st;
@@ -960,26 +960,6 @@ static int mpegts_write_header(AVFormatContext *s)
 
 fail:
     av_freep(&pids);
-    for (i = 0; i < s->nb_streams; i++) {
-        st    = s->streams[i];
-        ts_st = st->priv_data;
-        if (ts_st) {
-            av_freep(&ts_st->payload);
-            if (ts_st->amux) {
-                avformat_free_context(ts_st->amux);
-                ts_st->amux = NULL;
-            }
-        }
-        av_freep(&st->priv_data);
-    }
-
-    for (i = 0; i < ts->nb_services; i++) {
-        service = ts->services[i];
-        av_freep(&service->provider_name);
-        av_freep(&service->name);
-        av_freep(&service);
-    }
-    av_freep(&ts->services);
     return ret;
 }
 
@@ -1714,20 +1694,27 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int mpegts_write_end(AVFormatContext *s)
 {
+    if (s->pb)
+        mpegts_write_flush(s);
+
+    return 0;
+}
+
+static void mpegts_deinit(AVFormatContext *s)
+{
     MpegTSWrite *ts = s->priv_data;
     MpegTSService *service;
     int i;
 
-    if (s->pb)
-        mpegts_write_flush(s);
-
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
-        av_freep(&ts_st->payload);
-        if (ts_st->amux) {
-            avformat_free_context(ts_st->amux);
-            ts_st->amux = NULL;
+        if (ts_st) {
+            av_freep(&ts_st->payload);
+            if (ts_st->amux) {
+                avformat_free_context(ts_st->amux);
+                ts_st->amux = NULL;
+            }
         }
     }
 
@@ -1738,8 +1725,24 @@ static int mpegts_write_end(AVFormatContext *s)
         av_freep(&service);
     }
     av_freep(&ts->services);
+}
 
-    return 0;
+static int mpegts_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    int ret = 1;
+    AVStream *st = s->streams[pkt->stream_index];
+
+    if (st->codec->codec_id == AV_CODEC_ID_H264) {
+        if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                              AV_RB24(pkt->data) != 0x000001)
+            ret = ff_stream_add_bitstream_filter(st, "h264_mp4toannexb", NULL);
+    } else if (st->codec->codec_id == AV_CODEC_ID_HEVC) {
+        if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                              AV_RB24(pkt->data) != 0x000001)
+            ret = ff_stream_add_bitstream_filter(st, "hevc_mp4toannexb", NULL);
+    }
+
+    return ret;
 }
 
 static const AVOption options[] = {
@@ -1846,9 +1849,11 @@ AVOutputFormat ff_mpegts_muxer = {
     .priv_data_size = sizeof(MpegTSWrite),
     .audio_codec    = AV_CODEC_ID_MP2,
     .video_codec    = AV_CODEC_ID_MPEG2VIDEO,
-    .write_header   = mpegts_write_header,
+    .init           = mpegts_init,
     .write_packet   = mpegts_write_packet,
     .write_trailer  = mpegts_write_end,
+    .deinit         = mpegts_deinit,
+    .check_bitstream = mpegts_check_bitstream,
     .flags          = AVFMT_ALLOW_FLUSH | AVFMT_VARIABLE_FPS,
     .priv_class     = &mpegts_muxer_class,
 };
