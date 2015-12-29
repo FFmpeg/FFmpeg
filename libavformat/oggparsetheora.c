@@ -108,7 +108,7 @@ static int theora_header(AVFormatContext *s, int idx)
             skip_bits(&gb, 2);
 
         thp->gpshift = get_bits(&gb, 5);
-        thp->gpmask  = (1 << thp->gpshift) - 1;
+        thp->gpmask  = (1U << thp->gpshift) - 1;
 
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id   = AV_CODEC_ID_THEORA;
