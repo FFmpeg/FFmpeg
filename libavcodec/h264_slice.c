@@ -1688,7 +1688,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     }
 
     if (h->nal_unit_type == NAL_IDR_SLICE)
-        get_ue_golomb(&sl->gb); /* idr_pic_id */
+        get_ue_golomb_long(&sl->gb); /* idr_pic_id */
 
     if (h->sps.poc_type == 0) {
         int poc_lsb = get_bits(&sl->gb, h->sps.log2_max_poc_lsb);
