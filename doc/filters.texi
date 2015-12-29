@@ -14836,6 +14836,14 @@ in a 1024x800 picture using @command{ffmpeg}:
 @example
 ffmpeg -i audio.flac -lavfi showwavespic=split_channels=1:s=1024x800 waveform.png
 @end example
+
+@item
+Colorize the waveform with colorchannelmixer. This example will make
+the waveform a green color approximately RGB(66,217,150). Additional
+channels will be shades of this color.
+@example
+ffmpeg -i audio.mp3 -filter_complex "showwavespic,colorchannelmixer=rr=66/255:gg=217/255:bb=150/255" waveform.png
+@end example
 @end itemize
 
 @section split, asplit
