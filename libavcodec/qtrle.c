@@ -83,9 +83,9 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
         if(skip & 0x80) {
             lines_to_change--;
             row_ptr += row_inc;
-            pixel_ptr = row_ptr + 2 * (skip & 0x7f);
+            pixel_ptr = row_ptr + 2 * 8 * (skip & 0x7f);
         } else
-            pixel_ptr += 2 * skip;
+            pixel_ptr += 2 * 8 * skip;
         CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
 
         if(rle_code == -1)
@@ -99,19 +99,42 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
 
             pi0 = bytestream2_get_byte(&s->g);
             pi1 = bytestream2_get_byte(&s->g);
-            CHECK_PIXEL_PTR(rle_code * 2);
+            CHECK_PIXEL_PTR(rle_code * 2 * 8);
 
             while (rle_code--) {
-                rgb[pixel_ptr++] = pi0;
-                rgb[pixel_ptr++] = pi1;
+                rgb[pixel_ptr++] = (pi0 >> 7) & 0x01;
+                rgb[pixel_ptr++] = (pi0 >> 6) & 0x01;
+                rgb[pixel_ptr++] = (pi0 >> 5) & 0x01;
+                rgb[pixel_ptr++] = (pi0 >> 4) & 0x01;
+                rgb[pixel_ptr++] = (pi0 >> 3) & 0x01;
+                rgb[pixel_ptr++] = (pi0 >> 2) & 0x01;
+                rgb[pixel_ptr++] = (pi0 >> 1) & 0x01;
+                rgb[pixel_ptr++] =  pi0       & 0x01;
+                rgb[pixel_ptr++] = (pi1 >> 7) & 0x01;
+                rgb[pixel_ptr++] = (pi1 >> 6) & 0x01;
+                rgb[pixel_ptr++] = (pi1 >> 5) & 0x01;
+                rgb[pixel_ptr++] = (pi1 >> 4) & 0x01;
+                rgb[pixel_ptr++] = (pi1 >> 3) & 0x01;
+                rgb[pixel_ptr++] = (pi1 >> 2) & 0x01;
+                rgb[pixel_ptr++] = (pi1 >> 1) & 0x01;
+                rgb[pixel_ptr++] =  pi1       & 0x01;
             }
         } else {
             /* copy the same pixel directly to output 2 times */
             rle_code *= 2;
-            CHECK_PIXEL_PTR(rle_code);
+            CHECK_PIXEL_PTR(rle_code * 8);
 
-            bytestream2_get_buffer(&s->g, &rgb[pixel_ptr], rle_code);
-            pixel_ptr += rle_code;
+            while (rle_code--) {
+                int x = bytestream2_get_byte(&s->g);
+                rgb[pixel_ptr++] = (x >> 7) & 0x01;
+                rgb[pixel_ptr++] = (x >> 6) & 0x01;
+                rgb[pixel_ptr++] = (x >> 5) & 0x01;
+                rgb[pixel_ptr++] = (x >> 4) & 0x01;
+                rgb[pixel_ptr++] = (x >> 3) & 0x01;
+                rgb[pixel_ptr++] = (x >> 2) & 0x01;
+                rgb[pixel_ptr++] = (x >> 1) & 0x01;
+                rgb[pixel_ptr++] =  x       & 0x01;
+            }
         }
     }
 }
@@ -364,13 +387,10 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     switch (avctx->bits_per_coded_sample) {
     case 1:
-    case 33:
-        avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
-        break;
-
     case 2:
     case 4:
     case 8:
+    case 33:
     case 34:
     case 36:
     case 40:
@@ -446,6 +466,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     case 1:
     case 33:
         qtrle_decode_1bpp(s, row_ptr, height);
+        has_palette = 1;
         break;
 
     case 2:
