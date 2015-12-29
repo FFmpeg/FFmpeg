@@ -39,12 +39,15 @@ enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
+enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
 typedef struct {
     const AVClass *class;
     int w, h;
     AVFrame *outpicref;
     int nb_display_channels;
+    int orientation;
+    int channel_width;
     int channel_height;
     int sliding;                ///< 1 if sliding mode, 0 otherwise
     int mode;                   ///< channel display mode
@@ -100,6 +103,9 @@ static const AVOption showspectrum_options[] = {
         { "nuttall",  "Nuttall",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_NUTTALL},  0, 0, FLAGS, "win_func" },
         { "lanczos",  "Lanczos",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_LANCZOS},  0, 0, FLAGS, "win_func" },
         { "gauss",    "Gauss",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_GAUSS},    0, 0, FLAGS, "win_func" },
+    { "orientation", "set orientation", OFFSET(orientation), AV_OPT_TYPE_INT, {.i64=VERTICAL}, 0, NB_ORIENTATIONS-1, FLAGS, "orientation" },
+        { "vertical",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=VERTICAL},   0, 0, FLAGS, "orientation" },
+        { "horizontal", NULL, 0, AV_OPT_TYPE_CONST, {.i64=HORIZONTAL}, 0, 0, FLAGS, "orientation" },
     { NULL }
 };
 
@@ -168,16 +174,23 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowSpectrumContext *s = ctx->priv;
-    int i, rdft_bits, win_size, h;
+    int i, rdft_bits, win_size, h, w;
 
     outlink->w = s->w;
     outlink->h = s->h;
 
-    h = (s->mode == COMBINED) ? outlink->h : outlink->h / inlink->channels;
+    h = (s->mode == COMBINED || s->orientation == HORIZONTAL) ? outlink->h : outlink->h / inlink->channels;
+    w = (s->mode == COMBINED || s->orientation == VERTICAL)   ? outlink->w : outlink->w / inlink->channels;
     s->channel_height = h;
+    s->channel_width  = w;
 
-    /* RDFT window size (precision) according to the requested output frame height */
-    for (rdft_bits = 1; 1 << rdft_bits < 2 * h; rdft_bits++);
+    if (s->orientation == VERTICAL) {
+        /* RDFT window size (precision) according to the requested output frame height */
+        for (rdft_bits = 1; 1 << rdft_bits < 2 * h; rdft_bits++);
+    } else {
+        /* RDFT window size (precision) according to the requested output frame width */
+        for (rdft_bits = 1; 1 << rdft_bits < 2 * w; rdft_bits++);
+    }
     win_size = 1 << rdft_bits;
 
     /* (re-)configuration if the video output changed (or first init) */
@@ -232,19 +245,28 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    if (s->xpos >= outlink->w)
+    if ((s->orientation == VERTICAL   && s->xpos >= outlink->w) ||
+        (s->orientation == HORIZONTAL && s->xpos >= outlink->h))
         s->xpos = 0;
 
     outlink->frame_rate = av_make_q(inlink->sample_rate, win_size);
-    if (s->sliding == FULLFRAME)
+    if (s->orientation == VERTICAL && s->sliding == FULLFRAME)
         outlink->frame_rate.den *= outlink->w;
+    if (s->orientation == HORIZONTAL && s->sliding == FULLFRAME)
+        outlink->frame_rate.den *= outlink->h;
 
     inlink->min_samples = inlink->max_samples = inlink->partial_buf_size =
         win_size;
 
-    s->combine_buffer =
-        av_realloc_f(s->combine_buffer, outlink->h * 3,
-                     sizeof(*s->combine_buffer));
+    if (s->orientation == VERTICAL) {
+        s->combine_buffer =
+            av_realloc_f(s->combine_buffer, outlink->h * 3,
+                         sizeof(*s->combine_buffer));
+    } else {
+        s->combine_buffer =
+            av_realloc_f(s->combine_buffer, outlink->w * 3,
+                         sizeof(*s->combine_buffer));
+    }
 
     av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d RDFT window size:%d\n",
            s->w, s->h, win_size);
@@ -261,10 +283,18 @@ static int request_frame(AVFilterLink *outlink)
     ret = ff_request_frame(inlink);
     if (ret == AVERROR_EOF && s->sliding == FULLFRAME && s->xpos > 0 &&
         s->outpicref) {
-        for (i = 0; i < outlink->h; i++) {
-            memset(s->outpicref->data[0] + i * s->outpicref->linesize[0] + s->xpos,   0, outlink->w - s->xpos);
-            memset(s->outpicref->data[1] + i * s->outpicref->linesize[1] + s->xpos, 128, outlink->w - s->xpos);
-            memset(s->outpicref->data[2] + i * s->outpicref->linesize[2] + s->xpos, 128, outlink->w - s->xpos);
+        if (s->orientation == VERTICAL) {
+            for (i = 0; i < outlink->h; i++) {
+                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0] + s->xpos,   0, outlink->w - s->xpos);
+                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1] + s->xpos, 128, outlink->w - s->xpos);
+                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2] + s->xpos, 128, outlink->w - s->xpos);
+            }
+        } else {
+            for (i = s->xpos; i < outlink->h; i++) {
+                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0],   0, outlink->w);
+                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1], 128, outlink->w);
+                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2], 128, outlink->w);
+            }
         }
         ret = ff_filter_frame(outlink, s->outpicref);
         s->outpicref = NULL;
@@ -286,9 +316,9 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     const int nb_freq = 1 << (s->rdft_bits - 1);
     const int win_size = nb_freq << 1;
     const double w = 1. / (sqrt(nb_freq) * 32768.);
-    int h = s->channel_height;
+    int h = s->orientation == VERTICAL ? s->channel_height : s->channel_width;
 
-    int ch, plane, n, y;
+    int ch, plane, n, x, y;
 
     av_assert0(insamples->nb_samples == win_size);
 
@@ -310,10 +340,18 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
 #define MAGNITUDE(y, ch) hypot(RE(y, ch), IM(y, ch))
 
     /* initialize buffer for combining to black */
-    for (y = 0; y < outlink->h; y++) {
-        s->combine_buffer[3 * y    ] = 0;
-        s->combine_buffer[3 * y + 1] = 127.5;
-        s->combine_buffer[3 * y + 2] = 127.5;
+    if (s->orientation == VERTICAL) {
+        for (y = 0; y < outlink->h; y++) {
+            s->combine_buffer[3 * y    ] = 0;
+            s->combine_buffer[3 * y + 1] = 127.5;
+            s->combine_buffer[3 * y + 2] = 127.5;
+        }
+    } else {
+        for (y = 0; y < outlink->w; y++) {
+            s->combine_buffer[3 * y    ] = 0;
+            s->combine_buffer[3 * y + 1] = 127.5;
+            s->combine_buffer[3 * y + 2] = 127.5;
+        }
     }
 
     for (ch = 0; ch < s->nb_display_channels; ch++) {
@@ -427,32 +465,62 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     }
 
     /* copy to output */
-    if (s->sliding == SCROLL) {
+    if (s->orientation == VERTICAL) {
+        if (s->sliding == SCROLL) {
+            for (plane = 0; plane < 3; plane++) {
+                for (y = 0; y < outlink->h; y++) {
+                    uint8_t *p = outpicref->data[plane] +
+                                 y * outpicref->linesize[plane];
+                    memmove(p, p + 1, outlink->w - 1);
+                }
+            }
+            s->xpos = outlink->w - 1;
+        } else if (s->sliding == RSCROLL) {
+            for (plane = 0; plane < 3; plane++) {
+                for (y = 0; y < outlink->h; y++) {
+                    uint8_t *p = outpicref->data[plane] +
+                                 y * outpicref->linesize[plane];
+                    memmove(p + 1, p, outlink->w - 1);
+                }
+            }
+            s->xpos = 0;
+        }
         for (plane = 0; plane < 3; plane++) {
+            uint8_t *p = outpicref->data[plane] +
+                         (outlink->h - 1) * outpicref->linesize[plane] +
+                         s->xpos;
             for (y = 0; y < outlink->h; y++) {
-                uint8_t *p = outpicref->data[plane] +
-                             y * outpicref->linesize[plane];
-                memmove(p, p + 1, outlink->w - 1);
+                *p = lrint(FFMAX(0, FFMIN(s->combine_buffer[3 * y + plane], 255)));
+                p -= outpicref->linesize[plane];
             }
         }
-        s->xpos = outlink->w - 1;
-    } else if (s->sliding == RSCROLL) {
-        for (plane = 0; plane < 3; plane++) {
-            for (y = 0; y < outlink->h; y++) {
-                uint8_t *p = outpicref->data[plane] +
-                             y * outpicref->linesize[plane];
-                memmove(p + 1, p, outlink->w - 1);
+    } else {
+        if (s->sliding == SCROLL) {
+            for (plane = 0; plane < 3; plane++) {
+                for (y = 1; y < outlink->h; y++) {
+                    memmove(outpicref->data[plane] + (y-1) * outpicref->linesize[plane],
+                            outpicref->data[plane] + (y  ) * outpicref->linesize[plane],
+                            outlink->w);
+                }
             }
+            s->xpos = outlink->h - 1;
+        } else if (s->sliding == RSCROLL) {
+            for (plane = 0; plane < 3; plane++) {
+                for (y = outlink->h - 1; y >= 1; y--) {
+                    memmove(outpicref->data[plane] + (y  ) * outpicref->linesize[plane],
+                            outpicref->data[plane] + (y-1) * outpicref->linesize[plane],
+                            outlink->w);
+                }
+            }
+            s->xpos = 0;
         }
-        s->xpos = 0;
-    }
-    for (plane = 0; plane < 3; plane++) {
-        uint8_t *p = outpicref->data[plane] +
-                     (outlink->h - 1) * outpicref->linesize[plane] +
-                     s->xpos;
-        for (y = 0; y < outlink->h; y++) {
-            *p = lrint(FFMAX(0, FFMIN(s->combine_buffer[3 * y + plane], 255)));
-            p -= outpicref->linesize[plane];
+        for (plane = 0; plane < 3; plane++) {
+            uint8_t *p = outpicref->data[plane] +
+                         s->xpos * outpicref->linesize[plane];
+            for (x = 0; x < outlink->w; x++) {
+                *p = lrint(FFMAX(0, FFMIN(s->combine_buffer[3 * x + plane], 255)));
+                p++;
+            }
         }
     }
 
@@ -460,7 +528,9 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         outpicref->pts = insamples->pts;
 
     s->xpos++;
-    if (s->xpos >= outlink->w)
+    if (s->orientation == VERTICAL && s->xpos >= outlink->w)
+        s->xpos = 0;
+    if (s->orientation == HORIZONTAL && s->xpos >= outlink->h)
         s->xpos = 0;
     if (s->sliding != FULLFRAME || s->xpos == 0) {
         ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));

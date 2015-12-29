@@ -14665,6 +14665,10 @@ It accepts the following values:
 @end table
 
 Default value is @code{hann}.
+
+@item orientation
+Set orientation of time vs frequency axis. Can be @code{vertical} or
+@code{horizontal}. Default is @code{vertical}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
