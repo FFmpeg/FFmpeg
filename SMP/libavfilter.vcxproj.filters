@@ -147,6 +147,9 @@
     <ClCompile Include="..\libavfilter\af_aemphasis.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_anequalizer.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\aeval.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -715,6 +718,9 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showfreqs.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\window_func.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showspectrum.c">

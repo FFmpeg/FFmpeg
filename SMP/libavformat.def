@@ -1,6 +1,7 @@
 EXPORTS
     av_add_index_entry
     av_append_packet
+    av_apply_bitstream_filters
     av_codec_get_id
     av_codec_get_tag
     av_codec_get_tag2

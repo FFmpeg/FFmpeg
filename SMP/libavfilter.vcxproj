@@ -109,6 +109,7 @@
     <ClCompile Include="..\libavfilter\af_adelay.c" />
     <ClCompile Include="..\libavfilter\af_aecho.c" />
     <ClCompile Include="..\libavfilter\af_aemphasis.c" />
+    <ClCompile Include="..\libavfilter\af_anequalizer.c" />
     <ClCompile Include="..\libavfilter\aeval.c" />
     <ClCompile Include="..\libavfilter\af_aformat.c" />
     <ClCompile Include="..\libavfilter\af_agate.c" />
@@ -331,6 +332,7 @@
     <ClCompile Include="..\libavfilter\avf_concat.c" />
     <ClCompile Include="..\libavfilter\avf_showcqt.c" />
     <ClCompile Include="..\libavfilter\avf_showfreqs.c" />
+    <ClCompile Include="..\libavfilter\window_func.c" />
     <ClCompile Include="..\libavfilter\avf_showspectrum.c" />
     <ClCompile Include="..\libavfilter\avf_showvolume.c" />
     <ClCompile Include="..\libavfilter\avf_showwaves.c" />
