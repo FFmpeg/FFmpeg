@@ -147,7 +147,7 @@ typedef struct DCAAudioHeader {
 } DCAAudioHeader;
 
 typedef struct DCAChan {
-    DECLARE_ALIGNED(32, int32_t, subband_samples)[DCA_BLOCKS_MAX][DCA_SUBBANDS][8];
+    DECLARE_ALIGNED(32, int32_t, subband_samples)[DCA_BLOCKS_MAX][DCA_SUBBANDS][SAMPLES_PER_SUBBAND];
 
     /* Subband samples history (for ADPCM) */
     DECLARE_ALIGNED(32, int32_t, subband_samples_hist)[DCA_SUBBANDS][4];

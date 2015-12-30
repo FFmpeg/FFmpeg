@@ -27,7 +27,7 @@
 #include "dcadsp.h"
 #include "dcamath.h"
 
-static void decode_hf_c(int32_t dst[DCA_SUBBANDS][8],
+static void decode_hf_c(int32_t dst[DCA_SUBBANDS][SAMPLES_PER_SUBBAND],
                         const int32_t vq_num[DCA_SUBBANDS],
                         const int8_t hf_vq[1024][32], intptr_t vq_offset,
                         int32_t scale[DCA_SUBBANDS][2],
@@ -62,7 +62,7 @@ static inline void dca_lfe_fir(float *out, const float *in, const float *coefs,
     }
 }
 
-static void dca_qmf_32_subbands(float samples_in[32][8], int sb_act,
+static void dca_qmf_32_subbands(float samples_in[DCA_SUBBANDS][SAMPLES_PER_SUBBAND], int sb_act,
                                 SynthFilterContext *synth, FFTContext *imdct,
                                 float synth_buf_ptr[512],
                                 int *synth_buf_offset, float synth_buf2[32],
@@ -103,7 +103,7 @@ static void dequantize_c(int32_t *samples, uint32_t step_size, uint32_t scale)
         shift = 0;
     step_scale = (int32_t)(step >> shift);
 
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < SAMPLES_PER_SUBBAND; i++)
         samples[i] = dca_clip23(dca_norm((int64_t)samples[i] * step_scale, 22 - shift));
 }
 

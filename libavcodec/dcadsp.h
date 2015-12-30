@@ -22,17 +22,20 @@
 #include "avfft.h"
 #include "synth_filter.h"
 
-#define DCA_SUBBANDS 32
+#define DCA_SUBBANDS_X96K  64
+#define DCA_SUBBANDS       32
+#define SAMPLES_PER_SUBBAND 8 // number of samples per subband per subsubframe
+
 
 typedef struct DCADSPContext {
     void (*lfe_fir[2])(float *out, const float *in, const float *coefs);
-    void (*qmf_32_subbands)(float samples_in[32][8], int sb_act,
+    void (*qmf_32_subbands)(float samples_in[DCA_SUBBANDS][SAMPLES_PER_SUBBAND], int sb_act,
                             SynthFilterContext *synth, FFTContext *imdct,
                             float synth_buf_ptr[512],
                             int *synth_buf_offset, float synth_buf2[32],
                             const float window[512], float *samples_out,
                             float raXin[32], float scale);
-    void (*decode_hf)(int32_t dst[DCA_SUBBANDS][8],
+    void (*decode_hf)(int32_t dst[DCA_SUBBANDS][SAMPLES_PER_SUBBAND],
                       const int32_t vq_num[DCA_SUBBANDS],
                       const int8_t hf_vq[1024][32], intptr_t vq_offset,
                       int32_t scale[DCA_SUBBANDS][2],
