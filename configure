@@ -3699,7 +3699,8 @@ probe_cc(){
         gcc_ext_ver=$(expr "$gcc_version" : ".*$gcc_pkg_ver $gcc_basever \\(.*\\)")
         _ident=$(cleanws "gcc $gcc_basever $gcc_pkg_ver $gcc_ext_ver")
         case $gcc_basever in
-            2*) ;;
+            2) ;;
+            2.*) ;;
             *) _depflags='-MMD -MF $(@:.o=.d) -MT $@' ;;
         esac
         if [ "$first" = true ]; then
