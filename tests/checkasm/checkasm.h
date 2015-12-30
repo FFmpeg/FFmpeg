@@ -116,11 +116,24 @@ void checkasm_stack_clobber(uint64_t clobber, ...);
                                              (void *)checkasm_checked_call;
 #define call_new(...) checked_call(func_new, __VA_ARGS__)
 #endif
+#elif ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
+/* Use a dummy argument, to offset the real parameters by 2, not only 1.
+ * This makes sure that potential 8-byte-alignment of parameters is kept the same
+ * even when the extra parameters have been removed. */
+void checkasm_checked_call_vfp(void *func, int dummy, ...);
+void checkasm_checked_call_novfp(void *func, int dummy, ...);
+extern void (*checkasm_checked_call)(void *func, int dummy, ...);
+#define declare_new(ret, ...) ret (*checked_call)(void *, int dummy, __VA_ARGS__) = (void *)checkasm_checked_call;
+#define call_new(...) checked_call(func_new, 0, __VA_ARGS__)
 #else
 #define declare_new(ret, ...)
 #define declare_new_emms(cpu_flags, ret, ...)
 /* Call the function */
 #define call_new(...) ((func_type *)func_new)(__VA_ARGS__)
+#endif
+
+#ifndef declare_new_emms
+#define declare_new_emms(cpu_flags, ret, ...) declare_new(ret, __VA_ARGS__)
 #endif
 
 /* Benchmark the function */
