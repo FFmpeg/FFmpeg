@@ -14619,6 +14619,8 @@ each channel is displayed using the same color scheme
 each channel is displayed using the rainbow color scheme
 @item moreland
 each channel is displayed using the moreland color scheme
+@item nebulae
+each channel is displayed using the nebulae color scheme
 @end table
 
 Default value is @samp{channel}.
