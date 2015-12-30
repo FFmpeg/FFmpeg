@@ -526,6 +526,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             sws_setColorspaceDetails(scale->isws[1], inv_table, in_full,
                                      table, out_full,
                                      brightness, contrast, saturation);
+
+        av_frame_set_color_range(out, out_full ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG);
     }
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
