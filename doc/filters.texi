@@ -14617,6 +14617,8 @@ each channel is displayed in a separate color
 each channel is displayed using the same color scheme
 @item rainbow
 each channel is displayed using the rainbow color scheme
+@item moreland
+each channel is displayed using the moreland color scheme
 @end table
 
 Default value is @samp{channel}.

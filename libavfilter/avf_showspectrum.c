@@ -37,7 +37,7 @@
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
-enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, NB_CLMODES };
+enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
@@ -82,7 +82,8 @@ static const AVOption showspectrum_options[] = {
     { "color", "set channel coloring", OFFSET(color_mode), AV_OPT_TYPE_INT, {.i64=CHANNEL}, CHANNEL, NB_CLMODES-1, FLAGS, "color" },
         { "channel",   "separate color for each channel", 0, AV_OPT_TYPE_CONST, {.i64=CHANNEL},   0, 0, FLAGS, "color" },
         { "intensity", "intensity based coloring",        0, AV_OPT_TYPE_CONST, {.i64=INTENSITY}, 0, 0, FLAGS, "color" },
-        { "rainbow",   "rainbow based coloring",          0, AV_OPT_TYPE_CONST, {.i64=RAINBOW}, 0, 0, FLAGS, "color" },
+        { "rainbow",   "rainbow based coloring",          0, AV_OPT_TYPE_CONST, {.i64=RAINBOW},   0, 0, FLAGS, "color" },
+        { "moreland",  "moreland based coloring",         0, AV_OPT_TYPE_CONST, {.i64=MORELAND},  0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=SQRT}, LINEAR, NB_SCALES-1, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
         { "cbrt", "cubic root",  0, AV_OPT_TYPE_CONST, {.i64=CBRT},   0, 0, FLAGS, "scale" },
@@ -134,6 +135,15 @@ static const struct ColorTable {
     { 0.73,           205/256.,      (19-128)/256.,      (149-128)/256. },
     { 0.86,           135/256.,      (83-128)/256.,      (200-128)/256. },
     {    1,            73/256.,      (95-128)/256.,      (225-128)/256. }},
+    [MORELAND] = {
+    {    0,            44/256.,     (181-128)/256.,      (112-128)/256. },
+    { 0.13,           126/256.,     (177-128)/256.,      (106-128)/256. },
+    { 0.25,           164/256.,     (163-128)/256.,      (109-128)/256. },
+    { 0.38,           200/256.,     (140-128)/256.,      (120-128)/256. },
+    { 0.60,           201/256.,     (117-128)/256.,      (141-128)/256. },
+    { 0.73,           177/256.,     (103-128)/256.,      (165-128)/256. },
+    { 0.86,           136/256.,     (100-128)/256.,      (183-128)/256. },
+    {    1,            68/256.,     (117-128)/256.,      (203-128)/256. }},
 };
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -381,6 +391,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             yf = 256.0f / s->nb_display_channels;
             switch (s->color_mode) {
             case RAINBOW:
+            case MORELAND:
             case INTENSITY:
                 uf = yf;
                 vf = yf;
@@ -442,8 +453,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 av_assert0(0);
             }
 
-            if (s->color_mode == INTENSITY ||
-                s->color_mode == RAINBOW) {
+            if (s->color_mode > CHANNEL) {
                 const int cm = s->color_mode;
                 float y, u, v;
                 int i;
