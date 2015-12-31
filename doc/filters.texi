@@ -14614,7 +14614,15 @@ It accepts the following values:
 @item channel
 each channel is displayed in a separate color
 @item intensity
-each channel is is displayed using the same color scheme
+each channel is displayed using the same color scheme
+@item rainbow
+each channel is displayed using the rainbow color scheme
+@item moreland
+each channel is displayed using the moreland color scheme
+@item nebulae
+each channel is displayed using the nebulae color scheme
+@item fire
+each channel is displayed using the fire color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -14665,6 +14673,10 @@ It accepts the following values:
 @end table
 
 Default value is @code{hann}.
+
+@item orientation
+Set orientation of time vs frequency axis. Can be @code{vertical} or
+@code{horizontal}. Default is @code{vertical}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that

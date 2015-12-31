@@ -82,7 +82,7 @@ static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
 
-    get_ue_golomb(gb);                  // frame_packing_arrangement_id
+    get_ue_golomb_long(gb);             // frame_packing_arrangement_id
     s->sei_frame_packing_present = !get_bits1(gb);
 
     if (s->sei_frame_packing_present) {

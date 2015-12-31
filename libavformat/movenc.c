@@ -5274,7 +5274,7 @@ static int mov_write_header(AVFormatContext *s)
             }
             if (track->mode != MODE_MOV &&
                 track->enc->codec_id == AV_CODEC_ID_MP3 && track->timescale < 16000) {
-                if (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
+                if (s->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
                     av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not standard, to mux anyway set strict to -1\n",
                         i, track->enc->sample_rate);
                     ret = AVERROR(EINVAL);

@@ -3934,7 +3934,7 @@ static void handle_child_exit(int sig)
             fprintf(stderr,
                     "%s: Pid %"PRId64" exited with status %d after %"PRId64" "
                         "seconds\n",
-                    feed->filename, (int64_t) pid, status, uptime);
+                    feed->filename, (int64_t) pid, status, (int64_t)uptime);
 
             if (uptime < 30)
                 /* Turn off any more restarts */

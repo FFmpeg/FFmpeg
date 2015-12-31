@@ -46,8 +46,8 @@ int ff_get_qtpalette(int codec_id, AVIOContext *pb, uint32_t *palette)
     if (greyscale && codec_id == AV_CODEC_ID_CINEPAK)
         return 0;
 
-    /* If the depth is 2, 4, or 8 bpp, file is palettized. */
-    if ((bit_depth == 2 || bit_depth == 4 || bit_depth == 8)) {
+    /* If the depth is 1, 2, 4, or 8 bpp, file is palettized. */
+    if ((bit_depth == 1 || bit_depth == 2 || bit_depth == 4 || bit_depth == 8)) {
         int color_count, color_start, color_end;
         uint32_t a, r, g, b;
 
@@ -70,7 +70,9 @@ int ff_get_qtpalette(int codec_id, AVIOContext *pb, uint32_t *palette)
              * color table */
             const uint8_t *color_table;
             color_count = 1 << bit_depth;
-            if (bit_depth == 2)
+            if (bit_depth == 1)
+                color_table = ff_qt_default_palette_2;
+            else if (bit_depth == 2)
                 color_table = ff_qt_default_palette_4;
             else if (bit_depth == 4)
                 color_table = ff_qt_default_palette_16;

@@ -27,15 +27,12 @@
 
 #define TEMPLATE_8bit
 #include "dirac_dwt_template.c"
-#undef TEMPLATE_8bit
 
 #define TEMPLATE_10bit
 #include "dirac_dwt_template.c"
-#undef TEMPLATE_10bit
 
 #define TEMPLATE_12bit
 #include "dirac_dwt_template.c"
-#undef TEMPLATE_12bit
 
 int ff_spatial_idwt_init2(DWTContext *d, uint8_t *buffer, int width, int height,
                           int stride, enum dwt_type type, int decomposition_count,

@@ -130,6 +130,12 @@ static int daala_header(AVFormatContext *s, int idx)
         hdr->fpr = bytestream2_get_byte(&gb);
 
         hdr->format.planes = bytestream2_get_byte(&gb);
+        if (hdr->format.planes > 4) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid number of planes %d in daala pixel format map.\n",
+                   hdr->format.planes);
+            return AVERROR_INVALIDDATA;
+        }
         for (i = 0; i < hdr->format.planes; i++) {
             hdr->format.xdec[i] = bytestream2_get_byte(&gb);
             hdr->format.ydec[i] = bytestream2_get_byte(&gb);

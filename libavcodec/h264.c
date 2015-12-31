@@ -1365,7 +1365,7 @@ static int get_last_needed_nal(H264Context *h, const uint8_t *buf, int buf_size)
         case NAL_IDR_SLICE:
         case NAL_SLICE:
             init_get_bits(&gb, ptr, bit_length);
-            if (!get_ue_golomb(&gb) ||
+            if (!get_ue_golomb_long(&gb) ||  // first_mb_in_slice
                 !first_slice ||
                 first_slice != h->nal_unit_type)
                 nals_needed = nal_index;
