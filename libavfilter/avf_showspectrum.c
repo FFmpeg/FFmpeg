@@ -64,6 +64,7 @@ typedef struct {
     FFTSample **rdft_data;      ///< bins holder for each (displayed) channels
     float *window_func_lut;     ///< Window function LUT
     int win_func;
+    int win_size;
     double win_scale;
     float overlap;
     int skip_samples;
@@ -225,7 +226,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowSpectrumContext *s = ctx->priv;
-    int i, rdft_bits, win_size, h, w;
+    int i, rdft_bits, h, w;
     float overlap;
 
     outlink->w = s->w;
@@ -243,7 +244,7 @@ static int config_output(AVFilterLink *outlink)
         /* RDFT window size (precision) according to the requested output frame width */
         for (rdft_bits = 1; 1 << rdft_bits < 2 * w; rdft_bits++);
     }
-    win_size = 1 << rdft_bits;
+    s->win_size = 1 << rdft_bits;
 
     /* (re-)configuration if the video output changed (or first init) */
     if (rdft_bits != s->rdft_bits) {
@@ -270,27 +271,27 @@ static int config_output(AVFilterLink *outlink)
         if (!s->rdft_data)
             return AVERROR(ENOMEM);
         for (i = 0; i < s->nb_display_channels; i++) {
-            s->rdft_data[i] = av_calloc(win_size, sizeof(**s->rdft_data));
+            s->rdft_data[i] = av_calloc(s->win_size, sizeof(**s->rdft_data));
             if (!s->rdft_data[i])
                 return AVERROR(ENOMEM);
         }
 
         /* pre-calc windowing function */
         s->window_func_lut =
-            av_realloc_f(s->window_func_lut, win_size,
+            av_realloc_f(s->window_func_lut, s->win_size,
                          sizeof(*s->window_func_lut));
         if (!s->window_func_lut)
             return AVERROR(ENOMEM);
-        ff_generate_window_func(s->window_func_lut, win_size, s->win_func, &overlap);
+        ff_generate_window_func(s->window_func_lut, s->win_size, s->win_func, &overlap);
         if (s->overlap == 1)
             s->overlap = overlap;
-        s->skip_samples = (1. - s->overlap) * win_size;
+        s->skip_samples = (1. - s->overlap) * s->win_size;
         if (s->skip_samples < 1) {
             av_log(ctx, AV_LOG_ERROR, "overlap %f too big\n", s->overlap);
             return AVERROR(EINVAL);
         }
 
-        for (s->win_scale = 0, i = 0; i < win_size; i++) {
+        for (s->win_scale = 0, i = 0; i < s->win_size; i++) {
             s->win_scale += s->window_func_lut[i] * s->window_func_lut[i];
         }
         s->win_scale = 1. / (sqrt(s->win_scale) * 32768.);
@@ -313,7 +314,7 @@ static int config_output(AVFilterLink *outlink)
         (s->orientation == HORIZONTAL && s->xpos >= outlink->h))
         s->xpos = 0;
 
-    outlink->frame_rate = av_make_q(inlink->sample_rate, win_size * (1.-s->overlap));
+    outlink->frame_rate = av_make_q(inlink->sample_rate, s->win_size * (1.-s->overlap));
     if (s->orientation == VERTICAL && s->sliding == FULLFRAME)
         outlink->frame_rate.den *= outlink->w;
     if (s->orientation == HORIZONTAL && s->sliding == FULLFRAME)
@@ -330,10 +331,10 @@ static int config_output(AVFilterLink *outlink)
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d RDFT window size:%d\n",
-           s->w, s->h, win_size);
+           s->w, s->h, s->win_size);
 
     av_audio_fifo_free(s->fifo);
-    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, win_size);
+    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, s->win_size);
     if (!s->fifo)
         return AVERROR(ENOMEM);
     return 0;
@@ -376,23 +377,18 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterLink *outlink = ctx->outputs[0];
     ShowSpectrumContext *s = ctx->priv;
     AVFrame *outpicref = s->outpicref;
-
-    /* nb_freq contains the power of two superior or equal to the output image
-     * height (or half the RDFT window size) */
-    const int nb_freq = 1 << (s->rdft_bits - 1);
-    const int win_size = nb_freq << 1;
     const double w = s->win_scale;
     int h = s->orientation == VERTICAL ? s->channel_height : s->channel_width;
 
     int ch, plane, n, x, y;
 
-    av_assert0(insamples->nb_samples == win_size);
+    av_assert0(insamples->nb_samples == s->win_size);
 
     /* fill RDFT input with the number of samples available */
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         const int16_t *p = (int16_t *)insamples->extended_data[ch];
 
-        for (n = 0; n < win_size; n++)
+        for (n = 0; n < s->win_size; n++)
             s->rdft_data[ch][n] = p[n] * s->window_func_lut[n];
     }
 
@@ -610,21 +606,20 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             return ret;
     }
 
-    return win_size;
+    return s->win_size;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowSpectrumContext *s = ctx->priv;
-    unsigned win_size = 1 << s->rdft_bits;
     AVFrame *fin = NULL;
     int ret = 0;
 
     av_audio_fifo_write(s->fifo, (void **)insamples->extended_data, insamples->nb_samples);
     av_frame_free(&insamples);
-    while (av_audio_fifo_size(s->fifo) >= win_size) {
-        fin = ff_get_audio_buffer(inlink, win_size);
+    while (av_audio_fifo_size(s->fifo) >= s->win_size) {
+        fin = ff_get_audio_buffer(inlink, s->win_size);
         if (!fin) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -632,7 +627,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
         fin->pts = s->pts;
         s->pts += s->skip_samples;
-        ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, win_size);
+        ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
         if (ret < 0)
             goto fail;
 
