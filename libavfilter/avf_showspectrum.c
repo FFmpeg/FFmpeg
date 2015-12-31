@@ -37,7 +37,7 @@
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
-enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, NB_CLMODES };
+enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
@@ -85,6 +85,7 @@ static const AVOption showspectrum_options[] = {
         { "rainbow",   "rainbow based coloring",          0, AV_OPT_TYPE_CONST, {.i64=RAINBOW},   0, 0, FLAGS, "color" },
         { "moreland",  "moreland based coloring",         0, AV_OPT_TYPE_CONST, {.i64=MORELAND},  0, 0, FLAGS, "color" },
         { "nebulae",   "nebulae based coloring",          0, AV_OPT_TYPE_CONST, {.i64=NEBULAE},   0, 0, FLAGS, "color" },
+        { "fire",      "fire based coloring",             0, AV_OPT_TYPE_CONST, {.i64=FIRE},      0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=SQRT}, LINEAR, NB_SCALES-1, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
         { "cbrt", "cubic root",  0, AV_OPT_TYPE_CONST, {.i64=CBRT},   0, 0, FLAGS, "scale" },
@@ -153,6 +154,15 @@ static const struct ColorTable {
     { 0.67,           104/256.,     (116-128)/256.,      (162-128)/256. },
     { 0.77,           120/256.,     (105-128)/256.,      (188-128)/256. },
     { 0.87,           140/256.,     (105-128)/256.,      (188-128)/256. },
+    {    1,                  1,                  0,                   0 }},
+    [FIRE] = {
+    {    0,                  0,                  0,                   0 },
+    { 0.23,            44/256.,     (132-128)/256.,      (127-128)/256. },
+    { 0.45,            62/256.,     (116-128)/256.,      (140-128)/256. },
+    { 0.57,            75/256.,     (105-128)/256.,      (152-128)/256. },
+    { 0.67,            95/256.,      (91-128)/256.,      (166-128)/256. },
+    { 0.77,           126/256.,      (74-128)/256.,      (172-128)/256. },
+    { 0.87,           164/256.,      (73-128)/256.,      (162-128)/256. },
     {    1,                  1,                  0,                   0 }},
 };
 
@@ -403,6 +413,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             case RAINBOW:
             case MORELAND:
             case NEBULAE:
+            case FIRE:
             case INTENSITY:
                 uf = yf;
                 vf = yf;
