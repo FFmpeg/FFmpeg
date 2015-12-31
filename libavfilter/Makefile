@@ -286,6 +286,7 @@ OBJS-$(CONFIG_CONCAT_FILTER)                 += avf_concat.o
 OBJS-$(CONFIG_SHOWCQT_FILTER)                += avf_showcqt.o lswsutils.o lavfutils.o
 OBJS-$(CONFIG_SHOWFREQS_FILTER)              += avf_showfreqs.o window_func.o
 OBJS-$(CONFIG_SHOWSPECTRUM_FILTER)           += avf_showspectrum.o window_func.o
+OBJS-$(CONFIG_SHOWSPECTRUMPIC_FILTER)        += avf_showspectrum.o window_func.o
 OBJS-$(CONFIG_SHOWVOLUME_FILTER)             += avf_showvolume.o
 OBJS-$(CONFIG_SHOWWAVES_FILTER)              += avf_showwaves.o
 OBJS-$(CONFIG_SHOWWAVESPIC_FILTER)           += avf_showwaves.o

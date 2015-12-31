@@ -14704,6 +14704,112 @@ ffplay -f lavfi 'amovie=input.mp3, asplit [a][out1];
 @end example
 @end itemize
 
+@section showspectrumpic
+
+Convert input audio to a single video frame, representing the audio frequency
+spectrum.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{4096x2048}.
+
+@item mode
+Specify display mode.
+
+It accepts the following values:
+@table @samp
+@item combined
+all channels are displayed in the same row
+@item separate
+all channels are displayed in separate rows
+@end table
+Default value is @samp{combined}.
+
+@item color
+Specify display color mode.
+
+It accepts the following values:
+@table @samp
+@item channel
+each channel is displayed in a separate color
+@item intensity
+each channel is displayed using the same color scheme
+@item rainbow
+each channel is displayed using the rainbow color scheme
+@item moreland
+each channel is displayed using the moreland color scheme
+@item nebulae
+each channel is displayed using the nebulae color scheme
+@item fire
+each channel is displayed using the fire color scheme
+@end table
+Default value is @samp{intensity}.
+
+@item scale
+Specify scale used for calculating intensity color values.
+
+It accepts the following values:
+@table @samp
+@item lin
+linear
+@item sqrt
+square root, default
+@item cbrt
+cubic root
+@item log
+logarithmic
+@end table
+Default value is @samp{log}.
+
+@item saturation
+Set saturation modifier for displayed colors. Negative values provide
+alternative color scheme. @code{0} is no saturation at all.
+Saturation must be in [-10.0, 10.0] range.
+Default value is @code{1}.
+
+@item win_func
+Set window function.
+
+It accepts the following values:
+@table @samp
+@item rect
+@item bartlett
+@item hann
+@item hanning
+@item hamming
+@item blackman
+@item welch
+@item flattop
+@item bharris
+@item bnuttall
+@item bhann
+@item sine
+@item nuttall
+@item lanczos
+@item gauss
+@end table
+Default value is @code{hann}.
+
+@item orientation
+Set orientation of time vs frequency axis. Can be @code{vertical} or
+@code{horizontal}. Default is @code{vertical}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Extract an audio spectrogram of a whole audio track
+in a 1024x1024 picture using @command{ffmpeg}:
+@example
+ffmpeg -i audio.flac -lavfi showspectrumpic=s=1024x1024 spectrogram.png
+@end example
+@end itemize
+
 @section showvolume
 
 Convert input audio volume to a video output.
