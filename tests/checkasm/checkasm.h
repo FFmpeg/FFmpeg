@@ -125,6 +125,10 @@ void checkasm_checked_call_novfp(void *func, int dummy, ...);
 extern void (*checkasm_checked_call)(void *func, int dummy, ...);
 #define declare_new(ret, ...) ret (*checked_call)(void *, int dummy, __VA_ARGS__) = (void *)checkasm_checked_call;
 #define call_new(...) checked_call(func_new, 0, __VA_ARGS__)
+#elif ARCH_AARCH64 && !defined(__APPLE__)
+void checkasm_checked_call(void *func, ...);
+#define declare_new(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call;
+#define call_new(...) checked_call(func_new, __VA_ARGS__)
 #else
 #define declare_new(ret, ...)
 #define declare_new_emms(cpu_flags, ret, ...)
