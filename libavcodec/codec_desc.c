@@ -2446,6 +2446,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "aac_latm",
         .long_name = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Coding LATM syntax)"),
         .props     = AV_CODEC_PROP_LOSSY,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     },
     {
         .id        = AV_CODEC_ID_QDMC,
