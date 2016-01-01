@@ -121,4 +121,12 @@ const AVProfile ff_vc1_profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_vp9_profiles[] = {
+    { FF_PROFILE_VP9_0, "Profile 0" },
+    { FF_PROFILE_VP9_1, "Profile 1" },
+    { FF_PROFILE_VP9_2, "Profile 2" },
+    { FF_PROFILE_VP9_3, "Profile 3" },
+    { FF_PROFILE_UNKNOWN },
+};
+
 #endif /* !CONFIG_SMALL */

@@ -32,6 +32,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "libvpx.h"
+#include "profiles.h"
 
 typedef struct VP8DecoderContext {
     struct vpx_codec_ctx decoder;
@@ -242,14 +243,6 @@ static av_cold int vp9_init(AVCodecContext *avctx)
     return vpx_init(avctx, &vpx_codec_vp9_dx_algo);
 }
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_VP9_0, "Profile 0" },
-    { FF_PROFILE_VP9_1, "Profile 1" },
-    { FF_PROFILE_VP9_2, "Profile 2" },
-    { FF_PROFILE_VP9_3, "Profile 3" },
-    { FF_PROFILE_UNKNOWN },
-};
-
 AVCodec ff_libvpx_vp9_decoder = {
     .name           = "libvpx-vp9",
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
@@ -261,6 +254,6 @@ AVCodec ff_libvpx_vp9_decoder = {
     .decode         = vp8_decode,
     .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
     .init_static_data = ff_vp9_init_static,
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
 };
 #endif /* CONFIG_LIBVPX_VP9_DECODER */
