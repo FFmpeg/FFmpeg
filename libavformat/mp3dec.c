@@ -64,13 +64,9 @@ static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 static int mp3_read_probe(AVProbeData *p)
 {
     int max_frames, first_frames = 0;
-    int fsize, frames;
+    int fsize, frames, ret;
     uint32_t header;
     const uint8_t *buf, *buf0, *buf2, *end;
-    AVCodecContext *avctx = avcodec_alloc_context3(NULL);
-
-    if (!avctx)
-        return AVERROR(ENOMEM);
 
     buf0 = p->buf;
     end = p->buf + p->buf_size - sizeof(uint32_t);
@@ -83,19 +79,18 @@ static int mp3_read_probe(AVProbeData *p)
     for(; buf < end; buf= buf2+1) {
         buf2 = buf;
         for(frames = 0; buf2 < end; frames++) {
-            int dummy;
+            MPADecodeHeader h;
+
             header = AV_RB32(buf2);
-            fsize = avpriv_mpa_decode_header(avctx, header,
-                                             &dummy, &dummy, &dummy, &dummy);
-            if(fsize < 0)
+            ret = avpriv_mpegaudio_decode_header(&h, header);
+            if (ret != 0)
                 break;
-            buf2 += fsize;
+            buf2 += h.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
         if(buf == buf0)
             first_frames= frames;
     }
-    avcodec_free_context(&avctx);
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
     if   (first_frames>=7) return AVPROBE_SCORE_EXTENSION + 1;
