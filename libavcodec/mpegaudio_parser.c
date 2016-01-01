@@ -69,7 +69,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 
                 state= (state<<8) + buf[i++];
 
-                ret = avpriv_mpa_decode_header2(state, &sr, &channels, &frame_size, &bit_rate, &codec_id);
+                ret = ff_mpa_decode_header(state, &sr, &channels, &frame_size, &bit_rate, &codec_id);
                 if (ret < 4) {
                     if (i > 4)
                         s->header_count = -2;
