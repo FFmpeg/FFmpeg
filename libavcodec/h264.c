@@ -46,6 +46,7 @@
 #include "mathops.h"
 #include "me_cmp.h"
 #include "mpegutils.h"
+#include "profiles.h"
 #include "rectangle.h"
 #include "svq3.h"
 #include "thread.h"
@@ -1962,23 +1963,6 @@ static const AVClass h264_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_H264_BASELINE,             "Baseline"              },
-    { FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"  },
-    { FF_PROFILE_H264_MAIN,                 "Main"                  },
-    { FF_PROFILE_H264_EXTENDED,             "Extended"              },
-    { FF_PROFILE_H264_HIGH,                 "High"                  },
-    { FF_PROFILE_H264_HIGH_10,              "High 10"               },
-    { FF_PROFILE_H264_HIGH_10_INTRA,        "High 10 Intra"         },
-    { FF_PROFILE_H264_HIGH_422,             "High 4:2:2"            },
-    { FF_PROFILE_H264_HIGH_422_INTRA,       "High 4:2:2 Intra"      },
-    { FF_PROFILE_H264_HIGH_444,             "High 4:4:4"            },
-    { FF_PROFILE_H264_HIGH_444_PREDICTIVE,  "High 4:4:4 Predictive" },
-    { FF_PROFILE_H264_HIGH_444_INTRA,       "High 4:4:4 Intra"      },
-    { FF_PROFILE_H264_CAVLC_444,            "CAVLC 4:4:4"           },
-    { FF_PROFILE_UNKNOWN },
-};
-
 AVCodec ff_h264_decoder = {
     .name                  = "h264",
     .long_name             = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
@@ -1995,7 +1979,7 @@ AVCodec ff_h264_decoder = {
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
-    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles              = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .priv_class            = &h264_class,
 };
 

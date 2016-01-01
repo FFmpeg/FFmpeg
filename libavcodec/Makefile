@@ -33,6 +33,7 @@ OBJS = allcodecs.o                                                      \
        mathtables.o                                                     \
        options.o                                                        \
        parser.o                                                         \
+       profiles.o                                                       \
        qsv_api.o                                                        \
        raw.o                                                            \
        resample.o                                                       \

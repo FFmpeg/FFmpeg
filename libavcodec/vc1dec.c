@@ -34,6 +34,7 @@
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
+#include "profiles.h"
 #include "vc1.h"
 #include "vc1data.h"
 #include "vdpau_compat.h"
@@ -1103,14 +1104,6 @@ err:
 }
 
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_VC1_SIMPLE,   "Simple"   },
-    { FF_PROFILE_VC1_MAIN,     "Main"     },
-    { FF_PROFILE_VC1_COMPLEX,  "Complex"  },
-    { FF_PROFILE_VC1_ADVANCED, "Advanced" },
-    { FF_PROFILE_UNKNOWN },
-};
-
 static const enum AVPixelFormat vc1_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_VC1_DXVA2_HWACCEL
     AV_PIX_FMT_DXVA2_VLD,
@@ -1140,7 +1133,7 @@ AVCodec ff_vc1_decoder = {
     .flush          = ff_mpeg_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles)
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
 };
 
 #if CONFIG_WMV3_DECODER
@@ -1156,7 +1149,7 @@ AVCodec ff_wmv3_decoder = {
     .flush          = ff_mpeg_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles)
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
 };
 #endif
 
