@@ -2004,7 +2004,7 @@ AVCodec ff_h264_vdpau_decoder = {
     .flush          = flush_dpb,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
                                                      AV_PIX_FMT_NONE},
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .priv_class     = &h264_vdpau_class,
 };
 #endif
