@@ -64,7 +64,7 @@ static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 static int mp3_read_probe(AVProbeData *p)
 {
     int max_frames, first_frames = 0;
-    int fsize, frames, ret;
+    int frames, ret;
     uint32_t header;
     const uint8_t *buf, *buf0, *buf2, *end;
 
