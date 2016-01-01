@@ -41,7 +41,7 @@
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
-enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, NB_CLMODES };
+enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
@@ -96,6 +96,7 @@ static const AVOption showspectrum_options[] = {
         { "moreland",  "moreland based coloring",         0, AV_OPT_TYPE_CONST, {.i64=MORELAND},  0, 0, FLAGS, "color" },
         { "nebulae",   "nebulae based coloring",          0, AV_OPT_TYPE_CONST, {.i64=NEBULAE},   0, 0, FLAGS, "color" },
         { "fire",      "fire based coloring",             0, AV_OPT_TYPE_CONST, {.i64=FIRE},      0, 0, FLAGS, "color" },
+        { "fiery",     "fiery based coloring",            0, AV_OPT_TYPE_CONST, {.i64=FIERY},     0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=SQRT}, LINEAR, NB_SCALES-1, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
         { "cbrt", "cubic root",  0, AV_OPT_TYPE_CONST, {.i64=CBRT},   0, 0, FLAGS, "scale" },
@@ -174,6 +175,15 @@ static const struct ColorTable {
     { 0.67,            95/256.,      (91-128)/256.,      (166-128)/256. },
     { 0.77,           126/256.,      (74-128)/256.,      (172-128)/256. },
     { 0.87,           164/256.,      (73-128)/256.,      (162-128)/256. },
+    {    1,                  1,                  0,                   0 }},
+    [FIERY] = {
+    {    0,                  0,                  0,                   0 },
+    { 0.23,            36/256.,     (116-128)/256.,      (163-128)/256. },
+    { 0.45,            52/256.,     (102-128)/256.,      (200-128)/256. },
+    { 0.57,           116/256.,      (84-128)/256.,      (196-128)/256. },
+    { 0.67,           157/256.,      (67-128)/256.,      (181-128)/256. },
+    { 0.77,           193/256.,      (40-128)/256.,      (155-128)/256. },
+    { 0.87,           221/256.,     (101-128)/256.,      (134-128)/256. },
     {    1,                  1,                  0,                   0 }},
 };
 
@@ -456,6 +466,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             case MORELAND:
             case NEBULAE:
             case FIRE:
+            case FIERY:
             case INTENSITY:
                 uf = yf;
                 vf = yf;
@@ -753,6 +764,7 @@ static const AVOption showspectrumpic_options[] = {
         { "moreland",  "moreland based coloring",         0, AV_OPT_TYPE_CONST, {.i64=MORELAND},  0, 0, FLAGS, "color" },
         { "nebulae",   "nebulae based coloring",          0, AV_OPT_TYPE_CONST, {.i64=NEBULAE},   0, 0, FLAGS, "color" },
         { "fire",      "fire based coloring",             0, AV_OPT_TYPE_CONST, {.i64=FIRE},      0, 0, FLAGS, "color" },
+        { "fiery",     "fiery based coloring",            0, AV_OPT_TYPE_CONST, {.i64=FIERY},     0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=LOG}, 0, NB_SCALES-1, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
         { "cbrt", "cubic root",  0, AV_OPT_TYPE_CONST, {.i64=CBRT},   0, 0, FLAGS, "scale" },

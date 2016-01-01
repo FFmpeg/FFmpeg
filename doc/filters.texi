@@ -14623,6 +14623,8 @@ each channel is displayed using the moreland color scheme
 each channel is displayed using the nebulae color scheme
 @item fire
 each channel is displayed using the fire color scheme
+@item fiery
+each channel is displayed using the fiery color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -14746,6 +14748,8 @@ each channel is displayed using the moreland color scheme
 each channel is displayed using the nebulae color scheme
 @item fire
 each channel is displayed using the fire color scheme
+@item fiery
+each channel is displayed using the fiery color scheme
 @end table
 Default value is @samp{intensity}.
 
