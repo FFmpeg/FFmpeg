@@ -2465,7 +2465,7 @@ Specifically this means either
 @itemize @minus
 @item
 @var{CQP} - constant quantizer scale, when the @option{qscale} codec flag is
-also set (the @option{-qscale} avconv option).
+also set (the @option{-qscale} ffmpeg option).
 
 @item
 @var{LA_ICQ} - intelligent constant quality with lookahead, when the
