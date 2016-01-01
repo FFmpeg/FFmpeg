@@ -2669,7 +2669,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *codec_type;
     const char *codec_name;
     const char *profile = NULL;
-    const AVCodec *p;
     int64_t bitrate;
     int new_line = 0;
     AVRational display_aspect_ratio;
@@ -2679,15 +2678,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         return;
     codec_type = av_get_media_type_string(enc->codec_type);
     codec_name = avcodec_get_name(enc->codec_id);
-    if (enc->profile != FF_PROFILE_UNKNOWN) {
-        if (enc->codec)
-            p = enc->codec;
-        else
-            p = encode ? avcodec_find_encoder(enc->codec_id) :
-                        avcodec_find_decoder(enc->codec_id);
-        if (p)
-            profile = av_get_profile_name(p, enc->profile);
-    }
+    profile = avcodec_profile_name(enc->codec_id, enc->profile);
 
     snprintf(buf, buf_size, "%s: %s", codec_type ? codec_type : "unknown",
              codec_name);
