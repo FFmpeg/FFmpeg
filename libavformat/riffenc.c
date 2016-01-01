@@ -242,7 +242,12 @@ void ff_parse_specific_params(AVStream *st, int *au_rate,
     int gcd;
     int audio_frame_size;
 
+    /* We use the known constant frame size for the codec if known, otherwise
+     * fall back on using AVCodecContext.frame_size, which is not as reliable
+     * for indicating packet duration. */
     audio_frame_size = av_get_audio_frame_duration(codec, 0);
+    if (!audio_frame_size)
+        audio_frame_size = codec->frame_size;
 
     *au_ssize = codec->block_align;
     if (audio_frame_size && codec->sample_rate) {
