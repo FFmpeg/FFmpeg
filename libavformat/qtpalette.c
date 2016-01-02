@@ -51,7 +51,9 @@ int ff_get_qtpalette(int codec_id, AVIOContext *pb, uint32_t *palette)
         int color_count, color_start, color_end;
         uint32_t a, r, g, b;
 
-        if (greyscale) {
+        /* Ignore the greyscale bit for 1-bit video and sample
+         * descriptions containing a color table. */
+        if (greyscale && bit_depth > 1 && color_table_id) {
             int color_index, color_dec;
             /* compute the greyscale palette */
             color_count = 1 << bit_depth;
