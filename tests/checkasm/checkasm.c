@@ -65,6 +65,9 @@ static const struct {
     #if CONFIG_BSWAPDSP
         { "bswapdsp", checkasm_check_bswapdsp },
     #endif
+    #if CONFIG_DCA_DECODER
+        { "dcadsp", checkasm_check_dcadsp },
+    #endif
     #if CONFIG_FLACDSP
         { "flacdsp", checkasm_check_flacdsp },
     #endif
