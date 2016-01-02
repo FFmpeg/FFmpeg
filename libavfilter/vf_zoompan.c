@@ -230,9 +230,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->frame_count++;
 
         ret = ff_filter_frame(outlink, out);
+        out = NULL;
         if (ret < 0)
             break;
-        out = NULL;
 
         sws_freeContext(s->sws);
         s->sws = NULL;
