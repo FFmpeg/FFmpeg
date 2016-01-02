@@ -816,13 +816,6 @@ static void exponents_from_scale_factors(MPADecodeContext *s, GranuleDef *g,
     }
 }
 
-/* handle n = 0 too */
-static inline int get_bitsz(GetBitContext *s, int n)
-{
-    return n ? get_bits(s, n) : 0;
-}
-
-
 static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos,
                           int *end_pos2)
 {
