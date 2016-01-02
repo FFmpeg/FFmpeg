@@ -1,5 +1,6 @@
 OBJS-$(CONFIG_DCA_DECODER)              += aarch64/dcadsp_init.o
 OBJS-$(CONFIG_FFT)                      += aarch64/fft_init_aarch64.o
+OBJS-$(CONFIG_FMTCONVERT)               += aarch64/fmtconvert_init.o
 OBJS-$(CONFIG_H264CHROMA)               += aarch64/h264chroma_init_aarch64.o
 OBJS-$(CONFIG_H264DSP)                  += aarch64/h264dsp_init_aarch64.o
 OBJS-$(CONFIG_H264PRED)                 += aarch64/h264pred_init.o
@@ -19,6 +20,7 @@ ARMV8-OBJS-$(CONFIG_VIDEODSP)           += aarch64/videodsp.o
 NEON-OBJS-$(CONFIG_DCA_DECODER)         += aarch64/dcadsp_neon.o               \
                                            aarch64/synth_filter_neon.o
 NEON-OBJS-$(CONFIG_FFT)                 += aarch64/fft_neon.o
+NEON-OBJS-$(CONFIG_FMTCONVERT)          += aarch64/fmtconvert_neon.o
 NEON-OBJS-$(CONFIG_H264CHROMA)          += aarch64/h264cmc_neon.o
 NEON-OBJS-$(CONFIG_H264DSP)             += aarch64/h264dsp_neon.o              \
                                            aarch64/h264idct_neon.o
