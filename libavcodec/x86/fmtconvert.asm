@@ -38,11 +38,8 @@ cglobal int32_to_float_fmul_scalar, 4, 4, %1, dst, src, mul, len
 %elif ARCH_X86_32
     movss   m0, mulm
 %endif
-%if ARCH_X86_64
-    movsxd  lenq, lend
-%endif
     SPLATD  m0
-    shl     lenq, 2
+    shl     lend, 2
     add     srcq, lenq
     add     dstq, lenq
     neg     lenq
