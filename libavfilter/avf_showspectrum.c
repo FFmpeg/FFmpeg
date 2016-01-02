@@ -428,6 +428,61 @@ static void scale_magnitudes(ShowSpectrumContext *s, float scale)
     }
 }
 
+static void pick_color(ShowSpectrumContext *s,
+                       float yf, float uf, float vf,
+                       float a, float *out)
+{
+    if (s->color_mode > CHANNEL) {
+        const int cm = s->color_mode;
+        float y, u, v;
+        int i;
+
+        for (i = 1; i < FF_ARRAY_ELEMS(color_table[cm]) - 1; i++)
+            if (color_table[cm][i].a >= a)
+                break;
+        // i now is the first item >= the color
+        // now we know to interpolate between item i - 1 and i
+        if (a <= color_table[cm][i - 1].a) {
+            y = color_table[cm][i - 1].y;
+            u = color_table[cm][i - 1].u;
+            v = color_table[cm][i - 1].v;
+        } else if (a >= color_table[cm][i].a) {
+            y = color_table[cm][i].y;
+            u = color_table[cm][i].u;
+            v = color_table[cm][i].v;
+        } else {
+            float start = color_table[cm][i - 1].a;
+            float end = color_table[cm][i].a;
+            float lerpfrac = (a - start) / (end - start);
+            y = color_table[cm][i - 1].y * (1.0f - lerpfrac)
+              + color_table[cm][i].y * lerpfrac;
+            u = color_table[cm][i - 1].u * (1.0f - lerpfrac)
+              + color_table[cm][i].u * lerpfrac;
+            v = color_table[cm][i - 1].v * (1.0f - lerpfrac)
+              + color_table[cm][i].v * lerpfrac;
+        }
+
+        out[0] += y * yf;
+        out[1] += u * uf;
+        out[2] += v * vf;
+    } else {
+        out[0] += a * yf;
+        out[1] += a * uf;
+        out[2] += a * vf;
+    }
+}
+
+static void clear_combine_buffer(ShowSpectrumContext *s, int size)
+{
+    int y;
+
+    for (y = 0; y < size; y++) {
+        s->combine_buffer[3 * y    ] = 0;
+        s->combine_buffer[3 * y + 1] = 127.5;
+        s->combine_buffer[3 * y + 2] = 127.5;
+    }
+}
+
 static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
 {
     int ret;
@@ -442,19 +497,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
 
     /* fill a new spectrum column */
     /* initialize buffer for combining to black */
-    if (s->orientation == VERTICAL) {
-        for (y = 0; y < outlink->h; y++) {
-            s->combine_buffer[3 * y    ] = 0;
-            s->combine_buffer[3 * y + 1] = 127.5;
-            s->combine_buffer[3 * y + 2] = 127.5;
-        }
-    } else {
-        for (y = 0; y < outlink->w; y++) {
-            s->combine_buffer[3 * y    ] = 0;
-            s->combine_buffer[3 * y + 1] = 127.5;
-            s->combine_buffer[3 * y + 2] = 127.5;
-        }
-    }
+    clear_combine_buffer(s, s->orientation == VERTICAL ? outlink->h : outlink->w);
 
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         float *magnitudes = s->magnitudes[ch];
@@ -532,44 +575,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 av_assert0(0);
             }
 
-            if (s->color_mode > CHANNEL) {
-                const int cm = s->color_mode;
-                float y, u, v;
-                int i;
-
-                for (i = 1; i < FF_ARRAY_ELEMS(color_table[cm]) - 1; i++)
-                    if (color_table[cm][i].a >= a)
-                        break;
-                // i now is the first item >= the color
-                // now we know to interpolate between item i - 1 and i
-                if (a <= color_table[cm][i - 1].a) {
-                    y = color_table[cm][i - 1].y;
-                    u = color_table[cm][i - 1].u;
-                    v = color_table[cm][i - 1].v;
-                } else if (a >= color_table[cm][i].a) {
-                    y = color_table[cm][i].y;
-                    u = color_table[cm][i].u;
-                    v = color_table[cm][i].v;
-                } else {
-                    float start = color_table[cm][i - 1].a;
-                    float end = color_table[cm][i].a;
-                    float lerpfrac = (a - start) / (end - start);
-                    y = color_table[cm][i - 1].y * (1.0f - lerpfrac)
-                      + color_table[cm][i].y * lerpfrac;
-                    u = color_table[cm][i - 1].u * (1.0f - lerpfrac)
-                      + color_table[cm][i].u * lerpfrac;
-                    v = color_table[cm][i - 1].v * (1.0f - lerpfrac)
-                      + color_table[cm][i].v * lerpfrac;
-                }
-
-                out[0] += y * yf;
-                out[1] += u * uf;
-                out[2] += v * vf;
-            } else {
-                out[0] += a * yf;
-                out[1] += a * uf;
-                out[2] += a * vf;
-            }
+            pick_color(s, yf, uf, vf, a, out);
         }
     }
 
