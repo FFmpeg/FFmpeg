@@ -1344,17 +1344,17 @@ int ff_dca_xbr_parse_frame(DCAContext *s)
             for(i = 0; i < n_xbr_ch[chset]; i++) {
                 for(j = 0; j < active_bands[chset][i]; j++) {
                     const int xbr_abits = abits_high[i][j];
-                    const float quant_step_size = ff_dca_lossless_quant_d[xbr_abits];
+                    const uint32_t quant_step_size = ff_dca_lossless_quant[xbr_abits];
                     const int sfi = xbr_tmode && s->dca_chan[i].transition_mode[j] && subsubframe >= s->dca_chan[i].transition_mode[j];
-                    const float rscale = quant_step_size * scale_table_high[i][j][sfi];
-                    float *subband_samples = s->dca_chan[chan_base+i].subband_samples[k][j];
-                    int block[8];
+                    const uint32_t rscale = scale_table_high[i][j][sfi];
+                    int32_t *subband_samples = s->dca_chan[chan_base+i].subband_samples[k][j];
+                    int32_t block[SAMPLES_PER_SUBBAND];
 
                     if(xbr_abits <= 0)
                         continue;
 
                     if(xbr_abits > 7) {
-                        get_array(&s->gb, block, 8, xbr_abits - 3);
+                        get_array(&s->gb, block, SAMPLES_PER_SUBBAND, xbr_abits - 3);
                     } else {
                         int block_code1, block_code2, size, levels, err;
 
@@ -1373,8 +1373,9 @@ int ff_dca_xbr_parse_frame(DCAContext *s)
                     }
 
                     /* scale & sum into subband */
-                    for(l = 0; l < 8; l++)
-                        subband_samples[l] += (float)block[l] * rscale;
+                    s->dcadsp.dequantize(block, quant_step_size, rscale);
+                    for(l = 0; l < SAMPLES_PER_SUBBAND; l++)
+                        subband_samples[l] += block[l];
                 }
             }
 
