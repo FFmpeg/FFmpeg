@@ -113,8 +113,6 @@ enum DCAXxchSpeakerMask {
 
 #define DCA_NSYNCAUX        0x9A1105A0
 
-#define SAMPLES_PER_SUBBAND 8 // number of samples per subband per subsubframe
-
 /** Bit allocation */
 typedef struct BitAlloc {
     int offset;                 ///< code values offset
@@ -623,7 +621,7 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
 }
 
 static void qmf_32_subbands(DCAContext *s, int chans,
-                            float samples_in[32][SAMPLES_PER_SUBBAND], float *samples_out,
+                            float samples_in[DCA_SUBBANDS][SAMPLES_PER_SUBBAND], float *samples_out,
                             float scale)
 {
     const float *prCoeff;
@@ -671,7 +669,8 @@ static QMF64_table *qmf64_precompute(void)
 /* FIXME: Totally unoptimized. Based on the reference code and
  * http://multimedia.cx/mirror/dca-transform.pdf, with guessed tweaks
  * for doubling the size. */
-static void qmf_64_subbands(DCAContext *s, int chans, float samples_in[64][SAMPLES_PER_SUBBAND],
+static void qmf_64_subbands(DCAContext *s, int chans,
+                            float samples_in[DCA_SUBBANDS_X96K][SAMPLES_PER_SUBBAND],
                             float *samples_out, float scale)
 {
     float raXin[64];
@@ -680,7 +679,7 @@ static void qmf_64_subbands(DCAContext *s, int chans, float samples_in[64][SAMPL
     float *raZ = s->dca_chan[chans].subband_fir_noidea;
     unsigned i, j, k, subindex;
 
-    for (i = s->audio_header.subband_activity[chans]; i < 64; i++)
+    for (i = s->audio_header.subband_activity[chans]; i < DCA_SUBBANDS_X96K; i++)
         raXin[i] = 0.0;
     for (subindex = 0; subindex < SAMPLES_PER_SUBBAND; subindex++) {
         for (i = 0; i < s->audio_header.subband_activity[chans]; i++)
@@ -701,14 +700,14 @@ static void qmf_64_subbands(DCAContext *s, int chans, float samples_in[64][SAMPL
             raX[63 - k] = s->qmf64_table->rsin[k] * (A[k] - B[k]);
         }
 
-        for (i = 0; i < 64; i++) {
+        for (i = 0; i < DCA_SUBBANDS_X96K; i++) {
             float out = raZ[i];
             for (j = 0; j < 1024; j += 128)
                 out += ff_dca_fir_64bands[j + i] * (raX[j + i] - raX[j + 63 - i]);
             *samples_out++ = out * scale;
         }
 
-        for (i = 0; i < 64; i++) {
+        for (i = 0; i < DCA_SUBBANDS_X96K; i++) {
             float hist = 0.0;
             for (j = 0; j < 1024; j += 128)
                 hist += ff_dca_fir_64bands[64 + j + i] * (-raX[i + j] - raX[j + 63 - i]);
@@ -1017,7 +1016,7 @@ static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
     int k;
 
     if (upsample) {
-        LOCAL_ALIGNED(32, float, samples, [64], [SAMPLES_PER_SUBBAND]);
+        LOCAL_ALIGNED(32, float, samples, [DCA_SUBBANDS_X96K], [SAMPLES_PER_SUBBAND]);
 
         if (!s->qmf64_table) {
             s->qmf64_table = qmf64_precompute();
@@ -1031,7 +1030,7 @@ static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
                      s->dca_chan[k].subband_samples[block_index];
 
             s->fmt_conv.int32_to_float(samples[0], subband_samples[0],
-                                       64 * SAMPLES_PER_SUBBAND);
+                                       DCA_SUBBANDS_X96K * SAMPLES_PER_SUBBAND);
 
             if (s->channel_order_tab[k] >= 0)
                 qmf_64_subbands(s, k, samples,
@@ -1041,14 +1040,14 @@ static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
         }
     } else {
         /* 32 subbands QMF */
-        LOCAL_ALIGNED(32, float, samples, [32], [SAMPLES_PER_SUBBAND]);
+        LOCAL_ALIGNED(32, float, samples, [DCA_SUBBANDS], [SAMPLES_PER_SUBBAND]);
 
         for (k = 0; k < s->audio_header.prim_channels; k++) {
             int32_t (*subband_samples)[SAMPLES_PER_SUBBAND] =
                      s->dca_chan[k].subband_samples[block_index];
 
             s->fmt_conv.int32_to_float(samples[0], subband_samples[0],
-                                       32 * SAMPLES_PER_SUBBAND);
+                                       DCA_SUBBANDS * SAMPLES_PER_SUBBAND);
 
             if (s->channel_order_tab[k] >= 0)
                 qmf_32_subbands(s, k, samples,
