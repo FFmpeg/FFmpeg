@@ -40,6 +40,7 @@ typedef struct DCADSPContext {
 } DCADSPContext;
 
 void ff_dcadsp_init(DCADSPContext *s);
+void ff_dcadsp_init_aarch64(DCADSPContext *s);
 void ff_dcadsp_init_arm(DCADSPContext *s);
 void ff_dcadsp_init_x86(DCADSPContext *s);
 
