@@ -32,6 +32,14 @@ static void int32_to_float_fmul_scalar_c(float *dst, const int32_t *src,
         dst[i] = src[i] * mul;
 }
 
+static void int32_to_float_c(float *dst, const int32_t *src, intptr_t len)
+{
+    int i;
+
+    for (i = 0; i < len; i++)
+        dst[i] = (float)src[i];
+}
+
 static void int32_to_float_fmul_array8_c(FmtConvertContext *c, float *dst,
                                          const int32_t *src, const float *mul,
                                          int len)
@@ -43,6 +51,7 @@ static void int32_to_float_fmul_array8_c(FmtConvertContext *c, float *dst,
 
 av_cold void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx)
 {
+    c->int32_to_float             = int32_to_float_c;
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
     c->int32_to_float_fmul_array8 = int32_to_float_fmul_array8_c;
 

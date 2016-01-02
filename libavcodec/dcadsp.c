@@ -25,6 +25,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "dcadsp.h"
+#include "dcamath.h"
 
 static void decode_hf_c(float dst[DCA_SUBBANDS][8],
                         const int32_t vq_num[DCA_SUBBANDS],
@@ -41,6 +42,21 @@ static void decode_hf_c(float dst[DCA_SUBBANDS][8],
         float fscale = scale[l][0] * (1 / 16.0);
         for (i = 0; i < 8; i++)
             dst[l][i] = ptr[i] * fscale;
+    }
+}
+
+static void decode_hf_int_c(int32_t dst[DCA_SUBBANDS][8],
+                            const int32_t vq_num[DCA_SUBBANDS],
+                            const int8_t hf_vq[1024][32], intptr_t vq_offset,
+                            int32_t scale[DCA_SUBBANDS][2],
+                            intptr_t start, intptr_t end)
+{
+    int i, j;
+
+    for (j = start; j < end; j++) {
+        const int8_t *ptr = &hf_vq[vq_num[j]][vq_offset];
+        for (i = 0; i < 8; i++)
+            dst[j][i] = ptr[i] * scale[j][0] + 8 >> 4;
     }
 }
 
@@ -93,6 +109,22 @@ static void dca_qmf_32_subbands(float samples_in[32][8], int sb_act,
     }
 }
 
+static void dequantize_c(int32_t *samples, uint32_t step_size, uint32_t scale)
+{
+    int64_t step = (int64_t)step_size * scale;
+    int shift, i;
+    int32_t step_scale;
+
+    if (step > (1 << 23))
+        shift = av_log2(step >> 23) + 1;
+    else
+        shift = 0;
+    step_scale = (int32_t)(step >> shift);
+
+    for (i = 0; i < 8; i++)
+        samples[i] = dca_clip23(dca_norm((int64_t)samples[i] * step_scale, 22 - shift));
+}
+
 static void dca_lfe_fir0_c(float *out, const float *in, const float *coefs)
 {
     dca_lfe_fir(out, in, coefs, 32);
@@ -109,6 +141,8 @@ av_cold void ff_dcadsp_init(DCADSPContext *s)
     s->lfe_fir[1]      = dca_lfe_fir1_c;
     s->qmf_32_subbands = dca_qmf_32_subbands;
     s->decode_hf       = decode_hf_c;
+    s->decode_hf_int   = decode_hf_int_c;
+    s->dequantize      = dequantize_c;
 
     if (ARCH_AARCH64)
         ff_dcadsp_init_aarch64(s);
