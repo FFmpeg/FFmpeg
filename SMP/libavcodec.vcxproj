@@ -163,6 +163,7 @@
     <ClCompile Include="..\libavcodec\mathtables.c" />
     <ClCompile Include="..\libavcodec\options.c" />
     <ClCompile Include="..\libavcodec\parser.c" />
+    <ClCompile Include="..\libavcodec\profiles.c" />
     <ClCompile Include="..\libavcodec\qsv_api.c" />
     <ClCompile Include="..\libavcodec\raw.c" />
     <ClCompile Include="..\libavcodec\resample.c" />

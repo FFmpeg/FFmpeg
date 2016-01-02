@@ -309,6 +309,9 @@
     <ClCompile Include="..\libavcodec\parser.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\profiles.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\qsv_api.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

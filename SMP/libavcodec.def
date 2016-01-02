@@ -154,6 +154,7 @@ EXPORTS
     avcodec_license
     avcodec_open2
     avcodec_pix_fmt_to_codec_tag
+    avcodec_profile_name
     avcodec_register
     avcodec_register_all
     avcodec_set_dimensions
