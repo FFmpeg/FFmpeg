@@ -270,7 +270,8 @@ static int autorotate = 1;
 
 /* current context */
 static int is_full_screen;
-static PlayerState *player;
+static PlayerState player_state;
+static PlayerState *player = &player_state;
 static int64_t audio_callback_time;
 
 static AVPacket flush_pkt;
@@ -1229,7 +1230,6 @@ static void player_close(PlayerState *is)
     if (is->img_convert_ctx)
         sws_freeContext(is->img_convert_ctx);
 #endif
-    av_free(is);
 }
 
 static void do_exit(void)
@@ -2399,8 +2399,6 @@ static int stream_setup(PlayerState *is)
     return 0;
 
 fail:
-    stream_close(is);
-
     return ret;
 }
 
@@ -2541,21 +2539,18 @@ fail:
     return 0;
 }
 
-static PlayerState *stream_open(const char *filename, AVInputFormat *iformat)
+static int stream_open(PlayerState *is,
+                       const char *filename, AVInputFormat *iformat)
 {
-    PlayerState *is;
+    int ret;
 
-    is = av_mallocz(sizeof(PlayerState));
-    if (!is)
-        return NULL;
     av_strlcpy(is->filename, filename, sizeof(is->filename));
     is->iformat = iformat;
     is->ytop    = 0;
     is->xleft   = 0;
 
-    if (stream_setup(is) < 0) {
-        av_free(is);
-        return NULL;
+    if ((ret = stream_setup(is)) < 0) {
+        return ret;
     }
 
     /* start video display */
@@ -2567,12 +2562,12 @@ static PlayerState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->av_sync_type = av_sync_type;
     is->refresh_tid  = SDL_CreateThread(refresh_thread, is);
+    if (!is->refresh_tid)
+        return -1;
     is->parse_tid    = SDL_CreateThread(decode_thread, is);
-    if (!is->parse_tid) {
-        av_free(is);
-        return NULL;
-    }
-    return is;
+    if (!is->parse_tid)
+        return -1;
+    return 0;
 }
 
 static void stream_cycle_channel(PlayerState *is, int codec_type)
@@ -3057,7 +3052,11 @@ int main(int argc, char **argv)
     av_init_packet(&flush_pkt);
     flush_pkt.data = (uint8_t *)&flush_pkt;
 
-    player = stream_open(input_filename, file_iformat);
+    if (stream_open(player, input_filename, file_iformat) < 0) {
+        fprintf(stderr, "Could not setup the player\n");
+        stream_close(player);
+        exit(1);
+    }
 
     event_loop();
 
