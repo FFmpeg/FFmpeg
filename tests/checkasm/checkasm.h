@@ -34,6 +34,7 @@ void checkasm_check_alacdsp(void);
 void checkasm_check_bswapdsp(void);
 void checkasm_check_dcadsp(void);
 void checkasm_check_flacdsp(void);
+void checkasm_check_fmtconvert(void);
 void checkasm_check_h264pred(void);
 void checkasm_check_h264qpel(void);
 void checkasm_check_jpeg2000dsp(void);
