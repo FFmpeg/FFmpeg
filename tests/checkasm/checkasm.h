@@ -38,6 +38,7 @@ void checkasm_check_h264pred(void);
 void checkasm_check_h264qpel(void);
 void checkasm_check_jpeg2000dsp(void);
 void checkasm_check_pixblockdsp(void);
+void checkasm_check_synth_filter(void);
 void checkasm_check_v210enc(void);
 void checkasm_check_vp9dsp(void);
 
