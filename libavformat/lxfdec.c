@@ -130,7 +130,7 @@ static int get_packet_header(AVFormatContext *s)
     version     = bytestream_get_le32(&p);
     header_size = bytestream_get_le32(&p);
     if (version > 1)
-        avpriv_request_sample(s, "Unknown format version %"PRIu32"\n", version);
+        avpriv_request_sample(s, "Format version %"PRIu32, version);
 
     if (header_size < (version ? 72 : 60) ||
         header_size > LXF_MAX_PACKET_HEADER_SIZE ||
