@@ -124,7 +124,7 @@ enum {
     AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
 };
 
-typedef struct VideoState {
+typedef struct PlayerState {
     SDL_Thread *parse_tid;
     SDL_Thread *video_tid;
     SDL_Thread *refresh_tid;
@@ -222,7 +222,7 @@ typedef struct VideoState {
     float skip_frames;
     float skip_frames_index;
     int refresh;
-} VideoState;
+} PlayerState;
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
@@ -270,7 +270,7 @@ static int autorotate = 1;
 
 /* current context */
 static int is_full_screen;
-static VideoState *cur_stream;
+static PlayerState *cur_stream;
 static int64_t audio_callback_time;
 
 static AVPacket flush_pkt;
@@ -638,7 +638,7 @@ static void free_subpicture(SubPicture *sp)
     avsubtitle_free(&sp->sub);
 }
 
-static void video_image_display(VideoState *is)
+static void video_image_display(PlayerState *is)
 {
     VideoPicture *vp;
     SubPicture *sp;
@@ -708,7 +708,7 @@ static void video_image_display(VideoState *is)
 
 /* get the current audio output buffer size, in samples. With SDL, we
    cannot have a precise information */
-static int audio_write_get_buf_size(VideoState *is)
+static int audio_write_get_buf_size(PlayerState *is)
 {
     return is->audio_buf_size - is->audio_buf_index;
 }
@@ -722,7 +722,7 @@ static inline int compute_mod(int a, int b)
         return a + b;
 }
 
-static void video_audio_display(VideoState *s)
+static void video_audio_display(PlayerState *s)
 {
     int i, i_start, x, y1, y, ys, delay, n, nb_display_channels;
     int ch, channels, h, h2, bgcolor, fgcolor;
@@ -862,7 +862,7 @@ static void video_audio_display(VideoState *s)
     }
 }
 
-static int video_open(VideoState *is)
+static int video_open(PlayerState *is)
 {
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
@@ -914,7 +914,7 @@ static int video_open(VideoState *is)
 }
 
 /* display the current picture, if any */
-static void video_display(VideoState *is)
+static void video_display(PlayerState *is)
 {
     if (!screen)
         video_open(cur_stream);
@@ -926,7 +926,7 @@ static void video_display(VideoState *is)
 
 static int refresh_thread(void *opaque)
 {
-    VideoState *is= opaque;
+    PlayerState *is= opaque;
     while (!is->abort_request) {
         SDL_Event event;
         event.type = FF_REFRESH_EVENT;
@@ -941,7 +941,7 @@ static int refresh_thread(void *opaque)
 }
 
 /* get the current audio clock value */
-static double get_audio_clock(VideoState *is)
+static double get_audio_clock(PlayerState *is)
 {
     double pts;
     int hw_buf_size, bytes_per_sec;
@@ -958,7 +958,7 @@ static double get_audio_clock(VideoState *is)
 }
 
 /* get the current video clock value */
-static double get_video_clock(VideoState *is)
+static double get_video_clock(PlayerState *is)
 {
     if (is->paused) {
         return is->video_current_pts;
@@ -968,7 +968,7 @@ static double get_video_clock(VideoState *is)
 }
 
 /* get the current external clock value */
-static double get_external_clock(VideoState *is)
+static double get_external_clock(PlayerState *is)
 {
     int64_t ti;
     ti = av_gettime_relative();
@@ -976,7 +976,7 @@ static double get_external_clock(VideoState *is)
 }
 
 /* get the current master clock value */
-static double get_master_clock(VideoState *is)
+static double get_master_clock(PlayerState *is)
 {
     double val;
 
@@ -997,7 +997,7 @@ static double get_master_clock(VideoState *is)
 }
 
 /* seek in the stream */
-static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_bytes)
+static void stream_seek(PlayerState *is, int64_t pos, int64_t rel, int seek_by_bytes)
 {
     if (!is->seek_req) {
         is->seek_pos = pos;
@@ -1010,7 +1010,7 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
 }
 
 /* pause or resume the video */
-static void stream_pause(VideoState *is)
+static void stream_pause(PlayerState *is)
 {
     if (is->paused) {
         is->frame_timer += av_gettime_relative() / 1000000.0 + is->video_current_pts_drift - is->video_current_pts;
@@ -1022,7 +1022,7 @@ static void stream_pause(VideoState *is)
     is->paused = !is->paused;
 }
 
-static double compute_target_time(double frame_current_pts, VideoState *is)
+static double compute_target_time(double frame_current_pts, PlayerState *is)
 {
     double delay, sync_threshold, diff = 0;
 
@@ -1065,7 +1065,7 @@ static double compute_target_time(double frame_current_pts, VideoState *is)
 /* called to display each frame */
 static void video_refresh_timer(void *opaque)
 {
-    VideoState *is = opaque;
+    PlayerState *is = opaque;
     VideoPicture *vp;
 
     SubPicture *sp, *sp2;
@@ -1204,7 +1204,7 @@ retry:
     }
 }
 
-static void player_close(VideoState *is)
+static void player_close(PlayerState *is)
 {
     VideoPicture *vp;
     int i;
@@ -1251,7 +1251,7 @@ static void do_exit(void)
    potential locking problems */
 static void alloc_picture(void *opaque)
 {
-    VideoState *is = opaque;
+    PlayerState *is = opaque;
     VideoPicture *vp;
 
     vp = &is->pictq[is->pictq_windex];
@@ -1289,7 +1289,7 @@ static void alloc_picture(void *opaque)
 
 /* The 'pts' parameter is the dts of the packet / pts of the frame and
  * guessed if not known. */
-static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
+static int queue_picture(PlayerState *is, AVFrame *src_frame, double pts, int64_t pos)
 {
     VideoPicture *vp;
 #if !CONFIG_AVFILTER
@@ -1397,7 +1397,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
 /* Compute the exact PTS for the picture if it is omitted in the stream.
  * The 'pts1' parameter is the dts of the packet / pts of the frame. */
-static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
+static int output_picture2(PlayerState *is, AVFrame *src_frame, double pts1, int64_t pos)
 {
     double frame_delay, pts;
     int ret;
@@ -1422,7 +1422,7 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1, int6
     return ret;
 }
 
-static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
+static int get_video_frame(PlayerState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
 {
     int got_picture, i;
 
@@ -1481,7 +1481,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 }
 
 #if CONFIG_AVFILTER
-static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters)
+static int configure_video_filters(AVFilterGraph *graph, PlayerState *is, const char *vfilters)
 {
     char sws_flags_str[128];
     char buffersrc_args[256];
@@ -1581,7 +1581,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 static int video_thread(void *arg)
 {
     AVPacket pkt = { 0 };
-    VideoState *is = arg;
+    PlayerState *is = arg;
     AVFrame *frame = av_frame_alloc();
     int64_t pts_int;
     double pts;
@@ -1691,7 +1691,7 @@ static int video_thread(void *arg)
 
 static int subtitle_thread(void *arg)
 {
-    VideoState *is = arg;
+    PlayerState *is = arg;
     SubPicture *sp;
     AVPacket pkt1, *pkt = &pkt1;
     int got_subtitle;
@@ -1759,7 +1759,7 @@ static int subtitle_thread(void *arg)
 }
 
 /* copy samples for viewing in editor window */
-static void update_sample_display(VideoState *is, short *samples, int samples_size)
+static void update_sample_display(PlayerState *is, short *samples, int samples_size)
 {
     int size, len;
 
@@ -1779,7 +1779,7 @@ static void update_sample_display(VideoState *is, short *samples, int samples_si
 
 /* return the new audio buffer size (samples can be added or deleted
    to get better sync if video or external master clock) */
-static int synchronize_audio(VideoState *is, short *samples,
+static int synchronize_audio(PlayerState *is, short *samples,
                              int samples_size1, double pts)
 {
     int n, samples_size;
@@ -1853,7 +1853,7 @@ static int synchronize_audio(VideoState *is, short *samples,
 }
 
 /* decode one audio frame and returns its uncompressed size */
-static int audio_decode_frame(VideoState *is, double *pts_ptr)
+static int audio_decode_frame(PlayerState *is, double *pts_ptr)
 {
     AVPacket *pkt_temp = &is->audio_pkt_temp;
     AVPacket *pkt = &is->audio_pkt;
@@ -2012,7 +2012,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
 /* prepare a new audio buffer */
 static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 {
-    VideoState *is = opaque;
+    PlayerState *is = opaque;
     int audio_size, len1;
     double pts;
 
@@ -2045,7 +2045,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 }
 
 /* open a given stream. Return 0 if OK */
-static int stream_component_open(VideoState *is, int stream_index)
+static int stream_component_open(PlayerState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
     AVCodecContext *avctx;
@@ -2165,7 +2165,7 @@ fail:
     return ret;
 }
 
-static void stream_component_close(VideoState *is, int stream_index)
+static void stream_component_close(PlayerState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
     AVCodecContext *avctx;
@@ -2249,14 +2249,14 @@ static void stream_component_close(VideoState *is, int stream_index)
 
 /* since we have only one decoding thread, we can use a global
    variable instead of a thread local variable */
-static VideoState *global_video_state;
+static PlayerState *global_video_state;
 
 static int decode_interrupt_cb(void *ctx)
 {
     return global_video_state && global_video_state->abort_request;
 }
 
-static void stream_close(VideoState *is)
+static void stream_close(PlayerState *is)
 {
     /* disable interrupting */
     global_video_state = NULL;
@@ -2273,7 +2273,7 @@ static void stream_close(VideoState *is)
     }
 }
 
-static int stream_setup(VideoState *is)
+static int stream_setup(PlayerState *is)
 {
     AVFormatContext *ic = NULL;
     int err, i, ret;
@@ -2407,7 +2407,7 @@ fail:
 /* this thread gets the stream from the disk or the network */
 static int decode_thread(void *arg)
 {
-    VideoState *is        = arg;
+    PlayerState *is        = arg;
     AVPacket pkt1, *pkt   = &pkt1;
     AVFormatContext *ic   = is->ic;
     int pkt_in_play_range = 0;
@@ -2541,11 +2541,11 @@ fail:
     return 0;
 }
 
-static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
+static PlayerState *stream_open(const char *filename, AVInputFormat *iformat)
 {
-    VideoState *is;
+    PlayerState *is;
 
-    is = av_mallocz(sizeof(VideoState));
+    is = av_mallocz(sizeof(PlayerState));
     if (!is)
         return NULL;
     av_strlcpy(is->filename, filename, sizeof(is->filename));
@@ -2575,7 +2575,7 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     return is;
 }
 
-static void stream_cycle_channel(VideoState *is, int codec_type)
+static void stream_cycle_channel(PlayerState *is, int codec_type)
 {
     AVFormatContext *ic = is->ic;
     int start_index, stream_index;
@@ -2666,7 +2666,7 @@ static void toggle_audio_display(void)
     }
 }
 
-static void seek_chapter(VideoState *is, int incr)
+static void seek_chapter(PlayerState *is, int incr)
 {
     int64_t pos = get_master_clock(is) * AV_TIME_BASE;
     int i;
