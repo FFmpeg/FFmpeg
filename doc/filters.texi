@@ -14827,6 +14827,7 @@ It accepts the following values:
 @item nuttall
 @item lanczos
 @item gauss
+@item tukey
 @end table
 Default value is @code{hann}.
 
@@ -14837,6 +14838,9 @@ Set orientation of time vs frequency axis. Can be @code{vertical} or
 @item gain
 Set scale gain for calculating intensity color values.
 Default value is @code{1}.
+
+@item legend
+Draw time and frequency axes and legends. Default is enabled.
 @end table
 
 @subsection Examples
