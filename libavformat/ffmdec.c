@@ -36,7 +36,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
 {
     FFMContext *ffm = s->priv_data;
     int64_t pos, avail_size;
-    int len;
+    ptrdiff_t len;
 
     len = ffm->packet_end - ffm->packet_ptr;
     if (size <= len)
@@ -87,8 +87,9 @@ static int ffm_read_data(AVFormatContext *s,
 {
     FFMContext *ffm = s->priv_data;
     AVIOContext *pb = s->pb;
-    int len, fill_size, size1, frame_offset;
+    int fill_size, size1, frame_offset;
     uint32_t id;
+    ptrdiff_t len;
     int64_t last_pos = -1;
 
     size1 = size;
