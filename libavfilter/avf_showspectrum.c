@@ -194,12 +194,16 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->combine_buffer);
     av_rdft_end(s->rdft);
-    for (i = 0; i < s->nb_display_channels; i++)
-        av_freep(&s->rdft_data[i]);
+    if (s->rdft_data) {
+        for (i = 0; i < s->nb_display_channels; i++)
+            av_freep(&s->rdft_data[i]);
+    }
     av_freep(&s->rdft_data);
     av_freep(&s->window_func_lut);
-    for (i = 0; i < s->nb_display_channels; i++)
-        av_freep(&s->magnitudes[i]);
+    if (s->magnitudes) {
+        for (i = 0; i < s->nb_display_channels; i++)
+            av_freep(&s->magnitudes[i]);
+    }
     av_freep(&s->magnitudes);
     av_frame_free(&s->outpicref);
     av_audio_fifo_free(s->fifo);
