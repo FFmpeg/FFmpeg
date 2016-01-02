@@ -37,7 +37,6 @@ extern const uint32_t ff_dca_scale_factor_quant7[128];
 extern const uint32_t ff_dca_lossy_quant[32];
 
 extern const uint32_t ff_dca_lossless_quant[32];
-extern const float ff_dca_lossless_quant_d[32];
 
 extern const int8_t ff_dca_high_freq_vq[1024][32];
 
