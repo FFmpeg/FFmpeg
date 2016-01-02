@@ -32,16 +32,11 @@ typedef struct DCADSPContext {
                             int *synth_buf_offset, float synth_buf2[32],
                             const float window[512], float *samples_out,
                             float raXin[32], float scale);
-    void (*decode_hf)(float dst[DCA_SUBBANDS][8],
+    void (*decode_hf)(int32_t dst[DCA_SUBBANDS][8],
                       const int32_t vq_num[DCA_SUBBANDS],
                       const int8_t hf_vq[1024][32], intptr_t vq_offset,
                       int32_t scale[DCA_SUBBANDS][2],
                       intptr_t start, intptr_t end);
-    void (*decode_hf_int)(int32_t dst[DCA_SUBBANDS][8],
-                          const int32_t vq_num[DCA_SUBBANDS],
-                          const int8_t hf_vq[1024][32], intptr_t vq_offset,
-                          int32_t scale[DCA_SUBBANDS][2],
-                          intptr_t start, intptr_t end);
     void (*dequantize)(int32_t *samples, uint32_t step_size, uint32_t scale);
 } DCADSPContext;
 

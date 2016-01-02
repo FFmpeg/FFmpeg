@@ -75,16 +75,6 @@
         }                                                               \
     } while (0)
 
-#define randomize_decode_hf()                                   \
-    do {                                                        \
-        int i;                                                  \
-        for (i = 0; i < DCA_SUBBANDS; i++) {                    \
-            vq_num[i]   = rnd() >> 22;                          \
-            scale[i][0] = rnd() >> 26;                          \
-            scale[i][1] = INT32_MIN;                            \
-        }                                                       \
-    } while (0)
-
 void checkasm_check_dcadsp(void)
 {
     DCADSPContext c;
@@ -97,41 +87,6 @@ void checkasm_check_dcadsp(void)
 
     if (check_func(c.lfe_fir[1], "dca_lfe_fir1"))
         check_lfe_fir(64, 1.0e-6f);
-
-    if (check_func(c.decode_hf,  "dca_decode_hf")) {
-        LOCAL_ALIGNED_16(float,   dst0,   [DCA_SUBBANDS], [8]);
-        LOCAL_ALIGNED_16(float,   dst1,   [DCA_SUBBANDS], [8]);
-        LOCAL_ALIGNED_16(int32_t, scale,  [DCA_SUBBANDS], [2]);
-        LOCAL_ALIGNED_16(int32_t, vq_num, [DCA_SUBBANDS]);
-        intptr_t start, end = 32, offset;
-
-        declare_func(void, float[DCA_SUBBANDS][8], const int32_t[DCA_SUBBANDS],
-                     const int8_t[1024][DCA_SUBBANDS], intptr_t, int32_t[DCA_SUBBANDS][2],
-                     intptr_t, intptr_t);
-
-        for (start = 0; start < 32; start++) {
-            for (offset = 0; offset < 32; offset += 8) {
-                int j;
-                for (j = 0; j < DCA_SUBBANDS; j++) {
-                    memset(dst0[j], 0, sizeof(*(dst0[j])) * 8);
-                    memset(dst1[j], 0, sizeof(*(dst1[j])) * 8);
-                }
-                randomize_decode_hf();
-
-                call_ref(dst0, vq_num, ff_dca_high_freq_vq, offset, scale, start, end);
-                call_new(dst1, vq_num, ff_dca_high_freq_vq, offset, scale, start, end);
-
-                for (j = 0; j < 8 * DCA_SUBBANDS; j++) {
-                    if (!float_near_ulp(dst0[j>>3][j&7], dst1[j>>3][j&7], 1)) {
-                        fail();
-                        break;
-                    }
-                }
-
-                bench_new(dst1, vq_num, ff_dca_high_freq_vq, offset, scale, start, end);
-            }
-        }
-    }
 
     report("dcadsp");
 }
