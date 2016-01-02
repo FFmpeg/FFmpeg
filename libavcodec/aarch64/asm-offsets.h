@@ -27,4 +27,7 @@
 #define CELT_TMP                        0x10
 #define CELT_TWIDDLE                    (CELT_TMP + 0x8)    // loaded as pair
 
+/* FFTContext */
+#define IMDCT_HALF                      0x48
+
 #endif /* AVCODEC_AARCH64_ASM_OFFSETS_H */
