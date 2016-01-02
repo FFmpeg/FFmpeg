@@ -68,7 +68,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
         return AVERROR_INVALIDDATA;
 }
 
-static int ffm_resync(AVFormatContext *s, int state)
+static int ffm_resync(AVFormatContext *s, uint32_t state)
 {
     av_log(s, AV_LOG_ERROR, "resyncing\n");
     while (state != PACKET_ID) {
@@ -87,7 +87,8 @@ static int ffm_read_data(AVFormatContext *s,
 {
     FFMContext *ffm = s->priv_data;
     AVIOContext *pb = s->pb;
-    int len, fill_size, size1, frame_offset, id;
+    int len, fill_size, size1, frame_offset;
+    uint32_t id;
     int64_t last_pos = -1;
 
     size1 = size;
