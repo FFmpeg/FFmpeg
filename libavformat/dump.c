@@ -318,6 +318,22 @@ static void dump_audioservicetype(void *ctx, AVPacketSideData *sd)
     }
 }
 
+static void dump_cpb(void *ctx, AVPacketSideData *sd)
+{
+    AVCPBProperties *cpb = (AVCPBProperties *)sd->data;
+
+    if (sd->size < sizeof(*cpb)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+
+    av_log(ctx, AV_LOG_INFO,
+           "bitrate max/min/avg: %d/%d/%d buffer size: %d vbv_delay: %"PRId64,
+           cpb->max_bitrate, cpb->min_bitrate, cpb->avg_bitrate,
+           cpb->buffer_size,
+           cpb->vbv_delay);
+}
+
 static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
 {
     int i;
@@ -361,6 +377,10 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             break;
         case AV_PKT_DATA_QUALITY_FACTOR:
             av_log(ctx, AV_LOG_INFO, "quality factor: %d", *(int *)sd.data);
+            break;
+        case AV_PKT_DATA_CPB_PROPERTIES:
+            av_log(ctx, AV_LOG_INFO, "cpb: ");
+            dump_cpb(ctx, &sd);
             break;
         default:
             av_log(ctx, AV_LOG_WARNING,
