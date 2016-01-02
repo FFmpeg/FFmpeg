@@ -1231,7 +1231,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
                decoded_frame->width, decoded_frame->height, av_get_pix_fmt_name(decoded_frame->format));
 
         ret = poll_filters();
-        if (ret < 0 && (ret != AVERROR_EOF && ret != AVERROR(EAGAIN))) {
+        if (ret < 0 && ret != AVERROR_EOF) {
             char errbuf[128];
             av_strerror(ret, errbuf, sizeof(errbuf));
 
@@ -2556,7 +2556,7 @@ static int transcode(void)
         }
 
         ret = poll_filters();
-        if (ret < 0 && (ret != AVERROR_EOF || ret != AVERROR(EAGAIN))) {
+        if (ret < 0 && ret != AVERROR_EOF) {
             char errbuf[128];
             av_strerror(ret, errbuf, sizeof(errbuf));
 
