@@ -270,7 +270,7 @@ static int autorotate = 1;
 
 /* current context */
 static int is_full_screen;
-static PlayerState *cur_stream;
+static PlayerState *player;
 static int64_t audio_callback_time;
 
 static AVPacket flush_pkt;
@@ -917,7 +917,7 @@ static int video_open(PlayerState *is)
 static void video_display(PlayerState *is)
 {
     if (!screen)
-        video_open(cur_stream);
+        video_open(player);
     if (is->audio_st && is->show_audio)
         video_audio_display(is);
     else if (is->video_st)
@@ -1234,9 +1234,9 @@ static void player_close(PlayerState *is)
 
 static void do_exit(void)
 {
-    if (cur_stream) {
-        player_close(cur_stream);
-        cur_stream = NULL;
+    if (player) {
+        player_close(player);
+        player = NULL;
     }
     uninit_opts();
     avformat_network_deinit();
@@ -1676,8 +1676,8 @@ static int video_thread(void *arg)
 
 
         if (step)
-            if (cur_stream)
-                stream_pause(cur_stream);
+            if (player)
+                stream_pause(player);
     }
  the_end:
 #if CONFIG_AVFILTER
@@ -2488,7 +2488,7 @@ static int decode_thread(void *arg)
             SDL_Delay(10);
             if (is->audioq.size + is->videoq.size + is->subtitleq.size == 0) {
                 if (loop != 1 && (!loop || --loop)) {
-                    stream_seek(cur_stream, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
+                    stream_seek(player, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
                 } else if (!noautoexit) {
                     ret = AVERROR_EOF;
                     goto fail;
@@ -2631,38 +2631,38 @@ static void toggle_full_screen(void)
     /* OS X needs to empty the picture_queue */
     int i;
     for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++)
-        cur_stream->pictq[i].reallocate = 1;
+        player->pictq[i].reallocate = 1;
 #endif
     is_full_screen = !is_full_screen;
-    video_open(cur_stream);
+    video_open(player);
 }
 
 static void toggle_pause(void)
 {
-    if (cur_stream)
-        stream_pause(cur_stream);
+    if (player)
+        stream_pause(player);
     step = 0;
 }
 
 static void step_to_next_frame(void)
 {
-    if (cur_stream) {
+    if (player) {
         /* if the stream is paused unpause it, then step */
-        if (cur_stream->paused)
-            stream_pause(cur_stream);
+        if (player->paused)
+            stream_pause(player);
     }
     step = 1;
 }
 
 static void toggle_audio_display(void)
 {
-    if (cur_stream) {
+    if (player) {
         int bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-        cur_stream->show_audio = (cur_stream->show_audio + 1) % 3;
+        player->show_audio = (player->show_audio + 1) % 3;
         fill_rectangle(screen,
-                       cur_stream->xleft, cur_stream->ytop, cur_stream->width, cur_stream->height,
+                       player->xleft, player->ytop, player->width, player->height,
                        bgcolor);
-        SDL_UpdateRect(screen, cur_stream->xleft, cur_stream->ytop, cur_stream->width, cur_stream->height);
+        SDL_UpdateRect(screen, player->xleft, player->ytop, player->width, player->height);
     }
 }
 
@@ -2724,25 +2724,25 @@ static void event_loop(void)
                 step_to_next_frame();
                 break;
             case SDLK_a:
-                if (cur_stream)
-                    stream_cycle_channel(cur_stream, AVMEDIA_TYPE_AUDIO);
+                if (player)
+                    stream_cycle_channel(player, AVMEDIA_TYPE_AUDIO);
                 break;
             case SDLK_v:
-                if (cur_stream)
-                    stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
+                if (player)
+                    stream_cycle_channel(player, AVMEDIA_TYPE_VIDEO);
                 break;
             case SDLK_t:
-                if (cur_stream)
-                    stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
+                if (player)
+                    stream_cycle_channel(player, AVMEDIA_TYPE_SUBTITLE);
                 break;
             case SDLK_w:
                 toggle_audio_display();
                 break;
             case SDLK_PAGEUP:
-                seek_chapter(cur_stream, 1);
+                seek_chapter(player, 1);
                 break;
             case SDLK_PAGEDOWN:
-                seek_chapter(cur_stream, -1);
+                seek_chapter(player, -1);
                 break;
             case SDLK_LEFT:
                 incr = -10.0;
@@ -2756,24 +2756,24 @@ static void event_loop(void)
             case SDLK_DOWN:
                 incr = -60.0;
             do_seek:
-                if (cur_stream) {
+                if (player) {
                     if (seek_by_bytes) {
-                        if (cur_stream->video_stream >= 0 && cur_stream->video_current_pos >= 0) {
-                            pos = cur_stream->video_current_pos;
-                        } else if (cur_stream->audio_stream >= 0 && cur_stream->audio_pkt.pos >= 0) {
-                            pos = cur_stream->audio_pkt.pos;
+                        if (player->video_stream >= 0 && player->video_current_pos >= 0) {
+                            pos = player->video_current_pos;
+                        } else if (player->audio_stream >= 0 && player->audio_pkt.pos >= 0) {
+                            pos = player->audio_pkt.pos;
                         } else
-                            pos = avio_tell(cur_stream->ic->pb);
-                        if (cur_stream->ic->bit_rate)
-                            incr *= cur_stream->ic->bit_rate / 8.0;
+                            pos = avio_tell(player->ic->pb);
+                        if (player->ic->bit_rate)
+                            incr *= player->ic->bit_rate / 8.0;
                         else
                             incr *= 180000.0;
                         pos += incr;
-                        stream_seek(cur_stream, pos, incr, 1);
+                        stream_seek(player, pos, incr, 1);
                     } else {
-                        pos = get_master_clock(cur_stream);
+                        pos = get_master_clock(player);
                         pos += incr;
-                        stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
+                        stream_seek(player, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
                     }
                 }
                 break;
@@ -2794,38 +2794,38 @@ static void event_loop(void)
                     break;
                 x = event.motion.x;
             }
-            if (cur_stream) {
-                if (seek_by_bytes || cur_stream->ic->duration <= 0) {
-                    uint64_t size =  avio_size(cur_stream->ic->pb);
-                    stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
+            if (player) {
+                if (seek_by_bytes || player->ic->duration <= 0) {
+                    uint64_t size =  avio_size(player->ic->pb);
+                    stream_seek(player, size*x/player->width, 0, 1);
                 } else {
                     int64_t ts;
                     int ns, hh, mm, ss;
                     int tns, thh, tmm, tss;
-                    tns  = cur_stream->ic->duration / 1000000LL;
+                    tns  = player->ic->duration / 1000000LL;
                     thh  = tns / 3600;
                     tmm  = (tns % 3600) / 60;
                     tss  = (tns % 60);
-                    frac = x / cur_stream->width;
+                    frac = x / player->width;
                     ns   = frac * tns;
                     hh   = ns / 3600;
                     mm   = (ns % 3600) / 60;
                     ss   = (ns % 60);
                     fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
                             hh, mm, ss, thh, tmm, tss);
-                    ts = frac * cur_stream->ic->duration;
-                    if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
-                        ts += cur_stream->ic->start_time;
-                    stream_seek(cur_stream, ts, 0, 0);
+                    ts = frac * player->ic->duration;
+                    if (player->ic->start_time != AV_NOPTS_VALUE)
+                        ts += player->ic->start_time;
+                    stream_seek(player, ts, 0, 0);
                 }
             }
             break;
         case SDL_VIDEORESIZE:
-            if (cur_stream) {
+            if (player) {
                 screen = SDL_SetVideoMode(event.resize.w, event.resize.h, 0,
                                           SDL_HWSURFACE|SDL_RESIZABLE|SDL_ASYNCBLIT|SDL_HWACCEL);
-                screen_width  = cur_stream->width  = event.resize.w;
-                screen_height = cur_stream->height = event.resize.h;
+                screen_width  = player->width  = event.resize.w;
+                screen_height = player->height = event.resize.h;
             }
             break;
         case SDL_QUIT:
@@ -2838,7 +2838,7 @@ static void event_loop(void)
             break;
         case FF_REFRESH_EVENT:
             video_refresh_timer(event.user.data1);
-            cur_stream->refresh = 0;
+            player->refresh = 0;
             break;
         default:
             break;
@@ -3057,7 +3057,7 @@ int main(int argc, char **argv)
     av_init_packet(&flush_pkt);
     flush_pkt.data = (uint8_t *)&flush_pkt;
 
-    cur_stream = stream_open(input_filename, file_iformat);
+    player = stream_open(input_filename, file_iformat);
 
     event_loop();
 
