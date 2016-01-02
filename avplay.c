@@ -2381,7 +2381,6 @@ static int stream_setup(VideoState *is)
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
         ret = stream_component_open(is, st_index[AVMEDIA_TYPE_VIDEO]);
     }
-    is->refresh_tid = SDL_CreateThread(refresh_thread, is);
     if (ret < 0) {
         if (!display_disable)
             is->show_audio = 2;
@@ -2567,6 +2566,7 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->subpq_cond  = SDL_CreateCond();
 
     is->av_sync_type = av_sync_type;
+    is->refresh_tid  = SDL_CreateThread(refresh_thread, is);
     is->parse_tid    = SDL_CreateThread(decode_thread, is);
     if (!is->parse_tid) {
         av_free(is);
