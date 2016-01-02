@@ -222,6 +222,9 @@ typedef struct PlayerState {
     float skip_frames;
     float skip_frames_index;
     int refresh;
+
+    SpecifierOpt *codec_names;
+    int        nb_codec_names;
 } PlayerState;
 
 /* options specified by the user */
@@ -2044,6 +2047,52 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     }
 }
 
+static AVCodec *find_codec_or_die(const char *name, enum AVMediaType type)
+{
+    const AVCodecDescriptor *desc;
+    AVCodec *codec = avcodec_find_decoder_by_name(name);
+
+    if (!codec && (desc = avcodec_descriptor_get_by_name(name))) {
+        codec = avcodec_find_decoder(desc->id);
+        if (codec)
+            av_log(NULL, AV_LOG_VERBOSE, "Matched decoder '%s' for codec '%s'.\n",
+                   codec->name, desc->name);
+    }
+
+    if (!codec) {
+        av_log(NULL, AV_LOG_FATAL, "Unknown decoder '%s'\n", name);
+        exit_program(1);
+    }
+
+    if (codec->type != type) {
+        av_log(NULL, AV_LOG_FATAL, "Invalid decoder type '%s'\n", name);
+        exit_program(1);
+    }
+
+    return codec;
+}
+
+static AVCodec *choose_decoder(PlayerState *is, AVFormatContext *ic, AVStream *st)
+{
+    char *codec_name = NULL;
+    int i, ret;
+
+    for (i = 0; i < is->nb_codec_names; i++) {
+        char *spec = is->codec_names[i].specifier;
+        if ((ret = check_stream_specifier(ic, st, spec)) > 0)
+            codec_name = is->codec_names[i].u.str;
+        else if (ret < 0)
+            exit_program(1);
+    }
+
+    if (codec_name) {
+        AVCodec *codec = find_codec_or_die(codec_name, st->codec->codec_type);
+        st->codec->codec_id = codec->id;
+        return codec;
+    } else
+        return avcodec_find_decoder(st->codec->codec_id);
+}
+
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(PlayerState *is, int stream_index)
 {
@@ -2061,7 +2110,7 @@ static int stream_component_open(PlayerState *is, int stream_index)
 
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], NULL);
 
-    codec = avcodec_find_decoder(avctx->codec_id);
+    codec = choose_decoder(is, ic, ic->streams[stream_index]);
     avctx->workaround_bugs   = workaround_bugs;
     avctx->idct_algo         = idct;
     avctx->skip_frame        = skip_frame;
@@ -2302,6 +2351,7 @@ static int stream_setup(PlayerState *is)
         ret = -1;
         goto fail;
     }
+
     if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
         av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
         ret = AVERROR_OPTION_NOT_FOUND;
@@ -2314,6 +2364,9 @@ static int stream_setup(PlayerState *is)
 
     opts = setup_find_stream_info_opts(ic, codec_opts);
     orig_nb_streams = ic->nb_streams;
+
+    for (i = 0; i < ic->nb_streams; i++)
+        ic->streams[i]->codec->codec = choose_decoder(is, ic, ic->streams[i]);
 
     err = avformat_find_stream_info(ic, opts);
 
@@ -2904,6 +2957,7 @@ static int opt_duration(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+#define OFF(x) offsetof(PlayerState, x)
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "x", HAS_ARG, { .func_arg = opt_width }, "force displayed width", "width" },
@@ -2946,6 +3000,9 @@ static const OptionDef options[] = {
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, { opt_default }, "generic catch all option", "" },
     { "i", 0, { NULL }, "avconv compatibility dummy option", ""},
     { "autorotate", OPT_BOOL, { &autorotate }, "automatically rotate video", "" },
+    { "c", HAS_ARG | OPT_STRING | OPT_SPEC | OPT_INPUT, { .off = OFF(codec_names) }, "codec name", "codec" },
+    { "codec",  HAS_ARG | OPT_STRING | OPT_SPEC | OPT_INPUT, { .off = OFF(codec_names) }, "codec name", "codec" },
+
     { NULL, },
 };
 
@@ -3018,7 +3075,7 @@ int main(int argc, char **argv)
 
     show_banner();
 
-    parse_options(NULL, argc, argv, options, opt_input_file);
+    parse_options(player, argc, argv, options, opt_input_file);
 
     if (!input_filename) {
         show_usage();
