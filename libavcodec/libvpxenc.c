@@ -32,6 +32,7 @@
 #include "internal.h"
 #include "libavutil/avassert.h"
 #include "libvpx.h"
+#include "profiles.h"
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
@@ -1077,14 +1078,6 @@ static const AVClass class_vp9 = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_VP9_0, "Profile 0" },
-    { FF_PROFILE_VP9_1, "Profile 1" },
-    { FF_PROFILE_VP9_2, "Profile 2" },
-    { FF_PROFILE_VP9_3, "Profile 3" },
-    { FF_PROFILE_UNKNOWN },
-};
-
 AVCodec ff_libvpx_vp9_encoder = {
     .name           = "libvpx-vp9",
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
@@ -1095,7 +1088,7 @@ AVCodec ff_libvpx_vp9_encoder = {
     .encode2        = vp8_encode,
     .close          = vp8_free,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
     .priv_class     = &class_vp9,
     .defaults       = defaults,
     .init_static_data = ff_vp9_init_static,

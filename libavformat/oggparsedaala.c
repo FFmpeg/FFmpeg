@@ -123,7 +123,12 @@ static int daala_header(AVFormatContext *s, int idx)
 
         hdr->frame_duration = bytestream2_get_ne32(&gb);
         hdr->gpshift = bytestream2_get_byte(&gb);
-        hdr->gpmask  = (1 << hdr->gpshift) - 1;
+        if (hdr->gpshift >= 32) {
+            av_log(s, AV_LOG_ERROR, "Too large gpshift %d (>= 32).\n",
+                   hdr->gpshift);
+            return AVERROR_INVALIDDATA;
+        }
+        hdr->gpmask  = (1U << hdr->gpshift) - 1;
 
         hdr->format.depth  = 8 + 2*(bytestream2_get_byte(&gb)-1);
 

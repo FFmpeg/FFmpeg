@@ -31,4 +31,9 @@
 #define have_neon(flags)    CPUEXT(flags, NEON)
 #define have_setend(flags)  CPUEXT(flags, SETEND)
 
+/* some functions use the VFPv2 vector mode which is deprecated in ARMv7-A
+ * and might trap on such CPU depending on the OS configuration */
+#define have_vfp_vm(flags)                                              \
+    (have_armv6(flags) && ((flags) & AV_CPU_FLAG_VFP_VM))
+
 #endif /* AVUTIL_ARM_CPU_H */

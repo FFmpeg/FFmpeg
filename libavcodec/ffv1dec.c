@@ -181,7 +181,8 @@ static av_always_inline void decode_line(FFV1Context *s, int w,
 }
 
 static void decode_plane(FFV1Context *s, uint8_t *src,
-                         int w, int h, int stride, int plane_index)
+                         int w, int h, int stride, int plane_index,
+                         int pixel_stride)
 {
     int x, y;
     int16_t *sample[2];
@@ -205,16 +206,16 @@ static void decode_plane(FFV1Context *s, uint8_t *src,
         if (s->avctx->bits_per_raw_sample <= 8) {
             decode_line(s, w, sample, plane_index, 8);
             for (x = 0; x < w; x++)
-                src[x + stride * y] = sample[1][x];
+                src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
             decode_line(s, w, sample, plane_index, s->avctx->bits_per_raw_sample);
             if (s->packed_at_lsb) {
                 for (x = 0; x < w; x++) {
-                    ((uint16_t*)(src + stride*y))[x] = sample[1][x];
+                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x];
                 }
             } else {
                 for (x = 0; x < w; x++) {
-                    ((uint16_t*)(src + stride*y))[x] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample);
+                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample);
                 }
             }
         }
@@ -433,19 +434,22 @@ static int decode_slice(AVCodecContext *c, void *arg)
     }
 
     av_assert1(width && height);
-    if (f->colorspace == 0) {
+    if (f->colorspace == 0 && (f->chroma_planes || !fs->transparency)) {
         const int chroma_width  = FF_CEIL_RSHIFT(width,  f->chroma_h_shift);
         const int chroma_height = FF_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
-        decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0);
+        decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
 
         if (f->chroma_planes) {
-            decode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
-            decode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+            decode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
+            decode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
         if (fs->transparency)
-            decode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2);
+            decode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1);
+    } else if (f->colorspace == 0) {
+         decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
+         decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
     } else {
         uint8_t *planes[3] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
@@ -697,6 +701,11 @@ static int read_header(FFV1Context *f)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
             else
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+        } else if (f->transparency && !f->chroma_planes) {
+            if (f->avctx->bits_per_raw_sample <= 8)
+                f->avctx->pix_fmt = AV_PIX_FMT_YA8;
+            else
+                return AVERROR(ENOSYS);
         } else if (f->avctx->bits_per_raw_sample<=8 && !f->transparency) {
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P; break;

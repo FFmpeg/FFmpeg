@@ -39,6 +39,7 @@
 #include "timer.h"
 #include "cpu.h"
 #include "dict.h"
+#include "macros.h"
 #include "pixfmt.h"
 #include "version.h"
 

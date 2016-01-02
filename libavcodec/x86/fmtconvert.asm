@@ -39,7 +39,7 @@ cglobal int32_to_float_fmul_scalar, 4, 4, %1, dst, src, mul, len
     movss   m0, mulm
 %endif
     SPLATD  m0
-    shl     lenq, 2
+    shl     lend, 2
     add     srcq, lenq
     add     dstq, lenq
     neg     lenq
@@ -61,7 +61,14 @@ cglobal int32_to_float_fmul_scalar, 4, 4, %1, dst, src, mul, len
     mova  [dstq+lenq+16], m2
     add     lenq, 32
     jl .loop
-    REP_RET
+%if notcpuflag(sse2)
+    ;; cvtpi2ps switches to MMX even if the source is a memory location
+    ;; possible an error in documentation since every tested CPU disagrees with
+    ;; that. Use emms anyway since the vast majority of machines will use the
+    ;; SSE2 variant
+    emms
+%endif
+    RET
 %endmacro
 
 INIT_XMM sse

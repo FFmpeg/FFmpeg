@@ -140,8 +140,8 @@ typedef struct DCAAudioHeader {
     int transient_huffman[DCA_PRIM_CHANNELS_MAX];   ///< transient mode code book
     int scalefactor_huffman[DCA_PRIM_CHANNELS_MAX]; ///< scale factor code book
     int bitalloc_huffman[DCA_PRIM_CHANNELS_MAX];    ///< bit allocation quantizer select
-    int quant_index_huffman[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX]; ///< quantization index codebook select
-    float scalefactor_adj[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX];   ///< scale factor adjustment
+    int quant_index_huffman[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX];  ///< quantization index codebook select
+    uint32_t scalefactor_adj[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX]; ///< scale factor adjustment
 
     int subframes;              ///< number of subframes
     int total_channels;         ///< number of channels including extensions
@@ -149,10 +149,10 @@ typedef struct DCAAudioHeader {
 } DCAAudioHeader;
 
 typedef struct DCAChan {
-    DECLARE_ALIGNED(32, float, subband_samples)[DCA_BLOCKS_MAX][DCA_SUBBANDS][8];
+    DECLARE_ALIGNED(32, int32_t, subband_samples)[DCA_BLOCKS_MAX][DCA_SUBBANDS][8];
 
     /* Subband samples history (for ADPCM) */
-    DECLARE_ALIGNED(16, float, subband_samples_hist)[DCA_SUBBANDS][4];
+    DECLARE_ALIGNED(32, int32_t, subband_samples_hist)[DCA_SUBBANDS][4];
     int hist_index;
 
     /* Half size is sufficient for core decoding, but for 96 kHz data

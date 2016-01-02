@@ -29,6 +29,7 @@
 #include "dca.h"
 #include "dca_syncwords.h"
 #include "internal.h"
+#include "profiles.h"
 
 typedef struct DCADecContext {
     const AVClass *class;
@@ -292,16 +293,6 @@ static const AVClass dcadec_class = {
     .category   = AV_CLASS_CATEGORY_DECODER,
 };
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_DTS,         "DTS"         },
-    { FF_PROFILE_DTS_ES,      "DTS-ES"      },
-    { FF_PROFILE_DTS_96_24,   "DTS 96/24"   },
-    { FF_PROFILE_DTS_HD_HRA,  "DTS-HD HRA"  },
-    { FF_PROFILE_DTS_HD_MA,   "DTS-HD MA"   },
-    { FF_PROFILE_DTS_EXPRESS, "DTS Express" },
-    { FF_PROFILE_UNKNOWN },
-};
-
 AVCodec ff_libdcadec_decoder = {
     .name           = "libdcadec",
     .long_name      = NULL_IF_CONFIG_SMALL("dcadec DCA decoder"),
@@ -316,5 +307,5 @@ AVCodec ff_libdcadec_decoder = {
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class     = &dcadec_class,
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
 };

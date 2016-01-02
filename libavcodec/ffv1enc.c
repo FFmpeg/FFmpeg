@@ -370,7 +370,7 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
 }
 
 static int encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
-                         int stride, int plane_index)
+                         int stride, int plane_index, int pixel_stride)
 {
     int x, y, i, ret;
     const int ring_size = s->avctx->context_model ? 3 : 2;
@@ -388,7 +388,7 @@ static int encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
 // { START_TIMER
         if (s->bits_per_raw_sample <= 8) {
             for (x = 0; x < w; x++)
-                sample[0][x] = src[x + stride * y];
+                sample[0][x] = src[x * pixel_stride + stride * y];
             if((ret = encode_line(s, w, sample, plane_index, 8)) < 0)
                 return ret;
         } else {
@@ -758,6 +758,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         s->version = FFMAX(s->version, 1);
     case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_YA8:
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_YUV422P:
@@ -769,7 +770,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_YUVA420P:
         s->chroma_planes = desc->nb_components < 3 ? 0 : 1;
         s->colorspace = 0;
-        s->transparency = desc->nb_components == 4;
+        s->transparency = desc->nb_components == 4 || desc->nb_components == 2;
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 8;
         else if (!s->bits_per_raw_sample)
@@ -1174,20 +1175,23 @@ retry:
                       fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
     }
 
-    if (f->colorspace == 0) {
+    if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
         const int chroma_width  = FF_CEIL_RSHIFT(width,  f->chroma_h_shift);
         const int chroma_height = FF_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 
-        ret = encode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0);
+        ret = encode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
 
         if (f->chroma_planes) {
-            ret |= encode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
-            ret |= encode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+            ret |= encode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
+            ret |= encode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
         if (fs->transparency)
-            ret |= encode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2);
+            ret |= encode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1);
+    } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
+        ret  = encode_plane(fs, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
+        ret |= encode_plane(fs, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
     } else {
         ret = encode_rgb_frame(fs, planes, width, height, p->linesize);
     }
@@ -1416,6 +1420,7 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_YA8,
         AV_PIX_FMT_NONE
 
     },

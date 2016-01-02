@@ -309,12 +309,13 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt->data && pkt->size >= 4) {
         MPADecodeHeader mpah;
+        int ret;
         int av_unused base;
         uint32_t h;
 
         h = AV_RB32(pkt->data);
-        if (ff_mpa_check_header(h) == 0) {
-            avpriv_mpegaudio_decode_header(&mpah, h);
+        ret = avpriv_mpegaudio_decode_header(&mpah, h);
+        if (ret >= 0) {
             if (!mp3->initial_bitrate)
                 mp3->initial_bitrate = mpah.bit_rate;
             if ((mpah.bit_rate == 0) || (mp3->initial_bitrate != mpah.bit_rate))

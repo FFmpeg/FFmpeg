@@ -26,6 +26,7 @@
 SECTION_RODATA
 
 error_message: db "failed to preserve register", 0
+error_message_emms: db "failed to issue emms", 0
 
 %if ARCH_X86_64
 ; just random numbers to reduce the chance of incidental match
@@ -83,11 +84,22 @@ cglobal stack_clobber, 1,2
     DECLARE_REG_TMP 7
 %endif
 
+%macro report_fail 1
+    mov  r9, rax
+    mov r10, rdx
+    lea  r0, [%1]
+    xor eax, eax
+    call fail_func
+    mov rdx, r10
+    mov rax, r9
+%endmacro
+
 ;-----------------------------------------------------------------------------
 ; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
 INIT_XMM
-cglobal checked_call, 2,15,16,max_args*8+8
+%macro CHECKED_CALL 0-1
+cglobal checked_call%1, 2,15,16,max_args*8+8
     mov  t0, r0
 
     ; All arguments have been pushed on the stack instead of registers in order to
@@ -154,16 +166,21 @@ cglobal checked_call, 2,15,16,max_args*8+8
     ; Call fail_func() with a descriptive message to mark it as a failure
     ; if the called function didn't preserve all callee-saved registers.
     ; Save the return value located in rdx:rax first to prevent clobbering.
-    jz .ok
-    mov  r9, rax
-    mov r10, rdx
-    lea  r0, [error_message]
-    xor eax, eax
-    call fail_func
-    mov rdx, r10
-    mov rax, r9
-.ok:
+    jz .clobber_ok
+    report_fail error_message
+.clobber_ok:
+%ifnid %1, _emms
+    fstenv [rsp]
+    cmp  word [rsp + 8], 0xffff
+    je   .emms_ok
+    report_fail error_message_emms
+    emms
+.emms_ok:
+%else
+    emms
+%endif
     RET
+%endmacro
 
 %else
 
@@ -173,10 +190,21 @@ cglobal checked_call, 2,15,16,max_args*8+8
 %define n5 dword 0xb78d0d1d
 %define n6 dword 0x33627ba7
 
+%macro report_fail 1
+    mov  r3, eax
+    mov  r4, edx
+    lea  r0, [%1]
+    mov [esp], r0
+    call fail_func
+    mov  edx, r4
+    mov  eax, r3
+%endmacro
+
+%macro CHECKED_CALL 0-1
 ;-----------------------------------------------------------------------------
 ; void checkasm_checked_call(void *func, ...)
 ;-----------------------------------------------------------------------------
-cglobal checked_call, 1,7
+cglobal checked_call%1, 1,7
     mov  r3, n3
     mov  r4, n4
     mov  r5, n5
@@ -192,16 +220,24 @@ cglobal checked_call, 1,7
     or   r3, r4
     or   r5, r6
     or   r3, r5
-    jz .ok
-    mov  r3, eax
-    mov  r4, edx
-    lea  r0, [error_message]
-    mov [esp], r0
-    call fail_func
-    mov  edx, r4
-    mov  eax, r3
-.ok:
+    jz .clobber_ok
+    report_fail error_message
+.clobber_ok:
+%ifnid %1, _emms
+    fstenv [esp]
+    cmp  word [esp + 8], 0xffff
+    je   .emms_ok
+    report_fail error_message_emms
+    emms
+.emms_ok:
+%else
+    emms
+%endif
     add  esp, max_args*4
     REP_RET
+%endmacro
 
 %endif ; ARCH_X86_64
+
+CHECKED_CALL
+CHECKED_CALL _emms

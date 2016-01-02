@@ -30,6 +30,7 @@
 
 #include "libavcodec/avfft.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/intmath.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -952,18 +953,6 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static inline unsigned clz(unsigned x)
-{
-    unsigned i = sizeof(x) * 8;
-
-    while (x) {
-        x >>= 1;
-        i--;
-    }
-
-    return i;
-}
-
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -996,8 +985,8 @@ static int config_input(AVFilterLink *inlink)
     }
     /* buffer length is longest IR plus max. delay -> next power of 2
        (32 - count leading zeros gives required exponent)  */
-    s->buffer_length = exp2(32 - clz((uint32_t)n_max));
-    s->n_fft         = exp2(32 - clz((uint32_t)(n_max + inlink->sample_rate)));
+    s->buffer_length = 1 << (32 - ff_clz(n_max));
+    s->n_fft         = 1 << (32 - ff_clz(n_max + inlink->sample_rate));
 
     if (s->type == FREQUENCY_DOMAIN) {
         av_fft_end(s->fft[0]);

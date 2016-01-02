@@ -1672,12 +1672,11 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
         av_log(avctx, AV_LOG_DEBUG, "discarding ID3 tag\n");
         return buf_size;
     }
-    if (ff_mpa_check_header(header) < 0) {
+    ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Header missing\n");
         return AVERROR_INVALIDDATA;
-    }
-
-    if (avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header) == 1) {
+    } else if (ret == 1) {
         /* free format: prepare to compute frame size */
         s->frame_size = -1;
         return AVERROR_INVALIDDATA;
@@ -1758,12 +1757,11 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data,
     // Get header and restore sync word
     header = AV_RB32(buf) | 0xffe00000;
 
-    if (ff_mpa_check_header(header) < 0) { // Bad header, discard frame
+    ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid frame header\n");
-        return AVERROR_INVALIDDATA;
+        return ret;
     }
-
-    avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
     /* update codec info */
     avctx->sample_rate = s->sample_rate;
     avctx->channels    = s->nb_channels;
@@ -1954,12 +1952,11 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         }
         header = (AV_RB32(buf) & 0x000fffff) | s->syncword; // patch header
 
-        if (ff_mpa_check_header(header) < 0) {
+        ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)m, header);
+        if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Bad header, discard block\n");
             return AVERROR_INVALIDDATA;
         }
-
-        avpriv_mpegaudio_decode_header((MPADecodeHeader *)m, header);
 
         if (ch + m->nb_channels > avctx->channels ||
             s->coff[fr] + m->nb_channels > avctx->channels) {

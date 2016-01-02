@@ -3232,15 +3232,3 @@ static const AVClass aac_decoder_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
-static const AVProfile profiles[] = {
-    { FF_PROFILE_AAC_MAIN,  "Main"     },
-    { FF_PROFILE_AAC_LOW,   "LC"       },
-    { FF_PROFILE_AAC_SSR,   "SSR"      },
-    { FF_PROFILE_AAC_LTP,   "LTP"      },
-    { FF_PROFILE_AAC_HE,    "HE-AAC"   },
-    { FF_PROFILE_AAC_HE_V2, "HE-AACv2" },
-    { FF_PROFILE_AAC_LD,    "LD"       },
-    { FF_PROFILE_AAC_ELD,   "ELD"      },
-    { FF_PROFILE_UNKNOWN },
-};

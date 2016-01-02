@@ -55,6 +55,7 @@
 #include "aacsbr.h"
 #include "mpeg4audio.h"
 #include "aacadtsdec.h"
+#include "profiles.h"
 #include "libavutil/intfloat.h"
 
 #include <errno.h>
@@ -555,7 +556,7 @@ AVCodec ff_aac_decoder = {
     .channel_layouts = aac_channel_layout,
     .flush = flush,
     .priv_class      = &aac_decoder_class,
-    .profiles        = profiles,
+    .profiles        = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
 };
 
 /*
@@ -579,5 +580,5 @@ AVCodec ff_aac_latm_decoder = {
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE,
     .channel_layouts = aac_channel_layout,
     .flush = flush,
-    .profiles        = profiles,
+    .profiles        = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
 };
