@@ -124,9 +124,10 @@ static int ffm_read_data(AVFormatContext *s,
             ffm->dts = avio_rb64(pb);
             frame_offset = avio_rb16(pb);
             avio_read(pb, ffm->packet, ffm->packet_size - FFM_HEADER_SIZE);
-            ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
-            if (ffm->packet_end < ffm->packet || frame_offset < 0)
+            if (ffm->packet_size < FFM_HEADER_SIZE + fill_size || frame_offset < 0) {
                 return -1;
+            }
+            ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
             /* if first packet or resynchronization packet, we must
                handle it specifically */
             if (ffm->first_packet || (frame_offset & 0x8000)) {
@@ -142,8 +143,10 @@ static int ffm_read_data(AVFormatContext *s,
                     return 0;
                 }
                 ffm->first_packet = 0;
-                if ((frame_offset & 0x7fff) < FFM_HEADER_SIZE)
+                if ((frame_offset & 0x7fff) < FFM_HEADER_SIZE) {
+                    ffm->packet_end = ffm->packet_ptr;
                     return -1;
+                }
                 ffm->packet_ptr = ffm->packet + (frame_offset & 0x7fff) - FFM_HEADER_SIZE;
                 if (!header)
                     break;
