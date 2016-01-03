@@ -208,6 +208,8 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
             }
         }
     }
+    for (i = 0; i < sl->list_count; i++)
+        h->default_ref[i] = sl->ref_list[i][0];
 }
 
 static void print_short_term(H264Context *h);
@@ -351,10 +353,14 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
             if (   !sl->ref_list[list][index].parent
                 || (!FIELD_PICTURE(h) && (sl->ref_list[list][index].reference&3) != 3)) {
                 int i;
-                av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture\n");
+                av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture, default is %d\n", h->default_ref[list].poc);
                 for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
                     h->last_pocs[i] = INT_MIN;
-                return -1;
+                if (h->default_ref[list].parent
+                    && !(!FIELD_PICTURE(h) && (h->default_ref[list].reference&3) != 3))
+                    sl->ref_list[list][index] = h->default_ref[list];
+                else
+                    return -1;
             }
             av_assert0(av_buffer_get_ref_count(sl->ref_list[list][index].parent->f->buf[0]) > 0);
         }
@@ -524,6 +530,7 @@ void ff_h264_remove_all_refs(H264Context *h)
     }
     h->short_ref_count = 0;
 
+    memset(h->default_ref, 0, sizeof(h->default_ref));
     for (i = 0; i < h->nb_slice_ctx; i++) {
         H264SliceContext *sl = &h->slice_ctx[i];
         sl->list_count = sl->ref_count[0] = sl->ref_count[1] = 0;
