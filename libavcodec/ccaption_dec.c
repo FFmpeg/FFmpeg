@@ -100,40 +100,6 @@ static const unsigned char pac2_attribs[32][3] = // Color, font, ident
     /* total 32 entries */
 };
 
-/* 0-255 needs 256 spaces */
-static const uint8_t parity_table[256] = { 0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           0, 1, 1, 0, 1, 0, 0, 1,
-                                           1, 0, 0, 1, 0, 1, 1, 0 };
-
 struct Screen {
     /* +1 is used to compensate null character of string */
     uint8_t characters[SCREEN_ROWS][SCREEN_COLUMNS+1];
@@ -236,10 +202,10 @@ static int validate_cc_data_pair(uint8_t *cc_data_pair)
 
     // if EIA-608 data then verify parity.
     if (cc_type==0 || cc_type==1) {
-        if (!parity_table[cc_data_pair[2]]) {
+        if (!ff_parity(cc_data_pair[2])) {
             return AVERROR_INVALIDDATA;
         }
-        if (!parity_table[cc_data_pair[1]]) {
+        if (!ff_parity(cc_data_pair[1])) {
             cc_data_pair[1]=0x7F;
         }
     }
