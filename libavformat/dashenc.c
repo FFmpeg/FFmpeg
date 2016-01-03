@@ -130,7 +130,7 @@ static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
         tags[0] = ff_mp4_obj_type;
         oti = av_codec_get_tag(tags, par->codec_id);
         if (oti)
-            av_strlcatf(str, size, ".%02x", oti);
+            av_strlcatf(str, size, ".%02"SCNx32, oti);
         else
             return;
 
