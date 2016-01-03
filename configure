@@ -1736,6 +1736,7 @@ BUILTIN_LIST="
     machine_rw_barrier
     MemoryBarrier
     mm_empty
+    parity
     rdtsc
     sarestart
     sync_val_compare_and_swap
@@ -5241,6 +5242,7 @@ check_builtin sarestart signal.h "SA_RESTART"
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
+check_builtin parity "" "__builtin_parity(123)"
 
 case "$custom_allocator" in
     jemalloc)
