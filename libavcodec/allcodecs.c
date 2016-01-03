@@ -572,7 +572,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (LIBSCHROEDINGER,   libschroedinger);
     REGISTER_ENCODER(LIBSHINE,          libshine);
     REGISTER_ENCDEC (LIBSPEEX,          libspeex);
-    REGISTER_DECODER(LIBSTAGEFRIGHT_H264, libstagefright_h264);
     REGISTER_ENCODER(LIBTHEORA,         libtheora);
     REGISTER_ENCODER(LIBTWOLAME,        libtwolame);
     REGISTER_ENCDEC (LIBUTVIDEO,        libutvideo);

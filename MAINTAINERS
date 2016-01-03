@@ -304,7 +304,6 @@ Codecs:
 Hardware acceleration:
   crystalhd.c                           Philip Langdale
   dxva2*                                Hendrik Leppkes, Laurent Aimar
-  libstagefright.cpp                    Mohamed Naufal
   vaapi*                                Gwenole Beauchesne
   vda*                                  Sebastien Zwickert
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
