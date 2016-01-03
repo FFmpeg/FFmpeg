@@ -132,10 +132,10 @@ cglobal anaglyph, 3, 6, 8, 2*9*mmsize, dst, lsrc, rsrc, dst_linesize, o, cnt
     xor                 cntd, cntd
 
     .loop:
-        movu                 m0, [lsrcq+cntq]
-        pshufb               m1, m0, [ex_r]
-        pshufb               m2, m0, [ex_g]
-        pshufb               m3, m0, [ex_b]
+        movu                 m3, [lsrcq+cntq]
+        pshufb               m1, m3, [ex_r]
+        pshufb               m2, m3, [ex_g]
+        pshufb               m3, [ex_b]
         movu                 m0, [rsrcq+cntq]
         pshufb               m4, m0, [ex_r]
         pshufb               m5, m0, [ex_g]
@@ -152,10 +152,10 @@ cglobal anaglyph, 3, 6, 8, 2*9*mmsize, dst, lsrc, rsrc, dst_linesize, o, cnt
         paddd                m1, m3
         paddd                m1, m5
 
-        movu                 m0, [lsrcq+cntq]
-        pshufb               m7, m0, [ex_r]
-        pshufb               m2, m0, [ex_g]
-        pshufb               m3, m0, [ex_b]
+        movu                 m3, [lsrcq+cntq]
+        pshufb               m7, m3, [ex_r]
+        pshufb               m2, m3, [ex_g]
+        pshufb               m3, [ex_b]
         movu                 m0, [rsrcq+cntq]
         pshufb               m4, m0, [ex_r]
         pshufb               m5, m0, [ex_g]
@@ -172,10 +172,10 @@ cglobal anaglyph, 3, 6, 8, 2*9*mmsize, dst, lsrc, rsrc, dst_linesize, o, cnt
         paddd                m7, m3
         paddd                m7, m5
 
-        movu                 m0, [lsrcq+cntq]
-        pshufb               m2, m0, [ex_r]
-        pshufb               m3, m0, [ex_g]
-        pshufb               m4, m0, [ex_b]
+        movu                 m4, [lsrcq+cntq]
+        pshufb               m2, m4, [ex_r]
+        pshufb               m3, m4, [ex_g]
+        pshufb               m4, [ex_b]
         movu                 m0, [rsrcq+cntq]
         pshufb               m5, m0, [ex_r]
         pshufb               m6, m0, [ex_g]
