@@ -31,6 +31,9 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
+
 #include "audio.h"
 #include "avfilter.h"
 #include "buffersink.h"
@@ -129,18 +132,26 @@ int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFr
 {
     BufferSinkContext *buf = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    int ret;
+    int peek_in_framequeue = 0, ret;
+    int64_t frame_count;
     AVFrame *cur_frame;
 
     /* no picref available, fetch it from the filterchain */
     while (!av_fifo_size(buf->fifo)) {
-        if (inlink->status)
-            return inlink->status;
-        if (flags & AV_BUFFERSINK_FLAG_NO_REQUEST)
+        /* if peek_in_framequeue is true later, then ff_request_frame() and
+           the ff_filter_graph_run_once() loop will take a frame from it and
+           move it to the internal fifo, ending the global loop */
+        av_assert0(!peek_in_framequeue);
+        if (inlink->status_out)
+            return inlink->status_out;
+        peek_in_framequeue = ff_framequeue_queued_frames(&inlink->fifo) &&
+                             ff_framequeue_queued_samples(&inlink->fifo) >= inlink->min_samples;
+        if ((flags & AV_BUFFERSINK_FLAG_NO_REQUEST) && !peek_in_framequeue)
             return AVERROR(EAGAIN);
         if ((ret = ff_request_frame(inlink)) < 0)
             return ret;
-        while (inlink->frame_wanted_out) {
+        frame_count = inlink->frame_count_out;
+        while (frame_count == inlink->frame_count_out) {
             ret = ff_filter_graph_run_once(ctx->graph);
             if (ret < 0)
                 return ret;

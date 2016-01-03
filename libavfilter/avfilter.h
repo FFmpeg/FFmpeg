@@ -368,6 +368,13 @@ struct AVFilterContext {
      * Overrides global number of threads set per filter graph.
      */
     int nb_threads;
+
+    /**
+     * Ready status of the filter.
+     * A non-0 value means that the filter needs activating;
+     * a higher value suggests a more urgent activation.
+     */
+    unsigned ready;
 };
 
 /**
@@ -509,18 +516,6 @@ struct AVFilterLink {
     int max_samples;
 
     /**
-     * Link status.
-     * If not zero, all attempts of filter_frame or request_frame
-     * will fail with the corresponding code, and if necessary the reference
-     * will be destroyed.
-     * If request_frame returns an error, the status is set on the
-     * corresponding link.
-     * It can be set also be set by either the source or the destination
-     * filter.
-     */
-    int status;
-
-    /**
      * Number of channels.
      */
     int channels;
@@ -541,13 +536,6 @@ struct AVFilterLink {
     void *video_frame_pool;
 
     /**
-     * True if a frame is currently wanted on the input of this filter.
-     * Set when ff_request_frame() is called by the output,
-     * cleared when the request is handled or forwarded.
-     */
-    int frame_wanted_in;
-
-    /**
      * True if a frame is currently wanted on the output of this filter.
      * Set when ff_request_frame() is called by the output,
      * cleared when a frame is filtered.
@@ -559,6 +547,51 @@ struct AVFilterLink {
      * AVHWFramesContext describing the frames.
      */
     AVBufferRef *hw_frames_ctx;
+
+#ifndef FF_INTERNAL_FIELDS
+
+    /**
+     * Internal structure members.
+     * The fields below this limit are internal for libavfilter's use
+     * and must in no way be accessed by applications.
+     */
+    char reserved[0xF000];
+
+#else /* FF_INTERNAL_FIELDS */
+
+    /**
+     * Queue of frames waiting to be filtered.
+     */
+    FFFrameQueue fifo;
+
+    /**
+     * If set, the source filter can not generate a frame as is.
+     * The goal is to avoid repeatedly calling the request_frame() method on
+     * the same link.
+     */
+    int frame_blocked_in;
+
+    /**
+     * Link input status.
+     * If not zero, all attempts of filter_frame will fail with the
+     * corresponding code.
+     */
+    int status_in;
+
+    /**
+     * Timestamp of the input status change.
+     */
+    int64_t status_in_pts;
+
+    /**
+     * Link output status.
+     * If not zero, all attempts of request_frame will fail with the
+     * corresponding code.
+     */
+    int status_out;
+
+#endif /* FF_INTERNAL_FIELDS */
+
 };
 
 /**
