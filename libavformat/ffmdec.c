@@ -100,11 +100,12 @@ static int ffm_read_data(AVFormatContext *s,
         if (len > size)
             len = size;
         if (len == 0) {
-            if (avio_tell(pb) == ffm->file_size)
-                if (ffm->server_attached)
+            if (avio_tell(pb) == ffm->file_size) {
+                if (ffm->server_attached) {
                     avio_seek(pb, ffm->packet_size, SEEK_SET);
-                else
+                } else
                     return AVERROR_EOF;
+            }
     retry_read:
             if (pb->buffer_size != ffm->packet_size) {
                 int64_t tell = avio_tell(pb);
