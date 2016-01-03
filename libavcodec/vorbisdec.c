@@ -573,6 +573,11 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
                 return AVERROR(ENOMEM);
 
             rangebits = get_bits(gb, 4);
+            if (!rangebits && floor_setup->data.t1.partitions) {
+                av_log(vc->avctx, AV_LOG_ERROR,
+                       "A rangebits value of 0 is not compliant with the Vorbis I specification.\n");
+                return AVERROR_INVALIDDATA;
+            }
             rangemax = (1 << rangebits);
             if (rangemax > vc->blocksize[1] / 2) {
                 av_log(vc->avctx, AV_LOG_ERROR,
