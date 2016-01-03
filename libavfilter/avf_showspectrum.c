@@ -59,9 +59,9 @@ typedef struct {
     int scale;
     float saturation;           ///< color saturation multiplier
     int xpos;                   ///< x position (current column)
-    RDFTContext *rdft;          ///< Real Discrete Fourier Transform context
-    int rdft_bits;              ///< number of bits (RDFT window size = 1<<rdft_bits)
-    FFTSample **rdft_data;      ///< bins holder for each (displayed) channels
+    FFTContext *fft;            ///< Fast Fourier Transform context
+    int fft_bits;               ///< number of bits (FFT window size = 1<<fft_bits)
+    FFTComplex **fft_data;      ///< bins holder for each (displayed) channels
     float *window_func_lut;     ///< Window function LUT
     float **magnitudes;
     int win_func;
@@ -195,12 +195,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     av_freep(&s->combine_buffer);
-    av_rdft_end(s->rdft);
-    if (s->rdft_data) {
+    av_fft_end(s->fft);
+    if (s->fft_data) {
         for (i = 0; i < s->nb_display_channels; i++)
-            av_freep(&s->rdft_data[i]);
+            av_freep(&s->fft_data[i]);
     }
-    av_freep(&s->rdft_data);
+    av_freep(&s->fft_data);
     av_freep(&s->window_func_lut);
     if (s->magnitudes) {
         for (i = 0; i < s->nb_display_channels; i++)
@@ -217,7 +217,7 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts = NULL;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_NONE };
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE };
     static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE };
     int ret;
 
@@ -247,7 +247,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowSpectrumContext *s = ctx->priv;
-    int i, rdft_bits, h, w;
+    int i, fft_bits, h, w;
     float overlap;
 
     if (!strcmp(ctx->filter->name, "showspectrumpic"))
@@ -262,33 +262,33 @@ static int config_output(AVFilterLink *outlink)
     s->channel_width  = w;
 
     if (s->orientation == VERTICAL) {
-        /* RDFT window size (precision) according to the requested output frame height */
-        for (rdft_bits = 1; 1 << rdft_bits < 2 * h; rdft_bits++);
+        /* FFT window size (precision) according to the requested output frame height */
+        for (fft_bits = 1; 1 << fft_bits < 2 * h; fft_bits++);
     } else {
-        /* RDFT window size (precision) according to the requested output frame width */
-        for (rdft_bits = 1; 1 << rdft_bits < 2 * w; rdft_bits++);
+        /* FFT window size (precision) according to the requested output frame width */
+        for (fft_bits = 1; 1 << fft_bits < 2 * w; fft_bits++);
     }
-    s->win_size = 1 << rdft_bits;
+    s->win_size = 1 << fft_bits;
 
     /* (re-)configuration if the video output changed (or first init) */
-    if (rdft_bits != s->rdft_bits) {
+    if (fft_bits != s->fft_bits) {
         AVFrame *outpicref;
 
-        av_rdft_end(s->rdft);
-        s->rdft = av_rdft_init(rdft_bits, DFT_R2C);
-        if (!s->rdft) {
-            av_log(ctx, AV_LOG_ERROR, "Unable to create RDFT context. "
+        av_fft_end(s->fft);
+        s->fft = av_fft_init(fft_bits, 0);
+        if (!s->fft) {
+            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT context. "
                    "The window size might be too high.\n");
             return AVERROR(EINVAL);
         }
-        s->rdft_bits = rdft_bits;
+        s->fft_bits = fft_bits;
 
-        /* RDFT buffers: x2 for each (display) channel buffer.
+        /* FFT buffers: x2 for each (display) channel buffer.
          * Note: we use free and malloc instead of a realloc-like function to
          * make sure the buffer is aligned in memory for the FFT functions. */
         for (i = 0; i < s->nb_display_channels; i++)
-            av_freep(&s->rdft_data[i]);
-        av_freep(&s->rdft_data);
+            av_freep(&s->fft_data[i]);
+        av_freep(&s->fft_data);
         s->nb_display_channels = inlink->channels;
 
         s->magnitudes = av_calloc(s->nb_display_channels, sizeof(*s->magnitudes));
@@ -300,12 +300,12 @@ static int config_output(AVFilterLink *outlink)
                 return AVERROR(ENOMEM);
         }
 
-        s->rdft_data = av_calloc(s->nb_display_channels, sizeof(*s->rdft_data));
-        if (!s->rdft_data)
+        s->fft_data = av_calloc(s->nb_display_channels, sizeof(*s->fft_data));
+        if (!s->fft_data)
             return AVERROR(ENOMEM);
         for (i = 0; i < s->nb_display_channels; i++) {
-            s->rdft_data[i] = av_calloc(s->win_size, sizeof(**s->rdft_data));
-            if (!s->rdft_data[i])
+            s->fft_data[i] = av_calloc(s->win_size, sizeof(**s->fft_data));
+            if (!s->fft_data[i])
                 return AVERROR(ENOMEM);
         }
 
@@ -327,7 +327,7 @@ static int config_output(AVFilterLink *outlink)
         for (s->win_scale = 0, i = 0; i < s->win_size; i++) {
             s->win_scale += s->window_func_lut[i] * s->window_func_lut[i];
         }
-        s->win_scale = 1. / (sqrt(s->win_scale) * 32768.);
+        s->win_scale = 1. / sqrt(s->win_scale);
 
         /* prepare the initial picref buffer (black frame) */
         av_frame_free(&s->outpicref);
@@ -363,7 +363,7 @@ static int config_output(AVFilterLink *outlink)
                          sizeof(*s->combine_buffer));
     }
 
-    av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d RDFT window size:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d FFT window size:%d\n",
            s->w, s->h, s->win_size);
 
     av_audio_fifo_free(s->fifo);
@@ -373,25 +373,29 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void run_rdft(ShowSpectrumContext *s, AVFrame *fin)
+static void run_fft(ShowSpectrumContext *s, AVFrame *fin)
 {
     int ch, n;
 
-    /* fill RDFT input with the number of samples available */
+    /* fill FFT input with the number of samples available */
     for (ch = 0; ch < s->nb_display_channels; ch++) {
-        const int16_t *p = (int16_t *)fin->extended_data[ch];
+        const float *p = (float *)fin->extended_data[ch];
 
-        for (n = 0; n < s->win_size; n++)
-            s->rdft_data[ch][n] = p[n] * s->window_func_lut[n];
+        for (n = 0; n < s->win_size; n++) {
+            s->fft_data[ch][n].re = p[n] * s->window_func_lut[n];
+            s->fft_data[ch][n].im = 0;
+        }
     }
 
-    /* run RDFT on each samples set */
-    for (ch = 0; ch < s->nb_display_channels; ch++)
-        av_rdft_calc(s->rdft, s->rdft_data[ch]);
+    /* run FFT on each samples set */
+    for (ch = 0; ch < s->nb_display_channels; ch++) {
+        av_fft_permute(s->fft, s->fft_data[ch]);
+        av_fft_calc(s->fft, s->fft_data[ch]);
+    }
 }
 
-#define RE(y, ch) s->rdft_data[ch][2 * (y) + 0]
-#define IM(y, ch) s->rdft_data[ch][2 * (y) + 1]
+#define RE(y, ch) s->fft_data[ch][y].re
+#define IM(y, ch) s->fft_data[ch][y].im
 #define MAGNITUDE(y, ch) hypot(RE(y, ch), IM(y, ch))
 
 static void calc_magnitudes(ShowSpectrumContext *s)
@@ -721,7 +725,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
         av_assert0(fin->nb_samples == s->win_size);
 
-        run_rdft(s, fin);
+        run_fft(s, fin);
         calc_magnitudes(s);
 
         ret = plot_spectrum_column(inlink, fin);
@@ -847,12 +851,12 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
 
             if (ret < s->win_size) {
                 for (ch = 0; ch < s->nb_display_channels; ch++) {
-                    memset(fin->extended_data[ch] + ret * sizeof(int16_t), 0,
-                           (s->win_size - ret) * sizeof(int16_t));
+                    memset(fin->extended_data[ch] + ret * sizeof(float), 0,
+                           (s->win_size - ret) * sizeof(float));
                 }
             }
 
-            run_rdft(s, fin);
+            run_fft(s, fin);
             acalc_magnitudes(s);
 
             consumed += spf;
