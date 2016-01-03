@@ -469,7 +469,7 @@ static int hls_slice_header(HEVCContext *s)
 
         slice_address_length = av_ceil_log2(s->ps.sps->ctb_width *
                                             s->ps.sps->ctb_height);
-        sh->slice_segment_addr = slice_address_length ? get_bits(gb, slice_address_length) : 0;
+        sh->slice_segment_addr = get_bitsz(gb, slice_address_length);
         if (sh->slice_segment_addr >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Invalid slice segment address: %u.\n",

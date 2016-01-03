@@ -1222,7 +1222,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
         int num_fill_bits;
         if (!(num_fill_bits = get_bits(&s->gb, 2))) {
             int len = get_bits(&s->gb, 4);
-            num_fill_bits = (len ? get_bits(&s->gb, len) : 0) + 1;
+            num_fill_bits = get_bitsz(&s->gb, len) + 1;
         }
 
         if (num_fill_bits >= 0) {

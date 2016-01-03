@@ -422,8 +422,7 @@ static void decode_ac_filter(WmallDecodeCtx *s)
     s->acfilter_scaling = get_bits(&s->gb, 4);
 
     for (i = 0; i < s->acfilter_order; i++)
-        s->acfilter_coeffs[i] = (s->acfilter_scaling ?
-                                 get_bits(&s->gb, s->acfilter_scaling) : 0) + 1;
+        s->acfilter_coeffs[i] = get_bitsz(&s->gb, s->acfilter_scaling) + 1;
 }
 
 static void decode_mclms(WmallDecodeCtx *s)
@@ -436,7 +435,7 @@ static void decode_mclms(WmallDecodeCtx *s)
         if (1 << cbits < s->mclms_scaling + 1)
             cbits++;
 
-        send_coef_bits = (cbits ? get_bits(&s->gb, cbits) : 0) + 2;
+        send_coef_bits = get_bitsz(&s->gb, cbits) + 2;
 
         for (i = 0; i < s->mclms_order * s->num_channels * s->num_channels; i++)
             s->mclms_coeffs[i] = get_bits(&s->gb, send_coef_bits);
@@ -489,7 +488,7 @@ static int decode_cdlms(WmallDecodeCtx *s)
                 if ((1 << cbits) < s->cdlms[c][i].scaling + 1)
                     cbits++;
 
-                s->cdlms[c][i].bitsend = (cbits ? get_bits(&s->gb, cbits) : 0) + 2;
+                s->cdlms[c][i].bitsend = get_bitsz(&s->gb, cbits) + 2;
                 shift_l = 32 - s->cdlms[c][i].bitsend;
                 shift_r = 32 - s->cdlms[c][i].scaling - 2;
                 for (j = 0; j < s->cdlms[c][i].coefsend; j++)
