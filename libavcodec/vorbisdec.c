@@ -789,6 +789,11 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc)
 
         if (get_bits1(gb)) {
             mapping_setup->coupling_steps = get_bits(gb, 8) + 1;
+            if (vc->audio_channels < 2) {
+                av_log(vc->avctx, AV_LOG_ERROR,
+                       "Square polar channel mapping with less than two channels is not compliant with the Vorbis I specification.\n");
+                return AVERROR_INVALIDDATA;
+            }
             mapping_setup->magnitude      = av_mallocz(mapping_setup->coupling_steps *
                                                        sizeof(*mapping_setup->magnitude));
             mapping_setup->angle          = av_mallocz(mapping_setup->coupling_steps *
