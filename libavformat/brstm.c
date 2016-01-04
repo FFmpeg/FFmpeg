@@ -392,6 +392,10 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!b->adpc) {
             av_log(s, AV_LOG_ERROR, "adpcm_thp requires ADPC chunk, but none was found.\n");
             return AVERROR_INVALIDDATA;
+        if (!b->table) {
+            b->table = av_mallocz(32 * codec->channels);
+            if (!b->table)
+                return AVERROR(ENOMEM);
         }
 
         if (size > (INT_MAX - 32 - 4) ||
