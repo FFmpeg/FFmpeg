@@ -14625,6 +14625,8 @@ each channel is displayed using the nebulae color scheme
 each channel is displayed using the fire color scheme
 @item fiery
 each channel is displayed using the fiery color scheme
+@item fruit
+each channel is displayed using the fruit color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -14758,6 +14760,8 @@ each channel is displayed using the nebulae color scheme
 each channel is displayed using the fire color scheme
 @item fiery
 each channel is displayed using the fiery color scheme
+@item fruit
+each channel is displayed using the fruit color scheme
 @end table
 Default value is @samp{intensity}.
 
