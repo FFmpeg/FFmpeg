@@ -38,6 +38,8 @@
 static const AVClass ac3enc_class = { "Fixed-Point AC-3 Encoder", av_default_item_name,
                                       ac3_options, LIBAVUTIL_VERSION_INT };
 
+static int normalize_samples(AC3EncodeContext *s);
+
 #include "ac3enc_template.c"
 
 

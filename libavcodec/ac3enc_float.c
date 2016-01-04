@@ -83,16 +83,6 @@ av_cold int ff_ac3_float_mdct_init(AC3EncodeContext *s)
 
 
 /*
- * Normalize the input samples.
- * Not needed for the floating-point encoder.
- */
-static int normalize_samples(AC3EncodeContext *s)
-{
-    return 0;
-}
-
-
-/*
  * Scale MDCT coefficients from float to 24-bit fixed-point.
  */
 static void scale_coefficients(AC3EncodeContext *s)
