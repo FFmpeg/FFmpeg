@@ -1071,6 +1071,12 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                srcW, srcH, dstW, dstH);
         return AVERROR(EINVAL);
     }
+    if (flags & SWS_FAST_BILINEAR) {
+        if (srcW < 8 || dstW < 8) {
+            flags ^= SWS_FAST_BILINEAR | SWS_BILINEAR;
+            c->flags = flags;
+        }
+    }
 
     if (!dstFilter)
         dstFilter = &dummyFilter;
