@@ -416,7 +416,9 @@ static int do_qsv_decode(AVCodecContext *avctx, QSVContext *q,
         av_fifo_generic_read(q->async_fifo, &sync,      sizeof(sync),      NULL);
         out_frame->queued = 0;
 
-        MFXVideoCORE_SyncOperation(q->session, sync, 60000);
+        do {
+            ret = MFXVideoCORE_SyncOperation(q->session, sync, 1000);
+        } while (ret == MFX_WRN_IN_EXECUTION);
 
         src_frame = out_frame->frame;
 
