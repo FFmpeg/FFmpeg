@@ -68,6 +68,7 @@ typedef struct {
     int win_size;
     double win_scale;
     float overlap;
+    float gain;
     int skip_samples;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
     AVAudioFifo *fifo;
@@ -125,6 +126,7 @@ static const AVOption showspectrum_options[] = {
         { "vertical",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=VERTICAL},   0, 0, FLAGS, "orientation" },
         { "horizontal", NULL, 0, AV_OPT_TYPE_CONST, {.i64=HORIZONTAL}, 0, 0, FLAGS, "orientation" },
     { "overlap", "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl = 0}, 0, 1, FLAGS },
+    { "gain", "set scale gain", OFFSET(gain), AV_OPT_TYPE_FLOAT, {.dbl = 1}, 0, 128, FLAGS },
     { NULL }
 };
 
@@ -497,6 +499,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     ShowSpectrumContext *s = ctx->priv;
     AVFrame *outpicref = s->outpicref;
     const double w = s->win_scale;
+    const float g = s->gain;
     int h = s->orientation == VERTICAL ? s->channel_height : s->channel_width;
 
     int ch, plane, x, y;
@@ -562,7 +565,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             float *out = &s->combine_buffer[3 * row];
 
             /* get magnitude */
-            float a = w * magnitudes[y];
+            float a = g * w * magnitudes[y];
 
             /* apply scale */
             switch (s->scale) {
@@ -814,6 +817,7 @@ static const AVOption showspectrumpic_options[] = {
     { "orientation", "set orientation", OFFSET(orientation), AV_OPT_TYPE_INT, {.i64=VERTICAL}, 0, NB_ORIENTATIONS-1, FLAGS, "orientation" },
         { "vertical",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=VERTICAL},   0, 0, FLAGS, "orientation" },
         { "horizontal", NULL, 0, AV_OPT_TYPE_CONST, {.i64=HORIZONTAL}, 0, 0, FLAGS, "orientation" },
+    { "gain", "set scale gain", OFFSET(gain), AV_OPT_TYPE_FLOAT, {.dbl = 1}, 0, 128, FLAGS },
     { NULL }
 };
 
