@@ -181,22 +181,6 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
         if (len < sl->ref_count[0])
             memset(&sl->ref_list[0][len], 0, sizeof(H264Ref) * (sl->ref_count[0] - len));
     }
-#ifdef TRACE
-    for (i = 0; i < sl->ref_count[0]; i++) {
-        ff_tlog(h->avctx, "List0: %s fn:%d 0x%p\n",
-                (sl->ref_list[0][i].long_ref ? "LT" : "ST"),
-                sl->ref_list[0][i].pic_id,
-                sl->ref_list[0][i].f->data[0]);
-    }
-    if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-        for (i = 0; i < sl->ref_count[1]; i++) {
-            ff_tlog(h->avctx, "List1: %s fn:%d 0x%p\n",
-                    (sl->ref_list[1][i].long_ref ? "LT" : "ST"),
-                    sl->ref_list[1][i].pic_id,
-                    sl->ref_list[1][i].f->data[0]);
-        }
-    }
-#endif
 
     for (j = 0; j<1+(sl->slice_type_nos == AV_PICTURE_TYPE_B); j++) {
         for (i = 0; i < sl->ref_count[j]; i++) {
