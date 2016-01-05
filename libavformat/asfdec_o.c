@@ -178,6 +178,9 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t size   = avio_rl64(pb);
     int ret;
 
+    if (size > INT64_MAX)
+        return AVERROR_INVALIDDATA;
+
     if (asf->is_header)
         asf->unknown_size = size;
     asf->is_header = 0;
