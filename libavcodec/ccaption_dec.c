@@ -361,24 +361,20 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
 /**
  * @param pts it is required to set end time
  */
-static int handle_edm(CCaptionSubContext *ctx, int64_t pts)
+static void handle_edm(CCaptionSubContext *ctx, int64_t pts)
 {
-    int ret = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
 
     reap_screen(ctx, pts);
     screen->row_used = 0;
     ctx->screen_changed = 1;
-    return ret;
 }
 
-static int handle_eoc(CCaptionSubContext *ctx, int64_t pts)
+static void handle_eoc(CCaptionSubContext *ctx, int64_t pts)
 {
-    int ret;
-    ret = handle_edm(ctx,pts);
+    handle_edm(ctx,pts);
     ctx->active_screen = !ctx->active_screen;
     ctx->cursor_column = 0;
-    return ret;
 }
 
 static void handle_delete_end_of_row(CCaptionSubContext *ctx, char hi, char lo)
@@ -416,9 +412,8 @@ static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
        ff_dlog(ctx, "(%c)\n", hi);
 }
 
-static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8_t lo)
+static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8_t lo)
 {
-    int ret = 0;
     if (hi == ctx->prev_cmd[0] && lo == ctx->prev_cmd[1]) {
         /* ignore redundant command */
     } else if ( (hi == 0x10 && (lo >= 0x40 && lo <= 0x5f)) ||
@@ -458,7 +453,7 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
             break;
         case 0x2c:
             /* erase display memory */
-            ret = handle_edm(ctx, pts);
+            handle_edm(ctx, pts);
             break;
         case 0x2d:
             /* carriage return */
@@ -471,7 +466,7 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
         case 0x2f:
             /* end of caption */
             ff_dlog(ctx, "handle_eoc\n");
-            ret = handle_eoc(ctx, pts);
+            handle_eoc(ctx, pts);
             break;
         default:
             ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
@@ -488,8 +483,6 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
     /* set prev command */
     ctx->prev_cmd[0] = hi;
     ctx->prev_cmd[1] = lo;
-
-    return ret;
 }
 
 static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avpkt)
