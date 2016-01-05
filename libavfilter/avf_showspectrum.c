@@ -595,7 +595,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 a = pow(a, 0.20);
                 break;
             case LOG:
-                a = 1 + log10(FFMAX(FFMIN(1, a * w), 1e-6)) / 6; // zero = -120dBFS
+                a = 1 + log10(av_clipd(a * w, 1e-6, 1)) / 6; // zero = -120dBFS
                 break;
             default:
                 av_assert0(0);
@@ -632,7 +632,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                          (outlink->h - 1) * outpicref->linesize[plane] +
                          s->xpos;
             for (y = 0; y < outlink->h; y++) {
-                *p = lrint(FFMAX(0, FFMIN(s->combine_buffer[3 * y + plane], 255)));
+                *p = lrintf(av_clipf(s->combine_buffer[3 * y + plane], 0, 255));
                 p -= outpicref->linesize[plane];
             }
         }
@@ -660,7 +660,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             uint8_t *p = outpicref->data[plane] +
                          s->xpos * outpicref->linesize[plane];
             for (x = 0; x < outlink->w; x++) {
-                *p = lrint(FFMAX(0, FFMIN(s->combine_buffer[3 * x + plane], 255)));
+                *p = lrintf(av_clipf(s->combine_buffer[3 * x + plane], 0, 255));
                 p++;
             }
         }
