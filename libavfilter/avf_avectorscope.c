@@ -40,15 +40,23 @@ enum VectorScopeMode {
     MODE_NB,
 };
 
+enum VectorScopeDraw {
+    DOT,
+    LINE,
+    DRAW_NB,
+};
+
 typedef struct AudioVectorScopeContext {
     const AVClass *class;
     AVFrame *outpicref;
     int w, h;
     int hw, hh;
     int mode;
+    int draw;
     int contrast[4];
     int fade[4];
     double zoom;
+    unsigned prev_x, prev_y;
     AVRational frame_rate;
 } AudioVectorScopeContext;
 
@@ -74,6 +82,9 @@ static const AVOption avectorscope_options[] = {
     { "bf", "set blue fade",      OFFSET(fade[2]), AV_OPT_TYPE_INT, {.i64=5},  0, 255, FLAGS },
     { "af", "set alpha fade",     OFFSET(fade[3]), AV_OPT_TYPE_INT, {.i64=5},  0, 255, FLAGS },
     { "zoom", "set zoom factor",  OFFSET(zoom), AV_OPT_TYPE_DOUBLE, {.dbl=1},  1, 10, FLAGS },
+    { "draw", "set draw mode", OFFSET(draw), AV_OPT_TYPE_INT, {.i64=DOT}, 0, DRAW_NB-1, FLAGS, "draw" },
+    { "dot",   "", 0, AV_OPT_TYPE_CONST, {.i64=DOT} , 0, 0, FLAGS, "draw" },
+    { "line",  "", 0, AV_OPT_TYPE_CONST, {.i64=LINE}, 0, 0, FLAGS, "draw" },
     { NULL }
 };
 
@@ -97,6 +108,32 @@ static void draw_dot(AudioVectorScopeContext *s, unsigned x, unsigned y)
     dst[1] = FFMIN(dst[1] + s->contrast[1], 255);
     dst[2] = FFMIN(dst[2] + s->contrast[2], 255);
     dst[3] = FFMIN(dst[3] + s->contrast[3], 255);
+}
+
+static void draw_line(AudioVectorScopeContext *s, int x0, int y0, int x1, int y1)
+{
+    int dx = FFABS(x1-x0), sx = x0 < x1 ? 1 : -1;
+    int dy = FFABS(y1-y0), sy = y0 < y1 ? 1 : -1;
+    int err = (dx>dy ? dx : -dy) / 2, e2;
+
+    for (;;) {
+        draw_dot(s, x0, y0);
+
+        if (x0 == x1 && y0 == y1)
+            break;
+
+        e2 = err;
+
+        if (e2 >-dx) {
+            err -= dy;
+            x0 += sx;
+        }
+
+        if (e2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
 }
 
 static void fade(AudioVectorScopeContext *s)
@@ -168,8 +205,8 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->frame_rate = s->frame_rate;
 
-    s->hw = s->w / 2;
-    s->hh = s->h / 2;
+    s->prev_x = s->hw = s->w / 2;
+    s->prev_y = s->hh = s->h / 2;
 
     return 0;
 }
@@ -182,6 +219,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     const int hw = s->hw;
     const int hh = s->hh;
     unsigned x, y;
+    unsigned prev_x = s->prev_x, prev_y = s->prev_y;
     const double zoom = s->zoom;
     int i;
 
@@ -223,7 +261,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 y = s->h - s->h * fabsf(cx + cy) * .7;
             }
 
-            draw_dot(s, x, y);
+            if (s->draw == DOT) {
+                draw_dot(s, x, y);
+            } else {
+                draw_line(s, x, y, prev_x, prev_y);
+            }
+            prev_x = x;
+            prev_y = y;
         }
         break;
     case AV_SAMPLE_FMT_FLT:
@@ -247,11 +291,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 y = s->h - s->h * fabsf(cx + cy) * .7;
             }
 
-            draw_dot(s, x, y);
+            if (s->draw == DOT) {
+                draw_dot(s, x, y);
+            } else {
+                draw_line(s, x, y, prev_x, prev_y);
+            }
+            prev_x = x;
+            prev_y = y;
         }
         break;
     }
 
+    s->prev_x = x, s->prev_y = y;
     av_frame_free(&insamples);
 
     return ff_filter_frame(outlink, av_frame_clone(s->outpicref));
