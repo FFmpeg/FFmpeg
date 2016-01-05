@@ -893,7 +893,7 @@ static void implicit_weight_table(H264Context *h, int field)
             cur_poc = h->cur_pic_ptr->field_poc[h->picture_structure - 1];
         }
         if (h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF(h) &&
-            h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2 * cur_poc) {
+            h->ref_list[0][0].poc + (int64_t)h->ref_list[1][0].poc == 2 * cur_poc) {
             h->use_weight        = 0;
             h->use_weight_chroma = 0;
             return;
@@ -914,7 +914,7 @@ static void implicit_weight_table(H264Context *h, int field)
     h->chroma_log2_weight_denom = 5;
 
     for (ref0 = ref_start; ref0 < ref_count0; ref0++) {
-        int poc0 = h->ref_list[0][ref0].poc;
+        int64_t poc0 = h->ref_list[0][ref0].poc;
         for (ref1 = ref_start; ref1 < ref_count1; ref1++) {
             int w = 32;
             if (!h->ref_list[0][ref0].long_ref && !h->ref_list[1][ref1].long_ref) {
