@@ -455,7 +455,7 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
     int ret = 0;
     if (hi == ctx->prev_cmd[0] && lo == ctx->prev_cmd[1]) {
         /* ignore redundant command */
-    } else if ( (hi == 0x10 && (lo >= 0x40 || lo <= 0x5f)) ||
+    } else if ( (hi == 0x10 && (lo >= 0x40 && lo <= 0x5f)) ||
               ( (hi >= 0x11 && hi <= 0x17) && (lo >= 0x40 && lo <= 0x7f) ) ) {
         handle_pac(ctx, hi, lo);
     } else if ( ( hi == 0x11 && lo >= 0x20 && lo <= 0x2f ) ||
