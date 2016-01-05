@@ -125,7 +125,7 @@ typedef struct CCaptionSubContext {
     AVBPrint buffer;
     int screen_changed;
     int rollup;
-    enum  cc_mode mode;
+    enum cc_mode mode;
     int64_t start_time;
     /* visible screen time */
     int64_t startv_time;
@@ -180,7 +180,7 @@ static int write_char(CCaptionSubContext *ctx, char *row, uint8_t col, char ch)
         return 0;
     }
     else {
-        av_log(ctx, AV_LOG_WARNING,"Data Ignored since exceeding screen width\n");
+        av_log(ctx, AV_LOG_WARNING, "Data Ignored since exceeding screen width\n");
         return AVERROR_INVALIDDATA;
     }
 }
@@ -285,7 +285,7 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
 
     for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
     {
-        if (CHECK_FLAG(screen->row_used,i)) {
+        if (CHECK_FLAG(screen->row_used, i)) {
             char *str = screen->characters[i];
             /* skip space */
             while (*str == ' ')
@@ -322,7 +322,7 @@ static void handle_textattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     ctx->cursor_color = pac2_attribs[i][0];
     ctx->cursor_font = pac2_attribs[i][1];
 
-    SET_FLAG(screen->row_used,ctx->cursor_row);
+    SET_FLAG(screen->row_used, ctx->cursor_row);
     ret = write_char(ctx, row, ctx->cursor_column, ' ');
     if (ret == 0)
         ctx->cursor_column++;
@@ -339,7 +339,7 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     int indent, i, ret;
 
     if (row_map[index] <= 0) {
-        av_log(ctx, AV_LOG_DEBUG,"Invalid pac index encountered\n");
+        av_log(ctx, AV_LOG_DEBUG, "Invalid pac index encountered\n");
         return;
     }
 
@@ -477,7 +477,7 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
             ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
             break;
         }
-    } else if (hi>=0x20) {
+    } else if (hi >= 0x20) {
         /* Standard characters (always in pairs) */
         handle_char(ctx, hi, lo, pts);
     } else {
@@ -504,7 +504,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     if (ctx->pktbuf->size < len) {
         ret = av_buffer_realloc(&ctx->pktbuf, len);
          if (ret < 0) {
-            av_log(ctx, AV_LOG_WARNING, "Insufficient Memory of %d truncated to %d\n",len, ctx->pktbuf->size);
+            av_log(ctx, AV_LOG_WARNING, "Insufficient Memory of %d truncated to %d\n", len, ctx->pktbuf->size);
             len = ctx->pktbuf->size;
             ret = 0;
         }
