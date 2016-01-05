@@ -44,7 +44,7 @@
 /**
  * Table of number of bits a motion vector component needs.
  */
-static uint8_t mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
+static uint8_t mv_penalty[MAX_FCODE+1][MAX_DMV*2+1];
 
 /**
  * Minimal fcode that a motion vector component would need.
@@ -677,7 +677,7 @@ static av_cold void init_mv_penalty_and_fcode(MpegEncContext *s)
     int mv;
 
     for(f_code=1; f_code<=MAX_FCODE; f_code++){
-        for(mv=-MAX_MV; mv<=MAX_MV; mv++){
+        for(mv=-MAX_DMV; mv<=MAX_DMV; mv++){
             int len;
 
             if(mv==0) len= ff_mvtab[0][1];
@@ -698,7 +698,7 @@ static av_cold void init_mv_penalty_and_fcode(MpegEncContext *s)
                 }
             }
 
-            mv_penalty[f_code][mv+MAX_MV]= len;
+            mv_penalty[f_code][mv+MAX_DMV]= len;
         }
     }
 

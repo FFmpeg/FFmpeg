@@ -284,7 +284,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
     c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
-    c->current_mv_penalty= c->mv_penalty[s->m.f_code=1] + MAX_MV;
+    c->current_mv_penalty= c->mv_penalty[s->m.f_code=1] + MAX_DMV;
 
     c->xmin = - x*block_w - 16+3;
     c->ymin = - y*block_w - 16+3;
