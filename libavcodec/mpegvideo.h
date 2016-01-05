@@ -66,6 +66,7 @@ enum OutputFormat {
 
 #define MAX_FCODE 7
 #define MAX_MV 4096
+#define MAX_DMV (2*MAX_MV)
 
 #define MAX_THREADS 32
 #define MAX_PICTURE_COUNT 36
@@ -198,7 +199,7 @@ typedef struct MotionEstContext{
     op_pixels_func (*hpel_avg)[4];
     qpel_mc_func (*qpel_put)[16];
     qpel_mc_func (*qpel_avg)[16];
-    uint8_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV
+    uint8_t (*mv_penalty)[MAX_DMV*2+1];  ///< amount of bits needed to encode a MV
     uint8_t *current_mv_penalty;
     int (*sub_motion_search)(struct MpegEncContext * s,
                                   int *mx_ptr, int *my_ptr, int dmin,
