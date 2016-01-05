@@ -105,9 +105,17 @@ static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
             break;                                                            \
         case 2:                                                               \
             idx = (bytestream2_get_byte(gbc) + 2) * x;                        \
+            if (idx > pos) {                                                  \
+                av_log(avctx, AV_LOG_ERROR, "idx %d > %d\n", idx, pos);       \
+                return AVERROR_INVALIDDATA;                                   \
+            }                                                                 \
             break;                                                            \
         case 3:                                                               \
             idx = (bytestream2_get_le16(gbc) + 0x102) * x;                    \
+            if (idx > pos) {                                                  \
+                av_log(avctx, AV_LOG_ERROR, "idx %d > %d\n", idx, pos);       \
+                return AVERROR_INVALIDDATA;                                   \
+            }                                                                 \
             break;                                                            \
         }                                                                     \
     } while(0)
