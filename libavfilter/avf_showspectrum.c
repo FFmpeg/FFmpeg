@@ -590,7 +590,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 a = cbrt(a);
                 break;
             case FOURTHRT:
-                a = pow(a, 0.25);
+                a = sqrt(sqrt(a));
                 break;
             case FIFTHRT:
                 a = pow(a, 0.20);
