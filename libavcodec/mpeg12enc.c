@@ -47,7 +47,7 @@ static const uint8_t svcd_scan_offset_placeholder[] = {
     0x81, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-static uint8_t mv_penalty[MAX_FCODE + 1][MAX_MV * 2 + 1];
+static uint8_t mv_penalty[MAX_FCODE + 1][MAX_DMV * 2 + 1];
 static uint8_t fcode_tab[MAX_MV * 2 + 1];
 
 static uint8_t uni_mpeg1_ac_vlc_len[64 * 64 * 2];
@@ -1041,7 +1041,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
         }
 
         for (f_code = 1; f_code <= MAX_FCODE; f_code++)
-            for (mv = -MAX_MV; mv <= MAX_MV; mv++) {
+            for (mv = -MAX_DMV; mv <= MAX_DMV; mv++) {
                 int len;
 
                 if (mv == 0) {
@@ -1064,7 +1064,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
                               2 + bit_size;
                 }
 
-                mv_penalty[f_code][mv + MAX_MV] = len;
+                mv_penalty[f_code][mv + MAX_DMV] = len;
             }
 
 
