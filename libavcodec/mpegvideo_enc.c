@@ -342,6 +342,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         break;
     }
 
+    avctx->bits_per_raw_sample = av_clip(avctx->bits_per_raw_sample, 0, 8);
     s->bit_rate = avctx->bit_rate;
     s->width    = avctx->width;
     s->height   = avctx->height;
