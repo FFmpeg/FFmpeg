@@ -1287,6 +1287,10 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
         }
         if (!asf_pkt) {
             if (asf->packet_offset + asf->packet_size <= asf->data_offset + asf->data_size) {
+                if (!asf->packet_size) {
+                    av_log(s, AV_LOG_ERROR, "Invalid packet size 0.\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 avio_seek(pb, asf->packet_offset + asf->packet_size, SEEK_SET);
                 av_log(s, AV_LOG_WARNING, "Skipping the stream with the invalid stream index %d.\n",
                        asf->stream_index);
