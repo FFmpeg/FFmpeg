@@ -549,7 +549,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "</MPD>\n");
     avio_flush(out);
     ff_format_io_close(s, &out);
-    return ff_rename(temp_filename, s->filename, s);
+    return avpriv_io_move(temp_filename, s->filename);
 }
 
 static int dash_write_header(AVFormatContext *s)
@@ -859,7 +859,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         } else {
             ffurl_close(os->out);
             os->out = NULL;
-            ret = ff_rename(temp_path, full_path, s);
+            ret = avpriv_io_move(temp_path, full_path);
             if (ret < 0)
                 break;
         }
