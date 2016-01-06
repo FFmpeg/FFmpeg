@@ -176,7 +176,6 @@ static int file_delete(URLContext *h)
 
 static int file_move(URLContext *h_src, URLContext *h_dst)
 {
-#if HAVE_UNISTD_H
     const char *filename_src = h_src->filename;
     const char *filename_dst = h_dst->filename;
     av_strstart(filename_src, "file:", &filename_src);
@@ -186,9 +185,6 @@ static int file_move(URLContext *h_src, URLContext *h_dst)
         return AVERROR(errno);
 
     return 0;
-#else
-    return AVERROR(ENOSYS);
-#endif /* HAVE_UNISTD_H */
 }
 
 #if CONFIG_FILE_PROTOCOL
