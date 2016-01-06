@@ -37,9 +37,7 @@
 enum cc_mode {
     CCMODE_POPON,
     CCMODE_PAINTON,
-    CCMODE_ROLLUP_2,
-    CCMODE_ROLLUP_3,
-    CCMODE_ROLLUP_4,
+    CCMODE_ROLLUP,
     CCMODE_TEXT,
 };
 
@@ -143,7 +141,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
 
     av_bprint_init(&ctx->buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
     /* taking by default roll up to 2 */
-    ctx->mode = CCMODE_ROLLUP_2;
+    ctx->mode = CCMODE_ROLLUP;
     ctx->rollup = 2;
     ret = ff_ass_subtitle_header_default(avctx);
     if (ret < 0) {
@@ -233,9 +231,7 @@ static struct Screen *get_writing_screen(CCaptionSubContext *ctx)
         // use Inactive screen
         return ctx->screen + !ctx->active_screen;
     case CCMODE_PAINTON:
-    case CCMODE_ROLLUP_2:
-    case CCMODE_ROLLUP_3:
-    case CCMODE_ROLLUP_4:
+    case CCMODE_ROLLUP:
     case CCMODE_TEXT:
         // use active screen
         return ctx->screen + ctx->active_screen;
@@ -433,15 +429,15 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
             break;
         case 0x25:
             ctx->rollup = 2;
-            ctx->mode = CCMODE_ROLLUP_2;
+            ctx->mode = CCMODE_ROLLUP;
             break;
         case 0x26:
             ctx->rollup = 3;
-            ctx->mode = CCMODE_ROLLUP_3;
+            ctx->mode = CCMODE_ROLLUP;
             break;
         case 0x27:
             ctx->rollup = 4;
-            ctx->mode = CCMODE_ROLLUP_4;
+            ctx->mode = CCMODE_ROLLUP;
             break;
         case 0x29:
             /* resume direct captioning */
