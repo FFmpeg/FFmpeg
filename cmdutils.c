@@ -1504,12 +1504,12 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
         case 't': type = AVMEDIA_TYPE_ATTACHMENT; break;
         default:  av_assert0(0);
         }
-        if (type != st->codec->codec_type)
+        if (type != st->codecpar->codec_type)
             return 0;
         if (*spec++ == ':') { /* possibly followed by :index */
             int i, index = strtol(spec, NULL, 0);
             for (i = 0; i < s->nb_streams; i++)
-                if (s->streams[i]->codec->codec_type == type && index-- == 0)
+                if (s->streams[i]->codecpar->codec_type == type && index-- == 0)
                    return i == st->index;
             return 0;
         }
@@ -1565,17 +1565,17 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
         av_freep(&key);
         return ret;
     } else if (*spec == 'u') {
-        AVCodecContext *avctx = st->codec;
+        AVCodecParameters *par = st->codecpar;
         int val;
-        switch (avctx->codec_type) {
+        switch (par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            val = avctx->sample_rate && avctx->channels;
-            if (avctx->sample_fmt == AV_SAMPLE_FMT_NONE)
+            val = par->sample_rate && par->channels;
+            if (par->format == AV_SAMPLE_FMT_NONE)
                 return 0;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            val = avctx->width && avctx->height;
-            if (avctx->pix_fmt == AV_PIX_FMT_NONE)
+            val = par->width && par->height;
+            if (par->format == AV_PIX_FMT_NONE)
                 return 0;
             break;
         case AVMEDIA_TYPE_UNKNOWN:
@@ -1585,7 +1585,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
             val = 1;
             break;
         }
-        return avctx->codec_id != AV_CODEC_ID_NONE && val != 0;
+        return par->codec_id != AV_CODEC_ID_NONE && val != 0;
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 
@@ -1607,7 +1607,7 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
         codec            = s->oformat ? avcodec_find_encoder(codec_id)
                                       : avcodec_find_decoder(codec_id);
 
-    switch (st->codec->codec_type) {
+    switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         prefix  = 'v';
         flags  |= AV_OPT_FLAG_VIDEO_PARAM;
@@ -1664,7 +1664,7 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
         return NULL;
     }
     for (i = 0; i < s->nb_streams; i++)
-        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id,
+        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
                                     s, s->streams[i], NULL);
     return opts;
 }

@@ -134,7 +134,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         s = input_files[file_idx]->ctx;
 
         for (i = 0; i < s->nb_streams; i++) {
-            if (s->streams[i]->codec->codec_type != type)
+            if (s->streams[i]->codecpar->codec_type != type)
                 continue;
             if (check_stream_specifier(s, s->streams[i], *p == ':' ? p + 1 : p) == 1) {
                 st = s->streams[i];
