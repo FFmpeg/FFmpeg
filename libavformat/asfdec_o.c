@@ -190,8 +190,13 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
         if ((ret = detect_unknown_subobject(s, asf->unknown_offset,
                                             asf->unknown_size)) < 0)
             return ret;
-    } else
+    } else {
+        if (size < 24) {
+            av_log(s, AV_LOG_ERROR, "Too small size %"PRIu64" (< 24).\n", size);
+            return AVERROR_INVALIDDATA;
+        }
         avio_skip(pb, size - 24);
+    }
 
     return 0;
 }
