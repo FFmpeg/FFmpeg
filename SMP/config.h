@@ -23,7 +23,7 @@
 #define FFMPEG_CONFIG_H
 #define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "nonfree and unredistributable"
-#define CONFIG_THIS_YEAR 2015
+#define CONFIG_THIS_YEAR 2016
 #define FFMPEG_DATADIR "."
 #define AVCONV_DATADIR "."
 #if defined(__INTEL_COMPILER)
@@ -1837,6 +1837,7 @@
 #define CONFIG_SHOWCQT_FILTER 1
 #define CONFIG_SHOWFREQS_FILTER 1
 #define CONFIG_SHOWSPECTRUM_FILTER 1
+#define CONFIG_SHOWSPECTRUMPIC_FILTER 1
 #define CONFIG_SHOWVOLUME_FILTER 1
 #define CONFIG_SHOWWAVES_FILTER 1
 #define CONFIG_SHOWWAVESPIC_FILTER 1
