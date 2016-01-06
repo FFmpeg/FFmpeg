@@ -1136,14 +1136,15 @@ static int asf_read_replicated_data(AVFormatContext *s, ASFPacket *asf_pkt)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media object size
+        if (data_size <= 0)
             return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // reading of media object size is already done
     asf_pkt->dts = avio_rl32(pb); // read presentation time
@@ -1212,14 +1213,15 @@ static int asf_read_single_payload(AVFormatContext *s, AVPacket *pkt,
     int64_t  offset;
     uint64_t size;
     unsigned char *p;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media objectgg size
+        if (data_size <= 0)
             return AVERROR_EOF;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // skip media object size
     asf_pkt->dts = avio_rl32(pb); // read presentation time
