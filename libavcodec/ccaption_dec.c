@@ -30,6 +30,8 @@
 #define UNSET_FLAG(var, val) ( (var) &=  ~( 1 << (val)) )
 #define CHECK_FLAG(var, val) ( (var) &    ( 1 << (val)) )
 
+static const AVRational ass_tb = {1, 100};
+
 /*
  * TODO list
  * 1) handle font and color completely
@@ -512,8 +514,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
             process_cc608(ctx, avpkt->pts, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
         if (ctx->screen_changed && *ctx->buffer.str)
         {
-            int start_time = av_rescale_q(ctx->start_time, avctx->time_base, (AVRational){ 1, 100 });
-            int end_time = av_rescale_q(ctx->end_time, avctx->time_base, (AVRational){ 1, 100 });
+            int start_time = av_rescale_q(ctx->start_time, avctx->time_base, ass_tb);
+            int end_time = av_rescale_q(ctx->end_time, avctx->time_base, ass_tb);
             ff_dlog(ctx, "cdp writing data (%s)\n",ctx->buffer.str);
             ret = ff_ass_add_rect_bprint(sub, &ctx->buffer, start_time, end_time - start_time);
             if (ret < 0)
