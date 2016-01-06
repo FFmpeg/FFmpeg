@@ -76,11 +76,70 @@
         }                                    \
     } while (0)
 
+static const struct {
+    NVENCSTATUS nverr;
+    int         averr;
+    const char *desc;
+} nvenc_errors[] = {
+    { NV_ENC_SUCCESS,                      0,                "success"                  },
+    { NV_ENC_ERR_NO_ENCODE_DEVICE,         AVERROR(ENOENT),  "no encode device"         },
+    { NV_ENC_ERR_UNSUPPORTED_DEVICE,       AVERROR(ENOSYS),  "unsupported device"       },
+    { NV_ENC_ERR_INVALID_ENCODERDEVICE,    AVERROR(EINVAL),  "invalid encoder device"   },
+    { NV_ENC_ERR_INVALID_DEVICE,           AVERROR(EINVAL),  "invalid device"           },
+    { NV_ENC_ERR_DEVICE_NOT_EXIST,         AVERROR(EIO),     "device does not exist"    },
+    { NV_ENC_ERR_INVALID_PTR,              AVERROR(EFAULT),  "invalid ptr"              },
+    { NV_ENC_ERR_INVALID_EVENT,            AVERROR(EINVAL),  "invalid event"            },
+    { NV_ENC_ERR_INVALID_PARAM,            AVERROR(EINVAL),  "invalid param"            },
+    { NV_ENC_ERR_INVALID_CALL,             AVERROR(EINVAL),  "invalid call"             },
+    { NV_ENC_ERR_OUT_OF_MEMORY,            AVERROR(ENOMEM),  "out of memory"            },
+    { NV_ENC_ERR_ENCODER_NOT_INITIALIZED,  AVERROR(EINVAL),  "encoder not initialized"  },
+    { NV_ENC_ERR_UNSUPPORTED_PARAM,        AVERROR(ENOSYS),  "unsupported param"        },
+    { NV_ENC_ERR_LOCK_BUSY,                AVERROR(EAGAIN),  "lock busy"                },
+    { NV_ENC_ERR_NOT_ENOUGH_BUFFER,        AVERROR(ENOBUFS), "not enough buffer"        },
+    { NV_ENC_ERR_INVALID_VERSION,          AVERROR(EINVAL),  "invalid version"          },
+    { NV_ENC_ERR_MAP_FAILED,               AVERROR(EIO),     "map failed"               },
+    { NV_ENC_ERR_NEED_MORE_INPUT,          AVERROR(EAGAIN),  "need more input"          },
+    { NV_ENC_ERR_ENCODER_BUSY,             AVERROR(EAGAIN),  "encoder busy"             },
+    { NV_ENC_ERR_EVENT_NOT_REGISTERD,      AVERROR(EBADF),   "event not registered"     },
+    { NV_ENC_ERR_GENERIC,                  AVERROR_UNKNOWN,  "generic error"            },
+    { NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY,  AVERROR(EINVAL),  "incompatible client key"  },
+    { NV_ENC_ERR_UNIMPLEMENTED,            AVERROR(ENOSYS),  "unimplemented"            },
+    { NV_ENC_ERR_RESOURCE_REGISTER_FAILED, AVERROR(EIO),     "resource register failed" },
+    { NV_ENC_ERR_RESOURCE_NOT_REGISTERED,  AVERROR(EBADF),   "resource not registered"  },
+    { NV_ENC_ERR_RESOURCE_NOT_MAPPED,      AVERROR(EBADF),   "resource not mapped"      },
+};
+
+static int nvenc_map_error(NVENCSTATUS err, const char **desc)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(nvenc_errors); i++) {
+        if (nvenc_errors[i].nverr == err) {
+            if (desc)
+                *desc = nvenc_errors[i].desc;
+            return nvenc_errors[i].averr;
+        }
+    }
+    if (desc)
+        *desc = "unknown error";
+    return AVERROR_UNKNOWN;
+}
+
+static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
+                             const char *error_string)
+{
+    const char *desc;
+    int ret;
+    ret = nvenc_map_error(err, &desc);
+    av_log(log_ctx, AV_LOG_ERROR, "%s: %s (%d)\n", error_string, desc, err);
+    return ret;
+}
+
 static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 {
     NVENCContext *ctx         = avctx->priv_data;
     NVENCLibraryContext *nvel = &ctx->nvel;
     PNVENCODEAPICREATEINSTANCE nvenc_create_instance;
+    NVENCSTATUS err;
 
     LOAD_LIBRARY(nvel->cuda, CUDA_LIBNAME);
 
@@ -101,10 +160,9 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 
     nvel->nvenc_funcs.version = NV_ENCODE_API_FUNCTION_LIST_VER;
 
-    if ((nvenc_create_instance(&nvel->nvenc_funcs)) != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot create the NVENC instance");
-        return AVERROR_UNKNOWN;
-    }
+    err = nvenc_create_instance(&nvel->nvenc_funcs);
+    if (err != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, err, "Cannot create the NVENC instance");
 
     return 0;
 }
@@ -124,9 +182,7 @@ static int nvenc_open_session(AVCodecContext *avctx)
     ret = nv->nvEncOpenEncodeSessionEx(&params, &ctx->nvenc_ctx);
     if (ret != NV_ENC_SUCCESS) {
         ctx->nvenc_ctx = NULL;
-        av_log(avctx, AV_LOG_ERROR,
-               "Cannot open the NVENC Session\n");
-        return AVERROR_UNKNOWN;
+        return nvenc_print_error(avctx, ret, "Cannot open the NVENC Session");
     }
 
     return 0;
@@ -598,11 +654,8 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
                                          ctx->params.encodeGUID,
                                          ctx->params.presetGUID,
                                          &preset_cfg);
-    if (ret != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Cannot get the preset configuration\n");
-        return AVERROR_UNKNOWN;
-    }
+    if (ret != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, ret, "Cannot get the preset configuration");
 
     memcpy(&ctx->config, &preset_cfg.presetCfg, sizeof(ctx->config));
 
@@ -640,10 +693,8 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
         return ret;
 
     ret = nv->nvEncInitializeEncoder(ctx->nvenc_ctx, &ctx->params);
-    if (ret != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot initialize the decoder");
-        return AVERROR_UNKNOWN;
-    }
+    if (ret != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, ret, "Cannot initialize the decoder");
 
     cpb_props = ff_add_cpb_side_data(avctx);
     if (!cpb_props)
@@ -687,10 +738,8 @@ static int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     }
 
     ret = nv->nvEncCreateInputBuffer(ctx->nvenc_ctx, &in_buffer);
-    if (ret != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "CreateInputBuffer failed\n");
-        return AVERROR_UNKNOWN;
-    }
+    if (ret != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, ret, "CreateInputBuffer failed");
 
     ctx->in[idx].in        = in_buffer.inputBuffer;
     ctx->in[idx].format    = in_buffer.bufferFmt;
@@ -702,10 +751,8 @@ static int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     out_buffer.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED;
 
     ret = nv->nvEncCreateBitstreamBuffer(ctx->nvenc_ctx, &out_buffer);
-    if (ret != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "CreateBitstreamBuffer failed\n");
-        return AVERROR_UNKNOWN;
-    }
+    if (ret != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, ret, "CreateBitstreamBuffer failed");
 
     ctx->out[idx].out  = out_buffer.bitstreamBuffer;
     ctx->out[idx].busy = 0;
@@ -766,10 +813,8 @@ static int nvenc_setup_extradata(AVCodecContext *avctx)
     payload.outSPSPPSPayloadSize = &avctx->extradata_size;
 
     ret = nv->nvEncGetSequenceParams(ctx->nvenc_ctx, &payload);
-    if (ret != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot get the extradata\n");
-        return AVERROR_UNKNOWN;
-    }
+    if (ret != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, ret, "Cannot get the extradata");
 
     return 0;
 }
@@ -931,22 +976,16 @@ static int nvenc_enqueue_frame(AVCodecContext *avctx, const AVFrame *frame,
 
 
     ret = nv->nvEncLockInputBuffer(ctx->nvenc_ctx, &params);
-    if (ret != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot lock the buffer %p.\n",
-               in);
-        return AVERROR_UNKNOWN;
-    }
+    if (ret != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, ret, "Cannot lock the buffer");
 
     ret = nvenc_copy_frame(&params, frame);
     if (ret < 0)
         goto fail;
 
     ret = nv->nvEncUnlockInputBuffer(ctx->nvenc_ctx, in->in);
-    if (ret != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot unlock the buffer %p.\n",
-               in);
-        return AVERROR_UNKNOWN;
-    }
+    if (ret != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, ret, "Cannot unlock the buffer");
 
     *in_surf = in;
 
@@ -1029,7 +1068,7 @@ static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
 
     ret = nv->nvEncLockBitstream(ctx->nvenc_ctx, &params);
     if (ret < 0)
-        return AVERROR_UNKNOWN;
+        return nvenc_print_error(avctx, ret, "Cannot lock the bitstream");
 
     ret = ff_alloc_packet(pkt, params.bitstreamSizeInBytes);
     if (ret < 0)
@@ -1039,7 +1078,7 @@ static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
 
     ret = nv->nvEncUnlockBitstream(ctx->nvenc_ctx, out->out);
     if (ret < 0)
-        return AVERROR_UNKNOWN;
+        return nvenc_print_error(avctx, ret, "Cannot unlock the bitstream");
 
     out->busy = out->in->locked = 0;
 
@@ -1120,12 +1159,9 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     ret = nv->nvEncEncodePicture(ctx->nvenc_ctx, &params);
-
     if (ret != NV_ENC_SUCCESS &&
-        ret != NV_ENC_ERR_NEED_MORE_INPUT) {
-
-        return AVERROR_UNKNOWN;
-    }
+        ret != NV_ENC_ERR_NEED_MORE_INPUT)
+        return nvenc_print_error(avctx, ret, "Error encoding the frame");
 
     if (out) {
         ret = nvenc_enqueue_surface(ctx->pending, out);
