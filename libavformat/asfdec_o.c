@@ -1434,6 +1434,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     while (!pb->eof_reached) {
         if (asf->state == PARSE_PACKET_HEADER) {
             asf_read_packet_header(s);
+            if (pb->eof_reached)
+                break;
             if (!asf->nb_mult_left)
                 asf->state = READ_SINGLE;
             else
