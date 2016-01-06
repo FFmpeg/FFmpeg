@@ -4239,7 +4239,7 @@ elif enabled mips; then
         ;;
         *)
             # Unknown CPU. Disable everything.
-            echo "Warning: unknown CPU. Disabling all MIPS optimizations."
+            warn "unknown CPU. Disabling all MIPS optimizations."
             disable mipsfpu
             disable mips32r2
             disable mips32r6
