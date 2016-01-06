@@ -3285,6 +3285,10 @@ typedef struct AVCodecContext {
 #define FF_SUB_CHARENC_MODE_AUTOMATIC    0  ///< libavcodec will select the mode itself
 #define FF_SUB_CHARENC_MODE_PRE_DECODER  1  ///< the AVPacket data needs to be recoded to UTF-8 before being fed to the decoder, requires iconv
 
+    int sub_text_format;
+#define FF_SUB_TEXT_FMT_ASS              0
+#define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
+
     /**
      * Skip processing alpha if supported by codec.
      * Note that if the format uses pre-multiplied alpha (common with VP6,

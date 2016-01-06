@@ -332,15 +332,25 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     s->box_flags = 0;
     s->style_entries = 0;
     for (i = 0; i < sub->num_rects; i++) {
+        const char *ass = sub->rects[i]->ass;
 
         if (sub->rects[i]->type != SUBTITLE_ASS) {
             av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
             return AVERROR(ENOSYS);
         }
 
-        dialog = ff_ass_split_dialog(s->ass_ctx, sub->rects[i]->ass, 0, &num);
+        if (!strncmp(ass, "Dialogue: ", 10)) {
+            dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
+            // TODO reindent
         for (; dialog && num--; dialog++) {
             ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
+        }
+        } else {
+            dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+            if (!dialog)
+                return AVERROR(ENOMEM);
+            ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
+            ff_ass_free_dialog(&dialog);
         }
 
         for (j = 0; j < box_count; j++) {

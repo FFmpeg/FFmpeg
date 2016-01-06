@@ -248,6 +248,7 @@ typedef struct CCaptionSubContext {
     char prev_cmd[2];
     /* buffer to store pkt data */
     AVBufferRef *pktbuf;
+    int readorder;
 } CCaptionSubContext;
 
 
@@ -306,6 +307,7 @@ static void flush_decoder(AVCodecContext *avctx)
     ctx->last_real_time = 0;
     ctx->screen_touched = 0;
     ctx->buffer_changed = 0;
+    ctx->readorder = 0;
     av_bprint_clear(&ctx->buffer);
 }
 
@@ -752,18 +754,16 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
 
         if (*ctx->buffer.str || ctx->real_time)
         {
-            int64_t sub_pts = ctx->real_time ? avpkt->pts : ctx->start_time;
-            int start_time = av_rescale_q(sub_pts, avctx->time_base, ass_tb);
-            int duration = -1;
-            if (!ctx->real_time) {
-                int end_time = av_rescale_q(ctx->end_time, avctx->time_base, ass_tb);
-                duration = end_time - start_time;
-            }
             ff_dlog(ctx, "cdp writing data (%s)\n",ctx->buffer.str);
-            ret = ff_ass_add_rect_bprint(sub, &ctx->buffer, start_time, duration);
+            ret = ff_ass_add_rect(sub, ctx->buffer.str, ctx->readorder++, 0, NULL, NULL);
             if (ret < 0)
                 return ret;
-            sub->pts = av_rescale_q(sub_pts, avctx->time_base, AV_TIME_BASE_Q);
+            sub->pts = av_rescale_q(ctx->start_time, avctx->time_base, AV_TIME_BASE_Q);
+            if (!ctx->real_time)
+                sub->end_display_time = av_rescale_q(ctx->end_time - ctx->start_time,
+                                                     avctx->time_base, av_make_q(1, 1000));
+            else
+                sub->end_display_time = -1;
             ctx->buffer_changed = 0;
             ctx->last_real_time = avpkt->pts;
             ctx->screen_touched = 0;
@@ -772,18 +772,16 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
 
     if (ctx->real_time && ctx->screen_touched &&
         avpkt->pts > ctx->last_real_time + av_rescale_q(20, ass_tb, avctx->time_base)) {
-        int start_time;
         ctx->last_real_time = avpkt->pts;
         ctx->screen_touched = 0;
 
         capture_screen(ctx);
         ctx->buffer_changed = 0;
 
-        start_time = av_rescale_q(avpkt->pts, avctx->time_base, ass_tb);
-        ret = ff_ass_add_rect_bprint(sub, &ctx->buffer, start_time, -1);
+        ret = ff_ass_add_rect(sub, ctx->buffer.str, ctx->readorder++, 0, NULL, NULL);
         if (ret < 0)
             return ret;
-        sub->pts = av_rescale_q(avpkt->pts, avctx->time_base, AV_TIME_BASE_Q);
+        sub->end_display_time = -1;
     }
 
     *got_sub = sub->num_rects > 0;

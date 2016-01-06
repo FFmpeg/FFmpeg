@@ -57,9 +57,10 @@ static int srt_decode_frame(AVCodecContext *avctx,
 {
     AVSubtitle *sub = data;
     AVBPrint buffer;
-    int ts_start, ts_end, x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+    int x1 = -1, y1 = -1, x2 = -1, y2 = -1;
     int size, ret;
     const uint8_t *p = av_packet_get_side_data(avpkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
+    FFASSDecoderContext *s = avctx->priv_data;
 
     if (p && size == 16) {
         x1 = AV_RL32(p     );
@@ -73,16 +74,8 @@ static int srt_decode_frame(AVCodecContext *avctx,
 
     av_bprint_init(&buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    // Do final divide-by-10 outside rescale to force rounding down.
-    ts_start = av_rescale_q(avpkt->pts,
-                            avctx->time_base,
-                            (AVRational){1,100});
-    ts_end   = av_rescale_q(avpkt->pts + avpkt->duration,
-                            avctx->time_base,
-                            (AVRational){1,100});
-
     srt_to_ass(avctx, &buffer, avpkt->data, x1, y1, x2, y2);
-    ret = ff_ass_add_rect_bprint(sub, &buffer, ts_start, ts_end-ts_start);
+    ret = ff_ass_add_rect(sub, buffer.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buffer, NULL);
     if (ret < 0)
         return ret;
@@ -100,6 +93,8 @@ AVCodec ff_srt_decoder = {
     .id           = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
+    .flush        = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };
 #endif
 
@@ -111,5 +106,7 @@ AVCodec ff_subrip_decoder = {
     .id           = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
+    .flush        = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };
 #endif

@@ -40,24 +40,23 @@ static av_cold int ass_decode_init(AVCodecContext *avctx)
 static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
                             AVPacket *avpkt)
 {
-    int ret;
     AVSubtitle *sub = data;
-    const char *ptr = avpkt->data;
-    static const AVRational ass_tb = {1, 100};
-    const int ts_start    = av_rescale_q(avpkt->pts,      avctx->time_base, ass_tb);
-    const int ts_duration = av_rescale_q(avpkt->duration, avctx->time_base, ass_tb);
 
     if (avpkt->size <= 0)
         return avpkt->size;
 
-    ret = ff_ass_add_rect(sub, ptr, ts_start, ts_duration, 2);
-    if (ret < 0) {
-        if (ret == AVERROR_INVALIDDATA)
-            av_log(avctx, AV_LOG_ERROR, "Invalid ASS packet\n");
-        return ret;
-    }
-
-    *got_sub_ptr = avpkt->size > 0;
+    sub->rects = av_malloc(sizeof(*sub->rects));
+    if (!sub->rects)
+        return AVERROR(ENOMEM);
+    sub->rects[0] = av_mallocz(sizeof(*sub->rects[0]));
+    if (!sub->rects[0])
+        return AVERROR(ENOMEM);
+    sub->num_rects = 1;
+    sub->rects[0]->type = SUBTITLE_ASS;
+    sub->rects[0]->ass  = av_strdup(avpkt->data);
+    if (!sub->rects[0]->ass)
+        return AVERROR(ENOMEM);
+    *got_sub_ptr = 1;
     return avpkt->size;
 }
 

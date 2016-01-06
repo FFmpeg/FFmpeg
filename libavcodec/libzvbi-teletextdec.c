@@ -74,6 +74,8 @@ typedef struct TeletextContext
     vbi_export *    ex;
 #endif
     vbi_sliced      sliced[MAX_SLICES];
+
+    int             readorder;
 } TeletextContext;
 
 static int chop_spaces_utf8(const unsigned char* t, int len)
@@ -95,37 +97,21 @@ static void subtitle_rect_free(AVSubtitleRect **sub_rect)
     av_freep(sub_rect);
 }
 
-static int create_ass_text(TeletextContext *ctx, const char *text, char **ass)
+static char *create_ass_text(TeletextContext *ctx, const char *text)
 {
     int ret;
-    AVBPrint buf, buf2;
-    const int ts_start    = av_rescale_q(ctx->pts,          AV_TIME_BASE_Q,        (AVRational){1, 100});
-    const int ts_duration = av_rescale_q(ctx->sub_duration, (AVRational){1, 1000}, (AVRational){1, 100});
+    char *dialog;
+    AVBPrint buf;
 
-    /* First we escape the plain text into buf. */
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     ff_ass_bprint_text_event(&buf, text, strlen(text), "", 0);
-    av_bprintf(&buf, "\r\n");
-
     if (!av_bprint_is_complete(&buf)) {
         av_bprint_finalize(&buf, NULL);
-        return AVERROR(ENOMEM);
+        return NULL;
     }
-
-    /* Then we create the ass dialog line in buf2 from the escaped text in buf. */
-    av_bprint_init(&buf2, 0, AV_BPRINT_SIZE_UNLIMITED);
-    ff_ass_bprint_dialog(&buf2, buf.str, ts_start, ts_duration, 0);
+    dialog = ff_ass_get_dialog(ctx->readorder++, 0, NULL, NULL, buf.str);
     av_bprint_finalize(&buf, NULL);
-
-    if (!av_bprint_is_complete(&buf2)) {
-        av_bprint_finalize(&buf2, NULL);
-        return AVERROR(ENOMEM);
-    }
-
-    if ((ret = av_bprint_finalize(&buf2, ass)) < 0)
-        return ret;
-
-    return 0;
+    return dialog;
 }
 
 /* Draw a page as text */
@@ -181,11 +167,12 @@ static int gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page
     }
 
     if (buf.len) {
-        int ret;
         sub_rect->type = SUBTITLE_ASS;
-        if ((ret = create_ass_text(ctx, buf.str, &sub_rect->ass)) < 0) {
+        sub_rect->ass = create_ass_text(ctx, buf.str);
+
+        if (!sub_rect->ass) {
             av_bprint_finalize(&buf, NULL);
-            return ret;
+            return AVERROR(ENOMEM);
         }
         av_log(ctx, AV_LOG_DEBUG, "subtext:%s:txetbus\n", sub_rect->ass);
     } else {
@@ -541,6 +528,7 @@ static int teletext_close_decoder(AVCodecContext *avctx)
     vbi_decoder_delete(ctx->vbi);
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
+    ctx->readorder = 0;
     return 0;
 }
 

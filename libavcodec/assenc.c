@@ -60,13 +60,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-        if (strncmp(ass, "Dialogue: ", 10)) {
-            av_log(avctx, AV_LOG_ERROR, "AVSubtitle rectangle ass \"%s\""
-                   " does not look like a SSA markup\n", ass);
-            return AVERROR_INVALIDDATA;
-        }
-
-        // TODO: reindent
+        if (!strncmp(ass, "Dialogue: ", 10)) {
             if (i > 0) {
                 av_log(avctx, AV_LOG_ERROR, "ASS encoder supports only one "
                        "ASS rectangle field.\n");
@@ -91,6 +85,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
             snprintf(ass_line, sizeof(ass_line), "%d,%ld,%s", ++s->id, layer, p);
             ass_line[strcspn(ass_line, "\r\n")] = 0;
             ass = ass_line;
+        }
 
         len = av_strlcpy(buf+total_len, ass, bufsize-total_len);
 
