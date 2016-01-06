@@ -824,7 +824,7 @@ static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
                        (int)(ms / (60 * 60 * 1000)),
                        (int)(ms / (60 * 1000)) % 60,
                        (int)(ms / 1000) % 60,
-                       (int)ms % 1000);
+                       (int)(ms % 1000));
         }
     } else if (!strcmp(fmt, "localtime") ||
                !strcmp(fmt, "gmtime")) {

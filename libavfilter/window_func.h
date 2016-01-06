@@ -25,7 +25,7 @@
 enum WindowFunc     { WFUNC_RECT, WFUNC_HANNING, WFUNC_HAMMING, WFUNC_BLACKMAN,
                       WFUNC_BARTLETT, WFUNC_WELCH, WFUNC_FLATTOP,
                       WFUNC_BHARRIS, WFUNC_BNUTTALL, WFUNC_SINE, WFUNC_NUTTALL,
-                      WFUNC_BHANN, WFUNC_LANCZOS, WFUNC_GAUSS, NB_WFUNC };
+                      WFUNC_BHANN, WFUNC_LANCZOS, WFUNC_GAUSS, WFUNC_TUKEY, NB_WFUNC };
 
 void ff_generate_window_func(float *lut, int N, int win_func, float *overlap);
 

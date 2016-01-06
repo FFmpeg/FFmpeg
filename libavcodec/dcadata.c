@@ -4197,14 +4197,6 @@ const uint32_t ff_dca_lossless_quant[32] = {
          4,       2,       1,       0,       0,      0,      0,      0
 };
 
-const float ff_dca_lossless_quant_d[32] = {
-           0,      1.0,      0.5,     0.33,     0.25,    0.166,    0.125,
-       0.083,   0.0625,  0.03125,   0.0156, 7.874E-3, 3.922E-3, 1.957E-3,
-    9.775E-4, 4.885E-4, 2.442E-4, 1.221E-4, 6.104E-5, 3.052E-5, 1.526E-5,
-    7.629E-6, 3.815E-6, 1.907E-6, 9.537E-7, 4.768E-7, 2.384E-7,        0,
-           0,        0,        0,        0
-};
-
 /* Vector quantization tables */
 
 DECLARE_ALIGNED(8, const int8_t, ff_dca_high_freq_vq)[1024][32] = {

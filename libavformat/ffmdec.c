@@ -68,7 +68,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
         return AVERROR_INVALIDDATA;
 }
 
-static int ffm_resync(AVFormatContext *s, int state)
+static int ffm_resync(AVFormatContext *s, uint32_t state)
 {
     av_log(s, AV_LOG_ERROR, "resyncing\n");
     while (state != PACKET_ID) {
@@ -87,7 +87,8 @@ static int ffm_read_data(AVFormatContext *s,
 {
     FFMContext *ffm = s->priv_data;
     AVIOContext *pb = s->pb;
-    int len, fill_size, size1, frame_offset, id;
+    int len, fill_size, size1, frame_offset;
+    uint32_t id;
     int64_t last_pos = -1;
 
     size1 = size;
@@ -99,11 +100,12 @@ static int ffm_read_data(AVFormatContext *s,
         if (len > size)
             len = size;
         if (len == 0) {
-            if (avio_tell(pb) == ffm->file_size)
-                if (ffm->server_attached)
+            if (avio_tell(pb) == ffm->file_size) {
+                if (ffm->server_attached) {
                     avio_seek(pb, ffm->packet_size, SEEK_SET);
-                else
+                } else
                     return AVERROR_EOF;
+            }
     retry_read:
             if (pb->buffer_size != ffm->packet_size) {
                 int64_t tell = avio_tell(pb);
@@ -122,9 +124,10 @@ static int ffm_read_data(AVFormatContext *s,
             ffm->dts = avio_rb64(pb);
             frame_offset = avio_rb16(pb);
             avio_read(pb, ffm->packet, ffm->packet_size - FFM_HEADER_SIZE);
-            ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
-            if (ffm->packet_end < ffm->packet || frame_offset < 0)
+            if (ffm->packet_size < FFM_HEADER_SIZE + fill_size || frame_offset < 0) {
                 return -1;
+            }
+            ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
             /* if first packet or resynchronization packet, we must
                handle it specifically */
             if (ffm->first_packet || (frame_offset & 0x8000)) {
@@ -140,8 +143,10 @@ static int ffm_read_data(AVFormatContext *s,
                     return 0;
                 }
                 ffm->first_packet = 0;
-                if ((frame_offset & 0x7fff) < FFM_HEADER_SIZE)
+                if ((frame_offset & 0x7fff) < FFM_HEADER_SIZE) {
+                    ffm->packet_end = ffm->packet_ptr;
                     return -1;
+                }
                 ffm->packet_ptr = ffm->packet + (frame_offset & 0x7fff) - FFM_HEADER_SIZE;
                 if (!header)
                     break;

@@ -269,6 +269,14 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
     return tmp;
 }
 
+/**
+ * Read 0-25 bits.
+ */
+static av_always_inline int get_bitsz(GetBitContext *s, int n)
+{
+    return n ? get_bits(s, n) : 0;
+}
+
 static inline unsigned int get_bits_le(GetBitContext *s, int n)
 {
     register int tmp;

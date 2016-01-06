@@ -104,6 +104,18 @@ void ff_generate_window_func(float *lut, int N, int win_func, float *overlap)
             lut[n] = exp(-0.5 * SQR((n-(N-1)/2)/(0.4*(N-1)/2.f)));
         *overlap = 0.75;
         break;
+    case WFUNC_TUKEY:
+        for (n = 0; n < N; n++) {
+            float M = (N-1)/2.;
+
+            if (FFABS(n - M) >= 0.3 * M) {
+                lut[n] = 0.5 * (1 + cos((M_PI*(FFABS(n - M) - 0.3 * M))/((1 - 0.3) * M)));
+            } else {
+                lut[n] = 1;
+            }
+        }
+        *overlap = 0.33;
+        break;
     default:
         av_assert0(0);
     }

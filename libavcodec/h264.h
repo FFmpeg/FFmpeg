@@ -669,6 +669,7 @@ typedef struct H264Context {
      */
     int max_pic_num;
 
+    H264Ref default_ref[2];
     H264Picture *short_ref[32];
     H264Picture *long_ref[32];
     H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?

@@ -318,7 +318,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
                 slice_address_length = av_ceil_log2_c(ps->sps->ctb_width *
                                                       ps->sps->ctb_height);
-                sh->slice_segment_addr = slice_address_length ? get_bits(gb, slice_address_length) : 0;
+                sh->slice_segment_addr = get_bitsz(gb, slice_address_length);
                 if (sh->slice_segment_addr >= ps->sps->ctb_width * ps->sps->ctb_height) {
                     av_log(avctx, AV_LOG_ERROR, "Invalid slice segment address: %u.\n",
                            sh->slice_segment_addr);

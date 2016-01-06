@@ -1501,6 +1501,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     static int64_t last_time = -1;
     static int qp_histogram[52];
     int hours, mins, secs, us;
+    int ret;
     float t;
 
     if (!print_stats && !is_last_report && !progress_avio)
@@ -1667,7 +1668,9 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         avio_flush(progress_avio);
         av_bprint_finalize(&buf_script, NULL);
         if (is_last_report) {
-            avio_closep(&progress_avio);
+            if ((ret = avio_closep(&progress_avio)) < 0)
+                av_log(NULL, AV_LOG_ERROR,
+                       "Error closing progress log, loss of information possible: %s\n", av_err2str(ret));
         }
     }
 

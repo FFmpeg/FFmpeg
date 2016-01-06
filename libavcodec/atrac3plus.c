@@ -39,9 +39,6 @@ static VLC spec_vlc_tabs[112];
 static VLC gain_vlc_tabs[11];
 static VLC tone_vlc_tabs[7];
 
-#define GET_DELTA(gb, delta_bits) \
-    ((delta_bits) ? get_bits((gb), (delta_bits)) : 0)
-
 /**
  * Generate canonical VLC table from given descriptor.
  *
@@ -384,7 +381,7 @@ static int decode_channel_wordlen(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
                     chan->qu_wordlen[i] = get_bits(gb, 3);
 
                 for (i = pos; i < chan->num_coded_vals; i++)
-                    chan->qu_wordlen[i] = (min_val + GET_DELTA(gb, delta_bits)) & 7;
+                    chan->qu_wordlen[i] = (min_val + get_bitsz(gb, delta_bits)) & 7;
             }
         }
         break;
@@ -516,7 +513,7 @@ static int decode_channel_sf_idx(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
                 /* all others are: min_val + delta */
                 for (i = num_long_vals; i < ctx->used_quant_units; i++)
                     chan->qu_sf_idx[i] = (chan->qu_sf_idx[i] + min_val +
-                                          GET_DELTA(gb, delta_bits)) & 0x3F;
+                                          get_bitsz(gb, delta_bits)) & 0x3F;
             } else {
                 num_long_vals = get_bits(gb, 5);
                 delta_bits    = get_bits(gb, 3);
@@ -534,7 +531,7 @@ static int decode_channel_sf_idx(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
                 /* all others are: min_val + delta */
                 for (i = num_long_vals; i < ctx->used_quant_units; i++)
                     chan->qu_sf_idx[i] = (min_val +
-                                          GET_DELTA(gb, delta_bits)) & 0x3F;
+                                          get_bitsz(gb, delta_bits)) & 0x3F;
             }
         }
         break;
@@ -1014,7 +1011,7 @@ static int decode_gainc_npoints(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
             min_val    = get_bits(gb, 3);
 
             for (i = 0; i < coded_subbands; i++) {
-                chan->gain_data[i].num_points = min_val + GET_DELTA(gb, delta_bits);
+                chan->gain_data[i].num_points = min_val + get_bitsz(gb, delta_bits);
                 if (chan->gain_data[i].num_points > 7)
                     return AVERROR_INVALIDDATA;
             }
@@ -1134,7 +1131,7 @@ static int decode_gainc_levels(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
 
             for (sb = 0; sb < coded_subbands; sb++)
                 for (i = 0; i < chan->gain_data[sb].num_points; i++) {
-                    chan->gain_data[sb].lev_code[i] = min_val + GET_DELTA(gb, delta_bits);
+                    chan->gain_data[sb].lev_code[i] = min_val + get_bitsz(gb, delta_bits);
                     if (chan->gain_data[sb].lev_code[i] > 15)
                         return AVERROR_INVALIDDATA;
                 }

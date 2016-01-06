@@ -30,6 +30,7 @@
 struct MpegEncContext;
 
 #define MAX_MV 4096
+#define MAX_DMV (2*MAX_MV)
 #define ME_MAP_SIZE 64
 
 #define FF_ME_ZERO 0
@@ -85,7 +86,7 @@ typedef struct MotionEstContext {
     op_pixels_func(*hpel_avg)[4];
     qpel_mc_func(*qpel_put)[16];
     qpel_mc_func(*qpel_avg)[16];
-    uint8_t (*mv_penalty)[MAX_MV * 2 + 1]; ///< bit amount needed to encode a MV
+    uint8_t (*mv_penalty)[MAX_DMV * 2 + 1]; ///< bit amount needed to encode a MV
     uint8_t *current_mv_penalty;
     int (*sub_motion_search)(struct MpegEncContext *s,
                              int *mx_ptr, int *my_ptr, int dmin,

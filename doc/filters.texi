@@ -13372,6 +13372,20 @@ Allowed range is @code{[0, 255]}.
 
 @item zoom
 Set the zoom factor. Default value is @code{1}. Allowed range is @code{[1, 10]}.
+
+@item draw
+Set the vectorscope drawing mode.
+
+Available values are:
+@table @samp
+@item dot
+Draw dot for each sample.
+
+@item line
+Draw line between previous and current sample.
+@end table
+
+Default value is @samp{dot}.
 @end table
 
 @subsection Examples
@@ -14535,6 +14549,7 @@ It accepts the following values:
 @item nuttall
 @item lanczos
 @item gauss
+@item tukey
 @end table
 Default is @code{hanning}.
 
@@ -14623,6 +14638,10 @@ each channel is displayed using the moreland color scheme
 each channel is displayed using the nebulae color scheme
 @item fire
 each channel is displayed using the fire color scheme
+@item fiery
+each channel is displayed using the fiery color scheme
+@item fruit
+each channel is displayed using the fruit color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -14638,6 +14657,10 @@ linear
 square root, default
 @item cbrt
 cubic root
+@item 4thrt
+4th root
+@item 5thrt
+5th root
 @item log
 logarithmic
 @end table
@@ -14670,6 +14693,7 @@ It accepts the following values:
 @item nuttall
 @item lanczos
 @item gauss
+@item tukey
 @end table
 
 Default value is @code{hann}.
@@ -14682,6 +14706,10 @@ Set orientation of time vs frequency axis. Can be @code{vertical} or
 Set ratio of overlap window. Default value is @code{0}.
 When value is @code{1} overlap is set to recommended size for specific
 window function currently used.
+
+@item gain
+Set scale gain for calculating intensity color values.
+Default value is @code{1}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
@@ -14701,6 +14729,124 @@ Complete example for a colored and sliding spectrum per channel using @command{f
 @example
 ffplay -f lavfi 'amovie=input.mp3, asplit [a][out1];
              [a] showspectrum=mode=separate:color=intensity:slide=1:scale=cbrt [out0]'
+@end example
+@end itemize
+
+@section showspectrumpic
+
+Convert input audio to a single video frame, representing the audio frequency
+spectrum.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{4096x2048}.
+
+@item mode
+Specify display mode.
+
+It accepts the following values:
+@table @samp
+@item combined
+all channels are displayed in the same row
+@item separate
+all channels are displayed in separate rows
+@end table
+Default value is @samp{combined}.
+
+@item color
+Specify display color mode.
+
+It accepts the following values:
+@table @samp
+@item channel
+each channel is displayed in a separate color
+@item intensity
+each channel is displayed using the same color scheme
+@item rainbow
+each channel is displayed using the rainbow color scheme
+@item moreland
+each channel is displayed using the moreland color scheme
+@item nebulae
+each channel is displayed using the nebulae color scheme
+@item fire
+each channel is displayed using the fire color scheme
+@item fiery
+each channel is displayed using the fiery color scheme
+@item fruit
+each channel is displayed using the fruit color scheme
+@end table
+Default value is @samp{intensity}.
+
+@item scale
+Specify scale used for calculating intensity color values.
+
+It accepts the following values:
+@table @samp
+@item lin
+linear
+@item sqrt
+square root, default
+@item cbrt
+cubic root
+@item 4thrt
+4th root
+@item 5thrt
+5th root
+@item log
+logarithmic
+@end table
+Default value is @samp{log}.
+
+@item saturation
+Set saturation modifier for displayed colors. Negative values provide
+alternative color scheme. @code{0} is no saturation at all.
+Saturation must be in [-10.0, 10.0] range.
+Default value is @code{1}.
+
+@item win_func
+Set window function.
+
+It accepts the following values:
+@table @samp
+@item rect
+@item bartlett
+@item hann
+@item hanning
+@item hamming
+@item blackman
+@item welch
+@item flattop
+@item bharris
+@item bnuttall
+@item bhann
+@item sine
+@item nuttall
+@item lanczos
+@item gauss
+@end table
+Default value is @code{hann}.
+
+@item orientation
+Set orientation of time vs frequency axis. Can be @code{vertical} or
+@code{horizontal}. Default is @code{vertical}.
+
+@item gain
+Set scale gain for calculating intensity color values.
+Default value is @code{1}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Extract an audio spectrogram of a whole audio track
+in a 1024x1024 picture using @command{ffmpeg}:
+@example
+ffmpeg -i audio.flac -lavfi showspectrumpic=s=1024x1024 spectrogram.png
 @end example
 @end itemize
 

@@ -50,6 +50,7 @@ version <next>:
 - VAAPI VP9 hwaccel
 - audio high-order multiband parametric equalizer
 - automatic bitstream filtering
+- showspectrumpic filter
 
 
 version 2.8:

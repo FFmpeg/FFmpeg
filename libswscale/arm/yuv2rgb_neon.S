@@ -159,7 +159,23 @@
     vst4.8              {q6, q7}, [\dst,:128]!
 .endm
 
-.macro process_16px_16 ofmt
+.macro process_1l_16px_16 ofmt
+    compute_premult_16  d28, d29, d30, d31
+    vld1.8              {q7}, [r4]!
+    compute_16px_16     r2, d14, d15, \ofmt
+.endm
+
+.macro process_1l_16px_32 ofmt
+    compute_premult_32  d28, d30
+    vld1.8              {q7}, [r4]!
+    vmov                d28, d15                                       @ save right of the line of luma for later use
+    compute_8px_32      r2, d14, \ofmt
+
+    compute_premult_32  d29, d31
+    compute_8px_32      r2,  d28, \ofmt
+.endm
+
+.macro process_2l_16px_16 ofmt
     compute_premult_16  d28, d29, d30, d31
 
     vld1.8              {q7}, [r4]!                                    @ first line of luma
@@ -169,7 +185,7 @@
     compute_16px_16     r11, d14, d15, \ofmt
 .endm
 
-.macro process_16px_32 ofmt
+.macro process_2l_16px_32 ofmt
     compute_premult_32  d28, d30
 
     vld1.8              {q7}, [r4]!                                    @ first line of luma
@@ -228,6 +244,28 @@
     ldr                 r10,[sp, #120]                                 @ r10 = srcV
 .endm
 
+.macro load_args_yuv422p
+    push                {r4-r12, lr}
+    vpush               {q4-q7}
+    ldr                 r4, [sp, #104]                                 @ r4  = srcY
+    ldr                 r5, [sp, #108]                                 @ r5  = linesizeY
+    ldr                 r6, [sp, #112]                                 @ r6  = srcU
+    ldr                 r7, [sp, #116]                                 @ r7  = linesizeU
+    ldr                 r12,[sp, #124]                                 @ r12 = linesizeV
+    ldr                 r8, [sp, #128]                                 @ r8  = table
+    ldr                 r9, [sp, #132]                                 @ r9  = y_offset
+    ldr                 r10,[sp, #136]                                 @ r10 = y_coeff
+    vdup.16             d0, r10                                        @ d0  = y_coeff
+    vld1.16             {d1}, [r8]                                     @ d1  = *table
+    add                 r11, r2, r3                                    @ r11 = dst + linesize (dst2)
+    lsl                 r8, r0, #2
+    sub                 r3, r3, r8                                     @ r3 = linesize  * 2 - width * 4 (padding)
+    sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
+    sub                 r7, r7, r0, lsr #1                             @ r7 = linesizeU     - width / 2 (paddingU)
+    sub                 r12,r12,r0, lsr #1                             @ r12 = linesizeV    - width / 2 (paddingV)
+    ldr                 r10,[sp, #120]                                 @ r10 = srcV
+.endm
+
 .macro declare_func ifmt ofmt precision
 function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
 
@@ -243,66 +281,107 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     load_args_yuv420p
 .endif
 
+
+.ifc \ifmt,yuv422p
+    load_args_yuv422p
+.endif
+
 1:
     mov                 r8, r0                                         @ r8 = width
 2:
     pld [r6, #64*3]
     pld [r4, #64*3]
-    pld [r12, #64*3]
 
     vmov.i8             d10, #128
 
 .ifc \ifmt,nv12
+    pld [r12, #64*3]
+
     vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+
+    process_2l_16px_\precision \ofmt
 .endif
 
 .ifc \ifmt,nv21
+    pld [r12, #64*3]
+
     vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
     vsubl.u8            q14, d3, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d2, d10                                   @ q15 = V - 128
+
+    process_2l_16px_\precision \ofmt
 .endif
 
 .ifc \ifmt,yuv420p
+    pld [r10, #64*3]
+    pld [r12, #64*3]
+
+    vld1.8              d2, [r6]!                                      @ d2: chroma red line
+    vld1.8              d3, [r10]!                                     @ d3: chroma blue line
+    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
+    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+
+    process_2l_16px_\precision \ofmt
+.endif
+
+.ifc \ifmt,yuv422p
     pld [r10, #64*3]
 
     vld1.8              d2, [r6]!                                      @ d2: chroma red line
     vld1.8              d3, [r10]!                                     @ d3: chroma blue line
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+
+    process_1l_16px_\precision \ofmt
 .endif
-
-
-    process_16px_\precision \ofmt
 
     subs                r8, r8, #16                                    @ width -= 16
     bgt                 2b
 
     add                 r2, r2, r3                                     @ dst   += padding
     add                 r4, r4, r5                                     @ srcY  += paddingY
+
+.ifc \ifmt,nv12
     add                 r11, r11, r3                                   @ dst2  += padding
     add                 r12, r12, r5                                   @ srcY2 += paddingY
 
-.ifc \ifmt,nv12
     add                 r6, r6, r7                                     @ srcC  += paddingC
+
+    subs                r1, r1, #2                                     @ height -= 2
 .endif
 
 .ifc \ifmt,nv21
+    add                 r11, r11, r3                                   @ dst2  += padding
+    add                 r12, r12, r5                                   @ srcY2 += paddingY
+
     add                 r6, r6, r7                                     @ srcC  += paddingC
+    subs                r1, r1, #2                                     @ height -= 2
 .endif
 
 .ifc \ifmt,yuv420p
+    add                 r11, r11, r3                                   @ dst2  += padding
+    add                 r12, r12, r5                                   @ srcY2 += paddingY
+
     ldr                 r7, [sp, #116]                                 @ r7     = linesizeU
     sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeU - width / 2 (paddingU)
     add                 r6, r6, r7                                     @ srcU  += paddingU
 
     ldr                 r7, [sp, #124]                                 @ r7     = linesizeV
     sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeV - width / 2 (paddingV)
-    add                 r10, r10, r7                                   @ srcU  += paddingV
-.endif
+    add                 r10, r10, r7                                   @ srcV  += paddingV
 
     subs                r1, r1, #2                                     @ height -= 2
+.endif
+
+.ifc \ifmt,yuv422p
+    add                 r6, r6, r7                                     @ srcU  += paddingU
+    add                 r10,r10,r12                                    @ srcV  += paddingV
+
+    subs                r1, r1, #1                                     @ height -= 1
+.endif
+
     bgt                 1b
 
     vpop                {q4-q7}
@@ -324,3 +403,5 @@ declare_rgb_funcs nv12, 32
 declare_rgb_funcs nv21, 32
 declare_rgb_funcs yuv420p, 16
 declare_rgb_funcs yuv420p, 32
+declare_rgb_funcs yuv422p, 16
+declare_rgb_funcs yuv422p, 32
