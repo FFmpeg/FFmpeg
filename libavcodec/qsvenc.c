@@ -857,8 +857,8 @@ static void print_interlace_msg(AVCodecContext *avctx, QSVEncContext *q)
     }
 }
 
-int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
-                  AVPacket *pkt, const AVFrame *frame, int *got_packet)
+static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
+                        const AVFrame *frame)
 {
     AVPacket new_pkt = { 0 };
     mfxBitstream *bs;
@@ -913,8 +913,24 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         av_freep(&bs);
     }
 
+    return 0;
+}
+
+int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
+                  AVPacket *pkt, const AVFrame *frame, int *got_packet)
+{
+    int ret;
+
+    ret = encode_frame(avctx, q, frame);
+    if (ret < 0)
+        return ret;
+
     if (!av_fifo_space(q->async_fifo) ||
         (!frame && av_fifo_size(q->async_fifo))) {
+        AVPacket new_pkt;
+        mfxBitstream *bs;
+        mfxSyncPoint sync;
+
         av_fifo_generic_read(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
         av_fifo_generic_read(q->async_fifo, &sync,    sizeof(sync),    NULL);
         av_fifo_generic_read(q->async_fifo, &bs,      sizeof(bs),      NULL);
