@@ -33,7 +33,7 @@
 /* some functions use the VFPv2 vector mode which is deprecated in ARMv7-A
  * and might trap on such CPU depending on the OS configuration */
 #define have_vfp_vm(flags)                                              \
-    (have_armv6(flags) && ((flags) & AV_CPU_FLAG_VFP_VM))
+    (HAVE_VFP && ((flags) & AV_CPU_FLAG_VFP_VM))
 
 /* Some functions use the 'setend' instruction which is deprecated on ARMv8
  * and serializing on some ARMv7 cores. This macro ensures such functions
