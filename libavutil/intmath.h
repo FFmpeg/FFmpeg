@@ -153,16 +153,10 @@ static av_always_inline av_const unsigned ff_clz_c(unsigned x)
 }
 #endif
 
-#ifndef ff_parity
-#define ff_parity ff_parity_c
-static av_always_inline av_const int ff_parity_c(uint32_t v)
-{
-#if HAVE_PARITY
-    return __builtin_parity(v);
-#else
-    return av_popcount(v) & 1;
+#if AV_GCC_VERSION_AT_LEAST(3,4)
+#ifndef av_parity
+#define av_parity __builtin_parity
 #endif
-}
 #endif
 
 /**

@@ -472,7 +472,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         ac_index      = get_bits(&gb, format->ac_index_bits[i]);
         if(!i && format->parity_bit)
-            bad_pitch = ff_parity(ac_index >> 2) == get_bits1(&gb);
+            bad_pitch = av_parity(ac_index >> 2) == get_bits1(&gb);
         fc_indexes    = get_bits(&gb, format->fc_indexes_bits);
         pulses_signs  = get_bits(&gb, format->fc_signs_bits);
         gc_1st_index  = get_bits(&gb, format->gc_1st_index_bits);

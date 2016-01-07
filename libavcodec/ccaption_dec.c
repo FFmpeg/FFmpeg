@@ -202,10 +202,10 @@ static int validate_cc_data_pair(uint8_t *cc_data_pair)
 
     // if EIA-608 data then verify parity.
     if (cc_type==0 || cc_type==1) {
-        if (!ff_parity(cc_data_pair[2])) {
+        if (!av_parity(cc_data_pair[2])) {
             return AVERROR_INVALIDDATA;
         }
-        if (!ff_parity(cc_data_pair[1])) {
+        if (!av_parity(cc_data_pair[1])) {
             cc_data_pair[1]=0x7F;
         }
     }
