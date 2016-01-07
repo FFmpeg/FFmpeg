@@ -554,8 +554,12 @@ static void ffmpeg_cleanup(int ret)
         av_freep(&input_streams[i]);
     }
 
-    if (vstats_file)
-        fclose(vstats_file);
+    if (vstats_file) {
+        if (fclose(vstats_file))
+            av_log(NULL, AV_LOG_ERROR,
+                   "Error closing vstats file, loss of information possible: %s\n",
+                   av_err2str(AVERROR(errno)));
+    }
     av_freep(&vstats_filename);
 
     av_freep(&input_streams);
@@ -4200,7 +4204,10 @@ static int transcode(void)
             ost = output_streams[i];
             if (ost) {
                 if (ost->logfile) {
-                    fclose(ost->logfile);
+                    if (fclose(ost->logfile))
+                        av_log(NULL, AV_LOG_ERROR,
+                               "Error closing logfile, loss of information possible: %s\n",
+                               av_err2str(AVERROR(errno)));
                     ost->logfile = NULL;
                 }
                 av_freep(&ost->forced_kf_pts);
