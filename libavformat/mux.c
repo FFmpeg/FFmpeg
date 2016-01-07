@@ -199,12 +199,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 codec->codec_tag = av_codec_get_tag(of->codec_tag, codec->codec_id);
         }
 
-        if (of->flags & AVFMT_GLOBALHEADER &&
-            !(codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
-            av_log(s, AV_LOG_WARNING,
-                   "Codec for stream %d does not use global headers "
-                   "but container format requires global headers\n", i);
-
         if (codec->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             s->internal->nb_interleaved_streams++;
     }
