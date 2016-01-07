@@ -170,7 +170,6 @@ static void init_fps(int bf, int audio_preroll, int fps)
     if (!st->codec->extradata)
         exit(1);
     memcpy(st->codec->extradata, h264_extradata, sizeof(h264_extradata));
-    st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     video_st = st;
 
     st = avformat_new_stream(ctx, NULL);
@@ -187,7 +186,6 @@ static void init_fps(int bf, int audio_preroll, int fps)
     if (!st->codec->extradata)
         exit(1);
     memcpy(st->codec->extradata, aac_extradata, sizeof(aac_extradata));
-    st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     audio_st = st;
 
     if (avformat_write_header(ctx, &opts) < 0)
