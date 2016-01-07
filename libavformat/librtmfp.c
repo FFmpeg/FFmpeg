@@ -59,7 +59,7 @@ typedef struct LibRTMFPContext {
     int buffer_size;*/
 } LibRTMFPContext;
 
-static void rtmfp_log(int level, const char *message)
+static void rtmfp_log(unsigned int threadID, int level, const char* fileName, long line, const char* message)
 {
     switch (level) {
     default:
