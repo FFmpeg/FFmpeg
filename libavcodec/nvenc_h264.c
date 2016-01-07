@@ -91,7 +91,7 @@ static const AVCodecDefault defaults[] = {
 };
 
 AVCodec ff_h264_nvenc_encoder = {
-    .name           = "nvenc_h264",
+    .name           = "h264_nvenc",
     .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H264 encoder"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
@@ -108,3 +108,38 @@ AVCodec ff_h264_nvenc_encoder = {
     .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
+
+#if FF_API_NVENC_OLD_NAME
+
+static int nvenc_old_init(AVCodecContext *avctx)
+{
+    av_log(avctx, AV_LOG_WARNING, "This encoder is deprecated, use 'h264_nvenc' instead\n");
+    return ff_nvenc_encode_init(avctx);
+}
+
+static const AVClass nvenc_h264_old_class = {
+    .class_name = "nvenc_h264",
+    .item_name = av_default_item_name,
+    .option = options,
+    .version = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_nvenc_h264_encoder = {
+    .name           = "nvenc_h264",
+    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H264 encoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_H264,
+    .init           = nvenc_old_init,
+    .encode2        = ff_nvenc_encode_frame,
+    .close          = ff_nvenc_encode_close,
+    .priv_data_size = sizeof(NVENCContext),
+    .priv_class     = &nvenc_h264_old_class,
+    .defaults       = defaults,
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+                                                    AV_PIX_FMT_YUV420P,
+                                                    AV_PIX_FMT_YUV444P,
+                                                    AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+};
+#endif
