@@ -64,7 +64,7 @@ static void video_frame_cksum(AVBPrint *bp, AVFrame *frame)
         unsigned cksum = 0;
         int h = frame->height;
         if ((i == 1 || i == 2) && desc->nb_components >= 3)
-            h = -((-h) >> desc->log2_chroma_h);
+            h = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
         data = frame->data[i];
         for (y = 0; y < h; y++) {
             cksum = av_adler32_update(cksum, data, linesize[i]);
