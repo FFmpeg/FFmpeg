@@ -54,7 +54,7 @@
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
-/* assume a>=0 and b>=0 */
+/* Fast a/(1<<b) rounded toward +inf. Assume a>=0 and b>=0 */
 #define FF_CEIL_RSHIFT(a,b) (!av_builtin_constant_p(b) ? -((-(a)) >> (b)) \
                                                        : ((a) + (1<<(b)) - 1) >> (b))
 #define FFUDIV(a,b) (((a)>0 ?(a):(a)-(b)+1) / (b))
