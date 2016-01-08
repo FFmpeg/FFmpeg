@@ -1067,7 +1067,7 @@ static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
     NVENCOutputSurface *out         = NULL;
     int ret;
 
-    ret = nvenc_dequeue_surface(ctx->pending, &out);
+    ret = nvenc_dequeue_surface(ctx->ready, &out);
     if (ret)
         return ret;
 
@@ -1127,7 +1127,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     NV_ENC_PIC_PARAMS params        = { 0 };
     NVENCInputSurface *in           = NULL;
     NVENCOutputSurface *out         = NULL;
-    int ret;
+    int enc_ret, ret;
 
     params.version = NV_ENC_PIC_PARAMS_VER;
 
@@ -1166,10 +1166,10 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
 
-    ret = nv->nvEncEncodePicture(ctx->nvenc_ctx, &params);
-    if (ret != NV_ENC_SUCCESS &&
-        ret != NV_ENC_ERR_NEED_MORE_INPUT)
-        return nvenc_print_error(avctx, ret, "Error encoding the frame");
+    enc_ret = nv->nvEncEncodePicture(ctx->nvenc_ctx, &params);
+    if (enc_ret != NV_ENC_SUCCESS &&
+        enc_ret != NV_ENC_ERR_NEED_MORE_INPUT)
+        return nvenc_print_error(avctx, enc_ret, "Error encoding the frame");
 
     if (out) {
         ret = nvenc_enqueue_surface(ctx->pending, out);
@@ -1177,8 +1177,15 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return ret;
     }
 
-    if (ret != NV_ENC_ERR_NEED_MORE_INPUT &&
-        av_fifo_size(ctx->pending)) {
+    /* all the pending buffers are now ready for output */
+    if (enc_ret == NV_ENC_SUCCESS) {
+        while (av_fifo_size(ctx->pending) > 0) {
+            av_fifo_generic_read(ctx->pending, &out, sizeof(out), NULL);
+            av_fifo_generic_write(ctx->ready, &out, sizeof(out), NULL);
+        }
+    }
+
+    if (av_fifo_size(ctx->ready) > 0) {
         ret = nvenc_get_frame(avctx, pkt);
         if (ret < 0)
             return ret;
