@@ -362,8 +362,6 @@ cglobal butterflies_float, 3,3,3, src0, src1, len
 %if ARCH_X86_64
     movsxd    lenq, lend
 %endif
-    test      lenq, lenq
-    jz .end
     shl       lenq, 2
     add      src0q, lenq
     add      src1q, lenq
@@ -377,5 +375,4 @@ cglobal butterflies_float, 3,3,3, src0, src1, len
     mova        [src0q + lenq], m0
     add       lenq, mmsize
     jl .loop
-.end:
     REP_RET
