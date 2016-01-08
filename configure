@@ -5578,8 +5578,11 @@ fi
 if enabled gcrypt; then
     GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
     if "${GCRYPT_CONFIG}" --version > /dev/null 2>&1; then
+        gcrypt_cflags=$("${GCRYPT_CONFIG}" --cflags)
         gcrypt_libs=$("${GCRYPT_CONFIG}" --libs)
-        require2 gcrypt gcrypt.h gcry_mpi_new $gcrypt_libs
+        check_func_headers gcrypt.h gcry_mpi_new $gcrypt_cflags $gcrypt_libs ||
+            die "ERROR: gcrypt not found"
+        add_cflags $gcrypt_cflags && add_extralibs $gcrypt_libs
     else
         require2 gcrypt gcrypt.h gcry_mpi_new -lgcrypt
     fi
