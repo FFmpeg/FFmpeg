@@ -1812,8 +1812,15 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
                                  AVStream *st, MOVStreamContext *sc)
 {
     int bits_per_sample, flags;
-    uint16_t version = avio_rb16(pb);
+    uint32_t format;
+    uint16_t version;
     AVDictionaryEntry *compatible_brands = av_dict_get(c->fc->metadata, "compatible_brands", NULL, AV_DICT_MATCH_CASE);
+
+    avio_seek(pb, -12, SEEK_CUR);
+    format = avio_rb32(pb);
+    avio_seek(pb, 8, SEEK_CUR);
+
+    version = avio_rb16(pb);
 
     avio_rb16(pb); /* revision level */
     avio_rb32(pb); /* vendor */
@@ -1861,6 +1868,13 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
                 break;
             }
         }
+    }
+
+    if (format == 0) {
+        if (st->codec->bits_per_coded_sample == 8)
+            st->codec->codec_id = mov_codec_id(st, MKTAG('r','a','w',' '));
+        else if (st->codec->bits_per_coded_sample == 16)
+            st->codec->codec_id = mov_codec_id(st, MKTAG('t','w','o','s'));
     }
 
     switch (st->codec->codec_id) {
