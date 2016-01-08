@@ -300,8 +300,8 @@ static void apply_mid_side_stereo(ChannelElement *cpe)
                  * ms_mask is set.
                  */
                 if (!cpe->ms_mask[w*16 + g] || cpe->is_mask[w*16 + g]
-                    || cpe->ch[0].band_type[w*16 + g] == NOISE_BT
-                    || cpe->ch[1].band_type[w*16 + g] == NOISE_BT) {
+                    || cpe->ch[0].band_type[w*16 + g] >= NOISE_BT
+                    || cpe->ch[1].band_type[w*16 + g] >= NOISE_BT) {
                     start += ics->swb_sizes[g];
                     continue;
                 }
