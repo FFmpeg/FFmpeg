@@ -359,10 +359,7 @@ cglobal scalarproduct_float, 3,3,2, v1, v2, offset
 ;-----------------------------------------------------------------------------
 INIT_XMM sse
 cglobal butterflies_float, 3,3,3, src0, src1, len
-%if ARCH_X86_64
-    movsxd    lenq, lend
-%endif
-    shl       lenq, 2
+    shl       lend, 2
     add      src0q, lenq
     add      src1q, lenq
     neg       lenq
