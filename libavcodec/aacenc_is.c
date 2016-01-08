@@ -87,7 +87,7 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
 
     is_error.pass = dist2 <= dist1;
     is_error.phase = phase;
-    is_error.error = fabsf(dist1 - dist2);
+    is_error.error = dist2 - dist1;
     is_error.dist1 = dist1;
     is_error.dist2 = dist2;
     is_error.ener01 = ener01;
