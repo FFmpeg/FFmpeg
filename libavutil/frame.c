@@ -111,7 +111,7 @@ static int get_video_buffer(AVFrame *frame, int align)
     for (i = 0; i < 4 && frame->linesize[i]; i++) {
         int h = frame->height;
         if (i == 1 || i == 2)
-            h = -((-h) >> desc->log2_chroma_h);
+            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
 
         frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h);
         if (!frame->buf[i])

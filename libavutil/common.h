@@ -50,6 +50,14 @@
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
+
+/**
+ * Fast a / (1 << b) rounded toward +inf, assuming a >= 0 and b >= 0.
+ */
+#define AV_CEIL_RSHIFT(a, b) \
+    (av_builtin_constant_p(b) ? ((a) + (1 << (b)) - 1) >> (b) \
+                              : -((-(a)) >> (b)))
+
 #define FFABS(a) ((a) >= 0 ? (a) : (-(a)))
 #define FFSIGN(a) ((a) > 0 ? 1 : -1)
 

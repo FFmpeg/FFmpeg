@@ -392,8 +392,8 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         avctx->height  = height;
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         for (i = 0; i < 3; i++) {
-            ctx->num_vblocks[i] = -((-height) >> (3 + !!i));
-            ctx->num_hblocks[i] =     width   >> (3 + !!i);
+            ctx->num_vblocks[i] = AV_CEIL_RSHIFT(height,   3 + !!i);
+            ctx->num_hblocks[i] =                width >> (3 + !!i);
         }
     } else if (width != ctx->avctx->width || height != ctx->avctx->height) {
         avpriv_request_sample(avctx, "Resolution changing");

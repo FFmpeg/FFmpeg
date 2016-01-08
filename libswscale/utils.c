@@ -1019,11 +1019,11 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
          (flags & SWS_FAST_BILINEAR)))
         c->chrSrcHSubSample = 1;
 
-    // Note the -((-x)>>y) is so that we always round toward +inf.
-    c->chrSrcW = -((-srcW) >> c->chrSrcHSubSample);
-    c->chrSrcH = -((-srcH) >> c->chrSrcVSubSample);
-    c->chrDstW = -((-dstW) >> c->chrDstHSubSample);
-    c->chrDstH = -((-dstH) >> c->chrDstVSubSample);
+    // Note the AV_CEIL_RSHIFT is so that we always round toward +inf.
+    c->chrSrcW = AV_CEIL_RSHIFT(srcW, c->chrSrcHSubSample);
+    c->chrSrcH = AV_CEIL_RSHIFT(srcH, c->chrSrcVSubSample);
+    c->chrDstW = AV_CEIL_RSHIFT(dstW, c->chrDstHSubSample);
+    c->chrDstH = AV_CEIL_RSHIFT(dstH, c->chrDstVSubSample);
 
     /* unscaled special cases */
     if (unscaled && !usesHFilter && !usesVFilter &&

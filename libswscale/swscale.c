@@ -384,8 +384,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     yuv2packed2_fn yuv2packed2       = c->yuv2packed2;
     yuv2packedX_fn yuv2packedX       = c->yuv2packedX;
     yuv2anyX_fn yuv2anyX             = c->yuv2anyX;
-    const int chrSrcSliceY           =     srcSliceY  >> c->chrSrcVSubSample;
-    const int chrSrcSliceH           = -((-srcSliceH) >> c->chrSrcVSubSample);
+    const int chrSrcSliceY           =                srcSliceY >> c->chrSrcVSubSample;
+    const int chrSrcSliceH           = AV_CEIL_RSHIFT(srcSliceH,   c->chrSrcVSubSample);
     int should_dither                = is9_OR_10BPS(c->srcFormat) ||
                                        is16BPS(c->srcFormat);
     int lastDstY;
@@ -484,7 +484,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
         // Do we have enough lines in this slice to output the dstY line
         enough_lines = lastLumSrcY2 < srcSliceY + srcSliceH &&
-                       lastChrSrcY < -((-srcSliceY - srcSliceH) >> c->chrSrcVSubSample);
+                       lastChrSrcY < AV_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample);
 
         if (!enough_lines) {
             lastLumSrcY = srcSliceY + srcSliceH - 1;

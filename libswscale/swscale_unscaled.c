@@ -798,9 +798,9 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
     const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(c->dstFormat);
     int plane, i, j;
     for (plane = 0; plane < 4; plane++) {
-        int length = (plane == 0 || plane == 3) ? c->srcW  : -((-c->srcW  ) >> c->chrDstHSubSample);
-        int y =      (plane == 0 || plane == 3) ? srcSliceY: -((-srcSliceY) >> c->chrDstVSubSample);
-        int height = (plane == 0 || plane == 3) ? srcSliceH: -((-srcSliceH) >> c->chrDstVSubSample);
+        int length = (plane == 0 || plane == 3) ? c->srcW  : AV_CEIL_RSHIFT(c->srcW,   c->chrDstHSubSample);
+        int y =      (plane == 0 || plane == 3) ? srcSliceY: AV_CEIL_RSHIFT(srcSliceY, c->chrDstVSubSample);
+        int height = (plane == 0 || plane == 3) ? srcSliceH: AV_CEIL_RSHIFT(srcSliceH, c->chrDstVSubSample);
         const uint8_t *srcPtr = src[plane];
         uint8_t *dstPtr = dst[plane] + dstStride[plane] * y;
         int shiftonly = plane == 1 || plane == 2 || (!c->srcRange && plane == 0);

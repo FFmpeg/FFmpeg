@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -158,8 +159,8 @@ static void horizontal_frame_pack(AVFilterLink *outlink,
 
         for (plane = 0; plane < s->pix_desc->nb_components; plane++) {
             if (plane == 1 || plane == 2) {
-                length = -(-(out->width / 2) >> s->pix_desc->log2_chroma_w);
-                lines  = -(-(out->height)    >> s->pix_desc->log2_chroma_h);
+                length = AV_CEIL_RSHIFT(out->width / 2, s->pix_desc->log2_chroma_w);
+                lines  = AV_CEIL_RSHIFT(out->height,    s->pix_desc->log2_chroma_h);
             }
             for (i = 0; i < lines; i++) {
                 int j;

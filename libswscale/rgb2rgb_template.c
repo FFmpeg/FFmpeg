@@ -856,7 +856,7 @@ static void yuyvtoyuv420_c(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                            int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = -((-width) >> 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y = 0; y < height; y++) {
         extract_even_c(src, ydst, width);
@@ -876,7 +876,7 @@ static void yuyvtoyuv422_c(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                            int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = -((-width) >> 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y = 0; y < height; y++) {
         extract_even_c(src, ydst, width);
@@ -894,7 +894,7 @@ static void uyvytoyuv420_c(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                            int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = -((-width) >> 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y = 0; y < height; y++) {
         extract_even_c(src + 1, ydst, width);
@@ -914,7 +914,7 @@ static void uyvytoyuv422_c(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                            int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = -((-width) >> 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y = 0; y < height; y++) {
         extract_even_c(src + 1, ydst, width);
