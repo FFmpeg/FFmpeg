@@ -14642,6 +14642,8 @@ each channel is displayed using the fire color scheme
 each channel is displayed using the fiery color scheme
 @item fruit
 each channel is displayed using the fruit color scheme
+@item cool
+each channel is displayed using the cool color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -14778,6 +14780,8 @@ each channel is displayed using the fire color scheme
 each channel is displayed using the fiery color scheme
 @item fruit
 each channel is displayed using the fruit color scheme
+@item cool
+each channel is displayed using the cool color scheme
 @end table
 Default value is @samp{intensity}.
 

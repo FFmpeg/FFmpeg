@@ -43,7 +43,7 @@
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, FOURTHRT, FIFTHRT, NB_SCALES };
-enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY, FRUIT, NB_CLMODES };
+enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY, FRUIT, COOL, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
@@ -103,6 +103,7 @@ static const AVOption showspectrum_options[] = {
         { "fire",      "fire based coloring",             0, AV_OPT_TYPE_CONST, {.i64=FIRE},      0, 0, FLAGS, "color" },
         { "fiery",     "fiery based coloring",            0, AV_OPT_TYPE_CONST, {.i64=FIERY},     0, 0, FLAGS, "color" },
         { "fruit",     "fruit based coloring",            0, AV_OPT_TYPE_CONST, {.i64=FRUIT},     0, 0, FLAGS, "color" },
+        { "cool",      "cool based coloring",             0, AV_OPT_TYPE_CONST, {.i64=COOL},      0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=SQRT}, LINEAR, NB_SCALES-1, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
         { "cbrt", "cubic root",  0, AV_OPT_TYPE_CONST, {.i64=CBRT},   0, 0, FLAGS, "scale" },
@@ -204,6 +205,10 @@ static const struct ColorTable {
     { 0.60,           151/256.,      (50-128)/256.,      (146-128)/256. },
     { 0.70,           191/256.,      (63-128)/256.,      (178-128)/256. },
     {    1,            98/256.,      (80-128)/256.,      (221-128)/256. }},
+    [COOL] = {
+    {    0,                  0,                  0,                   0 },
+    {  .15,                  0,                 .5,                 -.5 },
+    {    1,                  1,                -.5,                  .5 }},
 };
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -472,6 +477,7 @@ static void color_range(ShowSpectrumContext *s, int ch,
         case FIRE:
         case FIERY:
         case FRUIT:
+        case COOL:
         case INTENSITY:
             *uf = *yf;
             *vf = *yf;
@@ -599,18 +605,19 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             /* apply scale */
             switch (s->scale) {
             case LINEAR:
+                a = av_clipf(a, 0, 1);
                 break;
             case SQRT:
-                a = sqrt(a);
+                a = av_clipf(sqrt(a), 0, 1);
                 break;
             case CBRT:
-                a = cbrt(a);
+                a = av_clipf(cbrt(a), 0, 1);
                 break;
             case FOURTHRT:
-                a = sqrt(sqrt(a));
+                a = av_clipf(sqrt(sqrt(a)), 0, 1);
                 break;
             case FIFTHRT:
-                a = pow(a, 0.20);
+                a = av_clipf(pow(a, 0.20), 0, 1);
                 break;
             case LOG:
                 a = 1 + log10(av_clipd(a * w, 1e-6, 1)) / 6; // zero = -120dBFS
@@ -820,6 +827,7 @@ static const AVOption showspectrumpic_options[] = {
         { "fire",      "fire based coloring",             0, AV_OPT_TYPE_CONST, {.i64=FIRE},      0, 0, FLAGS, "color" },
         { "fiery",     "fiery based coloring",            0, AV_OPT_TYPE_CONST, {.i64=FIERY},     0, 0, FLAGS, "color" },
         { "fruit",     "fruit based coloring",            0, AV_OPT_TYPE_CONST, {.i64=FRUIT},     0, 0, FLAGS, "color" },
+        { "cool",      "cool based coloring",             0, AV_OPT_TYPE_CONST, {.i64=COOL},      0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=LOG}, 0, NB_SCALES-1, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
         { "cbrt", "cubic root",  0, AV_OPT_TYPE_CONST, {.i64=CBRT},   0, 0, FLAGS, "scale" },
