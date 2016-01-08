@@ -112,7 +112,10 @@ typedef struct NVENCContext {
     AVFifoBuffer *timestamps;
     AVFifoBuffer *pending, *ready;
 
-    int64_t last_dts;
+    /* timestamps of the first two frames, for computing the first dts
+     * when b-frames are present */
+    int64_t initial_pts[2];
+    int first_packet_output;
 
     void *nvenc_ctx;
 
