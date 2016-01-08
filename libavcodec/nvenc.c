@@ -825,6 +825,14 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
     int i;
 
+    /* the encoder has to be flushed before it can be closed */
+    if (ctx->nvenc_ctx) {
+        NV_ENC_PIC_PARAMS params        = { .version        = NV_ENC_PIC_PARAMS_VER,
+                                            .encodePicFlags = NV_ENC_PIC_FLAG_EOS };
+
+        nv->nvEncEncodePicture(ctx->nvenc_ctx, &params);
+    }
+
     av_fifo_free(ctx->timestamps);
     av_fifo_free(ctx->pending);
     av_fifo_free(ctx->ready);
