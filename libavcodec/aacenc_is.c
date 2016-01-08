@@ -53,7 +53,7 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
     for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
         FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
         FFPsyBand *band1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
-        int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[(w+w2)*16+g]-4);
+        int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[w*16+g]-4);
         float e01_34 = phase*pow(ener1/ener0, 3.0/4.0);
         float maxval, dist_spec_err = 0.0f;
         float minthr = FFMIN(band0->threshold, band1->threshold);
@@ -66,13 +66,13 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
         is_band_type = find_min_book(maxval, is_sf_idx);
         dist1 += quantize_band_cost(s, &L[start + (w+w2)*128], L34,
                                     sce0->ics.swb_sizes[g],
-                                    sce0->sf_idx[(w+w2)*16+g],
-                                    sce0->band_type[(w+w2)*16+g],
+                                    sce0->sf_idx[w*16+g],
+                                    sce0->band_type[w*16+g],
                                     s->lambda / band0->threshold, INFINITY, NULL, NULL, 0);
         dist1 += quantize_band_cost(s, &R[start + (w+w2)*128], R34,
                                     sce1->ics.swb_sizes[g],
-                                    sce1->sf_idx[(w+w2)*16+g],
-                                    sce1->band_type[(w+w2)*16+g],
+                                    sce1->sf_idx[w*16+g],
+                                    sce1->band_type[w*16+g],
                                     s->lambda / band1->threshold, INFINITY, NULL, NULL, 0);
         dist2 += quantize_band_cost(s, IS, I34, sce0->ics.swb_sizes[g],
                                     is_sf_idx, is_band_type,
@@ -118,11 +118,6 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                 ff_sfdelta_can_remove_band(sce1, nextband1, prev_sf1, w*16+g)) {
                 float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f, ener01p = 0.0f;
                 struct AACISError ph_err1, ph_err2, *best;
-                if (sce0->band_type[w*16+g] == NOISE_BT ||
-                    sce1->band_type[w*16+g] == NOISE_BT) {
-                    start += sce0->ics.swb_sizes[g];
-                    continue;
-                }
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
                         float coef0 = fabsf(sce0->coeffs[start+(w+w2)*128+i]);
