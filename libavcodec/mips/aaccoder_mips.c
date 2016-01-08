@@ -2357,8 +2357,9 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
         start = 0;
         for (g = 0;  g < sce0->ics.num_swb; g++) {
             float bmax = bval2bmax(g * 17.0f / sce0->ics.num_swb) / 0.0045f;
-            cpe->ms_mask[w*16+g] = 0;
-            if (!sce0->zeroes[w*16+g] && !sce1->zeroes[w*16+g]) {
+            if (!cpe->is_mask[w*16+g])
+                cpe->ms_mask[w*16+g] = 0;
+            if (!sce0->zeroes[w*16+g] && !sce1->zeroes[w*16+g] && !cpe->is_mask[w*16+g]) {
                 float Mmax = 0.0f, Smax = 0.0f;
 
                 /* Must compute mid/side SF and book for the whole window group */
@@ -2387,7 +2388,7 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
                     minidx = FFMIN(sce0->sf_idx[w*16+g], sce1->sf_idx[w*16+g]);
                     mididx = av_clip(minidx, 0, SCALE_MAX_POS - SCALE_DIV_512);
                     sididx = av_clip(minidx - sid_sf_boost * 3, 0, SCALE_MAX_POS - SCALE_DIV_512);
-                    if (!cpe->is_mask[w*16+g] && sce0->band_type[w*16+g] != NOISE_BT && sce1->band_type[w*16+g] != NOISE_BT
+                    if (sce0->band_type[w*16+g] != NOISE_BT && sce1->band_type[w*16+g] != NOISE_BT
                         && (   !ff_sfdelta_can_replace(sce0, nextband0, prev_mid, mididx, w*16+g)
                             || !ff_sfdelta_can_replace(sce1, nextband1, prev_side, sididx, w*16+g))) {
                         /* scalefactor range violation, bad stuff, will decrease quality unacceptably */
@@ -2420,40 +2421,42 @@ static void search_for_ms_mips(AACEncContext *s, ChannelElement *cpe)
                         dist1 += quantize_band_cost(s, &sce0->coeffs[start + (w+w2)*128],
                                                     L34,
                                                     sce0->ics.swb_sizes[g],
-                                                    sce0->sf_idx[(w+w2)*16+g],
-                                                    sce0->band_type[(w+w2)*16+g],
+                                                    sce0->sf_idx[w*16+g],
+                                                    sce0->band_type[w*16+g],
                                                     lambda / band0->threshold, INFINITY, &b1, NULL, 0);
                         dist1 += quantize_band_cost(s, &sce1->coeffs[start + (w+w2)*128],
                                                     R34,
                                                     sce1->ics.swb_sizes[g],
-                                                    sce1->sf_idx[(w+w2)*16+g],
-                                                    sce1->band_type[(w+w2)*16+g],
+                                                    sce1->sf_idx[w*16+g],
+                                                    sce1->band_type[w*16+g],
                                                     lambda / band1->threshold, INFINITY, &b2, NULL, 0);
                         dist2 += quantize_band_cost(s, M,
                                                     M34,
                                                     sce0->ics.swb_sizes[g],
-                                                    sce0->sf_idx[(w+w2)*16+g],
-                                                    sce0->band_type[(w+w2)*16+g],
+                                                    mididx,
+                                                    midcb,
                                                     lambda / minthr, INFINITY, &b3, NULL, 0);
                         dist2 += quantize_band_cost(s, S,
                                                     S34,
                                                     sce1->ics.swb_sizes[g],
-                                                    sce1->sf_idx[(w+w2)*16+g],
-                                                    sce1->band_type[(w+w2)*16+g],
+                                                    sididx,
+                                                    sidcb,
                                                     mslambda / (minthr * bmax), INFINITY, &b4, NULL, 0);
                         B0 += b1+b2;
                         B1 += b3+b4;
-                        dist1 -= B0;
-                        dist2 -= B1;
+                        dist1 -= b1+b2;
+                        dist2 -= b3+b4;
                     }
                     cpe->ms_mask[w*16+g] = dist2 <= dist1 && B1 < B0;
                     if (cpe->ms_mask[w*16+g]) {
-                        /* Setting the M/S mask is useful with I/S or PNS, but only the flag */
-                        if (!cpe->is_mask[w*16+g] && sce0->band_type[w*16+g] != NOISE_BT && sce1->band_type[w*16+g] != NOISE_BT) {
+                        if (sce0->band_type[w*16+g] != NOISE_BT && sce1->band_type[w*16+g] != NOISE_BT) {
                             sce0->sf_idx[w*16+g] = mididx;
                             sce1->sf_idx[w*16+g] = sididx;
                             sce0->band_type[w*16+g] = midcb;
                             sce1->band_type[w*16+g] = sidcb;
+                        } else if ((sce0->band_type[w*16+g] != NOISE_BT) ^ (sce1->band_type[w*16+g] != NOISE_BT)) {
+                            /* ms_mask unneeded, and it confuses some decoders */
+                            cpe->ms_mask[w*16+g] = 0;
                         }
                         break;
                     } else if (B1 > B0) {
