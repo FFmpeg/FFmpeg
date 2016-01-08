@@ -643,8 +643,11 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             const int start = wstart+sce->ics.swb_offset[g];
             const float freq = (start-wstart)*freq_mult;
             const float freq_boost = FFMAX(0.88f*freq/NOISE_LOW_LIMIT, 1.0f);
-            if (freq < NOISE_LOW_LIMIT || (start-wstart) >= cutoff)
+            if (freq < NOISE_LOW_LIMIT || (start-wstart) >= cutoff) {
+                if (!sce->zeroes[w*16+g])
+                    prev_sf = sce->sf_idx[w*16+g];
                 continue;
+            }
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 sfb_energy += band->energy;
