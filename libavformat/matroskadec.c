@@ -1869,6 +1869,15 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 fourcc = AV_RL32(track->codec_priv.data);
                 codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
             }
+            if (fourcc == 0) {
+                if (track->audio.bitdepth == 8) {
+                    fourcc = MKTAG('r','a','w',' ');
+                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+                } else if (track->audio.bitdepth == 16) {
+                    fourcc = MKTAG('t','w','o','s');
+                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+                }
+            }
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
                    (track->codec_priv.size >= 21)          &&
                    (track->codec_priv.data)) {
