@@ -172,9 +172,11 @@ static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
 {
     uint8_t col = ctx->cursor_column;
     char *row = screen->characters[ctx->cursor_row];
+    char *font = screen->fonts[ctx->cursor_row];
 
     if (col < SCREEN_COLUMNS) {
         row[col] = ch;
+        font[col] = ctx->cursor_font;
         if (ch) ctx->cursor_column++;
         return 0;
     }
@@ -283,17 +285,60 @@ static int capture_screen(CCaptionSubContext *ctx)
     int i;
     int ret = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
+    enum cc_font prev_font = CCFONT_REGULAR;
     av_bprint_clear(&ctx->buffer);
 
     for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
     {
         if (CHECK_FLAG(screen->row_used, i)) {
-            char *str = screen->characters[i];
-            /* skip space */
-            while (*str == ' ')
-                str++;
+            char *row = screen->characters[i];
+            char *font = screen->fonts[i];
+            int j = 0;
 
-            av_bprintf(&ctx->buffer, "%s\\N", str);
+            /* skip leading space */
+            while (row[j] == ' ')
+                j++;
+
+            for (; j < SCREEN_COLUMNS; j++) {
+                if (row[j] == 0)
+                    break;
+
+                const char *e_tag = "", *s_tag = "";
+                if (prev_font != font[j]) {
+                    switch (prev_font) {
+                    case CCFONT_ITALICS:
+                        e_tag = "{/i0}";
+                        break;
+                    case CCFONT_UNDERLINED:
+                        e_tag = "{/u0}";
+                        break;
+                    case CCFONT_UNDERLINED_ITALICS:
+                        e_tag = "{/u0}{/i0}";
+                        break;
+                    }
+                    switch (font[j]) {
+                    case CCFONT_ITALICS:
+                        s_tag = "{/i1}";
+                        break;
+                    case CCFONT_UNDERLINED:
+                        s_tag = "{/u1}";
+                        break;
+                    case CCFONT_UNDERLINED_ITALICS:
+                        s_tag = "{/u1}{/i1}";
+                        break;
+                    }
+                }
+                prev_font = font[j];
+
+                av_bprintf(&ctx->buffer, "%s%s%c", e_tag, s_tag, row[j]);
+                ret = av_bprint_is_complete(&ctx->buffer);
+                if (ret == 0) {
+                    ret = AVERROR(ENOMEM);
+                    break;
+                }
+            }
+
+            av_bprintf(&ctx->buffer, "\\N");
             ret = av_bprint_is_complete(&ctx->buffer);
             if (ret == 0) {
                 ret = AVERROR(ENOMEM);
