@@ -370,6 +370,7 @@ static int config_output(AVFilterLink *outlink)
             memset(outpicref->data[1] + i * outpicref->linesize[1], 128, outlink->w);
             memset(outpicref->data[2] + i * outpicref->linesize[2], 128, outlink->w);
         }
+        av_frame_set_color_range(outpicref, AVCOL_RANGE_JPEG);
     }
 
     if ((s->orientation == VERTICAL   && s->xpos >= s->w) ||
