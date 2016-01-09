@@ -300,10 +300,11 @@ static int capture_screen(CCaptionSubContext *ctx)
                 j++;
 
             for (; j < SCREEN_COLUMNS; j++) {
+                const char *e_tag = "", *s_tag = "";
+
                 if (row[j] == 0)
                     break;
 
-                const char *e_tag = "", *s_tag = "";
                 if (prev_font != font[j]) {
                     switch (prev_font) {
                     case CCFONT_ITALICS:
