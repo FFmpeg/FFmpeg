@@ -361,15 +361,17 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     }
 }
 
-static void handle_erase(CCaptionSubContext *ctx, int n_screen)
+static void handle_erase(CCaptionSubContext *ctx, int64_t pts, int n_screen)
 {
     struct Screen *screen = ctx->screen + n_screen;
+
+    reap_screen(ctx, pts);
     screen->row_used = 0;
 }
 
 static void handle_eoc(CCaptionSubContext *ctx, int64_t pts)
 {
-    reap_screen(ctx, pts);
+    handle_erase(ctx, pts, ctx->active_screen);
     ctx->active_screen = !ctx->active_screen;
     ctx->cursor_column = 0;
 }
@@ -450,7 +452,7 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
             break;
         case 0x2c:
             /* erase display memory */
-            handle_erase(ctx, ctx->active_screen);
+            handle_erase(ctx, pts, ctx->active_screen);
             break;
         case 0x2d:
             /* carriage return */
@@ -461,7 +463,7 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
             break;
         case 0x2e:
             /* erase non displayed memory */
-            handle_erase(ctx, !ctx->active_screen);
+            handle_erase(ctx, pts, !ctx->active_screen);
             break;
         case 0x2f:
             /* end of caption */
