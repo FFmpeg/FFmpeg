@@ -331,11 +331,6 @@ static int capture_screen(CCaptionSubContext *ctx)
                 prev_font = font[j];
 
                 av_bprintf(&ctx->buffer, "%s%s%c", e_tag, s_tag, row[j]);
-                ret = av_bprint_is_complete(&ctx->buffer);
-                if (ret == 0) {
-                    ret = AVERROR(ENOMEM);
-                    break;
-                }
             }
 
             av_bprintf(&ctx->buffer, "\\N");
