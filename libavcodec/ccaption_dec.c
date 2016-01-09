@@ -175,6 +175,7 @@ static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
 
     if (col < SCREEN_COLUMNS) {
         row[col] = ch;
+        if (ch) ctx->cursor_column++;
         return 0;
     }
     /* We have extra space at end only for null character */
@@ -320,7 +321,6 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
 static void handle_textattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
 {
     int i = lo - 0x20;
-    int ret;
     struct Screen *screen = get_writing_screen(ctx);
 
     if (i >= 32)
@@ -330,9 +330,7 @@ static void handle_textattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     ctx->cursor_font = pac2_attribs[i][1];
 
     SET_FLAG(screen->row_used, ctx->cursor_row);
-    ret = write_char(ctx, screen, ' ');
-    if (ret == 0)
-        ctx->cursor_column++;
+    write_char(ctx, screen, ' ');
 }
 
 static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
@@ -342,7 +340,7 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     };
     const int index = ( (hi<<1) & 0x0e) | ( (lo>>5) & 0x01 );
     struct Screen *screen = get_writing_screen(ctx);
-    int indent, i, ret;
+    int indent, i;
 
     if (row_map[index] <= 0) {
         av_log(ctx, AV_LOG_DEBUG, "Invalid pac index encountered\n");
@@ -357,9 +355,7 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     ctx->cursor_column = 0;
     indent = pac2_attribs[lo][2];
     for (i = 0; i < indent; i++) {
-        ret = write_char(ctx, screen, ' ');
-        if (ret == 0)
-            ctx->cursor_column++;
+        write_char(ctx, screen, ' ');
     }
 }
 
@@ -390,18 +386,13 @@ static void handle_delete_end_of_row(CCaptionSubContext *ctx, char hi, char lo)
 static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
 {
     struct Screen *screen = get_writing_screen(ctx);
-    int ret;
 
     SET_FLAG(screen->row_used, ctx->cursor_row);
 
-    ret = write_char(ctx, screen, hi);
-    if (ret == 0)
-        ctx->cursor_column++;
+    write_char(ctx, screen, hi);
 
     if (lo) {
-        ret = write_char(ctx, screen, lo);
-        if (ret == 0)
-            ctx->cursor_column++;
+        write_char(ctx, screen, lo);
     }
     write_char(ctx, screen, 0);
 
