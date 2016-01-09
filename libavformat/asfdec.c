@@ -1218,7 +1218,7 @@ static int asf_read_single_payload(AVFormatContext *s, ASFPacket *asf_pkt)
     int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        data_size = avio_rl32(pb); // read media objectgg size
+        data_size = avio_rl32(pb); // read media object size
         if (data_size <= 0)
             return AVERROR_EOF;
         if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
