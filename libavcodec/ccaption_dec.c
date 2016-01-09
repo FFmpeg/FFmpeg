@@ -283,7 +283,6 @@ static void roll_up(CCaptionSubContext *ctx)
 static int capture_screen(CCaptionSubContext *ctx)
 {
     int i;
-    int ret = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
     enum cc_font prev_font = CCFONT_REGULAR;
     av_bprint_clear(&ctx->buffer);
@@ -330,25 +329,19 @@ static int capture_screen(CCaptionSubContext *ctx)
                     }
                 }
                 prev_font = font[j];
-
                 av_bprintf(&ctx->buffer, "%s%s%c", e_tag, s_tag, row[j]);
             }
-
             av_bprintf(&ctx->buffer, "\\N");
-            ret = av_bprint_is_complete(&ctx->buffer);
-            if (ret == 0) {
-                ret = AVERROR(ENOMEM);
-                break;
-            }
         }
-
     }
+    if (!av_bprint_is_complete(&ctx->buffer))
+        return AVERROR(ENOMEM);
     if (screen->row_used && ctx->buffer.len >= 2) {
         ctx->buffer.len -= 2;
         ctx->buffer.str[ctx->buffer.len] = 0;
     }
     ctx->buffer_changed = 1;
-    return ret;
+    return 0;
 }
 
 static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
