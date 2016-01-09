@@ -291,8 +291,8 @@ static int capture_screen(CCaptionSubContext *ctx)
     for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
     {
         if (CHECK_FLAG(screen->row_used, i)) {
-            char *row = screen->characters[i];
-            char *font = screen->fonts[i];
+            const char *row = screen->characters[i];
+            const char *font = screen->fonts[i];
             int j = 0;
 
             /* skip leading space */
