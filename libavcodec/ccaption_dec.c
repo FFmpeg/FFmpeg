@@ -168,8 +168,11 @@ static av_cold int close_decoder(AVCodecContext *avctx)
 /**
  * @param ctx closed caption context just to print log
  */
-static int write_char(CCaptionSubContext *ctx, char *row, uint8_t col, char ch)
+static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
 {
+    uint8_t col = ctx->cursor_column;
+    char *row = screen->characters[ctx->cursor_row];
+
     if (col < SCREEN_COLUMNS) {
         row[col] = ch;
         return 0;
@@ -319,7 +322,6 @@ static void handle_textattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     int i = lo - 0x20;
     int ret;
     struct Screen *screen = get_writing_screen(ctx);
-    char *row = screen->characters[ctx->cursor_row];
 
     if (i >= 32)
         return;
@@ -328,7 +330,7 @@ static void handle_textattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     ctx->cursor_font = pac2_attribs[i][1];
 
     SET_FLAG(screen->row_used, ctx->cursor_row);
-    ret = write_char(ctx, row, ctx->cursor_column, ' ');
+    ret = write_char(ctx, screen, ' ');
     if (ret == 0)
         ctx->cursor_column++;
 }
@@ -340,7 +342,6 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     };
     const int index = ( (hi<<1) & 0x0e) | ( (lo>>5) & 0x01 );
     struct Screen *screen = get_writing_screen(ctx);
-    char *row;
     int indent, i, ret;
 
     if (row_map[index] <= 0) {
@@ -355,9 +356,8 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     ctx->cursor_font = pac2_attribs[lo][1];
     ctx->cursor_column = 0;
     indent = pac2_attribs[lo][2];
-    row = screen->characters[ctx->cursor_row];
     for (i = 0; i < indent; i++) {
-        ret = write_char(ctx, row, ctx->cursor_column, ' ');
+        ret = write_char(ctx, screen, ' ');
         if (ret == 0)
             ctx->cursor_column++;
     }
@@ -384,28 +384,26 @@ static void handle_eoc(CCaptionSubContext *ctx, int64_t pts)
 static void handle_delete_end_of_row(CCaptionSubContext *ctx, char hi, char lo)
 {
     struct Screen *screen = get_writing_screen(ctx);
-    char *row = screen->characters[ctx->cursor_row];
-    write_char(ctx, row, ctx->cursor_column, 0);
+    write_char(ctx, screen, 0);
 }
 
 static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
 {
     struct Screen *screen = get_writing_screen(ctx);
-    char *row = screen->characters[ctx->cursor_row];
     int ret;
 
-    SET_FLAG(screen->row_used,ctx->cursor_row);
+    SET_FLAG(screen->row_used, ctx->cursor_row);
 
-    ret = write_char(ctx, row, ctx->cursor_column, hi);
+    ret = write_char(ctx, screen, hi);
     if (ret == 0)
         ctx->cursor_column++;
 
     if (lo) {
-        ret = write_char(ctx, row, ctx->cursor_column, lo);
+        ret = write_char(ctx, screen, lo);
         if (ret == 0)
             ctx->cursor_column++;
     }
-    write_char(ctx, row, ctx->cursor_column, 0);
+    write_char(ctx, screen, 0);
 
     /* reset prev command since character can repeat */
     ctx->prev_cmd[0] = 0;
