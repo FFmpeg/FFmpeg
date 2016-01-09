@@ -302,6 +302,7 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
         ctx->buffer.len -= 2;
         ctx->buffer.str[ctx->buffer.len] = 0;
     }
+    ctx->buffer_changed = 1;
     ctx->startv_time = pts;
     ctx->end_time = pts;
     return ret;
@@ -365,7 +366,6 @@ static void handle_edm(CCaptionSubContext *ctx, int64_t pts)
 
     reap_screen(ctx, pts);
     screen->row_used = 0;
-    ctx->buffer_changed = 1;
 }
 
 static void handle_eoc(CCaptionSubContext *ctx, int64_t pts)
@@ -458,7 +458,6 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
             ff_dlog(ctx, "carriage return\n");
             reap_screen(ctx, pts);
             roll_up(ctx);
-            ctx->buffer_changed = 1;
             ctx->cursor_column = 0;
             break;
         case 0x2f:
