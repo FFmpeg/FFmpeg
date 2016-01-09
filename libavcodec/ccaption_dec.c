@@ -459,15 +459,9 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
             handle_delete_end_of_row(ctx, hi, lo);
             break;
         case 0x25:
-            ctx->rollup = 2;
-            ctx->mode = CCMODE_ROLLUP;
-            break;
         case 0x26:
-            ctx->rollup = 3;
-            ctx->mode = CCMODE_ROLLUP;
-            break;
         case 0x27:
-            ctx->rollup = 4;
+            ctx->rollup = lo - 0x23;
             ctx->mode = CCMODE_ROLLUP;
             break;
         case 0x29:
