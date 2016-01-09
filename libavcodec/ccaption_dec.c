@@ -280,6 +280,7 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
     int ret = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
     ctx->start_time = ctx->startv_time;
+    av_bprint_clear(&ctx->buffer);
 
     for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
     {
@@ -521,7 +522,6 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
                 return ret;
             sub->pts = av_rescale_q(ctx->start_time, avctx->time_base, AV_TIME_BASE_Q);
             ctx->buffer_changed = 0;
-            av_bprint_clear(&ctx->buffer);
         }
     }
 
