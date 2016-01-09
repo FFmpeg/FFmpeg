@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavu 55.6.0
+  xxxxxxx buffer.h - Add av_buffer_pool_init2().
+
 2016-xx-xx - xxxxxxx - lavf 57.3.0 - avformat.h
   Add AVFormatContext.opaque, io_open and io_close, allowing custom IO
   for muxers and demuxers that open additional files.
