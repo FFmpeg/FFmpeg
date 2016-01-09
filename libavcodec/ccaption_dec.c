@@ -282,7 +282,6 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
     int ret = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
     ctx->start_time = ctx->startv_time;
-    av_bprint_clear(&ctx->buffer);
 
     for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
     {
@@ -299,14 +298,12 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
                 break;
             }
         }
-    }
 
+    }
     if (screen->row_used && ctx->buffer.len >= 2) {
         ctx->buffer.len -= 2;
         ctx->buffer.str[ctx->buffer.len] = 0;
-        ctx->screen_changed = 1;
     }
-
     ctx->startv_time = pts;
     ctx->end_time = pts;
     return ret;
@@ -370,6 +367,7 @@ static void handle_edm(CCaptionSubContext *ctx, int64_t pts)
 
     reap_screen(ctx, pts);
     screen->row_used = 0;
+    ctx->screen_changed = 1;
 }
 
 static void handle_eoc(CCaptionSubContext *ctx, int64_t pts)
@@ -462,6 +460,7 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
             ff_dlog(ctx, "carriage return\n");
             reap_screen(ctx, pts);
             roll_up(ctx);
+            ctx->screen_changed = 1;
             ctx->cursor_column = 0;
             break;
         case 0x2f:
@@ -515,7 +514,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
             continue;
         else
             process_cc608(ctx, avpkt->pts, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
-        if (ctx->screen_changed)
+        if (ctx->screen_changed && *ctx->buffer.str)
         {
             int start_time = av_rescale_q(ctx->start_time, avctx->time_base, (AVRational){ 1, 100 });
             int end_time = av_rescale_q(ctx->end_time, avctx->time_base, (AVRational){ 1, 100 });
@@ -525,6 +524,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
                 return ret;
             sub->pts = av_rescale_q(ctx->start_time, avctx->time_base, AV_TIME_BASE_Q);
             ctx->screen_changed = 0;
+            av_bprint_clear(&ctx->buffer);
         }
     }
 
