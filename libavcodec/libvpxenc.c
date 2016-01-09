@@ -125,6 +125,9 @@ static const char *const ctlidstr[] = {
 #if VPX_ENCODER_ABI_VERSION > 8
     [VP9E_SET_COLOR_SPACE]             = "VP9E_SET_COLOR_SPACE",
 #endif
+#if VPX_ENCODER_ABI_VERSION >= 11
+    [VP9E_SET_COLOR_RANGE]             = "VP9E_SET_COLOR_RANGE",
+#endif
 #endif
 };
 
@@ -366,6 +369,24 @@ static void set_colorspace(AVCodecContext *avctx)
         return;
     }
     codecctl_int(avctx, VP9E_SET_COLOR_SPACE, vpx_cs);
+}
+#endif
+
+#if VPX_ENCODER_ABI_VERSION >= 11
+static void set_color_range(AVCodecContext *avctx)
+{
+    enum vpx_color_range vpx_cr;
+    switch (avctx->color_range) {
+    case AVCOL_RANGE_UNSPECIFIED:
+    case AVCOL_RANGE_MPEG:       vpx_cr = VPX_CR_STUDIO_RANGE; break;
+    case AVCOL_RANGE_JPEG:       vpx_cr = VPX_CR_FULL_RANGE;   break;
+    default:
+        av_log(avctx, AV_LOG_WARNING, "Unsupported color range (%d)\n",
+               avctx->color_range);
+        return;
+    }
+
+    codecctl_int(avctx, VP9E_SET_COLOR_RANGE, vpx_cr);
 }
 #endif
 #endif
@@ -616,6 +637,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
             codecctl_int(avctx, VP9E_SET_AQ_MODE, ctx->aq_mode);
 #if VPX_ENCODER_ABI_VERSION > 8
         set_colorspace(avctx);
+#endif
+#if VPX_ENCODER_ABI_VERSION >= 11
+        set_color_range(avctx);
 #endif
     }
 #endif

@@ -69,6 +69,12 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
         AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_RESERVED, AVCOL_SPC_RGB,
     };
     avctx->colorspace = colorspaces[img->cs];
+#if VPX_IMAGE_ABI_VERSION >= 4
+    static const enum AVColorRange color_ranges[] = {
+        AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG
+    };
+    avctx->color_range = color_ranges[img->range];
+#endif
 #endif
     if (avctx->codec_id == AV_CODEC_ID_VP8 && img->fmt != VPX_IMG_FMT_I420)
         return AVERROR_INVALIDDATA;
