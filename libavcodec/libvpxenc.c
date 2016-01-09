@@ -962,7 +962,6 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
 #endif
 
 #define COMMON_OPTIONS \
-    { "cpu-used",        "Quality/Speed ratio modifier",           OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1},       -16,     16,      VE}, \
     { "auto-alt-ref",    "Enable use of alternate reference " \
                          "frames (2-pass only)",                   OFFSET(auto_alt_ref),    AV_OPT_TYPE_BOOL, {.i64 = -1},     -1,      1,       VE}, \
     { "lag-in-frames",   "Number of frames to look ahead for " \
@@ -1003,6 +1002,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
 #if CONFIG_LIBVPX_VP8_ENCODER
 static const AVOption vp8_options[] = {
     COMMON_OPTIONS
+    { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE},
     LEGACY_OPTIONS
     { NULL }
 };
@@ -1011,6 +1011,7 @@ static const AVOption vp8_options[] = {
 #if CONFIG_LIBVPX_VP9_ENCODER
 static const AVOption vp9_options[] = {
     COMMON_OPTIONS
+    { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1},  -8, 8, VE},
     { "lossless",        "Lossless mode",                               OFFSET(lossless),        AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
     { "tile-columns",    "Number of tile columns to use, log2",         OFFSET(tile_columns),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "tile-rows",       "Number of tile rows to use, log2",            OFFSET(tile_rows),       AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, VE},
