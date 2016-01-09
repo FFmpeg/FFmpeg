@@ -274,12 +274,11 @@ static void roll_up(CCaptionSubContext *ctx)
     UNSET_FLAG(screen->row_used, ctx->cursor_row);
 }
 
-static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
+static int capture_screen(CCaptionSubContext *ctx)
 {
     int i;
     int ret = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
-    ctx->start_time = ctx->startv_time;
     av_bprint_clear(&ctx->buffer);
 
     for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
@@ -304,9 +303,15 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
         ctx->buffer.str[ctx->buffer.len] = 0;
     }
     ctx->buffer_changed = 1;
+    return ret;
+}
+
+static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
+{
+    ctx->start_time = ctx->startv_time;
     ctx->startv_time = pts;
     ctx->end_time = pts;
-    return ret;
+    return capture_screen(ctx);
 }
 
 static void handle_textattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
