@@ -51,6 +51,7 @@ version <next>:
 - audio high-order multiband parametric equalizer
 - automatic bitstream filtering
 - showspectrumpic filter
+- libstagefright support removed
 
 
 version 2.8:

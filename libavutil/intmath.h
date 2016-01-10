@@ -153,6 +153,12 @@ static av_always_inline av_const unsigned ff_clz_c(unsigned x)
 }
 #endif
 
+#if AV_GCC_VERSION_AT_LEAST(3,4)
+#ifndef av_parity
+#define av_parity __builtin_parity
+#endif
+#endif
+
 /**
  * @}
  */

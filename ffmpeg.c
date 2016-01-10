@@ -554,8 +554,12 @@ static void ffmpeg_cleanup(int ret)
         av_freep(&input_streams[i]);
     }
 
-    if (vstats_file)
-        fclose(vstats_file);
+    if (vstats_file) {
+        if (fclose(vstats_file))
+            av_log(NULL, AV_LOG_ERROR,
+                   "Error closing vstats file, loss of information possible: %s\n",
+                   av_err2str(AVERROR(errno)));
+    }
     av_freep(&vstats_filename);
 
     av_freep(&input_streams);
@@ -1560,7 +1564,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                 if (qp >= 0 && qp < FF_ARRAY_ELEMS(qp_histogram))
                     qp_histogram[qp]++;
                 for (j = 0; j < 32; j++)
-                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log2(qp_histogram[j] + 1)));
+                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", av_log2(qp_histogram[j] + 1));
             }
 
             if ((enc->flags & AV_CODEC_FLAG_PSNR) && (ost->pict_type != AV_PICTURE_TYPE_NONE || is_last_report)) {
@@ -4200,7 +4204,10 @@ static int transcode(void)
             ost = output_streams[i];
             if (ost) {
                 if (ost->logfile) {
-                    fclose(ost->logfile);
+                    if (fclose(ost->logfile))
+                        av_log(NULL, AV_LOG_ERROR,
+                               "Error closing logfile, loss of information possible: %s\n",
+                               av_err2str(AVERROR(errno)));
                     ost->logfile = NULL;
                 }
                 av_freep(&ost->forced_kf_pts);

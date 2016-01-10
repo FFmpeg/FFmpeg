@@ -1863,6 +1863,13 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
         }
     }
 
+    if (sc->format == 0) {
+        if (st->codec->bits_per_coded_sample == 8)
+            st->codec->codec_id = mov_codec_id(st, MKTAG('r','a','w',' '));
+        else if (st->codec->bits_per_coded_sample == 16)
+            st->codec->codec_id = mov_codec_id(st, MKTAG('t','w','o','s'));
+    }
+
     switch (st->codec->codec_id) {
     case AV_CODEC_ID_PCM_S8:
     case AV_CODEC_ID_PCM_U8:

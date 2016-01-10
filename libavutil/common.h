@@ -54,7 +54,7 @@
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
-/* assume a>0 and b>0 */
+/* Fast a/(1<<b) rounded toward +inf. Assume a>=0 and b>=0 */
 #define FF_CEIL_RSHIFT(a,b) (!av_builtin_constant_p(b) ? -((-(a)) >> (b)) \
                                                        : ((a) + (1<<(b)) - 1) >> (b))
 #define FFUDIV(a,b) (((a)>0 ?(a):(a)-(b)+1) / (b))
@@ -331,6 +331,11 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
     return av_popcount((uint32_t)x) + av_popcount((uint32_t)(x >> 32));
 }
 
+static av_always_inline av_const int av_parity_c(uint32_t v)
+{
+    return av_popcount(v) & 1;
+}
+
 #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
 #define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
 
@@ -516,4 +521,7 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #endif
 #ifndef av_popcount64
 #   define av_popcount64    av_popcount64_c
+#endif
+#ifndef av_parity
+#   define av_parity        av_parity_c
 #endif

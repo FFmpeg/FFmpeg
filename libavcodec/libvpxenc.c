@@ -125,6 +125,9 @@ static const char *const ctlidstr[] = {
 #if VPX_ENCODER_ABI_VERSION > 8
     [VP9E_SET_COLOR_SPACE]             = "VP9E_SET_COLOR_SPACE",
 #endif
+#if VPX_ENCODER_ABI_VERSION >= 11
+    [VP9E_SET_COLOR_RANGE]             = "VP9E_SET_COLOR_RANGE",
+#endif
 #endif
 };
 
@@ -366,6 +369,24 @@ static void set_colorspace(AVCodecContext *avctx)
         return;
     }
     codecctl_int(avctx, VP9E_SET_COLOR_SPACE, vpx_cs);
+}
+#endif
+
+#if VPX_ENCODER_ABI_VERSION >= 11
+static void set_color_range(AVCodecContext *avctx)
+{
+    enum vpx_color_range vpx_cr;
+    switch (avctx->color_range) {
+    case AVCOL_RANGE_UNSPECIFIED:
+    case AVCOL_RANGE_MPEG:       vpx_cr = VPX_CR_STUDIO_RANGE; break;
+    case AVCOL_RANGE_JPEG:       vpx_cr = VPX_CR_FULL_RANGE;   break;
+    default:
+        av_log(avctx, AV_LOG_WARNING, "Unsupported color range (%d)\n",
+               avctx->color_range);
+        return;
+    }
+
+    codecctl_int(avctx, VP9E_SET_COLOR_RANGE, vpx_cr);
 }
 #endif
 #endif
@@ -616,6 +637,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
             codecctl_int(avctx, VP9E_SET_AQ_MODE, ctx->aq_mode);
 #if VPX_ENCODER_ABI_VERSION > 8
         set_colorspace(avctx);
+#endif
+#if VPX_ENCODER_ABI_VERSION >= 11
+        set_color_range(avctx);
 #endif
     }
 #endif
@@ -962,7 +986,6 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
 #endif
 
 #define COMMON_OPTIONS \
-    { "cpu-used",        "Quality/Speed ratio modifier",           OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1},       -16,     16,      VE}, \
     { "auto-alt-ref",    "Enable use of alternate reference " \
                          "frames (2-pass only)",                   OFFSET(auto_alt_ref),    AV_OPT_TYPE_BOOL, {.i64 = -1},     -1,      1,       VE}, \
     { "lag-in-frames",   "Number of frames to look ahead for " \
@@ -1003,6 +1026,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
 #if CONFIG_LIBVPX_VP8_ENCODER
 static const AVOption vp8_options[] = {
     COMMON_OPTIONS
+    { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE},
     LEGACY_OPTIONS
     { NULL }
 };
@@ -1011,6 +1035,7 @@ static const AVOption vp8_options[] = {
 #if CONFIG_LIBVPX_VP9_ENCODER
 static const AVOption vp9_options[] = {
     COMMON_OPTIONS
+    { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1},  -8, 8, VE},
     { "lossless",        "Lossless mode",                               OFFSET(lossless),        AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
     { "tile-columns",    "Number of tile columns to use, log2",         OFFSET(tile_columns),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "tile-rows",       "Number of tile rows to use, log2",            OFFSET(tile_rows),       AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, VE},

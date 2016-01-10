@@ -1869,6 +1869,15 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 fourcc = AV_RL32(track->codec_priv.data);
                 codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
             }
+            if (fourcc == 0) {
+                if (track->audio.bitdepth == 8) {
+                    fourcc = MKTAG('r','a','w',' ');
+                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+                } else if (track->audio.bitdepth == 16) {
+                    fourcc = MKTAG('t','w','o','s');
+                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+                }
+            }
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
                    (track->codec_priv.size >= 21)          &&
                    (track->codec_priv.data)) {
@@ -1878,8 +1887,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 fourcc   = AV_RL32(track->codec_priv.data);
                 codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
             }
-            if (codec_id == AV_CODEC_ID_NONE && AV_RL32(track->codec_priv.data+4) == AV_RL32("SMI "))
-                codec_id = AV_CODEC_ID_SVQ3;
+            if (codec_id == AV_CODEC_ID_NONE && AV_RL32(track->codec_priv.data+4) == AV_RL32("SMI ")) {
+                fourcc = MKTAG('S','V','Q','3');
+                codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
+            }
             if (codec_id == AV_CODEC_ID_NONE) {
                 char buf[32];
                 av_get_codec_tag_string(buf, sizeof(buf), fourcc);

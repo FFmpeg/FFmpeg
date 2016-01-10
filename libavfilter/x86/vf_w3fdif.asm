@@ -102,14 +102,22 @@ cglobal w3fdif_complex_low, 4, 7, 8, 0, work_line, in_lines_cur0, coef, linesize
 REP_RET
 
 %if ARCH_X86_64
-
 cglobal w3fdif_simple_high, 5, 9, 8, 0, work_line, in_lines_cur0, in_lines_adj0, coef, linesize
+%else
+cglobal w3fdif_simple_high, 4, 7, 8, 0, work_line, in_lines_cur0, in_lines_adj0, coef, linesize
+%endif
     movq                  m2, [coefq]
+%if ARCH_X86_64
     DEFINE_ARGS    work_line, in_lines_cur0, in_lines_adj0, in_lines_cur1, linesize, offset, in_lines_cur2, in_lines_adj1, in_lines_adj2
+    xor              offsetq, offsetq
+%else
+    DEFINE_ARGS    work_line, in_lines_cur0, in_lines_adj0, in_lines_cur1, in_lines_cur2, in_lines_adj1, in_lines_adj2
+    %define linesized r4mp
+%endif
+
     pshufd                m0, m2, q0000
     SPLATW                m2, m2, 2
     pxor                  m7, m7
-    mov              offsetq, 0
     mov       in_lines_cur2q, [in_lines_cur0q+gprsize*2]
     mov       in_lines_cur1q, [in_lines_cur0q+gprsize]
     mov       in_lines_cur0q, [in_lines_cur0q]
@@ -117,8 +125,21 @@ cglobal w3fdif_simple_high, 5, 9, 8, 0, work_line, in_lines_cur0, in_lines_adj0,
     mov       in_lines_adj1q, [in_lines_adj0q+gprsize]
     mov       in_lines_adj0q, [in_lines_adj0q]
 
+%if ARCH_X86_32
+    sub in_lines_cur1q, in_lines_cur0q
+    sub in_lines_cur2q, in_lines_cur0q
+    sub in_lines_adj0q, in_lines_cur0q
+    sub in_lines_adj1q, in_lines_cur0q
+    sub in_lines_adj2q, in_lines_cur0q
+    %define offsetq in_lines_cur0q
+%endif
+
 .loop:
+%if ARCH_X86_64
     movh                                   m3, [in_lines_cur0q+offsetq]
+%else
+    movh                                   m3, [in_lines_cur0q]
+%endif
     movh                                   m4, [in_lines_cur1q+offsetq]
     punpcklbw                              m3, m7
     punpcklbw                              m4, m7
@@ -143,14 +164,24 @@ cglobal w3fdif_simple_high, 5, 9, 8, 0, work_line, in_lines_cur0, in_lines_adj0,
     pmaddwd                                m6, m2
     paddd                                  m3, m5
     paddd                                  m4, m6
+%if ARCH_X86_64
     paddd                                  m3, [work_lineq+offsetq*4]
     paddd                                  m4, [work_lineq+offsetq*4+mmsize]
     mova               [work_lineq+offsetq*4], m3
     mova        [work_lineq+offsetq*4+mmsize], m4
+%else
+    paddd                                  m3, [work_lineq]
+    paddd                                  m4, [work_lineq+mmsize]
+    mova                         [work_lineq], m3
+    mova                  [work_lineq+mmsize], m4
+    add                            work_lineq, mmsize*2
+%endif
     add                               offsetq, mmsize/2
     sub                             linesized, mmsize/2
     jg .loop
 REP_RET
+
+%if ARCH_X86_64
 
 cglobal w3fdif_complex_high, 5, 13, 10, 0, work_line, in_lines_cur0, in_lines_adj0, coef, linesize
     movq                  m0, [coefq+0]

@@ -51,12 +51,12 @@ av_cold void ff_w3fdif_init_x86(W3FDIFDSPContext *dsp)
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         dsp->filter_simple_low   = ff_w3fdif_simple_low_sse2;
+        dsp->filter_simple_high  = ff_w3fdif_simple_high_sse2;
         dsp->filter_complex_low  = ff_w3fdif_complex_low_sse2;
         dsp->filter_scale        = ff_w3fdif_scale_sse2;
     }
 
     if (ARCH_X86_64 && EXTERNAL_SSE2(cpu_flags)) {
-        dsp->filter_simple_high  = ff_w3fdif_simple_high_sse2;
         dsp->filter_complex_high = ff_w3fdif_complex_high_sse2;
     }
 }
