@@ -52,6 +52,7 @@ version <next>:
 - automatic bitstream filtering
 - showspectrumpic filter
 - libstagefright support removed
+- spectrumsynth filter
 
 
 version 2.8:
