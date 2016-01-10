@@ -210,8 +210,13 @@ static int decode_555(GetByteContext *gB, uint16_t *dst, int stride,
                     last_symbol = b << 8 | bytestream2_get_byte(gB);
                 else if (b > 129) {
                     repeat = 0;
-                    while (b-- > 130)
+                    while (b-- > 130) {
+                        if (repeat >= (INT_MAX >> 8) - 1) {
+                            av_log(NULL, AV_LOG_ERROR, "repeat overflow\n");
+                            return AVERROR_INVALIDDATA;
+                        }
                         repeat = (repeat << 8) + bytestream2_get_byte(gB) + 1;
+                    }
                     if (last_symbol == -2) {
                         int skip = FFMIN((unsigned)repeat, dst + w - p);
                         repeat -= skip;
