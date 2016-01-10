@@ -307,24 +307,24 @@ static int capture_screen(CCaptionSubContext *ctx)
                 if (prev_font != font[j]) {
                     switch (prev_font) {
                     case CCFONT_ITALICS:
-                        e_tag = "{/i0}";
+                        e_tag = "{\\i0}";
                         break;
                     case CCFONT_UNDERLINED:
-                        e_tag = "{/u0}";
+                        e_tag = "{\\u0}";
                         break;
                     case CCFONT_UNDERLINED_ITALICS:
-                        e_tag = "{/u0}{/i0}";
+                        e_tag = "{\\u0}{\\i0}";
                         break;
                     }
                     switch (font[j]) {
                     case CCFONT_ITALICS:
-                        s_tag = "{/i1}";
+                        s_tag = "{\\i1}";
                         break;
                     case CCFONT_UNDERLINED:
-                        s_tag = "{/u1}";
+                        s_tag = "{\\u1}";
                         break;
                     case CCFONT_UNDERLINED_ITALICS:
-                        s_tag = "{/u1}{/i1}";
+                        s_tag = "{\\u1}{\\i1}";
                         break;
                     }
                 }
