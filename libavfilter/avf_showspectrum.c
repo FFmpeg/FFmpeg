@@ -451,13 +451,15 @@ static void run_fft(ShowSpectrumContext *s, AVFrame *fin)
 
 static void calc_magnitudes(ShowSpectrumContext *s)
 {
+    const double w = s->win_scale * (s->scale == LOG ? s->win_scale : 1);
     int ch, y, h = s->orientation == VERTICAL ? s->h : s->w;
+    const float f = s->gain * w;
 
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         float *magnitudes = s->magnitudes[ch];
 
         for (y = 0; y < h; y++)
-            magnitudes[y] = MAGNITUDE(y, ch);
+            magnitudes[y] = MAGNITUDE(y, ch) * f;
     }
 }
 
@@ -475,13 +477,15 @@ static void calc_phases(ShowSpectrumContext *s)
 
 static void acalc_magnitudes(ShowSpectrumContext *s)
 {
+    const double w = s->win_scale * (s->scale == LOG ? s->win_scale : 1);
     int ch, y, h = s->orientation == VERTICAL ? s->h : s->w;
+    const float f = s->gain * w;
 
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         float *magnitudes = s->magnitudes[ch];
 
         for (y = 0; y < h; y++)
-            magnitudes[y] += MAGNITUDE(y, ch);
+            magnitudes[y] += MAGNITUDE(y, ch) * f;
     }
 }
 
@@ -611,8 +615,6 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterLink *outlink = ctx->outputs[0];
     ShowSpectrumContext *s = ctx->priv;
     AVFrame *outpicref = s->outpicref;
-    const double w = s->data == D_PHASE ? 1 : s->win_scale;
-    const float g = s->gain;
     int h = s->orientation == VERTICAL ? s->channel_height : s->channel_width;
 
     int ch, plane, x, y;
@@ -638,7 +640,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             switch (s->data) {
             case D_MAGNITUDE:
                 /* get magnitude */
-                a = g * w * magnitudes[y];
+                a = magnitudes[y];
                 break;
             case D_PHASE:
                 /* get phase */
@@ -666,7 +668,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 a = av_clipf(pow(a, 0.20), 0, 1);
                 break;
             case LOG:
-                a = 1 + log10(av_clipd(a * w, 1e-6, 1)) / 6; // zero = -120dBFS
+                a = 1 + log10(av_clipd(a, 1e-6, 1)) / 6; // zero = -120dBFS
                 break;
             default:
                 av_assert0(0);
