@@ -99,7 +99,7 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
 {
     SingleChannelElement *sce0 = &cpe->ch[0];
     SingleChannelElement *sce1 = &cpe->ch[1];
-    int start = 0, count = 0, w, w2, g, i, prev_sf1 = -1;
+    int start = 0, count = 0, w, w2, g, i, prev_sf1 = -1, prev_bt = -1, prev_is = 0;
     const float freq_mult = avctx->sample_rate/(1024.0f/sce0->ics.num_windows)/2.0f;
     uint8_t nextband1[128];
 
@@ -139,11 +139,18 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                     cpe->ch[0].is_ener[w*16+g] = sqrt(ener0 / best->ener01);
                     cpe->ch[1].is_ener[w*16+g] = ener0/ener1;
                     cpe->ch[1].band_type[w*16+g] = (best->phase > 0) ? INTENSITY_BT : INTENSITY_BT2;
+                    if (prev_is && prev_bt != cpe->ch[1].band_type[w*16+g]) {
+                        /** Flip M/S mask and pick the other CB, since it encodes more efficiently */
+                        cpe->ms_mask[w*16+g] = 1;
+                        cpe->ch[1].band_type[w*16+g] = (best->phase > 0) ? INTENSITY_BT2 : INTENSITY_BT;
+                    }
+                    prev_bt = cpe->ch[1].band_type[w*16+g];
                     count++;
                 }
             }
             if (!sce1->zeroes[w*16+g] && sce1->band_type[w*16+g] < RESERVED_BT)
                 prev_sf1 = sce1->sf_idx[w*16+g];
+            prev_is = cpe->is_mask[w*16+g];
             start += sce0->ics.swb_sizes[g];
         }
     }
