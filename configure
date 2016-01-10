@@ -5229,6 +5229,8 @@ elif check_func dlopen -ldl; then
     ldl=-ldl
 fi
 
+decklink_outdev_extralibs="$decklink_outdev_extralibs $ldl"
+decklink_indev_extralibs="$decklink_indev_extralibs $ldl"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
