@@ -48,7 +48,7 @@ int ff_get_qtpalette(int codec_id, AVIOContext *pb, uint32_t *palette)
 
     /* If the depth is 1, 2, 4, or 8 bpp, file is palettized. */
     if ((bit_depth == 1 || bit_depth == 2 || bit_depth == 4 || bit_depth == 8)) {
-        int color_count, color_start, color_end;
+        uint32_t color_count, color_start, color_end;
         uint32_t a, r, g, b;
 
         /* Ignore the greyscale bit for 1-bit video and sample
