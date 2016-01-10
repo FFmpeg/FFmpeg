@@ -145,7 +145,15 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     /* taking by default roll up to 2 */
     ctx->mode = CCMODE_ROLLUP;
     ctx->rollup = 2;
-    ret = ff_ass_subtitle_header_default(avctx);
+    ret = ff_ass_subtitle_header(avctx, "Monospace",
+                                 ASS_DEFAULT_FONT_SIZE,
+                                 ASS_DEFAULT_COLOR,
+                                 ASS_DEFAULT_BACK_COLOR,
+                                 ASS_DEFAULT_BOLD,
+                                 ASS_DEFAULT_ITALIC,
+                                 ASS_DEFAULT_UNDERLINE,
+                                 3,
+                                 ASS_DEFAULT_ALIGNMENT);
     if (ret < 0) {
         return ret;
     }

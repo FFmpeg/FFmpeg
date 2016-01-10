@@ -370,7 +370,8 @@ static int microdvd_init(AVCodecContext *avctx)
     }
     return ff_ass_subtitle_header(avctx, font_buf.str, font_size, color,
                                   ASS_DEFAULT_BACK_COLOR, bold, italic,
-                                  underline, alignment);
+                                  underline, ASS_DEFAULT_BORDERSTYLE,
+                                  alignment);
 }
 
 AVCodec ff_microdvd_decoder = {
