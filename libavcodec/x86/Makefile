@@ -51,6 +51,7 @@ OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
 OBJS-$(CONFIG_V210_ENCODER)            += x86/v210enc_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
+OBJS-$(CONFIG_VP3_DECODER)             += x86/hpeldsp_vp3_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
@@ -122,5 +123,6 @@ YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv40dsp.o
 YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
 YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o
+YASM-OBJS-$(CONFIG_VP3_DECODER)        += x86/hpeldsp_vp3.o
 YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
 YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9dsp.o
