@@ -576,8 +576,10 @@ lavd 54.0.0, lavfi 3.5.0
                    9 branch was cut here
 ----------------------------->8--------------------------------------
 
-2012-12-29 - d8fd06c - lavu 52.3.0 - avstring.h
-  Add av_basename() and av_dirname().
+2012-12-29 - lavu 52.3.0
+  d8fd06c - Add av_basename() and av_dirname().
+  c1a02e8 - Add av_pix_fmt_get_chroma_sub_sample and deprecate
+            avcodec_get_chroma_sub_sample.
 
 2012-11-11 - 5980f5d - lavu 52.2.0 - audioconvert.h
   Rename audioconvert.h to channel_layout.h. audioconvert.h is now deprecated.
