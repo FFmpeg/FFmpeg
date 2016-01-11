@@ -1167,9 +1167,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
                 trans_coeff_level = 1 + coeff_abs_level_greater1_flag[n];
                 if (trans_coeff_level == ((m < 8) ?
                                           ((n == first_greater1_coeff_idx) ? 3 : 2) : 1)) {
-                    int last_coeff_abs_level_remaining = ff_hevc_coeff_abs_level_remaining(s, trans_coeff_level, c_rice_param);
-
-                    trans_coeff_level += last_coeff_abs_level_remaining;
+                    trans_coeff_level += ff_hevc_coeff_abs_level_remaining(s, trans_coeff_level, c_rice_param);
                     if ((trans_coeff_level) > (3 * (1 << c_rice_param)))
                         c_rice_param = FFMIN(c_rice_param + 1, 4);
                 }
