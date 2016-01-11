@@ -941,7 +941,7 @@ static void init_planes(DiracContext *s)
         p->height      = s->seq.height >> (i ? s->chroma_y_shift : 0);
         p->idwt_width  = w = CALC_PADDING(p->width , s->wavelet_depth);
         p->idwt_height = h = CALC_PADDING(p->height, s->wavelet_depth);
-        p->idwt_stride = FFALIGN(p->idwt_width << (1 + s->pshift), 8);
+        p->idwt_stride = FFALIGN(p->idwt_width, 8) << (1 + s->pshift);
 
         for (level = s->wavelet_depth-1; level >= 0; level--) {
             w = w>>1;
