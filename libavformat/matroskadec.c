@@ -1719,11 +1719,11 @@ static int get_qt_codec(MatroskaTrack *track, uint32_t *fourcc, enum AVCodecID *
      * by expanding/shifting the data by 4 bytes and storing the data
      * size at the start. */
     if (ff_codec_get_id(codec_tags, AV_RL32(track->codec_priv.data))) {
-        uint8_t *p = av_malloc(track->codec_priv.size + 4);
+        uint8_t *p = av_realloc(track->codec_priv.data,
+                                track->codec_priv.size + 4);
         if (!p)
             return AVERROR(ENOMEM);
-        memcpy(p + 4, track->codec_priv.data, track->codec_priv.size);
-        av_free(track->codec_priv.data);
+        memmove(p + 4, p, track->codec_priv.size);
         track->codec_priv.data = p;
         track->codec_priv.size += 4;
         AV_WB32(track->codec_priv.data, track->codec_priv.size);
