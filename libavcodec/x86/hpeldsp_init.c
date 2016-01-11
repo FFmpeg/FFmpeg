@@ -158,7 +158,7 @@ HPELDSP_AVG_PIXELS16(_mmxext)
         c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
     } while (0)
 
-static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
+static void hpeldsp_init_mmx(HpelDSPContext *c, int flags)
 {
 #if HAVE_MMX_INLINE
     SET_HPEL_FUNCS(put,        [0], 16, mmx);
@@ -171,7 +171,7 @@ static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
 #endif /* HAVE_MMX_INLINE */
 }
 
-static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int cpu_flags)
+static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
 {
 #if HAVE_MMXEXT_EXTERNAL
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_mmxext;
@@ -200,7 +200,7 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int cpu_flags)
 #endif /* HAVE_MMXEXT_EXTERNAL */
 }
 
-static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int cpu_flags)
+static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags)
 {
 #if HAVE_AMD3DNOW_EXTERNAL
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_3dnow;
@@ -229,7 +229,7 @@ static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int cpu_flags)
 #endif /* HAVE_AMD3DNOW_EXTERNAL */
 }
 
-static void hpeldsp_init_sse2_fast(HpelDSPContext *c, int flags, int cpu_flags)
+static void hpeldsp_init_sse2_fast(HpelDSPContext *c, int flags)
 {
 #if HAVE_SSE2_EXTERNAL
     c->put_pixels_tab[0][0]        = ff_put_pixels16_sse2;
@@ -243,16 +243,16 @@ av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
     int cpu_flags = av_get_cpu_flags();
 
     if (INLINE_MMX(cpu_flags))
-        hpeldsp_init_mmx(c, flags, cpu_flags);
+        hpeldsp_init_mmx(c, flags);
 
     if (EXTERNAL_AMD3DNOW(cpu_flags))
-        hpeldsp_init_3dnow(c, flags, cpu_flags);
+        hpeldsp_init_3dnow(c, flags);
 
     if (EXTERNAL_MMXEXT(cpu_flags))
-        hpeldsp_init_mmxext(c, flags, cpu_flags);
+        hpeldsp_init_mmxext(c, flags);
 
     if (EXTERNAL_SSE2_FAST(cpu_flags))
-        hpeldsp_init_sse2_fast(c, flags, cpu_flags);
+        hpeldsp_init_sse2_fast(c, flags);
 
     if (CONFIG_VP3_DECODER)
         ff_hpeldsp_vp3_init_x86(c, cpu_flags, flags);
