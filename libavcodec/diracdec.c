@@ -517,7 +517,7 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
         coeff = ret - 1;
     }
     if (coeff) {
-        coeff = (coeff * qfactor + qoffset + 2) >> 2;
+        coeff = (coeff * qfactor + qoffset) >> 2;
         sign  = SHOW_SBITS(re, gb, 1);
         LAST_SKIP_BITS(re, gb, 1);
         coeff = (coeff ^ sign) - sign;
@@ -548,7 +548,7 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
         } \
         coeff = dirac_get_arith_uint(c, pred_ctx, CTX_COEFF_DATA); \
         if (coeff) { \
-            coeff = (coeff * qfactor + qoffset + 2) >> 2; \
+            coeff = (coeff * qfactor + qoffset) >> 2; \
             sign  = dirac_get_arith_bit(c, SIGN_CTX(sign_pred)); \
             coeff = (coeff ^ -sign) + sign; \
         } \
@@ -600,9 +600,9 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     qfactor = qscale_tab[b->quant];
     /* TODO: context pointer? */
     if (!s->num_refs)
-        qoffset = qoffset_intra_tab[b->quant];
+        qoffset = qoffset_intra_tab[b->quant] + 2;
     else
-        qoffset = qoffset_inter_tab[b->quant];
+        qoffset = qoffset_inter_tab[b->quant] + 2;
 
     buf = b->ibuf + top * b->stride;
     if (is_arith) {
@@ -776,7 +776,7 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
     int bottom = b1->height *(slice_y+1) / s->num_y;
 
     int qfactor = qscale_tab[quant & 0x7f];
-    int qoffset = qoffset_intra_tab[quant & 0x7f];
+    int qoffset = qoffset_intra_tab[quant & 0x7f] + 2;
 
     uint8_t *buf1 =      b1->ibuf + top * b1->stride;
     uint8_t *buf2 = b2 ? b2->ibuf + top * b2->stride: NULL;
