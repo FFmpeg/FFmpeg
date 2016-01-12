@@ -67,10 +67,12 @@ struct decklink_ctx {
     unsigned int dropped;
     AVStream *audio_st;
     AVStream *video_st;
+    AVStream *teletext_st;
 
     /* Options */
     int list_devices;
     int list_formats;
+    int64_t teletext_lines;
     double preroll;
 
     int frames_preroll;

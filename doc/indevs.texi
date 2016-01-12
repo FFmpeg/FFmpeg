@@ -236,6 +236,16 @@ Defaults to @option{false}.
 If set to @samp{1}, video is captured in 10 bit v210 instead
 of uyvy422. Not all Blackmagic devices support this option.
 
+@item teletext_lines
+If set to nonzero, an additional teletext stream will be captured from the
+vertical ancillary data. This option is a bitmask of the VBI lines checked,
+specifically lines 6 to 22, and lines 318 to 335. Line 6 is the LSB in the mask.
+Selected lines which do not contain teletext information will be ignored. You
+can use the special @option{all} constant to select all possible lines, or
+@option{standard} to skip lines 6, 318 and 319, which are not compatible with all
+receivers. Capturing teletext only works for SD PAL sources in 8 bit mode.
+To use this option, ffmpeg needs to be compiled with @code{--enable-libzvbi}.
+
 @end table
 
 @subsection Examples
