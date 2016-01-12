@@ -37,8 +37,6 @@ int ff_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
 {
     uint32_t mrk;
     int i, tmp;
-    const uint16_t *ssrc = (const uint16_t *) src;
-    uint16_t *sdst = (uint16_t *) dst;
     PutBitContext pb;
 
     if ((unsigned) src_size > (unsigned) max_size)
@@ -50,8 +48,11 @@ int ff_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
         memcpy(dst, src, src_size);
         return src_size;
     case DCA_SYNCWORD_CORE_LE:
-        for (i = 0; i < (src_size + 1) >> 1; i++)
-            *sdst++ = av_bswap16(*ssrc++);
+        for (i = 0; i < (src_size + 1) >> 1; i++) {
+            AV_WB16(dst, AV_RL16(src));
+            src += 2;
+            dst += 2;
+        }
         return src_size;
     case DCA_SYNCWORD_CORE_14B_BE:
     case DCA_SYNCWORD_CORE_14B_LE:
