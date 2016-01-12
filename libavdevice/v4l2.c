@@ -126,7 +126,7 @@ static int device_open(AVFormatContext *ctx)
 #if CONFIG_LIBV4L2
         SET_WRAPPERS(v4l2_);
 #else
-        av_log(ctx, AV_LOG_ERROR, "libavdevice is not build with libv4l2 support.\n");
+        av_log(ctx, AV_LOG_ERROR, "libavdevice is not built with libv4l2 support.\n");
         return AVERROR(EINVAL);
 #endif
     } else {
