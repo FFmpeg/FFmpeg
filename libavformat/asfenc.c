@@ -964,6 +964,11 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
     av_assert0(pts != AV_NOPTS_VALUE);
+    if (   pts < - PREROLL_TIME
+        || pts > (INT_MAX-3)/10000LL * ASF_INDEXED_INTERVAL - PREROLL_TIME) {
+        av_log(s, AV_LOG_ERROR, "input pts %"PRId64" is invalid\n", pts);
+        return AVERROR(EINVAL);
+    }
     pts *= 10000;
     asf->duration = FFMAX(asf->duration, pts + pkt->duration * 10000);
 
