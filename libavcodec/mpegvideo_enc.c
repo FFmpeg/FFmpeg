@@ -3723,9 +3723,11 @@ static int encode_picture(MpegEncContext *s, int picture_number)
             ff_wmv2_encode_picture_header(s, picture_number);
         else if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
             ff_msmpeg4_encode_picture_header(s, picture_number);
-        else if (CONFIG_MPEG4_ENCODER && s->h263_pred)
-            ff_mpeg4_encode_picture_header(s, picture_number);
-        else if (CONFIG_RV10_ENCODER && s->codec_id == AV_CODEC_ID_RV10) {
+        else if (CONFIG_MPEG4_ENCODER && s->h263_pred) {
+            ret = ff_mpeg4_encode_picture_header(s, picture_number);
+            if (ret < 0)
+                return ret;
+        } else if (CONFIG_RV10_ENCODER && s->codec_id == AV_CODEC_ID_RV10) {
             ret = ff_rv10_encode_picture_header(s, picture_number);
             if (ret < 0)
                 return ret;

@@ -1086,7 +1086,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
 }
 
 /* write mpeg4 VOP header */
-void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
+int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     int time_incr;
     int time_div, time_mod;
@@ -1112,6 +1112,12 @@ void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
     time_mod  = FFUMOD(s->time, s->avctx->time_base.den);
     time_incr = time_div - s->last_time_base;
     av_assert0(time_incr >= 0);
+
+    // This limits the frame duration to max 1 hour
+    if (time_incr > 3600) {
+        av_log(s->avctx, AV_LOG_ERROR, "time_incr %d too large\n", time_incr);
+        return AVERROR(EINVAL);
+    }
     while (time_incr--)
         put_bits(&s->pb, 1, 1);
 
@@ -1137,6 +1143,8 @@ void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
         put_bits(&s->pb, 3, s->f_code);  /* fcode_for */
     if (s->pict_type == AV_PICTURE_TYPE_B)
         put_bits(&s->pb, 3, s->b_code);  /* fcode_back */
+
+    return 0;
 }
 
 static av_cold void init_uni_dc_tab(void)
