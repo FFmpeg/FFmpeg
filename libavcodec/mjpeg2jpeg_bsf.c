@@ -28,6 +28,7 @@
 
 #include "libavutil/error.h"
 #include "libavutil/mem.h"
+#include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
 #include "jpegtables.h"
@@ -86,6 +87,10 @@ static int mjpeg2jpeg_filter(AVBitStreamFilterContext *bsfc,
 
     if (buf_size < 12) {
         av_log(avctx, AV_LOG_ERROR, "input is truncated\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (AV_RB16(buf) != 0xffd8) {
+        av_log(avctx, AV_LOG_ERROR, "input is not MJPEG\n");
         return AVERROR_INVALIDDATA;
     }
     if (memcmp("AVI1", buf + 6, 4)) {
