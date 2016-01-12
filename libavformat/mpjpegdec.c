@@ -198,6 +198,7 @@ static int parse_multipart_header(AVIOContext *pb,
     }
 
     if (!av_strstart(line, expected_boundary, NULL)) {
+        if (log_ctx)
         av_log(log_ctx,
             AV_LOG_ERROR,
             "Expected boundary '%s' not found, instead found a line of %zu bytes\n",
@@ -228,6 +229,7 @@ static int parse_multipart_header(AVIOContext *pb,
 
         if (!av_strcasecmp(tag, "Content-type")) {
             if (av_strcasecmp(value, "image/jpeg")) {
+                if (log_ctx)
                 av_log(log_ctx, AV_LOG_ERROR,
                            "Unexpected %s : %s\n",
                            tag, value);
@@ -237,6 +239,7 @@ static int parse_multipart_header(AVIOContext *pb,
         } else if (!av_strcasecmp(tag, "Content-Length")) {
             *size = parse_content_length(value);
             if ( *size < 0 )
+                if (log_ctx)
                 av_log(log_ctx, AV_LOG_WARNING,
                            "Invalid Content-Length value : %s\n",
                            value);
