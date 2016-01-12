@@ -862,6 +862,11 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, AVStream *avst,
                 flush_packet(s);
                 continue;
             }
+            if (asf->packet_timestamp_start > INT64_MAX - UINT16_MAX ||
+                timestamp > asf->packet_timestamp_start + UINT16_MAX) {
+                flush_packet(s);
+                continue;
+            }
         }
         if (frag_len1 > 0) {
             if (payload_len > frag_len1)
