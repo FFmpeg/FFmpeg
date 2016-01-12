@@ -491,6 +491,12 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
     UPDATE_CACHE(re, gb);
     buf = GET_CACHE(re, gb);
 
+    if (buf & 0x80000000) {
+        LAST_SKIP_BITS(re,gb,1);
+        CLOSE_READER(re, gb);
+        return 0;
+    }
+
     if (buf & 0xAA800000) {
         buf >>= 32 - 8;
         SKIP_BITS(re, gb, ff_interleaved_golomb_vlc_len[buf]);
@@ -516,12 +522,12 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
 
         coeff = ret - 1;
     }
-    if (coeff) {
-        coeff = (coeff * qfactor + qoffset) >> 2;
-        sign  = SHOW_SBITS(re, gb, 1);
-        LAST_SKIP_BITS(re, gb, 1);
-        coeff = (coeff ^ sign) - sign;
-    }
+
+    coeff = (coeff * qfactor + qoffset) >> 2;
+    sign  = SHOW_SBITS(re, gb, 1);
+    LAST_SKIP_BITS(re, gb, 1);
+    coeff = (coeff ^ sign) - sign;
+
     CLOSE_READER(re, gb);
     return coeff;
 }
