@@ -19,6 +19,7 @@ API changes, most recent first:
                         for handling hwaccel frames.
   xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
                               VDPAU-specific hwcontext definitions.
+  xxxxxxx pixfmt.h - Add AV_PIX_FMT_CUDA.
 
 2016-xx-xx - xxxxxxx - lavf 57.3.0 - avformat.h
   Add AVFormatContext.opaque, io_open and io_close, allowing custom IO
