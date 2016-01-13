@@ -82,6 +82,7 @@ typedef struct SegmentContext {
     int   list_size;       ///< number of entries for the segment list file
 
     int use_clocktime;    ///< flag to cut segments at regular clock time
+    int64_t clocktime_offset; //< clock offset for cutting the segments at regular clock time
     int64_t last_val;      ///< remember last time for wrap around detection
     int64_t last_cut;      ///< remember last cut
     int cut_pending;
@@ -633,6 +634,13 @@ static int seg_write_header(AVFormatContext *s)
                    seg->time_str);
             return ret;
         }
+        if (seg->use_clocktime) {
+            if (seg->time <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid negative segment_time with segment_atclocktime option set\n");
+                return AVERROR(EINVAL);
+            }
+            seg->clocktime_offset = seg->time - (seg->clocktime_offset % seg->time);
+        }
     }
 
     if (seg->format_options_str) {
@@ -775,7 +783,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             time_t sec = avgt / 1000000;
             localtime_r(&sec, &ti);
             usecs = (int64_t)(ti.tm_hour * 3600 + ti.tm_min * 60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
-            wrapped_val = usecs % seg->time;
+            wrapped_val = (usecs + seg->clocktime_offset) % seg->time;
             if (seg->last_cut != usecs && wrapped_val < seg->last_val) {
                 seg->cut_pending = 1;
                 seg->last_cut = usecs;
@@ -926,6 +934,7 @@ static const AVOption options[] = {
     { "hls", "Apple HTTP Live Streaming compatible", 0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, E, "list_type" },
 
     { "segment_atclocktime",      "set segment to be cut at clocktime",  OFFSET(use_clocktime), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E},
+    { "segment_clocktime_offset", "set segment clocktime offset",        OFFSET(clocktime_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, 86400000000LL, E},
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },

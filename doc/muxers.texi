@@ -1100,6 +1100,16 @@ to create files at 12:00 o'clock, 12:15, 12:30, etc.
 
 Default value is "0".
 
+@item segment_clocktime_offset @var{duration}
+Delay the segment splitting times with the specified duration when using
+@option{segment_atclocktime}.
+
+For example with @option{segment_time} set to "900" and
+@option{segment_clocktime_offset} set to "300" this makes it possible to
+create files at 12:05, 12:20, 12:35, etc.
+
+Default value is "0".
+
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
 segment, expressed as a duration specification. Default value is "0".
