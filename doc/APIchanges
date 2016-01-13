@@ -17,6 +17,8 @@ API changes, most recent first:
   xxxxxxx buffer.h - Add av_buffer_pool_init2().
   xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
                         for handling hwaccel frames.
+  xxxxxxx hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
+                             CUDA-specific hwcontext definitions.
   xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
                               VDPAU-specific hwcontext definitions.
   xxxxxxx pixfmt.h - Add AV_PIX_FMT_CUDA.

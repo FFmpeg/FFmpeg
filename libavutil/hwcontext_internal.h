@@ -86,6 +86,7 @@ struct AVHWFramesInternal {
     AVBufferPool *pool_internal;
 };
 
+extern const HWContextType ff_hwcontext_type_cuda;
 extern const HWContextType ff_hwcontext_type_vdpau;
 
 #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */

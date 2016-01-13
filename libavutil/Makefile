@@ -24,6 +24,7 @@ HEADERS = adler32.h                                                     \
           frame.h                                                       \
           hmac.h                                                        \
           hwcontext.h                                                   \
+          hwcontext_cuda.h                                              \
           hwcontext_vdpau.h                                             \
           imgutils.h                                                    \
           intfloat.h                                                    \
@@ -106,6 +107,7 @@ OBJS = adler32.o                                                        \
        xtea.o                                                           \
 
 OBJS-$(CONFIG_LZO)                      += lzo.o
+OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
