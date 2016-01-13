@@ -606,7 +606,15 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->mdct1024.mdct_calc(&s->mdct1024, sce->lcoeffs, sce->ret_buf);
             }
 
-            if (isnan(cpe->ch->coeffs[0])) {
+            if (isnan(cpe->ch->coeffs[0]) ||
+                isnan(cpe->ch->coeffs[  128]) ||
+                isnan(cpe->ch->coeffs[2*128]) ||
+                isnan(cpe->ch->coeffs[3*128]) ||
+                isnan(cpe->ch->coeffs[4*128]) ||
+                isnan(cpe->ch->coeffs[5*128]) ||
+                isnan(cpe->ch->coeffs[6*128]) ||
+                isnan(cpe->ch->coeffs[7*128])
+            ) {
                 av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
                 return AVERROR(EINVAL);
             }
