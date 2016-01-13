@@ -129,6 +129,8 @@ LF_IFUNC(v, chroma_intra, depth, avx)
 LF_FUNCS(uint8_t,   8)
 LF_FUNCS(uint16_t, 10)
 
+void ff_deblock_h_chroma422_8_mmxext(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
+
 #if ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL
 LF_FUNC(v8, luma, 8, mmxext)
 static void deblock_v_luma_8_mmxext(uint8_t *pix, int stride, int alpha,
@@ -245,6 +247,8 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             if (chroma_format_idc <= 1) {
                 c->h264_h_loop_filter_chroma       = ff_deblock_h_chroma_8_mmxext;
                 c->h264_h_loop_filter_chroma_intra = ff_deblock_h_chroma_intra_8_mmxext;
+            } else {
+                c->h264_h_loop_filter_chroma = ff_deblock_h_chroma422_8_mmxext;
             }
 #if ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL
             c->h264_v_loop_filter_luma       = deblock_v_luma_8_mmxext;
