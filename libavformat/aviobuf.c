@@ -360,6 +360,8 @@ static inline int put_str16(AVIOContext *s, const char *str, const int be)
 invalid:
         av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16%s\n", be ? "be" : "le");
         err = AVERROR(EINVAL);
+        if (!*(q-1))
+            break;
     }
     if (be)
         avio_wb16(s, 0);
