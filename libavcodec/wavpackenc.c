@@ -129,7 +129,7 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if (avctx->channels > 255) {
-        av_log(avctx, AV_LOG_ERROR, "Too many channels\n", avctx->channels);
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel count: %d\n", avctx->channels);
         return AVERROR(EINVAL);
     }
 
