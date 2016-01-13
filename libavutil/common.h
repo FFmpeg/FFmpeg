@@ -356,13 +356,13 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
  * to prevent undefined results.
  */
 #define GET_UTF8(val, GET_BYTE, ERROR)\
-    val= GET_BYTE;\
+    val= (GET_BYTE);\
     {\
         uint32_t top = (val & 128) >> 1;\
         if ((val & 0xc0) == 0x80 || val >= 0xFE)\
             ERROR\
         while (val & top) {\
-            int tmp= GET_BYTE - 128;\
+            int tmp= (GET_BYTE) - 128;\
             if(tmp>>6)\
                 ERROR\
             val= (val<<6) + tmp;\
