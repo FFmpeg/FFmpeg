@@ -22,6 +22,8 @@
 #include <cuda.h>
 #include <nvEncodeAPI.h>
 
+#include "config.h"
+
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 
@@ -47,7 +49,9 @@ typedef NVENCSTATUS (NVENCAPI *PNVENCODEAPICREATEINSTANCE)(NV_ENCODE_API_FUNCTIO
 
 typedef struct NVENCLibraryContext
 {
+#if !CONFIG_CUDA
     void *cuda;
+#endif
     void *nvenc;
 
     PCUINIT cu_init;

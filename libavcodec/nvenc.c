@@ -148,6 +148,16 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
     PNVENCODEAPICREATEINSTANCE nvenc_create_instance;
     NVENCSTATUS err;
 
+#if CONFIG_CUDA
+    nvel->cu_init                      = cuInit;
+    nvel->cu_device_get_count          = cuDeviceGetCount;
+    nvel->cu_device_get                = cuDeviceGet;
+    nvel->cu_device_get_name           = cuDeviceGetName;
+    nvel->cu_device_compute_capability = cuDeviceComputeCapability;
+    nvel->cu_ctx_create                = cuCtxCreate_v2;
+    nvel->cu_ctx_pop_current           = cuCtxPopCurrent_v2;
+    nvel->cu_ctx_destroy               = cuCtxDestroy_v2;
+#else
     LOAD_LIBRARY(nvel->cuda, CUDA_LIBNAME);
 
     LOAD_SYMBOL(nvel->cu_init, nvel->cuda, "cuInit");
@@ -159,6 +169,7 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
     LOAD_SYMBOL(nvel->cu_ctx_create, nvel->cuda, "cuCtxCreate_v2");
     LOAD_SYMBOL(nvel->cu_ctx_pop_current, nvel->cuda, "cuCtxPopCurrent_v2");
     LOAD_SYMBOL(nvel->cu_ctx_destroy, nvel->cuda, "cuCtxDestroy_v2");
+#endif
 
     LOAD_LIBRARY(nvel->nvenc, NVENC_LIBNAME);
 
@@ -859,8 +870,10 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     if (ctx->nvel.nvenc)
         dlclose(ctx->nvel.nvenc);
 
+#if !CONFIG_CUDA
     if (ctx->nvel.cuda)
         dlclose(ctx->nvel.cuda);
+#endif
 
     return 0;
 }

@@ -179,6 +179,7 @@ Individual component options:
 External library support:
   --enable-avisynth        enable reading of AviSynth script files [no]
   --enable-bzlib           enable bzlib [autodetect]
+  --enable-cuda            enable dynamically linked CUDA [no]
   --enable-frei0r          enable frei0r video filtering
   --enable-gnutls          enable gnutls [no]
   --enable-libbs2b         enable bs2b DSP library [no]
@@ -1238,6 +1239,7 @@ EXAMPLE_LIST="
 EXTERNAL_LIBRARY_LIST="
     avisynth
     bzlib
+    cuda
     frei0r
     gnutls
     libbs2b
@@ -4043,6 +4045,7 @@ die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
 die_license_disabled gpl x11grab
 
+die_license_disabled nonfree cuda
 die_license_disabled nonfree libfaac
 die_license_disabled nonfree libfdk_aac
 die_license_disabled nonfree nvenc
@@ -4523,6 +4526,7 @@ done
 enabled avisynth          && { check_lib2 "avisynth/avisynth_c.h windows.h" LoadLibrary ||
                                check_lib2 "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl   ||
                                die "ERROR: LoadLibrary/dlopen not found, or avisynth header not found"; }
+enabled cuda              && check_lib cuda.h cuInit -lcuda
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
@@ -4617,7 +4621,7 @@ if enabled libdc1394; then
 fi
 
 if enabled nvenc; then
-    check_header cuda.h || die "ERROR: cuda.h not found.";
+    enabled cuda || check_header cuda.h || die "ERROR: cuda.h not found.";
     check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found.";
     check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
         die "ERROR: NVENC API version 4 or older is not supported";
