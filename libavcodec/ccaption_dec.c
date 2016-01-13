@@ -294,8 +294,11 @@ static void roll_up(CCaptionSubContext *ctx)
      */
     keep_lines = FFMIN(ctx->cursor_row + 1, ctx->rollup);
 
-    for (i = 0; i < ctx->cursor_row - keep_lines; i++)
+    for (i = 0; i < SCREEN_ROWS; i++) {
+        if (i > ctx->cursor_row - keep_lines && i <= ctx->cursor_row)
+            continue;
         UNSET_FLAG(screen->row_used, i);
+    }
 
     for (i = 0; i < keep_lines && screen->row_used; i++) {
         const int i_row = ctx->cursor_row - keep_lines + i + 1;
