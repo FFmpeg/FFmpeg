@@ -356,6 +356,8 @@ int avio_put_str16le(AVIOContext *s, const char *str)
 invalid:
         av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16le\n");
         err = AVERROR(EINVAL);
+        if (!*(q-1))
+            break;
     }
     avio_wl16(s, 0);
     if (err)
