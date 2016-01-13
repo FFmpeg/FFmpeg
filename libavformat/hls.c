@@ -938,6 +938,12 @@ static int open_input(HLSContext *c, struct playlist *pls)
            seg->url, seg->url_offset, pls->index);
 
     if (seg->key_type == KEY_NONE) {
+        const char *proto_name = avio_find_protocol_name(seg->url);
+        if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL)) {
+            ret = AVERROR_INVALIDDATA;
+            goto cleanup;
+        }
+
         ret = ffurl_open(&pls->input, seg->url, AVIO_FLAG_READ,
                           &pls->parent->interrupt_callback, &opts);
 
@@ -945,6 +951,11 @@ static int open_input(HLSContext *c, struct playlist *pls)
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             URLContext *uc;
+            const char *proto_name = avio_find_protocol_name(seg->key);
+            if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL)) {
+                ret = AVERROR_INVALIDDATA;
+                goto cleanup;
+            }
             if (ffurl_open(&uc, seg->key, AVIO_FLAG_READ,
                            &pls->parent->interrupt_callback, &opts2) == 0) {
                 if (ffurl_read_complete(uc, pls->key, sizeof(pls->key))
