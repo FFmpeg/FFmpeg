@@ -4,6 +4,9 @@ fate-sub-aqtitle: CMD = fmtstdout ass -sub_charenc windows-1250 -i $(TARGET_SAMP
 FATE_SUBTITLES_ASS-$(call ALLYES, AVDEVICE LAVFI_INDEV CCAPTION_DECODER MOVIE_FILTER MPEGTS_DEMUXER) += fate-sub-cc
 fate-sub-cc: CMD = fmtstdout ass -f lavfi -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]"
 
+FATE_SUBTITLES_ASS-$(call ALLYES, AVDEVICE LAVFI_INDEV CCAPTION_DECODER MOVIE_FILTER MPEGTS_DEMUXER) += fate-sub-cc-realtime
+fate-sub-cc-realtime: CMD = fmtstdout ass -real_time 1 -f lavfi -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]"
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, ASS, ASS) += fate-sub-ass-to-ass-transcode
 fate-sub-ass-to-ass-transcode: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/1ededcbd7b.ass
 
