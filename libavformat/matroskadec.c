@@ -1708,6 +1708,33 @@ static void mkv_stereo_mode_display_mul(int stereo_mode, int *h_width, int *h_he
     }
 }
 
+static int get_qt_codec(MatroskaTrack *track, uint32_t *fourcc, enum AVCodecID *codec_id)
+{
+    const AVCodecTag *codec_tags;
+
+    codec_tags = track->type == MATROSKA_TRACK_TYPE_VIDEO ?
+            ff_codec_movvideo_tags : ff_codec_movaudio_tags;
+
+    /* Normalize noncompliant private data that starts with the fourcc
+     * by expanding/shifting the data by 4 bytes and storing the data
+     * size at the start. */
+    if (ff_codec_get_id(codec_tags, AV_RL32(track->codec_priv.data))) {
+        uint8_t *p = av_realloc(track->codec_priv.data,
+                                track->codec_priv.size + 4);
+        if (!p)
+            return AVERROR(ENOMEM);
+        memmove(p + 4, p, track->codec_priv.size);
+        track->codec_priv.data = p;
+        track->codec_priv.size += 4;
+        AV_WB32(track->codec_priv.data, track->codec_priv.size);
+    }
+
+    *fourcc = AV_RL32(track->codec_priv.data + 4);
+    *codec_id = ff_codec_get_id(codec_tags, *fourcc);
+
+    return 0;
+}
+
 static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -1861,14 +1888,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
             fourcc           = st->codec->codec_tag;
             extradata_offset = FFMIN(track->codec_priv.size, 18);
         } else if (!strcmp(track->codec_id, "A_QUICKTIME")
-                   && (track->codec_priv.size >= 36)
+                   /* Normally 36, but allow noncompliant private data */
+                   && (track->codec_priv.size >= 32)
                    && (track->codec_priv.data)) {
-            fourcc = AV_RL32(track->codec_priv.data + 4);
-            codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
-            if (ff_codec_get_id(ff_codec_movaudio_tags, AV_RL32(track->codec_priv.data))) {
-                fourcc = AV_RL32(track->codec_priv.data);
-                codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
-            }
+            int ret = get_qt_codec(track, &fourcc, &codec_id);
+            if (ret < 0)
+                return ret;
             if (fourcc == 0) {
                 if (track->audio.bitdepth == 8) {
                     fourcc = MKTAG('r','a','w',' ');
@@ -1881,12 +1906,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
                    (track->codec_priv.size >= 21)          &&
                    (track->codec_priv.data)) {
-            fourcc   = AV_RL32(track->codec_priv.data + 4);
-            codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
-            if (ff_codec_get_id(ff_codec_movvideo_tags, AV_RL32(track->codec_priv.data))) {
-                fourcc   = AV_RL32(track->codec_priv.data);
-                codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
-            }
+            int ret = get_qt_codec(track, &fourcc, &codec_id);
+            if (ret < 0)
+                return ret;
             if (codec_id == AV_CODEC_ID_NONE && AV_RL32(track->codec_priv.data+4) == AV_RL32("SMI ")) {
                 fourcc = MKTAG('S','V','Q','3');
                 codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);

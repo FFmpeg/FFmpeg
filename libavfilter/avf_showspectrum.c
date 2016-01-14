@@ -42,6 +42,7 @@
 #include "window_func.h"
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
+enum DataMode     { D_MAGNITUDE, D_PHASE, NB_DMODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, FOURTHRT, FIFTHRT, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY, FRUIT, COOL, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
@@ -60,12 +61,14 @@ typedef struct {
     int color_mode;             ///< display color scheme
     int scale;
     float saturation;           ///< color saturation multiplier
+    int data;
     int xpos;                   ///< x position (current column)
     FFTContext *fft;            ///< Fast Fourier Transform context
     int fft_bits;               ///< number of bits (FFT window size = 1<<fft_bits)
     FFTComplex **fft_data;      ///< bins holder for each (displayed) channels
     float *window_func_lut;     ///< Window function LUT
     float **magnitudes;
+    float **phases;
     int win_func;
     int win_size;
     double win_scale;
@@ -134,6 +137,9 @@ static const AVOption showspectrum_options[] = {
         { "horizontal", NULL, 0, AV_OPT_TYPE_CONST, {.i64=HORIZONTAL}, 0, 0, FLAGS, "orientation" },
     { "overlap", "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl = 0}, 0, 1, FLAGS },
     { "gain", "set scale gain", OFFSET(gain), AV_OPT_TYPE_FLOAT, {.dbl = 1}, 0, 128, FLAGS },
+    { "data", "set data mode", OFFSET(data), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_DMODES-1, FLAGS, "data" },
+        { "magnitude", NULL, 0, AV_OPT_TYPE_CONST, {.i64=D_MAGNITUDE}, 0, 0, FLAGS, "data" },
+        { "phase",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=D_PHASE},     0, 0, FLAGS, "data" },
     { NULL }
 };
 
@@ -231,6 +237,11 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->magnitudes);
     av_frame_free(&s->outpicref);
     av_audio_fifo_free(s->fifo);
+    if (s->phases) {
+        for (i = 0; i < s->nb_display_channels; i++)
+            av_freep(&s->phases[i]);
+    }
+    av_freep(&s->phases);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -326,6 +337,15 @@ static int config_output(AVFilterLink *outlink)
         for (i = 0; i < s->nb_display_channels; i++) {
             s->magnitudes[i] = av_calloc(s->orientation == VERTICAL ? s->h : s->w, sizeof(**s->magnitudes));
             if (!s->magnitudes[i])
+                return AVERROR(ENOMEM);
+        }
+
+        s->phases = av_calloc(s->nb_display_channels, sizeof(*s->magnitudes));
+        if (!s->phases)
+            return AVERROR(ENOMEM);
+        for (i = 0; i < s->nb_display_channels; i++) {
+            s->phases[i] = av_calloc(s->orientation == VERTICAL ? s->h : s->w, sizeof(**s->phases));
+            if (!s->phases[i])
                 return AVERROR(ENOMEM);
         }
 
@@ -427,28 +447,45 @@ static void run_fft(ShowSpectrumContext *s, AVFrame *fin)
 #define RE(y, ch) s->fft_data[ch][y].re
 #define IM(y, ch) s->fft_data[ch][y].im
 #define MAGNITUDE(y, ch) hypot(RE(y, ch), IM(y, ch))
+#define PHASE(y, ch) atan2(IM(y, ch), RE(y, ch))
 
 static void calc_magnitudes(ShowSpectrumContext *s)
 {
+    const double w = s->win_scale * (s->scale == LOG ? s->win_scale : 1);
     int ch, y, h = s->orientation == VERTICAL ? s->h : s->w;
+    const float f = s->gain * w;
 
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         float *magnitudes = s->magnitudes[ch];
 
         for (y = 0; y < h; y++)
-            magnitudes[y] = MAGNITUDE(y, ch);
+            magnitudes[y] = MAGNITUDE(y, ch) * f;
+    }
+}
+
+static void calc_phases(ShowSpectrumContext *s)
+{
+    int ch, y, h = s->orientation == VERTICAL ? s->h : s->w;
+
+    for (ch = 0; ch < s->nb_display_channels; ch++) {
+        float *phases = s->phases[ch];
+
+        for (y = 0; y < h; y++)
+            phases[y] = (PHASE(y, ch) / M_PI + 1) / 2;
     }
 }
 
 static void acalc_magnitudes(ShowSpectrumContext *s)
 {
+    const double w = s->win_scale * (s->scale == LOG ? s->win_scale : 1);
     int ch, y, h = s->orientation == VERTICAL ? s->h : s->w;
+    const float f = s->gain * w;
 
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         float *magnitudes = s->magnitudes[ch];
 
         for (y = 0; y < h; y++)
-            magnitudes[y] += MAGNITUDE(y, ch);
+            magnitudes[y] += MAGNITUDE(y, ch) * f;
     }
 }
 
@@ -578,8 +615,6 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterLink *outlink = ctx->outputs[0];
     ShowSpectrumContext *s = ctx->priv;
     AVFrame *outpicref = s->outpicref;
-    const double w = s->win_scale;
-    const float g = s->gain;
     int h = s->orientation == VERTICAL ? s->channel_height : s->channel_width;
 
     int ch, plane, x, y;
@@ -590,6 +625,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
 
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         float *magnitudes = s->magnitudes[ch];
+        float *phases = s->phases[ch];
         float yf, uf, vf;
 
         /* decide color range */
@@ -599,9 +635,20 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         for (y = 0; y < h; y++) {
             int row = (s->mode == COMBINED) ? y : ch * h + y;
             float *out = &s->combine_buffer[3 * row];
+            float a;
 
-            /* get magnitude */
-            float a = g * w * magnitudes[y];
+            switch (s->data) {
+            case D_MAGNITUDE:
+                /* get magnitude */
+                a = magnitudes[y];
+                break;
+            case D_PHASE:
+                /* get phase */
+                a = phases[y];
+                break;
+            default:
+                av_assert0(0);
+            }
 
             /* apply scale */
             switch (s->scale) {
@@ -621,7 +668,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 a = av_clipf(pow(a, 0.20), 0, 1);
                 break;
             case LOG:
-                a = 1 + log10(av_clipd(a * w, 1e-6, 1)) / 6; // zero = -120dBFS
+                a = 1 + log10(av_clipd(a, 1e-6, 1)) / 6; // zero = -120dBFS
                 break;
             default:
                 av_assert0(0);
@@ -766,7 +813,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         av_assert0(fin->nb_samples == s->win_size);
 
         run_fft(s, fin);
-        calc_magnitudes(s);
+        if (s->data == D_MAGNITUDE)
+            calc_magnitudes(s);
+        if (s->data == D_PHASE)
+            calc_phases(s);
 
         ret = plot_spectrum_column(inlink, fin);
         av_frame_free(&fin);

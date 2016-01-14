@@ -14712,6 +14712,9 @@ window function currently used.
 @item gain
 Set scale gain for calculating intensity color values.
 Default value is @code{1}.
+
+@item data
+Set which data to display. Can be @code{magnitude}, default or @code{phase}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that

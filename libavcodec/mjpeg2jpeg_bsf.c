@@ -28,9 +28,11 @@
 
 #include "libavutil/error.h"
 #include "libavutil/mem.h"
+#include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
 #include "jpegtables.h"
+#include "mjpeg.h"
 
 static const uint8_t jpeg_header[] = {
     0xff, 0xd8,                     // SOI
@@ -88,11 +90,15 @@ static int mjpeg2jpeg_filter(AVBitStreamFilterContext *bsfc,
         av_log(avctx, AV_LOG_ERROR, "input is truncated\n");
         return AVERROR_INVALIDDATA;
     }
-    if (memcmp("AVI1", buf + 6, 4)) {
-        av_log(avctx, AV_LOG_ERROR, "input is not MJPEG/AVI1\n");
+    if (AV_RB16(buf) != 0xffd8) {
+        av_log(avctx, AV_LOG_ERROR, "input is not MJPEG\n");
         return AVERROR_INVALIDDATA;
     }
-    input_skip = (buf[4] << 8) + buf[5] + 4;
+    if (buf[2] == 0xff && buf[3] == APP0) {
+        input_skip = (buf[4] << 8) + buf[5] + 4;
+    } else {
+        input_skip = 2;
+    }
     if (buf_size < input_skip) {
         av_log(avctx, AV_LOG_ERROR, "input is truncated\n");
         return AVERROR_INVALIDDATA;

@@ -30,7 +30,7 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
                            const char *font, int font_size,
                            int color, int back_color,
                            int bold, int italic, int underline,
-                           int alignment)
+                           int border_style, int alignment)
 {
     avctx->subtitle_header = av_asprintf(
              "[Script Info]\r\n"
@@ -59,7 +59,7 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
              "%d,%d,%d,0,"          /* Bold, Italic, Underline, StrikeOut */
              "100,100,"             /* Scale{X,Y} */
              "0,0,"                 /* Spacing, Angle */
-             "1,1,0,"               /* BorderStyle, Outline, Shadow */
+             "%d,1,0,"              /* BorderStyle, Outline, Shadow */
              "%d,10,10,10,"         /* Alignment, Margin[LRV] */
              "0\r\n"                /* Encoding */
 
@@ -69,7 +69,7 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
              !(avctx->flags & AV_CODEC_FLAG_BITEXACT) ? AV_STRINGIFY(LIBAVCODEC_VERSION) : "",
              ASS_DEFAULT_PLAYRESX, ASS_DEFAULT_PLAYRESY,
              font, font_size, color, color, back_color, back_color,
-             -bold, -italic, -underline, alignment);
+             -bold, -italic, -underline, border_style, alignment);
 
     if (!avctx->subtitle_header)
         return AVERROR(ENOMEM);
@@ -86,6 +86,7 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx)
                                ASS_DEFAULT_BOLD,
                                ASS_DEFAULT_ITALIC,
                                ASS_DEFAULT_UNDERLINE,
+                               ASS_DEFAULT_BORDERSTYLE,
                                ASS_DEFAULT_ALIGNMENT);
 }
 

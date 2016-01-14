@@ -53,8 +53,8 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
     for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
         FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
         FFPsyBand *band1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
-        int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[(w+w2)*16+g]-4);
-        float e01_34 = phase*pow(ener1/ener0, 3.0/4.0);
+        int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[w*16+g]-4);
+        float e01_34 = phase*pos_pow34(ener1/ener0);
         float maxval, dist_spec_err = 0.0f;
         float minthr = FFMIN(band0->threshold, band1->threshold);
         for (i = 0; i < sce0->ics.swb_sizes[g]; i++)
@@ -66,13 +66,13 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
         is_band_type = find_min_book(maxval, is_sf_idx);
         dist1 += quantize_band_cost(s, &L[start + (w+w2)*128], L34,
                                     sce0->ics.swb_sizes[g],
-                                    sce0->sf_idx[(w+w2)*16+g],
-                                    sce0->band_type[(w+w2)*16+g],
+                                    sce0->sf_idx[w*16+g],
+                                    sce0->band_type[w*16+g],
                                     s->lambda / band0->threshold, INFINITY, NULL, NULL, 0);
         dist1 += quantize_band_cost(s, &R[start + (w+w2)*128], R34,
                                     sce1->ics.swb_sizes[g],
-                                    sce1->sf_idx[(w+w2)*16+g],
-                                    sce1->band_type[(w+w2)*16+g],
+                                    sce1->sf_idx[w*16+g],
+                                    sce1->band_type[w*16+g],
                                     s->lambda / band1->threshold, INFINITY, NULL, NULL, 0);
         dist2 += quantize_band_cost(s, IS, I34, sce0->ics.swb_sizes[g],
                                     is_sf_idx, is_band_type,
@@ -87,7 +87,7 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
 
     is_error.pass = dist2 <= dist1;
     is_error.phase = phase;
-    is_error.error = fabsf(dist1 - dist2);
+    is_error.error = dist2 - dist1;
     is_error.dist1 = dist1;
     is_error.dist2 = dist2;
     is_error.ener01 = ener01;
@@ -99,7 +99,7 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
 {
     SingleChannelElement *sce0 = &cpe->ch[0];
     SingleChannelElement *sce1 = &cpe->ch[1];
-    int start = 0, count = 0, w, w2, g, i, prev_sf1 = -1;
+    int start = 0, count = 0, w, w2, g, i, prev_sf1 = -1, prev_bt = -1, prev_is = 0;
     const float freq_mult = avctx->sample_rate/(1024.0f/sce0->ics.num_windows)/2.0f;
     uint8_t nextband1[128];
 
@@ -118,11 +118,6 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                 ff_sfdelta_can_remove_band(sce1, nextband1, prev_sf1, w*16+g)) {
                 float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f, ener01p = 0.0f;
                 struct AACISError ph_err1, ph_err2, *best;
-                if (sce0->band_type[w*16+g] == NOISE_BT ||
-                    sce1->band_type[w*16+g] == NOISE_BT) {
-                    start += sce0->ics.swb_sizes[g];
-                    continue;
-                }
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
                         float coef0 = fabsf(sce0->coeffs[start+(w+w2)*128+i]);
@@ -144,11 +139,18 @@ void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElemen
                     cpe->ch[0].is_ener[w*16+g] = sqrt(ener0 / best->ener01);
                     cpe->ch[1].is_ener[w*16+g] = ener0/ener1;
                     cpe->ch[1].band_type[w*16+g] = (best->phase > 0) ? INTENSITY_BT : INTENSITY_BT2;
+                    if (prev_is && prev_bt != cpe->ch[1].band_type[w*16+g]) {
+                        /** Flip M/S mask and pick the other CB, since it encodes more efficiently */
+                        cpe->ms_mask[w*16+g] = 1;
+                        cpe->ch[1].band_type[w*16+g] = (best->phase > 0) ? INTENSITY_BT2 : INTENSITY_BT;
+                    }
+                    prev_bt = cpe->ch[1].band_type[w*16+g];
                     count++;
                 }
             }
             if (!sce1->zeroes[w*16+g] && sce1->band_type[w*16+g] < RESERVED_BT)
                 prev_sf1 = sce1->sf_idx[w*16+g];
+            prev_is = cpe->is_mask[w*16+g];
             start += sce0->ics.swb_sizes[g];
         }
     }

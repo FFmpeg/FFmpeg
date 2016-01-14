@@ -154,7 +154,7 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
                                   float *audio)
 {
     int i;
-    float *output = sce->ret_buf;
+    const float *output = sce->ret_buf;
 
     apply_window[sce->ics.window_sequence[0]](s->fdsp, sce, audio);
 
@@ -300,8 +300,8 @@ static void apply_mid_side_stereo(ChannelElement *cpe)
                  * ms_mask is set.
                  */
                 if (!cpe->ms_mask[w*16 + g] || cpe->is_mask[w*16 + g]
-                    || cpe->ch[0].band_type[w*16 + g] == NOISE_BT
-                    || cpe->ch[1].band_type[w*16 + g] == NOISE_BT) {
+                    || cpe->ch[0].band_type[w*16 + g] >= NOISE_BT
+                    || cpe->ch[1].band_type[w*16 + g] >= NOISE_BT) {
                     start += ics->swb_sizes[g];
                     continue;
                 }
@@ -606,8 +606,16 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->mdct1024.mdct_calc(&s->mdct1024, sce->lcoeffs, sce->ret_buf);
             }
 
-            if (isnan(cpe->ch->coeffs[0])) {
-                av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
+            if (isnan(cpe->ch->coeffs[    0]) || isinf(cpe->ch->coeffs[    0]) ||
+                isnan(cpe->ch->coeffs[  128]) || isinf(cpe->ch->coeffs[  128]) ||
+                isnan(cpe->ch->coeffs[2*128]) || isinf(cpe->ch->coeffs[2*128]) ||
+                isnan(cpe->ch->coeffs[3*128]) || isinf(cpe->ch->coeffs[3*128]) ||
+                isnan(cpe->ch->coeffs[4*128]) || isinf(cpe->ch->coeffs[4*128]) ||
+                isnan(cpe->ch->coeffs[5*128]) || isinf(cpe->ch->coeffs[5*128]) ||
+                isnan(cpe->ch->coeffs[6*128]) || isinf(cpe->ch->coeffs[6*128]) ||
+                isnan(cpe->ch->coeffs[7*128]) || isinf(cpe->ch->coeffs[7*128])
+            ) {
+                av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
                 return AVERROR(EINVAL);
             }
             avoid_clipping(s, sce);

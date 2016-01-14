@@ -343,6 +343,25 @@ static av_always_inline av_const int avpriv_isnan(double x)
         : avpriv_isnan(x))
 #endif /* HAVE_ISNAN */
 
+#if !HAVE_ISFINITE
+static av_always_inline av_const int avpriv_isfinitef(float x)
+{
+    uint32_t v = av_float2int(x);
+    return (v & 0x7f800000) != 0x7f800000;
+}
+
+static av_always_inline av_const int avpriv_isfinite(double x)
+{
+    uint64_t v = av_double2int(x);
+    return (v & 0x7ff0000000000000) != 0x7ff0000000000000;
+}
+
+#define isfinite(x)                  \
+    (sizeof(x) == sizeof(float)      \
+        ? avpriv_isfinitef(x)        \
+        : avpriv_isfinite(x))
+#endif /* HAVE_ISFINITE */
+
 #if !HAVE_HYPOT
 static inline av_const double hypot(double x, double y)
 {

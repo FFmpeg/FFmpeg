@@ -145,7 +145,15 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     /* taking by default roll up to 2 */
     ctx->mode = CCMODE_ROLLUP;
     ctx->rollup = 2;
-    ret = ff_ass_subtitle_header_default(avctx);
+    ret = ff_ass_subtitle_header(avctx, "Monospace",
+                                 ASS_DEFAULT_FONT_SIZE,
+                                 ASS_DEFAULT_COLOR,
+                                 ASS_DEFAULT_BACK_COLOR,
+                                 ASS_DEFAULT_BOLD,
+                                 ASS_DEFAULT_ITALIC,
+                                 ASS_DEFAULT_UNDERLINE,
+                                 3,
+                                 ASS_DEFAULT_ALIGNMENT);
     if (ret < 0) {
         return ret;
     }
@@ -307,24 +315,24 @@ static int capture_screen(CCaptionSubContext *ctx)
                 if (prev_font != font[j]) {
                     switch (prev_font) {
                     case CCFONT_ITALICS:
-                        e_tag = "{/i0}";
+                        e_tag = "{\\i0}";
                         break;
                     case CCFONT_UNDERLINED:
-                        e_tag = "{/u0}";
+                        e_tag = "{\\u0}";
                         break;
                     case CCFONT_UNDERLINED_ITALICS:
-                        e_tag = "{/u0}{/i0}";
+                        e_tag = "{\\u0}{\\i0}";
                         break;
                     }
                     switch (font[j]) {
                     case CCFONT_ITALICS:
-                        s_tag = "{/i1}";
+                        s_tag = "{\\i1}";
                         break;
                     case CCFONT_UNDERLINED:
-                        s_tag = "{/u1}";
+                        s_tag = "{\\u1}";
                         break;
                     case CCFONT_UNDERLINED_ITALICS:
-                        s_tag = "{/u1}{/i1}";
+                        s_tag = "{\\u1}{\\i1}";
                         break;
                     }
                 }

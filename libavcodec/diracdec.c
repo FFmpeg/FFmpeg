@@ -485,13 +485,50 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
 static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffset)
 {
     int sign, coeff;
+    uint32_t buf;
 
-    coeff = svq3_get_ue_golomb(gb);
-    if (coeff) {
-        coeff = (coeff * qfactor + qoffset + 2) >> 2;
-        sign  = get_bits1(gb);
-        coeff = (coeff ^ -sign) + sign;
+    OPEN_READER(re, gb);
+    UPDATE_CACHE(re, gb);
+    buf = GET_CACHE(re, gb);
+
+    if (buf & 0x80000000) {
+        LAST_SKIP_BITS(re,gb,1);
+        CLOSE_READER(re, gb);
+        return 0;
     }
+
+    if (buf & 0xAA800000) {
+        buf >>= 32 - 8;
+        SKIP_BITS(re, gb, ff_interleaved_golomb_vlc_len[buf]);
+
+        coeff = ff_interleaved_ue_golomb_vlc_code[buf];
+    } else {
+        unsigned ret = 1;
+
+        do {
+            buf >>= 32 - 8;
+            SKIP_BITS(re, gb,
+                           FFMIN(ff_interleaved_golomb_vlc_len[buf], 8));
+
+            if (ff_interleaved_golomb_vlc_len[buf] != 9) {
+                ret <<= (ff_interleaved_golomb_vlc_len[buf] - 1) >> 1;
+                ret  |= ff_interleaved_dirac_golomb_vlc_code[buf];
+                break;
+            }
+            ret = (ret << 4) | ff_interleaved_dirac_golomb_vlc_code[buf];
+            UPDATE_CACHE(re, gb);
+            buf = GET_CACHE(re, gb);
+        } while (ret<0x8000000U && BITS_AVAILABLE(re, gb));
+
+        coeff = ret - 1;
+    }
+
+    coeff = (coeff * qfactor + qoffset) >> 2;
+    sign  = SHOW_SBITS(re, gb, 1);
+    LAST_SKIP_BITS(re, gb, 1);
+    coeff = (coeff ^ sign) - sign;
+
+    CLOSE_READER(re, gb);
     return coeff;
 }
 
@@ -517,7 +554,7 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
         } \
         coeff = dirac_get_arith_uint(c, pred_ctx, CTX_COEFF_DATA); \
         if (coeff) { \
-            coeff = (coeff * qfactor + qoffset + 2) >> 2; \
+            coeff = (coeff * qfactor + qoffset) >> 2; \
             sign  = dirac_get_arith_bit(c, SIGN_CTX(sign_pred)); \
             coeff = (coeff ^ -sign) + sign; \
         } \
@@ -569,9 +606,9 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     qfactor = qscale_tab[b->quant];
     /* TODO: context pointer? */
     if (!s->num_refs)
-        qoffset = qoffset_intra_tab[b->quant];
+        qoffset = qoffset_intra_tab[b->quant] + 2;
     else
-        qoffset = qoffset_inter_tab[b->quant];
+        qoffset = qoffset_inter_tab[b->quant] + 2;
 
     buf = b->ibuf + top * b->stride;
     if (is_arith) {
@@ -745,7 +782,7 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
     int bottom = b1->height *(slice_y+1) / s->num_y;
 
     int qfactor = qscale_tab[quant & 0x7f];
-    int qoffset = qoffset_intra_tab[quant & 0x7f];
+    int qoffset = qoffset_intra_tab[quant & 0x7f] + 2;
 
     uint8_t *buf1 =      b1->ibuf + top * b1->stride;
     uint8_t *buf2 = b2 ? b2->ibuf + top * b2->stride: NULL;
@@ -832,11 +869,13 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
  * VC-2 Specification ->
  * 13.5.3 hq_slice(sx,sy)
  */
-static int decode_hq_slice(DiracContext *s, GetBitContext *gb,
-                           int slice_x, int slice_y)
+static int decode_hq_slice(AVCodecContext *avctx, void *arg)
 {
     int i, quant, level, orientation, quant_idx;
     uint8_t quants[MAX_DWT_LEVELS][4];
+    DiracContext *s = avctx->priv_data;
+    DiracSlice *slice = arg;
+    GetBitContext *gb = &slice->gb;
 
     skip_bits_long(gb, 8*s->highquality.prefix_bytes);
     quant_idx = get_bits(gb, 8);
@@ -856,7 +895,7 @@ static int decode_hq_slice(DiracContext *s, GetBitContext *gb,
         int bits_end = get_bits_count(gb) + bits_left;
         for (level = 0; level < s->wavelet_depth; level++) {
             for (orientation = !!level; orientation < 4; orientation++) {
-                decode_subband(s, gb, quants[level][orientation], slice_x, slice_y, bits_end,
+                decode_subband(s, gb, quants[level][orientation], slice->slice_x, slice->slice_y, bits_end,
                                &s->plane[i].band[level][orientation], NULL);
             }
         }
@@ -873,7 +912,7 @@ static int decode_hq_slice(DiracContext *s, GetBitContext *gb,
 static int decode_lowdelay(DiracContext *s)
 {
     AVCodecContext *avctx = s->avctx;
-    int slice_x, slice_y, bytes, bufsize;
+    int slice_x, slice_y, bytes = 0, bufsize;
     const uint8_t *buf;
     DiracSlice *slices;
     int slice_num = 0;
@@ -888,11 +927,31 @@ static int decode_lowdelay(DiracContext *s)
     bufsize = get_bits_left(&s->gb);
 
     if (s->hq_picture) {
-        for (slice_y = 0; slice_y < s->num_y; slice_y++) {
-            for (slice_x = 0; slice_x < s->num_x; slice_x++) {
-                decode_hq_slice(s, &s->gb, slice_x, slice_y);
+        int i;
+
+        for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
+            for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
+                bytes = s->highquality.prefix_bytes + 1;
+                for (i = 0; i < 3; i++) {
+                    if (bytes <= bufsize/8)
+                        bytes += buf[bytes] * s->highquality.size_scaler + 1;
+                }
+
+                slices[slice_num].bytes   = bytes;
+                slices[slice_num].slice_x = slice_x;
+                slices[slice_num].slice_y = slice_y;
+                init_get_bits(&slices[slice_num].gb, buf, bufsize);
+                slice_num++;
+
+                buf     += bytes;
+                if (bufsize/8 >= bytes)
+                    bufsize -= bytes*8;
+                else
+                    bufsize = 0;
             }
         }
+        avctx->execute(avctx, decode_hq_slice, slices, NULL, slice_num,
+                       sizeof(DiracSlice));
     } else {
         for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
             for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
@@ -941,7 +1000,7 @@ static void init_planes(DiracContext *s)
         p->height      = s->seq.height >> (i ? s->chroma_y_shift : 0);
         p->idwt_width  = w = CALC_PADDING(p->width , s->wavelet_depth);
         p->idwt_height = h = CALC_PADDING(p->height, s->wavelet_depth);
-        p->idwt_stride = FFALIGN(p->idwt_width << (1 + s->pshift), 8);
+        p->idwt_stride = FFALIGN(p->idwt_width, 8) << (1 + s->pshift);
 
         for (level = s->wavelet_depth-1; level >= 0; level--) {
             w = w>>1;
@@ -2199,6 +2258,6 @@ AVCodec ff_dirac_decoder = {
     .init           = dirac_decode_init,
     .close          = dirac_decode_end,
     .decode         = dirac_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_DR1,
     .flush          = dirac_decode_flush,
 };

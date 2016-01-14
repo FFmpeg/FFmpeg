@@ -413,7 +413,8 @@ static int mov_text_init(AVCodecContext *avctx) {
     if (ret == 0) {
         return ff_ass_subtitle_header(avctx, m->d.font, m->d.fontsize, m->d.color,
                                 m->d.back_color, m->d.bold, m->d.italic,
-                                m->d.underline, m->d.alignment);
+                                m->d.underline, ASS_DEFAULT_BORDERSTYLE,
+                                m->d.alignment);
     } else
         return ff_ass_subtitle_header_default(avctx);
 }

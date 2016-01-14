@@ -26,12 +26,13 @@
 #include <stdint.h>
 #include <math.h>
 #include "libavutil/attributes.h"
+#include "libavutil/intfloat.h"
 #include "libavcodec/aac_defines.h"
 
 #if USE_FIXED
-#define CBRT(x) lrint((x).f * 8192)
+#define CBRT(x) lrint((x) * 8192)
 #else
-#define CBRT(x) x.i
+#define CBRT(x) av_float2int((float)(x))
 #endif
 
 #if CONFIG_HARDCODED_TABLES
@@ -47,16 +48,34 @@ static uint32_t cbrt_tab[1 << 13];
 
 static av_cold void AAC_RENAME(cbrt_tableinit)(void)
 {
+    static double cbrt_tab_dbl[1 << 13];
     if (!cbrt_tab[(1<<13) - 1]) {
-        int i;
-        for (i = 0; i < 1<<13; i++) {
-            union {
-                float f;
-                uint32_t i;
-            } f;
-            f.f = cbrt(i) * i;
-            cbrt_tab[i] = CBRT(f);
+        int i, j, k;
+        double cbrt_val;
+
+        for (i = 1; i < 1<<13; i++)
+            cbrt_tab_dbl[i] = 1;
+
+        /* have to take care of non-squarefree numbers */
+        for (i = 2; i < 90; i++) {
+            if (cbrt_tab_dbl[i] == 1) {
+                cbrt_val = i * cbrt(i);
+                for (k = i; k < 1<<13; k *= i)
+                    for (j = k; j < 1<<13; j += k)
+                        cbrt_tab_dbl[j] *= cbrt_val;
+            }
         }
+
+        for (i = 91; i <= 8191; i+= 2) {
+            if (cbrt_tab_dbl[i] == 1) {
+                cbrt_val = i * cbrt(i);
+                for (j = i; j < 1<<13; j += i)
+                    cbrt_tab_dbl[j] *= cbrt_val;
+            }
+        }
+
+        for (i = 0; i < 1<<13; i++)
+            cbrt_tab[i] = CBRT(cbrt_tab_dbl[i]);
     }
 }
 #endif /* CONFIG_HARDCODED_TABLES */

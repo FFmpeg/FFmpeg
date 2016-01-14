@@ -97,7 +97,16 @@
         mpz_fdiv_r_2exp(bn, bn, num_bits);            \
     } while (0)
 #elif CONFIG_GCRYPT
-#define bn_new(bn)                  bn = gcry_mpi_new(1)
+#define bn_new(bn)                                              \
+    do {                                                        \
+        if (!gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P)) { \
+            if (!gcry_check_version("1.5.4"))                   \
+                return AVERROR(EINVAL);                         \
+            gcry_control(GCRYCTL_DISABLE_SECMEM, 0);            \
+            gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);   \
+        }                                                       \
+        bn = gcry_mpi_new(1);                                   \
+    } while (0)
 #define bn_free(bn)                 gcry_mpi_release(bn)
 #define bn_set_word(bn, w)          gcry_mpi_set_ui(bn, w)
 #define bn_cmp(a, b)                gcry_mpi_cmp(a, b)
