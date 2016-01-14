@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-07-20 - xxxxxxx - lavu 55.20.0 - cpu.h
+  Add AV_CPU_FLAG_SSSE3SLOW.
+
 2016-07-02 - 4926fa9 - lavu 55.19.0 - hwcontext_vaapi.h
   Add driver quirks field to VAAPI-specific hwdevice and enum with
   members AV_VAAPI_DRIVER_QUIRK_* to represent its values.
