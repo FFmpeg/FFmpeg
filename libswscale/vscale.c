@@ -19,6 +19,16 @@
  */
 #include "swscale_internal.h"
 
+typedef struct VScalerContext
+{
+    uint16_t *filter[2];
+    int32_t  *filter_pos;
+    int filter_size;
+    int isMMX;
+    void *pfn;
+} VScalerContext;
+
+
 static int lum_planar_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     VScalerContext *inst = desc->instance;
