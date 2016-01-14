@@ -39,7 +39,7 @@ static void free_lines(SwsSlice *s)
 }
 
 /*
- slice lines contains extra bytes for vetorial code thus @size
+ slice lines contains extra bytes for vectorial code thus @size
  is the allocated memory size and @width is the number of pixels
 */
 static int alloc_lines(SwsSlice *s, int size, int width)
