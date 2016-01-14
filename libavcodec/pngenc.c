@@ -770,7 +770,7 @@ static int apng_encode_frame(AVCodecContext *avctx, const AVFrame *pict,
 
                 if (last_fctl_chunk.dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
                     for (y = last_fctl_chunk.y_offset; y < last_fctl_chunk.y_offset + last_fctl_chunk.height; ++y) {
-                        size_t row_start = s->last_frame->linesize[0] * y + bpp * last_fctl_chunk.x_offset;
+                        size_t row_start = diffFrame->linesize[0] * y + bpp * last_fctl_chunk.x_offset;
                         memset(diffFrame->data[0] + row_start, 0, bpp * last_fctl_chunk.width);
                     }
                 }
@@ -948,7 +948,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
                 uint32_t y;
                 uint8_t bpp = (s->bits_per_pixel + 7) >> 3;
                 for (y = s->last_frame_fctl.y_offset; y < s->last_frame_fctl.y_offset + s->last_frame_fctl.height; ++y) {
-                    size_t row_start = s->last_frame->linesize[0] * y + bpp * s->last_frame_fctl.x_offset;
+                    size_t row_start = s->prev_frame->linesize[0] * y + bpp * s->last_frame_fctl.x_offset;
                     memset(s->prev_frame->data[0] + row_start, 0, bpp * s->last_frame_fctl.width);
                 }
             }
