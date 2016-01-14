@@ -1357,6 +1357,11 @@ static int ivr_read_packet(AVFormatContext *s, AVPacket *pkt)
                 size = avio_rb32(pb);
                 avio_skip(pb, 4);
 
+                if (size < 1 || size > INT_MAX/4) {
+                    av_log(s, AV_LOG_ERROR, "size %d is invalid\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
                 st = s->streams[index];
                 ret = ff_rm_parse_packet(s, pb, st, st->priv_data, size, pkt,
                                          &seq, 0, pts);
