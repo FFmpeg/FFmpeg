@@ -54,7 +54,7 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
         FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
         FFPsyBand *band1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
         int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[w*16+g]-4);
-        float e01_34 = phase*pow(ener1/ener0, 3.0/4.0);
+        float e01_34 = phase*pos_pow34(ener1/ener0);
         float maxval, dist_spec_err = 0.0f;
         float minthr = FFMIN(band0->threshold, band1->threshold);
         for (i = 0; i < sce0->ics.swb_sizes[g]; i++)

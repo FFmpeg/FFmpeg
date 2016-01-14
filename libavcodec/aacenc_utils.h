@@ -45,6 +45,11 @@ static inline void abs_pow34_v(float *out, const float *in, const int size)
     }
 }
 
+static inline float pos_pow34(float a)
+{
+    return sqrtf(a * sqrtf(a));
+}
+
 /**
  * Quantize one coefficient.
  * @return absolute value of the quantized coefficient
