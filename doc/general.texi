@@ -173,12 +173,6 @@ Go to @url{http://sourceforge.net/projects/zapping/} and follow the instructions
 installing the library. Then pass @code{--enable-libzvbi} to configure to
 enable it.
 
-@float NOTE
-libzvbi is licensed under the GNU General Public License Version 2 or later
-(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for details),
-you must upgrade FFmpeg's license to GPL in order to use it.
-@end float
-
 @section AviSynth
 
 FFmpeg can read AviSynth scripts as input. To enable support, pass
