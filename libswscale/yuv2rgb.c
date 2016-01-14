@@ -776,7 +776,8 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
     uint16_t *y_table16;
     uint32_t *y_table32;
     int i, base, rbase, gbase, bbase, av_uninit(abase), needAlpha;
-    const int yoffs = fullRange ? 384 : 326;
+    const int yoffs = (fullRange ? 384 : 326) + YUVRGB_TABLE_LUMA_HEADROOM;
+    const int table_plane_size = 1024 + 2*YUVRGB_TABLE_LUMA_HEADROOM;
 
     int64_t crv =  inv_table[0];
     int64_t cbu =  inv_table[1];
@@ -833,10 +834,10 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
             return AVERROR(ENOMEM);
     switch (bpp) {
     case 1:
-        ALLOC_YUV_TABLE(1024);
+        ALLOC_YUV_TABLE(table_plane_size);
         y_table     = c->yuvTable;
-        yb = -(384 << 16) - oy;
-        for (i = 0; i < 1024 - 110; i++) {
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size - 110; i++) {
             y_table[i + 110]  = av_clip_uint8((yb + 0x8000) >> 16) >> 7;
             yb               += cy;
         }
@@ -848,60 +849,60 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? 3 : 0;
         gbase       = 1;
         bbase       = isRgb ? 0 : 3;
-        ALLOC_YUV_TABLE(1024 * 3);
+        ALLOC_YUV_TABLE(table_plane_size * 3);
         y_table     = c->yuvTable;
-        yb = -(384 << 16) - oy;
-        for (i = 0; i < 1024 - 110; i++) {
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size - 110; i++) {
             int yval                = av_clip_uint8((yb + 0x8000) >> 16);
             y_table[i + 110]        = (yval >> 7)        << rbase;
-            y_table[i +  37 + 1024] = ((yval + 43) / 85) << gbase;
-            y_table[i + 110 + 2048] = (yval >> 7)        << bbase;
+            y_table[i +  37 +   table_plane_size] = ((yval + 43) / 85) << gbase;
+            y_table[i + 110 + 2*table_plane_size] = (yval >> 7)        << bbase;
             yb += cy;
         }
         fill_table(c->table_rV, 1, crv, y_table + yoffs);
-        fill_table(c->table_gU, 1, cgu, y_table + yoffs + 1024);
-        fill_table(c->table_bU, 1, cbu, y_table + yoffs + 2048);
+        fill_table(c->table_gU, 1, cgu, y_table + yoffs +   table_plane_size);
+        fill_table(c->table_bU, 1, cbu, y_table + yoffs + 2*table_plane_size);
         fill_gv_table(c->table_gV, 1, cgv);
         break;
     case 8:
         rbase       = isRgb ? 5 : 0;
         gbase       = isRgb ? 2 : 3;
         bbase       = isRgb ? 0 : 6;
-        ALLOC_YUV_TABLE(1024 * 3);
+        ALLOC_YUV_TABLE(table_plane_size * 3);
         y_table     = c->yuvTable;
-        yb = -(384 << 16) - oy;
-        for (i = 0; i < 1024 - 38; i++) {
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size - 38; i++) {
             int yval               = av_clip_uint8((yb + 0x8000) >> 16);
             y_table[i + 16]        = ((yval + 18) / 36) << rbase;
-            y_table[i + 16 + 1024] = ((yval + 18) / 36) << gbase;
-            y_table[i + 37 + 2048] = ((yval + 43) / 85) << bbase;
+            y_table[i + 16 +   table_plane_size] = ((yval + 18) / 36) << gbase;
+            y_table[i + 37 + 2*table_plane_size] = ((yval + 43) / 85) << bbase;
             yb += cy;
         }
         fill_table(c->table_rV, 1, crv, y_table + yoffs);
-        fill_table(c->table_gU, 1, cgu, y_table + yoffs + 1024);
-        fill_table(c->table_bU, 1, cbu, y_table + yoffs + 2048);
+        fill_table(c->table_gU, 1, cgu, y_table + yoffs +   table_plane_size);
+        fill_table(c->table_bU, 1, cbu, y_table + yoffs + 2*table_plane_size);
         fill_gv_table(c->table_gV, 1, cgv);
         break;
     case 12:
         rbase       = isRgb ? 8 : 0;
         gbase       = 4;
         bbase       = isRgb ? 0 : 8;
-        ALLOC_YUV_TABLE(1024 * 3 * 2);
+        ALLOC_YUV_TABLE(table_plane_size * 3 * 2);
         y_table16   = c->yuvTable;
-        yb = -(384 << 16) - oy;
-        for (i = 0; i < 1024; i++) {
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size; i++) {
             uint8_t yval        = av_clip_uint8((yb + 0x8000) >> 16);
             y_table16[i]        = (yval >> 4) << rbase;
-            y_table16[i + 1024] = (yval >> 4) << gbase;
-            y_table16[i + 2048] = (yval >> 4) << bbase;
+            y_table16[i +   table_plane_size] = (yval >> 4) << gbase;
+            y_table16[i + 2*table_plane_size] = (yval >> 4) << bbase;
             yb += cy;
         }
         if (isNotNe)
-            for (i = 0; i < 1024 * 3; i++)
+            for (i = 0; i < table_plane_size * 3; i++)
                 y_table16[i] = av_bswap16(y_table16[i]);
         fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
-        fill_table(c->table_gU, 2, cgu, y_table16 + yoffs + 1024);
-        fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2048);
+        fill_table(c->table_gU, 2, cgu, y_table16 + yoffs +   table_plane_size);
+        fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2*table_plane_size);
         fill_gv_table(c->table_gV, 2, cgv);
         break;
     case 15:
@@ -909,30 +910,30 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? bpp - 5 : 0;
         gbase       = 5;
         bbase       = isRgb ? 0 : (bpp - 5);
-        ALLOC_YUV_TABLE(1024 * 3 * 2);
+        ALLOC_YUV_TABLE(table_plane_size * 3 * 2);
         y_table16   = c->yuvTable;
-        yb = -(384 << 16) - oy;
-        for (i = 0; i < 1024; i++) {
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size; i++) {
             uint8_t yval        = av_clip_uint8((yb + 0x8000) >> 16);
             y_table16[i]        = (yval >> 3)          << rbase;
-            y_table16[i + 1024] = (yval >> (18 - bpp)) << gbase;
-            y_table16[i + 2048] = (yval >> 3)          << bbase;
+            y_table16[i +   table_plane_size] = (yval >> (18 - bpp)) << gbase;
+            y_table16[i + 2*table_plane_size] = (yval >> 3)          << bbase;
             yb += cy;
         }
         if (isNotNe)
-            for (i = 0; i < 1024 * 3; i++)
+            for (i = 0; i < table_plane_size * 3; i++)
                 y_table16[i] = av_bswap16(y_table16[i]);
         fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
-        fill_table(c->table_gU, 2, cgu, y_table16 + yoffs + 1024);
-        fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2048);
+        fill_table(c->table_gU, 2, cgu, y_table16 + yoffs +   table_plane_size);
+        fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2*table_plane_size);
         fill_gv_table(c->table_gV, 2, cgv);
         break;
     case 24:
     case 48:
-        ALLOC_YUV_TABLE(1024);
+        ALLOC_YUV_TABLE(table_plane_size);
         y_table     = c->yuvTable;
-        yb = -(384 << 16) - oy;
-        for (i = 0; i < 1024; i++) {
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size; i++) {
             y_table[i]  = av_clip_uint8((yb + 0x8000) >> 16);
             yb         += cy;
         }
@@ -951,20 +952,20 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         needAlpha = CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat);
         if (!needAlpha)
             abase = (base + 24) & 31;
-        ALLOC_YUV_TABLE(1024 * 3 * 4);
+        ALLOC_YUV_TABLE(table_plane_size * 3 * 4);
         y_table32   = c->yuvTable;
-        yb = -(384 << 16) - oy;
-        for (i = 0; i < 1024; i++) {
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size; i++) {
             unsigned yval       = av_clip_uint8((yb + 0x8000) >> 16);
             y_table32[i]        = (yval << rbase) +
                                   (needAlpha ? 0 : (255u << abase));
-            y_table32[i + 1024] =  yval << gbase;
-            y_table32[i + 2048] =  yval << bbase;
+            y_table32[i +   table_plane_size] =  yval << gbase;
+            y_table32[i + 2*table_plane_size] =  yval << bbase;
             yb += cy;
         }
         fill_table(c->table_rV, 4, crv, y_table32 + yoffs);
-        fill_table(c->table_gU, 4, cgu, y_table32 + yoffs + 1024);
-        fill_table(c->table_bU, 4, cbu, y_table32 + yoffs + 2048);
+        fill_table(c->table_gU, 4, cgu, y_table32 + yoffs +   table_plane_size);
+        fill_table(c->table_bU, 4, cbu, y_table32 + yoffs + 2*table_plane_size);
         fill_gv_table(c->table_gV, 4, cgv);
         break;
     default:
