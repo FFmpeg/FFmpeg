@@ -211,7 +211,7 @@ static av_always_inline av_const int32_t av_clipl_int32_c(int64_t a)
  */
 static av_always_inline av_const int av_clip_intp2_c(int a, int p)
 {
-    if ((a + (1 << p)) & ~((2 << p) - 1))
+    if (((unsigned)a + (1 << p)) & ~((2 << p) - 1))
         return (a >> 31) ^ ((1 << p) - 1);
     else
         return a;
