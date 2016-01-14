@@ -109,7 +109,7 @@ static int packed_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, i
     uint16_t *lum_filter = inst[0].filter[0];
     uint16_t *chr_filter = inst[1].filter[0];
 
-    int firstLum = FFMAX(1-lum_fsize, inst[0].filter_pos[chrSliceY]);
+    int firstLum = FFMAX(1-lum_fsize, inst[0].filter_pos[   sliceY]);
     int firstChr = FFMAX(1-chr_fsize, inst[1].filter_pos[chrSliceY]);
 
     int sp0 = firstLum - desc->src->plane[0].sliceY;
@@ -128,9 +128,9 @@ static int packed_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, i
         ((yuv2packed1_fn)inst->pfn)(c, (const int16_t*)*src0, (const int16_t**)src1, (const int16_t**)src2,
                                     (const int16_t*)(desc->alpha ? *src3 : NULL),  *dst, dstW, 0, sliceY);
     } else if (c->yuv2packed1 && lum_fsize == 1 && chr_fsize == 2 &&
-               chr_filter[2 * sliceY + 1] + chr_filter[2 * chrSliceY] == 4096 &&
-               chr_filter[2 * sliceY + 1] <= 4096U) { // unscaled RGB
-        int chrAlpha = chr_filter[2 * sliceY + 1];
+               chr_filter[2 * chrSliceY + 1] + chr_filter[2 * chrSliceY] == 4096 &&
+               chr_filter[2 * chrSliceY + 1] <= 4096U) { // unscaled RGB
+        int chrAlpha = chr_filter[2 * chrSliceY + 1];
         ((yuv2packed1_fn)inst->pfn)(c, (const int16_t*)*src0, (const int16_t**)src1, (const int16_t**)src2,
                                     (const int16_t*)(desc->alpha ? *src3 : NULL),  *dst, dstW, chrAlpha, sliceY);
     } else if (c->yuv2packed2 && lum_fsize == 2 && chr_fsize == 2 &&
@@ -140,7 +140,7 @@ static int packed_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, i
                chr_filter[2 * chrSliceY + 1] <= 4096U
     ) { // bilinear upscale RGB
         int lumAlpha = lum_filter[2 * sliceY + 1];
-        int chrAlpha = chr_filter[2 * sliceY + 1];
+        int chrAlpha = chr_filter[2 * chrSliceY + 1];
         c->lumMmxFilter[2] =
         c->lumMmxFilter[3] = lum_filter[2 * sliceY]    * 0x10001;
         c->chrMmxFilter[2] =
@@ -156,7 +156,7 @@ static int packed_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, i
         }
 
         inst->yuv2packedX(c, lum_filter + sliceY * lum_fsize,
-                    (const int16_t**)src0, lum_fsize, chr_filter + sliceY * chr_fsize,
+                    (const int16_t**)src0, lum_fsize, chr_filter + chrSliceY * chr_fsize,
                     (const int16_t**)src1, (const int16_t**)src2, chr_fsize, (const int16_t**)src3, *dst, dstW, sliceY);
     }
     return 1;
@@ -173,7 +173,7 @@ static int any_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int 
     uint16_t *lum_filter = inst[0].filter[0];
     uint16_t *chr_filter = inst[1].filter[0];
 
-    int firstLum = FFMAX(1-lum_fsize, inst[0].filter_pos[chrSliceY]);
+    int firstLum = FFMAX(1-lum_fsize, inst[0].filter_pos[   sliceY]);
     int firstChr = FFMAX(1-chr_fsize, inst[1].filter_pos[chrSliceY]);
 
     int sp0 = firstLum - desc->src->plane[0].sliceY;
