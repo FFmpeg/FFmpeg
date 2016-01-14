@@ -1399,5 +1399,6 @@ AVInputFormat ff_ivr_demuxer = {
     .read_probe     = ivr_probe,
     .read_header    = ivr_read_header,
     .read_packet    = ivr_read_packet,
+    .read_close     = rm_read_close,
     .extensions     = "ivr",
 };
