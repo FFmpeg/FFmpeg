@@ -173,7 +173,8 @@ static cqueue *cqueue_create(int size)
 
 static void cqueue_free(cqueue *q)
 {
-    av_free(q->elements);
+    if (q)
+        av_free(q->elements);
     av_free(q);
 }
 
@@ -684,9 +685,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->fade_factors[1]);
 
     for (c = 0; c < s->channels; c++) {
-        cqueue_free(s->gain_history_original[c]);
-        cqueue_free(s->gain_history_minimum[c]);
-        cqueue_free(s->gain_history_smoothed[c]);
+        if (s->gain_history_original)
+            cqueue_free(s->gain_history_original[c]);
+        if (s->gain_history_minimum)
+            cqueue_free(s->gain_history_minimum[c]);
+        if (s->gain_history_smoothed)
+            cqueue_free(s->gain_history_smoothed[c]);
     }
 
     av_freep(&s->gain_history_original);
