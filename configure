@@ -1820,6 +1820,7 @@ MATH_FUNCS="
     exp2f
     expf
     hypot
+    isfinite
     isinf
     isnan
     ldexpf
