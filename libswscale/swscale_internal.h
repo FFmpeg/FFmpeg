@@ -989,21 +989,6 @@ typedef struct SwsFilterDescriptor
     int (*process)(SwsContext *c, struct SwsFilterDescriptor *desc, int sliceY, int sliceH);
 } SwsFilterDescriptor;
 
-/// Color conversion instance data
-typedef struct ColorContext
-{
-    uint32_t *pal;
-} ColorContext;
-
-/// Scaler instance data
-typedef struct FilterContext
-{
-    uint16_t *filter;
-    int *filter_pos;
-    int filter_size;
-    int xInc;
-} FilterContext;
-
 // warp input lines in the form (src + width*i + j) to slice format (line[i][j])
 // relative=true means first line src[x][0] otherwise first line is src[x][lum/crh Y]
 int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH, int relative);

@@ -20,6 +20,21 @@
 
 #include "swscale_internal.h"
 
+/// Scaler instance data
+typedef struct FilterContext
+{
+    uint16_t *filter;
+    int *filter_pos;
+    int filter_size;
+    int xInc;
+} FilterContext;
+
+/// Color conversion instance data
+typedef struct ColorContext
+{
+    uint32_t *pal;
+} ColorContext;
+
 static int lum_h_scale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     FilterContext *instance = desc->instance;
