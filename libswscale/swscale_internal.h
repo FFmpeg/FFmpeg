@@ -1003,15 +1003,6 @@ typedef struct FilterContext
     int xInc;
 } FilterContext;
 
-typedef struct VScalerContext
-{
-    uint16_t *filter[2];
-    int32_t  *filter_pos;
-    int filter_size;
-    int isMMX;
-    void *pfn;
-} VScalerContext;
-
 // warp input lines in the form (src + width*i + j) to slice format (line[i][j])
 // relative=true means first line src[x][0] otherwise first line is src[x][lum/crh Y]
 int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH, int relative);
