@@ -1358,7 +1358,7 @@ static int ivr_read_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_skip(pb, 4);
 
                 if (size < 1 || size > INT_MAX/4) {
-                    av_log(s, AV_LOG_ERROR, "size %d is invalid\n");
+                    av_log(s, AV_LOG_ERROR, "size %u is invalid\n", size);
                     return AVERROR_INVALIDDATA;
                 }
 
