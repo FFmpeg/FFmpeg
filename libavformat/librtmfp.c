@@ -166,7 +166,7 @@ static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
     LibRTMFPContext *ctx = s->priv_data;
     int res = 0;
 
-    res = RTMFP_Read(ctx->id, buf, size);
+    res = RTMFP_Read((ctx->peerId)? ctx->peerId : "", ctx->id, buf, size);
     //av_log(NULL, AV_LOG_INFO, "RTMFP read called, %d/%d bytes read\n", res, size);
     if (res < 0)
         return AVERROR_UNKNOWN;
