@@ -135,13 +135,20 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         const uint16_t *v = (const uint16_t *)pic->data[2];
         for (h = 0; h < avctx->height; h++) {
             uint32_t val;
-            w = (avctx->width / 6) * 6;
+            w = (avctx->width / (6 * s->sample_factor)) * 6 * s->sample_factor;
             s->pack_line_10(y, u, v, dst, w);
 
             y += w;
             u += w >> 1;
             v += w >> 1;
-            dst += (w / 6) * 16;
+            dst += (w / (6 * s->sample_factor)) * 16 * s->sample_factor;
+
+            for (; w < avctx->width - 5; w += 6) {
+                WRITE_PIXELS(u, y, v);
+                WRITE_PIXELS(y, u, y);
+                WRITE_PIXELS(v, y, u);
+                WRITE_PIXELS(y, v, y);
+            }
             if (w < avctx->width - 1) {
                 WRITE_PIXELS(u, y, v);
 

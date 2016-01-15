@@ -51,7 +51,7 @@ SECTION .text
 %macro v210_planar_pack_10 0
 
 ; v210_planar_pack_10(const uint16_t *y, const uint16_t *u, const uint16_t *v, uint8_t *dst, ptrdiff_t width)
-cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
+cglobal v210_planar_pack_10, 5, 5, 4+cpuflag(avx2), y, u, v, dst, width
     lea     r0, [yq+2*widthq]
     add     uq, widthq
     add     vq, widthq
@@ -61,11 +61,19 @@ cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
     mova    m3, [v210_enc_max_10]
 
 .loop:
-    movu    m0, [yq+2*widthq]
+    movu        xm0, [yq+2*widthq]
+%if cpuflag(avx2)
+    vinserti128 m0,   m0, [yq+widthq*2+12], 1
+%endif
     CLIPW   m0, m2, m3
 
-    movq    m1, [uq+widthq]
-    movhps  m1, [vq+widthq]
+    movq         xm1, [uq+widthq]
+    movhps       xm1, [vq+widthq]
+%if cpuflag(avx2)
+    movq         xm4, [uq+widthq+6]
+    movhps       xm4, [vq+widthq+6]
+    vinserti128  m1,   m1, xm4, 1
+%endif
     CLIPW   m1, m2, m3
 
     pmullw  m0, [v210_enc_luma_mult_10]
@@ -79,13 +87,15 @@ cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
     movu    [dstq], m0
 
     add     dstq, mmsize
-    add     widthq, 6
+    add     widthq, (mmsize*3)/8
     jl .loop
 
     RET
 %endmacro
 
 INIT_XMM ssse3
+v210_planar_pack_10
+INIT_YMM avx2
 v210_planar_pack_10
 
 %macro v210_planar_pack_8 0

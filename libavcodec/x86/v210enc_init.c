@@ -29,6 +29,9 @@ void ff_v210_planar_pack_8_avx2(const uint8_t *y, const uint8_t *u,
 void ff_v210_planar_pack_10_ssse3(const uint16_t *y, const uint16_t *u,
                                   const uint16_t *v, uint8_t *dst,
                                   ptrdiff_t width);
+void ff_v210_planar_pack_10_avx2(const uint16_t *y, const uint16_t *u,
+                                 const uint16_t *v, uint8_t *dst,
+                                 ptrdiff_t width);
 
 av_cold void ff_v210enc_init_x86(V210EncContext *s)
 {
@@ -44,6 +47,7 @@ av_cold void ff_v210enc_init_x86(V210EncContext *s)
 
     if (EXTERNAL_AVX2(cpu_flags)) {
         s->pack_line_8 = ff_v210_planar_pack_8_avx2;
+        s->pack_line_10 = ff_v210_planar_pack_10_avx2;
         s->sample_factor = 2;
     }
 }
