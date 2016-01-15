@@ -903,12 +903,16 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
 
 static int check_url(const char *url) {
     const char *proto_name = avio_find_protocol_name(url);
+
+    if (!proto_name)
+        return AVERROR_INVALIDDATA;
+
     if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL))
         return AVERROR_INVALIDDATA;
 
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
         return 0;
-    else if (strcmp(proto_name, "file") || !strcmp(url, "file,"))
+    else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
 
     return 0;
