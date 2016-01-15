@@ -1,6 +1,35 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.7.5
+- configure: bump copyright year to 2016
+- avformat/hls: Even stricter URL checks
+- avformat/hls: More strict url checks
+- swscale/utils: Detect and skip unneeded sws_setColorspaceDetails() calls
+- swscale/yuv2rgb: Increase YUV2RGB table headroom
+- swscale/yuv2rgb: Factor YUVRGB_TABLE_LUMA_HEADROOM out
+- avformat/hls: forbid all protocols except http(s) & file
+- avformat/aviobuf: Fix end check in put_str16()
+- avformat/asfenc: Check pts
+- avcodec/mpeg4video: Check time_incr
+- avcodec/wavpackenc: Check the number of channels
+- avcodec/wavpackenc: Headers are per channel
+- avcodec/aacdec_template: Check id_map
+- avcodec/dvdec: Fix "left shift of negative value -254"
+- avcodec/mjpegdec: Fix negative shift
+- avcodec/mss2: Check for repeat overflow
+- avformat: Add integer fps from 31 to 60 to get_std_framerate()
+- avcodec/mpegvideo_enc: Clip bits_per_raw_sample within valid range
+- avfilter/vf_scale: set proper out frame color range
+- avcodec/motion_est: Fix mv_penalty table size
+- avcodec/h264_slice: Fix integer overflow in implicit weight computation
+- swscale/utils: Use normal bilinear scaler if fast cannot be used due to tiny dimensions
+- avcodec/put_bits: Always check buffer end before writing
+- mjpegdec: extend check for incompatible values of s->rgb and s->ls
+- swscale/utils: Fix intermediate format for cascaded alpha downscaling
+- x86/float_dsp: zero extend offset from ff_scalarproduct_float_sse
+- avfilter/vf_zoompan: do not free frame we pushed to lavfi
+
 
 version 2.7.4
 - nuv: sanitize negative fps rate
