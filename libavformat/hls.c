@@ -619,12 +619,16 @@ static int open_url(HLSContext *c, URLContext **uc, const char *url, AVDictionar
     AVDictionary *tmp = NULL;
     int ret;
     const char *proto_name = avio_find_protocol_name(url);
+
+    if (!proto_name)
+        return AVERROR_INVALIDDATA;
+
     // only http(s) & file are allowed
     if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL))
         return AVERROR_INVALIDDATA;
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
         ;
-    else if (strcmp(proto_name, "file") || !strcmp(url, "file,"))
+    else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
 
     av_dict_copy(&tmp, c->avio_opts, 0);
