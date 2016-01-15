@@ -209,6 +209,7 @@ typedef struct MOVContext {
     void *audible_fixed_key;
     int audible_fixed_key_size;
     struct AVAES *aes_decrypt;
+    int enable_drefs;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
