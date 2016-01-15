@@ -2701,13 +2701,23 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         MOVDref *dref = &sc->drefs[sc->dref_id - 1];
-        if (mov_open_dref(&sc->pb, c->fc->filename, dref, &c->fc->interrupt_callback,
-            c->use_absolute_path, c->fc) < 0)
-            av_log(c->fc, AV_LOG_ERROR,
-                   "stream %d, error opening alias: path='%s', dir='%s', "
-                   "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
+        if (c->enable_drefs) {
+            if (mov_open_dref(&sc->pb, c->fc->filename, dref, &c->fc->interrupt_callback,
+                              c->use_absolute_path, c->fc) < 0)
+                av_log(c->fc, AV_LOG_ERROR,
+                       "stream %d, error opening alias: path='%s', dir='%s', "
+                       "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
+                       st->index, dref->path, dref->dir, dref->filename,
+                       dref->volume, dref->nlvl_from, dref->nlvl_to);
+        } else {
+            av_log(c->fc, AV_LOG_WARNING,
+                   "Skipped opening external track: "
+                   "stream %d, alias: path='%s', dir='%s', "
+                   "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d."
+                   "Set enable_drefs to allow this.\n",
                    st->index, dref->path, dref->dir, dref->filename,
                    dref->volume, dref->nlvl_from, dref->nlvl_to);
+        }
     } else {
         sc->pb = c->fc->pb;
         sc->pb_is_copied = 1;
@@ -4389,6 +4399,8 @@ static const AVOption mov_options[] = {
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
     { "export_xmp", "Export full XMP metadata", OFFSET(export_xmp),
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
+    { "enable_drefs", "Enable external track support.", OFFSET(enable_drefs), AV_OPT_TYPE_INT,
+        {.i64 = 0}, 0, 1, FLAGS },
     { NULL },
 };
 
