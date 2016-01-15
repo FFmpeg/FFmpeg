@@ -2382,6 +2382,7 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
 frei0r_src_filter_extralibs='$ldl'
 hqdn3d_filter_deps="gpl"
+hwupload_cuda_filter_deps="cuda"
 interlace_filter_deps="gpl"
 ocv_filter_deps="libopencv"
 resample_filter_deps="avresample"
