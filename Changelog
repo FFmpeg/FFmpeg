@@ -1,6 +1,49 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+
+version 2.8.5
+- avformat/hls: Even stricter URL checks
+- avformat/hls: More strict url checks
+- avcodec/pngenc: Fix mixed up linesizes
+- avcodec/pngenc: Replace memcpy by av_image_copy()
+- swscale/vscale: Check that 2 tap filters are bilinear before using bilinear code
+- swscale: Move VScalerContext into vscale.c
+- swscale/utils: Detect and skip unneeded sws_setColorspaceDetails() calls
+- swscale/yuv2rgb: Increase YUV2RGB table headroom
+- swscale/yuv2rgb: Factor YUVRGB_TABLE_LUMA_HEADROOM out
+- avformat/hls: forbid all protocols except http(s) & file
+- avformat/aviobuf: Fix end check in put_str16()
+- avformat/asfenc: Check pts
+- avcodec/mpeg4video: Check time_incr
+- avcodec/wavpackenc: Check the number of channels
+- avcodec/wavpackenc: Headers are per channel
+- avcodec/aacdec_template: Check id_map
+- avcodec/dvdec: Fix "left shift of negative value -254"
+- avcodec/g2meet: Check for ff_els_decode_bit() failure in epic_decode_run_length()
+- avcodec/mjpegdec: Fix negative shift
+- avcodec/mss2: Check for repeat overflow
+- avformat: Add integer fps from 31 to 60 to get_std_framerate()
+- avformat/ivfenc: fix division by zero
+- avcodec/mpegvideo_enc: Clip bits_per_raw_sample within valid range
+- avfilter/vf_scale: set proper out frame color range
+- avcodec/motion_est: Fix mv_penalty table size
+- avcodec/h264_slice: Fix integer overflow in implicit weight computation
+- swscale/utils: Use normal bilinear scaler if fast cannot be used due to tiny dimensions
+- avcodec/put_bits: Always check buffer end before writing
+- mjpegdec: extend check for incompatible values of s->rgb and s->ls
+- swscale/utils: Fix intermediate format for cascaded alpha downscaling
+- avformat/mov: Update handbrake_version threshold for full mp3 parsing
+- x86/float_dsp: zero extend offset from ff_scalarproduct_float_sse
+- avfilter/vf_zoompan: do not free frame we pushed to lavfi
+- nuv: sanitize negative fps rate
+- nutdec: reject negative value_len in read_sm_data
+- xwddec: prevent overflow of lsize * avctx->height
+- nutdec: only copy the header if it exists
+- exr: fix out of bounds read in get_code
+- on2avc: limit number of bits to 30 in get_egolomb
+
+
 version 2.8.4
 - rawdec: only exempt BIT0 with need_copy from buffer sanity check
 - mlvdec: check that index_entries exist
