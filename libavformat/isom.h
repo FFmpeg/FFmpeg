@@ -172,6 +172,7 @@ typedef struct MOVContext {
     int bitrates_count;
     int moov_retry;
     int atom_depth;
+    int enable_drefs;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
