@@ -23,8 +23,8 @@
 
 SECTION_RODATA 32
 
-v210_enc_min_10: times 16 dw 0x4
-v210_enc_max_10: times 16 dw 0x3fb
+v210_enc_min_10: times 32 dw 0x4
+v210_enc_max_10: times 32 dw 0x3fb
 
 v210_enc_luma_mult_10: times 2 dw 4,1,16,4,1,16,0,0
 v210_enc_luma_shuf_10: times 2 db -1,0,1,-1,2,3,4,5,-1,6,7,-1,8,9,10,11
@@ -47,7 +47,7 @@ SECTION .text
 %macro v210_planar_pack_10 0
 
 ; v210_planar_pack_10(const uint16_t *y, const uint16_t *u, const uint16_t *v, uint8_t *dst, ptrdiff_t width)
-cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
+cglobal v210_planar_pack_10, 5, 5, 4+cpuflag(avx2), y, u, v, dst, width
     lea     r0, [yq+2*widthq]
     add     uq, widthq
     add     vq, widthq
@@ -57,11 +57,19 @@ cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
     mova    m3, [v210_enc_max_10]
 
 .loop
-    movu    m0, [yq+2*widthq]
+    movu        xm0, [yq+2*widthq]
+%if cpuflag(avx2)
+    vinserti128 m0, m0, [yq+2*widthq+12], 1
+%endif
     CLIPW   m0, m2, m3
 
-    movq    m1, [uq+widthq]
-    movhps  m1, [vq+widthq]
+    movq    xm1, [uq+widthq]
+    movhps  xm1, [vq+widthq]
+%if cpuflag(avx2)
+    movq         xm4, [uq+widthq+6]
+    movhps       xm4, [vq+widthq+6]
+    vinserti128  m1, m1, xm4, 1
+%endif
     CLIPW   m1, m2, m3
 
     pmullw  m0, [v210_enc_luma_mult_10]
@@ -75,7 +83,7 @@ cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
     movu    [dstq], m0
 
     add     dstq, mmsize
-    add     widthq, 6
+    add     widthq, (mmsize*3)/8
     jl .loop
 
     RET
@@ -83,6 +91,10 @@ cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
 
 %if HAVE_SSSE3_EXTERNAL
 INIT_XMM ssse3
+v210_planar_pack_10
+%endif
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
 v210_planar_pack_10
 %endif
 
