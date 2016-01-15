@@ -167,7 +167,7 @@ static void swap_guid(ff_asf_guid guid)
 
 static void align_position(AVIOContext *pb,  int64_t offset, uint64_t size)
 {
-    if (avio_tell(pb) != offset + size)
+    if (size < INT64_MAX - offset && avio_tell(pb) != offset + size)
         avio_seek(pb, offset + size, SEEK_SET);
 }
 
@@ -178,6 +178,9 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t size   = avio_rl64(pb);
     int ret;
 
+    if (size > INT64_MAX)
+        return AVERROR_INVALIDDATA;
+
     if (asf->is_header)
         asf->unknown_size = size;
     asf->is_header = 0;
@@ -187,8 +190,13 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
         if ((ret = detect_unknown_subobject(s, asf->unknown_offset,
                                             asf->unknown_size)) < 0)
             return ret;
-    } else
+    } else {
+        if (size < 24) {
+            av_log(s, AV_LOG_ERROR, "Too small size %"PRIu64" (< 24).\n", size);
+            return AVERROR_INVALIDDATA;
+        }
         avio_skip(pb, size - 24);
+    }
 
     return 0;
 }
@@ -967,7 +975,7 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t interval; // index entry time interval in 100 ns units, usually it's 1s
     uint32_t pkt_num, nb_entries;
     int32_t prev_pkt_num = -1;
-    int i;
+    int i, ret;
     uint64_t size = avio_rl64(pb);
 
     // simple index objects should be ordered by stream number, this loop tries to find
@@ -989,7 +997,11 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     nb_entries = avio_rl32(pb);
     for (i = 0; i < nb_entries; i++) {
         pkt_num = avio_rl32(pb);
-        avio_skip(pb, 2);
+        ret = avio_skip(pb, 2);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Skipping failed in asf_read_simple_index.\n");
+            return ret;
+        }
         if (prev_pkt_num != pkt_num) {
             av_add_index_entry(st, asf->first_packet_offset + asf->packet_size *
                                pkt_num, av_rescale(interval, i, 10000),
@@ -1136,14 +1148,15 @@ static int asf_read_replicated_data(AVFormatContext *s, ASFPacket *asf_pkt)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media object size
+        if (data_size <= 0)
             return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // reading of media object size is already done
     asf_pkt->dts = avio_rl32(pb); // read presentation time
@@ -1212,14 +1225,15 @@ static int asf_read_single_payload(AVFormatContext *s, AVPacket *pkt,
     int64_t  offset;
     uint64_t size;
     unsigned char *p;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media object size
+        if (data_size <= 0)
             return AVERROR_EOF;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // skip media object size
     asf_pkt->dts = avio_rl32(pb); // read presentation time
@@ -1278,6 +1292,10 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
         }
         if (!asf_pkt) {
             if (asf->packet_offset + asf->packet_size <= asf->data_offset + asf->data_size) {
+                if (!asf->packet_size) {
+                    av_log(s, AV_LOG_ERROR, "Invalid packet size 0.\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 avio_seek(pb, asf->packet_offset + asf->packet_size, SEEK_SET);
                 av_log(s, AV_LOG_WARNING, "Skipping the stream with the invalid stream index %d.\n",
                        asf->stream_index);
@@ -1421,6 +1439,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     while (!pb->eof_reached) {
         if (asf->state == PARSE_PACKET_HEADER) {
             asf_read_packet_header(s);
+            if (pb->eof_reached)
+                break;
             if (!asf->nb_mult_left)
                 asf->state = READ_SINGLE;
             else

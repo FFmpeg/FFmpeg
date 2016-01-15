@@ -14578,6 +14578,7 @@ Default is @code{combined}.
 
 @end table
 
+@anchor{showspectrum}
 @section showspectrum
 
 Convert input audio to a video output, representing the audio frequency
@@ -15000,6 +15001,68 @@ the waveform a green color approximately RGB(66,217,150). Additional
 channels will be shades of this color.
 @example
 ffmpeg -i audio.mp3 -filter_complex "showwavespic,colorchannelmixer=rr=66/255:gg=217/255:bb=150/255" waveform.png
+@end example
+@end itemize
+
+@section spectrumsynth
+
+Sythesize audio from 2 input video spectrums, first input stream represents
+magnitude across time and second represents phase across time.
+The filter will transform from frequency domain as displayed in videos back
+to time domain as presented in audio output.
+
+This filter is primarly created for reversing processed @ref{showspectrum}
+filter outputs, but can synthesize sound from other spectrograms too.
+But in such case results are going to be poor if the phase data is not
+available, because in such cases phase data need to be recreated, usually
+its just recreated from random noise.
+For best results use gray only output (@code{channel} color mode in
+@ref{showspectrum} filter) and @code{log} scale for magnitude video and
+@code{lin} scale for phase video. To produce phase, for 2nd video, use
+@code{data} option. Inputs videos should generally use @code{fullframe}
+slide mode as that saves resources needed for decoding video.
+
+The filter accepts the following options:
+
+@table @option
+@item sample_rate
+Specify sample rate of output audio, the sample rate of audio from which
+spectrum was generated may differ.
+
+@item channels
+Set number of channels represented in input video spectrums.
+
+@item scale
+Set scale which was used when generating magnitude input spectrum.
+Can be @code{lin} or @code{log}. Default is @code{log}.
+
+@item slide
+Set slide which was used when generating inputs spectrums.
+Can be @code{replace}, @code{scroll}, @code{fullframe} or @code{rscroll}.
+Default is @code{fullframe}.
+
+@item win_func
+Set window function used for resynthesis.
+
+@item overlap
+Set window overlap. In range @code{[0, 1]}. Default is @code{1},
+which means optimal overlap for selected window function will be picked.
+
+@item orientation
+Set orientation of input videos. Can be @code{vertical} or @code{horizontal}.
+Default is @code{vertical}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+First create magnitude and phase videos from audio, assuming audio is stereo with 44100 sample rate,
+then resynthesize videos back to audio with spectrumsynth:
+@example
+ffmpeg -i input.flac -lavfi showspectrum=mode=separate:scale=log:overlap=0.875:color=channel:slide=fullframe:data=magnitude -an -c:v rawvideo magnitude.nut
+ffmpeg -i input.flac -lavfi showspectrum=mode=separate:scale=lin:overlap=0.875:color=channel:slide=fullframe:data=phase -an -c:v rawvideo phase.nut
+ffmpeg -i magnitude.nut -i phase.nut -lavfi spectrumsynth=channels=2:sample_rate=44100:win_fun=hann:overlap=0.875:slide=fullframe output.flac
 @end example
 @end itemize
 

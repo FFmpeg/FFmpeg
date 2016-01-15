@@ -385,6 +385,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
     const uint8_t * const d128 = ff_dither_8x8_220[y & 7];
     int  yalpha1 = 4096 - yalpha;
     int i;
+    av_assert2(yalpha  <= 4096U);
 
     if (c->dither == SWS_DITHER_ED) {
         int err = 0;
@@ -590,6 +591,8 @@ yuv2422_2_c_template(SwsContext *c, const int16_t *buf[2],
     int  yalpha1 = 4096 - yalpha;
     int uvalpha1 = 4096 - uvalpha;
     int i;
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha)  >> 19;
@@ -776,6 +779,9 @@ yuv2rgba64_2_c_template(SwsContext *c, const int32_t *buf[2],
     int uvalpha1 = 4096 - uvalpha;
     int i;
     int A1 = 0xffff<<14, A2 = 0xffff<<14;
+
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha) >> 14;
@@ -1005,6 +1011,9 @@ yuv2rgba64_full_2_c_template(SwsContext *c, const int32_t *buf[2],
     int uvalpha1 = 4096 - uvalpha;
     int i;
     int A = 0xffff<<14;
+
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < dstW; i++) {
         int Y  = (buf0[i]     * yalpha1  + buf1[i]     * yalpha) >> 14;
@@ -1387,6 +1396,8 @@ yuv2rgb_2_c_template(SwsContext *c, const int16_t *buf[2],
     int  yalpha1 = 4096 - yalpha;
     int uvalpha1 = 4096 - uvalpha;
     int i;
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha)  >> 19;
@@ -1729,6 +1740,9 @@ yuv2rgb_full_2_c_template(SwsContext *c, const int16_t *buf[2],
     int err[4] = {0};
     int A = 0; // init to silcene warning
 
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
+
     if(   target == AV_PIX_FMT_BGR4_BYTE || target == AV_PIX_FMT_RGB4_BYTE
        || target == AV_PIX_FMT_BGR8      || target == AV_PIX_FMT_RGB8)
         step = 1;
@@ -1955,6 +1969,8 @@ yuv2ya8_2_c(SwsContext *c, const int16_t *buf[2],
                   *abuf1 = hasAlpha ? abuf[1] : NULL;
     int  yalpha1 = 4096 - yalpha;
     int i;
+
+    av_assert2(yalpha  <= 4096U);
 
     for (i = 0; i < dstW; i++) {
         int Y = (buf0[i] * yalpha1 + buf1[i] * yalpha) >> 19;

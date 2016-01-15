@@ -39,7 +39,8 @@
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
-#define YUVRGB_TABLE_HEADROOM 256
+#define YUVRGB_TABLE_HEADROOM 512
+#define YUVRGB_TABLE_LUMA_HEADROOM 512
 
 #define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
 
@@ -397,6 +398,7 @@ typedef struct SwsContext {
     uint8_t *chrMmxextFilterCode; ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for chroma planes.
 
     int canMMXEXTBeUsed;
+    int warned_unuseable_bilinear;
 
     int dstY;                     ///< Last destination vertical line output from last slice.
     int flags;                    ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
@@ -987,30 +989,6 @@ typedef struct SwsFilterDescriptor
     /// Function for processing input slice sliceH lines starting from line sliceY
     int (*process)(SwsContext *c, struct SwsFilterDescriptor *desc, int sliceY, int sliceH);
 } SwsFilterDescriptor;
-
-/// Color conversion instance data
-typedef struct ColorContext
-{
-    uint32_t *pal;
-} ColorContext;
-
-/// Scaler instance data
-typedef struct FilterContext
-{
-    uint16_t *filter;
-    int *filter_pos;
-    int filter_size;
-    int xInc;
-} FilterContext;
-
-typedef struct VScalerContext
-{
-    uint16_t *filter[2];
-    int32_t  *filter_pos;
-    int filter_size;
-    int isMMX;
-    void *pfn;
-} VScalerContext;
 
 // warp input lines in the form (src + width*i + j) to slice format (line[i][j])
 // relative=true means first line src[x][0] otherwise first line is src[x][lum/crh Y]
