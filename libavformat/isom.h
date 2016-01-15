@@ -190,6 +190,7 @@ typedef struct MOVContext {
     MOVFragmentIndex** fragment_index_data;
     unsigned fragment_index_count;
     int atom_depth;
+    int enable_drefs;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
