@@ -732,6 +732,9 @@
     <ClCompile Include="..\libavfilter\avf_showwaves.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vaf_spectrumsynth.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\src_movie.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

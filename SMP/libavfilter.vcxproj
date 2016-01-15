@@ -336,6 +336,7 @@
     <ClCompile Include="..\libavfilter\avf_showspectrum.c" />
     <ClCompile Include="..\libavfilter\avf_showvolume.c" />
     <ClCompile Include="..\libavfilter\avf_showwaves.c" />
+    <ClCompile Include="..\libavfilter\vaf_spectrumsynth.c" />
     <ClCompile Include="..\libavfilter\src_movie.c" />
     <ClCompile Include="..\libavfilter\pthread.c" />
     <ClCompile Include="..\libavfilter\x86\vf_blend_init.c" />
