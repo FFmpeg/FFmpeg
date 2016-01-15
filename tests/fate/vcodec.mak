@@ -212,7 +212,8 @@ FATE_VCODEC-$(call ENCDEC, SVQ1, MOV)   += svq1
 fate-vsynth%-svq1:               ENCOPTS = -qscale 3 -pix_fmt yuv410p
 fate-vsynth%-svq1:               FMT     = mov
 
-FATE_VCODEC-$(call ENCDEC, V210, AVI)   += v210
+FATE_VCODEC-$(call ENCDEC, V210, AVI)   += v210 v210-10
+fate-vsynth%-v210-10:            ENCOPTS = -pix_fmt yuv422p10
 
 FATE_VCODEC-$(call ENCDEC, WMV1, AVI)   += wmv1
 fate-vsynth%-wmv1:               ENCOPTS = -qscale 10
