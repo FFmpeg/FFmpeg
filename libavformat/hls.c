@@ -622,6 +622,10 @@ static int open_url(HLSContext *c, URLContext **uc, const char *url, AVDictionar
     // only http(s) & file are allowed
     if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL))
         return AVERROR_INVALIDDATA;
+    if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
+        ;
+    else if (strcmp(proto_name, "file") || !strcmp(url, "file,"))
+        return AVERROR_INVALIDDATA;
 
     av_dict_copy(&tmp, c->avio_opts, 0);
     av_dict_copy(&tmp, opts, 0);
