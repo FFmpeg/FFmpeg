@@ -1058,6 +1058,8 @@ static int bayer_to_rgb24_wrapper(SwsContext *c, const uint8_t* src[], int srcSt
     default: return 0;
     }
 
+    av_assert0(srcSliceH > 1);
+
     copy(srcPtr, srcStride[0], dstPtr, dstStride[0], c->srcW);
     srcPtr += 2 * srcStride[0];
     dstPtr += 2 * dstStride[0];
@@ -1068,7 +1070,10 @@ static int bayer_to_rgb24_wrapper(SwsContext *c, const uint8_t* src[], int srcSt
         dstPtr += 2 * dstStride[0];
     }
 
-    copy(srcPtr, srcStride[0], dstPtr, dstStride[0], c->srcW);
+    if (i + 1 == srcSliceH) {
+        copy(srcPtr, -srcStride[0], dstPtr, -dstStride[0], c->srcW);
+    } else if (i < srcSliceH)
+        copy(srcPtr, srcStride[0], dstPtr, dstStride[0], c->srcW);
     return srcSliceH;
 }
 
