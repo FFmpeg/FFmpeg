@@ -1,7 +1,7 @@
 ;*****************************************************************************
 ;* x86inc.asm: x264asm abstraction layer
 ;*****************************************************************************
-;* Copyright (C) 2005-2015 x264 project
+;* Copyright (C) 2005-2016 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
@@ -1457,47 +1457,44 @@ FMA_INSTR pmadcswd, pmaddwd, paddd
 ; This lets us use tzcnt without bumping the yasm version requirement yet.
 %define tzcnt rep bsf
 
-; convert FMA4 to FMA3 if possible
-%macro FMA4_INSTR 4
-    %macro %1 4-8 %1, %2, %3, %4
-        %if cpuflag(fma4)
-            v%5 %1, %2, %3, %4
-        %elifidn %1, %2
-            v%6 %1, %4, %3 ; %1 = %1 * %3 + %4
-        %elifidn %1, %3
-            v%7 %1, %2, %4 ; %1 = %2 * %1 + %4
-        %elifidn %1, %4
-            v%8 %1, %2, %3 ; %1 = %2 * %3 + %1
-        %else
-            %error fma3 emulation of ``%5 %1, %2, %3, %4'' is not supported
-        %endif
-    %endmacro
+; Macros for consolidating FMA3 and FMA4 using 4-operand (dst, src1, src2, src3) syntax.
+; FMA3 is only possible if dst is the same as one of the src registers.
+; Either src2 or src3 can be a memory operand.
+%macro FMA4_INSTR 2-*
+    %push fma4_instr
+    %xdefine %$prefix %1
+    %rep %0 - 1
+        %macro %$prefix%2 4-6 %$prefix, %2
+            %if notcpuflag(fma3) && notcpuflag(fma4)
+                %error use of ``%5%6'' fma instruction in cpuname function: current_function
+            %elif cpuflag(fma4)
+                v%5%6 %1, %2, %3, %4
+            %elifidn %1, %2
+                ; If %3 or %4 is a memory operand it needs to be encoded as the last operand.
+                %ifid %3
+                    v%{5}213%6 %2, %3, %4
+                %else
+                    v%{5}132%6 %2, %4, %3
+                %endif
+            %elifidn %1, %3
+                v%{5}213%6 %3, %2, %4
+            %elifidn %1, %4
+                v%{5}231%6 %4, %2, %3
+            %else
+                %error fma3 emulation of ``%5%6 %1, %2, %3, %4'' is not supported
+            %endif
+        %endmacro
+        %rotate 1
+    %endrep
+    %pop
 %endmacro
 
-FMA4_INSTR fmaddpd, fmadd132pd, fmadd213pd, fmadd231pd
-FMA4_INSTR fmaddps, fmadd132ps, fmadd213ps, fmadd231ps
-FMA4_INSTR fmaddsd, fmadd132sd, fmadd213sd, fmadd231sd
-FMA4_INSTR fmaddss, fmadd132ss, fmadd213ss, fmadd231ss
-
-FMA4_INSTR fmaddsubpd, fmaddsub132pd, fmaddsub213pd, fmaddsub231pd
-FMA4_INSTR fmaddsubps, fmaddsub132ps, fmaddsub213ps, fmaddsub231ps
-FMA4_INSTR fmsubaddpd, fmsubadd132pd, fmsubadd213pd, fmsubadd231pd
-FMA4_INSTR fmsubaddps, fmsubadd132ps, fmsubadd213ps, fmsubadd231ps
-
-FMA4_INSTR fmsubpd, fmsub132pd, fmsub213pd, fmsub231pd
-FMA4_INSTR fmsubps, fmsub132ps, fmsub213ps, fmsub231ps
-FMA4_INSTR fmsubsd, fmsub132sd, fmsub213sd, fmsub231sd
-FMA4_INSTR fmsubss, fmsub132ss, fmsub213ss, fmsub231ss
-
-FMA4_INSTR fnmaddpd, fnmadd132pd, fnmadd213pd, fnmadd231pd
-FMA4_INSTR fnmaddps, fnmadd132ps, fnmadd213ps, fnmadd231ps
-FMA4_INSTR fnmaddsd, fnmadd132sd, fnmadd213sd, fnmadd231sd
-FMA4_INSTR fnmaddss, fnmadd132ss, fnmadd213ss, fnmadd231ss
-
-FMA4_INSTR fnmsubpd, fnmsub132pd, fnmsub213pd, fnmsub231pd
-FMA4_INSTR fnmsubps, fnmsub132ps, fnmsub213ps, fnmsub231ps
-FMA4_INSTR fnmsubsd, fnmsub132sd, fnmsub213sd, fnmsub231sd
-FMA4_INSTR fnmsubss, fnmsub132ss, fnmsub213ss, fnmsub231ss
+FMA4_INSTR fmadd,    pd, ps, sd, ss
+FMA4_INSTR fmaddsub, pd, ps
+FMA4_INSTR fmsub,    pd, ps, sd, ss
+FMA4_INSTR fmsubadd, pd, ps
+FMA4_INSTR fnmadd,   pd, ps, sd, ss
+FMA4_INSTR fnmsub,   pd, ps, sd, ss
 
 ; workaround: vpbroadcastq is broken in x86_32 due to a yasm bug (fixed in 1.3.0)
 %ifdef __YASM_VER__
