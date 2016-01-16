@@ -61,6 +61,7 @@ version <next>:
 - support for dvaudio in wav and avi
 - libaacplus and libvo-aacenc support removed
 - Cineform HD decoder
+- new DCA decoder with full support for DTS-HD extensions
 
 
 version 2.8:

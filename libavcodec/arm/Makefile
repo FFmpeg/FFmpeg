@@ -36,7 +36,7 @@ OBJS-$(CONFIG_VP8DSP)                  += arm/vp8dsp_init_arm.o
 # decoders/encoders
 OBJS-$(CONFIG_AAC_DECODER)             += arm/aacpsdsp_init_arm.o       \
                                           arm/sbrdsp_init_arm.o
-#OBJS-$(CONFIG_DCA_DECODER)             += arm/synth_filter_init_arm.o
+OBJS-$(CONFIG_DCA_DECODER)             += arm/synth_filter_init_arm.o
 OBJS-$(CONFIG_HEVC_DECODER)            += arm/hevcdsp_init_arm.o
 OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o
 OBJS-$(CONFIG_RV40_DECODER)            += arm/rv40dsp_init_arm.o
@@ -87,7 +87,7 @@ VFP-OBJS-$(CONFIG_FMTCONVERT)          += arm/fmtconvert_vfp.o
 VFP-OBJS-$(CONFIG_MDCT)                += arm/mdct_vfp.o
 
 # decoders/encoders
-#VFP-OBJS-$(CONFIG_DCA_DECODER)         += arm/synth_filter_vfp.o
+VFP-OBJS-$(CONFIG_DCA_DECODER)         += arm/synth_filter_vfp.o
 
 
 # NEON optimizations
@@ -126,7 +126,7 @@ NEON-OBJS-$(CONFIG_VP8DSP)             += arm/vp8dsp_init_neon.o        \
 NEON-OBJS-$(CONFIG_AAC_DECODER)        += arm/aacpsdsp_neon.o           \
                                           arm/sbrdsp_neon.o
 NEON-OBJS-$(CONFIG_LLAUDDSP)           += arm/lossless_audiodsp_neon.o
-#NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/synth_filter_neon.o
+NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/synth_filter_neon.o
 NEON-OBJS-$(CONFIG_HEVC_DECODER)       += arm/hevcdsp_init_neon.o       \
                                           arm/hevcdsp_deblock_neon.o    \
                                           arm/hevcdsp_idct_neon.o       \
