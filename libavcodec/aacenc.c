@@ -572,8 +572,16 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             }
 
             apply_window_and_mdct(s, &cpe->ch[ch], overlap);
-            if (isnan(cpe->ch->coeffs[0])) {
-                av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
+
+            if (isnan(cpe->ch[ch].coeffs[    0]) || isinf(cpe->ch[ch].coeffs[    0]) ||
+                isnan(cpe->ch[ch].coeffs[  128]) || isinf(cpe->ch[ch].coeffs[  128]) ||
+                isnan(cpe->ch[ch].coeffs[2*128]) || isinf(cpe->ch[ch].coeffs[2*128]) ||
+                isnan(cpe->ch[ch].coeffs[3*128]) || isinf(cpe->ch[ch].coeffs[3*128]) ||
+                isnan(cpe->ch[ch].coeffs[4*128]) || isinf(cpe->ch[ch].coeffs[4*128]) ||
+                isnan(cpe->ch[ch].coeffs[5*128]) || isinf(cpe->ch[ch].coeffs[5*128]) ||
+                isnan(cpe->ch[ch].coeffs[6*128]) || isinf(cpe->ch[ch].coeffs[6*128]) ||
+                isnan(cpe->ch[ch].coeffs[7*128]) || isinf(cpe->ch[ch].coeffs[7*128])) {
+                av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
                 return AVERROR(EINVAL);
             }
             avoid_clipping(s, &cpe->ch[ch]);
