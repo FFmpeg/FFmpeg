@@ -22,7 +22,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/channel_layout.h"
 #include "libavutil/mem.h"
 
 #include "dca.h"
@@ -7509,76 +7508,6 @@ DECLARE_ALIGNED(16, const float, ff_dca_lfe_fir_128)[256] = {
 };
 #undef SCALE
 
-
-#define SCALE(c) ((float)(c) / (256.0f * 32768.0f * 8388608.0f))
-DECLARE_ALIGNED(16, const float, ff_dca_lfe_xll_fir_64)[256] = {
-    SCALE(   6103), SCALE(  52170), SCALE(-558064), SCALE(1592440),
-    SCALE(6290049), SCALE(1502534), SCALE(-546669), SCALE(  53047),
-    SCALE(   1930), SCALE(  51089), SCALE(-568920), SCALE(1683709),
-    SCALE(6286575), SCALE(1414057), SCALE(-534782), SCALE(  53729),
-    SCALE(   2228), SCALE(  49794), SCALE(-579194), SCALE(1776276),
-    SCALE(6279634), SCALE(1327070), SCALE(-522445), SCALE(  54228),
-    SCALE(   2552), SCALE(  48275), SCALE(-588839), SCALE(1870070),
-    SCALE(6269231), SCALE(1241632), SCALE(-509702), SCALE(  54550),
-    SCALE(   2904), SCALE(  46523), SCALE(-597808), SCALE(1965017),
-    SCALE(6255380), SCALE(1157798), SCALE(-496595), SCALE(  54708),
-    SCALE(   3287), SCALE(  44529), SCALE(-606054), SCALE(2061044),
-    SCALE(6238099), SCALE(1075621), SCALE(-483164), SCALE(  54710),
-    SCALE(   3704), SCALE(  42282), SCALE(-613529), SCALE(2158071),
-    SCALE(6217408), SCALE( 995149), SCALE(-469451), SCALE(  54566),
-    SCALE(   4152), SCALE(  39774), SCALE(-620186), SCALE(2256019),
-    SCALE(6193332), SCALE( 916430), SCALE(-455494), SCALE(  54285),
-    SCALE(   4631), SCALE(  36995), SCALE(-625976), SCALE(2354805),
-    SCALE(6165900), SCALE( 839507), SCALE(-441330), SCALE(  53876),
-    SCALE(   5139), SCALE(  33937), SCALE(-630850), SCALE(2454343),
-    SCALE(6135146), SCALE( 764419), SCALE(-426998), SCALE(  53348),
-    SCALE(   5682), SCALE(  30591), SCALE(-634759), SCALE(2554547),
-    SCALE(6101107), SCALE( 691203), SCALE(-412531), SCALE(  52711),
-    SCALE(   6264), SCALE(  26948), SCALE(-637655), SCALE(2655326),
-    SCALE(6063824), SCALE( 619894), SCALE(-397966), SCALE(  51972),
-    SCALE(   6886), SCALE(  23001), SCALE(-639488), SCALE(2756591),
-    SCALE(6023343), SCALE( 550521), SCALE(-383335), SCALE(  51140),
-    SCALE(   7531), SCALE(  18741), SCALE(-640210), SCALE(2858248),
-    SCALE(5979711), SCALE( 483113), SCALE(-368671), SCALE(  50224),
-    SCALE(   8230), SCALE(  14162), SCALE(-639772), SCALE(2960201),
-    SCALE(5932981), SCALE( 417692), SCALE(-354003), SCALE(  49231),
-    SCALE(   8959), SCALE(   9257), SCALE(-638125), SCALE(3062355),
-    SCALE(5883210), SCALE( 354281), SCALE(-339362), SCALE(  48168),
-    SCALE(   9727), SCALE(   4018), SCALE(-635222), SCALE(3164612),
-    SCALE(5830457), SCALE( 292897), SCALE(-324777), SCALE(  47044),
-    SCALE(  10535), SCALE(  -1558), SCALE(-631014), SCALE(3266872),
-    SCALE(5774785), SCALE( 233555), SCALE(-310273), SCALE(  45866),
-    SCALE(  11381), SCALE(  -7480), SCALE(-625455), SCALE(3369035),
-    SCALE(5716260), SCALE( 176267), SCALE(-295877), SCALE(  44640),
-    SCALE(  12267), SCALE( -13750), SCALE(-618499), SCALE(3471000),
-    SCALE(5654952), SCALE( 121042), SCALE(-281613), SCALE(  43373),
-    SCALE(  13190), SCALE( -20372), SCALE(-610098), SCALE(3572664),
-    SCALE(5590933), SCALE(  67886), SCALE(-267505), SCALE(  42072),
-    SCALE(  14152), SCALE( -27352), SCALE(-600209), SCALE(3673924),
-    SCALE(5524280), SCALE(  16800), SCALE(-253574), SCALE(  40743),
-    SCALE(  15153), SCALE( -34691), SCALE(-588788), SCALE(3774676),
-    SCALE(5455069), SCALE( -32214), SCALE(-239840), SCALE(  39391),
-    SCALE(  16192), SCALE( -42390), SCALE(-575791), SCALE(3874816),
-    SCALE(5383383), SCALE( -79159), SCALE(-226323), SCALE(  38022),
-    SCALE(  17267), SCALE( -50453), SCALE(-561178), SCALE(3974239),
-    SCALE(5309305), SCALE(-124041), SCALE(-213041), SCALE(  36642),
-    SCALE(  18377), SCALE( -58879), SCALE(-544906), SCALE(4072841),
-    SCALE(5232922), SCALE(-166869), SCALE(-200010), SCALE(  35256),
-    SCALE(  19525), SCALE( -67667), SCALE(-526937), SCALE(4170517),
-    SCALE(5154321), SCALE(-207653), SCALE(-187246), SCALE(  33866),
-    SCALE(  20704), SCALE( -76817), SCALE(-507233), SCALE(4267162),
-    SCALE(5073593), SCALE(-246406), SCALE(-174764), SCALE(  32480),
-    SCALE(  21915), SCALE( -86327), SCALE(-485757), SCALE(4362672),
-    SCALE(4990831), SCALE(-283146), SCALE(-162575), SCALE(  31101),
-    SCALE(  23157), SCALE( -96193), SCALE(-462476), SCALE(4456942),
-    SCALE(4906129), SCALE(-317890), SCALE(-150692), SCALE(  29732),
-    SCALE(  24426), SCALE(-106412), SCALE(-437356), SCALE(4549871),
-    SCALE(4819584), SCALE(-350658), SCALE(-139125), SCALE(  28376),
-    SCALE(  25721), SCALE(-116977), SCALE(-410365), SCALE(4641355),
-    SCALE(4731293), SCALE(-381475), SCALE(-127884), SCALE(  27038),
-};
-#undef SCALE
-
 DECLARE_ALIGNED(16, const float, ff_dca_fir_64bands)[1024] = {
     /* Bank 0 */
     -7.1279389866041690e-8, -7.0950903150874990e-8,
@@ -8178,218 +8107,9 @@ const uint32_t ff_dca_inv_dmixtable[FF_DCA_INV_DMIXTABLE_SIZE] = {
       65536,
 };
 
-const float ff_dca_default_coeffs[10][6][2] = {
-    { { 0.707107, 0.707107 }, { 0.000000, 0.000000 },                                                                                                 }, // A [LFE]
-    { { 1.000000, 0.000000 }, { 0.000000, 1.000000 }, { 0.000000, 0.000000 },                                                                         }, // A + B (dual mono) [LFE]
-    { { 1.000000, 0.000000 }, { 0.000000, 1.000000 }, { 0.000000, 0.000000 },                                                                         }, // L + R (stereo) [LFE]
-    { { 1.000000, 0.000000 }, { 0.000000, 1.000000 }, { 0.000000, 0.000000 },                                                                         }, // (L+R) + (L-R) (sum-difference) [LFE]
-    { { 1.000000, 0.000000 }, { 0.000000, 1.000000 }, { 0.000000, 0.000000 },                                                                         }, // LT + RT (left and right total) [LFE]
-    { { 0.501187, 0.501187 }, { 0.707107, 0.000000 }, { 0.000000, 0.707107 }, { 0.000000, 0.000000 },                                                 }, // C + L + R [LFE]
-    { { 0.707107, 0.000000 }, { 0.000000, 0.707107 }, { 0.501187, 0.501187 }, { 0.000000, 0.000000 },                                                 }, // L + R + S [LFE]
-    { { 0.501187, 0.501187 }, { 0.707107, 0.000000 }, { 0.000000, 0.707107 }, { 0.501187, 0.501187 }, { 0.000000, 0.000000 },                         }, // C + L + R + S [LFE]
-    { { 0.707107, 0.000000 }, { 0.000000, 0.707107 }, { 0.501187, 0.000000 }, { 0.000000, 0.501187 }, { 0.000000, 0.000000 },                         }, // L + R + SL + SR [LFE]
-    { { 0.501187, 0.501187 }, { 0.707107, 0.000000 }, { 0.000000, 0.707107 }, { 0.501187, 0.000000 }, { 0.000000, 0.501187 }, { 0.000000, 0.000000 }, }, // C + L + R + SL + SR [LFE]
-};
-
 const int32_t ff_dca_sampling_freqs[16] = {
       8000,  16000, 32000, 64000, 128000, 22050,  44100,  88200,
     176400, 352800, 12000, 24000,  48000, 96000, 192000, 384000,
-};
-
-/* downmix coeffs
- *
- * TABLE 9
- * ______________________________________
- * Down-mix coefficients for 8-channel source
- * audio (5 + 3 format)
- * lt
- * cen- rt lt ctr rt
- * lt ter ctr center
- * rt srd srd srd
- * ______________________________________
- * 1 0.71 0.74 1.0 0.71 0.71 0.58 0.58 0.58
- * 2 left 1.0 0.89 0.71 0.46 0.71 0.50
- * rt 0.45 0.71 0.89 1.0 0.50 0.71
- * 3 lt 1.0 0.89 0.71 0.45
- * rt 0.45 0.71 0.89 1.0
- * srd 0.71 0.71 0.71
- * 4 lt 1.0 0.89 0.71 0.45
- * rt 0.45 0.71 0.89 1.0
- * lt srd 1.0 0.71
- * rt srd 0.71 0.71
- * 4 lt 1.0 0.5
- * ctr 0.87 1.0 0.87
- * rt 0.5 1.0
- * srd 0.71 0.71 0.71
- * 5 lt 1.0 0.5
- * ctr 0.87 1.0 0.87
- * rt 0.5 1.0
- * lt srd 1.0 0.71
- * rt srd 0.71 1.0
- * 6 lt 1.0 0.5
- * lt ctr 0.87 0.71
- * rt ctr 0.71 0.87
- * rt 0.5 1.0
- * lt srd 1.0 0.71
- * rt srd 0.71 1.0
- * 6 lt 1.0 0.5
- * ctr 0.86 1.0 0.86
- * rt 0.5 1.0
- * lt srd 1.0
- * ctr srd 1.0
- * rt srd 1.0
- * 7 lt 1.0
- * lt ctr 1.0
- * ctr 1.0
- * rt ctr 1.0
- * rt 1.0
- * lt srd 1.0 0.71
- * rt srd 0.71 1.0
- * 7 lt 1.0 0.5
- * lt ctr 0.87 0.71
- * rt ctr 0.71 0.87
- * rt 0.5 1.0
- * lt srd 1.0
- * ctr srd 1.0
- * rt srd 1.0
- * 8 lt 1.0 0.5
- * lt ctr 0.87 0.71
- * rt ctr 0.71 0.87
- * rt 0.5 1.0
- * lt 1 srd 0.87 0.35
- * lt 2 srd 0.5 0.61
- * rt 2 srd 0.61 0.50
- * rt 2 srd 0.35 0.87
- *
- * Generation of Lt Rt
- *
- * In the case when the playback system has analog or digital surround
- * multi-channel capability, a down matrix from 5, 4, or 3 channel to
- * Lt Rt may be desirable. In the case when the number of decoded audio
- * channels exceeds 5, 4 or 3 respectively a first stage down mix to 5,
- * 4 or 3 chs should be used as described above.
- *
- * The down matrixing equations for 5-channel source audio to a
- * two-channel Lt Rt playback system are given by:
- *
- * Left  = left  + 0.7 * center - 0.7 * (lt surround + rt surround)
- *
- * Right = right + 0.7 * center + 0.7 * (lt surround + rt surround)
- *
- * Embedded mixing to 2-channel
- *
- * One concern arising from the proliferation of multi-channel audio
- * systems is that most home systems presently have only two channel
- * playback capability. To accommodate this a fixed 2-channel down
- * matrix processes is commonly used following the multi-channel
- * decoding stage. However, for music only applications the image
- * quality etc. of the down matrixed signal may not match that of an
- * equivalent stereo recording found on CD.
- *
- * The concept of embedded mixing is to allow the producer to
- * dynamically specify the matrixing coefficients within the audio
- * frame itself. In this way the stereo down mix at the decoder may be
- * better matched to a 2-channel playback environment.
- *
- * CHS*2, 7-bit down mix indexes (MCOEFFS) are transmitted along with
- * the multi-channel audio once in every frame. The indexes are
- * converted to attenuation factors using a 7 bit LUT. The 2-ch down
- * mix equations are as follows,
- *
- * Left Ch  = sum (MCOEFF[n]       * Ch[n]) for n=1, CHS
- *
- * Right Ch = sum (MCOEFF[n + CHS] * Ch[n]) for n=1, CHS
- *
- * where Ch(n) represents the subband samples in the (n)th audio channel.
- */
-
-const uint32_t ff_dca_map_xxch_to_native[28] = {
-    AV_CH_FRONT_CENTER,
-    AV_CH_FRONT_LEFT,
-    AV_CH_FRONT_RIGHT,
-    AV_CH_SIDE_LEFT,
-    AV_CH_SIDE_RIGHT,
-    AV_CH_LOW_FREQUENCY,
-    AV_CH_BACK_CENTER,
-    AV_CH_BACK_LEFT,
-    AV_CH_BACK_RIGHT,
-    AV_CH_SIDE_LEFT,           /* side surround left -- dup sur side L */
-    AV_CH_SIDE_RIGHT,          /* side surround right -- dup sur side R */
-    AV_CH_FRONT_LEFT_OF_CENTER,
-    AV_CH_FRONT_RIGHT_OF_CENTER,
-    AV_CH_TOP_FRONT_LEFT,
-    AV_CH_TOP_FRONT_CENTER,
-    AV_CH_TOP_FRONT_RIGHT,
-    AV_CH_LOW_FREQUENCY,        /* lfe2 -- duplicate lfe1 position */
-    AV_CH_FRONT_LEFT_OF_CENTER, /* side front left -- dup front cntr L */
-    AV_CH_FRONT_RIGHT_OF_CENTER,/* side front right -- dup front cntr R */
-    AV_CH_TOP_CENTER,           /* overhead */
-    AV_CH_TOP_FRONT_LEFT,       /* side high left -- dup */
-    AV_CH_TOP_FRONT_RIGHT,      /* side high right -- dup */
-    AV_CH_TOP_BACK_CENTER,
-    AV_CH_TOP_BACK_LEFT,
-    AV_CH_TOP_BACK_RIGHT,
-    AV_CH_BACK_CENTER,          /* rear low center -- dup */
-    AV_CH_BACK_LEFT,            /* rear low left -- dup */
-    AV_CH_BACK_RIGHT            /* read low right -- dup  */
-};
-
-/* -1 are reserved or unknown */
-const int ff_dca_ext_audio_descr_mask[8] = {
-    DCA_EXT_XCH,
-    -1,
-    DCA_EXT_X96,
-    DCA_EXT_XCH | DCA_EXT_X96,
-    -1,
-    -1,
-    DCA_EXT_XXCH,
-    -1,
-};
-
-/* Tables for mapping dts channel configurations to libavcodec multichannel api.
- * Some compromises have been made for special configurations. Most configurations
- * are never used so complete accuracy is not needed.
- *
- * L = left, R = right, C = center, S = surround, F = front, R = rear, T = total, OV = overhead.
- * S  -> side, when both rear and back are configured move one of them to the side channel
- * OV -> center back
- * All 2 channel configurations -> AV_CH_LAYOUT_STEREO
- */
-const uint64_t ff_dca_core_channel_layout[16] = {
-    AV_CH_FRONT_CENTER,                                                     ///< 1, A
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, A + B (dual mono)
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, L + R (stereo)
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, (L + R) + (L - R) (sum-difference)
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, LT + RT (left and right total)
-    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER,                               ///< 3, C + L + R
-    AV_CH_LAYOUT_STEREO | AV_CH_BACK_CENTER,                                ///< 3, L + R + S
-    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER | AV_CH_BACK_CENTER,           ///< 4, C + L + R + S
-    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,               ///< 4, L + R + SL + SR
-
-    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER | AV_CH_SIDE_LEFT |
-    AV_CH_SIDE_RIGHT,                                                       ///< 5, C + L + R + SL + SR
-
-    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT |
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER,               ///< 6, CL + CR + L + R + SL + SR
-
-    AV_CH_LAYOUT_STEREO | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT |
-    AV_CH_FRONT_CENTER  | AV_CH_BACK_CENTER,                                ///< 6, C + L + R + LR + RR + OV
-
-    AV_CH_FRONT_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER |
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_BACK_CENTER   |
-    AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,                                     ///< 6, CF + CR + LF + RF + LR + RR
-
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_CENTER   |
-    AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_LAYOUT_STEREO |
-    AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,                                     ///< 7, CL + C + CR + L + R + SL + SR
-
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER |
-    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT |
-    AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,                                     ///< 8, CL + CR + L + R + SL1 + SL2 + SR1 + SR2
-
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_CENTER   |
-    AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_LAYOUT_STEREO |
-    AV_CH_SIDE_LEFT | AV_CH_BACK_CENTER | AV_CH_SIDE_RIGHT,                 ///< 8, CL + C + CR + L + R + SL + S + SR
 };
 
 const int8_t ff_dca_lfe_index[16] = {
@@ -8415,25 +8135,6 @@ const int8_t ff_dca_channel_reorder_lfe[16][9] = {
     { 4,  2,  5,  0,  1,  6,  8,  7, -1 },
 };
 
-const int8_t ff_dca_channel_reorder_lfe_xch[16][9] = {
-    { 0,  2, -1, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
-    { 2,  0,  1,  4, -1, -1, -1, -1, -1 },
-    { 0,  1,  3,  4, -1, -1, -1, -1, -1 },
-    { 2,  0,  1,  4,  5, -1, -1, -1, -1 },
-    { 0,  1,  4,  5,  3, -1, -1, -1, -1 },
-    { 2,  0,  1,  5,  6,  4, -1, -1, -1 },
-    { 3,  4,  0,  1,  6,  7,  5, -1, -1 },
-    { 2,  0,  1,  4,  5,  6,  7, -1, -1 },
-    { 0,  6,  4,  5,  2,  3,  7, -1, -1 },
-    { 4,  2,  5,  0,  1,  7,  8,  6, -1 },
-    { 5,  6,  0,  1,  8,  3,  9,  4,  7 },
-    { 4,  2,  5,  0,  1,  6,  9,  8,  7 },
-};
-
 const int8_t ff_dca_channel_reorder_nolfe[16][9] = {
     { 0, -1, -1, -1, -1, -1, -1, -1, -1 },
     { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
@@ -8451,25 +8152,6 @@ const int8_t ff_dca_channel_reorder_nolfe[16][9] = {
     { 3,  2,  4,  0,  1,  5,  6, -1, -1 },
     { 4,  5,  0,  1,  6,  2,  7,  3, -1 },
     { 3,  2,  4,  0,  1,  5,  7,  6, -1 },
-};
-
-const int8_t ff_dca_channel_reorder_nolfe_xch[16][9] = {
-    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
-    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
-    { 2,  0,  1,  3, -1, -1, -1, -1, -1 },
-    { 0,  1,  2,  3, -1, -1, -1, -1, -1 },
-    { 2,  0,  1,  3,  4, -1, -1, -1, -1 },
-    { 0,  1,  3,  4,  2, -1, -1, -1, -1 },
-    { 2,  0,  1,  4,  5,  3, -1, -1, -1 },
-    { 2,  3,  0,  1,  5,  6,  4, -1, -1 },
-    { 2,  0,  1,  3,  4,  5,  6, -1, -1 },
-    { 0,  5,  3,  4,  1,  2,  6, -1, -1 },
-    { 3,  2,  4,  0,  1,  6,  7,  5, -1 },
-    { 4,  5,  0,  1,  7,  2,  8,  3,  6 },
-    { 3,  2,  4,  0,  1,  5,  8,  7,  6 },
 };
 
 const uint16_t ff_dca_vlc_offs[63] = {

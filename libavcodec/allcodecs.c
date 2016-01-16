@@ -391,7 +391,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(BINKAUDIO_RDFT,    binkaudio_rdft);
     REGISTER_DECODER(BMV_AUDIO,         bmv_audio);
     REGISTER_DECODER(COOK,              cook);
-    REGISTER_ENCDEC (DCA,               dca);
+    REGISTER_ENCODER(DCA,               dca);
     REGISTER_DECODER(DSD_LSBF,          dsd_lsbf);
     REGISTER_DECODER(DSD_MSBF,          dsd_msbf);
     REGISTER_DECODER(DSD_LSBF_PLANAR,   dsd_lsbf_planar);

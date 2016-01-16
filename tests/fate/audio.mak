@@ -21,12 +21,7 @@ fate-dca-core: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
 fate-dca-core: CMP = oneoff
 fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
 
-FATE_DCA-$(CONFIG_DTS_DEMUXER) += fate-dca-xll
-fate-dca-xll: CMD = pcm -disable_xll 0 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts
-fate-dca-xll: CMP = oneoff
-fate-dca-xll: REF = $(SAMPLES)/dts/master_audio_7.1_24bit_2.pcm
-
-FATE_SAMPLES_AUDIO-$(CONFIG_DCA_DECODER) += $(FATE_DCA-yes)
+#FATE_SAMPLES_AUDIO-$(CONFIG_DCA_DECODER) += $(FATE_DCA-yes)
 fate-dca: $(FATE_DCA-yes)
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSICIN, DSICINAUDIO) += fate-delphine-cin-audio
@@ -36,7 +31,7 @@ FATE_SAMPLES_AUDIO-$(call DEMDEC, DSS, DSS_SP) += fate-dss-lp fate-dss-sp
 fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30
 fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, DTS, DCA) += fate-dts_es
+#FATE_SAMPLES_AUDIO-$(call DEMDEC, DTS, DCA) += fate-dts_es
 fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
 fate-dts_es: CMP = oneoff
 fate-dts_es: REF = $(SAMPLES)/dts/dts_es_2.pcm
