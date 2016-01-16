@@ -733,6 +733,83 @@ afade=t=out:st=875:d=25
 @end example
 @end itemize
 
+@section afftfilt
+Apply arbitrary expressions to samples in frequency domain.
+
+@table @option
+@item real
+Set frequency domain real expression for each separate channel separated
+by '|'. Default is "1".
+If the number of input channels is greater than the number of
+expressions, the last specified expression is used for the remaining
+output channels.
+
+@item imag
+Set frequency domain imaginary expression for each separate channel
+separated by '|'. If not set, @var{real} option is used.
+
+Each expression in @var{real} and @var{imag} can contain the following
+constants:
+
+@table @option
+@item sr
+sample rate
+
+@item b
+current frequency bin number
+
+@item nb
+number of available bins
+
+@item ch
+channel number of the current expression
+
+@item chs
+number of channels
+
+@item pts
+current frame pts
+@end table
+
+@item win_size
+Set window size.
+
+It accepts the following values:
+@table @samp
+@item w16
+@item w32
+@item w64
+@item w128
+@item w256
+@item w512
+@item w1024
+@item w2048
+@item w4096
+@item w8192
+@item w16384
+@item w32768
+@item w65536
+@end table
+Default is @code{w4096}
+
+@item win_func
+Set window function. Default is @code{hann}.
+
+@item overlap
+Set window overlap. If set to 1, the recommended overlap for selected
+window function will be picked. Default is @code{0.75}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Increase first 50 bins by 0.1 and lower all other frequencies by factor of 10:
+@example
+afftfilt="1.1*between(b\,0\,49)+0.1*between(b\,50\,f)"
+@end example
+@end itemize
+
 @anchor{aformat}
 @section aformat
 

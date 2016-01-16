@@ -52,6 +52,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(AEMPHASIS,      aemphasis,      af);
     REGISTER_FILTER(AEVAL,          aeval,          af);
     REGISTER_FILTER(AFADE,          afade,          af);
+    REGISTER_FILTER(AFFTFILT,       afftfilt,       af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
     REGISTER_FILTER(AGATE,          agate,          af);
     REGISTER_FILTER(AINTERLEAVE,    ainterleave,    af);
