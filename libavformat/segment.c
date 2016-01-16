@@ -67,6 +67,9 @@ static int segment_mux_init(AVFormatContext *s)
 
     oc->oformat            = seg->oformat;
     oc->interrupt_callback = s->interrupt_callback;
+    oc->opaque             = s->opaque;
+    oc->io_close           = s->io_close;
+    oc->io_open            = s->io_open;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st;
@@ -86,8 +89,7 @@ static int segment_hls_window(AVFormatContext *s, int last)
     int i, ret = 0;
     char buf[1024];
 
-    if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0)
+    if ((ret = s->io_open(s, &seg->pb, seg->list, AVIO_FLAG_WRITE, NULL)) < 0)
         goto fail;
 
     avio_printf(seg->pb, "#EXTM3U\n");
@@ -116,7 +118,8 @@ static int segment_hls_window(AVFormatContext *s, int last)
     if (last)
         avio_printf(seg->pb, "#EXT-X-ENDLIST\n");
 fail:
-    avio_closep(&seg->pb);
+    ff_format_io_close(s, &seg->pb);
+
     return ret;
 }
 
@@ -141,8 +144,7 @@ static int segment_start(AVFormatContext *s, int write_header)
                               s->filename, c->number++) < 0)
         return AVERROR(EINVAL);
 
-    if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, NULL)) < 0)
+    if ((err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0)
         return err;
 
     if (oc->oformat->priv_class && oc->priv_data)
@@ -163,7 +165,7 @@ static int segment_end(AVFormatContext *oc, int write_trailer)
     av_write_frame(oc, NULL); /* Flush any buffered data (fragmented mp4) */
     if (write_trailer)
         av_write_trailer(oc);
-    avio_close(oc->pb);
+    ff_format_io_close(oc, &oc->pb);
 
     return ret;
 }
@@ -190,7 +192,7 @@ static void close_null_ctx(AVIOContext *pb)
 
 static void seg_free_context(SegmentContext *seg)
 {
-    avio_closep(&seg->pb);
+    ff_format_io_close(seg->avf, &seg->pb);
     avformat_free_context(seg->avf);
     seg->avf = NULL;
 }
@@ -208,8 +210,7 @@ static int seg_write_header(AVFormatContext *s)
         seg->individual_header_trailer = 0;
 
     if (seg->list && seg->list_type != LIST_HLS)
-        if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0)
+        if ((ret = s->io_open(s, &seg->pb, seg->list, AVIO_FLAG_WRITE, NULL)) < 0)
             goto fail;
 
     for (i = 0; i < s->nb_streams; i++)
@@ -245,8 +246,7 @@ static int seg_write_header(AVFormatContext *s)
     }
 
     if (seg->write_header_trailer) {
-        if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0)
+        if ((ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0)
             goto fail;
     } else {
         if ((ret = open_null_ctx(&oc->pb)) < 0)
@@ -254,14 +254,13 @@ static int seg_write_header(AVFormatContext *s)
     }
 
     if ((ret = avformat_write_header(oc, NULL)) < 0) {
-        avio_close(oc->pb);
+        ff_format_io_close(oc, &oc->pb);
         goto fail;
     }
 
     if (!seg->write_header_trailer) {
         close_null_ctx(oc->pb);
-        if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0)
+        if ((ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0)
             goto fail;
     }
 
@@ -321,9 +320,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_printf(seg->pb, "%s\n", oc->filename);
                 avio_flush(seg->pb);
                 if (seg->size && !(seg->number % seg->size)) {
-                    avio_closep(&seg->pb);
-                    if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
-                                          &s->interrupt_callback, NULL)) < 0)
+                    ff_format_io_close(s, &seg->pb);
+                    if ((ret = s->io_open(s, &seg->pb, seg->list,
+                                          AVIO_FLAG_WRITE, NULL)) < 0)
                         goto fail;
                 }
             }
@@ -368,7 +367,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
     }
 
 fail:
-    avio_close(seg->pb);
+    ff_format_io_close(s, &seg->pb);
     avformat_free_context(oc);
     return ret;
 }

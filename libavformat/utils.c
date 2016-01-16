@@ -3176,3 +3176,10 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
     sd->size = size;
     return data;
 }
+
+void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
+{
+    if (*pb)
+        s->io_close(s, *pb);
+    *pb = NULL;
+}

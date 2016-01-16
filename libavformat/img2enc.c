@@ -72,8 +72,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for (i = 0; i < 3; i++) {
-            if (avio_open2(&pb[i], img->tmp, AVIO_FLAG_WRITE,
-                           &s->interrupt_callback, NULL) < 0) {
+            if (s->io_open(s, &pb[i], img->tmp, AVIO_FLAG_WRITE, NULL) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->tmp);
                 return AVERROR(EIO);
             }
@@ -91,8 +90,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[0], pkt->data, ysize);
         avio_write(pb[1], pkt->data + ysize,                           (pkt->size - ysize) / 2);
         avio_write(pb[2], pkt->data + ysize + (pkt->size - ysize) / 2, (pkt->size - ysize) / 2);
-        avio_close(pb[1]);
-        avio_close(pb[2]);
+        ff_format_io_close(s, &pb[1]);
+        ff_format_io_close(s, &pb[2]);
     } else {
         if (ff_guess_image2_codec(s->filename) == AV_CODEC_ID_JPEG2000) {
             AVStream *st = s->streams[0];
@@ -122,7 +121,7 @@ error:
     }
     avio_flush(pb[0]);
     if (!img->is_pipe) {
-        avio_close(pb[0]);
+        ff_format_io_close(s, &pb[0]);
         ff_rename(img->tmp, filename);
     }
 

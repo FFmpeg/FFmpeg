@@ -94,6 +94,7 @@ struct variant {
 };
 
 typedef struct HLSContext {
+    AVFormatContext *ctx;
     int n_variants;
     struct variant **variants;
     int cur_seq_no;
@@ -207,7 +208,7 @@ static int open_in(HLSContext *c, AVIOContext **in, const char *url)
 
     av_dict_copy(&tmp, c->avio_opts, 0);
 
-    ret = avio_open2(in, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
+    ret = c->ctx->io_open(c->ctx, in, url, AVIO_FLAG_READ, &tmp);
 
     av_dict_free(&tmp);
     return ret;
@@ -370,7 +371,7 @@ static int parse_playlist(HLSContext *c, const char *url,
 fail:
     av_free(new_url);
     if (close_in)
-        avio_close(in);
+        ff_format_io_close(c->ctx, &in);
     return ret;
 }
 
@@ -514,6 +515,7 @@ static int hls_read_header(AVFormatContext *s)
     HLSContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;
 
+    c->ctx                = s;
     c->interrupt_callback = &s->interrupt_callback;
 
     if ((ret = parse_playlist(c, s->filename, NULL, s->pb)) < 0)

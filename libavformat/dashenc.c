@@ -444,7 +444,7 @@ static int write_manifest(AVFormatContext *s, int final)
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
 
     snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", s->filename);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -532,7 +532,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "\t</Period>\n");
     avio_printf(out, "</MPD>\n");
     avio_flush(out);
-    avio_close(out);
+    ff_format_io_close(s, &out);
     return ff_rename(temp_filename, s->filename);
 }
 
@@ -604,6 +604,9 @@ static int dash_write_header(AVFormatContext *s)
         os->ctx = ctx;
         ctx->oformat = oformat;
         ctx->interrupt_callback = s->interrupt_callback;
+        ctx->opaque             = s->opaque;
+        ctx->io_close           = s->io_close;
+        ctx->io_open            = s->io_open;
 
         if (!(st = avformat_new_stream(ctx, NULL))) {
             ret = AVERROR(ENOMEM);

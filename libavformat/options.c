@@ -90,11 +90,25 @@ static const AVClass av_format_context_class = {
     .child_class_next = format_child_class_next,
 };
 
+static int io_open_default(AVFormatContext *s, AVIOContext **pb,
+                           const char *url, int flags, AVDictionary **options)
+{
+    return avio_open2(pb, url, flags, &s->interrupt_callback, options);
+}
+
+static void io_close_default(AVFormatContext *s, AVIOContext *pb)
+{
+    avio_close(pb);
+}
+
 static void avformat_get_context_defaults(AVFormatContext *s)
 {
     memset(s, 0, sizeof(AVFormatContext));
 
     s->av_class = &av_format_context_class;
+
+    s->io_open  = io_open_default;
+    s->io_close = io_close_default;
 
     av_opt_set_defaults(s);
 }

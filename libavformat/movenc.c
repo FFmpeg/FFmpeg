@@ -4188,7 +4188,7 @@ static int shift_data(AVFormatContext *s)
      * writing, so we re-open the same output, but for reading. It also avoids
      * a read/seek/write/seek back and forth. */
     avio_flush(s->pb);
-    ret = avio_open(&read_pb, s->filename, AVIO_FLAG_READ);
+    ret = s->io_open(s, &read_pb, s->filename, AVIO_FLAG_READ, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to re-open %s output file for "
                "the second pass (faststart)\n", s->filename);
@@ -4220,7 +4220,7 @@ static int shift_data(AVFormatContext *s)
         avio_write(s->pb, read_buf[read_buf_id], n);
         pos += n;
     } while (pos < pos_end);
-    avio_close(read_pb);
+    ff_format_io_close(s, &read_pb);
 
 end:
     av_free(buf);

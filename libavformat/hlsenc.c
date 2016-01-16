@@ -74,6 +74,9 @@ static int hls_mux_init(AVFormatContext *s)
 
     oc->oformat            = hls->oformat;
     oc->interrupt_callback = s->interrupt_callback;
+    oc->opaque             = s->opaque;
+    oc->io_open            = s->io_open;
+    oc->io_close           = s->io_close;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st;
@@ -140,8 +143,7 @@ static int hls_window(AVFormatContext *s, int last)
     int64_t sequence = FFMAX(hls->start_sequence, hls->sequence - hls->size);
 
     snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", s->filename);
-    if ((ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, NULL)) < 0)
+    if ((ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL)) < 0)
         goto fail;
 
     for (en = hls->list; en; en = en->next) {
@@ -178,7 +180,7 @@ static int hls_window(AVFormatContext *s, int last)
         avio_printf(out, "#EXT-X-ENDLIST\n");
 
 fail:
-    avio_closep(&out);
+    ff_format_io_close(s, &out);
     if (ret >= 0)
         ff_rename(temp_filename, s->filename);
     return ret;
@@ -195,8 +197,7 @@ static int hls_start(AVFormatContext *s)
         return AVERROR(EINVAL);
     c->number++;
 
-    if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, NULL)) < 0)
+    if ((err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0)
         return err;
 
     if (oc->oformat->priv_class && oc->priv_data)
@@ -300,7 +301,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         hls->duration = 0;
 
         av_write_frame(oc, NULL); /* Flush any buffered data */
-        avio_close(oc->pb);
+        ff_format_io_close(s, &oc->pb);
 
         ret = hls_start(s);
 
@@ -324,7 +325,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
     AVFormatContext *oc = hls->avf;
 
     av_write_trailer(oc);
-    avio_closep(&oc->pb);
+    ff_format_io_close(s, &oc->pb);
     avformat_free_context(oc);
     av_free(hls->basename);
     append_entry(hls, hls->duration);

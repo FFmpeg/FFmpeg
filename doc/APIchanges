@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavf 57.3.0 - avformat.h
+  Add AVFormatContext.opaque, io_open and io_close, allowing custom IO
+  for muxers and demuxers that open additional files.
+
 2015-xx-xx - xxxxxxx - lavc 57.12.0 - avcodec.h
   Add AVCodecDescriptor.profiles and avcodec_profile_name().
 

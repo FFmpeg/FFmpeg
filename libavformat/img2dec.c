@@ -238,8 +238,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                                   s->img_number) < 0 && s->img_number > 1)
             return AVERROR(EIO);
         for (i = 0; i < 3; i++) {
-            if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
-                           &s1->interrupt_callback, NULL) < 0) {
+            if (s1->io_open(s1, &f[i], filename, AVIO_FLAG_READ, NULL) < 0) {
                 if (i >= 1)
                     break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",
@@ -273,7 +272,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (f[i]) {
             ret[i] = avio_read(f[i], pkt->data + pkt->size, size[i]);
             if (!s->is_pipe)
-                avio_close(f[i]);
+                ff_format_io_close(s1, &f[i]);
             if (ret[i] > 0)
                 pkt->size += ret[i];
         }

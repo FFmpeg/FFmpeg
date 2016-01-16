@@ -2400,8 +2400,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     }
 }
 
-static int mov_open_dref(AVIOContext **pb, char *src, MOVDref *ref,
-                         AVIOInterruptCB *int_cb)
+static int mov_open_dref(AVFormatContext *s, AVIOContext **pb, char *src,
+                         MOVDref *ref)
 {
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
@@ -2436,7 +2436,7 @@ static int mov_open_dref(AVIOContext **pb, char *src, MOVDref *ref,
 
             av_strlcat(filename, ref->path + l + 1, 1024);
 
-            if (!avio_open2(pb, filename, AVIO_FLAG_READ, int_cb, NULL))
+            if (!s->io_open(s, pb, filename, AVIO_FLAG_READ, NULL))
                 return 0;
         }
     }
@@ -2485,7 +2485,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         MOVDref *dref = &sc->drefs[sc->dref_id - 1];
         if (c->enable_drefs) {
-            if (mov_open_dref(&sc->pb, c->fc->filename, dref, &c->fc->interrupt_callback) < 0)
+            if (mov_open_dref(c->fc, &sc->pb, c->fc->filename, dref) < 0)
                 av_log(c->fc, AV_LOG_ERROR,
                        "stream %d, error opening alias: path='%s', dir='%s', "
                        "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
@@ -3335,7 +3335,7 @@ static int mov_read_close(AVFormatContext *s)
         }
         av_freep(&sc->drefs);
         if (sc->pb && sc->pb != s->pb)
-            avio_close(sc->pb);
+            ff_format_io_close(s, &sc->pb);
 
         av_freep(&sc->chunk_offsets);
         av_freep(&sc->stsc_data);

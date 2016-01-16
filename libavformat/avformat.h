@@ -1229,6 +1229,39 @@ typedef struct AVFormatContext {
      * Must not be accessed in any way by callers.
      */
     AVFormatInternal *internal;
+
+    /**
+     * Arbitrary user data set by the caller.
+     */
+    void *opaque;
+
+    /**
+     * A callback for opening new IO streams.
+     *
+     * Certain muxers or demuxers (e.g. for various playlist-based formats) need
+     * to open additional files during muxing or demuxing. This callback allows
+     * the caller to provide custom IO in such cases.
+     *
+     * @param s the format context
+     * @param pb on success, the newly opened IO context should be returned here
+     * @param url the url to open
+     * @param flags a combination of AVIO_FLAG_*
+     * @param options a dictionary of additional options, with the same
+     *                semantics as in avio_open2()
+     * @return 0 on success, a negative AVERROR code on failure
+     *
+     * @note Certain muxers and demuxers do nesting, i.e. they open one or more
+     * additional internal format contexts. Thus the AVFormatContext pointer
+     * passed to this callback may be different from the one facing the caller.
+     * It will, however, have the same 'opaque' field.
+     */
+    int (*io_open)(struct AVFormatContext *s, AVIOContext **pb, const char *url,
+                   int flags, AVDictionary **options);
+
+    /**
+     * A callback for closing the streams opened with AVFormatContext.io_open().
+     */
+    void (*io_close)(struct AVFormatContext *s, AVIOContext *pb);
 } AVFormatContext;
 
 typedef struct AVPacketList {
