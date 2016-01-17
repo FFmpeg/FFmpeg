@@ -195,6 +195,7 @@ External library support:
   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
   --enable-libmfx          enable HW acceleration through libmfx
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
+  --enable-libnpp          enable NVIDIA Performance Primitives-based code [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -1222,6 +1223,7 @@ EXTERNAL_LIBRARY_LIST="
     libkvazaar
     libmfx
     libmp3lame
+    libnpp
     libopencore_amrnb
     libopencore_amrwb
     libopencv
@@ -2359,6 +2361,7 @@ interlace_filter_deps="gpl"
 ocv_filter_deps="libopencv"
 resample_filter_deps="avresample"
 scale_filter_deps="swscale"
+scale_npp_filter_deps="cuda libnpp"
 scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
@@ -4024,6 +4027,7 @@ die_license_disabled gpl x11grab
 die_license_disabled nonfree cuda
 die_license_disabled nonfree libfaac
 die_license_disabled nonfree libfdk_aac
+die_license_disabled nonfree libnpp
 die_license_disabled nonfree nvenc
 die_license_disabled nonfree openssl
 
@@ -4520,6 +4524,7 @@ enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -li
 enabled libkvazaar        && require_pkg_config "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
 enabled libmfx            && require_pkg_config libmfx "mfx/mfxvideo.h" MFXInit
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
+enabled libnpp            && require libnpp npp.h nppGetLibVersion -lnppi -lnppc
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
