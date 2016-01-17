@@ -255,13 +255,13 @@ const PixelFormatTag avpriv_pix_fmt_bps_avi[] = {
 };
 
 const PixelFormatTag avpriv_pix_fmt_bps_mov[] = {
-    { AV_PIX_FMT_MONOWHITE, 1 },
+    { AV_PIX_FMT_PAL8,      1 },
     { AV_PIX_FMT_PAL8,      2 },
     { AV_PIX_FMT_PAL8,      4 },
     { AV_PIX_FMT_PAL8,      8 },
     { AV_PIX_FMT_RGB555BE, 16 },
     { AV_PIX_FMT_RGB24,    24 },
     { AV_PIX_FMT_ARGB,     32 },
-    { AV_PIX_FMT_MONOWHITE,33 },
+    { AV_PIX_FMT_PAL8,     33 },
     { AV_PIX_FMT_NONE,      0 },
 };
