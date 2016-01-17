@@ -95,8 +95,11 @@ cglobal v210_planar_pack_10, 5, 5, 4+cpuflag(avx2), y, u, v, dst, width
 
 INIT_XMM ssse3
 v210_planar_pack_10
+
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 v210_planar_pack_10
+%endif
 
 %macro v210_planar_pack_8 0
 
@@ -168,5 +171,8 @@ INIT_XMM ssse3
 v210_planar_pack_8
 INIT_XMM avx
 v210_planar_pack_8
+
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 v210_planar_pack_8
+%endif
