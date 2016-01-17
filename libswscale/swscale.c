@@ -895,10 +895,18 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     const uint8_t *src2[4];
     uint8_t *dst2[4];
     uint8_t *rgb0_tmp = NULL;
+    int macro_height = isBayer(c->srcFormat) ? 2 : (1 << c->chrSrcVSubSample);
 
     if (!srcStride || !dstStride || !dst || !srcSlice) {
         av_log(c, AV_LOG_ERROR, "One of the input parameters to sws_scale() is NULL, please check the calling code\n");
         return 0;
+    }
+
+    if ((srcSliceY & (macro_height-1)) ||
+        ((srcSliceH& (macro_height-1)) && srcSliceY + srcSliceH != c->srcH) ||
+        srcSliceY + srcSliceH > c->srcH) {
+        av_log(c, AV_LOG_ERROR, "Slice parameters %d, %d are invalid\n", srcSliceY, srcSliceH);
+        return AVERROR(EINVAL);
     }
     if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH) {
         ret = sws_scale(c->cascaded_context[0],
