@@ -160,7 +160,7 @@ static inline void quantize_coefs(double *coef, int *idx, float *lpc, int order,
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 {
     TemporalNoiseShaping *tns = &sce->tns;
-    int w, w2, g, count = 0;
+    int w, g, count = 0;
     double gain, coefs[MAX_LPC_ORDER];
     const int mmm = FFMIN(sce->ics.tns_max_bands, sce->ics.max_sfb);
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
