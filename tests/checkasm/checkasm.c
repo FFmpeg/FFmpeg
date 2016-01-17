@@ -99,6 +99,9 @@ static const struct {
     #if CONFIG_VP9_DECODER
         { "vp9dsp", checkasm_check_vp9dsp },
     #endif
+    #if CONFIG_VIDEODSP
+        { "videodsp", checkasm_check_videodsp },
+    #endif
 #endif
     { NULL }
 };

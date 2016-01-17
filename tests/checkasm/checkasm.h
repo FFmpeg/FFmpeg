@@ -42,6 +42,7 @@ void checkasm_check_pixblockdsp(void);
 void checkasm_check_synth_filter(void);
 void checkasm_check_v210enc(void);
 void checkasm_check_vp9dsp(void);
+void checkasm_check_videodsp(void);
 
 void *checkasm_check_func(void *func, const char *name, ...) av_printf_format(2, 3);
 int checkasm_bench_func(void);
