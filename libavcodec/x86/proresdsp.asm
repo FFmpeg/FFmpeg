@@ -54,7 +54,7 @@ cextern pw_8
 cextern pw_512
 cextern pw_1019
 
-section .text align=16
+SECTION .text
 
 ; interleave data while maintaining source
 ; %1=type, %2=dstlo, %3=dsthi, %4=src, %5=interleave
