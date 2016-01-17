@@ -27,6 +27,7 @@
 
 extern "C" {
 #include "avcodec.h"
+#include "libavutil/imgutils.h"
 }
 
 #include "libutvideo.h"
@@ -93,7 +94,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     }
 
     /* Only allocate the buffer once */
-    utv->buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    utv->buf_size = av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
 #ifdef UTVF_UQY2
     if (format == UTVF_v210)
         utv->buf_size += avctx->height * ((avctx->width + 47) / 48) * 128; // the linesize used by the decoder, this does not seem to be exported

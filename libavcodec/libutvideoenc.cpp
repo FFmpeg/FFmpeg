@@ -27,6 +27,7 @@
 
 extern "C" {
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "internal.h"
 }
@@ -94,7 +95,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
      * We use this buffer to hold the data that Ut Video returns,
      * since we cannot decode planes separately with it.
      */
-    ret = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    ret = av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
     if (ret < 0) {
         av_free(info);
         return ret;

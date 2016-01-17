@@ -25,6 +25,7 @@
  */
 
 #include "libavcodec/raw.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
@@ -80,7 +81,7 @@ static int frm_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     if (s->count)
         return AVERROR_EOF;
 
-    packet_size = avpicture_get_size(stc->pix_fmt, stc->width, stc->height);
+    packet_size = av_image_get_buffer_size(stc->pix_fmt, stc->width, stc->height, 1);
     if (packet_size < 0)
         return AVERROR_INVALIDDATA;
 

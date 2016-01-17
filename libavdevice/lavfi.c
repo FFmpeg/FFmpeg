@@ -30,6 +30,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/file.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -430,7 +431,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     stream_idx = lavfi->sink_stream_map[min_pts_sink_idx];
 
     if (frame->width /* FIXME best way of testing a video */) {
-        size = avpicture_get_size(frame->format, frame->width, frame->height);
+        size = av_image_get_buffer_size(frame->format, frame->width, frame->height, 1);
         if ((ret = av_new_packet(pkt, size)) < 0)
             return ret;
 
