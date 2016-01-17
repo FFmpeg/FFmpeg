@@ -35,6 +35,8 @@ typedef struct aacPlusAudioContext {
     unsigned long samples_input;
 } aacPlusAudioContext;
 
+static int aacPlus_encode_close(AVCodecContext *avctx);
+
 static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
 {
     aacPlusAudioContext *s = avctx->priv_data;
@@ -67,6 +69,7 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
     aacplus_cfg->inputFormat = avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? AACPLUS_INPUT_FLOAT : AACPLUS_INPUT_16BIT;
     if (!aacplusEncSetConfiguration(s->aacplus_handle, aacplus_cfg)) {
         av_log(avctx, AV_LOG_ERROR, "libaacplus doesn't support this output format!\n");
+        aacPlus_encode_close(avctx);
         return AVERROR(EINVAL);
     }
 
@@ -84,6 +87,7 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
             avctx->extradata = av_malloc(decoder_specific_info_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!avctx->extradata) {
                 free(buffer);
+                aacPlus_encode_close(avctx);
                 return AVERROR(ENOMEM);
             }
             avctx->extradata_size = decoder_specific_info_size;
@@ -117,6 +121,7 @@ static av_cold int aacPlus_encode_close(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     aacplusEncClose(s->aacplus_handle);
+    s->aacplus_handle = NULL;
 
     return 0;
 }
