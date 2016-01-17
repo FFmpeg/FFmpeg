@@ -773,8 +773,9 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %assign cpuflags_bmi1     (1<<22)|cpuflags_lzcnt
 %assign cpuflags_bmi2     (1<<23)|cpuflags_bmi1
 
-%define    cpuflag(x) ((cpuflags & (cpuflags_ %+ x)) == (cpuflags_ %+ x))
-%define notcpuflag(x) ((cpuflags & (cpuflags_ %+ x)) != (cpuflags_ %+ x))
+; Returns a boolean value expressing whether or not the specified cpuflag is enabled.
+%define    cpuflag(x) (((((cpuflags & (cpuflags_ %+ x)) ^ (cpuflags_ %+ x)) - 1) >> 31) & 1)
+%define notcpuflag(x) (cpuflag(x) ^ 1)
 
 ; Takes an arbitrary number of cpuflags from the above list.
 ; All subsequent functions (up to the next INIT_CPUFLAGS) is built for the specified cpu.
