@@ -71,6 +71,7 @@
   <ItemGroup>
     <YASM Include="..\libavutil\x86\cpuid.asm" />
     <YASM Include="..\libavutil\x86\emms.asm" />
+    <YASM Include="..\libavutil\x86\fixed_dsp.asm" />
     <YASM Include="..\libavutil\x86\float_dsp.asm" />
     <YASM Include="..\libavutil\x86\lls.asm" />
     <YASM Include="..\libavutil\x86\pixelutils.asm" />
@@ -102,7 +103,9 @@
     <ClCompile Include="..\libavutil\float_dsp.c">
       <ObjectFileName>$(IntDir)\libavutil_float_dsp.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavutil\fixed_dsp.c" />
+    <ClCompile Include="..\libavutil\fixed_dsp.c">
+      <ObjectFileName>$(IntDir)\libavutil_fixed_dsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavutil\frame.c" />
     <ClCompile Include="..\libavutil\hash.c" />
     <ClCompile Include="..\libavutil\hmac.c" />
@@ -151,6 +154,7 @@
     <ClCompile Include="..\libavutil\x86\cpu.c">
       <ObjectFileName>$(IntDir)\libavutil_x86_cpu.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavutil\x86\fixed_dsp_init.c" />
     <ClCompile Include="..\libavutil\x86\float_dsp_init.c" />
     <ClCompile Include="..\libavutil\x86\lls_init.c" />
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c" />

@@ -43,6 +43,9 @@
     <YASM Include="..\libavutil\x86\emms.asm">
       <Filter>Source Files\libavutil\x86</Filter>
     </YASM>
+    <YASM Include="..\libavutil\x86\fixed_dsp.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
     <YASM Include="..\libavutil\x86\float_dsp.asm">
       <Filter>Source Files\libavutil\x86</Filter>
     </YASM>
@@ -253,6 +256,9 @@
       <Filter>Source Files\compat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\cpu.c">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\x86\fixed_dsp_init.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\float_dsp_init.c">

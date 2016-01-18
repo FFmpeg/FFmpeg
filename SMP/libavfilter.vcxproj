@@ -327,6 +327,7 @@
     <ClCompile Include="..\libavfilter\vsrc_mandelbrot.c" />
     <ClCompile Include="..\libavfilter\vsrc_mptestsrc.c" />
     <ClCompile Include="..\libavfilter\vsink_nullsink.c" />
+    <ClCompile Include="..\libavfilter\avf_ahistogram.c" />
     <ClCompile Include="..\libavfilter\avf_aphasemeter.c" />
     <ClCompile Include="..\libavfilter\avf_avectorscope.c" />
     <ClCompile Include="..\libavfilter\avf_concat.c" />
