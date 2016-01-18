@@ -74,7 +74,6 @@ YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
 YASM-OBJS-$(CONFIG_AUDIODSP)           += x86/audiodsp.o
 YASM-OBJS-$(CONFIG_BSWAPDSP)           += x86/bswapdsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
-YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
 YASM-OBJS-$(CONFIG_FMTCONVERT)         += x86/fmtconvert.o
 YASM-OBJS-$(CONFIG_H263DSP)            += x86/h263_loopfilter.o
@@ -103,7 +102,6 @@ YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
 YASM-OBJS-$(CONFIG_RV34DSP)            += x86/rv34dsp.o
-YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 YASM-OBJS-$(CONFIG_VP8DSP)             += x86/vp8dsp.o                  \
@@ -113,11 +111,13 @@ YASM-OBJS-$(CONFIG_VP8DSP)             += x86/vp8dsp.o                  \
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
 YASM-OBJS-$(CONFIG_APE_DECODER)        += x86/apedsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
+YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_deblock.o            \
                                           x86/hevc_mc.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv40dsp.o
+YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp.o
 YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o
 YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
