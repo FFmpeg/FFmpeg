@@ -54,6 +54,7 @@ version <next>:
 - libstagefright support removed
 - spectrumsynth filter
 - ahistogram filter
+- only seek with the right mouse button in ffplay
 
 
 version 2.8:
