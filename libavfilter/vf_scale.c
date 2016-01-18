@@ -71,6 +71,13 @@ enum var_name {
     VARS_NB
 };
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
+
 typedef struct ScaleContext {
     const AVClass *class;
     struct SwsContext *sws;     ///< software scaler context
@@ -112,6 +119,9 @@ typedef struct ScaleContext {
     int force_original_aspect_ratio;
 
     int nb_slices;
+
+    int eval_mode;              ///< expression evaluation mode
+
 } ScaleContext;
 
 AVFilter ff_vf_scale2ref;
@@ -494,16 +504,24 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     if(   in->width  != link->w
        || in->height != link->h
-       || in->format != link->format) {
+       || in->format != link->format
+       || in->sample_aspect_ratio.den != link->sample_aspect_ratio.den || in->sample_aspect_ratio.num != link->sample_aspect_ratio.num) {
         int ret;
-        snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
-        av_opt_set(scale, "w", buf, 0);
-        snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
-        av_opt_set(scale, "h", buf, 0);
+
+        if (scale->eval_mode == EVAL_MODE_INIT) {
+            snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
+            av_opt_set(scale, "w", buf, 0);
+            snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
+            av_opt_set(scale, "h", buf, 0);
+        }
 
         link->dst->inputs[0]->format = in->format;
         link->dst->inputs[0]->w      = in->width;
         link->dst->inputs[0]->h      = in->height;
+
+        link->dst->inputs[0]->sample_aspect_ratio.den = in->sample_aspect_ratio.den;
+        link->dst->inputs[0]->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
+
 
         if ((ret = config_props(outlink)) < 0)
             return ret;
@@ -665,6 +683,9 @@ static const AVOption scale_options[] = {
     { "param0", "Scaler param 0",             OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { "param1", "Scaler param 1",             OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { "nb_slices", "set the number of slices (debug purpose only)", OFFSET(nb_slices), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+         { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
+         { "frame", "eval expressions during initialization and per-frame", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     { NULL }
 };
 
