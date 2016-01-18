@@ -55,6 +55,7 @@ version <next>:
 - spectrumsynth filter
 - ahistogram filter
 - only seek with the right mouse button in ffplay
+- toggle full screen when double-clicking with the left mouse button in ffplay
 
 
 version 2.8:
