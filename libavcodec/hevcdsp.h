@@ -128,6 +128,7 @@ extern const int8_t ff_hevc_epel_filters[7][4];
 extern const int8_t ff_hevc_qpel_filters[3][16];
 
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
+void ff_hevcdsp_init_aarch64(HEVCDSPContext *c, const int bit_depth);
 void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth);
 void ff_hevc_dsp_init_mips(HEVCDSPContext *c, const int bit_depth);
 #endif /* AVCODEC_HEVCDSP_H */
