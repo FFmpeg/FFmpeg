@@ -43,6 +43,7 @@ typedef struct GIFContext {
     const AVClass *class;
     LZWState *lzw;
     uint8_t *buf;
+    int buf_size;
     AVFrame *last_frame;
     int flags;
     uint32_t palette[AVPALETTE_COUNT];  ///< local reference palette for !pal8
@@ -174,7 +175,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
 
     bytestream_put_byte(bytestream, 0x08);
 
-    ff_lzw_encode_init(s->lzw, s->buf, 2 * width * height,
+    ff_lzw_encode_init(s->lzw, s->buf, s->buf_size,
                        12, FF_LZW_GIF, put_bits);
 
     ptr = buf + y_start*linesize + x_start;
@@ -231,7 +232,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     s->transparent_index = -1;
 
     s->lzw = av_mallocz(ff_lzw_encode_state_size);
-    s->buf = av_malloc(avctx->width*avctx->height*2);
+    s->buf_size = avctx->width*avctx->height*2 + 1000;
+    s->buf = av_malloc(s->buf_size);
     s->tmpl = av_malloc(avctx->width);
     if (!s->tmpl || !s->buf || !s->lzw)
         return AVERROR(ENOMEM);
@@ -321,6 +323,7 @@ static int gif_encode_close(AVCodecContext *avctx)
 
     av_freep(&s->lzw);
     av_freep(&s->buf);
+    s->buf_size = 0;
     av_frame_free(&s->last_frame);
     av_freep(&s->tmpl);
     return 0;
