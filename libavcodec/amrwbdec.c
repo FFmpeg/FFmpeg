@@ -358,7 +358,7 @@ static void decode_pitch_vector(AMRWBContext *ctx,
 }
 
 /** Get x bits in the index interval [lsb,lsb+len-1] inclusive */
-#define BIT_STR(x,lsb,len) (((x) >> (lsb)) & ((1 << (len)) - 1))
+#define BIT_STR(x,lsb,len) av_mod_uintp2((x) >> (lsb), (len))
 
 /** Get the bit at specified position */
 #define BIT_POS(x, p) (((x) >> (p)) & 1)
