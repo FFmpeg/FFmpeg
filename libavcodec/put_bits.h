@@ -105,7 +105,7 @@ static inline void flush_put_bits(PutBitContext *s)
         s->bit_buf <<= s->bit_left;
 #endif
     while (s->bit_left < 32) {
-        /* XXX: should test end of buffer */
+        av_assert0(s->buf_ptr < s->buf_end);
 #ifdef BITSTREAM_WRITER_LE
         *s->buf_ptr++ = s->bit_buf;
         s->bit_buf  >>= 8;
