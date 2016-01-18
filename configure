@@ -5780,6 +5780,7 @@ check_disable_warning -Wno-parentheses
 check_disable_warning -Wno-switch
 check_disable_warning -Wno-format-zero-length
 check_disable_warning -Wno-pointer-sign
+check_disable_warning -Wno-unused-const-variable
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
