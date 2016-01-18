@@ -1110,6 +1110,18 @@ create files at 12:05, 12:20, 12:35, etc.
 
 Default value is "0".
 
+@item segment_clocktime_wrap_duration @var{duration}
+Force the segmenter to only start a new segment if a packet reaches the muxer
+within the specified duration after the segmenting clock time. This way you
+can make the segmenter more resilient to backward local time jumps, such as
+leap seconds or transition to standard time from daylight savings time.
+
+Assuming that the delay between the packets of your source is less than 0.5
+second you can detect a leap second by specifying 0.5 as the duration.
+
+Default is the maximum possible duration which means starting a new segment
+regardless of the elapsed time since the last clock time.
+
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
 segment, expressed as a duration specification. Default value is "0".

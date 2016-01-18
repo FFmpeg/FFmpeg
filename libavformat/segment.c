@@ -83,6 +83,7 @@ typedef struct SegmentContext {
 
     int use_clocktime;    ///< flag to cut segments at regular clock time
     int64_t clocktime_offset; //< clock offset for cutting the segments at regular clock time
+    int64_t clocktime_wrap_duration; //< wrapping duration considered for starting a new segment
     int64_t last_val;      ///< remember last time for wrap around detection
     int64_t last_cut;      ///< remember last cut
     int cut_pending;
@@ -784,7 +785,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             localtime_r(&sec, &ti);
             usecs = (int64_t)(ti.tm_hour * 3600 + ti.tm_min * 60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
             wrapped_val = (usecs + seg->clocktime_offset) % seg->time;
-            if (seg->last_cut != usecs && wrapped_val < seg->last_val) {
+            if (seg->last_cut != usecs && wrapped_val < seg->last_val && wrapped_val < seg->clocktime_wrap_duration) {
                 seg->cut_pending = 1;
                 seg->last_cut = usecs;
             }
@@ -935,6 +936,7 @@ static const AVOption options[] = {
 
     { "segment_atclocktime",      "set segment to be cut at clocktime",  OFFSET(use_clocktime), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E},
     { "segment_clocktime_offset", "set segment clocktime offset",        OFFSET(clocktime_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, 86400000000LL, E},
+    { "segment_clocktime_wrap_duration", "set segment clocktime wrapping duration", OFFSET(clocktime_wrap_duration), AV_OPT_TYPE_DURATION, {.i64 = INT64_MAX}, 0, INT64_MAX, E},
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
