@@ -255,11 +255,42 @@ static void init_gaussian_filter(DynamicAudioNormalizerContext *s)
     }
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    DynamicAudioNormalizerContext *s = ctx->priv;
+    int c;
+
+    av_freep(&s->prev_amplification_factor);
+    av_freep(&s->dc_correction_value);
+    av_freep(&s->compress_threshold);
+    av_freep(&s->fade_factors[0]);
+    av_freep(&s->fade_factors[1]);
+
+    for (c = 0; c < s->channels; c++) {
+        if (s->gain_history_original)
+            cqueue_free(s->gain_history_original[c]);
+        if (s->gain_history_minimum)
+            cqueue_free(s->gain_history_minimum[c]);
+        if (s->gain_history_smoothed)
+            cqueue_free(s->gain_history_smoothed[c]);
+    }
+
+    av_freep(&s->gain_history_original);
+    av_freep(&s->gain_history_minimum);
+    av_freep(&s->gain_history_smoothed);
+
+    av_freep(&s->weights);
+
+    ff_bufqueue_discard_all(&s->queue);
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     DynamicAudioNormalizerContext *s = ctx->priv;
     int c;
+
+    uninit(ctx);
 
     s->frame_len =
     inlink->min_samples =
@@ -671,35 +702,6 @@ static int request_frame(AVFilterLink *outlink)
         ret = flush_buffer(s, ctx->inputs[0], outlink);
 
     return ret;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    DynamicAudioNormalizerContext *s = ctx->priv;
-    int c;
-
-    av_freep(&s->prev_amplification_factor);
-    av_freep(&s->dc_correction_value);
-    av_freep(&s->compress_threshold);
-    av_freep(&s->fade_factors[0]);
-    av_freep(&s->fade_factors[1]);
-
-    for (c = 0; c < s->channels; c++) {
-        if (s->gain_history_original)
-            cqueue_free(s->gain_history_original[c]);
-        if (s->gain_history_minimum)
-            cqueue_free(s->gain_history_minimum[c]);
-        if (s->gain_history_smoothed)
-            cqueue_free(s->gain_history_smoothed[c]);
-    }
-
-    av_freep(&s->gain_history_original);
-    av_freep(&s->gain_history_minimum);
-    av_freep(&s->gain_history_smoothed);
-
-    av_freep(&s->weights);
-
-    ff_bufqueue_discard_all(&s->queue);
 }
 
 static const AVFilterPad avfilter_af_dynaudnorm_inputs[] = {
