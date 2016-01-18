@@ -3320,6 +3320,16 @@ case "$arch" in
         arch="arm"
     ;;
     mips*|IP*)
+        case "$arch" in
+        *el)
+            add_cppflags -EL
+            add_ldflags -EL
+        ;;
+        *eb)
+            add_cppflags -EB
+            add_ldflags -EB
+        ;;
+        esac
         arch="mips"
     ;;
     parisc*|hppa*)
