@@ -13282,6 +13282,84 @@ tools.
 
 Below is a description of the currently available multimedia filters.
 
+@section ahistogram
+
+Convert input audio to a video output, displaying the volume histogram.
+
+The filter accepts the following options:
+
+@table @option
+@item dmode
+Specify how histogram is calculated.
+
+It accepts the following values:
+@table @samp
+@item single
+Use single histogram for all channels.
+@item separate
+Use separate histogram for each channel.
+@end table
+Default is @code{single}.
+
+@item rate, r
+Set frame rate, expressed as number of frames per second. Default
+value is "25".
+
+@item size, s
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{hd720}.
+
+@item scale
+Set display scale.
+
+It accepts the following values:
+@table @samp
+@item log
+logarithmic
+@item sqrt
+square root
+@item cbrt
+cubic root
+@item lin
+linear
+@item rlog
+reverse logarithmic
+@end table
+Default is @code{log}.
+
+@item ascale
+Set amplitude scale.
+
+It accepts the following values:
+@table @samp
+@item log
+logarithmic
+@item lin
+linear
+@end table
+Default is @code{log}.
+
+@item acount
+Set how much frames to accumulate in histogram.
+Defauls is 1. Setting this to -1 accumulates all frames.
+
+@item rheight
+Set histogram ratio of window height.
+
+@item slide
+Set sonogram sliding.
+
+It accepts the following values:
+@table @samp
+@item replace
+replace old rows with new ones.
+@item scroll
+scroll from top to bottom.
+@end table
+Default is @code{replace}.
+@end table
+
 @section aphasemeter
 
 Convert input audio to a video output, displaying the audio phase.

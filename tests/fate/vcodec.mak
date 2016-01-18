@@ -300,7 +300,8 @@ fate-vsynth%-svq1:               FMT     = mov
 
 FATE_VCODEC-$(call ENCDEC, R210, AVI)   += r210
 
-FATE_VCODEC-$(call ENCDEC, V210, AVI)   += v210
+FATE_VCODEC-$(call ENCDEC, V210, AVI)   += v210 v210-10
+fate-vsynth%-v210-10:            ENCOPTS = -pix_fmt yuv422p10
 
 FATE_VCODEC-$(call ENCDEC, V308, AVI)   += v308
 

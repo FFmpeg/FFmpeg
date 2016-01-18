@@ -392,6 +392,7 @@ static int try_push_frame(AVFilterContext *ctx, int x)
 
             if (ch == s->channels - 1) {
                 float *dst;
+                int c;
 
                 out = ff_get_audio_buffer(outlink, s->win_size);
                 if (!out) {
@@ -402,7 +403,7 @@ static int try_push_frame(AVFilterContext *ctx, int x)
 
                 out->pts = s->pts;
                 s->pts += s->win_size;
-                for (int c = 0; c < s->channels; c++) {
+                for (c = 0; c < s->channels; c++) {
                     dst = (float *)out->extended_data[c];
                     buf = (float *)s->buffer->extended_data[c];
 

@@ -67,7 +67,7 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n, int dir)
     int8_t *const qscale_table = s->current_picture.qscale_table;
 
     /* find prediction */
-    ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val  = &s->ac_val[0][0][0] + s->block_index[n] * 16;
     ac_val1 = ac_val;
     if (s->ac_pred) {
         if (dir == 0) {

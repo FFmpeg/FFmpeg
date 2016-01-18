@@ -160,7 +160,7 @@ static inline void quantize_coefs(double *coef, int *idx, float *lpc, int order,
 void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
 {
     TemporalNoiseShaping *tns = &sce->tns;
-    int w, w2, g, count = 0;
+    int w, g, count = 0;
     double gain, coefs[MAX_LPC_ORDER];
     const int mmm = FFMIN(sce->ics.tns_max_bands, sce->ics.max_sfb);
     const int is8 = sce->ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
@@ -178,23 +178,19 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
         int coef_len = sce->ics.swb_offset[sfb_end] - sce->ics.swb_offset[sfb_start];
         const int sfb_len = sfb_end - sfb_start;
 
-        for (g = 0;  g < sce->ics.num_swb; g++) {
-            if (w*16+g < sfb_start || w*16+g > sfb_end)
-                continue;
-            for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
-                FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                if ((w+w2)*16+g > sfb_start + (sfb_len/2))
-                    en[1] += band->energy;
-                else
-                    en[0] += band->energy;
-            }
+        for (g = sfb_start; g < sce->ics.num_swb && g <= sfb_end; g++) {
+            FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[w*16+g];
+            if (g > sfb_start + (sfb_len/2))
+                en[1] += band->energy;
+            else
+                en[0] += band->energy;
         }
 
         if (coef_len <= 0 || sfb_len <= 0)
             continue;
 
         /* LPC */
-        gain = ff_lpc_calc_ref_coefs_f(&s->lpc, &sce->coeffs[coef_start],
+        gain = ff_lpc_calc_ref_coefs_f(&s->lpc, &sce->coeffs[w*128 + coef_start],
                                        coef_len, order, coefs);
 
         if (!order || gain < TNS_GAIN_THRESHOLD_LOW || gain > TNS_GAIN_THRESHOLD_HIGH)

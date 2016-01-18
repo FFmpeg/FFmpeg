@@ -53,6 +53,7 @@ version <next>:
 - showspectrumpic filter
 - libstagefright support removed
 - spectrumsynth filter
+- ahistogram filter
 
 
 version 2.8:

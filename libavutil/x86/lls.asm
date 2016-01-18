@@ -125,8 +125,7 @@ cglobal update_lls, 2,5,8, ctx, var, i, j, covar2
 .ret:
     REP_RET
 
-%if HAVE_AVX_EXTERNAL
-INIT_YMM avx
+%macro UPDATE_LLS 0
 cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     %define covarq ctxq
     mov  countd, [ctxq + LLSModel.indep_count]
@@ -140,6 +139,18 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     vbroadcastsd ymm6, [varq + iq*8 + 16]
     vbroadcastsd ymm7, [varq + iq*8 + 24]
     vextractf128 xmm3, ymm1, 1
+%if cpuflag(fma3)
+    mova ymm0, COVAR(iq  ,0)
+    mova xmm2, COVAR(iq+2,2)
+    fmaddpd ymm0, ymm1, ymm4, ymm0
+    fmaddpd xmm2, xmm3, xmm6, xmm2
+    fmaddpd ymm1, ymm5, ymm1, COVAR(iq  ,1)
+    fmaddpd xmm3, xmm7, xmm3, COVAR(iq+2,3)
+    mova COVAR(iq  ,0), ymm0
+    mova COVAR(iq  ,1), ymm1
+    mova COVAR(iq+2,2), xmm2
+    mova COVAR(iq+2,3), xmm3
+%else
     vmulpd  ymm0, ymm1, ymm4
     vmulpd  ymm1, ymm1, ymm5
     vmulpd  xmm2, xmm3, xmm6
@@ -148,12 +159,26 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     ADDPD_MEM COVAR(iq  ,1), ymm1
     ADDPD_MEM COVAR(iq+2,2), xmm2
     ADDPD_MEM COVAR(iq+2,3), xmm3
+%endif ; cpuflag(fma3)
     lea     jd, [iq + 4]
     cmp     jd, count2d
     jg .skip4x4
 .loop4x4:
     ; Compute all 16 pairwise products of a 4x4 block
     mova    ymm3, [varq + jq*8]
+%if cpuflag(fma3)
+    mova ymm0, COVAR(jq, 0)
+    mova ymm1, COVAR(jq, 1)
+    mova ymm2, COVAR(jq, 2)
+    fmaddpd ymm0, ymm3, ymm4, ymm0
+    fmaddpd ymm1, ymm3, ymm5, ymm1
+    fmaddpd ymm2, ymm3, ymm6, ymm2
+    fmaddpd ymm3, ymm7, ymm3, COVAR(jq,3)
+    mova COVAR(jq, 0), ymm0
+    mova COVAR(jq, 1), ymm1
+    mova COVAR(jq, 2), ymm2
+    mova COVAR(jq, 3), ymm3
+%else
     vmulpd  ymm0, ymm3, ymm4
     vmulpd  ymm1, ymm3, ymm5
     vmulpd  ymm2, ymm3, ymm6
@@ -162,6 +187,7 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     ADDPD_MEM COVAR(jq,1), ymm1
     ADDPD_MEM COVAR(jq,2), ymm2
     ADDPD_MEM COVAR(jq,3), ymm3
+%endif ; cpuflag(fma3)
     add     jd, 4
     cmp     jd, count2d
     jle .loop4x4
@@ -169,6 +195,19 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     cmp     jd, countd
     jg .skip2x4
     mova    xmm3, [varq + jq*8]
+%if cpuflag(fma3)
+    mova xmm0, COVAR(jq, 0)
+    mova xmm1, COVAR(jq, 1)
+    mova xmm2, COVAR(jq, 2)
+    fmaddpd xmm0, xmm3, xmm4, xmm0
+    fmaddpd xmm1, xmm3, xmm5, xmm1
+    fmaddpd xmm2, xmm3, xmm6, xmm2
+    fmaddpd xmm3, xmm7, xmm3, COVAR(jq,3)
+    mova COVAR(jq, 0), xmm0
+    mova COVAR(jq, 1), xmm1
+    mova COVAR(jq, 2), xmm2
+    mova COVAR(jq, 3), xmm3
+%else
     vmulpd  xmm0, xmm3, xmm4
     vmulpd  xmm1, xmm3, xmm5
     vmulpd  xmm2, xmm3, xmm6
@@ -177,6 +216,7 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     ADDPD_MEM COVAR(jq,1), xmm1
     ADDPD_MEM COVAR(jq,2), xmm2
     ADDPD_MEM COVAR(jq,3), xmm3
+%endif ; cpuflag(fma3)
 .skip2x4:
     add     id, 4
     add covarq, 4*COVAR_STRIDE
@@ -187,14 +227,29 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     mov     jd, id
 .loop2x1:
     vmovddup xmm0, [varq + iq*8]
+%if cpuflag(fma3)
+    mova xmm1, [varq + jq*8]
+    fmaddpd xmm0, xmm1, xmm0, COVAR(jq,0)
+    mova COVAR(jq,0), xmm0
+%else
     vmulpd   xmm0, [varq + jq*8]
     ADDPD_MEM COVAR(jq,0), xmm0
+%endif ; cpuflag(fma3)
     inc     id
     add covarq, COVAR_STRIDE
     cmp     id, countd
     jle .loop2x1
 .ret:
     REP_RET
+%endmacro ; UPDATE_LLS
+
+%if HAVE_AVX_EXTERNAL
+INIT_YMM avx
+UPDATE_LLS
+%endif
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
+UPDATE_LLS
 %endif
 
 INIT_XMM sse2

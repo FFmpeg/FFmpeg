@@ -16,24 +16,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_V210ENC_H
-#define AVCODEC_V210ENC_H
+#include "config.h"
 
-#include "libavutil/log.h"
-#include "libavutil/opt.h"
-#include "libavutil/pixfmt.h"
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/fixed_dsp.h"
+#include "cpu.h"
 
-typedef struct V210EncContext {
-    void (*pack_line_8)(const uint8_t *y, const uint8_t *u,
-                        const uint8_t *v, uint8_t *dst, ptrdiff_t width);
-    void (*pack_line_10)(const uint16_t *y, const uint16_t *u,
-                         const uint16_t *v, uint8_t *dst, ptrdiff_t width);
-    int sample_factor; /* This value must be the same for both 8-and 10-bit
-                          functions otherwise the output will be incorrect. */
-} V210EncContext;
+void ff_butterflies_fixed_sse2(int *src0, int *src1, int len);
 
-void ff_v210enc_init(V210EncContext *s);
+av_cold void ff_fixed_dsp_init_x86(AVFixedDSPContext *fdsp)
+{
+    int cpu_flags = av_get_cpu_flags();
 
-void ff_v210enc_init_x86(V210EncContext *s);
-
-#endif /* AVCODEC_V210ENC_H */
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        fdsp->butterflies_fixed = ff_butterflies_fixed_sse2;
+    }
+}

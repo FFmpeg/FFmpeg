@@ -473,7 +473,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     st->codec->time_base.den      = ctx->bmd_tb_den;
     st->codec->time_base.num      = ctx->bmd_tb_num;
-    st->codec->bit_rate    = avpicture_get_size(st->codec->pix_fmt, ctx->bmd_width, ctx->bmd_height) * 1/av_q2d(st->codec->time_base) * 8;
+    st->codec->bit_rate    = av_image_get_buffer_size(st->codec->pix_fmt, ctx->bmd_width, ctx->bmd_height, 1) * 1/av_q2d(st->codec->time_base) * 8;
 
     if (cctx->v210) {
         st->codec->codec_id    = AV_CODEC_ID_V210;
