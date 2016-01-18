@@ -1004,8 +1004,13 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             av_log(s->avctx, AV_LOG_ERROR, "subsample count invalid\n");
             return AVERROR_INVALIDDATA;
         }
-        for (i = 0; i < count; i++)
+        for (i = 0; i < count; i++) {
             s->subsampling[i] = ff_tget(&s->gb, type, s->le);
+            if (s->subsampling[i] <= 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "subsampling %d is invalid\n", s->subsampling[i]);
+                return AVERROR_INVALIDDATA;
+            }
+        }
         break;
     case TIFF_T4OPTIONS:
         if (s->compr == TIFF_G3)
@@ -1253,7 +1258,7 @@ static int decode_frame(AVCodecContext *avctx,
                          avpkt->size - s->strippos);
     }
 
-    if (s->rps <= 0) {
+    if (s->rps <= 0 || s->rps % s->subsampling[1]) {
         av_log(avctx, AV_LOG_ERROR, "rps %d invalid\n", s->rps);
         return AVERROR_INVALIDDATA;
     }
