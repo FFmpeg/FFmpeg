@@ -31,8 +31,8 @@ void ff_add_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
 
 int  ff_add_hfyu_left_pred_ssse3(uint8_t *dst, const uint8_t *src,
                                  int w, int left);
-int  ff_add_hfyu_left_pred_sse4(uint8_t *dst, const uint8_t *src,
-                                int w, int left);
+int  ff_add_hfyu_left_pred_unaligned_ssse3(uint8_t *dst, const uint8_t *src,
+                                           int w, int left);
 
 #if HAVE_INLINE_ASM
 
@@ -124,7 +124,9 @@ av_cold void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c)
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
         c->add_hfyu_left_pred = ff_add_hfyu_left_pred_ssse3;
-        if (cpu_flags & AV_CPU_FLAG_SSE4) // not really SSE4, just slow on Conroe
-            c->add_hfyu_left_pred = ff_add_hfyu_left_pred_sse4;
+    }
+
+    if (EXTERNAL_SSSE3_FAST(cpu_flags)) {
+        c->add_hfyu_left_pred = ff_add_hfyu_left_pred_unaligned_ssse3;
     }
 }

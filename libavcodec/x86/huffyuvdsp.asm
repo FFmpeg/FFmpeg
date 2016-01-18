@@ -146,8 +146,8 @@ cglobal add_hfyu_left_pred, 3,3,7, dst, src, w, left
     psllq   m0, 56
     ADD_HFYU_LEFT_LOOP 1, 1
 
-INIT_XMM sse4
-cglobal add_hfyu_left_pred, 3,3,7, dst, src, w, left
+INIT_XMM ssse3
+cglobal add_hfyu_left_pred_unaligned, 3,3,7, dst, src, w, left
     mova    m5, [pb_f]
     mova    m6, [pb_zzzzzzzz77777777]
     mova    m4, [pb_zzzz3333zzzzbbbb]
