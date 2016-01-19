@@ -3738,7 +3738,8 @@ void show_help_default(const char *opt, const char *arg)
            "left/right          seek backward/forward 10 seconds\n"
            "down/up             seek backward/forward 1 minute\n"
            "page down/page up   seek backward/forward 10 minutes\n"
-           "mouse click         seek to percentage in file corresponding to fraction of width\n"
+           "right mouse click   seek to percentage in file corresponding to fraction of width\n"
+           "left double-click   toggle full screen\n"
            );
 }
 
