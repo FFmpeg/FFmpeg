@@ -20,6 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
+#if CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/imgutils.h"

@@ -134,8 +134,8 @@ typedef struct SWFContext {
     AVCodecContext *audio_enc, *video_enc;
     AVStream *video_st;
 #if CONFIG_ZLIB
-    AVIOContext *zpb;
 #define ZBUF_SIZE 4096
+    AVIOContext *zpb;
     uint8_t *zbuf_in;
     uint8_t *zbuf_out;
     z_stream zstream;
