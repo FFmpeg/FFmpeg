@@ -1110,8 +1110,10 @@ lavd 54.4.100 / 54.0.0, lavfi 3.5.0
   Add avresample_set_channel_mapping() for input channel reordering,
   duplication, and silencing.
 
-2012-12-29 - 2ce43b3 / d8fd06c - lavu 52.13.100 / 52.3.0 - avstring.h
-  Add av_basename() and av_dirname().
+2012-12-29 - lavu 52.13.100 / 52.3.0 - avstring.h
+  2ce43b3 / d8fd06c - Add av_basename() and av_dirname().
+  e13d5e9 / c1a02e8 - Add av_pix_fmt_get_chroma_sub_sample and deprecate
+                      avcodec_get_chroma_sub_sample.
 
 2012-11-11 - 03b0787 / 5980f5d - lavu 52.6.100 / 52.2.0 - audioconvert.h
   Rename audioconvert.h to channel_layout.h. audioconvert.h is now deprecated.
