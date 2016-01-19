@@ -846,13 +846,15 @@ skip:
         const int64_t fsize = avio_size(s->pb);
         avio_seek(s->pb, fsize - 4, SEEK_SET);
         size = avio_rb32(s->pb);
-        // Seek to the start of the last FLV tag at position (fsize - 4 - size)
-        // but skip the byte indicating the type.
-        avio_seek(s->pb, fsize - 3 - size, SEEK_SET);
-        if (size == avio_rb24(s->pb) + 11) {
-            uint32_t ts = avio_rb24(s->pb);
-            ts         |= avio_r8(s->pb) << 24;
-            s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
+        if (size > 0 && size < fsize) {
+            // Seek to the start of the last FLV tag at position (fsize - 4 - size)
+            // but skip the byte indicating the type.
+            avio_seek(s->pb, fsize - 3 - size, SEEK_SET);
+            if (size == avio_rb24(s->pb) + 11) {
+                uint32_t ts = avio_rb24(s->pb);
+                ts         |= avio_r8(s->pb) << 24;
+                s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
+            }
         }
         avio_seek(s->pb, pos, SEEK_SET);
         flv->searched_for_end = 1;
