@@ -35,6 +35,17 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
+/* Color space conversion coefficients for YCbCr -> RGB mapping.
+ *
+ * Entries are {crv, cbu, cgu, cgv}
+ *
+ *   crv = (255 / 224) * 65536 * (1 - cr) / 0.5
+ *   cbu = (255 / 224) * 65536 * (1 - cb) / 0.5
+ *   cgu = (255 / 224) * 65536 * (cb / cg) * (1 - cb) / 0.5
+ *   cgv = (255 / 224) * 65536 * (cr / cg) * (1 - cr) / 0.5
+ *
+ * where Y = cr * R + cg * G + cb * B and cr + cg + cb = 1.
+ */
 const int32_t ff_yuv2rgb_coeffs[8][4] = {
     { 117504, 138453, 13954, 34903 }, /* no sequence_display_extension */
     { 117504, 138453, 13954, 34903 }, /* ITU-R Rec. 709 (1990) */
