@@ -625,13 +625,14 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
 
     if (ctx->real_time && ctx->screen_touched &&
         avpkt->pts > ctx->last_real_time + av_rescale_q(20, ass_tb, avctx->time_base)) {
+        int start_time;
         ctx->last_real_time = avpkt->pts;
         ctx->screen_touched = 0;
 
         capture_screen(ctx);
         ctx->buffer_changed = 0;
 
-        int start_time = av_rescale_q(avpkt->pts, avctx->time_base, ass_tb);
+        start_time = av_rescale_q(avpkt->pts, avctx->time_base, ass_tb);
         ret = ff_ass_add_rect_bprint(sub, &ctx->buffer, start_time, -1);
         if (ret < 0)
             return ret;
