@@ -153,15 +153,14 @@ enum AVPixelFormat avcodec_find_best_pix_fmt2(enum AVPixelFormat *pix_fmt_list,
     return dst_pix_fmt;
 }
 
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
 /* return true if yuv planar */
 static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
 {
     return (!(desc->flags & AV_PIX_FMT_FLAG_RGB) &&
              (desc->flags & AV_PIX_FMT_FLAG_PLANAR));
 }
-
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
 
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
                     enum AVPixelFormat pix_fmt, int top_band, int left_band)
