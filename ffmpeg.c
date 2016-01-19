@@ -4126,7 +4126,7 @@ static int transcode(void)
         }
 
         ret = transcode_step();
-        if (ret < 0 && (ret != AVERROR_EOF && ret != AVERROR(EAGAIN))) {
+        if (ret < 0 && ret != AVERROR_EOF) {
             char errbuf[128];
             av_strerror(ret, errbuf, sizeof(errbuf));
 
