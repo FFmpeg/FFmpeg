@@ -255,5 +255,5 @@ av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
         hpeldsp_init_sse2_fast(c, flags);
 
     if (CONFIG_VP3_DECODER)
-        ff_hpeldsp_vp3_init_x86(c, cpu_flags, flags);
+        ff_hpeldsp_vp3_init_x86(c, cpu_flags);
 }

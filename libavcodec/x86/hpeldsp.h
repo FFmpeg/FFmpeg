@@ -37,6 +37,6 @@ void ff_put_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
 void ff_put_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 
-void ff_hpeldsp_vp3_init_x86(HpelDSPContext *c, int cpu_flags, int flags);
+void ff_hpeldsp_vp3_init_x86(HpelDSPContext *c, int cpu_flags);
 
 #endif /* AVCODEC_X86_HPELDSP_H */
