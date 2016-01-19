@@ -33,12 +33,14 @@
 #include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
 
+#if FF_API_GETCHROMA
 void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     *h_shift = desc->log2_chroma_w;
     *v_shift = desc->log2_chroma_h;
 }
+#endif
 
 static int is_gray(const AVPixFmtDescriptor *desc)
 {
