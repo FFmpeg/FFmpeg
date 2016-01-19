@@ -94,8 +94,11 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
         if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
             avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
-        else
+        else {
             memset(context->palette->data, 0, AVPALETTE_SIZE);
+            if (avctx->bits_per_coded_sample == 1)
+                memset(context->palette->data, 0xff, 4);
+        }
     }
 
     if ((avctx->extradata_size >= 9 &&
