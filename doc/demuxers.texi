@@ -359,6 +359,23 @@ ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
 
+@section mov/mp4/3gp/Quicktme
+
+Quicktime / MP4 demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item enable_drefs
+Enable loading of external tracks, disabled by default.
+Enabling this can theoretically leak information in some use cases.
+
+@item use_absolute_path
+Allows loading of external tracks via absolute paths, disabled by default.
+Enabling this poses a security risk. It should only be enabled if the source
+is known to be non malicious.
+
+@end table
+
 @section mpegts
 
 MPEG-2 transport stream demuxer.
