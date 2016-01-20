@@ -145,9 +145,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-    if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && avctx->height > 2800)
-        avctx->thread_count = 1;
-
     if (ff_mpv_encode_init(avctx) < 0)
         return -1;
 
