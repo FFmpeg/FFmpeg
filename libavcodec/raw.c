@@ -53,6 +53,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_YUYV422, MKTAG('V', '4', '2', '2') },
     { AV_PIX_FMT_YUYV422, MKTAG('V', 'Y', 'U', 'Y') },
     { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'N', 'V') },
+    { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'Y', 'V') },
     { AV_PIX_FMT_YVYU422, MKTAG('Y', 'V', 'Y', 'U') }, /* Philips */
     { AV_PIX_FMT_UYVY422, MKTAG('U', 'Y', 'V', 'Y') },
     { AV_PIX_FMT_UYVY422, MKTAG('H', 'D', 'Y', 'C') },
