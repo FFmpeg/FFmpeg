@@ -245,6 +245,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_R10K,         MKTAG('R', '1', '0', 'k') },
     { AV_CODEC_ID_R210,         MKTAG('r', '2', '1', '0') },
     { AV_CODEC_ID_V210,         MKTAG('v', '2', '1', '0') },
+    { AV_CODEC_ID_V210,         MKTAG('C', '2', '1', '0') },
     { AV_CODEC_ID_V410,         MKTAG('v', '4', '1', '0') },
     { AV_CODEC_ID_INDEO3,       MKTAG('I', 'V', '3', '1') },
     { AV_CODEC_ID_INDEO3,       MKTAG('I', 'V', '3', '2') },
