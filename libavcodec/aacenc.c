@@ -544,6 +544,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
         for (ch = 0; ch < chans; ch++) {
+            int k;
             float clip_avoidance_factor;
             sce = &cpe->ch[ch];
             ics = &sce->ics;
@@ -607,17 +608,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->mdct1024.mdct_calc(&s->mdct1024, sce->lcoeffs, sce->ret_buf);
             }
 
-            if (!(isfinite(cpe->ch[ch].coeffs[    0]) &&
-                  isfinite(cpe->ch[ch].coeffs[  128]) &&
-                  isfinite(cpe->ch[ch].coeffs[2*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[3*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[4*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[5*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[6*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[7*128]))
-            ) {
-                av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
-                return AVERROR(EINVAL);
+            for (k = 0; k < 1024; k++) {
+                if (!isfinite(cpe->ch[ch].coeffs[k])) {
+                    av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
+                    return AVERROR(EINVAL);
+                }
             }
             avoid_clipping(s, sce);
         }
