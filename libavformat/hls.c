@@ -34,7 +34,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
-#include "url.h"
 
 #define INITIAL_BUFFER_SIZE 32768
 
@@ -73,7 +72,7 @@ struct variant {
     char url[MAX_URL_SIZE];
     AVIOContext pb;
     uint8_t* read_buffer;
-    URLContext *input;
+    AVIOContext *input;
     AVFormatContext *parent;
     int index;
     AVFormatContext *ctx;
@@ -133,7 +132,7 @@ static void free_variant_list(HLSContext *c)
         av_packet_unref(&var->pkt);
         av_free(var->pb.buffer);
         if (var->input)
-            ffurl_close(var->input);
+            ff_format_io_close(c->ctx, &var->input);
         if (var->ctx) {
             var->ctx->pb = NULL;
             avformat_close_input(&var->ctx);
@@ -214,31 +213,15 @@ static int open_in(HLSContext *c, AVIOContext **in, const char *url)
     return ret;
 }
 
-static int url_connect(struct variant *var, AVDictionary *opts)
+static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
+                    const AVDictionary *opts)
 {
     AVDictionary *tmp = NULL;
     int ret;
 
     av_dict_copy(&tmp, opts, 0);
 
-    if ((ret = av_opt_set_dict(var->input, &tmp)) < 0 ||
-        (ret = ffurl_connect(var->input, NULL)) < 0) {
-        ffurl_close(var->input);
-        var->input = NULL;
-    }
-
-    av_dict_free(&tmp);
-    return ret;
-}
-
-static int open_url(HLSContext *c, URLContext **uc, const char *url)
-{
-    AVDictionary *tmp = NULL;
-    int ret;
-
-    av_dict_copy(&tmp, c->avio_opts, 0);
-
-    ret = ffurl_open(uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
+    ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
 
     av_dict_free(&tmp);
 
@@ -377,22 +360,23 @@ fail:
 
 static int open_input(struct variant *var)
 {
+    HLSContext *c = var->parent->priv_data;
     struct segment *seg = var->segments[var->cur_seq_no - var->start_seq_no];
     if (seg->key_type == KEY_NONE) {
-        return  open_url(var->parent->priv_data, &var->input, seg->url);
+        return open_url(var->parent, &var->input, seg->url, c->avio_opts);
     } else if (seg->key_type == KEY_AES_128) {
-        HLSContext *c = var->parent->priv_data;
+        AVDictionary *opts = NULL;
         char iv[33], key[33], url[MAX_URL_SIZE];
         int ret;
         if (strcmp(seg->key, var->key_url)) {
-            URLContext *uc;
-            if (open_url(var->parent->priv_data, &uc, seg->key) == 0) {
-                if (ffurl_read_complete(uc, var->key, sizeof(var->key))
-                    != sizeof(var->key)) {
+            AVIOContext *pb;
+            if (open_url(var->parent, &pb, seg->key, c->avio_opts) == 0) {
+                ret = avio_read(pb, var->key, sizeof(var->key));
+                if (ret != sizeof(var->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
                            seg->key);
                 }
-                ffurl_close(uc);
+                ff_format_io_close(var->parent, &pb);
             } else {
                 av_log(NULL, AV_LOG_ERROR, "Unable to open key file %s\n",
                        seg->key);
@@ -406,13 +390,14 @@ static int open_input(struct variant *var)
             snprintf(url, sizeof(url), "crypto+%s", seg->url);
         else
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
-        if ((ret = ffurl_alloc(&var->input, url, AVIO_FLAG_READ,
-                               &var->parent->interrupt_callback)) < 0)
-            return ret;
-        av_opt_set(var->input->priv_data, "key", key, 0);
-        av_opt_set(var->input->priv_data, "iv", iv, 0);
 
-        return url_connect(var, c->avio_opts);
+        av_dict_copy(&opts, c->avio_opts, 0);
+        av_dict_set(&opts, "key", key, 0);
+        av_dict_set(&opts, "iv", iv, 0);
+
+        ret = open_url(var->parent, &var->input, url, opts);
+        av_dict_free(&opts);
+        return ret;
     }
     return AVERROR(ENOSYS);
 }
@@ -463,11 +448,10 @@ reload:
         if (ret < 0)
             return ret;
     }
-    ret = ffurl_read(v->input, buf, buf_size);
+    ret = avio_read(v->input, buf, buf_size);
     if (ret > 0)
         return ret;
-    ffurl_close(v->input);
-    v->input = NULL;
+    ff_format_io_close(c->ctx, &v->input);
     v->cur_seq_no++;
 
     c->end_of_segment = 1;
@@ -665,8 +649,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             av_log(s, AV_LOG_INFO, "Now receiving variant %d\n", i);
         } else if (first && !v->cur_needed && v->needed) {
             if (v->input)
-                ffurl_close(v->input);
-            v->input = NULL;
+                ff_format_io_close(s, &v->input);
             v->needed = 0;
             changed = 1;
             av_log(s, AV_LOG_INFO, "No longer receiving variant %d\n", i);
@@ -813,10 +796,8 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         struct variant *var = c->variants[i];
         int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ?
                       0 : c->first_timestamp;
-        if (var->input) {
-            ffurl_close(var->input);
-            var->input = NULL;
-        }
+        if (var->input)
+            ff_format_io_close(s, &var->input);
         av_packet_unref(&var->pkt);
         reset_packet(&var->pkt);
         var->pb.eof_reached = 0;
