@@ -9954,6 +9954,21 @@ dimension is divisible by n and adjust the value if necessary.
 See below for the list of accepted constants for use in the dimension
 expression.
 
+@item eval
+Specify when to evaluate @var{width} and @var{height} expression. It accepts the following values:
+
+@table @samp
+@item init
+Only evaluate expressions once during the filter initialization or when a command is processed.
+
+@item frame
+Evaluate expressions for each incoming frame.
+
+@end table
+
+Default value is @samp{init}.
+
+
 @item interl
 Set the interlacing mode. It accepts the following values:
 
@@ -9976,6 +9991,15 @@ Set libswscale scaling flags. See
 @ref{sws_flags,,the ffmpeg-scaler manual,ffmpeg-scaler} for the
 complete list of values. If not explicitly specified the filter applies
 the default flags.
+
+
+@item param0, param1
+Set libswscale input parameters for scaling algorithms that need them. See
+@ref{sws_params,,the ffmpeg-scaler manual,ffmpeg-scaler} for the
+complete documentation. If not explicitly specified the filter applies
+empty parameters.
+
+
 
 @item size, s
 Set the video size. For the syntax of this option, check the
