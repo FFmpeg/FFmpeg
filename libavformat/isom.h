@@ -159,6 +159,7 @@ typedef struct MOVContext {
     int64_t next_root_atom; ///< offset of the next root atom
     int export_all;
     int export_xmp;
+    int enable_drefs;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
