@@ -34,7 +34,8 @@ enum PatternType {
     PT_GLOB_SEQUENCE,
     PT_GLOB,
     PT_SEQUENCE,
-    PT_NONE
+    PT_NONE,
+    PT_DEFAULT
 };
 
 typedef struct VideoDemuxData {
