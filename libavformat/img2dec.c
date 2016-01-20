@@ -376,6 +376,10 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int size[3]           = { 0 }, ret[3] = { 0 };
     AVIOContext *f[3]     = { NULL };
     AVCodecContext *codec = s1->streams[0]->codec;
+    AVOpenCallback open_func = s1->open_cb;
+
+    if (!open_func)
+        open_func = ffio_open2_wrapper;
 
     if (!s->is_pipe) {
         /* loop over input */
@@ -397,7 +401,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for (i = 0; i < 3; i++) {
-            if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
+            if (open_func(s1, &f[i], filename, AVIO_FLAG_READ,
                            &s1->interrupt_callback, NULL) < 0) {
                 if (i >= 1)
                     break;
