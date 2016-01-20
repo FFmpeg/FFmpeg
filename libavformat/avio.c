@@ -155,9 +155,16 @@ static int url_alloc_for_protocol(URLContext **puc, struct URLProtocol *up,
                 char sep= *++p;
                 char *key, *val;
                 p++;
+
+                if (strcmp(up->name, "subfile"))
+                    ret = AVERROR(EINVAL);
+
                 while(ret >= 0 && (key= strchr(p, sep)) && p<key && (val = strchr(key+1, sep))){
                     *val= *key= 0;
-                    ret= av_opt_set(uc->priv_data, p, key+1, 0);
+                    if (strcmp(p, "start") && strcmp(p, "end")) {
+                        ret = AVERROR_OPTION_NOT_FOUND;
+                    } else
+                        ret= av_opt_set(uc->priv_data, p, key+1, 0);
                     if (ret == AVERROR_OPTION_NOT_FOUND)
                         av_log(uc, AV_LOG_ERROR, "Key '%s' not found.\n", p);
                     *val= *key= sep;
@@ -222,7 +229,7 @@ static struct URLProtocol *url_find_protocol(const char *filename)
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
 
     if (filename[proto_len] != ':' &&
-        (filename[proto_len] != ',' || !strchr(filename + proto_len + 1, ':')) ||
+        (strncmp(filename, "subfile,", 8) || !strchr(filename + proto_len + 1, ':')) ||
         is_dos_path(filename))
         strcpy(proto_str, "file");
     else
