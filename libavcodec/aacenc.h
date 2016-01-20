@@ -34,8 +34,7 @@
 #include "lpc.h"
 
 typedef enum AACCoder {
-    AAC_CODER_FAAC = 0,
-    AAC_CODER_ANMR,
+    AAC_CODER_ANMR = 0,
     AAC_CODER_TWOLOOP,
     AAC_CODER_FAST,
 
