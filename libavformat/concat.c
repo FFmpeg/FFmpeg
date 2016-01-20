@@ -65,7 +65,10 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
     struct concat_data  *data = h->priv_data;
     struct concat_nodes *nodes;
 
-    av_strstart(uri, "concat:", &uri);
+    if (!av_strstart(uri, "concat:", &uri)) {
+        av_log(h, AV_LOG_ERROR, "URL %s lacks prefix\n", uri);
+        return AVERROR(EINVAL);
+    }
 
     for (i = 0, len = 1; uri[i]; i++) {
         if (uri[i] == *AV_CAT_SEPARATOR) {
