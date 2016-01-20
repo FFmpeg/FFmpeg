@@ -138,7 +138,7 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     else if (ctx->p2pPublishing)
         res = RTMFP_PublishP2P(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
     else if (flags & AVIO_FLAG_WRITE)
-        res = RTMFP_Publish(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered);
+        res = RTMFP_Publish(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
     else
         res = RTMFP_Play(ctx->id, ctx->publication);
 
