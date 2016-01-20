@@ -70,6 +70,10 @@ static const AVOption avformat_options[] = {
 {"auto",              "enabled when required by target format",    0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_AUTO },              INT_MIN, INT_MAX, E, "avoid_negative_ts"},
 {"make_non_negative", "shift timestamps so they are non negative", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE }, INT_MIN, INT_MAX, E, "avoid_negative_ts"},
 {"make_zero",         "shift timestamps so they start at 0",       0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_MAKE_ZERO },         INT_MIN, INT_MAX, E, "avoid_negative_ts"},
+{"protocol_blacklist", "A comma-separated list of blacklisted protocols used for opening files internally by lavf",
+                       OFFSET(protocol_blacklist), AV_OPT_TYPE_STRING, { .str = "concat" }, .flags = E | D },
+{"protocol_whitelist", "A comma-separated list of whitelisted protocols used for opening files internally by lavf",
+                       OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = E | D },
 {NULL},
 };
 

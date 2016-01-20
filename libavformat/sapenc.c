@@ -138,7 +138,8 @@ static int sap_write_header(AVFormatContext *s)
         freeaddrinfo(ai);
     }
 
-    sap->protocols = ffurl_get_protocols(NULL, NULL);
+    sap->protocols = ffurl_get_protocols(s->protocol_whitelist,
+                                         s->protocol_blacklist);
     if (!sap->protocols) {
         ret = AVERROR(ENOMEM);
         goto fail;

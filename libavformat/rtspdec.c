@@ -640,7 +640,8 @@ static int rtsp_listen(AVFormatContext *s)
     enum RTSPMethod methodcode;
 
     if (!rt->protocols) {
-        rt->protocols = ffurl_get_protocols(NULL, NULL);
+        rt->protocols = ffurl_get_protocols(s->protocol_whitelist,
+                                            s->protocol_blacklist);
         if (!rt->protocols)
             return AVERROR(ENOMEM);
     }

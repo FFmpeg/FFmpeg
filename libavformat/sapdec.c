@@ -85,7 +85,8 @@ static int sap_read_header(AVFormatContext *s)
         av_strlcpy(host, "224.2.127.254", sizeof(host));
     }
 
-    sap->protocols = ffurl_get_protocols(NULL, NULL);
+    sap->protocols = ffurl_get_protocols(s->protocol_whitelist,
+                                         s->protocol_blacklist);
     if (!sap->protocols) {
         ret = AVERROR(ENOMEM);
         goto fail;

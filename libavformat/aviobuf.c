@@ -41,20 +41,53 @@
 #define SHORT_SEEK_THRESHOLD 4096
 
 typedef struct AVIOInternal {
+    const AVClass *class;
+
+    char *protocol_whitelist;
+    char *protocol_blacklist;
+
     URLContext *h;
     const URLProtocol **protocols;
 } AVIOInternal;
 
+static void *io_priv_child_next(void *obj, void *prev)
+{
+    AVIOInternal *internal = obj;
+    return prev ? NULL : internal->h;
+}
+
+static const AVClass *io_priv_child_class_next(const AVClass *prev)
+{
+    return prev ? NULL : &ffurl_context_class;
+}
+
+#define OFFSET(x) offsetof(AVIOInternal, x)
+static const AVOption io_priv_options[] = {
+    { "protocol_whitelist", "A comma-separated list of allowed protocols",
+        OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING },
+    { "protocol_blacklist", "A comma-separated list of forbidden protocols",
+        OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING },
+    { NULL },
+};
+
+static const AVClass io_priv_class = {
+    .class_name       = "AVIOContext",
+    .item_name        = av_default_item_name,
+    .version          = LIBAVUTIL_VERSION_INT,
+    .option           = io_priv_options,
+    .child_next       = io_priv_child_next,
+    .child_class_next = io_priv_child_class_next,
+};
+
 static void *ff_avio_child_next(void *obj, void *prev)
 {
     AVIOContext *s = obj;
-    AVIOInternal *internal = s->opaque;
-    return prev ? NULL : internal->h;
+    return prev ? NULL : s->opaque;
 }
 
 static const AVClass *ff_avio_child_class_next(const AVClass *prev)
 {
-    return prev ? NULL : &ffurl_context_class;
+    return prev ? NULL : &io_priv_class;
 }
 
 static const AVOption ff_avio_options[] = {
@@ -750,7 +783,10 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     if (!internal)
         goto fail;
 
+    internal->class = &io_priv_class;
     internal->h = h;
+
+    av_opt_set_defaults(internal);
 
     *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE,
                             internal, io_read_packet, io_write_packet, io_seek);
@@ -766,6 +802,8 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     (*s)->av_class = &ff_avio_class;
     return 0;
 fail:
+    if (internal)
+        av_opt_free(internal);
     av_freep(&internal);
     av_freep(&buffer);
     return AVERROR(ENOMEM);
@@ -849,10 +887,21 @@ int avio_open2(AVIOContext **s, const char *filename, int flags,
 {
     AVIOInternal *internal;
     const URLProtocol **protocols;
+    char *proto_whitelist = NULL, *proto_blacklist = NULL;
+    AVDictionaryEntry *e;
     URLContext *h;
     int err;
 
-    protocols = ffurl_get_protocols(NULL, NULL);
+    if (options) {
+        e = av_dict_get(*options, "protocol_whitelist", NULL, 0);
+        if (e)
+            proto_whitelist = e->value;
+        e = av_dict_get(*options, "protocol_blacklist", NULL, 0);
+        if (e)
+            proto_blacklist = e->value;
+    }
+
+    protocols = ffurl_get_protocols(proto_whitelist, proto_blacklist);
     if (!protocols)
         return AVERROR(ENOMEM);
 
@@ -872,6 +921,14 @@ int avio_open2(AVIOContext **s, const char *filename, int flags,
     internal = (*s)->opaque;
     internal->protocols = protocols;
 
+    if (options) {
+        err = av_opt_set_dict(internal, options);
+        if (err < 0) {
+            avio_closep(s);
+            return err;
+        }
+    }
+
     return 0;
 }
 
@@ -886,6 +943,8 @@ int avio_close(AVIOContext *s)
     avio_flush(s);
     internal = s->opaque;
     h        = internal->h;
+
+    av_opt_free(internal);
 
     av_freep(&internal->protocols);
     av_freep(&s->opaque);

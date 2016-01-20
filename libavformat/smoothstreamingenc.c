@@ -312,7 +312,7 @@ static int ism_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    c->protocols = ffurl_get_protocols(NULL, NULL);
+    c->protocols = ffurl_get_protocols(s->protocol_whitelist, s->protocol_blacklist);
     if (!c->protocols) {
         ret = AVERROR(ENOMEM);
         goto fail;

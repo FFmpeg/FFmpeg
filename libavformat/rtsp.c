@@ -1668,7 +1668,8 @@ int ff_rtsp_connect(AVFormatContext *s)
         return AVERROR(EIO);
 
     if (!rt->protocols) {
-        rt->protocols = ffurl_get_protocols(NULL, NULL);
+        rt->protocols = ffurl_get_protocols(s->protocol_whitelist,
+                                            s->protocol_blacklist);
         if (!rt->protocols)
             return AVERROR(ENOMEM);
     }
@@ -2252,7 +2253,8 @@ static int sdp_read_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     if (!rt->protocols) {
-        rt->protocols = ffurl_get_protocols(NULL, NULL);
+        rt->protocols = ffurl_get_protocols(s->protocol_whitelist,
+                                            s->protocol_blacklist);
         if (!rt->protocols)
             return AVERROR(ENOMEM);
     }
@@ -2379,7 +2381,8 @@ static int rtp_read_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     if (!rt->protocols) {
-        rt->protocols = ffurl_get_protocols(NULL, NULL);
+        rt->protocols = ffurl_get_protocols(s->protocol_whitelist,
+                                            s->protocol_blacklist);
         if (!rt->protocols)
             return AVERROR(ENOMEM);
     }
