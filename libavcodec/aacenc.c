@@ -989,6 +989,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         s->options.pns = 0;
     }
 
+    ERROR_IF(s->options.ltp && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
+             "The LPT profile requires experimental compliance, add -strict -2 to enable!\n");
+
     if ((ret = dsp_init(avctx, s)) < 0)
         goto fail;
 
