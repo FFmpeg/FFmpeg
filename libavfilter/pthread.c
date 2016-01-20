@@ -27,18 +27,11 @@
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
+#include "libavutil/thread.h"
 
 #include "avfilter.h"
 #include "internal.h"
 #include "thread.h"
-
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#endif
 
 typedef struct ThreadContext {
     AVFilterGraph *graph;

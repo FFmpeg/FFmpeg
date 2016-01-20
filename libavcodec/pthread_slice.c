@@ -24,14 +24,6 @@
 
 #include "config.h"
 
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#endif
-
 #include "avcodec.h"
 #include "internal.h"
 #include "pthread_internal.h"
@@ -41,6 +33,7 @@
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
+#include "libavutil/thread.h"
 
 typedef int (action_func)(AVCodecContext *c, void *arg);
 typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
