@@ -59,6 +59,7 @@ typedef struct TeletextContext
     int             chop_top;
     int             sub_duration; /* in msec */
     int             transparent_bg;
+    int             opacity;
     int             chop_spaces;
 
     int             lines_processed;
@@ -210,9 +211,16 @@ static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi
                     memset(pixel, VBI_TRANSPARENT_BLACK, BITMAP_CHAR_WIDTH);
                     break;
                 case VBI_OPAQUE:
-                case VBI_SEMI_TRANSPARENT:
                     if (!ctx->transparent_bg)
                         break;
+                case VBI_SEMI_TRANSPARENT:
+                    if (ctx->opacity > 0) {
+                        if (ctx->opacity < 255)
+                            for(; pixel < pixelnext; pixel++)
+                                if (*pixel == vc->background)
+                                    *pixel += VBI_NB_COLORS;
+                        break;
+                    }
                 case VBI_TRANSPARENT_FULL:
                     for(; pixel < pixelnext; pixel++)
                         if (*pixel == vc->background)
@@ -259,7 +267,7 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
     sub_rect->y = ctx->y_offset + chop_top * BITMAP_CHAR_HEIGHT;
     sub_rect->w = resx;
     sub_rect->h = resy;
-    sub_rect->nb_colors = VBI_NB_COLORS;
+    sub_rect->nb_colors = ctx->opacity > 0 && ctx->opacity < 255 ? 2 * VBI_NB_COLORS : VBI_NB_COLORS;
     sub_rect->data[1] = av_mallocz(AVPALETTE_SIZE);
     if (!sub_rect->data[1]) {
         av_freep(&sub_rect->data[0]);
@@ -273,9 +281,11 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
         b = VBI_B(page->color_map[ci]);
         a = VBI_A(page->color_map[ci]);
         ((uint32_t *)sub_rect->data[1])[ci] = RGBA(r, g, b, a);
+        ((uint32_t *)sub_rect->data[1])[ci + VBI_NB_COLORS] = RGBA(r, g, b, ctx->opacity);
         ff_dlog(ctx, "palette %0x\n", ((uint32_t *)sub_rect->data[1])[ci]);
     }
     ((uint32_t *)sub_rect->data[1])[VBI_TRANSPARENT_BLACK] = RGBA(0, 0, 0, 0);
+    ((uint32_t *)sub_rect->data[1])[VBI_TRANSPARENT_BLACK + VBI_NB_COLORS] = RGBA(0, 0, 0, 0);
     sub_rect->type = SUBTITLE_BITMAP;
     return 0;
 }
@@ -511,6 +521,9 @@ static int teletext_init_decoder(AVCodecContext *avctx)
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
 
+    if (ctx->opacity == -1)
+        ctx->opacity = ctx->transparent_bg ? 0 : 255;
+
 #ifdef DEBUG
     {
         char *t;
@@ -554,6 +567,7 @@ static const AVOption options[] = {
     {"txt_chop_spaces", "chops leading and trailing spaces from text",       OFFSET(chop_spaces),    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
     {"txt_duration",    "display duration of teletext pages in msecs",       OFFSET(sub_duration),   AV_OPT_TYPE_INT,    {.i64 = 30000},    0, 86400000, SD},
     {"txt_transparent", "force transparent background of the teletext",      OFFSET(transparent_bg), AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,        SD},
+    {"txt_opacity",     "set opacity of the transparent background",         OFFSET(opacity),        AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 255,      SD},
     { NULL },
 };
 
