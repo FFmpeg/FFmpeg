@@ -2085,6 +2085,8 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         avctx->level           = dsh->level;
         avctx->framerate       = dsh->framerate;
         s->bit_depth           = dsh->bit_depth;
+        s->version.major       = dsh->version.major;
+        s->version.minor       = dsh->version.minor;
         s->seq                 = *dsh;
         av_freep(&dsh);
 
@@ -2143,6 +2145,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         pic->avframe->key_frame = s->num_refs == 0;              /* [DIRAC_STD] is_intra()            */
         pic->avframe->pict_type = s->num_refs + 1;               /* Definition of AVPictureType in avutil.h */
 
+        /* VC-2 Low Delay has a different parse code than the Dirac Low Delay */
         if (s->version.minor == 2 && parse_code == 0x88)
             s->ld_picture = 1;
 
