@@ -60,8 +60,8 @@ yuv422p14be         8bd7bfb0b35d68000ba57af66958ef2d
 yuv422p14le         471c7528e3da240d0a40f33548cbfbab
 yuv422p16be         8c193a8b6064e2379b2fb211cd2e6e37
 yuv422p16le         c949614bec06baca5ffca840b164eacc
-yuv422p9be          245551dc31484ff4d31f7e7230efd1ed
-yuv422p9le          8fd07db781631685523e3193f2792874
+yuv422p9be          b615f4e767a287e85be97dd52371ba5e
+yuv422p9le          c9faffe2fcb2e30be5d792412b3550b0
 yuv444p             1483374f69c4bbaf9252ce255fc84feb
 yuv444p10be         2e5caee508692869141bd9649cc17f64
 yuv444p10le         c0ceb41ad4c2ddc454f3fdb9cda2d8ad
@@ -71,8 +71,8 @@ yuv444p14be         33f1cf5233f57582618390ea337e83c6
 yuv444p14le         7d9fc358232488f671d663d27875f3c1
 yuv444p16be         779ea70979e735d3074fef0466792681
 yuv444p16le         aa893d9b1857b68fd1c5fc42236d7816
-yuv444p9be          4e5c3a669f37a6f0587d372a28d3e6e8
-yuv444p9le          621d86abf2ed636d9933ece245033278
+yuv444p9be          fd0ae3b828d40e2638ea0640bb5cc168
+yuv444p9le          9bb3dde9fadb3c03a0ef8305b5f67a7e
 yuva422p            c470da57cde22b452deb8874df710dce
 yuva422p10be        a2ffa080ae661c1033aa38be28002922
 yuva422p10le        a4f5e8006f8ea3f964206605045e0fe0
