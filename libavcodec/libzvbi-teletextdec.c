@@ -30,6 +30,7 @@
 
 #define TEXT_MAXSZ    (25 * (56 + 1) * 4 + 2)
 #define VBI_NB_COLORS 40
+#define VBI_TRANSPARENT_BLACK 8
 #define RGBA(r,g,b,a) (((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
 #define VBI_R(rgba)   (((rgba) >> 0) & 0xFF)
 #define VBI_G(rgba)   (((rgba) >> 8) & 0xFF)
@@ -193,7 +194,7 @@ static int gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page
 }
 
 static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page,
-                             int chop_top, uint8_t transparent_color, int resx, int resy)
+                             int chop_top, int resx, int resy)
 {
     int iy;
 
@@ -206,7 +207,7 @@ static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi
             uint8_t *pixelnext = pixel + BITMAP_CHAR_WIDTH;
             switch (vc->opacity) {
                 case VBI_TRANSPARENT_SPACE:
-                    memset(pixel, transparent_color, BITMAP_CHAR_WIDTH);
+                    memset(pixel, VBI_TRANSPARENT_BLACK, BITMAP_CHAR_WIDTH);
                     break;
                 case VBI_OPAQUE:
                 case VBI_SEMI_TRANSPARENT:
@@ -215,7 +216,7 @@ static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi
                 case VBI_TRANSPARENT_FULL:
                     for(; pixel < pixelnext; pixel++)
                         if (*pixel == vc->background)
-                            *pixel = transparent_color;
+                            *pixel = VBI_TRANSPARENT_BLACK;
                     break;
             }
             pixel = pixelnext;
@@ -255,12 +256,12 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
                             0, chop_top, page->columns, page->rows - chop_top,
                             /*reveal*/ 1, /*flash*/ 1);
 
-    fix_transparency(ctx, sub_rect, page, chop_top, cmax, resx, resy);
+    fix_transparency(ctx, sub_rect, page, chop_top, resx, resy);
     sub_rect->x = ctx->x_offset;
     sub_rect->y = ctx->y_offset + chop_top * BITMAP_CHAR_HEIGHT;
     sub_rect->w = resx;
     sub_rect->h = resy;
-    sub_rect->nb_colors = (int)cmax + 1;
+    sub_rect->nb_colors = cmax;
     sub_rect->data[1] = av_mallocz(AVPALETTE_SIZE);
     if (!sub_rect->data[1]) {
         av_freep(&sub_rect->data[0]);
@@ -276,7 +277,7 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
         ((uint32_t *)sub_rect->data[1])[ci] = RGBA(r, g, b, a);
         ff_dlog(ctx, "palette %0x\n", ((uint32_t *)sub_rect->data[1])[ci]);
     }
-    ((uint32_t *)sub_rect->data[1])[cmax] = RGBA(0, 0, 0, 0);
+    ((uint32_t *)sub_rect->data[1])[VBI_TRANSPARENT_BLACK] = RGBA(0, 0, 0, 0);
     sub_rect->type = SUBTITLE_BITMAP;
     return 0;
 }
