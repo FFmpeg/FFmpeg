@@ -2783,6 +2783,11 @@ int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t s
         uint8_t *new_buffer = NULL;
         int new_buffer_size = 0;
 
+        if ((s->avctx->internal->byte_buffer_size + size_increase) >= INT_MAX/8) {
+            av_log(s->avctx, AV_LOG_ERROR, "Cannot reallocate putbit buffer\n");
+            return AVERROR(ENOMEM);
+        }
+
         av_fast_padded_malloc(&new_buffer, &new_buffer_size,
                               s->avctx->internal->byte_buffer_size + size_increase);
         if (!new_buffer)
