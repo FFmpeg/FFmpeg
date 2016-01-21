@@ -1866,7 +1866,7 @@ static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
     if (track->st)
         t = av_dict_get(track->st->metadata, "reel_name", NULL, 0);
 
-    if (t && utf8len(t->value))
+    if (t && utf8len(t->value) && track->mode != MODE_MP4)
         mov_write_source_reference_tag(pb, track, t->value);
     else
         avio_wb16(pb, 0); /* zero size */
@@ -2246,7 +2246,10 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tra
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
     } else if (track->tag == MKTAG('t','m','c','d')) {
-        mov_write_gmhd_tag(pb, track);
+        if (track->mode == MODE_MP4)
+            mov_write_nmhd_tag(pb);
+        else
+            mov_write_gmhd_tag(pb, track);
     }
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(pb, NULL);
@@ -5185,7 +5188,7 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
-    if (mov->mode == MODE_MOV) {
+    if (mov->mode == MODE_MOV || mov->mode == MODE_MP4) {
         tmcd_track = mov->nb_streams;
 
         /* +1 tmcd track for each video stream with a timecode */
