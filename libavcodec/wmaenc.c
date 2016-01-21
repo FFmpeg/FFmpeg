@@ -32,6 +32,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     WMACodecContext *s = avctx->priv_data;
     int i, flags1, flags2, block_align;
     uint8_t *extradata;
+    int ret;
 
     s->avctx = avctx;
 
@@ -78,7 +79,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->channels == 2)
         s->ms_stereo = 1;
 
-    ff_wma_init(avctx, flags2);
+    if ((ret = ff_wma_init(avctx, flags2)) < 0)
+        return ret;
 
     /* init MDCT */
     for (i = 0; i < s->nb_block_sizes; i++)
