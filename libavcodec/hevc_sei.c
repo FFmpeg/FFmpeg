@@ -78,6 +78,30 @@ static int decode_nal_sei_decoded_picture_hash(HEVCContext *s)
     return 0;
 }
 
+static int decode_nal_sei_mastering_display_info(HEVCContext *s)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+    int i;
+    // Mastering primaries
+    for (i = 0; i < 3; i++) {
+        s->display_primaries[i][0] = get_bits(gb, 16);
+        s->display_primaries[i][1] = get_bits(gb, 16);
+    }
+    // White point (x, y)
+    s->white_point[0] = get_bits(gb, 16);
+    s->white_point[1] = get_bits(gb, 16);
+
+    // Max and min luminance of mastering display
+    s->max_mastering_luminance = get_bits_long(gb, 32);
+    s->min_mastering_luminance = get_bits_long(gb, 32);
+
+    // As this SEI message comes before the first frame that references it,
+    // initialize the flag to 2 and decrement on IRAP access unit so it
+    // persists for the coded video sequence (e.g., between two IRAPs)
+    s->sei_mastering_display_info_present = 2;
+    return 0;
+}
+
 static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -278,6 +302,8 @@ static int decode_nal_sei_prefix(HEVCContext *s, int type, int size)
             skip_bits(gb, 8 * size);
             return ret;
         }
+    case SEI_TYPE_MASTERING_DISPLAY_INFO:
+        return decode_nal_sei_mastering_display_info(s);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         active_parameter_sets(s);
         av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
