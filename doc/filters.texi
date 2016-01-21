@@ -15134,6 +15134,13 @@ option @var{n}. Default value is "25".
 @item split_channels
 Set if channels should be drawn separately or overlap. Default value is 0.
 
+@item colors
+Set colors separated by '|' which are going to be used for drawing of each channel.
+
+@item scale
+Set amplitude scale. Can be linear @code{lin} or logarithmic @code{log}.
+Default is linear.
+
 @end table
 
 @subsection Examples
@@ -15168,6 +15175,13 @@ Default value is @code{600x240}.
 
 @item split_channels
 Set if channels should be drawn separately or overlap. Default value is 0.
+
+@item colors
+Set colors separated by '|' which are going to be used for drawing of each channel.
+
+@item scale
+Set amplitude scale. Can be linear @code{lin} or logarithmic @code{log}.
+Default is linear.
 @end table
 
 @subsection Examples
