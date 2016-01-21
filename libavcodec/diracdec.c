@@ -1839,9 +1839,12 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
         if (!s->num_refs) { /* intra */
             for (y = 0; y < p->height; y += 16) {
+                int idx = (s->bit_depth - 8) >> 1;
                 ff_spatial_idwt_slice2(&d, y+16); /* decode */
-                s->diracdsp.put_signed_rect_clamped[s->pshift](frame + y*p->stride, p->stride,
-                                                               p->idwt_buf + y*p->idwt_stride, p->idwt_stride, p->width, 16);
+                s->diracdsp.put_signed_rect_clamped[idx](frame + y*p->stride,
+                                                         p->stride,
+                                                         p->idwt_buf + y*p->idwt_stride,
+                                                         p->idwt_stride, p->width, 16);
             }
         } else { /* inter */
             int rowheight = p->ybsep*p->stride;

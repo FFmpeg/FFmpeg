@@ -168,6 +168,23 @@ static void put_signed_rect_clamped_10bit_c(uint8_t *_dst, int dst_stride, const
     }
 }
 
+static void put_signed_rect_clamped_12bit_c(uint8_t *_dst, int dst_stride, const uint8_t *_src, int src_stride, int width, int height)
+{
+    int x, y;
+    uint16_t *dst = (uint16_t *)_dst;
+    int32_t *src = (int32_t *)_src;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x+=4) {
+            dst[x  ] = av_clip(src[x  ] + 2048, 0, (1 << 12) - 1);
+            dst[x+1] = av_clip(src[x+1] + 2048, 0, (1 << 12) - 1);
+            dst[x+2] = av_clip(src[x+2] + 2048, 0, (1 << 12) - 1);
+            dst[x+3] = av_clip(src[x+3] + 2048, 0, (1 << 12) - 1);
+        }
+        dst += dst_stride >> 1;
+        src += src_stride >> 2;
+    }
+}
+
 static void add_rect_clamped_c(uint8_t *dst, const uint16_t *src, int stride,
                                const int16_t *idwt, int idwt_stride,
                                int width, int height)
@@ -197,6 +214,7 @@ av_cold void ff_diracdsp_init(DiracDSPContext *c)
     c->add_rect_clamped = add_rect_clamped_c;
     c->put_signed_rect_clamped[0] = put_signed_rect_clamped_8bit_c;
     c->put_signed_rect_clamped[1] = put_signed_rect_clamped_10bit_c;
+    c->put_signed_rect_clamped[2] = put_signed_rect_clamped_12bit_c;
 
     c->add_dirac_obmc[0] = add_obmc8_c;
     c->add_dirac_obmc[1] = add_obmc16_c;
