@@ -48,9 +48,6 @@
 #define MIN_SIZE 3
 #define MAX_SIZE 13
 
-/* right-shift and round-up */
-#define SHIFTUP(x,shift) (-((-(x))>>(shift)))
-
 typedef struct FilterParam {
     int msize_x;                             ///< matrix width
     int msize_y;                             ///< matrix height
@@ -182,7 +179,7 @@ static int config_props(AVFilterLink *link)
     unsharp->vsub = desc->log2_chroma_h;
 
     init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
-    init_filter_param(link->dst, &unsharp->chroma, "chroma", SHIFTUP(link->w, unsharp->hsub));
+    init_filter_param(link->dst, &unsharp->chroma, "chroma", AV_CEIL_RSHIFT(link->w, unsharp->hsub));
 
     return 0;
 }
@@ -208,8 +205,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     UnsharpContext *unsharp = link->dst->priv;
     AVFilterLink *outlink   = link->dst->outputs[0];
     AVFrame *out;
-    int cw = SHIFTUP(link->w, unsharp->hsub);
-    int ch = SHIFTUP(link->h, unsharp->vsub);
+    int cw = AV_CEIL_RSHIFT(link->w, unsharp->hsub);
+    int ch = AV_CEIL_RSHIFT(link->h, unsharp->vsub);
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
