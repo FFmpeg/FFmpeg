@@ -1774,6 +1774,7 @@ HEADERS_LIST="
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
     malloc_h
+    opencv2_core_core_c_h
     openjpeg_2_1_openjpeg_h
     openjpeg_2_0_openjpeg_h
     openjpeg_1_5_openjpeg_h
@@ -5481,7 +5482,9 @@ enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set
 enabled libnut            && require libnut libnut.h nut_demuxer_init -lnut
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
-enabled libopencv         && require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader
+enabled libopencv         && { check_header opencv2/core/core_c.h &&
+                               require_pkg_config opencv opencv2/core/core_c.h cvCreateImageHeader ||
+                               require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
 enabled libopenjpeg       && { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC ||
                                check_lib openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC ||
