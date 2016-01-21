@@ -11,6 +11,7 @@ version <next>:
 - bench and abench filters
 - ciescope filter
 - protocol blacklisting API
+- MediaCodec H264 decoding
 
 
 version 3.0:
