@@ -288,8 +288,10 @@ static int enu_free(void *opaque, void *elem)
 
 void ff_nut_free_sp(NUTContext *nut)
 {
-    av_tree_enumerate(nut->syncpoints, NULL, NULL, enu_free);
-    av_tree_destroy(nut->syncpoints);
+    if (nut->syncpoints) {
+        av_tree_enumerate(nut->syncpoints, NULL, NULL, enu_free);
+        av_tree_destroy(nut->syncpoints);
+    }
 }
 
 const Dispositions ff_nut_dispositions[] = {

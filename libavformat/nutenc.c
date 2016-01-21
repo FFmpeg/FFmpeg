@@ -1174,7 +1174,7 @@ static int nut_write_trailer(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
     AVIOContext *bc = s->pb, *dyn_bc;
-    int i, ret;
+    int ret;
 
     while (nut->header_count < 3)
         write_headers(s, bc);
@@ -1186,15 +1186,22 @@ static int nut_write_trailer(AVFormatContext *s)
         put_packet(nut, bc, dyn_bc, 1, INDEX_STARTCODE);
     }
 
+    return 0;
+}
+
+static void nut_write_deinit(AVFormatContext *s)
+{
+    NUTContext *nut = s->priv_data;
+    int i;
+
     ff_nut_free_sp(nut);
-    for (i=0; i<s->nb_streams; i++)
-        av_freep(&nut->stream[i].keyframe_pts);
+    if (nut->stream)
+        for (i=0; i<s->nb_streams; i++)
+            av_freep(&nut->stream[i].keyframe_pts);
 
     av_freep(&nut->stream);
     av_freep(&nut->chapter);
     av_freep(&nut->time_base);
-
-    return 0;
 }
 
 #define OFFSET(x) offsetof(NUTContext, x)
@@ -1227,6 +1234,7 @@ AVOutputFormat ff_nut_muxer = {
     .write_header   = nut_write_header,
     .write_packet   = nut_write_packet,
     .write_trailer  = nut_write_trailer,
+    .deinit         = nut_write_deinit,
     .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag      = ff_nut_codec_tags,
     .priv_class     = &class,
