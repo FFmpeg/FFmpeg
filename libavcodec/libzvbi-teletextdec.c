@@ -229,18 +229,16 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
 {
     int resx = page->columns * BITMAP_CHAR_WIDTH;
     int resy = (page->rows - chop_top) * BITMAP_CHAR_HEIGHT;
-    uint8_t ci, cmax = 0;
+    uint8_t ci;
     vbi_char *vc = page->text + (chop_top * page->columns);
     vbi_char *vcend = page->text + (page->rows * page->columns);
 
     for (; vc < vcend; vc++) {
-        if (vc->opacity != VBI_TRANSPARENT_SPACE) {
-            cmax = VBI_NB_COLORS;
+        if (vc->opacity != VBI_TRANSPARENT_SPACE)
             break;
-        }
     }
 
-    if (cmax == 0) {
+    if (vc >= vcend) {
         av_log(ctx, AV_LOG_DEBUG, "dropping empty page %3x\n", page->pgno);
         sub_rect->type = SUBTITLE_NONE;
         return 0;
@@ -261,13 +259,13 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
     sub_rect->y = ctx->y_offset + chop_top * BITMAP_CHAR_HEIGHT;
     sub_rect->w = resx;
     sub_rect->h = resy;
-    sub_rect->nb_colors = cmax;
+    sub_rect->nb_colors = VBI_NB_COLORS;
     sub_rect->data[1] = av_mallocz(AVPALETTE_SIZE);
     if (!sub_rect->data[1]) {
         av_freep(&sub_rect->data[0]);
         return AVERROR(ENOMEM);
     }
-    for (ci = 0; ci < cmax; ci++) {
+    for (ci = 0; ci < VBI_NB_COLORS; ci++) {
         int r, g, b, a;
 
         r = VBI_R(page->color_map[ci]);
