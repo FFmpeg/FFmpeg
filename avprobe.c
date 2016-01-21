@@ -600,7 +600,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 {
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
-    const AVCodec *dec;
+    const AVCodecDescriptor *codec_desc;
     const char *profile;
     char val_str[128];
     AVRational display_aspect_ratio, *sar = NULL;
@@ -611,9 +611,10 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     probe_int("index", stream->index);
 
     dec_ctx = stream->codec;
-    if ((dec = dec_ctx->codec)) {
-        probe_str("codec_name", dec->name);
-        probe_str("codec_long_name", dec->long_name);
+    codec_desc = avcodec_descriptor_get(dec_ctx->codec_id);
+    if (codec_desc) {
+        probe_str("codec_name", codec_desc->name);
+        probe_str("codec_long_name", codec_desc->long_name);
     } else {
         probe_str("codec_name", "unknown");
     }
@@ -630,7 +631,8 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
                                       dec_ctx->codec_tag));
 
     /* print profile, if there is one */
-    if (dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
+    profile = avcodec_profile_name(dec_ctx->codec_id, dec_ctx->profile);
+    if (profile)
         probe_str("profile", profile);
 
     switch (dec_ctx->codec_type) {
