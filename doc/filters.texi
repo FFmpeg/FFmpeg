@@ -804,9 +804,9 @@ window function will be picked. Default is @code{0.75}.
 
 @itemize
 @item
-Increase first 50 bins by 0.1 and lower all other frequencies by factor of 10:
+Leave almost only low frequencies in audio:
 @example
-afftfilt="1.1*between(b\,0\,49)+0.1*between(b\,50\,f)"
+afftfilt="1-clip((b/nb)*b,0,1)"
 @end example
 @end itemize
 
