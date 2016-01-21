@@ -521,7 +521,7 @@ disable_safe(){
 do_enable_deep(){
     for var; do
         enabled $var && continue
-        eval sel="\$${var}_select\ \$${var}_select_any"
+        eval sel="\$${var}_select"
         eval sgs="\$${var}_suggest"
         pushvar var sgs
         enable_deep $sel
@@ -546,11 +546,26 @@ enable_deep_weak(){
     done
 }
 
+do_enable_deep_force(){
+    for var; do
+        enabled $var && continue
+        eval sel="\$${var}_select\ \$${var}_suggest\ \$${var}_select_any"
+        pushvar var
+        enable_deep_force $sel
+        popvar var
+    done
+}
+
+enable_deep_force(){
+    do_enable_deep_force $*
+    enable $*
+}
+
 request(){
     for var; do
         enable ${var}_requested
     done
-    enable_deep $*
+    enable_deep_force $*
 }
 
 enabled(){
