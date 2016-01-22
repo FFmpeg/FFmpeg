@@ -4582,7 +4582,8 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
                                die "ERROR: mmal not found"; }
-enabled openssl           && { check_pkg_config openssl openssl/ssl.h SSL_library_init ||
+enabled openssl           && { check_pkg_config openssl openssl/ssl.h SSL_library_init && {
+                               add_cflags $openssl_cflags && add_extralibs $openssl_libs; }||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
