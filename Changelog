@@ -57,6 +57,7 @@ version <next>:
 - only seek with the right mouse button in ffplay
 - toggle full screen when double-clicking with the left mouse button in ffplay
 - afftfilt filter
+- convolution filter
 
 
 version 2.8:
