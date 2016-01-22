@@ -262,6 +262,9 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
 
     dsh->bit_depth = luma_depth;
 
+    /* Full range 8 bts uses the same pix_fmts as limited range 8 bits */
+    dsh->pixel_range_index += dsh->pixel_range_index == 1;
+
     if (dsh->pixel_range_index < 2U)
         return AVERROR_INVALIDDATA;
 
