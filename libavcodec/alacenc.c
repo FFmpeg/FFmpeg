@@ -59,6 +59,7 @@ typedef struct AlacLPCContext {
 } AlacLPCContext;
 
 typedef struct AlacEncodeContext {
+    const AVClass *class;
     AVCodecContext *avctx;
     int frame_size;                     /**< current frame size               */
     int verbatim;                       /**< current frame verbatim mode flag */

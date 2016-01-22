@@ -59,6 +59,7 @@ typedef enum Predictor {
 } Predictor;
 
 typedef struct HYuvContext {
+    const AVClass *class;
     AVCodecContext *avctx;
     Predictor predictor;
     GetBitContext gb;
