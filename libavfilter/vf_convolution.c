@@ -332,4 +332,5 @@ AVFilter ff_vf_convolution = {
     .query_formats = query_formats,
     .inputs        = convolution_inputs,
     .outputs       = convolution_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
