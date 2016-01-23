@@ -163,7 +163,7 @@ static void filter_3x3(ConvolutionContext *s, AVFrame *in, AVFrame *out, int pla
                       p2[x] *     matrix[7] +
                       p2[x + 1] * matrix[8];
             sum = (int)(sum * rdiv + bias + 0.5f);
-            dst[x] = av_clip(sum, 0, 255);
+            dst[x] = av_clip_uint8(sum);
         }
 
         p0 = p1;
@@ -218,7 +218,7 @@ static void filter_5x5(ConvolutionContext *s, AVFrame *in, AVFrame *out, int pla
                 sum += *(array[i] + x) * matrix[i];
             }
             sum = (int)(sum * rdiv + bias + 0.5f);
-            dst[x] = av_clip(sum, 0, 255);
+            dst[x] = av_clip_uint8(sum);
         }
 
         p0 = p1;
