@@ -489,7 +489,7 @@ enable(){
 
 check_requested() {
     for var; do
-        eval test "x\$${var#!}_requested" = "xyes" &&  die "${var#*_} ${var/_*} cannot be enabled"
+        eval test "x\$${var#!}_requested" = "xyes" &&  die "${var%%_*} cannot be enabled"
     done
 }
 
@@ -549,7 +549,7 @@ enable_deep_weak(){
 do_enable_deep_force(){
     for var; do
         enabled $var && continue
-        eval sel="\$${var}_select\ \$${var}_suggest\ \$${var}_select_any"
+        eval sel="\$${var}_deps\ \$${var}_deps_any\ \$${var}_select\ \$${var}_suggest\ \$${var}_select_any"
         pushvar var
         enable_deep_force $sel
         popvar var
@@ -558,14 +558,18 @@ do_enable_deep_force(){
 
 enable_deep_force(){
     do_enable_deep_force $*
-    enable $*
+    for var; do
+        is_in $var $ALL_COMPONENTS $COMPONENT_LIST $LIBRARY_LIST && enable $var
+    done
 }
 
 request(){
+    disable $* # force the refresh of the dependencies
     for var; do
         enable ${var}_requested
     done
     enable_deep_force $*
+    enable $*
 }
 
 enabled(){
@@ -2650,6 +2654,7 @@ for opt do
         ;;
         --enable-?*|--disable-?*)
             eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
+            test $action = enable && action="request"
             if is_in $option $COMPONENT_LIST; then
                 eval $action \$$(toupper ${option%s})_LIST
             elif is_in $option $CMDLINE_SELECT; then
