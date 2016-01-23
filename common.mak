@@ -47,7 +47,8 @@ LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)$(DST_PATH)/lib%) $(LDFLAGS)
 
 define COMPILE
        $(call $(1)DEP,$(1))
-       $(Q)cd $(SRC_PATH); $(subst @,,$($(1))) $($(1)FLAGS) $($(1)_DEPFLAGS:$(@:.o=.d)=$(DST_PATH)/$(@:.o=.d)) $($(1)_C) $($(1)_O:$@=$(DST_PATH)/$@) $(subst $(SRC_PATH)/,,$<)
+       $(Q)cd $(SRC_PATH); if [ -n "$(findstring $(SRC_PATH),$<)" ]; then dest=$(subst $(SRC_PATH)/,,$<); else dest=$(DST_PATH)/$<; fi; \
+       $(subst @,,$($(1))) $($(1)FLAGS) $($(1)_DEPFLAGS:$(@:.o=.d)=$(DST_PATH)/$(@:.o=.d)) $($(1)_C) $($(1)_O:$@=$(DST_PATH)/$@) $$dest
 endef
 
 COMPILE_C = $(call COMPILE,CC)
