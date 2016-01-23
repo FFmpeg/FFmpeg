@@ -2452,8 +2452,6 @@ target_os_default=$(tolower $(uname -s))
 host_os=$target_os_default
 
 # configurable options
-enable $EXAMPLE_LIST $LIBRARY_LIST $PROGRAM_LIST
-
 enable asm
 enable debug
 enable doc
@@ -2627,6 +2625,7 @@ for opt do
         ;;
         --disable-everything)
             map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+            enable_deep_force $EXAMPLE_LIST $LIBRARY_LIST $PROGRAM_LIST
         ;;
         --disable-all)
             map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
@@ -2691,6 +2690,10 @@ for e in $env; do
 done
 
 disabled logging && logfile=/dev/null
+
+# Enable the default components if not disabled explicitly
+
+enable_weak $EXAMPLE_LIST $LIBRARY_LIST $PROGRAM_LIST
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
