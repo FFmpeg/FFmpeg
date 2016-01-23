@@ -318,7 +318,9 @@ int main(void){
         put_cabac(&c, state, r[i]&1);
     }
 
-    put_cabac_terminate(&c, 1);
+    i= put_cabac_terminate(&c, 1);
+    b[i++] = av_lfg_get(&prng);
+    b[i  ] = av_lfg_get(&prng);
 
     ff_init_cabac_decoder(&c, b, SIZE);
 
