@@ -8490,6 +8490,115 @@ Negate input video.
 It accepts an integer in input; if non-zero it negates the
 alpha component (if available). The default value in input is 0.
 
+@section nnedi
+
+Deinterlace video using neural network edge directed interpolation.
+
+This filter accepts the following options:
+
+@table @option
+@item weights
+Mandatory option, without binary file filter can not work.
+Currently file can be found here:
+https://github.com/dubhater/vapoursynth-nnedi3/blob/master/src/nnedi3_weights.bin
+
+@item deint
+Set which frames to deinterlace, by default it is @code{all}.
+Can be @code{all} or @code{interlaced}.
+
+@item field
+Set mode of operation.
+
+Can be one of the following:
+
+@table @samp
+@item af
+Use frame flags, both fields.
+@item a
+Use frame flags, single field.
+@item t
+Use top field only.
+@item b
+Use bottom field only.
+@item ft
+Use both fields, top first.
+@item fb
+Use both fields, bottom first.
+@end table
+
+@item planes
+Set which planes to process, by default filter process all frames.
+
+@item nsize
+Set size of local neighborhood around each pixel, used by the predictor neural
+network.
+
+Can be one of the following:
+
+@table @samp
+@item s8x6
+@item s16x6
+@item s32x6
+@item s48x6
+@item s8x4
+@item s16x4
+@item s32x4
+@end table
+
+@item nns
+Set the number of neurons in predicctor neural network.
+Can be one of the following:
+
+@table @samp
+@item n16
+@item n32
+@item n64
+@item n128
+@item n256
+@end table
+
+@item qual
+Controls the number of different neural network predictions that are blended
+together to compute the final output value. Can be @code{fast}, default or
+@code{slow}.
+
+@item etype
+Set which set of weights to use in the predictor.
+Can be one of the following:
+
+@table @samp
+@item a
+weights trained to minimize absolute error
+@item s
+weights trained to minimize squared error
+@end table
+
+@item pscrn
+Controls whether or not the prescreener neural network is used to decide
+which pixels should be processed by the predictor neural network and which
+can be handled by simple cubic interpolation.
+The prescreener is trained to know whether cubic interpolation will be
+sufficient for a pixel or whether it should be predicted by the predictor nn.
+The computational complexity of the prescreener nn is much less than that of
+the predictor nn. Since most pixels can be handled by cubic interpolation,
+using the prescreener generally results in much faster processing.
+The prescreener is pretty accurate, so the difference between using it and not
+using it is almost always unnoticeable.
+
+Can be one of the following:
+
+@table @samp
+@item none
+@item original
+@item new
+@end table
+
+Default is @code{new}.
+
+@item fapprox
+Set various debugging flags.
+@end table
+
 @section noformat
 
 Force libavfilter not to use any of the specified pixel formats for the
