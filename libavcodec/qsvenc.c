@@ -504,7 +504,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
                 q->b_strategy = avctx->b_frame_strategy;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-            if (q->extco2.b_strategy >= 0)
+            if (q->b_strategy >= 0)
                 q->extco2.BRefType = q->b_strategy ? MFX_B_REF_PYRAMID : MFX_B_REF_OFF;
             if (q->adaptive_i >= 0)
                 q->extco2.AdaptiveI = q->adaptive_i ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
