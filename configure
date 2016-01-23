@@ -5050,6 +5050,10 @@ echo "External libraries:"
 print_enabled '' $EXTERNAL_LIBRARY_LIST | print_3_columns
 echo
 
+echo "Libraries:"
+print_enabled '' $LIBRARY_LIST | print_3_columns
+echo
+
 for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
     echo "Enabled ${type}s:"
     eval list=\$$(toupper $type)_LIST
