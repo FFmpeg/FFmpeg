@@ -227,6 +227,7 @@ typedef struct MOVContext {
     struct AVAES *aes_decrypt;
     uint8_t *decryption_key;
     int decryption_key_len;
+    int enable_drefs;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);

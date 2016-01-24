@@ -91,6 +91,7 @@ Select source range.
 @item dst_range
 Select destination range.
 
+@anchor{sws_params}
 @item param0, param1
 Set scaling algorithm parameters. The specified values are specific of
 some scaling algorithms and ignored by others. The specified values

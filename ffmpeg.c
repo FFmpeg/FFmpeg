@@ -4126,16 +4126,12 @@ static int transcode(void)
         }
 
         ret = transcode_step();
-        if (ret < 0) {
-            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
-                continue;
-            } else {
-                char errbuf[128];
-                av_strerror(ret, errbuf, sizeof(errbuf));
+        if (ret < 0 && ret != AVERROR_EOF) {
+            char errbuf[128];
+            av_strerror(ret, errbuf, sizeof(errbuf));
 
-                av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", errbuf);
-                break;
-            }
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", errbuf);
+            break;
         }
 
         /* dump report by using the output first video and audio streams */

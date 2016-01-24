@@ -1,0 +1,2 @@
+sws_flags=+accurate_rnd+bitexact;
+[1]colorkey=black:0.2:0.5[t],[0][t]overlay=10:main_h-overlay_h-10

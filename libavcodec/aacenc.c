@@ -544,6 +544,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
         for (ch = 0; ch < chans; ch++) {
+            int k;
             float clip_avoidance_factor;
             sce = &cpe->ch[ch];
             ics = &sce->ics;
@@ -607,17 +608,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->mdct1024.mdct_calc(&s->mdct1024, sce->lcoeffs, sce->ret_buf);
             }
 
-            if (!(isfinite(cpe->ch[ch].coeffs[    0]) &&
-                  isfinite(cpe->ch[ch].coeffs[  128]) &&
-                  isfinite(cpe->ch[ch].coeffs[2*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[3*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[4*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[5*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[6*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[7*128]))
-            ) {
-                av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
-                return AVERROR(EINVAL);
+            for (k = 0; k < 1024; k++) {
+                if (!isfinite(cpe->ch[ch].coeffs[k])) {
+                    av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
+                    return AVERROR(EINVAL);
+                }
             }
             avoid_clipping(s, sce);
         }
@@ -983,11 +978,12 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (s->options.coder != AAC_CODER_TWOLOOP) {
         ERROR_IF(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
                  "Coders other than twoloop require -strict -2 and some may be removed in the future\n");
-        WARN_IF(s->options.coder == AAC_CODER_FAAC,
-                "The FAAC-like coder will be removed in the near future, please use twoloop!\n");
         s->options.intensity_stereo = 0;
         s->options.pns = 0;
     }
+
+    ERROR_IF(s->options.ltp && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
+             "The LPT profile requires experimental compliance, add -strict -2 to enable!\n");
 
     if ((ret = dsp_init(avctx, s)) < 0)
         goto fail;
@@ -1026,8 +1022,7 @@ fail:
 
 #define AACENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption aacenc_options[] = {
-    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, -1, AAC_CODER_NB-1, AACENC_FLAGS, "coder"},
-        {"faac",     "FAAC-inspired method",      0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAAC},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
+    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, 0, AAC_CODER_NB-1, AACENC_FLAGS, "coder"},
         {"anmr",     "ANMR method",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_ANMR},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
         {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
         {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},

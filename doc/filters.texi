@@ -733,6 +733,83 @@ afade=t=out:st=875:d=25
 @end example
 @end itemize
 
+@section afftfilt
+Apply arbitrary expressions to samples in frequency domain.
+
+@table @option
+@item real
+Set frequency domain real expression for each separate channel separated
+by '|'. Default is "1".
+If the number of input channels is greater than the number of
+expressions, the last specified expression is used for the remaining
+output channels.
+
+@item imag
+Set frequency domain imaginary expression for each separate channel
+separated by '|'. If not set, @var{real} option is used.
+
+Each expression in @var{real} and @var{imag} can contain the following
+constants:
+
+@table @option
+@item sr
+sample rate
+
+@item b
+current frequency bin number
+
+@item nb
+number of available bins
+
+@item ch
+channel number of the current expression
+
+@item chs
+number of channels
+
+@item pts
+current frame pts
+@end table
+
+@item win_size
+Set window size.
+
+It accepts the following values:
+@table @samp
+@item w16
+@item w32
+@item w64
+@item w128
+@item w256
+@item w512
+@item w1024
+@item w2048
+@item w4096
+@item w8192
+@item w16384
+@item w32768
+@item w65536
+@end table
+Default is @code{w4096}
+
+@item win_func
+Set window function. Default is @code{hann}.
+
+@item overlap
+Set window overlap. If set to 1, the recommended overlap for selected
+window function will be picked. Default is @code{0.75}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Leave almost only low frequencies in audio:
+@example
+afftfilt="1-clip((b/nb)*b,0,1)"
+@end example
+@end itemize
+
 @anchor{aformat}
 @section aformat
 
@@ -4585,6 +4662,68 @@ For example to convert from BT.601 to SMPTE-240M, use the command:
 colormatrix=bt601:smpte240m
 @end example
 
+@section convolution
+
+Apply convolution 3x3 or 5x5 filter.
+
+The filter accepts the following options:
+
+@table @option
+@item 0m
+@item 1m
+@item 2m
+@item 3m
+Set matrix for each plane.
+Matrix is sequence of 9 or 25 signed integers.
+
+@item 0rdiv
+@item 1rdiv
+@item 2rdiv
+@item 3rdiv
+Set multiplier for calculated value for each plane.
+
+@item 0bias
+@item 1bias
+@item 2bias
+@item 3bias
+Set bias for each plane. This value is added to the result of the multiplication.
+Useful for making the overall image brighter or darker. Default is 0.0.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply sharpen:
+@example
+convolution="0 -1 0 -1 5 -1 0 -1 0:0 -1 0 -1 5 -1 0 -1 0:0 -1 0 -1 5 -1 0 -1 0:0 -1 0 -1 5 -1 0 -1 0"
+@end example
+
+@item
+Apply blur:
+@example
+convolution="1 1 1 1 1 1 1 1 1:1 1 1 1 1 1 1 1 1:1 1 1 1 1 1 1 1 1:1 1 1 1 1 1 1 1 1:1/9:1/9:1/9:1/9"
+@end example
+
+@item
+Apply edge enhance:
+@example
+convolution="0 0 0 -1 1 0 0 0 0:0 0 0 -1 1 0 0 0 0:0 0 0 -1 1 0 0 0 0:0 0 0 -1 1 0 0 0 0:5:1:1:1:0:128:128:128"
+@end example
+
+@item
+Apply edge detect:
+@example
+convolution="0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:5:5:5:1:0:128:128:128"
+@end example
+
+@item
+Apply emboss:
+@example
+convolution="-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2"
+@end example
+@end itemize
+
 @section copy
 
 Copy the input source unchanged to the output. This is mainly useful for
@@ -6466,6 +6605,12 @@ fftfilt=dc_Y=0:weight_Y='squish((Y+X)/100-1)'
 Sharpen:
 @example
 fftfilt=dc_Y=0:weight_Y='1+squish(1-(Y+X)/100)'
+@end example
+
+@item
+Blur:
+@example
+fftfilt=dc_Y=0:weight_Y='exp(-4 * ((Y+X)/(W+H)))'
 @end example
 
 @end itemize
@@ -9948,6 +10093,21 @@ dimension is divisible by n and adjust the value if necessary.
 See below for the list of accepted constants for use in the dimension
 expression.
 
+@item eval
+Specify when to evaluate @var{width} and @var{height} expression. It accepts the following values:
+
+@table @samp
+@item init
+Only evaluate expressions once during the filter initialization or when a command is processed.
+
+@item frame
+Evaluate expressions for each incoming frame.
+
+@end table
+
+Default value is @samp{init}.
+
+
 @item interl
 Set the interlacing mode. It accepts the following values:
 
@@ -9970,6 +10130,15 @@ Set libswscale scaling flags. See
 @ref{sws_flags,,the ffmpeg-scaler manual,ffmpeg-scaler} for the
 complete list of values. If not explicitly specified the filter applies
 the default flags.
+
+
+@item param0, param1
+Set libswscale input parameters for scaling algorithms that need them. See
+@ref{sws_params,,the ffmpeg-scaler manual,ffmpeg-scaler} for the
+complete documentation. If not explicitly specified the filter applies
+empty parameters.
+
+
 
 @item size, s
 Set the video size. For the syntax of this option, check the
@@ -15027,6 +15196,13 @@ option @var{n}. Default value is "25".
 @item split_channels
 Set if channels should be drawn separately or overlap. Default value is 0.
 
+@item colors
+Set colors separated by '|' which are going to be used for drawing of each channel.
+
+@item scale
+Set amplitude scale. Can be linear @code{lin} or logarithmic @code{log}.
+Default is linear.
+
 @end table
 
 @subsection Examples
@@ -15061,6 +15237,13 @@ Default value is @code{600x240}.
 
 @item split_channels
 Set if channels should be drawn separately or overlap. Default value is 0.
+
+@item colors
+Set colors separated by '|' which are going to be used for drawing of each channel.
+
+@item scale
+Set amplitude scale. Can be linear @code{lin} or logarithmic @code{log}.
+Default is linear.
 @end table
 
 @subsection Examples

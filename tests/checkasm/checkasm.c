@@ -53,6 +53,12 @@
 #define isatty(fd) 1
 #endif
 
+#if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
+#include "libavutil/arm/cpu.h"
+
+void (*checkasm_checked_call)(void *func, int dummy, ...) = checkasm_checked_call_novfp;
+#endif
+
 /* List of tests to invoke */
 static const struct {
     const char *name;
@@ -92,6 +98,9 @@ static const struct {
     #endif
     #if CONFIG_VP9_DECODER
         { "vp9dsp", checkasm_check_vp9dsp },
+    #endif
+    #if CONFIG_VIDEODSP
+        { "videodsp", checkasm_check_videodsp },
     #endif
 #endif
     { NULL }
@@ -478,6 +487,11 @@ static void print_cpu_name(void)
 int main(int argc, char *argv[])
 {
     int i, seed, ret = 0;
+
+#if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
+    if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
+        checkasm_checked_call = checkasm_checked_call_vfp;
+#endif
 
     if (!tests[0].func || !cpus[0].flag) {
         fprintf(stderr, "checkasm: no tests to perform\n");

@@ -95,6 +95,20 @@ static int libquvi_read_header(AVFormatContext *s)
         goto err_quvi_cleanup;
     }
 
+    if (!qc->fmtctx->format_whitelist) {
+        qc->fmtctx->format_whitelist = av_strdup("avi,asf,flv,mov,mpeg,mpegts,aac,h264,hevc,mp3,ogg,matroska,mxf,mp2");
+        if (!qc->fmtctx->format_whitelist) {
+            avformat_free_context(qc->fmtctx);
+            qc->fmtctx = NULL;
+            goto err_quvi_cleanup;
+        }
+    }
+    if (strncmp(media_url, "http:", 5) && strncmp(media_url, "https:", 6)) {
+        avformat_free_context(qc->fmtctx);
+        qc->fmtctx = NULL;
+        goto err_quvi_cleanup;
+    }
+
     ret = avformat_open_input(&qc->fmtctx, media_url, NULL, NULL);
     if (ret < 0)
         goto err_quvi_cleanup;

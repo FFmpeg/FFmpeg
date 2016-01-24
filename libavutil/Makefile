@@ -38,6 +38,7 @@ HEADERS = adler32.h                                                     \
           log.h                                                         \
           macros.h                                                      \
           mathematics.h                                                 \
+          mastering_display_metadata.h                                  \
           md5.h                                                         \
           mem.h                                                         \
           motion_vector.h                                               \
@@ -115,6 +116,7 @@ OBJS = adler32.o                                                        \
        log.o                                                            \
        log2_tab.o                                                       \
        mathematics.o                                                    \
+       mastering_display_metadata.o                                     \
        md5.o                                                            \
        mem.o                                                            \
        murmur3.o                                                        \

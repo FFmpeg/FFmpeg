@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/libm.h"
 
 #include "imdct15.h"
 #include "opus.h"
@@ -1839,7 +1840,7 @@ static void process_anticollapse(CeltContext *s, CeltFrame *frame, float *X)
 
         /* depth in 1/8 bits */
         depth = (1 + s->pulses[i]) / (celt_freq_range[i] << s->duration);
-        thresh = pow(2, -1.0 - 0.125f * depth);
+        thresh = exp2f(-1.0 - 0.125f * depth);
         sqrt_1 = 1.0f / sqrtf(celt_freq_range[i] << s->duration);
 
         xptr = X + (celt_freq_bands[i] << s->duration);

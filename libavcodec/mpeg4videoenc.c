@@ -1088,8 +1088,8 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
 /* write mpeg4 VOP header */
 int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
 {
-    int time_incr;
-    int time_div, time_mod;
+    uint64_t time_incr;
+    int64_t time_div, time_mod;
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         if (!(s->avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)) {
@@ -1111,11 +1111,10 @@ int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
     time_div  = FFUDIV(s->time, s->avctx->time_base.den);
     time_mod  = FFUMOD(s->time, s->avctx->time_base.den);
     time_incr = time_div - s->last_time_base;
-    av_assert0(time_incr >= 0);
 
     // This limits the frame duration to max 1 hour
     if (time_incr > 3600) {
-        av_log(s->avctx, AV_LOG_ERROR, "time_incr %d too large\n", time_incr);
+        av_log(s->avctx, AV_LOG_ERROR, "time_incr %"PRIu64" too large\n", time_incr);
         return AVERROR(EINVAL);
     }
     while (time_incr--)

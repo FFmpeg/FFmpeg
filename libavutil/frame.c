@@ -728,7 +728,11 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_DOWNMIX_INFO:    return "Metadata relevant to a downmix procedure";
     case AV_FRAME_DATA_REPLAYGAIN:      return "AVReplayGain";
     case AV_FRAME_DATA_DISPLAYMATRIX:   return "3x3 displaymatrix";
+    case AV_FRAME_DATA_AFD:             return "Active format description";
     case AV_FRAME_DATA_MOTION_VECTORS:  return "Motion vectors";
+    case AV_FRAME_DATA_SKIP_SAMPLES:    return "Skip samples";
+    case AV_FRAME_DATA_AUDIO_SERVICE_TYPE:          return "Audio service type";
+    case AV_FRAME_DATA_MASTERING_DISPLAY_METADATA:  return "Mastering display metadata";
     }
     return NULL;
 }

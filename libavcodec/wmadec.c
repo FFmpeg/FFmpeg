@@ -35,6 +35,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
+#include "libavutil/libm.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -164,7 +165,7 @@ static av_cold void wma_lsp_to_curve_init(WMACodecContext *s, int frame_len)
     /* tables for x^-0.25 computation */
     for (i = 0; i < 256; i++) {
         e                     = i - 126;
-        s->lsp_pow_e_table[i] = pow(2.0, e * -0.25);
+        s->lsp_pow_e_table[i] = exp2f(e * -0.25);
     }
 
     /* NOTE: these two tables are needed to avoid two operations in
@@ -173,7 +174,7 @@ static av_cold void wma_lsp_to_curve_init(WMACodecContext *s, int frame_len)
     for (i = (1 << LSP_POW_BITS) - 1; i >= 0; i--) {
         m                      = (1 << LSP_POW_BITS) + i;
         a                      = (float) m * (0.5 / (1 << LSP_POW_BITS));
-        a                      = pow(a, -0.25);
+        a                      = 1/sqrt(sqrt(a));
         s->lsp_pow_m_table1[i] = 2 * a - b;
         s->lsp_pow_m_table2[i] = b - a;
         b                      = a;

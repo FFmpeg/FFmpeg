@@ -599,6 +599,11 @@ static AVFrame *do_blend(AVFilterContext *ctx, AVFrame *mainpic,
             NAN : mainpic->pts * av_q2d(inlink->time_base);
         s->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 
+        s->var_values[VAR_OVERLAY_W] = s->var_values[VAR_OW] = second->width;
+        s->var_values[VAR_OVERLAY_H] = s->var_values[VAR_OH] = second->height;
+        s->var_values[VAR_MAIN_W   ] = s->var_values[VAR_MW] = mainpic->width;
+        s->var_values[VAR_MAIN_H   ] = s->var_values[VAR_MH] = mainpic->height;
+
         eval_expr(ctx);
         av_log(ctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d\n",
                s->var_values[VAR_N], s->var_values[VAR_T], s->var_values[VAR_POS],

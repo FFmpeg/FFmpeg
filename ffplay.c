@@ -3473,6 +3473,16 @@ static void event_loop(VideoState *cur_stream)
                 do_exit(cur_stream);
                 break;
             }
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                static int64_t last_mouse_left_click = 0;
+                if (av_gettime_relative() - last_mouse_left_click <= 500000) {
+                    toggle_full_screen(cur_stream);
+                    cur_stream->force_refresh = 1;
+                    last_mouse_left_click = 0;
+                } else {
+                    last_mouse_left_click = av_gettime_relative();
+                }
+            }
         case SDL_MOUSEMOTION:
             if (cursor_hidden) {
                 SDL_ShowCursor(1);
@@ -3480,9 +3490,11 @@ static void event_loop(VideoState *cur_stream)
             }
             cursor_last_shown = av_gettime_relative();
             if (event.type == SDL_MOUSEBUTTONDOWN) {
+                if (event.button.button != SDL_BUTTON_RIGHT)
+                    break;
                 x = event.button.x;
             } else {
-                if (event.motion.state != SDL_PRESSED)
+                if (!(event.motion.state & SDL_BUTTON_RMASK))
                     break;
                 x = event.motion.x;
             }
@@ -3726,7 +3738,8 @@ void show_help_default(const char *opt, const char *arg)
            "left/right          seek backward/forward 10 seconds\n"
            "down/up             seek backward/forward 1 minute\n"
            "page down/page up   seek backward/forward 10 minutes\n"
-           "mouse click         seek to percentage in file corresponding to fraction of width\n"
+           "right mouse click   seek to percentage in file corresponding to fraction of width\n"
+           "left double-click   toggle full screen\n"
            );
 }
 

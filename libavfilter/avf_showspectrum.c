@@ -74,7 +74,7 @@ typedef struct {
     double win_scale;
     float overlap;
     float gain;
-    int skip_samples;
+    int hop_size;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
     AVAudioFifo *fifo;
     int64_t pts;
@@ -367,8 +367,8 @@ static int config_output(AVFilterLink *outlink)
         ff_generate_window_func(s->window_func_lut, s->win_size, s->win_func, &overlap);
         if (s->overlap == 1)
             s->overlap = overlap;
-        s->skip_samples = (1. - s->overlap) * s->win_size;
-        if (s->skip_samples < 1) {
+        s->hop_size = (1. - s->overlap) * s->win_size;
+        if (s->hop_size < 1) {
             av_log(ctx, AV_LOG_ERROR, "overlap %f too big\n", s->overlap);
             return AVERROR(EINVAL);
         }
@@ -805,7 +805,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         }
 
         fin->pts = s->pts;
-        s->pts += s->skip_samples;
+        s->pts += s->hop_size;
         ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
         if (ret < 0)
             goto fail;
@@ -820,7 +820,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
         ret = plot_spectrum_column(inlink, fin);
         av_frame_free(&fin);
-        av_audio_fifo_drain(s->fifo, s->skip_samples);
+        av_audio_fifo_drain(s->fifo, s->hop_size);
         if (ret < 0)
             goto fail;
     }

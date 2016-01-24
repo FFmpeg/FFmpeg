@@ -53,7 +53,7 @@ typedef struct ShowFreqsContext {
     float **avg_data;
     float *window_func_lut;
     float overlap;
-    int skip_samples;
+    int hop_size;
     int nb_channels;
     int nb_freq;
     int win_size;
@@ -205,8 +205,8 @@ static int config_output(AVFilterLink *outlink)
     ff_generate_window_func(s->window_func_lut, s->win_size, s->win_func, &overlap);
     if (s->overlap == 1.)
         s->overlap = overlap;
-    s->skip_samples = (1. - s->overlap) * s->win_size;
-    if (s->skip_samples < 1) {
+    s->hop_size = (1. - s->overlap) * s->win_size;
+    if (s->hop_size < 1) {
         av_log(ctx, AV_LOG_ERROR, "overlap %f too big\n", s->overlap);
         return AVERROR(EINVAL);
     }
@@ -434,14 +434,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         fin->pts = s->pts;
-        s->pts += s->skip_samples;
+        s->pts += s->hop_size;
         ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
         if (ret < 0)
             goto fail;
 
         ret = plot_freqs(inlink, fin);
         av_frame_free(&fin);
-        av_audio_fifo_drain(s->fifo, s->skip_samples);
+        av_audio_fifo_drain(s->fifo, s->hop_size);
         if (ret < 0)
             goto fail;
     }

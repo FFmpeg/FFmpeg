@@ -546,7 +546,7 @@ static av_cold int init(AVFilterContext *ctx)
         LADSPA_Data val;
         int ret;
 
-        if (!(arg = av_strtok(p, "|", &saveptr)))
+        if (!(arg = av_strtok(p, " |", &saveptr)))
             break;
         p = NULL;
 

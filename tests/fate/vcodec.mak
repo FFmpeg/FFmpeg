@@ -264,9 +264,24 @@ fate-vsynth%-qtrlegray:          CODEC   = qtrle
 fate-vsynth%-qtrlegray:          ENCOPTS = -pix_fmt gray
 fate-vsynth%-qtrlegray:          FMT     = mov
 
-FATE_VCODEC-$(call ENCDEC, RAWVIDEO, AVI) += rgb
+FATE_VCODEC-$(call ENCDEC, RAWVIDEO, AVI) += rgb bpp1 bpp15
 fate-vsynth%-rgb:                CODEC   = rawvideo
 fate-vsynth%-rgb:                ENCOPTS = -pix_fmt bgr24
+fate-vsynth%-bpp1:               CODEC   = rawvideo
+fate-vsynth%-bpp1:               ENCOPTS = -pix_fmt monow
+fate-vsynth%-bpp15:              CODEC   = rawvideo
+fate-vsynth%-bpp15:              ENCOPTS = -pix_fmt bgr555le
+
+FATE_VCODEC-$(call ENCDEC, RAWVIDEO, MOV) += mov-bgr24 mov-bpp15 mov-bpp16
+fate-vsynth%-mov-bgr24:          CODEC   = rawvideo
+fate-vsynth%-mov-bgr24:          ENCOPTS = -pix_fmt bgr24
+fate-vsynth%-mov-bgr24:          FMT      = mov
+fate-vsynth%-mov-bpp15:          CODEC   = rawvideo
+fate-vsynth%-mov-bpp15:          ENCOPTS = -pix_fmt rgb555le
+fate-vsynth%-mov-bpp15:          FMT      = mov
+fate-vsynth%-mov-bpp16:          CODEC   = rawvideo
+fate-vsynth%-mov-bpp16:          ENCOPTS = -pix_fmt rgb565le
+fate-vsynth%-mov-bpp16:          FMT      = mov
 
 FATE_VCODEC-$(call ENCDEC, ROQ, ROQ)    += roqvideo
 fate-vsynth%-roqvideo:           CODEC   = roqvideo

@@ -100,7 +100,12 @@ typedef struct DiracParseUnit {
 static int unpack_parse_unit(DiracParseUnit *pu, DiracParseContext *pc,
                              int offset)
 {
+    int i;
     int8_t *start;
+    static const uint8_t valid_pu_types[] = {
+        0x00, 0x10, 0x20, 0x30, 0x08, 0x48, 0xC8, 0xE8, 0x0A, 0x0C, 0x0D, 0x0E,
+        0x4C, 0x09, 0xCC, 0x88, 0xCB
+    };
 
     if (offset < 0 || pc->index - 13 < offset)
         return 0;
@@ -111,17 +116,20 @@ static int unpack_parse_unit(DiracParseUnit *pu, DiracParseContext *pc,
     pu->next_pu_offset = AV_RB32(start + 5);
     pu->prev_pu_offset = AV_RB32(start + 9);
 
-    if (pu->pu_type == 0x10 && pu->next_pu_offset == 0)
-        pu->next_pu_offset = 13;
+    /* Check for valid parse code */
+    for (i = 0; i < 17; i++)
+        if (valid_pu_types[i] == pu->pu_type)
+            break;
+    if (i == 17)
+        return 0;
 
-    if (pu->next_pu_offset && pu->next_pu_offset < 13) {
-        av_log(NULL, AV_LOG_ERROR, "next_pu_offset %d is invalid\n", pu->next_pu_offset);
+    if (pu->pu_type == 0x10 && pu->next_pu_offset == 0x00)
+        pu->next_pu_offset = 13; /* The length of a parse info header */
+
+    /* Check if the parse offsets are somewhat sane */
+    if ((pu->next_pu_offset && pu->next_pu_offset < 13) ||
+        (pu->prev_pu_offset && pu->prev_pu_offset < 13))
         return 0;
-    }
-    if (pu->prev_pu_offset && pu->prev_pu_offset < 13) {
-        av_log(NULL, AV_LOG_ERROR, "prev_pu_offset %d is invalid\n", pu->prev_pu_offset);
-        return 0;
-    }
 
     return 1;
 }

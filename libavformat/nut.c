@@ -88,6 +88,12 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('B', 'R', 'A', 64 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(64 , 'R', 'B', 'A') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(64 , 'B', 'R', 'A') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 11 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG( 9 , 11 , '3', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 10 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG( 9 , 10 , '3', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3',  0 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG( 9 ,  0 , '3', 'Y') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 11 , 10 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(10 , 11 , '3', 'Y') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 10 , 10 ) },
@@ -282,8 +288,10 @@ static int enu_free(void *opaque, void *elem)
 
 void ff_nut_free_sp(NUTContext *nut)
 {
-    av_tree_enumerate(nut->syncpoints, NULL, NULL, enu_free);
-    av_tree_destroy(nut->syncpoints);
+    if (nut->syncpoints) {
+        av_tree_enumerate(nut->syncpoints, NULL, NULL, enu_free);
+        av_tree_destroy(nut->syncpoints);
+    }
 }
 
 const Dispositions ff_nut_dispositions[] = {
