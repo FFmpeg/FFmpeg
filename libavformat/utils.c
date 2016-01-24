@@ -313,7 +313,7 @@ int av_demuxer_open(AVFormatContext *ic) {
     int err;
 
     if (ic->format_whitelist && av_match_list(ic->iformat->name, ic->format_whitelist, ',') <= 0) {
-        av_log(ic, AV_LOG_ERROR, "Format not on whitelist\n");
+        av_log(ic, AV_LOG_ERROR, "Format not on whitelist \'%s\'\n", ic->format_whitelist);
         return AVERROR(EINVAL);
     }
 
@@ -442,7 +442,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     s->probe_score = ret;
 
     if (s->format_whitelist && av_match_list(s->iformat->name, s->format_whitelist, ',') <= 0) {
-        av_log(s, AV_LOG_ERROR, "Format not on whitelist\n");
+        av_log(s, AV_LOG_ERROR, "Format not on whitelist \'%s\'\n", s->format_whitelist);
         ret = AVERROR(EINVAL);
         goto fail;
     }
