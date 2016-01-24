@@ -314,7 +314,7 @@ These library packages are only available from
 @uref{http://sourceware.org/cygwinports/, Cygwin Ports}:
 
 @example
-yasm, libSDL-devel, libfaac-devel, libaacplus-devel, libgsm-devel, libmp3lame-devel,
+yasm, libSDL-devel, libfaac-devel, libgsm-devel, libmp3lame-devel,
 libschroedinger1.0-devel, speex-devel, libtheora-devel, libxvidcore-devel
 @end example
 

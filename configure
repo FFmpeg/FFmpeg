@@ -207,7 +207,6 @@ External library support:
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
   --enable-ladspa          enable LADSPA audio filtering [no]
-  --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libass          enable libass subtitles rendering,
                            needed for subtitles and ass filter [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -1435,7 +1434,6 @@ EXTERNAL_LIBRARY_LIST="
     gnutls
     iconv
     ladspa
-    libaacplus
     libass
     libbluray
     libbs2b
@@ -2604,7 +2602,6 @@ mjpeg2jpeg_bsf_select="jpegtables"
 
 # external libraries
 chromaprint_muxer_deps="chromaprint"
-libaacplus_encoder_deps="libaacplus"
 libcelt_decoder_deps="libcelt"
 libdcadec_decoder_deps="libdcadec"
 libfaac_encoder_deps="libfaac"
@@ -4888,7 +4885,6 @@ die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
 die_license_disabled gpl x11grab
 
-die_license_disabled nonfree libaacplus
 die_license_disabled nonfree libfaac
 die_license_disabled nonfree nvenc
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
@@ -5464,7 +5460,6 @@ enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
-enabled libaacplus        && require "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
 enabled libbluray         && require_pkg_config libbluray libbluray/bluray.h bd_open
 enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open

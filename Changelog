@@ -60,6 +60,7 @@ version <next>:
 - convolution filter
 - libquvi support removed
 - support for dvaudio in wav and avi
+- libaacplus support removed
 
 
 version 2.8:
