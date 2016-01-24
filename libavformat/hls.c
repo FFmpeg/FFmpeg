@@ -1984,7 +1984,7 @@ static int hls_probe(AVProbeData *p)
     if (strncmp(p->buf, "#EXTM3U", 7))
         return 0;
 
-    if (p->filename && !av_match_ext(p->filename, "m3u8,m3u"))
+    if (p->filename && *p->filename && !av_match_ext(p->filename, "m3u8,m3u"))
         return 0;
 
     if (strstr(p->buf, "#EXT-X-STREAM-INF:")     ||
