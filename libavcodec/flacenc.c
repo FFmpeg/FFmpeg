@@ -916,7 +916,7 @@ static int count_frame_header(FlacEncodeContext *s)
         count += 16;
 
     /* explicit sample rate */
-    count += ((s->sr_code[0] == 12) + (s->sr_code[0] > 12)) * 8;
+    count += ((s->sr_code[0] == 12) + (s->sr_code[0] > 12) * 2) * 8;
 
     /* frame header CRC-8 */
     count += 8;
