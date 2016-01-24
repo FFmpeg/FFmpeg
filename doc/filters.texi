@@ -12582,6 +12582,9 @@ single input image.
 
 @item s
 Set the output image size, default is 'hd720'.
+
+@item fps
+Set the output frame rate, default is '25'.
 @end table
 
 Each expression can contain the following constants:

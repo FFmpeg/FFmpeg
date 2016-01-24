@@ -92,6 +92,7 @@ typedef struct ZPcontext {
     int nb_frames;
     int current_frame;
     int finished;
+    AVRational framerate;
 } ZPContext;
 
 #define OFFSET(x) offsetof(ZPContext, x)
@@ -103,6 +104,7 @@ static const AVOption zoompan_options[] = {
     { "y", "set the y expression", OFFSET(y_expr_str), AV_OPT_TYPE_STRING, {.str="0"}, .flags = FLAGS },
     { "d", "set the duration expression", OFFSET(duration_expr_str), AV_OPT_TYPE_STRING, {.str="90"}, .flags = FLAGS },
     { "s", "set the output image size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, .flags = FLAGS },
+    { "fps", "set the output framerate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, .flags = FLAGS },
     { NULL }
 };
 
@@ -123,6 +125,8 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->w = s->w;
     outlink->h = s->h;
+    outlink->time_base = av_inv_q(s->framerate);
+    outlink->frame_rate = s->framerate;
     s->desc = av_pix_fmt_desc_get(outlink->format);
 
     return 0;
@@ -133,8 +137,7 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
 {
     ZPContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int64_t pts = av_rescale_q(in->pts, ctx->inputs[0]->time_base,
-                               outlink->time_base) + s->frame_count;
+    int64_t pts = s->frame_count;
     int k, x, y, w, h, ret = 0;
     uint8_t *input[4];
     int px[4], py[4];
