@@ -25,6 +25,7 @@
 #include "config.h"
 
 typedef struct xmm_reg { uint64_t a, b; } xmm_reg;
+typedef struct ymm_reg { uint64_t a, b, c, d; } ymm_reg;
 
 #if ARCH_X86_64
 #    define OPSIZE "q"
