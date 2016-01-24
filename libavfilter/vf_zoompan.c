@@ -221,10 +221,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     double nb_frames;
     int ret;
 
-    if (s->in) {
-        av_frame_free(&in);
-        return 0;
-    }
+    av_assert0(s->in == NULL);
 
     s->finished = 0;
     s->var_values[VAR_IN_W]  = s->var_values[VAR_IW] = in->width;
@@ -336,6 +333,7 @@ static const AVFilterPad inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .needs_fifo   = 1,
     },
     { NULL }
 };
