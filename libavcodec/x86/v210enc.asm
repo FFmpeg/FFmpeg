@@ -82,8 +82,10 @@ cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
     RET
 %endmacro
 
+%if HAVE_SSSE3_EXTERNAL
 INIT_XMM ssse3
 v210_planar_pack_10
+%endif
 
 %macro v210_planar_pack_8 0
 
@@ -139,7 +141,11 @@ cglobal v210_planar_pack_8, 5, 5, 7, y, u, v, dst, width
     RET
 %endmacro
 
+%if HAVE_SSSE3_EXTERNAL
 INIT_XMM ssse3
 v210_planar_pack_8
+%endif
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 v210_planar_pack_8
+%endif
