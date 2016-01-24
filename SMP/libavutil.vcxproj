@@ -119,6 +119,7 @@
     <ClCompile Include="..\libavutil\log.c" />
     <ClCompile Include="..\libavutil\log2_tab.c" />
     <ClCompile Include="..\libavutil\mathematics.c" />
+    <ClCompile Include="..\libavutil\mastering_display_metadata.c" />
     <ClCompile Include="..\libavutil\md5.c" />
     <ClCompile Include="..\libavutil\mem.c" />
     <ClCompile Include="..\libavutil\murmur3.c" />
@@ -196,6 +197,7 @@
     <ClInclude Include="..\libavutil\log.h" />
     <ClInclude Include="..\libavutil\macros.h" />
     <ClInclude Include="..\libavutil\mathematics.h" />
+    <ClInclude Include="..\libavutil\mastering_display_metadata.h" />
     <ClInclude Include="..\libavutil\md5.h" />
     <ClInclude Include="..\libavutil\mem.h" />
     <ClInclude Include="..\libavutil\motion_vector.h" />
@@ -536,6 +538,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -670,6 +673,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -810,6 +814,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -954,6 +959,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -1099,6 +1105,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -1243,6 +1250,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -1388,6 +1396,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -1528,6 +1537,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -1674,6 +1684,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -1819,6 +1830,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -1965,6 +1977,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -2110,6 +2123,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -2250,6 +2264,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
@@ -2390,6 +2405,7 @@ copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
 copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
+copy ..\libavutil\mastering_display_metadata.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil

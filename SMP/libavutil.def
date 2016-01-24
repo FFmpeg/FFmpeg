@@ -257,6 +257,8 @@ EXPORTS
     av_lzo1x_decode
     av_malloc
     av_mallocz
+    av_mastering_display_metadata_alloc
+    av_mastering_display_metadata_create_side_data
     av_match_list
     av_match_name
     av_max_alloc
