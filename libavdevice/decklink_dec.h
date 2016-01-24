@@ -23,8 +23,6 @@
 extern "C" {
 #endif
 
-#include "libavformat/avformat.h"
-
 int ff_decklink_read_header(AVFormatContext *avctx);
 int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt);
 int ff_decklink_read_close(AVFormatContext *avctx);

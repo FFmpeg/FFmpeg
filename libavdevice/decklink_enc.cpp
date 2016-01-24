@@ -21,7 +21,11 @@
 
 #include <DeckLinkAPI.h>
 
+#include <pthread.h>
+#include <semaphore.h>
+
 extern "C" {
+#include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 #include "libavutil/imgutils.h"
 }

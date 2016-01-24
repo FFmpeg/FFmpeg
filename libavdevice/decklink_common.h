@@ -19,15 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <pthread.h>
-#include <semaphore.h>
-#include <DeckLinkAPI.h>
-
-extern "C" {
-#include "libavformat/avformat.h"
+#include <DeckLinkAPIVersion.h>
 
 #include "decklink_common_c.h"
-}
 
 class decklink_output_callback;
 class decklink_input_callback;
