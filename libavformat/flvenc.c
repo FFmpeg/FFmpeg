@@ -562,7 +562,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
 
-    ts = pkt->dts + flv->delay; // add delay to force positive dts
+    ts = pkt->dts;
 
     if (s->event_flags & AVSTREAM_EVENT_FLAG_METADATA_UPDATED) {
         write_metadata(s, ts);
