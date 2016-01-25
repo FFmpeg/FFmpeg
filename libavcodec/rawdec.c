@@ -41,7 +41,7 @@ typedef struct RawVideoContext {
     AVBufferRef *palette;
     int frame_size;  /* size of the frame in bytes */
     int flip;
-    int is_1_2_4_8_bpp; // 1 bpp in mov, and 2, 4 and 8 bpp in avi/mov
+    int is_1_2_4_8_bpp; // 1, 2, 4 and 8 bpp in avi/mov
     int is_yuv2;
     int is_lt_16bpp; // 16bpp pixfmt and bits_per_coded_sample < 16
     int tff;
@@ -176,12 +176,18 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
     if ((avctx->bits_per_coded_sample == 8 || avctx->bits_per_coded_sample == 4
             || avctx->bits_per_coded_sample == 2 || avctx->bits_per_coded_sample == 1) &&
-        avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
-       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
+        (avctx->pix_fmt == AV_PIX_FMT_PAL8 || avctx->pix_fmt == AV_PIX_FMT_MONOWHITE) &&
+        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
         context->is_1_2_4_8_bpp = 1;
-        context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
-                                                       FFALIGN(avctx->width, 16),
-                                                       avctx->height, 1);
+        if (avctx->bits_per_coded_sample == 1 && avctx->pix_fmt == AV_PIX_FMT_MONOWHITE) {
+            int row_bytes = avctx->width / 8 + (avctx->width & 7 ? 1 : 0);
+            context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
+                                                           FFALIGN(row_bytes, 16) * 8,
+                                                           avctx->height, 1);
+        } else
+            context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
+                                                           FFALIGN(avctx->width, 16),
+                                                           avctx->height, 1);
     } else {
         context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample && avctx->bits_per_coded_sample < 16;
         context->frame_size = av_image_get_buffer_size(avctx->pix_fmt, avctx->width,
@@ -217,16 +223,18 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (!frame->buf[0])
         return AVERROR(ENOMEM);
 
-    // 1 bpp in mov, and 2, 4 and 8 bpp in avi/mov
+    // 1, 2, 4 and 8 bpp in avi/mov
     if (context->is_1_2_4_8_bpp) {
         int i, j, row_pix = 0;
         uint8_t *dst = frame->buf[0]->data;
-        buf_size = context->frame_size - AVPALETTE_SIZE;
-        if (avctx->bits_per_coded_sample == 8) {
+        buf_size = context->frame_size -
+                (avctx->pix_fmt == AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
+        if (avctx->bits_per_coded_sample == 8 || avctx->pix_fmt == AV_PIX_FMT_MONOWHITE) {
+            int pix_per_byte = avctx->pix_fmt == AV_PIX_FMT_MONOWHITE ? 8 : 1;
             for (i = 0, j = 0; j < buf_size && i<avpkt->size; i++, j++) {
                 dst[j] = buf[i];
-                row_pix++;
-                if (row_pix == avctx->width) {
+                row_pix += pix_per_byte;
+                if (row_pix >= avctx->width) {
                     i += avpkt_stride - (i % avpkt_stride) - 1;
                     j += 16 - (j % 16) - 1;
                     row_pix = 0;
