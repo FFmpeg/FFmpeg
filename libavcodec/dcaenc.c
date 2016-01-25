@@ -938,7 +938,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const int32_t *samples;
     int ret, i;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, c->frame_size , 0)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, c->frame_size, 0)) < 0)
         return ret;
 
     samples = (const int32_t *)frame->data[0];
@@ -968,7 +968,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     avpkt->pts      = frame->pts;
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
-    avpkt->size     = c->frame_size + 1;
+    avpkt->size     = put_bits_count(&c->pb) >> 3;
     *got_packet_ptr = 1;
     return 0;
 }
