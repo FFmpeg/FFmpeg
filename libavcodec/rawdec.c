@@ -156,12 +156,23 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     RawVideoContext *context       = avctx->priv_data;
     const uint8_t *buf             = avpkt->data;
     int buf_size                   = avpkt->size;
-    int avpkt_stride               = avpkt->size / avctx->height;
     int linesize_align             = 4;
+    int avpkt_stride;
     int res, len;
     int need_copy;
 
     AVFrame   *frame   = data;
+
+    if (avctx->height <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "height is not set\n");
+        return AVERROR_INVALIDDATA;
+    }
+    avpkt_stride = avpkt->size / avctx->height;
+
+    if (avpkt_stride == 0) {
+        av_log(avctx, AV_LOG_ERROR, "Packet too small (%d) height (%d)\n", avpkt->size, avctx->height);
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((avctx->bits_per_coded_sample == 8 || avctx->bits_per_coded_sample == 4
             || avctx->bits_per_coded_sample == 2 || avctx->bits_per_coded_sample == 1) &&
