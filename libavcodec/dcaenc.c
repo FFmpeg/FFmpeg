@@ -157,7 +157,6 @@ static int encode_init(AVCodecContext *avctx)
     for (i = 0; ff_dca_bit_rates[i] < avctx->bit_rate; i++)
         ;
     c->bitrate_index = i;
-    avctx->bit_rate = ff_dca_bit_rates[i];
     c->frame_bits = FFALIGN((avctx->bit_rate * 512 + avctx->sample_rate - 1) / avctx->sample_rate, 32);
     min_frame_bits = 132 + (493 + 28 * 32) * c->fullband_channels + c->lfe_channel * 72;
     if (c->frame_bits < min_frame_bits || c->frame_bits > (DCA_MAX_FRAME_SIZE << 3))
