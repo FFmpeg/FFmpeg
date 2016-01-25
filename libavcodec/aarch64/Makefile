@@ -1,4 +1,5 @@
-OBJS-$(CONFIG_DCA_DECODER)              += aarch64/dcadsp_init.o
+OBJS-$(CONFIG_DCA_DECODER)              += aarch64/dcadsp_init.o               \
+                                           aarch64/synth_filter_init.o
 OBJS-$(CONFIG_FFT)                      += aarch64/fft_init_aarch64.o
 OBJS-$(CONFIG_FMTCONVERT)               += aarch64/fmtconvert_init.o
 OBJS-$(CONFIG_H264CHROMA)               += aarch64/h264chroma_init_aarch64.o

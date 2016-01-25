@@ -36,7 +36,8 @@ OBJS-$(CONFIG_VP8DSP)                  += arm/vp8dsp_init_arm.o
 # decoders/encoders
 OBJS-$(CONFIG_AAC_DECODER)             += arm/aacpsdsp_init_arm.o       \
                                           arm/sbrdsp_init_arm.o
-OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o
+OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o         \
+                                          arm/synth_filter_init_arm.o
 OBJS-$(CONFIG_HEVC_DECODER)            += arm/hevcdsp_init_arm.o
 OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o
 OBJS-$(CONFIG_RV40_DECODER)            += arm/rv40dsp_init_arm.o
