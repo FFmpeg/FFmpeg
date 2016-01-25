@@ -160,6 +160,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (DNXHD,             dnxhd);
     REGISTER_ENCDEC (DPX,               dpx);
     REGISTER_DECODER(DSICINVIDEO,       dsicinvideo);
+    REGISTER_DECODER(DVAUDIO,           dvaudio);
     REGISTER_ENCDEC (DVVIDEO,           dvvideo);
     REGISTER_DECODER(DXA,               dxa);
     REGISTER_DECODER(DXTORY,            dxtory);

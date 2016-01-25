@@ -59,6 +59,7 @@ version <next>:
 - afftfilt filter
 - convolution filter
 - libquvi support removed
+- support for dvaudio in wav and avi
 
 
 version 2.8:
