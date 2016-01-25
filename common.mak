@@ -32,7 +32,7 @@ endif
 ALLFFLIBS = avcodec avdevice avfilter avformat avresample avutil postproc swscale swresample
 
 # NASM requires -I path terminated with /
-IFLAGS     := -I$(DST_PATH)/ -I$(SRC_PATH)/
+IFLAGS     := -I. -I$(SRC_LINK)/
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
@@ -43,12 +43,11 @@ CXXFLAGS   += $(CPPFLAGS) $(CFLAGS)
 YASMFLAGS  += $(IFLAGS:%=%/) -Pconfig.asm
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
-LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)$(DST_PATH)/lib%) $(LDFLAGS)
+LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)lib%) $(LDFLAGS)
 
 define COMPILE
        $(call $(1)DEP,$(1))
-       $(Q)cd $(SRC_PATH); if [ -n "$(findstring $(SRC_PATH),$<)" ]; then dest=$(subst $(SRC_PATH)/,,$<); else dest=$(DST_PATH)/$<; fi; \
-       $(subst @,,$($(1))) $($(1)FLAGS) $($(1)_DEPFLAGS:$(@:.o=.d)=$(DST_PATH)/$(@:.o=.d)) $($(1)_C) $($(1)_O:$@=$(DST_PATH)/$@) $$dest
+       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) $($(1)_C) $($(1)_O) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
 endef
 
 COMPILE_C = $(call COMPILE,CC)
