@@ -41,7 +41,7 @@ typedef struct RawVideoContext {
     AVBufferRef *palette;
     int frame_size;  /* size of the frame in bytes */
     int flip;
-    int is_1_2_4_bpp; // 1 bpp raw in mov, and 2 or 4 bpp raw in avi/mov
+    int is_1_2_4_8_bpp; // 1 bpp in mov, and 2, 4 and 8 bpp in avi/mov
     int is_yuv2;
     int is_lt_16bpp; // 16bpp pixfmt and bits_per_coded_sample < 16
     int tff;
@@ -156,19 +156,20 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     RawVideoContext *context       = avctx->priv_data;
     const uint8_t *buf             = avpkt->data;
     int buf_size                   = avpkt->size;
+    int avpkt_stride               = avpkt->size / avctx->height;
     int linesize_align             = 4;
     int res, len;
     int need_copy;
 
     AVFrame   *frame   = data;
 
-    if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2
-            || avctx->bits_per_coded_sample == 1) &&
+    if ((avctx->bits_per_coded_sample == 8 || avctx->bits_per_coded_sample == 4
+            || avctx->bits_per_coded_sample == 2 || avctx->bits_per_coded_sample == 1) &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
-        context->is_1_2_4_bpp = 1;
+        context->is_1_2_4_8_bpp = 1;
         context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
-                                                       FFALIGN(avctx->width, 32),
+                                                       FFALIGN(avctx->width, 16),
                                                        avctx->height, 1);
     } else {
         context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample && avctx->bits_per_coded_sample < 16;
@@ -178,7 +179,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (context->frame_size < 0)
         return context->frame_size;
 
-    need_copy = !avpkt->buf || context->is_1_2_4_bpp || context->is_yuv2 || context->is_lt_16bpp;
+    need_copy = !avpkt->buf || context->is_1_2_4_8_bpp || context->is_yuv2 || context->is_lt_16bpp;
 
     frame->pict_type        = AV_PICTURE_TYPE_I;
     frame->key_frame        = 1;
@@ -205,39 +206,65 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (!frame->buf[0])
         return AVERROR(ENOMEM);
 
-    // 1 bpp raw in mov, and 2 or 4 bpp raw in avi/mov
-    if (context->is_1_2_4_bpp) {
-        int i;
+    // 1 bpp in mov, and 2, 4 and 8 bpp in avi/mov
+    if (context->is_1_2_4_8_bpp) {
+        int i, j, row_pix = 0;
         uint8_t *dst = frame->buf[0]->data;
         buf_size = context->frame_size - AVPALETTE_SIZE;
-        if (avctx->bits_per_coded_sample == 4) {
-            for (i = 0; 2 * i + 1 < buf_size && i<avpkt->size; i++) {
-                dst[2 * i + 0] = buf[i] >> 4;
-                dst[2 * i + 1] = buf[i] & 15;
+        if (avctx->bits_per_coded_sample == 8) {
+            for (i = 0, j = 0; j < buf_size && i<avpkt->size; i++, j++) {
+                dst[j] = buf[i];
+                row_pix++;
+                if (row_pix == avctx->width) {
+                    i += avpkt_stride - (i % avpkt_stride) - 1;
+                    j += 16 - (j % 16) - 1;
+                    row_pix = 0;
+                }
             }
-            linesize_align = 8;
+        } else if (avctx->bits_per_coded_sample == 4) {
+            for (i = 0, j = 0; 2 * j + 1 < buf_size && i<avpkt->size; i++, j++) {
+                dst[2 * j + 0] = buf[i] >> 4;
+                dst[2 * j + 1] = buf[i] & 15;
+                row_pix += 2;
+                if (row_pix >= avctx->width) {
+                    i += avpkt_stride - (i % avpkt_stride) - 1;
+                    j += 8 - (j % 8) - 1;
+                    row_pix = 0;
+                }
+            }
         } else if (avctx->bits_per_coded_sample == 2) {
-            for (i = 0; 4 * i + 3 < buf_size && i<avpkt->size; i++) {
-                dst[4 * i + 0] = buf[i] >> 6;
-                dst[4 * i + 1] = buf[i] >> 4 & 3;
-                dst[4 * i + 2] = buf[i] >> 2 & 3;
-                dst[4 * i + 3] = buf[i]      & 3;
+            for (i = 0, j = 0; 4 * j + 3 < buf_size && i<avpkt->size; i++, j++) {
+                dst[4 * j + 0] = buf[i] >> 6;
+                dst[4 * j + 1] = buf[i] >> 4 & 3;
+                dst[4 * j + 2] = buf[i] >> 2 & 3;
+                dst[4 * j + 3] = buf[i]      & 3;
+                row_pix += 4;
+                if (row_pix >= avctx->width) {
+                    i += avpkt_stride - (i % avpkt_stride) - 1;
+                    j += 4 - (j % 4) - 1;
+                    row_pix = 0;
+                }
             }
-            linesize_align = 16;
         } else {
             av_assert0(avctx->bits_per_coded_sample == 1);
-            for (i = 0; 8 * i + 7 < buf_size && i<avpkt->size; i++) {
-                dst[8 * i + 0] = buf[i] >> 7 & 1;
-                dst[8 * i + 1] = buf[i] >> 6 & 1;
-                dst[8 * i + 2] = buf[i] >> 5 & 1;
-                dst[8 * i + 3] = buf[i] >> 4 & 1;
-                dst[8 * i + 4] = buf[i] >> 3 & 1;
-                dst[8 * i + 5] = buf[i] >> 2 & 1;
-                dst[8 * i + 6] = buf[i] >> 1 & 1;
-                dst[8 * i + 7] = buf[i]      & 1;
+            for (i = 0, j = 0; 8 * j + 7 < buf_size && i<avpkt->size; i++, j++) {
+                dst[8 * j + 0] = buf[i] >> 7;
+                dst[8 * j + 1] = buf[i] >> 6 & 1;
+                dst[8 * j + 2] = buf[i] >> 5 & 1;
+                dst[8 * j + 3] = buf[i] >> 4 & 1;
+                dst[8 * j + 4] = buf[i] >> 3 & 1;
+                dst[8 * j + 5] = buf[i] >> 2 & 1;
+                dst[8 * j + 6] = buf[i] >> 1 & 1;
+                dst[8 * j + 7] = buf[i]      & 1;
+                row_pix += 8;
+                if (row_pix >= avctx->width) {
+                    i += avpkt_stride - (i % avpkt_stride) - 1;
+                    j += 2 - (j % 2) - 1;
+                    row_pix = 0;
+                }
             }
-            linesize_align = 32;
         }
+        linesize_align = 16;
         buf = dst;
     } else if (context->is_lt_16bpp) {
         uint8_t *dst = frame->buf[0]->data;
