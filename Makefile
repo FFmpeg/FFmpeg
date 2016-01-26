@@ -181,7 +181,10 @@ clean::
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version avversion.h version.h libavutil/ffversion.h libavcodec/codec_names.h src
+	$(RM) config.* .config libavutil/avconfig.h .version avversion.h version.h libavutil/ffversion.h libavcodec/codec_names.h
+ifeq ($(SRC_LINK),src)
+	$(RM) src
+endif
 	$(RM) -rf doc/examples/pc-uninstalled
 
 config:
