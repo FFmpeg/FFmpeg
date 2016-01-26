@@ -1540,8 +1540,12 @@ static int decode_cabac_mb_mvd(H264SliceContext *sl, int ctxbase, int amvd, int 
     int amvd1 = sl->mvd_cache[list][scan8[n] - 1][1] +\
                 sl->mvd_cache[list][scan8[n] - 8][1];\
 \
-    mx += decode_cabac_mb_mvd(sl, 40, amvd0, &mpx);\
-    my += decode_cabac_mb_mvd(sl, 47, amvd1, &mpy);\
+    int mxd = decode_cabac_mb_mvd(sl, 40, amvd0, &mpx);\
+    int myd = decode_cabac_mb_mvd(sl, 47, amvd1, &mpy);\
+    if (mxd == INT_MIN || myd == INT_MIN) \
+        return AVERROR_INVALIDDATA; \
+    mx += mxd;\
+    my += myd;\
 }
 
 static av_always_inline int get_cabac_cbf_ctx(H264SliceContext *sl,
