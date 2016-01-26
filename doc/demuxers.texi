@@ -214,6 +214,33 @@ The default is 0.
 
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Use absolute filenames and include some comments:
+@example
+# my first filename
+file /mnt/share/file-1.wav
+# my second filename including whitespace
+file '/mnt/share/file 2.wav'
+# my third filename including whitespace plus single quote
+file '/mnt/share/file 3'\''.wav'
+@end example
+
+@item
+Allow for input format auto-probing, use safe filenames and set the duration of
+the first file:
+@example
+ffconcat version 1.0
+
+file file-1.wav
+duration 20.0
+
+file subdir/file-2.wav
+@end example
+@end itemize
+
 @section flv
 
 Adobe Flash Video Format demuxer.
