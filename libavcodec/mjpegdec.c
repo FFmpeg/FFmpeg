@@ -1921,24 +1921,54 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
     /* unescape buffer of SOS, use special treatment for JPEG-LS */
     if (start_code == SOS && !s->ls) {
         const uint8_t *src = *buf_ptr;
+        const uint8_t *ptr = src;
         uint8_t *dst = s->buffer;
 
-        while (src < buf_end) {
-            uint8_t x = *(src++);
+        #define copy_data_segment(skip) do {       \
+            ssize_t length = (ptr - src) - (skip); \
+            if (length > 0) {                         \
+                memcpy(dst, src, length);             \
+                dst += length;                        \
+                src = ptr;                            \
+            }                                         \
+        } while (0)
 
-            *(dst++) = x;
-            if (s->avctx->codec_id != AV_CODEC_ID_THP) {
+        if (s->avctx->codec_id == AV_CODEC_ID_THP) {
+            ptr = buf_end;
+            copy_data_segment(0);
+        } else {
+            while (ptr < buf_end) {
+                uint8_t x = *(ptr++);
+
                 if (x == 0xff) {
-                    while (src < buf_end && x == 0xff)
-                        x = *(src++);
+                    ssize_t skip = 0;
+                    while (ptr < buf_end && x == 0xff) {
+                        x = *(ptr++);
+                        skip++;
+                    }
 
-                    if (x >= 0xd0 && x <= 0xd7)
-                        *(dst++) = x;
-                    else if (x)
-                        break;
+                    /* 0xFF, 0xFF, ... */
+                    if (skip > 1) {
+                        copy_data_segment(skip);
+
+                        /* decrement src as it is equal to ptr after the
+                         * copy_data_segment macro and we might want to
+                         * copy the current value of x later on */
+                        src--;
+                    }
+
+                    if (x < 0xd0 || x > 0xd7) {
+                        copy_data_segment(1);
+                        if (x)
+                            break;
+                    }
                 }
             }
+            if (src < ptr)
+                copy_data_segment(0);
         }
+        #undef copy_data_segment
+
         *unescaped_buf_ptr  = s->buffer;
         *unescaped_buf_size = dst - s->buffer;
         memset(s->buffer + *unescaped_buf_size, 0,
