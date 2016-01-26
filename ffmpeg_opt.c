@@ -2466,6 +2466,13 @@ loop_end:
                 }
                 m = &oc->chapters[index]->metadata;
                 break;
+            case 'p':
+                if (index < 0 || index >= oc->nb_programs) {
+                    av_log(NULL, AV_LOG_FATAL, "Invalid program index %d in metadata specifier.\n", index);
+                    exit_program(1);
+                }
+                m = &oc->programs[index]->metadata;
+                break;
             default:
                 av_log(NULL, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
                 exit_program(1);
