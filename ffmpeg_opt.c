@@ -2358,6 +2358,62 @@ loop_end:
             }
         }
 
+    /* process manually set programs */
+    for (i = 0; i < o->nb_program; i++) {
+        const char *p = o->program[i].u.str;
+        int progid = i+1;
+        AVProgram *program;
+
+        while(*p) {
+            const char *p2 = av_get_token(&p, ":");
+            char *key;
+            if (!p2)
+                break;
+            if(*p) p++;
+
+            key = av_get_token(&p2, "=");
+            if (!key || !*p2)
+                break;
+            p2++;
+
+            if (!strcmp(key, "program_num"))
+                progid = strtol(p2, NULL, 0);
+        }
+
+        program = av_new_program(oc, progid);
+
+        p = o->program[i].u.str;
+        while(*p) {
+            const char *p2 = av_get_token(&p, ":");
+            char *key;
+            if (!p2)
+                break;
+            if(*p) p++;
+
+            key = av_get_token(&p2, "=");
+            if (!key) {
+                av_log(NULL, AV_LOG_FATAL,
+                       "No '=' character in program string %s.\n",
+                       p2);
+                exit_program(1);
+            }
+            if (!*p2)
+                exit_program(1);
+            p2++;
+
+            if (!strcmp(key, "title")) {
+                av_dict_set(&program->metadata, "title", p2, 0);
+            } else if (!strcmp(key, "program_num")) {
+            } else if (!strcmp(key, "st")) {
+                int st_num = strtol(p2, NULL, 0);
+                av_program_add_stream_index(oc, progid, st_num);
+            } else {
+                av_log(NULL, AV_LOG_FATAL, "Unknown program key %s.\n", key);
+                exit_program(1);
+            }
+        }
+    }
+
     /* process manually set metadata */
     for (i = 0; i < o->nb_metadata; i++) {
         AVDictionary **m;
@@ -2415,62 +2471,6 @@ loop_end:
                 exit_program(1);
             }
             av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
-        }
-    }
-
-    /* process manually set programs */
-    for (i = 0; i < o->nb_program; i++) {
-        const char *p = o->program[i].u.str;
-        int progid = i+1;
-        AVProgram *program;
-
-        while(*p) {
-            const char *p2 = av_get_token(&p, ":");
-            char *key;
-            if (!p2)
-                break;
-            if(*p) p++;
-
-            key = av_get_token(&p2, "=");
-            if (!key || !*p2)
-                break;
-            p2++;
-
-            if (!strcmp(key, "program_num"))
-                progid = strtol(p2, NULL, 0);
-        }
-
-        program = av_new_program(oc, progid);
-
-        p = o->program[i].u.str;
-        while(*p) {
-            const char *p2 = av_get_token(&p, ":");
-            char *key;
-            if (!p2)
-                break;
-            if(*p) p++;
-
-            key = av_get_token(&p2, "=");
-            if (!key) {
-                av_log(NULL, AV_LOG_FATAL,
-                       "No '=' character in program string %s.\n",
-                       p2);
-                exit_program(1);
-            }
-            if (!*p2)
-                exit_program(1);
-            p2++;
-
-            if (!strcmp(key, "title")) {
-                av_dict_set(&program->metadata, "title", p2, 0);
-            } else if (!strcmp(key, "program_num")) {
-            } else if (!strcmp(key, "st")) {
-                int st_num = strtol(p2, NULL, 0);
-                av_program_add_stream_index(oc, progid, st_num);
-            } else {
-                av_log(NULL, AV_LOG_FATAL, "Unknown program key %s.\n", key);
-                exit_program(1);
-            }
         }
     }
 
