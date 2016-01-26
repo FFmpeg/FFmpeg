@@ -34,7 +34,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     DVAudioContext *s = avctx->priv_data;
     int i;
 
-    if (avctx->channels > 2) {
+    if (avctx->channels != 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR(EINVAL);
     }
