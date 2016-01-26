@@ -22,6 +22,8 @@
 #define AVUTIL_MASTERING_DISPLAY_METADATA_H
 
 #include "frame.h"
+#include "rational.h"
+
 
 /**
  * Mastering display metadata capable of representing the color volume of
@@ -37,22 +39,22 @@ typedef struct AVMasteringDisplayMetadata {
     /**
      * CIE 1931 xy chromaticity coords of color primaries (r, g, b order).
      */
-    float display_primaries[3][2];
+    AVRational display_primaries[3][2];
 
     /**
      * CIE 1931 xy chromaticity coords of white point.
      */
-    float white_point[2];
+    AVRational white_point[2];
 
     /**
      * Min luminance of mastering display (cd/m^2).
      */
-    float min_luminance;
+    AVRational min_luminance;
 
     /**
      * Max luminance of mastering display (cd/m^2).
      */
-    float max_luminance;
+    AVRational max_luminance;
 
     /**
      * Flag indicating whether the display primaries (and white point) are set.
