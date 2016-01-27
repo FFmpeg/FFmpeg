@@ -979,7 +979,8 @@ skip:
 
     // if not streamed and no duration from metadata then seek to end to find
     // the duration from the timestamps
-    if (s->pb->seekable && (!s->duration || s->duration == AV_NOPTS_VALUE) && !flv->searched_for_end) {
+    if (s->pb->seekable && (!s->duration || s->duration == AV_NOPTS_VALUE) &&
+        !flv->searched_for_end) {
         int size;
         const int64_t pos   = avio_tell(s->pb);
         // Read the last 4 bytes of the file, this should be the size of the
