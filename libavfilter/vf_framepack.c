@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
