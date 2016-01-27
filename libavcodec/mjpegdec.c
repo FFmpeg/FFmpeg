@@ -1925,7 +1925,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
         uint8_t *dst = s->buffer;
 
         #define copy_data_segment(skip) do {       \
-            ssize_t length = (ptr - src) - (skip); \
+            ptrdiff_t length = (ptr - src) - (skip);  \
             if (length > 0) {                         \
                 memcpy(dst, src, length);             \
                 dst += length;                        \
@@ -1941,7 +1941,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
                 uint8_t x = *(ptr++);
 
                 if (x == 0xff) {
-                    ssize_t skip = 0;
+                    ptrdiff_t skip = 0;
                     while (ptr < buf_end && x == 0xff) {
                         x = *(ptr++);
                         skip++;
