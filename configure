@@ -5599,7 +5599,7 @@ enabled opengl            && { check_lib GL/glx.h glXGetProcAddress "-lGL" ||
                                check_lib2 ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
-enabled openssl           && { check_pkg_config openssl openssl/ssl.h SSL_library_init ||
+enabled openssl           && { use_pkg_config openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
