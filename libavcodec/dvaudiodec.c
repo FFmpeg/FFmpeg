@@ -51,6 +51,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->is_12bit = avctx->bits_per_raw_sample == 12;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->shuffle); i++) {
         const unsigned a = s->is_pal ? 18 : 15;
