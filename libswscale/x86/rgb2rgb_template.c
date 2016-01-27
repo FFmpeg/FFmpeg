@@ -2457,7 +2457,7 @@ static void RENAME(yuyvtoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_even)(src, ydst, width);
@@ -2483,7 +2483,7 @@ static void RENAME(yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_even)(src, ydst, width);
@@ -2507,7 +2507,7 @@ static void RENAME(uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_odd)(src, ydst, width);
@@ -2533,7 +2533,7 @@ static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
+    const int chromWidth = AV_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_odd)(src, ydst, width);

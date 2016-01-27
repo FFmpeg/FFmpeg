@@ -154,8 +154,8 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = inlink->w;
     outlink->h = inlink->h;
 
-    s->chromaw = FF_CEIL_RSHIFT(inlink->w, s->hsub);
-    s->chromah = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+    s->chromaw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+    s->chromah = AV_CEIL_RSHIFT(inlink->h, s->vsub);
 
     s->fs = inlink->w * inlink->h;
     s->cfs = s->chromaw * s->chromah;

@@ -582,7 +582,7 @@ static int config_output(AVFilterLink *outlink)
         return ret;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     av_image_fill_max_pixsteps(s->pixstep, NULL, desc);
-    s->pheight[1] = s->pheight[2] = FF_CEIL_RSHIFT(s->height, desc->log2_chroma_h);
+    s->pheight[1] = s->pheight[2] = AV_CEIL_RSHIFT(s->height, desc->log2_chroma_h);
     s->pheight[0] = s->pheight[3] = s->height;
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
@@ -781,10 +781,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     for (i = 0; i < 4; i++) {
         int hsub = i == 1 || i == 2 ? s->hsub : 0;
         int vsub = i == 1 || i == 2 ? s->vsub : 0;
-        s->in_off_left[i]   = (FF_CEIL_RSHIFT(s->in.row_left,   vsub) + s->in.off_lstep)  * ileft->linesize[i]  + FF_CEIL_RSHIFT(s->in.off_left   * s->pixstep[i], hsub);
-        s->in_off_right[i]  = (FF_CEIL_RSHIFT(s->in.row_right,  vsub) + s->in.off_rstep)  * iright->linesize[i] + FF_CEIL_RSHIFT(s->in.off_right  * s->pixstep[i], hsub);
-        out_off_left[i]  = (FF_CEIL_RSHIFT(s->out.row_left,  vsub) + s->out.off_lstep) * oleft->linesize[i]  + FF_CEIL_RSHIFT(s->out.off_left  * s->pixstep[i], hsub);
-        out_off_right[i] = (FF_CEIL_RSHIFT(s->out.row_right, vsub) + s->out.off_rstep) * oright->linesize[i] + FF_CEIL_RSHIFT(s->out.off_right * s->pixstep[i], hsub);
+        s->in_off_left[i]   = (AV_CEIL_RSHIFT(s->in.row_left,   vsub) + s->in.off_lstep)  * ileft->linesize[i]  + AV_CEIL_RSHIFT(s->in.off_left   * s->pixstep[i], hsub);
+        s->in_off_right[i]  = (AV_CEIL_RSHIFT(s->in.row_right,  vsub) + s->in.off_rstep)  * iright->linesize[i] + AV_CEIL_RSHIFT(s->in.off_right  * s->pixstep[i], hsub);
+        out_off_left[i]  = (AV_CEIL_RSHIFT(s->out.row_left,  vsub) + s->out.off_lstep) * oleft->linesize[i]  + AV_CEIL_RSHIFT(s->out.off_left  * s->pixstep[i], hsub);
+        out_off_right[i] = (AV_CEIL_RSHIFT(s->out.row_right, vsub) + s->out.off_rstep) * oright->linesize[i] + AV_CEIL_RSHIFT(s->out.off_right * s->pixstep[i], hsub);
     }
 
     switch (s->out.format) {

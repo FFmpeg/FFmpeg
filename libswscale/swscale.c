@@ -373,7 +373,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     yuv2packedX_fn yuv2packedX       = c->yuv2packedX;
     yuv2anyX_fn yuv2anyX             = c->yuv2anyX;
     const int chrSrcSliceY           =                srcSliceY >> c->chrSrcVSubSample;
-    const int chrSrcSliceH           = FF_CEIL_RSHIFT(srcSliceH,   c->chrSrcVSubSample);
+    const int chrSrcSliceH           = AV_CEIL_RSHIFT(srcSliceH,   c->chrSrcVSubSample);
     int should_dither                = is9_OR_10BPS(c->srcFormat) ||
                                        is16BPS(c->srcFormat);
     int lastDstY;
@@ -479,7 +479,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
     ff_init_slice_from_src(vout_slice, (uint8_t**)dst, dstStride, c->dstW,
             dstY, dstH, dstY >> c->chrDstVSubSample,
-            FF_CEIL_RSHIFT(dstH, c->chrDstVSubSample), 0);
+            AV_CEIL_RSHIFT(dstH, c->chrDstVSubSample), 0);
     if (srcSliceY == 0) {
         hout_slice->plane[0].sliceY = lastInLumBuf + 1;
         hout_slice->plane[1].sliceY = lastInChrBuf + 1;
@@ -558,7 +558,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
         // Do we have enough lines in this slice to output the dstY line
         enough_lines = lastLumSrcY2 < srcSliceY + srcSliceH &&
-                       lastChrSrcY < FF_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample);
+                       lastChrSrcY < AV_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample);
 
         if (!enough_lines) {
             lastLumSrcY = srcSliceY + srcSliceH - 1;
@@ -580,7 +580,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         cPosY = hout_slice->plane[1].sliceY + hout_slice->plane[1].sliceH;
         if (cPosY <= lastChrSrcY && !hasChrHoles) {
             firstCPosY = FFMAX(firstChrSrcY, cPosY);
-            lastCPosY = FFMIN(lastChrSrcY + MAX_LINES_AHEAD, FF_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample) - 1);
+            lastCPosY = FFMIN(lastChrSrcY + MAX_LINES_AHEAD, AV_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample) - 1);
         } else {
             firstCPosY = lastInChrBuf + 1;
             lastCPosY = lastChrSrcY;

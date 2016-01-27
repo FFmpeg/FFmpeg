@@ -209,8 +209,8 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
         // Adjust for smaller Cb and Cr planes
         av_pix_fmt_get_chroma_sub_sample(st->codec->pix_fmt, &h_chroma_shift,
                                          &v_chroma_shift);
-        width  = FF_CEIL_RSHIFT(width,  h_chroma_shift);
-        height = FF_CEIL_RSHIFT(height, v_chroma_shift);
+        width  = AV_CEIL_RSHIFT(width,  h_chroma_shift);
+        height = AV_CEIL_RSHIFT(height, v_chroma_shift);
 
         ptr1 = frame->data[1];
         ptr2 = frame->data[2];

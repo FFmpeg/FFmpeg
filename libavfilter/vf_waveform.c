@@ -158,8 +158,8 @@ static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int 
     const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = FF_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = FF_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
+    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     uint16_t *dst;
@@ -208,8 +208,8 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int co
     const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = FF_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = FF_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
+    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     uint8_t *dst;
@@ -259,8 +259,8 @@ static void envelope_peak16(WaveformContext *s, AVFrame *out, int plane, int com
     const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = FF_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = FF_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
+    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     int *emax = s->emax[plane][component];
@@ -331,8 +331,8 @@ static void envelope_peak(WaveformContext *s, AVFrame *out, int plane, int compo
     const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = FF_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = FF_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
+    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     int *emax = s->emax[plane][component];
@@ -447,8 +447,8 @@ static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
     const int limit = s->max - 1;
     const int max = limit - intensity;
-    const int src_h = FF_CEIL_RSHIFT(in->height, shift_h);
-    const int src_w = FF_CEIL_RSHIFT(in->width, shift_w);
+    const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
+    const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
     const uint16_t *src_data = (const uint16_t *)in->data[plane];
     uint16_t *dst_data = (uint16_t *)out->data[plane] + (column ? (offset >> shift_h) * dst_linesize : offset >> shift_w);
     uint16_t * const dst_bottom_line = dst_data + dst_linesize * ((s->size >> shift_h) - 1);
@@ -496,8 +496,8 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int dst_linesize = out->linesize[plane];
     const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
     const int max = 255 - intensity;
-    const int src_h = FF_CEIL_RSHIFT(in->height, shift_h);
-    const int src_w = FF_CEIL_RSHIFT(in->width, shift_w);
+    const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
+    const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
     const uint8_t *src_data = in->data[plane];
     uint8_t *dst_data = out->data[plane] + (column ? (offset >> shift_h) * dst_linesize : offset >> shift_w);
     uint8_t * const dst_bottom_line = dst_data + dst_linesize * ((s->size >> shift_h) - 1);
@@ -1205,8 +1205,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (k = 0; k < s->ncomp; k++) {
         const int is_chroma = (k == 1 || k == 2);
-        const int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? s->desc->log2_chroma_h : 0));
-        const int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? s->desc->log2_chroma_w : 0));
+        const int dst_h = AV_CEIL_RSHIFT(outlink->h, (is_chroma ? s->desc->log2_chroma_h : 0));
+        const int dst_w = AV_CEIL_RSHIFT(outlink->w, (is_chroma ? s->desc->log2_chroma_w : 0));
         if (s->bits <= 8) {
             for (i = 0; i < dst_h ; i++)
                 memset(out->data[s->desc->comp[k].plane] +

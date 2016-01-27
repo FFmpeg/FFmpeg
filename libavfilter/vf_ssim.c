@@ -288,9 +288,9 @@ static int config_input_ref(AVFilterLink *inlink)
     s->comps[2] = s->is_rgb ? 'B' : 'V';
     s->comps[3] = 'A';
 
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
-    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
     for (i = 0; i < s->nb_components; i++)
         sum += s->planeheight[i] * s->planewidth[i];

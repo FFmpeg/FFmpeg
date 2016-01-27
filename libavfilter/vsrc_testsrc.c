@@ -1145,9 +1145,9 @@ static void draw_bar(TestSourceContext *test, const uint8_t color[4],
 
         if (plane == 1 || plane == 2) {
             px = x >> desc->log2_chroma_w;
-            pw = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
+            pw = AV_CEIL_RSHIFT(w, desc->log2_chroma_w);
             py = y >> desc->log2_chroma_h;
-            ph = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+            ph = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
         } else {
             px = x;
             pw = w;

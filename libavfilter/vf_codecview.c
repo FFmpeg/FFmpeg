@@ -206,8 +206,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
         if (qp_table) {
             int x, y;
-            const int w = FF_CEIL_RSHIFT(frame->width,  s->hsub);
-            const int h = FF_CEIL_RSHIFT(frame->height, s->vsub);
+            const int w = AV_CEIL_RSHIFT(frame->width,  s->hsub);
+            const int h = AV_CEIL_RSHIFT(frame->height, s->vsub);
             uint8_t *pu = frame->data[1];
             uint8_t *pv = frame->data[2];
             const int lzu = frame->linesize[1];

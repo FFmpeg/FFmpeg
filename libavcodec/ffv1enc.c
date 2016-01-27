@@ -1176,8 +1176,8 @@ retry:
     }
 
     if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
-        const int chroma_width  = FF_CEIL_RSHIFT(width,  f->chroma_h_shift);
-        const int chroma_height = FF_CEIL_RSHIFT(height, f->chroma_v_shift);
+        const int chroma_width  = AV_CEIL_RSHIFT(width,  f->chroma_h_shift);
+        const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 

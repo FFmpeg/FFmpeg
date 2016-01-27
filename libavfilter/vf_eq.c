@@ -281,8 +281,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int h = inlink->h;
 
         if (i == 1 || i == 2) {
-            w = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
-            h = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, desc->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
         }
 
         if (eq->param[i].adjust)

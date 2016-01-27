@@ -262,13 +262,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         apply_delogo(out->data[plane], out->linesize[plane],
                      in ->data[plane], in ->linesize[plane],
-                     FF_CEIL_RSHIFT(inlink->w, hsub),
-                     FF_CEIL_RSHIFT(inlink->h, vsub),
+                     AV_CEIL_RSHIFT(inlink->w, hsub),
+                     AV_CEIL_RSHIFT(inlink->h, vsub),
                      sar, s->x>>hsub, s->y>>vsub,
                      /* Up and left borders were rounded down, inject lost bits
                       * into width and height to avoid error accumulation */
-                     FF_CEIL_RSHIFT(s->w + (s->x & ((1<<hsub)-1)), hsub),
-                     FF_CEIL_RSHIFT(s->h + (s->y & ((1<<vsub)-1)), vsub),
+                     AV_CEIL_RSHIFT(s->w + (s->x & ((1<<hsub)-1)), hsub),
+                     AV_CEIL_RSHIFT(s->h + (s->y & ((1<<vsub)-1)), vsub),
                      s->band>>FFMIN(hsub, vsub),
                      s->show, direct);
     }

@@ -153,12 +153,12 @@ AVFILTER_DEFINE_CLASS(fieldmatch);
 
 static int get_width(const FieldMatchContext *fm, const AVFrame *f, int plane)
 {
-    return plane ? FF_CEIL_RSHIFT(f->width, fm->hsub) : f->width;
+    return plane ? AV_CEIL_RSHIFT(f->width, fm->hsub) : f->width;
 }
 
 static int get_height(const FieldMatchContext *fm, const AVFrame *f, int plane)
 {
-    return plane ? FF_CEIL_RSHIFT(f->height, fm->vsub) : f->height;
+    return plane ? AV_CEIL_RSHIFT(f->height, fm->vsub) : f->height;
 }
 
 static int64_t luma_abs_diff(const AVFrame *f1, const AVFrame *f2)
@@ -270,8 +270,8 @@ static int calc_combed_score(const FieldMatchContext *fm, const AVFrame *src)
         uint8_t *cmkp  = fm->cmask_data[0];
         uint8_t *cmkpU = fm->cmask_data[1];
         uint8_t *cmkpV = fm->cmask_data[2];
-        const int width  = FF_CEIL_RSHIFT(src->width,  fm->hsub);
-        const int height = FF_CEIL_RSHIFT(src->height, fm->vsub);
+        const int width  = AV_CEIL_RSHIFT(src->width,  fm->hsub);
+        const int height = AV_CEIL_RSHIFT(src->height, fm->vsub);
         const int cmk_linesize   = fm->cmask_linesize[0] << 1;
         const int cmk_linesizeUV = fm->cmask_linesize[2];
         uint8_t *cmkpp  = cmkp - (cmk_linesize>>1);

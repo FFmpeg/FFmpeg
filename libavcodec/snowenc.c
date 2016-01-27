@@ -1574,12 +1574,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for(i=0; i < s->nb_planes; i++){
         int hshift= i ? s->chroma_h_shift : 0;
         int vshift= i ? s->chroma_v_shift : 0;
-        for(y=0; y<FF_CEIL_RSHIFT(height, vshift); y++)
+        for(y=0; y<AV_CEIL_RSHIFT(height, vshift); y++)
             memcpy(&s->input_picture->data[i][y * s->input_picture->linesize[i]],
                    &pict->data[i][y * pict->linesize[i]],
-                   FF_CEIL_RSHIFT(width, hshift));
+                   AV_CEIL_RSHIFT(width, hshift));
         s->mpvencdsp.draw_edges(s->input_picture->data[i], s->input_picture->linesize[i],
-                                FF_CEIL_RSHIFT(width, hshift), FF_CEIL_RSHIFT(height, vshift),
+                                AV_CEIL_RSHIFT(width, hshift), AV_CEIL_RSHIFT(height, vshift),
                                 EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
                                 EDGE_TOP | EDGE_BOTTOM);
 

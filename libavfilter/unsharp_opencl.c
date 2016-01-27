@@ -170,8 +170,8 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     FFOpenclParam kernel2 = {0};
     int width = link->w;
     int height = link->h;
-    int cw = FF_CEIL_RSHIFT(link->w, unsharp->hsub);
-    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
+    int cw = AV_CEIL_RSHIFT(link->w, unsharp->hsub);
+    int ch = AV_CEIL_RSHIFT(link->h, unsharp->vsub);
     size_t globalWorkSize1d = width * height + 2 * ch * cw;
     size_t globalWorkSize2dLuma[2];
     size_t globalWorkSize2dChroma[2];
@@ -385,7 +385,7 @@ int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFra
     int ret = 0;
     AVFilterLink *link = ctx->inputs[0];
     UnsharpContext *unsharp = ctx->priv;
-    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
+    int ch = AV_CEIL_RSHIFT(link->h, unsharp->vsub);
 
     if ((!unsharp->opencl_ctx.cl_inbuf) || (!unsharp->opencl_ctx.cl_outbuf)) {
         unsharp->opencl_ctx.in_plane_size[0]  = (in->linesize[0] * in->height);

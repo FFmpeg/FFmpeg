@@ -233,8 +233,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         int h = dstpic->height;
 
         if (i == 1 || i == 2) {
-            w = FF_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
-            h = FF_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
         }
 
 

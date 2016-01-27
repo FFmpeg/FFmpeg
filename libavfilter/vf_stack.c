@@ -123,7 +123,7 @@ static int process_frame(FFFrameSync *fs)
             return ret;
         }
 
-        height[1] = height[2] = FF_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
+        height[1] = height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
         height[0] = height[3] = inlink->h;
 
         for (p = 0; p < s->nb_planes; p++) {

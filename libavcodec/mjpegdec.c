@@ -1266,8 +1266,8 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
 
     av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt, &chroma_h_shift,
                                      &chroma_v_shift);
-    chroma_width  = FF_CEIL_RSHIFT(s->width,  chroma_h_shift);
-    chroma_height = FF_CEIL_RSHIFT(s->height, chroma_v_shift);
+    chroma_width  = AV_CEIL_RSHIFT(s->width,  chroma_h_shift);
+    chroma_height = AV_CEIL_RSHIFT(s->height, chroma_v_shift);
 
     for (i = 0; i < nb_components; i++) {
         int c   = s->comp_index[i];
@@ -2241,8 +2241,8 @@ the_end:
             if (!s->upscale_h[p])
                 continue;
             if (p==1 || p==2) {
-                w = FF_CEIL_RSHIFT(w, hshift);
-                h = FF_CEIL_RSHIFT(h, vshift);
+                w = AV_CEIL_RSHIFT(w, hshift);
+                h = AV_CEIL_RSHIFT(h, vshift);
             }
             if (s->upscale_v[p])
                 h = (h+1)>>1;
@@ -2299,8 +2299,8 @@ the_end:
             if (!s->upscale_v[p])
                 continue;
             if (p==1 || p==2) {
-                w = FF_CEIL_RSHIFT(w, hshift);
-                h = FF_CEIL_RSHIFT(h, vshift);
+                w = AV_CEIL_RSHIFT(w, hshift);
+                h = AV_CEIL_RSHIFT(h, vshift);
             }
             dst = &((uint8_t *)s->picture_ptr->data[p])[(h - 1) * s->linesize[p]];
             for (i = h - 1; i; i--) {
@@ -2324,8 +2324,8 @@ the_end:
             int w = s->picture_ptr->width;
             int h = s->picture_ptr->height;
             if(index && index<3){
-                w = FF_CEIL_RSHIFT(w, hshift);
-                h = FF_CEIL_RSHIFT(h, vshift);
+                w = AV_CEIL_RSHIFT(w, hshift);
+                h = AV_CEIL_RSHIFT(h, vshift);
             }
             if(dst){
                 uint8_t *dst2 = dst + s->picture_ptr->linesize[index]*(h-1);

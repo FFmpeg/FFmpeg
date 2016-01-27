@@ -70,7 +70,7 @@ static int chr_planar_vscale(SwsContext *c, SwsFilterDescriptor *desc, int slice
         return 0;
     else {
         VScalerContext *inst = desc->instance;
-        int dstW = FF_CEIL_RSHIFT(desc->dst->width, desc->dst->h_chr_sub_sample);
+        int dstW = AV_CEIL_RSHIFT(desc->dst->width, desc->dst->h_chr_sub_sample);
         int chrSliceY = sliceY >> desc->dst->v_chr_sub_sample;
 
         int first = FFMAX(1-inst->filter_size, inst->filter_pos[chrSliceY]);

@@ -87,7 +87,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
         uint8_t *data = frame->data[plane];
-        int h = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
+        int h = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         int linesize = av_image_get_linesize(frame->format, frame->width, plane);
 
         if (linesize < 0)

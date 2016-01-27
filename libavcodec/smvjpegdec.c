@@ -65,7 +65,7 @@ static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
     for (i = 0; i < planes_nb; i++) {
         int h = height;
         if (i == 1 || i == 2) {
-            h = FF_CEIL_RSHIFT(height, desc->log2_chroma_h);
+            h = AV_CEIL_RSHIFT(height, desc->log2_chroma_h);
         }
         smv_img_pnt_plane(&dst_data[i], src_data[i],
             src_linesizes[i], h, nlines);

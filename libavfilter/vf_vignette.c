@@ -267,8 +267,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const int chroma = plane == 1 || plane == 2;
             const int hsub = chroma ? s->desc->log2_chroma_w : 0;
             const int vsub = chroma ? s->desc->log2_chroma_h : 0;
-            const int w = FF_CEIL_RSHIFT(inlink->w, hsub);
-            const int h = FF_CEIL_RSHIFT(inlink->h, vsub);
+            const int w = AV_CEIL_RSHIFT(inlink->w, hsub);
+            const int h = AV_CEIL_RSHIFT(inlink->h, vsub);
 
             for (y = 0; y < h; y++) {
                 uint8_t *dstp = dst;

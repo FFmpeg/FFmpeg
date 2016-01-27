@@ -1175,11 +1175,11 @@ static void gray_frame(AVFrame *frame)
 
     for(i=0; i<frame->height; i++)
         memset(frame->data[0] + frame->linesize[0]*i, 0x80, frame->width);
-    for(i=0; i<FF_CEIL_RSHIFT(frame->height, v_chroma_shift); i++) {
+    for(i=0; i<AV_CEIL_RSHIFT(frame->height, v_chroma_shift); i++) {
         memset(frame->data[1] + frame->linesize[1]*i,
-               0x80, FF_CEIL_RSHIFT(frame->width, h_chroma_shift));
+               0x80, AV_CEIL_RSHIFT(frame->width, h_chroma_shift));
         memset(frame->data[2] + frame->linesize[2]*i,
-               0x80, FF_CEIL_RSHIFT(frame->width, h_chroma_shift));
+               0x80, AV_CEIL_RSHIFT(frame->width, h_chroma_shift));
     }
 }
 
@@ -1323,11 +1323,11 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 memset(s->last_picture_ptr->f->data[0] + s->last_picture_ptr->f->linesize[0]*i,
                        0x80, avctx->width);
             if (s->last_picture_ptr->f->data[2]) {
-                for(i=0; i<FF_CEIL_RSHIFT(avctx->height, v_chroma_shift); i++) {
+                for(i=0; i<AV_CEIL_RSHIFT(avctx->height, v_chroma_shift); i++) {
                     memset(s->last_picture_ptr->f->data[1] + s->last_picture_ptr->f->linesize[1]*i,
-                        0x80, FF_CEIL_RSHIFT(avctx->width, h_chroma_shift));
+                        0x80, AV_CEIL_RSHIFT(avctx->width, h_chroma_shift));
                     memset(s->last_picture_ptr->f->data[2] + s->last_picture_ptr->f->linesize[2]*i,
-                        0x80, FF_CEIL_RSHIFT(avctx->width, h_chroma_shift));
+                        0x80, AV_CEIL_RSHIFT(avctx->width, h_chroma_shift));
                 }
             }
 

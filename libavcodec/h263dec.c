@@ -699,8 +699,8 @@ frame_end:
             int x, y, p;
             av_frame_make_writable(pict);
             for (p=0; p<3; p++) {
-                int w = FF_CEIL_RSHIFT(pict-> width, !!p);
-                int h = FF_CEIL_RSHIFT(pict->height, !!p);
+                int w = AV_CEIL_RSHIFT(pict-> width, !!p);
+                int h = AV_CEIL_RSHIFT(pict->height, !!p);
                 int linesize = pict->linesize[p];
                 for (y=0; y<(h>>1); y++)
                     for (x=0; x<w; x++)

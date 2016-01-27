@@ -82,7 +82,7 @@ FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
     for (i = 0; i < 4 && pool->linesize[i]; i++) {
         int h = FFALIGN(pool->height, 32);
         if (i == 1 || i == 2)
-            h = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
 
         pool->pools[i] = av_buffer_pool_init(pool->linesize[i] * h + 16 + 16 - 1,
                                              alloc);

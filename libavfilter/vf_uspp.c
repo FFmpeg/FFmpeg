@@ -189,8 +189,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
-        int w = FF_CEIL_RSHIFT(width,  is_chroma ? p->hsub : 0);
-        int h = FF_CEIL_RSHIFT(height, is_chroma ? p->vsub : 0);
+        int w = AV_CEIL_RSHIFT(width,  is_chroma ? p->hsub : 0);
+        int h = AV_CEIL_RSHIFT(height, is_chroma ? p->vsub : 0);
         int stride = p->temp_stride[i];
         int block = BLOCK >> (is_chroma ? p->hsub : 0);
 
@@ -263,8 +263,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
 
         offset = (BLOCKc-x1c) + (BLOCKc-y1c) * p->frame_dec->linesize[1];
 
-        for (y = 0; y < FF_CEIL_RSHIFT(height, p->vsub); y++) {
-            for (x = 0; x < FF_CEIL_RSHIFT(width, p->hsub); x++) {
+        for (y = 0; y < AV_CEIL_RSHIFT(height, p->vsub); y++) {
+            for (x = 0; x < AV_CEIL_RSHIFT(width, p->hsub); x++) {
                 p->temp[1][x + y * p->temp_stride[1]] += p->frame_dec->data[1][x + y * p->frame_dec->linesize[1] + offset];
                 p->temp[2][x + y * p->temp_stride[2]] += p->frame_dec->data[2][x + y * p->frame_dec->linesize[2] + offset];
             }
@@ -276,8 +276,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         if (!dst[j])
             continue;
         store_slice_c(dst[j], p->temp[j], dst_stride[j], p->temp_stride[j],
-                      FF_CEIL_RSHIFT(width,  is_chroma ? p->hsub : 0),
-                      FF_CEIL_RSHIFT(height, is_chroma ? p->vsub : 0),
+                      AV_CEIL_RSHIFT(width,  is_chroma ? p->hsub : 0),
+                      AV_CEIL_RSHIFT(height, is_chroma ? p->vsub : 0),
                       8-p->log2_count);
     }
 }
@@ -325,8 +325,8 @@ static int config_input(AVFilterLink *inlink)
         int h = (height + 4 * BLOCK-1) & (~(2 * BLOCK-1));
 
         if (is_chroma) {
-            w = FF_CEIL_RSHIFT(w, uspp->hsub);
-            h = FF_CEIL_RSHIFT(h, uspp->vsub);
+            w = AV_CEIL_RSHIFT(w, uspp->hsub);
+            h = AV_CEIL_RSHIFT(h, uspp->vsub);
         }
 
         uspp->temp_stride[i] = w;
@@ -394,11 +394,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             /* if the qp stride is not set, it means the QP are only defined on
              * a line basis */
             if (!qp_stride) {
-                w = FF_CEIL_RSHIFT(inlink->w, 4);
+                w = AV_CEIL_RSHIFT(inlink->w, 4);
                 h = 1;
             } else {
                 w = qp_stride;
-                h = FF_CEIL_RSHIFT(inlink->h, 4);
+                h = AV_CEIL_RSHIFT(inlink->h, 4);
             }
 
             if (w * h > uspp->non_b_qp_alloc_size) {

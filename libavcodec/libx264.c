@@ -552,7 +552,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_frame_reference    = avctx->refs;
     else if (x4->level) {
         int i;
-        int mbn = FF_CEIL_RSHIFT(avctx->width, 4) * FF_CEIL_RSHIFT(avctx->height, 4);
+        int mbn = AV_CEIL_RSHIFT(avctx->width, 4) * AV_CEIL_RSHIFT(avctx->height, 4);
         int level_id = -1;
         char *tail;
         int scale = X264_BUILD < 129 ? 384 : 1;
