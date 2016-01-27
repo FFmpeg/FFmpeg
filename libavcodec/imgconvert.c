@@ -24,12 +24,6 @@
  * misc image conversion routines
  */
 
-/* TODO:
- * - write 'ffimg' program to test all the image related stuff
- * - move all api to slice based system
- * - integrate deinterlacing, postprocessing and scaling in the conversion process
- */
-
 #include "avcodec.h"
 #include "imgconvert.h"
 #include "internal.h"
