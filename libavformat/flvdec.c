@@ -989,17 +989,19 @@ skip:
 retry_duration:
         avio_seek(s->pb, fsize - 4, SEEK_SET);
         size = avio_rb32(s->pb);
-        // Seek to the start of the last FLV tag at position (fsize - 4 - size)
-        // but skip the byte indicating the type.
-        avio_seek(s->pb, fsize - 3 - size, SEEK_SET);
-        if (size == avio_rb24(s->pb) + 11) {
-            uint32_t ts = avio_rb24(s->pb);
-            ts         |= avio_r8(s->pb) << 24;
-            if (ts)
-                s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
-            else if (fsize >= 8 && fsize - 8 >= size) {
-                fsize -= size+4;
-                goto retry_duration;
+        if (size > 0 && size < fsize) {
+            // Seek to the start of the last FLV tag at position (fsize - 4 - size)
+            // but skip the byte indicating the type.
+            avio_seek(s->pb, fsize - 3 - size, SEEK_SET);
+            if (size == avio_rb24(s->pb) + 11) {
+                uint32_t ts = avio_rb24(s->pb);
+                ts         |= avio_r8(s->pb) << 24;
+                if (ts)
+                    s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
+                else if (fsize >= 8 && fsize - 8 >= size) {
+                    fsize -= size+4;
+                    goto retry_duration;
+                }
             }
         }
 
