@@ -681,10 +681,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return -1;
     }
 
-    if (avctx->b_frame_strategy && (avctx->flags & AV_CODEC_FLAG_PASS2)) {
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->b_frame_strategy)
+        s->b_frame_strategy = avctx->b_frame_strategy;
+    if (avctx->b_sensitivity != 40)
+        s->b_sensitivity = avctx->b_sensitivity;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (s->b_frame_strategy && (avctx->flags & AV_CODEC_FLAG_PASS2)) {
         av_log(avctx, AV_LOG_INFO,
                "notice: b_frame_strategy only affects the first pass\n");
-        avctx->b_frame_strategy = 0;
+        s->b_frame_strategy = 0;
     }
 
     i = av_gcd(avctx->time_base.den, avctx->time_base.num);
@@ -1022,7 +1031,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (avctx->b_frame_strategy == 2) {
+    if (s->b_frame_strategy == 2) {
         for (i = 0; i < s->max_b_frames + 2; i++) {
             s->tmp_frames[i] = av_frame_alloc();
             if (!s->tmp_frames[i])
@@ -1489,7 +1498,7 @@ static int select_input_picture(MpegEncContext *s)
             s->reordered_input_picture[0]->f->coded_picture_number =
                 s->coded_picture_number++;
         } else {
-            int b_frames;
+            int b_frames = 0;
 
             if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
                 for (i = 0; i < s->max_b_frames + 1; i++) {
@@ -1507,11 +1516,11 @@ static int select_input_picture(MpegEncContext *s)
                 }
             }
 
-            if (s->avctx->b_frame_strategy == 0) {
+            if (s->b_frame_strategy == 0) {
                 b_frames = s->max_b_frames;
                 while (b_frames && !s->input_picture[b_frames])
                     b_frames--;
-            } else if (s->avctx->b_frame_strategy == 1) {
+            } else if (s->b_frame_strategy == 1) {
                 for (i = 1; i < s->max_b_frames + 1; i++) {
                     if (s->input_picture[i] &&
                         s->input_picture[i]->b_frame_score == 0) {
@@ -1525,7 +1534,7 @@ static int select_input_picture(MpegEncContext *s)
                 for (i = 0; i < s->max_b_frames + 1; i++) {
                     if (!s->input_picture[i] ||
                         s->input_picture[i]->b_frame_score - 1 >
-                            s->mb_num / s->avctx->b_sensitivity)
+                            s->mb_num / s->b_sensitivity)
                         break;
                 }
 
@@ -1535,11 +1544,8 @@ static int select_input_picture(MpegEncContext *s)
                 for (i = 0; i < b_frames + 1; i++) {
                     s->input_picture[i]->b_frame_score = 0;
                 }
-            } else if (s->avctx->b_frame_strategy == 2) {
+            } else if (s->b_frame_strategy == 2) {
                 b_frames = estimate_best_b_count(s);
-            } else {
-                av_log(s->avctx, AV_LOG_ERROR, "illegal b frame strategy\n");
-                b_frames = 0;
             }
 
             emms_c();

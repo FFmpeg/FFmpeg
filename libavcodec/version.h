@@ -208,5 +208,8 @@
 #ifndef FF_API_STAT_BITS
 #define FF_API_STAT_BITS         (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_PRIVATE_OPT
+#define FF_API_PRIVATE_OPT      (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

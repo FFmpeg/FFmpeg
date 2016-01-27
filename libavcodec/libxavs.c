@@ -56,6 +56,7 @@ typedef struct XavsContext {
     int motion_est;
     int mbtree;
     int mixed_refs;
+    int b_frame_strategy;
 
     int64_t *pts_buffer;
     int out_frame_count;
@@ -309,7 +310,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* cabac is not included in AVS JiZhun Profile */
     x4->params.b_cabac           = 0;
 
-    x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->b_frame_strategy)
+        x4->b_frame_strategy = avctx->b_frame_strategy;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    x4->params.i_bframe_adaptive = x4->b_frame_strategy;
 
     avctx->has_b_frames          = !!avctx->max_b_frames;
 
@@ -437,6 +445,7 @@ static const AVOption options[] = {
     { "umh",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_UMH },               INT_MIN, INT_MAX, VE, "motion-est" },
     { "esa",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_ESA },               INT_MIN, INT_MAX, VE, "motion-est" },
     { "tesa",          NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_TESA },              INT_MIN, INT_MAX, VE, "motion-est" },
+    { "b_strategy",    "Strategy to choose between I/P/B-frames",         OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, VE},
 
     { NULL },
 };
