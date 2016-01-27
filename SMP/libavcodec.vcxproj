@@ -114,6 +114,7 @@
     <YASM Include="..\libavcodec\x86\alacdsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
     <YASM Include="..\libavcodec\x86\dcadsp.asm" />
+    <YASM Include="..\libavcodec\x86\synth_filter.asm" />
     <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm" />
     <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
@@ -439,7 +440,9 @@
     <ClCompile Include="..\libavcodec\dcadata.c" />
     <ClCompile Include="..\libavcodec\dca_exss.c" />
     <ClCompile Include="..\libavcodec\dca_xll.c" />
-    <ClCompile Include="..\libavcodec\synth_filter.c" />
+    <ClCompile Include="..\libavcodec\synth_filter.c">
+      <ObjectFileName>$(IntDir)\libavcodec_synth_filter.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dcaenc.c" />
     <ClCompile Include="..\libavcodec\dds.c" />
     <ClCompile Include="..\libavcodec\diracdec.c" />
@@ -462,6 +465,7 @@
     <ClCompile Include="..\libavcodec\dvbsub.c" />
     <ClCompile Include="..\libavcodec\dvdsubdec.c" />
     <ClCompile Include="..\libavcodec\dvdsubenc.c" />
+    <ClCompile Include="..\libavcodec\dvaudiodec.c" />
     <ClCompile Include="..\libavcodec\dvdec.c" />
     <ClCompile Include="..\libavcodec\dv.c" />
     <ClCompile Include="..\libavcodec\dvdata.c" />
@@ -1006,6 +1010,7 @@
       <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dcadsp_init.c" />
+    <ClCompile Include="..\libavcodec\x86\synth_filter_init.c" />
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c" />
     <ClCompile Include="..\libavcodec\x86\hevcdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\jpeg2000dsp_init.c" />

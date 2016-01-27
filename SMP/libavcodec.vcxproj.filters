@@ -166,6 +166,9 @@
     <YASM Include="..\libavcodec\x86\dcadsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\synth_filter.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -1054,6 +1057,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dvdsubenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dvaudiodec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dvdec.c">
@@ -2578,6 +2584,9 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dcadsp_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\synth_filter_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c">
