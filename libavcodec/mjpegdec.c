@@ -1653,7 +1653,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
         s->avctx->sample_aspect_ratio.num = get_bits(&s->gb, 16);
         s->avctx->sample_aspect_ratio.den = get_bits(&s->gb, 16);
-        ff_set_sar(s->avctx, s->avctx->sample_aspect_ratio);
+        if (   s->avctx->sample_aspect_ratio.num <= 0
+            || s->avctx->sample_aspect_ratio.den <= 0) {
+            s->avctx->sample_aspect_ratio.num = 0;
+            s->avctx->sample_aspect_ratio.den = 1;
+        }
 
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO,
