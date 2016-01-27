@@ -238,18 +238,6 @@ track. Track indexes start at 0. The demuxer exports the number of tracks as
 
 For very large files, the @option{max_size} option may have to be adjusted.
 
-@section libquvi
-
-Play media from Internet services using the quvi project.
-
-The demuxer accepts a @option{format} option to request a specific quality. It
-is by default set to @var{best}.
-
-See @url{http://quvi.sourceforge.net/} for more information.
-
-FFmpeg needs to be built with @code{--enable-libquvi} for this demuxer to be
-enabled.
-
 @section gif
 
 Animated GIF demuxer.

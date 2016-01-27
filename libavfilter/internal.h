@@ -86,7 +86,7 @@ struct AVFilterPad {
      * Input pads only.
      *
      * @return >= 0 on success, a negative AVERROR on error. This function
-     * must ensure that samplesref is properly unreferenced on error if it
+     * must ensure that frame is properly unreferenced on error if it
      * hasn't been passed on to another filter.
      */
     int (*filter_frame)(AVFilterLink *link, AVFrame *frame);

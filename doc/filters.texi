@@ -12582,6 +12582,9 @@ single input image.
 
 @item s
 Set the output image size, default is 'hd720'.
+
+@item fps
+Set the output frame rate, default is '25'.
 @end table
 
 Each expression can contain the following constants:
@@ -12781,6 +12784,63 @@ Possible value are:
 @end table
 
 Default is same as input.
+
+@item rangein, rin
+Set the input color range.
+
+Possible values are:
+@table @var
+@item input
+@item limited
+@item full
+@end table
+
+Default is same as input.
+
+@item primariesin, pin
+Set the input color primaries.
+
+Possible values are:
+@table @var
+@item input
+@item 709
+@item unspecified
+@item 170m
+@item 240m
+@item 2020
+@end table
+
+Default is same as input.
+
+@item transferin, tin
+Set the input transfer characteristics.
+
+Possible values are:
+@table @var
+@item input
+@item 709
+@item unspecified
+@item 601
+@item linear
+@item 2020_10
+@item 2020_12
+@end table
+
+Default is same as input.
+
+@item matrixin, min
+Set the input colorspace matrix.
+
+Possible value are:
+@table @var
+@item input
+@item 709
+@item unspecified
+@item 470bg
+@item 170m
+@item 2020_ncl
+@item 2020_cl
+@end table
 @end table
 
 The values of the @option{w} and @option{h} options are expressions

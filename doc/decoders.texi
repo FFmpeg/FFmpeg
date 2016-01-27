@@ -282,7 +282,13 @@ Sets the display duration of the decoded teletext pages or subtitles in
 miliseconds. Default value is 30000 which is 30 seconds.
 @item txt_transparent
 Force transparent background of the generated teletext bitmaps. Default value
-is 0 which means an opaque (black) background.
+is 0 which means an opaque background.
+@item txt_opacity
+Sets the opacity (0-255) of the teletext background. If
+@option{txt_transparent} is not set, it only affects characters between a start
+box and an end box, typically subtitles. Default value is 0 if
+@option{txt_transparent} is set, 255 otherwise.
+
 @end table
 
 @c man end SUBTILES DECODERS

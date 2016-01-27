@@ -64,6 +64,7 @@
 /libavcodec/*_tables.h
 /libavutil/avconfig.h
 /libavutil/ffversion.h
+/src
 /tests/audiogen
 /tests/base64
 /tests/checkasm/checkasm

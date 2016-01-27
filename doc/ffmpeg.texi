@@ -339,8 +339,8 @@ see @ref{date syntax,,the Date section in the ffmpeg-utils(1) manual,ffmpeg-util
 Set a metadata key/value pair.
 
 An optional @var{metadata_specifier} may be given to set metadata
-on streams or chapters. See @code{-map_metadata} documentation for
-details.
+on streams, chapters or programs. See @code{-map_metadata}
+documentation for details.
 
 This option overrides metadata set with @code{-map_metadata}. It is
 also possible to delete metadata by using an empty value.

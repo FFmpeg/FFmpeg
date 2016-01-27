@@ -275,8 +275,19 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
 
         if (s->nb_programs) {
-            AVProgram *program = av_find_program_from_stream(s, NULL, i);
-            if (program->id != service->sid)
+            int j, k, found = 0;
+
+            for (j = 0; j < s->nb_programs; j++)
+                if (s->programs[j]->id == service->sid) {
+                    for (k = 0; k < s->programs[j]->nb_stream_indexes; k++)
+                        if (s->programs[j]->stream_index[k] == i) {
+                            found = 1;
+                            break;
+                        }
+                    break;
+                }
+
+            if (!found)
                 continue;
         }
 

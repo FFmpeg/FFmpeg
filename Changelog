@@ -58,6 +58,8 @@ version <next>:
 - toggle full screen when double-clicking with the left mouse button in ffplay
 - afftfilt filter
 - convolution filter
+- libquvi support removed
+- support for dvaudio in wav and avi
 
 
 version 2.8:

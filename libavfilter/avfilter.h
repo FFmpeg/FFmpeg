@@ -491,7 +491,7 @@ struct AVFilterLink {
 
     /**
      * Link status.
-     * If not zero, all attempts of start_frame, filter_frame or request_frame
+     * If not zero, all attempts of filter_frame or request_frame
      * will fail with the corresponding code, and if necessary the reference
      * will be destroyed.
      * If request_frame returns an error, the status is set on the
