@@ -621,6 +621,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER(DIRAC,              dirac);
     REGISTER_PARSER(DNXHD,              dnxhd);
     REGISTER_PARSER(DPX,                dpx);
+    REGISTER_PARSER(DVAUDIO,            dvaudio);
     REGISTER_PARSER(DVBSUB,             dvbsub);
     REGISTER_PARSER(DVDSUB,             dvdsub);
     REGISTER_PARSER(DVD_NAV,            dvd_nav);

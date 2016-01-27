@@ -21,6 +21,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "dvaudio.h"
 
 typedef struct DVAudioContext {
     int block_size;
@@ -64,21 +65,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     return 0;
-}
-
-static inline int dv_get_audio_sample_count(const uint8_t *buffer, int dsf)
-{
-    int samples = buffer[0] & 0x3f; /* samples in this frame - min samples */
-
-    switch ((buffer[3] >> 3) & 0x07) {
-    case 0:
-        return samples + (dsf ? 1896 : 1580);
-    case 1:
-        return samples + (dsf ? 1742 : 1452);
-    case 2:
-    default:
-        return samples + (dsf ? 1264 : 1053);
-    }
 }
 
 static inline uint16_t dv_audio_12to16(uint16_t sample)
