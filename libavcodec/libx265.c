@@ -82,14 +82,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     if (!ctx->api)
         ctx->api = x265_api_get(0);
 
-    if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL &&
-        !av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_w) {
-        av_log(avctx, AV_LOG_ERROR,
-               "4:2:2 and 4:4:4 support is not fully defined for HEVC yet. "
-               "Set -strict experimental to encode anyway.\n");
-        return AVERROR(ENOSYS);
-    }
-
     ctx->params = ctx->api->param_alloc();
     if (!ctx->params) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate x265 param structure.\n");
