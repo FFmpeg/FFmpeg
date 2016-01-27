@@ -31,4 +31,5 @@ NEON-OBJS-$(CONFIG_MDCT)                += aarch64/mdct_neon.o
 NEON-OBJS-$(CONFIG_VORBIS_DECODER)      += aarch64/vorbisdsp_neon.o
 
 NEON-OBJS-$(CONFIG_HEVC_DECODER)        += aarch64/hevcdsp_init_neon.o		\
-                                           aarch64/hevcdsp_idct_neon.o
+                                           aarch64/hevcdsp_idct_neon.o		\
+                                           aarch64/hevcdsp_qpel_neon.o
