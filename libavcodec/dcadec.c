@@ -1990,7 +1990,9 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         avctx->bit_rate = s->bit_rate;
     *got_frame_ptr = 1;
 
-    return buf_size;
+    //fixed by chenhaixin
+    //    return buf_size;
+    return FFMIN(buf_size, s->frame_size);
 }
 
 /**
