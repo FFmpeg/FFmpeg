@@ -41,14 +41,16 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (avctx->codec_tag == 0x0215) {
         s->block_size = 7200;
-        s->is_pal = 0;
     } else if (avctx->codec_tag == 0x0216) {
         s->block_size = 8640;
-        s->is_pal = 1;
+    } else if (avctx->block_align == 7200 ||
+               avctx->block_align == 8640) {
+        s->block_size = avctx->block_align;
     } else {
         return AVERROR(EINVAL);
     }
 
+    s->is_pal = s->block_size == 8640;
     s->is_12bit = avctx->bits_per_raw_sample == 12;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->channel_layout = AV_CH_LAYOUT_STEREO;
@@ -108,7 +110,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     int16_t *dst;
     int ret, i;
 
-    if (pkt->size != s->block_size)
+    if (pkt->size < s->block_size)
         return AVERROR_INVALIDDATA;
 
     frame->nb_samples = dv_get_audio_sample_count(pkt->data + 244, s->is_pal);
@@ -130,7 +132,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return pkt->size;
+    return s->block_size;
 }
 
 AVCodec ff_dvaudio_decoder = {
