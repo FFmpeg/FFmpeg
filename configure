@@ -5556,8 +5556,8 @@ enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encode
                              { check_cpp_condition x264.h "X264_MPEG2" &&
                                enable libx262; }
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
-                             { check_cpp_condition x265.h "X265_BUILD >= 57" ||
-                               die "ERROR: libx265 version must be >= 57."; }
+                             { check_cpp_condition x265.h "X265_BUILD >= 68" ||
+                               die "ERROR: libx265 version must be >= 68."; }
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config zimg zimg.h zimg_get_api_version
