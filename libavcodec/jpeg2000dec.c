@@ -1245,11 +1245,15 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
 
-    if (s->cdef[0] < 0) {
-        for (x = 0; x < s->ncomponents; x++)
-            s->cdef[x] = x + 1;
-        if ((s->ncomponents & 1) == 0)
-            s->cdef[s->ncomponents-1] = 0;
+    for (x = 0; x < s->ncomponents; x++) {
+        if (s->cdef[x] < 0) {
+            for (x = 0; x < s->ncomponents; x++) {
+                s->cdef[x] = x + 1;
+            }
+            if ((s->ncomponents & 1) == 0)
+                s->cdef[s->ncomponents-1] = 0;
+            break;
+        }
     }
 
     if (s->precision <= 8) {
