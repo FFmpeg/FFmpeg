@@ -58,6 +58,7 @@ typedef struct XavsContext {
     int mixed_refs;
     int b_frame_strategy;
     int chroma_offset;
+    int scenechange_threshold;
 
     int64_t *pts_buffer;
     int out_frame_count;
@@ -328,7 +329,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (x4->params.i_keyint_min > x4->params.i_keyint_max)
         x4->params.i_keyint_min = x4->params.i_keyint_max;
 
-    x4->params.i_scenecut_threshold        = avctx->scenechange_threshold;
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->scenechange_threshold)
+        x4->scenechange_threshold = avctx->scenechange_threshold;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    x4->params.i_scenecut_threshold = x4->scenechange_threshold;
 
    // x4->params.b_deblocking_filter       = avctx->flags & AV_CODEC_FLAG_LOOP_FILTER;
 
@@ -456,6 +464,7 @@ static const AVOption options[] = {
     { "tesa",          NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_TESA },              INT_MIN, INT_MAX, VE, "motion-est" },
     { "b_strategy",    "Strategy to choose between I/P/B-frames",         OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, VE},
     { "chromaoffset", "QP difference between chroma and luma",           OFFSET(chroma_offset), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE},
+    { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, VE},
 
     { NULL },
 };
