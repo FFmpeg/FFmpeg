@@ -884,6 +884,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return -1;
     }
 
+#if FF_API_PRIVATE_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->noise_reduction)
+        s->noise_reduction = avctx->noise_reduction;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     avctx->has_b_frames = !s->low_delay;
 
     s->encoding = 1;
@@ -922,7 +929,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_ALLOCZ_OR_GOTO(s->avctx, s->reordered_input_picture,
                       MAX_PICTURE_COUNT * sizeof(Picture *), fail);
 
-    if (s->avctx->noise_reduction) {
+
+    if (s->noise_reduction) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_offset,
                           2 * 64 * sizeof(uint16_t), fail);
     }
@@ -1731,7 +1739,7 @@ static void update_noise_reduction(MpegEncContext *s)
         }
 
         for (i = 0; i < 64; i++) {
-            s->dct_offset[intra][i] = (s->avctx->noise_reduction *
+            s->dct_offset[intra][i] = (s->noise_reduction *
                                        s->dct_count[intra] +
                                        s->dct_error_sum[intra][i] / 2) /
                                       (s->dct_error_sum[intra][i] + 1);
@@ -1804,7 +1812,7 @@ static int frame_start(MpegEncContext *s)
     }
 
     if (s->dct_error_sum) {
-        av_assert2(s->avctx->noise_reduction && s->encoding);
+        av_assert2(s->noise_reduction && s->encoding);
         update_noise_reduction(s);
     }
 
@@ -3576,7 +3584,7 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(current_picture.encoding_error[1]);
     MERGE(current_picture.encoding_error[2]);
 
-    if(dst->avctx->noise_reduction){
+    if (dst->noise_reduction){
         for(i=0; i<64; i++){
             MERGE(dct_error_sum[0][i]);
             MERGE(dct_error_sum[1][i]);

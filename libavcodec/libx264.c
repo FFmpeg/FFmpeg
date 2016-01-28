@@ -89,6 +89,7 @@ typedef struct X264Context {
     int b_frame_strategy;
     int chroma_offset;
     int scenechange_threshold;
+    int noise_reduction;
 
     char *x264_params;
 } X264Context;
@@ -595,8 +596,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
         x4->params.analyse.i_trellis    = avctx->trellis;
     if (avctx->me_range >= 0)
         x4->params.analyse.i_me_range   = avctx->me_range;
+#if FF_API_PRIVATE_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->noise_reduction >= 0)
-        x4->params.analyse.i_noise_reduction = avctx->noise_reduction;
+        x4->noise_reduction = avctx->noise_reduction;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if (x4->noise_reduction >= 0)
+        x4->params.analyse.i_noise_reduction = x4->noise_reduction;
     if (avctx->me_subpel_quality >= 0)
         x4->params.analyse.i_subpel_refine   = avctx->me_subpel_quality;
 #if FF_API_PRIVATE_OPT
@@ -984,6 +991,7 @@ static const AVOption options[] = {
     { "b_strategy",   "Strategy to choose between I/P/B-frames",          OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 2, VE },
     { "chromaoffset", "QP difference between chroma and luma",           OFFSET(chroma_offset), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, VE },
     { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "noise_reduction", "Noise reduction",                               OFFSET(noise_reduction), AV_OPT_TYPE_INT, { .i64 = -1 }, 0, INT_MAX, VE },
 
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
@@ -1007,7 +1015,9 @@ static const AVCodecDefault x264_defaults[] = {
     { "sc_threshold",     "-1" },
 #endif
     { "trellis",          "-1" },
+#if FF_API_PRIVATE_OPT
     { "nr",               "-1" },
+#endif
     { "me_range",         "-1" },
 #if FF_API_MOTION_EST
     { "me_method",        "-1" },

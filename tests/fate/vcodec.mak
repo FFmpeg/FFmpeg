@@ -220,7 +220,8 @@ fate-vsynth%-mpeg4-error:        ENCOPTS = -qscale 7 -flags +mv4+aic    \
                                            -data_partitioning 1 -mbd rd \
                                            -ps 250 -error_rate 10
 
-fate-vsynth%-mpeg4-nr:           ENCOPTS = -qscale 8 -flags +mv4 -mbd rd -nr 200
+fate-vsynth%-mpeg4-nr:           ENCOPTS = -qscale 8 -flags +mv4 -mbd rd \
+                                           -noise_reduction 200
 
 fate-vsynth%-mpeg4-nsse:         ENCOPTS = -qscale 7 -cmp nsse -subcmp nsse \
                                            -mbcmp nsse -precmp nsse         \
