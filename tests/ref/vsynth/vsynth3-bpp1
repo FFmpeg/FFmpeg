@@ -1,4 +1,4 @@
 a5e6d1eff2f6fc3bba31e3bb8753b905 *tests/data/fate/vsynth3-bpp1.avi
 15352 tests/data/fate/vsynth3-bpp1.avi
-75e8ee0c0b0ada4515455d9f29377a16 *tests/data/fate/vsynth3-bpp1.out.rawvideo
-stddev:   97.70 PSNR:  8.33 MAXDIFF:  248 bytes:    86700/    86700
+79076b5fc43ee2a2284c0cde991d21f3 *tests/data/fate/vsynth3-bpp1.out.rawvideo
+stddev:   84.88 PSNR:  9.55 MAXDIFF:  232 bytes:    86700/    86700
