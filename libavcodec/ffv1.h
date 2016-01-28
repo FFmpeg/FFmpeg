@@ -114,6 +114,7 @@ typedef struct FFV1Context {
     int intra;
     int slice_damaged;
     int key_frame_ok;
+    int context_model;
 
     int bits_per_raw_sample;
     int packed_at_lsb;
