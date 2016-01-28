@@ -86,7 +86,8 @@ av_cold void ff_v210enc_init(V210EncContext *s)
 {
     s->pack_line_8  = v210_planar_pack_8_c;
     s->pack_line_10 = v210_planar_pack_10_c;
-    s->sample_factor = 1;
+    s->sample_factor_8  = 1;
+    s->sample_factor_10 = 1;
 
     if (ARCH_X86)
         ff_v210enc_init_x86(s);
@@ -133,15 +134,19 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         const uint16_t *y = (const uint16_t *)pic->data[0];
         const uint16_t *u = (const uint16_t *)pic->data[1];
         const uint16_t *v = (const uint16_t *)pic->data[2];
+
+        const int sample_size = 6 * s->sample_factor_10;
+        const int sample_w    = avctx->width / sample_size;
+
         for (h = 0; h < avctx->height; h++) {
             uint32_t val;
-            w = (avctx->width / (6 * s->sample_factor)) * 6 * s->sample_factor;
+            w = sample_w * sample_size;
             s->pack_line_10(y, u, v, dst, w);
 
             y += w;
             u += w >> 1;
             v += w >> 1;
-            dst += (w / (6 * s->sample_factor)) * 16 * s->sample_factor;
+            dst += sample_w * 16 * s->sample_factor_10;
 
             for (; w < avctx->width - 5; w += 6) {
                 WRITE_PIXELS(u, y, v);
@@ -178,15 +183,19 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         const uint8_t *y = pic->data[0];
         const uint8_t *u = pic->data[1];
         const uint8_t *v = pic->data[2];
+
+        const int sample_size = 12 * s->sample_factor_8;
+        const int sample_w    = avctx->width / sample_size;
+
         for (h = 0; h < avctx->height; h++) {
             uint32_t val;
-            w = (avctx->width / (12 * s->sample_factor)) * 12 * s->sample_factor;
+            w = sample_w * sample_size;
             s->pack_line_8(y, u, v, dst, w);
 
             y += w;
             u += w >> 1;
             v += w >> 1;
-            dst += (w / (12 * s->sample_factor)) * 32 * s->sample_factor;
+            dst += sample_w * 32 * s->sample_factor_8;
 
             for (; w < avctx->width - 5; w += 6) {
                 WRITE_PIXELS8(u, y, v);
