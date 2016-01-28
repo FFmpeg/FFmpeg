@@ -2209,12 +2209,11 @@ typedef struct AVCodecContext {
      */
     int refs;
 
-    /**
-     * chroma qp offset from luma
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int chromaoffset;
+#endif
 
 #if FF_API_UNUSED_MEMBERS
     /**
