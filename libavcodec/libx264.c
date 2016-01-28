@@ -418,12 +418,12 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->chromaoffset)
+    if (avctx->chromaoffset >= 0)
         x4->chroma_offset = avctx->chromaoffset;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-
-    x4->params.analyse.i_chroma_qp_offset = x4->chroma_offset;
+    if (x4->chroma_offset >= 0)
+        x4->params.analyse.i_chroma_qp_offset = x4->chroma_offset;
 
     if (avctx->gop_size >= 0)
         x4->params.i_keyint_max         = avctx->gop_size;
@@ -432,12 +432,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->scenechange_threshold)
+    if (avctx->scenechange_threshold >= 0)
         x4->scenechange_threshold = avctx->scenechange_threshold;
-    if (x4->scenechange_threshold >= 0)
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    x4->params.i_scenecut_threshold = x4->scenechange_threshold;
+    if (x4->scenechange_threshold >= 0)
+        x4->params.i_scenecut_threshold = x4->scenechange_threshold;
 
     if (avctx->qmin >= 0)
         x4->params.rc.i_qp_min          = avctx->qmin;
@@ -457,11 +457,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         x4->params.analyse.i_me_range   = avctx->me_range;
 #if FF_API_PRIVATE_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
-    if (!x4->noise_reduction)
+    if (!x4->noise_reduction >= 0)
         x4->noise_reduction = avctx->noise_reduction;
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    x4->params.analyse.i_noise_reduction = x4->noise_reduction;
+    if (!x4->noise_reduction >= 0)
+        x4->params.analyse.i_noise_reduction = x4->noise_reduction;
     if (avctx->me_subpel_quality >= 0)
         x4->params.analyse.i_subpel_refine   = avctx->me_subpel_quality;
 #if FF_API_PRIVATE_OPT
@@ -763,9 +764,9 @@ static const AVOption options[] = {
     { "cavlc",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "coder" },
     { "cabac",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "coder" },
     { "b_strategy",   "Strategy to choose between I/P/B-frames",          OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 2, VE },
-    { "chromaoffset", "QP difference between chroma and luma",           OFFSET(chroma_offset), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, VE },
-    { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
-    { "noise_reduction", "Noise reduction",                               OFFSET(noise_reduction), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "chromaoffset", "QP difference between chroma and luma",            OFFSET(chroma_offset), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
+    { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
+    { "noise_reduction", "Noise reduction",                               OFFSET(noise_reduction), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
 
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
