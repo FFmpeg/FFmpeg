@@ -5579,6 +5579,10 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
                                die "ERROR: mmal not found"; }
+enabled mmal &&
+    (check_code cc interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS" ||
+     die "ERROR: mmal firmware headers too old")
+
 enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
 enabled nvenc             && { check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."; } &&
                              { check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
