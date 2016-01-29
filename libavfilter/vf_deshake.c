@@ -437,8 +437,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     char tmp[256];
     int ret = 0;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
-    const int chroma_width  = FF_CEIL_RSHIFT(link->w, desc->log2_chroma_w);
-    const int chroma_height = FF_CEIL_RSHIFT(link->h, desc->log2_chroma_h);
+    const int chroma_width  = AV_CEIL_RSHIFT(link->w, desc->log2_chroma_w);
+    const int chroma_height = AV_CEIL_RSHIFT(link->h, desc->log2_chroma_h);
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {

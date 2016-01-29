@@ -365,12 +365,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 codec->codec_tag = av_codec_get_tag(of->codec_tag, codec->codec_id);
         }
 
-        if (of->flags & AVFMT_GLOBALHEADER &&
-            !(codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
-            av_log(s, AV_LOG_WARNING,
-                   "Codec for stream %d does not use global headers "
-                   "but container format requires global headers\n", i);
-
         if (codec->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             s->internal->nb_interleaved_streams++;
     }
@@ -832,11 +826,15 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
         av_assert0(((AVFrame *)pkt->data)->buf);
-    }
-
-    if ((ret = av_packet_ref(&this_pktl->pkt, pkt)) < 0) {
-        av_free(this_pktl);
-        return ret;
+        this_pktl->pkt = *pkt;
+        pkt->buf = NULL;
+        pkt->side_data = NULL;
+        pkt->side_data_elems = 0;
+    } else {
+        if ((ret = av_packet_ref(&this_pktl->pkt, pkt)) < 0) {
+            av_free(this_pktl);
+            return ret;
+        }
     }
 
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {

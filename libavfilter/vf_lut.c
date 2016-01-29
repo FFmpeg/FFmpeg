@@ -418,8 +418,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
-            int h = FF_CEIL_RSHIFT(inlink->h, vsub);
-            int w = FF_CEIL_RSHIFT(inlink->w, hsub);
+            int h = AV_CEIL_RSHIFT(inlink->h, vsub);
+            int w = AV_CEIL_RSHIFT(inlink->w, hsub);
             const uint16_t *tab = s->lut[plane];
             const int in_linesize  =  in->linesize[plane] / 2;
             const int out_linesize = out->linesize[plane] / 2;
@@ -446,8 +446,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
-            int h = FF_CEIL_RSHIFT(inlink->h, vsub);
-            int w = FF_CEIL_RSHIFT(inlink->w, hsub);
+            int h = AV_CEIL_RSHIFT(inlink->h, vsub);
+            int w = AV_CEIL_RSHIFT(inlink->w, hsub);
             const uint16_t *tab = s->lut[plane];
             const int in_linesize  =  in->linesize[plane];
             const int out_linesize = out->linesize[plane];

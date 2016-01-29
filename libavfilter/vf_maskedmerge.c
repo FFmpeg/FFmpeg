@@ -163,9 +163,9 @@ static int config_input(AVFilterLink *inlink)
 
     hsub = desc->log2_chroma_w;
     vsub = desc->log2_chroma_h;
-    s->height[1] = s->height[2] = FF_CEIL_RSHIFT(inlink->h, vsub);
+    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, vsub);
     s->height[0] = s->height[3] = inlink->h;
-    s->width[1]  = s->width[2]  = FF_CEIL_RSHIFT(inlink->w, hsub);
+    s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->width[0]  = s->width[3]  = inlink->w;
 
     s->depth = desc->comp[0].depth;

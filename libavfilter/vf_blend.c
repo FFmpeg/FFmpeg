@@ -369,8 +369,8 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
     for (plane = 0; plane < s->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
-        int outw = FF_CEIL_RSHIFT(dst_buf->width,  hsub);
-        int outh = FF_CEIL_RSHIFT(dst_buf->height, vsub);
+        int outw = AV_CEIL_RSHIFT(dst_buf->width,  hsub);
+        int outh = AV_CEIL_RSHIFT(dst_buf->height, vsub);
         FilterParams *param = &s->params[plane];
         ThreadData td = { .top = top_buf, .bottom = bottom_buf, .dst = dst_buf,
                           .w = outw, .h = outh, .param = param, .plane = plane,

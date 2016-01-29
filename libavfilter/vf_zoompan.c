@@ -178,10 +178,10 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
         return ret;
     }
 
-    px[1] = px[2] = FF_CEIL_RSHIFT(x, s->desc->log2_chroma_w);
+    px[1] = px[2] = AV_CEIL_RSHIFT(x, s->desc->log2_chroma_w);
     px[0] = px[3] = x;
 
-    py[1] = py[2] = FF_CEIL_RSHIFT(y, s->desc->log2_chroma_h);
+    py[1] = py[2] = AV_CEIL_RSHIFT(y, s->desc->log2_chroma_h);
     py[0] = py[3] = y;
 
     s->sws = sws_alloc_context();

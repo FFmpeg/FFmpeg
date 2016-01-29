@@ -227,8 +227,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     OWDenoiseContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
-    const int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub);
-    const int ch = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+    const int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+    const int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
 
     if (av_frame_is_writable(in)) {
         direct = 1;

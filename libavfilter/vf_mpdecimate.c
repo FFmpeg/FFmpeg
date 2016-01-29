@@ -130,8 +130,8 @@ static int decimate_frame(AVFilterContext *ctx,
         if (diff_planes(ctx,
                         cur->data[plane], cur->linesize[plane],
                         ref->data[plane], ref->linesize[plane],
-                        FF_CEIL_RSHIFT(ref->width,  hsub),
-                        FF_CEIL_RSHIFT(ref->height, vsub))) {
+                        AV_CEIL_RSHIFT(ref->width,  hsub),
+                        AV_CEIL_RSHIFT(ref->height, vsub))) {
             emms_c();
             return 0;
         }

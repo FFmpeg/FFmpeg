@@ -173,8 +173,8 @@ static int config_input(AVFilterLink *inlink)
     if (!s->buf)
         return AVERROR(ENOMEM);
 
-    s->chroma_w = FF_CEIL_RSHIFT(inlink->w, hsub);
-    s->chroma_h = FF_CEIL_RSHIFT(inlink->h, vsub);
+    s->chroma_w = AV_CEIL_RSHIFT(inlink->w, hsub);
+    s->chroma_h = AV_CEIL_RSHIFT(inlink->h, vsub);
     s->chroma_r = av_clip(((((s->radius >> hsub) + (s->radius >> vsub)) / 2 ) + 1) & ~1, 4, 32);
 
     return 0;

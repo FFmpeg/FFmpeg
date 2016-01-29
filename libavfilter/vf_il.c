@@ -109,7 +109,7 @@ static int config_input(AVFilterLink *inlink)
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    s->chroma_height = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->chroma_height = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
 
     return 0;
 }

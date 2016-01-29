@@ -93,8 +93,8 @@ static void calc_diffs(const DecimateContext *dm, struct qitem *q,
         const int linesize2 = f2->linesize[plane];
         const uint8_t *f1p = f1->data[plane];
         const uint8_t *f2p = f2->data[plane];
-        int width    = plane ? FF_CEIL_RSHIFT(f1->width,  dm->hsub) : f1->width;
-        int height   = plane ? FF_CEIL_RSHIFT(f1->height, dm->vsub) : f1->height;
+        int width    = plane ? AV_CEIL_RSHIFT(f1->width,  dm->hsub) : f1->width;
+        int height   = plane ? AV_CEIL_RSHIFT(f1->height, dm->vsub) : f1->height;
         int hblockx  = dm->blockx / 2;
         int hblocky  = dm->blocky / 2;
 

@@ -1,8 +1,4 @@
 /*
- * Copyright (C) 2012 Peng Gao <peng@multicorewareinc.com>
- * Copyright (C) 2012 Li   Cao <li@multicorewareinc.com>
- * Copyright (C) 2012 Wei  Gao <weigao@multicorewareinc.com>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,21 +16,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_OPENCL_INTERNAL_H
-#define AVUTIL_OPENCL_INTERNAL_H
+/**
+ * @file
+ * Ulead DV audio parser
+ *
+ * Determines the duration for each packet.
+ */
 
-#include "attributes.h"
-#include "opencl.h"
+#include "parser.h"
+#include "dvaudio.h"
 
-#define FF_OPENCL_PARAM_INFO(a) ((void*)(&(a))), (sizeof(a))
+static int dvaudio_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
+                        const uint8_t **poutbuf, int *poutbuf_size,
+                        const uint8_t *buf, int buf_size)
+{
+    if (buf_size >= 248)
+        s1->duration = dv_get_audio_sample_count(buf + 244, avctx->block_align == 8640);
 
-typedef struct {
-    cl_kernel kernel;
-    int param_num;
-    void *ctx;
-} FFOpenclParam;
+    /* always return the full packet. this parser isn't doing any splitting or
+       combining, only packet analysis */
+    *poutbuf      = buf;
+    *poutbuf_size = buf_size;
+    return buf_size;
+}
 
-av_warn_unused_result
-int avpriv_opencl_set_parameter(FFOpenclParam *opencl_param, ...);
-
-#endif /* AVUTIL_OPENCL_INTERNAL_H */
+AVCodecParser ff_dvaudio_parser = {
+    .codec_ids      = { AV_CODEC_ID_DVAUDIO },
+    .parser_parse   = dvaudio_parse,
+};

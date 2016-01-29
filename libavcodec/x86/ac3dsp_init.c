@@ -47,7 +47,6 @@ void ff_float_to_fixed24_sse2 (int32_t *dst, const float *src, unsigned int len)
 
 int ff_ac3_compute_mantissa_size_sse2(uint16_t mant_cnt[6][16]);
 
-void ff_ac3_extract_exponents_3dnow(uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_ac3_extract_exponents_sse2 (uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_coefs);
 

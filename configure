@@ -2494,8 +2494,7 @@ h264_d3d11va_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
 h264_mmal_decoder_deps="mmal"
-h264_mmal_decoder_select="h264_decoder"
-h264_mmal_encoder_deps="mmal"
+h264_mmal_decoder_select="mmal"
 h264_mmal_hwaccel_deps="mmal"
 h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
@@ -2539,7 +2538,7 @@ mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
 mpeg2_dxva2_hwaccel_deps="dxva2"
 mpeg2_dxva2_hwaccel_select="mpeg2video_decoder"
 mpeg2_mmal_decoder_deps="mmal"
-mpeg2_mmal_decoder_select="mpeg2video_decoder"
+mpeg2_mmal_decoder_select="mmal"
 mpeg2_mmal_hwaccel_deps="mmal"
 mpeg2_qsv_hwaccel_deps="libmfx"
 mpeg2_qsv_hwaccel_select="qsvdec_mpeg2"
@@ -2552,6 +2551,9 @@ mpeg2_videotoolbox_hwaccel_select="mpeg2video_decoder"
 mpeg2_xvmc_hwaccel_deps="xvmc"
 mpeg2_xvmc_hwaccel_select="mpeg2video_decoder"
 mpeg4_crystalhd_decoder_select="crystalhd"
+mpeg4_mmal_decoder_deps="mmal"
+mpeg4_mmal_decoder_select="mmal"
+mpeg4_mmal_hwaccel_deps="mmal"
 mpeg4_vaapi_hwaccel_deps="vaapi"
 mpeg4_vaapi_hwaccel_select="mpeg4_decoder"
 mpeg4_vdpau_decoder_deps="vdpau"
@@ -2567,7 +2569,7 @@ vc1_d3d11va_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
 vc1_mmal_decoder_deps="mmal"
-vc1_mmal_decoder_select="vc1_decoder"
+vc1_mmal_decoder_select="mmal"
 vc1_mmal_hwaccel_deps="mmal"
 vc1_qsv_hwaccel_deps="libmfx"
 vc1_qsv_hwaccel_select="qsvdec_vc1"
@@ -4012,6 +4014,16 @@ case "$arch" in
         arch="arm"
     ;;
     mips*|IP*)
+        case "$arch" in
+        *el)
+            add_cppflags -EL
+            add_ldflags -EL
+        ;;
+        *eb)
+            add_cppflags -EB
+            add_ldflags -EB
+        ;;
+        esac
         arch="mips"
     ;;
     parisc*|hppa*)
@@ -4874,7 +4886,6 @@ die_license_disabled gpl libx264
 die_license_disabled gpl libx265
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
-die_license_disabled gpl libzvbi
 die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libaacplus
@@ -5217,6 +5228,8 @@ elif check_func dlopen -ldl; then
     ldl=-ldl
 fi
 
+decklink_outdev_extralibs="$decklink_outdev_extralibs $ldl"
+decklink_indev_extralibs="$decklink_indev_extralibs $ldl"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
@@ -5559,7 +5572,9 @@ enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config zimg zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
-enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi
+enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi &&
+                             { check_cpp_condition libzvbi.h "VBI_VERSION_MAJOR > 0 || VBI_VERSION_MINOR > 2 || VBI_VERSION_MINOR == 2 && VBI_VERSION_MICRO >= 28" ||
+                               enabled gpl || die "ERROR: libzvbi requires version 0.2.28 or --enable-gpl."; }
 enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                 { ! enabled cross_compile && {
                                     add_cflags -isystem/opt/vc/include/ -isystem/opt/vc/include/interface/vmcs_host/linux -isystem/opt/vc/include/interface/vcos/pthreads -fgnu89-inline ;
@@ -5567,6 +5582,10 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
                                die "ERROR: mmal not found"; }
+enabled mmal &&
+    (check_code cc interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS" ||
+     die "ERROR: mmal firmware headers too old")
+
 enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
 enabled nvenc             && { check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."; } &&
                              { check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
@@ -5589,7 +5608,8 @@ enabled opengl            && { check_lib GL/glx.h glXGetProcAddress "-lGL" ||
                                check_lib2 ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
-enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
+enabled openssl           && { use_pkg_config openssl openssl/ssl.h SSL_library_init ||
+                               check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }

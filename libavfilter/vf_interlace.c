@@ -139,7 +139,7 @@ static void copy_picture_field(InterlaceContext *s,
 
     for (plane = 0; plane < desc->nb_components; plane++) {
         int cols  = (plane == 1 || plane == 2) ? -(-inlink->w) >> hsub : inlink->w;
-        int lines = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
+        int lines = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         uint8_t *dstp = dst_frame->data[plane];
         const uint8_t *srcp = src_frame->data[plane];
 

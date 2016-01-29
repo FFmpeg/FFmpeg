@@ -215,8 +215,8 @@ int ff_set_dimensions(AVCodecContext *s, int width, int height)
 
     s->coded_width  = width;
     s->coded_height = height;
-    s->width        = FF_CEIL_RSHIFT(width,  s->lowres);
-    s->height       = FF_CEIL_RSHIFT(height, s->lowres);
+    s->width        = AV_CEIL_RSHIFT(width,  s->lowres);
+    s->height       = AV_CEIL_RSHIFT(height, s->lowres);
 
     return ret;
 }
@@ -700,8 +700,8 @@ void ff_color_frame(AVFrame *frame, const int c[4])
     for (p = 0; p<desc->nb_components; p++) {
         uint8_t *dst = frame->data[p];
         int is_chroma = p == 1 || p == 2;
-        int bytes  = is_chroma ? FF_CEIL_RSHIFT(frame->width,  desc->log2_chroma_w) : frame->width;
-        int height = is_chroma ? FF_CEIL_RSHIFT(frame->height, desc->log2_chroma_h) : frame->height;
+        int bytes  = is_chroma ? AV_CEIL_RSHIFT(frame->width,  desc->log2_chroma_w) : frame->width;
+        int height = is_chroma ? AV_CEIL_RSHIFT(frame->height, desc->log2_chroma_h) : frame->height;
         for (y = 0; y < height; y++) {
             if (desc->comp[0].depth >= 9) {
                 for (x = 0; x<bytes; x++)
@@ -859,8 +859,8 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
     }
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (frame->width <= 0 || frame->height <= 0) {
-            frame->width  = FFMAX(avctx->width,  FF_CEIL_RSHIFT(avctx->coded_width,  avctx->lowres));
-            frame->height = FFMAX(avctx->height, FF_CEIL_RSHIFT(avctx->coded_height, avctx->lowres));
+            frame->width  = FFMAX(avctx->width,  AV_CEIL_RSHIFT(avctx->coded_width,  avctx->lowres));
+            frame->height = FFMAX(avctx->height, AV_CEIL_RSHIFT(avctx->coded_height, avctx->lowres));
             override_dimensions = 0;
         }
     }
@@ -1474,6 +1474,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (!avctx->rc_initial_buffer_occupancy)
             avctx->rc_initial_buffer_occupancy = avctx->rc_buffer_size * 3 / 4;
+
+        if (avctx->ticks_per_frame && avctx->time_base.num &&
+            avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "ticks_per_frame %d too large for the timebase %d/%d.",
+                   avctx->ticks_per_frame,
+                   avctx->time_base.num,
+                   avctx->time_base.den);
+            goto free_and_end;
+        }
     }
 
     avctx->pts_correction_num_faulty_pts =

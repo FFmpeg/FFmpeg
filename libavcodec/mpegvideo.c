@@ -375,7 +375,7 @@ static int init_duplicate_context(MpegEncContext *s)
                           ME_MAP_SIZE * sizeof(uint32_t), fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->me.score_map,
                           ME_MAP_SIZE * sizeof(uint32_t), fail)
-        if (s->avctx->noise_reduction) {
+        if (s->noise_reduction) {
             FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_error_sum,
                               2 * 64 * sizeof(int), fail)
         }
@@ -1175,11 +1175,11 @@ static void gray_frame(AVFrame *frame)
 
     for(i=0; i<frame->height; i++)
         memset(frame->data[0] + frame->linesize[0]*i, 0x80, frame->width);
-    for(i=0; i<FF_CEIL_RSHIFT(frame->height, v_chroma_shift); i++) {
+    for(i=0; i<AV_CEIL_RSHIFT(frame->height, v_chroma_shift); i++) {
         memset(frame->data[1] + frame->linesize[1]*i,
-               0x80, FF_CEIL_RSHIFT(frame->width, h_chroma_shift));
+               0x80, AV_CEIL_RSHIFT(frame->width, h_chroma_shift));
         memset(frame->data[2] + frame->linesize[2]*i,
-               0x80, FF_CEIL_RSHIFT(frame->width, h_chroma_shift));
+               0x80, AV_CEIL_RSHIFT(frame->width, h_chroma_shift));
     }
 }
 
@@ -1323,11 +1323,11 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 memset(s->last_picture_ptr->f->data[0] + s->last_picture_ptr->f->linesize[0]*i,
                        0x80, avctx->width);
             if (s->last_picture_ptr->f->data[2]) {
-                for(i=0; i<FF_CEIL_RSHIFT(avctx->height, v_chroma_shift); i++) {
+                for(i=0; i<AV_CEIL_RSHIFT(avctx->height, v_chroma_shift); i++) {
                     memset(s->last_picture_ptr->f->data[1] + s->last_picture_ptr->f->linesize[1]*i,
-                        0x80, FF_CEIL_RSHIFT(avctx->width, h_chroma_shift));
+                        0x80, AV_CEIL_RSHIFT(avctx->width, h_chroma_shift));
                     memset(s->last_picture_ptr->f->data[2] + s->last_picture_ptr->f->linesize[2]*i,
-                        0x80, FF_CEIL_RSHIFT(avctx->width, h_chroma_shift));
+                        0x80, AV_CEIL_RSHIFT(avctx->width, h_chroma_shift));
                 }
             }
 
@@ -2509,7 +2509,7 @@ void mpv_decode_mb_internal(MpegEncContext *s, int16_t block[12][64],
     else if (!is_mpeg12 && (s->h263_pred || s->h263_aic))
         s->mbintra_table[mb_xy]=1;
 
-    if ((s->avctx->flags & AV_CODEC_FLAG_PSNR) || s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor ||
+    if ((s->avctx->flags & AV_CODEC_FLAG_PSNR) || s->frame_skip_threshold || s->frame_skip_factor ||
         !(s->encoding && (s->intra_only || s->pict_type == AV_PICTURE_TYPE_B) &&
           s->avctx->mb_decision != FF_MB_DECISION_RD)) { // FIXME precalc
         uint8_t *dest_y, *dest_cb, *dest_cr;

@@ -183,9 +183,9 @@ static int config_input(AVFilterLink *inlink)
         h->fg_color = white_yuva_color;
     }
 
-    h->planeheight[1] = h->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, h->desc->log2_chroma_h);
+    h->planeheight[1] = h->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, h->desc->log2_chroma_h);
     h->planeheight[0] = h->planeheight[3] = inlink->h;
-    h->planewidth[1]  = h->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, h->desc->log2_chroma_w);
+    h->planewidth[1]  = h->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, h->desc->log2_chroma_w);
     h->planewidth[0]  = h->planewidth[3]  = inlink->w;
 
     return 0;
@@ -228,8 +228,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (k = 0; k < 4 && out->data[k]; k++) {
         const int is_chroma = (k == 1 || k == 2);
-        const int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? h->odesc->log2_chroma_h : 0));
-        const int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? h->odesc->log2_chroma_w : 0));
+        const int dst_h = AV_CEIL_RSHIFT(outlink->h, (is_chroma ? h->odesc->log2_chroma_h : 0));
+        const int dst_w = AV_CEIL_RSHIFT(outlink->w, (is_chroma ? h->odesc->log2_chroma_w : 0));
 
         if (h->histogram_size <= 256) {
             for (i = 0; i < dst_h ; i++)

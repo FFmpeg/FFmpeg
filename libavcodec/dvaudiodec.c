@@ -21,6 +21,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "dvaudio.h"
 
 typedef struct DVAudioContext {
     int block_size;
@@ -41,16 +42,19 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (avctx->codec_tag == 0x0215) {
         s->block_size = 7200;
-        s->is_pal = 0;
     } else if (avctx->codec_tag == 0x0216) {
         s->block_size = 8640;
-        s->is_pal = 1;
+    } else if (avctx->block_align == 7200 ||
+               avctx->block_align == 8640) {
+        s->block_size = avctx->block_align;
     } else {
         return AVERROR(EINVAL);
     }
 
+    s->is_pal = s->block_size == 8640;
     s->is_12bit = avctx->bits_per_raw_sample == 12;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->shuffle); i++) {
         const unsigned a = s->is_pal ? 18 : 15;
@@ -61,21 +65,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     return 0;
-}
-
-static inline int dv_get_audio_sample_count(const uint8_t *buffer, int dsf)
-{
-    int samples = buffer[0] & 0x3f; /* samples in this frame - min samples */
-
-    switch ((buffer[3] >> 3) & 0x07) {
-    case 0:
-        return samples + (dsf ? 1896 : 1580);
-    case 1:
-        return samples + (dsf ? 1742 : 1452);
-    case 2:
-    default:
-        return samples + (dsf ? 1264 : 1053);
-    }
 }
 
 static inline uint16_t dv_audio_12to16(uint16_t sample)
@@ -107,7 +96,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     int16_t *dst;
     int ret, i;
 
-    if (pkt->size != s->block_size)
+    if (pkt->size < s->block_size)
         return AVERROR_INVALIDDATA;
 
     frame->nb_samples = dv_get_audio_sample_count(pkt->data + 244, s->is_pal);
@@ -129,7 +118,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return pkt->size;
+    return s->block_size;
 }
 
 AVCodec ff_dvaudio_decoder = {

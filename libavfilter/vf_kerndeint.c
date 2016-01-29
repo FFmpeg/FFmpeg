@@ -152,7 +152,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     outpic->interlaced_frame = 0;
 
     for (plane = 0; plane < 4 && inpic->data[plane] && inpic->linesize[plane]; plane++) {
-        h = plane == 0 ? inlink->h : FF_CEIL_RSHIFT(inlink->h, kerndeint->vsub);
+        h = plane == 0 ? inlink->h : AV_CEIL_RSHIFT(inlink->h, kerndeint->vsub);
         bwidth = kerndeint->tmp_bwidth[plane];
 
         srcp_saved        = inpic->data[plane];

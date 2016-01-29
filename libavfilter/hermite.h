@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVFILTER_HERMITE_H
+#define AVFILTER_HERMITE_H
+
 static inline double hermite_interpolation(double x, double x0, double x1,
                                     double p0, double p1,
                                     double m0, double m1)
@@ -38,3 +41,5 @@ static inline double hermite_interpolation(double x, double x0, double x1,
 
     return ct3 * t3 + ct2 * t2 + ct1 * t + ct0;
 }
+
+#endif /* AVFILTER_HERMITE_H */

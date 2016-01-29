@@ -377,8 +377,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     apply_lut(hue, outpic->data[1], outpic->data[2], outpic->linesize[1],
               inpic->data[1],  inpic->data[2],  inpic->linesize[1],
-              FF_CEIL_RSHIFT(inlink->w, hue->hsub),
-              FF_CEIL_RSHIFT(inlink->h, hue->vsub));
+              AV_CEIL_RSHIFT(inlink->w, hue->hsub),
+              AV_CEIL_RSHIFT(inlink->h, hue->vsub));
     if (hue->brightness)
         apply_luma_lut(hue, outpic->data[0], outpic->linesize[0],
                        inpic->data[0], inpic->linesize[0], inlink->w, inlink->h);

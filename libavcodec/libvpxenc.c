@@ -102,6 +102,8 @@ typedef struct VP8EncoderContext {
     int tile_rows;
     int frame_parallel;
     int aq_mode;
+    int drop_threshold;
+    int noise_sensitivity;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -497,7 +499,13 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         }
     }
 
-    enccfg.rc_dropframe_thresh = avctx->frame_skip_threshold;
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->frame_skip_threshold)
+        ctx->drop_threshold = avctx->frame_skip_threshold;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    enccfg.rc_dropframe_thresh = ctx->drop_threshold;
 
     //0-100 (0 => CBR, 100 => VBR)
     enccfg.rc_2pass_vbr_bias_pct           = lrint(avctx->qcompress * 100);
@@ -605,7 +613,13 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         codecctl_int(avctx, VP8E_SET_ARNR_TYPE,        ctx->arnr_type);
 
     if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8) {
-        codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (avctx->noise_reduction)
+            ctx->noise_sensitivity = avctx->noise_reduction;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, ctx->noise_sensitivity);
         codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     }
 #if FF_API_MPV_OPT
@@ -1009,6 +1023,8 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
                          " is still done over the partition boundary.",       0, AV_OPT_TYPE_CONST, {.i64 = VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"}, \
     { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, VE }, \
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE }, \
+    { "drop-threshold",   "Frame drop threshold", offsetof(VP8Context, drop_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE }, \
+    { "noise-sensitivity", "Noise sensitivity", OFFSET(noise_sensitivity), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 4, VE}, \
     { "undershoot-pct",  "Datarate undershoot (min) target (%)", OFFSET(rc_undershoot_pct), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 100, VE }, \
     { "overshoot-pct",   "Datarate overshoot (max) target (%)", OFFSET(rc_overshoot_pct), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1000, VE }, \
 

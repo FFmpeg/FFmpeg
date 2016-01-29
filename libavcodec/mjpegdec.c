@@ -1266,8 +1266,8 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
 
     av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt, &chroma_h_shift,
                                      &chroma_v_shift);
-    chroma_width  = FF_CEIL_RSHIFT(s->width,  chroma_h_shift);
-    chroma_height = FF_CEIL_RSHIFT(s->height, chroma_v_shift);
+    chroma_width  = AV_CEIL_RSHIFT(s->width,  chroma_h_shift);
+    chroma_height = AV_CEIL_RSHIFT(s->height, chroma_v_shift);
 
     for (i = 0; i < nb_components; i++) {
         int c   = s->comp_index[i];
@@ -1653,7 +1653,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
         s->avctx->sample_aspect_ratio.num = get_bits(&s->gb, 16);
         s->avctx->sample_aspect_ratio.den = get_bits(&s->gb, 16);
-        ff_set_sar(s->avctx, s->avctx->sample_aspect_ratio);
+        if (   s->avctx->sample_aspect_ratio.num <= 0
+            || s->avctx->sample_aspect_ratio.den <= 0) {
+            s->avctx->sample_aspect_ratio.num = 0;
+            s->avctx->sample_aspect_ratio.den = 1;
+        }
 
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO,
@@ -1917,24 +1921,54 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
     /* unescape buffer of SOS, use special treatment for JPEG-LS */
     if (start_code == SOS && !s->ls) {
         const uint8_t *src = *buf_ptr;
+        const uint8_t *ptr = src;
         uint8_t *dst = s->buffer;
 
-        while (src < buf_end) {
-            uint8_t x = *(src++);
+        #define copy_data_segment(skip) do {       \
+            ptrdiff_t length = (ptr - src) - (skip);  \
+            if (length > 0) {                         \
+                memcpy(dst, src, length);             \
+                dst += length;                        \
+                src = ptr;                            \
+            }                                         \
+        } while (0)
 
-            *(dst++) = x;
-            if (s->avctx->codec_id != AV_CODEC_ID_THP) {
+        if (s->avctx->codec_id == AV_CODEC_ID_THP) {
+            ptr = buf_end;
+            copy_data_segment(0);
+        } else {
+            while (ptr < buf_end) {
+                uint8_t x = *(ptr++);
+
                 if (x == 0xff) {
-                    while (src < buf_end && x == 0xff)
-                        x = *(src++);
+                    ptrdiff_t skip = 0;
+                    while (ptr < buf_end && x == 0xff) {
+                        x = *(ptr++);
+                        skip++;
+                    }
 
-                    if (x >= 0xd0 && x <= 0xd7)
-                        *(dst++) = x;
-                    else if (x)
-                        break;
+                    /* 0xFF, 0xFF, ... */
+                    if (skip > 1) {
+                        copy_data_segment(skip);
+
+                        /* decrement src as it is equal to ptr after the
+                         * copy_data_segment macro and we might want to
+                         * copy the current value of x later on */
+                        src--;
+                    }
+
+                    if (x < 0xd0 || x > 0xd7) {
+                        copy_data_segment(1);
+                        if (x)
+                            break;
+                    }
                 }
             }
+            if (src < ptr)
+                copy_data_segment(0);
         }
+        #undef copy_data_segment
+
         *unescaped_buf_ptr  = s->buffer;
         *unescaped_buf_size = dst - s->buffer;
         memset(s->buffer + *unescaped_buf_size, 0,
@@ -2237,8 +2271,8 @@ the_end:
             if (!s->upscale_h[p])
                 continue;
             if (p==1 || p==2) {
-                w = FF_CEIL_RSHIFT(w, hshift);
-                h = FF_CEIL_RSHIFT(h, vshift);
+                w = AV_CEIL_RSHIFT(w, hshift);
+                h = AV_CEIL_RSHIFT(h, vshift);
             }
             if (s->upscale_v[p])
                 h = (h+1)>>1;
@@ -2295,8 +2329,8 @@ the_end:
             if (!s->upscale_v[p])
                 continue;
             if (p==1 || p==2) {
-                w = FF_CEIL_RSHIFT(w, hshift);
-                h = FF_CEIL_RSHIFT(h, vshift);
+                w = AV_CEIL_RSHIFT(w, hshift);
+                h = AV_CEIL_RSHIFT(h, vshift);
             }
             dst = &((uint8_t *)s->picture_ptr->data[p])[(h - 1) * s->linesize[p]];
             for (i = h - 1; i; i--) {
@@ -2320,8 +2354,8 @@ the_end:
             int w = s->picture_ptr->width;
             int h = s->picture_ptr->height;
             if(index && index<3){
-                w = FF_CEIL_RSHIFT(w, hshift);
-                h = FF_CEIL_RSHIFT(h, vshift);
+                w = AV_CEIL_RSHIFT(w, hshift);
+                h = AV_CEIL_RSHIFT(h, vshift);
             }
             if(dst){
                 uint8_t *dst2 = dst + s->picture_ptr->linesize[index]*(h-1);

@@ -52,6 +52,8 @@
 #include "thread.h"
 #include "vdpau_compat.h"
 
+static int h264_decode_end(AVCodecContext *avctx);
+
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx)
@@ -679,7 +681,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size > 0 && avctx->extradata) {
         ret = ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size);
         if (ret < 0) {
-            ff_h264_free_context(h);
+            h264_decode_end(avctx);
             return ret;
         }
     }
@@ -933,7 +935,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
         h->last_pocs[0] = cur->poc;
         cur->mmco_reset = 1;
     } else if(h->avctx->has_b_frames < out_of_order && !h->sps.bitstream_restriction_flag){
-        av_log(h->avctx, AV_LOG_VERBOSE, "Increasing reorder buffer to %d\n", out_of_order);
+        av_log(h->avctx, AV_LOG_INFO, "Increasing reorder buffer to %d\n", out_of_order);
         h->avctx->has_b_frames = out_of_order;
         h->low_delay = 0;
     }

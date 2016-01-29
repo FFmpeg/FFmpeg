@@ -128,8 +128,8 @@ static void filter(AVFilterContext *ctx)
         int refs = idet->cur->linesize[i];
 
         if (i && i<3) {
-            w = FF_CEIL_RSHIFT(w, idet->csp->log2_chroma_w);
-            h = FF_CEIL_RSHIFT(h, idet->csp->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, idet->csp->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, idet->csp->log2_chroma_h);
         }
 
         for (y = 2; y < h - 2; y++) {

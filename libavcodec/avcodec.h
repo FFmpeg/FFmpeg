@@ -1823,7 +1823,11 @@ typedef struct AVCodecContext {
 #define FF_RC_STRATEGY_XVID 1
 #endif
 
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int b_frame_strategy;
+#endif
 
     /**
      * qscale offset between IP and B-frames
@@ -1840,12 +1844,11 @@ typedef struct AVCodecContext {
      */
     int has_b_frames;
 
-    /**
-     * 0-> h263 quant 1-> mpeg quant
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int mpeg_quant;
+#endif
 
     /**
      * qscale factor between P and I-frames
@@ -2099,20 +2102,15 @@ typedef struct AVCodecContext {
      */
     uint16_t *inter_matrix;
 
-    /**
-     * scene change detection threshold
-     * 0 is default, larger means fewer detected scene changes.
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int scenechange_threshold;
 
-    /**
-     * noise reduction strength
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int noise_reduction;
+#endif
 
 #if FF_API_MPV_OPT
     /**
@@ -2185,12 +2183,11 @@ typedef struct AVCodecContext {
      */
     int bidir_refine;
 
-    /**
-     *
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int brd_scale;
+#endif
 
     /**
      * minimum GOP size
@@ -2206,12 +2203,11 @@ typedef struct AVCodecContext {
      */
     int refs;
 
-    /**
-     * chroma qp offset from luma
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int chromaoffset;
+#endif
 
 #if FF_API_UNUSED_MEMBERS
     /**
@@ -2230,12 +2226,11 @@ typedef struct AVCodecContext {
      */
     int mv0_threshold;
 
-    /**
-     * Adjust sensitivity of b_frame_strategy 1.
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int b_sensitivity;
+#endif
 
     /**
      * Chromaticity coordinates of the source primaries.
@@ -2580,12 +2575,11 @@ typedef struct AVCodecContext {
     int coder_type;
 #endif /* FF_API_CODER_TYPE */
 
-    /**
-     * context model
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int context_model;
+#endif
 
 #if FF_API_MPV_OPT
     /**
@@ -2601,33 +2595,23 @@ typedef struct AVCodecContext {
     int lmax;
 #endif
 
-    /**
-     * frame skip threshold
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+#if FF_API_PRIVATE_OPT
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_threshold;
 
-    /**
-     * frame skip factor
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_factor;
 
-    /**
-     * frame skip exponent
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_exp;
 
-    /**
-     * frame skip comparison function
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    /** @deprecated use encoder private options instead */
+    attribute_deprecated
     int frame_skip_cmp;
+#endif /* FF_API_PRIVATE_OPT */
 
     /**
      * trellis RD quantization

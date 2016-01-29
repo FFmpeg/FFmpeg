@@ -302,7 +302,7 @@ static int request_frame(AVFilterLink *outlink)
     MPTestContext *test = outlink->src->priv;
     AVFrame *picref;
     int w = WIDTH, h = HEIGHT,
-        cw = FF_CEIL_RSHIFT(w, test->hsub), ch = FF_CEIL_RSHIFT(h, test->vsub);
+        cw = AV_CEIL_RSHIFT(w, test->hsub), ch = AV_CEIL_RSHIFT(h, test->vsub);
     unsigned int frame = outlink->frame_count;
     enum test_type tt = test->test;
     int i;

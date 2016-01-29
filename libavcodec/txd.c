@@ -104,7 +104,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             if (!(flags & 1))
                 goto unsupported;
         case TXD_DXT1:
-            if (bytestream2_get_bytes_left(&gb) < FF_CEIL_RSHIFT(w, 2) * FF_CEIL_RSHIFT(h, 2) * 8)
+            if (bytestream2_get_bytes_left(&gb) < AV_CEIL_RSHIFT(w, 2) * AV_CEIL_RSHIFT(h, 2) * 8)
                 return AVERROR_INVALIDDATA;
             for (j = 0; j < avctx->height; j += 4) {
                 for (i = 0; i < avctx->width; i += 4) {
@@ -115,7 +115,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
             break;
         case TXD_DXT3:
-            if (bytestream2_get_bytes_left(&gb) < FF_CEIL_RSHIFT(w, 2) * FF_CEIL_RSHIFT(h, 2) * 16)
+            if (bytestream2_get_bytes_left(&gb) < AV_CEIL_RSHIFT(w, 2) * AV_CEIL_RSHIFT(h, 2) * 16)
                 return AVERROR_INVALIDDATA;
             for (j = 0; j < avctx->height; j += 4) {
                 for (i = 0; i < avctx->width; i += 4) {

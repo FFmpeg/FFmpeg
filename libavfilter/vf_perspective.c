@@ -150,7 +150,7 @@ static int config_input(AVFilterLink *inlink)
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    s->height[1] = s->height[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->height[0] = s->height[3] = inlink->h;
 
     s->pv = av_realloc_f(s->pv, w * h, 2 * sizeof(*s->pv));

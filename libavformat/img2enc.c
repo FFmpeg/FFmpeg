@@ -129,7 +129,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (img->split_planes) {
         int ysize = codec->width * codec->height;
-        int usize = FF_CEIL_RSHIFT(codec->width, desc->log2_chroma_w) * FF_CEIL_RSHIFT(codec->height, desc->log2_chroma_h);
+        int usize = AV_CEIL_RSHIFT(codec->width, desc->log2_chroma_w) * AV_CEIL_RSHIFT(codec->height, desc->log2_chroma_h);
         if (desc->comp[0].depth >= 9) {
             ysize *= 2;
             usize *= 2;

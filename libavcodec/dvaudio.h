@@ -16,16 +16,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_IMGCONVERT_H
-#define AVCODEC_IMGCONVERT_H
+#ifndef AVCODEC_DVAUDIO_H
+#define AVCODEC_DVAUDIO_H
 
-#include <stdint.h>
+static inline int dv_get_audio_sample_count(const uint8_t *buffer, int dsf)
+{
+    int samples = buffer[0] & 0x3f; /* samples in this frame - min samples */
 
-#include "version.h"
+    switch ((buffer[3] >> 3) & 0x07) {
+    case 0:
+        return samples + (dsf ? 1896 : 1580);
+    case 1:
+        return samples + (dsf ? 1742 : 1452);
+    case 2:
+    default:
+        return samples + (dsf ? 1264 : 1053);
+    }
+}
 
-/* 1/2^n downscaling functions */
-void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
-void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
-void ff_shrink88(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
-
-#endif /* AVCODEC_IMGCONVERT_H */
+#endif /* AVCODEC_DVAUDIO_H */

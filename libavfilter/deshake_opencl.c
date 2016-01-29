@@ -160,7 +160,7 @@ int ff_opencl_deshake_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFra
     AVFilterLink *link = ctx->inputs[0];
     DeshakeContext *deshake = ctx->priv;
     const int hshift = av_pix_fmt_desc_get(link->format)->log2_chroma_h;
-    int chroma_height = FF_CEIL_RSHIFT(link->h, hshift);
+    int chroma_height = AV_CEIL_RSHIFT(link->h, hshift);
 
     if ((!deshake->opencl_ctx.cl_inbuf) || (!deshake->opencl_ctx.cl_outbuf)) {
         deshake->opencl_ctx.in_plane_size[0]  = (in->linesize[0] * in->height);

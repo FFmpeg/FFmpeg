@@ -369,7 +369,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     s->codec_id     = avctx->codec->id;
     s->strict_std_compliance = avctx->strict_std_compliance;
     s->quarter_sample     = (avctx->flags & AV_CODEC_FLAG_QPEL) != 0;
-    s->mpeg_quant         = avctx->mpeg_quant;
     s->rtp_mode           = !!avctx->rtp_payload_size;
     s->intra_dc_precision = avctx->intra_dc_precision;
 
@@ -604,6 +603,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return -1;
     }
 
+#if FF_API_PRIVATE_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->mpeg_quant)
+        s->mpeg_quant = avctx->mpeg_quant;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     // FIXME mpeg2 uses that too
     if (s->mpeg_quant && (   s->codec_id != AV_CODEC_ID_MPEG4
                           && s->codec_id != AV_CODEC_ID_MPEG2VIDEO)) {
@@ -623,7 +629,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return -1;
     }
 
-    if (s->avctx->scenechange_threshold < 1000000000 &&
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->scenechange_threshold)
+        s->scenechange_threshold = avctx->scenechange_threshold;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (s->scenechange_threshold < 1000000000 &&
         (s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP)) {
         av_log(avctx, AV_LOG_ERROR,
                "closed gop with scene change detection are not supported yet, "
@@ -681,10 +694,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return -1;
     }
 
-    if (avctx->b_frame_strategy && (avctx->flags & AV_CODEC_FLAG_PASS2)) {
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->b_frame_strategy)
+        s->b_frame_strategy = avctx->b_frame_strategy;
+    if (avctx->b_sensitivity != 40)
+        s->b_sensitivity = avctx->b_sensitivity;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (s->b_frame_strategy && (avctx->flags & AV_CODEC_FLAG_PASS2)) {
         av_log(avctx, AV_LOG_INFO,
                "notice: b_frame_strategy only affects the first pass\n");
-        avctx->b_frame_strategy = 0;
+        s->b_frame_strategy = 0;
     }
 
     i = av_gcd(avctx->time_base.den, avctx->time_base.num);
@@ -868,6 +890,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return -1;
     }
 
+#if FF_API_PRIVATE_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->noise_reduction)
+        s->noise_reduction = avctx->noise_reduction;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     avctx->has_b_frames = !s->low_delay;
 
     s->encoding = 1;
@@ -906,7 +935,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_ALLOCZ_OR_GOTO(s->avctx, s->reordered_input_picture,
                       MAX_PICTURE_COUNT * sizeof(Picture *), fail);
 
-    if (s->avctx->noise_reduction) {
+
+    if (s->noise_reduction) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_offset,
                           2 * 64 * sizeof(uint16_t), fail);
     }
@@ -925,8 +955,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     s->quant_precision = 5;
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->frame_skip_threshold)
+        s->frame_skip_threshold = avctx->frame_skip_threshold;
+    if (avctx->frame_skip_factor)
+        s->frame_skip_factor = avctx->frame_skip_factor;
+    if (avctx->frame_skip_exp)
+        s->frame_skip_exp = avctx->frame_skip_exp;
+    if (avctx->frame_skip_cmp != FF_CMP_DCTMAX)
+        s->frame_skip_cmp = avctx->frame_skip_cmp;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      s->avctx->ildct_cmp);
-    ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->avctx->frame_skip_cmp);
+    ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
 
     if (CONFIG_H261_ENCODER && s->out_format == FMT_H261)
         ff_h261_encode_init(s);
@@ -1022,15 +1065,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (avctx->b_frame_strategy == 2) {
+#if FF_API_PRIVATE_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->brd_scale)
+        s->brd_scale = avctx->brd_scale;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (s->b_frame_strategy == 2) {
         for (i = 0; i < s->max_b_frames + 2; i++) {
             s->tmp_frames[i] = av_frame_alloc();
             if (!s->tmp_frames[i])
                 return AVERROR(ENOMEM);
 
             s->tmp_frames[i]->format = AV_PIX_FMT_YUV420P;
-            s->tmp_frames[i]->width  = s->width  >> avctx->brd_scale;
-            s->tmp_frames[i]->height = s->height >> avctx->brd_scale;
+            s->tmp_frames[i]->width  = s->width  >> s->brd_scale;
+            s->tmp_frames[i]->height = s->height >> s->brd_scale;
 
             ret = av_frame_get_buffer(s->tmp_frames[i], 32);
             if (ret < 0)
@@ -1301,7 +1351,7 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
                 uint8_t *rptr = ref->f->data[plane] + 8 * (x + y * stride);
                 int v = s->mecc.frame_skip_cmp[1](s, dptr, rptr, stride, 8);
 
-                switch (FFABS(s->avctx->frame_skip_exp)) {
+                switch (FFABS(s->frame_skip_exp)) {
                 case 0: score    =  FFMAX(score, v);          break;
                 case 1: score   += FFABS(v);                  break;
                 case 2: score64 += v * (int64_t)v;                       break;
@@ -1315,13 +1365,13 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
 
     if (score)
         score64 = score;
-    if (s->avctx->frame_skip_exp < 0)
+    if (s->frame_skip_exp < 0)
         score64 = pow(score64 / (double)(s->mb_width * s->mb_height),
-                      -1.0/s->avctx->frame_skip_exp);
+                      -1.0/s->frame_skip_exp);
 
-    if (score64 < s->avctx->frame_skip_threshold)
+    if (score64 < s->frame_skip_threshold)
         return 1;
-    if (score64 < ((s->avctx->frame_skip_factor * (int64_t)s->lambda) >> 8))
+    if (score64 < ((s->frame_skip_factor * (int64_t) s->lambda) >> 8))
         return 1;
     return 0;
 }
@@ -1345,7 +1395,7 @@ static int estimate_best_b_count(MpegEncContext *s)
 {
     AVCodec *codec    = avcodec_find_encoder(s->avctx->codec_id);
     AVCodecContext *c = avcodec_alloc_context3(NULL);
-    const int scale = s->avctx->brd_scale;
+    const int scale = s->brd_scale;
     int i, j, out_size, p_lambda, b_lambda, lambda2;
     int64_t best_rd  = INT64_MAX;
     int best_b_count = -1;
@@ -1469,7 +1519,7 @@ static int select_input_picture(MpegEncContext *s)
 
     /* set next picture type & ordering */
     if (!s->reordered_input_picture[0] && s->input_picture[0]) {
-        if (s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor) {
+        if (s->frame_skip_threshold || s->frame_skip_factor) {
             if (s->picture_in_gop_number < s->gop_size &&
                 s->next_picture_ptr &&
                 skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
@@ -1489,7 +1539,7 @@ static int select_input_picture(MpegEncContext *s)
             s->reordered_input_picture[0]->f->coded_picture_number =
                 s->coded_picture_number++;
         } else {
-            int b_frames;
+            int b_frames = 0;
 
             if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
                 for (i = 0; i < s->max_b_frames + 1; i++) {
@@ -1507,11 +1557,11 @@ static int select_input_picture(MpegEncContext *s)
                 }
             }
 
-            if (s->avctx->b_frame_strategy == 0) {
+            if (s->b_frame_strategy == 0) {
                 b_frames = s->max_b_frames;
                 while (b_frames && !s->input_picture[b_frames])
                     b_frames--;
-            } else if (s->avctx->b_frame_strategy == 1) {
+            } else if (s->b_frame_strategy == 1) {
                 for (i = 1; i < s->max_b_frames + 1; i++) {
                     if (s->input_picture[i] &&
                         s->input_picture[i]->b_frame_score == 0) {
@@ -1525,7 +1575,7 @@ static int select_input_picture(MpegEncContext *s)
                 for (i = 0; i < s->max_b_frames + 1; i++) {
                     if (!s->input_picture[i] ||
                         s->input_picture[i]->b_frame_score - 1 >
-                            s->mb_num / s->avctx->b_sensitivity)
+                            s->mb_num / s->b_sensitivity)
                         break;
                 }
 
@@ -1535,11 +1585,8 @@ static int select_input_picture(MpegEncContext *s)
                 for (i = 0; i < b_frames + 1; i++) {
                     s->input_picture[i]->b_frame_score = 0;
                 }
-            } else if (s->avctx->b_frame_strategy == 2) {
+            } else if (s->b_frame_strategy == 2) {
                 b_frames = estimate_best_b_count(s);
-            } else {
-                av_log(s->avctx, AV_LOG_ERROR, "illegal b frame strategy\n");
-                b_frames = 0;
             }
 
             emms_c();
@@ -1698,7 +1745,7 @@ static void update_noise_reduction(MpegEncContext *s)
         }
 
         for (i = 0; i < 64; i++) {
-            s->dct_offset[intra][i] = (s->avctx->noise_reduction *
+            s->dct_offset[intra][i] = (s->noise_reduction *
                                        s->dct_count[intra] +
                                        s->dct_error_sum[intra][i] / 2) /
                                       (s->dct_error_sum[intra][i] + 1);
@@ -1771,7 +1818,7 @@ static int frame_start(MpegEncContext *s)
     }
 
     if (s->dct_error_sum) {
-        av_assert2(s->avctx->noise_reduction && s->encoding);
+        av_assert2(s->noise_reduction && s->encoding);
         update_noise_reduction(s);
     }
 
@@ -3543,7 +3590,7 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(current_picture.encoding_error[1]);
     MERGE(current_picture.encoding_error[2]);
 
-    if(dst->avctx->noise_reduction){
+    if (dst->noise_reduction){
         for(i=0; i<64; i++){
             MERGE(dct_error_sum[0][i]);
             MERGE(dct_error_sum[1][i]);
@@ -3695,7 +3742,8 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     s->current_picture.   mb_var_sum= s->current_picture_ptr->   mb_var_sum= s->me.   mb_var_sum_temp;
     emms_c();
 
-    if(s->me.scene_change_score > s->avctx->scenechange_threshold && s->pict_type == AV_PICTURE_TYPE_P){
+    if (s->me.scene_change_score > s->scenechange_threshold &&
+        s->pict_type == AV_PICTURE_TYPE_P) {
         s->pict_type= AV_PICTURE_TYPE_I;
         for(i=0; i<s->mb_stride*s->mb_height; i++)
             s->mb_type[i]= CANDIDATE_MB_TYPE_INTRA;

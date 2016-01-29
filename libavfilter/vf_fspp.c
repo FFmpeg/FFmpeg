@@ -526,7 +526,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     if (!fspp->use_bframe_qp && !fspp->qp) {
-        fspp->non_b_qp_alloc_size = FF_CEIL_RSHIFT(inlink->w, 4) * FF_CEIL_RSHIFT(inlink->h, 4);
+        fspp->non_b_qp_alloc_size = AV_CEIL_RSHIFT(inlink->w, 4) * AV_CEIL_RSHIFT(inlink->h, 4);
         fspp->non_b_qp_table = av_calloc(fspp->non_b_qp_alloc_size, sizeof(*fspp->non_b_qp_table));
         if (!fspp->non_b_qp_table)
             return AVERROR(ENOMEM);
@@ -590,11 +590,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             /* if the qp stride is not set, it means the QP are only defined on
              * a line basis */
            if (!qp_stride) {
-                w = FF_CEIL_RSHIFT(inlink->w, 4);
+                w = AV_CEIL_RSHIFT(inlink->w, 4);
                 h = 1;
             } else {
                 w = qp_stride;
-                h = FF_CEIL_RSHIFT(inlink->h, 4);
+                h = AV_CEIL_RSHIFT(inlink->h, 4);
             }
             if (w * h > fspp->non_b_qp_alloc_size) {
                 int ret = av_reallocp_array(&fspp->non_b_qp_table, w, h);
@@ -615,8 +615,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             qp_table = fspp->non_b_qp_table;
 
         if (qp_table || fspp->qp) {
-            const int cw = FF_CEIL_RSHIFT(inlink->w, fspp->hsub);
-            const int ch = FF_CEIL_RSHIFT(inlink->h, fspp->vsub);
+            const int cw = AV_CEIL_RSHIFT(inlink->w, fspp->hsub);
+            const int ch = AV_CEIL_RSHIFT(inlink->h, fspp->vsub);
 
             /* get a new frame if in-place is not possible or if the dimensions
              * are not multiple of 8 */

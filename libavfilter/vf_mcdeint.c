@@ -197,8 +197,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
-        int w = FF_CEIL_RSHIFT(inlink->w, is_chroma);
-        int h = FF_CEIL_RSHIFT(inlink->h, is_chroma);
+        int w = AV_CEIL_RSHIFT(inlink->w, is_chroma);
+        int h = AV_CEIL_RSHIFT(inlink->h, is_chroma);
         int fils = frame_dec->linesize[i];
         int srcs = inpic    ->linesize[i];
         int dsts = outpic   ->linesize[i];

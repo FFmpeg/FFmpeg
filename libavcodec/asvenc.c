@@ -245,10 +245,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         for (i = 0; i<3; i++) {
             int x, y;
-            int w  = FF_CEIL_RSHIFT(pict->width, !!i);
-            int h  = FF_CEIL_RSHIFT(pict->height, !!i);
-            int w2 = FF_CEIL_RSHIFT(clone->width, !!i);
-            int h2 = FF_CEIL_RSHIFT(clone->height, !!i);
+            int w  = AV_CEIL_RSHIFT(pict->width, !!i);
+            int h  = AV_CEIL_RSHIFT(pict->height, !!i);
+            int w2 = AV_CEIL_RSHIFT(clone->width, !!i);
+            int h2 = AV_CEIL_RSHIFT(clone->height, !!i);
             for (y=0; y<h; y++)
                 for (x=w; x<w2; x++)
                     clone->data[i][x + y*clone->linesize[i]] =
