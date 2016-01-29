@@ -916,6 +916,7 @@
     <ClCompile Include="..\libavcodec\dirac_parser.c" />
     <ClCompile Include="..\libavcodec\dnxhd_parser.c" />
     <ClCompile Include="..\libavcodec\dpx_parser.c" />
+    <ClCompile Include="..\libavcodec\dvaudio_parser.c" />
     <ClCompile Include="..\libavcodec\dvbsub_parser.c" />
     <ClCompile Include="..\libavcodec\dvd_nav_parser.c" />
     <ClCompile Include="..\libavcodec\dvdsub_parser.c" />

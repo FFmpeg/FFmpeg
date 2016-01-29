@@ -2334,6 +2334,9 @@
     <ClCompile Include="..\libavcodec\dpx_parser.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dvaudio_parser.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dvbsub_parser.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
