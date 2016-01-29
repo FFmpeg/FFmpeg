@@ -117,7 +117,7 @@ static double get_f64l(uint8_t *p)
 
 int main(int argc, char *argv[])
 {
-    int i, j;
+    uint64_t i, j;
     uint64_t sse = 0;
     double sse_d = 0.0;
     FILE *f[2];
@@ -126,8 +126,8 @@ int main(int argc, char *argv[])
     int64_t max;
     int shift      = argc < 5 ? 0 : atoi(argv[4]);
     int skip_bytes = argc < 6 ? 0 : atoi(argv[5]);
-    int size0      = 0;
-    int size1      = 0;
+    uint64_t size0   = 0;
+    uint64_t size1   = 0;
     uint64_t maxdist = 0;
     double maxdist_d = 0.0;
 
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
         else
             psnr = 1000 * F - 1; // floating point free infinity :)
 
-        printf("stddev:%5d.%02d PSNR:%3d.%02d MAXDIFF:%5"PRIu64" bytes:%9d/%9d\n",
+        printf("stddev:%5d.%02d PSNR:%3d.%02d MAXDIFF:%5"PRIu64" bytes:%9"PRIu64"/%9"PRIu64"\n",
                (int)(dev / F), (int)(dev % F),
                (int)(psnr / F), (int)(psnr % F),
                maxdist, size0, size1);
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 
         maxdist = maxdist_d * scale;
 
-        printf("stddev:%10.2f PSNR:%s MAXDIFF:%10"PRIu64" bytes:%9d/%9d\n",
+        printf("stddev:%10.2f PSNR:%s MAXDIFF:%10"PRIu64" bytes:%9"PRIu64"/%9"PRIu64"\n",
                dev * scale, psnr_str, maxdist, size0, size1);
         break;
     }
