@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_DVAUDIO_H
+#define AVCODEC_DVAUDIO_H
+
 static inline int dv_get_audio_sample_count(const uint8_t *buffer, int dsf)
 {
     int samples = buffer[0] & 0x3f; /* samples in this frame - min samples */
@@ -30,3 +33,5 @@ static inline int dv_get_audio_sample_count(const uint8_t *buffer, int dsf)
         return samples + (dsf ? 1264 : 1053);
     }
 }
+
+#endif /* AVCODEC_DVAUDIO_H */

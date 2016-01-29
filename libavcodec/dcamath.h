@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_DCAMATH_H
+#define AVCODEC_DCAMATH_H
+
 #include "libavutil/common.h"
 
 
@@ -40,3 +43,5 @@ static inline int64_t dca_round(int64_t a, int bits)
     else
         return a;
 }
+
+#endif /* AVCODEC_DCAMATH_H */
