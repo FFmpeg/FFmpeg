@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PS_H
-#define AVCODEC_PS_H
+#ifndef AVCODEC_AACPS_H
+#define AVCODEC_AACPS_H
 
 #include <stdint.h>
 
@@ -83,4 +83,4 @@ void AAC_RENAME(ff_ps_ctx_init)(PSContext *ps);
 int AAC_RENAME(ff_ps_read_data)(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, int bits_left);
 int AAC_RENAME(ff_ps_apply)(AVCodecContext *avctx, PSContext *ps, INTFLOAT L[2][38][64], INTFLOAT R[2][38][64], int top);
 
-#endif /* AVCODEC_PS_H */
+#endif /* AVCODEC_AACPS_H */

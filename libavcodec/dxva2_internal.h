@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_DXVA_INTERNAL_H
-#define AVCODEC_DXVA_INTERNAL_H
+#ifndef AVCODEC_DXVA2_INTERNAL_H
+#define AVCODEC_DXVA2_INTERNAL_H
 
 #define COBJMACROS
 
@@ -118,4 +118,4 @@ int ff_dxva2_common_end_frame(AVCodecContext *, AVFrame *,
                                                   DECODER_BUFFER_DESC *bs,
                                                   DECODER_BUFFER_DESC *slice));
 
-#endif /* AVCODEC_DXVA_INTERNAL_H */
+#endif /* AVCODEC_DXVA2_INTERNAL_H */

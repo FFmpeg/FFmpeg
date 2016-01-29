@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SWR_VERSION_H
-#define SWR_VERSION_H
+#ifndef SWRESAMPLE_VERSION_H
+#define SWRESAMPLE_VERSION_H
 
 /**
  * @file
@@ -42,4 +42,4 @@
 
 #define LIBSWRESAMPLE_IDENT        "SwR" AV_STRINGIFY(LIBSWRESAMPLE_VERSION)
 
-#endif /* SWR_VERSION_H */
+#endif /* SWRESAMPLE_VERSION_H */

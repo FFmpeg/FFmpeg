@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_AVF_SHOWCQT_H
-#define AVFILTER_AVF_SHOWCQT_H
+#ifndef AVFILTER_SHOWCQT_H
+#define AVFILTER_SHOWCQT_H
 
 #include "libavcodec/avfft.h"
 #include "avfilter.h"

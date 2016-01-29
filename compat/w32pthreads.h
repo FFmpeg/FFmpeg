@@ -26,8 +26,8 @@
  * w32threads to pthreads wrapper
  */
 
-#ifndef FFMPEG_COMPAT_W32PTHREADS_H
-#define FFMPEG_COMPAT_W32PTHREADS_H
+#ifndef COMPAT_W32PTHREADS_H
+#define COMPAT_W32PTHREADS_H
 
 /* Build up a pthread-like API using underlying Windows API. Have only static
  * methods so as to not conflict with a potentially linked in pthread-win32
@@ -415,4 +415,4 @@ static av_unused void w32thread_init(void)
 
 }
 
-#endif /* FFMPEG_COMPAT_W32PTHREADS_H */
+#endif /* COMPAT_W32PTHREADS_H */

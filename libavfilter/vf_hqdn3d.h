@@ -20,8 +20,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef AVFILTER_VF_HQDN3D_H
-#define AVFILTER_VF_HQDN3D_H
+#ifndef AVFILTER_HQDN3D_H
+#define AVFILTER_HQDN3D_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -46,4 +46,4 @@ typedef struct HQDN3DContext {
 
 void ff_hqdn3d_init_x86(HQDN3DContext *hqdn3d);
 
-#endif /* AVFILTER_VF_HQDN3D_H */
+#endif /* AVFILTER_HQDN3D_H */

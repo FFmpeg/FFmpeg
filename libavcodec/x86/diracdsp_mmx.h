@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_X86_DIRACDSP_H
-#define AVCODEC_X86_DIRACDSP_H
+#ifndef AVCODEC_X86_DIRACDSP_MMX_H
+#define AVCODEC_X86_DIRACDSP_MMX_H
 
 #include "libavcodec/diracdsp.h"
 

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SWR_INTERNAL_H
-#define SWR_INTERNAL_H
+#ifndef SWRESAMPLE_SWRESAMPLE_INTERNAL_H
+#define SWRESAMPLE_SWRESAMPLE_INTERNAL_H
 
 #include "swresample.h"
 #include "libavutil/channel_layout.h"

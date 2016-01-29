@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AACPS_TABLEGEN_H
-#define AACPS_TABLEGEN_H
+#ifndef AVCODEC_AACPS_TABLEGEN_H
+#define AVCODEC_AACPS_TABLEGEN_H
 
 #include <math.h>
 #include <stdint.h>
@@ -214,4 +214,4 @@ static av_cold void ps_tableinit(void)
 }
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* AACPS_TABLEGEN_H */
+#endif /* AVCODEC_AACPS_TABLEGEN_H */

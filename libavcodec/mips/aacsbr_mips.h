@@ -51,8 +51,8 @@
  * Reference: libavcodec/aacsbr.c
  */
 
-#ifndef AVCODEC_MIPS_AACSBR_FLOAT_H
-#define AVCODEC_MIPS_AACSBR_FLOAT_H
+#ifndef AVCODEC_MIPS_AACSBR_MIPS_H
+#define AVCODEC_MIPS_AACSBR_MIPS_H
 
 #include "libavcodec/aac.h"
 #include "libavcodec/sbr.h"
@@ -491,4 +491,4 @@ static void sbr_qmf_synthesis_mips(FFTContext *mdct,
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
-#endif /* AVCODEC_MIPS_AACSBR_FLOAT_H */
+#endif /* AVCODEC_MIPS_AACSBR_MIPS_H */
