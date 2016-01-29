@@ -106,4 +106,4 @@ int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t directio
 int ff_decklink_list_devices(AVFormatContext *avctx);
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction = DIRECTION_OUT);
 
-#endif /* AVDEVICE_DECKLINK_COMMON_H *
+#endif /* AVDEVICE_DECKLINK_COMMON_H */
