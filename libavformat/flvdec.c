@@ -60,6 +60,7 @@ typedef struct FLVContext {
     uint8_t resync_buffer[2*RESYNC_BUFFER_SIZE];
 
     int broken_sizes;
+    int sum_flv_tag_size;
 } FLVContext;
 
 static int probe(AVProbeData *p, int live)
@@ -629,6 +630,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 static int flv_read_header(AVFormatContext *s)
 {
     int offset, flags;
+    FLVContext *flv = s->priv_data;
 
     avio_skip(s->pb, 4);
     flags = avio_r8(s->pb);
@@ -649,6 +651,7 @@ static int flv_read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
 
     s->start_time = 0;
+    flv->sum_flv_tag_size = 0;
 
     return 0;
 }
@@ -857,6 +860,7 @@ retry:
         type = (avio_r8(s->pb) & 0x1F);
         orig_size =
         size = avio_rb24(s->pb);
+        flv->sum_flv_tag_size += size + 11;
         dts  = avio_rb24(s->pb);
         dts |= (unsigned)avio_r8(s->pb) << 24;
         av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
@@ -1141,7 +1145,7 @@ retry_duration:
 leave:
     last = avio_rb32(s->pb);
     if (last != orig_size + 11 &&
-        (last != orig_size || !last) &&
+        (last != orig_size || !last) && last != flv->sum_flv_tag_size &&
         !flv->broken_sizes) {
         av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d\n", last, orig_size + 11);
         avio_seek(s->pb, pos + 1, SEEK_SET);
