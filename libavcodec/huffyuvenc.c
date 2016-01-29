@@ -28,8 +28,6 @@
  * huffyuv encoder
  */
 
-#include "libavutil/opt.h"
-
 #include "avcodec.h"
 #include "huffyuv.h"
 #include "huffman.h"
