@@ -171,8 +171,13 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
 {
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
-    int score, nodat = 0, score_max = 0;
+    int score, score_max = 0;
     const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
+    enum nodat {
+        NO_ID3,
+        ID3_GREATER_PROBE,
+        ID3_GREATER_MAX_PROBE,
+    } nodat = NO_ID3;
 
     if (!lpd.buf)
         lpd.buf = (unsigned char *) zerobuffer;
@@ -183,9 +188,9 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
             lpd.buf      += id3len;
             lpd.buf_size -= id3len;
         } else if (id3len >= PROBE_BUF_MAX) {
-            nodat = 2;
+            nodat = ID3_GREATER_MAX_PROBE;
         } else
-            nodat = 1;
+            nodat = ID3_GREATER_PROBE;
     }
 
     fmt = NULL;
@@ -198,9 +203,9 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
             if (score)
                 av_log(NULL, AV_LOG_TRACE, "Probing %s score:%d size:%d\n", fmt1->name, score, lpd.buf_size);
             if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
-                if      (nodat == 0) score = FFMAX(score, 1);
-                else if (nodat == 1) score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
-                else                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+                if      (nodat == NO_ID3)            score = FFMAX(score, 1);
+                else if (nodat == ID3_GREATER_PROBE) score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
+                else                                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
             }
         } else if (fmt1->extensions) {
             if (av_match_ext(lpd.filename, fmt1->extensions))
@@ -214,7 +219,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         } else if (score == score_max)
             fmt = NULL;
     }
-    if (nodat == 1)
+    if (nodat == ID3_GREATER_PROBE)
         score_max = FFMIN(AVPROBE_SCORE_EXTENSION / 2 - 1, score_max);
     *score_ret = score_max;
 
