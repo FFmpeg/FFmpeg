@@ -135,4 +135,6 @@ int ff_nvenc_encode_close(AVCodecContext *avctx);
 int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                           const AVFrame *frame, int *got_packet);
 
+extern const enum AVPixelFormat ff_nvenc_pix_fmts[];
+
 #endif /* AVCODEC_NVENC_H */

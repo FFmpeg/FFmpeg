@@ -101,12 +101,9 @@ AVCodec ff_h264_nvenc_encoder = {
     .priv_data_size = sizeof(NVENCContext),
     .priv_class     = &nvenc_hevc_class,
     .defaults       = defaults,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_YUV420P,
-                                                    AV_PIX_FMT_YUV444P,
-                                                    AV_PIX_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .pix_fmts       = ff_nvenc_pix_fmts,
 };
 
 #if FF_API_NVENC_OLD_NAME
@@ -135,11 +132,8 @@ AVCodec ff_nvenc_h264_encoder = {
     .priv_data_size = sizeof(NVENCContext),
     .priv_class     = &nvenc_h264_old_class,
     .defaults       = defaults,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_YUV420P,
-                                                    AV_PIX_FMT_YUV444P,
-                                                    AV_PIX_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .pix_fmts       = ff_nvenc_pix_fmts,
 };
 #endif
