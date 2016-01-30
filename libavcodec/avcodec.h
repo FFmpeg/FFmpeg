@@ -315,6 +315,7 @@ enum AVCodecID {
     AV_CODEC_ID_SMVJPEG,
     AV_CODEC_ID_APNG,
     AV_CODEC_ID_DAALA,
+    AV_CODEC_ID_CFHD,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

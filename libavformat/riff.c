@@ -413,6 +413,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_SCREENPRESSO, MKTAG('S', 'P', 'V', '1') },
     { AV_CODEC_ID_RSCC,         MKTAG('R', 'S', 'C', 'C') },
     { AV_CODEC_ID_RSCC,         MKTAG('I', 'S', 'C', 'C') },
+    { AV_CODEC_ID_CFHD,         MKTAG('C', 'F', 'H', 'D') },
     { AV_CODEC_ID_NONE,         0 }
 };
 
