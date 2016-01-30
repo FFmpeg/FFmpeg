@@ -18,10 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 #include "libavutil/arm/cpu.h"
+
 #include "libavcodec/fft.h"
 #include "libavcodec/rdft.h"
-#include "libavcodec/synth_filter.h"
 
 void ff_fft_calc_vfp(FFTContext *s, FFTComplex *z);
 
