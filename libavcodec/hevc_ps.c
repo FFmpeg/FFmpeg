@@ -257,8 +257,12 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
     else
         av_log(avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
 
-    for (i = 0; i < 32; i++)
+    for (i = 0; i < 32; i++) {
         ptl->profile_compatibility_flag[i] = get_bits1(gb);
+
+        if (ptl->profile_idc == 0 && i > 0 && ptl->profile_compatibility_flag[i])
+            ptl->profile_idc = i;
+    }
     ptl->progressive_source_flag    = get_bits1(gb);
     ptl->interlaced_source_flag     = get_bits1(gb);
     ptl->non_packed_constraint_flag = get_bits1(gb);
