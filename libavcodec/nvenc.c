@@ -1052,7 +1052,7 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
     return nvenc_dequeue_timestamp(ctx->timestamps, &pkt->dts);
 }
 
-static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
+static int nvenc_get_output(AVCodecContext *avctx, AVPacket *pkt)
 {
     NVENCContext *ctx               = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
@@ -1196,7 +1196,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (output_ready(avctx, !frame)) {
-        ret = nvenc_get_frame(avctx, pkt);
+        ret = nvenc_get_output(avctx, pkt);
         if (ret < 0)
             return ret;
         *got_packet = 1;
