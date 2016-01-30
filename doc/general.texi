@@ -626,6 +626,7 @@ following image formats are supported:
     @tab Amiga CD video codec
 @item Chinese AVS video      @tab  E  @tab  X
     @tab AVS1-P2, JiZhun profile, encoding through external library libxavs
+@item Cineform HD            @tab     @tab  X
 @item Delphine Software International CIN video  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item Discworld II BMV Video @tab     @tab  X

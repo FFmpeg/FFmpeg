@@ -180,6 +180,7 @@ OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdec.o cavsdsp.o \
                                           cavsdata.o mpeg12data.o
 OBJS-$(CONFIG_CDGRAPHICS_DECODER)      += cdgraphics.o
 OBJS-$(CONFIG_CDXL_DECODER)            += cdxl.o
+OBJS-$(CONFIG_CFHD_DECODER)            += cfhd.o cfhddata.o
 OBJS-$(CONFIG_CINEPAK_DECODER)         += cinepak.o
 OBJS-$(CONFIG_CLJR_DECODER)            += cljrdec.o
 OBJS-$(CONFIG_CLJR_ENCODER)            += cljrenc.o

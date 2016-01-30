@@ -11,6 +11,7 @@ version <next>:
 - Apple Pixlet decoder
 - The x86 assembler default switched from yasm to nasm, pass
   --x86asmexe=yasm to configure to restore the old behavior.
+- Cineform HD decoder
 
 
 version 12:

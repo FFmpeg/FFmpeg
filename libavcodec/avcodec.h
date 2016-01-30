@@ -415,6 +415,7 @@ enum AVCodecID {
     AV_CODEC_ID_TRUEMOTION2RT,
     AV_CODEC_ID_AV1,
     AV_CODEC_ID_PIXLET,
+    AV_CODEC_ID_CFHD,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
