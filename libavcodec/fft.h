@@ -154,4 +154,11 @@ void ff_fft_end(FFTContext *s);
 int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale);
 void ff_mdct_end(FFTContext *s);
 
+void ff_mdct_init_aarch64(FFTContext *s);
+void ff_mdct_init_arm(FFTContext *s);
+void ff_mdct_init_ppc(FFTContext *s);
+void ff_mdct_init_x86(FFTContext *s);
+
+void ff_mdct_fixed_init_arm(FFTContext *s);
+
 #endif /* AVCODEC_FFT_H */

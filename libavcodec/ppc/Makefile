@@ -11,6 +11,7 @@ OBJS-$(CONFIG_HPELDSP)                 += ppc/hpeldsp_altivec.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += ppc/huffyuvdsp_altivec.o
 OBJS-$(CONFIG_FDCTDSP)                 += ppc/fdctdsp.o
 OBJS-$(CONFIG_IDCTDSP)                 += ppc/idctdsp.o
+OBJS-$(CONFIG_MDCT)                    += ppc/mdct_init.o
 OBJS-$(CONFIG_ME_CMP)                  += ppc/me_cmp.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += ppc/mpegaudiodsp_altivec.o
 OBJS-$(CONFIG_MPEGVIDEO)               += ppc/mpegvideo_altivec.o      \

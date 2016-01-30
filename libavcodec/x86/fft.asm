@@ -655,68 +655,6 @@ cglobal fft_permute, 2,7,1
     jl      .loopcopy
     REP_RET
 
-%macro IMDCT_CALC_FUNC 0
-cglobal imdct_calc, 3,5,3
-    mov     r3d, [r0 + FFTContext.mdctsize]
-    mov     r4,  [r0 + FFTContext.imdcthalf]
-    add     r1,  r3
-    PUSH    r3
-    PUSH    r1
-%if ARCH_X86_32
-    push    r2
-    push    r1
-    push    r0
-%else
-    sub     rsp, 8+32*WIN64 ; allocate win64 shadow space
-%endif
-    call    r4
-%if ARCH_X86_32
-    add     esp, 12
-%else
-    add     rsp, 8+32*WIN64
-%endif
-    POP     r1
-    POP     r3
-    lea     r0, [r1 + 2*r3]
-    mov     r2, r3
-    sub     r3, mmsize
-    neg     r2
-    mova    m2, [ps_m1m1m1m1]
-.loop:
-%if mmsize == 8
-    PSWAPD  m0, [r1 + r3]
-    PSWAPD  m1, [r0 + r2]
-    pxor    m0, m2
-%else
-    mova    m0, [r1 + r3]
-    mova    m1, [r0 + r2]
-    shufps  m0, m0, 0x1b
-    shufps  m1, m1, 0x1b
-    xorps   m0, m2
-%endif
-    mova [r0 + r3], m1
-    mova [r1 + r2], m0
-    sub     r3, mmsize
-    add     r2, mmsize
-    jl      .loop
-%if cpuflag(3dnow)
-    femms
-    RET
-%else
-    REP_RET
-%endif
-%endmacro
-
-%if ARCH_X86_32
-INIT_MMX 3dnow
-IMDCT_CALC_FUNC
-INIT_MMX 3dnowext
-IMDCT_CALC_FUNC
-%endif
-
-INIT_XMM sse
-IMDCT_CALC_FUNC
-
 %if ARCH_X86_32
 INIT_MMX 3dnow
 %define mulps pfmul
@@ -790,6 +728,70 @@ INIT_MMX 3dnowext
 DECL_FFT 4
 DECL_FFT 4, _interleave
 %endif
+
+%if CONFIG_MDCT
+
+%macro IMDCT_CALC_FUNC 0
+cglobal imdct_calc, 3,5,3
+    mov     r3d, [r0 + FFTContext.mdctsize]
+    mov     r4,  [r0 + FFTContext.imdcthalf]
+    add     r1,  r3
+    PUSH    r3
+    PUSH    r1
+%if ARCH_X86_32
+    push    r2
+    push    r1
+    push    r0
+%else
+    sub     rsp, 8+32*WIN64 ; allocate win64 shadow space
+%endif
+    call    r4
+%if ARCH_X86_32
+    add     esp, 12
+%else
+    add     rsp, 8+32*WIN64
+%endif
+    POP     r1
+    POP     r3
+    lea     r0, [r1 + 2*r3]
+    mov     r2, r3
+    sub     r3, mmsize
+    neg     r2
+    mova    m2, [ps_m1m1m1m1]
+.loop:
+%if mmsize == 8
+    PSWAPD  m0, [r1 + r3]
+    PSWAPD  m1, [r0 + r2]
+    pxor    m0, m2
+%else
+    mova    m0, [r1 + r3]
+    mova    m1, [r0 + r2]
+    shufps  m0, m0, 0x1b
+    shufps  m1, m1, 0x1b
+    xorps   m0, m2
+%endif
+    mova [r0 + r3], m1
+    mova [r1 + r2], m0
+    sub     r3, mmsize
+    add     r2, mmsize
+    jl      .loop
+%if cpuflag(3dnow)
+    femms
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX 3dnow
+IMDCT_CALC_FUNC
+INIT_MMX 3dnowext
+IMDCT_CALC_FUNC
+%endif
+
+INIT_XMM sse
+IMDCT_CALC_FUNC
 
 INIT_XMM sse
 %undef mulps
@@ -1081,3 +1083,5 @@ DECL_IMDCT POSROTATESHUF_3DNOW
 
 INIT_YMM avx
 DECL_IMDCT POSROTATESHUF_AVX
+
+%endif ; CONFIG_MDCT

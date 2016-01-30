@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,27 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/arm/cpu.h"
+#ifndef AVCODEC_X86_MDCT_H
+#define AVCODEC_X86_MDCT_H
 
 #include "libavcodec/fft.h"
 
-void ff_fft_calc_vfp(FFTContext *s, FFTComplex *z);
+void ff_imdct_calc_3dnow(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_3dnow(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_3dnowext(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_3dnowext(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_avx(FFTContext *s, FFTSample *output, const FFTSample *input);
 
-void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_neon(FFTContext *s, FFTComplex *z);
-
-av_cold void ff_fft_init_arm(FFTContext *s)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-    if (have_vfp_vm(cpu_flags)) {
-        s->fft_calc     = ff_fft_calc_vfp;
-    }
-
-    if (have_neon(cpu_flags)) {
-        s->fft_permute  = ff_fft_permute_neon;
-        s->fft_calc     = ff_fft_calc_neon;
-    }
-}
+#endif /* AVCODEC_X86_MDCT_H */

@@ -21,6 +21,8 @@ OBJS-$(CONFIG_IDCTDSP)                 += arm/idctdsp_init_arm.o        \
 OBJS-$(CONFIG_FLACDSP)                 += arm/flacdsp_init_arm.o        \
                                           arm/flacdsp_arm.o
 OBJS-$(CONFIG_G722DSP)                 += arm/g722dsp_init_arm.o
+OBJS-$(CONFIG_MDCT)                    += arm/mdct_init_arm.o           \
+                                          arm/mdct_fixed_init_arm.o
 OBJS-$(CONFIG_ME_CMP)                  += arm/me_cmp_init_arm.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
 OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o

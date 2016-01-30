@@ -151,20 +151,13 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 
     s->fft_permute = fft_permute_c;
     s->fft_calc    = fft_calc_c;
-#if CONFIG_MDCT
-    s->imdct_calc  = ff_imdct_calc_c;
-    s->imdct_half  = ff_imdct_half_c;
-    s->mdct_calc   = ff_mdct_calc_c;
-#endif
 
 #if FFT_FLOAT
     if (ARCH_AARCH64) ff_fft_init_aarch64(s);
     if (ARCH_ARM)     ff_fft_init_arm(s);
     if (ARCH_PPC)     ff_fft_init_ppc(s);
     if (ARCH_X86)     ff_fft_init_x86(s);
-    if (CONFIG_MDCT)  s->mdct_calcw = s->mdct_calc;
 #else
-    if (CONFIG_MDCT)  s->mdct_calcw = ff_mdct_calcw_c;
     if (ARCH_ARM)     ff_fft_fixed_init_arm(s);
 #endif
 

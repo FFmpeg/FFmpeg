@@ -19,6 +19,7 @@ OBJS-$(CONFIG_HUFFYUVDSP)              += x86/huffyuvdsp_init.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += x86/huffyuvencdsp_mmx.o
 OBJS-$(CONFIG_IDCTDSP)                 += x86/idctdsp_init.o
 OBJS-$(CONFIG_LPC)                     += x86/lpc.o
+OBJS-$(CONFIG_MDCT)                    += x86/mdct_init.o
 OBJS-$(CONFIG_ME_CMP)                  += x86/me_cmp_init.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodsp.o
 OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o              \

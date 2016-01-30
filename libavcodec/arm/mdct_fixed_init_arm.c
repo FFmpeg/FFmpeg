@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -22,23 +20,21 @@
 #include "libavutil/cpu.h"
 #include "libavutil/arm/cpu.h"
 
+#define FFT_FLOAT 0
 #include "libavcodec/fft.h"
 
-void ff_fft_calc_vfp(FFTContext *s, FFTComplex *z);
+void ff_mdct_fixed_calc_neon(FFTContext *s, FFTSample *o, const FFTSample *i);
+void ff_mdct_fixed_calcw_neon(FFTContext *s, FFTDouble *o, const FFTSample *i);
 
-void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_neon(FFTContext *s, FFTComplex *z);
-
-av_cold void ff_fft_init_arm(FFTContext *s)
+av_cold void ff_mdct_fixed_init_arm(FFTContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (have_vfp_vm(cpu_flags)) {
-        s->fft_calc     = ff_fft_calc_vfp;
-    }
-
     if (have_neon(cpu_flags)) {
-        s->fft_permute  = ff_fft_permute_neon;
-        s->fft_calc     = ff_fft_calc_neon;
+        if (!s->inverse && s->nbits >= 3) {
+            s->mdct_permutation = FF_MDCT_PERM_INTERLEAVE;
+            s->mdct_calc        = ff_mdct_fixed_calc_neon;
+            s->mdct_calcw       = ff_mdct_fixed_calcw_neon;
+        }
     }
 }

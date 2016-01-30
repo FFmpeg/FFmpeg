@@ -56,6 +56,26 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     if (ff_fft_init(s, s->mdct_bits - 2, inverse) < 0)
         goto fail;
 
+    s->imdct_calc  = ff_imdct_calc_c;
+    s->imdct_half  = ff_imdct_half_c;
+    s->mdct_calc   = ff_mdct_calc_c;
+
+#if FFT_FLOAT
+    if (ARCH_AARCH64)
+        ff_mdct_init_aarch64(s);
+    if (ARCH_ARM)
+        ff_mdct_init_arm(s);
+    if (ARCH_PPC)
+        ff_mdct_init_ppc(s);
+    if (ARCH_X86)
+        ff_mdct_init_x86(s);
+    s->mdct_calcw  = s->mdct_calc;
+#else
+    s->mdct_calcw  = ff_mdct_calcw_c;
+    if (ARCH_ARM)
+        ff_mdct_fixed_init_arm(s);
+#endif
+
     s->tcos = av_malloc(n/2 * sizeof(FFTSample));
     if (!s->tcos)
         goto fail;

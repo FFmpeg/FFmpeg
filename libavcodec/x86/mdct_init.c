@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,27 +16,36 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/arm/cpu.h"
+#include "libavutil/x86/cpu.h"
 
-#include "libavcodec/fft.h"
+#include "mdct.h"
 
-void ff_fft_calc_vfp(FFTContext *s, FFTComplex *z);
-
-void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_neon(FFTContext *s, FFTComplex *z);
-
-av_cold void ff_fft_init_arm(FFTContext *s)
+av_cold void ff_mdct_init_x86(FFTContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (have_vfp_vm(cpu_flags)) {
-        s->fft_calc     = ff_fft_calc_vfp;
+#if ARCH_X86_32
+    if (EXTERNAL_AMD3DNOW(cpu_flags)) {
+        s->imdct_calc = ff_imdct_calc_3dnow;
+        s->imdct_half = ff_imdct_half_3dnow;
     }
 
-    if (have_neon(cpu_flags)) {
-        s->fft_permute  = ff_fft_permute_neon;
-        s->fft_calc     = ff_fft_calc_neon;
+    if (EXTERNAL_AMD3DNOWEXT(cpu_flags)) {
+        s->imdct_calc = ff_imdct_calc_3dnowext;
+        s->imdct_half = ff_imdct_half_3dnowext;
+    }
+#endif /* ARCH_X86_32 */
+
+    if (EXTERNAL_SSE(cpu_flags)) {
+        s->imdct_calc  = ff_imdct_calc_sse;
+        s->imdct_half  = ff_imdct_half_sse;
+    }
+
+    if (EXTERNAL_AVX_FAST(cpu_flags) && s->nbits >= 5) {
+        s->imdct_half      = ff_imdct_half_avx;
     }
 }
