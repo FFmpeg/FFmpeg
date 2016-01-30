@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- DXVA2-accelerated HEVC Main10 decoding
 
 
 version 3.0:
