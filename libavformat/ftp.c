@@ -537,8 +537,9 @@ static int ftp_connect_control_connection(URLContext *h)
         if (s->rw_timeout != -1) {
             av_dict_set_int(&opts, "timeout", s->rw_timeout, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
-                         &h->interrupt_callback, &opts);
+        err = ffurl_open_whitelist(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
+                                   &h->interrupt_callback, &opts,
+                                   h->protocol_whitelist);
         av_dict_free(&opts);
         if (err < 0) {
             av_log(h, AV_LOG_ERROR, "Cannot open control connection\n");
@@ -590,8 +591,9 @@ static int ftp_connect_data_connection(URLContext *h)
         if (s->rw_timeout != -1) {
             av_dict_set_int(&opts, "timeout", s->rw_timeout, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_data, buf, h->flags,
-                         &h->interrupt_callback, &opts);
+        err = ffurl_open_whitelist(&s->conn_data, buf, h->flags,
+                                   &h->interrupt_callback, &opts,
+                                   h->protocol_whitelist);
         av_dict_free(&opts);
         if (err < 0)
             return err;
@@ -1114,4 +1116,5 @@ URLProtocol ff_ftp_protocol = {
     .url_delete          = ftp_delete,
     .url_move            = ftp_move,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist   = "tcp",
 };

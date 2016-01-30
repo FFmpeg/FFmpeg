@@ -40,6 +40,7 @@
 #include "libavfilter/avfilter.h"
 #include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"
+#include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
 
@@ -144,7 +145,11 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     if (lavfi->graph_filename) {
         AVBPrint graph_file_pb;
         AVIOContext *avio = NULL;
-        ret = avio_open(&avio, lavfi->graph_filename, AVIO_FLAG_READ);
+        AVDictionary *options = NULL;
+        if (avctx->protocol_whitelist && (ret = av_dict_set(&options, "protocol_whitelist", avctx->protocol_whitelist, 0)) < 0)
+            goto end;
+        ret = avio_open2(&avio, lavfi->graph_filename, AVIO_FLAG_READ, &avctx->interrupt_callback, &options);
+        av_dict_set(&options, "protocol_whitelist", NULL, 0);
         if (ret < 0)
             goto end;
         av_bprint_init(&graph_file_pb, 0, AV_BPRINT_SIZE_UNLIMITED);

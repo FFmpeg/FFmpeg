@@ -97,8 +97,9 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
         uri += len + strspn(uri + len, AV_CAT_SEPARATOR);
 
         /* creating URLContext */
-        if ((err = ffurl_open(&uc, node_uri, flags,
-                              &h->interrupt_callback, NULL)) < 0)
+        err = ffurl_open_whitelist(&uc, node_uri, flags,
+                                   &h->interrupt_callback, NULL, h->protocol_whitelist);
+        if (err < 0)
             break;
 
         /* creating size */
@@ -192,4 +193,5 @@ URLProtocol ff_concat_protocol = {
     .url_seek       = concat_seek,
     .url_close      = concat_close,
     .priv_data_size = sizeof(struct concat_data),
+    .default_whitelist = "concat,file,subfile",
 };

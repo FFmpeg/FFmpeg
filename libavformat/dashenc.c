@@ -448,7 +448,8 @@ static int write_manifest(AVFormatContext *s, int final)
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
 
     snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", s->filename);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    ret = ffio_open_whitelist(&out, temp_filename, AVIO_FLAG_WRITE,
+                              &s->interrupt_callback, NULL, s->protocol_whitelist);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -648,7 +649,7 @@ static int dash_write_header(AVFormatContext *s)
             dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), c->init_seg_name, i, 0, os->bit_rate, 0);
         }
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
-        ret = ffurl_open(&os->out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+        ret = ffurl_open_whitelist(&os->out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist);
         if (ret < 0)
             goto fail;
         os->init_start_pos = 0;
@@ -755,7 +756,7 @@ static void find_index_range(AVFormatContext *s, const char *full_path,
     URLContext *fd;
     int ret;
 
-    ret = ffurl_open(&fd, full_path, AVIO_FLAG_READ, &s->interrupt_callback, NULL);
+    ret = ffurl_open_whitelist(&fd, full_path, AVIO_FLAG_READ, &s->interrupt_callback, NULL, s->protocol_whitelist);
     if (ret < 0)
         return;
     if (ffurl_seek(fd, pos, SEEK_SET) != pos) {
@@ -838,7 +839,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_pts);
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, filename);
             snprintf(temp_path, sizeof(temp_path), "%s.tmp", full_path);
-            ret = ffurl_open(&os->out, temp_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+            ret = ffurl_open_whitelist(&os->out, temp_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist);
             if (ret < 0)
                 break;
             write_styp(os->ctx->pb);

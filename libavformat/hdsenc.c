@@ -26,6 +26,7 @@
 #endif
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "os_support.h"
 
@@ -169,8 +170,8 @@ static int write_manifest(AVFormatContext *s, int final)
 
     snprintf(filename, sizeof(filename), "%s/index.f4m", s->filename);
     snprintf(temp_filename, sizeof(temp_filename), "%s/index.f4m.tmp", s->filename);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = ffio_open_whitelist(&out, temp_filename, AVIO_FLAG_WRITE,
+                     &s->interrupt_callback, NULL, s->protocol_whitelist);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -238,8 +239,8 @@ static int write_abst(AVFormatContext *s, OutputStream *os, int final)
              "%s/stream%d.abst", s->filename, index);
     snprintf(temp_filename, sizeof(temp_filename),
              "%s/stream%d.abst.tmp", s->filename, index);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = ffio_open_whitelist(&out, temp_filename, AVIO_FLAG_WRITE,
+                     &s->interrupt_callback, NULL, s->protocol_whitelist);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -289,8 +290,8 @@ static int write_abst(AVFormatContext *s, OutputStream *os, int final)
 static int init_file(AVFormatContext *s, OutputStream *os, int64_t start_ts)
 {
     int ret, i;
-    ret = avio_open2(&os->out, os->temp_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = ffio_open_whitelist(&os->out, os->temp_filename, AVIO_FLAG_WRITE,
+                     &s->interrupt_callback, NULL, s->protocol_whitelist);
     if (ret < 0)
         return ret;
     avio_wb32(os->out, 0);

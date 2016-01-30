@@ -80,7 +80,8 @@ static int srtp_open(URLContext *h, const char *uri, int flags)
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
                  path, sizeof(path), uri);
     ff_url_join(buf, sizeof(buf), "rtp", NULL, hostname, rtp_port, "%s", path);
-    if ((ret = ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL)) < 0)
+    if ((ret = ffurl_open_whitelist(&s->rtp_hd, buf, flags, &h->interrupt_callback,
+                                    NULL, h->protocol_whitelist)) < 0)
         goto fail;
 
     h->max_packet_size = FFMIN(s->rtp_hd->max_packet_size,

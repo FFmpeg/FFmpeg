@@ -80,8 +80,9 @@ static int import_pem(URLContext *h, char *path, CFArrayRef *array)
         goto end;
     }
 
-    if ((ret = avio_open2(&s, path, AVIO_FLAG_READ,
-                          &h->interrupt_callback, NULL)) < 0)
+    if ((ret = ffio_open_whitelist(&s, path, AVIO_FLAG_READ,
+                                   &h->interrupt_callback, NULL,
+                                   h->protocol_whitelist)) < 0)
         goto end;
 
     if ((ret = avio_size(s)) < 0)

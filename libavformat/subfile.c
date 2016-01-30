@@ -77,7 +77,8 @@ static int subfile_open(URLContext *h, const char *filename, int flags,
         return AVERROR(EINVAL);
     }
     av_strstart(filename, "subfile:", &filename);
-    ret = ffurl_open(&c->h, filename, flags, &h->interrupt_callback, options);
+    ret = ffurl_open_whitelist(&c->h, filename, flags, &h->interrupt_callback,
+                               options, h->protocol_whitelist);
     if (ret < 0)
         return ret;
     c->pos = c->start;
@@ -144,4 +145,5 @@ URLProtocol ff_subfile_protocol = {
     .url_close           = subfile_close,
     .priv_data_size      = sizeof(SubfileContext),
     .priv_data_class     = &subfile_class,
+    .default_whitelist   = "file",
 };
