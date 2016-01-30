@@ -175,6 +175,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
     enum nodat {
         NO_ID3,
+        ID3_ALMOST_GREATER_PROBE,
         ID3_GREATER_PROBE,
         ID3_GREATER_MAX_PROBE,
     } nodat = NO_ID3;
@@ -185,6 +186,8 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
         if (lpd.buf_size > id3len + 16) {
+            if (lpd.buf_size < 2LL*id3len + 16)
+                nodat = ID3_ALMOST_GREATER_PROBE;
             lpd.buf      += id3len;
             lpd.buf_size -= id3len;
         } else if (id3len >= PROBE_BUF_MAX) {
@@ -203,9 +206,18 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
             if (score)
                 av_log(NULL, AV_LOG_TRACE, "Probing %s score:%d size:%d\n", fmt1->name, score, lpd.buf_size);
             if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
-                if      (nodat == NO_ID3)            score = FFMAX(score, 1);
-                else if (nodat == ID3_GREATER_PROBE) score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
-                else                                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+                switch (nodat) {
+                case NO_ID3:
+                    score = FFMAX(score, 1);
+                    break;
+                case ID3_GREATER_PROBE:
+                case ID3_ALMOST_GREATER_PROBE:
+                    score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
+                    break;
+                case ID3_GREATER_MAX_PROBE:
+                    score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+                    break;
+                }
             }
         } else if (fmt1->extensions) {
             if (av_match_ext(lpd.filename, fmt1->extensions))
