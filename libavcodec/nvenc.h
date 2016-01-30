@@ -27,17 +27,12 @@
 
 #include "avcodec.h"
 
-typedef struct NVENCInputSurface {
-    NV_ENC_INPUT_PTR in;
+typedef struct NVENCFrame {
+    NV_ENC_INPUT_PTR  in;
+    NV_ENC_OUTPUT_PTR out;
     NV_ENC_BUFFER_FORMAT format;
     int locked;
-} NVENCInputSurface;
-
-typedef struct NVENCOutputSurface {
-    NV_ENC_OUTPUT_PTR out;
-    NVENCInputSurface *in;
-    int busy;
-} NVENCOutputSurface;
+} NVENCFrame;
 
 typedef CUresult(CUDAAPI *PCUINIT)(unsigned int Flags);
 typedef CUresult(CUDAAPI *PCUDEVICEGETCOUNT)(int *count);
@@ -107,8 +102,7 @@ typedef struct NVENCContext {
     CUcontext cu_context;
 
     int nb_surfaces;
-    NVENCInputSurface *in;
-    NVENCOutputSurface *out;
+    NVENCFrame *frames;
     AVFifoBuffer *timestamps;
     AVFifoBuffer *pending, *ready;
 

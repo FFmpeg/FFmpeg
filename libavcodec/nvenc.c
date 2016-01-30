@@ -750,8 +750,8 @@ static int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     if (ret != NV_ENC_SUCCESS)
         return nvenc_print_error(avctx, ret, "CreateInputBuffer failed");
 
-    ctx->in[idx].in        = in_buffer.inputBuffer;
-    ctx->in[idx].format    = in_buffer.bufferFmt;
+    ctx->frames[idx].in     = in_buffer.inputBuffer;
+    ctx->frames[idx].format = in_buffer.bufferFmt;
 
     /* 1MB is large enough to hold most output frames.
      * NVENC increases this automaticaly if it's not enough. */
@@ -763,8 +763,7 @@ static int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     if (ret != NV_ENC_SUCCESS)
         return nvenc_print_error(avctx, ret, "CreateBitstreamBuffer failed");
 
-    ctx->out[idx].out  = out_buffer.bitstreamBuffer;
-    ctx->out[idx].busy = 0;
+    ctx->frames[idx].out  = out_buffer.bitstreamBuffer;
 
     return 0;
 }
@@ -777,21 +776,17 @@ static int nvenc_setup_surfaces(AVCodecContext *avctx)
     ctx->nb_surfaces = FFMAX(4 + avctx->max_b_frames,
                              ctx->nb_surfaces);
 
-    ctx->in = av_mallocz(ctx->nb_surfaces * sizeof(*ctx->in));
-    if (!ctx->in)
-        return AVERROR(ENOMEM);
-
-    ctx->out = av_mallocz(ctx->nb_surfaces * sizeof(*ctx->out));
-    if (!ctx->out)
+    ctx->frames = av_mallocz_array(ctx->nb_surfaces, sizeof(*ctx->frames));
+    if (!ctx->frames)
         return AVERROR(ENOMEM);
 
     ctx->timestamps = av_fifo_alloc(ctx->nb_surfaces * sizeof(int64_t));
     if (!ctx->timestamps)
         return AVERROR(ENOMEM);
-    ctx->pending = av_fifo_alloc(ctx->nb_surfaces * sizeof(ctx->out));
+    ctx->pending = av_fifo_alloc(ctx->nb_surfaces * sizeof(*ctx->frames));
     if (!ctx->pending)
         return AVERROR(ENOMEM);
-    ctx->ready = av_fifo_alloc(ctx->nb_surfaces * sizeof(ctx->out));
+    ctx->ready = av_fifo_alloc(ctx->nb_surfaces * sizeof(*ctx->frames));
     if (!ctx->ready)
         return AVERROR(ENOMEM);
 
@@ -846,15 +841,14 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     av_fifo_free(ctx->pending);
     av_fifo_free(ctx->ready);
 
-    if (ctx->in) {
+    if (ctx->frames) {
         for (i = 0; i < ctx->nb_surfaces; ++i) {
-            nv->nvEncDestroyInputBuffer(ctx->nvenc_ctx, ctx->in[i].in);
-            nv->nvEncDestroyBitstreamBuffer(ctx->nvenc_ctx, ctx->out[i].out);
+            nv->nvEncDestroyInputBuffer(ctx->nvenc_ctx,     ctx->frames[i].in);
+            nv->nvEncDestroyBitstreamBuffer(ctx->nvenc_ctx, ctx->frames[i].out);
         }
     }
 
-    av_freep(&ctx->in);
-    av_freep(&ctx->out);
+    av_freep(&ctx->frames);
 
     if (ctx->nvenc_ctx)
         nv->nvEncDestroyEncoder(ctx->nvenc_ctx);
@@ -895,27 +889,14 @@ av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static NVENCInputSurface *get_input_surface(NVENCContext *ctx)
+static NVENCFrame *get_free_frame(NVENCContext *ctx)
 {
     int i;
 
     for (i = 0; i < ctx->nb_surfaces; i++) {
-        if (!ctx->in[i].locked) {
-            ctx->in[i].locked = 1;
-            return &ctx->in[i];
-        }
-    }
-
-    return NULL;
-}
-
-static NVENCOutputSurface *get_output_surface(NVENCContext *ctx)
-{
-    int i;
-
-    for (i = 0; i < ctx->nb_surfaces; i++) {
-        if (!ctx->out[i].busy) {
-            return &ctx->out[i];
+        if (!ctx->frames[i].locked) {
+            ctx->frames[i].locked = 1;
+            return &ctx->frames[i];
         }
     }
 
@@ -976,20 +957,16 @@ static int nvenc_copy_frame(NV_ENC_LOCK_INPUT_BUFFER *in, const AVFrame *frame)
     return 0;
 }
 
-static int nvenc_enqueue_frame(AVCodecContext *avctx, const AVFrame *frame,
-                               NVENCInputSurface **in_surf)
+static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
+                              NVENCFrame *nvenc_frame)
 {
     NVENCContext *ctx               = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
     NV_ENC_LOCK_INPUT_BUFFER params = { 0 };
-    NVENCInputSurface *in           = get_input_surface(ctx);
     int ret;
 
-    if (!in)
-        return AVERROR_BUG;
-
     params.version     = NV_ENC_LOCK_INPUT_BUFFER_VER;
-    params.inputBuffer = in->in;
+    params.inputBuffer = nvenc_frame->in;
 
 
     ret = nv->nvEncLockInputBuffer(ctx->nvenc_ctx, &params);
@@ -1000,16 +977,14 @@ static int nvenc_enqueue_frame(AVCodecContext *avctx, const AVFrame *frame,
     if (ret < 0)
         goto fail;
 
-    ret = nv->nvEncUnlockInputBuffer(ctx->nvenc_ctx, in->in);
+    ret = nv->nvEncUnlockInputBuffer(ctx->nvenc_ctx, nvenc_frame->in);
     if (ret != NV_ENC_SUCCESS)
         return nvenc_print_error(avctx, ret, "Cannot unlock the buffer");
-
-    *in_surf = in;
 
     return 0;
 
 fail:
-    nv->nvEncUnlockInputBuffer(ctx->nvenc_ctx, in->in);
+    nv->nvEncUnlockInputBuffer(ctx->nvenc_ctx, nvenc_frame->in);
 
     return ret;
 }
@@ -1043,19 +1018,6 @@ static inline int nvenc_enqueue_timestamp(AVFifoBuffer *f, int64_t pts)
 static inline int nvenc_dequeue_timestamp(AVFifoBuffer *f, int64_t *pts)
 {
     return av_fifo_generic_read(f, pts, sizeof(*pts), NULL);
-}
-
-static inline int nvenc_enqueue_surface(AVFifoBuffer *f,
-                                        NVENCOutputSurface *surf)
-{
-    surf->busy = 1;
-    return av_fifo_generic_write(f, &surf, sizeof(surf), NULL);
-}
-
-static inline int nvenc_dequeue_surface(AVFifoBuffer *f,
-                                        NVENCOutputSurface **surf)
-{
-    return av_fifo_generic_read(f, surf, sizeof(*surf), NULL);
 }
 
 static int nvenc_set_timestamp(AVCodecContext *avctx,
@@ -1095,15 +1057,15 @@ static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
     NVENCContext *ctx               = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
     NV_ENC_LOCK_BITSTREAM params    = { 0 };
-    NVENCOutputSurface *out         = NULL;
+    NVENCFrame *frame;
     int ret;
 
-    ret = nvenc_dequeue_surface(ctx->ready, &out);
+    ret = av_fifo_generic_read(ctx->ready, &frame, sizeof(frame), NULL);
     if (ret)
         return ret;
 
     params.version         = NV_ENC_LOCK_BITSTREAM_VER;
-    params.outputBitstream = out->out;
+    params.outputBitstream = frame->out;
 
     ret = nv->nvEncLockBitstream(ctx->nvenc_ctx, &params);
     if (ret < 0)
@@ -1115,11 +1077,11 @@ static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
 
     memcpy(pkt->data, params.bitstreamBufferPtr, pkt->size);
 
-    ret = nv->nvEncUnlockBitstream(ctx->nvenc_ctx, out->out);
+    ret = nv->nvEncUnlockBitstream(ctx->nvenc_ctx, frame->out);
     if (ret < 0)
         return nvenc_print_error(avctx, ret, "Cannot unlock the bitstream");
 
-    out->busy = out->in->locked = 0;
+    frame->locked = 0;
 
     ret = nvenc_set_timestamp(avctx, &params, pkt);
     if (ret < 0)
@@ -1168,27 +1130,27 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     NVENCContext *ctx               = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
     NV_ENC_PIC_PARAMS params        = { 0 };
-    NVENCInputSurface *in           = NULL;
-    NVENCOutputSurface *out         = NULL;
+    NVENCFrame         *nvenc_frame = NULL;
     int enc_ret, ret;
 
     params.version = NV_ENC_PIC_PARAMS_VER;
 
     if (frame) {
-        ret = nvenc_enqueue_frame(avctx, frame, &in);
+        nvenc_frame = get_free_frame(ctx);
+        if (!nvenc_frame) {
+            av_log(avctx, AV_LOG_ERROR, "No free surfaces\n");
+            return AVERROR_BUG;
+        }
+
+        ret = nvenc_upload_frame(avctx, frame, nvenc_frame);
         if (ret < 0)
             return ret;
-        out = get_output_surface(ctx);
-        if (!out)
-            return AVERROR_BUG;
 
-        out->in = in;
-
-        params.inputBuffer     = in->in;
-        params.bufferFmt       = in->format;
+        params.inputBuffer     = nvenc_frame->in;
+        params.bufferFmt       = nvenc_frame->format;
         params.inputWidth      = frame->width;
         params.inputHeight     = frame->height;
-        params.outputBitstream = out->out;
+        params.outputBitstream = nvenc_frame->out;
         params.inputTimeStamp  = frame->pts;
 
         if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
@@ -1219,8 +1181,8 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         enc_ret != NV_ENC_ERR_NEED_MORE_INPUT)
         return nvenc_print_error(avctx, enc_ret, "Error encoding the frame");
 
-    if (out) {
-        ret = nvenc_enqueue_surface(ctx->pending, out);
+    if (nvenc_frame) {
+        ret = av_fifo_generic_write(ctx->pending, &nvenc_frame, sizeof(nvenc_frame), NULL);
         if (ret < 0)
             return ret;
     }
@@ -1228,8 +1190,8 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* all the pending buffers are now ready for output */
     if (enc_ret == NV_ENC_SUCCESS) {
         while (av_fifo_size(ctx->pending) > 0) {
-            av_fifo_generic_read(ctx->pending, &out, sizeof(out), NULL);
-            av_fifo_generic_write(ctx->ready, &out, sizeof(out), NULL);
+            av_fifo_generic_read(ctx->pending, &nvenc_frame, sizeof(nvenc_frame), NULL);
+            av_fifo_generic_write(ctx->ready,  &nvenc_frame, sizeof(nvenc_frame), NULL);
         }
     }
 
