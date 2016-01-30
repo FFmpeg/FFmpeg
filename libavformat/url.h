@@ -47,6 +47,7 @@ typedef struct URLContext {
     int is_connected;
     AVIOInterruptCB interrupt_callback;
     int64_t rw_timeout;         /**< maximum time to wait for (network) read/write operation completion, in mcs */
+    const char *protocol_whitelist;
 } URLContext;
 
 typedef struct URLProtocol {
@@ -94,6 +95,7 @@ typedef struct URLProtocol {
     int (*url_close_dir)(URLContext *h);
     int (*url_delete)(URLContext *h);
     int (*url_move)(URLContext *h_src, URLContext *h_dst);
+    const char *default_whitelist;
 } URLProtocol;
 
 /**
@@ -138,6 +140,10 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
+int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
+               const AVIOInterruptCB *int_cb, AVDictionary **options,
+               const char *whitelist);
+
 int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options);
 

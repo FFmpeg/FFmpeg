@@ -1827,6 +1827,13 @@ typedef struct AVFormatContext {
      * Demuxing: Set by user.
      */
     int (*open_cb)(struct AVFormatContext *s, AVIOContext **p, const char *url, int flags, const AVIOInterruptCB *int_cb, AVDictionary **options);
+
+    /**
+     * ',' separated list of allowed protocols.
+     * - encoding: unused
+     * - decoding: set by user through AVOptions (NO direct access)
+     */
+    char *protocol_whitelist;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);
