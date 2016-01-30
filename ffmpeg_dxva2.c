@@ -637,6 +637,12 @@ int dxva2_init(AVCodecContext *s)
         return AVERROR(EINVAL);
     }
 
+    if (s->codec_id == AV_CODEC_ID_HEVC &&
+        s->profile != FF_PROFILE_HEVC_MAIN && s->profile != FF_PROFILE_HEVC_MAIN_10) {
+        av_log(NULL, loglevel, "Unsupported HEVC profile for DXVA2 HWAccel: %d\n", s->profile);
+        return AVERROR(EINVAL);
+    }
+
     if (ctx->decoder)
         dxva2_destroy_decoder(s);
 
