@@ -2423,7 +2423,13 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size * 8);
 
-    tc = avctx->timecode_frame_start = get_bits(&s->gb, 25);
+    tc = s-> timecode_frame_start = get_bits(&s->gb, 25);
+
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->timecode_frame_start = tc;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     s->closed_gop = get_bits1(&s->gb);
     /* broken_link indicate that after editing the
@@ -2831,8 +2837,20 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     ret = decode_chunks(avctx, picture, got_output, buf, buf_size);
-    if (ret<0 || *got_output)
+    if (ret<0 || *got_output) {
         s2->current_picture_ptr = NULL;
+
+        if (s2->timecode_frame_start != -1 && *got_output) {
+            AVFrameSideData *tcside = av_frame_new_side_data(picture,
+                                                             AV_FRAME_DATA_GOP_TIMECODE,
+                                                             sizeof(int64_t));
+            if (!tcside)
+                return AVERROR(ENOMEM);
+            memcpy(tcside->data, &s2->timecode_frame_start, sizeof(int64_t));
+
+            s2->timecode_frame_start = -1;
+        }
+    }
 
     return ret;
 }
