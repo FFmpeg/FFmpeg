@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-01-31 - xxxxxxx - lavu 55.17.100
+  Add AV_FRAME_DATA_GOP_TIMECODE for exporting MPEG1/2 GOP timecodes.
+
 2016-01-01 - xxxxxxx - lavc 57.21.100 / 57.12.0 - avcodec.h
   Add AVCodecDescriptor.profiles and avcodec_profile_name().
 
