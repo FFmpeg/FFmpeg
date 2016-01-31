@@ -1917,6 +1917,10 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
                 writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
                 print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+            } else if (sd->type == AV_FRAME_DATA_GOP_TIMECODE && sd->size >= 8) {
+                char tcbuf[AV_TIMECODE_STR_SIZE];
+                av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
+                print_str("timecode", tcbuf);
             }
             writer_print_section_footer(w);
         }
@@ -2227,6 +2231,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             else
                 print_str_opt("chroma_location", av_chroma_location_name(dec_ctx->chroma_sample_location));
 
+#if FF_API_PRIVATE_OPT
             if (dec_ctx->timecode_frame_start >= 0) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);
@@ -2234,6 +2239,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             } else {
                 print_str_opt("timecode", "N/A");
             }
+#endif
             print_int("refs", dec_ctx->refs);
             break;
 
