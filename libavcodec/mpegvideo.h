@@ -481,6 +481,7 @@ typedef struct MpegEncContext {
 
     /* RTP specific */
     int rtp_mode;
+    int rtp_payload_size;
 
     char *tc_opt_str;        ///< timecode option string
     AVTimecode tc;           ///< timecode context
@@ -646,6 +647,7 @@ FF_MPV_OPT_CMP_FUNC, \
 {"sc_threshold", "Scene change threshold",                          FF_MPV_OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"noise_reduction", "Noise reduction",                              FF_MPV_OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"mpeg_quant", "Use MPEG quantizers instead of H.263",              FF_MPV_OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS }, \
+{"ps", "RTP payload size in bytes",                             FF_MPV_OFFSET(rtp_payload_size), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 
 extern const AVOption ff_mpv_generic_options[];
 

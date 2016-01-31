@@ -127,8 +127,8 @@ static const AVOption avcodec_options[] = {
 #endif
 #if FF_API_PRIVATE_OPT
 {"b_strategy", "strategy to choose between I/P/B-frames", OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, V|E},
-#endif
 {"ps", "RTP payload size in bytes", OFFSET(rtp_payload_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 #if FF_API_STAT_BITS
 {"mv_bits", NULL, OFFSET(mv_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
 {"header_bits", NULL, OFFSET(header_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
