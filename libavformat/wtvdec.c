@@ -1027,7 +1027,6 @@ static int read_header(AVFormatContext *s)
             if (wtv->nb_index_entries) {
                 pb = wtvfile_open(s, root, root_size, ff_timeline_table_0_entries_Events_le16);
                 if (pb) {
-                    int i;
                     AVIndexEntry *e = wtv->index_entries;
                     AVIndexEntry *e_end = wtv->index_entries + wtv->nb_index_entries - 1;
                     uint64_t last_position = 0;
