@@ -382,7 +382,6 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     double min_pts = DBL_MAX;
     int stream_idx, min_pts_sink_idx = 0;
     AVFrame *frame = lavfi->decoded_frame;
-    AVPicture pict;
     AVDictionary *frame_metadata;
     int ret, i;
     int size = 0;
@@ -435,11 +434,8 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         if ((ret = av_new_packet(pkt, size)) < 0)
             return ret;
 
-        memcpy(pict.data,     frame->data,     4*sizeof(frame->data[0]));
-        memcpy(pict.linesize, frame->linesize, 4*sizeof(frame->linesize[0]));
-
-        avpicture_layout(&pict, frame->format, frame->width, frame->height,
-                         pkt->data, size);
+        av_image_copy_to_buffer(pkt->data, size, (const uint8_t **)frame->data, frame->linesize,
+                                frame->format, frame->width, frame->height, 1);
     } else if (av_frame_get_channels(frame) /* FIXME test audio */) {
         size = frame->nb_samples * av_get_bytes_per_sample(frame->format) *
                                    av_frame_get_channels(frame);
