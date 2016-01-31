@@ -1350,8 +1350,8 @@ static const AVOption options[] = {
 { "left_side",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_LEFT_SIDE   }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "right_side", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_RIGHT_SIDE  }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "mid_side",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_MID_SIDE    }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
-{ "min_prediction_order", NULL, offsetof(FlacEncodeContext, options.min_prediction_order), AV_OPT_TYPE_INT, { .i64 = 0 }, MIN_LPC_ORDER, MAX_LPC_ORDER, FLAGS },
-{ "max_prediction_order", NULL, offsetof(FlacEncodeContext, options.max_prediction_order), AV_OPT_TYPE_INT, { .i64 = 0 }, MIN_LPC_ORDER, MAX_LPC_ORDER, FLAGS },
+{ "min_prediction_order", NULL, offsetof(FlacEncodeContext, options.min_prediction_order), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, MAX_LPC_ORDER, FLAGS },
+{ "max_prediction_order", NULL, offsetof(FlacEncodeContext, options.max_prediction_order), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, MAX_LPC_ORDER, FLAGS },
 
 { NULL },
 };
