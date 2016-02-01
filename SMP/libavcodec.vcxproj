@@ -113,7 +113,6 @@
     <YASM Include="..\libavcodec\x86\g722dsp.asm" />
     <YASM Include="..\libavcodec\x86\alacdsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
-    <YASM Include="..\libavcodec\x86\dcadsp.asm" />
     <YASM Include="..\libavcodec\x86\synth_filter.asm" />
     <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm" />
     <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />
@@ -421,6 +420,8 @@
     <ClCompile Include="..\libavcodec\ccaption_dec.c" />
     <ClCompile Include="..\libavcodec\cdgraphics.c" />
     <ClCompile Include="..\libavcodec\cdxl.c" />
+    <ClCompile Include="..\libavcodec\cfhd.c" />
+    <ClCompile Include="..\libavcodec\cfhddata.c" />
     <ClCompile Include="..\libavcodec\cinepak.c" />
     <ClCompile Include="..\libavcodec\cinepakenc.c" />
     <ClCompile Include="..\libavcodec\cljrdec.c" />
@@ -434,12 +435,12 @@
     <ClCompile Include="..\libavcodec\cscd.c" />
     <ClCompile Include="..\libavcodec\dcadec.c" />
     <ClCompile Include="..\libavcodec\dca.c" />
-    <ClCompile Include="..\libavcodec\dcadsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dcadsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dcadata.c" />
+    <ClCompile Include="..\libavcodec\dca_core.c" />
     <ClCompile Include="..\libavcodec\dca_exss.c" />
     <ClCompile Include="..\libavcodec\dca_xll.c" />
+    <ClCompile Include="..\libavcodec\dcadsp.c" />
+    <ClCompile Include="..\libavcodec\dcadct.c" />
     <ClCompile Include="..\libavcodec\synth_filter.c">
       <ObjectFileName>$(IntDir)\libavcodec_synth_filter.obj</ObjectFileName>
     </ClCompile>
@@ -1010,7 +1011,6 @@
     <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\dcadsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\synth_filter_init.c" />
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c" />
     <ClCompile Include="..\libavcodec\x86\hevcdsp_init.c" />
