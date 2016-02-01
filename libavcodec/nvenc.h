@@ -29,8 +29,14 @@
 
 #include "avcodec.h"
 
+#define MAX_REGISTERED_FRAMES 64
+
 typedef struct NVENCFrame {
     NV_ENC_INPUT_PTR  in;
+    AVFrame          *in_ref;
+    NV_ENC_MAP_INPUT_RESOURCE in_map;
+    int reg_idx;
+
     NV_ENC_OUTPUT_PTR out;
     NV_ENC_BUFFER_FORMAT format;
     int locked;
@@ -104,11 +110,23 @@ typedef struct NVENCContext {
     NV_ENC_CONFIG config;
 
     CUcontext cu_context;
+    CUcontext cu_context_internal;
 
     int nb_surfaces;
     NVENCFrame *frames;
     AVFifoBuffer *timestamps;
     AVFifoBuffer *pending, *ready;
+
+    struct {
+        CUdeviceptr ptr;
+        NV_ENC_REGISTERED_PTR regptr;
+        int mapped;
+    } registered_frames[MAX_REGISTERED_FRAMES];
+    int nb_registered_frames;
+
+    /* the actual data pixel format, different from
+     * AVCodecContext.pix_fmt when using hwaccel frames on input */
+    enum AVPixelFormat data_pix_fmt;
 
     /* timestamps of the first two frames, for computing the first dts
      * when b-frames are present */
