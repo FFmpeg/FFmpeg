@@ -32,6 +32,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/frame.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
@@ -1059,6 +1060,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    avctx->time_base.den);
             goto free_and_end;
         }
+
+        if (avctx->hw_frames_ctx) {
+            AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+            if (frames_ctx->format != avctx->pix_fmt) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Mismatching AVCodecContext.pix_fmt and AVHWFramesContext.format\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+        }
     }
 
     if (avctx->codec->init && !(avctx->active_thread_type & FF_THREAD_FRAME)) {
@@ -1638,6 +1649,8 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_freep(&avctx->coded_side_data[i].data);
     av_freep(&avctx->coded_side_data);
     avctx->nb_coded_side_data = 0;
+
+    av_buffer_unref(&avctx->hw_frames_ctx);
 
     if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
         av_opt_free(avctx->priv_data);

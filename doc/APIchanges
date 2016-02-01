@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavc 57.13.0 - avcodec.h
+  Add AVCodecContext.hw_frames_ctx.
+
 2016-xx-xx - lavfi 6.2.0 - avfilter.h
   xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
   xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
