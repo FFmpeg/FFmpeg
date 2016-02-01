@@ -1,6 +1,81 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.4.13:
+- mov: Add an option to toggle dref opening
+- MAINTAINERS: remove unmaintained releases
+- avcodec/jpeg2000dec: More completely check cdef
+- avutil/opt: check for and handle errors in av_opt_set_dict2()
+- avcodec/flacenc: fix calculation of bits required in case of custom sample rate
+- avformat: Document urls a bit
+- avformat/concat: Check protocol prefix
+- doc/demuxers: Document enable_drefs and use_absolute_path
+- avcodec/mjpegdec: Check for end for both bytes in unescaping
+- avformat/avformat: Replace some references to filenames by urls
+- avcodec/wmaenc: Check ff_wma_init() for failure
+- avcodec/mpeg12enc: Move high resolution thread check to before initializing threads
+- avformat/avio: Limit url option parsing to the documented cases
+- avcodec/ass_split: Fix null pointer dereference in ff_ass_style_get()
+- avcodec/gif: Fix lzw buffer size
+- avcodec/put_bits: Assert buf_ptr in flush_put_bits()
+- avcodec/tiff: Check subsample & rps values more completely
+- swscale/swscale: Add some sanity checks for srcSlice* parameters
+- swscale/x86/rgb2rgb_template: Fix planar2x() for short width
+- swscale/swscale_unscaled: Fix odd height inputs for bayer_to_yv12_wrapper()
+- swscale/swscale_unscaled: Fix odd height inputs for bayer_to_rgb24_wrapper()
+- avcodec/wavpackenc: print channel count in av_log call
+- configure: bump copyright year to 2016
+- avformat/hls: Even stricter URL checks
+- avformat/hls: More strict url checks
+- swscale/yuv2rgb: Increase YUV2RGB table headroom
+- swscale/yuv2rgb: Factor YUVRGB_TABLE_LUMA_HEADROOM out
+- avformat/hls: forbid all protocols except http(s) & file
+- avformat/aviobuf: Fix end check in put_str16()
+- avformat/asfenc: Check pts
+- avcodec/mpeg4video: Check time_incr
+- avcodec/wavpackenc: Check the number of channels
+- avcodec/wavpackenc: Headers are per channel
+- avcodec/dvdec: Fix "left shift of negative value -254"
+- avcodec/mjpegdec: Fix negative shift
+- avcodec/mss2: Check for repeat overflow
+- avformat: Add integer fps from 31 to 60 to get_std_framerate()
+- avcodec/mpegvideo_enc: Clip bits_per_raw_sample within valid range
+- avcodec/motion_est: Fix mv_penalty table size
+- avcodec/h264_slice: Fix integer overflow in implicit weight computation
+- swscale/utils: Use normal bilinear scaler if fast cannot be used due to tiny dimensions
+- avcodec/put_bits: Always check buffer end before writing
+- swscale/utils: Fix intermediate format for cascaded alpha downscaling
+- avcodec/h264_refs: Fix long_idx check
+- avfilter/vf_mpdecimate: Add missing emms_c()
+- avformat/mxfenc: Do not crash if there is no packet in the first stream
+- swscale/swscale-test: Fix slice height in random reference data creation.
+- dca: fix misaligned access in avpriv_dca_convert_bitstream
+- brstm: fix missing closing brace
+- brstm: also allocate b->table in read_packet
+- brstm: make sure an ADPC chunk was read for adpcm_thp
+- vorbisdec: reject rangebits 0 with non-0 partitions
+- vorbisdec: reject channel mapping with less than two channels
+- ffmdec: reset packet_end in case of failure
+- mjpegdec: extend check for incompatible values of s->rgb and s->ls
+- avformat/ipmovie: put video decoding_map_size into packet and use it in decoder
+- avcodec/samidec: make sure to properly restore parsing context after a tag
+- x86/float_dsp: zero extend offset from ff_scalarproduct_float_sse
+- avcodec/mpeg4videodec: also for empty partitioned slices
+- nuv: sanitize negative fps rate
+- rawdec: only exempt BIT0 with need_copy from buffer sanity check
+- mlvdec: check that index_entries exist
+- nutdec: reject negative value_len in read_sm_data
+- xwddec: prevent overflow of lsize * avctx->height
+- nutdec: only copy the header if it exists
+- exr: fix out of bounds read in get_code
+- on2avc: limit number of bits to 30 in get_egolomb
+- sonic: make sure num_taps * channels is not larger than frame_size
+- opus_silk: fix typo causing overflow in silk_stabilize_lsf
+- ffm: reject invalid codec_id and codec_type
+- aaccoder: prevent crash of anmr coder
+- swscale/x86/rgb2rgb_template: Fallback to mmx in interleaveBytes() if the alignment is insufficient for SSE*
+- swscale/x86/rgb2rgb_template: Do not crash on misaligend stride
+
 version 2.4.12:
 - avcodec/ffv1dec: Clear quant_table_count if its invalid
 - avcodec/ffv1dec: Print an error if the quant table count is invalid
