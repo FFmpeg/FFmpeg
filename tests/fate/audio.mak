@@ -16,28 +16,12 @@ fate-binkaudio: $(FATE_BINKAUDIO-yes)
 FATE_SAMPLES_AUDIO-$(call DEMDEC, BMV, BMV_AUDIO) += fate-bmv-audio
 fate-bmv-audio: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -vn
 
-FATE_DCA-$(CONFIG_MPEGTS_DEMUXER) += fate-dca-core
-fate-dca-core: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
-fate-dca-core: CMP = oneoff
-fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
-
-FATE_DCA-$(call DEMDEC, DTS, DCA) += fate-dca-xll
-fate-dca-xll: CMD = md5 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -f s24le
-
-FATE_SAMPLES_AUDIO-$(CONFIG_DCA_DECODER) += $(FATE_DCA-yes)
-fate-dca: $(FATE_DCA-yes)
-
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSICIN, DSICINAUDIO) += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(TARGET_SAMPLES)/delphine-cin/LOGO-partial.CIN -vn
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSS, DSS_SP) += fate-dss-lp fate-dss-sp
 fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30
 fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
-
-FATE_SAMPLES_AUDIO-$(call DEMDEC, DTS, DCA) += fate-dts_es
-fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
-fate-dts_es: CMP = oneoff
-fate-dts_es: REF = $(SAMPLES)/dts/dts_es_2.pcm
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, IMC) += fate-imc
 fate-imc: CMD = pcm -i $(TARGET_SAMPLES)/imc/imc.avi
