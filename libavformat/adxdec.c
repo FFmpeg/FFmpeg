@@ -34,6 +34,19 @@ typedef struct ADXDemuxerContext {
     int header_size;
 } ADXDemuxerContext;
 
+static int adx_probe(AVProbeData *p)
+{
+    int offset;
+    if (AV_RB16(p->buf) != 0x8000)
+        return 0;
+    offset = AV_RB16(&p->buf[2]);
+    if (   offset < 8
+        || offset > p->buf_size - 4
+        || memcmp(p->buf + offset - 2, "(c)CRI", 6))
+        return 0;
+    return AVPROBE_SCORE_MAX * 3 / 4;
+}
+
 static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ADXDemuxerContext *c = s->priv_data;
@@ -107,6 +120,7 @@ static int adx_read_header(AVFormatContext *s)
 AVInputFormat ff_adx_demuxer = {
     .name           = "adx",
     .long_name      = NULL_IF_CONFIG_SMALL("CRI ADX"),
+    .read_probe     = adx_probe,
     .priv_data_size = sizeof(ADXDemuxerContext),
     .read_header    = adx_read_header,
     .read_packet    = adx_read_packet,
