@@ -19,6 +19,8 @@
 #ifndef AVCODEC_DVAUDIO_H
 #define AVCODEC_DVAUDIO_H
 
+#include <stdint.h>
+
 static inline int dv_get_audio_sample_count(const uint8_t *buffer, int dsf)
 {
     int samples = buffer[0] & 0x3f; /* samples in this frame - min samples */

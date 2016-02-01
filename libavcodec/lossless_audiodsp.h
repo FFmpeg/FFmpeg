@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_LLAUDDSP_H
-#define AVCODEC_LLAUDDSP_H
+#ifndef AVCODEC_LOSSLESS_AUDIODSP_H
+#define AVCODEC_LOSSLESS_AUDIODSP_H
 
 #include <stdint.h>
 
@@ -43,4 +43,4 @@ void ff_llauddsp_init_arm(LLAudDSPContext *c);
 void ff_llauddsp_init_ppc(LLAudDSPContext *c);
 void ff_llauddsp_init_x86(LLAudDSPContext *c);
 
-#endif /* AVCODEC_LLAUDDSP_H */
+#endif /* AVCODEC_LOSSLESS_AUDIODSP_H */

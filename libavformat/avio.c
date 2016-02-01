@@ -412,6 +412,7 @@ int ffurl_closep(URLContext **hh)
             av_opt_free(h->priv_data);
         av_freep(&h->priv_data);
     }
+    av_opt_free(h);
     av_freep(hh);
     return ret;
 }

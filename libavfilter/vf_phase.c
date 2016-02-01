@@ -116,14 +116,7 @@ static int config_input(AVFilterLink *inlink)
  */
 static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old, AVFrame *new)
 {
-    double bdiff, tdiff, pdiff, scale;
-    const int ns = new->linesize[0];
-    const int os = old->linesize[0];
-    const uint8_t *nptr = new->data[0];
-    const uint8_t *optr = old->data[0];
-    const int h = new->height;
-    const int w = new->width;
-    int bdif, tdif, pdif;
+    double bdiff, tdiff, pdiff;
 
     if (mode == AUTO) {
         mode = new->interlaced_frame ? new->top_field_first ?
@@ -136,6 +129,15 @@ static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old
     if (mode <= BOTTOM_FIRST) {
         bdiff = pdiff = tdiff = 65536.0;
     } else {
+        const int ns = new->linesize[0];
+        const int os = old->linesize[0];
+        const uint8_t *nptr = new->data[0];
+        const uint8_t *optr = old->data[0];
+        const int h = new->height;
+        const int w = new->width;
+        int bdif, tdif, pdif;
+        double scale;
+
         int top = 0, t;
         const uint8_t *rend, *end = nptr + (h - 2) * ns;
 

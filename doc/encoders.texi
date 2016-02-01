@@ -1075,31 +1075,6 @@ Set MPEG audio original flag when set to 1. The default value is 0
 
 @end table
 
-@anchor{libvo-aacenc}
-@section libvo-aacenc
-
-VisualOn AAC encoder.
-
-Requires the presence of the libvo-aacenc headers and library during
-configuration. You need to explicitly configure the build with
-@code{--enable-libvo-aacenc --enable-version3}.
-
-This encoder is considered to be worse than the
-@ref{aacenc,,native FFmpeg AAC encoder}, according to
-multiple sources.
-
-@subsection Options
-
-The VisualOn AAC encoder only support encoding AAC-LC and up to 2
-channels. It is also CBR-only.
-
-@table @option
-
-@item b
-Set bit rate in bits/s.
-
-@end table
-
 @section libvo-amrwbenc
 
 VisualOn Adaptive Multi-Rate Wideband encoder.

@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_COMPAT_TMS470_MATH_H
-#define FFMPEG_COMPAT_TMS470_MATH_H
+#ifndef COMPAT_TMS470_MATH_H
+#define COMPAT_TMS470_MATH_H
 
 #include_next <math.h>
 
@@ -27,4 +27,4 @@
 #define INFINITY (*(const float*)((const unsigned []){ 0x7f800000 }))
 #define NAN      (*(const float*)((const unsigned []){ 0x7fc00000 }))
 
-#endif /* FFMPEG_COMPAT_TMS470_MATH_H */
+#endif /* COMPAT_TMS470_MATH_H */

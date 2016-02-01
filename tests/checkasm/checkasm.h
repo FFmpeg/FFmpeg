@@ -20,8 +20,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef CHECKASM_H
-#define CHECKASM_H
+#ifndef TESTS_CHECKASM_CHECKASM_H
+#define TESTS_CHECKASM_CHECKASM_H
 
 #include <stdint.h>
 #include "config.h"
@@ -32,7 +32,6 @@
 
 void checkasm_check_alacdsp(void);
 void checkasm_check_bswapdsp(void);
-void checkasm_check_dcadsp(void);
 void checkasm_check_flacdsp(void);
 void checkasm_check_fmtconvert(void);
 void checkasm_check_h264pred(void);

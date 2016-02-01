@@ -1,4 +1,6 @@
 /*
+ * Copyright (C) 2016 foo86
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,15 +22,9 @@
 #define AVCODEC_DCAMATH_H
 
 #include "libavutil/common.h"
+#include "libavutil/intmath.h"
 
-
-// clip a signed integer into the (-2^23), (2^23-1) range
-static inline int dca_clip23(int a)
-{
-    return av_clip_intp2(a, 23);
-}
-
-static inline int32_t dca_norm(int64_t a, int bits)
+static inline int32_t norm__(int64_t a, int bits)
 {
     if (bits > 0)
         return (int32_t)((a + (INT64_C(1) << (bits - 1))) >> bits);
@@ -36,12 +32,24 @@ static inline int32_t dca_norm(int64_t a, int bits)
         return (int32_t)a;
 }
 
-static inline int64_t dca_round(int64_t a, int bits)
+static inline int32_t mul__(int32_t a, int32_t b, int bits)
 {
-    if (bits > 0)
-        return (a + (INT64_C(1) << (bits - 1))) & ~((INT64_C(1) << bits) - 1);
-    else
-        return a;
+    return norm__((int64_t)a * b, bits);
 }
 
-#endif /* AVCODEC_DCAMATH_H */
+static inline int32_t norm13(int64_t a) { return norm__(a, 13); }
+static inline int32_t norm16(int64_t a) { return norm__(a, 16); }
+static inline int32_t norm20(int64_t a) { return norm__(a, 20); }
+static inline int32_t norm21(int64_t a) { return norm__(a, 21); }
+static inline int32_t norm23(int64_t a) { return norm__(a, 23); }
+
+static inline int32_t mul15(int32_t a, int32_t b) { return mul__(a, b, 15); }
+static inline int32_t mul16(int32_t a, int32_t b) { return mul__(a, b, 16); }
+static inline int32_t mul17(int32_t a, int32_t b) { return mul__(a, b, 17); }
+static inline int32_t mul22(int32_t a, int32_t b) { return mul__(a, b, 22); }
+static inline int32_t mul23(int32_t a, int32_t b) { return mul__(a, b, 23); }
+static inline int32_t mul31(int32_t a, int32_t b) { return mul__(a, b, 31); }
+
+static inline int32_t clip23(int32_t a) { return av_clip_intp2(a, 23); }
+
+#endif

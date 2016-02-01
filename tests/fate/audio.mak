@@ -21,11 +21,6 @@ fate-dca-core: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
 fate-dca-core: CMP = oneoff
 fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
 
-FATE_DCA-$(CONFIG_DTS_DEMUXER) += fate-dca-xll
-fate-dca-xll: CMD = pcm -disable_xll 0 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts
-fate-dca-xll: CMP = oneoff
-fate-dca-xll: REF = $(SAMPLES)/dts/master_audio_7.1_24bit_2.pcm
-
 FATE_SAMPLES_AUDIO-$(CONFIG_DCA_DECODER) += $(FATE_DCA-yes)
 fate-dca: $(FATE_DCA-yes)
 

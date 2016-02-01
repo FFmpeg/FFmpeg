@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef AACPS_FIXED_TABLEGEN_H
-#define AACPS_FIXED_TABLEGEN_H
+#ifndef AVCODEC_AACPS_FIXED_TABLEGEN_H
+#define AVCODEC_AACPS_FIXED_TABLEGEN_H
 
 #include <math.h>
 #include <stdint.h>
@@ -400,4 +400,4 @@ static void ps_tableinit(void)
 }
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* AACPS_FIXED_TABLEGEN_H */
+#endif /* AVCODEC_AACPS_FIXED_TABLEGEN_H */

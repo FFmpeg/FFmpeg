@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_TSCC2_DATA_H
-#define AVCODEC_TSCC2_DATA_H
+#ifndef AVCODEC_TSCC2DATA_H
+#define AVCODEC_TSCC2DATA_H
 
 #include <stdint.h>
 
@@ -932,4 +932,4 @@ static const uint8_t *tscc2_ac_vlc_bits[NUM_VLC_SETS] = {
     ac_vlc_descC_bits,
 };
 
-#endif /* AVCODEC_TSCC2_DATA_H */
+#endif /* AVCODEC_TSCC2DATA_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 Mans Rullgard <mans@mansr.com>
+ * Copyright (C) 2016 foo86
  *
  * This file is part of FFmpeg.
  *
@@ -18,22 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
+#ifndef AVCODEC_DCADCT_H
+#define AVCODEC_DCADCT_H
 
-#include "libavutil/aarch64/cpu.h"
-#include "libavutil/attributes.h"
-#include "libavutil/internal.h"
-#include "libavcodec/dcadsp.h"
+#include "libavutil/common.h"
 
-void ff_dca_lfe_fir0_neon(float *out, const float *in, const float *coefs);
-void ff_dca_lfe_fir1_neon(float *out, const float *in, const float *coefs);
+typedef struct DCADCTContext {
+    void (*imdct_half[2])(int32_t *output, const int32_t *input);
+} DCADCTContext;
 
-av_cold void ff_dcadsp_init_aarch64(DCADSPContext *s)
-{
-    int cpu_flags = av_get_cpu_flags();
+av_cold void ff_dcadct_init(DCADCTContext *c);
 
-    if (have_neon(cpu_flags)) {
-        s->lfe_fir[0] = ff_dca_lfe_fir0_neon;
-        s->lfe_fir[1] = ff_dca_lfe_fir1_neon;
-    }
-}
+#endif

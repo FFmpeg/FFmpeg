@@ -23,8 +23,8 @@
  * os2threads to pthreads wrapper
  */
 
-#ifndef AVCODEC_OS2PTHREADS_H
-#define AVCODEC_OS2PTHREADS_H
+#ifndef COMPAT_OS2THREADS_H
+#define COMPAT_OS2THREADS_H
 
 #define INCL_DOS
 #include <os2.h>
@@ -190,4 +190,4 @@ static av_always_inline int pthread_once(pthread_once_t *once_control, void (*in
 
     return 0;
 }
-#endif /* AVCODEC_OS2PTHREADS_H */
+#endif /* COMPAT_OS2THREADS_H */

@@ -206,16 +206,24 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->timecode_frame_start)
+        s->timecode_frame_start = avctx->timecode_frame_start;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (s->tc_opt_str) {
         AVRational rate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
         int ret = av_timecode_init_from_string(&s->tc, rate, s->tc_opt_str, s);
         if (ret < 0)
             return ret;
         s->drop_frame_timecode = !!(s->tc.flags & AV_TIMECODE_FLAG_DROPFRAME);
-        s->avctx->timecode_frame_start = s->tc.start;
+        s->timecode_frame_start = s->tc.start;
     } else {
-        s->avctx->timecode_frame_start = 0; // default is -1
+        s->timecode_frame_start = 0; // default is -1
     }
+
     return 0;
 }
 
@@ -363,7 +371,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
          * fake MPEG frame rate in case of low frame rate */
         fps       = (framerate.num + framerate.den / 2) / framerate.den;
         time_code = s->current_picture_ptr->f->coded_picture_number +
-                    s->avctx->timecode_frame_start;
+                    s->timecode_frame_start;
 
         s->gop_picture_number = s->current_picture_ptr->f->coded_picture_number;
 
@@ -1092,14 +1100,16 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 #define OFFSET(x) offsetof(MpegEncContext, x)
 #define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 #define COMMON_OPTS                                                           \
-    { "gop_timecode",        "MPEG GOP Timecode in hh:mm:ss[:;.]ff format",   \
+    { "gop_timecode",        "MPEG GOP Timecode in hh:mm:ss[:;.]ff format. Overrides timecode_frame_start.",   \
       OFFSET(tc_opt_str), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, VE },\
     { "intra_vlc",           "Use MPEG-2 intra VLC table.",                   \
       OFFSET(intra_vlc_format),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
     { "drop_frame_timecode", "Timecode is in drop frame format.",             \
       OFFSET(drop_frame_timecode), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
     { "scan_offset",         "Reserve space for SVCD scan offset user data.", \
-      OFFSET(scan_offset),         AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+      OFFSET(scan_offset),         AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
+    { "timecode_frame_start", "GOP timecode frame start number, in non-drop-frame format", \
+      OFFSET(timecode_frame_start), AV_OPT_TYPE_INT64, {.i64 = -1 }, -1, INT64_MAX, VE}, \
 
 static const AVOption mpeg1_options[] = {
     COMMON_OPTS

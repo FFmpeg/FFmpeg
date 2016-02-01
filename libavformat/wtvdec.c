@@ -1027,22 +1027,23 @@ static int read_header(AVFormatContext *s)
             if (wtv->nb_index_entries) {
                 pb = wtvfile_open(s, root, root_size, ff_timeline_table_0_entries_Events_le16);
                 if (pb) {
-                    int i;
+                    AVIndexEntry *e = wtv->index_entries;
+                    AVIndexEntry *e_end = wtv->index_entries + wtv->nb_index_entries - 1;
+                    uint64_t last_position = 0;
                     while (1) {
                         uint64_t frame_nb = avio_rl64(pb);
                         uint64_t position = avio_rl64(pb);
+                        while (frame_nb > e->size && e <= e_end) {
+                            e->pos = last_position;
+                            e++;
+                        }
                         if (avio_feof(pb))
                             break;
-                        for (i = wtv->nb_index_entries - 1; i >= 0; i--) {
-                            AVIndexEntry *e = wtv->index_entries + i;
-                            if (frame_nb > e->size)
-                                break;
-                            if (position > e->pos)
-                                e->pos = position;
-                        }
+                        last_position = position;
                     }
+                    e_end->pos = last_position;
                     wtvfile_close(pb);
-                    st->duration = wtv->index_entries[wtv->nb_index_entries - 1].timestamp;
+                    st->duration = e_end->timestamp;
                 }
             }
         }

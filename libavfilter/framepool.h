@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_FRAME_POOL_H
-#define AVUTIL_FRAME_POOL_H
+#ifndef AVFILTER_FRAMEPOOL_H
+#define AVFILTER_FRAMEPOOL_H
 
 #include "libavutil/buffer.h"
 #include "libavutil/frame.h"
@@ -81,4 +81,4 @@ int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
 AVFrame *ff_video_frame_pool_get(FFVideoFramePool *pool);
 
 
-#endif /* AVUTIL_FRAME_POOL_H */
+#endif /* AVFILTER_FRAMEPOOL_H */

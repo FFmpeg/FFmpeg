@@ -1030,7 +1030,7 @@ static int check_header_variable(EXRContext *s,
 static int decode_header(EXRContext *s)
 {
     int current_channel_offset = 0;
-    int magic_number, version, flags, i;
+    int magic_number, version, flags, i, sar = 0;
 
     s->xmin               = ~0;
     s->xmax               = ~0;
@@ -1227,8 +1227,7 @@ static int decode_header(EXRContext *s)
             if (!var_size)
                 return AVERROR_INVALIDDATA;
 
-            ff_set_sar(s->avctx,
-                       av_d2q(av_int2float(bytestream2_get_le32(&s->gb)), 255));
+            sar = bytestream2_get_le32(&s->gb);
 
             continue;
         } else if ((var_size = check_header_variable(s, "compression",
@@ -1258,6 +1257,8 @@ static int decode_header(EXRContext *s)
         // Skip variable length
         bytestream2_skip(&s->gb, bytestream2_get_le32(&s->gb));
     }
+
+    ff_set_sar(s->avctx, av_d2q(av_int2float(sar), 255));
 
     if (s->compression == EXR_UNKN) {
         av_log(s->avctx, AV_LOG_ERROR, "Missing compression attribute.\n");

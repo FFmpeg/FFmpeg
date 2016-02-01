@@ -54,8 +54,8 @@
  * Reference: libavcodec/aacdec.c
  */
 
-#ifndef AVCODEC_MIPS_AACDEC_FLOAT_H
-#define AVCODEC_MIPS_AACDEC_FLOAT_H
+#ifndef AVCODEC_MIPS_AACDEC_MIPS_H
+#define AVCODEC_MIPS_AACDEC_MIPS_H
 
 #include "libavcodec/aac.h"
 #include "libavutil/mips/asmdefs.h"
@@ -248,4 +248,4 @@ static inline float *VMUL4S_mips(float *dst, const float *v, unsigned idx,
 #define VMUL4S VMUL4S_mips
 #endif /* HAVE_INLINE_ASM && HAVE_MIPSFPU */
 
-#endif /* AVCODEC_MIPS_AACDEC_FLOAT_H */
+#endif /* AVCODEC_MIPS_AACDEC_MIPS_H */

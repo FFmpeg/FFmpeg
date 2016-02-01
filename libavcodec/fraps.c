@@ -188,13 +188,13 @@ static int decode_frame(AVCodecContext *avctx,
             return buf_size;
         }
         if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
-            av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
+            av_log(avctx, AV_LOG_ERROR, "error in data stream\n");
             return AVERROR_INVALIDDATA;
         }
         for (i = 0; i < planes; i++) {
             offs[i] = AV_RL32(buf + 4 + i * 4);
             if (offs[i] >= buf_size - header_size || (i && offs[i] <= offs[i - 1] + 1024)) {
-                av_log(avctx, AV_LOG_ERROR, "Fraps: plane %i offset is out of bounds\n", i);
+                av_log(avctx, AV_LOG_ERROR, "plane %i offset is out of bounds\n", i);
                 return AVERROR_INVALIDDATA;
             }
         }

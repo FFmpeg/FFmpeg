@@ -282,7 +282,7 @@ unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat fmt)
 }
 
 const PixelFormatTag avpriv_pix_fmt_bps_avi[] = {
-    { AV_PIX_FMT_MONOWHITE, 1 },
+    { AV_PIX_FMT_PAL8,    1 },
     { AV_PIX_FMT_PAL8,    2 },
     { AV_PIX_FMT_PAL8,    4 },
     { AV_PIX_FMT_PAL8,    8 },

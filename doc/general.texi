@@ -53,14 +53,6 @@ instructions for installing the libraries.
 Then pass @code{--enable-libopencore-amrnb} and/or
 @code{--enable-libopencore-amrwb} to configure to enable them.
 
-@subsection VisualOn AAC encoder library
-
-FFmpeg can make use of the VisualOn AACenc library for AAC encoding.
-
-Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
-instructions for installing the library.
-Then pass @code{--enable-libvo-aacenc} to configure to enable it.
-
 @subsection VisualOn AMR-WB encoder library
 
 FFmpeg can make use of the VisualOn AMR-WBenc library for AMR-WB encoding.
@@ -284,6 +276,7 @@ library:
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks
 @item Phantom Cine              @tab   @tab X
+@item Cineform HD               @tab   @tab X
 @item Commodore CDXL            @tab   @tab X
     @tab Amiga CD video format
 @item Core Audio Format         @tab X @tab X
@@ -881,10 +874,10 @@ following image formats are supported:
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 8SVX exponential       @tab     @tab  X
 @item 8SVX fibonacci         @tab     @tab  X
+@item AAC                    @tab EX  @tab  X
+    @tab encoding supported through internal encoder and external libraries libfaac and libfdk-aac
 @item AAC+                   @tab  E  @tab  IX
-    @tab encoding supported through external library libaacplus
-@item AAC                    @tab  E  @tab  X
-    @tab encoding supported through external library libfaac and libvo-aacenc
+    @tab encoding supported through external library libfdk-aac
 @item AC-3                   @tab IX  @tab  IX
 @item ADPCM 4X Movie         @tab     @tab  X
 @item APDCM Yamaha AICA      @tab     @tab  X

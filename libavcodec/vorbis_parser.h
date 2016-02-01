@@ -24,8 +24,8 @@
  * Determines the duration for each packet.
  */
 
-#ifndef AVCODEC_VORBIS_PARSE_H
-#define AVCODEC_VORBIS_PARSE_H
+#ifndef AVCODEC_VORBIS_PARSER_H
+#define AVCODEC_VORBIS_PARSER_H
 
 #include <stdint.h>
 
@@ -75,4 +75,4 @@ int av_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
 
 void av_vorbis_parse_reset(AVVorbisParseContext *s);
 
-#endif /* AVCODEC_VORBIS_PARSE_H */
+#endif /* AVCODEC_VORBIS_PARSER_H */

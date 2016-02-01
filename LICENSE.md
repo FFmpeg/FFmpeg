@@ -104,7 +104,7 @@ license version needs to be upgraded by passing `--enable-version3` to configure
 incompatible libraries
 ----------------------
 
-The Fraunhofer AAC library, FAAC and aacplus are under licenses which
+The Fraunhofer AAC library and FAAC are under licenses which
 are incompatible with the GPLv2 and v3. We do not know for certain if their
 licenses are compatible with the LGPL.
 If you wish to enable these libraries, pass `--enable-nonfree` to configure.
