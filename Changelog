@@ -1,6 +1,42 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.5.11
+- MAINTAINERS: remove unmaintained releases
+- avcodec/jpeg2000dec: More completely check cdef
+- avutil/opt: check for and handle errors in av_opt_set_dict2()
+- avcodec/flacenc: fix calculation of bits required in case of custom sample rate
+- avformat: Document urls a bit
+- avformat/libquvi: Set default demuxer and protocol limitations
+- avformat/concat: Check protocol prefix
+- doc/demuxers: Document enable_drefs and use_absolute_path
+- avcodec/mjpegdec: Check for end for both bytes in unescaping
+- avcodec/mpegvideo_enc: Check for integer overflow in ff_mpv_reallocate_putbitbuffer()
+- avformat/avformat: Replace some references to filenames by urls
+- avcodec/wmaenc: Check ff_wma_init() for failure
+- avcodec/mpeg12enc: Move high resolution thread check to before initializing threads
+- avformat/avio: Limit url option parsing to the documented cases
+- avcodec/ass_split: Fix null pointer dereference in ff_ass_style_get()
+- mov: Add an option to toggle dref opening
+- avcodec/gif: Fix lzw buffer size
+- avcodec/put_bits: Assert buf_ptr in flush_put_bits()
+- avcodec/tiff: Check subsample & rps values more completely
+- swscale/swscale: Add some sanity checks for srcSlice* parameters
+- swscale/x86/rgb2rgb_template: Fix planar2x() for short width
+- swscale/swscale_unscaled: Fix odd height inputs for bayer_to_yv12_wrapper()
+- swscale/swscale_unscaled: Fix odd height inputs for bayer_to_rgb24_wrapper()
+- avcodec/aacenc: Check both channels for finiteness
+- swscale/swscale-test: Fix slice height in random reference data creation.
+- dca: fix misaligned access in avpriv_dca_convert_bitstream
+- brstm: fix missing closing brace
+- brstm: also allocate b->table in read_packet
+- brstm: make sure an ADPC chunk was read for adpcm_thp
+- vorbisdec: reject rangebits 0 with non-0 partitions
+- vorbisdec: reject channel mapping with less than two channels
+- ffmdec: reset packet_end in case of failure
+- avformat/ipmovie: put video decoding_map_size into packet and use it in decoder
+- avcodec/samidec: make sure to properly restore parsing context after a tag
+
 version 2.5.10
 - configure: bump copyright year to 2016
 - avformat/hls: Even stricter URL checks
