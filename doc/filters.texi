@@ -4553,6 +4553,61 @@ ffmpeg -f lavfi -i color=c=black:s=1280x720 -i video.mp4 -shortest -filter_compl
 @end example
 @end itemize
 
+@section ciescope
+
+Display CIE color diagram with pixels overlaid onto it.
+
+The filter acccepts the following options:
+
+@table @option
+@item system
+Set color system.
+
+@table @samp
+@item ntsc, 470m
+@item ebu, 470bg
+@item smpte
+@item 240m
+@item apple
+@item widergb
+@item cie1931
+@item rec709, hdtv
+@item uhdtv, rec2020
+@end table
+
+@item cie
+Set CIE system.
+
+@table @samp
+@item xyy
+@item ucs
+@item luv
+@end table
+
+@item gamuts
+Set what gamuts to draw.
+
+See @code{system} option for avaiable values.
+
+@item size, s
+Set ciescope size, by default set to 512.
+
+@item intensity, i
+Set intensity used to map input pixel values to CIE diagram.
+
+@item contrast
+Set contrast used to draw tongue colors that are out of active color system gamut.
+
+@item corrgamma
+Correct gamma displayed on scope, by default enabled.
+
+@item showwhite
+Show white point on CIE diagram, by default disabled.
+
+@item gamma
+Set input gamma. Used only with XYZ input color space.
+@end table
+
 @section codecview
 
 Visualize information exported by some codecs.

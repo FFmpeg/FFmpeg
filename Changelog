@@ -9,6 +9,7 @@ version <next>:
 - firequalizer filter
 - datascope filter
 - bench and abench filters
+- ciescope filter
 
 
 version 3.0:
