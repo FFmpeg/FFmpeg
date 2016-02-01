@@ -156,7 +156,7 @@ static av_cold void dca_init_vlcs(void)
     vlcs_initialized = 1;
 }
 
-static int get_vlc(GetBitContext *s, DCAVLC *v, int i)
+static int dca_get_vlc(GetBitContext *s, DCAVLC *v, int i)
 {
     return get_vlc2(s, v->vlc[i].table, v->vlc[i].bits, v->max_depth) + v->offset;
 }
@@ -498,7 +498,7 @@ static inline int parse_scale(DCACoreDecoder *s, int *scale_index, int sel)
 
     // If Huffman code was used, the difference of scales was encoded
     if (sel < 5)
-        *scale_index += get_vlc(&s->gb, &vlc_scale_factor, sel);
+        *scale_index += dca_get_vlc(&s->gb, &vlc_scale_factor, sel);
     else
         *scale_index = get_bits(&s->gb, sel + 1);
 
@@ -517,7 +517,7 @@ static inline int parse_joint_scale(DCACoreDecoder *s, int sel)
 
     // Absolute value was encoded even when Huffman code was used
     if (sel < 5)
-        scale_index = get_vlc(&s->gb, &vlc_scale_factor, sel);
+        scale_index = dca_get_vlc(&s->gb, &vlc_scale_factor, sel);
     else
         scale_index = get_bits(&s->gb, sel + 1);
 
@@ -569,7 +569,7 @@ static int parse_subframe_header(DCACoreDecoder *s, int sf,
             int abits;
 
             if (sel < 5)
-                abits = get_vlc(&s->gb, &vlc_bit_allocation, sel);
+                abits = dca_get_vlc(&s->gb, &vlc_bit_allocation, sel);
             else
                 abits = get_bits(&s->gb, sel - 1);
 
@@ -592,7 +592,7 @@ static int parse_subframe_header(DCACoreDecoder *s, int sf,
             int sel = s->transition_mode_sel[ch];
             for (band = 0; band < s->subband_vq_start[ch]; band++)
                 if (s->bit_allocation[ch][band])
-                    s->transition_mode[sf][ch][band] = get_vlc(&s->gb, &vlc_transition_mode, sel);
+                    s->transition_mode[sf][ch][band] = dca_get_vlc(&s->gb, &vlc_transition_mode, sel);
         }
     }
 
@@ -703,7 +703,7 @@ static inline int parse_huffman_codes(DCACoreDecoder *s, int32_t *audio, int abi
 
     // Extract Huffman codes from the bit stream
     for (i = 0; i < DCA_SUBBAND_SAMPLES; i++)
-        audio[i] = get_vlc(&s->gb, &vlc_quant_index[abits - 1], sel);
+        audio[i] = dca_get_vlc(&s->gb, &vlc_quant_index[abits - 1], sel);
 
     return 1;
 }
@@ -1488,7 +1488,7 @@ static int parse_x96_subframe_header(DCACoreDecoder *s, int xch_base)
         for (band = s->x96_subband_start; band < s->nsubbands[ch]; band++) {
             // If Huffman code was used, the difference of abits was encoded
             if (sel < 7)
-                abits += get_vlc(&s->gb, &vlc_quant_index[5 + 2 * s->x96_high_res], sel);
+                abits += dca_get_vlc(&s->gb, &vlc_quant_index[5 + 2 * s->x96_high_res], sel);
             else
                 abits = get_bits(&s->gb, 3 + s->x96_high_res);
 
