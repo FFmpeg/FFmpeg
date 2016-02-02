@@ -35,6 +35,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
+#include "libavutil/buffer.h"
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
 #include "libavutil/samplefmt.h"
@@ -387,6 +388,12 @@ struct AVFilterLink {
      * Sinks can use it to set a default output frame rate.
      */
     AVRational frame_rate;
+
+    /**
+     * For hwaccel pixel formats, this should be a reference to the
+     * AVHWFramesContext describing the frames.
+     */
+    AVBufferRef *hw_frames_ctx;
 };
 
 /**

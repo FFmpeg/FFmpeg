@@ -2864,6 +2864,10 @@ The time base used for input timestamps.
 @item sar
 The sample (pixel) aspect ratio of the input video.
 
+@item hw_frames_ctx
+When using a hardware pixel format, this should be a reference to an
+AVHWFramesContext describing input frames.
+
 @end table
 
 For example:

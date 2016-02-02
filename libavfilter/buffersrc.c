@@ -52,6 +52,8 @@ typedef struct BufferSourceContext {
     char               *pix_fmt_str;
     AVRational        pixel_aspect;
 
+    AVBufferRef *hw_frames_ctx;
+
     /* audio only */
     int sample_rate;
     enum AVSampleFormat sample_fmt;
@@ -59,6 +61,7 @@ typedef struct BufferSourceContext {
     uint64_t channel_layout;
     char    *channel_layout_str;
 
+    int got_format_from_params;
     int eof;
 } BufferSourceContext;
 
@@ -74,6 +77,62 @@ typedef struct BufferSourceContext {
         av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
         return AVERROR(EINVAL);\
     }
+
+AVBufferSrcParameters *av_buffersrc_parameters_alloc(void)
+{
+    AVBufferSrcParameters *par = av_mallocz(sizeof(*par));
+    if (!par)
+        return NULL;
+
+    par->format = -1;
+
+    return par;
+}
+
+int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *param)
+{
+    BufferSourceContext *s = ctx->priv;
+
+    if (param->time_base.num > 0 && param->time_base.den > 0)
+        s->time_base = param->time_base;
+
+    switch (ctx->filter->outputs[0].type) {
+    case AVMEDIA_TYPE_VIDEO:
+        if (param->format != AV_PIX_FMT_NONE) {
+            s->got_format_from_params = 1;
+            s->pix_fmt = param->format;
+        }
+        if (param->width > 0)
+            s->w = param->width;
+        if (param->height > 0)
+            s->h = param->height;
+        if (param->sample_aspect_ratio.num > 0 && param->sample_aspect_ratio.den > 0)
+            s->pixel_aspect = param->sample_aspect_ratio;
+        if (param->frame_rate.num > 0 && param->frame_rate.den > 0)
+            s->frame_rate = param->frame_rate;
+        if (param->hw_frames_ctx) {
+            av_buffer_unref(&s->hw_frames_ctx);
+            s->hw_frames_ctx = av_buffer_ref(param->hw_frames_ctx);
+            if (!s->hw_frames_ctx)
+                return AVERROR(ENOMEM);
+        }
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        if (param->format != AV_SAMPLE_FMT_NONE) {
+            s->got_format_from_params = 1;
+            s->sample_fmt = param->format;
+        }
+        if (param->sample_rate > 0)
+            s->sample_rate = param->sample_rate;
+        if (param->channel_layout)
+            s->channel_layout = param->channel_layout;
+        break;
+    default:
+        return AVERROR_BUG;
+    }
+
+    return 0;
+}
 
 int attribute_align_arg av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
 {
@@ -150,17 +209,20 @@ static av_cold int init_video(AVFilterContext *ctx)
 {
     BufferSourceContext *c = ctx->priv;
 
-    if (!c->pix_fmt_str || !c->w || !c->h || av_q2d(c->time_base) <= 0) {
+    if (!(c->pix_fmt_str || c->got_format_from_params)  || !c->w || !c->h ||
+        av_q2d(c->time_base) <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid parameters provided.\n");
         return AVERROR(EINVAL);
     }
 
-    if ((c->pix_fmt = av_get_pix_fmt(c->pix_fmt_str)) == AV_PIX_FMT_NONE) {
-        char *tail;
-        c->pix_fmt = strtol(c->pix_fmt_str, &tail, 10);
-        if (*tail || c->pix_fmt < 0 || !av_pix_fmt_desc_get(c->pix_fmt)) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid pixel format string '%s'\n", c->pix_fmt_str);
-            return AVERROR(EINVAL);
+    if (c->pix_fmt_str) {
+        if ((c->pix_fmt = av_get_pix_fmt(c->pix_fmt_str)) == AV_PIX_FMT_NONE) {
+            char *tail;
+            c->pix_fmt = strtol(c->pix_fmt_str, &tail, 10);
+            if (*tail || c->pix_fmt < 0 || !av_pix_fmt_desc_get(c->pix_fmt)) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid pixel format string '%s'\n", c->pix_fmt_str);
+                return AVERROR(EINVAL);
+            }
         }
     }
 
@@ -223,14 +285,22 @@ static av_cold int init_audio(AVFilterContext *ctx)
     BufferSourceContext *s = ctx->priv;
     int ret = 0;
 
-    s->sample_fmt = av_get_sample_fmt(s->sample_fmt_str);
+    if (!(s->sample_fmt_str || s->got_format_from_params)) {
+        av_log(ctx, AV_LOG_ERROR, "Sample format not provided\n");
+        return AVERROR(EINVAL);
+    }
+    if (s->sample_fmt_str)
+        s->sample_fmt = av_get_sample_fmt(s->sample_fmt_str);
+
     if (s->sample_fmt == AV_SAMPLE_FMT_NONE) {
         av_log(ctx, AV_LOG_ERROR, "Invalid sample format %s.\n",
                s->sample_fmt_str);
         return AVERROR(EINVAL);
     }
 
-    s->channel_layout = av_get_channel_layout(s->channel_layout_str);
+    if (s->channel_layout_str)
+        s->channel_layout = av_get_channel_layout(s->channel_layout_str);
+
     if (!s->channel_layout) {
         av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
                s->channel_layout_str);
@@ -258,6 +328,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_fifo_generic_read(s->fifo, &frame, sizeof(frame), NULL);
         av_frame_free(&frame);
     }
+    av_buffer_unref(&s->hw_frames_ctx);
     av_fifo_free(s->fifo);
     s->fifo = NULL;
 }
@@ -300,6 +371,12 @@ static int config_props(AVFilterLink *link)
         link->w = c->w;
         link->h = c->h;
         link->sample_aspect_ratio = c->pixel_aspect;
+
+        if (c->hw_frames_ctx) {
+            link->hw_frames_ctx = av_buffer_ref(c->hw_frames_ctx);
+            if (!link->hw_frames_ctx)
+                return AVERROR(ENOMEM);
+        }
         break;
     case AVMEDIA_TYPE_AUDIO:
         link->channel_layout = c->channel_layout;

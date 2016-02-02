@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavfi 6.2.0 - avfilter.h
+  xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
+  xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
+
 2016-xx-xx - lavu 55.6.0
   xxxxxxx buffer.h - Add av_buffer_pool_init2().
   xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
