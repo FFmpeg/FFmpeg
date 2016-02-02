@@ -992,6 +992,8 @@ static int parse_frame_data(DCACoreDecoder *s, enum HeaderType header, int xch_b
         }
     }
 
+    emms_c();
+
     return 0;
 }
 
@@ -1667,6 +1669,8 @@ static int parse_x96_frame_data(DCACoreDecoder *s, int exss, int xch_base)
                 memset(samples, 0, (DCA_ADPCM_COEFFS + s->npcmblocks) * sizeof(int32_t));
         }
     }
+
+    emms_c();
 
     return 0;
 }
