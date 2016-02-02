@@ -927,6 +927,8 @@ static void erase_adpcm_history(DCACoreDecoder *s)
     for (ch = 0; ch < DCA_CHANNELS; ch++)
         for (band = 0; band < DCA_SUBBANDS; band++)
             AV_ZERO128(s->subband_samples[ch][band] - DCA_ADPCM_COEFFS);
+
+    emms_c();
 }
 
 static int alloc_sample_buffer(DCACoreDecoder *s)
@@ -1434,6 +1436,8 @@ static void erase_x96_adpcm_history(DCACoreDecoder *s)
     for (ch = 0; ch < DCA_CHANNELS; ch++)
         for (band = 0; band < DCA_SUBBANDS_X96; band++)
             AV_ZERO128(s->x96_subband_samples[ch][band] - DCA_ADPCM_COEFFS);
+
+    emms_c();
 }
 
 static int alloc_x96_sample_buffer(DCACoreDecoder *s)
