@@ -37,19 +37,9 @@
 #include "mpegvideoencdsp.h"
 #include "dirac_dwt.h"
 #include "dirac.h"
+#include "diractab.h"
 #include "diracdsp.h"
 #include "videodsp.h"
-
-/**
- * The spec limits the number of wavelet decompositions to 4 for both
- * level 1 (VC-2) and 128 (long-gop default).
- * 5 decompositions is the maximum before >16-bit buffers are needed.
- * Schroedinger allows this for DD 9,7 and 13,7 wavelets only, limiting
- * the others to 4 decompositions (or 3 for the fidelity filter).
- *
- * We use this instead of MAX_DECOMPOSITIONS to save some memory.
- */
-#define MAX_DWT_LEVELS 5
 
 /**
  * The spec limits this to 3 for frame coding, but in practice can be as high as 6
