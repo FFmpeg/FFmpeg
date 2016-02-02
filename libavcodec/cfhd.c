@@ -280,7 +280,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 s->level++;
             av_log(avctx, AV_LOG_DEBUG, "Subband number %"PRIu16"\n", data);
             s->subband_num = data;
-            if (s->level > DWT_LEVELS) {
+            if (s->level >= DWT_LEVELS) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid level\n");
                 ret = AVERROR(EINVAL);
                 break;
