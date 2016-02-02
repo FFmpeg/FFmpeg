@@ -124,16 +124,16 @@ void ff_diracdsp_init_mmx(DiracDSPContext* c)
     int mm_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(mm_flags)) {
-    c->add_dirac_obmc[0] = ff_add_dirac_obmc8_mmx;
+        c->add_dirac_obmc[0] = ff_add_dirac_obmc8_mmx;
 #if !ARCH_X86_64
-    c->add_dirac_obmc[1] = ff_add_dirac_obmc16_mmx;
-    c->add_dirac_obmc[2] = ff_add_dirac_obmc32_mmx;
-    c->dirac_hpel_filter = dirac_hpel_filter_mmx;
-    c->add_rect_clamped = ff_add_rect_clamped_mmx;
-    c->put_signed_rect_clamped[0] = (void *)ff_put_signed_rect_clamped_mmx;
+        c->add_dirac_obmc[1] = ff_add_dirac_obmc16_mmx;
+        c->add_dirac_obmc[2] = ff_add_dirac_obmc32_mmx;
+        c->dirac_hpel_filter = dirac_hpel_filter_mmx;
+        c->add_rect_clamped = ff_add_rect_clamped_mmx;
+        c->put_signed_rect_clamped[0] = (void *)ff_put_signed_rect_clamped_mmx;
 #endif
-    PIXFUNC(put, 0, mmx);
-    PIXFUNC(avg, 0, mmx);
+        PIXFUNC(put, 0, mmx);
+        PIXFUNC(avg, 0, mmx);
     }
 
     if (EXTERNAL_MMXEXT(mm_flags)) {
