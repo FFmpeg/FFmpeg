@@ -6,6 +6,7 @@ OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
 OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_init.o
 OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
+OBJS-$(CONFIG_DIRAC_DECODER)           += x86/diracdsp_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_FLACDSP)                 += x86/flacdsp_init.o
@@ -133,7 +134,7 @@ YASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ALAC_DECODER)       += x86/alacdsp.o
 YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/synth_filter.o
-YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o \
+YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp.o                \
                                           x86/dwt_yasm.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o

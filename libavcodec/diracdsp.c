@@ -20,7 +20,6 @@
 
 #include "avcodec.h"
 #include "diracdsp.h"
-#include "libavcodec/x86/diracdsp_mmx.h"
 
 #define FILTER(src, stride)                                     \
     ((21*((src)[ 0*stride] + (src)[1*stride])                   \
@@ -222,5 +221,6 @@ av_cold void ff_diracdsp_init(DiracDSPContext *c)
     PIXFUNC(avg, 16);
     PIXFUNC(avg, 32);
 
-    if (HAVE_MMX && HAVE_YASM) ff_diracdsp_init_mmx(c);
+    if (ARCH_X86)
+        ff_diracdsp_init_x86(c);
 }
