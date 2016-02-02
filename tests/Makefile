@@ -216,7 +216,7 @@ fate-list:
 
 coverage.info: TAG = LCOV
 coverage.info:
-	$(M)lcov -q -d $(CURDIR) -b $(SRC_PATH) --capture | \
+	$(M)lcov -q -d $(CURDIR) -b $(patsubst src%,./,$(SRC_LINK)) --capture | \
 	    sed "s,$(CURDIR)/\./,$(CURDIR)/," > $@
 	$(M)lcov -q --remove $@ "/usr*" -o $@
 
