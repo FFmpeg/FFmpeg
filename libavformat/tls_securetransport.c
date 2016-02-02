@@ -22,6 +22,7 @@
 
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
