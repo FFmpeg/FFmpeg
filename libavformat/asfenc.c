@@ -216,6 +216,7 @@ typedef struct ASFStream {
 } ASFStream;
 
 typedef struct ASFContext {
+    AVClass *av_class;
     uint32_t seqno;
     int is_streamed;
     ASFStream streams[128];              ///< it's max number and it's not that big
@@ -1044,6 +1045,13 @@ static int asf_write_trailer(AVFormatContext *s)
 }
 
 #if CONFIG_ASF_MUXER
+static const AVClass asf_muxer_class = {
+    .class_name     = "ASF muxer",
+    .item_name      = av_default_item_name,
+    .option         = 0,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_asf_muxer = {
     .name           = "asf",
     .long_name      = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
@@ -1059,10 +1067,18 @@ AVOutputFormat ff_asf_muxer = {
     .codec_tag      = (const AVCodecTag * const []) {
         codec_asf_bmp_tags, ff_codec_bmp_tags, ff_codec_wav_tags, 0
     },
+    .priv_class        = &asf_muxer_class,
 };
 #endif /* CONFIG_ASF_MUXER */
 
 #if CONFIG_ASF_STREAM_MUXER
+static const AVClass asf_stream_muxer_class = {
+    .class_name     = "ASF stream muxer",
+    .item_name      = av_default_item_name,
+    .option         = 0,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_asf_stream_muxer = {
     .name           = "asf_stream",
     .long_name      = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
@@ -1078,5 +1094,6 @@ AVOutputFormat ff_asf_stream_muxer = {
     .codec_tag      = (const AVCodecTag * const []) {
         codec_asf_bmp_tags, ff_codec_bmp_tags, ff_codec_wav_tags, 0
     },
+    .priv_class        = &asf_stream_muxer_class,
 };
 #endif /* CONFIG_ASF_STREAM_MUXER */
