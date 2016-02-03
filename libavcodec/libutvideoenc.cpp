@@ -26,6 +26,7 @@
  */
 
 extern "C" {
+#include "libavutil/opt.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
@@ -86,7 +87,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
 
-    flags = ((avctx->prediction_method + 1) << 8) | (avctx->thread_count - 1);
+    flags = ((utv->pred + 1) << 8) | (avctx->thread_count - 1);
 
     avctx->priv_data = utv;
 
@@ -236,13 +237,13 @@ static const AVOption options[] = {
 static const AVClass utvideo_class = {
     "libutvideo",
     av_default_item_name,
-    options.
-    LIBAVUTIL_VERSION,
+    options,
+    LIBAVUTIL_VERSION_INT,
     0,
     0,
     NULL,
     NULL,
-    0,
+    AV_CLASS_CATEGORY_NA,
     NULL,
     NULL,
 };
