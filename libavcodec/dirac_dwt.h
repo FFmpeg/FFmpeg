@@ -34,6 +34,15 @@ typedef struct DWTCompose {
     int y;
 } DWTCompose;
 
+typedef struct DWTPlane {
+    int width;
+    int height;
+    int stride;
+    uint8_t *buf;
+    uint8_t *buf_base;
+    uint8_t *tmp;
+} DWTPlane;
+
 struct DWTContext;
 
 // Possible prototypes for vertical_compose functions
