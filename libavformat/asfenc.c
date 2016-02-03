@@ -22,6 +22,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "avlanguage.h"
 #include "avio_internal.h"
@@ -223,6 +224,7 @@ typedef struct ASFContext {
     ASFStream streams[128];              ///< it's max number and it's not that big
     const char *languages[128];
     int nb_languages;
+    int64_t creation_time;
     /* non streamed additonnal info */
     uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     int64_t duration;                    ///< in 100ns units
@@ -309,12 +311,12 @@ static void put_chunk(AVFormatContext *s, int type,
     asf->seqno++;
 }
 
-/* convert from unix to windows time */
-static int64_t unix_to_file_time(int ti)
+/* convert from av time to windows time */
+static int64_t unix_to_file_time(int64_t ti)
 {
     int64_t t;
 
-    t  = ti * INT64_C(10000000);
+    t  = ti * INT64_C(10);
     t += INT64_C(116444736000000000);
     return t;
 }
@@ -383,8 +385,8 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVDictionaryEntry *tags[5];
-    int header_size, n, extra_size, extra_size2, wav_extra_size, file_time;
+    AVDictionaryEntry *tags[5], *t;
+    int header_size, n, extra_size, extra_size2, wav_extra_size;
     int has_title, has_aspect_ratio = 0;
     int metadata_count;
     AVCodecContext *enc;
@@ -402,6 +404,15 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
 
     duration       = asf->duration + PREROLL_TIME * 10000;
     has_title      = tags[0] || tags[1] || tags[2] || tags[3] || tags[4];
+
+    if (!file_size && (t = av_dict_get(s->metadata, "creation_time", NULL, 0))) {
+        if (av_parse_time(&asf->creation_time, t->value, 0) < 0) {
+            av_log(s, AV_LOG_WARNING, "Failed to parse creation_time %s\n", t->value);
+            asf->creation_time = 0;
+        }
+        av_dict_set(&s->metadata, "creation_time", NULL, 0);
+    }
+
     metadata_count = av_dict_count(s->metadata);
 
     bit_rate = 0;
@@ -454,8 +465,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     hpos          = put_header(pb, &ff_asf_file_header);
     ff_put_guid(pb, &ff_asf_my_guid);
     avio_wl64(pb, file_size);
-    file_time = 0;
-    avio_wl64(pb, unix_to_file_time(file_time));
+    avio_wl64(pb, unix_to_file_time(asf->creation_time));
     avio_wl64(pb, asf->nb_packets); /* number of packets */
     avio_wl64(pb, duration); /* end time stamp (in 100ns units) */
     avio_wl64(pb, asf->duration); /* duration (in 100ns units) */
