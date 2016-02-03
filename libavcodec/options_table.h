@@ -403,7 +403,9 @@ static const AVOption avcodec_options[] = {
 #endif
 {"mblmin", "minimum macroblock Lagrange factor (VBR)", OFFSET(mb_lmin), AV_OPT_TYPE_INT, {.i64 = FF_QP2LAMBDA * 2 }, 1, FF_LAMBDA_MAX, V|E},
 {"mblmax", "maximum macroblock Lagrange factor (VBR)", OFFSET(mb_lmax), AV_OPT_TYPE_INT, {.i64 = FF_QP2LAMBDA * 31 }, 1, FF_LAMBDA_MAX, V|E},
+#if FF_API_PRIVATE_OPT
 {"mepc", "motion estimation bitrate penalty compensation (1.0 = 256)", OFFSET(me_penalty_compensation), AV_OPT_TYPE_INT, {.i64 = 256 }, INT_MIN, INT_MAX, V|E},
+#endif
 {"skip_loop_filter", "skip loop filtering process for the selected frames", OFFSET(skip_loop_filter), AV_OPT_TYPE_INT, {.i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, V|D, "avdiscard"},
 {"skip_idct"       , "skip IDCT/dequantization for the selected frames",    OFFSET(skip_idct),        AV_OPT_TYPE_INT, {.i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, V|D, "avdiscard"},
 {"skip_frame"      , "skip decoding for the selected frames",               OFFSET(skip_frame),       AV_OPT_TYPE_INT, {.i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, V|D, "avdiscard"},
