@@ -220,6 +220,14 @@ static int rtmp_http_open(URLContext *h, const char *uri, int flags)
     av_opt_set(rt->stream->priv_data, "multiple_requests", "1", 0);
     av_opt_set_bin(rt->stream->priv_data, "post_data", "", 1, 0);
 
+    if (!rt->stream->protocol_whitelist && h->protocol_whitelist) {
+        rt->stream->protocol_whitelist = av_strdup(h->protocol_whitelist);
+        if (!rt->stream->protocol_whitelist) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     /* open the http context */
     if ((ret = ffurl_connect(rt->stream, NULL)) < 0)
         goto fail;
@@ -274,4 +282,5 @@ const URLProtocol ff_ffrtmphttp_protocol = {
     .priv_data_size = sizeof(RTMP_HTTPContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class= &ffrtmphttp_class,
+    .default_whitelist = "https,http,tcp,tls",
 };
