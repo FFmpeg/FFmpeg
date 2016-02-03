@@ -33,18 +33,17 @@
 #define TEMPLATE_12bit
 #include "dirac_dwt_template.c"
 
-int ff_spatial_idwt_init(DWTContext *d, uint8_t *buffer, int width, int height,
-                         int stride, enum dwt_type type, int decomposition_count,
-                         uint8_t *temp, int bit_depth)
+int ff_spatial_idwt_init(DWTContext *d, DWTPlane *p, enum dwt_type type,
+                         int decomposition_count, int bit_depth)
 {
     int ret = 0;
 
-    d->buffer = buffer;
-    d->width  = width;
-    d->height = height;
-    d->stride = stride;
+    d->buffer = p->buf;
+    d->width  = p->width;
+    d->height = p->height;
+    d->stride = p->stride;
+    d->temp   = p->tmp;
     d->decomposition_count = decomposition_count;
-    d->temp   = temp;
 
     if (bit_depth == 8)
         ret = ff_spatial_idwt_init_8bit(d, type);
