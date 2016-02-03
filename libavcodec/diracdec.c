@@ -1755,8 +1755,8 @@ static int dirac_decode_frame_internal(DiracContext *s)
             memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
             decode_component(s, comp); /* [DIRAC_STD] 13.4.1 core_transform_data() */
         }
-        ret = ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
-                                    s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp, s->bit_depth);
+        ret = ff_spatial_idwt_init(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
+                                   s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp, s->bit_depth);
         if (ret < 0)
             return ret;
 

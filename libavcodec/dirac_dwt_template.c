@@ -476,7 +476,7 @@ static void RENAME(spatial_compose_daub97i_dy)(DWTContext *d, int level, int wid
     cs->y += 2;
 }
 
-static void RENAME(spatial_compose97i_init2)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
+static void RENAME(spatial_compose97i_init)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
 {
     cs->b[0] = buffer + avpriv_mirror(-3-1, height-1)*stride;
     cs->b[1] = buffer + avpriv_mirror(-3  , height-1)*stride;
@@ -485,7 +485,7 @@ static void RENAME(spatial_compose97i_init2)(DWTCompose *cs, uint8_t *buffer, in
     cs->y = -3;
 }
 
-static void RENAME(spatial_compose53i_init2)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
+static void RENAME(spatial_compose53i_init)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
 {
     cs->b[0] = buffer + avpriv_mirror(-1-1, height-1)*stride;
     cs->b[1] = buffer + avpriv_mirror(-1  , height-1)*stride;
@@ -516,7 +516,7 @@ static void RENAME(spatial_compose_dd137i_init)(DWTCompose *cs, uint8_t *buffer,
     cs->y = -5;
 }
 
-static int RENAME(ff_spatial_idwt_init2)(DWTContext *d, enum dwt_type type)
+static int RENAME(ff_spatial_idwt_init)(DWTContext *d, enum dwt_type type)
 {
     int level;
 
@@ -531,7 +531,7 @@ static int RENAME(ff_spatial_idwt_init2)(DWTContext *d, enum dwt_type type)
                 RENAME(spatial_compose_dd97i_init)(d->cs+level, d->buffer, hl, stride_l);
                 break;
             case DWT_DIRAC_LEGALL5_3:
-                RENAME(spatial_compose53i_init2)(d->cs+level, d->buffer, hl, stride_l);
+                RENAME(spatial_compose53i_init)(d->cs+level, d->buffer, hl, stride_l);
                 break;
             case DWT_DIRAC_DD13_7:
                 RENAME(spatial_compose_dd137i_init)(d->cs+level, d->buffer, hl, stride_l);
@@ -541,7 +541,7 @@ static int RENAME(ff_spatial_idwt_init2)(DWTContext *d, enum dwt_type type)
                 d->cs[level].y = 1;
                 break;
             case DWT_DIRAC_DAUB9_7:
-                RENAME(spatial_compose97i_init2)(d->cs+level, d->buffer, hl, stride_l);
+                RENAME(spatial_compose97i_init)(d->cs+level, d->buffer, hl, stride_l);
                 break;
             default:
                 d->cs[level].y = 0;
