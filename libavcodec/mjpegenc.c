@@ -280,7 +280,6 @@ AVCodec ff_mjpeg_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
-    .priv_class     = &mjpeg_class,
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
