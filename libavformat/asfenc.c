@@ -684,6 +684,11 @@ static int asf_write_header(AVFormatContext *s)
     s->max_interleave_delta = 0;
     asf->nb_packets = 0;
 
+    if (s->nb_streams > 127) {
+        av_log(s, AV_LOG_ERROR, "ASF can only handle 127 streams\n");
+        return AVERROR(EINVAL);
+    }
+
     asf->index_ptr             = av_malloc(sizeof(ASFIndex) * ASF_INDEX_BLOCK);
     if (!asf->index_ptr)
         return AVERROR(ENOMEM);
