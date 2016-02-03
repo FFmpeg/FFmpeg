@@ -255,6 +255,7 @@
     <ClCompile Include="..\libavfilter\vf_mcdeint.c" />
     <ClCompile Include="..\libavfilter\vf_mergeplanes.c" />
     <ClCompile Include="..\libavfilter\vf_mpdecimate.c" />
+    <ClCompile Include="..\libavfilter\vf_nnedi.c" />
     <ClCompile Include="..\libavfilter\vf_noise.c" />
     <ClCompile Include="..\libavfilter\vf_null.c" />
     <ClCompile Include="..\libavfilter\vf_overlay.c" />
