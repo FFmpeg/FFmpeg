@@ -297,7 +297,9 @@ see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) 
 -to and -t are mutually exclusive and -t has priority.
 
 @item -fs @var{limit_size} (@emph{output})
-Set the file size limit, expressed in bytes.
+Set the file size limit, expressed in bytes. No further chunk of bytes is written
+after the limit is exceeded. The size of the output file is slightly more than the
+requested file size.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to

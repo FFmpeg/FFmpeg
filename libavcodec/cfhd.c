@@ -224,7 +224,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
     GetByteContext gb;
     ThreadFrame frame = { .f = data };
     AVFrame *pic = data;
-    int ret = 0, i, j, plane;
+    int ret = 0, i, j, plane, got_buffer = 0;
     int16_t *coeff_data;
 
     avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
@@ -280,7 +280,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 s->level++;
             av_log(avctx, AV_LOG_DEBUG, "Subband number %"PRIu16"\n", data);
             s->subband_num = data;
-            if (s->level > DWT_LEVELS) {
+            if (s->level >= DWT_LEVELS) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid level\n");
                 ret = AVERROR(EINVAL);
                 break;
@@ -426,6 +426,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
             s->coded_width = 0;
             s->coded_height = 0;
+            got_buffer = 1;
         }
         coeff_data = s->plane[s->channel_num].subband[s->subband_num_actual];
 
@@ -553,6 +554,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (!s->a_width || !s->a_height || s->coded_width || s->coded_height) {
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions\n");
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+
+    if (!got_buffer) {
+        av_log(avctx, AV_LOG_ERROR, "No end of header tag found\n");
         ret = AVERROR(EINVAL);
         goto end;
     }

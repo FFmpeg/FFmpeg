@@ -30,6 +30,7 @@
 #include <time.h>
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 #include "libavutil/avassert.h"
@@ -239,8 +240,8 @@ static int segment_start(AVFormatContext *s, int write_header)
     if ((err = set_segment_filename(s)) < 0)
         return err;
 
-    if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, NULL)) < 0) {
+    if ((err = ffio_open_whitelist(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
+                                   &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
         return err;
     }
@@ -265,8 +266,8 @@ static int segment_list_open(AVFormatContext *s)
     int ret;
 
     snprintf(seg->temp_list_filename, sizeof(seg->temp_list_filename), seg->use_rename ? "%s.tmp" : "%s", seg->list);
-    ret = avio_open2(&seg->list_pb, seg->temp_list_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = ffio_open_whitelist(&seg->list_pb, seg->temp_list_filename, AVIO_FLAG_WRITE,
+                     &s->interrupt_callback, NULL, s->protocol_whitelist);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to open segment list '%s'\n", seg->list);
         return ret;
@@ -699,8 +700,8 @@ static int seg_write_header(AVFormatContext *s)
         goto fail;
 
     if (seg->write_header_trailer) {
-        if ((ret = avio_open2(&oc->pb, seg->header_filename ? seg->header_filename : oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0) {
+        if ((ret = ffio_open_whitelist(&oc->pb, seg->header_filename ? seg->header_filename : oc->filename, AVIO_FLAG_WRITE,
+                              &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
             av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
             goto fail;
         }
@@ -743,8 +744,8 @@ static int seg_write_header(AVFormatContext *s)
         } else {
             close_null_ctxp(&oc->pb);
         }
-        if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0)
+        if ((ret = ffio_open_whitelist(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
+                              &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0)
             goto fail;
         if (!seg->individual_header_trailer)
             oc->pb->seekable = 0;

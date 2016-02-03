@@ -86,7 +86,8 @@ static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **
     unlink(buffername);
     av_freep(&buffername);
 
-    return ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, options);
+    return ffurl_open_whitelist(&c->inner, arg, flags, &h->interrupt_callback,
+                                options, h->protocol_whitelist);
 }
 
 static int add_entry(URLContext *h, const unsigned char *buf, int size)

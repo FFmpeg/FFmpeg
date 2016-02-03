@@ -1013,7 +1013,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     int stored_height = (st->codec->height+15)/16*16;
     int display_height;
     int f1, f2;
-    unsigned desc_size = size+8+8+8+8+8+8+8+5+16+sc->interlaced*4+12+20+5;
+    unsigned desc_size = size+8+8+8+8+8+8+8+5+16+4+12+20+5;
     if (sc->interlaced && sc->field_dominance)
         desc_size += 5;
     if (sc->signal_standard)
@@ -1081,12 +1081,12 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
         f1 *= 2;
     }
 
-    mxf_write_local_tag(pb, 12+sc->interlaced*4, 0x320D);
-    avio_wb32(pb, sc->interlaced ? 2 : 1);
+
+    mxf_write_local_tag(pb, 16, 0x320D);
+    avio_wb32(pb, 2);
     avio_wb32(pb, 4);
     avio_wb32(pb, f1);
-    if (sc->interlaced)
-        avio_wb32(pb, f2);
+    avio_wb32(pb, f2);
 
     mxf_write_local_tag(pb, 8, 0x320E);
     avio_wb32(pb, sc->aspect_ratio.num);

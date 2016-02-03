@@ -291,7 +291,8 @@ static int xv_repaint(AVFormatContext *s)
     return 0;
 }
 
-static int write_picture(AVFormatContext *s, AVPicture *pict)
+static int write_picture(AVFormatContext *s, uint8_t *input_data[4],
+                         int linesize[4])
 {
     XVContext *xv = s->priv_data;
     XvImage *img = xv->yuv_image;
@@ -313,18 +314,20 @@ static int write_picture(AVFormatContext *s, AVPicture *pict)
         }
     }
 
-    av_image_copy(data, img->pitches, (const uint8_t **)pict->data, pict->linesize,
+    av_image_copy(data, img->pitches, (const uint8_t **)input_data, linesize,
                   xv->image_format, img->width, img->height);
     return xv_repaint(s);
 }
 
 static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVPicture pict;
     AVCodecContext *ctx = s->streams[0]->codec;
+    uint8_t *data[4];
+    int linesize[4];
 
-    avpicture_fill(&pict, pkt->data, ctx->pix_fmt, ctx->width, ctx->height);
-    return write_picture(s, &pict);
+    av_image_fill_arrays(data, linesize, pkt->data, ctx->pix_fmt,
+                         ctx->width, ctx->height, 1);
+    return write_picture(s, data, linesize);
 }
 
 static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
@@ -333,7 +336,7 @@ static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
     /* xv_write_header() should have accepted only supported formats */
     if ((flags & AV_WRITE_UNCODED_FRAME_QUERY))
         return 0;
-    return write_picture(s, (AVPicture *)*frame);
+    return write_picture(s, (*frame)->data, (*frame)->linesize);
 }
 
 static int xv_control_message(AVFormatContext *s, int type, void *data, size_t data_size)

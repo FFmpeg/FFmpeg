@@ -26,6 +26,7 @@
 #endif
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "os_support.h"
 #include "avc.h"
@@ -121,7 +122,8 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
             AVDictionary *opts = NULL;
             os->tail_out = os->out;
             av_dict_set(&opts, "truncate", "0", 0);
-            ret = ffurl_open(&os->out, frag->file, AVIO_FLAG_READ_WRITE, &os->ctx->interrupt_callback, &opts);
+            ret = ffurl_open_whitelist(&os->out, frag->file, AVIO_FLAG_READ_WRITE,
+                                       &os->ctx->interrupt_callback, &opts, os->ctx->protocol_whitelist);
             av_dict_free(&opts);
             if (ret < 0) {
                 os->out = os->tail_out;
@@ -129,7 +131,8 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
                 return ret;
             }
             av_dict_set(&opts, "truncate", "0", 0);
-            ffurl_open(&os->out2, frag->infofile, AVIO_FLAG_READ_WRITE, &os->ctx->interrupt_callback, &opts);
+            ffurl_open_whitelist(&os->out2, frag->infofile, AVIO_FLAG_READ_WRITE,
+                                 &os->ctx->interrupt_callback, &opts, os->ctx->protocol_whitelist);
             av_dict_free(&opts);
             ffurl_seek(os->out, offset - frag->start_pos, SEEK_SET);
             if (os->out2)
@@ -220,7 +223,7 @@ static int write_manifest(AVFormatContext *s, int final)
 
     snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
     snprintf(temp_filename, sizeof(temp_filename), "%s/Manifest.tmp", s->filename);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    ret = ffio_open_whitelist(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -329,7 +332,7 @@ static int ism_write_header(AVFormatContext *s)
         }
 
         ctx = avformat_alloc_context();
-        if (!ctx) {
+        if (!ctx || ff_copy_whitelists(ctx, s) < 0) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -409,7 +412,7 @@ static int parse_fragment(AVFormatContext *s, const char *filename, int64_t *sta
     AVIOContext *in;
     int ret;
     uint32_t len;
-    if ((ret = avio_open2(&in, filename, AVIO_FLAG_READ, &s->interrupt_callback, NULL)) < 0)
+    if ((ret = ffio_open_whitelist(&in, filename, AVIO_FLAG_READ, &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0)
         return ret;
     ret = AVERROR(EIO);
     *moof_size = avio_rb32(in);
@@ -486,9 +489,9 @@ static int copy_moof(AVFormatContext *s, const char* infile, const char *outfile
 {
     AVIOContext *in, *out;
     int ret = 0;
-    if ((ret = avio_open2(&in, infile, AVIO_FLAG_READ, &s->interrupt_callback, NULL)) < 0)
+    if ((ret = ffio_open_whitelist(&in, infile, AVIO_FLAG_READ, &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0)
         return ret;
-    if ((ret = avio_open2(&out, outfile, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL)) < 0) {
+    if ((ret = ffio_open_whitelist(&out, outfile, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
         avio_close(in);
         return ret;
     }
@@ -523,7 +526,7 @@ static int ism_flush(AVFormatContext *s, int final)
             continue;
 
         snprintf(filename, sizeof(filename), "%s/temp", os->dirname);
-        ret = ffurl_open(&os->out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+        ret = ffurl_open_whitelist(&os->out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist);
         if (ret < 0)
             break;
         os->cur_start_pos = os->tail_pos;

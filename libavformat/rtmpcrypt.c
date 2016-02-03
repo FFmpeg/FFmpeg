@@ -264,8 +264,9 @@ static int rtmpe_open(URLContext *h, const char *uri, int flags)
     }
 
     /* open the tcp or ffrtmphttp connection */
-    if ((ret = ffurl_open(&rt->stream, url, AVIO_FLAG_READ_WRITE,
-                          &h->interrupt_callback, NULL)) < 0) {
+    if ((ret = ffurl_open_whitelist(&rt->stream, url, AVIO_FLAG_READ_WRITE,
+                                    &h->interrupt_callback, NULL,
+                                    h->protocol_whitelist)) < 0) {
         rtmpe_close(h);
         return ret;
     }

@@ -219,8 +219,9 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
 
     if (!s->hd) {
-        err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE,
-                         &h->interrupt_callback, options);
+        err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
+                                   &h->interrupt_callback, options,
+                                   h->protocol_whitelist);
         if (err < 0)
             return err;
     }
@@ -453,8 +454,10 @@ static int http_listen(URLContext *h, const char *uri, int flags,
                 NULL);
     if ((ret = av_dict_set_int(options, "listen", s->listen, 0)) < 0)
         goto fail;
-    if ((ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
-                          &h->interrupt_callback, options)) < 0)
+    if ((ret = ffurl_open_whitelist(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
+                                    &h->interrupt_callback, options,
+                                    h->protocol_whitelist
+                                   )) < 0)
         goto fail;
     s->handshake_step = LOWER_PROTO;
     if (s->listen == HTTP_SINGLE) { /* single client */
@@ -1519,6 +1522,7 @@ URLProtocol ff_http_protocol = {
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &http_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist   = "http,https,tls,rtp,tcp,udp"
 };
 #endif /* CONFIG_HTTP_PROTOCOL */
 
@@ -1537,6 +1541,7 @@ URLProtocol ff_https_protocol = {
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &https_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist   = "http,https,tls,rtp,tcp,udp"
 };
 #endif /* CONFIG_HTTPS_PROTOCOL */
 
@@ -1575,8 +1580,9 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
                 NULL);
 redo:
-    ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
+    ret = ffurl_open_whitelist(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
+                               &h->interrupt_callback, NULL,
+                               h->protocol_whitelist);
     if (ret < 0)
         return ret;
 

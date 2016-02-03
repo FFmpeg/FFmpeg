@@ -164,7 +164,8 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     // Build new URI for passing to http protocol
     ff_url_join(h_url, sizeof(h_url), "http", auth, host, port, "%s", path);
     // Finally open http proto handler
-    ret = ffurl_open(&s->hd, h_url, AVIO_FLAG_READ_WRITE, NULL, &opt_dict);
+    ret = ffurl_open_whitelist(&s->hd, h_url, AVIO_FLAG_READ_WRITE, NULL,
+                               &opt_dict, h->protocol_whitelist);
 
 cleanup:
     av_freep(&user);

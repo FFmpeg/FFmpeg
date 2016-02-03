@@ -35,6 +35,7 @@
 #include "libavutil/time_internal.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "os_support.h"
 
@@ -209,8 +210,8 @@ static int hls_encryption_start(AVFormatContext *s)
     AVIOContext *pb;
     uint8_t key[KEYSIZE];
 
-    if ((ret = avio_open2(&pb, hls->key_info_file, AVIO_FLAG_READ,
-                           &s->interrupt_callback, NULL)) < 0) {
+    if ((ret = ffio_open_whitelist(&pb, hls->key_info_file, AVIO_FLAG_READ,
+                           &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
         av_log(hls, AV_LOG_ERROR,
                 "error opening key info file %s\n", hls->key_info_file);
         return ret;
@@ -237,8 +238,8 @@ static int hls_encryption_start(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if ((ret = avio_open2(&pb, hls->key_file, AVIO_FLAG_READ,
-                           &s->interrupt_callback, NULL)) < 0) {
+    if ((ret = ffio_open_whitelist(&pb, hls->key_file, AVIO_FLAG_READ,
+                           &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
         av_log(hls, AV_LOG_ERROR, "error opening key file %s\n", hls->key_file);
         return ret;
     }
@@ -394,8 +395,8 @@ static int hls_window(AVFormatContext *s, int last)
 
     set_http_options(&options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
-    if ((ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, &options)) < 0)
+    if ((ret = ffio_open_whitelist(&out, temp_filename, AVIO_FLAG_WRITE,
+                          &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
         goto fail;
 
     for (en = hls->segments; en; en = en->next) {
@@ -445,8 +446,8 @@ static int hls_window(AVFormatContext *s, int last)
         avio_printf(out, "#EXT-X-ENDLIST\n");
 
     if( hls->vtt_m3u8_name ) {
-        if ((ret = avio_open2(&sub_out, hls->vtt_m3u8_name, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, &options)) < 0)
+        if ((ret = ffio_open_whitelist(&sub_out, hls->vtt_m3u8_name, AVIO_FLAG_WRITE,
+                          &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
             goto fail;
         avio_printf(sub_out, "#EXTM3U\n");
         avio_printf(sub_out, "#EXT-X-VERSION:%d\n", version);
@@ -542,20 +543,20 @@ static int hls_start(AVFormatContext *s)
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
-                         &s->interrupt_callback, &options);
+        err = ffio_open_whitelist(&oc->pb, filename, AVIO_FLAG_WRITE,
+                         &s->interrupt_callback, &options, s->protocol_whitelist);
         av_free(filename);
         av_dict_free(&options);
         if (err < 0)
             return err;
     } else
-        if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, &options)) < 0)
+        if ((err = ffio_open_whitelist(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
+                          &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
             goto fail;
     if (c->vtt_basename) {
         set_http_options(&options, c);
-        if ((err = avio_open2(&vtt_oc->pb, vtt_oc->filename, AVIO_FLAG_WRITE,
-                         &s->interrupt_callback, &options)) < 0)
+        if ((err = ffio_open_whitelist(&vtt_oc->pb, vtt_oc->filename, AVIO_FLAG_WRITE,
+                         &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
             goto fail;
     }
     av_dict_free(&options);

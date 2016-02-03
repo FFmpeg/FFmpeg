@@ -73,7 +73,13 @@ static const AVClass *urlcontext_child_class_next(const AVClass *prev)
     return NULL;
 }
 
-static const AVOption options[] = { { NULL } };
+#define OFFSET(x) offsetof(URLContext,x)
+#define E AV_OPT_FLAG_ENCODING_PARAM
+#define D AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    {"protocol_whitelist", "List of protocols that are allowed to be used", OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
+    { NULL }
+};
 const AVClass ffurl_context_class = {
     .class_name       = "URLContext",
     .item_name        = urlcontext_to_name,
@@ -201,12 +207,43 @@ fail:
 
 int ffurl_connect(URLContext *uc, AVDictionary **options)
 {
-    int err =
+    int err;
+    AVDictionary *tmp_opts = NULL;
+    AVDictionaryEntry *e;
+
+    if (!options)
+        options = &tmp_opts;
+
+    // Check that URLContext was initialized correctly and lists are matching if set
+    av_assert0(!(e=av_dict_get(*options, "protocol_whitelist", NULL, 0)) ||
+               (uc->protocol_whitelist && !strcmp(uc->protocol_whitelist, e->value)));
+
+    if (uc->protocol_whitelist && av_match_list(uc->prot->name, uc->protocol_whitelist, ',') <= 0) {
+        av_log(uc, AV_LOG_ERROR, "Protocol not on whitelist \'%s\'!\n", uc->protocol_whitelist);
+        return AVERROR(EINVAL);
+    }
+
+    if (!uc->protocol_whitelist && uc->prot->default_whitelist) {
+        av_log(uc, AV_LOG_DEBUG, "Setting default whitelist '%s'\n", uc->prot->default_whitelist);
+        uc->protocol_whitelist = av_strdup(uc->prot->default_whitelist);
+        if (!uc->protocol_whitelist) {
+            return AVERROR(ENOMEM);
+        }
+    } else if (!uc->protocol_whitelist)
+        av_log(uc, AV_LOG_DEBUG, "No default whitelist set\n"); // This should be an error once all declare a default whitelist
+
+    if ((err = av_dict_set(options, "protocol_whitelist", uc->protocol_whitelist, 0)) < 0)
+        return err;
+
+    err =
         uc->prot->url_open2 ? uc->prot->url_open2(uc,
                                                   uc->filename,
                                                   uc->flags,
                                                   options) :
         uc->prot->url_open(uc, uc->filename, uc->flags);
+
+    av_dict_set(options, "protocol_whitelist", NULL, 0);
+
     if (err)
         return err;
     uc->is_connected = 1;
@@ -296,24 +333,46 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
 
-int ffurl_open(URLContext **puc, const char *filename, int flags,
-               const AVIOInterruptCB *int_cb, AVDictionary **options)
+int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
+                         const AVIOInterruptCB *int_cb, AVDictionary **options, const char *whitelist)
 {
+    AVDictionary *tmp_opts = NULL;
+    AVDictionaryEntry *e;
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
     if (ret < 0)
         return ret;
     if (options && (*puc)->prot->priv_data_class &&
         (ret = av_opt_set_dict((*puc)->priv_data, options)) < 0)
         goto fail;
+
+    if (!options)
+        options = &tmp_opts;
+
+    av_assert0(!whitelist ||
+               !(e=av_dict_get(*options, "protocol_whitelist", NULL, 0)) ||
+               !strcmp(whitelist, e->value));
+
+    if ((ret = av_dict_set(options, "protocol_whitelist", whitelist, 0)) < 0)
+        goto fail;
+
     if ((ret = av_opt_set_dict(*puc, options)) < 0)
         goto fail;
+
     ret = ffurl_connect(*puc, options);
+
     if (!ret)
         return 0;
 fail:
     ffurl_close(*puc);
     *puc = NULL;
     return ret;
+}
+
+int ffurl_open(URLContext **puc, const char *filename, int flags,
+               const AVIOInterruptCB *int_cb, AVDictionary **options)
+{
+    return ffurl_open_whitelist(puc, filename, flags,
+                                int_cb, options, NULL);
 }
 
 static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,

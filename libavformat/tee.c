@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "avio_internal.h"
 
 #define MAX_SLAVES 16
 
@@ -226,7 +227,9 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     }
 
     if (!(avf2->oformat->flags & AVFMT_NOFILE)) {
-        if ((ret = avio_open(&avf2->pb, filename, AVIO_FLAG_WRITE)) < 0) {
+        if ((ret = ffio_open_whitelist(&avf2->pb, filename, AVIO_FLAG_WRITE,
+                                       &avf->interrupt_callback, NULL,
+                                       avf->protocol_whitelist)) < 0) {
             av_log(avf, AV_LOG_ERROR, "Slave '%s': error opening: %s\n",
                    slave, av_err2str(ret));
             goto end;

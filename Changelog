@@ -63,6 +63,7 @@ version <next>:
 - Cineform HD decoder
 - new DCA decoder with full support for DTS-HD extensions
 - significant performance improvements in Windows Television (WTV) demuxer
+- nnedi deinterlacer
 
 
 version 2.8:

@@ -466,6 +466,17 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     }
 #endif
 
+    /* Check audio channel option for valid values: 2, 8 or 16 */
+    switch (cctx->audio_channels) {
+        case 2:
+        case 8:
+        case 16:
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Value of channels option must be one of 2, 8 or 16\n");
+            return AVERROR(EINVAL);
+    }
+
     iter = CreateDeckLinkIteratorInstance();
     if (!iter) {
         av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
@@ -543,7 +554,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id    = AV_CODEC_ID_PCM_S16LE;
     st->codec->sample_rate = bmdAudioSampleRate48kHz;
-    st->codec->channels    = 2;
+    st->codec->channels    = cctx->audio_channels;
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
     ctx->audio_st=st;
 
@@ -587,7 +598,8 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         ctx->teletext_st = st;
     }
 
-    result = ctx->dli->EnableAudioInput(bmdAudioSampleRate48kHz, bmdAudioSampleType16bitInteger, 2);
+    av_log(avctx, AV_LOG_VERBOSE, "Using %d input audio channels\n", ctx->audio_st->codec->channels);
+    result = ctx->dli->EnableAudioInput(bmdAudioSampleRate48kHz, bmdAudioSampleType16bitInteger, ctx->audio_st->codec->channels);
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable audio input\n");

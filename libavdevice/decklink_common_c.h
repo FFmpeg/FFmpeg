@@ -33,6 +33,7 @@ struct decklink_cctx {
     int64_t teletext_lines;
     double preroll;
     int v210;
+    int audio_channels;
 };
 
 #endif /* AVDEVICE_DECKLINK_COMMON_C_H */
