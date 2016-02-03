@@ -39,12 +39,19 @@ int ff_spatial_idwt_init2(DWTContext *d, uint8_t *buffer, int width, int height,
 {
     int ret = 0;
 
+    d->buffer = buffer;
+    d->width  = width;
+    d->height = height;
+    d->stride = stride;
+    d->decomposition_count = decomposition_count;
+    d->temp   = temp;
+
     if (bit_depth == 8)
-        ret = ff_spatial_idwt_init2_8bit(d, buffer, width, height, stride, type, decomposition_count, temp);
+        ret = ff_spatial_idwt_init2_8bit(d, type);
     else if (bit_depth == 10)
-        ret = ff_spatial_idwt_init2_10bit(d, buffer, width, height, stride, type, decomposition_count, temp);
+        ret = ff_spatial_idwt_init2_10bit(d, type);
     else if (bit_depth == 12)
-        ret = ff_spatial_idwt_init2_12bit(d, buffer, width, height, stride, type, decomposition_count, temp);
+        ret = ff_spatial_idwt_init2_12bit(d, type);
     else
         av_log(NULL, AV_LOG_WARNING, "Unsupported bit depth = %i\n", bit_depth);
 

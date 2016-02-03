@@ -516,39 +516,32 @@ static void RENAME(spatial_compose_dd137i_init)(DWTCompose *cs, uint8_t *buffer,
     cs->y = -5;
 }
 
-static int RENAME(ff_spatial_idwt_init2)(DWTContext *d, uint8_t *buffer, int width, int height,
-                                         int stride, enum dwt_type type, int decomposition_count,
-                                         uint8_t *temp)
+static int RENAME(ff_spatial_idwt_init2)(DWTContext *d, enum dwt_type type)
 {
     int level;
 
-    d->buffer = buffer;
-    d->width  = width;
-    d->height = height;
-    d->stride = stride;
-    d->decomposition_count = decomposition_count;
-    d->temp = (uint8_t *)(((TYPE *)temp) + 8);
+    d->temp = (uint8_t *)(((TYPE *)d->temp) + 8);
 
-    for(level=decomposition_count-1; level>=0; level--){
-        int hl = height >> level;
-        int stride_l = stride << level;
+    for (level = d->decomposition_count - 1; level >= 0; level--){
+        int hl = d->height >> level;
+        int stride_l = d->stride << level;
 
         switch(type){
             case DWT_DIRAC_DD9_7:
-                RENAME(spatial_compose_dd97i_init)(d->cs+level, buffer, hl, stride_l);
+                RENAME(spatial_compose_dd97i_init)(d->cs+level, d->buffer, hl, stride_l);
                 break;
             case DWT_DIRAC_LEGALL5_3:
-                RENAME(spatial_compose53i_init2)(d->cs+level, buffer, hl, stride_l);
+                RENAME(spatial_compose53i_init2)(d->cs+level, d->buffer, hl, stride_l);
                 break;
             case DWT_DIRAC_DD13_7:
-                RENAME(spatial_compose_dd137i_init)(d->cs+level, buffer, hl, stride_l);
+                RENAME(spatial_compose_dd137i_init)(d->cs+level, d->buffer, hl, stride_l);
                 break;
             case DWT_DIRAC_HAAR0:
             case DWT_DIRAC_HAAR1:
                 d->cs[level].y = 1;
                 break;
             case DWT_DIRAC_DAUB9_7:
-                RENAME(spatial_compose97i_init2)(d->cs+level, buffer, hl, stride_l);
+                RENAME(spatial_compose97i_init2)(d->cs+level, d->buffer, hl, stride_l);
                 break;
             default:
                 d->cs[level].y = 0;
