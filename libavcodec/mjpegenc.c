@@ -253,12 +253,24 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     return ret;
 }
 
+#define OFFSET(x) offsetof(MpegEncContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+FF_MPV_COMMON_OPTS
+{ "pred", "Prediction method", OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 3, VE, "pred" },
+    { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "pred" },
+    { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "pred" },
+    { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 3 }, INT_MIN, INT_MAX, VE, "pred" },
+
+{ NULL},
+};
+
 #if CONFIG_MJPEG_ENCODER
 
 static const AVClass mjpeg_class = {
     .class_name = "mjpeg encoder",
     .item_name  = av_default_item_name,
-    .option     = ff_mpv_generic_options,
+    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -268,6 +280,7 @@ AVCodec ff_mjpeg_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
+    .priv_class     = &mjpeg_class,
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
@@ -282,7 +295,7 @@ AVCodec ff_mjpeg_encoder = {
 static const AVClass amv_class = {
     .class_name = "amv encoder",
     .item_name  = av_default_item_name,
-    .option     = ff_mpv_generic_options,
+    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

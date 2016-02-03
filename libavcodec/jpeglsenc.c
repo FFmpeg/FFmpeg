@@ -35,6 +35,12 @@
 #include "mjpegenc.h"
 #include "jpegls.h"
 
+typedef struct JPEGLSContext {
+    AVClass *class;
+
+    int pred;
+} JPEGLSContext;
+
 /**
  * Encode error from regular symbol
  */
@@ -250,8 +256,8 @@ static void ls_store_lse(JLSState *state, PutBitContext *pb)
 static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pict, int *got_packet)
 {
+    JPEGLSContext *ctx = avctx->priv_data;
     const AVFrame *const p = pict;
-    const int near         = avctx->prediction_method;
     PutBitContext pb, pb2;
     GetBitContext gb;
     uint8_t *buf2 = NULL;
@@ -261,6 +267,13 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     JLSState *state = NULL;
     int i, size, ret;
     int comps;
+
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        ctx->pred = avctx->prediction_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 ||
         avctx->pix_fmt == AV_PIX_FMT_GRAY16)
@@ -300,7 +313,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
         put_bits(&pb, 8, i);   // component ID
         put_bits(&pb, 8, 0);   // mapping index: none
     }
-    put_bits(&pb, 8, near);
+    put_bits(&pb, 8, ctx->pred);
     put_bits(&pb, 8, (comps > 1) ? 1 : 0);  // interleaving: 0 - plane, 1 - line
     put_bits(&pb, 8, 0);  // point transform: none
 
@@ -309,7 +322,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
         goto memfail;
 
     /* initialize JPEG-LS state from JPEG parameters */
-    state->near = near;
+    state->near = ctx->pred;
     state->bpp  = (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8;
     ff_jpegls_reset_coding_parameters(state, 0);
     ff_jpegls_init_state(state);
@@ -432,11 +445,31 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
+#define OFFSET(x) offsetof(JPEGLSContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+{ "pred", "Prediction method", OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, VE, "pred" },
+    { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, VE, "pred" },
+    { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "pred" },
+    { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "pred" },
+
+    { NULL},
+};
+
+static const AVClass jpegls_class = {
+    .class_name = "jpegls",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_jpegls_encoder = {
     .name           = "jpegls",
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEGLS,
+    .priv_data_size = sizeof(JPEGLSContext),
+    .priv_class     = &jpegls_class,
     .init           = encode_init_ls,
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .encode2        = encode_picture_ls,

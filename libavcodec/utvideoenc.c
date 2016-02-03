@@ -26,6 +26,8 @@
 
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "bswapdsp.h"
@@ -111,6 +113,8 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     ff_bswapdsp_init(&c->bdsp);
     ff_huffyuvencdsp_init(&c->hdsp);
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
     /* Check the prediction method, and error out if unsupported */
     if (avctx->prediction_method < 0 || avctx->prediction_method > 4) {
         av_log(avctx, AV_LOG_WARNING,
@@ -126,7 +130,10 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     /* Convert from libavcodec prediction type to Ut Video's */
-    c->frame_pred = ff_ut_pred_order[avctx->prediction_method];
+    if (avctx->prediction_method)
+        c->frame_pred = ff_ut_pred_order[avctx->prediction_method];
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (c->frame_pred == PRED_GRADIENT) {
         av_log(avctx, AV_LOG_ERROR, "Gradient prediction is not supported.\n");
@@ -629,12 +636,32 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
+#define OFFSET(x) offsetof(UtvideoContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+{ "pred", "Prediction method", OFFSET(frame_pred), AV_OPT_TYPE_INT, { .i64 = PRED_LEFT }, PRED_NONE, PRED_MEDIAN, VE, "pred" },
+    { "none",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_NONE }, INT_MIN, INT_MAX, VE, "pred" },
+    { "left",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_LEFT }, INT_MIN, INT_MAX, VE, "pred" },
+    { "gradient", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_GRADIENT }, INT_MIN, INT_MAX, VE, "pred" },
+    { "median",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_MEDIAN }, INT_MIN, INT_MAX, VE, "pred" },
+
+    { NULL},
+};
+
+static const AVClass utvideo_class = {
+    .class_name = "utvideo",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_utvideo_encoder = {
     .name           = "utvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Ut Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_UTVIDEO,
     .priv_data_size = sizeof(UtvideoContext),
+    .priv_class     = &utvideo_class,
     .init           = utvideo_encode_init,
     .encode2        = utvideo_encode_frame,
     .close          = utvideo_encode_close,

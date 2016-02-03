@@ -62,9 +62,11 @@ typedef struct {
 } UtVideoExtra;
 
 typedef struct {
+    const AVClass *c;
     CCodec *codec;
     unsigned int buf_size;
     uint8_t *buffer;
+    int pred;
 } UtVideoContext;
 
 #endif /* AVCODEC_LIBUTVIDEO_H */

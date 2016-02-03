@@ -190,7 +190,7 @@ void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4
 }
 
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
-                                    ScanTable *intra_scantable,
+                                    ScanTable *intra_scantable, int pred,
                                     uint16_t luma_intra_matrix[64],
                                     uint16_t chroma_intra_matrix[64])
 {
@@ -282,7 +282,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
         put_bits(pb, 4, 0); /* AC huffman table index */
     }
 
-    put_bits(pb, 8, lossless ? avctx->prediction_method + 1 : 0); /* Ss (not used) */
+    put_bits(pb, 8, lossless ? pred : 0); /* Ss (not used) */
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MJPEG:  put_bits(pb, 8, 63); break; /* Se (not used) */

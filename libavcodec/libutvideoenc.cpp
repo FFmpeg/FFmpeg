@@ -73,8 +73,15 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        utv->pred = avctx->prediction_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     /* Check before we alloc anything */
-    if (avctx->prediction_method != 0 && avctx->prediction_method != 2) {
+    if (utv->pred != 0 && utv->pred != 2) {
         av_log(avctx, AV_LOG_ERROR, "Invalid prediction method.\n");
         return AVERROR(EINVAL);
     }
@@ -218,6 +225,28 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(UtVideoContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "pred", "Prediction method", OFFSET(pred), AV_OPT_TYPE_INT, 0, 0, 2, VE, "pred" },
+    { "left",   NULL, 0, AV_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, VE, "pred" },
+    { "median",   NULL, 0, AV_OPT_TYPE_CONST, 2, INT_MIN, INT_MAX, VE, "pred" },
+};
+
+static const AVClass utvideo_class = {
+    "libutvideo",
+    av_default_item_name,
+    options.
+    LIBAVUTIL_VERSION,
+    0,
+    0,
+    NULL,
+    NULL,
+    0,
+    NULL,
+    NULL,
+};
+
 AVCodec ff_libutvideo_encoder = {
     "libutvideo",
     NULL_IF_CONFIG_SMALL("Ut Video"),
@@ -233,7 +262,7 @@ AVCodec ff_libutvideo_encoder = {
     NULL, /* sample_fmts */
     NULL, /* channel_layouts */
     0,    /* max_lowres */
-    NULL, /* priv_class */
+    &utvideo_class, /* priv_class */
     NULL, /* profiles */
     sizeof(UtVideoContext),
     NULL, /* next */
