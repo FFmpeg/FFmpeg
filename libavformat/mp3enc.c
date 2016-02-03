@@ -192,7 +192,8 @@ static int mp3_write_xing(AVFormatContext *s)
             return -1;
         header |= mask;
 
-        avpriv_mpegaudio_decode_header(&mpah, header);
+        ret = avpriv_mpegaudio_decode_header(&mpah, header);
+        av_assert0(ret >= 0);
         mp3->xing_offset = xing_offtbl[mpah.lsf == 1][mpah.nb_channels == 1] + 4;
         bytes_needed     = mp3->xing_offset + XING_SIZE;
 
