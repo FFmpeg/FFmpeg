@@ -23,7 +23,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "dirac_dwt.h"
-#include "libavcodec/x86/dirac_dwt.h"
 
 #define TEMPLATE_8bit
 #include "dirac_dwt_template.c"
@@ -54,8 +53,8 @@ int ff_spatial_idwt_init2(DWTContext *d, uint8_t *buffer, int width, int height,
         return AVERROR_INVALIDDATA;
     }
 
-    if (HAVE_MMX && bit_depth == 8)
-        ff_spatial_idwt_init_mmx(d, type);
+    if (ARCH_X86 && bit_depth == 8)
+        ff_spatial_idwt_init_x86(d, type);
     return 0;
 }
 

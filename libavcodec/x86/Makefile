@@ -6,7 +6,8 @@ OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
 OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_init.o
 OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
-OBJS-$(CONFIG_DIRAC_DECODER)           += x86/diracdsp_init.o
+OBJS-$(CONFIG_DIRAC_DECODER)           += x86/diracdsp_init.o           \
+                                          x86/dirac_dwt_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_FLACDSP)                 += x86/flacdsp_init.o
@@ -73,7 +74,6 @@ OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 
 # GCC inline assembly optimizations
 # subsystems
-MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
 MMX-OBJS-$(CONFIG_FDCTDSP)             += x86/fdct.o
 MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/simple_idct.o
 
@@ -135,7 +135,7 @@ YASM-OBJS-$(CONFIG_ALAC_DECODER)       += x86/alacdsp.o
 YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/synth_filter.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp.o                \
-                                          x86/dwt_yasm.o
+                                          x86/dirac_dwt.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o
 ifdef CONFIG_GPL
