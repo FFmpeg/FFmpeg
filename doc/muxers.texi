@@ -318,6 +318,26 @@ ffmpeg in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file000.ts}, @file{file001.ts}, @file{file002.ts}, etc.
 
+@item use_localtime
+Use strftime on @var{filename} to expand the segment filename with localtime.
+The segment number (%d) is not available in this mode.
+@example
+ffmpeg in.nut -use_localtime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
+@end example
+This example will produce the playlist, @file{out.m3u8}, and segment files:
+@file{file-20160215-1455569023.ts}, @file{file-20160215-1455569024.ts}, etc.
+
+@item use_localtime_mkdir
+Used together with -use_localtime, it will create up to one subdirectory which
+is expanded in @var{filename}.
+@example
+ffmpeg in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
+@end example
+This example will create a directory 201560215 (if it does not exist), and then
+produce the playlist, @file{out.m3u8}, and segment files:
+@file{201560215/file-20160215-1455569023.ts}, @file{201560215/file-20160215-1455569024.ts}, etc.
+
+
 @item hls_key_info_file @var{key_info_file}
 Use the information in @var{key_info_file} for segment encryption. The first
 line of @var{key_info_file} specifies the key URI written to the playlist. The
