@@ -160,6 +160,9 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1') }, /* HEVC/H.265 which indicates parameter sets shall not be in ES */
 
     { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') }, /* AVC-1/H.264 */
+    { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '2') },
+    { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '3') },
+    { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '4') },
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '5', 'p') }, /* AVC-Intra  50M 720p24/30/60 */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '5', 'q') }, /* AVC-Intra  50M 720p25/50 */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '5', '2') }, /* AVC-Intra  50M 1080p25/50 */
