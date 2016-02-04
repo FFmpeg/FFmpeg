@@ -4005,9 +4005,11 @@ static int mov_read_frma(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         break;
 
     default:
-        av_log(c->fc, AV_LOG_WARNING,
-               "ignoring 'frma' atom of '%.4s', stream format is '%.4s'\n",
-               (char*)&format, (char*)&sc->format);
+        if (format != sc->format) {
+            av_log(c->fc, AV_LOG_WARNING,
+                   "ignoring 'frma' atom of '%.4s', stream format is '%.4s'\n",
+                   (char*)&format, (char*)&sc->format);
+        }
         break;
     }
 
