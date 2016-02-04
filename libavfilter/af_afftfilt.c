@@ -94,7 +94,8 @@ static int config_input(AVFilterLink *inlink)
     char *saveptr = NULL;
     int ret = 0, ch, i;
     float overlap;
-    char *args, *last_expr = NULL;
+    char *args;
+    const char *last_expr = "1";
 
     s->fft  = av_fft_init(s->fft_bits, 0);
     s->ifft = av_fft_init(s->fft_bits, 1);
