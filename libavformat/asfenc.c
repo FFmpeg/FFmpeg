@@ -23,6 +23,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "avlanguage.h"
 #include "avio_internal.h"
@@ -172,18 +173,19 @@
      ASF_PAYLOAD_REPLICATED_DATA_LENGTH +                 \
      ASF_PAYLOAD_LENGTH_FIELD_SIZE)
 
-#define SINGLE_PAYLOAD_DATA_LENGTH                        \
-    (PACKET_SIZE -                                        \
-     PACKET_HEADER_MIN_SIZE -                             \
+#define SINGLE_PAYLOAD_HEADERS                            \
+    (PACKET_HEADER_MIN_SIZE +                             \
      PAYLOAD_HEADER_SIZE_SINGLE_PAYLOAD)
 
-#define MULTI_PAYLOAD_CONSTANT                            \
-    (PACKET_SIZE -                                        \
-     PACKET_HEADER_MIN_SIZE -                             \
-     1 -         /* Payload Flags */                      \
+#define MULTI_PAYLOAD_HEADERS                             \
+    (PACKET_HEADER_MIN_SIZE +                             \
+     1 +         /* Payload Flags */                      \
      2 * PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS)
 
 #define DATA_HEADER_SIZE 50
+
+#define PACKET_SIZE_MAX 65536
+#define PACKET_SIZE_MIN 100
 
 typedef struct ASFPayload {
     uint8_t type;
@@ -234,7 +236,7 @@ typedef struct ASFContext {
     int64_t packet_timestamp_start;
     int64_t packet_timestamp_end;
     unsigned int packet_nb_payloads;
-    uint8_t packet_buf[PACKET_SIZE];
+    uint8_t packet_buf[PACKET_SIZE_MAX];
     AVIOContext pb;
     /* only for reading */
     uint64_t data_offset;                ///< beginning of the first data packet
@@ -247,6 +249,7 @@ typedef struct ASFContext {
     uint64_t next_packet_offset;
     int      next_start_sec;
     int      end_sec;
+    int      packet_size;
 } ASFContext;
 
 static const AVCodecTag codec_asf_bmp_tags[] = {
@@ -755,7 +758,7 @@ static int asf_write_header(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
 
-    s->packet_size  = PACKET_SIZE;
+    s->packet_size  = asf->packet_size;
     s->max_interleave_delta = 0;
     asf->nb_packets = 0;
 
@@ -866,7 +869,7 @@ static void flush_packet(AVFormatContext *s)
                                                asf->packet_nb_payloads,
                                                asf->packet_size_left);
 
-    packet_filled_size = PACKET_SIZE - asf->packet_size_left;
+    packet_filled_size = asf->packet_size - asf->packet_size_left;
     av_assert0(packet_hdr_size <= asf->packet_size_left);
     memset(asf->packet_buf + packet_filled_size, 0, asf->packet_size_left);
 
@@ -923,13 +926,14 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, AVStream *avst,
     while (m_obj_offset < m_obj_size) {
         payload_len = m_obj_size - m_obj_offset;
         if (asf->packet_timestamp_start == -1) {
-            asf->multi_payloads_present = (payload_len < MULTI_PAYLOAD_CONSTANT);
+            const int multi_payload_constant = (asf->packet_size - MULTI_PAYLOAD_HEADERS);
+            asf->multi_payloads_present = (payload_len < multi_payload_constant);
 
-            asf->packet_size_left = PACKET_SIZE;
+            asf->packet_size_left = asf->packet_size;
             if (asf->multi_payloads_present) {
-                frag_len1 = MULTI_PAYLOAD_CONSTANT - 1;
+                frag_len1 = multi_payload_constant - 1;
             } else {
-                frag_len1 = SINGLE_PAYLOAD_DATA_LENGTH;
+                frag_len1 = asf->packet_size - SINGLE_PAYLOAD_HEADERS;
             }
             asf->packet_timestamp_start = timestamp;
         } else {
@@ -1124,11 +1128,16 @@ static int asf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static const AVOption asf_options[] = {
+    { "packet_size", "Packet size", offsetof(ASFContext, packet_size), AV_OPT_TYPE_INT, {.i64 = 3200}, PACKET_SIZE_MIN, PACKET_SIZE_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL },
+};
+
 #if CONFIG_ASF_MUXER
 static const AVClass asf_muxer_class = {
     .class_name     = "ASF muxer",
     .item_name      = av_default_item_name,
-    .option         = 0,
+    .option         = asf_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
@@ -1155,7 +1164,7 @@ AVOutputFormat ff_asf_muxer = {
 static const AVClass asf_stream_muxer_class = {
     .class_name     = "ASF stream muxer",
     .item_name      = av_default_item_name,
-    .option         = 0,
+    .option         = asf_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
 

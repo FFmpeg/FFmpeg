@@ -26,8 +26,6 @@
 #include "metadata.h"
 #include "riff.h"
 
-#define PACKET_SIZE 3200
-
 typedef enum ASFDataType {
     ASF_UNICODE    = 0,
     ASF_BYTE_ARRAY = 1,
