@@ -565,12 +565,17 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     int today = 0, negative = 0, microseconds = 0;
     int i;
     static const char * const date_fmt[] = {
-        "%Y-%m-%d",
+        "%Y - %m - %d",
         "%Y%m%d",
     };
     static const char * const time_fmt[] = {
         "%H:%M:%S",
         "%H%M%S",
+    };
+    static const char * const tz_fmt[] = {
+        "%H:%M",
+        "%H%M",
+        "%H",
     };
 
     p = timestr;
@@ -600,8 +605,11 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         }
         p = q;
 
-        if (*p == 'T' || *p == 't' || *p == ' ')
+        if (*p == 'T' || *p == 't')
             p++;
+        else
+            while (av_isspace(*p))
+                p++;
 
         /* parse the hour-minute-second part */
         for (i = 0; i < FF_ARRAY_ELEMS(time_fmt); i++) {
@@ -655,7 +663,23 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
     } else {
         int is_utc = *q == 'Z' || *q == 'z';
+        int tzoffset = 0;
         q += is_utc;
+        if (!today && !is_utc && (*q == '+' || *q == '-')) {
+            struct tm tz = { 0 };
+            int sign = (*q == '+' ? -1 : 1);
+            q++;
+            p = q;
+            for (i = 0; i < FF_ARRAY_ELEMS(tz_fmt); i++) {
+                q = av_small_strptime(p, tz_fmt[i], &tz);
+                if (q)
+                    break;
+            }
+            if (!q)
+                return AVERROR(EINVAL);
+            tzoffset = sign * (tz.tm_hour * 60 + tz.tm_min) * 60;
+            is_utc = 1;
+        }
         if (today) { /* fill in today's date */
             struct tm dt2 = is_utc ? *gmtime_r(&now, &tmbuf) : *localtime_r(&now, &tmbuf);
             dt2.tm_hour = dt.tm_hour;
@@ -664,6 +688,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             dt = dt2;
         }
         t = is_utc ? av_timegm(&dt) : mktime(&dt);
+        t += tzoffset;
     }
 
     /* Check that we are at the end of the string */
@@ -860,7 +885,10 @@ int main(void)
             "now",
             "12:35:46",
             "2000-12-20 0:02:47.5z",
+            "2012 - 02-22  17:44:07",
             "2000-12-20T010247.6",
+            "2000-12-12 1:35:46+05:30",
+            "2112-12-12 22:30:40-02",
         };
         static const char * const duration_string[] = {
             "2:34:56.79",
