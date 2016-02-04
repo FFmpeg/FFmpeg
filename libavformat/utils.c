@@ -4751,3 +4751,20 @@ void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
         s->io_close(s, *pb);
     *pb = NULL;
 }
+
+int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds)
+{
+    AVDictionaryEntry *entry;
+    int64_t parsed_timestamp;
+    int ret;
+    if ((entry = av_dict_get(s->metadata, "creation_time", NULL, 0))) {
+        if ((ret = av_parse_time(&parsed_timestamp, entry->value, 0)) >= 0) {
+            *timestamp = return_seconds ? parsed_timestamp / 1000000 : parsed_timestamp;
+            return 1;
+        } else {
+            av_log(s, AV_LOG_WARNING, "Failed to parse creation_time %s\n", entry->value);
+            return ret;
+        }
+    }
+    return 0;
+}
