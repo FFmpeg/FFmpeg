@@ -31,13 +31,14 @@
 #include "random_seed.h"
 #include "time_internal.h"
 #include "parseutils.h"
+#include "time.h"
 
 #ifdef TEST
 
 #define av_get_random_seed av_get_random_seed_deterministic
 static uint32_t av_get_random_seed_deterministic(void);
 
-#define time(t) 1331972053
+#define av_gettime() 1331972053200000
 
 #endif
 
@@ -558,7 +559,7 @@ time_t av_timegm(struct tm *tm)
 int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 {
     const char *p, *q;
-    int64_t t;
+    int64_t t, now64;
     time_t now;
     struct tm dt = { 0 }, tmbuf;
     int today = 0, negative = 0, microseconds = 0;
@@ -576,10 +577,11 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     q = NULL;
     *timeval = INT64_MIN;
     if (!duration) {
-        now = time(0);
+        now64 = av_gettime();
+        now = now64 / 1000000;
 
         if (!av_strcasecmp(timestr, "now")) {
-            *timeval = (int64_t) now * 1000000;
+            *timeval = now64;
             return 0;
         }
 
@@ -870,7 +872,7 @@ int main(void)
 
         av_log_set_level(AV_LOG_DEBUG);
         putenv(tzstr);
-        printf("(now is 2012-03-17 09:14:13 +0100, local time is UTC+1)\n");
+        printf("(now is 2012-03-17 09:14:13.2 +0100, local time is UTC+1)\n");
         for (i = 0;  i < FF_ARRAY_ELEMS(time_string); i++) {
             printf("%-24s -> ", time_string[i]);
             if (av_parse_time(&tv, time_string[i], 0)) {
