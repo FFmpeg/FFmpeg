@@ -71,6 +71,9 @@ struct gdigrab {
 
 #define REGION_WND_BORDER 3
 
+    int vertres;
+    int desktopvertres;
+	
 /**
  * Callback to handle Windows messages for the region outline window.
  *
@@ -235,8 +238,7 @@ gdigrab_read_header(AVFormatContext *s1)
     AVStream   *st       = NULL;
 
     int bpp;
-    int vertres;
-    int desktopvertres;
+
     RECT virtual_rect;
     RECT clip_rect;
     BITMAP bmp;
@@ -478,7 +480,11 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
                 goto icon_error;
             }
         }
-
+		
+		//that would keep the correct location of mouse with hidpi screens
+		pos.x = pos.x * desktopvertres / vertres;
+		pos.y = pos.y * desktopvertres / vertres;
+		
         av_log(s1, AV_LOG_DEBUG, "Cursor pos (%li,%li) -> (%li,%li)\n",
                 ci.ptScreenPos.x, ci.ptScreenPos.y, pos.x, pos.y);
 
