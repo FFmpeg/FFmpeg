@@ -232,6 +232,7 @@ static const AVOption options[] = {
     { "pred", "Prediction method", OFFSET(pred), AV_OPT_TYPE_INT, 0, 0, 2, VE, "pred" },
     { "left",   NULL, 0, AV_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, VE, "pred" },
     { "median",   NULL, 0, AV_OPT_TYPE_CONST, 2, INT_MIN, INT_MAX, VE, "pred" },
+    { NULL },
 };
 
 static const AVClass utvideo_class = {
