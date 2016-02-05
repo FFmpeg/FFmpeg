@@ -32,19 +32,19 @@ typedef struct DCADSPContext {
                       const int32_t *vq_index,
                       const int8_t hf_vq[1024][32],
                       int32_t scale_factors[32][2],
-                      intptr_t sb_start, intptr_t sb_end,
-                      intptr_t ofs, intptr_t len);
+                      ptrdiff_t sb_start, ptrdiff_t sb_end,
+                      ptrdiff_t ofs, ptrdiff_t len);
 
     void (*decode_joint)(int32_t **dst, int32_t **src,
                          const int32_t *scale_factors,
-                         intptr_t sb_start, intptr_t sb_end,
-                         intptr_t ofs, intptr_t len);
+                         ptrdiff_t sb_start, ptrdiff_t sb_end,
+                         ptrdiff_t ofs, ptrdiff_t len);
 
     void (*lfe_fir_float[2])(float *pcm_samples, int32_t *lfe_samples,
-                             const float *filter_coeff, intptr_t npcmblocks);
+                             const float *filter_coeff, ptrdiff_t npcmblocks);
 
     void (*lfe_x96_float)(float *dst, const float *src,
-                          float *hist, intptr_t len);
+                          float *hist, ptrdiff_t len);
 
     void (*sub_qmf_float[2])(SynthFilterContext *synth,
                              FFTContext *imdct,
@@ -52,14 +52,14 @@ typedef struct DCADSPContext {
                              int32_t **subband_samples_lo,
                              int32_t **subband_samples_hi,
                              float *hist1, int *offset, float *hist2,
-                             const float *filter_coeff, intptr_t npcmblocks,
+                             const float *filter_coeff, ptrdiff_t npcmblocks,
                              float scale);
 
     void (*lfe_fir_fixed)(int32_t *pcm_samples, int32_t *lfe_samples,
-                          const int32_t *filter_coeff, intptr_t npcmblocks);
+                          const int32_t *filter_coeff, ptrdiff_t npcmblocks);
 
     void (*lfe_x96_fixed)(int32_t *dst, const int32_t *src,
-                          int32_t *hist, intptr_t len);
+                          int32_t *hist, ptrdiff_t len);
 
     void (*sub_qmf_fixed[2])(SynthFilterContext *synth,
                              DCADCTContext *imdct,
@@ -67,23 +67,23 @@ typedef struct DCADSPContext {
                              int32_t **subband_samples_lo,
                              int32_t **subband_samples_hi,
                              int32_t *hist1, int *offset, int32_t *hist2,
-                             const int32_t *filter_coeff, intptr_t npcmblocks);
+                             const int32_t *filter_coeff, ptrdiff_t npcmblocks);
 
-    void (*decor)(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_t len);
+    void (*decor)(int32_t *dst, const int32_t *src, int coeff, ptrdiff_t len);
 
     void (*dmix_sub_xch)(int32_t *dst1, int32_t *dst2,
-                         const int32_t *src, intptr_t len);
+                         const int32_t *src, ptrdiff_t len);
 
-    void (*dmix_sub)(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_t len);
+    void (*dmix_sub)(int32_t *dst, const int32_t *src, int coeff, ptrdiff_t len);
 
-    void (*dmix_add)(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_t len);
+    void (*dmix_add)(int32_t *dst, const int32_t *src, int coeff, ptrdiff_t len);
 
-    void (*dmix_scale)(int32_t *dst, intptr_t scale, intptr_t len);
+    void (*dmix_scale)(int32_t *dst, int scale, ptrdiff_t len);
 
-    void (*dmix_scale_inv)(int32_t *dst, intptr_t scale_inv, intptr_t len);
+    void (*dmix_scale_inv)(int32_t *dst, int scale_inv, ptrdiff_t len);
 
     void (*assemble_freq_bands)(int32_t *dst, int32_t *src0, int32_t *src1,
-                                const int32_t *coeff, intptr_t len);
+                                const int32_t *coeff, ptrdiff_t len);
 } DCADSPContext;
 
 av_cold void ff_dcadsp_init(DCADSPContext *s);

@@ -27,8 +27,8 @@ static void decode_hf_c(int32_t **dst,
                         const int32_t *vq_index,
                         const int8_t hf_vq[1024][32],
                         int32_t scale_factors[32][2],
-                        intptr_t sb_start, intptr_t sb_end,
-                        intptr_t ofs, intptr_t len)
+                        ptrdiff_t sb_start, ptrdiff_t sb_end,
+                        ptrdiff_t ofs, ptrdiff_t len)
 {
     int i, j;
 
@@ -42,8 +42,8 @@ static void decode_hf_c(int32_t **dst,
 
 static void decode_joint_c(int32_t **dst, int32_t **src,
                            const int32_t *scale_factors,
-                           intptr_t sb_start, intptr_t sb_end,
-                           intptr_t ofs, intptr_t len)
+                           ptrdiff_t sb_start, ptrdiff_t sb_end,
+                           ptrdiff_t ofs, ptrdiff_t len)
 {
     int i, j;
 
@@ -55,7 +55,7 @@ static void decode_joint_c(int32_t **dst, int32_t **src,
 }
 
 static void lfe_fir_float_c(float *pcm_samples, int32_t *lfe_samples,
-                            const float *filter_coeff, intptr_t npcmblocks,
+                            const float *filter_coeff, ptrdiff_t npcmblocks,
                             int dec_select)
 {
     // Select decimation factor
@@ -85,19 +85,19 @@ static void lfe_fir_float_c(float *pcm_samples, int32_t *lfe_samples,
 }
 
 static void lfe_fir1_float_c(float *pcm_samples, int32_t *lfe_samples,
-                             const float *filter_coeff, intptr_t npcmblocks)
+                             const float *filter_coeff, ptrdiff_t npcmblocks)
 {
     lfe_fir_float_c(pcm_samples, lfe_samples, filter_coeff, npcmblocks, 0);
 }
 
 static void lfe_fir2_float_c(float *pcm_samples, int32_t *lfe_samples,
-                             const float *filter_coeff, intptr_t npcmblocks)
+                             const float *filter_coeff, ptrdiff_t npcmblocks)
 {
     lfe_fir_float_c(pcm_samples, lfe_samples, filter_coeff, npcmblocks, 1);
 }
 
 static void lfe_x96_float_c(float *dst, const float *src,
-                            float *hist, intptr_t len)
+                            float *hist, ptrdiff_t len)
 {
     float prev = *hist;
     int i;
@@ -119,7 +119,7 @@ static void sub_qmf32_float_c(SynthFilterContext *synth,
                               int32_t **subband_samples_lo,
                               int32_t **subband_samples_hi,
                               float *hist1, int *offset, float *hist2,
-                              const float *filter_coeff, intptr_t npcmblocks,
+                              const float *filter_coeff, ptrdiff_t npcmblocks,
                               float scale)
 {
     LOCAL_ALIGNED(32, float, input, [32]);
@@ -148,7 +148,7 @@ static void sub_qmf64_float_c(SynthFilterContext *synth,
                               int32_t **subband_samples_lo,
                               int32_t **subband_samples_hi,
                               float *hist1, int *offset, float *hist2,
-                              const float *filter_coeff, intptr_t npcmblocks,
+                              const float *filter_coeff, ptrdiff_t npcmblocks,
                               float scale)
 {
     LOCAL_ALIGNED(32, float, input, [64]);
@@ -192,7 +192,7 @@ static void sub_qmf64_float_c(SynthFilterContext *synth,
 }
 
 static void lfe_fir_fixed_c(int32_t *pcm_samples, int32_t *lfe_samples,
-                            const int32_t *filter_coeff, intptr_t npcmblocks)
+                            const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
     // Select decimation factor
     int nlfesamples = npcmblocks >> 1;
@@ -219,7 +219,7 @@ static void lfe_fir_fixed_c(int32_t *pcm_samples, int32_t *lfe_samples,
 }
 
 static void lfe_x96_fixed_c(int32_t *dst, const int32_t *src,
-                            int32_t *hist, intptr_t len)
+                            int32_t *hist, ptrdiff_t len)
 {
     int32_t prev = *hist;
     int i;
@@ -241,7 +241,7 @@ static void sub_qmf32_fixed_c(SynthFilterContext *synth,
                               int32_t **subband_samples_lo,
                               int32_t **subband_samples_hi,
                               int32_t *hist1, int *offset, int32_t *hist2,
-                              const int32_t *filter_coeff, intptr_t npcmblocks)
+                              const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
     LOCAL_ALIGNED(32, int32_t, input, [32]);
     int i, j;
@@ -265,7 +265,7 @@ static void sub_qmf64_fixed_c(SynthFilterContext *synth,
                               int32_t **subband_samples_lo,
                               int32_t **subband_samples_hi,
                               int32_t *hist1, int *offset, int32_t *hist2,
-                              const int32_t *filter_coeff, intptr_t npcmblocks)
+                              const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
     LOCAL_ALIGNED(32, int32_t, input, [64]);
     int i, j;
@@ -295,7 +295,7 @@ static void sub_qmf64_fixed_c(SynthFilterContext *synth,
     }
 }
 
-static void decor_c(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_t len)
+static void decor_c(int32_t *dst, const int32_t *src, int coeff, ptrdiff_t len)
 {
     int i;
 
@@ -304,7 +304,7 @@ static void decor_c(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_t l
 }
 
 static void dmix_sub_xch_c(int32_t *dst1, int32_t *dst2,
-                           const int32_t *src, intptr_t len)
+                           const int32_t *src, ptrdiff_t len)
 {
     int i;
 
@@ -315,7 +315,7 @@ static void dmix_sub_xch_c(int32_t *dst1, int32_t *dst2,
     }
 }
 
-static void dmix_sub_c(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_t len)
+static void dmix_sub_c(int32_t *dst, const int32_t *src, int coeff, ptrdiff_t len)
 {
     int i;
 
@@ -323,7 +323,7 @@ static void dmix_sub_c(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_
         dst[i] -= mul15(src[i], coeff);
 }
 
-static void dmix_add_c(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_t len)
+static void dmix_add_c(int32_t *dst, const int32_t *src, int coeff, ptrdiff_t len)
 {
     int i;
 
@@ -331,7 +331,7 @@ static void dmix_add_c(int32_t *dst, const int32_t *src, intptr_t coeff, intptr_
         dst[i] += mul15(src[i], coeff);
 }
 
-static void dmix_scale_c(int32_t *dst, intptr_t scale, intptr_t len)
+static void dmix_scale_c(int32_t *dst, int scale, ptrdiff_t len)
 {
     int i;
 
@@ -339,7 +339,7 @@ static void dmix_scale_c(int32_t *dst, intptr_t scale, intptr_t len)
         dst[i] = mul15(dst[i], scale);
 }
 
-static void dmix_scale_inv_c(int32_t *dst, intptr_t scale_inv, intptr_t len)
+static void dmix_scale_inv_c(int32_t *dst, int scale_inv, ptrdiff_t len)
 {
     int i;
 
@@ -347,7 +347,7 @@ static void dmix_scale_inv_c(int32_t *dst, intptr_t scale_inv, intptr_t len)
         dst[i] = mul16(dst[i], scale_inv);
 }
 
-static void filter0(int32_t *dst, const int32_t *src, int32_t coeff, intptr_t len)
+static void filter0(int32_t *dst, const int32_t *src, int32_t coeff, ptrdiff_t len)
 {
     int i;
 
@@ -355,7 +355,7 @@ static void filter0(int32_t *dst, const int32_t *src, int32_t coeff, intptr_t le
         dst[i] -= mul22(src[i], coeff);
 }
 
-static void filter1(int32_t *dst, const int32_t *src, int32_t coeff, intptr_t len)
+static void filter1(int32_t *dst, const int32_t *src, int32_t coeff, ptrdiff_t len)
 {
     int i;
 
@@ -364,7 +364,7 @@ static void filter1(int32_t *dst, const int32_t *src, int32_t coeff, intptr_t le
 }
 
 static void assemble_freq_bands_c(int32_t *dst, int32_t *src0, int32_t *src1,
-                                  const int32_t *coeff, intptr_t len)
+                                  const int32_t *coeff, ptrdiff_t len)
 {
     int i;
 
