@@ -3895,6 +3895,10 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
     };
+    static const uint8_t uuid_xmp[] = {
+        0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8,
+        0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac
+    };
 
     if (atom.size < sizeof(uuid) || atom.size == INT64_MAX)
         return AVERROR_INVALIDDATA;
@@ -3948,6 +3952,27 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             }
         }
 
+        av_free(buffer);
+    } else if (!memcmp(uuid, uuid_xmp, sizeof(uuid))) {
+        uint8_t *buffer;
+        size_t len = atom.size - sizeof(uuid);
+
+        buffer = av_mallocz(len + 1);
+        if (!buffer) {
+            return AVERROR(ENOMEM);
+        }
+        ret = avio_read(pb, buffer, len);
+        if (ret < 0) {
+            av_free(buffer);
+            return ret;
+        } else if (ret != len) {
+            av_free(buffer);
+            return AVERROR_INVALIDDATA;
+        }
+        if (c->export_xmp) {
+            buffer[len] = '\0';
+            av_dict_set(&c->fc->metadata, "xmp", buffer, 0);
+        }
         av_free(buffer);
     }
     return 0;
