@@ -24,3 +24,5 @@
 .vs/
 *.VC.db
 *.opendb
+*.ilk
+[Bb]in/
