@@ -488,6 +488,8 @@ static void extract_m8(const uint8_t *srcp8, const int stride, const int xdia, c
 {
     // uint8_t or uint16_t or float
     const uint8_t *srcp = (const uint8_t *)srcp8;
+    float scale;
+    double tmp;
 
     // int32_t or int64_t or double
     int64_t sum = 0, sumsq = 0;
@@ -503,9 +505,9 @@ static void extract_m8(const uint8_t *srcp8, const int stride, const int xdia, c
         }
         input += xdia;
     }
-    const float scale = 1.0f / (xdia * ydia);
+    scale = 1.0f / (xdia * ydia);
     mstd[0] = sum * scale;
-    const double tmp = (double)sumsq * scale - (double)mstd[0] * mstd[0];
+    tmp = (double)sumsq * scale - (double)mstd[0] * mstd[0];
     mstd[3] = 0.0f;
     if (tmp <= FLT_EPSILON)
         mstd[1] = mstd[2] = 0.0f;
@@ -518,6 +520,7 @@ static void extract_m8(const uint8_t *srcp8, const int stride, const int xdia, c
 static void extract_m8_i16(const uint8_t *srcp, const int stride, const int xdia, const int ydia, float *mstd, float *inputf)
 {
     int16_t *input = (int16_t *)inputf;
+    float scale;
     int sum = 0, sumsq = 0;
     int y, x;
 
@@ -530,7 +533,7 @@ static void extract_m8_i16(const uint8_t *srcp, const int stride, const int xdia
         }
         input += xdia;
     }
-    const float scale = 1.0f / (float)(xdia * ydia);
+    scale = 1.0f / (float)(xdia * ydia);
     mstd[0] = sum * scale;
     mstd[1] = sumsq * scale - mstd[0] * mstd[0];
     mstd[3] = 0.0f;
@@ -587,9 +590,6 @@ static void evalfunc_1(NNEDIContext *s, FrameData *frame_data)
     int plane, y, x, i;
 
     for (plane = 0; plane < s->nb_planes; plane++) {
-        if (!(s->process_plane & (1 << plane)))
-            continue;
-
         const uint8_t *srcp = (const uint8_t *)frame_data->paddedp[plane];
         const int src_stride = frame_data->padded_stride[plane] / sizeof(uint8_t);
 
@@ -601,23 +601,27 @@ static void evalfunc_1(NNEDIContext *s, FrameData *frame_data)
 
         const int ystart = frame_data->field[plane];
         const int ystop = height - 12;
+        uint8_t *srcpp;
+
+        if (!(s->process_plane & (1 << plane)))
+            continue;
 
         srcp += (ystart + 6) * src_stride;
         dstp += ystart * dst_stride - 32;
-        const uint8_t *srcpp = srcp - (ydia - 1) * src_stride - xdiad2m1;
+        srcpp = srcp - (ydia - 1) * src_stride - xdiad2m1;
 
         for (y = ystart; y < ystop; y += 2) {
             for (x = 32; x < width - 32; x++) {
                 uint32_t pixel = 0;
-                memcpy(&pixel, dstp + x, sizeof(uint8_t));
-
                 uint32_t all_ones = 0;
+                float mstd[4];
+
+                memcpy(&pixel, dstp + x, sizeof(uint8_t));
                 memset(&all_ones, 255, sizeof(uint8_t));
 
                 if (pixel != all_ones)
                     continue;
 
-                float mstd[4];
                 s->extract((const uint8_t *)(srcpp + x), src_stride, xdia, ydia, mstd, input);
                 for (i = 0; i < qual; i++) {
                     s->dot_prod(s, input, weights1[i], temp, nns * 2, asize, mstd + 2);
@@ -1048,10 +1052,10 @@ static av_cold int init(AVFilterContext *ctx)
             // Factor mean removal and 1.0/127.5 scaling
             // into first layer weights. scale to int16 range
             for (j = 0; j < 4; j++) {
-                double mval = 0.0;
+                double scale, mval = 0.0;
                 for (k = 0; k < 48; k++)
                     mval = FFMAX(mval, FFABS((bdata[j * 48 + k] - mean[j]) / 127.5));
-                const double scale = 32767.0 / mval;
+                scale = 32767.0 / mval;
                 for (k = 0; k < 48; k++)
                     ws[j * 48 + k] = roundds(((bdata[j * 48 + k] - mean[j]) / 127.5) * scale);
                 wf[j] = (float)(mval / 32767.0);

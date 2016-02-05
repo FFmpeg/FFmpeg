@@ -521,7 +521,9 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         do {
             // NOTE: do not align linesizes individually, this breaks e.g. assumptions
             // that linesize[0] == 2*linesize[1] in the MPEG-encoder for 4:2:2
-            av_image_fill_linesizes(linesize, avctx->pix_fmt, w);
+            ret = av_image_fill_linesizes(linesize, avctx->pix_fmt, w);
+            if (ret < 0)
+                return ret;
             // increase alignment of w for next try (rhs gives the lowest bit set in w)
             w += w & ~(w - 1);
 

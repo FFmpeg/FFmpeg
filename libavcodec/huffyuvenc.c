@@ -319,7 +319,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     avctx->bits_per_coded_sample = s->bitstream_bpp;
     s->decorrelate = s->bitstream_bpp >= 24 && !s->yuv && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
-    s->predictor = avctx->prediction_method;
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        s->predictor = avctx->prediction_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     s->interlaced = avctx->flags & AV_CODEC_FLAG_INTERLACED_ME ? 1 : 0;
     if (s->context) {
         if (s->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {
@@ -1057,6 +1062,10 @@ static av_cold int encode_end(AVCodecContext *avctx)
     { "non_deterministic", "Allow multithreading for e.g. context=1 at the expense of determinism", \
       OFFSET(non_determ), AV_OPT_TYPE_BOOL, { .i64 = 1 }, \
       0, 1, VE }, \
+    { "pred", "Prediction method", OFFSET(predictor), AV_OPT_TYPE_INT, { .i64 = LEFT }, LEFT, MEDIAN, VE, "pred" }, \
+        { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LEFT },   INT_MIN, INT_MAX, VE, "pred" }, \
+        { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PLANE },  INT_MIN, INT_MAX, VE, "pred" }, \
+        { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MEDIAN }, INT_MIN, INT_MAX, VE, "pred" }, \
 
 static const AVOption normal_options[] = {
     COMMON_OPTIONS

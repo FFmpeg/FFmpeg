@@ -188,7 +188,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *ctx = link->dst;
     SidechainCompressContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out, *in[2] = { NULL };
+    AVFrame *out = NULL, *in[2] = { NULL };
     double *dst;
     int nb_samples;
     int i;
@@ -213,6 +213,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         if (!in[i]) {
             av_frame_free(&in[0]);
             av_frame_free(&in[1]);
+            av_frame_free(&out);
             return AVERROR(ENOMEM);
         }
         av_audio_fifo_read(s->fifo[i], (void **)in[i]->data, nb_samples);

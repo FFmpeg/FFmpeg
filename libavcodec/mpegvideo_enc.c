@@ -353,6 +353,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->rtp_payload_size)
         s->rtp_payload_size = avctx->rtp_payload_size;
+    if (avctx->me_penalty_compensation)
+        s->me_penalty_compensation = avctx->me_penalty_compensation;
+    if (avctx->pre_me)
+        s->me_pre = avctx->pre_me;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -1077,6 +1081,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->brd_scale)
         s->brd_scale = avctx->brd_scale;
+
+    if (avctx->prediction_method)
+        s->pred = avctx->prediction_method + 1;
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -3726,10 +3733,11 @@ static int encode_picture(MpegEncContext *s, int picture_number)
 
     /* Estimate motion for every MB */
     if(s->pict_type != AV_PICTURE_TYPE_I){
-        s->lambda = (s->lambda * s->avctx->me_penalty_compensation + 128)>>8;
-        s->lambda2= (s->lambda2* (int64_t)s->avctx->me_penalty_compensation + 128)>>8;
+        s->lambda  = (s->lambda  * s->me_penalty_compensation + 128) >> 8;
+        s->lambda2 = (s->lambda2 * (int64_t) s->me_penalty_compensation + 128) >> 8;
         if (s->pict_type != AV_PICTURE_TYPE_B) {
-            if((s->avctx->pre_me && s->last_non_b_pict_type==AV_PICTURE_TYPE_I) || s->avctx->pre_me==2){
+            if ((s->me_pre && s->last_non_b_pict_type == AV_PICTURE_TYPE_I) ||
+                s->me_pre == 2) {
                 s->avctx->execute(s->avctx, pre_estimate_motion_thread, &s->thread_context[0], NULL, context_count, sizeof(void*));
             }
         }
@@ -3888,7 +3896,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     case FMT_MJPEG:
         if (CONFIG_MJPEG_ENCODER)
             ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
-                                           s->intra_matrix, s->chroma_intra_matrix);
+                                           s->pred, s->intra_matrix, s->chroma_intra_matrix);
         break;
     case FMT_H261:
         if (CONFIG_H261_ENCODER)

@@ -29,7 +29,7 @@
 #include "put_bits.h"
 
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
-                                    ScanTable *intra_scantable,
+                                    ScanTable *intra_scantable, int pred,
                                     uint16_t luma_intra_matrix[64],
                                     uint16_t chroma_intra_matrix[64]);
 void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits);
