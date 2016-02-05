@@ -867,7 +867,8 @@ ff_chroma_inter_body_mmxext:
 %define t5 r4
 %define t6 r5
 
-cglobal deblock_h_chroma422_8, 5, 6, 0, 0-(1+ARCH_X86_64*2)*mmsize
+cglobal deblock_h_chroma422_8, 5, 6
+    SUB rsp, (1+ARCH_X86_64*2)*mmsize
     %if ARCH_X86_64
         %define buf0 [rsp+16]
         %define buf1 [rsp+8]
@@ -907,6 +908,7 @@ cglobal deblock_h_chroma422_8, 5, 6, 0, 0-(1+ARCH_X86_64*2)*mmsize
     movq m0, buf0
     movq m3, buf1
     TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
+    ADD rsp, (1+ARCH_X86_64*2)*mmsize
 RET
 
 ; in: %1=p0 %2=p1 %3=q1
