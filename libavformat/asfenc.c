@@ -396,6 +396,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     int64_t header_offset, cur_pos, hpos;
     int bit_rate;
     int64_t duration;
+    int audio_language_counts[128] = { 0 };
 
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
 
@@ -444,6 +445,8 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
                     asf->streams[n].stream_language_index = asf->nb_languages;
                     asf->nb_languages++;
                 }
+                if (enc->codec_type == AVMEDIA_TYPE_AUDIO)
+                    audio_language_counts[asf->streams[n].stream_language_index]++;
             }
         } else {
             asf->streams[n].stream_language_index = 128;
@@ -484,6 +487,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     if (asf->nb_languages) {
         int64_t hpos2;
         int i;
+        int nb_audio_languages = 0;
 
         hpos2 = put_header(pb, &ff_asf_language_guid);
         avio_wl16(pb, asf->nb_languages);
@@ -492,6 +496,25 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             avio_put_str16le(pb, asf->languages[i]);
         }
         end_header(pb, hpos2);
+
+        for (i = 0; i < asf->nb_languages; i++)
+            if (audio_language_counts[i])
+                nb_audio_languages++;
+
+        if (nb_audio_languages > 1) {
+            hpos2 = put_header(pb, &ff_asf_group_mutual_exclusion_object);
+            ff_put_guid(pb, &ff_asf_mutex_language);
+            avio_wl16(pb, nb_audio_languages);
+            for (i = 0; i < asf->nb_languages; i++) {
+                if (audio_language_counts[i]) {
+                    avio_wl16(pb, audio_language_counts[i]);
+                    for (n = 0; n < s->nb_streams; n++)
+                        if (asf->streams[n].stream_language_index == i && s->streams[n]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                            avio_wl16(pb, n + 1);
+                }
+            }
+            end_header(pb, hpos2);
+        }
 
         for (n = 0; n < s->nb_streams; n++) {
             int64_t es_pos;
