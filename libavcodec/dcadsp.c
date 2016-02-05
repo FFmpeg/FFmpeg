@@ -410,4 +410,7 @@ av_cold void ff_dcadsp_init(DCADSPContext *s)
     s->dmix_scale_inv = dmix_scale_inv_c;
 
     s->assemble_freq_bands = assemble_freq_bands_c;
+
+    if (ARCH_X86)
+        ff_dcadsp_init_x86(s);
 }
