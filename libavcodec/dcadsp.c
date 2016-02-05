@@ -84,13 +84,13 @@ static void lfe_fir_float_c(float *pcm_samples, int32_t *lfe_samples,
     }
 }
 
-static void lfe_fir1_float_c(float *pcm_samples, int32_t *lfe_samples,
+static void lfe_fir0_float_c(float *pcm_samples, int32_t *lfe_samples,
                              const float *filter_coeff, ptrdiff_t npcmblocks)
 {
     lfe_fir_float_c(pcm_samples, lfe_samples, filter_coeff, npcmblocks, 0);
 }
 
-static void lfe_fir2_float_c(float *pcm_samples, int32_t *lfe_samples,
+static void lfe_fir1_float_c(float *pcm_samples, int32_t *lfe_samples,
                              const float *filter_coeff, ptrdiff_t npcmblocks)
 {
     lfe_fir_float_c(pcm_samples, lfe_samples, filter_coeff, npcmblocks, 1);
@@ -390,8 +390,8 @@ av_cold void ff_dcadsp_init(DCADSPContext *s)
     s->decode_hf     = decode_hf_c;
     s->decode_joint  = decode_joint_c;
 
-    s->lfe_fir_float[0] = lfe_fir1_float_c;
-    s->lfe_fir_float[1] = lfe_fir2_float_c;
+    s->lfe_fir_float[0] = lfe_fir0_float_c;
+    s->lfe_fir_float[1] = lfe_fir1_float_c;
     s->lfe_x96_float    = lfe_x96_float_c;
     s->sub_qmf_float[0] = sub_qmf32_float_c;
     s->sub_qmf_float[1] = sub_qmf64_float_c;
