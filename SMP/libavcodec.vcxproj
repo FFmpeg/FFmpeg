@@ -448,6 +448,7 @@
     <ClCompile Include="..\libavcodec\dds.c" />
     <ClCompile Include="..\libavcodec\diracdec.c" />
     <ClCompile Include="..\libavcodec\diracdsp.c" />
+    <ClCompile Include="..\libavcodec\diractab.c" />
     <ClCompile Include="..\libavcodec\dirac_arith.c" />
     <ClCompile Include="..\libavcodec\dirac_dwt.c" />
     <ClCompile Include="..\libavcodec\dfa.c" />

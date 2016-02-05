@@ -1020,6 +1020,9 @@
     <ClCompile Include="..\libavcodec\diracdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\diractab.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dirac_arith.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
