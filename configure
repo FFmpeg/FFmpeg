@@ -2834,7 +2834,7 @@ fi
 
 exesuf() {
     case $1 in
-        mingw32*|win32|win64|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
+        mingw32*|mingw64*|win32|win64|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
     esac
 }
 
@@ -3750,7 +3750,7 @@ case $target_os in
     msys*)
         die "Native MSYS builds are discouraged, please use the MINGW environment.";
         ;;
-    mingw32*)
+    mingw32*|mingw64*)
         if test $target_os = "mingw32ce"; then
             disable network
         else
