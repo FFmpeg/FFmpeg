@@ -388,7 +388,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVDictionaryEntry *tags[5], *t;
+    AVDictionaryEntry *tags[5];
     int header_size, n, extra_size, extra_size2, wav_extra_size;
     int has_title, has_aspect_ratio = 0;
     int metadata_count;
@@ -408,12 +408,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     duration       = asf->duration + PREROLL_TIME * 10000;
     has_title      = tags[0] || tags[1] || tags[2] || tags[3] || tags[4];
 
-    if (!file_size && (t = av_dict_get(s->metadata, "creation_time", NULL, 0))) {
-        if (av_parse_time(&asf->creation_time, t->value, 0) < 0) {
-            av_log(s, AV_LOG_WARNING, "Failed to parse creation_time %s\n", t->value);
-            asf->creation_time = 0;
-        }
-        av_dict_set(&s->metadata, "creation_time", NULL, 0);
+    if (!file_size) {
+        if (ff_parse_creation_time_metadata(s, &asf->creation_time, 0) != 0)
+            av_dict_set(&s->metadata, "creation_time", NULL, 0);
     }
 
     metadata_count = av_dict_count(s->metadata);
