@@ -1211,6 +1211,7 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int eleme
     while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
         if (av_strcasecmp(t->key, "title") &&
             av_strcasecmp(t->key, "stereo_mode") &&
+            av_strcasecmp(t->key, "creation_time") &&
             av_strcasecmp(t->key, "encoding_tool") &&
             (elementid != MATROSKA_ID_TAGTARGETS_TRACKUID ||
              av_strcasecmp(t->key, "language"))) {
@@ -1383,6 +1384,7 @@ static int mkv_write_header(AVFormatContext *s)
     ebml_master ebml_header, segment_info;
     AVDictionaryEntry *tag;
     int ret, i, version = 2;
+    int64_t creation_time;
 
     if (!strcmp(s->oformat->name, "webm"))
         mkv->mode = MODE_WEBM;
@@ -1469,9 +1471,9 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, ident);
     }
 
-    if (tag = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
+    if (ff_parse_creation_time_metadata(s, &creation_time, 0) > 0) {
         // Adjust time so it's relative to 2001-01-01 and convert to nanoseconds.
-        int64_t date_utc = (ff_iso8601_to_unix_time(tag->value) - 978307200) * 1000000000;
+        int64_t date_utc = (creation_time - 978307200000000LL) * 1000;
         uint8_t date_utc_buf[8];
         AV_WB64(date_utc_buf, date_utc);
         put_ebml_binary(pb, MATROSKA_ID_DATEUTC, date_utc_buf, 8);
