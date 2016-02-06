@@ -289,6 +289,7 @@ OBJS-$(CONFIG_SWAPRECT_FILTER)               += vf_swaprect.o
 OBJS-$(CONFIG_SWAPUV_FILTER)                 += vf_swapuv.o
 OBJS-$(CONFIG_TBLEND_FILTER)                 += vf_blend.o dualinput.o framesync.o
 OBJS-$(CONFIG_TELECINE_FILTER)               += vf_telecine.o
+OBJS-$(CONFIG_THRESHOLD_FILTER)              += vf_threshold.o
 OBJS-$(CONFIG_THUMBNAIL_FILTER)              += vf_thumbnail.o
 OBJS-$(CONFIG_TILE_FILTER)                   += vf_tile.o
 OBJS-$(CONFIG_TINTERLACE_FILTER)             += vf_tinterlace.o
