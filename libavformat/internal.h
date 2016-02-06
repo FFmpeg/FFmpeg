@@ -321,11 +321,6 @@ void ff_reduce_index(AVFormatContext *s, int stream_index);
 enum AVCodecID ff_guess_image2_codec(const char *filename);
 
 /**
- * Convert a date string in ISO8601 format to Unix timestamp.
- */
-int64_t ff_iso8601_to_unix_time(const char *datestr);
-
-/**
  * Perform a binary search using av_index_search_timestamp() and
  * AVInputFormat.read_timestamp().
  *
