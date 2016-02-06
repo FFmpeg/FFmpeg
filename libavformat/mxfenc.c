@@ -2041,7 +2041,6 @@ static int mxf_write_header(AVFormatContext *s)
     int i, ret;
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
     const MXFSamplesPerFrame *spf = NULL;
-    AVDictionaryEntry *t;
     int64_t timestamp = 0;
 
     if (!s->nb_streams)
@@ -2212,9 +2211,7 @@ static int mxf_write_header(AVFormatContext *s)
             sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
 
-    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
-        timestamp = ff_iso8601_to_unix_time(t->value);
-    if (timestamp)
+    if (ff_parse_creation_time_metadata(s, &timestamp, 1) > 0)
         mxf->timestamp = mxf_parse_timestamp(timestamp);
     mxf->duration = -1;
 
