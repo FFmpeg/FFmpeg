@@ -1871,6 +1871,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->codec->channels    = track->audio.channels;
             if (st->codec->codec_id != AV_CODEC_ID_AAC)
                 st->need_parsing = AVSTREAM_PARSE_HEADERS;
+            if (st->codec->codec_id == AV_CODEC_ID_MP3)
+                st->need_parsing = AVSTREAM_PARSE_FULL;
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
             if (st->codec->codec_id == AV_CODEC_ID_SSA)
