@@ -2718,43 +2718,42 @@ echo "# $0 $LIBAV_CONFIGURATION" > $logfile
 set >> $logfile
 
 case "$toolchain" in
-    clang-asan)
-        cc_default="clang"
+    *-asan)
+        cc_default="${toolchain%-asan}"
         add_cflags  -fsanitize=address
         add_ldflags -fsanitize=address
     ;;
-    clang-tsan)
-        cc_default="clang"
+    *-tsan)
+        cc_default="${toolchain%-tsan}"
         add_cflags  -fsanitize=thread -pie
         add_ldflags -fsanitize=thread -pie
+        case "$toolchain" in
+            gcc-tsan)
+                add_cflags  -fPIC
+                add_ldflags -fPIC
+                ;;
+        esac
     ;;
-    clang-usan)
-        cc_default="clang"
-        add_cflags  -fsanitize=undefined -O1
-        add_ldflags -fsanitize=undefined
-    ;;
-    gcc-asan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=address
-        add_ldflags -fsanitize=address
-    ;;
-    gcc-tsan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=thread -pie -fPIC
-        add_ldflags -fsanitize=thread -pie -fPIC
-    ;;
-    gcc-usan)
-        cc_default="gcc"
+    *-usan)
+        cc_default="${toolchain%-usan}"
         add_cflags  -fsanitize=undefined
         add_ldflags -fsanitize=undefined
+        case "$toolchain" in
+            clang-usan)
+                add_cflags -O1
+                ;;
+        esac
     ;;
-    valgrind-massif)
+    valgrind-*)
         target_exec_default="valgrind"
-        target_exec_args="--alloc-fn=av_malloc --alloc-fn=av_mallocz"
-    ;;
-    valgrind-memcheck)
-        target_exec_default="valgrind"
-        target_exec_args="--track-origins=yes --leak-check=full"
+        case "$toolchain" in
+            valgrind-massif)
+                target_exec_args="--alloc-fn=av_malloc --alloc-fn=av_mallocz"
+                ;;
+            valgrind-memcheck)
+                target_exec_args="--track-origins=yes --leak-check=full"
+                ;;
+        esac
     ;;
     msvc)
         # Check whether the current MSVC version needs the C99 converter.
