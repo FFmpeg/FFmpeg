@@ -221,17 +221,13 @@ static int ffm_write_recommended_config(AVIOContext *pb, AVCodecContext *ctx, un
 static int ffm_write_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
-    AVDictionaryEntry *t;
     AVStream *st;
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     int bit_rate, i, ret;
 
-    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
-        ret = av_parse_time(&ffm->start_time, t->value, 0);
-        if (ret < 0)
-            return ret;
-    }
+    if ((ret = ff_parse_creation_time_metadata(s, &ffm->start_time, 0)) < 0)
+        return ret;
 
     ffm->packet_size = FFM_PACKET_SIZE;
 
