@@ -92,7 +92,7 @@ av_cold void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
         fdsp->vector_fmul_add    = ff_vector_fmul_add_avx;
         fdsp->vector_fmul_reverse = ff_vector_fmul_reverse_avx;
     }
-    if (EXTERNAL_FMA3(cpu_flags) && !(cpu_flags & AV_CPU_FLAG_AVXSLOW)) {
+    if (EXTERNAL_FMA3_FAST(cpu_flags)) {
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_fma3;
         fdsp->vector_fmul_add    = ff_vector_fmul_add_fma3;
     }

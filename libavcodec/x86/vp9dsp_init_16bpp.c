@@ -129,7 +129,7 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
         init_ipred_funcs(hd, HOR_DOWN, 16, avx);
     }
 
-    if (EXTERNAL_AVX2(cpu_flags)) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         init_fpel_func(2, 1,  32, avg, _16, avx2);
         init_fpel_func(1, 1,  64, avg, _16, avx2);
         init_fpel_func(0, 1, 128, avg, _16, avx2);

@@ -199,6 +199,6 @@ av_cold void ff_mlpdsp_init_x86(MLPDSPContext *c)
 #endif
     if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags))
         c->mlp_rematrix_channel = ff_mlp_rematrix_channel_sse4;
-    if (ARCH_X86_64 && EXTERNAL_AVX2(cpu_flags) && cpu_flags & AV_CPU_FLAG_BMI2)
+    if (ARCH_X86_64 && EXTERNAL_AVX2_FAST(cpu_flags) && cpu_flags & AV_CPU_FLAG_BMI2)
         c->mlp_rematrix_channel = ff_mlp_rematrix_channel_avx2_bmi2;
 }

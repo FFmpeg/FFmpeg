@@ -377,7 +377,7 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_ipred(32, avx, v, VERT);
     }
 
-    if (EXTERNAL_AVX2(cpu_flags)) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         init_fpel_func(1, 1, 32, avg, _8, avx2);
         init_fpel_func(0, 1, 64, avg, _8, avx2);
         if (ARCH_X86_64) {
