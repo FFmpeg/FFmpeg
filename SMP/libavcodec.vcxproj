@@ -113,9 +113,10 @@
     <YASM Include="..\libavcodec\x86\g722dsp.asm" />
     <YASM Include="..\libavcodec\x86\alacdsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
+    <YASM Include="..\libavcodec\x86\dcadsp.asm" />
     <YASM Include="..\libavcodec\x86\synth_filter.asm" />
-    <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm" />
-    <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />
+    <YASM Include="..\libavcodec\x86\diracdsp.asm" />
+    <YASM Include="..\libavcodec\x86\dirac_dwt.asm" />
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
     <YASM Include="..\libavcodec\x86\flacdsp.asm" />
     <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
@@ -439,7 +440,9 @@
     <ClCompile Include="..\libavcodec\dca_core.c" />
     <ClCompile Include="..\libavcodec\dca_exss.c" />
     <ClCompile Include="..\libavcodec\dca_xll.c" />
-    <ClCompile Include="..\libavcodec\dcadsp.c" />
+    <ClCompile Include="..\libavcodec\dcadsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dcadsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dcadct.c" />
     <ClCompile Include="..\libavcodec\synth_filter.c">
       <ObjectFileName>$(IntDir)\libavcodec_synth_filter.obj</ObjectFileName>
@@ -447,10 +450,14 @@
     <ClCompile Include="..\libavcodec\dcaenc.c" />
     <ClCompile Include="..\libavcodec\dds.c" />
     <ClCompile Include="..\libavcodec\diracdec.c" />
-    <ClCompile Include="..\libavcodec\diracdsp.c" />
+    <ClCompile Include="..\libavcodec\diracdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_diracdsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\diractab.c" />
     <ClCompile Include="..\libavcodec\dirac_arith.c" />
-    <ClCompile Include="..\libavcodec\dirac_dwt.c" />
+    <ClCompile Include="..\libavcodec\dirac_dwt.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dirac_dwt.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dfa.c" />
     <ClCompile Include="..\libavcodec\dnxhddec.c" />
     <ClCompile Include="..\libavcodec\dnxhddata.c" />
@@ -968,6 +975,8 @@
     <ClCompile Include="..\libavcodec\x86\blockdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\bswapdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\dct_init.c" />
+    <ClCompile Include="..\libavcodec\x86\diracdsp_init.c" />
+    <ClCompile Include="..\libavcodec\x86\dirac_dwt_init.c" />
     <ClCompile Include="..\libavcodec\x86\fdctdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\fft_init.c" />
     <ClCompile Include="..\libavcodec\x86\flacdsp_init.c" />
@@ -1012,6 +1021,7 @@
     <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\dcadsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\synth_filter_init.c" />
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c" />
     <ClCompile Include="..\libavcodec\x86\hevcdsp_init.c" />
@@ -1032,16 +1042,12 @@
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init_10bpp.c" />
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init_12bpp.c" />
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init_16bpp.c" />
-    <ClCompile Include="..\libavcodec\x86\dirac_dwt.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_dirac_dwt.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\fdct.c" />
     <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c" />
     <ClCompile Include="..\libavcodec\x86\vc1dsp_mmx.c" />
-    <ClCompile Include="..\libavcodec\x86\diracdsp_mmx.c" />
     <ClCompile Include="libavcodec\dxva2_vp9_wrap.c" />
     <ClCompile Include="libavcodec\log2_tab_wrap.c" />
     <ClCompile Include="libavcodec\reverse_wrap.c" />

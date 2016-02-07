@@ -138,6 +138,7 @@
     <ClCompile Include="..\libavfilter\af_ashowinfo.c" />
     <ClCompile Include="..\libavfilter\split.c" />
     <ClCompile Include="..\libavfilter\af_astats.c" />
+    <ClCompile Include="..\libavfilter\f_streamselect.c" />
     <ClCompile Include="..\libavfilter\af_atempo.c" />
     <ClCompile Include="..\libavfilter\trim.c" />
     <ClCompile Include="..\libavfilter\af_channelmap.c" />

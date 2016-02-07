@@ -234,6 +234,9 @@
     <ClCompile Include="..\libavfilter\af_astats.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\f_streamselect.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_atempo.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
