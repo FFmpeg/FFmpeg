@@ -5566,7 +5566,8 @@ enabled libnut            && require libnut libnut.h nut_demuxer_init -lnut
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_header opencv2/core/core_c.h &&
-                               require_pkg_config opencv opencv2/core/core_c.h cvCreateImageHeader ||
+                               { use_pkg_config opencv opencv2/core/core_c.h cvCreateImageHeader ||
+                                 require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
 enabled libopenjpeg       && { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC ||
