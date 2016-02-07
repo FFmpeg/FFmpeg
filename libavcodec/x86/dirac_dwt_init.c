@@ -1,5 +1,5 @@
 /*
- * MMX optimized discrete wavelet transform
+ * x86 optimized discrete wavelet transform
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2010 David Conrad
  *
@@ -22,7 +22,7 @@
 
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "dirac_dwt.h"
+#include "libavcodec/dirac_dwt.h"
 
 #define COMPOSE_VERTICAL(ext, align) \
 void ff_vertical_compose53iL0##ext(int16_t *b0, int16_t *b1, int16_t *b2, int width); \
@@ -158,7 +158,7 @@ static void horizontal_compose_dd97i_ssse3(uint8_t *_b, uint8_t *_tmp, int w)
 }
 #endif
 
-void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
+void ff_spatial_idwt_init_x86(DWTContext *d, enum dwt_type type)
 {
 #if HAVE_YASM
   int mm_flags = av_get_cpu_flags();

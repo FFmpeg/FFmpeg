@@ -32,6 +32,7 @@
 
 #include "avfilter.h"
 #include "audio.h"
+#include "formats.h"
 #include "internal.h"
 #include "video.h"
 
@@ -143,6 +144,7 @@ AVFilter ff_af_asplit = {
     .priv_class  = &asplit_class,
     .init        = split_init,
     .uninit      = split_uninit,
+    .query_formats = ff_query_formats_all,
     .inputs      = avfilter_af_asplit_inputs,
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,

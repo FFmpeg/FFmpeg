@@ -11321,6 +11321,45 @@ stereo3d=abl:sbsr
 @end example
 @end itemize
 
+@section streamselect, astreamselect
+Select video or audio streams.
+
+The filter accepts the following options:
+
+@table @option
+@item inputs
+Set number of inputs. Default is 2.
+
+@item map
+Set input indexes to remap to outputs.
+@end table
+
+@subsection Commands
+
+The @code{streamselect} and @code{astreamselect} filter supports the following
+commands:
+
+@table @option
+@item map
+Set input indexes to remap to outputs.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Select first 5 seconds 1st stream and rest of time 2nd stream:
+@example
+sendcmd='5.0 streamselect map 1',streamselect=inputs=2:map=0
+@end example
+
+@item
+Same as above, but for audio:
+@example
+asendcmd='5.0 astreamselect map 1',astreamselect=inputs=2:map=0
+@end example
+@end itemize
+
 @anchor{spp}
 @section spp
 

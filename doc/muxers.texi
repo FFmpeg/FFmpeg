@@ -37,6 +37,26 @@ ID3v2.3 and ID3v2.4) are supported. The default is version 4.
 
 @end table
 
+@anchor{asf}
+@section asf
+
+Advanced Systems Format muxer.
+
+Note that Windows Media Audio (wma) and Windows Media Video (wmv) use this
+muxer too.
+
+@subsection Options
+
+It accepts the following options:
+
+@table @option
+@item packet_size
+Set the muxer packet size. By tuning this setting you may reduce data
+fragmentation or muxer overhead depending on your source. Default value is
+3200, minimum is 100, maximum is 64k.
+
+@end table
+
 @anchor{chromaprint}
 @section chromaprint
 
