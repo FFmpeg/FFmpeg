@@ -4138,6 +4138,7 @@ Available values for component modes are:
 @item lighten
 @item linearlight
 @item multiply
+@item multiply128
 @item negation
 @item normal
 @item or

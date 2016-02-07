@@ -82,6 +82,7 @@ typedef struct ThreadData {
     { "lighten",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_LIGHTEN},    0, 0, FLAGS, "mode" },\
     { "linearlight","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_LINEARLIGHT},0, 0, FLAGS, "mode" },\
     { "multiply",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_MULTIPLY},   0, 0, FLAGS, "mode" },\
+    { "multiply128","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_MULTIPLY128},0, 0, FLAGS, "mode" },\
     { "negation",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_NEGATION},   0, 0, FLAGS, "mode" },\
     { "normal",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_NORMAL},     0, 0, FLAGS, "mode" },\
     { "or",         "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_OR},         0, 0, FLAGS, "mode" },\
@@ -229,6 +230,7 @@ DEFINE_BLEND8(addition128, av_clip_uint8(A + B - 128))
 DEFINE_BLEND8(average,    (A + B) / 2)
 DEFINE_BLEND8(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND8(multiply,   MULTIPLY(1, A, B))
+DEFINE_BLEND8(multiply128,av_clip_uint8((A - 128) * B / 32. + 128))
 DEFINE_BLEND8(negation,   255 - FFABS(255 - A - B))
 DEFINE_BLEND8(difference, FFABS(A - B))
 DEFINE_BLEND8(difference128, av_clip_uint8(128 + A - B))
@@ -268,6 +270,7 @@ DEFINE_BLEND16(addition128, av_clip_uint16(A + B - 32768))
 DEFINE_BLEND16(average,    (A + B) / 2)
 DEFINE_BLEND16(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B))
+DEFINE_BLEND16(multiply128, av_clip_uint16((A - 32768) * B / 8192. + 32768))
 DEFINE_BLEND16(negation,   65535 - FFABS(65535 - A - B))
 DEFINE_BLEND16(difference, FFABS(A - B))
 DEFINE_BLEND16(difference128, av_clip_uint16(32768 + A - B))
@@ -500,6 +503,7 @@ static int config_output(AVFilterLink *outlink)
         case BLEND_LIGHTEN:    param->blend = is_16bit ? blend_lighten_16bit    : blend_lighten_8bit;    break;
         case BLEND_LINEARLIGHT:param->blend = is_16bit ? blend_linearlight_16bit: blend_linearlight_8bit;break;
         case BLEND_MULTIPLY:   param->blend = is_16bit ? blend_multiply_16bit   : blend_multiply_8bit;   break;
+        case BLEND_MULTIPLY128:param->blend = is_16bit ? blend_multiply128_16bit: blend_multiply128_8bit;break;
         case BLEND_NEGATION:   param->blend = is_16bit ? blend_negation_16bit   : blend_negation_8bit;   break;
         case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_normal:
                                               is_16bit ? blend_normal_16bit     : blend_normal_8bit;     break;
