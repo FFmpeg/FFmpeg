@@ -608,10 +608,13 @@ static void copy_fields(const FieldMatchContext *fm, AVFrame *dst,
                         const AVFrame *src, int field)
 {
     int plane;
-    for (plane = 0; plane < 4 && src->data[plane] && src->linesize[plane]; plane++)
+    for (plane = 0; plane < 4 && src->data[plane] && src->linesize[plane]; plane++) {
+        const int plane_h = get_height(fm, src, plane);
+        const int nb_copy_fields = (plane_h >> 1) + (field ? 0 : (plane_h & 1));
         av_image_copy_plane(dst->data[plane] + field*dst->linesize[plane], dst->linesize[plane] << 1,
                             src->data[plane] + field*src->linesize[plane], src->linesize[plane] << 1,
-                            get_width(fm, src, plane), get_height(fm, src, plane) / 2);
+                            get_width(fm, src, plane), nb_copy_fields);
+    }
 }
 
 static AVFrame *create_weave_frame(AVFilterContext *ctx, int match, int field,
