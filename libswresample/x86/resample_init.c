@@ -71,7 +71,7 @@ av_cold void swri_resample_dsp_x86_init(ResampleContext *c)
             c->dsp.resample = c->linear ? ff_resample_linear_float_avx
                                         : ff_resample_common_float_avx;
         }
-        if (EXTERNAL_FMA3(mm_flags) && !(mm_flags & AV_CPU_FLAG_AVXSLOW)) {
+        if (EXTERNAL_FMA3_FAST(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_float_fma3
                                         : ff_resample_common_float_fma3;
         }
