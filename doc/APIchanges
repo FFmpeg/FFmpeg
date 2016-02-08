@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.25.0 - pixfmt.h
+  Add AV_PIX_FMT_GBRAP12(LE/BE).
+
 2016-xx-xx - xxxxxxx - lavu 55.24.0 - pixfmt.h
   Add AV_PIX_FMT_GBRP12(LE/BE).
 
