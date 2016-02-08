@@ -24,6 +24,7 @@
 
 SECTION_RODATA
 
+pw_1:   times 8 dw 1
 pw_128: times 8 dw 128
 pw_255: times 8 dw 255
 pb_127: times 16 db 127
@@ -98,6 +99,34 @@ BLEND_INIT difference128, 4
         packuswb        m0, m0
         movh   [dstq + xq], m0
         add             xq, mmsize / 2
+    jl .loop
+BLEND_END
+
+BLEND_INIT multiply, 4
+    pxor       m2, m2
+    mova       m3, [pw_1]
+.nextrow:
+    mov        xq, widthq
+
+    .loop:
+                                             ;     word
+                                             ;     |--|
+        movh            m0, [topq + xq]      ; 0000xxxx
+        movh            m1, [bottomq + xq]
+        punpcklbw       m0, m2               ; 00xx00xx
+        punpcklbw       m1, m2
+
+        pmullw          m0, m1               ; xxxxxxxx  a * b
+        paddw           m0, m3
+        mova            m1, m0
+        psrlw           m1, 8
+        paddw           m0, m1
+        psrlw           m0, 8                ; 00xx00xx  a * b / 255
+
+        packuswb        m0, m0               ; 0000xxxx
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
+
     jl .loop
 BLEND_END
 
