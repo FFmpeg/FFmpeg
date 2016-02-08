@@ -1203,3 +1203,26 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
     }
     return 0;
 }
+
+void ff_dnxhd_list_cid(AVCodecContext *avctx)
+{
+    int i, j;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {
+        const CIDEntry *cid = &ff_dnxhd_cid_table[i];
+        av_log(avctx, AV_LOG_INFO,
+               "cid %d %ux%u %dbits %s bit rates",
+               cid->cid,
+               cid->width, cid->height,
+               cid->bit_depth,
+               cid->interlaced ? "interlaced " :
+                                 "progressive");
+        for (j = 0; j < FF_ARRAY_ELEMS(cid->bit_rates); j++) {
+            if (!cid->bit_rates[j])
+                break;
+            av_log(avctx, AV_LOG_INFO, " %dM",
+                   cid->bit_rates[j]);
+        }
+        av_log(avctx, AV_LOG_INFO, "\n");
+    }
+}

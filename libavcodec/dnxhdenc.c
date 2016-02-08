@@ -289,14 +289,15 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
-               "pixel format is incompatible with DNxHD\n");
+               "Pixel format is incompatible with DNxHD, use yuv422p or yuv422p10.\n");
         return AVERROR(EINVAL);
     }
 
     ctx->cid = ff_dnxhd_find_cid(avctx, bit_depth);
     if (!ctx->cid) {
         av_log(avctx, AV_LOG_ERROR,
-               "video parameters incompatible with DNxHD\n");
+               "Video parameters incompatible with DNxHD, available CIDs:\n");
+        ff_dnxhd_list_cid(avctx);
         return AVERROR(EINVAL);
     }
     av_log(avctx, AV_LOG_DEBUG, "cid %d\n", ctx->cid);
