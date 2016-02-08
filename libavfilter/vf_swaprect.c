@@ -252,4 +252,5 @@ AVFilter ff_vf_swaprect = {
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
