@@ -2017,11 +2017,11 @@ static AVCodec *choose_decoder(PlayerState *is, AVFormatContext *ic, AVStream *s
     }
 
     if (codec_name) {
-        AVCodec *codec = find_codec_or_die(codec_name, st->codec->codec_type);
-        st->codec->codec_id = codec->id;
+        AVCodec *codec = find_codec_or_die(codec_name, st->codecpar->codec_type);
+        st->codecpar->codec_id = codec->id;
         return codec;
     } else
-        return avcodec_find_decoder(st->codec->codec_id);
+        return avcodec_find_decoder(st->codecpar->codec_id);
 }
 
 /* open a given stream. Return 0 if OK */
@@ -2042,7 +2042,7 @@ static int stream_component_open(PlayerState *is, int stream_index)
     if (!avctx)
         return AVERROR(ENOMEM);
 
-    ret = avcodec_copy_context(avctx, ic->streams[stream_index]->codec);
+    ret = avcodec_parameters_to_context(avctx, ic->streams[stream_index]->codecpar);
     if (ret < 0) {
         avcodec_free_context(&avctx);
         return ret;
@@ -2160,13 +2160,13 @@ fail:
 static void stream_component_close(PlayerState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
-    AVCodecContext *avctx;
+    AVCodecParameters *par;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return;
-    avctx = ic->streams[stream_index]->codec;
+    par = ic->streams[stream_index]->codecpar;
 
-    switch (avctx->codec_type) {
+    switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         packet_queue_abort(&is->audioq);
 
@@ -2220,7 +2220,7 @@ static void stream_component_close(PlayerState *is, int stream_index)
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_ALL;
-    switch (avctx->codec_type) {
+    switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         avcodec_free_context(&is->audio_dec);
         is->audio_st = NULL;
@@ -2311,7 +2311,7 @@ static int stream_setup(PlayerState *is)
     orig_nb_streams = ic->nb_streams;
 
     for (i = 0; i < ic->nb_streams; i++)
-        ic->streams[i]->codec->codec = choose_decoder(is, ic, ic->streams[i]);
+        choose_decoder(is, ic, ic->streams[i]);
 
     err = avformat_find_stream_info(ic, opts);
 
@@ -2596,12 +2596,12 @@ static void stream_cycle_channel(PlayerState *is, int codec_type)
         if (stream_index == start_index)
             return;
         st = ic->streams[stream_index];
-        if (st->codec->codec_type == codec_type) {
+        if (st->codecpar->codec_type == codec_type) {
             /* check that parameters are OK */
             switch (codec_type) {
             case AVMEDIA_TYPE_AUDIO:
-                if (st->codec->sample_rate != 0 &&
-                    st->codec->channels != 0)
+                if (st->codecpar->sample_rate != 0 &&
+                    st->codecpar->channels != 0)
                     goto the_end;
                 break;
             case AVMEDIA_TYPE_VIDEO:
