@@ -102,6 +102,15 @@ BLEND_INIT difference128, 4
     jl .loop
 BLEND_END
 
+%macro MULTIPLY 3 ; a, b, pw_1
+    pmullw          %1, %2               ; xxxxxxxx  a * b
+    paddw           %1, %3
+    mova            %2, %1
+    psrlw           %2, 8
+    paddw           %1, %2
+    psrlw           %1, 8                ; 00xx00xx  a * b / 255
+%endmacro
+
 BLEND_INIT multiply, 4
     pxor       m2, m2
     mova       m3, [pw_1]
@@ -116,12 +125,7 @@ BLEND_INIT multiply, 4
         punpcklbw       m0, m2               ; 00xx00xx
         punpcklbw       m1, m2
 
-        pmullw          m0, m1               ; xxxxxxxx  a * b
-        paddw           m0, m3
-        mova            m1, m0
-        psrlw           m1, 8
-        paddw           m0, m1
-        psrlw           m0, 8                ; 00xx00xx  a * b / 255
+        MULTIPLY        m0, m1, m3
 
         packuswb        m0, m0               ; 0000xxxx
         movh   [dstq + xq], m0
