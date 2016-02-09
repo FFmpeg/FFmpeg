@@ -1586,7 +1586,7 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
 
 static void mov_parse_stsd_subtitle(MOVContext *c, AVIOContext *pb,
                                     AVStream *st, MOVStreamContext *sc,
-                                    int size)
+                                    int64_t size)
 {
     // ttxt stsd contains display flags, justification, background
     // color, fonts, and default styles, so fake an atom to read it
@@ -1651,7 +1651,7 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
 
 static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
                                 AVStream *st, MOVStreamContext *sc,
-                                int size)
+                                int64_t size)
 {
     int ret;
 
@@ -1739,7 +1739,7 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
 
 static int mov_skip_multiple_stsd(MOVContext *c, AVIOContext *pb,
                                   int codec_tag, int format,
-                                  int size)
+                                  int64_t size)
 {
     int video_codec_id = ff_codec_get_id(ff_codec_movvideo_tags, format);
 
@@ -1781,7 +1781,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         int ret, dref_id = 1;
         MOVAtom a = { AV_RL32("stsd") };
         int64_t start_pos = avio_tell(pb);
-        uint32_t size = avio_rb32(pb); /* size */
+        int64_t size    = avio_rb32(pb); /* size */
         uint32_t format = avio_rl32(pb); /* data format */
 
         if (size >= 16) {
@@ -2555,7 +2555,7 @@ static int mov_read_ilst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return ret;
 }
 
-static int mov_read_replaygain(MOVContext *c, AVIOContext *pb, int size)
+static int mov_read_replaygain(MOVContext *c, AVIOContext *pb, int64_t size)
 {
     int64_t end = avio_tell(pb) + size;
     uint8_t *key = NULL, *val = NULL;
