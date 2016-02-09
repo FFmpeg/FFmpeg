@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_DIRAC_TABLES_H
-#define AVCODEC_DIRAC_TABLES_H
+#ifndef AVCODEC_DIRACTAB_H
+#define AVCODEC_DIRACTAB_H
 
 #include <stdint.h>
 
@@ -38,4 +38,4 @@ extern const int32_t ff_dirac_qoffset_intra_tab[120];
 /* Scaling offsets needed for quantization/dequantization, for inter frames */
 extern const int ff_dirac_qoffset_inter_tab[122];
 
-#endif /* AVCODEC_DIRAC_TABLES_H */
+#endif /* AVCODEC_DIRACTAB_H */

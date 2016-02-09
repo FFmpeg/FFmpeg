@@ -26,8 +26,6 @@
 #include "metadata.h"
 #include "riff.h"
 
-#define PACKET_SIZE 3200
-
 typedef enum ASFDataType {
     ASF_UNICODE    = 0,
     ASF_BYTE_ARRAY = 1,
@@ -101,6 +99,7 @@ extern const ff_asf_guid ff_asf_language_guid;
 extern const ff_asf_guid ff_asf_content_encryption;
 extern const ff_asf_guid ff_asf_ext_content_encryption;
 extern const ff_asf_guid ff_asf_digital_signature;
+extern const ff_asf_guid ff_asf_extended_stream_properties_object;
 
 extern const AVMetadataConv ff_asf_metadata_conv[];
 

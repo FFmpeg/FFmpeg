@@ -442,10 +442,10 @@ static int try_push_frames(AVFilterContext *ctx)
     case SCROLL:
         s->xpos = s->xend - 1;
         ret = try_push_frame(ctx, s->xpos);
+        break;
     case RSCROLL:
         s->xpos = 0;
         ret = try_push_frame(ctx, s->xpos);
-        break;
         break;
     case FULLFRAME:
         for (x = 0; x < s->xend; x++) {

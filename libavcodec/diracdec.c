@@ -101,16 +101,11 @@ typedef struct SubBand {
 } SubBand;
 
 typedef struct Plane {
+    DWTPlane idwt;
+
     int width;
     int height;
     ptrdiff_t stride;
-
-    int idwt_width;
-    int idwt_height;
-    int idwt_stride;
-    uint8_t *idwt_buf;
-    uint8_t *idwt_buf_base;
-    uint8_t *idwt_tmp;
 
     /* block length */
     uint8_t xblen;
@@ -290,10 +285,10 @@ static int alloc_sequence_buffers(DiracContext *s)
         w = FFALIGN(CALC_PADDING(w, MAX_DWT_LEVELS), 8); /* FIXME: Should this be 16 for SSE??? */
         h = top_padding + CALC_PADDING(h, MAX_DWT_LEVELS) + max_yblen/2;
 
-        s->plane[i].idwt_buf_base = av_mallocz_array((w+max_xblen), h * (2 << s->pshift));
-        s->plane[i].idwt_tmp      = av_malloc_array((w+16), 2 << s->pshift);
-        s->plane[i].idwt_buf      = s->plane[i].idwt_buf_base + (top_padding*w)*(2 << s->pshift);
-        if (!s->plane[i].idwt_buf_base || !s->plane[i].idwt_tmp)
+        s->plane[i].idwt.buf_base = av_mallocz_array((w+max_xblen), h * (2 << s->pshift));
+        s->plane[i].idwt.tmp      = av_malloc_array((w+16), 2 << s->pshift);
+        s->plane[i].idwt.buf      = s->plane[i].idwt.buf_base + (top_padding*w)*(2 << s->pshift);
+        if (!s->plane[i].idwt.buf_base || !s->plane[i].idwt.tmp)
             return AVERROR(ENOMEM);
     }
 
@@ -354,8 +349,8 @@ static void free_sequence_buffers(DiracContext *s)
     memset(s->delay_frames, 0, sizeof(s->delay_frames));
 
     for (i = 0; i < 3; i++) {
-        av_freep(&s->plane[i].idwt_buf_base);
-        av_freep(&s->plane[i].idwt_tmp);
+        av_freep(&s->plane[i].idwt.buf_base);
+        av_freep(&s->plane[i].idwt.tmp);
     }
 
     s->buffer_stride = 0;
@@ -939,9 +934,9 @@ static void init_planes(DiracContext *s)
 
         p->width       = s->seq.width  >> (i ? s->chroma_x_shift : 0);
         p->height      = s->seq.height >> (i ? s->chroma_y_shift : 0);
-        p->idwt_width  = w = CALC_PADDING(p->width , s->wavelet_depth);
-        p->idwt_height = h = CALC_PADDING(p->height, s->wavelet_depth);
-        p->idwt_stride = FFALIGN(p->idwt_width, 8) << (1 + s->pshift);
+        p->idwt.width  = w = CALC_PADDING(p->width , s->wavelet_depth);
+        p->idwt.height = h = CALC_PADDING(p->height, s->wavelet_depth);
+        p->idwt.stride = FFALIGN(p->idwt.width, 8) << (1 + s->pshift);
 
         for (level = s->wavelet_depth-1; level >= 0; level--) {
             w = w>>1;
@@ -950,9 +945,9 @@ static void init_planes(DiracContext *s)
                 SubBand *b = &p->band[level][orientation];
 
                 b->pshift = s->pshift;
-                b->ibuf   = p->idwt_buf;
+                b->ibuf   = p->idwt.buf;
                 b->level  = level;
-                b->stride = p->idwt_stride << (s->wavelet_depth - level);
+                b->stride = p->idwt.stride << (s->wavelet_depth - level);
                 b->width  = w;
                 b->height = h;
                 b->orientation = orientation;
@@ -1734,7 +1729,7 @@ static int dirac_decode_frame_internal(DiracContext *s)
         /* [DIRAC_STD] 13.5.1 low_delay_transform_data() */
         for (comp = 0; comp < 3; comp++) {
             Plane *p = &s->plane[comp];
-            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
+            memset(p->idwt.buf, 0, p->idwt.stride * p->idwt.height);
         }
         if (!s->zero_res) {
             if ((ret = decode_lowdelay(s)) < 0)
@@ -1752,11 +1747,11 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
         if (!s->zero_res && !s->low_delay)
         {
-            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height);
+            memset(p->idwt.buf, 0, p->idwt.stride * p->idwt.height);
             decode_component(s, comp); /* [DIRAC_STD] 13.4.1 core_transform_data() */
         }
-        ret = ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
-                                    s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp, s->bit_depth);
+        ret = ff_spatial_idwt_init(&d, &p->idwt, s->wavelet_idx+2,
+                                   s->wavelet_depth, s->bit_depth);
         if (ret < 0)
             return ret;
 
@@ -1766,8 +1761,8 @@ static int dirac_decode_frame_internal(DiracContext *s)
                 ff_spatial_idwt_slice2(&d, y+16); /* decode */
                 s->diracdsp.put_signed_rect_clamped[idx](frame + y*p->stride,
                                                          p->stride,
-                                                         p->idwt_buf + y*p->idwt_stride,
-                                                         p->idwt_stride, p->width, 16);
+                                                         p->idwt.buf + y*p->idwt.stride,
+                                                         p->idwt.stride, p->width, 16);
             }
         } else { /* inter */
             int rowheight = p->ybsep*p->stride;
@@ -1804,9 +1799,9 @@ static int dirac_decode_frame_internal(DiracContext *s)
                 mctmp += (start - dsty)*p->stride + p->xoffset;
                 ff_spatial_idwt_slice2(&d, start + h); /* decode */
                 /* NOTE: add_rect_clamped hasn't been templated hence the shifts.
-                 * idwt_stride is passed as pixels, not in bytes as in the rest of the decoder */
+                 * idwt.stride is passed as pixels, not in bytes as in the rest of the decoder */
                 s->diracdsp.add_rect_clamped(frame + start*p->stride, mctmp, p->stride,
-                                             (int16_t*)(p->idwt_buf) + start*(p->idwt_stride >> 1), (p->idwt_stride >> 1), p->width, h);
+                                             (int16_t*)(p->idwt.buf) + start*(p->idwt.stride >> 1), (p->idwt.stride >> 1), p->width, h);
 
                 dsty += p->ybsep;
             }

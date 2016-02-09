@@ -19,13 +19,34 @@
  */
 
 #include "libavutil/x86/cpu.h"
-#include "diracdsp_mmx.h"
+#include "libavcodec/diracdsp.h"
 #include "fpel.h"
+
+DECL_DIRAC_PIXOP(put, mmx);
+DECL_DIRAC_PIXOP(avg, mmx);
+DECL_DIRAC_PIXOP(avg, mmxext);
+
+void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
+void ff_avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
+void ff_put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
+void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
+
+void ff_add_rect_clamped_mmx(uint8_t *, const uint16_t *, int, const int16_t *, int, int, int);
+void ff_add_rect_clamped_sse2(uint8_t *, const uint16_t *, int, const int16_t *, int, int, int);
+
+void ff_add_dirac_obmc8_mmx(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
+void ff_add_dirac_obmc16_mmx(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
+void ff_add_dirac_obmc32_mmx(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
+
+void ff_add_dirac_obmc16_sse2(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
+void ff_add_dirac_obmc32_sse2(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
 
 void ff_put_rect_clamped_mmx(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 void ff_put_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 void ff_put_signed_rect_clamped_mmx(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 void ff_put_signed_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
+
+#if HAVE_YASM
 
 #define HPEL_FILTER(MMSIZE, EXT)                                                             \
     void ff_dirac_hpel_filter_v_ ## EXT(uint8_t *, const uint8_t *, int, int);               \
@@ -46,11 +67,6 @@ void ff_put_signed_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t
             src  += stride;                                                                  \
         }                                                                                    \
     }
-
-#if !ARCH_X86_64
-HPEL_FILTER(8, mmx)
-#endif
-HPEL_FILTER(16, sse2)
 
 #define PIXFUNC(PFX, IDX, EXT)                                                   \
     /*MMXDISABLEDc->PFX ## _dirac_pixels_tab[0][IDX] = ff_ ## PFX ## _dirac_pixels8_ ## EXT;*/  \
@@ -119,7 +135,22 @@ void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
     }
 }
 
-void ff_diracdsp_init_mmx(DiracDSPContext* c)
+#else // HAVE_YASM
+
+#define HPEL_FILTER(MMSIZE, EXT)                                                     \
+    void dirac_hpel_filter_ ## EXT(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc,              \
+                                   const uint8_t *src, int stride, int width, int height);
+
+#define PIXFUNC(PFX, IDX, EXT) do {} while (0)
+
+#endif // HAVE_YASM
+
+#if !ARCH_X86_64
+HPEL_FILTER(8, mmx)
+#endif
+HPEL_FILTER(16, sse2)
+
+void ff_diracdsp_init_x86(DiracDSPContext* c)
 {
     int mm_flags = av_get_cpu_flags();
 

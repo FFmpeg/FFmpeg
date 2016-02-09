@@ -1584,6 +1584,12 @@ follows: @code{(minrate * 100 / bitrate)}.
 
 @item crf (@emph{end-usage=cq}, @emph{cq-level})
 
+@item tune (@emph{tune})
+@table @samp
+@item psnr (@emph{psnr})
+@item ssim (@emph{ssim})
+@end table
+
 @item quality, deadline (@emph{deadline})
 @table @samp
 @item best

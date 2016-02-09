@@ -4138,6 +4138,7 @@ Available values for component modes are:
 @item lighten
 @item linearlight
 @item multiply
+@item multiply128
 @item negation
 @item normal
 @item or
@@ -11321,6 +11322,45 @@ stereo3d=abl:sbsr
 @end example
 @end itemize
 
+@section streamselect, astreamselect
+Select video or audio streams.
+
+The filter accepts the following options:
+
+@table @option
+@item inputs
+Set number of inputs. Default is 2.
+
+@item map
+Set input indexes to remap to outputs.
+@end table
+
+@subsection Commands
+
+The @code{streamselect} and @code{astreamselect} filter supports the following
+commands:
+
+@table @option
+@item map
+Set input indexes to remap to outputs.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Select first 5 seconds 1st stream and rest of time 2nd stream:
+@example
+sendcmd='5.0 streamselect map 1',streamselect=inputs=2:map=0
+@end example
+
+@item
+Same as above, but for audio:
+@example
+asendcmd='5.0 astreamselect map 1',astreamselect=inputs=2:map=0
+@end example
+@end itemize
+
 @anchor{spp}
 @section spp
 
@@ -11433,6 +11473,60 @@ Scale the input by 2x and smooth using the Super2xSaI (Scale and
 Interpolate) pixel art scaling algorithm.
 
 Useful for enlarging pixel art images without reducing sharpness.
+
+@section swaprect
+
+Swap two rectangular objects in video.
+
+This filter accepts the following options:
+
+@table @option
+@item w
+Set object width.
+
+@item h
+Set object height.
+
+@item x1
+Set 1st rect x coordinate.
+
+@item y1
+Set 1st rect y coordinate.
+
+@item x2
+Set 2nd rect x coordinate.
+
+@item y2
+Set 2nd rect y coordinate.
+
+All expressions are evaluated once for each frame.
+@end table
+
+The all options are expressions containing the following constants:
+
+@table @option
+@item w
+@item h
+The input width and height.
+
+@item a
+same as @var{w} / @var{h}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
+
+@item n
+The number of the input frame, starting from 0.
+
+@item t
+The timestamp expressed in seconds. It's NAN if the input timestamp is unknown.
+
+@item pos
+the position in the file of the input frame, NAN if unknown
+@end table
 
 @section swapuv
 Swap U & V plane.

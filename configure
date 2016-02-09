@@ -4710,7 +4710,7 @@ link_name=$(mktemp -u $TMPDIR/name_XXXXXXXX)
 mkdir "$link_dest"
 $ln_s "$link_dest" "$link_name"
 touch "$link_dest/test_file"
-if [ -e "$link_name/test_file" ]; then
+if [ "$source_path" != "." ] && ([ ! -d src ] || [ -L src ]) && [ -e "$link_name/test_file" ]; then
     # create link to source path
     [ -e src ] && rm src
     $ln_s "$source_path" src
@@ -5935,7 +5935,11 @@ elif enabled ccc; then
     add_cflags -msg_disable nonstandcast
     add_cflags -msg_disable unsupieee
 elif enabled gcc; then
-    check_optflags -fno-tree-vectorize
+    case $gcc_basever in
+        4.9*) enabled x86 || check_optflags -fno-tree-vectorize ;;
+        4.*)                 check_optflags -fno-tree-vectorize ;;
+        *)    enabled x86 || check_optflags -fno-tree-vectorize ;;
+    esac
     check_cflags -Werror=format-security
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
