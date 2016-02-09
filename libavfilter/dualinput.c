@@ -32,7 +32,7 @@ static int process_frame(FFFrameSync *fs)
         return ret;
     }
     av_assert0(mainpic);
-    mainpic->pts = av_rescale_q(mainpic->pts, s->fs.time_base, ctx->outputs[0]->time_base);
+    mainpic->pts = av_rescale_q(s->fs.pts, s->fs.time_base, ctx->outputs[0]->time_base);
     if (secondpic && !ctx->is_disabled)
         mainpic = s->process(ctx, mainpic, secondpic);
     ret = ff_filter_frame(ctx->outputs[0], mainpic);
