@@ -465,6 +465,7 @@ typedef struct H264SliceContext {
  * H264Context
  */
 typedef struct H264Context {
+    const AVClass *class;
     AVCodecContext *avctx;
     VideoDSPContext vdsp;
     H264DSPContext h264dsp;
