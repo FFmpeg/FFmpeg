@@ -1154,7 +1154,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->fdsp = avpriv_float_dsp_alloc(0);
     if (!s->fdsp)
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
 
 fail:
     av_free(bdata);
