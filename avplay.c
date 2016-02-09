@@ -149,6 +149,7 @@ typedef struct PlayerState {
     double audio_diff_threshold;
     int audio_diff_avg_count;
     AVStream *audio_st;
+    AVCodecContext *audio_dec;
     PacketQueue audioq;
     int audio_hw_buf_size;
     uint8_t silence_buf[SDL_AUDIO_BUFFER_SIZE];
@@ -181,6 +182,7 @@ typedef struct PlayerState {
     int subtitle_stream;
     int subtitle_stream_changed;
     AVStream *subtitle_st;
+    AVCodecContext *subtitle_dec;
     PacketQueue subtitleq;
     SubPicture subpq[SUBPICTURE_QUEUE_SIZE];
     int subpq_size, subpq_rindex, subpq_windex;
@@ -193,6 +195,7 @@ typedef struct PlayerState {
     double video_clock;             // pts of last decoded frame / predicted pts of next decoded frame
     int video_stream;
     AVStream *video_st;
+    AVCodecContext *video_dec;
     PacketQueue videoq;
     double video_current_pts;       // current displayed pts (different from video_clock if frame fifos are used)
     double video_current_pts_drift; // video_current_pts - time (av_gettime_relative) at which we updated video_current_pts - used to have running video pts
@@ -1358,7 +1361,7 @@ static int output_picture2(PlayerState *is, AVFrame *src_frame, double pts1, int
         pts = is->video_clock;
     }
     /* update video clock for next frame */
-    frame_delay = av_q2d(is->video_st->codec->time_base);
+    frame_delay = av_q2d(is->video_dec->time_base);
     /* for MPEG2, the frame can be repeated, so we update the
        clock accordingly */
     frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
@@ -1377,7 +1380,7 @@ static int get_video_frame(PlayerState *is, AVFrame *frame, int64_t *pts, AVPack
         return -1;
 
     if (pkt->data == flush_pkt.data) {
-        avcodec_flush_buffers(is->video_st->codec);
+        avcodec_flush_buffers(is->video_dec);
 
         SDL_LockMutex(is->pictq_mutex);
         // Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
@@ -1399,7 +1402,7 @@ static int get_video_frame(PlayerState *is, AVFrame *frame, int64_t *pts, AVPack
         return 0;
     }
 
-    avcodec_decode_video2(is->video_st->codec, frame, &got_picture, pkt);
+    avcodec_decode_video2(is->video_dec, frame, &got_picture, pkt);
 
     if (got_picture) {
         if (decoder_reorder_pts == -1) {
@@ -1433,7 +1436,7 @@ static int configure_video_filters(AVFilterGraph *graph, PlayerState *is, const 
     char buffersrc_args[256];
     int ret;
     AVFilterContext *filt_src = NULL, *filt_out = NULL, *last_filter;
-    AVCodecContext *codec = is->video_st->codec;
+    AVCodecContext *codec = is->video_dec;
 
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%"PRId64, sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
@@ -1533,8 +1536,8 @@ static int video_thread(void *arg)
 
     AVFilterGraph *graph = avfilter_graph_alloc();
     AVFilterContext *filt_out = NULL, *filt_in = NULL;
-    int last_w = is->video_st->codec->width;
-    int last_h = is->video_st->codec->height;
+    int last_w = is->video_dec->width;
+    int last_h = is->video_dec->height;
     if (!graph) {
         av_frame_free(&frame);
         return AVERROR(ENOMEM);
@@ -1564,18 +1567,18 @@ static int video_thread(void *arg)
         if (!ret)
             continue;
 
-        if (   last_w != is->video_st->codec->width
-            || last_h != is->video_st->codec->height) {
+        if (   last_w != is->video_dec->width
+            || last_h != is->video_dec->height) {
             av_log(NULL, AV_LOG_TRACE, "Changing size %dx%d -> %dx%d\n", last_w, last_h,
-                    is->video_st->codec->width, is->video_st->codec->height);
+                    is->video_dec->width, is->video_dec->height);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
             if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
                 goto the_end;
             filt_in  = is->in_video_filter;
             filt_out = is->out_video_filter;
-            last_w = is->video_st->codec->width;
-            last_h = is->video_st->codec->height;
+            last_w = is->video_dec->width;
+            last_h = is->video_dec->height;
         }
 
         frame->pts = pts_int;
@@ -1638,7 +1641,7 @@ static int subtitle_thread(void *arg)
             break;
 
         if (pkt->data == flush_pkt.data) {
-            avcodec_flush_buffers(is->subtitle_st->codec);
+            avcodec_flush_buffers(is->subtitle_dec);
             continue;
         }
         SDL_LockMutex(is->subpq_mutex);
@@ -1657,9 +1660,9 @@ static int subtitle_thread(void *arg)
            this packet, if any */
         pts = 0;
         if (pkt->pts != AV_NOPTS_VALUE)
-            pts = av_q2d(is->subtitle_st->time_base) * pkt->pts;
+            pts = av_q2d(is->subtitle_dec->time_base) * pkt->pts;
 
-        avcodec_decode_subtitle2(is->subtitle_st->codec, &sp->sub,
+        avcodec_decode_subtitle2(is->subtitle_dec, &sp->sub,
                                  &got_subtitle, pkt);
 
         if (got_subtitle && sp->sub.format == 0) {
@@ -1788,7 +1791,7 @@ static int audio_decode_frame(PlayerState *is, double *pts_ptr)
 {
     AVPacket *pkt_temp = &is->audio_pkt_temp;
     AVPacket *pkt = &is->audio_pkt;
-    AVCodecContext *dec = is->audio_st->codec;
+    AVCodecContext *dec = is->audio_dec;
     int n, len1, data_size, got_frame;
     double pts;
     int new_packet = 0;
@@ -2034,7 +2037,16 @@ static int stream_component_open(PlayerState *is, int stream_index)
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
-    avctx = ic->streams[stream_index]->codec;
+
+    avctx = avcodec_alloc_context3(NULL);
+    if (!avctx)
+        return AVERROR(ENOMEM);
+
+    ret = avcodec_copy_context(avctx, ic->streams[stream_index]->codec);
+    if (ret < 0) {
+        avcodec_free_context(&avctx);
+        return ret;
+    }
 
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], NULL);
 
@@ -2104,6 +2116,7 @@ static int stream_component_open(PlayerState *is, int stream_index)
     case AVMEDIA_TYPE_AUDIO:
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
+        is->audio_dec = avctx;
         is->audio_buf_size  = 0;
         is->audio_buf_index = 0;
 
@@ -2121,6 +2134,7 @@ static int stream_component_open(PlayerState *is, int stream_index)
     case AVMEDIA_TYPE_VIDEO:
         is->video_stream = stream_index;
         is->video_st = ic->streams[stream_index];
+        is->video_dec = avctx;
 
         packet_queue_init(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
@@ -2128,6 +2142,7 @@ static int stream_component_open(PlayerState *is, int stream_index)
     case AVMEDIA_TYPE_SUBTITLE:
         is->subtitle_stream = stream_index;
         is->subtitle_st = ic->streams[stream_index];
+        is->subtitle_dec = avctx;
         packet_queue_init(&is->subtitleq);
 
         is->subtitle_tid = SDL_CreateThread(subtitle_thread, is);
@@ -2205,17 +2220,19 @@ static void stream_component_close(PlayerState *is, int stream_index)
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_ALL;
-    avcodec_close(avctx);
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
+        avcodec_free_context(&is->audio_dec);
         is->audio_st = NULL;
         is->audio_stream = -1;
         break;
     case AVMEDIA_TYPE_VIDEO:
+        avcodec_free_context(&is->video_dec);
         is->video_st = NULL;
         is->video_stream = -1;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
+        avcodec_free_context(&is->subtitle_dec);
         is->subtitle_st = NULL;
         is->subtitle_stream = -1;
         break;
@@ -2457,7 +2474,7 @@ static int decode_thread(void *arg)
                 packet_queue_put(&is->videoq, pkt);
             }
             if (is->audio_stream >= 0 &&
-                (is->audio_st->codec->codec->capabilities & AV_CODEC_CAP_DELAY)) {
+                (is->audio_dec->codec->capabilities & AV_CODEC_CAP_DELAY)) {
                 av_init_packet(pkt);
                 pkt->data = NULL;
                 pkt->size = 0;
