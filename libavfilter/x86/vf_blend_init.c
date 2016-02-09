@@ -37,6 +37,7 @@ BLEND_FUNC(and, sse2)
 BLEND_FUNC(darken, sse2)
 BLEND_FUNC(difference128, sse2)
 BLEND_FUNC(multiply, sse2)
+BLEND_FUNC(screen, sse2)
 BLEND_FUNC(hardmix, sse2)
 BLEND_FUNC(lighten, sse2)
 BLEND_FUNC(or, sse2)
@@ -65,6 +66,7 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
         case BLEND_MULTIPLY: param->blend = ff_blend_multiply_sse2; break;
         case BLEND_OR:       param->blend = ff_blend_or_sse2;       break;
         case BLEND_PHOENIX:  param->blend = ff_blend_phoenix_sse2;  break;
+        case BLEND_SCREEN:   param->blend = ff_blend_screen_sse2; break;
         case BLEND_SUBTRACT: param->blend = ff_blend_subtract_sse2; break;
         case BLEND_XOR:      param->blend = ff_blend_xor_sse2;      break;
         case BLEND_DIFFERENCE: param->blend = ff_blend_difference_sse2; break;
