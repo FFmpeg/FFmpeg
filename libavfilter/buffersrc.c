@@ -327,7 +327,7 @@ static int request_frame(AVFilterLink *link)
     }
     av_fifo_generic_read(c->fifo, &frame, sizeof(frame), NULL);
 
-    ff_filter_frame(link, frame);
+    ret = ff_filter_frame(link, frame);
 
     return ret;
 }
