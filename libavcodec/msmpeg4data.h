@@ -84,7 +84,4 @@ extern const uint32_t ff_table1_dc_chroma[120][2];
 #define WMV2_INTER_CBP_TABLE_COUNT 4
 extern const uint32_t (* const ff_wmv2_inter_table[WMV2_INTER_CBP_TABLE_COUNT])[2];
 
-extern const uint8_t ff_wmv2_scantableA[64];
-extern const uint8_t ff_wmv2_scantableB[64];
-
 #endif /* AVCODEC_MSMPEG4DATA_H */

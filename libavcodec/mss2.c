@@ -28,9 +28,9 @@
 #include "internal.h"
 #include "mpeg_er.h"
 #include "msmpeg4.h"
-#include "msmpeg4data.h"
 #include "qpeldsp.h"
 #include "vc1.h"
+#include "wmv2data.h"
 #include "mss12.h"
 #include "mss2dsp.h"
 
