@@ -313,7 +313,7 @@ static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterS
 
 #define accumulate_bit(acc, val) \
     acc <<= 1; \
-    acc |= (val) >= (128 + 110)
+    acc |= (val) >= 234
 #define output_pixel(pos, acc) \
     if (target == AV_PIX_FMT_MONOBLACK) { \
         pos = acc; \
