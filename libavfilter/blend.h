@@ -71,6 +71,7 @@ typedef struct FilterParams {
                   struct FilterParams *param, double *values);
 } FilterParams;
 
+void ff_blend_init(FilterParams *param, int is_16bit);
 void ff_blend_init_x86(FilterParams *param, int is_16bit);
 
 #endif /* AVFILTER_BLEND_H */
