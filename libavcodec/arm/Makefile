@@ -28,6 +28,7 @@ OBJS-$(CONFIG_MPEGVIDEOENC)            += arm/mpegvideoencdsp_init_arm.o
 OBJS-$(CONFIG_NEON_CLOBBER_TEST)       += arm/neontest.o
 OBJS-$(CONFIG_PIXBLOCKDSP)             += arm/pixblockdsp_init_arm.o
 OBJS-$(CONFIG_RV34DSP)                 += arm/rv34dsp_init_arm.o
+OBJS-$(CONFIG_VC1DSP)                  += arm/vc1dsp_init_arm.o
 OBJS-$(CONFIG_VIDEODSP)                += arm/videodsp_init_arm.o
 OBJS-$(CONFIG_VP3DSP)                  += arm/vp3dsp_init_arm.o
 OBJS-$(CONFIG_VP8DSP)                  += arm/vp8dsp_init_arm.o
@@ -39,7 +40,6 @@ OBJS-$(CONFIG_APE_DECODER)             += arm/apedsp_init_arm.o
 OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o
 OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o
 OBJS-$(CONFIG_RV40_DECODER)            += arm/rv40dsp_init_arm.o
-OBJS-$(CONFIG_VC1_DECODER)             += arm/vc1dsp_init_arm.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += arm/vorbisdsp_init_arm.o
 OBJS-$(CONFIG_VP6_DECODER)             += arm/vp6dsp_init_arm.o
 
@@ -118,6 +118,8 @@ NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
                                           arm/mdct_fixed_neon.o
 NEON-OBJS-$(CONFIG_MPEGVIDEO)          += arm/mpegvideo_neon.o
 NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o
+NEON-OBJS-$(CONFIG_VC1DSP)             += arm/vc1dsp_init_neon.o        \
+                                          arm/vc1dsp_neon.o
 NEON-OBJS-$(CONFIG_VP3DSP)             += arm/vp3dsp_neon.o
 NEON-OBJS-$(CONFIG_VP8DSP)             += arm/vp8dsp_init_neon.o        \
                                           arm/vp8dsp_neon.o
@@ -131,7 +133,5 @@ NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
 NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_neon.o
 NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_neon.o            \
                                           arm/rv40dsp_neon.o
-NEON-OBJS-$(CONFIG_VC1_DECODER)        += arm/vc1dsp_init_neon.o        \
-                                          arm/vc1dsp_neon.o
 NEON-OBJS-$(CONFIG_VORBIS_DECODER)     += arm/vorbisdsp_neon.o
 NEON-OBJS-$(CONFIG_VP6_DECODER)        += arm/vp6dsp_neon.o

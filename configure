@@ -1704,6 +1704,7 @@ CONFIG_EXTRA="
     texturedsp
     texturedspenc
     tpeldsp
+    vc1dsp
     videodsp
     vp3dsp
     vp56dsp
@@ -1872,6 +1873,7 @@ nvenc_deps_any="dlopen LoadLibrary"
 nvenc_extralibs='$ldl'
 qsvdec_select="qsv"
 qsvenc_select="qsv"
+vc1dsp_select="h264chroma qpeldsp startcode"
 
 # decoders / encoders
 aac_decoder_select="imdct15 mdct sinewin"
@@ -2060,7 +2062,7 @@ twinvq_decoder_select="mdct lsp sinewin"
 utvideo_decoder_select="bswapdsp"
 utvideo_encoder_select="bswapdsp huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
-vc1_decoder_select="blockdsp error_resilience h263_decoder h264chroma h264qpel intrax8 mpeg_er mpegvideo qpeldsp startcode"
+vc1_decoder_select="blockdsp error_resilience h263_decoder h264qpel intrax8 mpeg_er mpegvideo vc1dsp"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
