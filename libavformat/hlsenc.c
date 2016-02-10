@@ -542,7 +542,7 @@ static int hls_start(AVFormatContext *s)
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL);
+        err = s->io_open(s, &oc->pb, filename, AVIO_FLAG_WRITE, &options);
         av_free(filename);
         av_dict_free(&options);
         if (err < 0)
