@@ -24,6 +24,7 @@
 
 SECTION_RODATA
 
+ps_255: times 4 dd 255.0
 pw_1:   times 8 dw 1
 pw_128: times 8 dw 128
 pw_255: times 8 dw 255
@@ -215,6 +216,35 @@ BLEND_INIT hardmix, 5
         pxor            m1, m2
         mova   [dstq + xq], m1
         add             xq, mmsize
+    jl .loop
+BLEND_END
+
+BLEND_INIT divide, 4
+    pxor       m2, m2
+    mova       m3, [ps_255]
+.nextrow:
+    mov        xq, widthq
+
+    .loop:
+        movd            m0, [topq + xq]      ; 000000xx
+        movd            m1, [bottomq + xq]
+        punpcklbw       m0, m2               ; 00000x0x
+        punpcklbw       m1, m2
+        punpcklwd       m0, m2               ; 000x000x
+        punpcklwd       m1, m2
+
+        cvtdq2ps        m0, m0
+        cvtdq2ps        m1, m1
+        divps           m0, m1               ; a / b
+        mulps           m0, m3               ; a / b * 255
+        minps           m0, m3
+        cvttps2dq       m0, m0
+
+        packssdw        m0, m0               ; 00000x0x
+        packuswb        m0, m0               ; 000000xx
+        movd   [dstq + xq], m0
+        add             xq, mmsize / 4
+
     jl .loop
 BLEND_END
 
