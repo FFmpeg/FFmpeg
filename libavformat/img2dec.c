@@ -377,10 +377,6 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int size[3]           = { 0 }, ret[3] = { 0 };
     AVIOContext *f[3]     = { NULL };
     AVCodecContext *codec = s1->streams[0]->codec;
-    AVOpenCallback open_func = s1->open_cb;
-
-    if (!open_func)
-        open_func = ffio_open2_wrapper;
 
     if (!s->is_pipe) {
         /* loop over input */
@@ -407,8 +403,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 !s->loop &&
                 !s->split_planes) {
                 f[i] = s1->pb;
-            } else if (open_func(s1, &f[i], filename, AVIO_FLAG_READ,
-                           &s1->interrupt_callback, NULL) < 0) {
+            } else if (s1->io_open(s1, &f[i], filename, AVIO_FLAG_READ, NULL) < 0) {
                 if (i >= 1)
                     break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",
@@ -496,7 +491,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 }
             }
             if (!s->is_pipe && f[i] != s1->pb)
-                avio_closep(&f[i]);
+                ff_format_io_close(s1, &f[i]);
             if (ret[i] > 0)
                 pkt->size += ret[i];
         }
@@ -525,7 +520,7 @@ fail:
     if (!s->is_pipe) {
         for (i = 0; i < 3; i++) {
             if (f[i] != s1->pb)
-                avio_closep(&f[i]);
+                ff_format_io_close(s1, &f[i]);
         }
     }
     return res;
