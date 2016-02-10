@@ -52,6 +52,7 @@
 // a wrapper around a single output AVStream
 typedef struct OutputStream {
     AVStream *st;
+    AVCodecContext *enc;
 
     /* pts of the next frame that will be generated */
     int64_t next_pts;
@@ -85,13 +86,18 @@ static void add_audio_stream(OutputStream *ost, AVFormatContext *oc,
         exit(1);
     }
 
-    ost->st = avformat_new_stream(oc, codec);
+    ost->st = avformat_new_stream(oc, NULL);
     if (!ost->st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
 
-    c = ost->st->codec;
+    c = avcodec_alloc_context3(codec);
+    if (!c) {
+        fprintf(stderr, "Could not alloc an encoding context\n");
+        exit(1);
+    }
+    ost->enc = c;
 
     /* put sample parameters */
     c->sample_fmt     = codec->sample_fmts           ? codec->sample_fmts[0]           : AV_SAMPLE_FMT_S16;
@@ -162,9 +168,9 @@ static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt,
 static void open_audio(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
-    int nb_samples;
+    int nb_samples, ret;
 
-    c = ost->st->codec;
+    c = ost->enc;
 
     /* open it */
     if (avcodec_open2(c, NULL, NULL) < 0) {
@@ -187,6 +193,13 @@ static void open_audio(AVFormatContext *oc, OutputStream *ost)
                                        c->sample_rate, nb_samples);
     ost->tmp_frame = alloc_audio_frame(AV_SAMPLE_FMT_S16, AV_CH_LAYOUT_STEREO,
                                        44100, nb_samples);
+
+    /* copy the stream parameters to the muxer */
+    ret = avcodec_parameters_from_context(ost->st->codecpar, c);
+    if (ret < 0) {
+        fprintf(stderr, "Could not copy the stream parameters\n");
+        exit(1);
+    }
 }
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
@@ -198,14 +211,14 @@ static AVFrame *get_audio_frame(OutputStream *ost)
     int16_t *q = (int16_t*)frame->data[0];
 
     /* check if we want to generate more frames */
-    if (av_compare_ts(ost->next_pts, ost->st->codec->time_base,
+    if (av_compare_ts(ost->next_pts, ost->enc->time_base,
                       STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
         return NULL;
 
 
     for (j = 0; j < frame->nb_samples; j++) {
         v = (int)(sin(ost->t) * 10000);
-        for (i = 0; i < ost->st->codec->channels; i++)
+        for (i = 0; i < ost->enc->channels; i++)
             *q++ = v;
         ost->t     += ost->tincr;
         ost->tincr += ost->tincr2;
@@ -224,12 +237,12 @@ static int encode_audio_frame(AVFormatContext *oc, OutputStream *ost,
     int got_packet;
 
     av_init_packet(&pkt);
-    avcodec_encode_audio2(ost->st->codec, &pkt, frame, &got_packet);
+    avcodec_encode_audio2(ost->enc, &pkt, frame, &got_packet);
 
     if (got_packet) {
         pkt.stream_index = ost->st->index;
 
-        av_packet_rescale_ts(&pkt, ost->st->codec->time_base, ost->st->time_base);
+        av_packet_rescale_ts(&pkt, ost->enc->time_base, ost->st->time_base);
 
         /* Write the compressed frame to the media file. */
         if (av_interleaved_write_frame(oc, &pkt) != 0) {
@@ -324,13 +337,18 @@ static void add_video_stream(OutputStream *ost, AVFormatContext *oc,
         exit(1);
     }
 
-    ost->st = avformat_new_stream(oc, codec);
+    ost->st = avformat_new_stream(oc, NULL);
     if (!ost->st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
 
-    c = ost->st->codec;
+    c = avcodec_alloc_context3(codec);
+    if (!c) {
+        fprintf(stderr, "Could not alloc an encoding context\n");
+        exit(1);
+    }
+    ost->enc = c;
 
     /* Put sample parameters. */
     c->bit_rate = 400000;
@@ -387,8 +405,9 @@ static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
 static void open_video(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
+    int ret;
 
-    c = ost->st->codec;
+    c = ost->enc;
 
     /* open the codec */
     if (avcodec_open2(c, NULL, NULL) < 0) {
@@ -413,6 +432,13 @@ static void open_video(AVFormatContext *oc, OutputStream *ost)
             fprintf(stderr, "Could not allocate temporary picture\n");
             exit(1);
         }
+    }
+
+    /* copy the stream parameters to the muxer */
+    ret = avcodec_parameters_from_context(ost->st->codecpar, c);
+    if (ret < 0) {
+        fprintf(stderr, "Could not copy the stream parameters\n");
+        exit(1);
     }
 }
 
@@ -448,10 +474,10 @@ static void fill_yuv_image(AVFrame *pict, int frame_index,
 
 static AVFrame *get_video_frame(OutputStream *ost)
 {
-    AVCodecContext *c = ost->st->codec;
+    AVCodecContext *c = ost->enc;
 
     /* check if we want to generate more frames */
-    if (av_compare_ts(ost->next_pts, ost->st->codec->time_base,
+    if (av_compare_ts(ost->next_pts, c->time_base,
                       STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
         return NULL;
 
@@ -494,7 +520,7 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     AVPacket pkt   = { 0 };
     int got_packet = 0;
 
-    c = ost->st->codec;
+    c = ost->enc;
 
     frame = get_video_frame(ost);
 
@@ -525,7 +551,7 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 
 static void close_stream(AVFormatContext *oc, OutputStream *ost)
 {
-    avcodec_close(ost->st->codec);
+    avcodec_free_context(&ost->enc);
     av_frame_free(&ost->frame);
     av_frame_free(&ost->tmp_frame);
     sws_freeContext(ost->sws_ctx);
@@ -614,8 +640,8 @@ int main(int argc, char **argv)
     while (encode_video || encode_audio) {
         /* select the stream to encode */
         if (encode_video &&
-            (!encode_audio || av_compare_ts(video_st.next_pts, video_st.st->codec->time_base,
-                                            audio_st.next_pts, audio_st.st->codec->time_base) <= 0)) {
+            (!encode_audio || av_compare_ts(video_st.next_pts, video_st.enc->time_base,
+                                            audio_st.next_pts, audio_st.enc->time_base) <= 0)) {
             encode_video = !write_video_frame(oc, &video_st);
         } else {
             encode_audio = !process_audio_stream(oc, &audio_st);
