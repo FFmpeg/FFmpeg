@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VC2_TRANSFORMS_H
-#define AVCODEC_VC2_TRANSFORMS_H
+#ifndef AVCODEC_VC2ENC_DWT_H
+#define AVCODEC_VC2ENC_DWT_H
 
 #include <stdint.h>
 
@@ -51,4 +51,4 @@ typedef struct VC2TransformContext {
 int  ff_vc2enc_init_transforms(VC2TransformContext *t, int p_width, int p_height);
 void ff_vc2enc_free_transforms(VC2TransformContext *t);
 
-#endif /* AVCODEC_VC2_TRANSFORMS_H */
+#endif /* AVCODEC_VC2ENC_DWT_H */
