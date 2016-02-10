@@ -127,7 +127,7 @@ static int less(MetadataContext *s, const char *value1, const char *value2, size
     if (sscanf(value1, "%f", &f1) + sscanf(value2, "%f", &f2) != 2)
         return 0;
 
-    return f1 > f2;
+    return f1 < f2;
 }
 
 static int greater(MetadataContext *s, const char *value1, const char *value2, size_t length)
@@ -137,7 +137,7 @@ static int greater(MetadataContext *s, const char *value1, const char *value2, s
     if (sscanf(value1, "%f", &f1) + sscanf(value2, "%f", &f2) != 2)
         return 0;
 
-    return f1 < f2;
+    return f1 > f2;
 }
 
 static int parse_expr(MetadataContext *s, const char *value1, const char *value2, size_t length)
@@ -148,7 +148,7 @@ static int parse_expr(MetadataContext *s, const char *value1, const char *value2
         return 0;
 
     s->var_values[VAR_VALUE1] = f1;
-    s->var_values[VAR_VALUE1] = f2;
+    s->var_values[VAR_VALUE2] = f2;
 
     return av_expr_eval(s->expr, s->var_values, NULL);
 }
@@ -223,7 +223,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if (!s->value && e && e->value) {
             return ff_filter_frame(outlink, frame);
         } else if (s->value && e && e->value &&
-                   s->compare(s, s->value, e->value, s->length)) {
+                   s->compare(s, e->value, s->value, s->length)) {
             return ff_filter_frame(outlink, frame);
         }
         break;
@@ -248,14 +248,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             while ((e = av_dict_get(metadata, "", e, AV_DICT_IGNORE_SUFFIX)) != NULL) {
                 av_log(ctx, AV_LOG_INFO, "%s=%s\n", e->key, e->value);
             }
-        } else if (e && e->value && (!s->value || (e->value && s->compare(s, s->value, e->value, s->length)))) {
+        } else if (e && e->value && (!s->value || (e->value && s->compare(s, e->value, s->value, s->length)))) {
             av_log(ctx, AV_LOG_INFO, "frame %"PRId64" pts %"PRId64"\n", inlink->frame_count, frame->pts);
             av_log(ctx, AV_LOG_INFO, "%s=%s\n", s->key, e->value);
         }
         return ff_filter_frame(outlink, frame);
         break;
     case METADATA_DELETE:
-        if (e && e->value && s->value && s->compare(s, s->value, e->value, s->length)) {
+        if (e && e->value && s->value && s->compare(s, e->value, s->value, s->length)) {
             av_dict_set(&metadata, s->key, NULL, 0);
         } else if (e && e->value) {
             av_dict_set(&metadata, s->key, NULL, 0);

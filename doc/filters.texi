@@ -8501,13 +8501,13 @@ Values are interpreted as strings, returns true if @code{value} is same as metad
 to N chars as set in @code{length} option.
 
 @item less
-Values are interpreted as floats, returns true if @code{value} is less than metadata value.
+Values are interpreted as floats, returns true if metadata value is less than @code{value}.
 
 @item equal
 Values are interpreted as floats, returns true if @code{value} is equal with metadata value.
 
 @item greater
-Values are interpreted as floats, returns true if @code{value} is greater than metadata value.
+Values are interpreted as floats, returns true if metadata value is greater than @code{value}.
 
 @item expr
 Values are interpreted as floats, returns true if expression from option @code{expr}
