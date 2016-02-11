@@ -180,7 +180,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!img->is_pipe) {
         ff_format_io_close(s, &pb[0]);
         for (i = 0; i < nb_renames; i++) {
-            ff_rename(img->tmp[i], img->target[i], s);
+            int ret = ff_rename(img->tmp[i], img->target[i], s);
+            if (ret < 0)
+                return ret;
         }
     }
 
