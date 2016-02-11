@@ -8541,7 +8541,7 @@ Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} wit
 between 0 and 1.
 @example
 @end example
-signalstats,metadata=print:key=lavfi.signalstats.YDIF:function=expr:expr='between(VALUE1,0,1)'
+signalstats,metadata=print:key=lavfi.signalstats.YDIF:value=0:function=expr:expr='between(VALUE1,0,1)'
 @end itemize
 
 @section mpdecimate
