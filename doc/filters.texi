@@ -8500,6 +8500,10 @@ Can be one of following:
 Values are interpreted as strings, returns true if @code{value} is same as metadata value up
 to N chars as set in @code{length} option.
 
+@item starts_with
+Values are interpreted as strings, returns true if metadata value starts with
+the @code{value} option string.
+
 @item less
 Values are interpreted as floats, returns true if metadata value is less than @code{value}.
 

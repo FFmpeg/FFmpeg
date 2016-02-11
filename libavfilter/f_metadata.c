@@ -49,6 +49,7 @@ enum MetadataMode {
 
 enum MetadataFunction {
     METADATAF_STRING,
+    METADATAF_STARTS_WITH,
     METADATAF_LESS,
     METADATAF_EQUAL,
     METADATAF_GREATER,
@@ -102,6 +103,7 @@ static const AVOption filt_name##_options[] = {                     \
     { "value", "set metadata value",     OFFSET(value),  AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "function", "function for comparing values", OFFSET(function), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, METADATAF_NB-1, FLAGS, "function" }, \
     {   "string",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STRING  }, 0, 3, FLAGS, "function" }, \
+    {   "starts_with", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STARTS_WITH }, 0, 0, FLAGS, "function" }, \
     {   "less",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_LESS    }, 0, 3, FLAGS, "function" }, \
     {   "equal",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EQUAL   }, 0, 3, FLAGS, "function" }, \
     {   "greater", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_GREATER }, 0, 3, FLAGS, "function" }, \
@@ -115,6 +117,11 @@ static const AVOption filt_name##_options[] = {                     \
 static int string(MetadataContext *s, const char *value1, const char *value2, size_t length)
 {
     return !strncmp(value1, value2, length);
+}
+
+static int starts_with(MetadataContext *s, const char *value1, const char *value2, size_t length)
+{
+    return !strncmp(value1, value2, strlen(value2));
 }
 
 static int equal(MetadataContext *s, const char *value1, const char *value2, size_t length)
@@ -200,6 +207,9 @@ static av_cold int init(AVFilterContext *ctx)
     switch (s->function) {
     case METADATAF_STRING:
         s->compare = string;
+        break;
+    case METADATAF_STARTS_WITH:
+        s->compare = starts_with;
         break;
     case METADATAF_LESS:
         s->compare = less;
