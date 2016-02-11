@@ -344,6 +344,11 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             break;
         } else if (tag == 2) {
             av_log(avctx, AV_LOG_DEBUG, "tag=2 header - skipping %i tag/value pairs\n", data);
+            if (data > bytestream2_get_bytes_left(&gb) / 4) {
+                av_log(avctx, AV_LOG_ERROR, "too many tag/value pairs (%d)\n", data);
+                ret = AVERROR_INVALIDDATA;
+                break;
+            }
             for (i = 0; i < data; i++) {
                 uint16_t tag2 = bytestream2_get_be16(&gb);
                 uint16_t val2 = bytestream2_get_be16(&gb);
