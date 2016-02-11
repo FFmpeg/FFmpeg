@@ -91,8 +91,8 @@ typedef struct MetadataContext {
 } MetadataContext;
 
 #define OFFSET(x) offsetof(MetadataContext, x)
-#define DEFINE_OPTIONS(filt_name, FLAGS)                            \
-static const AVOption filt_name##_options[] = {                     \
+#define DEFINE_OPTIONS(filt_name, FLAGS) \
+static const AVOption filt_name##_options[] = { \
     { "mode", "set a mode of operation", OFFSET(mode),   AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, METADATA_NB-1, FLAGS, "mode" }, \
     {   "select", "select frame",        0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_SELECT }, 0, 0, FLAGS, "mode" }, \
     {   "add",    "add new metadata",    0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_ADD },    0, 0, FLAGS, "mode" }, \
@@ -102,16 +102,16 @@ static const AVOption filt_name##_options[] = {                     \
     { "key",   "set metadata key",       OFFSET(key),    AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "value", "set metadata value",     OFFSET(value),  AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "function", "function for comparing values", OFFSET(function), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, METADATAF_NB-1, FLAGS, "function" }, \
-    {   "string",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STRING  }, 0, 3, FLAGS, "function" }, \
+    {   "string",      NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STRING  },     0, 3, FLAGS, "function" }, \
     {   "starts_with", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STARTS_WITH }, 0, 0, FLAGS, "function" }, \
-    {   "less",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_LESS    }, 0, 3, FLAGS, "function" }, \
-    {   "equal",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EQUAL   }, 0, 3, FLAGS, "function" }, \
-    {   "greater", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_GREATER }, 0, 3, FLAGS, "function" }, \
-    {   "expr",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EXPR    }, 0, 3, FLAGS, "function" }, \
+    {   "less",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_LESS    },     0, 3, FLAGS, "function" }, \
+    {   "equal",       NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EQUAL   },     0, 3, FLAGS, "function" }, \
+    {   "greater",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_GREATER },     0, 3, FLAGS, "function" }, \
+    {   "expr",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EXPR    },     0, 3, FLAGS, "function" }, \
     { "expr", "set expression for expr function", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "length", "compare up to N chars for string function", OFFSET(length), AV_OPT_TYPE_INT,    {.i64 = INT_MAX }, 1, INT_MAX, FLAGS }, \
     { "file", "set file where to print metadata information", OFFSET(file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS }, \
-    { NULL }                                                            \
+    { NULL } \
 }
 
 static int string(MetadataContext *s, const char *value1, const char *value2, size_t length)
