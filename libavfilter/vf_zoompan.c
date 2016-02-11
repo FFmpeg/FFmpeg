@@ -265,7 +265,7 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     ZPContext *s = ctx->priv;
     AVFrame *in = s->in;
-    double zoom, dx, dy;
+    double zoom=1, dx=0, dy=0;
     int ret;
 
     if (in) {
