@@ -23,6 +23,8 @@
  * filter for manipulating frame metadata
  */
 
+#include <float.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
@@ -117,7 +119,7 @@ static int equal(MetadataContext *s, const char *value1, const char *value2, siz
     if (sscanf(value1, "%f", &f1) + sscanf(value2, "%f", &f2) != 2)
         return 0;
 
-    return f1 == f2;
+    return fabsf(f1 - f2) < FLT_EPSILON;
 }
 
 static int less(MetadataContext *s, const char *value1, const char *value2, size_t length)
@@ -127,7 +129,7 @@ static int less(MetadataContext *s, const char *value1, const char *value2, size
     if (sscanf(value1, "%f", &f1) + sscanf(value2, "%f", &f2) != 2)
         return 0;
 
-    return f1 < f2;
+    return (f1 - f2) < FLT_EPSILON;
 }
 
 static int greater(MetadataContext *s, const char *value1, const char *value2, size_t length)
@@ -137,7 +139,7 @@ static int greater(MetadataContext *s, const char *value1, const char *value2, s
     if (sscanf(value1, "%f", &f1) + sscanf(value2, "%f", &f2) != 2)
         return 0;
 
-    return f1 > f2;
+    return (f2 - f1) < FLT_EPSILON;
 }
 
 static int parse_expr(MetadataContext *s, const char *value1, const char *value2, size_t length)
