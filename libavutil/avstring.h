@@ -284,6 +284,11 @@ const char *av_dirname(char *path);
 
 /**
  * Match instances of a name in a comma-separated list of names.
+ * List entries are checked from the start to the end of the names list,
+ * the first match ends further processing. If an entry prefixed with '-'
+ * matches, then 0 is returned. The "ALL" list entry is considered to
+ * match all names.
+ *
  * @param name  Name to look for.
  * @param names List of names.
  * @return 1 on match, 0 otherwise.
