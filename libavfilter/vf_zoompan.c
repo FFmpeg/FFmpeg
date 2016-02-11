@@ -283,7 +283,6 @@ static int request_frame(AVFilterLink *outlink)
         s->nb_frames = 0;
         s->current_frame = 0;
         av_frame_free(&s->in);
-        ret = 0;
         s->finished = 1;
         ret = ff_request_frame(ctx->inputs[0]);
     }
