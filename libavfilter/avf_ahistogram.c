@@ -297,6 +297,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 if (aa == 1.)
                     aa = 0;
                 break;
+            default:
+                av_assert0(0);
             }
 
             h = aa * (H - 1);
