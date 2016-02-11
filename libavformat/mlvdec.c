@@ -344,28 +344,24 @@ static int read_header(AVFormatContext *avctx)
     if (strlen(avctx->filename) > 2) {
         int i;
         char *filename = av_strdup(avctx->filename);
-        AVOpenCallback open_func = avctx->open_cb;
 
         if (!filename)
             return AVERROR(ENOMEM);
 
-        if (!open_func)
-            open_func = ffio_open2_wrapper;
-
         for (i = 0; i < 100; i++) {
             snprintf(filename + strlen(filename) - 2, 3, "%02d", i);
-            if (open_func(avctx, &mlv->pb[i], filename, AVIO_FLAG_READ, &avctx->interrupt_callback, NULL) < 0)
+            if (avctx->io_open(avctx, &mlv->pb[i], filename, AVIO_FLAG_READ, NULL) < 0)
                 break;
             if (check_file_header(mlv->pb[i], guid) < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ignoring %s; bad format or guid mismatch\n", filename);
-                avio_closep(&mlv->pb[i]);
+                ff_format_io_close(avctx, &mlv->pb[i]);
                 continue;
             }
             av_log(avctx, AV_LOG_INFO, "scanning %s\n", filename);
             ret = scan_file(avctx, vst, ast, i);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ignoring %s; %s\n", filename, av_err2str(ret));
-                avio_closep(&mlv->pb[i]);
+                ff_format_io_close(avctx, &mlv->pb[i]);
                 continue;
             }
         }
@@ -466,7 +462,7 @@ static int read_close(AVFormatContext *s)
     int i;
     for (i = 0; i < 100; i++)
         if (mlv->pb[i])
-            avio_closep(&mlv->pb[i]);
+            ff_format_io_close(s, &mlv->pb[i]);
     return 0;
 }
 

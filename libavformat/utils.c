@@ -112,7 +112,11 @@ MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, data_codec)
 MAKE_ACCESSORS(AVFormatContext, format, int, metadata_header_padding)
 MAKE_ACCESSORS(AVFormatContext, format, void *, opaque)
 MAKE_ACCESSORS(AVFormatContext, format, av_format_control_message, control_message_cb)
+#if FF_API_OLD_OPEN_CALLBACKS
+FF_DISABLE_DEPRECATION_WARNINGS
 MAKE_ACCESSORS(AVFormatContext, format, AVOpenCallback, open_cb)
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 int64_t av_stream_get_end_pts(const AVStream *st)
 {
@@ -356,9 +360,7 @@ static int init_input(AVFormatContext *s, const char *filename,
         (!s->iformat && (s->iformat = av_probe_input_format2(&pd, 0, &score))))
         return score;
 
-    if ((ret = ffio_open_whitelist(&s->pb, filename, AVIO_FLAG_READ | s->avio_flags,
-                                   &s->interrupt_callback, options,
-                                   s->protocol_whitelist)) < 0)
+    if ((ret = s->io_open(s, &s->pb, filename, AVIO_FLAG_READ | s->avio_flags, options)) < 0)
         return ret;
 
     if (s->iformat)
@@ -4741,4 +4743,11 @@ int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
         bsfc = bsfc->next;
     }
     return ret;
+}
+
+void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
+{
+    if (*pb)
+        s->io_close(s, *pb);
+    *pb = NULL;
 }

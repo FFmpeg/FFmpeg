@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavf 57.25.0 - avformat.h
+  Add AVFormatContext.opaque, io_open and io_close, allowing custom IO
+
 2016-02-01 - xxxxxxx - lavf 57.24.100
   Add protocol_whitelist to AVFormatContext, AVIOContext
 

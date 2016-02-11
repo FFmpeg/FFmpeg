@@ -2922,14 +2922,8 @@ static int test_same_origin(const char *src, const char *ref) {
         return 1;
 }
 
-static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDref *ref,
-                         AVIOInterruptCB *int_cb)
+static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDref *ref)
 {
-    AVOpenCallback open_func = c->fc->open_cb;
-
-    if (!open_func)
-        open_func = ffio_open2_wrapper;
-
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
     if (ref->nlvl_to > 0 && ref->nlvl_from > 0) {
@@ -2962,7 +2956,7 @@ static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDr
                 av_strlcat(filename, "../", sizeof(filename));
 
             av_strlcat(filename, ref->path + l + 1, sizeof(filename));
-            if (!c->use_absolute_path && !c->fc->open_cb) {
+            if (!c->use_absolute_path) {
                 int same_origin = test_same_origin(src, filename);
 
                 if (!same_origin) {
@@ -2982,16 +2976,13 @@ static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDr
 
             if (strlen(filename) + 1 == sizeof(filename))
                 return AVERROR(ENOENT);
-            if (!open_func(c->fc, pb, filename, AVIO_FLAG_READ, int_cb, NULL))
+            if (!c->fc->io_open(c->fc, pb, filename, AVIO_FLAG_READ, NULL))
                 return 0;
         }
     } else if (c->use_absolute_path) {
         av_log(c->fc, AV_LOG_WARNING, "Using absolute path on user request, "
                "this is a possible security issue\n");
-        if (!open_func(c->fc, pb, ref->path, AVIO_FLAG_READ, int_cb, NULL))
-            return 0;
-    } else if (c->fc->open_cb) {
-        if (!open_func(c->fc, pb, ref->path, AVIO_FLAG_READ, int_cb, NULL))
+        if (!c->fc->io_open(c->fc, pb, ref->path, AVIO_FLAG_READ, NULL))
             return 0;
     } else {
         av_log(c->fc, AV_LOG_ERROR,
@@ -3052,8 +3043,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         MOVDref *dref = &sc->drefs[sc->dref_id - 1];
         if (c->enable_drefs) {
-            if (mov_open_dref(c, &sc->pb, c->fc->filename, dref,
-                              &c->fc->interrupt_callback) < 0)
+            if (mov_open_dref(c, &sc->pb, c->fc->filename, dref) < 0)
                 av_log(c->fc, AV_LOG_ERROR,
                        "stream %d, error opening alias: path='%s', dir='%s', "
                        "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
@@ -3895,6 +3885,10 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
     };
+    static const uint8_t uuid_xmp[] = {
+        0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8,
+        0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac
+    };
 
     if (atom.size < sizeof(uuid) || atom.size == INT64_MAX)
         return AVERROR_INVALIDDATA;
@@ -3948,6 +3942,27 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             }
         }
 
+        av_free(buffer);
+    } else if (!memcmp(uuid, uuid_xmp, sizeof(uuid))) {
+        uint8_t *buffer;
+        size_t len = atom.size - sizeof(uuid);
+
+        buffer = av_mallocz(len + 1);
+        if (!buffer) {
+            return AVERROR(ENOMEM);
+        }
+        ret = avio_read(pb, buffer, len);
+        if (ret < 0) {
+            av_free(buffer);
+            return ret;
+        } else if (ret != len) {
+            av_free(buffer);
+            return AVERROR_INVALIDDATA;
+        }
+        if (c->export_xmp) {
+            buffer[len] = '\0';
+            av_dict_set(&c->fc->metadata, "xmp", buffer, 0);
+        }
         av_free(buffer);
     }
     return 0;
@@ -4558,7 +4573,7 @@ static int mov_read_close(AVFormatContext *s)
         sc->drefs_count = 0;
 
         if (!sc->pb_is_copied)
-            avio_closep(&sc->pb);
+            ff_format_io_close(s, &sc->pb);
 
         sc->pb = NULL;
         av_freep(&sc->chunk_offsets);

@@ -4138,6 +4138,7 @@ Available values for component modes are:
 @item lighten
 @item linearlight
 @item multiply
+@item multiply128
 @item negation
 @item normal
 @item or
@@ -8444,6 +8445,100 @@ format=rgb24,mergeplanes=0x000102:yuv444p
 @end example
 @end itemize
 
+@section metadata, ametadata
+
+Manipulate frame metadata.
+
+This filter accepts the following options:
+
+@table @option
+@item mode
+Set mode of operation of the filter.
+
+Can be one of the following:
+
+@table @samp
+@item select
+If both @code{value} and @code{key} is set, select frames
+which have such metadata. If only @code{key} is set, select
+every frame that has such key in metadata.
+
+@item add
+Add new metadata @code{key} and @code{value}. If key is already available
+do nothing.
+
+@item modify
+Modify value of already present key.
+
+@item delete
+If @code{value} is set, delete only keys that have such value.
+Otherwise, delete key.
+
+@item print
+Print key and its value if metadata was found. If @code{key} is not set print all
+metadata values available in frame.
+@end table
+
+@item key
+Set key used with all modes. Must be set for all modes except @code{print}.
+
+@item value
+Set metadata value which will be used. This option is mandatory for
+@code{modify} and @code{add} mode.
+
+@item length
+Set length of how many characters of two metadata values need to match to be
+considered same. Default is all available characters.
+
+@item function
+Which function to use when comparing metadata value and @code{value}.
+
+Can be one of following:
+
+@table @samp
+@item string
+Values are interpreted as strings, returns true if @code{value} is same as metadata value up
+to N chars as set in @code{length} option.
+
+@item less
+Values are interpreted as floats, returns true if metadata value is less than @code{value}.
+
+@item equal
+Values are interpreted as floats, returns true if @code{value} is equal with metadata value.
+
+@item greater
+Values are interpreted as floats, returns true if metadata value is greater than @code{value}.
+
+@item expr
+Values are interpreted as floats, returns true if expression from option @code{expr}
+evaluates to true.
+@end table
+
+@item expr
+Set expression which is used when @code{function} is set to @code{expr}.
+The expression is evaluated through the eval API and can contain the following
+constants:
+
+@table @option
+@item VALUE1
+Float representation of @code{value} from metadata key.
+
+@item VALUE2
+Float representation of @code{value} as supplied by user in @code{value} option.
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} with values
+between 0 and 1.
+@example
+@end example
+signalstats,metadata=print:key=lavfi.signalstats.YDIF:function=expr:expr='between(VALUE1,0,1)'
+@end itemize
+
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in
@@ -11472,6 +11567,60 @@ Scale the input by 2x and smooth using the Super2xSaI (Scale and
 Interpolate) pixel art scaling algorithm.
 
 Useful for enlarging pixel art images without reducing sharpness.
+
+@section swaprect
+
+Swap two rectangular objects in video.
+
+This filter accepts the following options:
+
+@table @option
+@item w
+Set object width.
+
+@item h
+Set object height.
+
+@item x1
+Set 1st rect x coordinate.
+
+@item y1
+Set 1st rect y coordinate.
+
+@item x2
+Set 2nd rect x coordinate.
+
+@item y2
+Set 2nd rect y coordinate.
+
+All expressions are evaluated once for each frame.
+@end table
+
+The all options are expressions containing the following constants:
+
+@table @option
+@item w
+@item h
+The input width and height.
+
+@item a
+same as @var{w} / @var{h}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
+
+@item n
+The number of the input frame, starting from 0.
+
+@item t
+The timestamp expressed in seconds. It's NAN if the input timestamp is unknown.
+
+@item pos
+the position in the file of the input frame, NAN if unknown
+@end table
 
 @section swapuv
 Swap U & V plane.

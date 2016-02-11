@@ -210,8 +210,7 @@ static int hls_encryption_start(AVFormatContext *s)
     AVIOContext *pb;
     uint8_t key[KEYSIZE];
 
-    if ((ret = ffio_open_whitelist(&pb, hls->key_info_file, AVIO_FLAG_READ,
-                           &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
+    if ((ret = s->io_open(s, &pb, hls->key_info_file, AVIO_FLAG_READ, NULL)) < 0) {
         av_log(hls, AV_LOG_ERROR,
                 "error opening key info file %s\n", hls->key_info_file);
         return ret;
@@ -226,7 +225,7 @@ static int hls_encryption_start(AVFormatContext *s)
     ff_get_line(pb, hls->iv_string, sizeof(hls->iv_string));
     hls->iv_string[strcspn(hls->iv_string, "\r\n")] = '\0';
 
-    avio_close(pb);
+    ff_format_io_close(s, &pb);
 
     if (!*hls->key_uri) {
         av_log(hls, AV_LOG_ERROR, "no key URI specified in key info file\n");
@@ -238,14 +237,13 @@ static int hls_encryption_start(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if ((ret = ffio_open_whitelist(&pb, hls->key_file, AVIO_FLAG_READ,
-                           &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
+    if ((ret = s->io_open(s, &pb, hls->key_file, AVIO_FLAG_READ, NULL)) < 0) {
         av_log(hls, AV_LOG_ERROR, "error opening key file %s\n", hls->key_file);
         return ret;
     }
 
     ret = avio_read(pb, key, sizeof(key));
-    avio_close(pb);
+    ff_format_io_close(s, &pb);
     if (ret != sizeof(key)) {
         av_log(hls, AV_LOG_ERROR, "error reading key file %s\n", hls->key_file);
         if (ret >= 0 || ret == AVERROR_EOF)
@@ -272,6 +270,9 @@ static int hls_mux_init(AVFormatContext *s)
     oc->oformat            = hls->oformat;
     oc->interrupt_callback = s->interrupt_callback;
     oc->max_delay          = s->max_delay;
+    oc->opaque             = s->opaque;
+    oc->io_open            = s->io_open;
+    oc->io_close           = s->io_close;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
     if(hls->vtt_oformat) {
@@ -395,8 +396,7 @@ static int hls_window(AVFormatContext *s, int last)
 
     set_http_options(&options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
-    if ((ret = ffio_open_whitelist(&out, temp_filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
+    if ((ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL)) < 0)
         goto fail;
 
     for (en = hls->segments; en; en = en->next) {
@@ -446,8 +446,7 @@ static int hls_window(AVFormatContext *s, int last)
         avio_printf(out, "#EXT-X-ENDLIST\n");
 
     if( hls->vtt_m3u8_name ) {
-        if ((ret = ffio_open_whitelist(&sub_out, hls->vtt_m3u8_name, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
+        if ((ret = s->io_open(s, &sub_out, hls->vtt_m3u8_name, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
         avio_printf(sub_out, "#EXTM3U\n");
         avio_printf(sub_out, "#EXT-X-VERSION:%d\n", version);
@@ -477,8 +476,8 @@ static int hls_window(AVFormatContext *s, int last)
 
 fail:
     av_dict_free(&options);
-    avio_closep(&out);
-    avio_closep(&sub_out);
+    ff_format_io_close(s, &out);
+    ff_format_io_close(s, &sub_out);
     if (ret >= 0 && use_rename)
         ff_rename(temp_filename, s->filename, s);
     return ret;
@@ -543,20 +542,17 @@ static int hls_start(AVFormatContext *s)
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        err = ffio_open_whitelist(&oc->pb, filename, AVIO_FLAG_WRITE,
-                         &s->interrupt_callback, &options, s->protocol_whitelist);
+        err = s->io_open(s, &oc->pb, filename, AVIO_FLAG_WRITE, &options);
         av_free(filename);
         av_dict_free(&options);
         if (err < 0)
             return err;
     } else
-        if ((err = ffio_open_whitelist(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
+        if ((err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
     if (c->vtt_basename) {
         set_http_options(&options, c);
-        if ((err = ffio_open_whitelist(&vtt_oc->pb, vtt_oc->filename, AVIO_FLAG_WRITE,
-                         &s->interrupt_callback, &options, s->protocol_whitelist)) < 0)
+        if ((err = s->io_open(s, &vtt_oc->pb, vtt_oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
     }
     av_dict_free(&options);
@@ -795,9 +791,9 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
             hls->number++;
         } else {
-            avio_closep(&oc->pb);
+            ff_format_io_close(s, &oc->pb);
             if (hls->vtt_avf)
-                avio_close(hls->vtt_avf->pb);
+                ff_format_io_close(s, &hls->vtt_avf->pb);
 
             ret = hls_start(s);
         }
@@ -828,7 +824,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
     av_write_trailer(oc);
     if (oc->pb) {
         hls->size = avio_tell(hls->avf->pb) - hls->start_pos;
-        avio_closep(&oc->pb);
+        ff_format_io_close(s, &oc->pb);
         hls_append_segment(hls, hls->duration, hls->start_pos, hls->size);
     }
 
@@ -836,7 +832,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
         if (vtt_oc->pb)
             av_write_trailer(vtt_oc);
         hls->size = avio_tell(hls->vtt_avf->pb) - hls->start_pos;
-        avio_closep(&vtt_oc->pb);
+        ff_format_io_close(s, &vtt_oc->pb);
     }
     av_freep(&hls->basename);
     avformat_free_context(oc);

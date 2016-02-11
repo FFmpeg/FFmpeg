@@ -156,6 +156,9 @@ static int segment_mux_init(AVFormatContext *s)
     oc->interrupt_callback = s->interrupt_callback;
     oc->max_delay          = s->max_delay;
     av_dict_copy(&oc->metadata, s->metadata, 0);
+    oc->opaque             = s->opaque;
+    oc->io_close           = s->io_close;
+    oc->io_open            = s->io_open;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st;
@@ -240,8 +243,7 @@ static int segment_start(AVFormatContext *s, int write_header)
     if ((err = set_segment_filename(s)) < 0)
         return err;
 
-    if ((err = ffio_open_whitelist(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                                   &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
+    if ((err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
         return err;
     }
@@ -266,8 +268,7 @@ static int segment_list_open(AVFormatContext *s)
     int ret;
 
     snprintf(seg->temp_list_filename, sizeof(seg->temp_list_filename), seg->use_rename ? "%s.tmp" : "%s", seg->list);
-    ret = ffio_open_whitelist(&seg->list_pb, seg->temp_list_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL, s->protocol_whitelist);
+    ret = s->io_open(s, &seg->list_pb, seg->temp_list_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to open segment list '%s'\n", seg->list);
         return ret;
@@ -376,7 +377,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
                 segment_list_print_entry(seg->list_pb, seg->list_type, entry, s);
             if (seg->list_type == LIST_TYPE_M3U8 && is_last)
                 avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
-            avio_closep(&seg->list_pb);
+            ff_format_io_close(s, &seg->list_pb);
             if (seg->use_rename)
                 ff_rename(seg->temp_list_filename, seg->list, s);
         } else {
@@ -390,7 +391,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
     seg->segment_count++;
 
 end:
-    avio_closep(&oc->pb);
+    ff_format_io_close(oc, &oc->pb);
 
     return ret;
 }
@@ -591,7 +592,7 @@ static int select_reference_stream(AVFormatContext *s)
 
 static void seg_free_context(SegmentContext *seg)
 {
-    avio_closep(&seg->list_pb);
+    ff_format_io_close(seg->avf, &seg->list_pb);
     avformat_free_context(seg->avf);
     seg->avf = NULL;
 }
@@ -700,8 +701,9 @@ static int seg_write_header(AVFormatContext *s)
         goto fail;
 
     if (seg->write_header_trailer) {
-        if ((ret = ffio_open_whitelist(&oc->pb, seg->header_filename ? seg->header_filename : oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
+        if ((ret = s->io_open(s, &oc->pb,
+                              seg->header_filename ? seg->header_filename : oc->filename,
+                              AVIO_FLAG_WRITE, NULL)) < 0) {
             av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
             goto fail;
         }
@@ -722,7 +724,7 @@ static int seg_write_header(AVFormatContext *s)
     }
 
     if (ret < 0) {
-        avio_closep(&oc->pb);
+        ff_format_io_close(oc, &oc->pb);
         goto fail;
     }
     seg->segment_frame_count = 0;
@@ -740,12 +742,11 @@ static int seg_write_header(AVFormatContext *s)
     if (!seg->write_header_trailer || seg->header_filename) {
         if (seg->header_filename) {
             av_write_frame(oc, NULL);
-            avio_closep(&oc->pb);
+            ff_format_io_close(oc, &oc->pb);
         } else {
             close_null_ctxp(&oc->pb);
         }
-        if ((ret = ffio_open_whitelist(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0)
+        if ((ret = oc->io_open(oc, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0)
             goto fail;
         if (!seg->individual_header_trailer)
             oc->pb->seekable = 0;
@@ -891,7 +892,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
     }
 fail:
     if (seg->list)
-        avio_closep(&seg->list_pb);
+        ff_format_io_close(s, &seg->list_pb);
 
     av_dict_free(&seg->format_options);
     av_opt_free(seg);

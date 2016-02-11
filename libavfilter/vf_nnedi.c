@@ -362,7 +362,7 @@ static int32_t process_line0(const uint8_t *tempu, int width, uint8_t *dstp8, co
             tmp /= 32;
             dstp[x] = FFMAX(FFMIN(tmp, maximum), minimum);
         } else {
-            memset(dstp + x, 255, sizeof(uint8_t));
+            dstp[x] = 255;
             count++;
         }
     }
@@ -612,14 +612,9 @@ static void evalfunc_1(NNEDIContext *s, FrameData *frame_data)
 
         for (y = ystart; y < ystop; y += 2) {
             for (x = 32; x < width - 32; x++) {
-                uint32_t pixel = 0;
-                uint32_t all_ones = 0;
                 float mstd[4];
 
-                memcpy(&pixel, dstp + x, sizeof(uint8_t));
-                memset(&all_ones, 255, sizeof(uint8_t));
-
-                if (pixel != all_ones)
+                if (dstp[x] != 255)
                     continue;
 
                 s->extract((const uint8_t *)(srcpp + x), src_stride, xdia, ydia, mstd, input);
@@ -1154,7 +1149,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->fdsp = avpriv_float_dsp_alloc(0);
     if (!s->fdsp)
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
 
 fail:
     av_free(bdata);

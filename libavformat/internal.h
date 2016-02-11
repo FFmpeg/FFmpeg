@@ -548,4 +548,10 @@ int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *
  */
 #define FFERROR_REDO FFERRTAG('R','E','D','O')
 
+/*
+ * A wrapper around AVFormatContext.io_close that should be used
+ * intead of calling the pointer directly.
+ */
+void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
+
 #endif /* AVFORMAT_INTERNAL_H */

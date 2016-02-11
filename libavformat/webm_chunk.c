@@ -126,8 +126,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     ret = get_chunk_filename(s, 1, oc->filename);
     if (ret < 0)
         return ret;
-    ret = ffio_open_whitelist(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL, s->protocol_whitelist);
+    ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0)
         return ret;
 
@@ -135,7 +134,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     ret = oc->oformat->write_header(oc);
     if (ret < 0)
         return ret;
-    avio_close(oc->pb);
+    ff_format_io_close(s, &oc->pb);
     return 0;
 }
 
@@ -170,14 +169,11 @@ static int chunk_end(AVFormatContext *s)
     ret = get_chunk_filename(s, 0, filename);
     if (ret < 0)
         goto fail;
-    ret = ffio_open_whitelist(&pb, filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL, s->protocol_whitelist);
+    ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0)
         goto fail;
     avio_write(pb, buffer, buffer_size);
-    ret = avio_close(pb);
-    if (ret < 0)
-        goto fail;
+    ff_format_io_close(s, &pb);
     oc->pb = NULL;
 fail:
     av_free(buffer);

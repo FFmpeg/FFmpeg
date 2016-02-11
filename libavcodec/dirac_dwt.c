@@ -33,18 +33,24 @@
 #define TEMPLATE_12bit
 #include "dirac_dwt_template.c"
 
-int ff_spatial_idwt_init2(DWTContext *d, uint8_t *buffer, int width, int height,
-                          int stride, enum dwt_type type, int decomposition_count,
-                          uint8_t *temp, int bit_depth)
+int ff_spatial_idwt_init(DWTContext *d, DWTPlane *p, enum dwt_type type,
+                         int decomposition_count, int bit_depth)
 {
     int ret = 0;
 
+    d->buffer = p->buf;
+    d->width  = p->width;
+    d->height = p->height;
+    d->stride = p->stride;
+    d->temp   = p->tmp;
+    d->decomposition_count = decomposition_count;
+
     if (bit_depth == 8)
-        ret = ff_spatial_idwt_init2_8bit(d, buffer, width, height, stride, type, decomposition_count, temp);
+        ret = ff_spatial_idwt_init_8bit(d, type);
     else if (bit_depth == 10)
-        ret = ff_spatial_idwt_init2_10bit(d, buffer, width, height, stride, type, decomposition_count, temp);
+        ret = ff_spatial_idwt_init_10bit(d, type);
     else if (bit_depth == 12)
-        ret = ff_spatial_idwt_init2_12bit(d, buffer, width, height, stride, type, decomposition_count, temp);
+        ret = ff_spatial_idwt_init_12bit(d, type);
     else
         av_log(NULL, AV_LOG_WARNING, "Unsupported bit depth = %i\n", bit_depth);
 

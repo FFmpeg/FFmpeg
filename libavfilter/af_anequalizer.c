@@ -585,6 +585,7 @@ static int config_input(AVFilterLink *inlink)
     s->filters = av_calloc(inlink->channels, 32 * sizeof(*s->filters));
     if (!s->filters) {
         s->nb_allocated = 0;
+        av_free(args);
         return AVERROR(ENOMEM);
     }
 

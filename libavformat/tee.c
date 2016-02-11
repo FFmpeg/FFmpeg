@@ -23,6 +23,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "internal.h"
 #include "avformat.h"
 #include "avio_internal.h"
 
@@ -165,6 +166,9 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     if (ret < 0)
         goto end;
     av_dict_copy(&avf2->metadata, avf->metadata, 0);
+    avf2->opaque   = avf->opaque;
+    avf2->io_open  = avf->io_open;
+    avf2->io_close = avf->io_close;
 
     tee_slave->stream_map = av_calloc(avf->nb_streams, sizeof(*tee_slave->stream_map));
     if (!tee_slave->stream_map) {
@@ -227,9 +231,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     }
 
     if (!(avf2->oformat->flags & AVFMT_NOFILE)) {
-        if ((ret = ffio_open_whitelist(&avf2->pb, filename, AVIO_FLAG_WRITE,
-                                       &avf->interrupt_callback, NULL,
-                                       avf->protocol_whitelist)) < 0) {
+        if ((ret = avf2->io_open(avf2, &avf2->pb, filename, AVIO_FLAG_WRITE, NULL)) < 0) {
             av_log(avf, AV_LOG_ERROR, "Slave '%s': error opening: %s\n",
                    slave, av_err2str(ret));
             goto end;
@@ -329,7 +331,7 @@ static void close_slaves(AVFormatContext *avf)
         av_freep(&tee->slaves[i].stream_map);
         av_freep(&tee->slaves[i].bsfs);
 
-        avio_closep(&avf2->pb);
+        ff_format_io_close(avf2, &avf2->pb);
         avformat_free_context(avf2);
         tee->slaves[i].avf = NULL;
     }
@@ -420,11 +422,8 @@ static int tee_write_trailer(AVFormatContext *avf)
         if ((ret = av_write_trailer(avf2)) < 0)
             if (!ret_all)
                 ret_all = ret;
-        if (!(avf2->oformat->flags & AVFMT_NOFILE)) {
-            if ((ret = avio_closep(&avf2->pb)) < 0)
-                if (!ret_all)
-                    ret_all = ret;
-        }
+        if (!(avf2->oformat->flags & AVFMT_NOFILE))
+            ff_format_io_close(avf2, &avf2->pb);
     }
     close_slaves(avf);
     return ret_all;

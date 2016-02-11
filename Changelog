@@ -65,6 +65,8 @@ version <next>:
 - significant performance improvements in Windows Television (WTV) demuxer
 - nnedi deinterlacer
 - streamselect video and astreamselect audio filter
+- swaprect filter
+- metadata video and ametadata audio filter
 
 
 version 2.8:

@@ -116,6 +116,7 @@ DIFF_BYTES_PROLOGUE
     %define regsize mmsize
     DIFF_BYTES_LOOP_PREP .skip_main_aa
     DIFF_BYTES_BODY    a, a
+%undef i
 %endif
 
 INIT_XMM sse2
@@ -129,6 +130,7 @@ DIFF_BYTES_PROLOGUE
     DIFF_BYTES_BODY    a, a
     DIFF_BYTES_BODY    u, a
     DIFF_BYTES_BODY    u, u
+%undef i
 
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
@@ -144,4 +146,5 @@ DIFF_BYTES_PROLOGUE
     DIFF_BYTES_BODY    a, a
     DIFF_BYTES_BODY    u, a
     DIFF_BYTES_BODY    u, u
+%undef i
 %endif

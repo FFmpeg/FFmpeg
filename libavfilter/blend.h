@@ -55,6 +55,7 @@ enum BlendMode {
     BLEND_LINEARLIGHT,
     BLEND_GLOW,
     BLEND_ADDITION128,
+    BLEND_MULTIPLY128,
     BLEND_NB
 };
 

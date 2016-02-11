@@ -223,7 +223,7 @@ static int write_manifest(AVFormatContext *s, int final)
 
     snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
     snprintf(temp_filename, sizeof(temp_filename), "%s/Manifest.tmp", s->filename);
-    ret = ffio_open_whitelist(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist);
+    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -285,7 +285,7 @@ static int write_manifest(AVFormatContext *s, int final)
     }
     avio_printf(out, "</SmoothStreamingMedia>\n");
     avio_flush(out);
-    avio_close(out);
+    ff_format_io_close(s, &out);
     return ff_rename(temp_filename, filename, s);
 }
 
@@ -412,7 +412,7 @@ static int parse_fragment(AVFormatContext *s, const char *filename, int64_t *sta
     AVIOContext *in;
     int ret;
     uint32_t len;
-    if ((ret = ffio_open_whitelist(&in, filename, AVIO_FLAG_READ, &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0)
+    if ((ret = s->io_open(s, &in, filename, AVIO_FLAG_READ, NULL)) < 0)
         return ret;
     ret = AVERROR(EIO);
     *moof_size = avio_rb32(in);
@@ -453,7 +453,7 @@ static int parse_fragment(AVFormatContext *s, const char *filename, int64_t *sta
         avio_seek(in, end, SEEK_SET);
     }
 fail:
-    avio_close(in);
+    ff_format_io_close(s, &in);
     return ret;
 }
 
@@ -489,10 +489,10 @@ static int copy_moof(AVFormatContext *s, const char* infile, const char *outfile
 {
     AVIOContext *in, *out;
     int ret = 0;
-    if ((ret = ffio_open_whitelist(&in, infile, AVIO_FLAG_READ, &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0)
+    if ((ret = s->io_open(s, &in, infile, AVIO_FLAG_READ, NULL)) < 0)
         return ret;
-    if ((ret = ffio_open_whitelist(&out, outfile, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist)) < 0) {
-        avio_close(in);
+    if ((ret = s->io_open(s, &out, outfile, AVIO_FLAG_WRITE, NULL)) < 0) {
+        ff_format_io_close(s, &in);
         return ret;
     }
     while (size > 0) {
@@ -507,8 +507,8 @@ static int copy_moof(AVFormatContext *s, const char* infile, const char *outfile
         size -= n;
     }
     avio_flush(out);
-    avio_close(out);
-    avio_close(in);
+    ff_format_io_close(s, &out);
+    ff_format_io_close(s, &in);
     return ret;
 }
 
