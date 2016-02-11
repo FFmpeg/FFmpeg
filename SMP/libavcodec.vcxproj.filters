@@ -2022,6 +2022,12 @@
     <ClCompile Include="..\libavcodec\qsvdec_vc1.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\vc2enc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vc2enc_dwt.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\vcr1.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

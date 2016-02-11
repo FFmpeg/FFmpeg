@@ -119,6 +119,7 @@
     <ClCompile Include="..\libavfilter\af_alimiter.c" />
     <ClCompile Include="..\libavfilter\af_biquads.c" />
     <ClCompile Include="..\libavfilter\af_amerge.c" />
+    <ClCompile Include="..\libavfilter\f_metadata.c" />
     <ClCompile Include="..\libavfilter\af_amix.c" />
     <ClCompile Include="..\libavfilter\af_anull.c" />
     <ClCompile Include="..\libavfilter\af_apad.c" />
@@ -306,6 +307,7 @@
       <ObjectFileName>$(IntDir)\libavfilter_vf_stereo3d.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_super2xsai.c" />
+    <ClCompile Include="..\libavfilter\vf_swaprect.c" />
     <ClCompile Include="..\libavfilter\vf_swapuv.c" />
     <ClCompile Include="..\libavfilter\vf_telecine.c" />
     <ClCompile Include="..\libavfilter\vf_thumbnail.c" />
