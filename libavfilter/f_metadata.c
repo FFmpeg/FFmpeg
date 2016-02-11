@@ -48,7 +48,7 @@ enum MetadataMode {
 };
 
 enum MetadataFunction {
-    METADATAF_STRING,
+    METADATAF_SAME_STR,
     METADATAF_STARTS_WITH,
     METADATAF_LESS,
     METADATAF_EQUAL,
@@ -75,7 +75,6 @@ typedef struct MetadataContext {
     int mode;
     char *key;
     char *value;
-    int length;
     int function;
 
     char *expr_str;
@@ -86,7 +85,7 @@ typedef struct MetadataContext {
     char *file_str;
 
     int (*compare)(struct MetadataContext *s,
-                   const char *value1, const char *value2, size_t length);
+                   const char *value1, const char *value2);
     void (*print)(AVFilterContext *ctx, const char *msg, ...) av_printf_format(2, 3);
 } MetadataContext;
 
@@ -102,29 +101,28 @@ static const AVOption filt_name##_options[] = { \
     { "key",   "set metadata key",       OFFSET(key),    AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "value", "set metadata value",     OFFSET(value),  AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "function", "function for comparing values", OFFSET(function), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, METADATAF_NB-1, FLAGS, "function" }, \
-    {   "string",      NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STRING  },     0, 3, FLAGS, "function" }, \
+    {   "same_str",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_SAME_STR },    0, 3, FLAGS, "function" }, \
     {   "starts_with", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STARTS_WITH }, 0, 0, FLAGS, "function" }, \
     {   "less",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_LESS    },     0, 3, FLAGS, "function" }, \
     {   "equal",       NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EQUAL   },     0, 3, FLAGS, "function" }, \
     {   "greater",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_GREATER },     0, 3, FLAGS, "function" }, \
     {   "expr",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EXPR    },     0, 3, FLAGS, "function" }, \
     { "expr", "set expression for expr function", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
-    { "length", "compare up to N chars for string function", OFFSET(length), AV_OPT_TYPE_INT,    {.i64 = INT_MAX }, 1, INT_MAX, FLAGS }, \
     { "file", "set file where to print metadata information", OFFSET(file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS }, \
     { NULL } \
 }
 
-static int string(MetadataContext *s, const char *value1, const char *value2, size_t length)
+static int same_str(MetadataContext *s, const char *value1, const char *value2)
 {
-    return !strncmp(value1, value2, length);
+    return !strcmp(value1, value2);
 }
 
-static int starts_with(MetadataContext *s, const char *value1, const char *value2, size_t length)
+static int starts_with(MetadataContext *s, const char *value1, const char *value2)
 {
     return !strncmp(value1, value2, strlen(value2));
 }
 
-static int equal(MetadataContext *s, const char *value1, const char *value2, size_t length)
+static int equal(MetadataContext *s, const char *value1, const char *value2)
 {
     float f1, f2;
 
@@ -134,7 +132,7 @@ static int equal(MetadataContext *s, const char *value1, const char *value2, siz
     return fabsf(f1 - f2) < FLT_EPSILON;
 }
 
-static int less(MetadataContext *s, const char *value1, const char *value2, size_t length)
+static int less(MetadataContext *s, const char *value1, const char *value2)
 {
     float f1, f2;
 
@@ -144,7 +142,7 @@ static int less(MetadataContext *s, const char *value1, const char *value2, size
     return (f1 - f2) < FLT_EPSILON;
 }
 
-static int greater(MetadataContext *s, const char *value1, const char *value2, size_t length)
+static int greater(MetadataContext *s, const char *value1, const char *value2)
 {
     float f1, f2;
 
@@ -154,7 +152,7 @@ static int greater(MetadataContext *s, const char *value1, const char *value2, s
     return (f2 - f1) < FLT_EPSILON;
 }
 
-static int parse_expr(MetadataContext *s, const char *value1, const char *value2, size_t length)
+static int parse_expr(MetadataContext *s, const char *value1, const char *value2)
 {
     double f1, f2;
 
@@ -205,8 +203,8 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     switch (s->function) {
-    case METADATAF_STRING:
-        s->compare = string;
+    case METADATAF_SAME_STR:
+        s->compare = same_str;
         break;
     case METADATAF_STARTS_WITH:
         s->compare = starts_with;
@@ -289,7 +287,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if (!s->value && e && e->value) {
             return ff_filter_frame(outlink, frame);
         } else if (s->value && e && e->value &&
-                   s->compare(s, e->value, s->value, s->length)) {
+                   s->compare(s, e->value, s->value)) {
             return ff_filter_frame(outlink, frame);
         }
         break;
@@ -314,14 +312,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             while ((e = av_dict_get(metadata, "", e, AV_DICT_IGNORE_SUFFIX)) != NULL) {
                 s->print(ctx, "%s=%s\n", e->key, e->value);
             }
-        } else if (e && e->value && (!s->value || (e->value && s->compare(s, e->value, s->value, s->length)))) {
+        } else if (e && e->value && (!s->value || (e->value && s->compare(s, e->value, s->value)))) {
             s->print(ctx, "frame %"PRId64" pts %"PRId64"\n", inlink->frame_count, frame->pts);
             s->print(ctx, "%s=%s\n", s->key, e->value);
         }
         return ff_filter_frame(outlink, frame);
         break;
     case METADATA_DELETE:
-        if (e && e->value && s->value && s->compare(s, e->value, s->value, s->length)) {
+        if (e && e->value && s->value && s->compare(s, e->value, s->value)) {
             av_dict_set(&metadata, s->key, NULL, 0);
         } else if (e && e->value) {
             av_dict_set(&metadata, s->key, NULL, 0);

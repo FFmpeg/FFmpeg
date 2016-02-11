@@ -8486,19 +8486,14 @@ Set key used with all modes. Must be set for all modes except @code{print}.
 Set metadata value which will be used. This option is mandatory for
 @code{modify} and @code{add} mode.
 
-@item length
-Set length of how many characters of two metadata values need to match to be
-considered same. Default is all available characters.
-
 @item function
 Which function to use when comparing metadata value and @code{value}.
 
 Can be one of following:
 
 @table @samp
-@item string
-Values are interpreted as strings, returns true if @code{value} is same as metadata value up
-to N chars as set in @code{length} option.
+@item same_str
+Values are interpreted as strings, returns true if metadata value is same as @code{value}.
 
 @item starts_with
 Values are interpreted as strings, returns true if metadata value starts with
