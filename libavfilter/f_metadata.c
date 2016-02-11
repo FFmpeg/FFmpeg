@@ -81,8 +81,12 @@ typedef struct MetadataContext {
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
 
+    FILE *file;
+    char *file_str;
+
     int (*compare)(struct MetadataContext *s,
                    const char *value1, const char *value2, size_t length);
+    void (*print)(AVFilterContext *ctx, const char *msg, ...) av_printf_format(2, 3);
 } MetadataContext;
 
 #define OFFSET(x) offsetof(MetadataContext, x)
@@ -104,6 +108,7 @@ static const AVOption filt_name##_options[] = {                     \
     {   "expr",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EXPR    }, 0, 3, FLAGS, "function" }, \
     { "expr", "set expression for expr function", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "length", "compare up to N chars for string function", OFFSET(length), AV_OPT_TYPE_INT,    {.i64 = INT_MAX }, 1, INT_MAX, FLAGS }, \
+    { "file", "set file where to print metadata information", OFFSET(file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS }, \
     { NULL }                                                            \
 }
 
@@ -155,6 +160,27 @@ static int parse_expr(MetadataContext *s, const char *value1, const char *value2
     return av_expr_eval(s->expr, s->var_values, NULL);
 }
 
+static void print_log(AVFilterContext *ctx, const char *msg, ...)
+{
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+    if (msg)
+        av_vlog(ctx, AV_LOG_INFO, msg, argument_list);
+    va_end(argument_list);
+}
+
+static void print_file(AVFilterContext *ctx, const char *msg, ...)
+{
+    MetadataContext *s = ctx->priv;
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+    if (msg)
+        vfprintf(s->file, msg, argument_list);
+    va_end(argument_list);
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     MetadataContext *s = ctx->priv;
@@ -203,7 +229,35 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
+    if (s->file_str) {
+        if (!strcmp(s->file_str, "-")) {
+            s->file = stdout;
+        } else {
+            s->file = fopen(s->file_str, "w");
+            if (!s->file) {
+                int err = AVERROR(errno);
+                char buf[128];
+                av_strerror(err, buf, sizeof(buf));
+                av_log(ctx, AV_LOG_ERROR, "Could not open file %s: %s\n",
+                       s->file_str, buf);
+                return err;
+            }
+        }
+        s->print = print_file;
+    } else {
+        s->print = print_log;
+    }
+
     return 0;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    MetadataContext *s = ctx->priv;
+
+    if (s->file && s->file != stdout)
+        fclose(s->file);
+    s->file = NULL;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -245,14 +299,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         break;
     case METADATA_PRINT:
         if (!s->key && e) {
-            av_log(ctx, AV_LOG_INFO, "frame %"PRId64" pts %"PRId64"\n", inlink->frame_count, frame->pts);
-            av_log(ctx, AV_LOG_INFO, "%s=%s\n", e->key, e->value);
+            s->print(ctx, "frame %"PRId64" pts %"PRId64"\n", inlink->frame_count, frame->pts);
+            s->print(ctx, "%s=%s\n", e->key, e->value);
             while ((e = av_dict_get(metadata, "", e, AV_DICT_IGNORE_SUFFIX)) != NULL) {
-                av_log(ctx, AV_LOG_INFO, "%s=%s\n", e->key, e->value);
+                s->print(ctx, "%s=%s\n", e->key, e->value);
             }
         } else if (e && e->value && (!s->value || (e->value && s->compare(s, e->value, s->value, s->length)))) {
-            av_log(ctx, AV_LOG_INFO, "frame %"PRId64" pts %"PRId64"\n", inlink->frame_count, frame->pts);
-            av_log(ctx, AV_LOG_INFO, "%s=%s\n", s->key, e->value);
+            s->print(ctx, "frame %"PRId64" pts %"PRId64"\n", inlink->frame_count, frame->pts);
+            s->print(ctx, "%s=%s\n", s->key, e->value);
         }
         return ff_filter_frame(outlink, frame);
         break;
@@ -301,6 +355,7 @@ AVFilter ff_af_ametadata = {
     .priv_size     = sizeof(MetadataContext),
     .priv_class    = &ametadata_class,
     .init          = init,
+    .uninit        = uninit,
     .query_formats = ff_query_formats_all,
     .inputs        = ainputs,
     .outputs       = aoutputs,
@@ -336,6 +391,7 @@ AVFilter ff_vf_metadata = {
     .priv_size   = sizeof(MetadataContext),
     .priv_class  = &metadata_class,
     .init        = init,
+    .uninit      = uninit,
     .inputs      = inputs,
     .outputs     = outputs,
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
