@@ -8185,6 +8185,25 @@ The formula that generates the correction is:
 where @var{r_0} is halve of the image diagonal and @var{r_src} and @var{r_tgt} are the
 distances from the focal point in the source and target images, respectively.
 
+@section loop, aloop
+
+Loop video frames or audio samples.
+
+Those filters accepts the following options:
+
+@table @option
+@item loop
+Set the number of loops.
+
+@item size
+Set maximal size in number of frames for @code{loop} filter or maximal number
+of samples in case of @code{aloop} filter.
+
+@item start
+Set first frame of loop for @code{loop} filter or first sample of loop in case
+of @code{aloop} filter.
+@end table
+
 @anchor{lut3d}
 @section lut3d
 

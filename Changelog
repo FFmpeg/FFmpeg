@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - DXVA2-accelerated HEVC Main10 decoding
 - fieldhint filter
+- loop video filter and aloop audio filter
 
 
 version 3.0:

@@ -58,6 +58,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(AINTERLEAVE,    ainterleave,    af);
     REGISTER_FILTER(ALIMITER,       alimiter,       af);
     REGISTER_FILTER(ALLPASS,        allpass,        af);
+    REGISTER_FILTER(ALOOP,          aloop,          af);
     REGISTER_FILTER(AMERGE,         amerge,         af);
     REGISTER_FILTER(AMETADATA,      ametadata,      af);
     REGISTER_FILTER(AMIX,           amix,           af);
@@ -202,6 +203,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(INTERLEAVE,     interleave,     vf);
     REGISTER_FILTER(KERNDEINT,      kerndeint,      vf);
     REGISTER_FILTER(LENSCORRECTION, lenscorrection, vf);
+    REGISTER_FILTER(LOOP,           loop,           vf);
     REGISTER_FILTER(LUT3D,          lut3d,          vf);
     REGISTER_FILTER(LUT,            lut,            vf);
     REGISTER_FILTER(LUTRGB,         lutrgb,         vf);
