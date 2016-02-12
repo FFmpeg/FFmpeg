@@ -121,7 +121,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     if (avctx->codec_tag == MKTAG('B','1','W','0') ||
         avctx->codec_tag == MKTAG('B','0','W','1'))
         context->is_nut_mono = 1;
-    else if (avctx->codec_tag == MKTAG('P','A','L','8'))
+    else if (avctx->codec_tag == MKTAG('P','A','L',8))
         context->is_nut_pal8 = 1;
 
     if (avctx->codec_tag == AV_RL32("yuv2") &&
