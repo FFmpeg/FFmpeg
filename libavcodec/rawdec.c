@@ -199,6 +199,8 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     else
         stride = avpkt->size / avctx->height;
 
+    av_log(avctx, AV_LOG_DEBUG, "PACKET SIZE: %d, STRIDE: %d\n", avpkt->size, stride);
+
     if (stride == 0 || avpkt->size < stride * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "Packet too small (%d)\n", avpkt->size);
         return AVERROR_INVALIDDATA;
