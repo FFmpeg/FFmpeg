@@ -190,7 +190,7 @@ static const AVOption video_options[] = {
     { "sar_num",       "deprecated, do not use", OFFSET(pixel_aspect.num), AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
     { "sar_den",       "deprecated, do not use", OFFSET(pixel_aspect.den), AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
 #endif
-    { "sar",           "sample aspect ratio",    OFFSET(pixel_aspect),     AV_OPT_TYPE_RATIONAL, { .dbl = 1 }, 0, DBL_MAX, V },
+    { "sar",           "sample aspect ratio",    OFFSET(pixel_aspect),     AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { "time_base",     NULL,                     OFFSET(time_base),        AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { "frame_rate",    NULL,                     OFFSET(frame_rate),       AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { NULL },
