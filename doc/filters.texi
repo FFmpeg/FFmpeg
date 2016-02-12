@@ -4244,6 +4244,12 @@ blend=all_expr='if(gte(T*SH*40+Y,H)*gte((T*40*SW+X)*W/H,W),A,B)'
 @end example
 
 @item
+Split diagonally video and shows top and bottom layer on each side:
+@example
+blend=all_expr=if(gt(X,Y*(W/H)),A,B)
+@end example
+
+@item
 Display differences between the current and the previous frame:
 @example
 tblend=all_mode=difference128
