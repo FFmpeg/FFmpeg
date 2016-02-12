@@ -277,6 +277,13 @@ static char* mpjpeg_get_boundary(AVIOContext* pb)
                 len = end - start - 1;
             else
                 len = strlen(start);
+
+            /* some endpoints may enclose the boundary
+              in Content-Type in quotes */
+            if ( len>2 && *start == '"' && start[len-1] == '"' ) {
+                start++;
+                len -= 2;
+            }
             res = av_strndup(start, len);
             break;
         }
