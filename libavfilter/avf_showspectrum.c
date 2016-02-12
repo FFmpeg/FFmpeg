@@ -793,7 +793,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterContext *ctx = inlink->dst;
     ShowSpectrumContext *s = ctx->priv;
     AVFrame *fin = NULL;
-    int ret = 0;
+    int ret = 0, consumed = 0;
+
+    if (s->pts == AV_NOPTS_VALUE)
+        s->pts = insamples->pts - av_audio_fifo_size(s->fifo);
 
     av_audio_fifo_write(s->fifo, (void **)insamples->extended_data, insamples->nb_samples);
     av_frame_free(&insamples);
@@ -804,8 +807,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             goto fail;
         }
 
-        fin->pts = s->pts;
-        s->pts += s->hop_size;
+        fin->pts = s->pts + consumed;
+        consumed += s->hop_size;
         ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
         if (ret < 0)
             goto fail;
@@ -826,6 +829,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 
 fail:
+    s->pts = AV_NOPTS_VALUE;
     av_frame_free(&fin);
     return ret;
 }
