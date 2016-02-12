@@ -1422,7 +1422,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    if (first_slice && h->dequant_coeff_pps != pps_id) {
+    if (!h->current_slice && h->dequant_coeff_pps != pps_id) {
         h->dequant_coeff_pps = pps_id;
         ff_h264_init_dequant_tables(h);
     }
