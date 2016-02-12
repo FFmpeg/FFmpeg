@@ -22,6 +22,7 @@
 #ifndef AVCODEC_VC2ENC_DWT_H
 #define AVCODEC_VC2ENC_DWT_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef int16_t dwtcoef;
