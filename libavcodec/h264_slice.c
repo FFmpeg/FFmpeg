@@ -1477,7 +1477,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    h->picture_structure = picture_structure;
     if (!h->setup_finished) {
         h->droppable         = droppable;
         h->picture_structure = picture_structure;
