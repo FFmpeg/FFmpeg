@@ -559,6 +559,7 @@ typedef struct SliceHeader {
     int short_term_ref_pic_set_size;
     ShortTermRPS slice_rps;
     const ShortTermRPS *short_term_rps;
+    int long_term_ref_pic_set_size;
     LongTermRPS long_term_rps;
     unsigned int list_entry_lx[2][32];
 

@@ -533,7 +533,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->colour_plane_id = get_bits(gb, 2);
 
         if (!IS_IDR(s)) {
-            int poc;
+            int poc, pos;
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->ps.sps->log2_max_poc_lsb);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
@@ -547,13 +547,12 @@ static int hls_slice_header(HEVCContext *s)
             s->poc = poc;
 
             sh->short_term_ref_pic_set_sps_flag = get_bits1(gb);
+            pos = get_bits_left(gb);
             if (!sh->short_term_ref_pic_set_sps_flag) {
-                int pos = get_bits_left(gb);
                 ret = ff_hevc_decode_short_term_rps(gb, s->avctx, &sh->slice_rps, s->ps.sps, 1);
                 if (ret < 0)
                     return ret;
 
-                sh->short_term_ref_pic_set_size = pos - get_bits_left(gb);
                 sh->short_term_rps = &sh->slice_rps;
             } else {
                 int numbits, rps_idx;
@@ -567,13 +566,16 @@ static int hls_slice_header(HEVCContext *s)
                 rps_idx = numbits > 0 ? get_bits(gb, numbits) : 0;
                 sh->short_term_rps = &s->ps.sps->st_rps[rps_idx];
             }
+            sh->short_term_ref_pic_set_size = pos - get_bits_left(gb);
 
+            pos = get_bits_left(gb);
             ret = decode_lt_rps(s, &sh->long_term_rps, gb);
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_WARNING, "Invalid long term RPS.\n");
                 if (s->avctx->err_recognition & AV_EF_EXPLODE)
                     return AVERROR_INVALIDDATA;
             }
+            sh->long_term_ref_pic_set_size = pos - get_bits_left(gb);
 
             if (s->ps.sps->sps_temporal_mvp_enabled_flag)
                 sh->slice_temporal_mvp_enabled_flag = get_bits1(gb);
