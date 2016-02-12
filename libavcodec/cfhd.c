@@ -312,7 +312,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->plane[s->channel_num].band[0][0].width  = data;
             s->plane[s->channel_num].band[0][0].stride = data;
             av_log(avctx, AV_LOG_DEBUG, "Lowpass width %"PRIu16"\n", data);
-            if (data < 2 || (data & 1) || data > s->plane[s->channel_num].band[0][0].a_width) {
+            if (data < 2 || data > s->plane[s->channel_num].band[0][0].a_width) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid lowpass width\n");
                 ret = AVERROR(EINVAL);
                 break;
@@ -358,7 +358,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->plane[s->channel_num].band[s->level][s->subband_num].width  = data;
             s->plane[s->channel_num].band[s->level][s->subband_num].stride = FFALIGN(data, 8);
             av_log(avctx, AV_LOG_DEBUG, "Highpass width %i channel %i level %i subband %i\n", data, s->channel_num, s->level, s->subband_num);
-            if (data < 2 || (data & 1)) {
+            if (data < 2) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass width\n");
                 ret = AVERROR(EINVAL);
                 break;
@@ -375,7 +375,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->plane[s->channel_num].band[s->level][s->subband_num].width  = data;
             s->plane[s->channel_num].band[s->level][s->subband_num].stride = FFALIGN(data, 8);
             av_log(avctx, AV_LOG_DEBUG, "Highpass width2 %i\n", data);
-            if (data < 2 || (data & 1)) {
+            if (data < 2) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass width2\n");
                 ret = AVERROR(EINVAL);
                 break;
