@@ -23,6 +23,7 @@
 #include "avconv.h"
 
 #include "libavfilter/avfilter.h"
+#include "libavfilter/buffersrc.h"
 
 #include "libavresample/avresample.h"
 
@@ -489,24 +490,39 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     InputFile     *f = input_files[ist->file_index];
     AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
                                          ist->st->time_base;
-    AVRational sar;
-    char args[255], name[255];
+    AVBufferSrcParameters *par;
+    char name[255];
     int ret, pad_idx = 0;
 
-    sar = ist->st->sample_aspect_ratio.num ?
-          ist->st->sample_aspect_ratio :
-          ist->dec_ctx->sample_aspect_ratio;
-    snprintf(args, sizeof(args),
-             "width=%d:height=%d:pix_fmt=%d:time_base=%d/%d:sar=%d/%d",
-             ist->dec_ctx->width, ist->dec_ctx->height,
-             ist->hwaccel_retrieve_data ? ist->hwaccel_retrieved_pix_fmt : ist->dec_ctx->pix_fmt,
-             tb.num, tb.den, sar.num, sar.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
-    if ((ret = avfilter_graph_create_filter(&ifilter->filter, buffer_filt, name,
-                                            args, NULL, fg->graph)) < 0)
+    ifilter->filter = avfilter_graph_alloc_filter(fg->graph, buffer_filt, name);
+    if (!ifilter->filter)
+        return AVERROR(ENOMEM);
+
+    par = av_buffersrc_parameters_alloc();
+    if (!par)
+        return AVERROR(ENOMEM);
+
+    par->sample_aspect_ratio = ist->st->sample_aspect_ratio.num ?
+                               ist->st->sample_aspect_ratio :
+                               ist->dec_ctx->sample_aspect_ratio;
+    par->width               = ist->dec_ctx->width;
+    par->height              = ist->dec_ctx->height;
+    par->format              = ist->hwaccel_retrieve_data ?
+                               ist->hwaccel_retrieved_pix_fmt : ist->dec_ctx->pix_fmt;
+    par->time_base           = tb;
+
+    ret = av_buffersrc_parameters_set(ifilter->filter, par);
+    av_freep(&par);
+    if (ret < 0)
         return ret;
+
+    ret = avfilter_init_str(ifilter->filter, NULL);
+    if (ret < 0)
+        return ret;
+
     last_filter = ifilter->filter;
 
     if (ist->autorotate) {
@@ -565,21 +581,33 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     const AVFilter *abuffer_filt = avfilter_get_by_name("abuffer");
     InputStream *ist = ifilter->ist;
     InputFile     *f = input_files[ist->file_index];
+    AVBufferSrcParameters *par;
     char args[255], name[255];
     int ret, pad_idx = 0;
 
-    snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s"
-             ":channel_layout=0x%"PRIx64,
-             1, ist->dec_ctx->sample_rate,
-             ist->dec_ctx->sample_rate,
-             av_get_sample_fmt_name(ist->dec_ctx->sample_fmt),
-             ist->dec_ctx->channel_layout);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
-    if ((ret = avfilter_graph_create_filter(&ifilter->filter, abuffer_filt,
-                                            name, args, NULL,
-                                            fg->graph)) < 0)
+    ifilter->filter = avfilter_graph_alloc_filter(fg->graph, abuffer_filt, name);
+    if (!ifilter->filter)
+        return AVERROR(ENOMEM);
+
+    par = av_buffersrc_parameters_alloc();
+    if (!par)
+        return AVERROR(ENOMEM);
+
+    par->time_base      = (AVRational){ 1, ist->dec_ctx->sample_rate };
+    par->sample_rate    = ist->dec_ctx->sample_rate;
+    par->format         = ist->dec_ctx->sample_fmt;
+    par->channel_layout = ist->dec_ctx->channel_layout;
+
+    ret = av_buffersrc_parameters_set(ifilter->filter, par);
+    av_freep(&par);
+    if (ret < 0)
+        return ret;
+
+    ret = avfilter_init_str(ifilter->filter, NULL);
+    if (ret < 0)
         return ret;
     last_filter = ifilter->filter;
 
