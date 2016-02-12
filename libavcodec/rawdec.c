@@ -100,7 +100,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
         else {
             memset(context->palette->data, 0, AVPALETTE_SIZE);
-            if (avctx->bits_per_coded_sample <= 1)
+            if (avctx->bits_per_coded_sample == 1)
                 memset(context->palette->data, 0xff, 4);
         }
     }
