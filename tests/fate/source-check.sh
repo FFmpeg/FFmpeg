@@ -19,10 +19,12 @@ git grep -L -E "This file is part of FFmpeg|This file is part of libswresample|"
 echo Headers without standard inclusion guards:
 for f in `git ls-files | grep '\.h$'` ; do
     macro="`echo $f | sed \
-        -e '/\/\|^ff/!{s/\(.*\)/ffmpeg\/\1/}' \
         -e 's/^lib//' \
-        -e 's/[^A-Za-z0-9]\{1\,\}/_/g' \
-        -e 's/_\(a\|v\|av\)f_/_/' \
+        -e 's/[^A-Za-z0-9]\{1,\}/_/g' \
+        -e 's/_af_/_/' \
+        -e 's/_vf_/_/' \
+        -e 's/_avf_/_/' \
+        -e 's/_vaf_/_/' \
     | tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ`"
 
     grep -L "^#define $macro$" $f
