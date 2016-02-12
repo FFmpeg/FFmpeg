@@ -1212,6 +1212,9 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         }
     }
 
+    if (!h->current_slice)
+        av_assert0(sl == h->slice_ctx);
+
     slice_type = get_ue_golomb_31(&sl->gb);
     if (slice_type > 9) {
         av_log(h->avctx, AV_LOG_ERROR,
