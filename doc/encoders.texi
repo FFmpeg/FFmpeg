@@ -2526,7 +2526,7 @@ encoder use CAVLC instead of CABAC.
 SMPTE VC-2 (previously BBC Dirac Pro). This codec was primarily aimed at
 professional broadcasting but since it supports yuv420, yuv422 and yuv444 at
 8 (limited range or full range), 10 or 12 bits, this makes it suitable for
-other tasts which require low overhead and low compression (like screen
+other tasks which require low overhead and low compression (like screen
 recording).
 
 @subsection Options
@@ -2581,7 +2581,7 @@ reduce perception. Use in bogus benchmarks.
 
 @item
 @var{color}
-Reduces detail but attempts to preserver color at extremely low bitrates.
+Reduces detail but attempts to preserve color at extremely low bitrates.
 @end itemize
 
 @end table
