@@ -348,6 +348,7 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->qscale_table = NULL;
     dst->qstride      = 0;
     dst->qscale_type  = 0;
+    av_buffer_unref(&dst->qp_table_buf);
     if (src->qp_table_buf) {
         dst->qp_table_buf = av_buffer_ref(src->qp_table_buf);
         if (dst->qp_table_buf) {
