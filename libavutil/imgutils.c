@@ -370,7 +370,7 @@ int av_image_get_buffer_size(enum AVPixelFormat pix_fmt,
 
     // do not include palette for these pseudo-paletted formats
     if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
-        return width * height;
+        return FFALIGN(width, align) * height;
 
     return av_image_fill_arrays(data, linesize, NULL, pix_fmt,
                                 width, height, align);
