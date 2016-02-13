@@ -71,6 +71,8 @@ struct gdigrab {
 
 #define REGION_WND_BORDER 3
 
+    
+	
 /**
  * Callback to handle Windows messages for the region outline window.
  *
@@ -235,8 +237,7 @@ gdigrab_read_header(AVFormatContext *s1)
     AVStream   *st       = NULL;
 
     int bpp;
-    int vertres;
-    int desktopvertres;
+
     RECT virtual_rect;
     RECT clip_rect;
     BITMAP bmp;
@@ -279,8 +280,8 @@ gdigrab_read_header(AVFormatContext *s1)
         GetClientRect(hwnd, &virtual_rect);
     } else {
         /* desktop -- get the right height and width for scaling DPI */
-        vertres = GetDeviceCaps(source_hdc, VERTRES);
-        desktopvertres = GetDeviceCaps(source_hdc, DESKTOPVERTRES);
+        int vertres = GetDeviceCaps(source_hdc, VERTRES);
+        int desktopvertres = GetDeviceCaps(source_hdc, DESKTOPVERTRES);
         virtual_rect.left = GetSystemMetrics(SM_XVIRTUALSCREEN);
         virtual_rect.top = GetSystemMetrics(SM_YVIRTUALSCREEN);
         virtual_rect.right = (virtual_rect.left + GetSystemMetrics(SM_CXVIRTUALSCREEN)) * desktopvertres / vertres;
@@ -431,8 +432,10 @@ error:
 static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
 {
     CURSORINFO ci = {0};
+	int vertres = GetDeviceCaps(gdigrab->source_hdc, VERTRES);
+    int desktopvertres = GetDeviceCaps(gdigrab->source_hdc, DESKTOPVERTRES);
 
-#define CURSOR_ERROR(str)                 \
+	#define CURSOR_ERROR(str)                 \
     if (!gdigrab->cursor_error_printed) {       \
         WIN32_API_ERROR(str);             \
         gdigrab->cursor_error_printed = 1;      \
@@ -459,12 +462,7 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
             icon = CopyCursor(LoadCursor(NULL, IDC_ARROW));
         }
 
-        if (!GetIconInfo(icon, &info)) {
-            CURSOR_ERROR("Could not get icon info");
-            goto icon_error;
-        }
-
-        pos.x = ci.ptScreenPos.x - clip_rect.left - info.xHotspot;
+		pos.x = ci.ptScreenPos.x - clip_rect.left - info.xHotspot;
         pos.y = ci.ptScreenPos.y - clip_rect.top - info.yHotspot;
 
         if (hwnd) {
@@ -478,7 +476,11 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
                 goto icon_error;
             }
         }
-
+	
+		//that would keep the correct location of mouse with hidpi screens
+        pos.x = pos.x * desktopvertres / vertres;
+        pos.y = pos.y * desktopvertres / vertres;
+		
         av_log(s1, AV_LOG_DEBUG, "Cursor pos (%li,%li) -> (%li,%li)\n",
                 ci.ptScreenPos.x, ci.ptScreenPos.y, pos.x, pos.y);
 
