@@ -995,6 +995,10 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ERROR_IF(s->options.ltp && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
              "The LPT profile requires experimental compliance, add -strict -2 to enable!\n");
 
+    /* M/S introduces horrible artifacts with multichannel files, this is temporary */
+    if (s->channels > 3)
+        s->options.mid_side = 0;
+
     if ((ret = dsp_init(avctx, s)) < 0)
         goto fail;
 
