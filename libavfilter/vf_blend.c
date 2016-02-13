@@ -118,14 +118,20 @@ static const AVOption blend_options[] = {
 
 AVFILTER_DEFINE_CLASS(blend);
 
-static void blend_normal(const uint8_t *top, ptrdiff_t top_linesize,
-                         const uint8_t *bottom, ptrdiff_t bottom_linesize,
-                         uint8_t *dst, ptrdiff_t dst_linesize,
-                         ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
-                         FilterParams *param, double *values)
-{
-    av_image_copy_plane(dst, dst_linesize, top, top_linesize, width, end - start);
+#define COPY(src)                                                            \
+static void blend_copy ## src(const uint8_t *top, ptrdiff_t top_linesize,    \
+                            const uint8_t *bottom, ptrdiff_t bottom_linesize,\
+                            uint8_t *dst, ptrdiff_t dst_linesize,            \
+                            ptrdiff_t width, ptrdiff_t start, ptrdiff_t end, \
+                            FilterParams *param, double *values)             \
+{                                                                            \
+    av_image_copy_plane(dst, dst_linesize, src, src ## _linesize,            \
+                        width, end - start);                                 \
 }
+
+COPY(top)
+
+#undef COPY
 
 static void blend_normal_8bit(const uint8_t *top, ptrdiff_t top_linesize,
                               const uint8_t *bottom, ptrdiff_t bottom_linesize,
@@ -505,7 +511,7 @@ static int config_output(AVFilterLink *outlink)
         case BLEND_MULTIPLY:   param->blend = is_16bit ? blend_multiply_16bit   : blend_multiply_8bit;   break;
         case BLEND_MULTIPLY128:param->blend = is_16bit ? blend_multiply128_16bit: blend_multiply128_8bit;break;
         case BLEND_NEGATION:   param->blend = is_16bit ? blend_negation_16bit   : blend_negation_8bit;   break;
-        case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_normal:
+        case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_copytop :
                                               is_16bit ? blend_normal_16bit     : blend_normal_8bit;     break;
         case BLEND_OR:         param->blend = is_16bit ? blend_or_16bit         : blend_or_8bit;         break;
         case BLEND_OVERLAY:    param->blend = is_16bit ? blend_overlay_16bit    : blend_overlay_8bit;    break;
