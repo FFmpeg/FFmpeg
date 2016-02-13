@@ -15,13 +15,13 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
-2016-02-10 - bc9a596 / 9f61abc - lavf 57.25.0 - avformat.h
+2016-02-10 - bc9a596 / 9f61abc - lavf 57.25.100 / 57.3.0 - avformat.h
   Add AVFormatContext.opaque, io_open and io_close, allowing custom IO
 
-2016-02-01 - 1dba837 - lavf 57.24.100
+2016-02-01 - 1dba837 - lavf 57.24.100 - avformat.h, avio.h
   Add protocol_whitelist to AVFormatContext, AVIOContext
 
-2016-01-31 - 66e9d2f - lavu 55.17.100
+2016-01-31 - 66e9d2f - lavu 55.17.100 - frame.h
   Add AV_FRAME_DATA_GOP_TIMECODE for exporting MPEG1/2 GOP timecodes.
 
 2016-01-01 - 5e8b053 / 2c68113 - lavc 57.21.100 / 57.12.0 - avcodec.h
