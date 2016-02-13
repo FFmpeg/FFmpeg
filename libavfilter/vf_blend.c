@@ -130,6 +130,7 @@ static void blend_copy ## src(const uint8_t *top, ptrdiff_t top_linesize,    \
 }
 
 COPY(top)
+COPY(bottom)
 
 #undef COPY
 
@@ -512,6 +513,7 @@ static int config_output(AVFilterLink *outlink)
         case BLEND_MULTIPLY128:param->blend = is_16bit ? blend_multiply128_16bit: blend_multiply128_8bit;break;
         case BLEND_NEGATION:   param->blend = is_16bit ? blend_negation_16bit   : blend_negation_8bit;   break;
         case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_copytop :
+                                              param->opacity == 0 ? blend_copybottom :
                                               is_16bit ? blend_normal_16bit     : blend_normal_8bit;     break;
         case BLEND_OR:         param->blend = is_16bit ? blend_or_16bit         : blend_or_8bit;         break;
         case BLEND_OVERLAY:    param->blend = is_16bit ? blend_overlay_16bit    : blend_overlay_8bit;    break;
@@ -527,6 +529,10 @@ static int config_output(AVFilterLink *outlink)
 
         if (ARCH_X86)
             ff_blend_init_x86(param, is_16bit);
+
+        if (param->opacity == 0 && param->mode != BLEND_NORMAL) {
+            param->blend = blend_copytop;
+        }
 
         if (s->all_expr && !param->expr_str) {
             param->expr_str = av_strdup(s->all_expr);
