@@ -385,6 +385,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
     int i, j, nb_planes = 0, linesize[4];
     int size = av_image_get_buffer_size(pix_fmt, width, height, align);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    uint8_t *orig_dst = dst;
 
     if (size > dst_size || size < 0 || !desc)
         return AVERROR(EINVAL);
@@ -409,6 +410,10 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
         uint32_t *d32 = (uint32_t *)(((size_t)dst + 3) & ~3);
+
+        if (dst_size - 1024 < (uint8_t*)d32 - orig_dst)
+            d32 = (uint32_t *)dst;
+
         for (i = 0; i<256; i++)
             AV_WL32(d32 + i, AV_RN32(src_data[1] + 4*i));
     }
