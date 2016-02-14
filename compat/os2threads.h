@@ -71,7 +71,10 @@ static void thread_entry(void *arg)
     thread->result = thread->start_routine(thread->arg);
 }
 
-static av_always_inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
+static av_always_inline int pthread_create(pthread_t *thread,
+                                           const pthread_attr_t *attr,
+                                           void *(*start_routine)(void*),
+                                           void *arg)
 {
     thread->start_routine = start_routine;
     thread->arg = arg;
@@ -92,7 +95,8 @@ static av_always_inline int pthread_join(pthread_t thread, void **value_ptr)
     return 0;
 }
 
-static av_always_inline int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr)
+static av_always_inline int pthread_mutex_init(pthread_mutex_t *mutex,
+                                               const pthread_mutexattr_t *attr)
 {
     DosCreateMutexSem(NULL, (PHMTX)mutex, 0, FALSE);
 
@@ -120,7 +124,8 @@ static av_always_inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
     return 0;
 }
 
-static av_always_inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
+static av_always_inline int pthread_cond_init(pthread_cond_t *cond,
+                                              const pthread_condattr_t *attr)
 {
     DosCreateEventSem(NULL, &cond->event_sem, DCE_POSTONE, FALSE);
     DosCreateEventSem(NULL, &cond->ack_sem, DCE_POSTONE, FALSE);
@@ -156,7 +161,8 @@ static av_always_inline int pthread_cond_broadcast(pthread_cond_t *cond)
     return 0;
 }
 
-static av_always_inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+static av_always_inline int pthread_cond_wait(pthread_cond_t *cond,
+                                              pthread_mutex_t *mutex)
 {
     __atomic_increment(&cond->wait_count);
 
@@ -173,7 +179,8 @@ static av_always_inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mute
     return 0;
 }
 
-static av_always_inline int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+static av_always_inline int pthread_once(pthread_once_t *once_control,
+                                         void (*init_routine)(void))
 {
     if (!once_control->done)
     {
