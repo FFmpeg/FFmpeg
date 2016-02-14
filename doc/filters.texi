@@ -6637,6 +6637,50 @@ Specify whether to extract the top (if the value is @code{0} or
 @code{bottom}).
 @end table
 
+@section fieldhint
+
+Create new frames by copying the top and bottom fields from surrounding frames
+supplied as numbers by the hint file.
+
+@table @option
+@item hint
+Set file containing hints: absolute/relative frame numbers.
+
+There must be one line for each frame in a clip. Each line must contain two
+numbers separated by the comma, optionally followed by @code{-} or @code{+}.
+Numbers supplied on each line of file can not be out of [N-1,N+1] where N
+is current frame number for @code{absolute} mode or out of [-1, 1] range
+for @code{relative} mode. First number tells from which frame to pick up top
+field and second number tells from which frame to pick up bottom field.
+
+If optionally followed by @code{+} output frame will be marked as interlaced,
+else if followed by @code{-} output frame will be marked as progressive, else
+it will be marked same as input frame.
+If line starts with @code{#} or @code{;} that line is skipped.
+
+@item mode
+Can be item @code{absolute} or @code{relative}. Default is @code{absolute}.
+@end table
+
+Example of first several lines of @code{hint} file for @code{relative} mode:
+@example
+0,0 - # first frame
+1,0 - # second frame, use third's frame top field and second's frame bottom field
+1,0 - # third frame, use fourth's frame top field and third's frame bottom field
+1,0 -
+0,0 -
+0,0 -
+1,0 -
+1,0 -
+1,0 -
+0,0 -
+0,0 -
+1,0 -
+1,0 -
+1,0 -
+0,0 -
+@end example
+
 @section fieldmatch
 
 Field matching filter for inverse telecine. It is meant to reconstruct the

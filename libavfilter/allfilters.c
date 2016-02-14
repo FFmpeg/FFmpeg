@@ -174,6 +174,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(FADE,           fade,           vf);
     REGISTER_FILTER(FFTFILT,        fftfilt,        vf);
     REGISTER_FILTER(FIELD,          field,          vf);
+    REGISTER_FILTER(FIELDHINT,      fieldhint,      vf);
     REGISTER_FILTER(FIELDMATCH,     fieldmatch,     vf);
     REGISTER_FILTER(FIELDORDER,     fieldorder,     vf);
     REGISTER_FILTER(FIND_RECT,      find_rect,      vf);

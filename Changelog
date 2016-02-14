@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - DXVA2-accelerated HEVC Main10 decoding
+- fieldhint filter
 
 
 version 3.0:
