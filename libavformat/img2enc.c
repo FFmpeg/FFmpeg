@@ -51,7 +51,6 @@ static int write_header(AVFormatContext *s)
     VideoMuxData *img = s->priv_data;
     AVStream *st = s->streams[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
-    const char *proto = avio_find_protocol_name(s->filename);
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
 
