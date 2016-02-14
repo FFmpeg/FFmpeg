@@ -124,7 +124,7 @@ static int mpjpeg_read_probe(AVProbeData *p)
     if (!pb)
         return 0;
 
-    ret = (parse_multipart_header(pb, &size, "--", NULL) > 0) ? AVPROBE_SCORE_MAX : 0;
+    ret = (parse_multipart_header(pb, &size, "--", NULL) >= 0) ? AVPROBE_SCORE_MAX : 0;
 
     av_free(pb);
 
