@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "dnxhddata.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 
 /* The quantization tables below are in zigzag order! */
 
@@ -1100,6 +1101,13 @@ int avpriv_dnxhd_get_interlaced(int cid)
     if (i < 0)
         return i;
     return ff_dnxhd_cid_table[i].flags & DNXHD_INTERLACED ? 1 : 0;
+}
+
+uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf)
+{
+    uint64_t prefix = AV_RB32(buf);
+    prefix = (prefix << 16) | buf[4] << 8;
+    return ff_dnxhd_check_header_prefix(prefix);
 }
 
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
