@@ -4244,6 +4244,12 @@ blend=all_expr='if(gte(T*SH*40+Y,H)*gte((T*40*SW+X)*W/H,W),A,B)'
 @end example
 
 @item
+Split diagonally video and shows top and bottom layer on each side:
+@example
+blend=all_expr=if(gt(X,Y*(W/H)),A,B)
+@end example
+
+@item
 Display differences between the current and the previous frame:
 @example
 tblend=all_mode=difference128
@@ -7478,12 +7484,9 @@ geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
 @end example
 
 @item
-Create a linear gradient to use as a mask for another filter, then
-compose with @ref{overlay}. In this example the video will gradually
-become more blurry from the top to the bottom of the y-axis as defined
-by the linear gradient:
+Diagonal split screen to compare filter effect:
 @example
-ffmpeg -i input.mp4 -filter_complex "geq=lum=255*(Y/H),format=gray[grad];[0:v]boxblur=4[blur];[blur][grad]alphamerge[alpha];[0:v][alpha]overlay" output.mp4
+ffmpeg -i input -filter_complex "[0:v]geq=lum=if(gt(X\,Y*(W/H))\,255),format=gray[alpha];[0:v][alpha]alphamerge,curves=preset=color_negative[filtered];[0:v][filtered]overlay" output
 @end example
 @end itemize
 
@@ -8486,19 +8489,18 @@ Set key used with all modes. Must be set for all modes except @code{print}.
 Set metadata value which will be used. This option is mandatory for
 @code{modify} and @code{add} mode.
 
-@item length
-Set length of how many characters of two metadata values need to match to be
-considered same. Default is all available characters.
-
 @item function
 Which function to use when comparing metadata value and @code{value}.
 
 Can be one of following:
 
 @table @samp
-@item string
-Values are interpreted as strings, returns true if @code{value} is same as metadata value up
-to N chars as set in @code{length} option.
+@item same_str
+Values are interpreted as strings, returns true if metadata value is same as @code{value}.
+
+@item starts_with
+Values are interpreted as strings, returns true if metadata value starts with
+the @code{value} option string.
 
 @item less
 Values are interpreted as floats, returns true if metadata value is less than @code{value}.
@@ -8526,6 +8528,12 @@ Float representation of @code{value} from metadata key.
 @item VALUE2
 Float representation of @code{value} as supplied by user in @code{value} option.
 @end table
+
+@item file
+If specified in @code{print} mode, output is written to the named file. When
+filename equals "-" data is written to standard output.
+If @code{file} option is not set, output is written to the log with AV_LOG_INFO
+loglevel.
 @end table
 
 @subsection Examples
@@ -8536,7 +8544,7 @@ Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} wit
 between 0 and 1.
 @example
 @end example
-signalstats,metadata=print:key=lavfi.signalstats.YDIF:function=expr:expr='between(VALUE1,0,1)'
+signalstats,metadata=print:key=lavfi.signalstats.YDIF:value=0:function=expr:expr='between(VALUE1,0,1)'
 @end itemize
 
 @section mpdecimate

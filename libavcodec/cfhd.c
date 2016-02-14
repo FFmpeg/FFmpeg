@@ -312,7 +312,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->plane[s->channel_num].band[0][0].width  = data;
             s->plane[s->channel_num].band[0][0].stride = data;
             av_log(avctx, AV_LOG_DEBUG, "Lowpass width %"PRIu16"\n", data);
-            if (data < 2 || (data & 1) || data > s->plane[s->channel_num].band[0][0].a_width) {
+            if (data < 2 || data > s->plane[s->channel_num].band[0][0].a_width) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid lowpass width\n");
                 ret = AVERROR(EINVAL);
                 break;
@@ -344,6 +344,11 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             break;
         } else if (tag == 2) {
             av_log(avctx, AV_LOG_DEBUG, "tag=2 header - skipping %i tag/value pairs\n", data);
+            if (data > bytestream2_get_bytes_left(&gb) / 4) {
+                av_log(avctx, AV_LOG_ERROR, "too many tag/value pairs (%d)\n", data);
+                ret = AVERROR_INVALIDDATA;
+                break;
+            }
             for (i = 0; i < data; i++) {
                 uint16_t tag2 = bytestream2_get_be16(&gb);
                 uint16_t val2 = bytestream2_get_be16(&gb);
@@ -353,7 +358,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->plane[s->channel_num].band[s->level][s->subband_num].width  = data;
             s->plane[s->channel_num].band[s->level][s->subband_num].stride = FFALIGN(data, 8);
             av_log(avctx, AV_LOG_DEBUG, "Highpass width %i channel %i level %i subband %i\n", data, s->channel_num, s->level, s->subband_num);
-            if (data < 2 || (data & 1)) {
+            if (data < 2) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass width\n");
                 ret = AVERROR(EINVAL);
                 break;
@@ -370,7 +375,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->plane[s->channel_num].band[s->level][s->subband_num].width  = data;
             s->plane[s->channel_num].band[s->level][s->subband_num].stride = FFALIGN(data, 8);
             av_log(avctx, AV_LOG_DEBUG, "Highpass width2 %i\n", data);
-            if (data < 2 || (data & 1)) {
+            if (data < 2) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass width2\n");
                 ret = AVERROR(EINVAL);
                 break;

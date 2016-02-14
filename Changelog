@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+
+version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support
 - DXV decoding
 - extrastereo filter

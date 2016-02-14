@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_CMDUTILS_H
-#define FFMPEG_CMDUTILS_H
+#ifndef CMDUTILS_H
+#define CMDUTILS_H
 
 #include <stdint.h>
 

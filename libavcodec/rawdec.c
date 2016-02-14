@@ -100,7 +100,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
         else {
             memset(context->palette->data, 0, AVPALETTE_SIZE);
-            if (avctx->bits_per_coded_sample <= 1)
+            if (avctx->bits_per_coded_sample == 1)
                 memset(context->palette->data, 0xff, 4);
         }
     }
@@ -121,7 +121,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     if (avctx->codec_tag == MKTAG('B','1','W','0') ||
         avctx->codec_tag == MKTAG('B','0','W','1'))
         context->is_nut_mono = 1;
-    else if (avctx->codec_tag == MKTAG('P','A','L','8'))
+    else if (avctx->codec_tag == MKTAG('P','A','L',8))
         context->is_nut_pal8 = 1;
 
     if (avctx->codec_tag == AV_RL32("yuv2") &&
@@ -198,6 +198,8 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         stride = avctx->width;
     else
         stride = avpkt->size / avctx->height;
+
+    av_log(avctx, AV_LOG_DEBUG, "PACKET SIZE: %d, STRIDE: %d\n", avpkt->size, stride);
 
     if (stride == 0 || avpkt->size < stride * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "Packet too small (%d)\n", avpkt->size);

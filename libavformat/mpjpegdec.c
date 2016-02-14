@@ -277,6 +277,13 @@ static char* mpjpeg_get_boundary(AVIOContext* pb)
                 len = end - start - 1;
             else
                 len = strlen(start);
+
+            /* some endpoints may enclose the boundary
+              in Content-Type in quotes */
+            if ( len>2 && *start == '"' && start[len-1] == '"' ) {
+                start++;
+                len -= 2;
+            }
             res = av_strndup(start, len);
             break;
         }
@@ -344,8 +351,8 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
             do {
                 if (!memcmp(start, mpjpeg->searchstr, mpjpeg->searchstr_len)) {
                     // got the boundary! rewind the stream
-                    avio_seek(s->pb, -(len-2), SEEK_CUR);
-                    pkt->size -= (len-2);
+                    avio_seek(s->pb, -len, SEEK_CUR);
+                    pkt->size -= len;
                     return pkt->size;
                 }
                 len--;

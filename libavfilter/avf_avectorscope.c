@@ -300,6 +300,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             prev_y = y;
         }
         break;
+    default:
+        av_assert0(0);
     }
 
     s->prev_x = x, s->prev_y = y;

@@ -256,6 +256,8 @@ static void read16_fft_bin(SpectrumSynthContext *s,
     case LOG:
         magnitude = ff_exp10(((m[x] / (double)UINT16_MAX) - 1.) * 6.);
         break;
+    default:
+        av_assert0(0);
     }
     phase = ((p[x] / (double)UINT16_MAX) * 2. - 1.) * M_PI;
 
@@ -279,6 +281,8 @@ static void read8_fft_bin(SpectrumSynthContext *s,
     case LOG:
         magnitude = ff_exp10(((m[x] / (double)UINT8_MAX) - 1.) * 6.);
         break;
+    default:
+        av_assert0(0);
     }
     phase = ((p[x] / (double)UINT8_MAX) * 2. - 1.) * M_PI;
 
@@ -454,6 +458,8 @@ static int try_push_frames(AVFilterContext *ctx)
                 break;
         }
         break;
+    default:
+        av_assert0(0);
     }
 
     av_frame_free(&s->magnitude);

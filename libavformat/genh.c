@@ -42,7 +42,7 @@ static int genh_read_header(AVFormatContext *s)
 {
     unsigned start_offset, header_size, codec, coef_type, coef[2];
     GENHDemuxContext *c = s->priv_data;
-    unsigned coef_splitted[2];
+    av_unused unsigned coef_splitted[2];
     int align, ch, ret;
     AVStream *st;
 

@@ -1927,6 +1927,9 @@ av_cold void ff_h264_free_context(H264Context *h)
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
 
+    h->a53_caption_size = 0;
+    av_freep(&h->a53_caption);
+
     for (i = 0; i < MAX_SPS_COUNT; i++)
         av_freep(h->sps_buffers + i);
 

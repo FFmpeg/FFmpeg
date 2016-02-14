@@ -12,7 +12,6 @@ libavfilter/log2_tab.c
 libavformat/file_open.c
 libavformat/golomb_tab.c
 libavformat/log2_tab.c
-libavutil/x86_cpu.h
 libswresample/log2_tab.c
 libswscale/log2_tab.c
 tools/uncoded_frame.c
@@ -28,4 +27,3 @@ compat/avisynth/windowsPorts/basicDataTypeConversions.h
 compat/avisynth/windowsPorts/windows2linux.h
 compat/float/float.h
 compat/float/limits.h
-libavutil/x86_cpu.h

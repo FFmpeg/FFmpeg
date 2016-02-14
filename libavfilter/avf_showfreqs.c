@@ -310,6 +310,8 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
         end = (outlink->h / s->nb_channels) * (ch + 1);
         y = (outlink->h / s->nb_channels) * ch + a * (outlink->h / s->nb_channels) - 1;
         break;
+    default:
+        av_assert0(0);
     }
     if (y < 0)
         return;

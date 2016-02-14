@@ -70,7 +70,13 @@ typedef struct VP9Context {
     uint8_t ss_h, ss_v;
     uint8_t last_bpp, bpp, bpp_index, bytesperpixel;
     uint8_t last_keyframe;
-    enum AVPixelFormat pix_fmt, last_fmt;
+    // sb_cols/rows, rows/cols and last_fmt are used for allocating all internal
+    // arrays, and are thus per-thread. w/h and gf_fmt are synced between threads
+    // and are therefore per-stream. pix_fmt represents the value in the header
+    // of the currently processed frame.
+    int w, h;
+    enum AVPixelFormat pix_fmt, last_fmt, gf_fmt;
+    unsigned sb_cols, sb_rows, rows, cols;
     ThreadFrame next_refs[8];
 
     struct {
@@ -78,7 +84,6 @@ typedef struct VP9Context {
         uint8_t mblim_lut[64];
     } filter_lut;
     unsigned tile_row_start, tile_row_end, tile_col_start, tile_col_end;
-    unsigned sb_cols, sb_rows, rows, cols;
     struct {
         prob_context p;
         uint8_t coef[4][2][2][6][6][3];
@@ -245,36 +250,45 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
     VP9Context *s = ctx->priv_data;
     uint8_t *p;
-    int bytesperpixel = s->bytesperpixel, res;
+    int bytesperpixel = s->bytesperpixel, res, cols, rows;
 
     av_assert0(w > 0 && h > 0);
 
-    if (s->intra_pred_data[0] && w == ctx->width && h == ctx->height && s->pix_fmt == s->last_fmt)
-        return 0;
+    if (!(s->pix_fmt == s->gf_fmt && w == s->w && h == s->h)) {
+        if ((res = ff_set_dimensions(ctx, w, h)) < 0)
+            return res;
 
-    if ((res = ff_set_dimensions(ctx, w, h)) < 0)
-        return res;
-
-    if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
+        if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
 #if CONFIG_VP9_DXVA2_HWACCEL
-        *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
+            *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
 #endif
 #if CONFIG_VP9_D3D11VA_HWACCEL
-        *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
+            *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
 #endif
 #if CONFIG_VP9_VAAPI_HWACCEL
-        *fmtp++ = AV_PIX_FMT_VAAPI;
+            *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif
+        }
+
+        *fmtp++ = s->pix_fmt;
+        *fmtp = AV_PIX_FMT_NONE;
+
+        res = ff_thread_get_format(ctx, pix_fmts);
+        if (res < 0)
+            return res;
+
+        ctx->pix_fmt = res;
+        s->gf_fmt  = s->pix_fmt;
+        s->w = w;
+        s->h = h;
     }
 
-    *fmtp++ = s->pix_fmt;
-    *fmtp = AV_PIX_FMT_NONE;
+    cols = (w + 7) >> 3;
+    rows = (h + 7) >> 3;
 
-    res = ff_thread_get_format(ctx, pix_fmts);
-    if (res < 0)
-        return res;
+    if (s->intra_pred_data[0] && cols == s->cols && rows == s->rows && s->pix_fmt == s->last_fmt)
+        return 0;
 
-    ctx->pix_fmt = res;
     s->last_fmt  = s->pix_fmt;
     s->sb_cols   = (w + 63) >> 6;
     s->sb_rows   = (h + 63) >> 6;
@@ -4292,13 +4306,6 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     int i, res;
     VP9Context *s = dst->priv_data, *ssrc = src->priv_data;
 
-    // detect size changes in other threads
-    if (s->intra_pred_data[0] &&
-        (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols ||
-         s->rows != ssrc->rows || s->bpp != ssrc->bpp || s->pix_fmt != ssrc->pix_fmt)) {
-        free_buffers(s);
-    }
-
     for (i = 0; i < 3; i++) {
         if (s->s.frames[i].tf.f->buf[0])
             vp9_unref_frame(dst, &s->s.frames[i]);
@@ -4325,6 +4332,9 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->s.h.segmentation.update_map = ssrc->s.h.segmentation.update_map;
     s->s.h.segmentation.absolute_vals = ssrc->s.h.segmentation.absolute_vals;
     s->bytesperpixel = ssrc->bytesperpixel;
+    s->gf_fmt = ssrc->gf_fmt;
+    s->w = ssrc->w;
+    s->h = ssrc->h;
     s->bpp = ssrc->bpp;
     s->bpp_index = ssrc->bpp_index;
     s->pix_fmt = ssrc->pix_fmt;

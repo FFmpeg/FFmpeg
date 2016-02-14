@@ -67,10 +67,11 @@ typedef struct FilterParams {
     void (*blend)(const uint8_t *top, ptrdiff_t top_linesize,
                   const uint8_t *bottom, ptrdiff_t bottom_linesize,
                   uint8_t *dst, ptrdiff_t dst_linesize,
-                  ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
+                  ptrdiff_t width, ptrdiff_t height,
                   struct FilterParams *param, double *values);
 } FilterParams;
 
+void ff_blend_init(FilterParams *param, int is_16bit);
 void ff_blend_init_x86(FilterParams *param, int is_16bit);
 
 #endif /* AVFILTER_BLEND_H */

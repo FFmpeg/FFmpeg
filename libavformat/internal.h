@@ -321,11 +321,6 @@ void ff_reduce_index(AVFormatContext *s, int stream_index);
 enum AVCodecID ff_guess_image2_codec(const char *filename);
 
 /**
- * Convert a date string in ISO8601 format to Unix timestamp.
- */
-int64_t ff_iso8601_to_unix_time(const char *datestr);
-
-/**
  * Perform a binary search using av_index_search_timestamp() and
  * AVInputFormat.read_timestamp().
  *
@@ -553,5 +548,16 @@ int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *
  * intead of calling the pointer directly.
  */
 void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
+
+/**
+ * Parse creation_time in AVFormatContext metadata if exists and warn if the
+ * parsing fails.
+ *
+ * @param s AVFormatContext
+ * @param timestamp parsed timestamp in microseconds, only set on successful parsing
+ * @param return_seconds set this to get the number of seconds in timestamp instead of microseconds
+ * @return 1 if OK, 0 if the metadata was not present, AVERROR(EINVAL) on parse error
+ */
+int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds);
 
 #endif /* AVFORMAT_INTERNAL_H */

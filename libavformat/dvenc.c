@@ -302,7 +302,6 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
 {
     DVMuxContext *c = s->priv_data;
     AVStream *vst = NULL;
-    AVDictionaryEntry *t;
     int i;
 
     /* we support at most 1 video and 2 audio streams */
@@ -363,8 +362,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
     c->frames     = 0;
     c->has_audio  = 0;
     c->has_video  = 0;
-    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
-        c->start_time = ff_iso8601_to_unix_time(t->value);
+    ff_parse_creation_time_metadata(s, &c->start_time, 1);
 
     for (i=0; i < c->n_ast; i++) {
         if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc_array(100, MAX_AUDIO_FRAME_SIZE))) {

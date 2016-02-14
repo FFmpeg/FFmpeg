@@ -2521,6 +2521,71 @@ encoder use CAVLC instead of CABAC.
 
 @end itemize
 
+@section vc2
+
+SMPTE VC-2 (previously BBC Dirac Pro). This codec was primarily aimed at
+professional broadcasting but since it supports yuv420, yuv422 and yuv444 at
+8 (limited range or full range), 10 or 12 bits, this makes it suitable for
+other tasks which require low overhead and low compression (like screen
+recording).
+
+@subsection Options
+
+@table @option
+
+@item b
+Sets target video bitrate. Usually that's around 1:6 of the uncompressed
+video bitrate (e.g. for 1920x1080 50fps yuv422p10 that's around 400Mbps). Higher
+values (close to the uncompressed bitrate) turn on lossless compression mode.
+
+@item field_order
+Enables field coding when set (e.g. to tt - top field first) for interlaced
+inputs. Should increase compression with interlaced content as it splits the
+fields and encodes each separately.
+
+@item wavelet_depth
+Sets the total amount of wavelet transforms to apply, between 1 and 5 (default).
+Lower values reduce compression and quality. Less capable decoders may not be
+able to handle values of @option{wavelet_depth} over 3.
+
+@item wavelet_type
+Sets the transform type. Currently only @var{5_3} (LeGall) and @var{9_7}
+(Deslauriers-Dubuc)
+are implemented, with 9_7 being the one with better compression and thus
+is the default.
+
+@item slice_width
+@item slice_height
+Sets the slice size for each slice. Larger values result in better compression.
+For compatibility with other more limited decoders use @option{slice_width} of
+32 and @option{slice_height} of 8.
+
+@item tolerance
+Sets the undershoot tolerance of the rate control system in percent. This is
+to prevent an expensive search from being run.
+
+@item qm
+Sets the quantization matrix preset to use by default or when @option{wavelet_depth}
+is set to 5
+@itemize @minus
+@item
+@var{default}
+Uses the default quantization matrix from the specifications, extended with
+values for the fifth level. This provides a good balance between keeping detail
+and omitting artifacts.
+
+@item
+@var{flat}
+Use a completely zeroed out quantization matrix. This increases PSNR but might
+reduce perception. Use in bogus benchmarks.
+
+@item
+@var{color}
+Reduces detail but attempts to preserve color at extremely low bitrates.
+@end itemize
+
+@end table
+
 @c man end VIDEO ENCODERS
 
 @chapter Subtitles Encoders

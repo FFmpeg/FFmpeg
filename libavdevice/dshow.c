@@ -240,7 +240,7 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         int i;
 
         r = CoGetMalloc(1, &co_malloc);
-        if (r = S_OK)
+        if (r != S_OK)
             goto fail1;
         r = CreateBindCtx(0, &bind_ctx);
         if (r != S_OK)

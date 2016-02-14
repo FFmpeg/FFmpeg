@@ -1,5 +1,6 @@
 # libavcodec tests
 AVCODECOBJS-$(CONFIG_ALAC_DECODER) += alacdsp.o
+AVCODECOBJS-$(CONFIG_BLEND_FILTER) += vf_blend.o
 AVCODECOBJS-$(CONFIG_BSWAPDSP) += bswapdsp.o
 AVCODECOBJS-$(CONFIG_DCA_DECODER) += synth_filter.o
 AVCODECOBJS-$(CONFIG_FLACDSP)  += flacdsp.o

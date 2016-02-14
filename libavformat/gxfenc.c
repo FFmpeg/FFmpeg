@@ -436,13 +436,11 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int timecode_base = gxf->time_base.den == 60000 ? 60 : 50;
     int64_t timestamp = 0;
-    AVDictionaryEntry *t;
     uint64_t nb_fields;
     uint32_t timecode_in; // timecode at mark in
     uint32_t timecode_out; // timecode at mark out
 
-    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
-        timestamp = ff_iso8601_to_unix_time(t->value);
+    ff_parse_creation_time_metadata(s, &timestamp, 1);
 
     timecode_in = GXF_TIMECODE(gxf->tc.color, gxf->tc.drop,
                                gxf->tc.hh, gxf->tc.mm,

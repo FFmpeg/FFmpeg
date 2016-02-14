@@ -51,7 +51,6 @@ static int write_header(AVFormatContext *s)
     VideoMuxData *img = s->priv_data;
     AVStream *st = s->streams[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
-    const char *proto = avio_find_protocol_name(s->filename);
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
 
@@ -72,9 +71,6 @@ static int write_header(AVFormatContext *s)
                              &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
                              && desc->nb_components >= 3;
     }
-
-    img->use_rename = img->use_rename < 0 ? proto && !strcmp(proto, "file")
-                                          : img->use_rename;
 
     return 0;
 }
@@ -180,7 +176,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!img->is_pipe) {
         ff_format_io_close(s, &pb[0]);
         for (i = 0; i < nb_renames; i++) {
-            ff_rename(img->tmp[i], img->target[i], s);
+            int ret = ff_rename(img->tmp[i], img->target[i], s);
+            if (ret < 0)
+                return ret;
         }
     }
 
@@ -206,7 +204,7 @@ static const AVOption muxoptions[] = {
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
-    { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, ENC },
+    { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { NULL },
 };
 
