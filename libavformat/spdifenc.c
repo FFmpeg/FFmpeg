@@ -463,6 +463,7 @@ static int spdif_write_header(AVFormatContext *s)
         ctx->header_info = spdif_header_aac;
         break;
     case AV_CODEC_ID_TRUEHD:
+    case AV_CODEC_ID_MLP:
         ctx->header_info = spdif_header_truehd;
         ctx->hd_buf = av_malloc(MAT_FRAME_SIZE);
         if (!ctx->hd_buf)
