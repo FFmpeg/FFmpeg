@@ -35,9 +35,15 @@
 #include <sys/builtin.h>
 #include <sys/fmutex.h>
 
-#include "libavutil/mem.h"
+#include "libavutil/attributes.h"
 
-typedef TID  pthread_t;
+typedef struct {
+    TID tid;
+    void *(*start_routine)(void *);
+    void *arg;
+    void *result;
+} pthread_t;
+
 typedef void pthread_attr_t;
 
 typedef HMTX pthread_mutex_t;
@@ -58,39 +64,30 @@ typedef struct {
 
 #define PTHREAD_ONCE_INIT {0, _FMUTEX_INITIALIZER}
 
-struct thread_arg {
-    void *(*start_routine)(void *);
-    void *arg;
-};
-
 static void thread_entry(void *arg)
 {
-    struct thread_arg *thread_arg = arg;
+    pthread_t *thread = arg;
 
-    thread_arg->start_routine(thread_arg->arg);
-
-    av_free(thread_arg);
+    thread->result = thread->start_routine(thread->arg);
 }
 
 static av_always_inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
 {
-    struct thread_arg *thread_arg;
+    thread->start_routine = start_routine;
+    thread->arg = arg;
+    thread->result = NULL;
 
-    thread_arg = av_mallocz(sizeof(struct thread_arg));
-    if (!thread_arg)
-        return ENOMEM;
-
-    thread_arg->start_routine = start_routine;
-    thread_arg->arg = arg;
-
-    *thread = _beginthread(thread_entry, NULL, 256 * 1024, thread_arg);
+    thread->tid = _beginthread(thread_entry, NULL, 1024 * 1024, thread);
 
     return 0;
 }
 
 static av_always_inline int pthread_join(pthread_t thread, void **value_ptr)
 {
-    DosWaitThread((PTID)&thread, DCWW_WAIT);
+    DosWaitThread(&thread.tid, DCWW_WAIT);
+
+    if (value_ptr)
+        *value_ptr = thread.result;
 
     return 0;
 }
