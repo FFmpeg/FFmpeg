@@ -27,7 +27,7 @@
 
 #define WIDTH 256
 #define HEIGHT 256
-#define BUF_UNITS 9
+#define BUF_UNITS 3
 #define SIZE_PER_UNIT (WIDTH * HEIGHT)
 #define BUF_SIZE (BUF_UNITS * SIZE_PER_UNIT)
 
