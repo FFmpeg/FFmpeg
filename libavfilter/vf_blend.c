@@ -122,11 +122,11 @@ AVFILTER_DEFINE_CLASS(blend);
 static void blend_copy ## src(const uint8_t *top, ptrdiff_t top_linesize,    \
                             const uint8_t *bottom, ptrdiff_t bottom_linesize,\
                             uint8_t *dst, ptrdiff_t dst_linesize,            \
-                            ptrdiff_t width, ptrdiff_t start, ptrdiff_t end, \
+                            ptrdiff_t width, ptrdiff_t height,               \
                             FilterParams *param, double *values)             \
 {                                                                            \
     av_image_copy_plane(dst, dst_linesize, src, src ## _linesize,            \
-                        width, end - start);                                 \
+                        width, height);                                 \
 }
 
 COPY(top)
@@ -137,13 +137,13 @@ COPY(bottom)
 static void blend_normal_8bit(const uint8_t *top, ptrdiff_t top_linesize,
                               const uint8_t *bottom, ptrdiff_t bottom_linesize,
                               uint8_t *dst, ptrdiff_t dst_linesize,
-                              ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
+                              ptrdiff_t width, ptrdiff_t height,
                               FilterParams *param, double *values)
 {
     const double opacity = param->opacity;
     int i, j;
 
-    for (i = start; i < end; i++) {
+    for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
             dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
         }
@@ -156,7 +156,7 @@ static void blend_normal_8bit(const uint8_t *top, ptrdiff_t top_linesize,
 static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
                                   const uint8_t *_bottom, ptrdiff_t bottom_linesize,
                                   uint8_t *_dst, ptrdiff_t dst_linesize,
-                                  ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,
+                                  ptrdiff_t width, ptrdiff_t height,
                                   FilterParams *param, double *values)
 {
     const uint16_t *top = (uint16_t*)_top;
@@ -168,7 +168,7 @@ static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
     top_linesize /= 2;
     bottom_linesize /= 2;
 
-    for (i = start; i < end; i++) {
+    for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
             dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
         }
@@ -182,13 +182,13 @@ static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
 static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,         \
                                  const uint8_t *bottom, ptrdiff_t bottom_linesize,   \
                                  uint8_t *dst, ptrdiff_t dst_linesize,               \
-                                 ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,                \
+                                 ptrdiff_t width, ptrdiff_t height,                \
                                  FilterParams *param, double *values)          \
 {                                                                              \
     double opacity = param->opacity;                                           \
     int i, j;                                                                  \
                                                                                \
-    for (i = start; i < end; i++) {                                            \
+    for (i = 0; i < height; i++) {                                             \
         for (j = 0; j < width; j++) {                                          \
             dst[j] = top[j] + ((expr) - top[j]) * opacity;                     \
         }                                                                      \
@@ -202,7 +202,7 @@ static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,    
 static void blend_## name##_16bit(const uint8_t *_top, ptrdiff_t top_linesize,       \
                                   const uint8_t *_bottom, ptrdiff_t bottom_linesize, \
                                   uint8_t *_dst, ptrdiff_t dst_linesize,             \
-                                  ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,               \
+                                  ptrdiff_t width, ptrdiff_t height,           \
                                   FilterParams *param, double *values)         \
 {                                                                              \
     const uint16_t *top = (uint16_t*)_top;                                     \
@@ -214,7 +214,7 @@ static void blend_## name##_16bit(const uint8_t *_top, ptrdiff_t top_linesize,  
     top_linesize /= 2;                                                         \
     bottom_linesize /= 2;                                                      \
                                                                                \
-    for (i = start; i < end; i++) {                                            \
+    for (i = 0; i < height; i++) {                                             \
         for (j = 0; j < width; j++) {                                          \
             dst[j] = top[j] + ((expr) - top[j]) * opacity;                     \
         }                                                                      \
@@ -306,7 +306,7 @@ DEFINE_BLEND16(linearlight,av_clip_uint16((B < 32768) ? B + 2 * A - 65535 : B + 
 static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,          \
                                const uint8_t *_bottom, ptrdiff_t bottom_linesize,    \
                                uint8_t *_dst, ptrdiff_t dst_linesize,                \
-                               ptrdiff_t width, ptrdiff_t start, ptrdiff_t end,                  \
+                               ptrdiff_t width, ptrdiff_t height,              \
                                FilterParams *param, double *values)            \
 {                                                                              \
     const type *top = (type*)_top;                                             \
@@ -318,7 +318,7 @@ static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,     
     top_linesize /= div;                                                       \
     bottom_linesize /= div;                                                    \
                                                                                \
-    for (y = start; y < end; y++) {                                            \
+    for (y = 0; y < height; y++) {                                             \
         values[VAR_Y] = y;                                                     \
         for (x = 0; x < width; x++) {                                          \
             values[VAR_X]      = x;                                            \
@@ -340,6 +340,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     ThreadData *td = arg;
     int slice_start = (td->h *  jobnr   ) / nb_jobs;
     int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
+    int height      = slice_end - slice_start;
     const uint8_t *top    = td->top->data[td->plane];
     const uint8_t *bottom = td->bottom->data[td->plane];
     uint8_t *dst    = td->dst->data[td->plane];
@@ -358,7 +359,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                      td->bottom->linesize[td->plane],
                      dst + slice_start * td->dst->linesize[td->plane],
                      td->dst->linesize[td->plane],
-                     td->w, slice_start, slice_end, td->param, &values[0]);
+                     td->w, height, td->param, &values[0]);
     return 0;
 }
 

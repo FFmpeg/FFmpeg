@@ -42,11 +42,10 @@ cglobal blend_%1, 5, 7, %2, top, top_linesize, bottom, bottom_linesize, dst, end
 %define dst_linesizeq r5mp
 %define widthq r6mp
 %endif
-    mov      endd, dword r8m
+    mov      endd, dword r7m
     add      topq, widthq
     add   bottomq, widthq
     add      dstq, widthq
-    sub      endd, dword r7m ; start
     neg    widthq
 %endmacro
 
