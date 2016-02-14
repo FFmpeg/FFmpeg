@@ -32,6 +32,7 @@
 #undef __STRICT_ANSI__          /* for _beginthread() */
 #include <stdlib.h>
 
+#include <sys/builtin.h>
 #include <sys/fmutex.h>
 
 #include "libavutil/mem.h"
@@ -43,8 +44,9 @@ typedef HMTX pthread_mutex_t;
 typedef void pthread_mutexattr_t;
 
 typedef struct {
-    HEV  event_sem;
-    int  wait_count;
+    HEV event_sem;
+    HEV ack_sem;
+    volatile unsigned  wait_count;
 } pthread_cond_t;
 
 typedef void pthread_condattr_t;
@@ -124,6 +126,7 @@ static av_always_inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
 static av_always_inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 {
     DosCreateEventSem(NULL, &cond->event_sem, DCE_POSTONE, FALSE);
+    DosCreateEventSem(NULL, &cond->ack_sem, DCE_POSTONE, FALSE);
 
     cond->wait_count = 0;
 
@@ -133,16 +136,16 @@ static av_always_inline int pthread_cond_init(pthread_cond_t *cond, const pthrea
 static av_always_inline int pthread_cond_destroy(pthread_cond_t *cond)
 {
     DosCloseEventSem(cond->event_sem);
+    DosCloseEventSem(cond->ack_sem);
 
     return 0;
 }
 
 static av_always_inline int pthread_cond_signal(pthread_cond_t *cond)
 {
-    if (cond->wait_count > 0) {
+    if (!__atomic_cmpxchg32(&cond->wait_count, 0, 0)) {
         DosPostEventSem(cond->event_sem);
-
-        cond->wait_count--;
+        DosWaitEventSem(cond->ack_sem, SEM_INDEFINITE_WAIT);
     }
 
     return 0;
@@ -150,22 +153,23 @@ static av_always_inline int pthread_cond_signal(pthread_cond_t *cond)
 
 static av_always_inline int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-    while (cond->wait_count > 0) {
-        DosPostEventSem(cond->event_sem);
-
-        cond->wait_count--;
-    }
+    while (!__atomic_cmpxchg32(&cond->wait_count, 0, 0))
+        pthread_cond_signal(cond);
 
     return 0;
 }
 
 static av_always_inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    cond->wait_count++;
+    __atomic_increment(&cond->wait_count);
 
     pthread_mutex_unlock(mutex);
 
     DosWaitEventSem(cond->event_sem, SEM_INDEFINITE_WAIT);
+
+    __atomic_decrement(&cond->wait_count);
+
+    DosPostEventSem(cond->ack_sem);
 
     pthread_mutex_lock(mutex);
 
