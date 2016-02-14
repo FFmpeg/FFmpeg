@@ -1017,7 +1017,7 @@ static int setup_hwaccel(AVCodecContext *avctx,
 
     if (avctx->active_thread_type & FF_THREAD_FRAME) {
         av_log(avctx, AV_LOG_WARNING,
-               "Hardware accelerated decoding with frame threading is known to be unstable and its use is discourage.\n");
+               "Hardware accelerated decoding with frame threading is known to be unstable and its use is discouraged.\n");
     }
 
     if (!hwa) {
