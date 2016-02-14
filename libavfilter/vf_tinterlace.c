@@ -131,7 +131,7 @@ static int config_out_props(AVFilterLink *outlink)
         if (ff_fmt_is_in(outlink->format, full_scale_yuvj_pix_fmts))
             black[0] = black[3] = 0;
         ret = av_image_alloc(tinterlace->black_data, tinterlace->black_linesize,
-                             outlink->w, outlink->h, outlink->format, 1);
+                             outlink->w, outlink->h, outlink->format, 16);
         if (ret < 0)
             return ret;
 
