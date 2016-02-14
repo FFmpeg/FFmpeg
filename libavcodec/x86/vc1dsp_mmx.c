@@ -38,6 +38,10 @@
 void ff_vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                    const uint8_t *src, x86_reg stride,
                                    int rnd, int64_t shift);
+void ff_vc1_put_hor_16b_shift2_mmx(uint8_t *dst, x86_reg stride,
+                                   const int16_t *src, int rnd);
+void ff_vc1_avg_hor_16b_shift2_mmxext(uint8_t *dst, x86_reg stride,
+                                      const int16_t *src, int rnd);
 
 #define OP_PUT(S,D)
 #define OP_AVG(S,D) "pavgb " #S ", " #D " \n\t"
@@ -69,55 +73,6 @@ void ff_vc1_put_ver_16b_shift2_mmx(int16_t *dst,
      "movd      "ROUND", %%mm7         \n\t"    \
      "punpcklwd %%mm7, %%mm7           \n\t"    \
      "punpckldq %%mm7, %%mm7           \n\t"
-
-/**
- * Data is already unpacked, so some operations can directly be made from
- * memory.
- */
-#define VC1_HOR_16b_SHIFT2(OP, OPNAME)\
-static void OPNAME ## vc1_hor_16b_shift2_mmx(uint8_t *dst, x86_reg stride,\
-                                             const int16_t *src, int rnd)\
-{\
-    int h = 8;\
-\
-    src -= 1;\
-    rnd -= (-1+9+9-1)*1024; /* Add -1024 bias */\
-    __asm__ volatile(\
-        LOAD_ROUNDER_MMX("%4")\
-        "movq      "MANGLE(ff_pw_128)", %%mm6\n\t"\
-        "movq      "MANGLE(ff_pw_9)", %%mm5 \n\t"\
-        "1:                                \n\t"\
-        "movq      2*0+0(%1), %%mm1        \n\t"\
-        "movq      2*0+8(%1), %%mm2        \n\t"\
-        "movq      2*1+0(%1), %%mm3        \n\t"\
-        "movq      2*1+8(%1), %%mm4        \n\t"\
-        "paddw     2*3+0(%1), %%mm1        \n\t"\
-        "paddw     2*3+8(%1), %%mm2        \n\t"\
-        "paddw     2*2+0(%1), %%mm3        \n\t"\
-        "paddw     2*2+8(%1), %%mm4        \n\t"\
-        "pmullw    %%mm5, %%mm3            \n\t"\
-        "pmullw    %%mm5, %%mm4            \n\t"\
-        "psubw     %%mm1, %%mm3            \n\t"\
-        "psubw     %%mm2, %%mm4            \n\t"\
-        NORMALIZE_MMX("$7")\
-        /* Remove bias */\
-        "paddw     %%mm6, %%mm3            \n\t"\
-        "paddw     %%mm6, %%mm4            \n\t"\
-        TRANSFER_DO_PACK(OP)\
-        "add       $24, %1                 \n\t"\
-        "add       %3, %2                  \n\t"\
-        "decl      %0                      \n\t"\
-        "jnz 1b                            \n\t"\
-        : "+r"(h), "+r" (src),  "+r" (dst)\
-        : "r"(stride), "m"(rnd)\
-          NAMED_CONSTRAINTS_ADD(ff_pw_128,ff_pw_9)\
-        : "memory"\
-    );\
-}
-
-VC1_HOR_16b_SHIFT2(OP_PUT, put_)
-VC1_HOR_16b_SHIFT2(OP_AVG, avg_)
-
 
 /**
  * Purely vertical or horizontal 1/2 shift interpolation.
@@ -380,14 +335,14 @@ typedef void (*vc1_mspel_mc_filter_8bits)(uint8_t *dst, const uint8_t *src, x86_
  * @param  hmode   Vertical filter.
  * @param  rnd     Rounding bias.
  */
-#define VC1_MSPEL_MC(OP)\
+#define VC1_MSPEL_MC(OP, INSTR)\
 static void OP ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride,\
                                int hmode, int vmode, int rnd)\
 {\
     static const vc1_mspel_mc_filter_ver_16bits vc1_put_shift_ver_16bits[] =\
          { NULL, vc1_put_ver_16b_shift1_mmx, ff_vc1_put_ver_16b_shift2_mmx, vc1_put_ver_16b_shift3_mmx };\
     static const vc1_mspel_mc_filter_hor_16bits vc1_put_shift_hor_16bits[] =\
-         { NULL, OP ## vc1_hor_16b_shift1_mmx, OP ## vc1_hor_16b_shift2_mmx, OP ## vc1_hor_16b_shift3_mmx };\
+         { NULL, OP ## vc1_hor_16b_shift1_mmx, ff_vc1_ ## OP ## hor_16b_shift2_ ## INSTR, OP ## vc1_hor_16b_shift3_mmx };\
     static const vc1_mspel_mc_filter_8bits vc1_put_shift_8bits[] =\
          { NULL, OP ## vc1_shift1_mmx, OP ## vc1_shift2_mmx, OP ## vc1_shift3_mmx };\
 \
@@ -428,8 +383,8 @@ static void OP ## vc1_mspel_mc_16(uint8_t *dst, const uint8_t *src, \
     OP ## vc1_mspel_mc(dst + 8, src + 8, stride, hmode, vmode, rnd); \
 }
 
-VC1_MSPEL_MC(put_)
-VC1_MSPEL_MC(avg_)
+VC1_MSPEL_MC(put_, mmx)
+VC1_MSPEL_MC(avg_, mmxext)
 
 /** Macro to ease bicubic filter interpolation functions declarations */
 #define DECLARE_FUNCTION(a, b)                                          \
