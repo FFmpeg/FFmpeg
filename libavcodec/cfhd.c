@@ -182,7 +182,7 @@ static int alloc_buffers(AVCodecContext *avctx)
         w2 = w4 * 2;
         h2 = h4 * 2;
 
-        s->plane[i].idwt_buf = av_malloc_array(height * stride, sizeof(*s->plane[i].idwt_buf));
+        s->plane[i].idwt_buf = av_mallocz_array(height * stride, sizeof(*s->plane[i].idwt_buf));
         s->plane[i].idwt_tmp = av_malloc_array(height * stride, sizeof(*s->plane[i].idwt_tmp));
         if (!s->plane[i].idwt_buf || !s->plane[i].idwt_tmp) {
             return AVERROR(ENOMEM);
