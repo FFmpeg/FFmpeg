@@ -974,6 +974,8 @@ static av_cold int vc2_encode_end(AVCodecContext *avctx)
     int i;
     VC2EncContext *s = avctx->priv_data;
 
+    av_log(avctx, AV_LOG_INFO, "Qavg: %i\n", s->q_start);
+
     for (i = 0; i < 3; i++) {
         ff_vc2enc_free_transforms(&s->transform_args[i].t);
         av_freep(&s->plane[i].coef_buf);
