@@ -756,6 +756,6 @@ AVCodec ff_cfhd_decoder = {
     .init           = cfhd_decode_init,
     .close          = cfhd_close_decoder,
     .decode         = cfhd_decode,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
