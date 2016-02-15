@@ -484,9 +484,6 @@ static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
     if (ctx->mode != CCMODE_POPON)
         ctx->screen_touched = 1;
 
-    /* reset prev command since character can repeat */
-    ctx->prev_cmd[0] = 0;
-    ctx->prev_cmd[1] = 0;
     if (lo)
        ff_dlog(ctx, "(%c,%c)\n", hi, lo);
     else
@@ -497,8 +494,15 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
 {
     if (hi == ctx->prev_cmd[0] && lo == ctx->prev_cmd[1]) {
         /* ignore redundant command */
-    } else if ( (hi == 0x10 && (lo >= 0x40 && lo <= 0x5f)) ||
-              ( (hi >= 0x11 && hi <= 0x17) && (lo >= 0x40 && lo <= 0x7f) ) ) {
+        return;
+    }
+
+    /* set prev command */
+    ctx->prev_cmd[0] = hi;
+    ctx->prev_cmd[1] = lo;
+
+    if ( (hi == 0x10 && (lo >= 0x40 && lo <= 0x5f)) ||
+       ( (hi >= 0x11 && hi <= 0x17) && (lo >= 0x40 && lo <= 0x7f) ) ) {
         handle_pac(ctx, hi, lo);
     } else if ( ( hi == 0x11 && lo >= 0x20 && lo <= 0x2f ) ||
                 ( hi == 0x17 && lo >= 0x2e && lo <= 0x2f) ) {
@@ -559,14 +563,11 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
     } else if (hi >= 0x20) {
         /* Standard characters (always in pairs) */
         handle_char(ctx, hi, lo, pts);
+        ctx->prev_cmd[0] = ctx->prev_cmd[1] = 0;
     } else {
         /* Ignoring all other non data code */
         ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
     }
-
-    /* set prev command */
-    ctx->prev_cmd[0] = hi;
-    ctx->prev_cmd[1] = lo;
 }
 
 static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avpkt)
