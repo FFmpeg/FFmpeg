@@ -60,9 +60,9 @@ typedef struct FFDrawContext {
 typedef struct FFDrawColor {
     uint8_t rgba[4];
     union {
-        uint32_t u32;
-        uint16_t u16;
-        uint8_t  u8[4];
+        uint32_t u32[4];
+        uint16_t u16[8];
+        uint8_t  u8[16];
     } comp[MAX_PLANES];
 } FFDrawColor;
 
