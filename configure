@@ -2656,10 +2656,11 @@ for opt do
         ;;
         --enable-?*|--disable-?*)
             eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
-            test $action = enable && action="request"
             if is_in $option $COMPONENT_LIST; then
+                test $action = enable && action="enable_deep_force"
                 eval $action \$$(toupper ${option%s})_LIST
             elif is_in $option $CMDLINE_SELECT; then
+                test $action = enable && action="request"
                 $action $option
             else
                 die_unknown $opt
