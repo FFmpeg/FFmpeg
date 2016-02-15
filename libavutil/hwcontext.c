@@ -32,6 +32,9 @@ static const HWContextType *hw_table[] = {
 #if CONFIG_CUDA
     &ff_hwcontext_type_cuda,
 #endif
+#if CONFIG_VAAPI
+    &ff_hwcontext_type_vaapi,
+#endif
 #if CONFIG_VDPAU
     &ff_hwcontext_type_vdpau,
 #endif
