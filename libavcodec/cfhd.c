@@ -156,6 +156,7 @@ static int alloc_buffers(AVCodecContext *avctx)
 
     if ((ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height)) < 0)
         return ret;
+    avctx->pix_fmt = s->coded_format;
 
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
 
@@ -213,6 +214,7 @@ static int alloc_buffers(AVCodecContext *avctx)
 
     s->a_height = s->coded_height;
     s->a_width  = s->coded_width;
+    s->a_format = s->coded_format;
 
     return 0;
 }
@@ -227,7 +229,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
     int ret = 0, i, j, plane, got_buffer = 0;
     int16_t *coeff_data;
 
-    avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+    s->coded_format = AV_PIX_FMT_YUV422P10;
     init_frame_defaults(s);
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
@@ -405,9 +407,9 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == 84) {
             av_log(avctx, AV_LOG_DEBUG, "Sample format? %i\n", data);
             if (data == 1)
-                avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+                s->coded_format = AV_PIX_FMT_YUV422P10;
             else if (data == 3)
-                avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+                s->coded_format = AV_PIX_FMT_GBRP12;
             else {
                 avpriv_report_missing_feature(avctx, "Sample format of %"PRIu16" is unsupported\n", data);
                 ret = AVERROR_PATCHWELCOME;
@@ -417,8 +419,10 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG,  "Unknown tag %i data %x\n", tag, data);
 
         /* Some kind of end of header tag */
-        if (tag == 4 && data == 0x1a4a && s->coded_width && s->coded_height && avctx->pix_fmt != AV_PIX_FMT_NONE) {
-            if (s->a_width != s->coded_width || s->a_height != s->coded_height) {
+        if (tag == 4 && data == 0x1a4a && s->coded_width && s->coded_height &&
+            s->coded_format != AV_PIX_FMT_NONE) {
+            if (s->a_width != s->coded_width || s->a_height != s->coded_height ||
+                s->a_format != s->coded_format) {
                 free_buffers(avctx);
                 if ((ret = alloc_buffers(avctx)) < 0) {
                     free_buffers(avctx);
@@ -431,6 +435,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
             s->coded_width = 0;
             s->coded_height = 0;
+            s->coded_format = AV_PIX_FMT_NONE;
             got_buffer = 1;
         }
         coeff_data = s->plane[s->channel_num].subband[s->subband_num_actual];
@@ -557,7 +562,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    if (!s->a_width || !s->a_height || s->coded_width || s->coded_height) {
+    if (!s->a_width || !s->a_height || s->a_format == AV_PIX_FMT_NONE ||
+        s->coded_width || s->coded_height || s->coded_format != AV_PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions\n");
         ret = AVERROR(EINVAL);
         goto end;
