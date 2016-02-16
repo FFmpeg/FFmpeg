@@ -334,8 +334,8 @@ end:
         CLOSE_READER(re, gb);
     }
 
-	if (i > MAX_INDEX)
-        i = AVERROR_INVALIDDATA;
+    if (i > MAX_INDEX)
+        return AVERROR_INVALIDDATA;
 
     block_last_index[index] = i;
     return 0;
