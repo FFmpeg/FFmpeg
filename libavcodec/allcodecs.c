@@ -610,6 +610,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
     REGISTER_ENCODER(LIBKVAZAAR,        libkvazaar);
     REGISTER_ENCODER(MPEG2_QSV,         mpeg2_qsv);
+    REGISTER_ENCODER(VTENC_H264,        vtenc_h264);
 
     /* parsers */
     REGISTER_PARSER(AAC,                aac);
