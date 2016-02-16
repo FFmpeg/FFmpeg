@@ -1132,7 +1132,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
      * should already be where want it to, but this allows e.g. local testing
      * without a HTTP server. */
     if (ret == 0 && seg->key_type == KEY_NONE && seg->url_offset) {
-        int seekret = avio_seek(pls->input, seg->url_offset, SEEK_SET);
+        int64_t seekret = avio_seek(pls->input, seg->url_offset, SEEK_SET);
         if (seekret < 0) {
             av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
             ret = seekret;
