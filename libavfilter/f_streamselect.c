@@ -267,7 +267,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (!strcmp(ctx->filter->name, "astreamselect"))
         s->is_audio = 1;
 
-    for (;;) {
+    for (; map;) {
         char *p;
 
         strtol(map, &p, 0);
