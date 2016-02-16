@@ -63,7 +63,7 @@ static int probe(AVProbeData *p)
         offset = AV_RL32(p->buf + 18 + i * 16);
         if (offset < 22)
             return FFMIN(i, AVPROBE_SCORE_MAX / 4);
-        if (offset + 8 > p->buf_size)
+        if (offset > p->buf_size - 8)
             continue;
         if (p->buf[offset] != 40 && AV_RB64(p->buf + offset) != PNGSIG)
             return FFMIN(i, AVPROBE_SCORE_MAX / 4);
