@@ -7526,12 +7526,6 @@ the @ref{vignette} filter):
 @example
 geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
 @end example
-
-@item
-Diagonal split screen to compare filter effect:
-@example
-ffmpeg -i input -filter_complex "[0:v]geq=lum=if(gt(X\,Y*(W/H))\,255),format=gray[alpha];[0:v][alpha]alphamerge,curves=preset=color_negative[filtered];[0:v][filtered]overlay" output
-@end example
 @end itemize
 
 @section gradfun
