@@ -2188,7 +2188,7 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 h264_parser_select="h264_decoder"
 hevc_parser_select="golomb"
 mpegvideo_parser_select="mpegvideo"
-mpeg4video_parser_select="error_resilience h263dsp mpeg_er mpegvideo qpeldsp"
+mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"
 vc1_parser_select="mpegvideo startcode vc1_decoder"
 
 # bitstream_filters
