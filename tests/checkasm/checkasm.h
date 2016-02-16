@@ -20,8 +20,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef CHECKASM_H
-#define CHECKASM_H
+#ifndef TESTS_CHECKASM_CHECKASM_H
+#define TESTS_CHECKASM_CHECKASM_H
 
 #include <stdint.h>
 #include "config.h"
@@ -167,4 +167,4 @@ void checkasm_checked_call(void *func, ...);
 #define bench_new(...) while(0)
 #endif
 
-#endif
+#endif /* TESTS_CHECKASM_CHECKASM_H */
