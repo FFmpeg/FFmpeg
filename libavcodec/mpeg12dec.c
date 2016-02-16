@@ -792,7 +792,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                                                   s->intra_matrix,
                                                   s->intra_scantable.permutated,
                                                   s->last_dc, *s->pblocks[i],
-                                                  i, s->qscale, s->block_last_index);
+                                                  i, s->qscale);
                 if (ret < 0) {
                     av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n",
                            s->mb_x, s->mb_y);

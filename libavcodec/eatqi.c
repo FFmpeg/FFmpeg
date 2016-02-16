@@ -51,7 +51,6 @@ typedef struct TqiContext {
     int last_dc[3];
 
     DECLARE_ALIGNED(16, int16_t, block)[6][64];
-    int block_last_index[12];
 } TqiContext;
 
 static av_cold int tqi_decode_init(AVCodecContext *avctx)
@@ -79,7 +78,7 @@ static int tqi_decode_mb(TqiContext *t, int16_t (*block)[64])
         int ret = ff_mpeg1_decode_block_intra(&t->gb,
                                               t->intra_matrix,
                                               t->intra_scantable.permutated,
-                                              t->last_dc, block[n], n, 1, t->block_last_index);
+                                              t->last_dc, block[n], n, 1);
         if (ret < 0)
             return -1;
     }

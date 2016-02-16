@@ -248,8 +248,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
 int ff_mpeg1_decode_block_intra(GetBitContext *gb,
                                 const uint16_t *quant_matrix,
                                 uint8_t *const scantable, int last_dc[3],
-                                int16_t *block, int index, int qscale,
-                                int block_last_index[12])
+                                int16_t *block, int index, int qscale)
 {
     int dc, diff, i = 0, component;
     RLTable *rl = &ff_rl_mpeg1;
@@ -335,8 +334,7 @@ end:
     }
 
     if (i > MAX_INDEX)
-        return AVERROR_INVALIDDATA;
+        i = AVERROR_INVALIDDATA;
 
-    block_last_index[index] = i;
-    return 0;
+    return i;
 }
