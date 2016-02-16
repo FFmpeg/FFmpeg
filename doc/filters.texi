@@ -2366,6 +2366,115 @@ Sets the difference coefficient (default: 2.5). 0.0 means mono sound
 Enable clipping. By default is enabled.
 @end table
 
+@section firequalizer
+Apply FIR Equalization using arbitrary frequency response.
+
+The filter accepts the following option:
+
+@table @option
+@item gain
+Set gain curve equation (in dB). The expression can contain variables:
+@table @option
+@item f
+the evaluated frequency
+@item sr
+sample rate
+@item ch
+channel number, set to 0 when multichannels evaluation is disabled
+@item chid
+channel id, see libavutil/channel_layout.h, set to the first channel id when
+multichannels evaluation is disabled
+@item chs
+number of channels
+@item chlayout
+channel_layout, see libavutil/channel_layout.h
+
+@end table
+and functions:
+@table @option
+@item gain_interpolate(f)
+interpolate gain on frequency f based on gain_entry
+@end table
+This option is also available as command. Default is @code{gain_interpolate(f)}.
+
+@item gain_entry
+Set gain entry for gain_interpolate function. The expression can
+contain functions:
+@table @option
+@item entry(f, g)
+store gain entry at frequency f with value g
+@end table
+This option is also available as command.
+
+@item delay
+Set filter delay in seconds. Higher value means more accurate.
+Default is @code{0.01}.
+
+@item accuracy
+Set filter accuracy in Hz. Lower value means more accurate.
+Default is @code{5}.
+
+@item wfunc
+Set window function. Acceptable values are:
+@table @option
+@item rectangular
+rectangular window, useful when gain curve is already smooth
+@item hann
+hann window (default)
+@item hamming
+hamming window
+@item blackman
+blackman window
+@item nuttall3
+3-terms continuous 1st derivative nuttall window
+@item mnuttall3
+minimum 3-terms discontinuous nuttall window
+@item nuttall
+4-terms continuous 1st derivative nuttall window
+@item bnuttall
+minimum 4-terms discontinuous nuttall (blackman-nuttall) window
+@item bharris
+blackman-harris window
+@end table
+
+@item fixed
+If enabled, use fixed number of audio samples. This improves speed when
+filtering with large delay. Default is disabled.
+
+@item multi
+Enable multichannels evaluation on gain. Default is disabled.
+@end table
+
+@subsection Examples
+@itemize
+@item
+lowpass at 1000 Hz:
+@example
+firequalizer=gain='if(lt(f,1000), 0, -INF)'
+@end example
+@item
+lowpass at 1000 Hz with gain_entry:
+@example
+firequalizer=gain_entry='entry(1000,0); entry(1001, -INF)'
+@end example
+@item
+custom equalization:
+@example
+firequalizer=gain_entry='entry(100,0); entry(400, -4); entry(1000, -6); entry(2000, 0)'
+@end example
+@item
+higher delay:
+@example
+firequalizer=delay=0.1:fixed=on
+@end example
+@item
+lowpass on left channel, highpass on right channel:
+@example
+firequalizer=gain='if(eq(chid,1), gain_interpolate(f), if(eq(chid,2), gain_interpolate(1e6+f), 0))'
+:gain_entry='entry(1000, 0); entry(1001,-INF); entry(1e6+1000,0)':multi=on
+@end example
+@end itemize
+
 @section flanger
 Apply a flanging effect to the audio.
 

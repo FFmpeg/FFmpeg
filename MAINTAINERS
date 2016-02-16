@@ -353,6 +353,7 @@ Filters:
   af_biquads.c                          Paul B Mahol
   af_chorus.c                           Paul B Mahol
   af_compand.c                          Paul B Mahol
+  af_firequalizer.c                     Muhammad Faiz
   af_ladspa.c                           Paul B Mahol
   af_pan.c                              Nicolas George
   af_sidechaincompress.c                Paul B Mahol
