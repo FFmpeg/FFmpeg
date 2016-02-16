@@ -554,6 +554,13 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                         memmove(dref->path, dref->path+volume_len, len);
                         dref->path[len] = 0;
                     }
+                    // trim string of any ending zeros
+                    for (j = len - 1; j >= 0; j--) {
+                        if (dref->path[j] == 0)
+                            len--;
+                        else
+                            break;
+                    }
                     for (j = 0; j < len; j++)
                         if (dref->path[j] == ':' || dref->path[j] == 0)
                             dref->path[j] = '/';
