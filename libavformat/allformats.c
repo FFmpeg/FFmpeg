@@ -121,6 +121,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (DTSHD,            dtshd);
     REGISTER_MUXDEMUX(DV,               dv);
     REGISTER_DEMUXER (DVBSUB,           dvbsub);
+    REGISTER_DEMUXER (DVBTXT,           dvbtxt);
     REGISTER_DEMUXER (DXA,              dxa);
     REGISTER_DEMUXER (EA,               ea);
     REGISTER_DEMUXER (EA_CDATA,         ea_cdata);
