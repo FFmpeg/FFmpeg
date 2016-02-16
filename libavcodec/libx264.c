@@ -457,11 +457,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         x4->params.analyse.i_me_range   = avctx->me_range;
 #if FF_API_PRIVATE_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
-    if (!x4->noise_reduction >= 0)
+    if (avctx->noise_reduction >= 0)
         x4->noise_reduction = avctx->noise_reduction;
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    if (!x4->noise_reduction >= 0)
+    if (x4->noise_reduction >= 0)
         x4->params.analyse.i_noise_reduction = x4->noise_reduction;
     if (avctx->me_subpel_quality >= 0)
         x4->params.analyse.i_subpel_refine   = avctx->me_subpel_quality;
