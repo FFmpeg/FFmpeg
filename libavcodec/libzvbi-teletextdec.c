@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "libavcodec/ass.h"
+#include "libavcodec/dvbtxt.h"
 #include "libavutil/opt.h"
 #include "libavutil/bprint.h"
 #include "libavutil/internal.h"
@@ -368,12 +369,6 @@ static void handler(vbi_event *ev, void *user_data)
     vbi_unref_page(&page);
 }
 
-static inline int data_identifier_is_teletext(int data_identifier) {
-    /* See EN 301 775 section 4.4.2. */
-    return (data_identifier >= 0x10 && data_identifier <= 0x1F ||
-            data_identifier >= 0x99 && data_identifier <= 0x9B);
-}
-
 static int slice_to_vbi_lines(TeletextContext *ctx, uint8_t* buf, int size)
 {
     int lines = 0;
@@ -382,7 +377,7 @@ static int slice_to_vbi_lines(TeletextContext *ctx, uint8_t* buf, int size)
         int data_unit_length = buf[1];
         if (data_unit_length + 2 > size)
             return AVERROR_INVALIDDATA;
-        if (data_unit_id == 0x02 || data_unit_id == 0x03) {
+        if (ff_data_unit_id_is_teletext(data_unit_id)) {
             if (data_unit_length != 0x2c)
                 return AVERROR_INVALIDDATA;
             else {
@@ -434,7 +429,7 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
 
         ctx->handler_ret = pkt->size;
 
-        if (data_identifier_is_teletext(*pkt->data)) {
+        if (ff_data_identifier_is_teletext(*pkt->data)) {
             if ((lines = slice_to_vbi_lines(ctx, pkt->data + 1, pkt->size - 1)) < 0)
                 return lines;
             ff_dlog(avctx, "ctx=%p buf_size=%d lines=%u pkt_pts=%7.3f\n",
