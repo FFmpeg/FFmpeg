@@ -45,9 +45,10 @@ av_cold void ff_v210enc_init_x86(V210EncContext *s)
     if (EXTERNAL_AVX(cpu_flags))
         s->pack_line_8 = ff_v210_planar_pack_8_avx;
 
-    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-        s->pack_line_8 = ff_v210_planar_pack_8_avx2;
-        s->pack_line_10 = ff_v210_planar_pack_10_avx2;
-        s->sample_factor = 2;
+    if (EXTERNAL_AVX2(cpu_flags)) {
+        s->sample_factor_8  = 2;
+        s->pack_line_8      = ff_v210_planar_pack_8_avx2;
+        s->sample_factor_10 = 2;
+        s->pack_line_10     = ff_v210_planar_pack_10_avx2;
     }
 }
