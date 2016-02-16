@@ -3294,43 +3294,37 @@ set >> $logfile
 test -n "$valgrind" && toolchain="valgrind-memcheck"
 
 case "$toolchain" in
-    clang-asan)
-        cc_default="clang"
+    *-asan)
+        cc_default="${toolchain%-asan}"
         add_cflags  -fsanitize=address
         add_ldflags -fsanitize=address
     ;;
-    clang-tsan)
-        cc_default="clang"
+    *-tsan)
+        cc_default="${toolchain%-tsan}"
         add_cflags  -fsanitize=thread -pie
         add_ldflags -fsanitize=thread -pie
+        case "$toolchain" in
+            gcc-tsan)
+                add_cflags  -fPIC
+                add_ldflags -fPIC
+                ;;
+        esac
     ;;
-    clang-usan)
-        cc_default="clang"
+    *-usan)
+        cc_default="${toolchain%-usan}"
         add_cflags  -fsanitize=undefined
         add_ldflags -fsanitize=undefined
     ;;
-    gcc-asan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=address
-        add_ldflags -fsanitize=address
-    ;;
-    gcc-tsan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=thread -pie -fPIC
-        add_ldflags -fsanitize=thread -pie -fPIC
-    ;;
-    gcc-usan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=undefined
-        add_ldflags -fsanitize=undefined
-    ;;
-    valgrind-massif)
-        target_exec_default=${valgrind:-"valgrind"}
-        target_exec_args="--tool=massif --alloc-fn=av_malloc --alloc-fn=av_mallocz --alloc-fn=av_calloc --alloc-fn=av_fast_padded_malloc --alloc-fn=av_fast_malloc --alloc-fn=av_realloc_f --alloc-fn=av_fast_realloc --alloc-fn=av_realloc"
-    ;;
-    valgrind-memcheck)
-        target_exec_default=${valgrind:-"valgrind"}
-        target_exec_args="--error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=$source_path/tests/fate-valgrind.supp"
+    valgrind-*)
+        target_exec_default="valgrind"
+        case "$toolchain" in
+            valgrind-massif)
+                target_exec_args="--tool=massif --alloc-fn=av_malloc --alloc-fn=av_mallocz --alloc-fn=av_calloc --alloc-fn=av_fast_padded_malloc --alloc-fn=av_fast_malloc --alloc-fn=av_realloc_f --alloc-fn=av_fast_realloc --alloc-fn=av_realloc"
+                ;;
+            valgrind-memcheck)
+                target_exec_args="--error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=$source_path/tests/fate-valgrind.supp"
+                ;;
+        esac
     ;;
     msvc)
         # Check whether the current MSVC version needs the C99 converter.
