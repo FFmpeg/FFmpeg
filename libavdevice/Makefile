@@ -6,6 +6,8 @@ HEADERS = avdevice.h                                                    \
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
 
+OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
+
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa_dec.o alsa.o
 OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa_enc.o alsa.o
@@ -27,8 +29,6 @@ OBJS-$(CONFIG_X11GRAB_XCB_INDEV)         += xcbgrab.o
 # external libraries
 OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
-
-OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio.h

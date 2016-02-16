@@ -82,11 +82,11 @@ ALLAVPROGS  = $(AVBASENAMES:%=%$(EXESUF))
 $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 
 OBJS-avconv                   += avconv_opt.o avconv_filter.o
-OBJS-avconv-$(HAVE_VDPAU_X11) += avconv_vdpau.o
-OBJS-avconv-$(HAVE_DXVA2_LIB) += avconv_dxva2.o
-OBJS-avconv-$(CONFIG_VDA)     += avconv_vda.o
 OBJS-avconv-$(CONFIG_LIBMFX)  += avconv_qsv.o
 OBJS-avconv-$(CONFIG_VAAPI)   += avconv_vaapi.o
+OBJS-avconv-$(CONFIG_VDA)     += avconv_vda.o
+OBJS-avconv-$(HAVE_DXVA2_LIB) += avconv_dxva2.o
+OBJS-avconv-$(HAVE_VDPAU_X11) += avconv_vdpau.o
 
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
@@ -105,7 +105,8 @@ FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.avpreset)
 
-SKIPHEADERS = cmdutils_common_opts.h compat/w32pthreads.h
+SKIPHEADERS = cmdutils_common_opts.h                                    \
+              compat/w32pthreads.h
 
 include $(SRC_PATH)/common.mak
 

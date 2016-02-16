@@ -15,6 +15,7 @@ HEADERS = adler32.h                                                     \
           common.h                                                      \
           cpu.h                                                         \
           crc.h                                                         \
+          dict.h                                                        \
           display.h                                                     \
           downmix_info.h                                                \
           error.h                                                       \
@@ -36,14 +37,13 @@ HEADERS = adler32.h                                                     \
           mathematics.h                                                 \
           md5.h                                                         \
           mem.h                                                         \
-          dict.h                                                        \
           opt.h                                                         \
           parseutils.h                                                  \
           pixdesc.h                                                     \
           pixfmt.h                                                      \
           random_seed.h                                                 \
-          replaygain.h                                                  \
           rational.h                                                    \
+          replaygain.h                                                  \
           samplefmt.h                                                   \
           sha.h                                                         \
           stereo3d.h                                                    \
@@ -72,6 +72,7 @@ OBJS = adler32.o                                                        \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
+       dict.o                                                           \
        display.o                                                        \
        downmix_info.o                                                   \
        error.o                                                          \
@@ -92,7 +93,6 @@ OBJS = adler32.o                                                        \
        mathematics.o                                                    \
        md5.o                                                            \
        mem.o                                                            \
-       dict.o                                                           \
        opt.o                                                            \
        parseutils.o                                                     \
        pixdesc.o                                                        \
@@ -107,8 +107,8 @@ OBJS = adler32.o                                                        \
        utils.o                                                          \
        xtea.o                                                           \
 
-OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
+OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
 OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
 

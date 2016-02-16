@@ -58,6 +58,7 @@ PARSERDEMDEC       = $(call ALLYES, $(1)_PARSER $(2)_DEMUXER $(3)_DECODER)
 
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
+
 include $(SRC_PATH)/tests/fate/avformat.mak
 include $(SRC_PATH)/tests/fate/seek.mak
 
@@ -78,10 +79,10 @@ include $(SRC_PATH)/tests/fate/demux.mak
 include $(SRC_PATH)/tests/fate/dfa.mak
 include $(SRC_PATH)/tests/fate/dpcm.mak
 include $(SRC_PATH)/tests/fate/ea.mak
+include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/filter-audio.mak
 include $(SRC_PATH)/tests/fate/filter-video.mak
 include $(SRC_PATH)/tests/fate/flac.mak
-include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/h264.mak
 include $(SRC_PATH)/tests/fate/hevc.mak
 include $(SRC_PATH)/tests/fate/image.mak

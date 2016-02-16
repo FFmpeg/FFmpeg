@@ -18,6 +18,9 @@ OBJS = allfilters.o                                                     \
        graphparser.o                                                    \
        video.o                                                          \
 
+OBJS-$(HAVE_THREADS)                         += pthread.o
+
+# audio filters
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AMIX_FILTER)                   += af_amix.o
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
@@ -35,10 +38,10 @@ OBJS-$(CONFIG_JOIN_FILTER)                   += af_join.o
 OBJS-$(CONFIG_RESAMPLE_FILTER)               += af_resample.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
 
+OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 
-OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
-
+# video filters
 OBJS-$(CONFIG_BLACKFRAME_FILTER)             += vf_blackframe.o
 OBJS-$(CONFIG_BOXBLUR_FILTER)                += vf_boxblur.o
 OBJS-$(CONFIG_COPY_FILTER)                   += vf_copy.o
@@ -57,8 +60,8 @@ OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += vf_hqdn3d.o
 OBJS-$(CONFIG_HWDOWNLOAD_FILTER)             += vf_hwdownload.o
-OBJS-$(CONFIG_HWUPLOAD_FILTER)               += vf_hwupload.o
 OBJS-$(CONFIG_HWUPLOAD_CUDA_FILTER)          += vf_hwupload_cuda.o
+OBJS-$(CONFIG_HWUPLOAD_FILTER)               += vf_hwupload.o
 OBJS-$(CONFIG_INTERLACE_FILTER)              += vf_interlace.o
 OBJS-$(CONFIG_LUT_FILTER)                    += vf_lut.o
 OBJS-$(CONFIG_LUTRGB_FILTER)                 += vf_lut.o
@@ -87,16 +90,14 @@ OBJS-$(CONFIG_UNSHARP_FILTER)                += vf_unsharp.o
 OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 
+OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
+
 OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_color.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += vsrc_movie.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 OBJS-$(CONFIG_RGBTESTSRC_FILTER)             += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
-
-OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
-
-OBJS-$(HAVE_THREADS)                         += pthread.o
 
 TOOLS     = graph2dot
 TESTPROGS = filtfmts
