@@ -66,9 +66,14 @@ static int tqi_decode_mb(MpegEncContext *s, int16_t (*block)[64])
 {
     int n;
     s->bdsp.clear_blocks(block[0]);
-    for (n=0; n<6; n++)
-        if (ff_mpeg1_decode_block_intra(s, block[n], n) < 0)
+    for (n = 0; n < 6; n++) {
+        int ret = ff_mpeg1_decode_block_intra(&s->gb,
+                                              s->intra_matrix,
+                                              s->intra_scantable.permutated,
+                                              s->last_dc, block[n], n, 1, s->block_last_index);
+        if (ret < 0)
             return -1;
+    }
 
     return 0;
 }
