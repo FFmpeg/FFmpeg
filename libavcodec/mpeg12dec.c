@@ -135,26 +135,27 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     } while (0)
 
 static inline int mpeg1_decode_block_intra(MpegEncContext *s,
-                                           int16_t *block, int n)
+                                           int16_t *block, int index)
 {
-    int level, dc, diff, i, j, run;
-    int component;
-    RLTable *rl                  = &ff_rl_mpeg1;
+    int dc, diff, i = 0, component;
+    RLTable *rl = &ff_rl_mpeg1;
     uint8_t *const scantable     = s->intra_scantable.permutated;
     const uint16_t *quant_matrix = s->intra_matrix;
     const int qscale             = s->qscale;
 
     /* DC coefficient */
-    component = (n <= 3 ? 0 : n - 4 + 1);
+    component = index <= 3 ? 0 : index - 4 + 1;
+
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
         return AVERROR_INVALIDDATA;
+
     dc  = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
+
     block[0] = dc * quant_matrix[0];
-    ff_tlog(s->avctx, "dc=%d diff=%d\n", dc, diff);
-    i = 0;
+
     {
         OPEN_READER(re, &s->gb);
         UPDATE_CACHE(re, &s->gb);
@@ -162,7 +163,9 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
             goto end;
 
         /* now quantify & encode AC coefficients */
-        for (;;) {
+        while (1) {
+            int level, run, j;
+
             GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0],
                        TEX_VLC_BITS, 2, 0);
 
@@ -170,6 +173,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
                 i += run;
                 if (i > MAX_INDEX)
                     break;
+
                 j = scantable[i];
                 level = (level * qscale * quant_matrix[j]) >> 4;
                 level = (level - 1) | 1;
@@ -183,6 +187,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
                 UPDATE_CACHE(re, &s->gb);
                 level = SHOW_SBITS(re, &s->gb, 8);
                 SKIP_BITS(re, &s->gb, 8);
+
                 if (level == -128) {
                     level = SHOW_UBITS(re, &s->gb, 8) - 256;
                     SKIP_BITS(re, &s->gb, 8);
@@ -190,9 +195,11 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
                     level = SHOW_UBITS(re, &s->gb, 8);
                     SKIP_BITS(re, &s->gb, 8);
                 }
+
                 i += run;
                 if (i > MAX_INDEX)
                     break;
+
                 j = scantable[i];
                 if (level < 0) {
                     level = -level;
@@ -218,13 +225,13 @@ end:
 
     check_scantable_index(s, i);
 
-    s->block_last_index[n] = i;
+    s->block_last_index[index] = i;
     return 0;
 }
 
-int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n)
+int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int index)
 {
-    return mpeg1_decode_block_intra(s, block, n);
+    return mpeg1_decode_block_intra(s, block, index);
 }
 
 static inline int mpeg1_decode_block_inter(MpegEncContext *s,
