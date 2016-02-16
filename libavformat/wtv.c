@@ -46,9 +46,7 @@
 #define LEN_PRETTY_GUID 34
 
 /*
- *
  * File system routines
- *
  */
 
 #define WTV_SECTOR_BITS    12
@@ -319,9 +317,7 @@ static void wtvfile_close(AVIOContext *pb)
 }
 
 /*
- *
  * Main demuxer
- *
  */
 
 typedef struct WtvStream {

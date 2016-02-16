@@ -154,7 +154,6 @@ static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
 #endif
 
 /**
- *
  * @return the number of bytes read or 0 if no end
  */
 static int av_unused get_cabac_terminate(CABACContext *c){

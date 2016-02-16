@@ -23,7 +23,6 @@
  * @file
  *
  * Unix socket url_protocol
- *
  */
 
 #include <sys/un.h>

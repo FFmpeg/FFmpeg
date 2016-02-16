@@ -151,7 +151,6 @@ void ff_mpeg4_init_direct_mv(MpegEncContext *s);
 int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
 
 /**
- *
  * @return the mb_type
  */
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);

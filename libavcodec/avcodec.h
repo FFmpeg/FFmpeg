@@ -74,7 +74,6 @@
  * @{
  * @}
  * @}
- *
  */
 
 /**
@@ -1946,7 +1945,6 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     *
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -1988,7 +1986,6 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     *
      * Note: Value depends upon the compare function used for fullpel ME.
      * - encoding: Set by user.
      * - decoding: unused
@@ -2870,21 +2867,18 @@ typedef struct AVCodecContext {
 #define FF_LEVEL_UNKNOWN -99
 
     /**
-     *
      * - encoding: unused
      * - decoding: Set by user.
      */
     enum AVDiscard skip_loop_filter;
 
     /**
-     *
      * - encoding: unused
      * - decoding: Set by user.
      */
     enum AVDiscard skip_idct;
 
     /**
-     *
      * - encoding: unused
      * - decoding: Set by user.
      */
@@ -3716,7 +3710,6 @@ void av_packet_move_ref(AVPacket *dst, AVPacket *src);
  * @param src Source packet
  *
  * @return 0 on success AVERROR on failure.
- *
  */
 int av_packet_copy_props(AVPacket *dst, const AVPacket *src);
 
@@ -4567,7 +4560,6 @@ AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f);
  *
  * Same behaviour av_fast_malloc but the buffer has additional
  * AV_INPUT_PADDING_SIZE at the end which will always memset to 0.
- *
  */
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size);
 

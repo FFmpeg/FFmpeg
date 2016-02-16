@@ -1795,7 +1795,6 @@ static av_always_inline void fill_filter_caches_inter(const H264Context *h,
 }
 
 /**
- *
  * @return non zero if the loop filter can be skipped
  */
 static int fill_filter_caches(const H264Context *h, H264SliceContext *sl, int mb_type)

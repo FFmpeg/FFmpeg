@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -55,7 +54,6 @@
    }
    av_dict_free(&d);
  @endcode
- *
  */
 
 #define AV_DICT_MATCH_CASE      1

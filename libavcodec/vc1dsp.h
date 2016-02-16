@@ -22,7 +22,6 @@
 /**
  * @file
  * VC-1 and WMV3 decoder
- *
  */
 
 #ifndef AVCODEC_VC1DSP_H

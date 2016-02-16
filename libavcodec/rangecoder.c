@@ -28,7 +28,6 @@
  *     G. N. N. Martin                  Presented in March 1979 to the Video &
  *                                      Data Recording Conference,
  *     IBM UK Scientific Center         held in Southampton July 24-27 1979."
- *
  */
 
 #include <string.h>

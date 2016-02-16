@@ -204,7 +204,6 @@ void ff_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
 void ff_formats_unref(AVFilterFormats **ref);
 
 /**
- *
  *         Before                                 After
  *   ________                         ________
  *  |formats |<---------.            |formats |<---------.
