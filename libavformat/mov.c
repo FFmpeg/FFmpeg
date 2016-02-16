@@ -3130,7 +3130,6 @@ static int mov_read_ilst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return ret;
 }
 
-<<<<<<< HEAD
 static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     uint32_t count;
@@ -3173,10 +3172,7 @@ static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int size)
-=======
-static int mov_read_replaygain(MOVContext *c, AVIOContext *pb, int64_t size)
->>>>>>> 5eb562831b3a9bea8026c413ef1338e06450d005
+static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
 {
     int64_t end = avio_tell(pb) + size;
     uint8_t *key = NULL, *val = NULL;
