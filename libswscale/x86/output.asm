@@ -54,8 +54,8 @@ SECTION .text
 ; int32_t if $output_size is 16. $filter is 12-bits. $filterSize is a multiple
 ; of 2. $offset is either 0 or 3. $dither holds 8 values.
 ;-----------------------------------------------------------------------------
-%macro yuv2planeX_mainloop 1
-.pixelloop:
+%macro yuv2planeX_mainloop 2
+.pixelloop_%2:
 %assign %%i 0
     ; the rep here is for the 8bit output mmx case, where dither covers
     ; 8 pixels but we can only handle 2 pixels per register, and thus 4
@@ -82,7 +82,7 @@ SECTION .text
     mova            m2,  m1
 %endif ; %1 == 8/9/10/16
     movsx     cntr_reg,  fltsizem
-.filterloop_ %+ %%i:
+.filterloop_%2_ %+ %%i:
     ; input pixels
     mov             r6, [srcq+gprsize*cntr_reg-2*gprsize]
 %if %1 == 16
@@ -129,7 +129,7 @@ SECTION .text
 %endif ; %1 == 8/9/10/16
 
     sub       cntr_reg,  2
-    jg .filterloop_ %+ %%i
+    jg .filterloop_%2_ %+ %%i
 
 %if %1 == 16
     psrad           m2,  31 - %1
@@ -156,7 +156,7 @@ SECTION .text
 %endif ; mmxext/sse2/sse4/avx
     pminsw          m2, [yuv2yuvX_%1_upper]
 %endif ; %1 == 9/10/16
-    mova   [dstq+r5*2],  m2
+    mov%2   [dstq+r5*2],  m2
 %endif ; %1 == 8/9/10/16
 
     add             r5,  mmsize/2
@@ -164,7 +164,7 @@ SECTION .text
 
 %assign %%i %%i+2
 %endrep
-    jg .pixelloop
+    jg .pixelloop_%2
 %endmacro
 
 %macro yuv2planeX_fn 3
@@ -235,7 +235,16 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 
     xor             r5,  r5
 
-yuv2planeX_mainloop %1
+%if mmsize == 8 || %1 == 8
+    yuv2planeX_mainloop %1, a
+%else ; mmsize == 16
+    test          dstq, 15
+    jnz .unaligned
+    yuv2planeX_mainloop %1, a
+    REP_RET
+.unaligned:
+    yuv2planeX_mainloop %1, u
+%endif ; mmsize == 8/16
 
 %if %1 == 8
 %if ARCH_X86_32
