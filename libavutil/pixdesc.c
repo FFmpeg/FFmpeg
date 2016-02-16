@@ -2061,7 +2061,6 @@ static const char *chroma_location_names[AVCHROMA_LOC_NB] = {
     "top", "bottomleft", "bottom",
 };
 
-FF_DISABLE_DEPRECATION_WARNINGS
 static enum AVPixelFormat get_pix_fmt_internal(const char *name)
 {
     enum AVPixelFormat pix_fmt;
@@ -2249,7 +2248,6 @@ void ff_check_pixfmt_descriptors(void){
         }
     }
 }
-FF_ENABLE_DEPRECATION_WARNINGS
 
 
 enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
