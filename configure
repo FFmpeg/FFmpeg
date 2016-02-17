@@ -3235,7 +3235,7 @@ for opt do
         ;;
         --disable-everything)
             map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
-            enable_deep_force $EXAMPLE_LIST $(filter_out avresample $LIBRARY_LIST) $PROGRAM_LIST
+            enable_deep_force $(filter_out avresample $LIBRARY_LIST) $PROGRAM_LIST
         ;;
         --disable-all)
             map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
@@ -3305,7 +3305,7 @@ disabled logging && logfile=/dev/null
 
 # Enable the default components if not disabled explicitly
 
-enable_weak $EXAMPLE_LIST $(filter_out avresample $LIBRARY_LIST) $PROGRAM_LIST
+enable_weak $(filter_out avresample $LIBRARY_LIST) $PROGRAM_LIST
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
