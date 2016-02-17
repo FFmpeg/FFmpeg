@@ -582,6 +582,49 @@ static int movie_request_frame(AVFilterLink *outlink)
     }
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    MovieContext *movie = ctx->priv;
+    int ret = AVERROR(ENOSYS);
+
+    if (!strcmp(cmd, "seek")) {
+        int idx, flags, i;
+        int64_t ts;
+        char tail[2];
+
+        if (sscanf(args, "%i|%"SCNi64"|%i %1s", &idx, &ts, &flags, tail) != 3)
+            return AVERROR(EINVAL);
+
+        ret = av_seek_frame(movie->format_ctx, idx, ts, flags);
+        if (ret < 0)
+            return ret;
+
+        for (i = 0; i < ctx->nb_outputs; i++) {
+            avcodec_flush_buffers(movie->st[i].codec_ctx);
+            movie->st[i].done = 0;
+        }
+        return ret;
+    } else if (!strcmp(cmd, "get_duration")) {
+        int print_len;
+        char tail[2];
+
+        if (!res || res_len <= 0)
+            return AVERROR(EINVAL);
+
+        if (args && sscanf(args, "%1s", tail) == 1)
+            return AVERROR(EINVAL);
+
+        print_len = snprintf(res, res_len, "%"PRId64, movie->format_ctx->duration);
+        if (print_len < 0 || print_len >= res_len)
+            return AVERROR(EINVAL);
+
+        return 0;
+    }
+
+    return ret;
+}
+
 #if CONFIG_MOVIE_FILTER
 
 AVFILTER_DEFINE_CLASS(movie);
@@ -598,6 +641,7 @@ AVFilter ff_avsrc_movie = {
     .inputs    = NULL,
     .outputs   = NULL,
     .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .process_command = process_command
 };
 
 #endif  /* CONFIG_MOVIE_FILTER */
@@ -619,6 +663,7 @@ AVFilter ff_avsrc_amovie = {
     .outputs    = NULL,
     .priv_class = &amovie_class,
     .flags      = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .process_command = process_command,
 };
 
 #endif /* CONFIG_AMOVIE_FILTER */
