@@ -560,4 +560,12 @@ void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
  */
 int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds);
 
+/**
+ * Reshuffles the lines to use the user specified stride.
+ *
+ * @param ppkt input and output packet
+ * @return negative error code or 0 or 1, 1 indicates that ppkt needs to be freed
+ */
+int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *enc, int expected_stride);
+
 #endif /* AVFORMAT_INTERNAL_H */
