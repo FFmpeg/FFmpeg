@@ -167,7 +167,7 @@ AVBufferRef *av_hwframe_ctx_alloc(AVBufferRef *device_ref_in)
     AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)device_ref_in->data;
     const HWContextType  *hw_type = device_ctx->internal->hw_type;
     AVHWFramesContext *ctx;
-    AVBufferRef *buf, *device_ref = NULL;;
+    AVBufferRef *buf, *device_ref = NULL;
 
     ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
