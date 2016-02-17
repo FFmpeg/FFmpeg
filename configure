@@ -3047,10 +3047,7 @@ cpu="generic"
 intrinsics="none"
 
 # configurable options
-enable $PROGRAM_LIST
 enable $DOCUMENT_LIST
-enable $EXAMPLE_LIST
-enable $(filter_out avresample $LIBRARY_LIST)
 enable stripping
 
 enable asm
@@ -3238,6 +3235,7 @@ for opt do
         ;;
         --disable-everything)
             map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+            enable_deep_force $EXAMPLE_LIST $(filter_out avresample $LIBRARY_LIST) $PROGRAM_LIST
         ;;
         --disable-all)
             map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
@@ -3264,10 +3262,11 @@ for opt do
         ;;
         --enable-?*|--disable-?*)
             eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
-            test $action = enable && action="request"
             if is_in $option $COMPONENT_LIST; then
+                test $action = enable && action="enable_deep_force"
                 eval $action \$$(toupper ${option%s})_LIST
             elif is_in $option $CMDLINE_SELECT; then
+                test $action = enable && action="request"
                 $action $option
             else
                 die_unknown $opt
@@ -3303,6 +3302,10 @@ for e in $env; do
 done
 
 disabled logging && logfile=/dev/null
+
+# Enable the default components if not disabled explicitly
+
+enable_weak $EXAMPLE_LIST $(filter_out avresample $LIBRARY_LIST) $PROGRAM_LIST
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
