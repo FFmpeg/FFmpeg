@@ -579,8 +579,15 @@ enable(){
     set_all yes $*
 }
 
+check_requested() {
+    for var; do
+        eval test "x\$${var#!}_requested" = "xyes" &&  die "${var#*_} ${var/_*} cannot be enabled"
+    done
+}
+
 disable(){
     set_all no $*
+    check_requested $*
 }
 
 enable_weak(){
@@ -629,6 +636,28 @@ enable_deep_weak(){
         popvar var
         enable_weak $var
     done
+}
+
+do_enable_deep_force(){
+    for var; do
+        enabled $var && continue
+        eval sel="\$${var}_select\ \$${var}_suggest\ \$${var}_select_any"
+        pushvar var
+        enable_deep_force $sel
+        popvar var
+    done
+}
+
+enable_deep_force(){
+    do_enable_deep_force $*
+    enable $*
+}
+
+request(){
+    for var; do
+        enable ${var}_requested
+    done
+    enable_deep_force $*
 }
 
 enabled(){
@@ -690,7 +719,7 @@ do_check_deps(){
         append allopts $cfg
 
         eval dep_all="\$${cfg}_deps"
-        eval dep_any="\$${cfg}_deps_any"
+        eval dep_any="\$${cfg}_deps_any\ \$${cfg}_select_any"
         eval dep_sel="\$${cfg}_select"
         eval dep_sgs="\$${cfg}_suggest"
         eval dep_ifa="\$${cfg}_if"
@@ -2827,7 +2856,7 @@ tls_schannel_protocol_deps="schannel"
 tls_schannel_protocol_select="tcp_protocol"
 tls_securetransport_protocol_deps="securetransport"
 tls_securetransport_protocol_select="tcp_protocol"
-tls_protocol_deps_any="tls_schannel_protocol tls_securetransport_protocol tls_gnutls_protocol tls_openssl_protocol"
+tls_protocol_select_any="tls_schannel_protocol tls_securetransport_protocol tls_gnutls_protocol tls_openssl_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
 unix_protocol_deps="sys_un_h"
@@ -3138,12 +3167,6 @@ ALL_COMPONENTS="
     $PROTOCOL_LIST
 "
 
-for n in $COMPONENT_LIST; do
-    v=$(toupper ${n%s})_LIST
-    eval enable \$$v
-    eval ${n}_if_any="\$$v"
-done
-
 enable $ARCH_EXT_LIST
 
 die_unknown(){
@@ -3210,10 +3233,10 @@ for opt do
             disable $PROGRAM_LIST
         ;;
         --disable-everything)
-            map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+            map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
         ;;
         --disable-all)
-            map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+            map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
             disable $LIBRARY_LIST $PROGRAM_LIST doc
             enable avutil
         ;;
@@ -3230,6 +3253,7 @@ for opt do
             is_in "${thing}s" $COMPONENT_LIST || die_unknown "$opt"
             eval list=\$$(toupper $thing)_LIST
             name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
+            test $action = enable && action="request"
             list=$(filter "$name" $list)
             [ "$list" = "" ] && warn "Option $opt did not match anything"
             $action $list
@@ -3237,7 +3261,6 @@ for opt do
         --enable-?*|--disable-?*)
             eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
             if is_in $option $COMPONENT_LIST; then
-                test $action = disable && action=unset
                 eval $action \$$(toupper ${option%s})_LIST
             elif is_in $option $CMDLINE_SELECT; then
                 $action $option
@@ -3280,13 +3303,32 @@ disabled logging && logfile=/dev/null
 # is disabled, see AVCODEC_LIST and following _LIST variables.
 
 disable_components(){
-    disabled ${1} && disable $(
+    disabled ${1} && disable_weak $(
         eval components="\$$(toupper ${1})_COMPONENTS"
         map 'eval echo \${$(toupper ${v%s})_LIST}' $components
     )
 }
 
 map 'disable_components $v' $LIBRARY_LIST
+
+echo "# $0 $FFMPEG_CONFIGURATION" > $logfile
+
+# Mark components that had not been enabled/disabled explicitly
+# as enabled
+
+for n in $COMPONENT_LIST; do
+    v=$(toupper ${n%s})_LIST
+    eval enable_weak \$$v
+    eval ${n}_if_any="\$$v"
+done
+
+# Make so that disabled libraries are enabled if a component
+# of them is requested
+
+for n in $LIBRARY_LIST; do
+    v=$(toupper ${n})_COMPONENTS
+    eval ${n}_if_any="\$$v"
+done
 
 echo "# $0 $FFMPEG_CONFIGURATION" > $logfile
 set >> $logfile
