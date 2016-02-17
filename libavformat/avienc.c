@@ -659,6 +659,20 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret = write_skip_frames(s, stream_index, pkt->dts)) < 0)
         return ret;
 
+    if (enc->codec_id == AV_CODEC_ID_RAWVIDEO && enc->codec_tag == 0) {
+        int64_t bpc = enc->bits_per_coded_sample != 15 ? enc->bits_per_coded_sample : 16;
+        int expected_stride = ((enc->width * bpc + 31) >> 5)*4;
+
+        ret = ff_reshuffle_raw_rgb(s, &pkt, enc, expected_stride);
+        if (ret < 0)
+            return ret;
+        if (ret) {
+            ret = avi_write_packet_internal(s, pkt);
+            av_packet_free(&pkt);
+            return ret;
+        }
+    }
+
     return avi_write_packet_internal(s, pkt);
 }
 
