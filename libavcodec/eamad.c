@@ -29,16 +29,17 @@
  */
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "blockdsp.h"
 #include "bytestream.h"
 #include "bswapdsp.h"
-#include "get_bits.h"
 #include "aandcttab.h"
 #include "eaidct.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpeg12data.h"
 #include "mpeg12vlc.h"
+#include "vlc.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD I-frame */
@@ -51,7 +52,7 @@ typedef struct MadContext {
     BswapDSPContext bbdsp;
     IDCTDSPContext idsp;
     AVFrame *last_frame;
-    GetBitContext gb;
+    BitstreamContext bc;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
     DECLARE_ALIGNED(16, int16_t, block)[64];
@@ -129,17 +130,15 @@ static inline void decode_block_intra(MadContext *s, int16_t * block)
     const uint8_t *scantable = s->scantable.permutated;
     int16_t *quant_matrix = s->quant_matrix;
 
-    block[0] = (128 + get_sbits(&s->gb, 8)) * quant_matrix[0];
+    block[0] = (128 + bitstream_read_signed(&s->bc, 8)) * quant_matrix[0];
 
     /* The RL decoder is derived from mpeg1_decode_block_intra;
        Escaped level and run values a decoded differently */
     i = 0;
     {
-        OPEN_READER(re, &s->gb);
         /* now quantify & encode AC coefficients */
         for (;;) {
-            UPDATE_CACHE(re, &s->gb);
-            GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
+            BITSTREAM_RL_VLC(level, run, &s->bc, rl->rl_vlc[0], TEX_VLC_BITS, 2);
 
             if (level == 127) {
                 break;
@@ -153,15 +152,12 @@ static inline void decode_block_intra(MadContext *s, int16_t * block)
                 j = scantable[i];
                 level = (level*quant_matrix[j]) >> 4;
                 level = (level-1)|1;
-                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
-                LAST_SKIP_BITS(re, &s->gb, 1);
+                level = bitstream_apply_sign(&s->bc, level);
             } else {
                 /* escape */
-                UPDATE_CACHE(re, &s->gb);
-                level = SHOW_SBITS(re, &s->gb, 10); SKIP_BITS(re, &s->gb, 10);
+                level = bitstream_read_signed(&s->bc, 10);
 
-                UPDATE_CACHE(re, &s->gb);
-                run = SHOW_UBITS(re, &s->gb, 6)+1; LAST_SKIP_BITS(re, &s->gb, 6);
+                run = bitstream_read(&s->bc, 6) + 1;
 
                 i += run;
                 if (i > 63) {
@@ -183,17 +179,17 @@ static inline void decode_block_intra(MadContext *s, int16_t * block)
 
             block[j] = level;
         }
-        CLOSE_READER(re, &s->gb);
     }
 }
 
-static int decode_motion(GetBitContext *gb)
+static int decode_motion(BitstreamContext *bc)
 {
     int value = 0;
-    if (get_bits1(gb)) {
-        if (get_bits1(gb))
+
+    if (bitstream_read_bit(bc)) {
+        if (bitstream_read_bit(bc))
             value = -17;
-        value += get_bits(gb, 4) + 1;
+        value += bitstream_read(bc, 4) + 1;
     }
     return value;
 }
@@ -205,11 +201,11 @@ static void decode_mb(MadContext *s, AVFrame *frame, int inter)
     int j;
 
     if (inter) {
-        int v = decode210(&s->gb);
+        int v = bitstream_decode210(&s->bc);
         if (v < 2) {
-            mv_map = v ? get_bits(&s->gb, 6) : 63;
-            mv_x = decode_motion(&s->gb);
-            mv_y = decode_motion(&s->gb);
+            mv_map = v ? bitstream_read(&s->bc, 6) : 63;
+            mv_x = decode_motion(&s->bc);
+            mv_y = decode_motion(&s->bc);
         } else {
             mv_map = 0;
         }
@@ -217,7 +213,7 @@ static void decode_mb(MadContext *s, AVFrame *frame, int inter)
 
     for (j=0; j<6; j++) {
         if (mv_map & (1<<j)) {  // mv_x and mv_y are guarded by mv_map
-            int add = 2*decode_motion(&s->gb);
+            int add = 2 * decode_motion(&s->bc);
             comp_block(s, frame, s->mb_x, s->mb_y, j, mv_x, mv_y, add);
         } else {
             s->bdsp.clear_block(s->block);
@@ -299,7 +295,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
     s->bbdsp.bswap16_buf(s->bitstream_buf, (const uint16_t *)(buf + bytestream2_tell(&gb)),
                          bytestream2_get_bytes_left(&gb) / 2);
-    init_get_bits(&s->gb, s->bitstream_buf, 8*(bytestream2_get_bytes_left(&gb)));
+    bitstream_init8(&s->bc, s->bitstream_buf, bytestream2_get_bytes_left(&gb));
 
     for (s->mb_y=0; s->mb_y < (avctx->height+15)/16; s->mb_y++)
         for (s->mb_x=0; s->mb_x < (avctx->width +15)/16; s->mb_x++)
