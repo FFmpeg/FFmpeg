@@ -37,6 +37,7 @@
 #include "mpeg12.h"
 
 typedef struct TqiContext {
+    AVCodecContext *avctx;
     GetBitContext gb;
     BlockDSPContext bdsp;
     BswapDSPContext bsdsp;
@@ -79,8 +80,11 @@ static int tqi_decode_mb(TqiContext *t, int16_t (*block)[64])
                                               t->intra_matrix,
                                               t->intra_scantable.permutated,
                                               t->last_dc, block[n], n, 1);
-        if (ret < 0)
+        if (ret < 0) {
+            av_log(t->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n",
+                   t->mb_x, t->mb_y);
             return -1;
+        }
     }
 
     return 0;
@@ -126,6 +130,8 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     TqiContext *t = avctx->priv_data;
     AVFrame *frame = data;
     int ret, w, h;
+
+    t->avctx = avctx;
 
     w = AV_RL16(&buf[0]);
     h = AV_RL16(&buf[2]);
