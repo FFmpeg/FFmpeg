@@ -3198,13 +3198,6 @@ static int transcode_init(void)
         }
     }
 
-    /* open each encoder */
-    for (i = 0; i < nb_output_streams; i++) {
-        ret = init_output_stream(output_streams[i], error, sizeof(error));
-        if (ret < 0)
-            goto dump_format;
-    }
-
     /* init input streams */
     for (i = 0; i < nb_input_streams; i++)
         if ((ret = init_input_stream(i, error, sizeof(error))) < 0) {
@@ -3214,6 +3207,13 @@ static int transcode_init(void)
             }
             goto dump_format;
         }
+
+    /* open each encoder */
+    for (i = 0; i < nb_output_streams; i++) {
+        ret = init_output_stream(output_streams[i], error, sizeof(error));
+        if (ret < 0)
+            goto dump_format;
+    }
 
     /* discard unused programs */
     for (i = 0; i < nb_input_files; i++) {
