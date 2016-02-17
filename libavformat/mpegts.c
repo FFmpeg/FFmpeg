@@ -1112,6 +1112,8 @@ static int parse_MP4ODescrTag(MP4DescrParseContext *d, int64_t off, int len)
 static int parse_MP4ESDescrTag(MP4DescrParseContext *d, int64_t off, int len)
 {
     int es_id = 0;
+    int ret   = 0;
+
     if (d->descr_count >= d->max_descr_count)
         return AVERROR_INVALIDDATA;
     ff_mp4_parse_es_descr(&d->pb, &es_id);
@@ -1119,12 +1121,13 @@ static int parse_MP4ESDescrTag(MP4DescrParseContext *d, int64_t off, int len)
 
     d->active_descr->es_id = es_id;
     update_offsets(&d->pb, &off, &len);
-    parse_mp4_descr(d, off, len, MP4DecConfigDescrTag);
+    if ((ret = parse_mp4_descr(d, off, len, MP4DecConfigDescrTag)) < 0)
+        return ret;
     update_offsets(&d->pb, &off, &len);
     if (len > 0)
-        parse_mp4_descr(d, off, len, MP4SLDescrTag);
+        ret = parse_mp4_descr(d, off, len, MP4SLDescrTag);
     d->active_descr = NULL;
-    return 0;
+    return ret;
 }
 
 static int parse_MP4DecConfigDescrTag(MP4DescrParseContext *d, int64_t off,
@@ -1179,6 +1182,8 @@ static int parse_mp4_descr(MP4DescrParseContext *d, int64_t off, int len,
 {
     int tag;
     int len1 = ff_mp4_read_descr(d->s, &d->pb, &tag);
+    int ret = 0;
+
     update_offsets(&d->pb, &off, &len);
     if (len < 0 || len1 > len || len1 <= 0) {
         av_log(d->s, AV_LOG_ERROR,
@@ -1189,30 +1194,32 @@ static int parse_mp4_descr(MP4DescrParseContext *d, int64_t off, int len,
 
     if (d->level++ >= MAX_LEVEL) {
         av_log(d->s, AV_LOG_ERROR, "Maximum MP4 descriptor level exceeded\n");
+        ret = AVERROR_INVALIDDATA;
         goto done;
     }
 
     if (target_tag && tag != target_tag) {
         av_log(d->s, AV_LOG_ERROR, "Found tag %x expected %x\n", tag,
                target_tag);
+        ret = AVERROR_INVALIDDATA;
         goto done;
     }
 
     switch (tag) {
     case MP4IODescrTag:
-        parse_MP4IODescrTag(d, off, len1);
+        ret = parse_MP4IODescrTag(d, off, len1);
         break;
     case MP4ODescrTag:
-        parse_MP4ODescrTag(d, off, len1);
+        ret = parse_MP4ODescrTag(d, off, len1);
         break;
     case MP4ESDescrTag:
-        parse_MP4ESDescrTag(d, off, len1);
+        ret = parse_MP4ESDescrTag(d, off, len1);
         break;
     case MP4DecConfigDescrTag:
-        parse_MP4DecConfigDescrTag(d, off, len1);
+        ret = parse_MP4DecConfigDescrTag(d, off, len1);
         break;
     case MP4SLDescrTag:
-        parse_MP4SLDescrTag(d, off, len1);
+        ret = parse_MP4SLDescrTag(d, off, len1);
         break;
     }
 
@@ -1220,7 +1227,7 @@ static int parse_mp4_descr(MP4DescrParseContext *d, int64_t off, int len,
 done:
     d->level--;
     avio_seek(&d->pb, off + len1, SEEK_SET);
-    return 0;
+    return ret;
 }
 
 static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
