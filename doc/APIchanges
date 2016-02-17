@@ -17,6 +17,8 @@ API changes, most recent first:
 
 2016-xx-xx - lavu 55.18.0
   xxxxxxx buffer.h - Add av_buffer_pool_init2().
+  xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
+                        for handling hwaccel frames.
 
 -------- 8< --------- FFmpeg 3.0 was cut here -------- 8< ---------
 
