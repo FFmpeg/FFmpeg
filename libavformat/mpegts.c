@@ -1171,6 +1171,11 @@ static int parse_MP4SLDescrTag(MP4DescrParseContext *d, int64_t off, int len)
         descr->sl.degr_prior_len     = lengths >> 12;
         descr->sl.au_seq_num_len     = (lengths >> 7) & 0x1f;
         descr->sl.packet_seq_num_len = (lengths >> 2) & 0x1f;
+        if (descr->sl.timestamp_len >= 64 ||
+            descr->sl.ocr_len >= 64 ||
+            descr->sl.au_len >= 32) {
+            return AVERROR_INVALIDDATA;
+        }
     } else {
         avpriv_report_missing_feature(d->s, "Predefined SLConfigDescriptor");
     }
