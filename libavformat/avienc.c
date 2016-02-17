@@ -79,7 +79,7 @@ typedef struct AVIStream {
     AVIIndex indexes;
 } AVIStream;
 
-static int avi_write_packet(AVFormatContext *s, AVPacket *pkt);
+static int avi_write_packet_internal(AVFormatContext *s, AVPacket *pkt);
 
 static inline AVIIentry *avi_get_ientry(const AVIIndex *idx, int ent_id)
 {
@@ -637,7 +637,7 @@ static int write_skip_frames(AVFormatContext *s, int stream_index, int64_t dts)
         empty_packet.size         = 0;
         empty_packet.data         = NULL;
         empty_packet.stream_index = stream_index;
-        avi_write_packet(s, &empty_packet);
+        avi_write_packet_internal(s, &empty_packet);
         ff_dlog(s, "dup dts:%s packet_count:%d\n", av_ts2str(dts), avist->packet_count);
     }
 
@@ -646,13 +646,7 @@ static int write_skip_frames(AVFormatContext *s, int stream_index, int64_t dts)
 
 static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    unsigned char tag[5];
-    unsigned int flags = 0;
     const int stream_index = pkt->stream_index;
-    int size               = pkt->size;
-    AVIContext *avi     = s->priv_data;
-    AVIOContext *pb     = s->pb;
-    AVIStream *avist    = s->streams[stream_index]->priv_data;
     AVCodecContext *enc = s->streams[stream_index]->codec;
     int ret;
 
@@ -664,6 +658,21 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if ((ret = write_skip_frames(s, stream_index, pkt->dts)) < 0)
         return ret;
+
+    return avi_write_packet_internal(s, pkt);
+}
+
+static int avi_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
+{
+    unsigned char tag[5];
+    unsigned int flags = 0;
+    const int stream_index = pkt->stream_index;
+    int size               = pkt->size;
+    AVIContext *avi     = s->priv_data;
+    AVIOContext *pb     = s->pb;
+    AVIStream *avist    = s->streams[stream_index]->priv_data;
+    AVCodecContext *enc = s->streams[stream_index]->codec;
+    int ret;
 
     if (pkt->dts != AV_NOPTS_VALUE)
         avist->last_dts = pkt->dts + pkt->duration;
