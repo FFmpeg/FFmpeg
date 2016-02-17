@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavu 55.18.0
+  xxxxxxx buffer.h - Add av_buffer_pool_init2().
+
 -------- 8< --------- FFmpeg 3.0 was cut here -------- 8< ---------
 
 2016-02-10 - bc9a596 / 9f61abc - lavf 57.25.100 / 57.3.0 - avformat.h

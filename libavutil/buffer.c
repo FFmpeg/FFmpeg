@@ -214,6 +214,26 @@ int av_buffer_realloc(AVBufferRef **pbuf, int size)
     return 0;
 }
 
+AVBufferPool *av_buffer_pool_init2(int size, void *opaque,
+                                   AVBufferRef* (*alloc)(void *opaque, int size),
+                                   void (*pool_free)(void *opaque))
+{
+    AVBufferPool *pool = av_mallocz(sizeof(*pool));
+    if (!pool)
+        return NULL;
+
+    ff_mutex_init(&pool->mutex, NULL);
+
+    pool->size      = size;
+    pool->opaque    = opaque;
+    pool->alloc2    = alloc;
+    pool->pool_free = pool_free;
+
+    avpriv_atomic_int_set(&pool->refcount, 1);
+
+    return pool;
+}
+
 AVBufferPool *av_buffer_pool_init(int size, AVBufferRef* (*alloc)(int size))
 {
     AVBufferPool *pool = av_mallocz(sizeof(*pool));
@@ -244,6 +264,10 @@ static void buffer_pool_free(AVBufferPool *pool)
         av_freep(&buf);
     }
     ff_mutex_destroy(&pool->mutex);
+
+    if (pool->pool_free)
+        pool->pool_free(pool->opaque);
+
     av_freep(&pool);
 }
 
@@ -326,7 +350,8 @@ static AVBufferRef *pool_alloc_buffer(AVBufferPool *pool)
     BufferPoolEntry *buf;
     AVBufferRef     *ret;
 
-    ret = pool->alloc(pool->size);
+    ret = pool->alloc2 ? pool->alloc2(pool->opaque, pool->size) :
+                         pool->alloc(pool->size);
     if (!ret)
         return NULL;
 
