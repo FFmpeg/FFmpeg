@@ -54,75 +54,7 @@ SECTION .text
 ; int32_t if $output_size is 16. $filter is 12-bits. $filterSize is a multiple
 ; of 2. $offset is either 0 or 3. $dither holds 8 values.
 ;-----------------------------------------------------------------------------
-
-%macro yuv2planeX_fn 3
-
-%if ARCH_X86_32
-%define cntr_reg fltsizeq
-%define movsx mov
-%else
-%define cntr_reg r7
-%define movsx movsxd
-%endif
-
-cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
-%if %1 == 8 || %1 == 9 || %1 == 10
-    pxor            m6,  m6
-%endif ; %1 == 8/9/10
-
-%if %1 == 8
-%if ARCH_X86_32
-%assign pad 0x2c - (stack_offset & 15)
-    SUB             rsp, pad
-%define m_dith m7
-%else ; x86-64
-%define m_dith m9
-%endif ; x86-32
-
-    ; create registers holding dither
-    movq        m_dith, [ditherq]        ; dither
-    test        offsetd, offsetd
-    jz              .no_rot
-%if mmsize == 16
-    punpcklqdq  m_dith,  m_dith
-%endif ; mmsize == 16
-    PALIGNR     m_dith,  m_dith,  3,  m0
-.no_rot:
-%if mmsize == 16
-    punpcklbw   m_dith,  m6
-%if ARCH_X86_64
-    punpcklwd       m8,  m_dith,  m6
-    pslld           m8,  12
-%else ; x86-32
-    punpcklwd       m5,  m_dith,  m6
-    pslld           m5,  12
-%endif ; x86-32/64
-    punpckhwd   m_dith,  m6
-    pslld       m_dith,  12
-%if ARCH_X86_32
-    mova      [rsp+ 0],  m5
-    mova      [rsp+16],  m_dith
-%endif
-%else ; mmsize == 8
-    punpcklbw       m5,  m_dith,  m6
-    punpckhbw   m_dith,  m6
-    punpcklwd       m4,  m5,  m6
-    punpckhwd       m5,  m6
-    punpcklwd       m3,  m_dith,  m6
-    punpckhwd   m_dith,  m6
-    pslld           m4,  12
-    pslld           m5,  12
-    pslld           m3,  12
-    pslld       m_dith,  12
-    mova      [rsp+ 0],  m4
-    mova      [rsp+ 8],  m5
-    mova      [rsp+16],  m3
-    mova      [rsp+24],  m_dith
-%endif ; mmsize == 8/16
-%endif ; %1 == 8
-
-    xor             r5,  r5
-
+%macro yuv2planeX_mainloop 1
 .pixelloop:
 %assign %%i 0
     ; the rep here is for the 8bit output mmx case, where dither covers
@@ -233,6 +165,77 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %assign %%i %%i+2
 %endrep
     jg .pixelloop
+%endmacro
+
+%macro yuv2planeX_fn 3
+
+%if ARCH_X86_32
+%define cntr_reg fltsizeq
+%define movsx mov
+%else
+%define cntr_reg r7
+%define movsx movsxd
+%endif
+
+cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
+%if %1 == 8 || %1 == 9 || %1 == 10
+    pxor            m6,  m6
+%endif ; %1 == 8/9/10
+
+%if %1 == 8
+%if ARCH_X86_32
+%assign pad 0x2c - (stack_offset & 15)
+    SUB             rsp, pad
+%define m_dith m7
+%else ; x86-64
+%define m_dith m9
+%endif ; x86-32
+
+    ; create registers holding dither
+    movq        m_dith, [ditherq]        ; dither
+    test        offsetd, offsetd
+    jz              .no_rot
+%if mmsize == 16
+    punpcklqdq  m_dith,  m_dith
+%endif ; mmsize == 16
+    PALIGNR     m_dith,  m_dith,  3,  m0
+.no_rot:
+%if mmsize == 16
+    punpcklbw   m_dith,  m6
+%if ARCH_X86_64
+    punpcklwd       m8,  m_dith,  m6
+    pslld           m8,  12
+%else ; x86-32
+    punpcklwd       m5,  m_dith,  m6
+    pslld           m5,  12
+%endif ; x86-32/64
+    punpckhwd   m_dith,  m6
+    pslld       m_dith,  12
+%if ARCH_X86_32
+    mova      [rsp+ 0],  m5
+    mova      [rsp+16],  m_dith
+%endif
+%else ; mmsize == 8
+    punpcklbw       m5,  m_dith,  m6
+    punpckhbw   m_dith,  m6
+    punpcklwd       m4,  m5,  m6
+    punpckhwd       m5,  m6
+    punpcklwd       m3,  m_dith,  m6
+    punpckhwd   m_dith,  m6
+    pslld           m4,  12
+    pslld           m5,  12
+    pslld           m3,  12
+    pslld       m_dith,  12
+    mova      [rsp+ 0],  m4
+    mova      [rsp+ 8],  m5
+    mova      [rsp+16],  m3
+    mova      [rsp+24],  m_dith
+%endif ; mmsize == 8/16
+%endif ; %1 == 8
+
+    xor             r5,  r5
+
+yuv2planeX_mainloop %1
 
 %if %1 == 8
 %if ARCH_X86_32
