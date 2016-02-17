@@ -240,31 +240,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
         }
     } else {
-    for (y = FFMAX(yb, 0); y < frame->height && y < (yb + s->h); y++) {
-        row[0] = frame->data[0] + y * frame->linesize[0];
+        for (y = FFMAX(yb, 0); y < frame->height && y < (yb + s->h); y++) {
+            row[0] = frame->data[0] + y * frame->linesize[0];
 
-        for (plane = 1; plane < 3; plane++)
-            row[plane] = frame->data[plane] +
-                 frame->linesize[plane] * (y >> s->vsub);
+            for (plane = 1; plane < 3; plane++)
+                row[plane] = frame->data[plane] +
+                     frame->linesize[plane] * (y >> s->vsub);
 
-        if (s->invert_color) {
-            for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
-                    (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness))
-                    row[0][x] = 0xff - row[0][x];
-        } else {
-            for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
-                double alpha = (double)s->yuv_color[A] / 255;
+            if (s->invert_color) {
+                for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
+                    if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
+                        (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness))
+                        row[0][x] = 0xff - row[0][x];
+            } else {
+                for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
+                    double alpha = (double)s->yuv_color[A] / 255;
 
-                if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
-                    (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness)) {
-                    row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * s->yuv_color[Y];
-                    row[1][x >> s->hsub] = (1 - alpha) * row[1][x >> s->hsub] + alpha * s->yuv_color[U];
-                    row[2][x >> s->hsub] = (1 - alpha) * row[2][x >> s->hsub] + alpha * s->yuv_color[V];
+                    if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
+                        (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness)) {
+                        row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * s->yuv_color[Y];
+                        row[1][x >> s->hsub] = (1 - alpha) * row[1][x >> s->hsub] + alpha * s->yuv_color[U];
+                        row[2][x >> s->hsub] = (1 - alpha) * row[2][x >> s->hsub] + alpha * s->yuv_color[V];
+                    }
                 }
             }
         }
-    }
     }
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
@@ -379,29 +379,29 @@ static int drawgrid_filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
         }
     } else {
-    for (y = 0; y < frame->height; y++) {
-        row[0] = frame->data[0] + y * frame->linesize[0];
+        for (y = 0; y < frame->height; y++) {
+            row[0] = frame->data[0] + y * frame->linesize[0];
 
-        for (plane = 1; plane < 3; plane++)
-            row[plane] = frame->data[plane] +
-                 frame->linesize[plane] * (y >> drawgrid->vsub);
+            for (plane = 1; plane < 3; plane++)
+                row[plane] = frame->data[plane] +
+                     frame->linesize[plane] * (y >> drawgrid->vsub);
 
-        if (drawgrid->invert_color) {
-            for (x = 0; x < frame->width; x++)
-                if (pixel_belongs_to_grid(drawgrid, x, y))
-                    row[0][x] = 0xff - row[0][x];
-        } else {
-            for (x = 0; x < frame->width; x++) {
-                double alpha = (double)drawgrid->yuv_color[A] / 255;
+            if (drawgrid->invert_color) {
+                for (x = 0; x < frame->width; x++)
+                    if (pixel_belongs_to_grid(drawgrid, x, y))
+                        row[0][x] = 0xff - row[0][x];
+            } else {
+                for (x = 0; x < frame->width; x++) {
+                    double alpha = (double)drawgrid->yuv_color[A] / 255;
 
-                if (pixel_belongs_to_grid(drawgrid, x, y)) {
-                    row[0][x                  ] = (1 - alpha) * row[0][x                  ] + alpha * drawgrid->yuv_color[Y];
-                    row[1][x >> drawgrid->hsub] = (1 - alpha) * row[1][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[U];
-                    row[2][x >> drawgrid->hsub] = (1 - alpha) * row[2][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[V];
+                    if (pixel_belongs_to_grid(drawgrid, x, y)) {
+                        row[0][x                  ] = (1 - alpha) * row[0][x                  ] + alpha * drawgrid->yuv_color[Y];
+                        row[1][x >> drawgrid->hsub] = (1 - alpha) * row[1][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[U];
+                        row[2][x >> drawgrid->hsub] = (1 - alpha) * row[2][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[V];
+                    }
                 }
             }
         }
-    }
     }
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
