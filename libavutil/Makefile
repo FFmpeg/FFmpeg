@@ -32,6 +32,7 @@ HEADERS = adler32.h                                                     \
           hash.h                                                        \
           hmac.h                                                        \
           hwcontext.h                                                   \
+          hwcontext_vdpau.h                                             \
           imgutils.h                                                    \
           intfloat.h                                                    \
           intreadwrite.h                                                \
@@ -150,6 +151,7 @@ OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o                     \
 
 OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
+OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
