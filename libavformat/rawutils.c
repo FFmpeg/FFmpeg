@@ -29,7 +29,8 @@ int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *en
     int64_t bpc = enc->bits_per_coded_sample != 15 ? enc->bits_per_coded_sample : 16;
     int min_stride = (enc->width * bpc + 7) >> 3;
     int with_pal_size = min_stride * enc->height + 1024;
-    int size = bpc == 8 && pkt->size == with_pal_size ? min_stride * enc->height : pkt->size;
+    int contains_pal = bpc == 8 && pkt->size == with_pal_size;
+    int size = contains_pal ? min_stride * enc->height : pkt->size;
     int stride = size / enc->height;
     int padding = expected_stride - FFMIN(expected_stride, stride);
     int y;
@@ -58,7 +59,7 @@ int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *en
     }
 
     *ppkt = new_pkt;
-    return 1;
+    return 1 + contains_pal;
 fail:
     av_packet_free(&new_pkt);
 

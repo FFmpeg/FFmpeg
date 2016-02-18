@@ -646,7 +646,11 @@ static int write_skip_frames(AVFormatContext *s, int stream_index, int64_t dts)
 
 static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    unsigned char tag[5];
     const int stream_index = pkt->stream_index;
+    const uint8_t *data    = pkt->data;
+    int size               = pkt->size;
+    AVIOContext *pb     = s->pb;
     AVCodecContext *enc = s->streams[stream_index]->codec;
     int ret;
 
@@ -667,6 +671,21 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0)
             return ret;
         if (ret) {
+            if (ret == CONTAINS_PAL) {
+                int pc_tag, i;
+                avi_stream2fourcc(tag, stream_index, enc->codec_type);
+                tag[2] = 'p'; tag[3] = 'c';
+
+                pc_tag = ff_start_tag(pb, tag);
+                avio_w8(pb, 0);
+                avio_w8(pb, 0);
+                avio_wl16(pb, 0); // reserved
+                for (i = 0; i<256; i++) {
+                    uint32_t v = AV_RL32(data + size - 1024 + 4*i);
+                    avio_wb32(pb, v<<8);
+                }
+                ff_end_tag(pb, pc_tag);
+            }
             ret = avi_write_packet_internal(s, pkt);
             av_packet_free(&pkt);
             return ret;
