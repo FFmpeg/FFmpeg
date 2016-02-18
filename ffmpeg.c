@@ -2123,8 +2123,12 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     ist->hwaccel_retrieved_pix_fmt = decoded_frame->format;
 
     best_effort_timestamp= av_frame_get_best_effort_timestamp(decoded_frame);
-    if(best_effort_timestamp != AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
+    if(best_effort_timestamp != AV_NOPTS_VALUE) {
+        int64_t ts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
+
+        if (ts != AV_NOPTS_VALUE)
+            ist->next_pts = ist->pts = ts;
+    }
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "decoder -> ist_index:%d type:video "
