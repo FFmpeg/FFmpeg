@@ -3216,7 +3216,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 }
                 av_log(c->fc, AV_LOG_DEBUG, "calculated into dts %"PRId64"\n", dts);
             } else {
-                dts = frag->time;
+                dts = frag->time - sc->time_offset;
                 av_log(c->fc, AV_LOG_DEBUG, "found frag time %"PRId64
                         ", using it for dts\n", dts);
             }
