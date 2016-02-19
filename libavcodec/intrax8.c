@@ -726,22 +726,21 @@ block_placed:
 }
 
 // FIXME maybe merge with ff_*
-static void x8_init_block_index(IntraX8Context *w)
+static void x8_init_block_index(IntraX8Context *w, AVFrame *frame, int mb_y)
 {
-    MpegEncContext *const s = w->s;
-    // not s->linesize as this would be wrong for field pics
+    // not parent codec linesize as this would be wrong for field pics
     // not that IntraX8 has interlacing support ;)
-    const int linesize   = s->current_picture.f->linesize[0];
-    const int uvlinesize = s->current_picture.f->linesize[1];
+    const int linesize   = frame->linesize[0];
+    const int uvlinesize = frame->linesize[1];
 
-    w->dest[0] = s->current_picture.f->data[0];
-    w->dest[1] = s->current_picture.f->data[1];
-    w->dest[2] = s->current_picture.f->data[2];
+    w->dest[0] = frame->data[0];
+    w->dest[1] = frame->data[1];
+    w->dest[2] = frame->data[2];
 
-    w->dest[0] +=  s->mb_y         * linesize   << 3;
+    w->dest[0] +=  mb_y         * linesize   << 3;
     // chroma blocks are on add rows
-    w->dest[1] += (s->mb_y & (~1)) * uvlinesize << 2;
-    w->dest[2] += (s->mb_y & (~1)) * uvlinesize << 2;
+    w->dest[1] += (mb_y & (~1)) * uvlinesize << 2;
+    w->dest[2] += (mb_y & (~1)) * uvlinesize << 2;
 }
 
 av_cold int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
@@ -797,7 +796,7 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, int dquant,
     x8_reset_vlc_tables(w);
 
     for (s->mb_y = 0; s->mb_y < s->mb_height * 2; s->mb_y++) {
-        x8_init_block_index(w);
+        x8_init_block_index(w, s->current_picture.f, s->mb_y);
         mb_xy = (s->mb_y >> 1) * s->mb_stride;
 
         for (s->mb_x = 0; s->mb_x < s->mb_width * 2; s->mb_x++) {
