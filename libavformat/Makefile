@@ -476,10 +476,6 @@ OBJS-$(CONFIG_WEBM_MUXER)                += matroskaenc.o matroska.o \
                                             flacenc_header.o avlanguage.o \
                                             wv.o vorbiscomment.o \
                                             webmdashenc.o webm_chunk.o
-OBJS-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER)+= matroskadec.o matroska.o  \
-                                            isom.o rmsipr.o flac_picture.o \
-                                            oggparsevorbis.o vorbiscomment.o \
-                                            flac_picture.o replaygain.o
 OBJS-$(CONFIG_WEBM_DASH_MANIFEST_MUXER)  += webmdashenc.o matroska.o
 OBJS-$(CONFIG_WEBM_CHUNK_MUXER)          += webm_chunk.o matroska.o
 OBJS-$(CONFIG_WEBP_MUXER)                += webpenc.o
