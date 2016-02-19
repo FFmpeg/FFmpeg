@@ -265,7 +265,7 @@ static const AVClass ffrtmphttp_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_ffrtmphttp_protocol = {
+const URLProtocol ff_ffrtmphttp_protocol = {
     .name           = "ffrtmphttp",
     .url_open       = rtmp_http_open,
     .url_read       = rtmp_http_read,

@@ -573,7 +573,7 @@ static int rtp_get_multi_file_handle(URLContext *h, int **handles,
     return 0;
 }
 
-URLProtocol ff_rtp_protocol = {
+const URLProtocol ff_rtp_protocol = {
     .name                      = "rtp",
     .url_open                  = rtp_open,
     .url_read                  = rtp_read,

@@ -315,7 +315,7 @@ retry:
     goto start;
 }
 
-URLProtocol ff_hls_protocol = {
+const URLProtocol ff_hls_protocol = {
     .name           = "hls",
     .url_open       = hls_open,
     .url_read       = hls_read,

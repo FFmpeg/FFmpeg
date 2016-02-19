@@ -358,7 +358,7 @@ static int mmsh_read(URLContext *h, uint8_t *buf, int size)
     return res;
 }
 
-URLProtocol ff_mmsh_protocol = {
+const URLProtocol ff_mmsh_protocol = {
     .name           = "mmsh",
     .url_open       = mmsh_open,
     .url_read       = mmsh_read,

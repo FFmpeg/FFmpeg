@@ -131,7 +131,7 @@ static int srtp_get_multi_file_handle(URLContext *h, int **handles,
     return ffurl_get_multi_file_handle(s->rtp_hd, handles, numhandles);
 }
 
-URLProtocol ff_srtp_protocol = {
+const URLProtocol ff_srtp_protocol = {
     .name                      = "srtp",
     .url_open                  = srtp_open,
     .url_read                  = srtp_read,

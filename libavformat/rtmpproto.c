@@ -3087,7 +3087,7 @@ static const AVClass flavor##_class = {          \
     .version    = LIBAVUTIL_VERSION_INT,         \
 };                                               \
                                                  \
-URLProtocol ff_##flavor##_protocol = {           \
+const URLProtocol ff_##flavor##_protocol = {     \
     .name           = #flavor,                   \
     .url_open       = rtmp_open,                 \
     .url_read       = rtmp_read,                 \

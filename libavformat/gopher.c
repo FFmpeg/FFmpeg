@@ -114,7 +114,7 @@ static int gopher_read(URLContext *h, uint8_t *buf, int size)
 }
 
 
-URLProtocol ff_gopher_protocol = {
+const URLProtocol ff_gopher_protocol = {
     .name           = "gopher",
     .url_open       = gopher_open,
     .url_read       = gopher_read,
