@@ -368,14 +368,16 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
     build_udp_url(s, buf, sizeof(buf),
                   hostname, rtp_port, s->local_rtpport, sources, block);
-    if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
+    if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL,
+                   h->protocols) < 0)
         goto fail;
     if (s->local_rtpport >= 0 && s->local_rtcpport < 0)
         s->local_rtcpport = ff_udp_get_local_port(s->rtp_hd) + 1;
 
     build_udp_url(s, buf, sizeof(buf),
                   hostname, s->rtcp_port, s->local_rtcpport, sources, block);
-    if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
+    if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL,
+                   h->protocols) < 0)
         goto fail;
 
     /* just to ease handle access. XXX: need to suppress direct handle

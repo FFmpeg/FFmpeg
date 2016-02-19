@@ -304,7 +304,7 @@ retry:
     url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
     ret = ffurl_open(&s->seg_hd, url, AVIO_FLAG_READ,
-                     &h->interrupt_callback, NULL);
+                     &h->interrupt_callback, NULL, h->protocols);
     if (ret < 0) {
         if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;

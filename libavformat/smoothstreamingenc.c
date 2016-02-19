@@ -64,6 +64,8 @@ typedef struct OutputStream {
     char *private_str;
     int packet_size;
     int audio_tag;
+
+    const URLProtocol **protocols;
 } OutputStream;
 
 typedef struct SmoothStreamingContext {
@@ -76,6 +78,8 @@ typedef struct SmoothStreamingContext {
     OutputStream *streams;
     int has_video, has_audio;
     int nb_fragments;
+
+    const URLProtocol **protocols;
 } SmoothStreamingContext;
 
 static int ism_write(void *opaque, uint8_t *buf, int buf_size)
@@ -121,7 +125,8 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
             AVDictionary *opts = NULL;
             os->tail_out = os->out;
             av_dict_set(&opts, "truncate", "0", 0);
-            ret = ffurl_open(&os->out, frag->file, AVIO_FLAG_WRITE, &os->ctx->interrupt_callback, &opts);
+            ret = ffurl_open(&os->out, frag->file, AVIO_FLAG_WRITE, &os->ctx->interrupt_callback, &opts,
+                             os->protocols);
             av_dict_free(&opts);
             if (ret < 0) {
                 os->out = os->tail_out;
@@ -129,7 +134,8 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
                 return ret;
             }
             av_dict_set(&opts, "truncate", "0", 0);
-            ffurl_open(&os->out2, frag->infofile, AVIO_FLAG_WRITE, &os->ctx->interrupt_callback, &opts);
+            ffurl_open(&os->out2, frag->infofile, AVIO_FLAG_WRITE, &os->ctx->interrupt_callback, &opts,
+                       os->protocols);
             av_dict_free(&opts);
             ffurl_seek(os->out, offset - frag->start_pos, SEEK_SET);
             if (os->out2)
@@ -168,6 +174,9 @@ static void ism_free(AVFormatContext *s)
 {
     SmoothStreamingContext *c = s->priv_data;
     int i, j;
+
+    av_freep(&c->protocols);
+
     if (!c->streams)
         return;
     for (i = 0; i < s->nb_streams; i++) {
@@ -303,6 +312,12 @@ static int ism_write_header(AVFormatContext *s)
         goto fail;
     }
 
+    c->protocols = ffurl_get_protocols(NULL, NULL);
+    if (!c->protocols) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     c->streams = av_mallocz(sizeof(*c->streams) * s->nb_streams);
     if (!c->streams) {
         ret = AVERROR(ENOMEM);
@@ -326,6 +341,8 @@ static int ism_write_header(AVFormatContext *s)
             ret = AVERROR(errno);
             goto fail;
         }
+
+        os->protocols = c->protocols;
 
         ctx = avformat_alloc_context();
         if (!ctx) {
@@ -523,7 +540,8 @@ static int ism_flush(AVFormatContext *s, int final)
             continue;
 
         snprintf(filename, sizeof(filename), "%s/temp", os->dirname);
-        ret = ffurl_open(&os->out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+        ret = ffurl_open(&os->out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL,
+                         c->protocols);
         if (ret < 0)
             break;
         os->cur_start_pos = os->tail_pos;

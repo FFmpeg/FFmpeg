@@ -520,7 +520,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
     err = ffurl_open(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
+                     &h->interrupt_callback, NULL, h->protocols);
     if (err)
         goto fail;
 

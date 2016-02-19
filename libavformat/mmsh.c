@@ -230,7 +230,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, "%s", path);
 
     if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ,
-                    &h->interrupt_callback) < 0) {
+                    &h->interrupt_callback, h->protocols) < 0) {
         return AVERROR(EIO);
     }
 
@@ -259,7 +259,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     ffurl_close(mms->mms_hd);
     memset(headers, 0, sizeof(headers));
     if ((err = ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ,
-                           &h->interrupt_callback)) < 0) {
+                           &h->interrupt_callback, h->protocols)) < 0) {
         goto fail;
     }
     stream_selection = av_mallocz(mms->stream_num * 19 + 1);

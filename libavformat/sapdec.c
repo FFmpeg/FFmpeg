@@ -39,6 +39,8 @@ struct SAPState {
     uint16_t hash;
     char *sdp;
     int eof;
+
+    const URLProtocol **protocols;
 };
 
 static int sap_probe(AVProbeData *p)
@@ -55,6 +57,7 @@ static int sap_read_close(AVFormatContext *s)
         avformat_close_input(&sap->sdp_ctx);
     if (sap->ann_fd)
         ffurl_close(sap->ann_fd);
+    av_freep(&sap->protocols);
     av_freep(&sap->sdp);
     ff_network_close();
     return 0;
@@ -82,10 +85,16 @@ static int sap_read_header(AVFormatContext *s)
         av_strlcpy(host, "224.2.127.254", sizeof(host));
     }
 
+    sap->protocols = ffurl_get_protocols(NULL, NULL);
+    if (!sap->protocols) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     ff_url_join(url, sizeof(url), "udp", NULL, host, port, "?localport=%d",
                 port);
     ret = ffurl_open(&sap->ann_fd, url, AVIO_FLAG_READ,
-                     &s->interrupt_callback, NULL);
+                     &s->interrupt_callback, NULL, sap->protocols);
     if (ret)
         goto fail;
 

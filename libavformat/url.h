@@ -38,6 +38,10 @@ extern const AVClass ffurl_context_class;
 typedef struct URLContext {
     const AVClass *av_class;    /**< information for av_log(). Set by url_open(). */
     const struct URLProtocol *prot;
+    /**
+     * A NULL-terminated list of protocols usable by the child contexts.
+     */
+    const struct URLProtocol **protocols;
     void *priv_data;
     char *filename;             /**< specified URL */
     int flags;
@@ -96,11 +100,15 @@ typedef struct URLProtocol {
  * is to be opened
  * @param int_cb interrupt callback to use for the URLContext, may be
  * NULL
+ * @param protocols a NULL-terminate list of protocols available for use by
+ *                  this context and its children. The caller must ensure this
+ *                  list remains valid until the context is closed.
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_alloc(URLContext **puc, const char *filename, int flags,
-                const AVIOInterruptCB *int_cb);
+                const AVIOInterruptCB *int_cb,
+                const URLProtocol **protocols);
 
 /**
  * Connect an URLContext that has been allocated by ffurl_alloc
@@ -125,11 +133,15 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  * @param options  A dictionary filled with protocol-private options. On return
  * this parameter will be destroyed and replaced with a dict containing options
  * that were not found. May be NULL.
+ * @param protocols a NULL-terminate list of protocols available for use by
+ *                  this context and its children. The caller must ensure this
+ *                  list remains valid until the context is closed.
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_open(URLContext **puc, const char *filename, int flags,
-               const AVIOInterruptCB *int_cb, AVDictionary **options);
+               const AVIOInterruptCB *int_cb, AVDictionary **options,
+               const URLProtocol **protocols);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store

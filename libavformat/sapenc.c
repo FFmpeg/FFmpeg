@@ -37,6 +37,8 @@ struct SAPState {
     int         ann_size;
     URLContext *ann_fd;
     int64_t     last_time;
+
+    const URLProtocol **protocols;
 };
 
 static int sap_write_close(AVFormatContext *s)
@@ -58,6 +60,8 @@ static int sap_write_close(AVFormatContext *s)
         sap->ann[0] |= 4; /* Session deletion*/
         ffurl_write(sap->ann_fd, sap->ann, sap->ann_size);
     }
+
+    av_freep(&sap->protocols);
 
     av_freep(&sap->ann);
     if (sap->ann_fd)
@@ -134,6 +138,12 @@ static int sap_write_header(AVFormatContext *s)
         freeaddrinfo(ai);
     }
 
+    sap->protocols = ffurl_get_protocols(NULL, NULL);
+    if (!sap->protocols) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     contexts = av_mallocz(sizeof(AVFormatContext*) * s->nb_streams);
     if (!contexts) {
         ret = AVERROR(ENOMEM);
@@ -148,7 +158,8 @@ static int sap_write_header(AVFormatContext *s)
                     "?ttl=%d", ttl);
         if (!same_port)
             base_port += 2;
-        ret = ffurl_open(&fd, url, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+        ret = ffurl_open(&fd, url, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL,
+                         sap->protocols);
         if (ret) {
             ret = AVERROR(EIO);
             goto fail;
@@ -167,7 +178,7 @@ static int sap_write_header(AVFormatContext *s)
     ff_url_join(url, sizeof(url), "udp", NULL, announce_addr, port,
                 "?ttl=%d&connect=1", ttl);
     ret = ffurl_open(&sap->ann_fd, url, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+                     &s->interrupt_callback, NULL, sap->protocols);
     if (ret) {
         ret = AVERROR(EIO);
         goto fail;

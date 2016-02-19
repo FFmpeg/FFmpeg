@@ -42,6 +42,7 @@
 
 typedef struct AVIOInternal {
     URLContext *h;
+    const URLProtocol **protocols;
 } AVIOInternal;
 
 static void *ff_avio_child_next(void *obj, void *prev)
@@ -846,17 +847,31 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
 int avio_open2(AVIOContext **s, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options)
 {
+    AVIOInternal *internal;
+    const URLProtocol **protocols;
     URLContext *h;
     int err;
 
-    err = ffurl_open(&h, filename, flags, int_cb, options);
-    if (err < 0)
+    protocols = ffurl_get_protocols(NULL, NULL);
+    if (!protocols)
+        return AVERROR(ENOMEM);
+
+    err = ffurl_open(&h, filename, flags, int_cb, options, protocols);
+    if (err < 0) {
+        av_freep(&protocols);
         return err;
+    }
+
     err = ffio_fdopen(s, h);
     if (err < 0) {
         ffurl_close(h);
+        av_freep(&protocols);
         return err;
     }
+
+    internal = (*s)->opaque;
+    internal->protocols = protocols;
+
     return 0;
 }
 
@@ -872,6 +887,7 @@ int avio_close(AVIOContext *s)
     internal = s->opaque;
     h        = internal->h;
 
+    av_freep(&internal->protocols);
     av_freep(&s->opaque);
     av_freep(&s->buffer);
     av_free(s);

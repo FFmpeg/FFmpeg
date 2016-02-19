@@ -83,7 +83,7 @@ static int crypto_open(URLContext *h, const char *uri, int flags)
         goto err;
     }
     if ((ret = ffurl_open(&c->hd, nested_url, AVIO_FLAG_READ,
-                          &h->interrupt_callback, NULL)) < 0) {
+                          &h->interrupt_callback, NULL, h->protocols)) < 0) {
         av_log(h, AV_LOG_ERROR, "Unable to open input\n");
         goto err;
     }

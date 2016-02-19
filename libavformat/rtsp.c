@@ -777,6 +777,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     }
     if (CONFIG_RTPDEC && rt->ts)
         ff_mpegts_parse_close(rt->ts);
+    av_freep(&rt->protocols);
     av_free(rt->p);
     av_free(rt->recvbuf);
 }
@@ -1465,7 +1466,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                 /* we will use two ports per rtp stream (rtp and rtcp) */
                 j += 2;
                 err = ffurl_open(&rtsp_st->rtp_handle, buf, AVIO_FLAG_READ_WRITE,
-                                 &s->interrupt_callback, &opts);
+                                 &s->interrupt_callback, &opts, rt->protocols);
 
                 av_dict_free(&opts);
 
@@ -1609,7 +1610,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "%s", optbuf);
             if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
-                           &s->interrupt_callback, NULL) < 0) {
+                           &s->interrupt_callback, NULL, rt->protocols) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1665,6 +1666,12 @@ int ff_rtsp_connect(AVFormatContext *s)
 
     if (!ff_network_init())
         return AVERROR(EIO);
+
+    if (!rt->protocols) {
+        rt->protocols = ffurl_get_protocols(NULL, NULL);
+        if (!rt->protocols)
+            return AVERROR(ENOMEM);
+    }
 
     if (s->max_delay < 0) /* Not set by the caller */
         s->max_delay = s->iformat ? DEFAULT_REORDERING_DELAY : 0;
@@ -1729,7 +1736,7 @@ redirect:
 
         /* GET requests */
         if (ffurl_alloc(&rt->rtsp_hd, httpname, AVIO_FLAG_READ,
-                        &s->interrupt_callback) < 0) {
+                        &s->interrupt_callback, rt->protocols) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1751,7 +1758,7 @@ redirect:
 
         /* POST requests */
         if (ffurl_alloc(&rt->rtsp_hd_out, httpname, AVIO_FLAG_WRITE,
-                        &s->interrupt_callback) < 0 ) {
+                        &s->interrupt_callback, rt->protocols) < 0 ) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1796,7 +1803,7 @@ redirect:
         ff_url_join(tcpname, sizeof(tcpname), lower_rtsp_proto, NULL,
                     host, port, NULL);
         if (ffurl_open(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                       &s->interrupt_callback, NULL) < 0) {
+                       &s->interrupt_callback, NULL, rt->protocols) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -2244,6 +2251,12 @@ static int sdp_read_header(AVFormatContext *s)
     if (!ff_network_init())
         return AVERROR(EIO);
 
+    if (!rt->protocols) {
+        rt->protocols = ffurl_get_protocols(NULL, NULL);
+        if (!rt->protocols)
+            return AVERROR(ENOMEM);
+    }
+
     if (s->max_delay < 0) /* Not set by the caller */
         s->max_delay = DEFAULT_REORDERING_DELAY;
     if (rt->rtsp_flags & RTSP_FLAG_CUSTOM_IO)
@@ -2296,7 +2309,7 @@ static int sdp_read_header(AVFormatContext *s)
                                 rtsp_st->nb_exclude_source_addrs,
                                 rtsp_st->exclude_source_addrs);
             err = ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
-                           &s->interrupt_callback, &opts);
+                             &s->interrupt_callback, &opts, rt->protocols);
 
             av_dict_free(&opts);
 
@@ -2365,8 +2378,14 @@ static int rtp_read_header(AVFormatContext *s)
     if (!ff_network_init())
         return AVERROR(EIO);
 
+    if (!rt->protocols) {
+        rt->protocols = ffurl_get_protocols(NULL, NULL);
+        if (!rt->protocols)
+            return AVERROR(ENOMEM);
+    }
+
     ret = ffurl_open(&in, s->filename, AVIO_FLAG_READ,
-                     &s->interrupt_callback, NULL);
+                     &s->interrupt_callback, NULL, rt->protocols);
     if (ret)
         goto fail;
 

@@ -62,7 +62,8 @@ const AVClass ffurl_context_class = {
 
 static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
                                   const char *filename, int flags,
-                                  const AVIOInterruptCB *int_cb)
+                                  const AVIOInterruptCB *int_cb,
+                                  const URLProtocol **protocols)
 {
     URLContext *uc;
     int err;
@@ -83,6 +84,7 @@ static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
     uc->flags           = flags;
     uc->is_streamed     = 0; /* default = not streamed */
     uc->max_packet_size = 0; /* default: stream file */
+    uc->protocols       = protocols;
     if (up->priv_data_size) {
         uc->priv_data = av_mallocz(up->priv_data_size);
         if (!uc->priv_data) {
@@ -136,9 +138,9 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
     "0123456789+-."
 
 int ffurl_alloc(URLContext **puc, const char *filename, int flags,
-                const AVIOInterruptCB *int_cb)
+                const AVIOInterruptCB *int_cb,
+                const URLProtocol **protocols)
 {
-    const URLProtocol **protocols;
     char proto_str[128], proto_nested[128], *ptr;
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
     int i;
@@ -153,27 +155,25 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
     if ((ptr = strchr(proto_nested, '+')))
         *ptr = '\0';
 
-    protocols = ffurl_get_protocols(NULL, NULL);
     for (i = 0; protocols[i]; i++) {
         const URLProtocol *up = protocols[i];
-        if (!strcmp(proto_str, up->name)) {
-            av_freep(&protocols);
-            return url_alloc_for_protocol(puc, up, filename, flags, int_cb);
-        }
+        if (!strcmp(proto_str, up->name))
+            return url_alloc_for_protocol(puc, up, filename, flags, int_cb,
+                                          protocols);
         if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME &&
-            !strcmp(proto_nested, up->name)) {
-            av_freep(&protocols);
-            return url_alloc_for_protocol(puc, up, filename, flags, int_cb);
-        }
+            !strcmp(proto_nested, up->name))
+            return url_alloc_for_protocol(puc, up, filename, flags, int_cb,
+                                          protocols);
     }
     *puc = NULL;
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
 
 int ffurl_open(URLContext **puc, const char *filename, int flags,
-               const AVIOInterruptCB *int_cb, AVDictionary **options)
+               const AVIOInterruptCB *int_cb, AVDictionary **options,
+               const URLProtocol **protocols)
 {
-    int ret = ffurl_alloc(puc, filename, flags, int_cb);
+    int ret = ffurl_alloc(puc, filename, flags, int_cb, protocols);
     if (ret)
         return ret;
     if (options && (*puc)->prot->priv_data_class &&
@@ -281,10 +281,19 @@ int ffurl_close(URLContext *h)
 
 int avio_check(const char *url, int flags)
 {
+    const URLProtocol **protocols;
     URLContext *h;
-    int ret = ffurl_alloc(&h, url, flags, NULL);
-    if (ret)
+    int ret;
+
+    protocols = ffurl_get_protocols(NULL, NULL);
+    if (!protocols)
+        return AVERROR(ENOMEM);
+
+    ret = ffurl_alloc(&h, url, flags, NULL, protocols);
+    if (ret) {
+        av_freep(&protocols);
         return ret;
+    }
 
     if (h->prot->url_check) {
         ret = h->prot->url_check(h, flags);
@@ -295,6 +304,7 @@ int avio_check(const char *url, int flags)
     }
 
     ffurl_close(h);
+    av_freep(&protocols);
     return ret;
 }
 
