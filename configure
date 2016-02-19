@@ -194,6 +194,7 @@ Individual component options:
   --disable-filters        disable all filters
 
 External library support:
+  --disable-audiotoolbox   enable AudioToolbox decoders and encoders [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
   --enable-cuda            enable dynamically linked CUDA [no]
@@ -1446,6 +1447,7 @@ EXAMPLE_LIST="
 "
 
 EXTERNAL_LIBRARY_LIST="
+    audiotoolbox
     avisynth
     bzlib
     chromaprint
@@ -2506,6 +2508,10 @@ zlib_encoder_select="zlib"
 zmbv_decoder_select="zlib"
 zmbv_encoder_select="zlib"
 
+# platform codecs
+audiotoolbox_deps="AudioToolbox_AudioToolbox_h"
+audiotoolbox_extralibs="-framework CoreFoundation -framework AudioToolbox -framework CoreMedia"
+
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
@@ -2641,6 +2647,20 @@ vc1_parser_select="vc1dsp"
 mjpeg2jpeg_bsf_select="jpegtables"
 
 # external libraries
+aac_at_decoder_deps="audiotoolbox"
+ac3_at_decoder_deps="audiotoolbox"
+adpcm_ima_qt_at_decoder_deps="audiotoolbox"
+alac_at_decoder_deps="audiotoolbox"
+amr_nb_at_decoder_deps="audiotoolbox"
+gsm_ms_at_decoder_deps="audiotoolbox"
+ilbc_at_decoder_deps="audiotoolbox"
+mp1_at_decoder_deps="audiotoolbox"
+mp2_at_decoder_deps="audiotoolbox"
+mp3_at_decoder_deps="audiotoolbox"
+pcm_alaw_at_decoder_deps="audiotoolbox"
+pcm_mulaw_at_decoder_deps="audiotoolbox"
+qdmc_at_decoder_deps="audiotoolbox"
+qdm2_at_decoder_deps="audiotoolbox"
 chromaprint_muxer_deps="chromaprint"
 h264_videotoolbox_encoder_deps="videotoolbox_encoder pthreads"
 libcelt_decoder_deps="libcelt"
@@ -3086,6 +3106,9 @@ enable valgrind_backtrace
 
 sws_max_filter_size_default=256
 set_default sws_max_filter_size
+
+# Enable platform codecs by default.
+enable audiotoolbox
 
 # Enable hwaccels by default.
 enable d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
@@ -5365,6 +5388,7 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
+check_header AudioToolbox/AudioToolbox.h
 check_header direct.h
 check_header dirent.h
 check_header dlfcn.h

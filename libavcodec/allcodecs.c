@@ -563,6 +563,20 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (XSUB,              xsub);
 
     /* external libraries */
+    REGISTER_DECODER(AAC_AT,            aac_at);
+    REGISTER_DECODER(AC3_AT,            ac3_at);
+    REGISTER_DECODER(ADPCM_IMA_QT_AT,   adpcm_ima_qt_at);
+    REGISTER_DECODER(ALAC_AT,           alac_at);
+    REGISTER_DECODER(AMR_NB_AT,         amr_nb_at);
+    REGISTER_DECODER(GSM_MS_AT,         gsm_ms_at);
+    REGISTER_DECODER(ILBC_AT,           ilbc_at);
+    REGISTER_DECODER(MP1_AT,            mp1_at);
+    REGISTER_DECODER(MP2_AT,            mp2_at);
+    REGISTER_DECODER(MP3_AT,            mp3_at);
+    REGISTER_DECODER(PCM_ALAW_AT,       pcm_alaw_at);
+    REGISTER_DECODER(PCM_MULAW_AT,      pcm_mulaw_at);
+    REGISTER_DECODER(QDMC_AT,           qdmc_at);
+    REGISTER_DECODER(QDM2_AT,           qdm2_at);
     REGISTER_DECODER(LIBCELT,           libcelt);
     REGISTER_DECODER(LIBDCADEC,         libdcadec)
     REGISTER_ENCODER(LIBFAAC,           libfaac);

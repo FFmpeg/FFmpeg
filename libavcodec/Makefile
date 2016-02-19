@@ -801,6 +801,20 @@ OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o mpegaudiodata.o  \
 OBJS-$(CONFIG_ELBG_FILTER)             += elbg.o
 
 # external codec libraries
+OBJS-$(CONFIG_AAC_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_AC3_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_ADPCM_IMA_QT_AT_DECODER)    += audiotoolboxdec.o
+OBJS-$(CONFIG_ALAC_AT_DECODER)            += audiotoolboxdec.o
+OBJS-$(CONFIG_AMR_NB_AT_DECODER)          += audiotoolboxdec.o
+OBJS-$(CONFIG_GSM_MS_AT_DECODER)          += audiotoolboxdec.o
+OBJS-$(CONFIG_ILBC_AT_DECODER)            += audiotoolboxdec.o
+OBJS-$(CONFIG_MP1_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_MP2_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_MP3_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_PCM_MULAW_AT_DECODER)       += audiotoolboxdec.o
+OBJS-$(CONFIG_PCM_ALAW_AT_DECODER)        += audiotoolboxdec.o
+OBJS-$(CONFIG_QDMC_AT_DECODER)            += audiotoolboxdec.o
+OBJS-$(CONFIG_QDM2_AT_DECODER)            += audiotoolboxdec.o
 OBJS-$(CONFIG_LIBCELT_DECODER)            += libcelt_dec.o
 OBJS-$(CONFIG_LIBDCADEC_DECODER)          += libdcadec.o dca.o
 OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
