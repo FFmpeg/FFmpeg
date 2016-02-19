@@ -18,6 +18,9 @@
 
 #include "config.h"
 
+#include "libavutil/avstring.h"
+#include "libavutil/mem.h"
+
 #include "url.h"
 
 extern const URLProtocol ff_concat_protocol;
@@ -55,7 +58,7 @@ extern const URLProtocol ff_librtmps_protocol;
 extern const URLProtocol ff_librtmpt_protocol;
 extern const URLProtocol ff_librtmpte_protocol;
 
-const URLProtocol *ff_url_protocols[] = {
+static const URLProtocol *url_protocols[] = {
 #if CONFIG_CONCAT_PROTOCOL
     &ff_concat_protocol,
 #endif
@@ -168,17 +171,17 @@ const AVClass *ff_urlcontext_child_class_next(const AVClass *prev)
     int i;
 
     /* find the protocol that corresponds to prev */
-    for (i = 0; ff_url_protocols[i]; i++) {
-        if (ff_url_protocols[i]->priv_data_class == prev) {
+    for (i = 0; url_protocols[i]; i++) {
+        if (url_protocols[i]->priv_data_class == prev) {
             i++;
             break;
         }
     }
 
     /* find next protocol with priv options */
-    for (; ff_url_protocols[i]; i++)
-        if (ff_url_protocols[i]->priv_data_class)
-            return ff_url_protocols[i]->priv_data_class;
+    for (; url_protocols[i]; i++)
+        if (url_protocols[i]->priv_data_class)
+            return url_protocols[i]->priv_data_class;
     return NULL;
 }
 
@@ -187,7 +190,7 @@ const char *avio_enum_protocols(void **opaque, int output)
 {
     const URLProtocol **p = *opaque;
 
-    p = p ? p + 1 : ff_url_protocols;
+    p = p ? p + 1 : url_protocols;
     *opaque = p;
     if (!*p) {
         *opaque = NULL;
@@ -196,4 +199,28 @@ const char *avio_enum_protocols(void **opaque, int output)
     if ((output && (*p)->url_write) || (!output && (*p)->url_read))
         return (*p)->name;
     return avio_enum_protocols(opaque, output);
+}
+
+const URLProtocol **ffurl_get_protocols(const char *whitelist,
+                                        const char *blacklist)
+{
+    const URLProtocol **ret;
+    int i, ret_idx = 0;
+
+    ret = av_mallocz_array(FF_ARRAY_ELEMS(url_protocols), sizeof(*ret));
+    if (!ret)
+        return NULL;
+
+    for (i = 0; url_protocols[i]; i++) {
+        const URLProtocol *up = url_protocols[i];
+
+        if (whitelist && *whitelist && !av_match_name(up->name, whitelist))
+            continue;
+        if (blacklist && *blacklist && av_match_name(up->name, blacklist))
+            continue;
+
+        ret[ret_idx++] = up;
+    }
+
+    return ret;
 }

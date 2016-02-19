@@ -266,6 +266,20 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
 
 const AVClass *ff_urlcontext_child_class_next(const AVClass *prev);
 
-extern const URLProtocol *ff_url_protocols[];
+/**
+ * Construct a list of protocols matching a given whitelist and/or blacklist.
+ *
+ * @param whitelist a comma-separated list of allowed protocol names or NULL. If
+ *                  this is a non-empty string, only protocols in this list will
+ *                  be included.
+ * @param blacklist a comma-separated list of forbidden protocol names or NULL.
+ *                  If this is a non-empty string, all protocols in this list
+ *                  will be excluded.
+ *
+ * @return a NULL-terminated array of matching protocols. The array must be
+ * freed by the caller.
+ */
+const URLProtocol **ffurl_get_protocols(const char *whitelist,
+                                        const char *blacklist);
 
 #endif /* AVFORMAT_URL_H */
