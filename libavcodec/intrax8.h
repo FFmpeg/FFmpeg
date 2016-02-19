@@ -21,6 +21,7 @@
 
 #include "get_bits.h"
 #include "mpegvideo.h"
+#include "idctdsp.h"
 #include "intrax8dsp.h"
 
 typedef struct IntraX8Context {
@@ -37,6 +38,7 @@ typedef struct IntraX8Context {
     // set by the caller codec
     MpegEncContext *s;
     IntraX8DSPContext dsp;
+    IDCTDSPContext idsp;
     int quant;
     int dquant;
     int qsum;
@@ -61,10 +63,12 @@ typedef struct IntraX8Context {
  * Initialize IntraX8 frame decoder.
  * Requires valid MpegEncContext with valid s->mb_width before calling.
  * @param w pointer to IntraX8Context
+ * @param idsp pointer to IDCTDSPContext
  * @param s pointer to MpegEncContext of the parent codec
  * @return 0 on success, a negative AVERROR value on error
  */
-int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s);
+int ff_intrax8_common_init(IntraX8Context *w, IDCTDSPContext *idsp,
+                           MpegEncContext *const s);
 
 /**
  * Destroy IntraX8 frame structure.

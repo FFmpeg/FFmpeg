@@ -492,7 +492,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
 {
     MpegEncContext *const s = w->s;
     int t;
-#define B(x, y) s->block[0][s->idsp.idct_permutation[(x) + (y) * 8]]
+#define B(x, y) s->block[0][w->idsp.idct_permutation[(x) + (y) * 8]]
 #define T(x)  ((x) * dc_level + 0x8000) >> 16;
     switch (direction) {
     case 0:
@@ -704,7 +704,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
                                                s->current_picture.f->linesize[!!chroma]);
     }
     if (!zeros_only)
-        s->idsp.idct_add(w->dest[chroma],
+        w->idsp.idct_add(w->dest[chroma],
                          s->current_picture.f->linesize[!!chroma],
                          s->block[0]);
 
@@ -743,12 +743,14 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame, int mb_y)
     w->dest[2] += (mb_y & (~1)) * uvlinesize << 2;
 }
 
-av_cold int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
+av_cold int ff_intrax8_common_init(IntraX8Context *w, IDCTDSPContext *idsp,
+                                   MpegEncContext *const s)
 {
     int ret = x8_vlc_init();
     if (ret < 0)
         return ret;
 
+    w->idsp = *idsp;
     w->s = s;
 
     // two rows, 2 blocks per cannon mb
@@ -756,11 +758,11 @@ av_cold int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
     if (!w->prediction_table)
         return AVERROR(ENOMEM);
 
-    ff_init_scantable(s->idsp.idct_permutation, &w->scantable[0],
+    ff_init_scantable(w->idsp.idct_permutation, &w->scantable[0],
                       ff_wmv1_scantable[0]);
-    ff_init_scantable(s->idsp.idct_permutation, &w->scantable[1],
+    ff_init_scantable(w->idsp.idct_permutation, &w->scantable[1],
                       ff_wmv1_scantable[2]);
-    ff_init_scantable(s->idsp.idct_permutation, &w->scantable[2],
+    ff_init_scantable(w->idsp.idct_permutation, &w->scantable[2],
                       ff_wmv1_scantable[3]);
 
     ff_intrax8dsp_init(&w->dsp);
