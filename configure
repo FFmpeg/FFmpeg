@@ -91,6 +91,7 @@ Standard options:
   --enable-rpath           use rpath to allow installing libraries in paths
                            not part of the dynamic linker search path
                            use rpath when linking programs [USE WITH CARE]
+  --install-name-dir=DIR   Darwin directory name for installed targets
 
 Licensing options:
   --enable-gpl             allow use of GPL code, the resulting libs
@@ -2078,6 +2079,7 @@ PATHS_LIST="
     pkgconfigdir
     prefix
     shlibdir
+    install_name_dir
 "
 
 CMDLINE_SET="
@@ -4522,7 +4524,8 @@ case $target_os in
         ;;
     darwin)
         enabled ppc && add_asflags -force_cpusubtype_ALL
-        SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR)'
+        install_name_dir_default='$(SHLIBDIR)'
+        SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(INSTALL_NAME_DIR)/$(SLIBNAME_WITH_MAJOR),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR)'
         enabled x86_32 && append SHFLAGS -Wl,-read_only_relocs,suppress
         strip="${strip} -x"
         add_ldflags -Wl,-dynamic,-search_paths_first
@@ -6364,6 +6367,7 @@ DATADIR=\$(DESTDIR)$datadir
 DOCDIR=\$(DESTDIR)$docdir
 MANDIR=\$(DESTDIR)$mandir
 PKGCONFIGDIR=\$(DESTDIR)$pkgconfigdir
+INSTALL_NAME_DIR=$install_name_dir
 SRC_PATH=$source_path
 SRC_LINK=$source_link
 ifndef MAIN_MAKEFILE
