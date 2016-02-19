@@ -45,7 +45,7 @@ static VLC j_ac_vlc[2][2][8];  // [quant < 13], [intra / inter], [select]
 static VLC j_dc_vlc[2][8];     // [quant], [select]
 static VLC j_orient_vlc[2][4]; // [quant], [select]
 
-static av_cold void x8_vlc_init(void)
+static av_cold int x8_vlc_init(void)
 {
     int i;
     int offset = 0;
@@ -114,9 +114,13 @@ static av_cold void x8_vlc_init(void)
         init_or_vlc(j_orient_vlc[1][i], x8_orient_lowquant_table[i][0]);
 #undef init_or_vlc
 
-    if (offset != sizeof(table)/sizeof(VLC_TYPE)/2)
+    if (offset != sizeof(table) / sizeof(VLC_TYPE) / 2) {
         av_log(NULL, AV_LOG_ERROR, "table size %zd does not match needed %i\n",
                sizeof(table) / sizeof(VLC_TYPE) / 2, offset);
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
 }
 
 static void x8_reset_vlc_tables(IntraX8Context *w)
@@ -739,14 +743,18 @@ static void x8_init_block_index(MpegEncContext *s)
     s->dest[2] += (s->mb_y & (~1)) * uvlinesize << 2;
 }
 
-av_cold void ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
+av_cold int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
 {
+    int ret = x8_vlc_init();
+    if (ret < 0)
+        return ret;
+
     w->s = s;
-    x8_vlc_init();
-    assert(s->mb_width > 0);
 
     // two rows, 2 blocks per cannon mb
     w->prediction_table = av_mallocz(s->mb_width * 2 * 2);
+    if (!w->prediction_table)
+        return AVERROR(ENOMEM);
 
     ff_init_scantable(s->idsp.idct_permutation, &w->scantable[0],
                       ff_wmv1_scantable[0]);
@@ -756,6 +764,8 @@ av_cold void ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
                       ff_wmv1_scantable[3]);
 
     ff_intrax8dsp_init(&w->dsp);
+
+    return 0;
 }
 
 av_cold void ff_intrax8_common_end(IntraX8Context *w)
