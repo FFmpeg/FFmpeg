@@ -40,10 +40,15 @@
  */
 #define SHORT_SEEK_THRESHOLD 4096
 
+typedef struct AVIOInternal {
+    URLContext *h;
+} AVIOInternal;
+
 static void *ff_avio_child_next(void *obj, void *prev)
 {
     AVIOContext *s = obj;
-    return prev ? NULL : s->opaque;
+    AVIOInternal *internal = s->opaque;
+    return prev ? NULL : internal->h;
 }
 
 static const AVClass *ff_avio_child_class_next(const AVClass *prev)
@@ -690,9 +695,44 @@ uint64_t ffio_read_varlen(AVIOContext *bc){
     return val;
 }
 
+static int io_read_packet(void *opaque, uint8_t *buf, int buf_size)
+{
+    AVIOInternal *internal = opaque;
+    return ffurl_read(internal->h, buf, buf_size);
+}
+
+static int io_write_packet(void *opaque, uint8_t *buf, int buf_size)
+{
+    AVIOInternal *internal = opaque;
+    return ffurl_write(internal->h, buf, buf_size);
+}
+
+static int64_t io_seek(void *opaque, int64_t offset, int whence)
+{
+    AVIOInternal *internal = opaque;
+    return ffurl_seek(internal->h, offset, whence);
+}
+
+static int io_read_pause(void *opaque, int pause)
+{
+    AVIOInternal *internal = opaque;
+    if (!internal->h->prot->url_read_pause)
+        return AVERROR(ENOSYS);
+    return internal->h->prot->url_read_pause(internal->h, pause);
+}
+
+static int64_t io_read_seek(void *opaque, int stream_index, int64_t timestamp, int flags)
+{
+    AVIOInternal *internal = opaque;
+    if (!internal->h->prot->url_read_seek)
+        return AVERROR(ENOSYS);
+    return internal->h->prot->url_read_seek(internal->h, stream_index, timestamp, flags);
+}
+
 int ffio_fdopen(AVIOContext **s, URLContext *h)
 {
-    uint8_t *buffer;
+    AVIOInternal *internal = NULL;
+    uint8_t *buffer = NULL;
     int buffer_size, max_packet_size;
 
     max_packet_size = h->max_packet_size;
@@ -705,22 +745,29 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     if (!buffer)
         return AVERROR(ENOMEM);
 
-    *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
-                            (int (*)(void *, uint8_t *, int)) ffurl_read,
-                            (int (*)(void *, uint8_t *, int)) ffurl_write,
-                            (int64_t (*)(void *, int64_t, int)) ffurl_seek);
-    if (!*s) {
-        av_free(buffer);
-        return AVERROR(ENOMEM);
-    }
+    internal = av_mallocz(sizeof(*internal));
+    if (!internal)
+        goto fail;
+
+    internal->h = h;
+
+    *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE,
+                            internal, io_read_packet, io_write_packet, io_seek);
+    if (!*s)
+        goto fail;
+
     (*s)->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
     (*s)->max_packet_size = max_packet_size;
     if(h->prot) {
-        (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
-        (*s)->read_seek  = (int64_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
+        (*s)->read_pause = io_read_pause;
+        (*s)->read_seek  = io_read_seek;
     }
     (*s)->av_class = &ff_avio_class;
     return 0;
+fail:
+    av_freep(&internal);
+    av_freep(&buffer);
+    return AVERROR(ENOMEM);
 }
 
 int ffio_set_buf_size(AVIOContext *s, int buf_size)
@@ -815,13 +862,17 @@ int avio_open2(AVIOContext **s, const char *filename, int flags,
 
 int avio_close(AVIOContext *s)
 {
+    AVIOInternal *internal;
     URLContext *h;
 
     if (!s)
         return 0;
 
     avio_flush(s);
-    h = s->opaque;
+    internal = s->opaque;
+    h        = internal->h;
+
+    av_freep(&s->opaque);
     av_freep(&s->buffer);
     av_free(s);
     return ffurl_close(h);
@@ -857,15 +908,14 @@ int avio_pause(AVIOContext *s, int pause)
 int64_t avio_seek_time(AVIOContext *s, int stream_index,
                        int64_t timestamp, int flags)
 {
-    URLContext *h = s->opaque;
     int64_t ret;
     if (!s->read_seek)
         return AVERROR(ENOSYS);
-    ret = s->read_seek(h, stream_index, timestamp, flags);
+    ret = s->read_seek(s->opaque, stream_index, timestamp, flags);
     if (ret >= 0) {
         int64_t pos;
         s->buf_ptr = s->buf_end; // Flush buffer
-        pos = s->seek(h, 0, SEEK_CUR);
+        pos = s->seek(s->opaque, 0, SEEK_CUR);
         if (pos >= 0)
             s->pos = pos;
         else if (pos != AVERROR(ENOSYS))
