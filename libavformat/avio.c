@@ -79,21 +79,6 @@ const AVClass ffurl_context_class = {
 };
 /*@}*/
 
-const char *avio_enum_protocols(void **opaque, int output)
-{
-    const URLProtocol **p = *opaque;
-
-    p = p ? p + 1 : ff_url_protocols;
-    *opaque = p;
-    if (!*p) {
-        *opaque = NULL;
-        return NULL;
-    }
-    if ((output && (*p)->url_write) || (!output && (*p)->url_read))
-        return (*p)->name;
-    return avio_enum_protocols(opaque, output);
-}
-
 static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
                                   const char *filename, int flags,
                                   const AVIOInterruptCB *int_cb)

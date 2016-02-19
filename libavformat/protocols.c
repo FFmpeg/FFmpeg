@@ -162,3 +162,18 @@ const URLProtocol *ff_url_protocols[] = {
 #endif
     NULL,
 };
+
+const char *avio_enum_protocols(void **opaque, int output)
+{
+    const URLProtocol **p = *opaque;
+
+    p = p ? p + 1 : ff_url_protocols;
+    *opaque = p;
+    if (!*p) {
+        *opaque = NULL;
+        return NULL;
+    }
+    if ((output && (*p)->url_write) || (!output && (*p)->url_read))
+        return (*p)->name;
+    return avio_enum_protocols(opaque, output);
+}
