@@ -49,25 +49,6 @@ static void *urlcontext_child_next(void *obj, void *prev)
     return NULL;
 }
 
-static const AVClass *urlcontext_child_class_next(const AVClass *prev)
-{
-    int i;
-
-    /* find the protocol that corresponds to prev */
-    for (i = 0; ff_url_protocols[i]; i++) {
-        if (ff_url_protocols[i]->priv_data_class == prev) {
-            i++;
-            break;
-        }
-    }
-
-    /* find next protocol with priv options */
-    for (; ff_url_protocols[i]; i++)
-        if (ff_url_protocols[i]->priv_data_class)
-            return ff_url_protocols[i]->priv_data_class;
-    return NULL;
-}
-
 static const AVOption options[] = { { NULL } };
 const AVClass ffurl_context_class = {
     .class_name       = "URLContext",
@@ -75,7 +56,7 @@ const AVClass ffurl_context_class = {
     .option           = options,
     .version          = LIBAVUTIL_VERSION_INT,
     .child_next       = urlcontext_child_next,
-    .child_class_next = urlcontext_child_class_next,
+    .child_class_next = ff_urlcontext_child_class_next,
 };
 /*@}*/
 
