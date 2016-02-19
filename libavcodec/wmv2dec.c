@@ -471,9 +471,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
 
     ff_wmv2_common_init(w);
 
-    ff_intrax8_common_init(&w->x8, &w->s);
-
-    return 0;
+    return ff_intrax8_common_init(&w->x8, &w->s);
 }
 
 static av_cold int wmv2_decode_end(AVCodecContext *avctx)
