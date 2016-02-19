@@ -371,20 +371,20 @@ static void set_colorspace(AVCodecContext *avctx)
     if (ctx->vpx_cs) {
         vpx_cs = ctx->vpx_cs;
     } else {
-    switch (avctx->colorspace) {
-    case AVCOL_SPC_RGB:         vpx_cs = VPX_CS_SRGB;      break;
-    case AVCOL_SPC_BT709:       vpx_cs = VPX_CS_BT_709;    break;
-    case AVCOL_SPC_UNSPECIFIED: vpx_cs = VPX_CS_UNKNOWN;   break;
-    case AVCOL_SPC_RESERVED:    vpx_cs = VPX_CS_RESERVED;  break;
-    case AVCOL_SPC_BT470BG:     vpx_cs = VPX_CS_BT_601;    break;
-    case AVCOL_SPC_SMPTE170M:   vpx_cs = VPX_CS_SMPTE_170; break;
-    case AVCOL_SPC_SMPTE240M:   vpx_cs = VPX_CS_SMPTE_240; break;
-    case AVCOL_SPC_BT2020_NCL:  vpx_cs = VPX_CS_BT_2020;   break;
-    default:
-        av_log(avctx, AV_LOG_WARNING, "Unsupported colorspace (%d)\n",
-               avctx->colorspace);
-        return;
-    }
+        switch (avctx->colorspace) {
+        case AVCOL_SPC_RGB:         vpx_cs = VPX_CS_SRGB;      break;
+        case AVCOL_SPC_BT709:       vpx_cs = VPX_CS_BT_709;    break;
+        case AVCOL_SPC_UNSPECIFIED: vpx_cs = VPX_CS_UNKNOWN;   break;
+        case AVCOL_SPC_RESERVED:    vpx_cs = VPX_CS_RESERVED;  break;
+        case AVCOL_SPC_BT470BG:     vpx_cs = VPX_CS_BT_601;    break;
+        case AVCOL_SPC_SMPTE170M:   vpx_cs = VPX_CS_SMPTE_170; break;
+        case AVCOL_SPC_SMPTE240M:   vpx_cs = VPX_CS_SMPTE_240; break;
+        case AVCOL_SPC_BT2020_NCL:  vpx_cs = VPX_CS_BT_2020;   break;
+        default:
+            av_log(avctx, AV_LOG_WARNING, "Unsupported colorspace (%d)\n",
+                   avctx->colorspace);
+            return;
+        }
     }
     codecctl_int(avctx, VP9E_SET_COLOR_SPACE, vpx_cs);
 }
