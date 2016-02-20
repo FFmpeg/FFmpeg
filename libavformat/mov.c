@@ -3173,10 +3173,10 @@ static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
+static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    int64_t end = avio_tell(pb) + size;
-    uint8_t *key = NULL, *val = NULL;
+    int64_t end = avio_tell(pb) + atom.size;
+    uint8_t *key = NULL, *val = NULL, *mean = NULL;
     int i;
     AVStream *st;
     MOVStreamContext *sc;
@@ -3186,7 +3186,7 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 3; i++) {
         uint8_t **p;
         uint32_t len, tag;
         int ret;
@@ -3202,7 +3202,9 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
             break;
         len -= 12;
 
-        if (tag == MKTAG('n', 'a', 'm', 'e'))
+        if (tag == MKTAG('m', 'e', 'a', 'n'))
+            p = &mean;
+        else if (tag == MKTAG('n', 'a', 'm', 'e'))
             p = &key;
         else if (tag == MKTAG('d', 'a', 't', 'a') && len > 4) {
             avio_skip(pb, 4);
@@ -3222,7 +3224,7 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
         (*p)[len] = 0;
     }
 
-    if (key && val) {
+    if (mean && key && val) {
         if (strcmp(key, "iTunSMPB") == 0) {
             int priming, remainder, samples;
             if(sscanf(val, "%*X %X %X %X", &priming, &remainder, &samples) == 3){
@@ -3235,43 +3237,15 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
                         AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
             key = val = NULL;
         }
+    } else {
+        av_log(c->fc, AV_LOG_VERBOSE,
+               "Unhandled or malformed custom metadata of size %"PRId64"\n", atom.size);
     }
 
     avio_seek(pb, end, SEEK_SET);
     av_freep(&key);
     av_freep(&val);
-    return 0;
-}
-
-static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
-{
-    int64_t end = avio_tell(pb) + atom.size;
-    uint32_t tag, len;
-
-    if (atom.size < 8)
-        goto fail;
-
-    len = avio_rb32(pb);
-    tag = avio_rl32(pb);
-
-    if (len > atom.size)
-        goto fail;
-
-    if (tag == MKTAG('m', 'e', 'a', 'n') && len > 12) {
-        uint8_t domain[128];
-        int domain_len;
-
-        avio_skip(pb, 4); // flags
-        len -= 12;
-
-        domain_len = avio_get_str(pb, len, domain, sizeof(domain));
-        avio_skip(pb, len - domain_len);
-        return mov_read_custom_2plus(c, pb, end - avio_tell(pb));
-    }
-
-fail:
-    av_log(c->fc, AV_LOG_VERBOSE,
-           "Unhandled or malformed custom metadata of size %"PRId64"\n", atom.size);
+    av_freep(&mean);
     return 0;
 }
 
