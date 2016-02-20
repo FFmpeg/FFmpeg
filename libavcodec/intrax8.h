@@ -35,6 +35,7 @@ typedef struct IntraX8Context {
     // set by ff_intrax8_common_init
     uint8_t *prediction_table; // 2 * (mb_w * 2)
     ScanTable scantable[3];
+    AVCodecContext *avctx;
 
     // set by the caller codec
     MpegEncContext *s;
@@ -67,12 +68,14 @@ typedef struct IntraX8Context {
 /**
  * Initialize IntraX8 frame decoder.
  * Requires valid MpegEncContext with valid s->mb_width before calling.
+ * @param avctx pointer to AVCodecContext
  * @param w pointer to IntraX8Context
  * @param idsp pointer to IDCTDSPContext
  * @param s pointer to MpegEncContext of the parent codec
  * @return 0 on success, a negative AVERROR value on error
  */
-int ff_intrax8_common_init(IntraX8Context *w, IDCTDSPContext *idsp,
+int ff_intrax8_common_init(AVCodecContext *avctx,
+                           IntraX8Context *w, IDCTDSPContext *idsp,
                            MpegEncContext *const s);
 
 /**
