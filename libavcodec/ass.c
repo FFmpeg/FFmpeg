@@ -124,7 +124,8 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
 void ff_ass_decoder_flush(AVCodecContext *avctx)
 {
     FFASSDecoderContext *s = avctx->priv_data;
-    s->readorder = 0;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        s->readorder = 0;
 }
 
 void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,

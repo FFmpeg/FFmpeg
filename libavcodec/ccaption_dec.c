@@ -307,7 +307,8 @@ static void flush_decoder(AVCodecContext *avctx)
     ctx->last_real_time = 0;
     ctx->screen_touched = 0;
     ctx->buffer_changed = 0;
-    ctx->readorder = 0;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        ctx->readorder = 0;
     av_bprint_clear(&ctx->buffer);
 }
 

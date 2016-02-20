@@ -518,7 +518,8 @@ static int mov_text_decode_close(AVCodecContext *avctx)
 static void mov_text_flush(AVCodecContext *avctx)
 {
     MovTextContext *m = avctx->priv_data;
-    m->readorder = 0;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        m->readorder = 0;
 }
 
 AVCodec ff_movtext_decoder = {

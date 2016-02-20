@@ -66,7 +66,8 @@ static int text_decode_frame(AVCodecContext *avctx, void *data,
 static void text_flush(AVCodecContext *avctx)
 {
     TextContext *text = avctx->priv_data;
-    text->readorder = 0;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        text->readorder = 0;
 }
 
 #define DECLARE_CLASS(decname) static const AVClass decname ## _decoder_class = {   \

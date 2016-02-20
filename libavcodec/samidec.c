@@ -166,7 +166,8 @@ static av_cold int sami_close(AVCodecContext *avctx)
 static void sami_flush(AVCodecContext *avctx)
 {
     SAMIContext *sami = avctx->priv_data;
-    sami->readorder = 0;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        sami->readorder = 0;
 }
 
 AVCodec ff_sami_decoder = {

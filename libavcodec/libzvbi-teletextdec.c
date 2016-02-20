@@ -528,7 +528,8 @@ static int teletext_close_decoder(AVCodecContext *avctx)
     vbi_decoder_delete(ctx->vbi);
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
-    ctx->readorder = 0;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        ctx->readorder = 0;
     return 0;
 }
 
