@@ -3178,6 +3178,7 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t end = avio_tell(pb) + atom.size;
     uint8_t *key = NULL, *val = NULL, *mean = NULL;
     int i;
+    int ret = 0;
     AVStream *st;
     MOVStreamContext *sc;
 
@@ -3189,7 +3190,6 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < 3; i++) {
         uint8_t **p;
         uint32_t len, tag;
-        int ret;
 
         if (end - avio_tell(pb) <= 12)
             break;
@@ -3219,7 +3219,7 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         ret = ffio_read_size(pb, *p, len);
         if (ret < 0) {
             av_freep(p);
-            return ret;
+            break;
         }
         (*p)[len] = 0;
     }
@@ -3246,7 +3246,7 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_freep(&key);
     av_freep(&val);
     av_freep(&mean);
-    return 0;
+    return ret;
 }
 
 static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
