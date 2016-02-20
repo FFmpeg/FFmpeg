@@ -225,7 +225,7 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
         init_lpf_funcs(BPC, avx);
     }
 
-    if (EXTERNAL_AVX2(cpu_flags)) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
 #if HAVE_AVX2_EXTERNAL
         init_subpel3_32_64(0,  put, BPC, avx2);
         init_subpel3_32_64(1,  avg, BPC, avx2);

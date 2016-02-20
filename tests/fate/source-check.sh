@@ -2,7 +2,7 @@
 
 cd "$1"/..
 
-git --version > /dev/null || { cat tests/ref/fate/source ; exit 0; }
+git show > /dev/null 2> /dev/null || { cat tests/ref/fate/source ; exit 0; }
 
 echo Files without standard license headers:
 git grep -L -E "This file is part of FFmpeg|This file is part of libswresample|"\

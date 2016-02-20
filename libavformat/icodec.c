@@ -45,11 +45,14 @@ typedef struct {
 
 static int probe(AVProbeData *p)
 {
-    unsigned i, frames = AV_RL16(p->buf + 4);
+    unsigned i, frames, checked = 0;
 
-    if (AV_RL16(p->buf) || AV_RL16(p->buf + 2) != 1 || !frames)
+    if (p->buf_size < 22 || AV_RL16(p->buf) || AV_RL16(p->buf + 2) != 1)
         return 0;
-    for (i = 0; i < frames; i++) {
+    frames = AV_RL16(p->buf + 4);
+    if (!frames)
+        return 0;
+    for (i = 0; i < frames && i * 16 + 22 <= p->buf_size; i++) {
         unsigned offset;
         if (AV_RL16(p->buf + 10 + i * 16) & ~1)
             return FFMIN(i, AVPROBE_SCORE_MAX / 4);
@@ -60,14 +63,15 @@ static int probe(AVProbeData *p)
         offset = AV_RL32(p->buf + 18 + i * 16);
         if (offset < 22)
             return FFMIN(i, AVPROBE_SCORE_MAX / 4);
-        if (offset + 8 > p->buf_size)
-            return AVPROBE_SCORE_MAX / 4 + FFMIN(i, 1);
+        if (offset > p->buf_size - 8)
+            continue;
         if (p->buf[offset] != 40 && AV_RB64(p->buf + offset) != PNGSIG)
             return FFMIN(i, AVPROBE_SCORE_MAX / 4);
-        if (i * 16 + 6 > p->buf_size)
-            return AVPROBE_SCORE_MAX / 4 + FFMIN(i, 1);
+        checked++;
     }
 
+    if (checked < frames)
+        return AVPROBE_SCORE_MAX / 4 + FFMIN(checked, 1);
     return AVPROBE_SCORE_MAX / 2 + 1;
 }
 

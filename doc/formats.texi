@@ -147,7 +147,7 @@ a packet for each stream, regardless of the maximum timestamp
 difference between the buffered packets.
 
 @item use_wallclock_as_timestamps @var{integer} (@emph{input})
-Use wallclock as timestamps.
+Use wallclock as timestamps if set to 1. Default is 0.
 
 @item avoid_negative_ts @var{integer} (@emph{output})
 

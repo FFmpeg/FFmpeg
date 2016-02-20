@@ -15,6 +15,16 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavu 55.18.100
+  xxxxxxx audio_fifo.h - Add av_audio_fifo_peek_at().
+
+2016-xx-xx - lavu 55.18.0
+  xxxxxxx buffer.h - Add av_buffer_pool_init2().
+  xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
+                        for handling hwaccel frames.
+  xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
+                              VDPAU-specific hwcontext definitions.
+
 -------- 8< --------- FFmpeg 3.0 was cut here -------- 8< ---------
 
 2016-02-10 - bc9a596 / 9f61abc - lavf 57.25.100 / 57.3.0 - avformat.h

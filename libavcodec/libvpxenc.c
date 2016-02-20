@@ -106,6 +106,7 @@ typedef struct VP8EncoderContext {
     int aq_mode;
     int drop_threshold;
     int noise_sensitivity;
+    int vpx_cs;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -277,6 +278,7 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
                        struct vpx_codec_enc_cfg *enccfg, vpx_codec_flags_t *flags,
                        vpx_img_fmt_t *img_fmt)
 {
+    VP8Context *ctx = avctx->priv_data;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
     enccfg->g_bit_depth = enccfg->g_input_bit_depth = 8;
 #endif
@@ -294,28 +296,30 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
         enccfg->g_profile = 1;
         *img_fmt = VPX_IMG_FMT_I440;
         return 0;
+    case AV_PIX_FMT_GBRP:
+        ctx->vpx_cs = VPX_CS_SRGB;
 #endif
     case AV_PIX_FMT_YUV444P:
         enccfg->g_profile = 1;
         *img_fmt = VPX_IMG_FMT_I444;
         return 0;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
-    case AV_PIX_FMT_YUV420P10LE:
-    case AV_PIX_FMT_YUV420P12LE:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV420P12:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV420P10LE ? 10 : 12;
+                avctx->pix_fmt == AV_PIX_FMT_YUV420P10 ? 10 : 12;
             enccfg->g_profile = 2;
             *img_fmt = VPX_IMG_FMT_I42016;
             *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
             return 0;
         }
         break;
-    case AV_PIX_FMT_YUV422P10LE:
-    case AV_PIX_FMT_YUV422P12LE:
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV422P12:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV422P10LE ? 10 : 12;
+                avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 10 : 12;
             enccfg->g_profile = 3;
             *img_fmt = VPX_IMG_FMT_I42216;
             *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
@@ -323,23 +327,27 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
         }
         break;
 #if VPX_IMAGE_ABI_VERSION >= 3
-    case AV_PIX_FMT_YUV440P10LE:
-    case AV_PIX_FMT_YUV440P12LE:
+    case AV_PIX_FMT_YUV440P10:
+    case AV_PIX_FMT_YUV440P12:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV440P10LE ? 10 : 12;
+                avctx->pix_fmt == AV_PIX_FMT_YUV440P10 ? 10 : 12;
             enccfg->g_profile = 3;
             *img_fmt = VPX_IMG_FMT_I44016;
             *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
             return 0;
         }
         break;
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+        ctx->vpx_cs = VPX_CS_SRGB;
 #endif
-    case AV_PIX_FMT_YUV444P10LE:
-    case AV_PIX_FMT_YUV444P12LE:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV444P12:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV444P10LE ? 10 : 12;
+                avctx->pix_fmt == AV_PIX_FMT_YUV444P10 ||
+                avctx->pix_fmt == AV_PIX_FMT_GBRP10 ? 10 : 12;
             enccfg->g_profile = 3;
             *img_fmt = VPX_IMG_FMT_I44416;
             *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
@@ -358,20 +366,25 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
 static void set_colorspace(AVCodecContext *avctx)
 {
     enum vpx_color_space vpx_cs;
+    VP8Context *ctx = avctx->priv_data;
 
-    switch (avctx->colorspace) {
-    case AVCOL_SPC_RGB:         vpx_cs = VPX_CS_SRGB;      break;
-    case AVCOL_SPC_BT709:       vpx_cs = VPX_CS_BT_709;    break;
-    case AVCOL_SPC_UNSPECIFIED: vpx_cs = VPX_CS_UNKNOWN;   break;
-    case AVCOL_SPC_RESERVED:    vpx_cs = VPX_CS_RESERVED;  break;
-    case AVCOL_SPC_BT470BG:     vpx_cs = VPX_CS_BT_601;    break;
-    case AVCOL_SPC_SMPTE170M:   vpx_cs = VPX_CS_SMPTE_170; break;
-    case AVCOL_SPC_SMPTE240M:   vpx_cs = VPX_CS_SMPTE_240; break;
-    case AVCOL_SPC_BT2020_NCL:  vpx_cs = VPX_CS_BT_2020;   break;
-    default:
-        av_log(avctx, AV_LOG_WARNING, "Unsupported colorspace (%d)\n",
-               avctx->colorspace);
-        return;
+    if (ctx->vpx_cs) {
+        vpx_cs = ctx->vpx_cs;
+    } else {
+        switch (avctx->colorspace) {
+        case AVCOL_SPC_RGB:         vpx_cs = VPX_CS_SRGB;      break;
+        case AVCOL_SPC_BT709:       vpx_cs = VPX_CS_BT_709;    break;
+        case AVCOL_SPC_UNSPECIFIED: vpx_cs = VPX_CS_UNKNOWN;   break;
+        case AVCOL_SPC_RESERVED:    vpx_cs = VPX_CS_RESERVED;  break;
+        case AVCOL_SPC_BT470BG:     vpx_cs = VPX_CS_BT_601;    break;
+        case AVCOL_SPC_SMPTE170M:   vpx_cs = VPX_CS_SMPTE_170; break;
+        case AVCOL_SPC_SMPTE240M:   vpx_cs = VPX_CS_SMPTE_240; break;
+        case AVCOL_SPC_BT2020_NCL:  vpx_cs = VPX_CS_BT_2020;   break;
+        default:
+            av_log(avctx, AV_LOG_WARNING, "Unsupported colorspace (%d)\n",
+                   avctx->colorspace);
+            return;
+        }
     }
     codecctl_int(avctx, VP9E_SET_COLOR_SPACE, vpx_cs);
 }

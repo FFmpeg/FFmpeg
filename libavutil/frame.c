@@ -429,6 +429,14 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
         }
     }
 
+    if (src->hw_frames_ctx) {
+        dst->hw_frames_ctx = av_buffer_ref(src->hw_frames_ctx);
+        if (!dst->hw_frames_ctx) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     /* duplicate extended data */
     if (src->extended_data != src->data) {
         int ch = src->channels;
@@ -489,6 +497,8 @@ void av_frame_unref(AVFrame *frame)
 #if FF_API_FRAME_QP
     av_buffer_unref(&frame->qp_table_buf);
 #endif
+
+    av_buffer_unref(&frame->hw_frames_ctx);
 
     get_frame_defaults(frame);
 }

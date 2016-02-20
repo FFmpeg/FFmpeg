@@ -538,7 +538,6 @@ extern int stdin_interaction;
 extern int frame_bits_per_raw_sample;
 extern AVIOContext *progress_avio;
 extern float max_error_rate;
-extern int vdpau_api_ver;
 extern char *videotoolbox_pixfmt;
 
 extern const AVIOInterruptCB int_cb;

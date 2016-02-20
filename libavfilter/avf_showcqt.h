@@ -60,7 +60,7 @@ typedef struct {
     AVRational          step_frac;
     int                 remaining_frac;
     int                 remaining_fill;
-    int64_t             frame_count;
+    int64_t             next_pts;
     double              *freq;
     FFTContext          *fft_ctx;
     Coeffs              *coeffs;

@@ -2162,7 +2162,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         int ret, dref_id = 1;
         MOVAtom a = { AV_RL32("stsd") };
         int64_t start_pos = avio_tell(pb);
-        int64_t size = avio_rb32(pb); /* size */
+        int64_t size    = avio_rb32(pb); /* size */
         uint32_t format = avio_rl32(pb); /* data format */
 
         if (size >= 16) {
@@ -3172,7 +3172,7 @@ static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int size)
+static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
 {
     int64_t end = avio_tell(pb) + size;
     uint8_t *key = NULL, *val = NULL;

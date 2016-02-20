@@ -98,7 +98,7 @@ av_cold void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c)
         c->diff_bytes = ff_diff_bytes_sse2;
     }
 
-    if (EXTERNAL_AVX2(cpu_flags)) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         c->diff_bytes = ff_diff_bytes_avx2;
     }
 }

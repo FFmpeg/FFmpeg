@@ -85,16 +85,16 @@ typedef struct AVPixFmtDescriptor {
     /**
      * Amount to shift the luma width right to find the chroma width.
      * For YV12 this is 1 for example.
-     * chroma_width = -((-luma_width) >> log2_chroma_w)
+     * chroma_width = AV_CEIL_RSHIFT(luma_width, log2_chroma_w)
      * The note above is needed to ensure rounding up.
      * This value only refers to the chroma components.
      */
-    uint8_t log2_chroma_w;  ///< chroma_width = -((-luma_width )>>log2_chroma_w)
+    uint8_t log2_chroma_w;
 
     /**
      * Amount to shift the luma height right to find the chroma height.
      * For YV12 this is 1 for example.
-     * chroma_height= -((-luma_height) >> log2_chroma_h)
+     * chroma_height= AV_CEIL_RSHIFT(luma_height, log2_chroma_h)
      * The note above is needed to ensure rounding up.
      * This value only refers to the chroma components.
      */

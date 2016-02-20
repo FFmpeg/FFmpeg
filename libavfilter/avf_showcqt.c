@@ -48,6 +48,8 @@
 #define FONTCOLOR       "st(0, (midi(f)-59.5)/12);" \
     "st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));" \
     "r(1-ld(1)) + b(ld(1))"
+#define PTS_STEP 10
+#define PTS_TOLERANCE 1
 
 #define OFFSET(x) offsetof(ShowCQTContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM)
@@ -989,11 +991,10 @@ static void process_cqt(ShowCQTContext *s)
         yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width);
 }
 
-static int plot_cqt(AVFilterContext *ctx)
+static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
 {
     AVFilterLink *outlink = ctx->outputs[0];
     ShowCQTContext *s = ctx->priv;
-    int ret = 0;
 
     memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
     av_fft_permute(s->fft_ctx, s->fft_result);
@@ -1004,7 +1005,7 @@ static int plot_cqt(AVFilterContext *ctx)
     if (s->sono_h)
         s->update_sono(s->sono_frame, s->c_buf, s->sono_idx);
     if (!s->sono_count) {
-        AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        AVFrame *out = *frameout = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
         if (s->bar_h)
@@ -1013,14 +1014,13 @@ static int plot_cqt(AVFilterContext *ctx)
             s->draw_axis(out, s->axis_frame, s->c_buf, s->bar_h);
         if (s->sono_h)
             s->draw_sono(out, s->sono_frame, s->bar_h + s->axis_h, s->sono_idx);
-        out->pts = s->frame_count;
-        ret = ff_filter_frame(outlink, out);
-        s->frame_count++;
+        out->pts = s->next_pts;
+        s->next_pts += PTS_STEP;
     }
     s->sono_count = (s->sono_count + 1) % s->count;
     if (s->sono_h)
         s->sono_idx = (s->sono_idx + s->sono_h - 1) % s->sono_h;
-    return ret;
+    return 0;
 }
 
 /* main filter control */
@@ -1133,7 +1133,7 @@ static int config_output(AVFilterLink *outlink)
     s->format = outlink->format;
     outlink->sample_aspect_ratio = av_make_q(1, 1);
     outlink->frame_rate = s->rate;
-    outlink->time_base = av_inv_q(s->rate);
+    outlink->time_base = av_mul_q(av_inv_q(s->rate), av_make_q(1, PTS_STEP));
     av_log(ctx, AV_LOG_INFO, "video: %dx%d %s %d/%d fps, bar_h = %d, axis_h = %d, sono_h = %d.\n",
            s->width, s->height, av_get_pix_fmt_name(s->format), s->rate.num, s->rate.den,
            s->bar_h, s->axis_h, s->sono_h);
@@ -1209,7 +1209,7 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     s->sono_count = 0;
-    s->frame_count = 0;
+    s->next_pts = 0;
     s->sono_idx = 0;
     s->remaining_fill = s->fft_len / 2;
     s->remaining_frac = 0;
@@ -1232,14 +1232,16 @@ static int config_output(AVFilterLink *outlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
     ShowCQTContext *s = ctx->priv;
     int remaining, step, ret, x, i, j, m;
     float *audio_data;
+    AVFrame *out = NULL;
 
     if (!insamples) {
         while (s->remaining_fill < s->fft_len / 2) {
             memset(&s->fft_data[s->fft_len - s->remaining_fill], 0, sizeof(*s->fft_data) * s->remaining_fill);
-            ret = plot_cqt(ctx);
+            ret = plot_cqt(ctx, &out);
             if (ret < 0)
                 return ret;
 
@@ -1248,6 +1250,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             for (x = 0; x < (s->fft_len-step); x++)
                 s->fft_data[x] = s->fft_data[x+step];
             s->remaining_fill += step;
+
+            if (out)
+                return ff_filter_frame(outlink, out);
         }
         return AVERROR_EOF;
     }
@@ -1263,12 +1268,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 s->fft_data[j+m].re = audio_data[2*(i+m)];
                 s->fft_data[j+m].im = audio_data[2*(i+m)+1];
             }
-            ret = plot_cqt(ctx);
+            ret = plot_cqt(ctx, &out);
             if (ret < 0) {
                 av_frame_free(&insamples);
                 return ret;
             }
             remaining -= s->remaining_fill;
+            if (out) {
+                int64_t pts = av_rescale_q(insamples->pts, inlink->time_base, av_make_q(1, inlink->sample_rate));
+                pts += insamples->nb_samples - remaining - s->fft_len/2;
+                pts = av_rescale_q(pts, av_make_q(1, inlink->sample_rate), outlink->time_base);
+                if (FFABS(pts - out->pts) > PTS_TOLERANCE) {
+                    av_log(ctx, AV_LOG_DEBUG, "changing pts from %"PRId64" (%.3f) to %"PRId64" (%.3f).\n",
+                           out->pts, out->pts * av_q2d(outlink->time_base),
+                           pts, pts * av_q2d(outlink->time_base));
+                    out->pts = pts;
+                    s->next_pts = pts + PTS_STEP;
+                }
+                ret = ff_filter_frame(outlink, out);
+                if (ret < 0) {
+                    av_frame_free(&insamples);
+                    return ret;
+                }
+                out = NULL;
+            }
             step = s->step + (s->step_frac.num + s->remaining_frac) / s->step_frac.den;
             s->remaining_frac = (s->step_frac.num + s->remaining_frac) % s->step_frac.den;
             for (m = 0; m < s->fft_len-step; m++)
@@ -1294,7 +1317,7 @@ static int request_frame(AVFilterLink *outlink)
 
     ret = ff_request_frame(inlink);
     if (ret == AVERROR_EOF)
-        filter_frame(inlink, NULL);
+        ret = filter_frame(inlink, NULL);
     return ret;
 }
 

@@ -111,7 +111,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t current_size, video_size, image_size;
     uint16_t audio_size, palette_size, width, height;
     int64_t  pos;
-    int      frames, ret;
+    int      format, frames, ret;
 
     if (avio_feof(pb))
         return AVERROR_EOF;
@@ -125,6 +125,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_INVALIDDATA;
     }
 
+    format       = cdxl->header[1] & 0xE0;
     current_size = AV_RB32(&cdxl->header[2]);
     width        = AV_RB16(&cdxl->header[14]);
     height       = AV_RB16(&cdxl->header[16]);
@@ -132,7 +133,10 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     audio_size   = AV_RB16(&cdxl->header[22]);
     if (FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
         return AVERROR_INVALIDDATA;
-    image_size   = FFALIGN(width, 16) * height * cdxl->header[19] / 8;
+    if (format == 0x20)
+        image_size = width * height * cdxl->header[19] / 8;
+    else
+        image_size = FFALIGN(width, 16) * height * cdxl->header[19] / 8;
     video_size   = palette_size + image_size;
 
     if (palette_size > 512)

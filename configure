@@ -2284,7 +2284,7 @@ eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
 eamad_decoder_select="aandcttables blockdsp bswapdsp idctdsp mpegvideo"
 eatgq_decoder_select="aandcttables"
-eatqi_decoder_select="aandcttables blockdsp bswapdsp idctdsp mpeg1video_decoder"
+eatqi_decoder_select="aandcttables blockdsp bswapdsp idctdsp"
 exr_decoder_select="zlib"
 ffv1_decoder_select="golomb rangecoder"
 ffv1_encoder_select="rangecoder"
@@ -2731,6 +2731,7 @@ w64_muxer_select="wav_muxer"
 wav_demuxer_select="riffdec"
 wav_muxer_select="riffenc"
 webm_muxer_select="riffenc"
+webm_dash_manifest_demuxer_select="matroska_demuxer"
 wtv_demuxer_select="riffdec"
 wtv_muxer_select="riffenc"
 xmv_demuxer_select="riffdec"
@@ -3294,43 +3295,37 @@ set >> $logfile
 test -n "$valgrind" && toolchain="valgrind-memcheck"
 
 case "$toolchain" in
-    clang-asan)
-        cc_default="clang"
+    *-asan)
+        cc_default="${toolchain%-asan}"
         add_cflags  -fsanitize=address
         add_ldflags -fsanitize=address
     ;;
-    clang-tsan)
-        cc_default="clang"
+    *-tsan)
+        cc_default="${toolchain%-tsan}"
         add_cflags  -fsanitize=thread -pie
         add_ldflags -fsanitize=thread -pie
+        case "$toolchain" in
+            gcc-tsan)
+                add_cflags  -fPIC
+                add_ldflags -fPIC
+                ;;
+        esac
     ;;
-    clang-usan)
-        cc_default="clang"
+    *-usan)
+        cc_default="${toolchain%-usan}"
         add_cflags  -fsanitize=undefined
         add_ldflags -fsanitize=undefined
     ;;
-    gcc-asan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=address
-        add_ldflags -fsanitize=address
-    ;;
-    gcc-tsan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=thread -pie -fPIC
-        add_ldflags -fsanitize=thread -pie -fPIC
-    ;;
-    gcc-usan)
-        cc_default="gcc"
-        add_cflags  -fsanitize=undefined
-        add_ldflags -fsanitize=undefined
-    ;;
-    valgrind-massif)
-        target_exec_default=${valgrind:-"valgrind"}
-        target_exec_args="--tool=massif --alloc-fn=av_malloc --alloc-fn=av_mallocz --alloc-fn=av_calloc --alloc-fn=av_fast_padded_malloc --alloc-fn=av_fast_malloc --alloc-fn=av_realloc_f --alloc-fn=av_fast_realloc --alloc-fn=av_realloc"
-    ;;
-    valgrind-memcheck)
-        target_exec_default=${valgrind:-"valgrind"}
-        target_exec_args="--error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=$source_path/tests/fate-valgrind.supp"
+    valgrind-*)
+        target_exec_default="valgrind"
+        case "$toolchain" in
+            valgrind-massif)
+                target_exec_args="--tool=massif --alloc-fn=av_malloc --alloc-fn=av_mallocz --alloc-fn=av_calloc --alloc-fn=av_fast_padded_malloc --alloc-fn=av_fast_malloc --alloc-fn=av_realloc_f --alloc-fn=av_fast_realloc --alloc-fn=av_realloc"
+                ;;
+            valgrind-memcheck)
+                target_exec_args="--error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=$source_path/tests/fate-valgrind.supp"
+                ;;
+        esac
     ;;
     msvc)
         # Check whether the current MSVC version needs the C99 converter.
@@ -6237,6 +6232,10 @@ echo
 
 echo "External libraries:"
 print_enabled '' $EXTERNAL_LIBRARY_LIST | print_in_columns
+echo
+
+echo "Libraries:"
+print_enabled '' $LIBRARY_LIST | print_in_columns
 echo
 
 for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do

@@ -446,6 +446,8 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
         POINT pos;
         RECT clip_rect = gdigrab->clip_rect;
         HWND hwnd = gdigrab->hwnd;
+        int vertres = GetDeviceCaps(gdigrab->source_hdc, VERTRES);
+        int desktopvertres = GetDeviceCaps(gdigrab->source_hdc, DESKTOPVERTRES);
         info.hbmMask = NULL;
         info.hbmColor = NULL;
 
@@ -478,6 +480,10 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
                 goto icon_error;
             }
         }
+
+        //that would keep the correct location of mouse with hidpi screens
+        pos.x = pos.x * desktopvertres / vertres;
+        pos.y = pos.y * desktopvertres / vertres;
 
         av_log(s1, AV_LOG_DEBUG, "Cursor pos (%li,%li) -> (%li,%li)\n",
                 ci.ptScreenPos.x, ci.ptScreenPos.y, pos.x, pos.y);
