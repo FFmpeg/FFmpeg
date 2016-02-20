@@ -21,7 +21,6 @@
 
 #include "blockdsp.h"
 #include "get_bits.h"
-#include "mpegvideo.h"
 #include "idctdsp.h"
 #include "intrax8dsp.h"
 #include "mpegpicture.h"
@@ -41,7 +40,6 @@ typedef struct IntraX8Context {
     int16_t (*block)[64];
 
     // set by the caller codec
-    MpegEncContext *s;
     IntraX8DSPContext dsp;
     IDCTDSPContext idsp;
     BlockDSPContext bdsp;
@@ -75,7 +73,6 @@ typedef struct IntraX8Context {
 
 /**
  * Initialize IntraX8 frame decoder.
- * Requires valid MpegEncContext with valid s->mb_width before calling.
  * @param avctx pointer to AVCodecContext
  * @param w pointer to IntraX8Context
  * @param idsp pointer to IDCTDSPContext
@@ -83,15 +80,13 @@ typedef struct IntraX8Context {
  * @param block_last_index pointer to index array
  * @param mb_width macroblock width
  * @param mb_height macroblock height
- * @param s pointer to MpegEncContext of the parent codec
  * @return 0 on success, a negative AVERROR value on error
  */
 int ff_intrax8_common_init(AVCodecContext *avctx,
                            IntraX8Context *w, IDCTDSPContext *idsp,
                            int16_t (*block)[64],
                            int block_last_index[12],
-                           int mb_width, int mb_height,
-                           MpegEncContext *const s);
+                           int mb_width, int mb_height);
 
 /**
  * Destroy IntraX8 frame structure.
@@ -101,9 +96,6 @@ void ff_intrax8_common_end(IntraX8Context *w);
 
 /**
  * Decode single IntraX8 frame.
- * The parent codec must call ff_mpv_frame_start() before calling this function.
- * The parent codec must call ff_mpv_frame_end() after calling this function.
- * This function does not use ff_mpv_decode_mb().
  * @param w pointer to IntraX8Context
  * @param pict the output Picture containing an AVFrame
  * @param gb open bitstream reader
