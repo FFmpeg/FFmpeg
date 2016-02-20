@@ -79,9 +79,9 @@
                      dst2 + dst_offset, WIDTH, WIDTH, HEIGHT, &param, NULL);               \
             if (memcmp(top1, top2, BUF_SIZE) || memcmp(bot1, bot2, BUF_SIZE) || memcmp(dst1, dst2, BUF_SIZE)) \
                 fail();                                                                    \
-            bench_new(top2 + src_offset, WIDTH, bot2 + src_offset, WIDTH,                  \
-                      dst2, WIDTH, WIDTH, HEIGHT, &param, NULL);                           \
         }                                                                                  \
+        bench_new(top2, WIDTH / 4, bot2, WIDTH / 4, dst2, WIDTH / 4,                       \
+                  WIDTH / 4, HEIGHT / 4, &param, NULL);                                    \
     } while (0)
 
 void checkasm_check_blend(void)
