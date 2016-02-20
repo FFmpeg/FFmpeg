@@ -330,12 +330,11 @@ static int x8_get_dc_rlf(IntraX8Context *const w, const int mode,
 
 static int x8_setup_spatial_predictor(IntraX8Context *const w, const int chroma)
 {
-    MpegEncContext *const s = w->s;
     int range;
     int sum;
     int quant;
 
-    w->dsp.setup_spatial_compensation(w->dest[chroma], s->sc.edge_emu_buffer,
+    w->dsp.setup_spatial_compensation(w->dest[chroma], w->scratchpad,
                                       w->frame->linesize[chroma > 0],
                                       &range, &sum, w->edges);
     if (chroma) {
@@ -699,7 +698,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
         dsp_x8_put_solidcolor(w->predicted_dc, w->dest[chroma],
                               w->frame->linesize[!!chroma]);
     } else {
-        w->dsp.spatial_compensation[w->orient](s->sc.edge_emu_buffer,
+        w->dsp.spatial_compensation[w->orient](w->scratchpad,
                                                w->dest[chroma],
                                                w->frame->linesize[!!chroma]);
     }
