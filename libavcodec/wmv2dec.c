@@ -231,7 +231,7 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
         ff_intrax8_decode_picture(&w->x8, &s->current_picture,
                                   &s->gb, &s->mb_x, &s->mb_y,
                                   2 * s->qscale, (s->qscale - 1) | 1,
-                                  s->loop_filter);
+                                  s->loop_filter, s->low_delay);
 
         ff_er_add_slice(&w->s.er, 0, 0,
                         (w->s.mb_x >> 1) - 1, (w->s.mb_y >> 1) - 1,
