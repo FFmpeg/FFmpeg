@@ -56,8 +56,30 @@ typedef struct IntraX8Context {
     int est_run;
 } IntraX8Context;
 
+/**
+ * Initialize IntraX8 frame decoder.
+ * Requires valid MpegEncContext with valid s->mb_width before calling.
+ * @param w pointer to IntraX8Context
+ * @param s pointer to MpegEncContext of the parent codec
+ */
 void ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s);
+
+/**
+ * Destroy IntraX8 frame structure.
+ * @param w pointer to IntraX8Context
+ */
 void ff_intrax8_common_end(IntraX8Context *w);
+
+/**
+ * Decode single IntraX8 frame.
+ * The parent codec must fill s->loopfilter and s->gb (bitstream).
+ * The parent codec must call ff_mpv_frame_start() before calling this function.
+ * The parent codec must call ff_mpv_frame_end() after calling this function.
+ * This function does not use ff_mpv_decode_mb().
+ * @param w pointer to IntraX8Context
+ * @param dquant doubled quantizer, it would be odd in case of VC-1 halfpq==1.
+ * @param quant_offset offset away from zero
+ */
 int ff_intrax8_decode_picture(IntraX8Context *w, int quant, int halfpq);
 
 #endif /* AVCODEC_INTRAX8_H */
