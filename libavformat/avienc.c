@@ -705,7 +705,6 @@ static int avi_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb     = s->pb;
     AVIStream *avist    = s->streams[stream_index]->priv_data;
     AVCodecContext *enc = s->streams[stream_index]->codec;
-    int ret;
 
     if (pkt->dts != AV_NOPTS_VALUE)
         avist->last_dts = pkt->dts + pkt->duration;
