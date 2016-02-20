@@ -22,7 +22,6 @@
  */
 
 #include "avcodec.h"
-#include "error_resilience.h"
 #include "get_bits.h"
 #include "idctdsp.h"
 #include "mpegvideo.h"
@@ -718,8 +717,8 @@ av_cold void ff_intrax8_common_end(IntraX8Context * w)
 /**
  * Decode single IntraX8 frame.
  * The parent codec must fill s->loopfilter and s->gb (bitstream).
- * The parent codec must call ff_mpv_frame_start(), ff_er_frame_start() before calling this function.
- * The parent codec must call ff_er_frame_end(), ff_mpv_frame_end() after calling this function.
+ * The parent codec must call ff_mpv_frame_start() before calling this function.
+ * The parent codec must call ff_mpv_frame_end() after calling this function.
  * This function does not use ff_mpv_decode_mb().
  * @param w pointer to IntraX8Context
  * @param dquant doubled quantizer, it would be odd in case of VC-1 halfpq==1.
@@ -745,8 +744,6 @@ int ff_intrax8_decode_picture(IntraX8Context * const w, int dquant, int quant_of
     }
     x8_reset_vlc_tables(w);
 
-    s->resync_mb_x=0;
-    s->resync_mb_y=0;
 
     for(s->mb_y=0; s->mb_y < s->mb_height*2; s->mb_y++){
         x8_init_block_index(s);
@@ -785,8 +782,5 @@ int ff_intrax8_decode_picture(IntraX8Context * const w, int dquant, int quant_of
     }
 
 error:
-    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
-                        (s->mb_x>>1)-1, (s->mb_y>>1)-1,
-                        ER_MB_END );
     return 0;
 }
