@@ -1,10 +1,10 @@
 [STREAM]
 index=0
-start_pts=0
+start_pts=2112
 duration_ts=105472
 [/STREAM]
 [FORMAT]
-start_time=0.000000
+start_time=0.047891
 duration=2.391655
 [/FORMAT]
 packet|pts=0|dts=0|duration=1024

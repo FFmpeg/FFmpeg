@@ -997,16 +997,22 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
         if (is_relative(pktl_it->pkt.dts))
             pktl_it->pkt.dts += shift;
 
-        if (st->start_time == AV_NOPTS_VALUE && pktl_it->pkt.pts != AV_NOPTS_VALUE)
+        if (st->start_time == AV_NOPTS_VALUE && pktl_it->pkt.pts != AV_NOPTS_VALUE) {
             st->start_time = pktl_it->pkt.pts;
+            if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->sample_rate)
+                st->start_time += av_rescale_q(st->skip_samples, (AVRational){1, st->codec->sample_rate}, st->time_base);
+        }
     }
 
     if (has_decode_delay_been_guessed(st)) {
         update_dts_from_pts(s, stream_index, pktl);
     }
 
-    if (st->start_time == AV_NOPTS_VALUE)
+    if (st->start_time == AV_NOPTS_VALUE) {
         st->start_time = pts;
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->sample_rate)
+            st->start_time += av_rescale_q(st->skip_samples, (AVRational){1, st->codec->sample_rate}, st->time_base);
+    }
 }
 
 static void update_initial_durations(AVFormatContext *s, AVStream *st,
