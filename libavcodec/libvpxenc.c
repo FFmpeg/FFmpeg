@@ -278,7 +278,7 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
                        struct vpx_codec_enc_cfg *enccfg, vpx_codec_flags_t *flags,
                        vpx_img_fmt_t *img_fmt)
 {
-    VP8Context *ctx = avctx->priv_data;
+    VP8Context av_unused *ctx = avctx->priv_data;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
     enccfg->g_bit_depth = enccfg->g_input_bit_depth = 8;
 #endif
