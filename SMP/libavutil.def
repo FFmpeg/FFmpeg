@@ -20,6 +20,7 @@ EXPORTS
     av_audio_fifo_drain
     av_audio_fifo_free
     av_audio_fifo_peek
+    av_audio_fifo_peek_at
     av_audio_fifo_read
     av_audio_fifo_realloc
     av_audio_fifo_reset
@@ -55,6 +56,7 @@ EXPORTS
     av_buffer_make_writable
     av_buffer_pool_get
     av_buffer_pool_init
+    av_buffer_pool_init2
     av_buffer_pool_uninit
     av_buffer_realloc
     av_buffer_ref
@@ -227,6 +229,13 @@ EXPORTS
     av_hmac_free
     av_hmac_init
     av_hmac_update
+    av_hwdevice_ctx_alloc
+    av_hwdevice_ctx_init
+    av_hwframe_ctx_alloc
+    av_hwframe_ctx_init
+    av_hwframe_get_buffer
+    av_hwframe_transfer_data
+    av_hwframe_transfer_get_formats
     av_i2int
     av_image_alloc
     av_image_check_sar

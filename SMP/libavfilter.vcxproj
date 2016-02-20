@@ -118,6 +118,7 @@
     <ClCompile Include="..\libavfilter\f_interleave.c" />
     <ClCompile Include="..\libavfilter\af_alimiter.c" />
     <ClCompile Include="..\libavfilter\af_biquads.c" />
+    <ClCompile Include="..\libavfilter\f_loop.c" />
     <ClCompile Include="..\libavfilter\af_amerge.c" />
     <ClCompile Include="..\libavfilter\f_metadata.c" />
     <ClCompile Include="..\libavfilter\af_amix.c" />
@@ -184,6 +185,7 @@
     <ClCompile Include="..\libavfilter\dualinput.c" />
     <ClCompile Include="..\libavfilter\framesync.c" />
     <ClCompile Include="..\libavfilter\vf_boxblur.c" />
+    <ClCompile Include="..\libavfilter\vf_bwdif.c" />
     <ClCompile Include="..\libavfilter\vf_chromakey.c" />
     <ClCompile Include="..\libavfilter\vf_codecview.c" />
     <ClCompile Include="..\libavfilter\vf_colorbalance.c" />
@@ -216,6 +218,7 @@
     <ClCompile Include="..\libavfilter\vf_fade.c" />
     <ClCompile Include="..\libavfilter\vf_fftfilt.c" />
     <ClCompile Include="..\libavfilter\vf_field.c" />
+    <ClCompile Include="..\libavfilter\vf_fieldhint.c" />
     <ClCompile Include="..\libavfilter\vf_fieldmatch.c" />
     <ClCompile Include="..\libavfilter\vf_fieldorder.c" />
     <ClCompile Include="..\libavfilter\vf_find_rect.c" />

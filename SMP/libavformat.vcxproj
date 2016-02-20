@@ -165,6 +165,7 @@
     <ClCompile Include="..\libavformat\avidec.c" />
     <ClCompile Include="..\libavformat\avienc.c" />
     <ClCompile Include="..\libavformat\mpegtsenc.c" />
+    <ClCompile Include="..\libavformat\rawutils.c" />
     <ClCompile Include="..\libavformat\avisynth.c" />
     <ClCompile Include="..\libavformat\swfenc.c" />
     <ClCompile Include="..\libavformat\swf.c" />
@@ -206,6 +207,7 @@
     <ClCompile Include="..\libavformat\dv.c" />
     <ClCompile Include="..\libavformat\dvenc.c" />
     <ClCompile Include="..\libavformat\dvbsub.c" />
+    <ClCompile Include="..\libavformat\dvbtxt.c" />
     <ClCompile Include="..\libavformat\dxa.c" />
     <ClCompile Include="..\libavformat\eacdata.c" />
     <ClCompile Include="..\libavformat\electronicarts.c" />

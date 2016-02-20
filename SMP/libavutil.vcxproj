@@ -109,6 +109,7 @@
     <ClCompile Include="..\libavutil\frame.c" />
     <ClCompile Include="..\libavutil\hash.c" />
     <ClCompile Include="..\libavutil\hmac.c" />
+    <ClCompile Include="..\libavutil\hwcontext.c" />
     <ClCompile Include="..\libavutil\imgutils.c" />
     <ClCompile Include="..\libavutil\integer.c" />
     <ClCompile Include="..\libavutil\intmath.c" />
@@ -190,6 +191,8 @@
     <ClInclude Include="..\libavutil\frame.h" />
     <ClInclude Include="..\libavutil\hash.h" />
     <ClInclude Include="..\libavutil\hmac.h" />
+    <ClInclude Include="..\libavutil\hwcontext.h" />
+    <ClInclude Include="..\libavutil\hwcontext_vdpau.h" />
     <ClInclude Include="..\libavutil\imgutils.h" />
     <ClInclude Include="..\libavutil\intfloat.h" />
     <ClInclude Include="..\libavutil\intreadwrite.h" />
@@ -531,6 +534,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -666,6 +671,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -807,6 +814,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -952,6 +961,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -1098,6 +1109,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -1243,6 +1256,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -1389,6 +1404,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -1530,6 +1547,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -1677,6 +1696,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -1823,6 +1844,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -1970,6 +1993,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -2116,6 +2141,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -2257,6 +2284,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
@@ -2398,6 +2427,8 @@ copy ..\libavutil\file.h $(OutDir)\include\libavutil
 copy ..\libavutil\frame.h $(OutDir)\include\libavutil
 copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
