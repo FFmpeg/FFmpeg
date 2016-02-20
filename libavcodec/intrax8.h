@@ -65,6 +65,10 @@ typedef struct IntraX8Context {
     int chroma_orient;
     int orient;
     int est_run;
+
+    // block props
+    int mb_x, mb_y;
+    int mb_width, mb_height;
 } IntraX8Context;
 
 /**
@@ -73,11 +77,14 @@ typedef struct IntraX8Context {
  * @param avctx pointer to AVCodecContext
  * @param w pointer to IntraX8Context
  * @param idsp pointer to IDCTDSPContext
+ * @param mb_width macroblock width
+ * @param mb_height macroblock height
  * @param s pointer to MpegEncContext of the parent codec
  * @return 0 on success, a negative AVERROR value on error
  */
 int ff_intrax8_common_init(AVCodecContext *avctx,
                            IntraX8Context *w, IDCTDSPContext *idsp,
+                           int mb_width, int mb_height,
                            MpegEncContext *const s);
 
 /**
