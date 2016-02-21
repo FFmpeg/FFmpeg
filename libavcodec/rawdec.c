@@ -384,11 +384,12 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    if ((avctx->pix_fmt==AV_PIX_FMT_BGR24    ||
-        avctx->pix_fmt==AV_PIX_FMT_GRAY8    ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB555LE ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB555BE ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB565LE ||
+    if ((avctx->pix_fmt==AV_PIX_FMT_RGB24    ||
+        avctx->pix_fmt==AV_PIX_FMT_BGR24     ||
+        avctx->pix_fmt==AV_PIX_FMT_GRAY8     ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555LE  ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555BE  ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB565LE  ||
         avctx->pix_fmt==AV_PIX_FMT_MONOWHITE ||
         avctx->pix_fmt==AV_PIX_FMT_MONOBLACK ||
         avctx->pix_fmt==AV_PIX_FMT_PAL8) &&
