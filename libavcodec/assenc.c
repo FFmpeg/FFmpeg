@@ -60,6 +60,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
             return -1;
         }
 
+#if FF_API_ASS_TIMING
         if (!strncmp(ass, "Dialogue: ", 10)) {
             if (i > 0) {
                 av_log(avctx, AV_LOG_ERROR, "ASS encoder supports only one "
@@ -86,6 +87,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
             ass_line[strcspn(ass_line, "\r\n")] = 0;
             ass = ass_line;
         }
+#endif
 
         len = av_strlcpy(buf+total_len, ass, bufsize-total_len);
 

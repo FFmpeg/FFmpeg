@@ -2426,6 +2426,7 @@ static int utf8_check(const uint8_t *str)
     return 1;
 }
 
+#if FF_API_ASS_TIMING
 static void insert_ts(AVBPrint *buf, int ts)
 {
     if (ts == -1) {
@@ -2495,6 +2496,7 @@ static int convert_sub_to_old_ass_form(AVSubtitle *sub, const AVPacket *pkt, AVR
     av_bprint_finalize(&buf, NULL);
     return 0;
 }
+#endif
 
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr,
@@ -2546,9 +2548,11 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
             av_assert1((ret >= 0) >= !!*got_sub_ptr &&
                        !!*got_sub_ptr >= !!sub->num_rects);
 
+#if FF_API_ASS_TIMING
             if (avctx->sub_text_format == FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS
                 && *got_sub_ptr && sub->num_rects)
                 ret = convert_sub_to_old_ass_form(sub, avpkt, avctx->time_base);
+#endif
 
             if (sub->num_rects && !sub->end_display_time && avpkt->duration &&
                 avctx->pkt_timebase.num) {

@@ -324,7 +324,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 {
     MovTextContext *s = avctx->priv_data;
     ASSDialog *dialog;
-    int i, num, length;
+    int i, length;
     size_t j;
 
     s->text_pos = 0;
@@ -339,19 +339,24 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             return AVERROR(ENOSYS);
         }
 
+#if FF_API_ASS_TIMING
         if (!strncmp(ass, "Dialogue: ", 10)) {
+            int num;
             dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
             // TODO reindent
         for (; dialog && num--; dialog++) {
             ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
         }
         } else {
+#endif
             dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
             if (!dialog)
                 return AVERROR(ENOMEM);
             ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
             ff_ass_free_dialog(&dialog);
+#if FF_API_ASS_TIMING
         }
+#endif
 
         for (j = 0; j < box_count; j++) {
             box_types[j].encode(s, box_types[j].type);

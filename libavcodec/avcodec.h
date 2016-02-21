@@ -3291,7 +3291,9 @@ typedef struct AVCodecContext {
 
     int sub_text_format;
 #define FF_SUB_TEXT_FMT_ASS              0
+#if FF_API_ASS_TIMING
 #define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
+#endif
 
     /**
      * Skip processing alpha if supported by codec.
