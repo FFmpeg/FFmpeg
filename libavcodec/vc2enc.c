@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/ffversion.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "dirac.h"
 #include "put_bits.h"
 #include "internal.h"
+#include "version.h"
 
 #include "vc2enc_dwt.h"
 #include "diractab.h"
@@ -925,7 +925,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ret;
     int max_frame_bytes, sig_size = 256;
     VC2EncContext *s = avctx->priv_data;
-    const char aux_data[] = "FFmpeg version "FFMPEG_VERSION;
+    const char aux_data[] = LIBAVCODEC_IDENT;
     const int aux_data_size = sizeof(aux_data);
     const int header_size = 100 + aux_data_size;
     int64_t r_bitrate = avctx->bit_rate >> (s->interlaced);
