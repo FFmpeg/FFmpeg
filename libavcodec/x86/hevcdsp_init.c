@@ -86,7 +86,7 @@ INTERP_HV_FUNC(32, avx)
 INTERP_HV_FUNC(48, avx)
 INTERP_HV_FUNC(64, avx)
 
-#if ARCH_X86_64
+#if ARCH_X86_64 && HAVE_AVX_EXTERNAL
 #define QPEL_FUNC_HV(width, depth, cf_h, cf_v, cf_hv)                                                         \
 static void hevc_qpel_hv_ ## width ## _ ## depth ## _ ## cf_hv(int16_t *dst, ptrdiff_t dststride,             \
                                                                uint8_t *src, ptrdiff_t srcstride,             \
@@ -100,7 +100,7 @@ static void hevc_qpel_hv_ ## width ## _ ## depth ## _ ## cf_hv(int16_t *dst, ptr
 }
 #else
 #define QPEL_FUNC_HV(width, depth, cf_h, cf_v, cf_hv)
-#endif
+#endif /* ARCH_X86_64 && HAVE_AVX_EXTERNAL */
 
 #define QPEL_FUNCS(width, depth, cf_h, cf_v, cf_hv)                                                           \
 void ff_hevc_qpel_h_ ## width ## _ ## depth ## _ ## cf_h(int16_t *dst, ptrdiff_t dststride,                   \
@@ -129,7 +129,7 @@ QPEL_FUNCS(32, 10, avx, avx, avx)
 QPEL_FUNCS(48, 10, avx, avx, avx)
 QPEL_FUNCS(64, 10, avx, avx, avx)
 
-#if ARCH_X86_64
+#if ARCH_X86_64 && HAVE_AVX_EXTERNAL
 #define EPEL_FUNC_HV(width, depth, cf_h, cf_v, cf_hv)                                                         \
 static void hevc_epel_hv_ ## width ## _ ## depth ## _ ## cf_hv(int16_t *dst, ptrdiff_t dststride,             \
                                                                uint8_t *src, ptrdiff_t srcstride,             \
@@ -143,7 +143,7 @@ static void hevc_epel_hv_ ## width ## _ ## depth ## _ ## cf_hv(int16_t *dst, ptr
 }
 #else
 #define EPEL_FUNC_HV(width, depth, cf_h, cf_v, cf_hv)
-#endif
+#endif /* ARCH_X86_64 && HAVE_AVX_EXTERNAL */
 
 #define EPEL_FUNCS(width, depth, cf_h, cf_v, cf_hv)                                                           \
 void ff_hevc_epel_h_ ## width ## _ ## depth ## _ ## cf_h(int16_t *dst, ptrdiff_t dststride,                   \
@@ -277,8 +277,10 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         }
 
         if (EXTERNAL_AVX(cpu_flags)) {
+#if HAVE_AVX_EXTERNAL
             SET_QPEL_FUNCS(1, 1, 8, avx, hevc_qpel_hv);
             SET_EPEL_FUNCS(1, 1, 8, avx, hevc_epel_hv);
+#endif /* HAVE_AVX_EXTERNAL */
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_SSSE3(cpu_flags)) {
@@ -292,12 +294,14 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SET_CHROMA_FUNCS(weighted_pred_avg_chroma, ff_hevc_put_weighted_pred_avg, 10, sse4);
         }
         if (EXTERNAL_AVX(cpu_flags)) {
+#if HAVE_AVX_EXTERNAL
             SET_QPEL_FUNCS(0, 1, 10, avx, ff_hevc_qpel_h);
             SET_QPEL_FUNCS(1, 0, 10, avx, ff_hevc_qpel_v);
             SET_QPEL_FUNCS(1, 1, 10, avx, hevc_qpel_hv);
             SET_EPEL_FUNCS(0, 1, 10, avx, ff_hevc_epel_h);
             SET_EPEL_FUNCS(1, 0, 10, avx, ff_hevc_epel_v);
             SET_EPEL_FUNCS(1, 1, 10, avx, hevc_epel_hv);
+#endif /* HAVE_AVX_EXTERNAL */
         }
     }
 #endif /* ARCH_X86_64 */
