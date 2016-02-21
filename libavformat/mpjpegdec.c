@@ -398,7 +398,8 @@ AVInputFormat ff_mpjpeg_demuxer = {
     .read_header       = mpjpeg_read_header,
     .read_packet       = mpjpeg_read_packet,
     .read_close        = mpjpeg_read_close,
-    .priv_class        = &mpjpeg_demuxer_class
+    .priv_class        = &mpjpeg_demuxer_class,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
 
 
