@@ -212,6 +212,7 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
     int raw_pal_avi;
 
     raw_pal_avi = !for_asf && enc->codec_id == AV_CODEC_ID_RAWVIDEO &&
+                  !enc->codec_tag &&
             enc->bits_per_coded_sample >= 1 && enc->bits_per_coded_sample <= 8;
     if (!enc->extradata_size && raw_pal_avi)
         extradata_size = 4 * (1 << enc->bits_per_coded_sample);
