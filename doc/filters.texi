@@ -8733,9 +8733,9 @@ Use frame flags, single field.
 Use top field only.
 @item b
 Use bottom field only.
-@item ft
+@item tf
 Use both fields, top first.
-@item fb
+@item bf
 Use both fields, bottom first.
 @end table
 
