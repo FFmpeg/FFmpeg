@@ -693,7 +693,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                 tag[2] = 'p'; tag[3] = 'c';
                 pc_tag = ff_start_tag(pb, tag);
                 avio_w8(pb, 0);
-                avio_w8(pb, pal_size);
+                avio_w8(pb, pal_size & 0xFF);
                 avio_wl16(pb, 0); // reserved
                 for (i = 0; i < pal_size; i++) {
                     uint32_t v = AV_RL32(data + size - 4*pal_size + 4*i);
