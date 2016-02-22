@@ -1173,6 +1173,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->frame_data.input);
     av_freep(&s->frame_data.temp);
+    av_freep(&s->fdsp);
     av_frame_free(&s->second);
 }
 
