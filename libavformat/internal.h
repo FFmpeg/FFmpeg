@@ -560,6 +560,14 @@ void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
  */
 int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds);
 
+/**
+ * Standardize creation_time metadata in AVFormatContext to an ISO-8601
+ * timestamp string.
+ *
+ * @param s AVFormatContext
+ * @return <0 on error
+ */
+int ff_standardize_creation_time(AVFormatContext *s);
 
 #define CONTAINS_PAL 2
 /**
