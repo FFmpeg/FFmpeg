@@ -23,7 +23,6 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/arm/cpu.h"
 
-#if 0
 extern void rgbx_to_nv12_neon_32(const uint8_t *src, uint8_t *y, uint8_t *chroma,
                 int width, int height,
                 int y_stride, int c_stride, int src_stride,
@@ -61,7 +60,6 @@ static int rgbx_to_nv12_neon_16_wrapper(SwsContext *context, const uint8_t *src[
 
     return 0;
 }
-#endif
 
 #define YUV_TO_RGB_TABLE(precision)                                                         \
         c->yuv2rgb_v2r_coeff / ((precision) == 16 ? 1 << 7 : 1),                            \
@@ -167,14 +165,12 @@ DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nv21)
 
 static void get_unscaled_swscale_neon(SwsContext *c) {
     int accurate_rnd = c->flags & SWS_ACCURATE_RND;
-#if 0
     if (c->srcFormat == AV_PIX_FMT_RGBA
             && c->dstFormat == AV_PIX_FMT_NV12
             && (c->srcW >= 16)) {
         c->swscale = accurate_rnd ? rgbx_to_nv12_neon_32_wrapper
                         : rgbx_to_nv12_neon_16_wrapper;
     }
-#endif
 
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv12, NV12, accurate_rnd);
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv21, NV21, accurate_rnd);
