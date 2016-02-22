@@ -30,7 +30,7 @@
 #include "diractab.h"
 
 /* Quantizations above this usually zero coefficients and lower the quality */
-#define MAX_QUANT_INDEX 100
+#define MAX_QUANT_INDEX 50
 
 #define COEF_LUT_TAB 2048
 
