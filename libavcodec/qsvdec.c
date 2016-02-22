@@ -77,7 +77,7 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession sess
 
     if (!q->async_fifo) {
         q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
-                                      (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
+                                      (sizeof(mfxSyncPoint*) + sizeof(QSVFrame*)));
         if (!q->async_fifo)
             return AVERROR(ENOMEM);
     }
@@ -218,7 +218,7 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
     QSVFrame *out_frame;
     mfxFrameSurface1 *insurf;
     mfxFrameSurface1 *outsurf;
-    mfxSyncPoint sync;
+    mfxSyncPoint *sync;
     mfxBitstream bs = { { { 0 } } };
     int ret;
 
@@ -229,13 +229,19 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         bs.TimeStamp  = avpkt->pts;
     }
 
+    sync = av_mallocz(sizeof(*sync));
+    if (!sync) {
+        av_freep(&sync);
+        return AVERROR(ENOMEM);
+    }
+
     do {
         ret = get_surface(avctx, q, &insurf);
         if (ret < 0)
             return ret;
 
         ret = MFXVideoDECODE_DecodeFrameAsync(q->session, avpkt->size ? &bs : NULL,
-                                              insurf, &outsurf, &sync);
+                                              insurf, &outsurf, sync);
         if (ret == MFX_WRN_DEVICE_BUSY)
             av_usleep(1);
 
@@ -246,28 +252,32 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         ret != MFX_WRN_VIDEO_PARAM_CHANGED &&
         ret != MFX_ERR_MORE_SURFACE) {
         av_log(avctx, AV_LOG_ERROR, "Error during QSV decoding.\n");
+        av_freep(&sync);
         return ff_qsv_error(ret);
     }
 
     /* make sure we do not enter an infinite loop if the SDK
      * did not consume any data and did not return anything */
-    if (!sync && !bs.DataOffset) {
+    if (!*sync && !bs.DataOffset) {
         av_log(avctx, AV_LOG_WARNING, "A decode call did not consume any data\n");
         bs.DataOffset = avpkt->size;
     }
 
-    if (sync) {
+    if (*sync) {
         QSVFrame *out_frame = find_frame(q, outsurf);
 
         if (!out_frame) {
             av_log(avctx, AV_LOG_ERROR,
                    "The returned surface does not correspond to any frame\n");
+            av_freep(&sync);
             return AVERROR_BUG;
         }
 
         out_frame->queued = 1;
         av_fifo_generic_write(q->async_fifo, &out_frame, sizeof(out_frame), NULL);
         av_fifo_generic_write(q->async_fifo, &sync,      sizeof(sync),      NULL);
+    } else {
+        av_freep(&sync);
     }
 
     if (!av_fifo_space(q->async_fifo) ||
@@ -279,8 +289,10 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         out_frame->queued = 0;
 
         do {
-            ret = MFXVideoCORE_SyncOperation(q->session, sync, 1000);
+            ret = MFXVideoCORE_SyncOperation(q->session, *sync, 1000);
         } while (ret == MFX_WRN_IN_EXECUTION);
+
+        av_freep(&sync);
 
         src_frame = out_frame->frame;
 
@@ -313,6 +325,16 @@ int ff_qsv_decode_close(QSVContext *q)
 
     if (q->session)
         MFXVideoDECODE_Close(q->session);
+
+    while (q->async_fifo && av_fifo_size(q->async_fifo)) {
+        QSVFrame *out_frame;
+        mfxSyncPoint *sync;
+
+        av_fifo_generic_read(q->async_fifo, &out_frame, sizeof(out_frame), NULL);
+        av_fifo_generic_read(q->async_fifo, &sync,      sizeof(sync),      NULL);
+
+        av_freep(&sync);
+    }
 
     while (cur) {
         q->work_frames = cur->next;
