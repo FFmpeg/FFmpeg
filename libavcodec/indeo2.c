@@ -146,6 +146,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     AVFrame *picture     = data;
     AVFrame * const p    = s->picture;
     int start, ret;
+    int ltab, ctab;
 
     if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
@@ -168,34 +169,36 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     if ((ret = init_get_bits8(&s->gb, buf + start, buf_size - start)) < 0)
         return ret;
 
+    ltab = buf[0x22] & 3;
+    ctab = buf[0x22] >> 2;
     if (s->decode_delta) { /* intraframe */
         if ((ret = ir2_decode_plane(s, avctx->width, avctx->height,
                                     p->data[0], p->linesize[0],
-                                    ir2_luma_table)) < 0)
+                                    ir2_delta_table[ltab])) < 0)
             return ret;
 
         /* swapped U and V */
         if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
                                     p->data[2], p->linesize[2],
-                                    ir2_luma_table)) < 0)
+                                    ir2_delta_table[ctab])) < 0)
             return ret;
         if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
                                     p->data[1], p->linesize[1],
-                                    ir2_luma_table)) < 0)
+                                    ir2_delta_table[ctab])) < 0)
             return ret;
     } else { /* interframe */
         if ((ret = ir2_decode_plane_inter(s, avctx->width, avctx->height,
                                           p->data[0], p->linesize[0],
-                                          ir2_luma_table)) < 0)
+                                          ir2_delta_table[ltab])) < 0)
             return ret;
         /* swapped U and V */
         if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
                                           p->data[2], p->linesize[2],
-                                          ir2_luma_table)) < 0)
+                                          ir2_delta_table[ctab])) < 0)
             return ret;
         if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
                                           p->data[1], p->linesize[1],
-                                          ir2_luma_table)) < 0)
+                                          ir2_delta_table[ctab])) < 0)
             return ret;
     }
 
