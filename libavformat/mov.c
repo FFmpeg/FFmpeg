@@ -3667,7 +3667,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     version = avio_r8(pb);
     if (version > 1) {
         avpriv_request_sample(c->fc, "sidx version %u", version);
-        return AVERROR_PATCHWELCOME;
+        return 0;
     }
 
     avio_rb24(pb); // flags
@@ -3680,8 +3680,8 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
     }
     if (!st) {
-        av_log(c->fc, AV_LOG_ERROR, "could not find corresponding track id %d\n", track_id);
-        return AVERROR_INVALIDDATA;
+        av_log(c->fc, AV_LOG_WARNING, "could not find corresponding track id %d\n", track_id);
+        return 0;
     }
 
     sc = st->priv_data;
