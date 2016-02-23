@@ -152,11 +152,11 @@ static inline int x8_get_orient_vlc(IntraX8Context * w){
     return get_vlc2(&s->gb, w->j_orient_vlc->table, OR_VLC_BITS, OR_VLC_MTD);
 }
 
-#define extra_bits(eb) (eb)
-#define extra_run   (0xFF<<8)
-#define extra_level (0x00<<8)
-#define   run_offset(r)    ((r)<<16)
-#define level_offset(l)    ((l)<<24)
+#define extra_bits(eb)  (eb)        // 3 bits
+#define extra_run       (0xFF << 8) // 1 bit
+#define extra_level     (0x00 << 8) // 1 bit
+#define run_offset(r)   ((r) << 16) // 6 bits
+#define level_offset(l) ((l) << 24) // 5 bits
 static const uint32_t ac_decode_table[]={
     /*46*/ extra_bits(3) |  extra_run  | run_offset(16) | level_offset( 0),
     /*47*/ extra_bits(3) |  extra_run  | run_offset(24) | level_offset( 0),
@@ -193,7 +193,6 @@ static const uint32_t ac_decode_table[]={
     /*71*/ extra_bits(2) | extra_level | run_offset( 1) | level_offset( 3),
     /*72*/ extra_bits(3) | extra_level | run_offset( 1) | level_offset( 7),
 };
-//extra_bits = 3bits; extra_run/level = 1 bit; run_offset = 6bits; level_offset = 5 bits;
 #undef extra_bits
 #undef extra_run
 #undef extra_level
