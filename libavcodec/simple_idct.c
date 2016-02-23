@@ -218,6 +218,7 @@ void ff_simple_idct44_add(uint8_t *dest, int line_size, int16_t *block)
     }
 }
 
+#if CONFIG_PRORES_DECODER
 void ff_prores_idct(int16_t *block, const int16_t *qmat)
 {
     int i;
@@ -231,3 +232,4 @@ void ff_prores_idct(int16_t *block, const int16_t *qmat)
     for (i = 0; i < 8; i++)
         idctSparseCol_10(block + i);
 }
+#endif /* CONFIG_PRORES_DECODER */
