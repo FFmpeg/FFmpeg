@@ -241,9 +241,14 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
                 avio_w8(pb, 0);
         } else if (raw_pal_avi) {
             int i;
+            enum AVPixelFormat pix_fmt = enc->pix_fmt;
+            if (pix_fmt == AV_PIX_FMT_NONE && enc->bits_per_coded_sample == 1)
+                pix_fmt = AV_PIX_FMT_MONOWHITE;
             for (i = 0; i < 1 << enc->bits_per_coded_sample; i++) {
                 /* Initialize 1 bpp palette to black & white */
-                if (!i && enc->bits_per_coded_sample == 1)
+                if (i == 0 && pix_fmt == AV_PIX_FMT_MONOWHITE)
+                    avio_wl32(pb, 0xffffff);
+                else if (i == 1 && pix_fmt == AV_PIX_FMT_MONOBLACK)
                     avio_wl32(pb, 0xffffff);
                 else
                     avio_wl32(pb, 0);
