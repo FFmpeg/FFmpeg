@@ -5240,6 +5240,43 @@ curves=psfile='MyCurvesPresets/purple.acv':green='0.45/0.53'
 @end example
 @end itemize
 
+@section datascope
+
+Video data analysis filter.
+
+This filter shows hexadecimal pixel values of part of video.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Set output video size.
+
+@item x
+Set x offset from where to pick pixels.
+
+@item y
+Set y offset from where to pick pixels.
+
+@item mode
+Set scope mode, can be one of the following:
+@table @samp
+@item mono
+Draw hexadecimal pixel values with white color on black background.
+
+@item color
+Draw hexadecimal pixel values with input video pixel color on black
+background.
+
+@item color2
+Draw hexadecimal pixel values on color background picked from input video,
+the text color is picked in such way so its always visible.
+@end table
+
+@item axis
+Draw rows and columns numbers on left and top of video.
+@end table
+
 @section dctdnoiz
 
 Denoise frames using 2D DCT (frequency domain filtering).
