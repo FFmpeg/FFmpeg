@@ -3141,8 +3141,8 @@ ffmpeg_deps="avcodec avfilter avformat swresample"
 ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                setpts_filter trim_filter"
-ffplay_deps="avcodec avformat swscale swresample sdl"
-ffplay_libs='$sdl_libs'
+ffplay_deps="avcodec avformat swscale swresample sdl2"
+ffplay_libs='$sdl2_libs'
 ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat fork sarestart"
@@ -6661,7 +6661,7 @@ HOSTLD_O=$HOSTLD_O
 TARGET_EXEC=$target_exec $target_exec_args
 TARGET_PATH=$target_path
 TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
-CFLAGS-ffplay=$sdl_cflags
+CFLAGS-ffplay=${sdl2_cflags}
 ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs

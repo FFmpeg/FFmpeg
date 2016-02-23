@@ -33,6 +33,7 @@ version <next>:
 - Meridian Lossless Packing (MLP) encoder
 - Non-Local Means (nlmeans) denoising filter
 - sdl2 output device
+- sdl2 support for ffplay
 
 
 version 3.1:
