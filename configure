@@ -4258,8 +4258,8 @@ elif enabled mips; then
             esac
         ;;
         generic)
-            disable mips64r6
-            disable msa
+            # We do not disable anything. Is up to the user to disable
+            # the unwanted features.
         ;;
         *)
             # Unknown CPU. Disable everything.
