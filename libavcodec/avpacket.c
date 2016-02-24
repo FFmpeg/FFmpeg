@@ -58,6 +58,7 @@ void av_init_packet(AVPacket *pkt)
 #if FF_API_DESTRUCT_PACKET
 FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct             = NULL;
+    pkt->priv                 = NULL;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     pkt->buf                  = NULL;
