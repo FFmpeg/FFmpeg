@@ -362,20 +362,14 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     if (!v->mv_type_mb_plane || !v->direct_mb_plane || !v->acpred_plane || !v->over_flags_plane ||
         !v->block || !v->cbp_base || !v->ttblk_base || !v->is_intra_base || !v->luma_mv_base ||
         !v->mb_type_base) {
-        av_freep(&v->mv_type_mb_plane);
-        av_freep(&v->direct_mb_plane);
-        av_freep(&v->acpred_plane);
-        av_freep(&v->over_flags_plane);
-        av_freep(&v->block);
-        av_freep(&v->cbp_base);
-        av_freep(&v->ttblk_base);
-        av_freep(&v->is_intra_base);
-        av_freep(&v->luma_mv_base);
-        av_freep(&v->mb_type_base);
-        return AVERROR(ENOMEM);
+        goto error;
     }
 
     return 0;
+
+error:
+    ff_vc1_decode_end(s->avctx);
+    return AVERROR(ENOMEM);
 }
 
 av_cold void ff_vc1_init_transposed_scantables(VC1Context *v)
