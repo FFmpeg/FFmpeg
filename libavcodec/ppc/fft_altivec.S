@@ -40,7 +40,7 @@
 
 #include "config.h"
 
-#if HAVE_GNU_AS && HAVE_ALTIVEC
+#if HAVE_GNU_AS && HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 #include "asm.S"
 
@@ -451,4 +451,4 @@ fft_dispatch_tab\suffix\()_altivec:
 DECL_FFTS 0
 DECL_FFTS 1, _interleave
 
-#endif /* HAVE_GNU_AS && HAVE_ALTIVEC */
+#endif /* HAVE_GNU_AS && HAVE_ALTIVEC && HAVE_BIGENDIAN */
