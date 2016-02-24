@@ -32,6 +32,7 @@ version <next>:
 - TrueHD encoder
 - Meridian Lossless Packing (MLP) encoder
 - Non-Local Means (nlmeans) denoising filter
+- sdl2 output device
 
 
 version 3.1:
