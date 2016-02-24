@@ -27,6 +27,7 @@ API changes, most recent first:
                         for handling hwaccel frames.
   xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
                               VDPAU-specific hwcontext definitions.
+  xxxxxxx pixfmt.h - Add AV_PIX_FMT_CUDA.
 
 -------- 8< --------- FFmpeg 3.0 was cut here -------- 8< ---------
 

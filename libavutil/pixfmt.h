@@ -242,6 +242,12 @@ enum AVPixelFormat {
 
     AV_PIX_FMT_D3D11VA_VLD,  ///< HW decoding through Direct3D11, Picture.data[3] contains a ID3D11VideoDecoderOutputView pointer
 
+    /**
+     * HW acceleration through CUDA. data[i] contain CUdeviceptr pointers
+     * exactly as for system memory frames.
+     */
+    AV_PIX_FMT_CUDA,
+
     AV_PIX_FMT_0RGB=0x123+4,///< packed RGB 8:8:8, 32bpp, XRGBXRGB...   X=unused/undefined
     AV_PIX_FMT_RGB0,        ///< packed RGB 8:8:8, 32bpp, RGBXRGBX...   X=unused/undefined
     AV_PIX_FMT_0BGR,        ///< packed BGR 8:8:8, 32bpp, XBGRXBGR...   X=unused/undefined
