@@ -3361,6 +3361,18 @@ typedef struct AVCodecContext {
     AVPacketSideData *coded_side_data;
     int            nb_coded_side_data;
 
+    /**
+     * Encoding only.
+     *
+     * For hardware encoders configured to use a hwaccel pixel format, this
+     * field should be set by the caller to a reference to the AVHWFramesContext
+     * describing input frames. AVHWFramesContext.format must be equal to
+     * AVCodecContext.pix_fmt.
+     *
+     * This field should be set before avcodec_open2() is called and is
+     * afterwards owned and managed by libavcodec.
+     */
+    AVBufferRef *hw_frames_ctx;
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
