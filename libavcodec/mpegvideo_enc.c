@@ -1343,8 +1343,7 @@ static int estimate_best_b_count(MpegEncContext *s)
         }
     }
 
-    avcodec_close(c);
-    av_freep(&c);
+    avcodec_free_context(&c);
 
     return best_b_count;
 }
