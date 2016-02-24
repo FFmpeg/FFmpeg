@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavfi 6.36.0 - avfilter.h
+  xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
+  xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
+
 2016-02-xx - xxxxxxx - lavc 57.25.100
   Add AV_PKT_DATA_MPEGTS_STREAM_ID for exporting the MPEGTS stream ID.
 

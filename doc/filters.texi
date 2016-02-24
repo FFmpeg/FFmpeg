@@ -13457,6 +13457,10 @@ The sample (pixel) aspect ratio of the input video.
 Specify the optional parameters to be used for the scale filter which
 is automatically inserted when an input change is detected in the
 input size or format.
+
+@item hw_frames_ctx
+When using a hardware pixel format, this should be a reference to an
+AVHWFramesContext describing input frames.
 @end table
 
 For example:
