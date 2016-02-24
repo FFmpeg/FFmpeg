@@ -32,6 +32,10 @@
 #include "libavdevice/avdevice.h"
 #include "cmdutils.h"
 
+typedef struct InputFile {
+    AVFormatContext *fmt_ctx;
+} InputFile;
+
 const char program_name[] = "avprobe";
 const int program_birth_year = 2007;
 
@@ -583,8 +587,9 @@ static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
     probe_object_footer("packet");
 }
 
-static void show_packets(AVFormatContext *fmt_ctx)
+static void show_packets(InputFile *ifile)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     AVPacket pkt;
 
     av_init_packet(&pkt);
@@ -596,8 +601,9 @@ static void show_packets(AVFormatContext *fmt_ctx)
     probe_array_footer("packets", 0);
 }
 
-static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
+static void show_stream(InputFile *ifile, int stream_idx)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
     const AVCodecDescriptor *codec_desc;
@@ -726,8 +732,9 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     probe_object_footer("stream");
 }
 
-static void show_format(AVFormatContext *fmt_ctx)
+static void show_format(InputFile *ifile)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     char val_str[128];
     int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
 
@@ -755,7 +762,7 @@ static void show_format(AVFormatContext *fmt_ctx)
     probe_object_footer("format");
 }
 
-static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
+static int open_input_file(InputFile *ifile, const char *filename)
 {
     int err, i;
     AVFormatContext *fmt_ctx = NULL;
@@ -798,14 +805,14 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         }
     }
 
-    *fmt_ctx_ptr = fmt_ctx;
+    ifile->fmt_ctx = fmt_ctx;
     return 0;
 }
 
-static void close_input_file(AVFormatContext **ctx_ptr)
+static void close_input_file(InputFile *ifile)
 {
     int i;
-    AVFormatContext *fmt_ctx = *ctx_ptr;
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
 
     /* close decoder for each stream */
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
@@ -813,31 +820,32 @@ static void close_input_file(AVFormatContext **ctx_ptr)
 
         avcodec_close(stream->codec);
     }
-    avformat_close_input(ctx_ptr);
+    avformat_close_input(&ifile->fmt_ctx);
 }
 
 static int probe_file(const char *filename)
 {
-    AVFormatContext *fmt_ctx;
+    InputFile ifile;
     int ret, i;
 
-    if ((ret = open_input_file(&fmt_ctx, filename)))
+    ret = open_input_file(&ifile, filename);
+    if (ret < 0)
         return ret;
 
     if (do_show_format)
-        show_format(fmt_ctx);
+        show_format(&ifile);
 
     if (do_show_streams) {
         probe_array_header("streams", 0);
-        for (i = 0; i < fmt_ctx->nb_streams; i++)
-            show_stream(fmt_ctx, i);
+        for (i = 0; i < ifile.fmt_ctx->nb_streams; i++)
+            show_stream(&ifile, i);
         probe_array_footer("streams", 0);
     }
 
     if (do_show_packets)
-        show_packets(fmt_ctx);
+        show_packets(&ifile);
 
-    close_input_file(&fmt_ctx);
+    close_input_file(&ifile);
     return 0;
 }
 
