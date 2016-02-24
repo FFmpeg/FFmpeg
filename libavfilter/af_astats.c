@@ -98,7 +98,7 @@ static void reset_stats(AudioStatsContext *s)
 {
     int c;
 
-    memset(s->chstats, 0, sizeof(*s->chstats));
+    memset(s->chstats, 0, sizeof(*s->chstats) * s->nb_channels);
 
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
