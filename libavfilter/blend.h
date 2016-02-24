@@ -56,6 +56,8 @@ enum BlendMode {
     BLEND_GLOW,
     BLEND_ADDITION128,
     BLEND_MULTIPLY128,
+    BLEND_HEAT,
+    BLEND_FREEZE,
     BLEND_NB
 };
 

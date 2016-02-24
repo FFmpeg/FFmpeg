@@ -4240,10 +4240,12 @@ Available values for component modes are:
 @item difference128
 @item divide
 @item dodge
+@item freeze
 @item exclusion
 @item glow
 @item hardlight
 @item hardmix
+@item heat
 @item lighten
 @item linearlight
 @item multiply
