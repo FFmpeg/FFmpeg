@@ -3100,6 +3100,9 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         st->codec->width = 0; /* let decoder init width/height */
         st->codec->height= 0;
         break;
+    case AV_CODEC_ID_MP3:
+        st->need_parsing = AVSTREAM_PARSE_FULL;
+        break;
     }
 
     // If the duration of the mp3 packets is not constant, then they could need a parser
