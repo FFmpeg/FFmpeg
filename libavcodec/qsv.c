@@ -101,22 +101,6 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
         return ff_qsv_error(ret);
     }
 
-    MFXQueryIMPL(*session, &impl);
-
-    switch (MFX_IMPL_BASETYPE(impl)) {
-    case MFX_IMPL_SOFTWARE:
-        desc = "software";
-        break;
-    case MFX_IMPL_HARDWARE:
-    case MFX_IMPL_HARDWARE2:
-    case MFX_IMPL_HARDWARE3:
-    case MFX_IMPL_HARDWARE4:
-        desc = "hardware accelerated";
-        break;
-    default:
-        desc = "unknown";
-    }
-
     if (load_plugins && *load_plugins) {
         while (*load_plugins) {
             mfxPluginUID uid;
@@ -154,6 +138,22 @@ load_plugin_fail:
             if (err < 0)
                 return err;
         }
+    }
+
+    MFXQueryIMPL(*session, &impl);
+
+    switch (MFX_IMPL_BASETYPE(impl)) {
+    case MFX_IMPL_SOFTWARE:
+        desc = "software";
+        break;
+    case MFX_IMPL_HARDWARE:
+    case MFX_IMPL_HARDWARE2:
+    case MFX_IMPL_HARDWARE3:
+    case MFX_IMPL_HARDWARE4:
+        desc = "hardware accelerated";
+        break;
+    default:
+        desc = "unknown";
     }
 
     av_log(avctx, AV_LOG_VERBOSE,
