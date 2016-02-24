@@ -2042,6 +2042,7 @@ CONFIG_EXTRA="
     texturedsp
     texturedspenc
     tpeldsp
+    vc1dsp
     videodsp
     vp3dsp
     vp56dsp
@@ -2237,6 +2238,7 @@ mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp mpeg_er videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
+vc1dsp_select="h264chroma qpeldsp startcode"
 rdft_select="fft"
 
 # decoders / encoders
@@ -2438,7 +2440,7 @@ txd_decoder_select="texturedsp"
 utvideo_decoder_select="bswapdsp"
 utvideo_encoder_select="bswapdsp huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
-vc1_decoder_select="blockdsp h263_decoder h264qpel intrax8 mpegvideo qpeldsp startcode"
+vc1_decoder_select="blockdsp h263_decoder h264qpel intrax8 mpegvideo"
 vc1_qsv_decoder_deps="libmfx"
 vc1_qsv_decoder_select="qsvdec vc1_qsv_hwaccel"
 vc1image_decoder_select="vc1_decoder"
