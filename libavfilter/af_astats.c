@@ -119,6 +119,7 @@ static int config_output(AVFilterLink *outlink)
     s->nb_channels = outlink->channels;
     s->mult = exp((-1 / s->time_constant / outlink->sample_rate));
     s->tc_samples = 5 * s->time_constant * outlink->sample_rate + .5;
+    s->nb_frames = 0;
 
     reset_stats(s);
 
@@ -269,6 +270,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     const double *src;
     int i, c;
 
+    if (s->reset_count > 0) {
+        if (s->nb_frames >= s->reset_count) {
+            reset_stats(s);
+            s->nb_frames = 0;
+        }
+        s->nb_frames++;
+    }
+
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBLP:
         for (c = 0; c < channels; c++) {
@@ -291,14 +300,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     if (s->metadata)
         set_metadata(s, metadata);
-
-    if (s->reset_count > 0) {
-        s->nb_frames++;
-        if (s->nb_frames >= s->reset_count) {
-            reset_stats(s);
-            s->nb_frames = 0;
-        }
-    }
 
     return ff_filter_frame(inlink->dst->outputs[0], buf);
 }
