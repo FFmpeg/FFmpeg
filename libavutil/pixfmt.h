@@ -24,7 +24,6 @@
 /**
  * @file
  * pixel format definitions
- *
  */
 
 #include "libavutil/avconfig.h"

@@ -467,7 +467,6 @@ static void remove_short_at_index(H264Context *h, int i)
 }
 
 /**
- *
  * @return the removed picture or NULL if an error occurs
  */
 static H264Picture *remove_short(H264Context *h, int frame_num, int ref_mask)

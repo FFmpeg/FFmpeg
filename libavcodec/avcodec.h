@@ -70,7 +70,6 @@
  * @{
  * @}
  * @}
- *
  */
 
 /**
@@ -2184,7 +2183,6 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     *
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -2226,7 +2224,6 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     *
      * Note: Value depends upon the compare function used for fullpel ME.
      * - encoding: Set by user.
      * - decoding: unused
@@ -4187,7 +4184,6 @@ void av_packet_move_ref(AVPacket *dst, AVPacket *src);
  * @param src Source packet
  *
  * @return 0 on success AVERROR on failure.
- *
  */
 int av_packet_copy_props(AVPacket *dst, const AVPacket *src);
 

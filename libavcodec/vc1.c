@@ -24,7 +24,6 @@
 /**
  * @file
  * VC-1 and WMV3 decoder common code
- *
  */
 
 #include "libavutil/attributes.h"

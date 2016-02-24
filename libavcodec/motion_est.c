@@ -1714,7 +1714,6 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 }
 
 /**
- *
  * @param truncate 1 for truncation, 0 for using intra
  */
 void ff_fix_long_mvs(MpegEncContext * s, uint8_t *field_select_table, int field_select,

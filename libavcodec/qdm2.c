@@ -635,7 +635,6 @@ static void fill_coding_method_array(sb_int8_array tone_level_idx,
 }
 
 /**
- *
  * Called by process_subpacket_11 to process more data from subpacket 11
  * with sb 0-8.
  * Called by process_subpacket_12 to process data from subpacket 12 with

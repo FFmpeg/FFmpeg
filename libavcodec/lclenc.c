@@ -35,7 +35,6 @@
  *   http://www.pcisys.net/~melanson/codecs
  *
  * Supports: BGR24 (RGB 24bpp)
- *
  */
 
 #include <stdio.h>
