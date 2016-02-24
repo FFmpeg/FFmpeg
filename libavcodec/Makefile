@@ -888,7 +888,8 @@ OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_RV30_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_RV40_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_TAK_PARSER)              += tak_parser.o tak.o
-OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o wmv2data.o
+OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o  \
+                                          simple_idct.o wmv2data.o
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o
 OBJS-$(CONFIG_VP9_PARSER)              += vp9_parser.o

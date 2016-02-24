@@ -2601,7 +2601,7 @@ h264_parser_select="h264_decoder"
 hevc_parser_select="golomb"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
-vc1_parser_select="mpegvideo startcode vc1_decoder"
+vc1_parser_select="vc1dsp"
 
 # bitstream_filters
 mjpeg2jpeg_bsf_select="jpegtables"
