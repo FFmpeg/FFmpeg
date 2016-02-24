@@ -298,6 +298,7 @@ void ff_fill_rectangle(FFDrawContext *draw, FFDrawColor *color,
 {
     int plane, x, y, wp, hp;
     uint8_t *p0, *p;
+    FFDrawColor color_tmp = *color;
 
     for (plane = 0; plane < draw->nb_planes; plane++) {
         p0 = pointer_at(draw, dst, dst_linesize, plane, dst_x, dst_y);
@@ -306,9 +307,15 @@ void ff_fill_rectangle(FFDrawContext *draw, FFDrawColor *color,
         if (!hp)
             return;
         p = p0;
+
+        if (HAVE_BIGENDIAN && draw->desc->comp[0].depth > 8) {
+            for (x = 0; 2*x < draw->pixelstep[plane]; x++)
+                color_tmp.comp[plane].u16[x] = av_bswap16(color_tmp.comp[plane].u16[x]);
+        }
+
         /* copy first line from color */
         for (x = 0; x < wp; x++) {
-            memcpy(p, color->comp[plane].u8, draw->pixelstep[plane]);
+            memcpy(p, color_tmp.comp[plane].u8, draw->pixelstep[plane]);
             p += draw->pixelstep[plane];
         }
         wp *= draw->pixelstep[plane];
