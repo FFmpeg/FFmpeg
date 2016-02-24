@@ -14,6 +14,7 @@ version <next>:
 - MediaCodec H264 decoding
 - VC-2 HQ RTP payload format (draft v1) depacketizer
 - AudioToolbox audio decoders
+- AudioToolbox audio encoders
 
 
 version 3.0:
