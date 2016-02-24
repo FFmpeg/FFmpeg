@@ -26,6 +26,7 @@
 
 enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_VDPAU,
+    AV_HWDEVICE_TYPE_CUDA,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;

@@ -29,6 +29,9 @@
 #include "pixfmt.h"
 
 static const HWContextType *hw_table[] = {
+#if CONFIG_CUDA
+    &ff_hwcontext_type_cuda,
+#endif
 #if CONFIG_VDPAU
     &ff_hwcontext_type_vdpau,
 #endif
