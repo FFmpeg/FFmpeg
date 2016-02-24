@@ -17,81 +17,79 @@ API changes, most recent first:
   Add AVStream.codecpar, deprecate AVStream.codec.
 
 2016-xx-xx - lavc 57.14.0 - avcodec.h
-  xxxxxxx - Add AVCodecParameters and its related API.
-  xxxxxxx - Add av_get_audio_frame_duration2().
+  998e1b8 - Add AVCodecParameters and its related API.
+  a806834 - Add av_get_audio_frame_duration2().
 
-2016-xx-xx - xxxxxxx - lavf 57.4.0 - avformat.h
+2016-02-22 - ec4c483 - lavf 57.4.0 - avformat.h
   Add AVFormatContext.protocol_whitelist and protocol_blacklist.
   Add 'protocol_whitelist' and 'protocol_blacklist' private options for
   avio_open2().
 
-2016-xx-xx - lavc 57.13.0 - avcodec.h
+2016-02-14 - 7b3214d0 - lavc 57.13.0 - avcodec.h
   Add AVCodecContext.hw_frames_ctx.
 
-2016-xx-xx - lavfi 6.2.0 - avfilter.h
-  xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
-  xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
+2016-02-14 - lavfi 6.2.0 - avfilter.h
+  b3dd30d avfilter.h - Add AVFilterLink.hw_frames_ctx.
+          buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
 
-2016-xx-xx - lavu 55.6.0
-  xxxxxxx buffer.h - Add av_buffer_pool_init2().
-  xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
+2016-02-14 - lavu 55.6.0
+  721a4ef buffer.h - Add av_buffer_pool_init2().
+  89923e4 hwcontext.h - Add a new installed header hwcontext.h with a new API
                         for handling hwaccel frames.
-  xxxxxxx hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
+  ad884d1 hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
                              CUDA-specific hwcontext definitions.
-  xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
+  a001ce3 hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
                               VDPAU-specific hwcontext definitions.
-  xxxxxxx pixfmt.h - Add AV_PIX_FMT_CUDA.
+  7bc780c pixfmt.h - Add AV_PIX_FMT_CUDA.
 
-2016-xx-xx - xxxxxxx - lavf 57.3.0 - avformat.h
+2016-01-24 - 9f61abc - lavf 57.3.0 - avformat.h
   Add AVFormatContext.opaque, io_open and io_close, allowing custom IO
   for muxers and demuxers that open additional files.
 
-2015-xx-xx - xxxxxxx - lavc 57.12.0 - avcodec.h
+2015-12-12 - 2c68113 - lavc 57.12.0 - avcodec.h
   Add AVCodecDescriptor.profiles and avcodec_profile_name().
 
-2015-xx-xx - xxxxxxx - lavc 57.11.0 - avcodec.h dirac.h
-  xxxxxxx - Add av_packet_add_side_data().
-  xxxxxxx - Add AVCodecContext.coded_side_data.
-  xxxxxxx - Add AVCPBProperties API.
-  xxxxxxx - Add a new public header dirac.h containing
+2015-12-06 - lavc 57.11.0 - avcodec.h dirac.h
+  31c51f7 - Add av_packet_add_side_data().
+  84adab3 - Add AVCodecContext.coded_side_data.
+  f0b769c - Add AVCPBProperties API.
+  e02de9d - Add a new public header dirac.h containing
             av_dirac_parse_sequence_header()
 
-2015-xx-xx - xxxxxxx - lavc 57.9.1 - avcodec.h
+2015-11-20 - 462a54e - lavc 57.9.1 - avcodec.h
   Deprecate rtp_callback without replacement, i.e. it won't be possible to
   get image slices before the full frame is encoded any more. The libavformat
   rtpenc muxer can still be used for RFC-2190 packetization.
 
-2015-11-xx - xxxxxxx - lavc 57.9.0 - avcodec.h
+2015-11-18 - 79ae1e6 - lavc 57.9.0 - avcodec.h
   Add AV_PKT_DATA_FALLBACK_TRACK for making fallback associations between
   streams.
 
-2015-11-xx - xxxxxxx - lavf 57.1.0 - avformat.h
+2015-11-18 - 7f4ec43 - lavf 57.1.0 - avformat.h
   Add av_stream_new_side_data().
 
-2015-11-xx - xxxxxxx - lavu 55.3.0 - xtea.h
+2015-11-13 - 92d107a - lavu 55.3.0 - xtea.h
     Add av_xtea_le_init and av_xtea_le_crypt
 
-2015-11-xx - xxxxxxx - lavfi 6.1.0 - avfilter.h
+2015-11-09 - 48ff668 - lavfi 6.1.0 - avfilter.h
     Add a frame_rate field to AVFilterLink
 
-2015-xx-xx - xxxxxxx - lavc 57.6.0 - avcodec.h
+2015-10-26 - lavc 57.7.0 - avcodec.h
+  ce70f28 - Deprecate av_free_packet(). Use av_packet_unref() as replacement,
+            it resets the packet in a more consistent way.
+  9b56d5c - Deprecate av_dup_packet(), it is a no-op for most cases.
+            Use av_packet_ref() to make a non-refcounted AVPacket refcounted.
+  a9a6010 - Add av_packet_alloc(), av_packet_clone(), av_packet_free().
+            They match the AVFrame functions with the same name.
 
-2015-xx-xx - lavc 57.7.0 - avcodec.h
-  xxxxxx - Deprecate av_free_packet(). Use av_packet_unref() as replacement,
-           it resets the packet in a more consistent way.
-  xxxxxx - Deprecate av_dup_packet(), it is a no-op for most cases.
-           Use av_packet_ref() to make a non-refcounted AVPacket refcounted.
-  xxxxxx - Add av_packet_alloc(), av_packet_clone(), av_packet_free().
-           They match the AVFrame functions with the same name.
-
-2015-xx-xx - xxxxxxx - lavc 57.5.0 - avcodec.h
+2015-10-21 - a17a766 - lavc 57.5.0 - avcodec.h
   Add data and linesize array to AVSubtitleRect, to be used instead of
   the ones from the embedded AVPicture.
 
-2015-xx-xx - xxxxxxx - lavc 57.0.0 - qsv.h
+2015-10-16 - dc923bc - lavc 57.0.0 - qsv.h
   Add an API for allocating opaque surfaces.
 
-2015-xx-xx - xxxxxxx - lavu 55.2.0 - dict.h
+2015-10-12 - 11c5f43 - lavu 55.2.0 - dict.h
   Change return type of av_dict_copy() from void to int, so that a proper
   error code can be reported.
 
