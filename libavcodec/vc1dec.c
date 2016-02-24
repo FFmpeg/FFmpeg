@@ -352,14 +352,6 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     v->mv_f_next[0]     = v->mv_f_next_base + s->b8_stride + 1;
     v->mv_f_next[1]     = v->mv_f_next[0] + (s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
 
-    /* Init coded blocks info */
-    if (v->profile == PROFILE_ADVANCED) {
-//        if (alloc_bitplane(&v->over_flags_plane, s->mb_width, s->mb_height) < 0)
-//            return -1;
-//        if (alloc_bitplane(&v->ac_pred_plane, s->mb_width, s->mb_height) < 0)
-//            return -1;
-    }
-
     ff_intrax8_common_init(&v->x8,s);
 
     if (s->avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || s->avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
