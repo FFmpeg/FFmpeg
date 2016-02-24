@@ -32,8 +32,15 @@
 #include "libavdevice/avdevice.h"
 #include "cmdutils.h"
 
+typedef struct InputStream {
+    AVStream *st;
+} InputStream;
+
 typedef struct InputFile {
     AVFormatContext *fmt_ctx;
+
+    InputStream *streams;
+    int       nb_streams;
 } InputFile;
 
 const char program_name[] = "avprobe";
@@ -787,10 +794,19 @@ static int open_input_file(InputFile *ifile, const char *filename)
 
     av_dump_format(fmt_ctx, 0, filename, 0);
 
+    ifile->streams = av_mallocz_array(fmt_ctx->nb_streams,
+                                      sizeof(*ifile->streams));
+    if (!ifile->streams)
+        exit(1);
+    ifile->nb_streams = fmt_ctx->nb_streams;
+
     /* bind a decoder to each input stream */
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
+        InputStream *ist = &ifile->streams[i];
         AVStream *stream = fmt_ctx->streams[i];
         AVCodec *codec;
+
+        ist->st = stream;
 
         if (stream->codec->codec_id == AV_CODEC_ID_PROBE) {
             fprintf(stderr, "Failed to probe codec for input stream %d\n",
@@ -820,6 +836,10 @@ static void close_input_file(InputFile *ifile)
 
         avcodec_close(stream->codec);
     }
+
+    av_freep(&ifile->streams);
+    ifile->nb_streams = 0;
+
     avformat_close_input(&ifile->fmt_ctx);
 }
 
