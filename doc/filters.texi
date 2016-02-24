@@ -7940,6 +7940,18 @@ A floating point number which specifies chroma temporal strength. It defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}.
 @end table
 
+@anchor{hwupload_cuda}
+@section hwupload_cuda
+
+Upload system memory frames to a CUDA device.
+
+It accepts the following optional parameters:
+
+@table @option
+@item device
+The number of the CUDA device to use
+@end table
+
 @section hqx
 
 Apply a high-quality magnification filter designed for pixel art. This filter
