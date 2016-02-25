@@ -175,13 +175,12 @@ static void avconv_cleanup(int ret)
     }
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
-        AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
-        while (bsfc) {
-            AVBitStreamFilterContext *next = bsfc->next;
-            av_bitstream_filter_close(bsfc);
-            bsfc = next;
-        }
-        ost->bitstream_filters = NULL;
+
+        for (j = 0; j < ost->nb_bitstream_filters; j++)
+            av_bsf_free(&ost->bsf_ctx[j]);
+        av_freep(&ost->bsf_ctx);
+        av_freep(&ost->bitstream_filters);
+
         av_frame_free(&ost->filtered_frame);
 
         av_parser_close(ost->parser);
@@ -255,10 +254,9 @@ static void abort_codec_experimental(AVCodec *c, int encoder)
     exit_program(1);
 }
 
-static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
+static void write_packet(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
     AVStream *st = ost->st;
-    AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
     int ret;
 
     /*
@@ -284,32 +282,6 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
             pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
                                          ost->st->time_base);
         }
-    }
-
-    while (bsfc) {
-        AVCodecContext *avctx = ost->encoding_needed ? ost->enc_ctx : ost->st->codec;
-        AVPacket new_pkt = *pkt;
-        int a = av_bitstream_filter_filter(bsfc, avctx, NULL,
-                                           &new_pkt.data, &new_pkt.size,
-                                           pkt->data, pkt->size,
-                                           pkt->flags & AV_PKT_FLAG_KEY);
-        if (a > 0) {
-            av_packet_unref(pkt);
-            new_pkt.buf = av_buffer_create(new_pkt.data, new_pkt.size,
-                                           av_buffer_default_free, NULL, 0);
-            if (!new_pkt.buf)
-                exit_program(1);
-        } else if (a < 0) {
-            av_log(NULL, AV_LOG_ERROR, "%s failed for stream %d, codec %s",
-                   bsfc->filter->name, pkt->stream_index,
-                   avctx->codec ? avctx->codec->name : "copy");
-            print_error("", a);
-            if (exit_on_error)
-                exit_program(1);
-        }
-        *pkt = new_pkt;
-
-        bsfc = bsfc->next;
     }
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
@@ -338,6 +310,49 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
+        exit_program(1);
+    }
+}
+
+static void output_packet(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
+{
+    int ret = 0;
+
+    /* apply the output bitstream filters, if any */
+    if (ost->nb_bitstream_filters) {
+        int idx;
+
+        ret = av_bsf_send_packet(ost->bsf_ctx[0], pkt);
+        if (ret < 0)
+            goto finish;
+
+        idx = 1;
+        while (idx) {
+            /* get a packet from the previous filter up the chain */
+            ret = av_bsf_receive_packet(ost->bsf_ctx[idx - 1], pkt);
+            if (ret == AVERROR(EAGAIN)) {
+                ret = 0;
+                idx--;
+                continue;
+            } else if (ret < 0)
+                goto finish;
+
+            /* send it to the next filter down the chain or to the muxer */
+            if (idx < ost->nb_bitstream_filters) {
+                ret = av_bsf_send_packet(ost->bsf_ctx[idx], pkt);
+                if (ret < 0)
+                    goto finish;
+                idx++;
+            } else
+                write_packet(s, pkt, ost);
+        }
+    } else
+        write_packet(s, pkt, ost);
+
+finish:
+    if (ret < 0 && ret != AVERROR_EOF) {
+        av_log(NULL, AV_LOG_FATAL, "Error applying bitstream filters to an output "
+               "packet for stream #%d:%d.\n", ost->file_index, ost->index);
         exit_program(1);
     }
 }
@@ -380,7 +395,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
 
     if (got_packet) {
         av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
-        write_frame(s, &pkt, ost);
+        output_packet(s, &pkt, ost);
     }
 }
 
@@ -449,7 +464,7 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        write_frame(s, &pkt, ost);
+        output_packet(s, &pkt, ost);
     }
 }
 
@@ -516,7 +531,7 @@ static void do_video_out(AVFormatContext *s,
 
     if (got_packet) {
         av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
-        write_frame(s, &pkt, ost);
+        output_packet(s, &pkt, ost);
         *frame_size = pkt.size;
 
         /* if two pass, output log */
@@ -983,7 +998,7 @@ static void flush_encoders(void)
                     break;
                 }
                 av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
-                write_frame(os, &pkt, ost);
+                output_packet(os, &pkt, ost);
             }
 
             if (stop_encoding)
@@ -1076,7 +1091,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.size = pkt->size;
     }
 
-    write_frame(of->ctx, &opkt, ost);
+    output_packet(of->ctx, &opkt, ost);
 }
 
 int guess_input_channel_layout(InputStream *ist)
@@ -1554,6 +1569,51 @@ static InputStream *get_input_stream(OutputStream *ost)
     return NULL;
 }
 
+static int init_output_bsfs(OutputStream *ost)
+{
+    AVBSFContext *ctx;
+    int i, ret;
+
+    if (!ost->nb_bitstream_filters)
+        return 0;
+
+    ost->bsf_ctx = av_mallocz_array(ost->nb_bitstream_filters, sizeof(*ost->bsf_ctx));
+    if (!ost->bsf_ctx)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < ost->nb_bitstream_filters; i++) {
+        ret = av_bsf_alloc(ost->bitstream_filters[i], &ctx);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error allocating a bistream filter context\n");
+            return ret;
+        }
+        ost->bsf_ctx[i] = ctx;
+
+        ret = avcodec_parameters_copy(ctx->par_in,
+                                      i ? ost->bsf_ctx[i - 1]->par_out : ost->st->codecpar);
+        if (ret < 0)
+            return ret;
+
+        ctx->time_base_in = i ? ost->bsf_ctx[i - 1]->time_base_out : ost->st->time_base;
+
+        ret = av_bsf_init(ctx);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error initializing bistream filter: %s\n",
+                   ost->bitstream_filters[i]->name);
+            return ret;
+        }
+    }
+
+    ctx = ost->bsf_ctx[ost->nb_bitstream_filters - 1];
+    ret = avcodec_parameters_copy(ost->st->codecpar, ctx->par_out);
+    if (ret < 0)
+        return ret;
+
+    ost->st->time_base = ctx->time_base_out;
+
+    return 0;
+}
+
 static int init_output_stream(OutputStream *ost, char *error, int error_len)
 {
     int ret = 0;
@@ -1647,6 +1707,13 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         if (ret < 0)
             return ret;
     }
+
+    /* initialize bitstream filters for the output stream
+     * needs to be done here, because the codec id for streamcopy is not
+     * known until now */
+    ret = init_output_bsfs(ost);
+    if (ret < 0)
+        return ret;
 
     return ret;
 }

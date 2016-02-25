@@ -912,7 +912,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     AVStream *st = avformat_new_stream(oc, NULL);
     int idx      = oc->nb_streams - 1, ret = 0;
     char *bsf = NULL, *next, *codec_tag = NULL;
-    AVBitStreamFilterContext *bsfc, *bsfc_prev = NULL;
     double qscale = -1;
 
     if (!st) {
@@ -980,19 +979,26 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     MATCH_PER_STREAM_OPT(bitstream_filters, str, bsf, oc, st);
     while (bsf) {
+        const AVBitStreamFilter *filter;
+
         if (next = strchr(bsf, ','))
             *next++ = 0;
-        if (!(bsfc = av_bitstream_filter_init(bsf))) {
+
+        filter = av_bsf_get_by_name(bsf);
+        if (!bsf) {
             av_log(NULL, AV_LOG_FATAL, "Unknown bitstream filter %s\n", bsf);
             exit_program(1);
         }
-        if (bsfc_prev)
-            bsfc_prev->next = bsfc;
-        else
-            ost->bitstream_filters = bsfc;
 
-        bsfc_prev = bsfc;
-        bsf       = next;
+        ost->bitstream_filters = av_realloc_array(ost->bitstream_filters,
+                                                  ost->nb_bitstream_filters + 1,
+                                                  sizeof(*ost->bitstream_filters));
+        if (!ost->bitstream_filters)
+            exit_program(1);
+
+        ost->bitstream_filters[ost->nb_bitstream_filters++] = filter;
+
+        bsf = next;
     }
 
     MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, oc, st);
