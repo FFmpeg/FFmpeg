@@ -102,7 +102,7 @@ AVFILTER_DEFINE_CLASS(waveform);
 
 static const enum AVPixelFormat lowpass_pix_fmts[] = {
     AV_PIX_FMT_GBRP,     AV_PIX_FMT_GBRAP,
-    AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
     AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV440P,
     AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,
@@ -114,6 +114,7 @@ static const enum AVPixelFormat lowpass_pix_fmts[] = {
     AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
     AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
+    AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV440P12,
     AV_PIX_FMT_NONE
 };
 
@@ -123,9 +124,10 @@ static const enum AVPixelFormat flat_pix_fmts[] = {
 
 static const enum AVPixelFormat color_pix_fmts[] = {
     AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
-    AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV444P12,
     AV_PIX_FMT_NONE
 };
 
@@ -1120,6 +1122,7 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
         s->bg_color = black_gbrp_color;
         break;
     default:

@@ -413,9 +413,6 @@ av_cold void ff_h264_decode_init_vlc(void){
     }
 }
 
-/**
- *
- */
 static inline int get_level_prefix(GetBitContext *gb){
     unsigned int buf;
     int log;

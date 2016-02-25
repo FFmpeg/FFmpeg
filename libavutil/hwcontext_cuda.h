@@ -16,13 +16,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_THREAD_H
-#define AVFILTER_THREAD_H
 
-#include "avfilter.h"
+#ifndef AVUTIL_HWCONTEXT_CUDA_H
+#define AVUTIL_HWCONTEXT_CUDA_H
 
-int ff_graph_thread_init(AVFilterGraph *graph);
+#include <cuda.h>
 
-void ff_graph_thread_free(AVFilterGraph *graph);
+#include "pixfmt.h"
 
-#endif /* AVFILTER_THREAD_H */
+/**
+ * @file
+ * An API-specific header for AV_HWDEVICE_TYPE_CUDA.
+ *
+ * This API supports dynamic frame pools. AVHWFramesContext.pool must return
+ * AVBufferRefs whose data pointer is a CUdeviceptr.
+ */
+
+/**
+ * This struct is allocated as AVHWDeviceContext.hwctx
+ */
+typedef struct AVCUDADeviceContext {
+    CUcontext cuda_ctx;
+} AVCUDADeviceContext;
+
+/**
+ * AVHWFramesContext.hwctx is currently not used
+ */
+
+#endif /* AVUTIL_HWCONTEXT_CUDA_H */

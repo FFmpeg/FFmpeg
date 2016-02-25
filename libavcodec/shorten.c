@@ -23,7 +23,6 @@
  * @file
  * Shorten decoder
  * @author Jeff Muizelaar
- *
  */
 
 #include <limits.h>

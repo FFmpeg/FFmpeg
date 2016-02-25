@@ -40,6 +40,8 @@
 
 #include "libavutil/frame.h"
 
+#include "avcodec.h"
+
 #define QSV_VERSION_MAJOR 1
 #define QSV_VERSION_MINOR 9
 

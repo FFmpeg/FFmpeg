@@ -35,7 +35,6 @@
  *   http://www.pcisys.net/~melanson/codecs
  *
  * Supports: BGR24 (RGB 24bpp)
- *
  */
 
 #include <stdio.h>
@@ -52,9 +51,6 @@
 #include <zlib.h>
 #endif
 
-/*
- * Decoder context
- */
 typedef struct LclDecContext {
     // Image type
     int imgtype;
@@ -158,11 +154,6 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
 #endif
 
 
-/*
- *
- * Decode a frame
- *
- */
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
     AVFrame *frame = data;
@@ -473,11 +464,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     return buf_size;
 }
 
-/*
- *
- * Init lcl decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
@@ -632,11 +618,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/*
- *
- * Uninit lcl decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;

@@ -100,6 +100,8 @@ extern const ff_asf_guid ff_asf_content_encryption;
 extern const ff_asf_guid ff_asf_ext_content_encryption;
 extern const ff_asf_guid ff_asf_digital_signature;
 extern const ff_asf_guid ff_asf_extended_stream_properties_object;
+extern const ff_asf_guid ff_asf_group_mutual_exclusion_object;
+extern const ff_asf_guid ff_asf_mutex_language;
 
 extern const AVMetadataConv ff_asf_metadata_conv[];
 

@@ -142,7 +142,6 @@ typedef signed char   sbyte;
  *           brgb|rgbr|gbrg|brgb
  *           1001 0010 0100 1001
  *           a67b 89cA BdCD eEFf
- *
  */
 static const vector unsigned char
     perm_rgb_0 = { 0x00, 0x01, 0x10, 0x02, 0x03, 0x11, 0x04, 0x05,

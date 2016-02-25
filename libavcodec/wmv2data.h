@@ -16,13 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_THREAD_H
-#define AVFILTER_THREAD_H
+#ifndef AVCODEC_WMV2DATA_H
+#define AVCODEC_WMV2DATA_H
 
-#include "avfilter.h"
+#include <stdint.h>
 
-int ff_graph_thread_init(AVFilterGraph *graph);
+extern const uint8_t ff_wmv2_scantableA[64];
+extern const uint8_t ff_wmv2_scantableB[64];
 
-void ff_graph_thread_free(AVFilterGraph *graph);
-
-#endif /* AVFILTER_THREAD_H */
+#endif /* AVCODEC_WMV2DATA_H */

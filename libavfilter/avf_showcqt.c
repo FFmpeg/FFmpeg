@@ -18,9 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <math.h>
-#include <stdlib.h>
-
 #include "config.h"
 #include "libavcodec/avfft.h"
 #include "libavutil/avassert.h"
@@ -444,19 +441,19 @@ static double midi(void *p, double f)
 static double r_func(void *p, double x)
 {
     x = av_clipd(x, 0.0, 1.0);
-    return (int)(x*255.0+0.5) << 16;
+    return lrint(x*255.0) << 16;
 }
 
 static double g_func(void *p, double x)
 {
     x = av_clipd(x, 0.0, 1.0);
-    return (int)(x*255.0+0.5) << 8;
+    return lrint(x*255.0) << 8;
 }
 
 static double b_func(void *p, double x)
 {
     x = av_clipd(x, 0.0, 1.0);
-    return (int)(x*255.0+0.5);
+    return lrint(x*255.0);
 }
 
 static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
@@ -705,9 +702,9 @@ static void draw_bar_rgb(AVFrame *out, const float *h, const float *rcp_h,
                 *lp++ = 0;
             } else {
                 mul = (h[x] - ht) * rcp_h[x];
-                *lp++ = mul * c[x].rgb.r + 0.5f;
-                *lp++ = mul * c[x].rgb.g + 0.5f;
-                *lp++ = mul * c[x].rgb.b + 0.5f;
+                *lp++ = lrintf(mul * c[x].rgb.r);
+                *lp++ = lrintf(mul * c[x].rgb.g);
+                *lp++ = lrintf(mul * c[x].rgb.b);
             }
         }
     }
@@ -736,9 +733,9 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
                 *lpv++ = 128;
             } else {
                 mul = (h[x] - ht) * rcp_h[x];
-                *lpy++ = mul * c[x].yuv.y + 16.5f;
-                *lpu++ = mul * c[x].yuv.u + 128.5f;
-                *lpv++ = mul * c[x].yuv.v + 128.5f;
+                *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f);
+                *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f);
+                *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f);
             }
             /* u and v are skipped on yuv422p and yuv420p */
             if (fmt == AV_PIX_FMT_YUV444P) {
@@ -748,16 +745,16 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
                     *lpv++ = 128;
                 } else {
                     mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
-                    *lpu++ = mul * c[x+1].yuv.u + 128.5f;
-                    *lpv++ = mul * c[x+1].yuv.v + 128.5f;
+                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
+                    *lpu++ = lrintf(mul * c[x+1].yuv.u + 128.0f);
+                    *lpv++ = lrintf(mul * c[x+1].yuv.v + 128.0f);
                 }
             } else {
                 if (h[x+1] <= ht) {
                     *lpy++ = 16;
                 } else {
                     mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
+                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
                 }
             }
         }
@@ -775,16 +772,16 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
                     *lpv++ = 128;
                 } else {
                     mul = (h[x] - ht) * rcp_h[x];
-                    *lpy++ = mul * c[x].yuv.y + 16.5f;
-                    *lpu++ = mul * c[x].yuv.u + 128.5f;
-                    *lpv++ = mul * c[x].yuv.v + 128.5f;
+                    *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f);
+                    *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f);
+                    *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f);
                 }
             } else {
                 if (h[x] <= ht) {
                     *lpy++ = 16;
                 } else {
                     mul = (h[x] - ht) * rcp_h[x];
-                    *lpy++ = mul * c[x].yuv.y + 16.5f;
+                    *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f);
                 }
             }
             /* u and v are skipped on yuv422p and yuv420p */
@@ -795,16 +792,16 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
                     *lpv++ = 128;
                 } else {
                     mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
-                    *lpu++ = mul * c[x+1].yuv.u + 128.5f;
-                    *lpv++ = mul * c[x+1].yuv.v + 128.5f;
+                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
+                    *lpu++ = lrintf(mul * c[x+1].yuv.u + 128.0f);
+                    *lpv++ = lrintf(mul * c[x+1].yuv.v + 128.0f);
                 }
             } else {
                 if (h[x+1] <= ht) {
                     *lpy++ = 16;
                 } else {
                     mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
+                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
                 }
             }
         }
@@ -822,9 +819,9 @@ static void draw_axis_rgb(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpa = axis->data[0] + y * axis->linesize[0];
         for (x = 0; x < w; x++) {
             a = rcp_255 * lpa[3];
-            *lp++ = a * lpa[0] + (1.0f - a) * c[x].rgb.r + 0.5f;
-            *lp++ = a * lpa[1] + (1.0f - a) * c[x].rgb.g + 0.5f;
-            *lp++ = a * lpa[2] + (1.0f - a) * c[x].rgb.b + 0.5f;
+            *lp++ = lrintf(a * lpa[0] + (1.0f - a) * c[x].rgb.r);
+            *lp++ = lrintf(a * lpa[1] + (1.0f - a) * c[x].rgb.g);
+            *lp++ = lrintf(a * lpa[2] + (1.0f - a) * c[x].rgb.b);
             lpa += 4;
         }
     }
@@ -852,15 +849,15 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpaa = vaa + y * lsaa;
         for (x = 0; x < w; x += 2) {
             a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f) + 0.5f;
-            *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f) + 0.5f;
-            *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f) + 0.5f;
+            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f));
+            *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f));
+            *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f));
             /* u and v are skipped on yuv422p and yuv420p */
             a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f) + 0.5f;
+            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f));
             if (fmt == AV_PIX_FMT_YUV444P) {
-                *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f) + 0.5f;
-                *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f) + 0.5f;
+                *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f));
+                *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f));
             }
         }
 
@@ -874,17 +871,17 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         for (x = 0; x < out->width; x += 2) {
             /* u and v are skipped on yuv420p */
             a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f) + 0.5f;
+            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f));
             if (fmt != AV_PIX_FMT_YUV420P) {
-                *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f) + 0.5f;
-                *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f) + 0.5f;
+                *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f));
+                *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f));
             }
             /* u and v are skipped on yuv422p and yuv420p */
             a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f) + 0.5f;
+            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f));
             if (fmt == AV_PIX_FMT_YUV444P) {
-                *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f) + 0.5f;
-                *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f) + 0.5f;
+                *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f));
+                *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f));
             }
         }
     }
@@ -920,9 +917,9 @@ static void update_sono_rgb(AVFrame *sono, const ColorFloat *c, int idx)
     uint8_t *lp = sono->data[0] + idx * sono->linesize[0];
 
     for (x = 0; x < w; x++) {
-        *lp++ = c[x].rgb.r + 0.5f;
-        *lp++ = c[x].rgb.g + 0.5f;
-        *lp++ = c[x].rgb.b + 0.5f;
+        *lp++ = lrintf(c[x].rgb.r);
+        *lp++ = lrintf(c[x].rgb.g);
+        *lp++ = lrintf(c[x].rgb.b);
     }
 }
 
@@ -934,13 +931,13 @@ static void update_sono_yuv(AVFrame *sono, const ColorFloat *c, int idx)
     uint8_t *lpv = sono->data[2] + idx * sono->linesize[2];
 
     for (x = 0; x < w; x += 2) {
-        *lpy++ = c[x].yuv.y + 16.5f;
-        *lpu++ = c[x].yuv.u + 128.5f;
-        *lpv++ = c[x].yuv.v + 128.5f;
-        *lpy++ = c[x+1].yuv.y + 16.5f;
+        *lpy++ = lrintf(c[x].yuv.y + 16.0f);
+        *lpu++ = lrintf(c[x].yuv.u + 128.0f);
+        *lpv++ = lrintf(c[x].yuv.v + 128.0f);
+        *lpy++ = lrintf(c[x+1].yuv.y + 16.0f);
         if (fmt == AV_PIX_FMT_YUV444P) {
-            *lpu++ = c[x+1].yuv.u + 128.5f;
-            *lpv++ = c[x+1].yuv.v + 128.5f;
+            *lpu++ = lrintf(c[x+1].yuv.u + 128.0f);
+            *lpv++ = lrintf(c[x+1].yuv.v + 128.0f);
         }
     }
 }

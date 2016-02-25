@@ -159,7 +159,6 @@ const uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63] = {
 };
 
 /**
- *
  * @param buf_size size of buf in bits
  */
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size){

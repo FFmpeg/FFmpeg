@@ -28,7 +28,6 @@
  * Supports: PAL8 (RGB 8bpp, paletted)
  *         : BGR24 (RGB 24bpp) (can also output it as RGB32)
  *         : RGB32 (RGB 32bpp, 4th plane is alpha)
- *
  */
 
 #include <stdio.h>

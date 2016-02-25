@@ -37,7 +37,7 @@ checkout(){
 update()(
     cd ${src} || return
     case "$repo" in
-        git:*) git fetch --force && git reset --hard "origin/$branch" ;;
+        git:*) git fetch --force && git reset --quiet --hard "origin/$branch" ;;
     esac
 )
 

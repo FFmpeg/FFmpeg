@@ -201,3 +201,82 @@ LFE_FIR0_FLOAT
 INIT_XMM fma3
 LFE_FIR0_FLOAT
 %endif
+
+%macro LFE_FIR1_FLOAT 0
+cglobal lfe_fir1_float, 4, 6, 10, samples, lfe, coeff, nblocks, cnt1, cnt2
+    shr nblocksd, 2
+    sub     lfeq, 3*sizeof_float
+    mov    cnt1d, 64*sizeof_float
+    mov    cnt2d, 64*sizeof_float-16
+    lea   coeffq, [coeffq+cnt1q*4]
+    add samplesq, cnt1q
+    neg    cnt1q
+
+.loop:
+%if cpuflag(avx)
+    cvtdq2ps  m4, [lfeq]
+    shufps    m5, m4, m4, q0123
+%elif cpuflag(sse2)
+    movu      m4, [lfeq]
+    cvtdq2ps  m4, m4
+    pshufd    m5, m4, q0123
+%endif
+
+.inner_loop:
+    movaps    m6, [coeffq+cnt1q*4   ]
+    movaps    m7, [coeffq+cnt1q*4+16]
+    mulps     m0, m5, m6
+    mulps     m1, m5, m7
+%if ARCH_X86_64
+    movaps    m8, [coeffq+cnt1q*4+32]
+    movaps    m9, [coeffq+cnt1q*4+48]
+    mulps     m2, m5, m8
+    mulps     m3, m5, m9
+%else
+    mulps     m2, m5, [coeffq+cnt1q*4+32]
+    mulps     m3, m5, [coeffq+cnt1q*4+48]
+%endif
+
+    haddps    m0, m1
+    haddps    m2, m3
+    haddps    m0, m2
+    movaps [samplesq+cnt1q], m0
+
+    mulps     m6, m4
+    mulps     m7, m4
+%if ARCH_X86_64
+    mulps     m8, m4
+    mulps     m9, m4
+
+    haddps    m6, m7
+    haddps    m8, m9
+    haddps    m6, m8
+%else
+    mulps     m2, m4, [coeffq+cnt1q*4+32]
+    mulps     m3, m4, [coeffq+cnt1q*4+48]
+
+    haddps    m6, m7
+    haddps    m2, m3
+    haddps    m6, m2
+%endif
+    movaps [samplesq+cnt2q], m6
+
+    sub    cnt2d, 16
+    add    cnt1q, 16
+    jl .inner_loop
+
+    add     lfeq, sizeof_float
+    add samplesq, 128*sizeof_float
+    mov    cnt1q, -64*sizeof_float
+    mov    cnt2d,  64*sizeof_float-16
+    sub nblocksd, 1
+    jg .loop
+    RET
+%endmacro
+
+INIT_XMM sse3
+LFE_FIR1_FLOAT
+%if HAVE_AVX_EXTERNAL
+INIT_XMM avx
+LFE_FIR1_FLOAT
+%endif

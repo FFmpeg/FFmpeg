@@ -151,7 +151,6 @@ static int decode_mime_header(AMRWBContext *ctx, const uint8_t *buf)
  *
  * @param[in]  ind                 Array of 5 indexes
  * @param[out] isf_q               Buffer for isf_q[LP_ORDER]
- *
  */
 static void decode_isf_indices_36b(uint16_t *ind, float *isf_q)
 {
@@ -178,7 +177,6 @@ static void decode_isf_indices_36b(uint16_t *ind, float *isf_q)
  *
  * @param[in]  ind                 Array of 7 indexes
  * @param[out] isf_q               Buffer for isf_q[LP_ORDER]
- *
  */
 static void decode_isf_indices_46b(uint16_t *ind, float *isf_q)
 {
@@ -212,7 +210,6 @@ static void decode_isf_indices_46b(uint16_t *ind, float *isf_q)
  *
  * @param[in,out] isf_q            Current quantized ISF
  * @param[in,out] isf_past         Past quantized ISF
- *
  */
 static void isf_add_mean_and_past(float *isf_q, float *isf_past)
 {

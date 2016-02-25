@@ -1111,7 +1111,7 @@ static uint8_t *get_ts_payload_start(uint8_t *pkt)
  * NOTE: 'payload' contains a complete PES payload. */
 static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                              const uint8_t *payload, int payload_size,
-                             int64_t pts, int64_t dts, int key)
+                             int64_t pts, int64_t dts, int key, int stream_id)
 {
     MpegTSWriteStream *ts_st = st->priv_data;
     MpegTSWrite *ts = s->priv_data;
@@ -1208,6 +1208,11 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                         st->codec->codec_id == AV_CODEC_ID_AC3 &&
                         ts->m2ts_mode) {
                 *q++ = 0xfd;
+            } else if (st->codec->codec_type == AVMEDIA_TYPE_DATA) {
+                *q++ = stream_id != -1 ? stream_id : 0xfc;
+
+                if (stream_id == 0xbd) /* asynchronous KLV */
+                    pts = dts = AV_NOPTS_VALUE;
             } else {
                 *q++ = 0xbd;
                 if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
@@ -1451,6 +1456,15 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     const int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE) * 2;
     int64_t dts = pkt->dts, pts = pkt->pts;
     int opus_samples = 0;
+    int side_data_size;
+    char *side_data = NULL;
+    int stream_id = -1;
+
+    side_data = av_packet_get_side_data(pkt,
+                                        AV_PKT_DATA_MPEGTS_STREAM_ID,
+                                        &side_data_size);
+    if (side_data)
+        stream_id = side_data[0];
 
     if (ts->reemit_pat_pmt) {
         av_log(s, AV_LOG_WARNING,
@@ -1629,8 +1643,8 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             if (   ts_st2->payload_size
                && (ts_st2->payload_dts == AV_NOPTS_VALUE || dts - ts_st2->payload_dts > delay/2)) {
                 mpegts_write_pes(s, st2, ts_st2->payload, ts_st2->payload_size,
-                                ts_st2->payload_pts, ts_st2->payload_dts,
-                                ts_st2->payload_flags & AV_PKT_FLAG_KEY);
+                                 ts_st2->payload_pts, ts_st2->payload_dts,
+                                 ts_st2->payload_flags & AV_PKT_FLAG_KEY, stream_id);
                 ts_st2->payload_size = 0;
             }
         }
@@ -1643,7 +1657,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         ts_st->opus_queued_samples + opus_samples >= 5760 /* 120ms */)) {
         mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
                          ts_st->payload_pts, ts_st->payload_dts,
-                         ts_st->payload_flags & AV_PKT_FLAG_KEY);
+                         ts_st->payload_flags & AV_PKT_FLAG_KEY, stream_id);
         ts_st->payload_size = 0;
         ts_st->opus_queued_samples = 0;
     }
@@ -1652,7 +1666,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         av_assert0(!ts_st->payload_size);
         // for video and subtitle, write a single pes packet
         mpegts_write_pes(s, st, buf, size, pts, dts,
-                         pkt->flags & AV_PKT_FLAG_KEY);
+                         pkt->flags & AV_PKT_FLAG_KEY, stream_id);
         ts_st->opus_queued_samples = 0;
         av_free(data);
         return 0;
@@ -1684,7 +1698,7 @@ static void mpegts_write_flush(AVFormatContext *s)
         if (ts_st->payload_size > 0) {
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
                              ts_st->payload_pts, ts_st->payload_dts,
-                             ts_st->payload_flags & AV_PKT_FLAG_KEY);
+                             ts_st->payload_flags & AV_PKT_FLAG_KEY, -1);
             ts_st->payload_size = 0;
             ts_st->opus_queued_samples = 0;
         }

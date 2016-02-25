@@ -15,6 +15,16 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavc 57.25.0 - avcodec.h
+  Add AVCodecContext.hw_frames_ctx.
+
+2016-xx-xx - lavfi 6.36.0 - avfilter.h
+  xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
+  xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
+
+2016-02-xx - xxxxxxx - lavc 57.25.100
+  Add AV_PKT_DATA_MPEGTS_STREAM_ID for exporting the MPEGTS stream ID.
+
 2016-xx-xx - lavu 55.18.100
   xxxxxxx audio_fifo.h - Add av_audio_fifo_peek_at().
 
@@ -22,8 +32,11 @@ API changes, most recent first:
   xxxxxxx buffer.h - Add av_buffer_pool_init2().
   xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
                         for handling hwaccel frames.
+  xxxxxxx hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
+                             CUDA-specific hwcontext definitions.
   xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
                               VDPAU-specific hwcontext definitions.
+  xxxxxxx pixfmt.h - Add AV_PIX_FMT_CUDA.
 
 -------- 8< --------- FFmpeg 3.0 was cut here -------- 8< ---------
 

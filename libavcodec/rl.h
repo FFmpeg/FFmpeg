@@ -48,7 +48,6 @@ typedef struct RLTable {
 } RLTable;
 
 /**
- *
  * @param static_store static uint8_t array[2][2*MAX_RUN + MAX_LEVEL + 3] which will hold
  *                     the level and run tables, if this is NULL av_malloc() will be used
  */

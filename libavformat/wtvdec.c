@@ -44,9 +44,7 @@
 #define LEN_PRETTY_GUID 34
 
 /*
- *
  * File system routines
- *
  */
 
 typedef struct WtvFile {
@@ -311,9 +309,7 @@ static void wtvfile_close(AVIOContext *pb)
 }
 
 /*
- *
  * Main demuxer
- *
  */
 
 typedef struct WtvStream {

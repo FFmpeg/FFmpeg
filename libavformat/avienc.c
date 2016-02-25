@@ -74,6 +74,9 @@ typedef struct AVIStream {
     int max_size;
     int sample_requested;
 
+    int64_t pal_offset;
+    int hdr_pal_done;
+
     int64_t last_dts;
 
     AVIIndex indexes;
@@ -359,6 +362,7 @@ static int avi_write_header(AVFormatContext *s)
                     && enc->pix_fmt == AV_PIX_FMT_RGB555LE
                     && enc->bits_per_coded_sample == 15)
                     enc->bits_per_coded_sample = 16;
+                avist->pal_offset = avio_tell(pb) + 40;
                 ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 0, 0);
                 pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
                                               enc->bits_per_coded_sample);
@@ -652,6 +656,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size               = pkt->size;
     AVIOContext *pb     = s->pb;
     AVCodecContext *enc = s->streams[stream_index]->codec;
+    AVIStream *avist    = s->streams[stream_index]->priv_data;
     int ret;
 
     if (enc->codec_id == AV_CODEC_ID_H264 && enc->codec_tag == MKTAG('H','2','6','4') && pkt->size) {
@@ -673,15 +678,25 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret) {
             if (ret == CONTAINS_PAL) {
                 int pc_tag, i;
+                int pal_size = 1 << enc->bits_per_coded_sample;
+                if (!avist->hdr_pal_done) {
+                    int64_t cur_offset = avio_tell(pb);
+                    avio_seek(pb, avist->pal_offset, SEEK_SET);
+                    for (i = 0; i < pal_size; i++) {
+                        uint32_t v = AV_RL32(data + size - 4*pal_size + 4*i);
+                        avio_wl32(pb, v & 0xffffff);
+                    }
+                    avio_seek(pb, cur_offset, SEEK_SET);
+                    avist->hdr_pal_done++;
+                }
                 avi_stream2fourcc(tag, stream_index, enc->codec_type);
                 tag[2] = 'p'; tag[3] = 'c';
-
                 pc_tag = ff_start_tag(pb, tag);
                 avio_w8(pb, 0);
-                avio_w8(pb, 0);
+                avio_w8(pb, pal_size & 0xFF);
                 avio_wl16(pb, 0); // reserved
-                for (i = 0; i<256; i++) {
-                    uint32_t v = AV_RL32(data + size - 1024 + 4*i);
+                for (i = 0; i < pal_size; i++) {
+                    uint32_t v = AV_RL32(data + size - 4*pal_size + 4*i);
                     avio_wb32(pb, v<<8);
                 }
                 ff_end_tag(pb, pc_tag);
@@ -705,7 +720,6 @@ static int avi_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb     = s->pb;
     AVIStream *avist    = s->streams[stream_index]->priv_data;
     AVCodecContext *enc = s->streams[stream_index]->codec;
-    int ret;
 
     if (pkt->dts != AV_NOPTS_VALUE)
         avist->last_dts = pkt->dts + pkt->duration;

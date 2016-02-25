@@ -128,10 +128,6 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         avctx->pix_fmt   == AV_PIX_FMT_YUYV422)
         context->is_yuv2 = 1;
 
-    /* Temporary solution until PAL8 is implemented in nut */
-    if (context->is_pal8 && avctx->bits_per_coded_sample == 1)
-        avctx->pix_fmt = AV_PIX_FMT_NONE;
-
     return 0;
 }
 
@@ -206,21 +202,6 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    /* Temporary solution until PAL8 is implemented in nut */
-    if (avctx->pix_fmt == AV_PIX_FMT_NONE &&
-        avctx->bits_per_coded_sample == 1 &&
-        avctx->frame_number == 0 &&
-        context->palette &&
-        AV_RB64(context->palette->data) == 0xFFFFFFFF00000000
-    ) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
-        if (!pal) {
-            avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
-            context->is_pal8 = 0;
-            context->is_mono = 1;
-        } else
-            avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    }
     desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
     if ((avctx->bits_per_coded_sample == 8 || avctx->bits_per_coded_sample == 4
@@ -403,11 +384,12 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    if ((avctx->pix_fmt==AV_PIX_FMT_BGR24    ||
-        avctx->pix_fmt==AV_PIX_FMT_GRAY8    ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB555LE ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB555BE ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB565LE ||
+    if ((avctx->pix_fmt==AV_PIX_FMT_RGB24    ||
+        avctx->pix_fmt==AV_PIX_FMT_BGR24     ||
+        avctx->pix_fmt==AV_PIX_FMT_GRAY8     ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555LE  ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555BE  ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB565LE  ||
         avctx->pix_fmt==AV_PIX_FMT_MONOWHITE ||
         avctx->pix_fmt==AV_PIX_FMT_MONOBLACK ||
         avctx->pix_fmt==AV_PIX_FMT_PAL8) &&

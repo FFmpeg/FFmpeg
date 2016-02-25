@@ -172,4 +172,4 @@ void checkasm_checked_call(void *func, ...);
 #define bench_new(...) while(0)
 #endif
 
-#endif
+#endif /* TESTS_CHECKASM_CHECKASM_H */

@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -64,6 +63,80 @@ enum {
  * The number is reset when a frame is added.
  */
 unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
+
+/**
+ * This structure contains the parameters describing the frames that will be
+ * passed to this filter.
+ *
+ * It should be allocated with av_buffersrc_parameters_alloc() and freed with
+ * av_free(). All the allocated fields in it remain owned by the caller.
+ */
+typedef struct AVBufferSrcParameters {
+    /**
+     * video: the pixel format, value corresponds to enum AVPixelFormat
+     * audio: the sample format, value corresponds to enum AVSampleFormat
+     */
+    int format;
+    /**
+     * The timebase to be used for the timestamps on the input frames.
+     */
+    AVRational time_base;
+
+    /**
+     * Video only, the display dimensions of the input frames.
+     */
+    int width, height;
+
+    /**
+     * Video only, the sample (pixel) aspect ratio.
+     */
+    AVRational sample_aspect_ratio;
+
+    /**
+     * Video only, the frame rate of the input video. This field must only be
+     * set to a non-zero value if input stream has a known constant framerate
+     * and should be left at its initial value if the framerate is variable or
+     * unknown.
+     */
+    AVRational frame_rate;
+
+    /**
+     * Video with a hwaccel pixel format only. This should be a reference to an
+     * AVHWFramesContext instance describing the input frames.
+     */
+    AVBufferRef *hw_frames_ctx;
+
+    /**
+     * Audio only, the audio sampling rate in samples per secon.
+     */
+    int sample_rate;
+
+    /**
+     * Audio only, the audio channel layout
+     */
+    uint64_t channel_layout;
+} AVBufferSrcParameters;
+
+/**
+ * Allocate a new AVBufferSrcParameters instance. It should be freed by the
+ * caller with av_free().
+ */
+AVBufferSrcParameters *av_buffersrc_parameters_alloc(void);
+
+/**
+ * Initialize the buffersrc or abuffersrc filter with the provided parameters.
+ * This function may be called multiple times, the later calls override the
+ * previous ones. Some of the parameters may also be set through AVOptions, then
+ * whatever method is used last takes precedence.
+ *
+ * @param ctx an instance of the buffersrc or abuffersrc filter
+ * @param param the stream parameters. The frames later passed to this filter
+ *              must conform to those parameters. All the allocated fields in
+ *              param remain owned by the caller, libavfilter will make internal
+ *              copies or references when necessary.
+ * @return 0 on success, a negative AVERROR code on failure.
+ */
+int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *param);
 
 /**
  * Add a frame to the buffer source.

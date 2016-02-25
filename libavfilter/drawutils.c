@@ -53,10 +53,10 @@ int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_BGRA:
     case AV_PIX_FMT_BGR0:
     case AV_PIX_FMT_BGR24: rgba_map[BLUE ] = 0; rgba_map[GREEN] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
-    case AV_PIX_FMT_GBRP9:
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
-    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP9LE:
+    case AV_PIX_FMT_GBRP10LE:
+    case AV_PIX_FMT_GBRP12LE:
+    case AV_PIX_FMT_GBRP14LE:
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:  rgba_map[GREEN] = 0; rgba_map[BLUE ] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
     default:                    /* unsupported */
@@ -250,7 +250,7 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
     } else if (draw->format == AV_PIX_FMT_GRAY8 || draw->format == AV_PIX_FMT_GRAY8A) {
         color->comp[0].u8[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
         color->comp[1].u8[0] = rgba[3];
-    } else if (draw->format == AV_PIX_FMT_GRAY16 || draw->format == AV_PIX_FMT_YA16) {
+    } else if (draw->format == AV_PIX_FMT_GRAY16LE || draw->format == AV_PIX_FMT_YA16LE) {
         color->comp[0].u8[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
         color->comp[0].u16[0] = color->comp[0].u8[0] << 8;
         color->comp[1].u8[0] = rgba[3];
@@ -298,6 +298,7 @@ void ff_fill_rectangle(FFDrawContext *draw, FFDrawColor *color,
 {
     int plane, x, y, wp, hp;
     uint8_t *p0, *p;
+    FFDrawColor color_tmp = *color;
 
     for (plane = 0; plane < draw->nb_planes; plane++) {
         p0 = pointer_at(draw, dst, dst_linesize, plane, dst_x, dst_y);
@@ -306,9 +307,15 @@ void ff_fill_rectangle(FFDrawContext *draw, FFDrawColor *color,
         if (!hp)
             return;
         p = p0;
+
+        if (HAVE_BIGENDIAN && draw->desc->comp[0].depth > 8) {
+            for (x = 0; 2*x < draw->pixelstep[plane]; x++)
+                color_tmp.comp[plane].u16[x] = av_bswap16(color_tmp.comp[plane].u16[x]);
+        }
+
         /* copy first line from color */
         for (x = 0; x < wp; x++) {
-            memcpy(p, color->comp[plane].u8, draw->pixelstep[plane]);
+            memcpy(p, color_tmp.comp[plane].u8, draw->pixelstep[plane]);
             p += draw->pixelstep[plane];
         }
         wp *= draw->pixelstep[plane];

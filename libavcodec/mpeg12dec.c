@@ -1871,6 +1871,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
 
         if (++s->mb_x >= s->mb_width) {
             const int mb_size = 16 >> s->avctx->lowres;
+            int left;
 
             ff_mpeg_draw_horiz_band(s, mb_size * (s->mb_y >> field_pic), mb_size);
             ff_mpv_report_decode_progress(s);
@@ -1910,12 +1911,13 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
             // in cases where the slice is completely outside the visible
             // area, we detect this here instead of running into the end expecting
             // more data
+            left = get_bits_left(&s->gb);
             if (s->mb_y >= ((s->height + 15) >> 4) &&
                 !s->progressive_sequence &&
-                get_bits_left(&s->gb) <= 8 &&
-                get_bits_left(&s->gb) >= 0 &&
+                left <= 25 &&
+                left >= 0 &&
                 s->mb_skip_run == -1 &&
-                show_bits(&s->gb, 8) == 0)
+                (!left || show_bits(&s->gb, left) == 0))
                 goto eos;
 
             ff_init_block_index(s);

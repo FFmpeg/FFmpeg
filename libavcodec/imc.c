@@ -27,7 +27,6 @@
  *  A mdct based codec using a 256 points large transform
  *  divided into 32 bands with some mix of scale factors.
  *  Only mono is supported.
- *
  */
 
 

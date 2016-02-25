@@ -351,6 +351,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_WEBVTT_IDENTIFIER:         return "WebVTT ID";
     case AV_PKT_DATA_WEBVTT_SETTINGS:           return "WebVTT Settings";
     case AV_PKT_DATA_METADATA_UPDATE:           return "Metadata Update";
+    case AV_PKT_DATA_MPEGTS_STREAM_ID:          return "MPEGTS Stream ID";
     }
     return NULL;
 }

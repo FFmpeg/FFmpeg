@@ -601,7 +601,7 @@ static void evalfunc_1(NNEDIContext *s, FrameData *frame_data)
 
         const int ystart = frame_data->field[plane];
         const int ystop = height - 12;
-        uint8_t *srcpp;
+        const uint8_t *srcpp;
 
         if (!(s->process_plane & (1 << plane)))
             continue;
@@ -1173,6 +1173,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->frame_data.input);
     av_freep(&s->frame_data.temp);
+    av_freep(&s->fdsp);
     av_frame_free(&s->second);
 }
 

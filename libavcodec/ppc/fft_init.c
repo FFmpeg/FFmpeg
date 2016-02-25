@@ -147,7 +147,7 @@ static void imdct_calc_altivec(FFTContext *s, FFTSample *output, const FFTSample
         p1[k]    = vec_perm(b, b, vcprm(3,2,1,0));
     }
 }
-#endif /* HAVE_GNU_AS && HAVE_ALTIVEC */
+#endif /* HAVE_GNU_AS && HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_fft_init_ppc(FFTContext *s)
 {
@@ -164,5 +164,5 @@ av_cold void ff_fft_init_ppc(FFTContext *s)
         s->imdct_calc = imdct_calc_altivec;
         s->imdct_half = imdct_half_altivec;
     }
-#endif /* HAVE_GNU_AS && HAVE_ALTIVEC */
+#endif /* HAVE_GNU_AS && HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

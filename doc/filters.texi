@@ -2366,6 +2366,115 @@ Sets the difference coefficient (default: 2.5). 0.0 means mono sound
 Enable clipping. By default is enabled.
 @end table
 
+@section firequalizer
+Apply FIR Equalization using arbitrary frequency response.
+
+The filter accepts the following option:
+
+@table @option
+@item gain
+Set gain curve equation (in dB). The expression can contain variables:
+@table @option
+@item f
+the evaluated frequency
+@item sr
+sample rate
+@item ch
+channel number, set to 0 when multichannels evaluation is disabled
+@item chid
+channel id, see libavutil/channel_layout.h, set to the first channel id when
+multichannels evaluation is disabled
+@item chs
+number of channels
+@item chlayout
+channel_layout, see libavutil/channel_layout.h
+
+@end table
+and functions:
+@table @option
+@item gain_interpolate(f)
+interpolate gain on frequency f based on gain_entry
+@end table
+This option is also available as command. Default is @code{gain_interpolate(f)}.
+
+@item gain_entry
+Set gain entry for gain_interpolate function. The expression can
+contain functions:
+@table @option
+@item entry(f, g)
+store gain entry at frequency f with value g
+@end table
+This option is also available as command.
+
+@item delay
+Set filter delay in seconds. Higher value means more accurate.
+Default is @code{0.01}.
+
+@item accuracy
+Set filter accuracy in Hz. Lower value means more accurate.
+Default is @code{5}.
+
+@item wfunc
+Set window function. Acceptable values are:
+@table @option
+@item rectangular
+rectangular window, useful when gain curve is already smooth
+@item hann
+hann window (default)
+@item hamming
+hamming window
+@item blackman
+blackman window
+@item nuttall3
+3-terms continuous 1st derivative nuttall window
+@item mnuttall3
+minimum 3-terms discontinuous nuttall window
+@item nuttall
+4-terms continuous 1st derivative nuttall window
+@item bnuttall
+minimum 4-terms discontinuous nuttall (blackman-nuttall) window
+@item bharris
+blackman-harris window
+@end table
+
+@item fixed
+If enabled, use fixed number of audio samples. This improves speed when
+filtering with large delay. Default is disabled.
+
+@item multi
+Enable multichannels evaluation on gain. Default is disabled.
+@end table
+
+@subsection Examples
+@itemize
+@item
+lowpass at 1000 Hz:
+@example
+firequalizer=gain='if(lt(f,1000), 0, -INF)'
+@end example
+@item
+lowpass at 1000 Hz with gain_entry:
+@example
+firequalizer=gain_entry='entry(1000,0); entry(1001, -INF)'
+@end example
+@item
+custom equalization:
+@example
+firequalizer=gain_entry='entry(100,0); entry(400, -4); entry(1000, -6); entry(2000, 0)'
+@end example
+@item
+higher delay:
+@example
+firequalizer=delay=0.1:fixed=on
+@end example
+@item
+lowpass on left channel, highpass on right channel:
+@example
+firequalizer=gain='if(eq(chid,1), gain_interpolate(f), if(eq(chid,2), gain_interpolate(1e6+f), 0))'
+:gain_entry='entry(1000, 0); entry(1001,-INF); entry(1e6+1000,0)':multi=on
+@end example
+@end itemize
+
 @section flanger
 Apply a flanging effect to the audio.
 
@@ -4131,10 +4240,12 @@ Available values for component modes are:
 @item difference128
 @item divide
 @item dodge
+@item freeze
 @item exclusion
 @item glow
 @item hardlight
 @item hardmix
+@item heat
 @item lighten
 @item linearlight
 @item multiply
@@ -7831,6 +7942,18 @@ A floating point number which specifies chroma temporal strength. It defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}.
 @end table
 
+@anchor{hwupload_cuda}
+@section hwupload_cuda
+
+Upload system memory frames to a CUDA device.
+
+It accepts the following optional parameters:
+
+@table @option
+@item device
+The number of the CUDA device to use
+@end table
+
 @section hqx
 
 Apply a high-quality magnification filter designed for pixel art. This filter
@@ -8733,9 +8856,9 @@ Use frame flags, single field.
 Use top field only.
 @item b
 Use bottom field only.
-@item ft
+@item tf
 Use both fields, top first.
-@item fb
+@item bf
 Use both fields, bottom first.
 @end table
 
@@ -13348,6 +13471,10 @@ The sample (pixel) aspect ratio of the input video.
 Specify the optional parameters to be used for the scale filter which
 is automatically inserted when an input change is detected in the
 input size or format.
+
+@item hw_frames_ctx
+When using a hardware pixel format, this should be a reference to an
+AVHWFramesContext describing input frames.
 @end table
 
 For example:
