@@ -153,6 +153,7 @@
     <ClCompile Include="..\libavfilter\af_earwax.c" />
     <ClCompile Include="..\libavfilter\f_ebur128.c" />
     <ClCompile Include="..\libavfilter\af_extrastereo.c" />
+    <ClCompile Include="..\libavfilter\af_firequalizer.c" />
     <ClCompile Include="..\libavfilter\af_flanger.c" />
     <ClCompile Include="..\libavfilter\af_join.c" />
     <ClCompile Include="..\libavfilter\af_pan.c" />

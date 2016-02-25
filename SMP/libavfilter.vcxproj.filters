@@ -279,6 +279,9 @@
     <ClCompile Include="..\libavfilter\af_extrastereo.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_firequalizer.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_flanger.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

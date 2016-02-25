@@ -86,6 +86,7 @@
     <ClCompile Include="..\libavformat\sdp.c" />
     <ClCompile Include="..\libavformat\url.c" />
     <ClCompile Include="..\libavformat\utils.c" />
+    <ClCompile Include="..\libavformat\isom.c" />
     <ClCompile Include="..\libavformat\network.c" />
     <ClCompile Include="..\libavformat\riffdec.c" />
     <ClCompile Include="..\libavformat\riffenc.c" />
@@ -139,7 +140,6 @@
     <ClCompile Include="..\libavformat\pcm.c" />
     <ClCompile Include="..\libavformat\afc.c" />
     <ClCompile Include="..\libavformat\aiffdec.c" />
-    <ClCompile Include="..\libavformat\isom.c" />
     <ClCompile Include="..\libavformat\mov_chan.c" />
     <ClCompile Include="..\libavformat\aiffenc.c" />
     <ClCompile Include="..\libavformat\amr.c" />
@@ -171,6 +171,7 @@
     <ClCompile Include="..\libavformat\swf.c" />
     <ClCompile Include="..\libavformat\avr.c" />
     <ClCompile Include="..\libavformat\avs.c" />
+    <ClCompile Include="..\libavformat\voc_packet.c" />
     <ClCompile Include="..\libavformat\vocdec.c" />
     <ClCompile Include="..\libavformat\voc.c" />
     <ClCompile Include="..\libavformat\bethsoftvid.c" />

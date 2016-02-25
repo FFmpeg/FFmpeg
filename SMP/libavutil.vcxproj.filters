@@ -368,6 +368,9 @@
     <ClInclude Include="..\libavutil\hwcontext.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\hwcontext_cuda.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_vdpau.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>

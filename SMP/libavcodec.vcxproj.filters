@@ -133,6 +133,9 @@
     <YASM Include="..\libavcodec\x86\rv34dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\vc1dsp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\simple_idct10.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -230,9 +233,6 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\v210.asm">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavcodec\x86\vc1dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\vorbisdsp.asm">
@@ -610,6 +610,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\tpeldsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vc1dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\videodsp.c">
@@ -1596,6 +1599,9 @@
     <ClCompile Include="..\libavcodec\mss2dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\wmv2data.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\msvideo1.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2014,9 +2020,6 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\vc1data.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\vc1dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\qsvdec_vc1.c">
@@ -2586,6 +2589,9 @@
     <ClCompile Include="..\libavcodec\x86\rv34dsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\vc1dsp_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\videodsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
@@ -2655,9 +2661,6 @@
     <ClCompile Include="..\libavcodec\x86\v210enc_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\vc1dsp_init.c">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vorbisdsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
@@ -2682,10 +2685,10 @@
     <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\snowdsp.c">
+    <ClCompile Include="..\libavcodec\x86\vc1dsp_mmx.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\vc1dsp_mmx.c">
+    <ClCompile Include="..\libavcodec\x86\snowdsp.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="libavcodec\dxva2_vp9_wrap.c">

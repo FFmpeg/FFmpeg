@@ -79,6 +79,9 @@
     <ClCompile Include="..\libavformat\utils.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\isom.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\network.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -238,9 +241,6 @@
     <ClCompile Include="..\libavformat\aiffdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\isom.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavformat\mov_chan.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -332,6 +332,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\avs.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\voc_packet.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\vocdec.c">

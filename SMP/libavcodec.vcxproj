@@ -103,6 +103,7 @@
     <YASM Include="..\libavcodec\x86\pixblockdsp.asm" />
     <YASM Include="..\libavcodec\x86\qpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
+    <YASM Include="..\libavcodec\x86\vc1dsp.asm" />
     <YASM Include="..\libavcodec\x86\simple_idct10.asm" />
     <YASM Include="..\libavcodec\x86\videodsp.asm" />
     <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
@@ -136,7 +137,6 @@
     <YASM Include="..\libavcodec\x86\ttadsp.asm" />
     <YASM Include="..\libavcodec\x86\v210enc.asm" />
     <YASM Include="..\libavcodec\x86\v210.asm" />
-    <YASM Include="..\libavcodec\x86\vc1dsp.asm" />
     <YASM Include="..\libavcodec\x86\vorbisdsp.asm" />
     <YASM Include="..\libavcodec\x86\vp6dsp.asm" />
     <YASM Include="..\libavcodec\x86\vp9intrapred.asm" />
@@ -298,6 +298,9 @@
     <ClCompile Include="..\libavcodec\texturedsp.c" />
     <ClCompile Include="..\libavcodec\texturedspenc.c" />
     <ClCompile Include="..\libavcodec\tpeldsp.c" />
+    <ClCompile Include="..\libavcodec\vc1dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vc1dsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\videodsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_videodsp.obj</ObjectFileName>
     </ClCompile>
@@ -654,6 +657,7 @@
     <ClCompile Include="..\libavcodec\mss12.c" />
     <ClCompile Include="..\libavcodec\mss2.c" />
     <ClCompile Include="..\libavcodec\mss2dsp.c" />
+    <ClCompile Include="..\libavcodec\wmv2data.c" />
     <ClCompile Include="..\libavcodec\msvideo1.c" />
     <ClCompile Include="..\libavcodec\msvideo1enc.c" />
     <ClCompile Include="..\libavcodec\lcldec.c" />
@@ -806,9 +810,6 @@
     <ClCompile Include="..\libavcodec\vc1_pred.c" />
     <ClCompile Include="..\libavcodec\vc1.c" />
     <ClCompile Include="..\libavcodec\vc1data.c" />
-    <ClCompile Include="..\libavcodec\vc1dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vc1dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\qsvdec_vc1.c" />
     <ClCompile Include="..\libavcodec\vc2enc.c" />
     <ClCompile Include="..\libavcodec\vc2enc_dwt.c" />
@@ -1012,6 +1013,7 @@
     <ClCompile Include="..\libavcodec\x86\pixblockdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\qpeldsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\rv34dsp_init.c" />
+    <ClCompile Include="..\libavcodec\x86\vc1dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\videodsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\vp3dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\vp8dsp_init.c" />
@@ -1037,7 +1039,6 @@
     <ClCompile Include="..\libavcodec\x86\ttadsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\v210-init.c" />
     <ClCompile Include="..\libavcodec\x86\v210enc_init.c" />
-    <ClCompile Include="..\libavcodec\x86\vc1dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\vorbisdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\vp6dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init.c" />
@@ -1048,8 +1049,8 @@
     <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\snowdsp.c" />
     <ClCompile Include="..\libavcodec\x86\vc1dsp_mmx.c" />
+    <ClCompile Include="..\libavcodec\x86\snowdsp.c" />
     <ClCompile Include="libavcodec\dxva2_vp9_wrap.c" />
     <ClCompile Include="libavcodec\log2_tab_wrap.c" />
     <ClCompile Include="libavcodec\reverse_wrap.c" />

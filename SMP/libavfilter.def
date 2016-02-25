@@ -9,6 +9,8 @@ EXPORTS
     av_buffersrc_add_frame
     av_buffersrc_add_frame_flags
     av_buffersrc_get_nb_failed_requests
+    av_buffersrc_parameters_alloc
+    av_buffersrc_parameters_set
     av_buffersrc_write_frame
     av_filter_next
     avfilter_add_matrix
