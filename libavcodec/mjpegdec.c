@@ -2268,7 +2268,8 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                   );
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
-        for (p = 0; p<4; p++) {
+        av_assert0(s->nb_components == av_pix_fmt_count_planes(s->picture_ptr->format));
+        for (p = 0; p<s->nb_components; p++) {
             uint8_t *line = s->picture_ptr->data[p];
             int w = s->width;
             int h = s->height;
@@ -2326,7 +2327,8 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                    );
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
-        for (p = 0; p < 4; p++) {
+        av_assert0(s->nb_components == av_pix_fmt_count_planes(s->picture_ptr->format));
+        for (p = 0; p < s->nb_components; p++) {
             uint8_t *dst;
             int w = s->width;
             int h = s->height;
@@ -2353,7 +2355,8 @@ the_end:
     if (s->flipped) {
         int j;
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
-        for (index=0; index<4; index++) {
+        av_assert0(s->nb_components == av_pix_fmt_count_planes(s->picture_ptr->format));
+        for (index=0; index<s->nb_components; index++) {
             uint8_t *dst = s->picture_ptr->data[index];
             int w = s->picture_ptr->width;
             int h = s->picture_ptr->height;
@@ -2375,6 +2378,7 @@ the_end:
     if (s->adobe_transform == 0 && s->avctx->pix_fmt == AV_PIX_FMT_GBRAP) {
         int w = s->picture_ptr->width;
         int h = s->picture_ptr->height;
+        av_assert0(s->nb_components == 4);
         for (i=0; i<h; i++) {
             int j;
             uint8_t *dst[4];
@@ -2397,6 +2401,7 @@ the_end:
     if (s->adobe_transform == 2 && s->avctx->pix_fmt == AV_PIX_FMT_YUVA444P) {
         int w = s->picture_ptr->width;
         int h = s->picture_ptr->height;
+        av_assert0(s->nb_components == 4);
         for (i=0; i<h; i++) {
             int j;
             uint8_t *dst[4];
