@@ -1677,7 +1677,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         goto out;
     }
 
-    if (id == AV_RB32("Adob") && (get_bits(&s->gb, 8) == 'e')) {
+    if (   id == AV_RB32("Adob")
+        && len >= 7
+        && show_bits(&s->gb, 8) == 'e'
+        && show_bits_long(&s->gb, 32) != AV_RB32("e_CM")) {
+        skip_bits(&s->gb,  8); /* 'e' */
         skip_bits(&s->gb, 16); /* version */
         skip_bits(&s->gb, 16); /* flags0 */
         skip_bits(&s->gb, 16); /* flags1 */
