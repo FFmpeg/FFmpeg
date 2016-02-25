@@ -4533,6 +4533,7 @@ case $target_os in
         enabled x86_64 && objformat="macho64"
         enabled_any pic shared x86_64 ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
+        check_header dispatch/dispatch.h
         ;;
     msys*)
         die "Native MSYS builds are discouraged, please use the MINGW environment.";
@@ -5347,7 +5348,6 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
-check_header dispatch/dispatch.h
 check_header direct.h
 check_header dirent.h
 check_header dlfcn.h
