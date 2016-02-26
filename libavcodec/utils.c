@@ -656,8 +656,8 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pic->format);
     int i;
 
-    if (pic->data[0]) {
-        av_log(s, AV_LOG_ERROR, "pic->data[0]!=NULL in avcodec_default_get_buffer\n");
+    if (pic->data[0] || pic->data[1] || pic->data[2] || pic->data[3]) {
+        av_log(s, AV_LOG_ERROR, "pic->data[*]!=NULL in avcodec_default_get_buffer\n");
         return -1;
     }
 
