@@ -32,6 +32,8 @@
 /* Quantizations above this usually zero coefficients and lower the quality */
 #define MAX_QUANT_INDEX 50
 
+/* Total range is -COEF_LUT_TAB to +COEFF_LUT_TAB, but total tab size is half
+ * (COEF_LUT_TAB*MAX_QUANT_INDEX) since the sign is appended during encoding */
 #define COEF_LUT_TAB 2048
 
 enum VC2_QM {
@@ -104,7 +106,7 @@ typedef struct VC2EncContext {
     uint8_t quant[MAX_DWT_LEVELS][4];
 
     /* Coefficient LUT */
-    uint32_t *coef_lut_val;
+    uint16_t *coef_lut_val;
     uint8_t  *coef_lut_len;
 
     int num_x; /* #slices horizontally */
@@ -147,7 +149,7 @@ static av_always_inline void put_padding(PutBitContext *pb, int bytes)
         put_bits(pb, bits, 0);
 }
 
-static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
+static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint16_t val)
 {
     int i;
     int pbits = 0, bits = 0, topbit = 1, maxval = 1;
@@ -192,7 +194,7 @@ static av_always_inline int count_vc2_ue_uint(uint16_t val)
 }
 
 static av_always_inline void get_vc2_ue_uint(uint16_t val, uint8_t *nbits,
-                                               uint32_t *eval)
+                                             uint16_t *eval)
 {
     int i;
     int pbits = 0, bits = 0, topbit = 1, maxval = 1;
@@ -539,29 +541,7 @@ static void encode_picture_start(VC2EncContext *s)
     encode_wavelet_transform(s);
 }
 
-#define QUANT(c)  \
-    c <<= 2;      \
-    c /= qfactor; \
-
-static av_always_inline void coeff_quantize_get(qcoef coeff, int qfactor,
-                                                uint8_t *len, uint32_t *eval)
-{
-    QUANT(coeff)
-    get_vc2_ue_uint(FFABS(coeff), len, eval);
-    if (coeff) {
-        *eval = (*eval << 1) | (coeff < 0);
-        *len += 1;
-    }
-}
-
-static av_always_inline void coeff_quantize_encode(PutBitContext *pb, qcoef coeff,
-                                                   int qfactor)
-{
-    QUANT(coeff)
-    put_vc2_ue_uint(pb, FFABS(coeff));
-    if (coeff)
-        put_bits(pb, 1, coeff < 0);
-}
+#define QUANT(c, qf) (((c) << 2)/(qf))
 
 /* VC-2 13.5.5.2 - slice_band() */
 static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
@@ -569,23 +549,33 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
 {
     int x, y;
 
-    int left   = b->width  * (sx+0) / s->num_x;
-    int right  = b->width  * (sx+1) / s->num_x;
-    int top    = b->height * (sy+0) / s->num_y;
-    int bottom = b->height * (sy+1) / s->num_y;
+    const int left   = b->width  * (sx+0) / s->num_x;
+    const int right  = b->width  * (sx+1) / s->num_x;
+    const int top    = b->height * (sy+0) / s->num_y;
+    const int bottom = b->height * (sy+1) / s->num_y;
 
-    int qfactor = ff_dirac_qscale_tab[quant];
-    uint8_t  *len_lut = &s->coef_lut_len[2*quant*COEF_LUT_TAB + COEF_LUT_TAB];
-    uint32_t *val_lut = &s->coef_lut_val[2*quant*COEF_LUT_TAB + COEF_LUT_TAB];
+    const int qfactor = ff_dirac_qscale_tab[quant];
+    const uint8_t  *len_lut = &s->coef_lut_len[quant*COEF_LUT_TAB];
+    const uint16_t *val_lut = &s->coef_lut_val[quant*COEF_LUT_TAB];
 
     dwtcoef *coeff = b->buf + top * b->stride;
 
     for (y = top; y < bottom; y++) {
         for (x = left; x < right; x++) {
-            if (coeff[x] >= -COEF_LUT_TAB && coeff[x] < COEF_LUT_TAB)
-                put_bits(pb, len_lut[coeff[x]], val_lut[coeff[x]]);
-            else
-                coeff_quantize_encode(pb, coeff[x], qfactor);
+            const int neg = coeff[x] < 0;
+            uint16_t c_abs = FFABS(coeff[x]);
+            if (c_abs < COEF_LUT_TAB) {
+                const uint8_t len  = len_lut[c_abs];
+                if (len == 1)
+                    put_bits(pb, 1, 1);
+                else
+                    put_bits(pb, len + 1, (val_lut[c_abs] << 1) | neg);
+            } else {
+                c_abs = QUANT(c_abs, qfactor);
+                put_vc2_ue_uint(pb, c_abs);
+                if (c_abs)
+                    put_bits(pb, 1, neg);
+            }
         }
         coeff += b->stride;
     }
@@ -594,7 +584,7 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
 static int count_hq_slice(VC2EncContext *s, int slice_x,
                           int slice_y, int quant_idx)
 {
-    int x, y, left, right, top, bottom, qfactor;
+    int x, y;
     uint8_t quants[MAX_DWT_LEVELS][4];
     int bits = 0, p, level, orientation;
 
@@ -611,28 +601,29 @@ static int count_hq_slice(VC2EncContext *s, int slice_x,
         bits += 8;
         for (level = 0; level < s->wavelet_depth; level++) {
             for (orientation = !!level; orientation < 4; orientation++) {
-                dwtcoef *buf;
                 SubBand *b = &s->plane[p].band[level][orientation];
 
-                quant_idx = quants[level][orientation];
-                qfactor = ff_dirac_qscale_tab[quant_idx];
+                const int q_idx = quants[level][orientation];
+                const uint8_t *len_lut = &s->coef_lut_len[q_idx*COEF_LUT_TAB];
+                const int qfactor = ff_dirac_qscale_tab[q_idx];
 
-                left   = b->width  * slice_x    / s->num_x;
-                right  = b->width  *(slice_x+1) / s->num_x;
-                top    = b->height * slice_y    / s->num_y;
-                bottom = b->height *(slice_y+1) / s->num_y;
+                const int left   = b->width  * slice_x    / s->num_x;
+                const int right  = b->width  *(slice_x+1) / s->num_x;
+                const int top    = b->height * slice_y    / s->num_y;
+                const int bottom = b->height *(slice_y+1) / s->num_y;
 
-                buf = b->buf + top * b->stride;
+                dwtcoef *buf = b->buf + top * b->stride;
 
                 for (y = top; y < bottom; y++) {
                     for (x = left; x < right; x++) {
-                        qcoef coeff = (qcoef)buf[x];
-                        if (coeff >= -COEF_LUT_TAB && coeff < COEF_LUT_TAB) {
-                            bits += s->coef_lut_len[2*quant_idx*COEF_LUT_TAB + coeff + COEF_LUT_TAB];
+                        uint16_t c_abs = FFABS(buf[x]);
+                        if (c_abs < COEF_LUT_TAB) {
+                            const int len = len_lut[c_abs];
+                            bits += len + (len != 1);
                         } else {
-                            QUANT(coeff)
-                            bits += count_vc2_ue_uint(FFABS(coeff));
-                            bits += !!coeff;
+                            c_abs = QUANT(c_abs, qfactor);
+                            bits += count_vc2_ue_uint(c_abs);
+                            bits += !!c_abs;
                         }
                     }
                     buf += b->stride;
@@ -1122,19 +1113,20 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         goto alloc_fail;
 
     /* Lookup tables */
-    s->coef_lut_len = av_malloc(2*COEF_LUT_TAB*s->q_ceil*sizeof(*s->coef_lut_len));
+    s->coef_lut_len = av_malloc(COEF_LUT_TAB*s->q_ceil*sizeof(*s->coef_lut_len));
     if (!s->coef_lut_len)
         goto alloc_fail;
 
-    s->coef_lut_val = av_malloc(2*COEF_LUT_TAB*s->q_ceil*sizeof(*s->coef_lut_val));
+    s->coef_lut_val = av_malloc(COEF_LUT_TAB*s->q_ceil*sizeof(*s->coef_lut_val));
     if (!s->coef_lut_val)
         goto alloc_fail;
 
     for (i = 0; i < s->q_ceil; i++) {
-        for (j = -COEF_LUT_TAB; j < COEF_LUT_TAB; j++) {
-            uint8_t  *len_lut = &s->coef_lut_len[2*i*COEF_LUT_TAB + COEF_LUT_TAB];
-            uint32_t *val_lut = &s->coef_lut_val[2*i*COEF_LUT_TAB + COEF_LUT_TAB];
-            coeff_quantize_get(j, ff_dirac_qscale_tab[i], &len_lut[j], &val_lut[j]);
+        for (j = 0; j < COEF_LUT_TAB; j++) {
+            uint8_t  *len_lut = &s->coef_lut_len[i*COEF_LUT_TAB];
+            uint16_t *val_lut = &s->coef_lut_val[i*COEF_LUT_TAB];
+            get_vc2_ue_uint(QUANT(j, ff_dirac_qscale_tab[i]),
+                            &len_lut[j], &val_lut[j]);
         }
     }
 

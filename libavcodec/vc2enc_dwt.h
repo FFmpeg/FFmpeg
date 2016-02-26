@@ -26,7 +26,6 @@
 #include <stdint.h>
 
 typedef int16_t dwtcoef;
-typedef int32_t qcoef;   /* Quantization needs more precision */
 
 /* Only Deslauriers-Dubuc (9,7) and LeGall (5,3) supported! */
 
