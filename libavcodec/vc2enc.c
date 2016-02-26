@@ -867,7 +867,7 @@ static int dwt_plane(AVCodecContext *avctx, void *arg)
         }
     }
 
-    memset(buf, 0, (p->coef_stride*p->dwt_height - p->height*p->width)*sizeof(dwtcoef));
+    memset(buf, 0, p->coef_stride * (p->dwt_height - p->height) * sizeof(dwtcoef));
 
     for (level = s->wavelet_depth-1; level >= 0; level--) {
         const SubBand *b = &p->band[level][0];
