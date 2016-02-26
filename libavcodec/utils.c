@@ -870,6 +870,11 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
             frame->height = FFMAX(avctx->height, AV_CEIL_RSHIFT(avctx->coded_height, avctx->lowres));
             override_dimensions = 0;
         }
+
+        if (frame->data[0] || frame->data[1] || frame->data[2] || frame->data[3]) {
+            av_log(avctx, AV_LOG_ERROR, "pic->data[*]!=NULL in get_buffer_internal\n");
+            return AVERROR(EINVAL);
+        }
     }
     ret = ff_decode_frame_props(avctx, frame);
     if (ret < 0)
