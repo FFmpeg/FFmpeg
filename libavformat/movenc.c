@@ -1711,10 +1711,30 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     avio_write(pb, compressor_name, 31);
 
     if (track->mode == MODE_MOV && track->enc->bits_per_coded_sample)
-        avio_wb16(pb, track->enc->bits_per_coded_sample);
+        avio_wb16(pb, track->enc->bits_per_coded_sample |
+                  (track->enc->pix_fmt == AV_PIX_FMT_GRAY8 ? 0x20 : 0));
     else
         avio_wb16(pb, 0x18); /* Reserved */
-    avio_wb16(pb, 0xffff); /* Reserved */
+
+    if (track->is_unaligned_qt_rgb && track->enc->pix_fmt == AV_PIX_FMT_PAL8) {
+        int i;
+        avio_wb16(pb, 0);             /* Color table ID */
+        avio_wb32(pb, 0);             /* Color table seed */
+        avio_wb16(pb, 0x8000);        /* Color table flags */
+        avio_wb16(pb, 255);           /* Color table size (zero-relative) */
+        for (i = 0; i < 256; i++) {
+            uint32_t rgb = AV_RL32(&track->palette[i]);
+            uint16_t r = (rgb >> 16) & 0xff;
+            uint16_t g = (rgb >> 8)  & 0xff;
+            uint16_t b = rgb         & 0xff;
+            avio_wb16(pb, 0);
+            avio_wb16(pb, (r << 8) | r);
+            avio_wb16(pb, (g << 8) | g);
+            avio_wb16(pb, (b << 8) | b);
+        }
+    } else
+        avio_wb16(pb, 0xffff); /* Reserved */
+
     if (track->tag == MKTAG('m','p','4','v'))
         mov_write_esds_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_H263)
@@ -4703,6 +4723,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         int i;
         MOVMuxContext *mov = s->priv_data;
+        MOVTrack *trk = &mov->tracks[pkt->stream_index];
 
         if (!pkt->size)
             return mov_write_single_packet(s, pkt); /* Passthrough. */
@@ -4736,6 +4757,31 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                 ret = mov_write_subtitle_end_packet(s, i, trk->track_duration);
                 if (ret < 0) return ret;
                 trk->last_sample_is_subtitle_end = 1;
+            }
+        }
+
+        if (trk->is_unaligned_qt_rgb) {
+            const uint8_t *data = pkt->data;
+            int size = pkt->size;
+            int64_t bpc = trk->enc->bits_per_coded_sample != 15 ? trk->enc->bits_per_coded_sample : 16;
+            int expected_stride = ((trk->enc->width * bpc + 15) >> 4)*2;
+            int ret = ff_reshuffle_raw_rgb(s, &pkt, trk->enc, expected_stride);
+            if (ret < 0)
+                return ret;
+            if (ret == CONTAINS_PAL && !trk->pal_done) {
+                int pal_size = 1 << trk->enc->bits_per_coded_sample;
+                memset(trk->palette, 0, AVPALETTE_SIZE);
+                memcpy(trk->palette, data + size - 4*pal_size, 4*pal_size);
+                trk->pal_done++;
+            } else if (trk->enc->pix_fmt == AV_PIX_FMT_GRAY8 ||
+                       trk->enc->pix_fmt == AV_PIX_FMT_MONOBLACK) {
+                for (i = 0; i < pkt->size; i++)
+                    pkt->data[i] = ~pkt->data[i];
+            }
+            if (ret) {
+                ret = mov_write_single_packet(s, pkt);
+                av_packet_free(&pkt);
+                return ret;
             }
         }
 
@@ -5249,6 +5295,20 @@ static int mov_write_header(AVFormatContext *s)
                        "WARNING codec timebase is very high. If duration is too long,\n"
                        "file may not be playable by quicktime. Specify a shorter timebase\n"
                        "or choose different container.\n");
+            if (track->mode == MODE_MOV &&
+                track->enc->codec_id == AV_CODEC_ID_RAWVIDEO &&
+                track->tag == MKTAG('r','a','w',' ')) {
+                enum AVPixelFormat pix_fmt = track->enc->pix_fmt;
+                if (pix_fmt == AV_PIX_FMT_NONE && track->enc->bits_per_coded_sample == 1)
+                    pix_fmt = AV_PIX_FMT_MONOWHITE;
+                track->is_unaligned_qt_rgb =
+                        pix_fmt == AV_PIX_FMT_RGB24 ||
+                        pix_fmt == AV_PIX_FMT_BGR24 ||
+                        pix_fmt == AV_PIX_FMT_PAL8 ||
+                        pix_fmt == AV_PIX_FMT_GRAY8 ||
+                        pix_fmt == AV_PIX_FMT_MONOWHITE ||
+                        pix_fmt == AV_PIX_FMT_MONOBLACK;
+            }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             track->timescale = st->codec->sample_rate;
             if (!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
