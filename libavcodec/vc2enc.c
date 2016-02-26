@@ -547,7 +547,7 @@ static av_always_inline void coeff_quantize_get(qcoef coeff, int qfactor,
                                                 uint8_t *len, uint32_t *eval)
 {
     QUANT(coeff)
-    get_vc2_ue_uint(abs(coeff), len, eval);
+    get_vc2_ue_uint(FFABS(coeff), len, eval);
     if (coeff) {
         *eval = (*eval << 1) | (coeff < 0);
         *len += 1;
@@ -558,7 +558,7 @@ static av_always_inline void coeff_quantize_encode(PutBitContext *pb, qcoef coef
                                                    int qfactor)
 {
     QUANT(coeff)
-    put_vc2_ue_uint(pb, abs(coeff));
+    put_vc2_ue_uint(pb, FFABS(coeff));
     if (coeff)
         put_bits(pb, 1, coeff < 0);
 }
@@ -631,7 +631,7 @@ static int count_hq_slice(VC2EncContext *s, int slice_x,
                             bits += s->coef_lut_len[2*quant_idx*COEF_LUT_TAB + coeff + COEF_LUT_TAB];
                         } else {
                             QUANT(coeff)
-                            bits += count_vc2_ue_uint(abs(coeff));
+                            bits += count_vc2_ue_uint(FFABS(coeff));
                             bits += !!coeff;
                         }
                     }
