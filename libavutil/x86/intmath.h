@@ -47,16 +47,18 @@ static av_always_inline av_const int ff_log2_x86(unsigned int v)
 #   endif
 #   define ff_log2_16bit av_log2
 
-#   define ff_ctz(v) _tzcnt_u32(v)
+#   if !defined(_MSC_VER) || (_MSC_VER >= 1700)
+#       define ff_ctz(v) _tzcnt_u32(v)
 
-#   if ARCH_X86_64
-#       define ff_ctzll(v) _tzcnt_u64(v)
-#   else
-#       define ff_ctzll ff_ctzll_x86
+#       if ARCH_X86_64
+#           define ff_ctzll(v) _tzcnt_u64(v)
+#       else
+#           define ff_ctzll ff_ctzll_x86
 static av_always_inline av_const int ff_ctzll_x86(long long v)
 {
     return ((uint32_t)v == 0) ? _tzcnt_u32((uint32_t)(v >> 32)) + 32 : _tzcnt_u32((uint32_t)v);
 }
+#       endif
 #   endif
 
 #endif /* __INTEL_COMPILER */
