@@ -57,6 +57,11 @@ typedef struct {
     int is_cbr;
 } MP3DecContext;
 
+enum CheckRet {
+    CHECK_WRONG_HEADER = -1,
+    CHECK_SEEK_FAILED  = -2,
+};
+
 static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 
 /* mp3 read */
@@ -375,17 +380,30 @@ static int mp3_read_header(AVFormatContext *s)
             ffio_ensure_seekback(s->pb, i + 1024 + 4);
         frame_size = check(s->pb, off + i, &header);
         if (frame_size > 0) {
-            avio_seek(s->pb, off, SEEK_SET);
+            ret = avio_seek(s->pb, off, SEEK_SET);
+            if (ret < 0)
+                return ret;
             ffio_ensure_seekback(s->pb, i + 1024 + frame_size + 4);
-            if (check(s->pb, off + i + frame_size, &header2) >= 0 &&
+            ret = check(s->pb, off + i + frame_size, &header2);
+            if (ret >= 0 &&
                 (header & SAME_HEADER_MASK) == (header2 & SAME_HEADER_MASK))
             {
                 av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
-                avio_seek(s->pb, off + i, SEEK_SET);
+                ret = avio_seek(s->pb, off + i, SEEK_SET);
+                if (ret < 0)
+                    return ret;
                 break;
+            } else if (ret == CHECK_SEEK_FAILED) {
+                av_log(s, AV_LOG_ERROR, "Invalid frame size (%d): Could not seek to %"PRId64".\n", frame_size, off + i + frame_size);
+                return AVERROR(EINVAL);
             }
+        } else if (frame_size == CHECK_SEEK_FAILED) {
+            av_log(s, AV_LOG_ERROR, "Failed to read frame size: Could not seek to %"PRId64".\n", (int64_t) (i + 1024 + frame_size + 4));
+            return AVERROR(EINVAL);
         }
-        avio_seek(s->pb, off, SEEK_SET);
+        ret = avio_seek(s->pb, off, SEEK_SET);
+        if (ret < 0)
+            return ret;
     }
 
     // the seek index is relative to the end of the xing vbr headers
@@ -427,16 +445,21 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int check(AVIOContext *pb, int64_t pos, uint32_t *ret_header)
 {
     int64_t ret = avio_seek(pb, pos, SEEK_SET);
+    uint8_t header_buf[4];
     unsigned header;
     MPADecodeHeader sd;
     if (ret < 0)
-        return ret;
+        return CHECK_SEEK_FAILED;
 
-    header = avio_rb32(pb);
+    ret = avio_read(pb, &header_buf[0], 4);
+    if (ret < 0)
+        return CHECK_SEEK_FAILED;
+
+    header = AV_RB32(&header_buf[0]);
     if (ff_mpa_check_header(header) < 0)
-        return -1;
+        return CHECK_WRONG_HEADER;
     if (avpriv_mpegaudio_decode_header(&sd, header) == 1)
-        return -1;
+        return CHECK_WRONG_HEADER;
 
     if (ret_header)
         *ret_header = header;
@@ -468,8 +491,14 @@ static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
 
         for(j=0; j<MIN_VALID; j++) {
             ret = check(s->pb, pos, NULL);
-            if(ret < 0)
-                break;
+            if(ret < 0) {
+                if (ret == CHECK_WRONG_HEADER) {
+                    break;
+                } else if (ret == CHECK_SEEK_FAILED) {
+                    av_log(s, AV_LOG_ERROR, "Could not seek to %"PRId64".\n", pos);
+                    return AVERROR(EINVAL);
+                }
+            }
             if ((target_pos - pos)*dir <= 0 && abs(MIN_VALID/2-j) < score) {
                 candidate = pos;
                 score = abs(MIN_VALID/2-j);
