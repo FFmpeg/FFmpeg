@@ -817,12 +817,12 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
 
     c->uOffset = 0x0400040004000400LL;
     c->vOffset = 0x0400040004000400LL;
-    c->yCoeff  = roundToInt16(cy  * 8192) * 0x0001000100010001ULL;
-    c->vrCoeff = roundToInt16(crv * 8192) * 0x0001000100010001ULL;
-    c->ubCoeff = roundToInt16(cbu * 8192) * 0x0001000100010001ULL;
-    c->vgCoeff = roundToInt16(cgv * 8192) * 0x0001000100010001ULL;
-    c->ugCoeff = roundToInt16(cgu * 8192) * 0x0001000100010001ULL;
-    c->yOffset = roundToInt16(oy  *    8) * 0x0001000100010001ULL;
+    c->yCoeff  = roundToInt16(cy  * (1 << 13)) * 0x0001000100010001ULL;
+    c->vrCoeff = roundToInt16(crv * (1 << 13)) * 0x0001000100010001ULL;
+    c->ubCoeff = roundToInt16(cbu * (1 << 13)) * 0x0001000100010001ULL;
+    c->vgCoeff = roundToInt16(cgv * (1 << 13)) * 0x0001000100010001ULL;
+    c->ugCoeff = roundToInt16(cgu * (1 << 13)) * 0x0001000100010001ULL;
+    c->yOffset = roundToInt16(oy  * (1 <<  3)) * 0x0001000100010001ULL;
 
     c->yuv2rgb_y_coeff   = (int16_t)roundToInt16(cy  * (1 << 13));
     c->yuv2rgb_y_offset  = (int16_t)roundToInt16(oy  * (1 <<  9));
