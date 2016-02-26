@@ -68,6 +68,7 @@ typedef struct SliceArgs {
     int y;
     int quant_idx;
     int bits_ceil;
+    int bits_floor;
     int bytes;
 } SliceArgs;
 
@@ -118,6 +119,7 @@ typedef struct VC2EncContext {
 
     /* Rate control stuff */
     int slice_max_bytes;
+    int slice_min_bytes;
     int q_ceil;
     int q_start;
 
@@ -651,9 +653,8 @@ static int rate_control(AVCodecContext *avctx, void *arg)
     const int sy = slice_dat->y;
     int bits_last = INT_MAX, quant_buf[2] = {-1, -1};
     int quant = s->q_start, range = s->q_start/3;
-    const int64_t top = slice_dat->bits_ceil;
-    const double percent = s->tolerance;
-    const double bottom = top - top*(percent/100.0f);
+    const int top = slice_dat->bits_ceil;
+    const int bottom = slice_dat->bits_floor;
     int bits = count_hq_slice(s, sx, sy, quant);
     range -= range & 1; /* Make it an even number */
     while ((bits > top) || (bits < bottom)) {
@@ -688,6 +689,7 @@ static void calc_slice_sizes(VC2EncContext *s)
             args->x = slice_x;
             args->y = slice_y;
             args->bits_ceil = s->slice_max_bytes << 3;
+            args->bits_floor = s->slice_min_bytes << 3;
         }
     }
 
@@ -939,6 +941,8 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         sig_size = s->slice_max_bytes/s->size_scaler; /* Signalled slize size */
         s->size_scaler <<= 1;
     }
+
+    s->slice_min_bytes = s->slice_max_bytes - s->slice_max_bytes*(s->tolerance/100.0f);
 
     ret = ff_alloc_packet2(avctx, avpkt, max_frame_bytes*2, 0);
     if (ret < 0) {
