@@ -15,6 +15,12 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-02-28 - xxxxxxx - lavc 57.27.101
+  Validate AVFrame returned by get_buffer2 to have required
+  planes not NULL and unused planes set to NULL as crashes
+  and buffer overflow are possible with certain streams if
+  that is not the case.
+
 2016-xx-xx - xxxxxxx - lavc 57.27.100 - avcodec.h
   "flags2" decoding option now allows the flag "ass_ro_flush_noop" preventing
   the reset of the ASS ReadOrder field on flush. This affects the content of
