@@ -248,12 +248,11 @@ static int encode_frame(AVCodecContext *avctx,
         if (!strncmp(ass, "Dialogue: ", 10)) {
             int num;
             dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
-            // TODO reindent
-        for (; dialog && num--; dialog++) {
-            s->alignment_applied = 0;
-            srt_style_apply(s, dialog->style);
-            ff_ass_split_override_codes(cb, s, dialog->text);
-        }
+            for (; dialog && num--; dialog++) {
+                s->alignment_applied = 0;
+                srt_style_apply(s, dialog->style);
+                ff_ass_split_override_codes(cb, s, dialog->text);
+            }
         } else {
 #endif
             dialog = ff_ass_split_dialog2(s->ass_ctx, ass);

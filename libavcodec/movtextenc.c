@@ -343,10 +343,9 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         if (!strncmp(ass, "Dialogue: ", 10)) {
             int num;
             dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
-            // TODO reindent
-        for (; dialog && num--; dialog++) {
-            ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
-        }
+            for (; dialog && num--; dialog++) {
+                ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
+            }
         } else {
 #endif
             dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
