@@ -393,7 +393,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     }
     if (ass->charenc)
         av_dict_set(&codec_opts, "sub_charenc", ass->charenc, 0);
-    if (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,25,100))
+    if (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,26,100))
         av_dict_set(&codec_opts, "sub_text_format", "ass", 0);
     ret = avcodec_open2(dec_ctx, dec, &codec_opts);
     if (ret < 0)
