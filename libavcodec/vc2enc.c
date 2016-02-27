@@ -39,6 +39,9 @@
 /* Per slice quantization bit cost cache */
 #define SLICE_CACHED_QUANTIZERS 30
 
+/* Decides the cutoff point in # of slices to distribute the leftover bytes */
+#define SLICE_REDIST_TOTAL 150
+
 enum VC2_QM {
     VC2_QM_DEF = 0,
     VC2_QM_COL,
@@ -780,12 +783,57 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
 static int encode_slices(VC2EncContext *s)
 {
     uint8_t *buf;
-    int slice_x, slice_y, skip = 0;
+    int i, slice_x, slice_y, skip = 0;
+    int bytes_left = 0;
     SliceArgs *enc_args = s->slice_args;
+
+    int bytes_top[SLICE_REDIST_TOTAL] = {0};
+    SliceArgs *top_loc[SLICE_REDIST_TOTAL] = {NULL};
 
     avpriv_align_put_bits(&s->pb);
     flush_put_bits(&s->pb);
     buf = put_bits_ptr(&s->pb);
+
+    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
+        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
+            SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
+            bytes_left += args->bytes_left;
+            for (i = 0; i < FFMIN(SLICE_REDIST_TOTAL, s->num_x*s->num_y); i++) {
+                if (args->bytes > bytes_top[i]) {
+                    bytes_top[i] = args->bytes;
+                    top_loc[i] = args;
+                    break;
+                }
+            }
+        }
+    }
+
+    while (1) {
+        int distributed = 0;
+        for (i = 0; i < FFMIN(SLICE_REDIST_TOTAL, s->num_x*s->num_y); i++) {
+            SliceArgs *args;
+            int bits, bytes, diff, prev_bytes, new_idx;
+            if (bytes_left <= 0)
+                break;
+            if (!top_loc[i] || !top_loc[i]->quant_idx)
+                break;
+            args = top_loc[i];
+            prev_bytes = args->bytes;
+            new_idx = av_clip(args->quant_idx - 1, 0, s->q_ceil);
+            bits = count_hq_slice(s, args->cache, &args->cached_results,
+                                  args->x, args->y, new_idx);
+            bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
+            diff = bytes - prev_bytes;
+            if ((bytes_left - diff) >= 0) {
+                args->quant_idx = new_idx;
+                args->bytes = bytes;
+                bytes_left -= diff;
+                distributed++;
+            }
+        }
+        if (!distributed)
+            break;
+    }
 
     for (slice_y = 0; slice_y < s->num_y; slice_y++) {
         for (slice_x = 0; slice_x < s->num_x; slice_x++) {
@@ -1042,6 +1090,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     s->strict_compliance = 1;
 
     s->q_avg = 0;
+    s->slice_max_bytes = 0;
+    s->slice_min_bytes = 0;
 
     /* Mark unknown as progressive */
     s->interlaced = !((avctx->field_order == AV_FIELD_UNKNOWN) ||
@@ -1194,10 +1244,10 @@ alloc_fail:
 
 #define VC2ENC_FLAGS (AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption vc2enc_options[] = {
-    {"tolerance",     "Max undershoot in percent", offsetof(VC2EncContext, tolerance), AV_OPT_TYPE_DOUBLE, {.dbl = 10.0f}, 0.0f, 45.0f, VC2ENC_FLAGS, "tolerance"},
-    {"slice_width",   "Slice width",  offsetof(VC2EncContext, slice_width), AV_OPT_TYPE_INT, {.i64 = 128}, 32, 1024, VC2ENC_FLAGS, "slice_width"},
-    {"slice_height",  "Slice height", offsetof(VC2EncContext, slice_height), AV_OPT_TYPE_INT, {.i64 = 64}, 8, 1024, VC2ENC_FLAGS, "slice_height"},
-    {"wavelet_depth", "Transform depth", offsetof(VC2EncContext, wavelet_depth), AV_OPT_TYPE_INT, {.i64 = 5}, 1, 5, VC2ENC_FLAGS, "wavelet_depth"},
+    {"tolerance",     "Max undershoot in percent", offsetof(VC2EncContext, tolerance), AV_OPT_TYPE_DOUBLE, {.dbl = 5.0f}, 0.0f, 45.0f, VC2ENC_FLAGS, "tolerance"},
+    {"slice_width",   "Slice width",  offsetof(VC2EncContext, slice_width), AV_OPT_TYPE_INT, {.i64 = 64}, 32, 1024, VC2ENC_FLAGS, "slice_width"},
+    {"slice_height",  "Slice height", offsetof(VC2EncContext, slice_height), AV_OPT_TYPE_INT, {.i64 = 32}, 8, 1024, VC2ENC_FLAGS, "slice_height"},
+    {"wavelet_depth", "Transform depth", offsetof(VC2EncContext, wavelet_depth), AV_OPT_TYPE_INT, {.i64 = 4}, 1, 5, VC2ENC_FLAGS, "wavelet_depth"},
     {"wavelet_type",  "Transform type",  offsetof(VC2EncContext, wavelet_idx), AV_OPT_TYPE_INT, {.i64 = VC2_TRANSFORM_9_7}, 0, VC2_TRANSFORMS_NB, VC2ENC_FLAGS, "wavelet_idx"},
         {"9_7",          "Deslauriers-Dubuc (9,7)", 0, AV_OPT_TYPE_CONST, {.i64 = VC2_TRANSFORM_9_7},    INT_MIN, INT_MAX, VC2ENC_FLAGS, "wavelet_idx"},
         {"5_3",          "LeGall (5,3)",            0, AV_OPT_TYPE_CONST, {.i64 = VC2_TRANSFORM_5_3},    INT_MIN, INT_MAX, VC2ENC_FLAGS, "wavelet_idx"},
