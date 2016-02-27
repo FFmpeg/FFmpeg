@@ -132,7 +132,7 @@ typedef struct VC2EncContext {
     int slice_max_bytes;
     int slice_min_bytes;
     int q_ceil;
-    int q_start;
+    int q_avg;
 
     /* Options */
     double tolerance;
@@ -675,7 +675,7 @@ static int rate_control(AVCodecContext *avctx, void *arg)
     const int sx = slice_dat->x;
     const int sy = slice_dat->y;
     int bits_last = INT_MAX, quant_buf[2] = {-1, -1};
-    int quant = s->q_start, range = s->q_start/3;
+    int quant = slice_dat->quant_idx, range = quant/5;
     const int top = slice_dat->bits_ceil;
     const int bottom = slice_dat->bits_floor;
     int bits = count_hq_slice(s, slice_dat->cache, &slice_dat->cached_results,
@@ -791,7 +791,7 @@ static int encode_slices(VC2EncContext *s)
         for (slice_x = 0; slice_x < s->num_x; slice_x++) {
             SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
             init_put_bits(&args->pb, buf + skip, args->bytes);
-            s->q_start = (s->q_start + args->quant_idx)/2;
+            s->q_avg = (s->q_avg + args->quant_idx)/2;
             skip += args->bytes;
         }
     }
@@ -839,8 +839,6 @@ static int encode_slices(VC2EncContext *s)
  * of levels. The rest of the areas can be thought as the details needed
  * to restore the image perfectly to its original size.
  */
-
-
 static int dwt_plane(AVCodecContext *avctx, void *arg)
 {
     TransformArgs *transform_dat = arg;
@@ -996,7 +994,7 @@ static av_cold int vc2_encode_end(AVCodecContext *avctx)
     int i;
     VC2EncContext *s = avctx->priv_data;
 
-    av_log(avctx, AV_LOG_INFO, "Qavg: %i\n", s->q_start);
+    av_log(avctx, AV_LOG_INFO, "Qavg: %i\n", s->q_avg);
 
     for (i = 0; i < 3; i++) {
         ff_vc2enc_free_transforms(&s->transform_args[i].t);
@@ -1030,6 +1028,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
 
     s->base_vf   = -1;
     s->strict_compliance = 1;
+
+    s->q_avg = 0;
 
     /* Mark unknown as progressive */
     s->interlaced = !((avctx->field_order == AV_FIELD_UNKNOWN) ||
