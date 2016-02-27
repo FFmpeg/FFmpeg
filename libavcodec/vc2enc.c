@@ -118,7 +118,7 @@ typedef struct VC2EncContext {
     uint8_t quant[MAX_DWT_LEVELS][4];
 
     /* Coefficient LUT */
-    uint16_t *coef_lut_val;
+    uint32_t *coef_lut_val;
     uint8_t  *coef_lut_len;
 
     int num_x; /* #slices horizontally */
@@ -162,7 +162,7 @@ static av_always_inline void put_padding(PutBitContext *pb, int bytes)
         put_bits(pb, bits, 0);
 }
 
-static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint16_t val)
+static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
 {
     int i;
     int pbits = 0, bits = 0, topbit = 1, maxval = 1;
@@ -190,7 +190,7 @@ static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint16_t val)
     put_bits(pb, bits*2 + 1, (pbits << 1) | 1);
 }
 
-static av_always_inline int count_vc2_ue_uint(uint16_t val)
+static av_always_inline int count_vc2_ue_uint(uint32_t val)
 {
     int topbit = 1, maxval = 1;
 
@@ -206,8 +206,8 @@ static av_always_inline int count_vc2_ue_uint(uint16_t val)
     return ff_log2(topbit)*2 + 1;
 }
 
-static av_always_inline void get_vc2_ue_uint(uint16_t val, uint8_t *nbits,
-                                             uint16_t *eval)
+static av_always_inline void get_vc2_ue_uint(int val, uint8_t *nbits,
+                                             uint32_t *eval)
 {
     int i;
     int pbits = 0, bits = 0, topbit = 1, maxval = 1;
@@ -569,14 +569,14 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
 
     const int qfactor = ff_dirac_qscale_tab[quant];
     const uint8_t  *len_lut = &s->coef_lut_len[quant*COEF_LUT_TAB];
-    const uint16_t *val_lut = &s->coef_lut_val[quant*COEF_LUT_TAB];
+    const uint32_t *val_lut = &s->coef_lut_val[quant*COEF_LUT_TAB];
 
     dwtcoef *coeff = b->buf + top * b->stride;
 
     for (y = top; y < bottom; y++) {
         for (x = left; x < right; x++) {
             const int neg = coeff[x] < 0;
-            uint16_t c_abs = FFABS(coeff[x]);
+            uint32_t c_abs = FFABS(coeff[x]);
             if (c_abs < COEF_LUT_TAB) {
                 const uint8_t len  = len_lut[c_abs];
                 if (len == 1)
@@ -635,7 +635,7 @@ static int count_hq_slice(VC2EncContext *s, BitCostCache *cache,
 
                 for (y = top; y < bottom; y++) {
                     for (x = left; x < right; x++) {
-                        uint16_t c_abs = FFABS(buf[x]);
+                        uint32_t c_abs = FFABS(buf[x]);
                         if (c_abs < COEF_LUT_TAB) {
                             const int len = len_lut[c_abs];
                             bits += len + (len != 1);
@@ -1155,7 +1155,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     for (i = 0; i < s->q_ceil; i++) {
         for (j = 0; j < COEF_LUT_TAB; j++) {
             uint8_t  *len_lut = &s->coef_lut_len[i*COEF_LUT_TAB];
-            uint16_t *val_lut = &s->coef_lut_val[i*COEF_LUT_TAB];
+            uint32_t *val_lut = &s->coef_lut_val[i*COEF_LUT_TAB];
             get_vc2_ue_uint(QUANT(j, ff_dirac_qscale_tab[i]),
                             &len_lut[j], &val_lut[j]);
         }
