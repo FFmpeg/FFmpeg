@@ -1008,12 +1008,24 @@ static av_cold int vc2_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static int minimum_frame_bits(VC2EncContext *s)
+{
+    int slice_x, slice_y, bits = 0;
+    s->size_scaler = 64;
+    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
+        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
+            bits += count_hq_slice(s, NULL, NULL, slice_x, slice_y, s->q_ceil);
+        }
+    }
+    return bits;
+}
 
 static av_cold int vc2_encode_init(AVCodecContext *avctx)
 {
     Plane *p;
     SubBand *b;
     int i, j, level, o, shift;
+    int64_t bits_per_frame, min_bits_per_frame;
     VC2EncContext *s = avctx->priv_data;
 
     s->picture_number = 0;
@@ -1159,6 +1171,17 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
             get_vc2_ue_uint(QUANT(j, ff_dirac_qscale_tab[i]),
                             &len_lut[j], &val_lut[j]);
         }
+    }
+
+    bits_per_frame = av_rescale(avctx->bit_rate, avctx->time_base.num,
+                                 avctx->time_base.den);
+    min_bits_per_frame = minimum_frame_bits(s) + 8*sizeof(LIBAVCODEC_IDENT) + 8*40 + 8*20000;
+    if (bits_per_frame < min_bits_per_frame) {
+        avctx->bit_rate = av_rescale(min_bits_per_frame, avctx->time_base.den,
+                                     avctx->time_base.num);
+        av_log(avctx, AV_LOG_WARNING,
+               "Bitrate too low, clipping to minimum = %.2lf Mbps!\n",
+               (double)avctx->bit_rate/1000000.0f);
     }
 
     return 0;
