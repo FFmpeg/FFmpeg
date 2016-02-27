@@ -128,7 +128,10 @@ static int open_output_file(const char *filename)
                 enc_ctx->width = dec_ctx->width;
                 enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
                 /* take first format from list of supported formats */
-                enc_ctx->pix_fmt = encoder->pix_fmts[0];
+                if (encoder->pix_fmts)
+                    enc_ctx->pix_fmt = encoder->pix_fmts[0];
+                else
+                    enc_ctx->pix_fmt = dec_ctx->pix_fmt;
                 /* video time_base can be set to whatever is handy and supported by encoder */
                 enc_ctx->time_base = dec_ctx->time_base;
             } else {
