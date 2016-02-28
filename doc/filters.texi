@@ -12513,7 +12513,7 @@ same component color value on location in graph. This is the default mode.
 @item color
 Gray values are displayed on graph. Surrounding pixels values which are not
 present in video frame are drawn in gradient of 2 color components which are
-set by option @code{x} and @code{y}.
+set by option @code{x} and @code{y}. The 3rd color component is static.
 
 @item color2
 Actual color components values present in video frame are displayed on graph.
@@ -12527,6 +12527,10 @@ default values of @code{x} and @code{y}.
 Actual colors present in video frame are displayed on graph. If two different
 colors map to same position on graph then color with higher value of component
 not present in graph is picked.
+
+@item color5
+Gray values are displayed on graph. Similar to @code{color} but with 3rd color
+component picked from radial gradient.
 @end table
 
 @item x
@@ -12536,7 +12540,7 @@ Set which color component will be represented on X-axis. Default is @code{1}.
 Set which color component will be represented on Y-axis. Default is @code{2}.
 
 @item intensity, i
-Set intensity, used by modes: gray, color and color3 for increasing brightness
+Set intensity, used by modes: gray, color, color3 and color5 for increasing brightness
 of color component which represents frequency of (X, Y) location in graph.
 
 @item envelope, e
