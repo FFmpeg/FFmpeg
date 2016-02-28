@@ -106,7 +106,6 @@ static int vdpau_alloc(AVCodecContext *s)
 {
     InputStream  *ist = s->opaque;
     int loglevel = (ist->hwaccel_id == HWACCEL_AUTO) ? AV_LOG_VERBOSE : AV_LOG_ERROR;
-    AVVDPAUContext *vdpau_ctx;
     VDPAUContext *ctx;
     const char *display, *vendor;
     VdpStatus err;
