@@ -102,7 +102,7 @@ static int query_formats(AVFilterContext *ctx)
     if ((ret = ff_formats_ref(formats, &inlink->out_formats)) < 0)
         return ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if ((ret = ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts)) < 0)
         return ret;
 
@@ -242,9 +242,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
             }
 
-            if (outlink->h > 40 && s->draw_text)
-                drawtext(s->out, c * (s->h + s->b) + (s->h - 10) / 2, outlink->h - 35,
-                         av_get_channel_name(av_channel_layout_extract_channel(insamples->channel_layout, c)), 1);
+            if (outlink->h > 40 && s->draw_text) {
+                const char *channel_name = av_get_channel_name(av_channel_layout_extract_channel(insamples->channel_layout, c));
+                if (!channel_name)
+                    continue;
+                drawtext(s->out, c * (s->h + s->b) + (s->h - 10) / 2, outlink->h - 35, channel_name, 1);
+            }
         }
     } else {
         for (c = 0; c < inlink->channels; c++) {
@@ -270,9 +273,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
             }
 
-            if (s->h >= 8 && s->draw_text)
-                drawtext(s->out, 2, c * (s->h + s->b) + (s->h - 8) / 2,
-                         av_get_channel_name(av_channel_layout_extract_channel(insamples->channel_layout, c)), 0);
+            if (s->h >= 8 && s->draw_text) {
+                const char *channel_name = av_get_channel_name(av_channel_layout_extract_channel(insamples->channel_layout, c));
+                if (!channel_name)
+                    continue;
+                drawtext(s->out, 2, c * (s->h + s->b) + (s->h - 8) / 2, channel_name, 0);
+            }
         }
     }
 
