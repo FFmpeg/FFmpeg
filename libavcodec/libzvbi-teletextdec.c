@@ -99,7 +99,6 @@ static void subtitle_rect_free(AVSubtitleRect **sub_rect)
 
 static char *create_ass_text(TeletextContext *ctx, const char *text)
 {
-    int ret;
     char *dialog;
     AVBPrint buf;
 
