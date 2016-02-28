@@ -952,6 +952,7 @@ TESTPROGS = imgconvert                                                  \
             jpeg2000dwt                                                 \
             mathops                                                    \
             options                                                     \
+            utils                                                       \
             avfft                                                       \
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
