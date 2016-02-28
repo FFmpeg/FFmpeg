@@ -332,6 +332,11 @@ fate-filter-concat: CMD = framecrc -filter_complex_script $(TARGET_PATH)/tests/d
 FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER FPS_FILTER MPDECIMATE_FILTER) += fate-filter-mpdecimate
 fate-filter-mpdecimate: CMD = framecrc -lavfi testsrc2=r=2:d=10,fps=3,mpdecimate -r 3 -pix_fmt yuv420p
 
+FATE_FILTER-$(call ALLYES, MOV_DEMUXER FPS_FILTER QTRLE_DECODER) += fate-filter-fps-cfr fate-filter-fps fate-filter-fps-r
+fate-filter-fps-cfr: CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -r 30 -vsync cfr -pix_fmt yuv420p
+fate-filter-fps-r:   CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -r 30 -vf fps -pix_fmt yuv420p
+fate-filter-fps:     CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -vf fps=30 -pix_fmt yuv420p
+
 FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER SPLIT_FILTER ALPHAEXTRACT_FILTER ALPHAMERGE_FILTER) += fate-filter-alphaextract_alphamerge_rgb
 fate-filter-alphaextract_alphamerge_rgb: tests/data/filtergraphs/alphamerge_alphaextract_rgb
 fate-filter-alphaextract_alphamerge_rgb: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/alphamerge_alphaextract_rgb
