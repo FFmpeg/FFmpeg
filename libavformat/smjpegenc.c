@@ -46,6 +46,7 @@ static int smjpeg_write_header(AVFormatContext *s)
     avio_wb32(pb, 0);
     avio_wb32(pb, 0);
 
+    ff_standardize_creation_time(s);
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
         avio_wl32(pb, SMJPEG_TXT);
         avio_wb32(pb, strlen(t->key) + strlen(t->value) + 3);

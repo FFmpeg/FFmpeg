@@ -175,6 +175,7 @@ static int caf_write_header(AVFormatContext *s)
         avio_write(pb, enc->extradata, enc->extradata_size);
     }
 
+    ff_standardize_creation_time(s);
     if (av_dict_count(s->metadata)) {
         ffio_wfourcc(pb, "info"); //< Information chunk
         while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {

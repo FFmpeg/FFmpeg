@@ -672,6 +672,7 @@ static void write_table_entries_attrib(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVDictionaryEntry *tag = 0;
 
+    ff_standardize_creation_time(s);
     //FIXME: translate special tags (e.g. WM/Bitrate) to binary representation
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
     while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
