@@ -1045,6 +1045,12 @@ implementation for HLS segmentation.
 The segment muxer supports the following options:
 
 @table @option
+@item increment_tc @var{1|0}
+if set to @code{1}, increment timecode between each segment
+If this is selected, the input need to have
+a timecode in the first video stream. Default value is
+@code{0}.
+
 @item reference_stream @var{specifier}
 Set the reference stream, as specified by the string @var{specifier}.
 If @var{specifier} is set to @code{auto}, the reference is chosen
