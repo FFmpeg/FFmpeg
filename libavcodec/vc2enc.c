@@ -1180,8 +1180,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         avctx->bit_rate = av_rescale(min_bits_per_frame, avctx->time_base.den,
                                      avctx->time_base.num);
         av_log(avctx, AV_LOG_WARNING,
-               "Bitrate too low, clipping to minimum = %.2lf Mbps!\n",
-               (double)avctx->bit_rate/1000000.0f);
+               "Bitrate too low, clipping to minimum = %li Mbps!\n",
+               avctx->bit_rate/1000000);
     }
 
     return 0;
