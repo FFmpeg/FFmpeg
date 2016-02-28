@@ -122,6 +122,7 @@ if [ -n "$do_mov" ] ; then
 mov_common_opt="-acodec pcm_alaw -vcodec mpeg4 -threads 1"
 do_lavf mov "" "-movflags +rtphint $mov_common_opt"
 do_lavf_timecode mov "-movflags +faststart $mov_common_opt"
+do_lavf_timecode mp4 "-vcodec mpeg4 -an -threads 1"
 fi
 
 if [ -n "$do_ismv" ] ; then
