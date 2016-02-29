@@ -215,7 +215,7 @@ const AVClass *ff_urlcontext_child_class_next(const AVClass *prev)
     int i;
 
     /* find the protocol that corresponds to prev */
-    for (i = 0; url_protocols[i]; i++) {
+    for (i = 0; prev && url_protocols[i]; i++) {
         if (url_protocols[i]->priv_data_class == prev) {
             i++;
             break;
