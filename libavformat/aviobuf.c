@@ -42,10 +42,6 @@
  */
 #define SHORT_SEEK_THRESHOLD 4096
 
-typedef struct AVIOInternal {
-    URLContext *h;
-} AVIOInternal;
-
 static void *ff_avio_child_next(void *obj, void *prev)
 {
     AVIOContext *s = obj;
