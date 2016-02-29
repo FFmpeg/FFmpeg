@@ -61,6 +61,18 @@ fate-cavs: CMD = framecrc -i $(TARGET_SAMPLES)/cavs/cavs.mpg -an
 FATE_SAMPLES_AVCONV-$(call DEMDEC, CDG, CDGRAPHICS) += fate-cdgraphics
 fate-cdgraphics: CMD = framecrc -i $(TARGET_SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24 -t 1
 
+FATE_CFHD-$(CONFIG_AVI_DEMUXER) += fate-cfhd-1
+fate-cfhd-1: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_422.avi -pix_fmt yuv422p10le
+
+FATE_CFHD-$(CONFIG_AVI_DEMUXER) += fate-cfhd-2
+fate-cfhd-2: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_444.avi -pix_fmt yuv422p10le
+
+FATE_CFHD-$(CONFIG_MOV_DEMUXER) += fate-cfhd-3
+fate-cfhd-3: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_odd.mov -pix_fmt yuv422p10le
+
+FATE_SAMPLES_AVCONV-$(CONFIG_CFHD_DECODER) += $(FATE_CFHD-yes)
+fate-cfhd: $(FATE_CFHD-yes)
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, CLJR) += fate-cljr
 fate-cljr: CMD = framecrc -i $(TARGET_SAMPLES)/cljr/testcljr-partial.avi
 
