@@ -12559,6 +12559,28 @@ can still spot out of range values without constantly looking at vectorscope.
 @item peak+instant
 Peak and instant envelope combined together.
 @end table
+
+@item graticule, g
+Set what kind of graticule to draw.
+@table @samp
+@item none
+@item green
+@item color
+@end table
+
+@item opacity, o
+Set graticule opacity.
+
+@item flags, f
+Set graticule flags.
+
+@table @samp
+@item white
+Draw graticule for white point.
+
+@item black
+Draw graticule for black point.
+@end table
 @end table
 
 @anchor{vidstabdetect}
