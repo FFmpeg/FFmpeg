@@ -22,5 +22,6 @@ FATE_LIBAVFORMAT-$(CONFIG_MOV_MUXER) += fate-movenc
 fate-movenc: libavformat/movenc-test$(EXESUF)
 fate-movenc: CMD = run libavformat/movenc-test
 
-FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT-yes)
+FATE_LIBAVFORMAT += $(FATE_LIBAVFORMAT-yes)
+FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT)
 fate-libavformat: $(FATE_LIBAVFORMAT)
