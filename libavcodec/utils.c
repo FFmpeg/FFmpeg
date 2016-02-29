@@ -1390,7 +1390,8 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE)) {
         av_log(avctx, AV_LOG_ERROR, "This decoder does not support parameter "
                "changes, but PARAM_CHANGE side data was sent to it.\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto fail2;
     }
 
     if (size < 4)
@@ -1425,13 +1426,20 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
         size -= 8;
         ret = ff_set_dimensions(avctx, avctx->width, avctx->height);
         if (ret < 0)
-            return ret;
+            goto fail2;
     }
 
     return 0;
 fail:
     av_log(avctx, AV_LOG_ERROR, "PARAM_CHANGE side data too small.\n");
-    return AVERROR_INVALIDDATA;
+    ret = AVERROR_INVALIDDATA;
+fail2:
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
+        if (avctx->err_recognition & AV_EF_EXPLODE)
+            return ret;
+    }
+    return 0;
 }
 
 static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
@@ -1492,11 +1500,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
     avctx->internal->pkt = avpkt;
     ret = apply_param_change(avctx, avpkt);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
-        if (avctx->err_recognition & AV_EF_EXPLODE)
-            return ret;
-    }
+    if (ret < 0)
+        return ret;
 
     av_frame_unref(picture);
 
@@ -1560,11 +1565,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     }
 
     ret = apply_param_change(avctx, avpkt);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
-        if (avctx->err_recognition & AV_EF_EXPLODE)
-            return ret;
-    }
+    if (ret < 0)
+        return ret;
 
     av_frame_unref(frame);
 
