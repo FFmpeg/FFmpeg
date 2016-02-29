@@ -1484,6 +1484,16 @@ static int save_avio_options(AVFormatContext *s)
     return ret;
 }
 
+static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
+                          int flags, AVDictionary **opts)
+{
+    av_log(s, AV_LOG_ERROR,
+           "A HLS playlist item '%s' referred to an external file '%s'. "
+           "Opening this file was forbidden for security reasons\n",
+           s->filename, url);
+    return AVERROR(EPERM);
+}
+
 static int hls_read_header(AVFormatContext *s)
 {
     void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
@@ -1604,6 +1614,7 @@ static int hls_read_header(AVFormatContext *s)
             goto fail;
         }
         pls->ctx->pb       = &pls->pb;
+        pls->ctx->io_open  = nested_io_open;
         pls->stream_offset = stream_offset;
 
         if ((ret = ff_copy_whitelists(pls->ctx, s)) < 0)
