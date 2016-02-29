@@ -4710,6 +4710,11 @@ int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
                                            &new_pkt.data, &new_pkt.size,
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
+        if (a == 0 && new_pkt.size == 0 && new_pkt.side_data_elems == 0) {
+            av_packet_unref(pkt);
+            memset(pkt, 0, sizeof(*pkt));
+            return 0;
+        }
         if(a == 0 && new_pkt.data != pkt->data) {
             uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
             if (t) {

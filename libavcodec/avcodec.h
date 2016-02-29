@@ -5253,7 +5253,8 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
  * If the return value is 0, the output buffer is not allocated and
  * should be considered identical to the input buffer, or in case
  * *poutbuf was set it points to the input buffer (not necessarily to
- * its starting address).
+ * its starting address). A special case is if *poutbuf was set to NULL and
+ * *poutbuf_size was set to 0, which indicates the packet should be dropped.
  */
 int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                AVCodecContext *avctx, const char *args,
