@@ -391,6 +391,10 @@ void av_frame_free(AVFrame **frame);
  * If src is not reference counted, new buffers are allocated and the data is
  * copied.
  *
+ * @warning: dst MUST have been either unreferenced with av_frame_unref(dst),
+ *           or newly allocated with av_frame_alloc() before calling this
+ *           function, or undefined behavior will occur.
+ *
  * @return 0 on success, a negative AVERROR on error
  */
 int av_frame_ref(AVFrame *dst, const AVFrame *src);
@@ -410,7 +414,11 @@ AVFrame *av_frame_clone(const AVFrame *src);
 void av_frame_unref(AVFrame *frame);
 
 /**
- * Move everythnig contained in src to dst and reset src.
+ * Move everything contained in src to dst and reset src.
+ *
+ * @warning: dst is not unreferenced, but directly overwritten without reading
+ *           or deallocating its contents. Call av_frame_unref(dst) manually
+ *           before calling this function to ensure that no memory is leaked.
  */
 void av_frame_move_ref(AVFrame *dst, AVFrame *src);
 
@@ -425,6 +433,10 @@ void av_frame_move_ref(AVFrame *dst, AVFrame *src);
  * This function will fill AVFrame.data and AVFrame.buf arrays and, if
  * necessary, allocate and fill AVFrame.extended_data and AVFrame.extended_buf.
  * For planar formats, one buffer will be allocated for each plane.
+ *
+ * @warning: if frame already has been allocated, calling this function will
+ *           leak memory. In addition, undefined behavior can occur in certain
+ *           cases.
  *
  * @param frame frame in which to store the new buffers.
  * @param align required buffer size alignment
