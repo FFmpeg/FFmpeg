@@ -7,6 +7,7 @@ version <next>:
 - loop video filter and aloop audio filter
 - Bob Weaver deinterlacing filter
 - firequalizer filter
+- datascope filter
 
 
 version 3.0:

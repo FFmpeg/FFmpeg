@@ -3173,11 +3173,12 @@ static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
+static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    int64_t end = avio_tell(pb) + size;
-    uint8_t *key = NULL, *val = NULL;
+    int64_t end = avio_tell(pb) + atom.size;
+    uint8_t *key = NULL, *val = NULL, *mean = NULL;
     int i;
+    int ret = 0;
     AVStream *st;
     MOVStreamContext *sc;
 
@@ -3186,10 +3187,9 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 3; i++) {
         uint8_t **p;
         uint32_t len, tag;
-        int ret;
 
         if (end - avio_tell(pb) <= 12)
             break;
@@ -3202,7 +3202,9 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
             break;
         len -= 12;
 
-        if (tag == MKTAG('n', 'a', 'm', 'e'))
+        if (tag == MKTAG('m', 'e', 'a', 'n'))
+            p = &mean;
+        else if (tag == MKTAG('n', 'a', 'm', 'e'))
             p = &key;
         else if (tag == MKTAG('d', 'a', 't', 'a') && len > 4) {
             avio_skip(pb, 4);
@@ -3217,12 +3219,12 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
         ret = ffio_read_size(pb, *p, len);
         if (ret < 0) {
             av_freep(p);
-            return ret;
+            break;
         }
         (*p)[len] = 0;
     }
 
-    if (key && val) {
+    if (mean && key && val) {
         if (strcmp(key, "iTunSMPB") == 0) {
             int priming, remainder, samples;
             if(sscanf(val, "%*X %X %X %X", &priming, &remainder, &samples) == 3){
@@ -3235,44 +3237,16 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int64_t size)
                         AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
             key = val = NULL;
         }
+    } else {
+        av_log(c->fc, AV_LOG_VERBOSE,
+               "Unhandled or malformed custom metadata of size %"PRId64"\n", atom.size);
     }
 
     avio_seek(pb, end, SEEK_SET);
     av_freep(&key);
     av_freep(&val);
-    return 0;
-}
-
-static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
-{
-    int64_t end = avio_tell(pb) + atom.size;
-    uint32_t tag, len;
-
-    if (atom.size < 8)
-        goto fail;
-
-    len = avio_rb32(pb);
-    tag = avio_rl32(pb);
-
-    if (len > atom.size)
-        goto fail;
-
-    if (tag == MKTAG('m', 'e', 'a', 'n') && len > 12) {
-        uint8_t domain[128];
-        int domain_len;
-
-        avio_skip(pb, 4); // flags
-        len -= 12;
-
-        domain_len = avio_get_str(pb, len, domain, sizeof(domain));
-        avio_skip(pb, len - domain_len);
-        return mov_read_custom_2plus(c, pb, end - avio_tell(pb));
-    }
-
-fail:
-    av_log(c->fc, AV_LOG_VERBOSE,
-           "Unhandled or malformed custom metadata of size %"PRId64"\n", atom.size);
-    return 0;
+    av_freep(&mean);
+    return ret;
 }
 
 static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
@@ -3610,7 +3584,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 }
                 av_log(c->fc, AV_LOG_DEBUG, "calculated into dts %"PRId64"\n", dts);
             } else {
-                dts = frag->time;
+                dts = frag->time - sc->time_offset;
                 av_log(c->fc, AV_LOG_DEBUG, "found frag time %"PRId64
                         ", using it for dts\n", dts);
             }
@@ -3667,7 +3641,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     version = avio_r8(pb);
     if (version > 1) {
         avpriv_request_sample(c->fc, "sidx version %u", version);
-        return AVERROR_PATCHWELCOME;
+        return 0;
     }
 
     avio_rb24(pb); // flags
@@ -3680,8 +3654,8 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
     }
     if (!st) {
-        av_log(c->fc, AV_LOG_ERROR, "could not find corresponding track id %d\n", track_id);
-        return AVERROR_INVALIDDATA;
+        av_log(c->fc, AV_LOG_WARNING, "could not find corresponding track id %d\n", track_id);
+        return 0;
     }
 
     sc = st->priv_data;

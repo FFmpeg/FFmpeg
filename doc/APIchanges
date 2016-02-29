@@ -15,6 +15,35 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-02-28 - xxxxxxx - lavc 57.27.101
+  Validate AVFrame returned by get_buffer2 to have required
+  planes not NULL and unused planes set to NULL as crashes
+  and buffer overflow are possible with certain streams if
+  that is not the case.
+
+2016-xx-xx - xxxxxxx - lavc 57.27.100 - avcodec.h
+  "flags2" decoding option now allows the flag "ass_ro_flush_noop" preventing
+  the reset of the ASS ReadOrder field on flush. This affects the content of
+  AVSubtitles.rects[N]->ass when "sub_text_format" is set to "ass" (see
+  previous entry).
+
+2016-xx-xx - xxxxxxx - lavc 57.26.100 - avcodec.h
+  Add a "sub_text_format" subtitles decoding option allowing the values "ass"
+  (recommended) and "ass_with_timings" (not recommended, deprecated, default).
+  The default value for this option will change to "ass" at the next major
+  libavcodec version bump.
+
+  The current default is "ass_with_timings" for compatibility. This means that
+  all subtitles text decoders currently still output ASS with timings printed
+  as strings in the AVSubtitles.rects[N]->ass fields.
+
+  Setting "sub_text_format" to "ass" allows a better timing accuracy (ASS
+  timing is limited to a 1/100 time base, so this is relevant for any subtitles
+  format needing a bigger one), ease timing adjustments, and prevents the need
+  of removing the timing from the decoded string yourself. This form is also
+  known as "the Matroska form". The timing information (start time, duration)
+  can be found in the AVSubtitles fields.
+
 2016-xx-xx - lavc 57.25.0 - avcodec.h
   Add AVCodecContext.hw_frames_ctx.
 

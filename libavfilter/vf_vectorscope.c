@@ -34,6 +34,7 @@ enum VectorscopeMode {
     COLOR2,
     COLOR3,
     COLOR4,
+    COLOR5,
     MODE_NB
 };
 
@@ -68,6 +69,7 @@ static const AVOption vectorscope_options[] = {
     {   "color2", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR2}, 0, 0, FLAGS, "mode" },
     {   "color3", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR3}, 0, 0, FLAGS, "mode" },
     {   "color4", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR4}, 0, 0, FLAGS, "mode" },
+    {   "color5", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR5}, 0, 0, FLAGS, "mode" },
     { "x", "set color component on X axis", OFFSET(x), AV_OPT_TYPE_INT, {.i64=1}, 0, 2, FLAGS},
     { "y", "set color component on Y axis", OFFSET(y), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS},
     { "intensity", "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.004}, 0, 1, FLAGS},
@@ -354,11 +356,12 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
         for (i = 0; i < out->height ; i++)
             for (j = 0; j < out->width; j++)
                 AV_WN16(out->data[k] + i * out->linesize[k] + j * 2,
-                        s->mode == COLOR && k == s->pd ? 0 : s->bg_color[k] * mult);
+                        (s->mode == COLOR || s->mode == COLOR5) && k == s->pd ? 0 : s->bg_color[k] * mult);
     }
 
     switch (s->mode) {
     case COLOR:
+    case COLOR5:
     case GRAY:
         if (s->is_yuv) {
             for (i = 0; i < h; i++) {
@@ -480,6 +483,16 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                 }
             }
         }
+    } else if (s->mode == COLOR5) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                if (!dpd[i * dlinesize + j]) {
+                    dpx[i * dlinesize + j] = j;
+                    dpy[i * dlinesize + j] = i;
+                    dpd[i * dlinesize + j] = mid * M_SQRT2 - hypot(i - mid, j - mid);
+                }
+            }
+        }
     }
 }
 
@@ -508,9 +521,10 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
     for (k = 0; k < 4 && dst[k]; k++)
         for (i = 0; i < out->height ; i++)
             memset(dst[k] + i * out->linesize[k],
-                   s->mode == COLOR && k == s->pd ? 0 : s->bg_color[k], out->width);
+                   (s->mode == COLOR || s->mode == COLOR5) && k == s->pd ? 0 : s->bg_color[k], out->width);
 
     switch (s->mode) {
+    case COLOR5:
     case COLOR:
     case GRAY:
         if (s->is_yuv) {
@@ -630,6 +644,16 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                     dpx[i * out->linesize[px] + j] = j;
                     dpy[i * out->linesize[py] + j] = i;
                     dpd[i * out->linesize[pd] + j] = 128;
+                }
+            }
+        }
+    } else if (s->mode == COLOR5) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                if (!dpd[i * out->linesize[pd] + j]) {
+                    dpx[i * out->linesize[px] + j] = j;
+                    dpy[i * out->linesize[py] + j] = i;
+                    dpd[i * out->linesize[pd] + j] = 128 * M_SQRT2 - hypot(i - 128, j - 128);
                 }
             }
         }

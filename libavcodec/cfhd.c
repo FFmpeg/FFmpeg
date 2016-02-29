@@ -141,7 +141,7 @@ static void free_buffers(AVCodecContext *avctx)
     CFHDContext *s = avctx->priv_data;
     int i;
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 4; i++) {
         av_freep(&s->plane[i].idwt_buf);
         av_freep(&s->plane[i].idwt_tmp);
     }
@@ -152,14 +152,16 @@ static void free_buffers(AVCodecContext *avctx)
 static int alloc_buffers(AVCodecContext *avctx)
 {
     CFHDContext *s = avctx->priv_data;
-    int i, j, k, ret;
+    int i, j, k, ret, planes;
 
     if ((ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height)) < 0)
         return ret;
+    avctx->pix_fmt = s->coded_format;
 
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+    planes = av_pix_fmt_count_planes(avctx->pix_fmt);
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < planes; i++) {
         int width = i ? avctx->width >> s->chroma_x_shift : avctx->width;
         int height = i ? avctx->height >> s->chroma_y_shift : avctx->height;
         int stride = FFALIGN(width / 8, 8) * 8;
@@ -213,6 +215,7 @@ static int alloc_buffers(AVCodecContext *avctx)
 
     s->a_height = s->coded_height;
     s->a_width  = s->coded_width;
+    s->a_format = s->coded_format;
 
     return 0;
 }
@@ -224,11 +227,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
     GetByteContext gb;
     ThreadFrame frame = { .f = data };
     AVFrame *pic = data;
-    int ret = 0, i, j, plane, got_buffer = 0;
+    int ret = 0, i, j, planes, plane, got_buffer = 0;
     int16_t *coeff_data;
 
-    avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+    s->coded_format = AV_PIX_FMT_YUV422P10;
     init_frame_defaults(s);
+    planes = av_pix_fmt_count_planes(s->coded_format);
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 
@@ -254,7 +258,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == 12) {
             av_log(avctx, AV_LOG_DEBUG, "Channel Count: %"PRIu16"\n", data);
             s->channel_cnt = data;
-            if (data != 3) {
+            if (data > 4) {
                 av_log(avctx, AV_LOG_ERROR, "Channel Count of %"PRIu16" is unsupported\n", data);
                 ret = AVERROR_PATCHWELCOME;
                 break;
@@ -269,7 +273,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == 62) {
             s->channel_num = data;
             av_log(avctx, AV_LOG_DEBUG, "Channel number %"PRIu16"\n", data);
-            if (s->channel_num > 2) {
+            if (s->channel_num >= planes) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid channel number\n");
                 ret = AVERROR(EINVAL);
                 break;
@@ -405,20 +409,25 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == 84) {
             av_log(avctx, AV_LOG_DEBUG, "Sample format? %i\n", data);
             if (data == 1)
-                avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+                s->coded_format = AV_PIX_FMT_YUV422P10;
             else if (data == 3)
-                avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+                s->coded_format = AV_PIX_FMT_GBRP12;
+            else if (data == 4)
+                s->coded_format = AV_PIX_FMT_GBRAP12;
             else {
                 avpriv_report_missing_feature(avctx, "Sample format of %"PRIu16" is unsupported\n", data);
                 ret = AVERROR_PATCHWELCOME;
                 break;
             }
+            planes = av_pix_fmt_count_planes(s->coded_format);
         } else
             av_log(avctx, AV_LOG_DEBUG,  "Unknown tag %i data %x\n", tag, data);
 
         /* Some kind of end of header tag */
-        if (tag == 4 && data == 0x1a4a && s->coded_width && s->coded_height && avctx->pix_fmt != AV_PIX_FMT_NONE) {
-            if (s->a_width != s->coded_width || s->a_height != s->coded_height) {
+        if (tag == 4 && data == 0x1a4a && s->coded_width && s->coded_height &&
+            s->coded_format != AV_PIX_FMT_NONE) {
+            if (s->a_width != s->coded_width || s->a_height != s->coded_height ||
+                s->a_format != s->coded_format) {
                 free_buffers(avctx);
                 if ((ret = alloc_buffers(avctx)) < 0) {
                     free_buffers(avctx);
@@ -431,6 +440,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
             s->coded_width = 0;
             s->coded_height = 0;
+            s->coded_format = AV_PIX_FMT_NONE;
             got_buffer = 1;
         }
         coeff_data = s->plane[s->channel_num].subband[s->subband_num_actual];
@@ -557,7 +567,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    if (!s->a_width || !s->a_height || s->coded_width || s->coded_height) {
+    if (!s->a_width || !s->a_height || s->a_format == AV_PIX_FMT_NONE ||
+        s->coded_width || s->coded_height || s->coded_format != AV_PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions\n");
         ret = AVERROR(EINVAL);
         goto end;
@@ -569,12 +580,13 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         goto end;
     }
 
-    for (plane = 0; plane < 3 && !ret; plane++) {
+    planes = av_pix_fmt_count_planes(avctx->pix_fmt);
+    for (plane = 0; plane < planes && !ret; plane++) {
         /* level 1 */
         int lowpass_height  = s->plane[plane].band[0][0].height;
         int lowpass_width   = s->plane[plane].band[0][0].width;
         int highpass_stride = s->plane[plane].band[0][1].stride;
-        int act_plane = plane == 1 ? 2 : plane == 2 ? 1 : 0;
+        int act_plane = plane == 1 ? 2 : plane == 2 ? 1 : plane;
         int16_t *low, *high, *output, *dst;
 
         if (lowpass_height > s->plane[plane].band[0][0].a_height || lowpass_width > s->plane[plane].band[0][0].a_width ||
@@ -617,7 +629,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             high   += lowpass_width;
             output += lowpass_width * 2;
         }
-        if (avctx->pix_fmt == AV_PIX_FMT_GBRP12) {
+        if (s->bpc == 12) {
             output = s->plane[plane].subband[0];
             for (i = 0; i < lowpass_height * 2; i++) {
                 for (j = 0; j < lowpass_width * 2; j++)

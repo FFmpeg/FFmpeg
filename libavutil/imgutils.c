@@ -389,6 +389,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
     int i, j, nb_planes = 0, linesize[4];
     int size = av_image_get_buffer_size(pix_fmt, width, height, align);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    int ret;
 
     if (size > dst_size || size < 0 || !desc)
         return AVERROR(EINVAL);
@@ -398,7 +399,9 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
 
     nb_planes++;
 
-    av_image_fill_linesizes(linesize, pix_fmt, width);
+    ret = av_image_fill_linesizes(linesize, pix_fmt, width);
+    av_assert0(ret >= 0); // was checked previously
+
     for (i = 0; i < nb_planes; i++) {
         int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
         const uint8_t *src = src_data[i];

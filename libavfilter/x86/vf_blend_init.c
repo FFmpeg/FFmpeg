@@ -39,6 +39,7 @@ BLEND_FUNC(difference128, sse2)
 BLEND_FUNC(multiply, sse2)
 BLEND_FUNC(screen, sse2)
 BLEND_FUNC(hardmix, sse2)
+BLEND_FUNC(divide, sse2)
 BLEND_FUNC(lighten, sse2)
 BLEND_FUNC(or, sse2)
 BLEND_FUNC(phoenix, sse2)
@@ -61,6 +62,7 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
         case BLEND_AVERAGE:  param->blend = ff_blend_average_sse2;  break;
         case BLEND_DARKEN:   param->blend = ff_blend_darken_sse2;   break;
         case BLEND_DIFFERENCE128: param->blend = ff_blend_difference128_sse2; break;
+        case BLEND_DIVIDE:   param->blend = ff_blend_divide_sse2;   break;
         case BLEND_HARDMIX:  param->blend = ff_blend_hardmix_sse2;  break;
         case BLEND_LIGHTEN:  param->blend = ff_blend_lighten_sse2;  break;
         case BLEND_MULTIPLY: param->blend = ff_blend_multiply_sse2; break;

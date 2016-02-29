@@ -152,6 +152,11 @@ typedef struct MOVTrack {
     void       *eac3_priv;
 
     MOVMuxCencContext cenc;
+
+    uint32_t palette[AVPALETTE_COUNT];
+    int pal_done;
+
+    int is_unaligned_qt_rgb;
 } MOVTrack;
 
 typedef enum {

@@ -90,101 +90,42 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx)
                                ASS_DEFAULT_ALIGNMENT);
 }
 
-static void insert_ts(AVBPrint *buf, int ts)
+char *ff_ass_get_dialog(int readorder, int layer, const char *style,
+                        const char *speaker, const char *text)
 {
-    if (ts == -1) {
-        av_bprintf(buf, "9:59:59.99,");
-    } else {
-        int h, m, s;
-
-        h = ts/360000;  ts -= 360000*h;
-        m = ts/  6000;  ts -=   6000*m;
-        s = ts/   100;  ts -=    100*s;
-        av_bprintf(buf, "%d:%02d:%02d.%02d,", h, m, s, ts);
-    }
-}
-
-int ff_ass_bprint_dialog(AVBPrint *buf, const char *dialog,
-                         int ts_start, int duration, int raw)
-{
-    int dlen;
-
-    if (!raw || raw == 2) {
-        long int layer = 0;
-
-        if (raw == 2) {
-            /* skip ReadOrder */
-            dialog = strchr(dialog, ',');
-            if (!dialog)
-                return AVERROR_INVALIDDATA;
-            dialog++;
-
-            /* extract Layer or Marked */
-            layer = strtol(dialog, (char**)&dialog, 10);
-            if (*dialog != ',')
-                return AVERROR_INVALIDDATA;
-            dialog++;
-        }
-        av_bprintf(buf, "Dialogue: %ld,", layer);
-        insert_ts(buf, ts_start);
-        insert_ts(buf, duration == -1 ? -1 : ts_start + duration);
-        if (raw != 2)
-            av_bprintf(buf, "Default,,0,0,0,,");
-    }
-
-    dlen = strcspn(dialog, "\n");
-    dlen += dialog[dlen] == '\n';
-
-    av_bprintf(buf, "%.*s", dlen, dialog);
-    if (raw == 2)
-        av_bprintf(buf, "\r\n");
-
-    return dlen;
+    return av_asprintf("%d,%d,%s,%s,0,0,0,,%s",
+                       readorder, layer, style ? style : "Default",
+                       speaker ? speaker : "", text);
 }
 
 int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
-                    int ts_start, int duration, int raw)
+                    int readorder, int layer, const char *style,
+                    const char *speaker)
 {
-    AVBPrint buf;
-    int ret, dlen;
+    char *ass_str;
     AVSubtitleRect **rects;
-
-    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if ((ret = ff_ass_bprint_dialog(&buf, dialog, ts_start, duration, raw)) < 0)
-        goto err;
-    dlen = ret;
-    if (!av_bprint_is_complete(&buf))
-        goto errnomem;
 
     rects = av_realloc_array(sub->rects, (sub->num_rects+1), sizeof(*sub->rects));
     if (!rects)
-        goto errnomem;
+        return AVERROR(ENOMEM);
     sub->rects = rects;
-    sub->end_display_time = FFMAX(sub->end_display_time, 10 * duration);
     rects[sub->num_rects]       = av_mallocz(sizeof(*rects[0]));
     if (!rects[sub->num_rects])
-        goto errnomem;
+        return AVERROR(ENOMEM);
     rects[sub->num_rects]->type = SUBTITLE_ASS;
-    ret = av_bprint_finalize(&buf, &rects[sub->num_rects]->ass);
-    if (ret < 0)
-        goto err;
+    ass_str = ff_ass_get_dialog(readorder, layer, style, speaker, dialog);
+    if (!ass_str)
+        return AVERROR(ENOMEM);
+    rects[sub->num_rects]->ass = ass_str;
     sub->num_rects++;
-    return dlen;
-
-errnomem:
-    ret = AVERROR(ENOMEM);
-err:
-    av_bprint_finalize(&buf, NULL);
-    return ret;
+    return 0;
 }
 
-int ff_ass_add_rect_bprint(AVSubtitle *sub, AVBPrint *buf,
-                           int ts_start, int duration)
+void ff_ass_decoder_flush(AVCodecContext *avctx)
 {
-    av_bprintf(buf, "\r\n");
-    if (!av_bprint_is_complete(buf))
-        return AVERROR(ENOMEM);
-    return ff_ass_add_rect(sub, buf->str, ts_start, duration, 0);
+    FFASSDecoderContext *s = avctx->priv_data;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        s->readorder = 0;
 }
 
 void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,

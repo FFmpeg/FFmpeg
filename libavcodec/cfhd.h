@@ -84,9 +84,11 @@ typedef struct CFHDContext {
 
     int coded_width;
     int coded_height;
+    int coded_format;
 
     int a_width;
     int a_height;
+    int a_format;
 
     int bpc;
     int channel_cnt;

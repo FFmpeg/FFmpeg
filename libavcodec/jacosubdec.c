@@ -167,6 +167,7 @@ static int jacosub_decode_frame(AVCodecContext *avctx,
     int ret;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
+    FFASSDecoderContext *s = avctx->priv_data;
 
     if (avpkt->size <= 0)
         goto end;
@@ -181,7 +182,7 @@ static int jacosub_decode_frame(AVCodecContext *avctx,
 
         av_bprint_init(&buffer, JSS_MAX_LINESIZE, JSS_MAX_LINESIZE);
         jacosub_to_ass(avctx, &buffer, ptr);
-        ret = ff_ass_add_rect_bprint(sub, &buffer, avpkt->pts, avpkt->duration);
+        ret = ff_ass_add_rect(sub, buffer.str, s->readorder++, 0, NULL, NULL);
         av_bprint_finalize(&buffer, NULL);
         if (ret < 0)
             return ret;
@@ -199,4 +200,6 @@ AVCodec ff_jacosub_decoder = {
     .id             = AV_CODEC_ID_JACOSUB,
     .init           = ff_ass_subtitle_header_default,
     .decode         = jacosub_decode_frame,
+    .flush          = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };

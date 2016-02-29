@@ -709,6 +709,7 @@ static int jpeg_probe(AVProbeData *p)
         case 0xC5:
         case 0xC6:
         case 0xC7:
+            i += AV_RB16(&b[i + 2]) + 1;
             if (state != 0xD8)
                 return 0;
             state = 0xC0;

@@ -195,7 +195,7 @@ static const AVOption cudaupload_options[] = {
     { NULL },
 };
 
-AVFILTER_DEFINE_CLASS(cudaupload)
+AVFILTER_DEFINE_CLASS(cudaupload);
 
 static const AVFilterPad cudaupload_inputs[] = {
     {

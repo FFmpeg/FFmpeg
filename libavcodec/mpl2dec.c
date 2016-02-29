@@ -69,13 +69,11 @@ static int mpl2_decode_frame(AVCodecContext *avctx, void *data,
     AVBPrint buf;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
-    const int ts_start     = av_rescale_q(avpkt->pts,      avctx->time_base, (AVRational){1,100});
-    const int ts_duration  = avpkt->duration != -1 ?
-                             av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
+    FFASSDecoderContext *s = avctx->priv_data;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (ptr && avpkt->size > 0 && *ptr && !mpl2_event_to_ass(&buf, ptr))
-        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration);
+        ret = ff_ass_add_rect(sub, buf.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
         return ret;
@@ -90,4 +88,6 @@ AVCodec ff_mpl2_decoder = {
     .id             = AV_CODEC_ID_MPL2,
     .decode         = mpl2_decode_frame,
     .init           = ff_ass_subtitle_header_default,
+    .flush          = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };

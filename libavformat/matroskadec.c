@@ -190,6 +190,9 @@ typedef struct MatroskaTrack {
     int64_t end_timecode;
     int ms_compat;
     uint64_t max_block_additional_id;
+
+    uint32_t palette[AVPALETTE_COUNT];
+    int has_palette;
 } MatroskaTrack;
 
 typedef struct MatroskaAttachment {
@@ -314,9 +317,6 @@ typedef struct MatroskaDemuxContext {
 
     /* WebM DASH Manifest live flag/ */
     int is_live;
-
-    uint32_t palette[AVPALETTE_COUNT];
-    int has_palette;
 } MatroskaDemuxContext;
 
 typedef struct MatroskaBlock {
@@ -1930,9 +1930,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 ffio_init_context(&b, track->codec_priv.data,
                                   track->codec_priv.size,
                                   0, NULL, NULL, NULL, NULL);
-                if (ff_get_qtpalette(codec_id, &b, matroska->palette)) {
+                if (ff_get_qtpalette(codec_id, &b, track->palette)) {
                     bit_depth &= 0x1F;
-                    matroska->has_palette = 1;
+                    track->has_palette = 1;
                 }
             }
         } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
@@ -2378,16 +2378,19 @@ static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
                                    AVPacket *pkt)
 {
     if (matroska->num_packets > 0) {
+        MatroskaTrack *tracks = matroska->tracks.elem;
+        MatroskaTrack *track;
         memcpy(pkt, matroska->packets[0], sizeof(AVPacket));
         av_freep(&matroska->packets[0]);
-        if (matroska->has_palette) {
+        track = &tracks[pkt->stream_index];
+        if (track->has_palette) {
             uint8_t *pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
             if (!pal) {
                 av_log(matroska->ctx, AV_LOG_ERROR, "Cannot append palette to packet\n");
             } else {
-                memcpy(pal, matroska->palette, AVPALETTE_SIZE);
+                memcpy(pal, track->palette, AVPALETTE_SIZE);
             }
-            matroska->has_palette = 0;
+            track->has_palette = 0;
         }
         if (matroska->num_packets > 1) {
             void *newpackets;
