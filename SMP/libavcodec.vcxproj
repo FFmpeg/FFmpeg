@@ -383,7 +383,6 @@
     <ClCompile Include="..\libavcodec\pngenc.c" />
     <ClCompile Include="..\libavcodec\assdec.c" />
     <ClCompile Include="..\libavcodec\ass.c" />
-    <ClCompile Include="..\libavcodec\ass_split.c" />
     <ClCompile Include="..\libavcodec\assenc.c" />
     <ClCompile Include="..\libavcodec\asvdec.c" />
     <ClCompile Include="..\libavcodec\asv.c" />
@@ -632,6 +631,7 @@
     <ClCompile Include="..\libavcodec\motionpixels.c" />
     <ClCompile Include="..\libavcodec\movtextdec.c" />
     <ClCompile Include="..\libavcodec\movtextenc.c" />
+    <ClCompile Include="..\libavcodec\ass_split.c" />
     <ClCompile Include="..\libavcodec\mpegaudiodec_fixed.c" />
     <ClCompile Include="..\libavcodec\mpegaudiodec_float.c" />
     <ClCompile Include="..\libavcodec\mpegaudioenc_float.c" />

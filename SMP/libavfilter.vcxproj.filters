@@ -411,6 +411,9 @@
     <ClCompile Include="..\libavfilter\vf_curves.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_datascope.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_dctdnoiz.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

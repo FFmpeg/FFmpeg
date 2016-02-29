@@ -201,6 +201,7 @@
     <ClCompile Include="..\libavfilter\vf_crop.c" />
     <ClCompile Include="..\libavfilter\vf_cropdetect.c" />
     <ClCompile Include="..\libavfilter\vf_curves.c" />
+    <ClCompile Include="..\libavfilter\vf_datascope.c" />
     <ClCompile Include="..\libavfilter\vf_dctdnoiz.c" />
     <ClCompile Include="..\libavfilter\vf_deband.c" />
     <ClCompile Include="..\libavfilter\vf_decimate.c" />
