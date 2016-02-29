@@ -3138,8 +3138,16 @@ MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
 DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
 OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
 INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
-PROTOCOL_LIST=$(find_things protocol PROTOCOL libavformat/allformats.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
+
+find_things_extern(){
+    thing=$1
+    pattern=$2
+    file=$source_path/$3
+    sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$thing/p" "$file"
+}
+
+PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
 
 ALL_COMPONENTS="
     $BSF_LIST

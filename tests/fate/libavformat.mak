@@ -1,6 +1,6 @@
-FATE_LIBAVFORMAT-$(HAVE_PTHREADS) += fate-async
-fate-async: libavformat/async-test$(EXESUF)
-fate-async: CMD = run libavformat/async-test
+#FATE_LIBAVFORMAT-$(HAVE_PTHREADS) += fate-async
+#fate-async: libavformat/async-test$(EXESUF)
+#fate-async: CMD = run libavformat/async-test
 
 FATE_LIBAVFORMAT-$(CONFIG_NETWORK) += fate-noproxy
 fate-noproxy: libavformat/noproxy-test$(EXESUF)

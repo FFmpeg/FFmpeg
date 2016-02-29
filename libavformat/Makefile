@@ -19,6 +19,7 @@ OBJS = allformats.o         \
        options.o            \
        os_support.o         \
        qtpalette.o          \
+       protocols.o          \
        riff.o               \
        sdp.o                \
        url.o                \

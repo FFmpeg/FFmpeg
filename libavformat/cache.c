@@ -312,7 +312,7 @@ static const AVClass cache_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_cache_protocol = {
+const URLProtocol ff_cache_protocol = {
     .name                = "cache",
     .url_open2           = cache_open,
     .url_read            = cache_read,

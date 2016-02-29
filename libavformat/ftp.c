@@ -1099,7 +1099,7 @@ cleanup:
     return ret;
 }
 
-URLProtocol ff_ftp_protocol = {
+const URLProtocol ff_ftp_protocol = {
     .name                = "ftp",
     .url_open            = ftp_open,
     .url_read            = ftp_read,

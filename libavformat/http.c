@@ -1508,7 +1508,7 @@ static const AVClass flavor ## _context_class = {   \
 #if CONFIG_HTTP_PROTOCOL
 HTTP_CLASS(http);
 
-URLProtocol ff_http_protocol = {
+const URLProtocol ff_http_protocol = {
     .name                = "http",
     .url_open2           = http_open,
     .url_accept          = http_accept,
@@ -1529,7 +1529,7 @@ URLProtocol ff_http_protocol = {
 #if CONFIG_HTTPS_PROTOCOL
 HTTP_CLASS(https);
 
-URLProtocol ff_https_protocol = {
+const URLProtocol ff_https_protocol = {
     .name                = "https",
     .url_open2           = http_open,
     .url_read            = http_read,
@@ -1644,7 +1644,7 @@ static int http_proxy_write(URLContext *h, const uint8_t *buf, int size)
     return ffurl_write(s->hd, buf, size);
 }
 
-URLProtocol ff_httpproxy_protocol = {
+const URLProtocol ff_httpproxy_protocol = {
     .name                = "httpproxy",
     .url_open            = http_proxy_open,
     .url_read            = http_buf_read,

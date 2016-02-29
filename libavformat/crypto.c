@@ -284,7 +284,7 @@ static int crypto_close(URLContext *h)
     return 0;
 }
 
-URLProtocol ff_crypto_protocol = {
+const URLProtocol ff_crypto_protocol = {
     .name            = "crypto",
     .url_open2       = crypto_open2,
     .url_read        = crypto_read,

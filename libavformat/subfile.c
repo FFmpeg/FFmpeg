@@ -137,7 +137,7 @@ static int64_t subfile_seek(URLContext *h, int64_t pos, int whence)
     return c->pos - c->start;
 }
 
-URLProtocol ff_subfile_protocol = {
+const URLProtocol ff_subfile_protocol = {
     .name                = "subfile",
     .url_open2           = subfile_open,
     .url_read            = subfile_read,

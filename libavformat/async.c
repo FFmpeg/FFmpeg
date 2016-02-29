@@ -479,7 +479,7 @@ static const AVClass async_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_async_protocol = {
+const URLProtocol ff_async_protocol = {
     .name                = "async",
     .url_open2           = async_open,
     .url_read            = async_read,
@@ -489,7 +489,7 @@ URLProtocol ff_async_protocol = {
     .priv_data_class     = &async_context_class,
 };
 
-#ifdef TEST
+#if 0
 
 #define TEST_SEEK_POS    (1536)
 #define TEST_STREAM_SIZE (2048)
@@ -581,7 +581,7 @@ static const AVClass async_test_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_async_test_protocol = {
+const URLProtocol ff_async_test_protocol = {
     .name                = "async-test",
     .url_open2           = async_test_open,
     .url_read            = async_test_read,
