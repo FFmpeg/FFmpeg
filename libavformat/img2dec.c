@@ -764,6 +764,27 @@ static int jpegls_probe(AVProbeData *p)
     return 0;
 }
 
+static int pcx_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (   p->buf_size < 128
+        || b[0] != 10
+        || b[1] > 5
+        || b[2] != 1
+        || av_popcount(b[3]) != 1 || b[3] > 8
+        || AV_RL16(&b[4]) > AV_RL16(&b[8])
+        || AV_RL16(&b[6]) > AV_RL16(&b[10])
+        || b[64])
+        return 0;
+    b += 73;
+    while (++b < p->buf + 128)
+        if (*b)
+            return AVPROBE_SCORE_EXTENSION / 4;
+
+    return AVPROBE_SCORE_EXTENSION + 1;
+}
+
 static int qdraw_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -865,6 +886,7 @@ IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
 IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
 IMAGEAUTO_DEMUXER(jpeg,    AV_CODEC_ID_MJPEG)
 IMAGEAUTO_DEMUXER(jpegls,  AV_CODEC_ID_JPEGLS)
+IMAGEAUTO_DEMUXER(pcx,     AV_CODEC_ID_PCX)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
 IMAGEAUTO_DEMUXER(qdraw,   AV_CODEC_ID_QDRAW)
