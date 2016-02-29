@@ -244,7 +244,9 @@ FATE_SEEK += $(FATE_SEEK_LAVF-yes:%=fate-seek-lavf-%)
 # extra files
 
 FATE_SEEK_EXTRA-$(CONFIG_MP3_DEMUXER)   += fate-seek-extra-mp3
+FATE_SEEK_EXTRA-$(call ALLYES, CACHE_PROTOCOL PIPE_PROTOCOL MP3_DEMUXER) += fate-seek-cache-pipe
 fate-seek-extra-mp3:  CMD = run libavformat/seek-test$(EXESUF) $(TARGET_SAMPLES)/gapless/gapless.mp3 -fastseek 1
+fate-seek-cache-pipe: CMD = cat $(TARGET_SAMPLES)/gapless/gapless.mp3 | run libavformat/seek-test$(EXESUF) cache:pipe:0 -read_ahead_limit -1
 FATE_SEEK_EXTRA += $(FATE_SEEK_EXTRA-yes)
 
 
