@@ -240,7 +240,6 @@ typedef struct InputStream {
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
     PtsCorrectionContext pts_ctx;
     double ts_scale;
-    int showed_multi_packet_warning;
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
 

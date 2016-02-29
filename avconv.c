@@ -1337,13 +1337,6 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_e
 
         ist->last_dts = ist->next_dts;
 
-        if (avpkt.size && avpkt.size != pkt->size &&
-            !(ist->dec->capabilities & AV_CODEC_CAP_SUBFRAMES)) {
-            av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
-                   "Multiple frames in a packet from stream %d\n", pkt->stream_index);
-            ist->showed_multi_packet_warning = 1;
-        }
-
         switch (ist->dec_ctx->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ret = decode_audio    (ist, &avpkt, &got_output);
