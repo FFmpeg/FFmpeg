@@ -309,6 +309,8 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
  */
 AVIODirEntry *ff_alloc_dir_entry(void);
 
+const AVClass *ff_urlcontext_child_class_next(const AVClass *prev);
+
 extern const URLProtocol *ff_url_protocols[];
 
 #endif /* AVFORMAT_URL_H */

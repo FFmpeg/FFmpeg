@@ -50,25 +50,6 @@ static void *urlcontext_child_next(void *obj, void *prev)
     return NULL;
 }
 
-static const AVClass *urlcontext_child_class_next(const AVClass *prev)
-{
-    int i;
-
-    /* find the protocol that corresponds to prev */
-    for (i = 0; ff_url_protocols[i]; i++) {
-        if (ff_url_protocols[i]->priv_data_class == prev) {
-            i++;
-            break;
-        }
-    }
-
-    /* find next protocol with priv options */
-    for (; ff_url_protocols[i]; i++)
-        if (ff_url_protocols[i]->priv_data_class)
-            return ff_url_protocols[i]->priv_data_class;
-    return NULL;
-}
-
 #define OFFSET(x) offsetof(URLContext,x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
@@ -76,13 +57,14 @@ static const AVOption options[] = {
     {"protocol_whitelist", "List of protocols that are allowed to be used", OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
     { NULL }
 };
+
 const AVClass ffurl_context_class = {
     .class_name       = "URLContext",
     .item_name        = urlcontext_to_name,
     .option           = options,
     .version          = LIBAVUTIL_VERSION_INT,
     .child_next       = urlcontext_child_next,
-    .child_class_next = urlcontext_child_class_next,
+    .child_class_next = ff_urlcontext_child_class_next,
 };
 /*@}*/
 

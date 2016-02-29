@@ -207,6 +207,26 @@ const URLProtocol *ff_url_protocols[] = {
     NULL,
 };
 
+const AVClass *ff_urlcontext_child_class_next(const AVClass *prev)
+{
+    int i;
+
+    /* find the protocol that corresponds to prev */
+    for (i = 0; ff_url_protocols[i]; i++) {
+        if (ff_url_protocols[i]->priv_data_class == prev) {
+            i++;
+            break;
+        }
+    }
+
+    /* find next protocol with priv options */
+    for (; ff_url_protocols[i]; i++)
+        if (ff_url_protocols[i]->priv_data_class)
+            return ff_url_protocols[i]->priv_data_class;
+    return NULL;
+}
+
+
 const char *avio_enum_protocols(void **opaque, int output)
 {
     const URLProtocol **p = *opaque;
