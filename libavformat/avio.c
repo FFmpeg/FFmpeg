@@ -239,6 +239,7 @@ int ffurl_handshake(URLContext *c)
 static const struct URLProtocol *url_find_protocol(const char *filename)
 {
     const URLProtocol *up;
+    const URLProtocol **protocols;
     char proto_str[128], proto_nested[128], *ptr;
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
     int i;
@@ -257,14 +258,16 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
     if ((ptr = strchr(proto_nested, '+')))
         *ptr = '\0';
 
-    for (i = 0; ff_url_protocols[i]; i++) {
-        up = ff_url_protocols[i];
+    protocols = ffurl_get_protocols(NULL, NULL);
+    for (i = 0; protocols[i]; i++) {
+        up = protocols[i];
         if (!strcmp(proto_str, up->name))
             break;
         if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME &&
             !strcmp(proto_nested, up->name))
             break;
     }
+    av_freep(&protocols);
 
     return up;
 }
