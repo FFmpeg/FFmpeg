@@ -34,6 +34,9 @@ static int msf_probe(AVProbeData *p)
     if (AV_RB32(p->buf+16) <= 0)
         return 0;
 
+    if (AV_RB32(p->buf+4) > 16)
+        return AVPROBE_SCORE_MAX / 5; //unsupported / unknown codec
+
     return AVPROBE_SCORE_MAX / 3 * 2;
 }
 
