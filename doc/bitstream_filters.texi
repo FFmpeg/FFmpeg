@@ -95,6 +95,10 @@ This bitstream filter passes the packets through unchanged.
 
 @section remove_extradata
 
+@section vp9_superframe
+
+Combine VP9 frames into superframes.
+
 @section vp9_superframe_split
 
 Split VP9 superframes into single frames.

@@ -12,6 +12,7 @@ version <next>:
 - The x86 assembler default switched from yasm to nasm, pass
   --x86asmexe=yasm to configure to restore the old behavior.
 - Cineform HD decoder
+- VP9 superframe split/merge bitstream filters
 
 
 version 12:
