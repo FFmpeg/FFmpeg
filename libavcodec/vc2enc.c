@@ -987,7 +987,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     s->slice_min_bytes = s->slice_max_bytes - s->slice_max_bytes*(s->tolerance/100.0f);
 
-    ret = ff_alloc_packet2(avctx, avpkt, max_frame_bytes*2, 0);
+    ret = ff_alloc_packet2(avctx, avpkt, max_frame_bytes*3, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
         return ret;
@@ -1197,6 +1197,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
                                  avctx->time_base.den);
     min_bits_per_frame = minimum_frame_bits(s) + 8*sizeof(LIBAVCODEC_IDENT) + 8*40 + 8*20000;
     if (bits_per_frame < min_bits_per_frame) {
+        if (s->interlaced)
+            min_bits_per_frame += min_bits_per_frame + min_bits_per_frame/2;
         avctx->bit_rate = av_rescale(min_bits_per_frame, avctx->time_base.den,
                                      avctx->time_base.num);
         av_log(avctx, AV_LOG_WARNING,
