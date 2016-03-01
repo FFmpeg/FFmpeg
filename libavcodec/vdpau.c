@@ -317,6 +317,7 @@ int ff_vdpau_add_buffer(struct vdpau_picture_context *pic_ctx,
     return 0;
 }
 
+#if FF_API_VDPAU_PROFILE
 int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile)
 {
 #define PROFILE(prof)                      \
@@ -363,6 +364,7 @@ do {                                       \
     return AVERROR(EINVAL);
 #undef PROFILE
 }
+#endif /* FF_API_VDPAU_PROFILE */
 
 AVVDPAUContext *av_vdpau_alloc_context(void)
 {
