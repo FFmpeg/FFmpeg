@@ -614,6 +614,13 @@ unk_pixfmt:
         return AVERROR_BUG;
     }
 
+    if (s->avctx->skip_frame == AVDISCARD_ALL) {
+        s->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
+        s->picture_ptr->key_frame = 1;
+        s->got_picture            = 1;
+        return 0;
+    }
+
     av_frame_unref(s->picture_ptr);
     if (ff_get_buffer(s->avctx, s->picture_ptr, AV_GET_BUFFER_FLAG_REF) < 0)
         return -1;
