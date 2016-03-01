@@ -30,11 +30,6 @@ typedef struct {
     int start, len;
 } Coeffs;
 
-enum CoeffsType {
-    COEFFS_TYPE_DEFAULT,
-    COEFFS_TYPE_INTERLEAVE
-};
-
 typedef struct {
     float r, g, b;
 } RGBFloat;
@@ -71,7 +66,6 @@ typedef struct {
     int                 fft_len;
     int                 cqt_len;
     int                 cqt_align;
-    enum CoeffsType     cqt_coeffs_type;
     ColorFloat          *c_buf;
     float               *h_buf;
     float               *rcp_h_buf;

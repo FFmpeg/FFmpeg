@@ -103,7 +103,7 @@ static void common_uninit(ShowCQTContext *s)
     av_fft_end(s->fft_ctx);
     s->fft_ctx = NULL;
     if (s->coeffs)
-        for (k = 0; k < s->cqt_len * 2; k++)
+        for (k = 0; k < s->cqt_len; k++)
             av_freep(&s->coeffs[k].val);
     av_freep(&s->coeffs);
     av_freep(&s->fft_data);
@@ -249,61 +249,25 @@ static void cqt_calc(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeff
     }
 }
 
-#if 0
-static void cqt_calc_interleave(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeffs,
-                                int len, int fft_len)
-{
-    int k, x, i, m;
-
-    for (k = 0; k < len; k++) {
-        FFTComplex l, r, a = {0,0}, b = {0,0};
-
-        m = 2 * k;
-        for (x = 0; x < coeffs[m].len; x++) {
-            FFTSample u = coeffs[m].val[x];
-            i = coeffs[m].start + x;
-            a.re += u * src[i].re;
-            a.im += u * src[i].im;
-        }
-
-        m++;
-        for (x = 0; x < coeffs[m].len; x++) {
-            FFTSample u = coeffs[m].val[x];
-            i = coeffs[m].start + x;
-            b.re += u * src[i].re;
-            b.im += u * src[i].im;
-        }
-
-        /* separate left and right, (and multiply by 2.0) */
-        l.re = a.re + b.re;
-        l.im = a.im - b.im;
-        r.re = b.im + a.im;
-        r.im = b.re - a.re;
-        dst[k].re = l.re * l.re + l.im * l.im;
-        dst[k].im = r.re * r.re + r.im * r.im;
-    }
-}
-#endif
-
 static int init_cqt(ShowCQTContext *s)
 {
     const char *var_names[] = { "timeclamp", "tc", "frequency", "freq", "f", NULL };
     AVExpr *expr = NULL;
     int rate = s->ctx->inputs[0]->sample_rate;
-    int nb_cqt_coeffs = 0, nb_cqt_coeffs_r = 0;
+    int nb_cqt_coeffs = 0;
     int k, x, ret;
 
     if ((ret = av_expr_parse(&expr, s->tlength, var_names, NULL, NULL, NULL, NULL, 0, s->ctx)) < 0)
         goto error;
 
     ret = AVERROR(ENOMEM);
-    if (!(s->coeffs = av_calloc(s->cqt_len * 2, sizeof(*s->coeffs))))
+    if (!(s->coeffs = av_calloc(s->cqt_len, sizeof(*s->coeffs))))
         goto error;
 
     for (k = 0; k < s->cqt_len; k++) {
         double vars[] = { s->timeclamp, s->timeclamp, s->freq[k], s->freq[k], s->freq[k] };
         double flen, center, tlength;
-        int start, end, m = (s->cqt_coeffs_type == COEFFS_TYPE_INTERLEAVE) ? (2 * k) : k;
+        int start, end, m = k;
 
         if (s->freq[k] > 0.5 * rate)
             continue;
@@ -321,14 +285,6 @@ static int init_cqt(ShowCQTContext *s)
         if (!(s->coeffs[m].val = av_calloc(s->coeffs[m].len, sizeof(*s->coeffs[m].val))))
             goto error;
 
-        if (s->cqt_coeffs_type == COEFFS_TYPE_INTERLEAVE) {
-            s->coeffs[m+1].start = (s->fft_len - end) & ~(s->cqt_align - 1);
-            s->coeffs[m+1].len = ((s->fft_len - start) | (s->cqt_align - 1)) + 1 - s->coeffs[m+1].start;
-            nb_cqt_coeffs_r += s->coeffs[m+1].len;
-            if (!(s->coeffs[m+1].val = av_calloc(s->coeffs[m+1].len, sizeof(*s->coeffs[m+1].val))))
-                goto error;
-        }
-
         for (x = start; x <= end; x++) {
             int sign = (x & 1) ? (-1) : 1;
             double y = 2.0 * M_PI * (x - center) * (1.0 / flen);
@@ -336,22 +292,17 @@ static int init_cqt(ShowCQTContext *s)
             double w = 0.355768 + 0.487396 * cos(y) + 0.144232 * cos(2*y) + 0.012604 * cos(3*y);
             w *= sign * (1.0 / s->fft_len);
             s->coeffs[m].val[x - s->coeffs[m].start] = w;
-            if (s->cqt_coeffs_type == COEFFS_TYPE_INTERLEAVE)
-                s->coeffs[m+1].val[(s->fft_len - x) - s->coeffs[m+1].start] = w;
         }
     }
 
     av_expr_free(expr);
-    if (s->cqt_coeffs_type == COEFFS_TYPE_DEFAULT)
-        av_log(s->ctx, AV_LOG_INFO, "nb_cqt_coeffs = %d.\n", nb_cqt_coeffs);
-    else
-        av_log(s->ctx, AV_LOG_INFO, "nb_cqt_coeffs = {%d,%d}.\n", nb_cqt_coeffs, nb_cqt_coeffs_r);
+    av_log(s->ctx, AV_LOG_INFO, "nb_cqt_coeffs = %d.\n", nb_cqt_coeffs);
     return 0;
 
 error:
     av_expr_free(expr);
     if (s->coeffs)
-        for (k = 0; k < s->cqt_len * 2; k++)
+        for (k = 0; k < s->cqt_len; k++)
             av_freep(&s->coeffs[k].val);
     av_freep(&s->coeffs);
     return ret;
@@ -1172,7 +1123,6 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     s->cqt_align = 1;
-    s->cqt_coeffs_type = COEFFS_TYPE_DEFAULT;
     s->cqt_calc = cqt_calc;
     s->draw_sono = draw_sono;
     if (s->format == AV_PIX_FMT_RGB24) {
