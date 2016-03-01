@@ -43,7 +43,7 @@ typedef struct VectorscopeContext {
     int mode;
     int intensity;
     float fintensity;
-    const uint8_t *bg_color;
+    uint16_t bg_color[4];
     int planewidth[4];
     int planeheight[4];
     int hsub, vsub;
@@ -55,6 +55,7 @@ typedef struct VectorscopeContext {
     int envelope;
     int graticule;
     float opacity;
+    float bgopacity;
     int flags;
     int cs;
     uint8_t peak[1024][1024];
@@ -98,6 +99,8 @@ static const AVOption vectorscope_options[] = {
     { "f",     "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, 3, FLAGS, "flags"},
     {   "white", "draw white point", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "flags" },
     {   "black", "draw black point", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "flags" },
+    { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
+    { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
     { NULL }
 };
 
@@ -208,9 +211,6 @@ static int query_formats(AVFilterContext *ctx)
 
     return 0;
 }
-
-static const uint8_t black_yuva_color[4] = { 0, 127, 127, 0 };
-static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 0 };
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -371,12 +371,10 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
     int i, j, k;
 
     for (k = 0; k < 4 && dst[k]; k++) {
-        const int mult = s->mult;
-
         for (i = 0; i < out->height ; i++)
             for (j = 0; j < out->width; j++)
                 AV_WN16(out->data[k] + i * out->linesize[k] + j * 2,
-                        (s->mode == COLOR || s->mode == COLOR5) && k == s->pd ? 0 : s->bg_color[k] * mult);
+                        (s->mode == COLOR || s->mode == COLOR5) && k == s->pd ? 0 : s->bg_color[k]);
     }
 
     switch (s->mode) {
@@ -765,6 +763,7 @@ static void none_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, in
 
 static void color_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
 {
+    const int max = s->size - 1;
     const float o = s->opacity;
     int i;
 
@@ -776,6 +775,8 @@ static void color_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, d, o);
         draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, x, o);
         draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, y, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
 
     if (s->flags & 1) {
@@ -786,6 +787,8 @@ static void color_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, d, o);
         draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, x, o);
         draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, y, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
 
     if (s->flags & 2) {
@@ -796,6 +799,8 @@ static void color_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, d, o);
         draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, x, o);
         draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, y, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
 }
 
@@ -812,6 +817,8 @@ static void color_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], d, o);
         draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], x, o);
         draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], y, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
 
     if (s->flags & 1) {
@@ -822,6 +829,8 @@ static void color_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], d, o);
         draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], x, o);
         draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], y, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
 
     if (s->flags & 2) {
@@ -832,11 +841,14 @@ static void color_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], d, o);
         draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], x, o);
         draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], y, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
 }
 
 static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
 {
+    const int max = s->size - 1;
     const float o = s->opacity;
     const int m = s->mult;
     int i;
@@ -848,6 +860,8 @@ static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
         draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
         draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
 
     if (s->flags & 1) {
@@ -857,6 +871,8 @@ static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
         draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
         draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
 
     if (s->flags & 2) {
@@ -866,6 +882,8 @@ static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
         draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
         draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
 }
 
@@ -881,6 +899,8 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
         draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
         draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
 
     if (s->flags & 1) {
@@ -890,6 +910,8 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
         draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
         draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
 
     if (s->flags & 2) {
@@ -899,6 +921,8 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
         draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
         draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
 }
 
@@ -973,15 +997,21 @@ static int config_input(AVFilterLink *inlink)
             s->graticulef = color_graticule16;
     }
 
+    s->bg_color[3] = s->bgopacity * (s->size - 1);
+
     switch (inlink->format) {
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
-        s->bg_color = black_gbrp_color;
+        s->bg_color[0] = 0;
+        s->bg_color[1] = 0;
+        s->bg_color[2] = 0;
         break;
     default:
-        s->bg_color = black_yuva_color;
+        s->bg_color[0] = 0;
+        s->bg_color[1] = s->size / 2 - 1;
+        s->bg_color[2] = s->size / 2 - 1;
     }
 
     s->hsub = desc->log2_chroma_w;

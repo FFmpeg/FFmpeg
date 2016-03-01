@@ -12581,6 +12581,9 @@ Draw graticule for white point.
 @item black
 Draw graticule for black point.
 @end table
+
+@item bgopacity, b
+Set background opacity.
 @end table
 
 @anchor{vidstabdetect}
