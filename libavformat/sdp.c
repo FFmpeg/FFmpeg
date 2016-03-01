@@ -706,7 +706,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
             av_strlcatf(buff, size, "a=rtpmap:%d opus/48000/2\r\n",
                                      payload_type);
             if (c->channels == 2) {
-                av_strlcatf(buff, size, "a=fmtp:%d sprop-stereo:1\r\n",
+                av_strlcatf(buff, size, "a=fmtp:%d sprop-stereo=1\r\n",
                                          payload_type);
             }
             break;
