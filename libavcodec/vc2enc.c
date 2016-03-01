@@ -152,19 +152,6 @@ typedef struct VC2EncContext {
     enum DiracParseCodes last_parse_code;
 } VC2EncContext;
 
-static av_always_inline void put_padding(PutBitContext *pb, int bytes)
-{
-    int bits = bytes*8;
-    if (!bits)
-        return;
-    while (bits > 31) {
-        put_bits(pb, 31, 0);
-        bits -= 31;
-    }
-    if (bits)
-        put_bits(pb, bits, 0);
-}
-
 static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
 {
     int i;
@@ -742,7 +729,7 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
     int p, level, orientation;
 
     avpriv_align_put_bits(pb);
-    put_padding(pb, s->prefix_bytes);
+    skip_put_bytes(pb, s->prefix_bytes);
     put_bits(pb, 8, quant_idx);
 
     /* Slice quantization (slice_quantizers() in the specs) */
@@ -773,7 +760,8 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
             pad_c = (pad_s*s->size_scaler) - bytes_len;
         }
         pb->buf[bytes_start] = pad_s;
-        put_padding(pb, pad_c);
+        flush_put_bits(pb);
+        skip_put_bytes(pb, pad_c);
     }
 
     return 0;
