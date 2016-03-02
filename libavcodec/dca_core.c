@@ -1760,6 +1760,7 @@ static int parse_x96_frame_exss(DCACoreDecoder *s)
         return ret;
 
     // Channel set data
+    s->x96_nchannels = 0;
     for (i = 0, x96_base_ch = 0; i < x96_nchsets; i++) {
         header_pos = get_bits_count(&s->gb);
 
