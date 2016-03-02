@@ -869,7 +869,7 @@ Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
 Return the maximum between @var{x} and @var{y}.
 
 @item min(x, y)
-Return the maximum between @var{x} and @var{y}.
+Return the minimum between @var{x} and @var{y}.
 
 @item mod(x, y)
 Compute the remainder of division of @var{x} by @var{y}.
