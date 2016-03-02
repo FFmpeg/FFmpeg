@@ -749,7 +749,6 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
     uint8_t quants[MAX_DWT_LEVELS][4];
     int p, level, orientation;
 
-    avpriv_align_put_bits(pb);
     skip_put_bytes(pb, s->prefix_bytes);
     put_bits(pb, 8, quant_idx);
 
