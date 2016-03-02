@@ -307,7 +307,8 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int yuv4_read_seek(AVFormatContext *s, int stream_index,
                           int64_t pts, int flags)
 {
-    avio_seek(s->pb, pts * s->packet_size + s->internal->data_offset, SEEK_SET);
+    if (avio_seek(s->pb, pts * s->packet_size + s->internal->data_offset, SEEK_SET) < 0)
+        return -1;
     return 0;
 }
 
