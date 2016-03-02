@@ -4759,3 +4759,19 @@ int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int 
     }
     return 0;
 }
+
+int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, const uint8_t **palette)
+{
+    int size;
+
+    *palette = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
+    if (*palette && size != AVPALETTE_SIZE) {
+        av_log(s, AV_LOG_ERROR, "Invalid palette side data\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!*palette && ret == CONTAINS_PAL)
+        *palette = pkt->data + pkt->size - AVPALETTE_SIZE;
+
+    return 0;
+}
