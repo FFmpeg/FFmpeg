@@ -165,6 +165,12 @@ DEC_OPTS="$DEC_OPTS -idct auto"
 do_lavf_fate ogg "vp3/coeff_level64.mkv"
 fi
 
+if [ -n "$do_mov_qtrle_mace6" ] ; then
+DEC_OPTS="$DEC_OPTS -idct auto"
+do_lavf_fate mov "qtrle/Animation-16Greys.mov"
+fi
+
+
 if [ -n "$do_wtv" ] ; then
 do_lavf wtv "" "-acodec mp2 -threads 1"
 fi

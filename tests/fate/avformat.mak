@@ -69,6 +69,7 @@ fate-lavf:     $(FATE_LAVF)
 FATE_LAVF_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGG_MUXER)          += ogg_vp3
 FATE_LAVF_FATE-$(call ALLYES, MOV_DEMUXER        LATM_MUXER)         += latm
 FATE_LAVF_FATE-$(call ALLYES, MP3_DEMUXER        MP3_MUXER)          += mp3
+FATE_LAVF_FATE-$(call ALLYES, MOV_DEMUXER        MOV_MUXER)          += mov_qtrle_mace6
 
 FATE_LAVF_FATE +=  $(FATE_LAVF_FATE-yes:%=fate-lavf-fate-%)
 $(FATE_LAVF_FATE): CMD = lavffatetest
