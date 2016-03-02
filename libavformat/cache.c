@@ -283,6 +283,12 @@ resolve_eof:
     return ret;
 }
 
+static int enu_free(void *opaque, void *elem)
+{
+    av_free(elem);
+    return 0;
+}
+
 static int cache_close(URLContext *h)
 {
     Context *c= h->priv_data;
@@ -292,6 +298,7 @@ static int cache_close(URLContext *h)
 
     close(c->fd);
     ffurl_close(c->inner);
+    av_tree_enumerate(c->root, NULL, NULL, enu_free);
     av_tree_destroy(c->root);
 
     return 0;
