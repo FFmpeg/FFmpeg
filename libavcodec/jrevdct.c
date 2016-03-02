@@ -251,8 +251,8 @@ void ff_j_rev_dct(DCTBLOCK data)
       /* AC terms all zero */
       if (d0) {
           /* Compute a 32 bit value to assign. */
-          int16_t dcval = (int16_t) (d0 << PASS1_BITS);
-          register int v = (dcval & 0xffff) | ((dcval << 16) & 0xffff0000);
+          int16_t dcval = (int16_t) (d0 * (1 << PASS1_BITS));
+          register int v = (dcval & 0xffff) | ((dcval * (1 << 16)) & 0xffff0000);
 
           idataptr[0] = v;
           idataptr[1] = v;
@@ -274,8 +274,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
                     tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
 
-                    tmp0 = (d0 + d4) << CONST_BITS;
-                    tmp1 = (d0 - d4) << CONST_BITS;
+                    tmp0 = (d0 + d4) * CONST_SCALE;
+                    tmp1 = (d0 - d4) * CONST_SCALE;
 
                     tmp10 = tmp0 + tmp3;
                     tmp13 = tmp0 - tmp3;
@@ -286,8 +286,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp2 = MULTIPLY(-d6, FIX_1_306562965);
                     tmp3 = MULTIPLY(d6, FIX_0_541196100);
 
-                    tmp0 = (d0 + d4) << CONST_BITS;
-                    tmp1 = (d0 - d4) << CONST_BITS;
+                    tmp0 = (d0 + d4) * CONST_SCALE;
+                    tmp1 = (d0 - d4) * CONST_SCALE;
 
                     tmp10 = tmp0 + tmp3;
                     tmp13 = tmp0 - tmp3;
@@ -300,8 +300,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp2 = MULTIPLY(d2, FIX_0_541196100);
                     tmp3 = MULTIPLY(d2, FIX_1_306562965);
 
-                    tmp0 = (d0 + d4) << CONST_BITS;
-                    tmp1 = (d0 - d4) << CONST_BITS;
+                    tmp0 = (d0 + d4) * CONST_SCALE;
+                    tmp1 = (d0 - d4) * CONST_SCALE;
 
                     tmp10 = tmp0 + tmp3;
                     tmp13 = tmp0 - tmp3;
@@ -309,8 +309,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp12 = tmp1 - tmp2;
             } else {
                     /* d0 != 0, d2 == 0, d4 != 0, d6 == 0 */
-                    tmp10 = tmp13 = (d0 + d4) << CONST_BITS;
-                    tmp11 = tmp12 = (d0 - d4) << CONST_BITS;
+                    tmp10 = tmp13 = (d0 + d4) * CONST_SCALE;
+                    tmp11 = tmp12 = (d0 - d4) * CONST_SCALE;
             }
       }
 
@@ -620,8 +620,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
                     tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
 
-                    tmp0 = (d0 + d4) << CONST_BITS;
-                    tmp1 = (d0 - d4) << CONST_BITS;
+                    tmp0 = (d0 + d4) * CONST_SCALE;
+                    tmp1 = (d0 - d4) * CONST_SCALE;
 
                     tmp10 = tmp0 + tmp3;
                     tmp13 = tmp0 - tmp3;
@@ -632,8 +632,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp2 = MULTIPLY(-d6, FIX_1_306562965);
                     tmp3 = MULTIPLY(d6, FIX_0_541196100);
 
-                    tmp0 = (d0 + d4) << CONST_BITS;
-                    tmp1 = (d0 - d4) << CONST_BITS;
+                    tmp0 = (d0 + d4) * CONST_SCALE;
+                    tmp1 = (d0 - d4) * CONST_SCALE;
 
                     tmp10 = tmp0 + tmp3;
                     tmp13 = tmp0 - tmp3;
@@ -646,8 +646,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp2 = MULTIPLY(d2, FIX_0_541196100);
                     tmp3 = MULTIPLY(d2, FIX_1_306562965);
 
-                    tmp0 = (d0 + d4) << CONST_BITS;
-                    tmp1 = (d0 - d4) << CONST_BITS;
+                    tmp0 = (d0 + d4) * CONST_SCALE;
+                    tmp1 = (d0 - d4) * CONST_SCALE;
 
                     tmp10 = tmp0 + tmp3;
                     tmp13 = tmp0 - tmp3;
@@ -655,8 +655,8 @@ void ff_j_rev_dct(DCTBLOCK data)
                     tmp12 = tmp1 - tmp2;
             } else {
                     /* d0 != 0, d2 == 0, d4 != 0, d6 == 0 */
-                    tmp10 = tmp13 = (d0 + d4) << CONST_BITS;
-                    tmp11 = tmp12 = (d0 - d4) << CONST_BITS;
+                    tmp10 = tmp13 = (d0 + d4) * CONST_SCALE;
+                    tmp11 = tmp12 = (d0 - d4) * CONST_SCALE;
             }
     }
 
