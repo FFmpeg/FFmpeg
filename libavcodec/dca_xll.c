@@ -460,19 +460,14 @@ static int chs_parse_band_data(DCAXllDecoder *s, DCAXllChSet *c, int band, int s
             // Unpack Rice coding flag
             // 0 - linear code, 1 - Rice code
             c->rice_code_flag[i] = get_bits1(&s->gb);
-            if (!c->seg_common && c->rice_code_flag[i]) {
-                // Unpack Hybrid Rice coding flag
-                // 0 - Rice code, 1 - Hybrid Rice code
-                if (get_bits1(&s->gb))
-                    // Unpack binary code length for isolated samples
-                    c->bitalloc_hybrid_linear[i] = get_bits(&s->gb, c->nabits) + 1;
-                else
-                    // 0 indicates no Hybrid Rice coding
-                    c->bitalloc_hybrid_linear[i] = 0;
-            } else {
+            // Unpack Hybrid Rice coding flag
+            // 0 - Rice code, 1 - Hybrid Rice code
+            if (!c->seg_common && c->rice_code_flag[i] && get_bits1(&s->gb))
+                // Unpack binary code length for isolated samples
+                c->bitalloc_hybrid_linear[i] = get_bits(&s->gb, c->nabits) + 1;
+            else
                 // 0 indicates no Hybrid Rice coding
                 c->bitalloc_hybrid_linear[i] = 0;
-            }
         }
 
         // Unpack coding parameters
