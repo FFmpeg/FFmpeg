@@ -30,7 +30,7 @@
 #include "diractab.h"
 
 /* Quantizations above this usually zero coefficients and lower the quality */
-#define MAX_QUANT_INDEX 50
+#define MAX_QUANT_INDEX FF_ARRAY_ELEMS(ff_dirac_qscale_tab)
 
 /* Total range is -COEF_LUT_TAB to +COEFF_LUT_TAB, but total tab size is half
  * (COEF_LUT_TAB*MAX_QUANT_INDEX) since the sign is appended during encoding */
@@ -99,6 +99,7 @@ typedef struct VC2EncContext {
     /* For conversion from unsigned pixel values to signed */
     int diff_offset;
     int bpp;
+    int bpp_idx;
 
     /* Picture number */
     uint32_t picture_number;
@@ -110,6 +111,7 @@ typedef struct VC2EncContext {
 
     /* Quantization matrix */
     uint8_t quant[MAX_DWT_LEVELS][4];
+    int custom_quant_matrix;
 
     /* Coefficient LUT */
     uint32_t *coef_lut_val;
@@ -327,31 +329,9 @@ static void encode_clean_area(VC2EncContext *s)
 /* VC-2 11.3.8 - signal_range() */
 static void encode_signal_range(VC2EncContext *s)
 {
-    int idx;
-    AVCodecContext *avctx = s->avctx;
-    const AVPixFmtDescriptor *fmt = av_pix_fmt_desc_get(avctx->pix_fmt);
-    const int depth = fmt->comp[0].depth;
-    if (depth == 8 && avctx->color_range == AVCOL_RANGE_JPEG) {
-        idx = 1;
-        s->bpp = 1;
-        s->diff_offset = 128;
-    } else if (depth == 8 && (avctx->color_range == AVCOL_RANGE_MPEG ||
-               avctx->color_range == AVCOL_RANGE_UNSPECIFIED)) {
-        idx = 2;
-        s->bpp = 1;
-        s->diff_offset = 128;
-    } else if (depth == 10) {
-        idx = 3;
-        s->bpp = 2;
-        s->diff_offset = 512;
-    } else {
-        idx = 4;
-        s->bpp = 2;
-        s->diff_offset = 2048;
-    }
     put_bits(&s->pb, 1, !s->strict_compliance);
     if (!s->strict_compliance)
-        put_vc2_ue_uint(&s->pb, idx);
+        put_vc2_ue_uint(&s->pb, s->bpp_idx);
 }
 
 /* VC-2 11.3.9 - color_spec() */
@@ -455,9 +435,22 @@ const uint8_t vc2_qm_flat_tab[][4] = {
     { 0,  0,  0,  0}
 };
 
-static void init_custom_qm(VC2EncContext *s)
+static void init_quant_matrix(VC2EncContext *s)
 {
     int level, orientation;
+
+    if (s->wavelet_depth <= 4 && s->quant_matrix == VC2_QM_DEF) {
+        s->custom_quant_matrix = 0;
+        for (level = 0; level < s->wavelet_depth; level++) {
+            s->quant[level][0] = ff_dirac_default_qmat[s->wavelet_idx][level][0];
+            s->quant[level][1] = ff_dirac_default_qmat[s->wavelet_idx][level][1];
+            s->quant[level][2] = ff_dirac_default_qmat[s->wavelet_idx][level][2];
+            s->quant[level][3] = ff_dirac_default_qmat[s->wavelet_idx][level][3];
+        }
+        return;
+    }
+
+    s->custom_quant_matrix = 1;
 
     if (s->quant_matrix == VC2_QM_DEF) {
         for (level = 0; level < s->wavelet_depth; level++) {
@@ -486,24 +479,14 @@ static void init_custom_qm(VC2EncContext *s)
 /* VC-2 12.3.4.2 - quant_matrix() */
 static void encode_quant_matrix(VC2EncContext *s)
 {
-    int level, custom_quant_matrix = 0;
-    if (s->wavelet_depth > 4 || s->quant_matrix != VC2_QM_DEF)
-        custom_quant_matrix = 1;
-    put_bits(&s->pb, 1, custom_quant_matrix);
-    if (custom_quant_matrix) {
-        init_custom_qm(s);
+    int level;
+    put_bits(&s->pb, 1, s->custom_quant_matrix);
+    if (s->custom_quant_matrix) {
         put_vc2_ue_uint(&s->pb, s->quant[0][0]);
         for (level = 0; level < s->wavelet_depth; level++) {
             put_vc2_ue_uint(&s->pb, s->quant[level][1]);
             put_vc2_ue_uint(&s->pb, s->quant[level][2]);
             put_vc2_ue_uint(&s->pb, s->quant[level][3]);
-        }
-    } else {
-        for (level = 0; level < s->wavelet_depth; level++) {
-            s->quant[level][0] = ff_dirac_default_qmat[s->wavelet_idx][level][0];
-            s->quant[level][1] = ff_dirac_default_qmat[s->wavelet_idx][level][1];
-            s->quant[level][2] = ff_dirac_default_qmat[s->wavelet_idx][level][2];
-            s->quant[level][3] = ff_dirac_default_qmat[s->wavelet_idx][level][3];
         }
     }
 }
@@ -649,53 +632,108 @@ static int rate_control(AVCodecContext *avctx, void *arg)
     VC2EncContext *s = slice_dat->ctx;
     const int sx = slice_dat->x;
     const int sy = slice_dat->y;
-    int bits_last = INT_MAX, quant_buf[2] = {-1, -1};
-    int quant = slice_dat->quant_idx, range = quant/5;
     const int top = slice_dat->bits_ceil;
     const int bottom = slice_dat->bits_floor;
-    int bits = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
-    range -= range & 1; /* Make it an even number */
+    int quant_buf[2] = {-1, -1};
+    int quant = slice_dat->quant_idx, step = 1;
+    int bits_last, bits = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
     while ((bits > top) || (bits < bottom)) {
-        range *= bits > top ? +1 : -1;
-        quant = av_clip(quant + range, 0, s->q_ceil);
-        bits = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
-        range = av_clip(range/2, 1, s->q_ceil);
+        const int signed_step = bits > top ? +step : -step;
+        quant  = av_clip(quant + signed_step, 0, s->q_ceil-1);
+        bits   = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
         if (quant_buf[1] == quant) {
-            quant = bits_last < bits ? quant_buf[0] : quant;
-            bits  = bits_last < bits ? bits_last : bits;
+            quant = FFMAX(quant_buf[0], quant);
+            bits  = quant == quant_buf[0] ? bits_last : bits;
             break;
         }
+        step         = av_clip(step/2, 1, (s->q_ceil-1)/2);
         quant_buf[1] = quant_buf[0];
         quant_buf[0] = quant;
-        bits_last = bits;
+        bits_last    = bits;
     }
-    slice_dat->quant_idx = av_clip(quant, 0, s->q_ceil);
+    slice_dat->quant_idx = av_clip(quant, 0, s->q_ceil-1);
     slice_dat->bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
     slice_dat->bytes_left = s->slice_max_bytes - slice_dat->bytes;
-
     return 0;
 }
 
-static void calc_slice_sizes(VC2EncContext *s)
+static int calc_slice_sizes(VC2EncContext *s)
 {
-    int slice_x, slice_y;
+    int i, slice_x, slice_y, bytes_left = 0;
+    int bytes_top[SLICE_REDIST_TOTAL] = {0};
+    int64_t total_bytes_needed = 0;
+    int slice_redist_range = FFMIN(SLICE_REDIST_TOTAL, s->num_x*s->num_y);
     SliceArgs *enc_args = s->slice_args;
+    SliceArgs *top_loc[SLICE_REDIST_TOTAL] = {NULL};
+
+    init_quant_matrix(s);
 
     for (slice_y = 0; slice_y < s->num_y; slice_y++) {
         for (slice_x = 0; slice_x < s->num_x; slice_x++) {
             SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
             args->ctx = s;
-            args->x = slice_x;
-            args->y = slice_y;
-            args->bits_ceil = s->slice_max_bytes << 3;
+            args->x   = slice_x;
+            args->y   = slice_y;
+            args->bits_ceil  = s->slice_max_bytes << 3;
             args->bits_floor = s->slice_min_bytes << 3;
-            memset(args->cache, 0, MAX_QUANT_INDEX*sizeof(*args->cache));
+            memset(args, 0, s->q_ceil*sizeof(int));
         }
     }
 
-    /* Determine quantization indices and bytes per slice */
+    /* First pass - determine baseline slice sizes w.r.t. max_slice_size */
     s->avctx->execute(s->avctx, rate_control, enc_args, NULL, s->num_x*s->num_y,
                       sizeof(SliceArgs));
+
+    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
+        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
+            SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
+            bytes_left += args->bytes_left;
+            for (i = 0; i < slice_redist_range; i++) {
+                if (args->bytes > bytes_top[i]) {
+                    bytes_top[i] = args->bytes;
+                    top_loc[i]   = args;
+                    break;
+                }
+            }
+        }
+    }
+
+    /* Second pass - distribute leftover bytes */
+    while (1) {
+        int distributed = 0;
+        for (i = 0; i < slice_redist_range; i++) {
+            SliceArgs *args;
+            int bits, bytes, diff, prev_bytes, new_idx;
+            if (bytes_left <= 0)
+                break;
+            if (!top_loc[i] || !top_loc[i]->quant_idx)
+                break;
+            args = top_loc[i];
+            prev_bytes = args->bytes;
+            new_idx = FFMAX(args->quant_idx - 1, 0);
+            bits  = count_hq_slice(s, args->cache, args->x, args->y, new_idx);
+            bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
+            diff  = bytes - prev_bytes;
+            if ((bytes_left - diff) > 0) {
+                args->quant_idx = new_idx;
+                args->bytes = bytes;
+                bytes_left -= diff;
+                distributed++;
+            }
+        }
+        if (!distributed)
+            break;
+    }
+
+    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
+        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
+            SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
+            total_bytes_needed += args->bytes;
+            s->q_avg = (s->q_avg + args->quant_idx)/2;
+        }
+    }
+
+    return total_bytes_needed;
 }
 
 /* VC-2 13.5.3 - hq_slice */
@@ -754,12 +792,8 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
 static int encode_slices(VC2EncContext *s)
 {
     uint8_t *buf;
-    int i, slice_x, slice_y, skip = 0;
-    int bytes_left = 0;
+    int slice_x, slice_y, skip = 0;
     SliceArgs *enc_args = s->slice_args;
-
-    int bytes_top[SLICE_REDIST_TOTAL] = {0};
-    SliceArgs *top_loc[SLICE_REDIST_TOTAL] = {NULL};
 
     avpriv_align_put_bits(&s->pb);
     flush_put_bits(&s->pb);
@@ -768,48 +802,7 @@ static int encode_slices(VC2EncContext *s)
     for (slice_y = 0; slice_y < s->num_y; slice_y++) {
         for (slice_x = 0; slice_x < s->num_x; slice_x++) {
             SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
-            bytes_left += args->bytes_left;
-            for (i = 0; i < FFMIN(SLICE_REDIST_TOTAL, s->num_x*s->num_y); i++) {
-                if (args->bytes > bytes_top[i]) {
-                    bytes_top[i] = args->bytes;
-                    top_loc[i] = args;
-                    break;
-                }
-            }
-        }
-    }
-
-    while (1) {
-        int distributed = 0;
-        for (i = 0; i < FFMIN(SLICE_REDIST_TOTAL, s->num_x*s->num_y); i++) {
-            SliceArgs *args;
-            int bits, bytes, diff, prev_bytes, new_idx;
-            if (bytes_left <= 0)
-                break;
-            if (!top_loc[i] || !top_loc[i]->quant_idx)
-                break;
-            args = top_loc[i];
-            prev_bytes = args->bytes;
-            new_idx = av_clip(args->quant_idx - 1, 0, s->q_ceil);
-            bits = count_hq_slice(s, args->cache, args->x, args->y, new_idx);
-            bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
-            diff = bytes - prev_bytes;
-            if ((bytes_left - diff) >= 0) {
-                args->quant_idx = new_idx;
-                args->bytes = bytes;
-                bytes_left -= diff;
-                distributed++;
-            }
-        }
-        if (!distributed)
-            break;
-    }
-
-    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
-        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
-            SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
-            init_put_bits(&args->pb, buf + skip, args->bytes);
-            s->q_avg = (s->q_avg + args->quant_idx)/2;
+            init_put_bits(&args->pb, buf + skip, args->bytes+s->prefix_bytes);
             skip += args->bytes;
         }
     }
@@ -914,10 +907,36 @@ static int dwt_plane(AVCodecContext *avctx, void *arg)
     return 0;
 }
 
-static void encode_frame(VC2EncContext *s, const AVFrame *frame,
-                         const char *aux_data, int field)
+static int encode_frame(VC2EncContext *s, AVPacket *avpkt, const AVFrame *frame,
+                        const char *aux_data, const int header_size, int field)
 {
-    int i;
+    int i, ret;
+    int64_t max_frame_bytes;
+
+     /* Threaded DWT transform */
+    for (i = 0; i < 3; i++) {
+        s->transform_args[i].ctx   = s;
+        s->transform_args[i].field = field;
+        s->transform_args[i].plane = &s->plane[i];
+        s->transform_args[i].idata = frame->data[i];
+        s->transform_args[i].istride = frame->linesize[i];
+    }
+    s->avctx->execute(s->avctx, dwt_plane, s->transform_args, NULL, 3,
+                      sizeof(TransformArgs));
+
+    /* Calculate per-slice quantizers and sizes */
+    max_frame_bytes = header_size + calc_slice_sizes(s);
+
+    if (field < 2) {
+        ret = ff_alloc_packet2(s->avctx, avpkt,
+                               max_frame_bytes << s->interlaced,
+                               max_frame_bytes << s->interlaced);
+        if (ret) {
+            av_log(s->avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+            return ret;
+        }
+        init_put_bits(&s->pb, avpkt->data, avpkt->size);
+    }
 
     /* Sequence header */
     encode_parse_info(s, DIRAC_PCODE_SEQ_HEADER);
@@ -933,38 +952,25 @@ static void encode_frame(VC2EncContext *s, const AVFrame *frame,
     encode_parse_info(s, DIRAC_PCODE_PICTURE_HQ);
     encode_picture_start(s);
 
-    for (i = 0; i < 3; i++) {
-        s->transform_args[i].ctx   = s;
-        s->transform_args[i].field = field;
-        s->transform_args[i].plane = &s->plane[i];
-        s->transform_args[i].idata = frame->data[i];
-        s->transform_args[i].istride = frame->linesize[i];
-    }
-
-    /* Do a DWT transform */
-    s->avctx->execute(s->avctx, dwt_plane, s->transform_args, NULL, 3,
-                      sizeof(TransformArgs));
-
-    /* Calculate per-slice quantizers and sizes */
-    calc_slice_sizes(s);
-
-    /* Init planes and encode slices */
+    /* Encode slices */
     encode_slices(s);
 
     /* End sequence */
     encode_parse_info(s, DIRAC_PCODE_END_SEQ);
+
+    return 0;
 }
 
 static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                                       const AVFrame *frame, int *got_packet_ptr)
 {
-    int ret;
-    int max_frame_bytes, sig_size = 256;
+    int ret = 0;
+    int sig_size = 256;
     VC2EncContext *s = avctx->priv_data;
     const char aux_data[] = LIBAVCODEC_IDENT;
     const int aux_data_size = sizeof(aux_data);
     const int header_size = 100 + aux_data_size;
-    int64_t r_bitrate = avctx->bit_rate >> (s->interlaced);
+    int64_t max_frame_bytes, r_bitrate = avctx->bit_rate >> (s->interlaced);
 
     s->avctx = avctx;
     s->size_scaler = 1;
@@ -987,17 +993,14 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     s->slice_min_bytes = s->slice_max_bytes - s->slice_max_bytes*(s->tolerance/100.0f);
 
-    ret = ff_alloc_packet2(avctx, avpkt, max_frame_bytes*3, 0);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    ret = encode_frame(s, avpkt, frame, aux_data, header_size, s->interlaced);
+    if (ret)
         return ret;
-    } else {
-        init_put_bits(&s->pb, avpkt->data, avpkt->size);
+    if (s->interlaced) {
+        ret = encode_frame(s, avpkt, frame, aux_data, header_size, 2);
+        if (ret)
+            return ret;
     }
-
-    encode_frame(s, frame, aux_data, s->interlaced);
-    if (s->interlaced)
-        encode_frame(s, frame, NULL, 2);
 
     flush_put_bits(&s->pb);
     avpkt->size = put_bits_count(&s->pb) >> 3;
@@ -1026,24 +1029,13 @@ static av_cold int vc2_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static int minimum_frame_bits(VC2EncContext *s)
-{
-    int slice_x, slice_y, bits = 0;
-    s->size_scaler = 64;
-    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
-        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
-            bits += count_hq_slice(s, NULL, slice_x, slice_y, s->q_ceil);
-        }
-    }
-    return bits;
-}
-
 static av_cold int vc2_encode_init(AVCodecContext *avctx)
 {
     Plane *p;
     SubBand *b;
     int i, j, level, o, shift;
-    int64_t bits_per_frame, min_bits_per_frame;
+    const AVPixFmtDescriptor *fmt = av_pix_fmt_desc_get(avctx->pix_fmt);
+    const int depth = fmt->comp[0].depth;
     VC2EncContext *s = avctx->priv_data;
 
     s->picture_number = 0;
@@ -1131,7 +1123,28 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_INFO, "Selected base video format = %i\n", s->base_vf);
     }
 
+    /* Chroma subsampling */
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+
+    /* Bit depth and color range index */
+    if (depth == 8 && avctx->color_range == AVCOL_RANGE_JPEG) {
+        s->bpp = 1;
+        s->bpp_idx = 1;
+        s->diff_offset = 128;
+    } else if (depth == 8 && (avctx->color_range == AVCOL_RANGE_MPEG ||
+               avctx->color_range == AVCOL_RANGE_UNSPECIFIED)) {
+        s->bpp = 1;
+        s->bpp_idx = 2;
+        s->diff_offset = 128;
+    } else if (depth == 10) {
+        s->bpp = 2;
+        s->bpp_idx = 3;
+        s->diff_offset = 512;
+    } else {
+        s->bpp = 2;
+        s->bpp_idx = 4;
+        s->diff_offset = 2048;
+    }
 
     /* Planes initialization */
     for (i = 0; i < 3; i++) {
@@ -1176,34 +1189,21 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         goto alloc_fail;
 
     /* Lookup tables */
-    s->coef_lut_len = av_malloc(COEF_LUT_TAB*s->q_ceil*sizeof(*s->coef_lut_len));
+    s->coef_lut_len = av_malloc(COEF_LUT_TAB*(s->q_ceil+1)*sizeof(*s->coef_lut_len));
     if (!s->coef_lut_len)
         goto alloc_fail;
 
-    s->coef_lut_val = av_malloc(COEF_LUT_TAB*s->q_ceil*sizeof(*s->coef_lut_val));
+    s->coef_lut_val = av_malloc(COEF_LUT_TAB*(s->q_ceil+1)*sizeof(*s->coef_lut_val));
     if (!s->coef_lut_val)
         goto alloc_fail;
 
     for (i = 0; i < s->q_ceil; i++) {
+        uint8_t  *len_lut = &s->coef_lut_len[i*COEF_LUT_TAB];
+        uint32_t *val_lut = &s->coef_lut_val[i*COEF_LUT_TAB];
         for (j = 0; j < COEF_LUT_TAB; j++) {
-            uint8_t  *len_lut = &s->coef_lut_len[i*COEF_LUT_TAB];
-            uint32_t *val_lut = &s->coef_lut_val[i*COEF_LUT_TAB];
             get_vc2_ue_uint(QUANT(j, ff_dirac_qscale_tab[i]),
                             &len_lut[j], &val_lut[j]);
         }
-    }
-
-    bits_per_frame = av_rescale(avctx->bit_rate, avctx->time_base.num,
-                                 avctx->time_base.den);
-    min_bits_per_frame = minimum_frame_bits(s) + 8*sizeof(LIBAVCODEC_IDENT) + 8*40 + 8*20000;
-    if (bits_per_frame < min_bits_per_frame) {
-        if (s->interlaced)
-            min_bits_per_frame += min_bits_per_frame + min_bits_per_frame/2;
-        avctx->bit_rate = av_rescale(min_bits_per_frame, avctx->time_base.den,
-                                     avctx->time_base.num);
-        av_log(avctx, AV_LOG_WARNING,
-               "Bitrate too low, clipping to minimum = %li Mbps!\n",
-               avctx->bit_rate/1000000);
     }
 
     return 0;
