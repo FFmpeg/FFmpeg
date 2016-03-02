@@ -1754,9 +1754,9 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x - 1;
     //block_index is not used by mpeg2, so it is not affected by chroma_format
 
-    s->dest[0] = s->current_picture.f->data[0] + ((s->mb_x - 1) <<  mb_size);
-    s->dest[1] = s->current_picture.f->data[1] + ((s->mb_x - 1) << (mb_size - s->chroma_x_shift));
-    s->dest[2] = s->current_picture.f->data[2] + ((s->mb_x - 1) << (mb_size - s->chroma_x_shift));
+    s->dest[0] = s->current_picture.f->data[0] + (s->mb_x - 1) * (1 << mb_size);
+    s->dest[1] = s->current_picture.f->data[1] + (s->mb_x - 1) * (1 << (mb_size - s->chroma_x_shift));
+    s->dest[2] = s->current_picture.f->data[2] + (s->mb_x - 1) * (1 << (mb_size - s->chroma_x_shift));
 
     if(!(s->pict_type==AV_PICTURE_TYPE_B && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME))
     {
