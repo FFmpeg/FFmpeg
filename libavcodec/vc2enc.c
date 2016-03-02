@@ -506,7 +506,6 @@ static void encode_wavelet_transform(VC2EncContext *s)
 {
     encode_transform_params(s);
     avpriv_align_put_bits(&s->pb);
-    /* Continued after DWT in encode_transform_data() */
 }
 
 /* VC-2 12 - picture_parse() */
@@ -542,7 +541,7 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
             const int neg = coeff[x] < 0;
             uint32_t c_abs = FFABS(coeff[x]);
             if (c_abs < COEF_LUT_TAB) {
-                const uint8_t len  = len_lut[c_abs];
+                const uint8_t len = len_lut[c_abs];
                 if (len == 1)
                     put_bits(pb, 1, 1);
                 else
@@ -961,7 +960,7 @@ static int encode_frame(VC2EncContext *s, AVPacket *avpkt, const AVFrame *frame,
 }
 
 static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
-                                      const AVFrame *frame, int *got_packet_ptr)
+                                      const AVFrame *frame, int *got_packet)
 {
     int ret = 0;
     int sig_size = 256;
@@ -984,7 +983,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     /* Find an appropriate size scaler */
     while (sig_size > 255) {
         s->slice_max_bytes = FFALIGN(av_rescale(max_frame_bytes, 1,
-                                     s->num_x*s->num_y), s->size_scaler);
+                                                s->num_x*s->num_y), s->size_scaler);
         s->slice_max_bytes += 4 + s->prefix_bytes;
         sig_size = s->slice_max_bytes/s->size_scaler; /* Signalled slize size */
         s->size_scaler <<= 1;
@@ -1004,7 +1003,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     flush_put_bits(&s->pb);
     avpkt->size = put_bits_count(&s->pb) >> 3;
 
-    *got_packet_ptr = 1;
+    *got_packet = 1;
 
     return 0;
 }
