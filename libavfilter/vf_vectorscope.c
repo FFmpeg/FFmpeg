@@ -112,12 +112,12 @@ static const enum AVPixelFormat out_yuv8_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat out_yuv9_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P9,
+    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUV444P9,
     AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat out_yuv10_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_NONE
 };
 
@@ -139,6 +139,7 @@ static const enum AVPixelFormat out_rgb10_pix_fmts[] = {
 static const enum AVPixelFormat in1_pix_fmts[] = {
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
     AV_PIX_FMT_NONE
@@ -154,6 +155,8 @@ static const enum AVPixelFormat in2_pix_fmts[] = {
     AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
     AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
+    AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_NONE
 };
 
