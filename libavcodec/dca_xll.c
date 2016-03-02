@@ -602,7 +602,7 @@ static int chs_parse_band_data(DCAXllDecoder *s, DCAXllChSet *c, int band, int s
     return 0;
 }
 
-static void av_cold chs_clear_band_data(DCAXllDecoder *s, DCAXllChSet *c, int band, int seg)
+static av_cold void chs_clear_band_data(DCAXllDecoder *s, DCAXllChSet *c, int band, int seg)
 {
     DCAXllBand *b = &c->bands[band];
     int i, offset, nsamples;
@@ -1242,7 +1242,7 @@ static void scale_down_mix(DCAXllDecoder *s, DCAXllChSet *o, int band)
 
 // Clear all band data and replace non-residual encoded channels with lossy
 // counterparts
-static void av_cold force_lossy_output(DCAXllDecoder *s, DCAXllChSet *c)
+static av_cold void force_lossy_output(DCAXllDecoder *s, DCAXllChSet *c)
 {
     DCAContext *dca = s->avctx->priv_data;
     int band, ch;
