@@ -1229,7 +1229,7 @@ static int draw_background(AVFilterContext *ctx)
 
     tongue_outline(pixels, s->f->linesize[0] / 2, w, h, 65535, s->cie);
 
-    fill_in_tongue(pixels, s->f->linesize[0] / 2, w, h, 65535, cs, s->i, s->cie,
+    fill_in_tongue(pixels, s->f->linesize[0] / 2, w, h, 65535, cs, (const double (*)[3])s->i, s->cie,
                    s->correct_gamma, s->contrast);
 
     return 0;
@@ -1244,7 +1244,7 @@ static void filter_rgb48(AVFilterContext *ctx, AVFrame *in, double *cx, double *
     double b = src[2] / 65535.;
     double cz;
 
-    rgb_to_xy(r, g, b, cx, cy, &cz, s->m);
+    rgb_to_xy(r, g, b, cx, cy, &cz, (const double (*)[3])s->m);
 }
 
 static void filter_rgba64(AVFilterContext *ctx, AVFrame *in, double *cx, double *cy, int x, int y)
@@ -1256,7 +1256,7 @@ static void filter_rgba64(AVFilterContext *ctx, AVFrame *in, double *cx, double 
     double b = src[2] / 65535.;
     double cz;
 
-    rgb_to_xy(r, g, b, cx, cy, &cz, s->m);
+    rgb_to_xy(r, g, b, cx, cy, &cz, (const double (*)[3])s->m);
 }
 
 static void filter_rgb24(AVFilterContext *ctx, AVFrame *in, double *cx, double *cy, int x, int y)
@@ -1268,7 +1268,7 @@ static void filter_rgb24(AVFilterContext *ctx, AVFrame *in, double *cx, double *
     double b = src[2] / 255.;
     double cz;
 
-    rgb_to_xy(r, g, b, cx, cy, &cz, s->m);
+    rgb_to_xy(r, g, b, cx, cy, &cz, (const double (*)[3])s->m);
 }
 
 static void filter_rgba(AVFilterContext *ctx, AVFrame *in, double *cx, double *cy, int x, int y)
@@ -1280,7 +1280,7 @@ static void filter_rgba(AVFilterContext *ctx, AVFrame *in, double *cx, double *c
     double b = src[2] / 255.;
     double cz;
 
-    rgb_to_xy(r, g, b, cx, cy, &cz, s->m);
+    rgb_to_xy(r, g, b, cx, cy, &cz, (const double (*)[3])s->m);
 }
 
 static void filter_xyz(AVFilterContext *ctx, AVFrame *in, double *cx, double *cy, int x, int y)
