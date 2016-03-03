@@ -13161,6 +13161,20 @@ Similar as above, but shows difference between blue and red chroma.
 @item color
 Displays actual color value on waveform.
 @end table
+
+@item graticule, g
+Set which graticule to display.
+
+@table @samp
+@item none
+Do not display graticule.
+
+@item green
+Display green graticule showing legal broadcast ranges.
+@end table
+
+@item opacity, o
+Set graticule opacity.
 @end table
 
 @section xbr
