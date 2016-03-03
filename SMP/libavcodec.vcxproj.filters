@@ -133,7 +133,10 @@
     <YASM Include="..\libavcodec\x86\rv34dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
-    <YASM Include="..\libavcodec\x86\vc1dsp.asm">
+    <YASM Include="..\libavcodec\x86\vc1dsp_loopfilter.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavcodec\x86\vc1dsp_mc.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\simple_idct10.asm">

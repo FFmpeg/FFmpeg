@@ -132,6 +132,9 @@
     <ClCompile Include="..\libavfilter\video.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\f_bench.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_sidechaincompress.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

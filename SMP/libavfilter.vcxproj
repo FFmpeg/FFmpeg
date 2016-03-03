@@ -104,6 +104,7 @@
     <ClCompile Include="..\libavfilter\opencl_allkernels.c" />
     <ClCompile Include="..\libavfilter\transform.c" />
     <ClCompile Include="..\libavfilter\video.c" />
+    <ClCompile Include="..\libavfilter\f_bench.c" />
     <ClCompile Include="..\libavfilter\af_sidechaincompress.c" />
     <ClCompile Include="..\libavfilter\af_afade.c" />
     <ClCompile Include="..\libavfilter\af_adelay.c" />

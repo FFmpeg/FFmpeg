@@ -103,7 +103,8 @@
     <YASM Include="..\libavcodec\x86\pixblockdsp.asm" />
     <YASM Include="..\libavcodec\x86\qpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
-    <YASM Include="..\libavcodec\x86\vc1dsp.asm" />
+    <YASM Include="..\libavcodec\x86\vc1dsp_loopfilter.asm" />
+    <YASM Include="..\libavcodec\x86\vc1dsp_mc.asm" />
     <YASM Include="..\libavcodec\x86\simple_idct10.asm" />
     <YASM Include="..\libavcodec\x86\videodsp.asm" />
     <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
@@ -298,9 +299,7 @@
     <ClCompile Include="..\libavcodec\texturedsp.c" />
     <ClCompile Include="..\libavcodec\texturedspenc.c" />
     <ClCompile Include="..\libavcodec\tpeldsp.c" />
-    <ClCompile Include="..\libavcodec\vc1dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vc1dsp.obj</ObjectFileName>
-    </ClCompile>
+    <ClCompile Include="..\libavcodec\vc1dsp.c" />
     <ClCompile Include="..\libavcodec\videodsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_videodsp.obj</ObjectFileName>
     </ClCompile>
