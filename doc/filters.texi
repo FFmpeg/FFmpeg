@@ -12639,6 +12639,20 @@ Draw graticule for black point.
 
 @item bgopacity, b
 Set background opacity.
+
+@item lthreshold, l
+Set low threshold for color component not represented on X or Y axis.
+Values lower than this value will be ignored. Default is 0.
+Note this value is multiplied with actual max possible value one pixel component
+can have. So for 8-bit input and low threshold value of 0.1 actual threshold
+is 0.1 * 255 = 25.
+
+@item hthreshold, h
+Set high threshold for color component not represented on X or Y axis.
+Values higher than this value will be ignored. Default is 1.
+Note this value is multiplied with actual max possible value one pixel component
+can have. So for 8-bit input and high threshold value of 0.9 actual threshold
+is 0.9 * 255 = 230.
 @end table
 
 @anchor{vidstabdetect}

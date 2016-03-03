@@ -56,6 +56,10 @@ typedef struct VectorscopeContext {
     int graticule;
     float opacity;
     float bgopacity;
+    float lthreshold;
+    float hthreshold;
+    int tmin;
+    int tmax;
     int flags;
     int cs;
     uint8_t peak[1024][1024];
@@ -101,6 +105,10 @@ static const AVOption vectorscope_options[] = {
     {   "black", "draw black point", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "flags" },
     { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
     { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
+    { "lthreshold", "set low threshold",  OFFSET(lthreshold), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, 1, FLAGS},
+    { "l",          "set low threshold",  OFFSET(lthreshold), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, 1, FLAGS},
+    { "hthreshold", "set high threshold", OFFSET(hthreshold), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, FLAGS},
+    { "h",          "set high threshold", OFFSET(hthreshold), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, FLAGS},
     { NULL }
 };
 
@@ -371,6 +379,8 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
     uint16_t *dpd = dst[pd];
     const int max = s->size - 1;
     const int mid = s->size / 2;
+    const int tmin = s->tmin;
+    const int tmax = s->tmax;
     int i, j, k;
 
     for (k = 0; k < 4 && dst[k]; k++) {
@@ -388,10 +398,15 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
             for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
                 const int iwy = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = FFMIN(spx[iwx + j], max);
                     const int y = FFMIN(spy[iwy + j], max);
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     dpd[pos] = FFMIN(dpd[pos] + intensity, max);
                     if (dst[3])
@@ -402,10 +417,15 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
             for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
                 const int iwy = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = FFMIN(spx[iwx + j], max);
                     const int y = FFMIN(spy[iwy + j], max);
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     dst[0][pos] = FFMIN(dst[0][pos] + intensity, max);
                     dst[1][pos] = FFMIN(dst[1][pos] + intensity, max);
@@ -421,10 +441,15 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
             for (i = 0; i < h; i++) {
                 const int iw1 = i * slinesizex;
                 const int iw2 = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = FFMIN(spx[iw1 + j], max);
                     const int y = FFMIN(spy[iw2 + j], max);
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     if (!dpd[pos])
                         dpd[pos] = FFABS(mid - x) + FFABS(mid - y);
@@ -438,10 +463,15 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
             for (i = 0; i < h; i++) {
                 const int iw1 = i * slinesizex;
                 const int iw2 = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = FFMIN(spx[iw1 + j], max);
                     const int y = FFMIN(spy[iw2 + j], max);
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     if (!dpd[pos])
                         dpd[pos] = FFMIN(x + y, max);
@@ -457,10 +487,15 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
         for (i = 0; i < h; i++) {
             const int iw1 = i * slinesizex;
             const int iw2 = i * slinesizey;
+            const int iwd = i * slinesized;
             for (j = 0; j < w; j++) {
                 const int x = FFMIN(spx[iw1 + j], max);
                 const int y = FFMIN(spy[iw2 + j], max);
+                const int z = spd[iwd + j];
                 const int pos = y * dlinesize + x;
+
+                if (z < tmin || z > tmax)
+                    continue;
 
                 dpd[pos] = FFMIN(max, dpd[pos] + intensity);
                 dpx[pos] = x;
@@ -478,9 +513,13 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
             for (j = 0; j < in->width; j++) {
                 const int x = FFMIN(spx[iwx + (j >> hsub)], max);
                 const int y = FFMIN(spy[iwy + (j >> hsub)], max);
+                const int z = spd[iwd + j];
                 const int pos = y * dlinesize + x;
 
-                dpd[pos] = FFMAX(spd[iwd + j], dpd[pos]);
+                if (z < tmin || z > tmax)
+                    continue;
+
+                dpd[pos] = FFMAX(z, dpd[pos]);
                 dpx[pos] = x;
                 dpy[pos] = y;
                 if (dst[3])
@@ -537,6 +576,8 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
     uint8_t *dpx = dst[px];
     uint8_t *dpy = dst[py];
     uint8_t *dpd = dst[pd];
+    const int tmin = s->tmin;
+    const int tmax = s->tmax;
     int i, j, k;
 
     for (k = 0; k < 4 && dst[k]; k++)
@@ -552,10 +593,15 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
             for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
                 const int iwy = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = spx[iwx + j];
                     const int y = spy[iwy + j];
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     dpd[pos] = FFMIN(dpd[pos] + intensity, 255);
                     if (dst[3])
@@ -566,10 +612,15 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
             for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
                 const int iwy = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = spx[iwx + j];
                     const int y = spy[iwy + j];
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     dst[0][pos] = FFMIN(dst[0][pos] + intensity, 255);
                     dst[1][pos] = FFMIN(dst[1][pos] + intensity, 255);
@@ -585,10 +636,15 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
             for (i = 0; i < h; i++) {
                 const int iw1 = i * slinesizex;
                 const int iw2 = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = spx[iw1 + j];
                     const int y = spy[iw2 + j];
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     if (!dpd[pos])
                         dpd[pos] = FFABS(128 - x) + FFABS(128 - y);
@@ -602,10 +658,15 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
             for (i = 0; i < h; i++) {
                 const int iw1 = i * slinesizex;
                 const int iw2 = i * slinesizey;
+                const int iwd = i * slinesized;
                 for (j = 0; j < w; j++) {
                     const int x = spx[iw1 + j];
                     const int y = spy[iw2 + j];
+                    const int z = spd[iwd + j];
                     const int pos = y * dlinesize + x;
+
+                    if (z < tmin || z > tmax)
+                        continue;
 
                     if (!dpd[pos])
                         dpd[pos] = FFMIN(x + y, 255);
@@ -621,10 +682,15 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
         for (i = 0; i < h; i++) {
             const int iw1 = i * slinesizex;
             const int iw2 = i * slinesizey;
+            const int iwd = i * slinesized;
             for (j = 0; j < w; j++) {
                 const int x = spx[iw1 + j];
                 const int y = spy[iw2 + j];
+                const int z = spd[iwd + j];
                 const int pos = y * dlinesize + x;
+
+                if (z < tmin || z > tmax)
+                    continue;
 
                 dpd[pos] = FFMIN(255, dpd[pos] + intensity);
                 dpx[pos] = x;
@@ -642,9 +708,13 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
             for (j = 0; j < in->width; j++) {
                 const int x = spx[iwx + (j >> hsub)];
                 const int y = spy[iwy + (j >> hsub)];
+                const int z = spd[iwd + j];
                 const int pos = y * dlinesize + x;
 
-                dpd[pos] = FFMAX(spd[iwd + j], dpd[pos]);
+                if (z < tmin || z > tmax)
+                    continue;
+
+                dpd[pos] = FFMAX(z, dpd[pos]);
                 dpx[pos] = x;
                 dpy[pos] = y;
                 if (dst[3])
@@ -963,12 +1033,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int config_input(AVFilterLink *inlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    VectorscopeContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    VectorscopeContext *s = ctx->priv;
 
     s->is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB);
     s->size = 1 << desc->comp[0].depth;
     s->mult = s->size / 256;
     s->depth = desc->comp[0].depth;
+    s->tmin = s->lthreshold * (s->size - 1);
+    s->tmax = s->hthreshold * (s->size - 1);
+
+    if (s->tmin > s->tmax) {
+        av_log(ctx, AV_LOG_ERROR, "low threshold should be less than high threshold\n");
+        return AVERROR(EINVAL);
+    }
 
     if (s->mode == GRAY && s->is_yuv)
         s->pd = 0;
