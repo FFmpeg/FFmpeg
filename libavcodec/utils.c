@@ -3682,9 +3682,9 @@ AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx)
 
 #ifdef TEST
 int main(void){
-    avcodec_register_all();
     AVCodec *codec = NULL;
     int ret = 0;
+    avcodec_register_all();
 
     while (codec = av_codec_next(codec)) {
         if (av_codec_is_encoder(codec)) {
