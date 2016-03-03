@@ -3,12 +3,15 @@ fate-filter-adelay: tests/data/asynth-44100-2.wav
 fate-filter-adelay: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-adelay: CMD = framecrc -i $(SRC) -af adelay=42
 
-FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-filter-hls1 fate-filter-hls2
-fate-filter-hls1: CMD = run ffmpeg -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t)::d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
-                                   -segment_list $(TARGET_PATH)/tests/data/hls-list.m3u8 $(TARGET_PATH)/tests/data/hls-out-%03d.ts
-fate-filter-hls1: REF = /dev/null
-fate-filter-hls2: fate-filter-hls1
-fate-filter-hls2: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls-list.m3u8
+tests/data/hls-list.m3u8: TAG = GEN
+tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t)::d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
+        -segment_list $(TARGET_PATH)/$@ -y $(TARGET_PATH)/tests/data/hls-out-%03d.ts 2>/dev/null
+
+FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-filter-hls
+fate-filter-hls: tests/data/hls-list.m3u8
+fate-filter-hls: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls-list.m3u8
 
 FATE_AMIX += fate-filter-amix-simple
 fate-filter-amix-simple: CMD = ffmpeg -filter_complex amix -i $(SRC) -ss 3 -i $(SRC1) -f f32le -
