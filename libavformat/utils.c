@@ -4782,18 +4782,27 @@ int ff_standardize_creation_time(AVFormatContext *s)
     return ret;
 }
 
-int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, const uint8_t **palette)
+int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette)
 {
+    uint8_t *side_data;
     int size;
 
-    *palette = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
-    if (*palette && size != AVPALETTE_SIZE) {
-        av_log(s, AV_LOG_ERROR, "Invalid palette side data\n");
-        return AVERROR_INVALIDDATA;
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
+    if (side_data) {
+        if (size != AVPALETTE_SIZE) {
+            av_log(s, AV_LOG_ERROR, "Invalid palette side data\n");
+            return AVERROR_INVALIDDATA;
+        }
+        memcpy(palette, side_data, AVPALETTE_SIZE);
+        return 1;
     }
 
-    if (!*palette && ret == CONTAINS_PAL)
-        *palette = pkt->data + pkt->size - AVPALETTE_SIZE;
+    if (ret == CONTAINS_PAL) {
+        int i;
+        for (i = 0; i < AVPALETTE_COUNT; i++)
+            palette[i] = AV_RL32(pkt->data + pkt->size - AVPALETTE_SIZE + i*4);
+        return 1;
+    }
 
     return 0;
 }

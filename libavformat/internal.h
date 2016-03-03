@@ -588,9 +588,12 @@ int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *en
  *
  * Use 0 for the ret parameter to check for side data only.
  *
- * @param pkt pointer to the packet before calling ff_reshuffle_raw_rgb()
+ * @param pkt pointer to packet before calling ff_reshuffle_raw_rgb()
  * @param ret return value from ff_reshuffle_raw_rgb(), or 0
+ * @param palette pointer to palette buffer
+ * @return negative error code or
+ *         1 if the packet has a palette, else 0
  */
-int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, const uint8_t **palette);
+int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette);
 
 #endif /* AVFORMAT_INTERNAL_H */
