@@ -453,8 +453,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->src_format.pixel_type = desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
         s->src_format.color_family = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
         s->src_format.matrix_coefficients = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : s->colorspace_in == -1 ? convert_matrix(in->colorspace) : s->colorspace_in;
-        s->src_format.transfer_characteristics = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_TRANSFER_UNSPECIFIED : s->trc_in == - 1 ? convert_trc(in->color_trc) : s->trc_in;
-        s->src_format.color_primaries = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_PRIMARIES_UNSPECIFIED : s->primaries_in == -1 ? convert_primaries(in->color_primaries) : s->primaries_in;
+        s->src_format.transfer_characteristics = s->trc_in == - 1 ? convert_trc(in->color_trc) : s->trc_in;
+        s->src_format.color_primaries = s->primaries_in == -1 ? convert_primaries(in->color_primaries) : s->primaries_in;
         s->src_format.pixel_range = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : s->range_in == -1 ? convert_range(in->color_range) : s->range_in;
 
         s->dst_format.width = out->width;
@@ -465,8 +465,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->dst_format.pixel_type = odesc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
         s->dst_format.color_family = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
         s->dst_format.matrix_coefficients = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : s->colorspace == -1 ? convert_matrix(out->colorspace) : s->colorspace;
-        s->dst_format.transfer_characteristics = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_TRANSFER_UNSPECIFIED : s->trc == -1 ? convert_trc(out->color_trc) : s->trc;
-        s->dst_format.color_primaries = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_PRIMARIES_UNSPECIFIED : s->primaries == -1 ? convert_primaries(out->color_primaries) : s->primaries;
+        s->dst_format.transfer_characteristics = s->trc == -1 ? convert_trc(out->color_trc) : s->trc;
+        s->dst_format.color_primaries = s->primaries == -1 ? convert_primaries(out->color_primaries) : s->primaries;
         s->dst_format.pixel_range = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : s->range == -1 ? convert_range(out->color_range) : s->range;
 
         if (s->colorspace != -1)
