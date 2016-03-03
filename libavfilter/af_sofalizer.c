@@ -269,7 +269,7 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     sp_r = s->sofa.sp_r = av_malloc_array(m_dim, sizeof(float));
     /* delay and IR values required for each ear and measurement position: */
     data_delay = s->sofa.data_delay = av_calloc(m_dim, 2 * sizeof(int));
-    data_ir = s->sofa.data_ir = av_malloc_array(m_dim * n_samples, sizeof(float) * 2);
+    data_ir = s->sofa.data_ir = av_calloc(m_dim * FFALIGN(n_samples, 16), sizeof(float) * 2);
 
     if (!data_delay || !sp_a || !sp_e || !sp_r || !data_ir) {
         /* if memory could not be allocated */
@@ -351,6 +351,8 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     s->sofa.n_samples = n_samples; /* length on one IR */
     s->sofa.ncid = ncid; /* netCDF ID of SOFA file */
     nc_close(ncid); /* close SOFA file */
+
+    av_log(ctx, AV_LOG_DEBUG, "m_dim: %d n_samples %d\n", m_dim, n_samples);
 
     return 0;
 
@@ -554,7 +556,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 /* LFE is an input channel but requires no convolution */
                 /* apply gain to LFE signal and add to output buffer */
                 *dst += *(buffer[s->lfe_channel] + wr) * s->gain_lfe;
-                temp_ir += n_samples;
+                temp_ir += FFALIGN(n_samples, 16);
                 continue;
             }
 
@@ -574,7 +576,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
 
             /* multiply signal and IR, and add up the results */
             dst[0] += s->fdsp->scalarproduct_float(temp_ir, temp_src, n_samples);
-            temp_ir += n_samples;
+            temp_ir += FFALIGN(n_samples, 16);
         }
 
         /* clippings counter */
@@ -812,8 +814,8 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
         s->temp_src[1] = av_calloc(FFALIGN(n_samples, 16), sizeof(float));
 
         /* get temporary IR for L and R channel */
-        data_ir_l = av_malloc_array(n_conv * n_samples, sizeof(*data_ir_l));
-        data_ir_r = av_malloc_array(n_conv * n_samples, sizeof(*data_ir_r));
+        data_ir_l = av_calloc(n_conv * FFALIGN(n_samples, 16), sizeof(*data_ir_l));
+        data_ir_r = av_calloc(n_conv * FFALIGN(n_samples, 16), sizeof(*data_ir_r));
         if (!data_ir_r || !data_ir_l || !s->temp_src[0] || !s->temp_src[1]) {
             av_free(data_ir_l);
             av_free(data_ir_r);
@@ -842,7 +844,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
         delay_r[i] = *(s->sofa.data_delay + 2 * m[i] + 1);
 
         if (s->type == TIME_DOMAIN) {
-            offset = i * n_samples; /* no. samples already written */
+            offset = i * FFALIGN(n_samples, 16); /* no. samples already written */
             for (j = 0; j < n_samples; j++) {
                 /* load reversed IRs of the specified source position
                  * sample-by-sample for left and right ear; and apply gain */
@@ -889,8 +891,8 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
 
     if (s->type == TIME_DOMAIN) {
         /* copy IRs and delays to allocated memory in the SOFAlizerContext struct: */
-        memcpy(s->data_ir[0], data_ir_l, sizeof(float) * n_conv * n_samples);
-        memcpy(s->data_ir[1], data_ir_r, sizeof(float) * n_conv * n_samples);
+        memcpy(s->data_ir[0], data_ir_l, sizeof(float) * n_conv * FFALIGN(n_samples, 16));
+        memcpy(s->data_ir[1], data_ir_r, sizeof(float) * n_conv * FFALIGN(n_samples, 16));
 
         av_freep(&data_ir_l); /* free temporary IR memory */
         av_freep(&data_ir_r);
@@ -1006,8 +1008,8 @@ static int config_input(AVFilterLink *inlink)
 
     /* Allocate memory for the impulse responses, delays and the ringbuffers */
     /* size: (longest IR) * (number of channels to convolute) */
-    s->data_ir[0] = av_malloc_array(n_max_ir, sizeof(float) * s->n_conv);
-    s->data_ir[1] = av_malloc_array(n_max_ir, sizeof(float) * s->n_conv);
+    s->data_ir[0] = av_calloc(FFALIGN(n_max_ir, 16), sizeof(float) * s->n_conv);
+    s->data_ir[1] = av_calloc(FFALIGN(n_max_ir, 16), sizeof(float) * s->n_conv);
     /* length:  number of channels to convolute */
     s->delay[0] = av_malloc_array(s->n_conv, sizeof(float));
     s->delay[1] = av_malloc_array(s->n_conv, sizeof(float));
