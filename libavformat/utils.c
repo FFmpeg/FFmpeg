@@ -2431,8 +2431,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    estimate_timings(ic, old_offset);
-
     compute_chapters_end(ic);
 
     /* update the stream parameters from the internal codec contexts */
@@ -2464,6 +2462,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         st->internal->avctx_inited = 0;
     }
+
+    estimate_timings(ic, old_offset);
 
 find_stream_info_err:
     for (i = 0; i < ic->nb_streams; i++) {
