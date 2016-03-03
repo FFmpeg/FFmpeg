@@ -983,7 +983,7 @@ static int udp_close(URLContext *h)
     return 0;
 }
 
-URLProtocol ff_udp_protocol = {
+const URLProtocol ff_udp_protocol = {
     .name                = "udp",
     .url_open            = udp_open,
     .url_read            = udp_read,
@@ -995,7 +995,7 @@ URLProtocol ff_udp_protocol = {
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };
 
-URLProtocol ff_udplite_protocol = {
+const URLProtocol ff_udplite_protocol = {
     .name                = "udplite",
     .url_open            = udplite_open,
     .url_read            = udp_read,

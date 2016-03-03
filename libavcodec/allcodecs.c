@@ -604,6 +604,7 @@ void avcodec_register_all(void)
      * above is available */
     REGISTER_ENCODER(LIBOPENH264,       libopenh264);
     REGISTER_ENCODER(H264_QSV,          h264_qsv);
+    REGISTER_ENCODER(H264_VIDEOTOOLBOX, h264_videotoolbox);
     REGISTER_ENCODER(NVENC,             nvenc);
     REGISTER_ENCODER(NVENC_H264,        nvenc_h264);
     REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);

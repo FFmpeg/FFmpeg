@@ -281,6 +281,7 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
         put_amf_double(pb, 0.0);
     }
 
+    ff_standardize_creation_time(s);
     while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         if(   !strcmp(tag->key, "width")
             ||!strcmp(tag->key, "height")

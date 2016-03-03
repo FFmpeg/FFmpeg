@@ -193,6 +193,7 @@ int ff_ape_write_tag(AVFormatContext *s)
                      APE_TAG_FLAG_IS_HEADER);
     ffio_fill(dyn_bc, 0, 8);             // reserved
 
+    ff_standardize_creation_time(s);
     while ((e = av_dict_get(s->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
         int val_len;
 

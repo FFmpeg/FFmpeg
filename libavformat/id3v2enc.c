@@ -242,6 +242,7 @@ int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
                                   ID3v2_ENCODING_UTF8;
     int i, ret;
 
+    ff_standardize_creation_time(s);
     if ((ret = write_metadata(s->pb, &s->metadata, id3, enc)) < 0)
         return ret;
 

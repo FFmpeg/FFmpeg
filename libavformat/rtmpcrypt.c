@@ -325,7 +325,7 @@ static const AVClass ffrtmpcrypt_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_ffrtmpcrypt_protocol = {
+const URLProtocol ff_ffrtmpcrypt_protocol = {
     .name            = "ffrtmpcrypt",
     .url_open        = rtmpe_open,
     .url_read        = rtmpe_read,

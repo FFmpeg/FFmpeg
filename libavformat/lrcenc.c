@@ -52,6 +52,7 @@ static int lrc_write_header(AVFormatContext *s)
     }
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
 
+    ff_standardize_creation_time(s);
     ff_metadata_conv_ctx(s, ff_lrc_metadata_conv, NULL);
     if(!(s->flags & AVFMT_FLAG_BITEXACT)) { // avoid breaking regression tests
         /* LRC provides a metadata slot for specifying encoder version

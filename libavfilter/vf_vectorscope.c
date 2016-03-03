@@ -43,19 +43,27 @@ typedef struct VectorscopeContext {
     int mode;
     int intensity;
     float fintensity;
-    const uint8_t *bg_color;
+    uint16_t bg_color[4];
     int planewidth[4];
     int planeheight[4];
     int hsub, vsub;
     int x, y, pd;
     int is_yuv;
     int size;
+    int depth;
     int mult;
     int envelope;
+    int graticule;
+    float opacity;
+    float bgopacity;
+    int flags;
+    int cs;
     uint8_t peak[1024][1024];
 
     void (*vectorscope)(struct VectorscopeContext *s,
                         AVFrame *in, AVFrame *out, int pd);
+    void (*graticulef)(struct VectorscopeContext *s, AVFrame *out,
+                       int X, int Y, int D, int P);
 } VectorscopeContext;
 
 #define OFFSET(x) offsetof(VectorscopeContext, x)
@@ -80,6 +88,19 @@ static const AVOption vectorscope_options[] = {
     {   "instant",      0, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "envelope" },
     {   "peak",         0, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "envelope" },
     {   "peak+instant", 0, 0, AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, "envelope" },
+    { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "graticule"},
+    { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "graticule"},
+    {   "none",         0, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "graticule" },
+    {   "green",        0, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "graticule" },
+    {   "color",        0, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "graticule" },
+    { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS},
+    { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS},
+    { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, 3, FLAGS, "flags"},
+    { "f",     "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, 3, FLAGS, "flags"},
+    {   "white", "draw white point", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "flags" },
+    {   "black", "draw black point", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "flags" },
+    { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
+    { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
     { NULL }
 };
 
@@ -91,12 +112,12 @@ static const enum AVPixelFormat out_yuv8_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat out_yuv9_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P9,
+    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUV444P9,
     AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat out_yuv10_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_NONE
 };
 
@@ -118,6 +139,7 @@ static const enum AVPixelFormat out_rgb10_pix_fmts[] = {
 static const enum AVPixelFormat in1_pix_fmts[] = {
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
     AV_PIX_FMT_NONE
@@ -133,6 +155,8 @@ static const enum AVPixelFormat in2_pix_fmts[] = {
     AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
     AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
+    AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_NONE
 };
 
@@ -181,16 +205,15 @@ static int query_formats(AVFilterContext *ctx)
         out_pix_fmts = out_yuv9_pix_fmts;
     else if (depth == 10)
         out_pix_fmts = out_yuv10_pix_fmts;
-    else
+    else if (depth == 8)
         out_pix_fmts = out_yuv8_pix_fmts;
+    else
+        return AVERROR(EAGAIN);
     if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
         return ret;
 
     return 0;
 }
-
-static const uint8_t black_yuva_color[4] = { 0, 127, 127, 0 };
-static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 0 };
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -351,12 +374,10 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
     int i, j, k;
 
     for (k = 0; k < 4 && dst[k]; k++) {
-        const int mult = s->mult;
-
         for (i = 0; i < out->height ; i++)
             for (j = 0; j < out->width; j++)
                 AV_WN16(out->data[k] + i * out->linesize[k] + j * 2,
-                        (s->mode == COLOR || s->mode == COLOR5) && k == s->pd ? 0 : s->bg_color[k] * mult);
+                        (s->mode == COLOR || s->mode == COLOR5) && k == s->pd ? 0 : s->bg_color[k]);
     }
 
     switch (s->mode) {
@@ -660,12 +681,270 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
     }
 }
 
+const static uint16_t positions[][14][3] = {
+  { { 210,  16, 146 }, { 170, 166,  16 }, { 145,  54,  34 },
+    { 106, 202, 222 }, {  81,  90, 240 }, {  41, 240, 110 },
+    { 162,  44, 142 }, { 131, 156,  44 }, { 112,  72,  58 },
+    {  84, 184, 198 }, {  65, 100, 212 }, {  35, 212, 114 },
+    { 235, 128, 128 }, { 16, 128, 128 } },
+  { {  63, 102, 240 }, {  32, 240, 118 }, { 188, 154,  16 },
+    { 219,  16, 138 }, { 173,  42,  26 }, {  78, 214, 230 },
+    {  28, 212, 120 }, {  51, 109, 212 }, {  63, 193, 204 },
+    { 133,  63,  52 }, { 145, 147,  44 }, { 168,  44, 136 },
+    { 235, 128, 128 }, { 16, 128, 128 } },
+  { { 210*2,  16*2, 146*2 }, { 170*2, 166*2,  16*2 }, { 145*2,  54*2,  34*2 },
+    { 106*2, 202*2, 222*2 }, {  81*2,  90*2, 240*2 }, {  41*2, 240*2, 110*2 },
+    { 162*2,  44*2, 142*2 }, { 131*2, 156*2,  44*2 }, { 112*2,  72*2,  58*2 },
+    {  84*2, 184*2, 198*2 }, {  65*2, 100*2, 212*2 }, {  35*2, 212*2, 114*2 },
+    { 470, 256, 256 }, { 32, 256, 256 } },
+  { {  63*2, 102*2, 240*2 }, {  32*2, 240*2, 118*2 }, { 188*2, 154*2,  16*2 },
+    { 219*2,  16*2, 138*2 }, { 173*2,  42*2,  26*2 }, {  78*2, 214*2, 230*2 },
+    {  28*2, 212*2, 120*2 }, {  51*2, 109*2, 212*2 }, {  63*2, 193*2, 204*2 },
+    { 133*2,  63*2,  52*2 }, { 145*2, 147*2,  44*2 }, { 168*2,  44*2, 136*2 },
+    { 470, 256, 256 }, { 32, 256, 256 } },
+  { { 210*4,  16*4, 146*4 }, { 170*4, 166*4,  16*4 }, { 145*4,  54*4,  34*4 },
+    { 106*4, 202*4, 222*4 }, {  81*4,  90*4, 240*4 }, {  41*4, 240*4, 110*4 },
+    { 162*4,  44*4, 142*4 }, { 131*4, 156*4,  44*4 }, { 112*4,  72*4,  58*4 },
+    {  84*4, 184*4, 198*4 }, {  65*4, 100*4, 212*4 }, {  35*4, 212*4, 114*4 },
+    { 940, 512, 512 }, { 64, 512, 512 } },
+  { {  63*4, 102*4, 240*4 }, {  32*4, 240*4, 118*4 }, { 188*4, 154*4,  16*4 },
+    { 219*4,  16*4, 138*4 }, { 173*4,  42*4,  26*4 }, {  78*4, 214*4, 230*4 },
+    {  28*4, 212*4, 120*4 }, {  51*4, 109*4, 212*4 }, {  63*4, 193*4, 204*4 },
+    { 133*4,  63*4,  52*4 }, { 145*4, 147*4,  44*4 }, { 168*4,  44*4, 136*4 },
+    { 940, 512, 512 }, { 64, 512, 512 } },
+};
+
+static void draw_dots(uint8_t *dst, int L, int v, float o)
+{
+    const float f = 1. - o;
+    const float V = o * v;
+    int l = L * 2;
+
+    dst[ l - 3] = dst[ l - 3] * f + V;
+    dst[ l + 3] = dst[ l + 3] * f + V;
+    dst[-l - 3] = dst[-l - 3] * f + V;
+    dst[-l + 3] = dst[-l + 3] * f + V;
+
+    l += L;
+
+    dst[ l - 3] = dst[ l - 3] * f + V;
+    dst[ l + 3] = dst[ l + 3] * f + V;
+    dst[ l - 2] = dst[ l - 2] * f + V;
+    dst[ l + 2] = dst[ l + 2] * f + V;
+    dst[-l - 3] = dst[-l - 3] * f + V;
+    dst[-l + 3] = dst[-l + 3] * f + V;
+    dst[-l - 2] = dst[-l - 2] * f + V;
+    dst[-l + 2] = dst[-l + 2] * f + V;
+}
+
+static void draw_dots16(uint16_t *dst, int L, int v, float o)
+{
+    const float f = 1. - o;
+    const float V = o * v;
+    int l = L * 2;
+
+    dst[ l - 3] = dst[ l - 3] * f + V;
+    dst[ l + 3] = dst[ l + 3] * f + V;
+    dst[-l - 3] = dst[-l - 3] * f + V;
+    dst[-l + 3] = dst[-l + 3] * f + V;
+
+    l += L;
+
+    dst[ l - 3] = dst[ l - 3] * f + V;
+    dst[ l + 3] = dst[ l + 3] * f + V;
+    dst[ l - 2] = dst[ l - 2] * f + V;
+    dst[ l + 2] = dst[ l + 2] * f + V;
+    dst[-l - 3] = dst[-l - 3] * f + V;
+    dst[-l + 3] = dst[-l + 3] * f + V;
+    dst[-l - 2] = dst[-l - 2] * f + V;
+    dst[-l + 2] = dst[-l + 2] * f + V;
+}
+
+static void none_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
+{
+}
+
+static void color_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
+{
+    const int max = s->size - 1;
+    const float o = s->opacity;
+    int i;
+
+    for (i = 0; i < 12; i++) {
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+        int d = positions[P][i][D];
+
+        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, d, o);
+        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, x, o);
+        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, y, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    if (s->flags & 1) {
+        int x = positions[P][12][X];
+        int y = positions[P][12][Y];
+        int d = positions[P][12][D];
+
+        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, d, o);
+        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, x, o);
+        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, y, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    if (s->flags & 2) {
+        int x = positions[P][13][X];
+        int y = positions[P][13][Y];
+        int d = positions[P][13][D];
+
+        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, d, o);
+        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, x, o);
+        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, y, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+}
+
+static void color_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
+{
+    const float o = s->opacity;
+    int i;
+
+    for (i = 0; i < 12; i++) {
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+        int d = positions[P][i][D];
+
+        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], d, o);
+        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], x, o);
+        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], y, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
+    }
+
+    if (s->flags & 1) {
+        int x = positions[P][12][X];
+        int y = positions[P][12][Y];
+        int d = positions[P][12][D];
+
+        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], d, o);
+        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], x, o);
+        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], y, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
+    }
+
+    if (s->flags & 2) {
+        int x = positions[P][13][X];
+        int y = positions[P][13][Y];
+        int d = positions[P][12][D];
+
+        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], d, o);
+        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], x, o);
+        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], y, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
+    }
+}
+
+static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
+{
+    const int max = s->size - 1;
+    const float o = s->opacity;
+    const int m = s->mult;
+    int i;
+
+    for (i = 0; i < 12; i++) {
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
+        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    if (s->flags & 1) {
+        int x = positions[P][12][X];
+        int y = positions[P][12][Y];
+
+        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
+        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    if (s->flags & 2) {
+        int x = positions[P][13][X];
+        int y = positions[P][13][Y];
+
+        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
+        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+}
+
+static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
+{
+    const float o = s->opacity;
+    int i;
+
+    for (i = 0; i < 12; i++) {
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
+        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
+        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
+    }
+
+    if (s->flags & 1) {
+        int x = positions[P][12][X];
+        int y = positions[P][12][Y];
+
+        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
+        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
+        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
+    }
+
+    if (s->flags & 2) {
+        int x = positions[P][13][X];
+        int y = positions[P][13][Y];
+
+        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
+        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
+        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        if (out->data[3])
+            draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx  = inlink->dst;
     VectorscopeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
+
+    switch (av_frame_get_colorspace(in)) {
+    case AVCOL_SPC_SMPTE170M:
+    case AVCOL_SPC_BT470BG:
+        s->cs = (s->depth - 8) * 2 + 0;
+        break;
+    case AVCOL_SPC_BT709:
+    default:
+        s->cs = (s->depth - 8) * 2 + 1;
+    }
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -675,6 +954,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->pts = in->pts;
 
     s->vectorscope(s, in, out, s->pd);
+    s->graticulef(s, out, s->x, s->y, s->pd, s->cs);
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -688,6 +968,7 @@ static int config_input(AVFilterLink *inlink)
     s->is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB);
     s->size = 1 << desc->comp[0].depth;
     s->mult = s->size / 256;
+    s->depth = desc->comp[0].depth;
 
     if (s->mode == GRAY && s->is_yuv)
         s->pd = 0;
@@ -705,15 +986,35 @@ static int config_input(AVFilterLink *inlink)
     else
         s->vectorscope = vectorscope16;
 
+    s->graticulef = none_graticule;
+
+    if (s->is_yuv && s->size == 256) {
+        if (s->graticule == 1)
+            s->graticulef = green_graticule;
+        else if (s->graticule == 2)
+            s->graticulef = color_graticule;
+    } else if (s->is_yuv) {
+        if (s->graticule == 1)
+            s->graticulef = green_graticule16;
+        else if (s->graticule == 2)
+            s->graticulef = color_graticule16;
+    }
+
+    s->bg_color[3] = s->bgopacity * (s->size - 1);
+
     switch (inlink->format) {
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
-        s->bg_color = black_gbrp_color;
+        s->bg_color[0] = 0;
+        s->bg_color[1] = 0;
+        s->bg_color[2] = 0;
         break;
     default:
-        s->bg_color = black_yuva_color;
+        s->bg_color[0] = 0;
+        s->bg_color[1] = s->size / 2 - 1;
+        s->bg_color[2] = s->size / 2 - 1;
     }
 
     s->hsub = desc->log2_chroma_w;

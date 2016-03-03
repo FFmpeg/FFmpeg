@@ -10874,6 +10874,7 @@ Scale a subtitle stream to match the main video in size before overlaying
 @end example
 @end itemize
 
+@anchor{selectivecolor}
 @section selectivecolor
 
 Adjust cyan, magenta, yellow and black (CMYK) to certain ranges of colors (such
@@ -12558,6 +12559,31 @@ can still spot out of range values without constantly looking at vectorscope.
 @item peak+instant
 Peak and instant envelope combined together.
 @end table
+
+@item graticule, g
+Set what kind of graticule to draw.
+@table @samp
+@item none
+@item green
+@item color
+@end table
+
+@item opacity, o
+Set graticule opacity.
+
+@item flags, f
+Set graticule flags.
+
+@table @samp
+@item white
+Draw graticule for white point.
+
+@item black
+Draw graticule for black point.
+@end table
+
+@item bgopacity, b
+Set background opacity.
 @end table
 
 @anchor{vidstabdetect}
@@ -14286,6 +14312,40 @@ Complete example using @command{ffplay}:
 @example
 ffplay -f lavfi 'amovie=input.mp3, asplit [a][out1];
              [a] avectorscope=zoom=1.3:rc=2:gc=200:bc=10:rf=1:gf=8:bf=7 [out0]'
+@end example
+@end itemize
+
+@section bench, abench
+
+Benchmark part of a filtergraph.
+
+The filter accepts the following options:
+
+@table @option
+@item action
+Start or stop a timer.
+
+Available values are:
+@table @samp
+@item start
+Get the current time, set it as frame metadata (using the key
+@code{lavfi.bench.start_time}), and forward the frame to the next filter.
+
+@item stop
+Get the current time and fetch the @code{lavfi.bench.start_time} metadata from
+the input frame metadata to get the time difference. Time difference, average,
+maximum and minimum time (respectively @code{t}, @code{avg}, @code{max} and
+@code{min}) are then printed. The timestamps are expressed in seconds.
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Benchmark @ref{selectivecolor} filter:
+@example
+bench=start,selectivecolor=reds=-.2 .12 -.49,bench=stop
 @end example
 @end itemize
 

@@ -629,7 +629,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
     return result;
 }
 
-URLProtocol ff_mmst_protocol = {
+const URLProtocol ff_mmst_protocol = {
     .name           = "mmst",
     .url_open       = mms_open,
     .url_read       = mms_read,

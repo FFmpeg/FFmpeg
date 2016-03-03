@@ -36,9 +36,6 @@
  * (COEF_LUT_TAB*MAX_QUANT_INDEX) since the sign is appended during encoding */
 #define COEF_LUT_TAB 2048
 
-/* Per slice quantization bit cost cache */
-#define SLICE_CACHED_QUANTIZERS 30
-
 /* Decides the cutoff point in # of slices to distribute the leftover bytes */
 #define SLICE_REDIST_TOTAL 150
 
@@ -67,15 +64,9 @@ typedef struct Plane {
     ptrdiff_t coef_stride;
 } Plane;
 
-typedef struct BitCostCache {
-    int bits;
-    int quantizer;
-} BitCostCache;
-
 typedef struct SliceArgs {
     PutBitContext pb;
-    BitCostCache cache[SLICE_CACHED_QUANTIZERS];
-    int cached_results;
+    int cache[MAX_QUANT_INDEX];
     void *ctx;
     int x;
     int y;
@@ -151,19 +142,6 @@ typedef struct VC2EncContext {
     uint32_t next_parse_offset;
     enum DiracParseCodes last_parse_code;
 } VC2EncContext;
-
-static av_always_inline void put_padding(PutBitContext *pb, int bytes)
-{
-    int bits = bytes*8;
-    if (!bits)
-        return;
-    while (bits > 31) {
-        put_bits(pb, 31, 0);
-        bits -= 31;
-    }
-    if (bits)
-        put_bits(pb, bits, 0);
-}
 
 static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
 {
@@ -597,18 +575,15 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
     }
 }
 
-static int count_hq_slice(VC2EncContext *s, BitCostCache *cache,
-                          int *cached_results, int slice_x, int slice_y,
-                          int quant_idx)
+static int count_hq_slice(VC2EncContext *s, int *cache,
+                          int slice_x, int slice_y, int quant_idx)
 {
-    int i, x, y;
+    int x, y;
     uint8_t quants[MAX_DWT_LEVELS][4];
     int bits = 0, p, level, orientation;
 
-    if (cache && *cached_results)
-        for (i = 0; i < *cached_results; i++)
-            if (cache[i].quantizer == quant_idx)
-                return cache[i].bits;
+    if (cache && cache[quant_idx])
+        return cache[quant_idx];
 
     bits += 8*s->prefix_bytes;
     bits += 8; /* quant_idx */
@@ -659,11 +634,8 @@ static int count_hq_slice(VC2EncContext *s, BitCostCache *cache,
         bits += pad_c*8;
     }
 
-    if (cache) {
-        cache[*cached_results].quantizer = quant_idx;
-        cache[*cached_results].bits = bits;
-        *cached_results = FFMIN(*cached_results + 1, SLICE_CACHED_QUANTIZERS);
-    }
+    if (cache)
+        cache[quant_idx] = bits;
 
     return bits;
 }
@@ -681,14 +653,12 @@ static int rate_control(AVCodecContext *avctx, void *arg)
     int quant = slice_dat->quant_idx, range = quant/5;
     const int top = slice_dat->bits_ceil;
     const int bottom = slice_dat->bits_floor;
-    int bits = count_hq_slice(s, slice_dat->cache, &slice_dat->cached_results,
-                              sx, sy, quant);
+    int bits = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
     range -= range & 1; /* Make it an even number */
     while ((bits > top) || (bits < bottom)) {
         range *= bits > top ? +1 : -1;
         quant = av_clip(quant + range, 0, s->q_ceil);
-        bits = count_hq_slice(s, slice_dat->cache, &slice_dat->cached_results,
-                              sx, sy, quant);
+        bits = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
         range = av_clip(range/2, 1, s->q_ceil);
         if (quant_buf[1] == quant) {
             quant = bits_last < bits ? quant_buf[0] : quant;
@@ -717,9 +687,9 @@ static void calc_slice_sizes(VC2EncContext *s)
             args->ctx = s;
             args->x = slice_x;
             args->y = slice_y;
-            args->cached_results = 0;
             args->bits_ceil = s->slice_max_bytes << 3;
             args->bits_floor = s->slice_min_bytes << 3;
+            memset(args->cache, 0, MAX_QUANT_INDEX*sizeof(*args->cache));
         }
     }
 
@@ -742,7 +712,7 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
     int p, level, orientation;
 
     avpriv_align_put_bits(pb);
-    put_padding(pb, s->prefix_bytes);
+    skip_put_bytes(pb, s->prefix_bytes);
     put_bits(pb, 8, quant_idx);
 
     /* Slice quantization (slice_quantizers() in the specs) */
@@ -773,7 +743,8 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
             pad_c = (pad_s*s->size_scaler) - bytes_len;
         }
         pb->buf[bytes_start] = pad_s;
-        put_padding(pb, pad_c);
+        flush_put_bits(pb);
+        skip_put_bytes(pb, pad_c);
     }
 
     return 0;
@@ -820,8 +791,7 @@ static int encode_slices(VC2EncContext *s)
             args = top_loc[i];
             prev_bytes = args->bytes;
             new_idx = av_clip(args->quant_idx - 1, 0, s->q_ceil);
-            bits = count_hq_slice(s, args->cache, &args->cached_results,
-                                  args->x, args->y, new_idx);
+            bits = count_hq_slice(s, args->cache, args->x, args->y, new_idx);
             bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
             diff = bytes - prev_bytes;
             if ((bytes_left - diff) >= 0) {
@@ -1017,7 +987,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     s->slice_min_bytes = s->slice_max_bytes - s->slice_max_bytes*(s->tolerance/100.0f);
 
-    ret = ff_alloc_packet2(avctx, avpkt, max_frame_bytes*2, 0);
+    ret = ff_alloc_packet2(avctx, avpkt, max_frame_bytes*3, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
         return ret;
@@ -1062,7 +1032,7 @@ static int minimum_frame_bits(VC2EncContext *s)
     s->size_scaler = 64;
     for (slice_y = 0; slice_y < s->num_y; slice_y++) {
         for (slice_x = 0; slice_x < s->num_x; slice_x++) {
-            bits += count_hq_slice(s, NULL, NULL, slice_x, slice_y, s->q_ceil);
+            bits += count_hq_slice(s, NULL, slice_x, slice_y, s->q_ceil);
         }
     }
     return bits;
@@ -1227,6 +1197,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
                                  avctx->time_base.den);
     min_bits_per_frame = minimum_frame_bits(s) + 8*sizeof(LIBAVCODEC_IDENT) + 8*40 + 8*20000;
     if (bits_per_frame < min_bits_per_frame) {
+        if (s->interlaced)
+            min_bits_per_frame += min_bits_per_frame + min_bits_per_frame/2;
         avctx->bit_rate = av_rescale(min_bits_per_frame, avctx->time_base.den,
                                      avctx->time_base.num);
         av_log(avctx, AV_LOG_WARNING,

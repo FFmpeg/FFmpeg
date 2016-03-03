@@ -877,6 +877,7 @@ extern const AVClass ff_sws_context_class;
 void ff_get_unscaled_swscale(SwsContext *c);
 void ff_get_unscaled_swscale_ppc(SwsContext *c);
 void ff_get_unscaled_swscale_arm(SwsContext *c);
+void ff_get_unscaled_swscale_aarch64(SwsContext *c);
 
 /**
  * Return function pointer to fastest main scaler path function depending

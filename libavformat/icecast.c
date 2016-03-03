@@ -209,7 +209,7 @@ static const AVClass icecast_context_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_icecast_protocol = {
+const URLProtocol ff_icecast_protocol = {
     .name            = "icecast",
     .url_open        = icecast_open,
     .url_write       = icecast_write,

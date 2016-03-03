@@ -122,7 +122,7 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
             AVDictionary *opts = NULL;
             os->tail_out = os->out;
             av_dict_set(&opts, "truncate", "0", 0);
-            ret = ffurl_open_whitelist(&os->out, frag->file, AVIO_FLAG_READ_WRITE,
+            ret = ffurl_open_whitelist(&os->out, frag->file, AVIO_FLAG_WRITE,
                                        &os->ctx->interrupt_callback, &opts, os->ctx->protocol_whitelist);
             av_dict_free(&opts);
             if (ret < 0) {
@@ -131,7 +131,7 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
                 return ret;
             }
             av_dict_set(&opts, "truncate", "0", 0);
-            ffurl_open_whitelist(&os->out2, frag->infofile, AVIO_FLAG_READ_WRITE,
+            ffurl_open_whitelist(&os->out2, frag->infofile, AVIO_FLAG_WRITE,
                                  &os->ctx->interrupt_callback, &opts, os->ctx->protocol_whitelist);
             av_dict_free(&opts);
             ffurl_seek(os->out, offset - frag->start_pos, SEEK_SET);

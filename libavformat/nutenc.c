@@ -201,9 +201,16 @@ static void build_frame_code(AVFormatContext *s)
         key_frame = intra_only;
 #if 1
         if (is_audio) {
-            int frame_bytes = codec->frame_size * (int64_t)codec->bit_rate /
-                              (8 * codec->sample_rate);
+            int frame_bytes;
             int pts;
+
+            if (codec->block_align > 0) {
+                frame_bytes = codec->block_align;
+            } else {
+                int frame_size = av_get_audio_frame_duration(codec, 0);
+                frame_bytes = frame_size * (int64_t)codec->bit_rate / (8 * codec->sample_rate);
+            }
+
             for (pts = 0; pts < 2; pts++) {
                 for (pred = 0; pred < 2; pred++) {
                     FrameCode *ft  = &nut->frame_code[start2];
@@ -489,6 +496,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc)
     if (ret < 0)
         return ret;
 
+    ff_standardize_creation_time(s);
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
         count += add_info(dyn_bc, t->key, t->value);
 

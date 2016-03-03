@@ -614,7 +614,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
     if (ret >= 0) {
         // update cookies on http response with setcookies.
-        void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
+        AVIOInternal *internal = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
+        void *u = internal ? internal->hlsopts : NULL;
         update_options(&c->cookies, "cookies", u);
         av_dict_set(&opts, "cookies", c->cookies, 0);
     }
@@ -1484,9 +1485,20 @@ static int save_avio_options(AVFormatContext *s)
     return ret;
 }
 
+static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
+                          int flags, AVDictionary **opts)
+{
+    av_log(s, AV_LOG_ERROR,
+           "A HLS playlist item '%s' referred to an external file '%s'. "
+           "Opening this file was forbidden for security reasons\n",
+           s->filename, url);
+    return AVERROR(EPERM);
+}
+
 static int hls_read_header(AVFormatContext *s)
 {
-    void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
+    AVIOInternal *internal = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
+    void *u = internal ? internal->hlsopts : NULL;
     HLSContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;
 
@@ -1604,6 +1616,7 @@ static int hls_read_header(AVFormatContext *s)
             goto fail;
         }
         pls->ctx->pb       = &pls->pb;
+        pls->ctx->io_open  = nested_io_open;
         pls->stream_offset = stream_offset;
 
         if ((ret = ff_copy_whitelists(pls->ctx, s)) < 0)

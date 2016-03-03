@@ -560,6 +560,14 @@ void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
  */
 int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds);
 
+/**
+ * Standardize creation_time metadata in AVFormatContext to an ISO-8601
+ * timestamp string.
+ *
+ * @param s AVFormatContext
+ * @return <0 on error
+ */
+int ff_standardize_creation_time(AVFormatContext *s);
 
 #define CONTAINS_PAL 2
 /**
@@ -572,5 +580,17 @@ int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int 
  *         CONTAINS_PAL if in addition to a new packet the old contained a palette
  */
 int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *enc, int expected_stride);
+
+/**
+ * Retrieves the palette from a packet, either from side data, or
+ * appended to the video data in the packet itself (raw video only).
+ * It is commonly used after a call to ff_reshuffle_raw_rgb().
+ *
+ * Use 0 for the ret parameter to check for side data only.
+ *
+ * @param pkt pointer to the packet before calling ff_reshuffle_raw_rgb()
+ * @param ret return value from ff_reshuffle_raw_rgb(), or 0
+ */
+int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, const uint8_t **palette);
 
 #endif /* AVFORMAT_INTERNAL_H */

@@ -401,7 +401,7 @@ static int64_t mmsh_seek(URLContext *h, int64_t pos, int whence)
     return AVERROR(ENOSYS);
 }
 
-URLProtocol ff_mmsh_protocol = {
+const URLProtocol ff_mmsh_protocol = {
     .name           = "mmsh",
     .url_open       = mmsh_open,
     .url_read       = mmsh_read,

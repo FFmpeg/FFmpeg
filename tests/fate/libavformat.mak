@@ -1,6 +1,6 @@
-FATE_LIBAVFORMAT-$(HAVE_PTHREADS) += fate-async
-fate-async: libavformat/async-test$(EXESUF)
-fate-async: CMD = run libavformat/async-test
+#FATE_LIBAVFORMAT-$(HAVE_PTHREADS) += fate-async
+#fate-async: libavformat/async-test$(EXESUF)
+#fate-async: CMD = run libavformat/async-test
 
 FATE_LIBAVFORMAT-$(CONFIG_NETWORK) += fate-noproxy
 fate-noproxy: libavformat/noproxy-test$(EXESUF)
@@ -22,5 +22,6 @@ FATE_LIBAVFORMAT-$(CONFIG_MOV_MUXER) += fate-movenc
 fate-movenc: libavformat/movenc-test$(EXESUF)
 fate-movenc: CMD = run libavformat/movenc-test
 
-FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT-yes)
+FATE_LIBAVFORMAT += $(FATE_LIBAVFORMAT-yes)
+FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT)
 fate-libavformat: $(FATE_LIBAVFORMAT)

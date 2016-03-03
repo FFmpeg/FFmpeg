@@ -63,7 +63,7 @@ typedef struct OutputStream {
     AVFormatContext *ctx;
     int ctx_inited;
     uint8_t iobuf[32768];
-    URLContext *out;
+    AVIOContext *out;
     int packets_written;
     char initfile[1024];
     int64_t init_start_pos;
@@ -104,7 +104,7 @@ static int dash_write(void *opaque, uint8_t *buf, int buf_size)
 {
     OutputStream *os = opaque;
     if (os->out)
-        ffurl_write(os->out, buf, buf_size);
+        avio_write(os->out, buf, buf_size);
     return buf_size;
 }
 
@@ -186,8 +186,7 @@ static void dash_free(AVFormatContext *s)
             av_write_trailer(os->ctx);
         if (os->ctx && os->ctx->pb)
             av_free(os->ctx->pb);
-        ffurl_close(os->out);
-        os->out =  NULL;
+        ff_format_io_close(s, &os->out);
         if (os->ctx)
             avformat_free_context(os->ctx);
         for (j = 0; j < os->nb_segments; j++)
@@ -651,7 +650,7 @@ static int dash_write_header(AVFormatContext *s)
             dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), c->init_seg_name, i, 0, os->bit_rate, 0);
         }
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
-        ret = ffurl_open_whitelist(&os->out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist);
+        ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, NULL);
         if (ret < 0)
             goto fail;
         os->init_start_pos = 0;
@@ -755,18 +754,18 @@ static void find_index_range(AVFormatContext *s, const char *full_path,
                              int64_t pos, int *index_length)
 {
     uint8_t buf[8];
-    URLContext *fd;
+    AVIOContext *pb;
     int ret;
 
-    ret = ffurl_open_whitelist(&fd, full_path, AVIO_FLAG_READ, &s->interrupt_callback, NULL, s->protocol_whitelist);
+    ret = s->io_open(s, &pb, full_path, AVIO_FLAG_READ, NULL);
     if (ret < 0)
         return;
-    if (ffurl_seek(fd, pos, SEEK_SET) != pos) {
-        ffurl_close(fd);
+    if (avio_seek(pb, pos, SEEK_SET) != pos) {
+        ff_format_io_close(s, &pb);
         return;
     }
-    ret = ffurl_read(fd, buf, 8);
-    ffurl_close(fd);
+    ret = avio_read(pb, buf, 8);
+    ff_format_io_close(s, &pb);
     if (ret < 8)
         return;
     if (AV_RL32(&buf[4]) != MKTAG('s', 'i', 'd', 'x'))
@@ -829,10 +828,8 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         if (!os->init_range_length) {
             av_write_frame(os->ctx, NULL);
             os->init_range_length = avio_tell(os->ctx->pb);
-            if (!c->single_file) {
-                ffurl_close(os->out);
-                os->out = NULL;
-            }
+            if (!c->single_file)
+                ff_format_io_close(s, &os->out);
         }
 
         start_pos = avio_tell(os->ctx->pb);
@@ -841,7 +838,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_pts);
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, filename);
             snprintf(temp_path, sizeof(temp_path), "%s.tmp", full_path);
-            ret = ffurl_open_whitelist(&os->out, temp_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL, s->protocol_whitelist);
+            ret = s->io_open(s, &os->out, temp_path, AVIO_FLAG_WRITE, NULL);
             if (ret < 0)
                 break;
             write_styp(os->ctx->pb);
@@ -857,8 +854,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         if (c->single_file) {
             find_index_range(s, full_path, start_pos, &index_length);
         } else {
-            ffurl_close(os->out);
-            os->out = NULL;
+            ff_format_io_close(s, &os->out);
             ret = avpriv_io_move(temp_path, full_path);
             if (ret < 0)
                 break;

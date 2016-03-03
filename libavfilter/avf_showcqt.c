@@ -710,6 +710,30 @@ static void draw_bar_rgb(AVFrame *out, const float *h, const float *rcp_h,
     }
 }
 
+#define DRAW_BAR_WITH_CHROMA(x) \
+do { \
+    if (h[x] <= ht) { \
+        *lpy++ = 16; \
+        *lpu++ = 128; \
+        *lpv++ = 128; \
+    } else { \
+        mul = (h[x] - ht) * rcp_h[x]; \
+        *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
+        *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f); \
+        *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f); \
+    } \
+} while (0)
+
+#define DRAW_BAR_WITHOUT_CHROMA(x) \
+do { \
+    if (h[x] <= ht) { \
+        *lpy++ = 16; \
+    } else { \
+        mul = (h[x] - ht) * rcp_h[x]; \
+        *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
+    } \
+} while (0)
+
 static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
                          const ColorFloat *c, int bar_h)
 {
@@ -726,36 +750,15 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
         lpy = vy + y * lsy;
         lpu = vu + yh * lsu;
         lpv = vv + yh * lsv;
-        for (x = 0; x < w; x += 2) {
-            if (h[x] <= ht) {
-                *lpy++ = 16;
-                *lpu++ = 128;
-                *lpv++ = 128;
-            } else {
-                mul = (h[x] - ht) * rcp_h[x];
-                *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f);
-                *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f);
-                *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f);
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITH_CHROMA(x+1);
             }
-            /* u and v are skipped on yuv422p and yuv420p */
-            if (fmt == AV_PIX_FMT_YUV444P) {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                    *lpu++ = 128;
-                    *lpv++ = 128;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
-                    *lpu++ = lrintf(mul * c[x+1].yuv.u + 128.0f);
-                    *lpv++ = lrintf(mul * c[x+1].yuv.v + 128.0f);
-                }
-            } else {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
-                }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITHOUT_CHROMA(x+1);
             }
         }
 
@@ -763,46 +766,20 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
         lpy = vy + (y+1) * lsy;
         lpu = vu + (y+1) * lsu;
         lpv = vv + (y+1) * lsv;
-        for (x = 0; x < w; x += 2) {
-            /* u and v are skipped on yuv420p */
-            if (fmt != AV_PIX_FMT_YUV420P) {
-                if (h[x] <= ht) {
-                    *lpy++ = 16;
-                    *lpu++ = 128;
-                    *lpv++ = 128;
-                } else {
-                    mul = (h[x] - ht) * rcp_h[x];
-                    *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f);
-                    *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f);
-                    *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f);
-                }
-            } else {
-                if (h[x] <= ht) {
-                    *lpy++ = 16;
-                } else {
-                    mul = (h[x] - ht) * rcp_h[x];
-                    *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f);
-                }
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITH_CHROMA(x+1);
             }
-            /* u and v are skipped on yuv422p and yuv420p */
-            if (out->format == AV_PIX_FMT_YUV444P) {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                    *lpu++ = 128;
-                    *lpv++ = 128;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
-                    *lpu++ = lrintf(mul * c[x+1].yuv.u + 128.0f);
-                    *lpv++ = lrintf(mul * c[x+1].yuv.v + 128.0f);
-                }
-            } else {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = lrintf(mul * c[x+1].yuv.y + 16.0f);
-                }
+        } else if (fmt == AV_PIX_FMT_YUV422P) {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITHOUT_CHROMA(x+1);
+            }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITHOUT_CHROMA(x);
+                DRAW_BAR_WITHOUT_CHROMA(x+1);
             }
         }
     }
@@ -818,20 +795,63 @@ static void draw_axis_rgb(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lp = out->data[0] + (off + y) * out->linesize[0];
         lpa = axis->data[0] + y * axis->linesize[0];
         for (x = 0; x < w; x++) {
-            a = rcp_255 * lpa[3];
-            *lp++ = lrintf(a * lpa[0] + (1.0f - a) * c[x].rgb.r);
-            *lp++ = lrintf(a * lpa[1] + (1.0f - a) * c[x].rgb.g);
-            *lp++ = lrintf(a * lpa[2] + (1.0f - a) * c[x].rgb.b);
+            if (!lpa[3]) {
+                *lp++ = lrintf(c[x].rgb.r);
+                *lp++ = lrintf(c[x].rgb.g);
+                *lp++ = lrintf(c[x].rgb.b);
+            } else if (lpa[3] == 255) {
+                *lp++ = lpa[0];
+                *lp++ = lpa[1];
+                *lp++ = lpa[2];
+            } else {
+                a = rcp_255 * lpa[3];
+                *lp++ = lrintf(a * lpa[0] + (1.0f - a) * c[x].rgb.r);
+                *lp++ = lrintf(a * lpa[1] + (1.0f - a) * c[x].rgb.g);
+                *lp++ = lrintf(a * lpa[2] + (1.0f - a) * c[x].rgb.b);
+            }
             lpa += 4;
         }
     }
 }
 
+#define BLEND_WITH_CHROMA(c) \
+do { \
+    if (!*lpaa) { \
+        *lpy = lrintf(c.yuv.y + 16.0f); \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == *lpaa) { \
+        *lpy = *lpay; \
+        *lpu = *lpau; \
+        *lpv = *lpav; \
+    } else { \
+        float a = (1.0f/255.0f) * (*lpaa); \
+        *lpy = lrintf(a * (*lpay) + (1.0f - a) * (c.yuv.y + 16.0f)); \
+        *lpu = lrintf(a * (*lpau) + (1.0f - a) * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a * (*lpav) + (1.0f - a) * (c.yuv.v + 128.0f)); \
+    } \
+    lpy++; lpu++; lpv++; \
+    lpay++; lpau++; lpav++; lpaa++; \
+} while (0)
+
+#define BLEND_WITHOUT_CHROMA(c) \
+do { \
+    if (!*lpaa) { \
+        *lpy = lrintf(c.yuv.y + 16.0f); \
+    } else if (255 == *lpaa) { \
+        *lpy = *lpay; \
+    } else { \
+        float a = (1.0f/255.0f) * (*lpaa); \
+        *lpy = lrintf(a * (*lpay) + (1.0f - a) * (c.yuv.y + 16.0f)); \
+    } \
+    lpy++; \
+    lpay++; lpaa++; \
+} while (0)
+
 static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off)
 {
     int fmt = out->format, x, y, yh, w = axis->width, h = axis->height;
     int offh = (fmt == AV_PIX_FMT_YUV420P) ? off / 2 : off;
-    float a, rcp_255 = 1.0f / 255.0f;
     uint8_t *vy = out->data[0], *vu = out->data[1], *vv = out->data[2];
     uint8_t *vay = axis->data[0], *vau = axis->data[1], *vav = axis->data[2], *vaa = axis->data[3];
     int lsy = out->linesize[0], lsu = out->linesize[1], lsv = out->linesize[2];
@@ -847,17 +867,15 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpau = vau + yh * lsau;
         lpav = vav + yh * lsav;
         lpaa = vaa + y * lsaa;
-        for (x = 0; x < w; x += 2) {
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f));
-            *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f));
-            *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f));
-            /* u and v are skipped on yuv422p and yuv420p */
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f));
-            if (fmt == AV_PIX_FMT_YUV444P) {
-                *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f));
-                *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f));
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITH_CHROMA(c[x+1]);
+            }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1]);
             }
         }
 
@@ -868,20 +886,20 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpau = vau + (y + 1) * lsau;
         lpav = vav + (y + 1) * lsav;
         lpaa = vaa + (y + 1) * lsaa;
-        for (x = 0; x < out->width; x += 2) {
-            /* u and v are skipped on yuv420p */
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f));
-            if (fmt != AV_PIX_FMT_YUV420P) {
-                *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f));
-                *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f));
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITH_CHROMA(c[x+1]);
             }
-            /* u and v are skipped on yuv422p and yuv420p */
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = lrintf(a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f));
-            if (fmt == AV_PIX_FMT_YUV444P) {
-                *lpu++ = lrintf(a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f));
-                *lpv++ = lrintf(a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f));
+        } else if (fmt == AV_PIX_FMT_YUV422P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1]);
+            }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITHOUT_CHROMA(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1]);
             }
         }
     }

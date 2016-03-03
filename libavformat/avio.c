@@ -31,13 +31,6 @@
 #endif
 #include "url.h"
 
-static URLProtocol *first_protocol = NULL;
-
-URLProtocol *ffurl_protocol_next(const URLProtocol *prev)
-{
-    return prev ? prev->next : first_protocol;
-}
-
 /** @name Logging context. */
 /*@{*/
 static const char *urlcontext_to_name(void *ptr)
@@ -57,22 +50,6 @@ static void *urlcontext_child_next(void *obj, void *prev)
     return NULL;
 }
 
-static const AVClass *urlcontext_child_class_next(const AVClass *prev)
-{
-    URLProtocol *p = NULL;
-
-    /* find the protocol that corresponds to prev */
-    while (prev && (p = ffurl_protocol_next(p)))
-        if (p->priv_data_class == prev)
-            break;
-
-    /* find next protocol with priv options */
-    while (p = ffurl_protocol_next(p))
-        if (p->priv_data_class)
-            return p->priv_data_class;
-    return NULL;
-}
-
 #define OFFSET(x) offsetof(URLContext,x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
@@ -80,39 +57,18 @@ static const AVOption options[] = {
     {"protocol_whitelist", "List of protocols that are allowed to be used", OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
     { NULL }
 };
+
 const AVClass ffurl_context_class = {
     .class_name       = "URLContext",
     .item_name        = urlcontext_to_name,
     .option           = options,
     .version          = LIBAVUTIL_VERSION_INT,
     .child_next       = urlcontext_child_next,
-    .child_class_next = urlcontext_child_class_next,
+    .child_class_next = ff_urlcontext_child_class_next,
 };
 /*@}*/
 
-const char *avio_enum_protocols(void **opaque, int output)
-{
-    URLProtocol *p;
-    *opaque = ffurl_protocol_next(*opaque);
-    if (!(p = *opaque))
-        return NULL;
-    if ((output && p->url_write) || (!output && p->url_read))
-        return p->name;
-    return avio_enum_protocols(opaque, output);
-}
-
-int ffurl_register_protocol(URLProtocol *protocol)
-{
-    URLProtocol **p;
-    p = &first_protocol;
-    while (*p)
-        p = &(*p)->next;
-    *p             = protocol;
-    protocol->next = NULL;
-    return 0;
-}
-
-static int url_alloc_for_protocol(URLContext **puc, struct URLProtocol *up,
+static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
                                   const char *filename, int flags,
                                   const AVIOInterruptCB *int_cb)
 {
@@ -280,11 +236,13 @@ int ffurl_handshake(URLContext *c)
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"                \
     "0123456789+-."
 
-static struct URLProtocol *url_find_protocol(const char *filename)
+static const struct URLProtocol *url_find_protocol(const char *filename)
 {
-    URLProtocol *up = NULL;
+    const URLProtocol *up;
+    const URLProtocol **protocols;
     char proto_str[128], proto_nested[128], *ptr;
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
+    int i;
 
     if (filename[proto_len] != ':' &&
         (strncmp(filename, "subfile,", 8) || !strchr(filename + proto_len + 1, ':')) ||
@@ -300,13 +258,16 @@ static struct URLProtocol *url_find_protocol(const char *filename)
     if ((ptr = strchr(proto_nested, '+')))
         *ptr = '\0';
 
-    while (up = ffurl_protocol_next(up)) {
+    protocols = ffurl_get_protocols(NULL, NULL);
+    for (i = 0; protocols[i]; i++) {
+        up = protocols[i];
         if (!strcmp(proto_str, up->name))
             break;
         if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME &&
             !strcmp(proto_nested, up->name))
             break;
     }
+    av_freep(&protocols);
 
     return up;
 }
@@ -314,12 +275,7 @@ static struct URLProtocol *url_find_protocol(const char *filename)
 int ffurl_alloc(URLContext **puc, const char *filename, int flags,
                 const AVIOInterruptCB *int_cb)
 {
-    URLProtocol *p = NULL;
-
-    if (!first_protocol) {
-        av_log(NULL, AV_LOG_WARNING, "No URL Protocols are registered. "
-                                     "Missing call to av_register_all()?\n");
-    }
+    const URLProtocol *p = NULL;
 
     p = url_find_protocol(filename);
     if (p)
@@ -484,7 +440,7 @@ int ffurl_close(URLContext *h)
 
 const char *avio_find_protocol_name(const char *url)
 {
-    URLProtocol *p = url_find_protocol(url);
+    const URLProtocol *p = url_find_protocol(url);
 
     return p ? p->name : NULL;
 }

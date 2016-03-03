@@ -8,6 +8,7 @@ version <next>:
 - Bob Weaver deinterlacing filter
 - firequalizer filter
 - datascope filter
+- bench and abench filters
 
 
 version 3.0:

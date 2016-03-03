@@ -45,6 +45,7 @@ void avfilter_register_all(void)
         return;
     initialized = 1;
 
+    REGISTER_FILTER(ABENCH,         abench,         af);
     REGISTER_FILTER(ACOMPRESSOR,    acompressor,    af);
     REGISTER_FILTER(ACROSSFADE,     acrossfade,     af);
     REGISTER_FILTER(ADELAY,         adelay,         af);
@@ -136,6 +137,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ALPHAMERGE,     alphamerge,     vf);
     REGISTER_FILTER(ATADENOISE,     atadenoise,     vf);
     REGISTER_FILTER(ASS,            ass,            vf);
+    REGISTER_FILTER(BENCH,          bench,          vf);
     REGISTER_FILTER(BBOX,           bbox,           vf);
     REGISTER_FILTER(BLACKDETECT,    blackdetect,    vf);
     REGISTER_FILTER(BLACKFRAME,     blackframe,     vf);
