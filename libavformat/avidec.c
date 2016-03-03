@@ -1089,7 +1089,7 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
         ast->sub_ctx->pb = pb;
 
-        if (ff_copy_whitelists(ast->sub_ctx, s) < 0)
+        if (ff_copy_whiteblacklists(ast->sub_ctx, s) < 0)
             goto error;
 
         if (!avformat_open_input(&ast->sub_ctx, "", sub_demuxer, NULL)) {

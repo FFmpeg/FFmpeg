@@ -47,6 +47,7 @@ typedef struct URLContext {
     AVIOInterruptCB interrupt_callback;
     int64_t rw_timeout;         /**< maximum time to wait for (network) read/write operation completion, in mcs */
     const char *protocol_whitelist;
+    const char *protocol_blacklist;
 } URLContext;
 
 typedef struct URLProtocol {
@@ -140,7 +141,7 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  */
 int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options,
-               const char *whitelist);
+               const char *whitelist, const char* blacklist);
 
 int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options);

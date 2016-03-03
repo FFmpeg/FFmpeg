@@ -87,7 +87,7 @@ static int sap_read_header(AVFormatContext *s)
                 port);
     ret = ffurl_open_whitelist(&sap->ann_fd, url, AVIO_FLAG_READ,
                                &s->interrupt_callback, NULL,
-                               s->protocol_whitelist);
+                               s->protocol_whitelist, s->protocol_blacklist);
     if (ret)
         goto fail;
 
@@ -161,7 +161,7 @@ static int sap_read_header(AVFormatContext *s)
     sap->sdp_ctx->pb        = &sap->sdp_pb;
     sap->sdp_ctx->interrupt_callback = s->interrupt_callback;
 
-    if ((ret = ff_copy_whitelists(sap->sdp_ctx, s)) < 0)
+    if ((ret = ff_copy_whiteblacklists(sap->sdp_ctx, s)) < 0)
         goto fail;
 
     ret = avformat_open_input(&sap->sdp_ctx, "temp.sdp", infmt, NULL);
