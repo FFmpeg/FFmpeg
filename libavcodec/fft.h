@@ -134,7 +134,8 @@ extern COSTABLE(8192);
 extern COSTABLE(16384);
 extern COSTABLE(32768);
 extern COSTABLE(65536);
-extern COSTABLE_CONST FFTSample* const FFT_NAME(ff_cos_tabs)[17];
+extern COSTABLE(131072);
+extern COSTABLE_CONST FFTSample* const FFT_NAME(ff_cos_tabs)[18];
 
 #define ff_init_ff_cos_tabs FFT_NAME(ff_init_ff_cos_tabs)
 

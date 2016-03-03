@@ -51,6 +51,7 @@ COSTABLE(8192);
 COSTABLE(16384);
 COSTABLE(32768);
 COSTABLE(65536);
+COSTABLE(131072);
 #endif
 COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     NULL, NULL, NULL, NULL,
@@ -67,6 +68,7 @@ COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     FFT_NAME(ff_cos_16384),
     FFT_NAME(ff_cos_32768),
     FFT_NAME(ff_cos_65536),
+    FFT_NAME(ff_cos_131072),
 };
 
 #endif /* FFT_FIXED_32 */
@@ -141,7 +143,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, n;
 
-    if (nbits < 2 || nbits > 16)
+    if (nbits < 2 || nbits > 17)
         goto fail;
     s->nbits = nbits;
     n = 1 << nbits;
@@ -166,7 +168,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 #if FFT_FIXED_32
     {
         int n=0;
-        ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 16, &n);
+        ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
     }
 #else /* FFT_FIXED_32 */
 #if FFT_FLOAT
@@ -515,10 +517,11 @@ DECL_FFT(8192,4096,2048)
 DECL_FFT(16384,8192,4096)
 DECL_FFT(32768,16384,8192)
 DECL_FFT(65536,32768,16384)
+DECL_FFT(131072,65536,32768)
 
 static void (* const fft_dispatch[])(FFTComplex*) = {
     fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512, fft1024,
-    fft2048, fft4096, fft8192, fft16384, fft32768, fft65536,
+    fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
 };
 
 static void fft_calc_c(FFTContext *s, FFTComplex *z)
