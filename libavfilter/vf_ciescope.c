@@ -772,6 +772,7 @@ static void invert_matrix3x3(double in[3][3], double out[3][3])
            m10 = in[1][0], m11 = in[1][1], m12 = in[1][2],
            m20 = in[2][0], m21 = in[2][1], m22 = in[2][2];
     int i, j;
+    double det;
 
     out[0][0] =  (m11 * m22 - m21 * m12);
     out[0][1] = -(m01 * m22 - m21 * m02);
@@ -783,7 +784,7 @@ static void invert_matrix3x3(double in[3][3], double out[3][3])
     out[2][1] = -(m00 * m21 - m20 * m01);
     out[2][2] =  (m00 * m11 - m10 * m01);
 
-    double det = m00 * out[0][0] + m10 * out[0][1] + m20 * out[0][2];
+    det = m00 * out[0][0] + m10 * out[0][1] + m20 * out[0][2];
     det = 1.0 / det;
 
     for (i = 0; i < 3; i++) {
