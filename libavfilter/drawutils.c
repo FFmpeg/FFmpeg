@@ -54,10 +54,20 @@ int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_BGR0:
     case AV_PIX_FMT_BGR24: rgba_map[BLUE ] = 0; rgba_map[GREEN] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
     case AV_PIX_FMT_GBRP9LE:
+    case AV_PIX_FMT_GBRP9BE:
     case AV_PIX_FMT_GBRP10LE:
+    case AV_PIX_FMT_GBRP10BE:
     case AV_PIX_FMT_GBRP12LE:
+    case AV_PIX_FMT_GBRP12BE:
     case AV_PIX_FMT_GBRP14LE:
+    case AV_PIX_FMT_GBRP14BE:
+    case AV_PIX_FMT_GBRP16LE:
+    case AV_PIX_FMT_GBRP16BE:
     case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_GBRAP12LE:
+    case AV_PIX_FMT_GBRAP12BE:
+    case AV_PIX_FMT_GBRAP16LE:
+    case AV_PIX_FMT_GBRAP16BE:
     case AV_PIX_FMT_GBRP:  rgba_map[GREEN] = 0; rgba_map[BLUE ] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
     default:                    /* unsupported */
         return AVERROR(EINVAL);
