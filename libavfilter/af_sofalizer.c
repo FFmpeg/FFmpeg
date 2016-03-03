@@ -999,7 +999,7 @@ static int config_input(AVFilterLink *inlink)
         s->ifft[1] = av_fft_init(log2(s->n_fft), 1);
 
         if (!s->fft[0] || !s->fft[1] || !s->ifft[0] || !s->ifft[1]) {
-            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts.\n");
+            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts of size %d.\n", s->n_fft);
             return AVERROR(ENOMEM);
         }
     }
