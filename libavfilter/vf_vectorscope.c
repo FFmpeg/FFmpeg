@@ -930,9 +930,9 @@ static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         int x = positions[P][i][X];
         int y = positions[P][i][Y];
 
-        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
-        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
-        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[0] + y * out->linesize[0] + x * 2), out->linesize[0] / 2, 128 * m, o);
+        draw_dots16((uint16_t *)(out->data[1] + y * out->linesize[1] + x * 2), out->linesize[1] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[2] + y * out->linesize[2] + x * 2), out->linesize[2] / 2, 0, o);
         if (out->data[3])
             draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
@@ -941,9 +941,9 @@ static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         int x = positions[P][12][X];
         int y = positions[P][12][Y];
 
-        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
-        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
-        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[0] + y * out->linesize[0] + x * 2), out->linesize[0] / 2, 128 * m, o);
+        draw_dots16((uint16_t *)(out->data[1] + y * out->linesize[1] + x * 2), out->linesize[1] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[2] + y * out->linesize[2] + x * 2), out->linesize[2] / 2, 0, o);
         if (out->data[3])
             draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
@@ -952,9 +952,9 @@ static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         int x = positions[P][13][X];
         int y = positions[P][13][Y];
 
-        draw_dots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, 128 * m, o);
-        draw_dots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, 0, o);
-        draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[0] + y * out->linesize[0] + x * 2), out->linesize[0] / 2, 128 * m, o);
+        draw_dots16((uint16_t *)(out->data[1] + y * out->linesize[1] + x * 2), out->linesize[1] / 2, 0, o);
+        draw_dots16((uint16_t *)(out->data[2] + y * out->linesize[2] + x * 2), out->linesize[2] / 2, 0, o);
         if (out->data[3])
             draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
@@ -969,9 +969,9 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         int x = positions[P][i][X];
         int y = positions[P][i][Y];
 
-        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
-        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
-        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        draw_dots(out->data[0] + y * out->linesize[0] + x, out->linesize[0], 128, o);
+        draw_dots(out->data[1] + y * out->linesize[1] + x, out->linesize[1], 0, o);
+        draw_dots(out->data[2] + y * out->linesize[2] + x, out->linesize[2], 0, o);
         if (out->data[3])
             draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
@@ -980,9 +980,9 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         int x = positions[P][12][X];
         int y = positions[P][12][Y];
 
-        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
-        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
-        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        draw_dots(out->data[0] + y * out->linesize[0] + x, out->linesize[0], 128, o);
+        draw_dots(out->data[1] + y * out->linesize[1] + x, out->linesize[1], 0, o);
+        draw_dots(out->data[2] + y * out->linesize[2] + x, out->linesize[2], 0, o);
         if (out->data[3])
             draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
@@ -991,9 +991,9 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         int x = positions[P][13][X];
         int y = positions[P][13][Y];
 
-        draw_dots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], 128, o);
-        draw_dots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], 0, o);
-        draw_dots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], 0, o);
+        draw_dots(out->data[0] + y * out->linesize[0] + x, out->linesize[0], 128, o);
+        draw_dots(out->data[1] + y * out->linesize[1] + x, out->linesize[1], 0, o);
+        draw_dots(out->data[2] + y * out->linesize[2] + x, out->linesize[2], 0, o);
         if (out->data[3])
             draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
