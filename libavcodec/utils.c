@@ -3784,6 +3784,7 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
         par->sample_rate     = codec->sample_rate;
         par->block_align     = codec->block_align;
         par->initial_padding = codec->initial_padding;
+        par->seek_preroll    = codec->seek_preroll;
         break;
     }
 
@@ -3830,6 +3831,7 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         codec->sample_rate     = par->sample_rate;
         codec->block_align     = par->block_align;
         codec->initial_padding = par->initial_padding;
+        codec->seek_preroll    = par->seek_preroll;
         break;
     }
 
