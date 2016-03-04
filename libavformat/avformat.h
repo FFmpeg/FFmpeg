@@ -1832,11 +1832,11 @@ typedef struct AVFormatContext {
 #endif
 
     /**
-     * ',' separated list of disallowed protocols.
+     * ',' separated list of allowed protocols.
      * - encoding: unused
      * - decoding: set by user through AVOptions (NO direct access)
      */
-    char *protocol_blacklist;
+    char *protocol_whitelist;
 
     /*
      * A callback for opening new IO streams.
