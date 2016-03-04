@@ -110,6 +110,7 @@ struct FFTContext {
     void (*mdct_calcw)(struct FFTContext *s, FFTDouble *output, const FFTSample *input);
     enum fft_permutation_type fft_permutation;
     enum mdct_permutation_type mdct_permutation;
+    uint32_t *revtab32;
 };
 
 #if CONFIG_HARDCODED_TABLES
