@@ -60,7 +60,7 @@ enum                                   { VAR_SAMPLE_RATE, VAR_BIN, VAR_NBBINS, V
 static const AVOption afftfilt_options[] = {
     { "real", "set channels real expressions",       OFFSET(real_str), AV_OPT_TYPE_STRING, {.str = "1" }, 0, 0, A },
     { "imag",  "set channels imaginary expressions", OFFSET(img_str),  AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, A },
-    { "win_size", "set window size", OFFSET(fft_bits), AV_OPT_TYPE_INT, {.i64=12}, 4, 16, A, "fft" },
+    { "win_size", "set window size", OFFSET(fft_bits), AV_OPT_TYPE_INT, {.i64=12}, 4, 17, A, "fft" },
         { "w16",    0, 0, AV_OPT_TYPE_CONST, {.i64=4},  0, 0, A, "fft" },
         { "w32",    0, 0, AV_OPT_TYPE_CONST, {.i64=5},  0, 0, A, "fft" },
         { "w64",    0, 0, AV_OPT_TYPE_CONST, {.i64=6},  0, 0, A, "fft" },
