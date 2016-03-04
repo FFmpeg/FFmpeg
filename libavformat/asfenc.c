@@ -212,7 +212,7 @@ typedef struct ASFContext {
     ASFStream streams[128];              ///< it's max number and it's not that big
     /* non streamed additonnal info */
     uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
-    int64_t duration;                    ///< in 100ns units
+    uint64_t duration;                   ///< in ms
     /* packet filling */
     unsigned char multi_payloads_present;
     int packet_size_left;
@@ -380,7 +380,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     AVCodecParameters *par;
     int64_t header_offset, cur_pos, hpos;
     int bit_rate;
-    int64_t duration;
+    uint64_t play_duration, send_duration;
 
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
 
@@ -390,7 +390,17 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     tags[3] = av_dict_get(s->metadata, "comment", NULL, 0);
     tags[4] = av_dict_get(s->metadata, "rating", NULL, 0);
 
-    duration       = asf->duration + PREROLL_TIME * 10000;
+    if (asf->duration > UINT64_MAX / 10000 - PREROLL_TIME) {
+        av_log(s, AV_LOG_WARNING, "Duration %"PRIu64" too large\n", asf->duration);
+        if (s->error_recognition & AV_EF_EXPLODE)
+            return AVERROR(ERANGE);
+        send_duration = 0;
+        play_duration = 0;
+    } else {
+        send_duration  = asf->duration * 10000;
+        play_duration  = (asf->duration + PREROLL_TIME) * 10000;
+    }
+
     has_title      = tags[0] || tags[1] || tags[2] || tags[3] || tags[4];
     metadata_count = av_dict_count(s->metadata);
 
@@ -421,8 +431,8 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     file_time = 0;
     avio_wl64(pb, unix_to_file_time(file_time));
     avio_wl64(pb, asf->nb_packets); /* number of packets */
-    avio_wl64(pb, duration); /* end time stamp (in 100ns units) */
-    avio_wl64(pb, asf->duration); /* duration (in 100ns units) */
+    avio_wl64(pb, play_duration); /* end time stamp (in 100ns units) */
+    avio_wl64(pb, send_duration); /* duration (in 100ns units) */
     avio_wl64(pb, PREROLL_TIME); /* start time stamp */
     avio_wl32(pb, (asf->is_streamed || !pb->seekable) ? 3 : 2);  /* ??? */
     avio_wl32(pb, s->packet_size); /* packet size */
@@ -854,7 +864,6 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
     ASFStream *stream;
-    int64_t duration;
     AVCodecParameters *par;
     int64_t packet_st, pts;
     int start_sec, i;
@@ -869,8 +878,10 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
     assert(pts != AV_NOPTS_VALUE);
-    duration      = pts * 10000;
-    asf->duration = FFMAX(asf->duration, duration + pkt->duration * 10000);
+
+    if (pts > UINT64_MAX - pkt->duration)
+        return AVERROR(ERANGE);
+    asf->duration = FFMAX(asf->duration, pts + pkt->duration);
 
     packet_st = asf->nb_packets;
     put_frame(s, stream, s->streams[pkt->stream_index],
@@ -878,8 +889,11 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* check index */
     if ((!asf->is_streamed) && (flags & AV_PKT_FLAG_KEY)) {
-        start_sec = (int)(duration / INT64_C(10000000));
-        if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
+        if (pts / 1000LL > INT_MAX)
+            return AVERROR(ERANGE);
+
+        start_sec = pts / 1000;
+        if (start_sec != asf->last_indexed_pts / 1000) {
             for (i = asf->nb_index_count; i < start_sec; i++) {
                 if (i >= asf->nb_index_memory_alloc) {
                     int err;
@@ -900,7 +914,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
                                                         (uint16_t)(asf->nb_packets - packet_st));
             }
             asf->nb_index_count   = start_sec;
-            asf->last_indexed_pts = duration;
+            asf->last_indexed_pts = pts;
         }
     }
     return 0;
