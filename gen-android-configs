@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Generate configurations for various FFMPEG targets
-TARGETS="armv5te armv7-a armv7-a-neon armv8-a silvermont x86"
+TARGETS="armv5te armv7-a armv7-a-neon armv8-a silvermont x86 x86_64"
 SYSROOT_BASE="../../prebuilts/ndk/current/platforms/android-21"
 TOOLS_BASE="../../prebuilts/gcc/linux-x86"
 
@@ -19,6 +19,8 @@ OPTS_silvermont="--arch=x86 --cpu=silvermont --build_suffix= --cross-prefix=${TO
 
 OPTS_x86="--arch=x86 --cpu=i686 --build_suffix= --cross-prefix=${TOOLS_BASE}/x86/x86_64-linux-android-4.9/bin/x86_64-linux-android- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-x86 --target-os=linux --extra-cflags=-m32"
 
+OPTS_x86_64="--arch=x86_64 --cpu=generic --build_suffix= --cross-prefix=${TOOLS_BASE}/x86/x86_64-linux-android-4.9/bin/x86_64-linux-android- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-x86_64 --target-os=linux --extra-cflags=-m64"
+
 for TARGET in $TARGETS;do
     echo "Generating configuration for: ${TARGET}"
     rm -f config.mak config.h
@@ -29,7 +31,7 @@ for TARGET in $TARGETS;do
     cat config.h | sed -e "s/^#define \(ARCH_.*\|HAVE_.*\) \(.*\)/#ifdef \1\n#undef \1\n#endif\n#define \1 \2/g" > android/include/config-${TARGET}.h
 done
 
-cp config.asm android/include/
+cp config.asm android/include/config-${TARGET}.asm
 cp libavutil/avconfig.h android/include/libavutil/
 
 # Not sure why this gets configured wrong..
