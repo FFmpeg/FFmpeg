@@ -192,7 +192,6 @@ typedef struct ASFStream {
     AVPacket pkt;
     int frag_offset;
     int timestamp;
-    int64_t duration;
 
     int ds_span;                /* descrambling  */
     int ds_packet_size;
