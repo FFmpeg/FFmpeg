@@ -1158,7 +1158,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->peak)
         return AVERROR(ENOMEM);
 
-    for (p = 0; p < 4; p++) {
+    for (p = 0; p < s->ncomp; p++) {
         const int is_chroma = (p == 1 || p == 2);
         const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
         const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
