@@ -3289,12 +3289,6 @@ typedef struct AVCodecContext {
 #define FF_SUB_CHARENC_MODE_AUTOMATIC    0  ///< libavcodec will select the mode itself
 #define FF_SUB_CHARENC_MODE_PRE_DECODER  1  ///< the AVPacket data needs to be recoded to UTF-8 before being fed to the decoder, requires iconv
 
-    int sub_text_format;
-#define FF_SUB_TEXT_FMT_ASS              0
-#if FF_API_ASS_TIMING
-#define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
-#endif
-
     /**
      * Skip processing alpha if supported by codec.
      * Note that if the format uses pre-multiplied alpha (common with VP6,
@@ -3387,6 +3381,18 @@ typedef struct AVCodecContext {
      * afterwards owned and managed by libavcodec.
      */
     AVBufferRef *hw_frames_ctx;
+
+    /**
+     * Control the form of AVSubtitle.rects[N]->ass
+     * - decoding: set by user
+     * - encoding: unused
+     */
+    int sub_text_format;
+#define FF_SUB_TEXT_FMT_ASS              0
+#if FF_API_ASS_TIMING
+#define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
+#endif
+
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
