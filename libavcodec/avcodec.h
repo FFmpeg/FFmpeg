@@ -3889,6 +3889,10 @@ typedef struct AVCodecParameters {
      * Corresponds to nBlockAlign in WAVEFORMATEX.
      */
     int      block_align;
+    /**
+     * Audio only. Audio frame size, if known. Required by some formats to be static.
+     */
+    int      frame_size;
 
     /**
      * Audio only. The amount of padding (in samples) inserted by the encoder at
