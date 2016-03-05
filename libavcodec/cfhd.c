@@ -467,6 +467,9 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 coeff_data += lowpass_width;
             }
 
+            /* Align to mod-4 position to continue reading tags */
+            bytestream2_seek(&gb, bytestream2_tell(&gb) & 3, SEEK_CUR);
+
             /* Copy last line of coefficients if odd height */
             if (lowpass_height & 1) {
                 memcpy(&coeff_data[lowpass_height * lowpass_width],
