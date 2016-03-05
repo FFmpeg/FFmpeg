@@ -101,7 +101,7 @@ static void pkt_dump_internal(void *avcl, FILE *f, int level, const AVPacket *pk
     HEXDUMP_PRINT("\n");
     HEXDUMP_PRINT("  size=%d\n", pkt->size);
     if (dump_payload)
-        av_hex_dump(f, pkt->data, pkt->size);
+        hex_dump_internal(avcl, f, level, pkt->data, pkt->size);
 }
 
 void av_pkt_dump2(FILE *f, const AVPacket *pkt, int dump_payload, const AVStream *st)
