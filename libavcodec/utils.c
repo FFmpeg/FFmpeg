@@ -2517,6 +2517,7 @@ static int convert_sub_to_old_ass_form(AVSubtitle *sub, const AVPacket *pkt, AVR
 
         final_dialog = av_strdup(buf.str);
         if (!av_bprint_is_complete(&buf) || !final_dialog) {
+            av_freep(&final_dialog);
             av_bprint_finalize(&buf, NULL);
             return AVERROR(ENOMEM);
         }
