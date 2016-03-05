@@ -301,7 +301,7 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
 
     cat->avf->interrupt_callback = avf->interrupt_callback;
 
-    if ((ret = ff_copy_whitelists(cat->avf, avf)) < 0)
+    if ((ret = ff_copy_whiteblacklists(cat->avf, avf)) < 0)
         return ret;
 
     if ((ret = avformat_open_input(&cat->avf, file->url, NULL, NULL)) < 0 ||

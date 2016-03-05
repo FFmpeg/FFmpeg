@@ -74,6 +74,7 @@ static const AVOption afftfilt_options[] = {
         { "w16384", 0, 0, AV_OPT_TYPE_CONST, {.i64=14}, 0, 0, A, "fft" },
         { "w32768", 0, 0, AV_OPT_TYPE_CONST, {.i64=15}, 0, 0, A, "fft" },
         { "w65536", 0, 0, AV_OPT_TYPE_CONST, {.i64=16}, 0, 0, A, "fft" },
+        { "w131072",0, 0, AV_OPT_TYPE_CONST, {.i64=17}, 0, 0, A, "fft" },
     { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANNING}, 0, NB_WFUNC-1, A, "win_func" },
         { "rect",     "Rectangular",      0, AV_OPT_TYPE_CONST, {.i64=WFUNC_RECT},     0, 0, A, "win_func" },
         { "bartlett", "Bartlett",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BARTLETT}, 0, 0, A, "win_func" },

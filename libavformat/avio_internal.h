@@ -155,7 +155,7 @@ int ffio_open_null_buf(AVIOContext **s);
 
 int ffio_open_whitelist(AVIOContext **s, const char *url, int flags,
                          const AVIOInterruptCB *int_cb, AVDictionary **options,
-                         const char *whitelist);
+                         const char *whitelist, const char *blacklist);
 
 /**
  * Close a null buffer.

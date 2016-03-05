@@ -83,7 +83,7 @@ static int import_pem(URLContext *h, char *path, CFArrayRef *array)
 
     if ((ret = ffio_open_whitelist(&s, path, AVIO_FLAG_READ,
                                    &h->interrupt_callback, NULL,
-                                   h->protocol_whitelist)) < 0)
+                                   h->protocol_whitelist, h->protocol_blacklist)) < 0)
         goto end;
 
     if ((ret = avio_size(s)) < 0)

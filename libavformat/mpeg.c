@@ -732,7 +732,7 @@ static int vobsub_read_header(AVFormatContext *s)
         goto end;
     }
 
-    if ((ret = ff_copy_whitelists(vobsub->sub_ctx, s)) < 0)
+    if ((ret = ff_copy_whiteblacklists(vobsub->sub_ctx, s)) < 0)
         goto end;
 
     ret = avformat_open_input(&vobsub->sub_ctx, vobsub->sub_name, iformat, NULL);

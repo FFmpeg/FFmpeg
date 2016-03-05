@@ -39,6 +39,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/time_internal.h"
@@ -130,6 +131,36 @@ typedef struct MatroskaTrackEncoding {
     MatroskaTrackEncryption encryption;
 } MatroskaTrackEncoding;
 
+typedef struct MatroskaMasteringMeta {
+    double r_x;
+    double r_y;
+    double g_x;
+    double g_y;
+    double b_x;
+    double b_y;
+    double white_x;
+    double white_y;
+    double max_luminance;
+    double min_luminance;
+} MatroskaMasteringMeta;
+
+typedef struct MatroskaTrackVideoColor {
+    uint64_t matrix_coefficients;
+    uint64_t bits_per_channel;
+    uint64_t chroma_sub_horz;
+    uint64_t chroma_sub_vert;
+    uint64_t cb_sub_horz;
+    uint64_t cb_sub_vert;
+    uint64_t chroma_siting_horz;
+    uint64_t chroma_siting_vert;
+    uint64_t range;
+    uint64_t transfer_characteristics;
+    uint64_t primaries;
+    uint64_t max_cll;
+    uint64_t max_fall;
+    MatroskaMasteringMeta mastering_meta;
+} MatroskaTrackVideoColor;
+
 typedef struct MatroskaTrackVideo {
     double   frame_rate;
     uint64_t display_width;
@@ -139,6 +170,7 @@ typedef struct MatroskaTrackVideo {
     EbmlBin color_space;
     uint64_t stereo_mode;
     uint64_t alpha_mode;
+    MatroskaTrackVideoColor color;
 } MatroskaTrackVideo;
 
 typedef struct MatroskaTrackAudio {
@@ -356,6 +388,38 @@ static const EbmlSyntax matroska_info[] = {
     { 0 }
 };
 
+static const EbmlSyntax matroska_mastering_meta[] = {
+    { MATROSKA_ID_VIDEOCOLOR_RX, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, r_x), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_RY, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, r_y), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_GX, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, g_x), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_GY, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, g_y), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_BX, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, b_x), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_BY, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, b_y), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_WHITEX, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, white_x), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_WHITEY, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, white_y), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_LUMINANCEMIN, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, min_luminance), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_LUMINANCEMAX, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, max_luminance), { .f=-1 } },
+    { 0 }
+};
+
+static const EbmlSyntax matroska_track_video_color[] = {
+    { MATROSKA_ID_VIDEOCOLORMATRIXCOEFF,      EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, matrix_coefficients), { .u=2 } },
+    { MATROSKA_ID_VIDEOCOLORBITSPERCHANNEL,   EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, bits_per_channel), { .u=8 } },
+    { MATROSKA_ID_VIDEOCOLORCHROMASUBHORZ,    EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_sub_horz), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORCHROMASUBVERT,    EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_sub_vert), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORCBSUBHORZ,        EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, cb_sub_horz), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORCBSUBVERT,        EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, cb_sub_vert), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORCHROMASITINGHORZ, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_siting_horz), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORCHROMASITINGVERT, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_siting_vert), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORRANGE,            EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, range), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORTRANSFERCHARACTERISTICS, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, transfer_characteristics), { .u=2 } },
+    { MATROSKA_ID_VIDEOCOLORPRIMARIES,        EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, primaries), { .u=2 } },
+    { MATROSKA_ID_VIDEOCOLORMAXCLL,           EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, max_cll), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORMAXFALL,          EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, max_fall), { .u=0 } },
+    { MATROSKA_ID_VIDEOCOLORMASTERINGMETA,    EBML_NEST, 0, offsetof(MatroskaTrackVideoColor, mastering_meta), { .n = matroska_mastering_meta } },
+    { 0 }
+};
+
 static const EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOFRAMERATE,      EBML_FLOAT, 0, offsetof(MatroskaTrackVideo, frame_rate) },
     { MATROSKA_ID_VIDEODISPLAYWIDTH,   EBML_UINT,  0, offsetof(MatroskaTrackVideo, display_width), { .u=-1 } },
@@ -364,6 +428,7 @@ static const EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELHEIGHT,    EBML_UINT,  0, offsetof(MatroskaTrackVideo, pixel_height) },
     { MATROSKA_ID_VIDEOCOLORSPACE,     EBML_BIN,   0, offsetof(MatroskaTrackVideo, color_space) },
     { MATROSKA_ID_VIDEOALPHAMODE,      EBML_UINT,  0, offsetof(MatroskaTrackVideo, alpha_mode) },
+    { MATROSKA_ID_VIDEOCOLOR,          EBML_NEST,  0, offsetof(MatroskaTrackVideo, color), { .n = matroska_track_video_color } },
     { MATROSKA_ID_VIDEOPIXELCROPB,     EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPT,     EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPL,     EBML_NONE },
@@ -1708,6 +1773,69 @@ static void mkv_stereo_mode_display_mul(int stereo_mode, int *h_width, int *h_he
     }
 }
 
+static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
+    const MatroskaMasteringMeta* mastering_meta =
+        &track->video.color.mastering_meta;
+    // Mastering primaries are CIE 1931 coords, and must be > 0.
+    const int has_mastering_primaries =
+        mastering_meta->r_x > 0 && mastering_meta->r_y > 0 &&
+        mastering_meta->g_x > 0 && mastering_meta->g_y > 0 &&
+        mastering_meta->b_x > 0 && mastering_meta->b_y > 0 &&
+        mastering_meta->white_x > 0 && mastering_meta->white_y > 0;
+    const int has_mastering_luminance = mastering_meta->max_luminance > 0;
+
+    if (track->video.color.matrix_coefficients != AVCOL_SPC_RESERVED)
+        st->codec->colorspace = track->video.color.matrix_coefficients;
+    if (track->video.color.primaries != AVCOL_PRI_RESERVED)
+        st->codec->color_primaries = track->video.color.primaries;
+    if (track->video.color.transfer_characteristics != AVCOL_TRC_RESERVED)
+        st->codec->color_trc = track->video.color.transfer_characteristics;
+    if (track->video.color.range != AVCOL_RANGE_UNSPECIFIED &&
+        track->video.color.range <= AVCOL_RANGE_JPEG)
+        st->codec->color_range = track->video.color.range;
+
+    if (has_mastering_primaries || has_mastering_luminance) {
+        // Use similar rationals as other standards.
+        const int chroma_den = 50000;
+        const int luma_den = 10000;
+        AVMasteringDisplayMetadata *metadata =
+            (AVMasteringDisplayMetadata*) av_stream_new_side_data(
+                st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+                sizeof(AVMasteringDisplayMetadata));
+        if (!metadata) {
+            return AVERROR(ENOMEM);
+        }
+        memset(metadata, 0, sizeof(AVMasteringDisplayMetadata));
+        if (has_mastering_primaries) {
+            metadata->display_primaries[0][0] = av_make_q(
+                round(mastering_meta->r_x * chroma_den), chroma_den);
+            metadata->display_primaries[0][1] = av_make_q(
+                round(mastering_meta->r_y * chroma_den), chroma_den);
+            metadata->display_primaries[1][0] = av_make_q(
+                round(mastering_meta->g_x * chroma_den), chroma_den);
+            metadata->display_primaries[1][1] = av_make_q(
+                round(mastering_meta->g_y * chroma_den), chroma_den);
+            metadata->display_primaries[2][0] = av_make_q(
+                round(mastering_meta->b_x * chroma_den), chroma_den);
+            metadata->display_primaries[2][1] = av_make_q(
+                round(mastering_meta->b_y * chroma_den), chroma_den);
+            metadata->white_point[0] = av_make_q(
+                round(mastering_meta->white_x * chroma_den), chroma_den);
+            metadata->white_point[1] = av_make_q(
+                round(mastering_meta->white_y * chroma_den), chroma_den);
+            metadata->has_primaries = 1;
+        }
+        if (has_mastering_luminance) {
+            metadata->max_luminance = av_make_q(
+                round(mastering_meta->max_luminance * luma_den), luma_den);
+            metadata->min_luminance = av_make_q(
+                round(mastering_meta->min_luminance * luma_den), luma_den);
+            metadata->has_luminance = 1;
+        }
+    }
+    return 0;
+}
+
 static int get_qt_codec(MatroskaTrack *track, uint32_t *fourcc, enum AVCodecID *codec_id)
 {
     const AVCodecTag *codec_tags;
@@ -2174,6 +2302,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
                 track->video.stereo_mode != 10 && track->video.stereo_mode != 12) {
                 int ret = ff_mkv_stereo3d_conv(st, track->video.stereo_mode);
+                if (ret < 0)
+                    return ret;
+            }
+
+            if (s->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
+                int ret = mkv_parse_video_color(st, track);
                 if (ret < 0)
                     return ret;
             }

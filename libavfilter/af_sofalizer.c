@@ -937,6 +937,11 @@ static av_cold int init(AVFilterContext *ctx)
     SOFAlizerContext *s = ctx->priv;
     int ret;
 
+    if (!s->filename) {
+        av_log(ctx, AV_LOG_ERROR, "Valid SOFA filename must be set.\n");
+        return AVERROR(EINVAL);
+    }
+
     /* load SOFA file, */
     /* initialize file IDs to 0 before attempting to load SOFA files,
      * this assures that in case of error, only the memory of already

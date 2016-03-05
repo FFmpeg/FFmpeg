@@ -26,6 +26,7 @@
 #include "libavutil/display.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
@@ -352,6 +353,23 @@ static void dump_cpb(void *ctx, AVPacketSideData *sd)
            cpb->vbv_delay);
 }
 
+static void dump_mastering_display_metadata(void *ctx, AVPacketSideData* sd) {
+    AVMasteringDisplayMetadata* metadata = (AVMasteringDisplayMetadata*)sd->data;
+    av_log(ctx, AV_LOG_INFO, "Mastering Display Metadata, "
+           "has_primaries:%d has_luminance:%d "
+           "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f) "
+           "min_luminance=%f, max_luminance=%f\n",
+           metadata->has_primaries, metadata->has_luminance,
+           av_q2d(metadata->display_primaries[0][0]),
+           av_q2d(metadata->display_primaries[0][1]),
+           av_q2d(metadata->display_primaries[1][0]),
+           av_q2d(metadata->display_primaries[1][1]),
+           av_q2d(metadata->display_primaries[2][0]),
+           av_q2d(metadata->display_primaries[2][1]),
+           av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]),
+           av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+}
+
 static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
 {
     int i;
@@ -399,6 +417,9 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
         case AV_PKT_DATA_CPB_PROPERTIES:
             av_log(ctx, AV_LOG_INFO, "cpb: ");
             dump_cpb(ctx, &sd);
+            break;
+        case AV_PKT_DATA_MASTERING_DISPLAY_METADATA:
+            dump_mastering_display_metadata(ctx, &sd);
             break;
         default:
             av_log(ctx, AV_LOG_WARNING,
