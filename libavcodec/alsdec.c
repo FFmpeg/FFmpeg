@@ -729,7 +729,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                     quant_cof[k] = decode_rice(gb, rice_param) + offset;
                     if (quant_cof[k] < -64 || quant_cof[k] > 63) {
                         av_log(avctx, AV_LOG_ERROR,
-                               "quant_cof %"PRIu32" is out of range.\n",
+                               "quant_cof %"PRId32" is out of range.\n",
                                quant_cof[k]);
                         return AVERROR_INVALIDDATA;
                     }
