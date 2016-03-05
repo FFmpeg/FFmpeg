@@ -699,6 +699,9 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (ret2) {
                 int pal_size = 1 << enc->bits_per_coded_sample;
                 int pc_tag, i;
+
+                av_assert0(enc->bits_per_coded_sample >= 0 && enc->bits_per_coded_sample <= 8);
+
                 if (pb->seekable && avist->pal_offset) {
                     int64_t cur_offset = avio_tell(pb);
                     avio_seek(pb, avist->pal_offset, SEEK_SET);
