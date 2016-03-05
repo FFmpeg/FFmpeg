@@ -306,8 +306,7 @@ static int avi_write_header(AVFormatContext *s)
             avio_wl32(pb, enc->codec_tag);
         else
             avio_wl32(pb, 1);
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO && pb->seekable)
-            avist->strh_flags_offset = avio_tell(pb);
+        avist->strh_flags_offset = avio_tell(pb);
         avio_wl32(pb, 0); /* flags */
         avio_wl16(pb, 0); /* priority */
         avio_wl16(pb, 0); /* language */
@@ -369,8 +368,7 @@ static int avi_write_header(AVFormatContext *s)
                     && enc->pix_fmt == AV_PIX_FMT_RGB555LE
                     && enc->bits_per_coded_sample == 15)
                     enc->bits_per_coded_sample = 16;
-                if (pb->seekable)
-                    avist->pal_offset = avio_tell(pb) + 40;
+                avist->pal_offset = avio_tell(pb) + 40;
                 ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 0, 0);
                 pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
                                               enc->bits_per_coded_sample);
