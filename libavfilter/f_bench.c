@@ -68,7 +68,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->action == ACTION_START) {
         av_dict_set_int(&in->metadata, START_TIME_KEY, t, 0);
-    } else if (s->action = ACTION_STOP) {
+    } else if (s->action == ACTION_STOP) {
         AVDictionaryEntry *e = av_dict_get(in->metadata, START_TIME_KEY, NULL, 0);
         if (e) {
             const int64_t start = strtoll(e->value, NULL, 0);
