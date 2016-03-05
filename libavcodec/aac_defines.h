@@ -89,9 +89,9 @@ typedef float               AAC_FLOAT;
 typedef unsigned            AAC_SIGNE;
 #define FIXR(x)             ((float)(x))
 #define FIXR10(x)           ((float)(x))
-#define Q23(x)              x
-#define Q30(x)              x
-#define Q31(x)              x
+#define Q23(x)              ((float)(x))
+#define Q30(x)              ((float)(x))
+#define Q31(x)              ((float)(x))
 #define RANGE15(x)          (32768.0 * (x))
 #define GET_GAIN(x, y)      powf((x), -(y))
 #define AAC_MUL16(x, y)     ((x) * (y))
