@@ -49,6 +49,8 @@ typedef struct AVIIentry {
 
 #define AVI_INDEX_CLUSTER_SIZE 16384
 
+#define AVISF_VIDEO_PALCHANGES 0x00010000
+
 typedef struct AVIIndex {
     int64_t     indx_start;
     int64_t     audio_strm_offset;
@@ -74,12 +76,15 @@ typedef struct AVIStream {
     int max_size;
     int sample_requested;
 
-    int64_t pal_offset;
-    int hdr_pal_done;
-
     int64_t last_dts;
 
     AVIIndex indexes;
+
+    int64_t strh_flags_offset;
+
+    uint32_t palette[AVPALETTE_COUNT];
+    uint32_t old_palette[AVPALETTE_COUNT];
+    int64_t pal_offset;
 } AVIStream;
 
 static int avi_write_packet_internal(AVFormatContext *s, AVPacket *pkt);
@@ -301,6 +306,8 @@ static int avi_write_header(AVFormatContext *s)
             avio_wl32(pb, enc->codec_tag);
         else
             avio_wl32(pb, 1);
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO && pb->seekable)
+            avist->strh_flags_offset = avio_tell(pb);
         avio_wl32(pb, 0); /* flags */
         avio_wl16(pb, 0); /* priority */
         avio_wl16(pb, 0); /* language */
@@ -362,7 +369,8 @@ static int avi_write_header(AVFormatContext *s)
                     && enc->pix_fmt == AV_PIX_FMT_RGB555LE
                     && enc->bits_per_coded_sample == 15)
                     enc->bits_per_coded_sample = 16;
-                avist->pal_offset = avio_tell(pb) + 40;
+                if (pb->seekable)
+                    avist->pal_offset = avio_tell(pb) + 40;
                 ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 0, 0);
                 pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
                                               enc->bits_per_coded_sample);
@@ -652,11 +660,11 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     unsigned char tag[5];
     const int stream_index = pkt->stream_index;
-    const uint8_t *data    = pkt->data;
-    int size               = pkt->size;
     AVIOContext *pb     = s->pb;
     AVCodecContext *enc = s->streams[stream_index]->codec;
     AVIStream *avist    = s->streams[stream_index]->priv_data;
+    AVPacket *opkt = pkt;
+    enum AVPixelFormat pix_fmt = enc->pix_fmt;
     int ret;
 
     if (enc->codec_id == AV_CODEC_ID_H264 && enc->codec_tag == MKTAG('H','2','6','4') && pkt->size) {
@@ -668,39 +676,64 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret = write_skip_frames(s, stream_index, pkt->dts)) < 0)
         return ret;
 
-    if (enc->codec_id == AV_CODEC_ID_RAWVIDEO && enc->codec_tag == 0) {
-        int64_t bpc = enc->bits_per_coded_sample != 15 ? enc->bits_per_coded_sample : 16;
-        int expected_stride = ((enc->width * bpc + 31) >> 5)*4;
+    if (!pkt->size)
+        return avi_write_packet_internal(s, pkt); /* Passthrough */
 
-        ret = ff_reshuffle_raw_rgb(s, &pkt, enc, expected_stride);
-        if (ret < 0)
-            return ret;
-        if (ret) {
-            if (ret == CONTAINS_PAL) {
-                int pc_tag, i;
+    if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (enc->codec_id == AV_CODEC_ID_RAWVIDEO && enc->codec_tag == 0) {
+            int64_t bpc = enc->bits_per_coded_sample != 15 ? enc->bits_per_coded_sample : 16;
+            int expected_stride = ((enc->width * bpc + 31) >> 5)*4;
+            ret = ff_reshuffle_raw_rgb(s, &pkt, enc, expected_stride);
+            if (ret < 0)
+                return ret;
+        } else
+            ret = 0;
+        if (pix_fmt == AV_PIX_FMT_NONE && enc->bits_per_coded_sample == 1)
+            pix_fmt = AV_PIX_FMT_MONOWHITE;
+        if (pix_fmt == AV_PIX_FMT_PAL8 ||
+            pix_fmt == AV_PIX_FMT_MONOWHITE ||
+            pix_fmt == AV_PIX_FMT_MONOBLACK) {
+            int ret2 = ff_get_packet_palette(s, opkt, ret, avist->palette);
+            if (ret2 < 0)
+                return ret2;
+            if (ret2) {
                 int pal_size = 1 << enc->bits_per_coded_sample;
-                if (!avist->hdr_pal_done) {
+                int pc_tag, i;
+                if (pb->seekable && avist->pal_offset) {
                     int64_t cur_offset = avio_tell(pb);
                     avio_seek(pb, avist->pal_offset, SEEK_SET);
                     for (i = 0; i < pal_size; i++) {
-                        uint32_t v = AV_RL32(data + size - 4*pal_size + 4*i);
+                        uint32_t v = avist->palette[i];
                         avio_wl32(pb, v & 0xffffff);
                     }
                     avio_seek(pb, cur_offset, SEEK_SET);
-                    avist->hdr_pal_done++;
+                    memcpy(avist->old_palette, avist->palette, pal_size * 4);
+                    avist->pal_offset = 0;
                 }
-                avi_stream2fourcc(tag, stream_index, enc->codec_type);
-                tag[2] = 'p'; tag[3] = 'c';
-                pc_tag = ff_start_tag(pb, tag);
-                avio_w8(pb, 0);
-                avio_w8(pb, pal_size & 0xFF);
-                avio_wl16(pb, 0); // reserved
-                for (i = 0; i < pal_size; i++) {
-                    uint32_t v = AV_RL32(data + size - 4*pal_size + 4*i);
-                    avio_wb32(pb, v<<8);
+                if (memcmp(avist->palette, avist->old_palette, pal_size * 4)) {
+                    avi_stream2fourcc(tag, stream_index, enc->codec_type);
+                    tag[2] = 'p'; tag[3] = 'c';
+                    pc_tag = ff_start_tag(pb, tag);
+                    avio_w8(pb, 0);
+                    avio_w8(pb, pal_size & 0xFF);
+                    avio_wl16(pb, 0); // reserved
+                    for (i = 0; i < pal_size; i++) {
+                        uint32_t v = avist->palette[i];
+                        avio_wb32(pb, v<<8);
+                    }
+                    ff_end_tag(pb, pc_tag);
+                    memcpy(avist->old_palette, avist->palette, pal_size * 4);
+                    if (pb->seekable && avist->strh_flags_offset) {
+                        int64_t cur_offset = avio_tell(pb);
+                        avio_seek(pb, avist->strh_flags_offset, SEEK_SET);
+                        avio_wl32(pb, AVISF_VIDEO_PALCHANGES);
+                        avio_seek(pb, cur_offset, SEEK_SET);
+                        avist->strh_flags_offset = 0;
+                    }
                 }
-                ff_end_tag(pb, pc_tag);
             }
+        }
+        if (ret) {
             ret = avi_write_packet_internal(s, pkt);
             av_packet_free(&pkt);
             return ret;
