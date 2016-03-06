@@ -109,7 +109,7 @@ static const AVOption waveform_options[] = {
 
 AVFILTER_DEFINE_CLASS(waveform);
 
-static const enum AVPixelFormat lowpass_pix_fmts[] = {
+static const enum AVPixelFormat in_lowpass_pix_fmts[] = {
     AV_PIX_FMT_GBRP,     AV_PIX_FMT_GBRAP,
     AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
     AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
@@ -124,6 +124,51 @@ static const enum AVPixelFormat lowpass_pix_fmts[] = {
     AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
     AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV440P12,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_rgb8_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_rgb9_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GBRP9,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_rgb10_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_rgb12_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GBRP12,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_yuv8_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVA444P,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_yuv9_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUVA444P9,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_yuv10_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_yuv12_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_gray8_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
 };
 
@@ -144,21 +189,73 @@ static int query_formats(AVFilterContext *ctx)
 {
     WaveformContext *s = ctx->priv;
     AVFilterFormats *fmts_list;
+    const enum AVPixelFormat *out_pix_fmts;
     const enum AVPixelFormat *pix_fmts;
+    const AVPixFmtDescriptor *desc;
+    AVFilterFormats *avff;
+    int depth, rgb, i, ret, ncomp;
 
-    switch (s->filter) {
-    case LOWPASS: pix_fmts = lowpass_pix_fmts; break;
-    case FLAT:
-    case AFLAT:
-    case CHROMA:
-    case ACHROMA: pix_fmts = flat_pix_fmts;    break;
-    case COLOR:   pix_fmts = color_pix_fmts;   break;
+    if (s->filter != LOWPASS) {
+        switch (s->filter) {
+        case FLAT:
+        case AFLAT:
+        case CHROMA:
+        case ACHROMA: pix_fmts = flat_pix_fmts;    break;
+        case COLOR:   pix_fmts = color_pix_fmts;   break;
+        }
+
+        fmts_list = ff_make_format_list(pix_fmts);
+        if (!fmts_list)
+            return AVERROR(ENOMEM);
+        return ff_set_common_formats(ctx, fmts_list);
     }
 
-    fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    if (!ctx->inputs[0]->in_formats ||
+        !ctx->inputs[0]->in_formats->nb_formats) {
+        return AVERROR(EAGAIN);
+    }
+
+    if (!ctx->inputs[0]->out_formats) {
+        if ((ret = ff_formats_ref(ff_make_format_list(in_lowpass_pix_fmts), &ctx->inputs[0]->out_formats)) < 0)
+            return ret;
+    }
+
+    avff = ctx->inputs[0]->in_formats;
+    desc = av_pix_fmt_desc_get(avff->formats[0]);
+    ncomp = desc->nb_components;
+    rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
+    depth = desc->comp[0].depth;
+    for (i = 1; i < avff->nb_formats; i++) {
+        desc = av_pix_fmt_desc_get(avff->formats[i]);
+        if (rgb != (desc->flags & AV_PIX_FMT_FLAG_RGB) ||
+            depth != desc->comp[0].depth)
+            return AVERROR(EAGAIN);
+    }
+
+    if (ncomp == 1 && depth == 8)
+        out_pix_fmts = out_gray8_lowpass_pix_fmts;
+    else if (rgb && depth == 8 && ncomp > 2)
+        out_pix_fmts = out_rgb8_lowpass_pix_fmts;
+    else if (rgb && depth == 9 && ncomp > 2)
+        out_pix_fmts = out_rgb9_lowpass_pix_fmts;
+    else if (rgb && depth == 10 && ncomp > 2)
+        out_pix_fmts = out_rgb10_lowpass_pix_fmts;
+    else if (rgb && depth == 12 && ncomp > 2)
+        out_pix_fmts = out_rgb12_lowpass_pix_fmts;
+    else if (depth == 8 && ncomp > 2)
+        out_pix_fmts = out_yuv8_lowpass_pix_fmts;
+    else if (depth == 9 && ncomp > 2)
+        out_pix_fmts = out_yuv9_lowpass_pix_fmts;
+    else if (depth == 10 && ncomp > 2)
+        out_pix_fmts = out_yuv10_lowpass_pix_fmts;
+    else if (depth == 12 && ncomp > 2)
+        out_pix_fmts = out_yuv12_lowpass_pix_fmts;
+    else
+        return AVERROR(EAGAIN);
+    if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
+        return ret;
+
+    return 0;
 }
 
 static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int component)
@@ -166,11 +263,8 @@ static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int 
     const int dst_linesize = out->linesize[component] / 2;
     const int bg = s->bg_color[component] * (s->max / 256);
     const int limit = s->max - 1;
-    const int is_chroma = (component == 1 || component == 2);
-    const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-    const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = out->height;
+    const int dst_w = out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     uint16_t *dst;
@@ -216,11 +310,8 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int co
 {
     const int dst_linesize = out->linesize[component];
     const uint8_t bg = s->bg_color[component];
-    const int is_chroma = (component == 1 || component == 2);
-    const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-    const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = out->height;
+    const int dst_w = out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     uint8_t *dst;
@@ -267,11 +358,8 @@ static void envelope_peak16(WaveformContext *s, AVFrame *out, int plane, int com
     const int dst_linesize = out->linesize[component] / 2;
     const int bg = s->bg_color[component] * (s->max / 256);
     const int limit = s->max - 1;
-    const int is_chroma = (component == 1 || component == 2);
-    const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-    const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = out->height;
+    const int dst_w = out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     int *emax = s->emax[plane][component];
@@ -339,11 +427,8 @@ static void envelope_peak(WaveformContext *s, AVFrame *out, int plane, int compo
 {
     const int dst_linesize = out->linesize[component];
     const int bg = s->bg_color[component];
-    const int is_chroma = (component == 1 || component == 2);
-    const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-    const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
-    const int dst_h = AV_CEIL_RSHIFT(out->height, shift_h);
-    const int dst_w = AV_CEIL_RSHIFT(out->width, shift_w);
+    const int dst_h = out->height;
+    const int dst_w = out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     int *emax = s->emax[plane][component];
@@ -461,14 +546,15 @@ static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
     const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
     const uint16_t *src_data = (const uint16_t *)in->data[plane];
-    uint16_t *dst_data = (uint16_t *)out->data[plane] + (column ? (offset >> shift_h) * dst_linesize : offset >> shift_w);
-    uint16_t * const dst_bottom_line = dst_data + dst_linesize * ((s->size >> shift_h) - 1);
+    uint16_t *dst_data = (uint16_t *)out->data[plane] + (column ? offset * dst_linesize : offset);
+    uint16_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint16_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
+    const int step = column ? 1 << shift_w : 1 << shift_h;
     const uint16_t *p;
     int y;
 
     if (!column && mirror)
-        dst_data += s->size >> shift_w;
+        dst_data += s->size;
 
     for (y = 0; y < src_h; y++) {
         const uint16_t *src_data_end = src_data + src_w;
@@ -476,20 +562,27 @@ static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
 
         for (p = src_data; p < src_data_end; p++) {
             uint16_t *target;
-            int v = FFMIN(*p, limit);
+            int i = 0, v = FFMIN(*p, limit);
 
             if (column) {
-                target = dst++ + dst_signed_linesize * (v >> shift_h);
+                do {
+                    target = dst++ + dst_signed_linesize * v;
+                    update16(target, max, intensity, limit);
+                } while (++i < step);
             } else {
-                if (mirror)
-                    target = dst_data - (v >> shift_w) - 1;
-                else
-                    target = dst_data + (v >> shift_w);
+                uint16_t *row = dst_data;
+                do {
+                    if (mirror)
+                        target = row - v - 1;
+                    else
+                        target = row + v;
+                    update16(target, max, intensity, limit);
+                    row += dst_linesize;
+                } while (++i < step);
             }
-            update16(target, max, intensity, limit);
         }
         src_data += src_linesize;
-        dst_data += dst_linesize;
+        dst_data += dst_linesize * step;
     }
 
     envelope16(s, out, plane, plane);
@@ -510,33 +603,42 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
     const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
     const uint8_t *src_data = in->data[plane];
-    uint8_t *dst_data = out->data[plane] + (column ? (offset >> shift_h) * dst_linesize : offset >> shift_w);
-    uint8_t * const dst_bottom_line = dst_data + dst_linesize * ((s->size >> shift_h) - 1);
+    uint8_t *dst_data = out->data[plane] + (column ? offset * dst_linesize : offset);
+    uint8_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint8_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
+    const int step = column ? 1 << shift_w : 1 << shift_h;
     const uint8_t *p;
     int y;
 
     if (!column && mirror)
-        dst_data += s->size >> shift_w;
+        dst_data += s->size;
 
     for (y = 0; y < src_h; y++) {
         const uint8_t *src_data_end = src_data + src_w;
         uint8_t *dst = dst_line;
 
         for (p = src_data; p < src_data_end; p++) {
+            int i = 0;
             uint8_t *target;
             if (column) {
-                target = dst++ + dst_signed_linesize * (*p >> shift_h);
+                do {
+                    target = dst++ + dst_signed_linesize * *p;
+                    update(target, max, intensity);
+                } while (++i < step);
             } else {
-                if (mirror)
-                    target = dst_data - (*p >> shift_w) - 1;
-                else
-                    target = dst_data + (*p >> shift_w);
+                uint8_t *row = dst_data;
+                do {
+                    if (mirror)
+                        target = row - *p - 1;
+                    else
+                        target = row + *p;
+                    update(target, max, intensity);
+                    row += dst_linesize;
+                } while (++i < step);
             }
-            update(target, max, intensity);
         }
         src_data += src_linesize;
-        dst_data += dst_linesize;
+        dst_data += dst_linesize * step;
     }
 
     envelope(s, out, plane, plane);
@@ -1149,15 +1251,12 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
             continue;
 
         for (p = 0; p < s->ncomp; p++) {
-            const int is_chroma = (p == 1 || p == 2);
-            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
             const int v = green_yuva_color[p];
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
                 int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
-                uint8_t *dst = out->data[p] + (x >> shift_w);
+                uint8_t *dst = out->data[p] + x;
 
-                blend_vline(dst, out->height >> shift_h, out->linesize[p], o1, o2, v);
+                blend_vline(dst, out->height, out->linesize[p], o1, o2, v);
             }
         }
 
@@ -1177,15 +1276,12 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
             continue;
 
         for (p = 0; p < s->ncomp; p++) {
-            const int is_chroma = (p == 1 || p == 2);
-            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
             const int v = green_yuva_color[p] * mult;
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
                 int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) * mult;
-                uint16_t *dst = (uint16_t *)(out->data[p]) + (x >> shift_w);
+                uint16_t *dst = (uint16_t *)(out->data[p]) + x;
 
-                blend_vline16(dst, out->height >> shift_h, out->linesize[p], o1, o2, v);
+                blend_vline16(dst, out->height, out->linesize[p], o1, o2, v);
             }
         }
 
@@ -1204,15 +1300,12 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
             continue;
 
         for (p = 0; p < s->ncomp; p++) {
-            const int is_chroma = (p == 1 || p == 2);
-            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
             const int v = green_yuva_color[p];
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
                 int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
-                uint8_t *dst = out->data[p] + (y >> shift_h) * out->linesize[p];
+                uint8_t *dst = out->data[p] + y * out->linesize[p];
 
-                blend_hline(dst, out->width >> shift_w, o1, o2, v);
+                blend_hline(dst, out->width, o1, o2, v);
             }
         }
 
@@ -1232,15 +1325,12 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
             continue;
 
         for (p = 0; p < s->ncomp; p++) {
-            const int is_chroma = (p == 1 || p == 2);
-            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
             const int v = green_yuva_color[p] * mult;
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
                 int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) * mult;
-                uint16_t *dst = (uint16_t *)(out->data[p] + (y >> shift_h) * out->linesize[p]);
+                uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]);
 
-                blend_hline16(dst, out->width >> shift_w, o1, o2, v);
+                blend_hline16(dst, out->width, o1, o2, v);
             }
         }
 
@@ -1309,7 +1399,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     WaveformContext *s = ctx->priv;
-    int comp = 0, i, j = 0, k, p, size, shift;
+    int comp = 0, i, j = 0, k, p, size;
 
     for (i = 0; i < s->ncomp; i++) {
         if ((1 << i) & s->pcomp)
@@ -1331,16 +1421,11 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     for (p = 0; p < s->ncomp; p++) {
-        const int is_chroma = (p == 1 || p == 2);
-        const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
-        const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
         const int plane = s->desc->comp[p].plane;
         int offset;
 
         if (!((1 << p) & s->pcomp))
             continue;
-
-        shift = s->mode ? shift_h : shift_w;
 
         for (k = 0; k < 4; k++) {
             s->emax[plane][k] = s->peak + size * (plane * 4 + k + 0);
@@ -1348,8 +1433,8 @@ static int config_output(AVFilterLink *outlink)
         }
 
         offset = j++ * s->size * s->display;
-        s->estart[plane] = offset >> shift;
-        s->eend[plane]   = (offset + s->size - 1) >> shift;
+        s->estart[plane] = offset;
+        s->eend[plane]   = (offset + s->size - 1);
         for (i = 0; i < size; i++) {
             for (k = 0; k < 4; k++) {
                 s->emax[plane][k][i] = s->estart[plane];
@@ -1379,20 +1464,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->pts = in->pts;
 
     for (k = 0; k < s->ncomp; k++) {
-        const int is_chroma = (k == 1 || k == 2);
-        const int dst_h = AV_CEIL_RSHIFT(outlink->h, (is_chroma ? s->desc->log2_chroma_h : 0));
-        const int dst_w = AV_CEIL_RSHIFT(outlink->w, (is_chroma ? s->desc->log2_chroma_w : 0));
         if (s->bits <= 8) {
-            for (i = 0; i < dst_h ; i++)
+            for (i = 0; i < outlink->h ; i++)
                 memset(out->data[s->desc->comp[k].plane] +
                        i * out->linesize[s->desc->comp[k].plane],
-                       s->bg_color[k], dst_w);
+                       s->bg_color[k], outlink->w);
         } else {
             const int mult = s->size / 256;
             uint16_t *dst = (uint16_t *)out->data[s->desc->comp[k].plane];
 
-            for (i = 0; i < dst_h ; i++) {
-                for (j = 0; j < dst_w; j++)
+            for (i = 0; i < outlink->h ; i++) {
+                for (j = 0; j < outlink->w; j++)
                     dst[j] = s->bg_color[k] * mult;
                 dst += out->linesize[s->desc->comp[k].plane] / 2;
             }
