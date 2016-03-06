@@ -25,6 +25,7 @@
 #include "libavutil/xga_font_data.h"
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/time.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "lavfutils.h"
@@ -90,7 +91,33 @@ AVFILTER_DEFINE_CLASS(showcqt);
 static void common_uninit(ShowCQTContext *s)
 {
     int k;
+    int level = AV_LOG_DEBUG;
+    int64_t plot_time;
 
+    if (s->fft_time)
+        av_log(s->ctx, level, "fft_time         = %16.3f s.\n", s->fft_time * 1e-6);
+    if (s->cqt_time)
+        av_log(s->ctx, level, "cqt_time         = %16.3f s.\n", s->cqt_time * 1e-6);
+    if (s->process_cqt_time)
+        av_log(s->ctx, level, "process_cqt_time = %16.3f s.\n", s->process_cqt_time * 1e-6);
+    if (s->update_sono_time)
+        av_log(s->ctx, level, "update_sono_time = %16.3f s.\n", s->update_sono_time * 1e-6);
+    if (s->alloc_time)
+        av_log(s->ctx, level, "alloc_time       = %16.3f s.\n", s->alloc_time * 1e-6);
+    if (s->bar_time)
+        av_log(s->ctx, level, "bar_time         = %16.3f s.\n", s->bar_time * 1e-6);
+    if (s->axis_time)
+        av_log(s->ctx, level, "axis_time        = %16.3f s.\n", s->axis_time * 1e-6);
+    if (s->sono_time)
+        av_log(s->ctx, level, "sono_time        = %16.3f s.\n", s->sono_time * 1e-6);
+
+    plot_time = s->fft_time + s->cqt_time + s->process_cqt_time + s->update_sono_time
+              + s->alloc_time + s->bar_time + s->axis_time + s->sono_time;
+    if (plot_time)
+        av_log(s->ctx, level, "plot_time        = %16.3f s.\n", plot_time * 1e-6);
+
+    s->fft_time = s->cqt_time = s->process_cqt_time = s->update_sono_time
+                = s->alloc_time = s->bar_time = s->axis_time = s->sono_time = 0;
     /* axis_frame may be non reference counted frame */
     if (s->axis_frame && !s->axis_frame->buf[0]) {
         av_freep(s->axis_frame->data);
@@ -961,25 +988,52 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
 {
     AVFilterLink *outlink = ctx->outputs[0];
     ShowCQTContext *s = ctx->priv;
+    int64_t last_time, cur_time;
+
+#define UPDATE_TIME(t) \
+    cur_time = av_gettime(); \
+    t += cur_time - last_time; \
+    last_time = cur_time
+
+    last_time = av_gettime();
 
     memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
     av_fft_permute(s->fft_ctx, s->fft_result);
     av_fft_calc(s->fft_ctx, s->fft_result);
     s->fft_result[s->fft_len] = s->fft_result[0];
+    UPDATE_TIME(s->fft_time);
+
     s->cqt_calc(s->cqt_result, s->fft_result, s->coeffs, s->cqt_len, s->fft_len);
+    UPDATE_TIME(s->cqt_time);
+
     process_cqt(s);
-    if (s->sono_h)
+    UPDATE_TIME(s->process_cqt_time);
+
+    if (s->sono_h) {
         s->update_sono(s->sono_frame, s->c_buf, s->sono_idx);
+        UPDATE_TIME(s->update_sono_time);
+    }
+
     if (!s->sono_count) {
         AVFrame *out = *frameout = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
-        if (s->bar_h)
+        UPDATE_TIME(s->alloc_time);
+
+        if (s->bar_h) {
             s->draw_bar(out, s->h_buf, s->rcp_h_buf, s->c_buf, s->bar_h);
-        if (s->axis_h)
+            UPDATE_TIME(s->bar_time);
+        }
+
+        if (s->axis_h) {
             s->draw_axis(out, s->axis_frame, s->c_buf, s->bar_h);
-        if (s->sono_h)
+            UPDATE_TIME(s->axis_time);
+        }
+
+        if (s->sono_h) {
             s->draw_sono(out, s->sono_frame, s->bar_h + s->axis_h, s->sono_idx);
+            UPDATE_TIME(s->sono_time);
+        }
         out->pts = s->next_pts;
         s->next_pts += PTS_STEP;
     }

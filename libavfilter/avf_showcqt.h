@@ -79,6 +79,15 @@ typedef struct {
     void                (*draw_axis)(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off);
     void                (*draw_sono)(AVFrame *out, AVFrame *sono, int off, int idx);
     void                (*update_sono)(AVFrame *sono, const ColorFloat *c, int idx);
+    /* performance debugging */
+    int64_t             fft_time;
+    int64_t             cqt_time;
+    int64_t             process_cqt_time;
+    int64_t             update_sono_time;
+    int64_t             alloc_time;
+    int64_t             bar_time;
+    int64_t             axis_time;
+    int64_t             sono_time;
     /* option */
     int                 width, height;
     AVRational          rate;
