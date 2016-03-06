@@ -343,7 +343,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             bytestream2_skipu(&gb, data * 4);
         } else if (tag == 23) {
             av_log(avctx, AV_LOG_DEBUG, "Skip frame\n");
-            avpriv_report_missing_feature(avctx, "Skip frame\n");
+            avpriv_report_missing_feature(avctx, "Skip frame");
             ret = AVERROR_PATCHWELCOME;
             break;
         } else if (tag == 2) {
