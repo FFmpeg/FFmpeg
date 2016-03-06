@@ -62,7 +62,7 @@ typedef struct VectorscopeContext {
     int tmax;
     int flags;
     int cs;
-    uint8_t peak[1024][1024];
+    uint8_t peak[4096][4096];
 
     void (*vectorscope)(struct VectorscopeContext *s,
                         AVFrame *in, AVFrame *out, int pd);
@@ -129,6 +129,11 @@ static const enum AVPixelFormat out_yuv10_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static const enum AVPixelFormat out_yuv12_pix_fmts[] = {
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_NONE
+};
+
 static const enum AVPixelFormat out_rgb8_pix_fmts[] = {
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_NONE
@@ -144,12 +149,19 @@ static const enum AVPixelFormat out_rgb10_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static const enum AVPixelFormat out_rgb12_pix_fmts[] = {
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+    AV_PIX_FMT_NONE
+};
+
 static const enum AVPixelFormat in1_pix_fmts[] = {
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_YUV444P12,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_NONE
 };
 
@@ -161,10 +173,12 @@ static const enum AVPixelFormat in2_pix_fmts[] = {
     AV_PIX_FMT_YUV440P,  AV_PIX_FMT_YUV410P,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
     AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
     AV_PIX_FMT_NONE
 };
 
@@ -209,12 +223,16 @@ static int query_formats(AVFilterContext *ctx)
         out_pix_fmts = out_rgb9_pix_fmts;
     else if (rgb && depth == 10)
         out_pix_fmts = out_rgb10_pix_fmts;
+    else if (rgb && depth == 12)
+        out_pix_fmts = out_rgb12_pix_fmts;
+    else if (depth == 8)
+        out_pix_fmts = out_yuv8_pix_fmts;
     else if (depth == 9)
         out_pix_fmts = out_yuv9_pix_fmts;
     else if (depth == 10)
         out_pix_fmts = out_yuv10_pix_fmts;
-    else if (depth == 8)
-        out_pix_fmts = out_yuv8_pix_fmts;
+    else if (depth == 12)
+        out_pix_fmts = out_yuv12_pix_fmts;
     else
         return AVERROR(EAGAIN);
     if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
@@ -782,6 +800,26 @@ const static uint16_t positions[][14][3] = {
     {  28*4, 212*4, 120*4 }, {  51*4, 109*4, 212*4 }, {  63*4, 193*4, 204*4 },
     { 133*4,  63*4,  52*4 }, { 145*4, 147*4,  44*4 }, { 168*4,  44*4, 136*4 },
     { 940, 512, 512 }, { 64, 512, 512 } },
+  { { 210*8,  16*8, 146*8 }, { 170*8, 166*8,  16*8 }, { 145*8,  54*8,  34*8 },
+    { 106*8, 202*8, 222*8 }, {  81*8,  90*8, 240*8 }, {  41*8, 240*8, 110*8 },
+    { 162*8,  44*8, 142*8 }, { 131*8, 156*8,  44*8 }, { 112*8,  72*8,  58*8 },
+    {  84*8, 184*8, 198*8 }, {  65*8, 100*8, 212*8 }, {  35*8, 212*8, 114*8 },
+    { 1880, 1024, 1024 }, { 128, 1024, 1024 } },
+  { {  63*8, 102*8, 240*8 }, {  32*8, 240*8, 118*8 }, { 188*8, 154*8,  16*8 },
+    { 219*8,  16*8, 138*8 }, { 173*8,  42*8,  26*8 }, {  78*8, 214*8, 230*8 },
+    {  28*8, 212*8, 120*8 }, {  51*8, 109*8, 212*8 }, {  63*8, 193*8, 204*8 },
+    { 133*8,  63*8,  52*8 }, { 145*8, 147*8,  44*8 }, { 168*8,  44*8, 136*8 },
+    { 1880, 1024, 1024 }, { 128, 1024, 1024 } },
+  { { 210*16,  16*16, 146*16 }, { 170*16, 166*16,  16*16 }, { 145*16,  54*16,  34*16 },
+    { 106*16, 202*16, 222*16 }, {  81*16,  90*16, 240*16 }, {  41*16, 240*16, 110*16 },
+    { 162*16,  44*16, 142*16 }, { 131*16, 156*16,  44*16 }, { 112*16,  72*16,  58*16 },
+    {  84*16, 184*16, 198*16 }, {  65*16, 100*16, 212*16 }, {  35*16, 212*16, 114*16 },
+    { 3760, 2048, 2048 }, { 256, 2048, 2048 } },
+  { {  63*16, 102*16, 240*16 }, {  32*16, 240*16, 118*16 }, { 188*16, 154*16,  16*16 },
+    { 219*16,  16*16, 138*16 }, { 173*16,  42*16,  26*16 }, {  78*16, 214*16, 230*16 },
+    {  28*16, 212*16, 120*16 }, {  51*16, 109*16, 212*16 }, {  63*16, 193*16, 204*16 },
+    { 133*16,  63*16,  52*16 }, { 145*16, 147*16,  44*16 }, { 168*16,  44*16, 136*16 },
+    { 3760, 2048, 2048 }, { 256, 2048, 2048 } },
 };
 
 static void draw_dots(uint8_t *dst, int L, int v, float o)
@@ -1081,6 +1119,7 @@ static int config_input(AVFilterLink *inlink)
     s->bg_color[3] = s->bgopacity * (s->size - 1);
 
     switch (inlink->format) {
+    case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:
