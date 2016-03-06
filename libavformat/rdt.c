@@ -531,7 +531,7 @@ static av_cold int rdt_init(AVFormatContext *s, int st_index, PayloadContext *rd
     if (!rdt->rmctx)
         return AVERROR(ENOMEM);
 
-    if ((ret = ff_copy_whitelists(rdt->rmctx, s)) < 0)
+    if ((ret = ff_copy_whiteblacklists(rdt->rmctx, s)) < 0)
         return ret;
 
     return avformat_open_input(&rdt->rmctx, "", &ff_rdt_demuxer, NULL);

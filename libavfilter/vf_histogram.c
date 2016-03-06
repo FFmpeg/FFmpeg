@@ -148,8 +148,10 @@ static int query_formats(AVFilterContext *ctx)
         out_pix_fmts = levels_out_yuv8_pix_fmts;
     else if (bits == 9)
         out_pix_fmts = levels_out_yuv9_pix_fmts;
-    else // if (bits == 10)
+    else if (bits == 10)
         out_pix_fmts = levels_out_yuv10_pix_fmts;
+    else
+        return AVERROR(EAGAIN);
     if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
         return ret;
 

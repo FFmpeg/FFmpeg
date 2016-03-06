@@ -26,6 +26,9 @@ av_cold void ff_fft_init_x86(FFTContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
+    if (s->nbits > 16)
+        return;
+
 #if ARCH_X86_32
     if (EXTERNAL_AMD3DNOW(cpu_flags)) {
         /* 3DNow! for K6-2/3 */

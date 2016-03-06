@@ -500,7 +500,10 @@ av_cold void ff_fft_init_mips(FFTContext *s)
 {
     int n=0;
 
-    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 16, &n);
+    if (s->nbits > 16)
+        return;
+
+    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
     ff_init_ff_cos_tabs(16);
 
 #if HAVE_INLINE_ASM

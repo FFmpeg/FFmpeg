@@ -48,6 +48,10 @@ FATE_LIBAVUTIL += fate-crc
 fate-crc: libavutil/crc-test$(EXESUF)
 fate-crc: CMD = run libavutil/crc-test
 
+FATE_LIBAVUTIL += fate-color_utils
+fate-color_utils: libavutil/color_utils-test$(EXESUF)
+fate-color_utils: CMD = run libavutil/color_utils-test
+
 FATE_LIBAVUTIL += fate-des
 fate-des: libavutil/des-test$(EXESUF)
 fate-des: CMD = run libavutil/des-test

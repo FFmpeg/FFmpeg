@@ -49,6 +49,8 @@ typedef struct WaveformContext {
     int            mirror;
     int            display;
     int            envelope;
+    int            graticule;
+    float          opacity;
     int            estart[4];
     int            eend[4];
     int            *emax[4][4];
@@ -60,6 +62,7 @@ typedef struct WaveformContext {
     int            size;
     void (*waveform)(struct WaveformContext *s, AVFrame *in, AVFrame *out,
                      int component, int intensity, int offset, int column);
+    void (*graticulef)(struct WaveformContext *s, AVFrame *out);
     const AVPixFmtDescriptor *desc;
 } WaveformContext;
 
@@ -95,6 +98,12 @@ static const AVOption waveform_options[] = {
         { "chroma",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=CHROMA},  0, 0, FLAGS, "filter" },
         { "achroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACHROMA}, 0, 0, FLAGS, "filter" },
         { "color",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},   0, 0, FLAGS, "filter" },
+    { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
+    { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
+        { "none",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "graticule" },
+        { "green", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "graticule" },
+    { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
+    { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -1081,7 +1090,163 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
 }
 
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
+static const uint8_t green_yuva_color[4] = { 255, 0, 0, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
+static const uint8_t lines[4][2] = { { 16, 235 }, { 16, 240 }, { 16, 240 }, { 0, 255 } };
+
+static void blend_vline(uint8_t *dst, int height, int linesize, float o1, float o2, int v)
+{
+    int y;
+
+    for (y = 0; y < height; y++) {
+        dst[0] = v * o1 + dst[0] * o2;
+
+        dst += linesize;
+    }
+}
+
+static void blend_vline16(uint16_t *dst, int height, int linesize, float o1, float o2, int v)
+{
+    int y;
+
+    for (y = 0; y < height; y++) {
+        dst[0] = v * o1 + dst[0] * o2;
+
+        dst += linesize / 2;
+    }
+}
+
+static void blend_hline(uint8_t *dst, int width, float o1, float o2, int v)
+{
+    int x;
+
+    for (x = 0; x < width; x++) {
+        dst[x] = v * o1 + dst[x] * o2;
+    }
+}
+
+static void blend_hline16(uint16_t *dst, int width, float o1, float o2, int v)
+{
+    int x;
+
+    for (x = 0; x < width; x++) {
+        dst[x] = v * o1 + dst[x] * o2;
+    }
+}
+
+static void graticule_none(WaveformContext *s, AVFrame *out)
+{
+}
+
+static void graticule_green_row(WaveformContext *s, AVFrame *out)
+{
+    const float o1 = s->opacity;
+    const float o2 = 1. - o1;
+    int c, p, l, offset = 0;
+
+    for (c = 0; c < s->ncomp; c++) {
+        if (!((1 << c) & s->pcomp))
+            continue;
+
+        for (p = 0; p < s->ncomp; p++) {
+            const int is_chroma = (p == 1 || p == 2);
+            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
+            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
+            const int v = green_yuva_color[p];
+            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
+                int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
+                uint8_t *dst = out->data[p] + (x >> shift_w);
+
+                blend_vline(dst, out->height >> shift_h, out->linesize[p], o1, o2, v);
+            }
+        }
+
+        offset += 256 * s->display;
+    }
+}
+
+static void graticule16_green_row(WaveformContext *s, AVFrame *out)
+{
+    const float o1 = s->opacity;
+    const float o2 = 1. - o1;
+    const int mult = s->size / 256;
+    int c, p, l, offset = 0;
+
+    for (c = 0; c < s->ncomp; c++) {
+        if (!((1 << c) & s->pcomp))
+            continue;
+
+        for (p = 0; p < s->ncomp; p++) {
+            const int is_chroma = (p == 1 || p == 2);
+            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
+            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
+            const int v = green_yuva_color[p] * mult;
+            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
+                int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) * mult;
+                uint16_t *dst = (uint16_t *)(out->data[p]) + (x >> shift_w);
+
+                blend_vline16(dst, out->height >> shift_h, out->linesize[p], o1, o2, v);
+            }
+        }
+
+        offset += s->size * s->display;
+    }
+}
+
+static void graticule_green_column(WaveformContext *s, AVFrame *out)
+{
+    const float o1 = s->opacity;
+    const float o2 = 1. - o1;
+    int c, p, l, offset = 0;
+
+    for (c = 0; c < s->ncomp; c++) {
+        if (!((1 << c) & s->pcomp))
+            continue;
+
+        for (p = 0; p < s->ncomp; p++) {
+            const int is_chroma = (p == 1 || p == 2);
+            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
+            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
+            const int v = green_yuva_color[p];
+            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
+                int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
+                uint8_t *dst = out->data[p] + (y >> shift_h) * out->linesize[p];
+
+                blend_hline(dst, out->width >> shift_w, o1, o2, v);
+            }
+        }
+
+        offset += 256 * s->display;
+    }
+}
+
+static void graticule16_green_column(WaveformContext *s, AVFrame *out)
+{
+    const float o1 = s->opacity;
+    const float o2 = 1. - o1;
+    const int mult = s->size / 256;
+    int c, p, l, offset = 0;
+
+    for (c = 0; c < s->ncomp; c++) {
+        if (!((1 << c) & s->pcomp))
+            continue;
+
+        for (p = 0; p < s->ncomp; p++) {
+            const int is_chroma = (p == 1 || p == 2);
+            const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
+            const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
+            const int v = green_yuva_color[p] * mult;
+            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
+                int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) * mult;
+                uint16_t *dst = (uint16_t *)(out->data[p] + (y >> shift_h) * out->linesize[p]);
+
+                blend_hline16(dst, out->width >> shift_w, o1, o2, v);
+            }
+        }
+
+        offset += s->size * s->display;
+    }
+}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -1094,9 +1259,15 @@ static int config_input(AVFilterLink *inlink)
     s->max = 1 << s->bits;
     s->intensity = s->fintensity * (s->max - 1);
 
+    s->graticulef = graticule_none;
+
     switch (s->filter) {
     case LOWPASS:
             s->size = 256;
+            if (s->graticule && s->mode == 1)
+                s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+            else if (s->graticule && s->mode == 0)
+                s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
             s->waveform = s->bits > 8 ? lowpass16 : lowpass; break;
     case FLAT:
             s->size = 256 * 3;
@@ -1124,6 +1295,7 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
         s->bg_color = black_gbrp_color;
+        s->graticulef = graticule_none;
         break;
     default:
         s->bg_color = black_yuva_color;
@@ -1158,7 +1330,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->peak)
         return AVERROR(ENOMEM);
 
-    for (p = 0; p < 4; p++) {
+    for (p = 0; p < s->ncomp; p++) {
         const int is_chroma = (p == 1 || p == 2);
         const int shift_w = (is_chroma ? s->desc->log2_chroma_w : 0);
         const int shift_h = (is_chroma ? s->desc->log2_chroma_h : 0);
@@ -1233,6 +1405,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->waveform(s, in, out, k, s->intensity, offset, s->mode);
         }
     }
+    s->graticulef(s, out);
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

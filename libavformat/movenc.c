@@ -1716,14 +1716,15 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     else
         avio_wb16(pb, 0x18); /* Reserved */
 
-    if (track->is_unaligned_qt_rgb && track->enc->pix_fmt == AV_PIX_FMT_PAL8) {
+    if (track->mode == MODE_MOV && track->enc->pix_fmt == AV_PIX_FMT_PAL8) {
+        int pal_size = 1 << track->enc->bits_per_coded_sample;
         int i;
         avio_wb16(pb, 0);             /* Color table ID */
         avio_wb32(pb, 0);             /* Color table seed */
         avio_wb16(pb, 0x8000);        /* Color table flags */
-        avio_wb16(pb, 255);           /* Color table size (zero-relative) */
-        for (i = 0; i < 256; i++) {
-            uint32_t rgb = AV_RL32(&track->palette[i]);
+        avio_wb16(pb, pal_size - 1);  /* Color table size (zero-relative) */
+        for (i = 0; i < pal_size; i++) {
+            uint32_t rgb = track->palette[i];
             uint16_t r = (rgb >> 16) & 0xff;
             uint16_t g = (rgb >> 8)  & 0xff;
             uint16_t b = rgb         & 0xff;
@@ -4763,21 +4764,26 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-        if (trk->is_unaligned_qt_rgb) {
-            const uint8_t *data = pkt->data;
-            int size = pkt->size;
-            int64_t bpc = trk->enc->bits_per_coded_sample != 15 ? trk->enc->bits_per_coded_sample : 16;
-            int expected_stride = ((trk->enc->width * bpc + 15) >> 4)*2;
-            int ret = ff_reshuffle_raw_rgb(s, &pkt, trk->enc, expected_stride);
-            if (ret < 0)
-                return ret;
-            if (ret == CONTAINS_PAL && !trk->pal_done) {
-                int pal_size = 1 << trk->enc->bits_per_coded_sample;
-                memset(trk->palette, 0, AVPALETTE_SIZE);
-                memcpy(trk->palette, data + size - 4*pal_size, 4*pal_size);
-                trk->pal_done++;
-            } else if (trk->enc->pix_fmt == AV_PIX_FMT_GRAY8 ||
-                       trk->enc->pix_fmt == AV_PIX_FMT_MONOBLACK) {
+        if (trk->mode == MODE_MOV && trk->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+            AVPacket *opkt = pkt;
+            int ret;
+            if (trk->is_unaligned_qt_rgb) {
+                int64_t bpc = trk->enc->bits_per_coded_sample != 15 ? trk->enc->bits_per_coded_sample : 16;
+                int expected_stride = ((trk->enc->width * bpc + 15) >> 4)*2;
+                ret = ff_reshuffle_raw_rgb(s, &pkt, trk->enc, expected_stride);
+                if (ret < 0)
+                    return ret;
+            } else
+                ret = 0;
+            if (trk->enc->pix_fmt == AV_PIX_FMT_PAL8 && !trk->pal_done) {
+                int ret2 = ff_get_packet_palette(s, opkt, ret, trk->palette);
+                if (ret2 < 0)
+                    return ret2;
+                if (ret2)
+                    trk->pal_done++;
+            } else if (trk->enc->codec_id == AV_CODEC_ID_RAWVIDEO &&
+                       (trk->enc->pix_fmt == AV_PIX_FMT_GRAY8 ||
+                       trk->enc->pix_fmt == AV_PIX_FMT_MONOBLACK)) {
                 for (i = 0; i < pkt->size; i++)
                     pkt->data[i] = ~pkt->data[i];
             }

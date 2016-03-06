@@ -317,11 +317,11 @@ static int set_extradata(AVCodecContext *avctx, CMSampleBufferRef sample_buffer)
 }
 
 static void vtenc_output_callback(
-    void *CM_NULLABLE ctx,
+    void *ctx,
     void *sourceFrameCtx,
     OSStatus status,
     VTEncodeInfoFlags flags,
-    CM_NULLABLE CMSampleBufferRef sample_buffer)
+    CMSampleBufferRef sample_buffer)
 {
     AVCodecContext *avctx = ctx;
     VTEncContext   *vtctx = avctx->priv_data;
@@ -975,11 +975,11 @@ static int get_cv_pixel_info(
 #if !TARGET_OS_IPHONE
 //Not used on iOS - frame is always copied.
 static void free_avframe(
-    void       *CV_NULLABLE release_ctx,
-    const void *CV_NULLABLE data,
-    size_t                  size,
-    size_t                  plane_count,
-    const void *CV_NULLABLE plane_addresses[])
+    void       *release_ctx,
+    const void *data,
+    size_t      size,
+    size_t      plane_count,
+    const void *plane_addresses[])
 {
     AVFrame *frame = release_ctx;
     av_frame_free(&frame);

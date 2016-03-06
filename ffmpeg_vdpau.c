@@ -126,8 +126,10 @@ static int vdpau_alloc(AVCodecContext *s)
         return AVERROR(ENOMEM);
 
     device_priv = av_mallocz(sizeof(*device_priv));
-    if (!device_priv)
+    if (!device_priv) {
+        av_freep(&ctx);
         goto fail;
+    }
 
     ist->hwaccel_ctx           = ctx;
     ist->hwaccel_uninit        = vdpau_uninit;

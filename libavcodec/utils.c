@@ -2517,6 +2517,7 @@ static int convert_sub_to_old_ass_form(AVSubtitle *sub, const AVPacket *pkt, AVR
 
         final_dialog = av_strdup(buf.str);
         if (!av_bprint_is_complete(&buf) || !final_dialog) {
+            av_freep(&final_dialog);
             av_bprint_finalize(&buf, NULL);
             return AVERROR(ENOMEM);
         }
@@ -3682,9 +3683,9 @@ AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx)
 
 #ifdef TEST
 int main(void){
-    avcodec_register_all();
     AVCodec *codec = NULL;
     int ret = 0;
+    avcodec_register_all();
 
     while (codec = av_codec_next(codec)) {
         if (av_codec_is_encoder(codec)) {

@@ -1619,7 +1619,7 @@ static int hls_read_header(AVFormatContext *s)
         pls->ctx->io_open  = nested_io_open;
         pls->stream_offset = stream_offset;
 
-        if ((ret = ff_copy_whitelists(pls->ctx, s)) < 0)
+        if ((ret = ff_copy_whiteblacklists(pls->ctx, s)) < 0)
             goto fail;
 
         ret = avformat_open_input(&pls->ctx, pls->segments[0]->url, in_fmt, NULL);

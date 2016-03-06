@@ -131,7 +131,7 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         rt->asf_ctx->pb      = &pb;
         av_dict_set(&opts, "no_resync_search", "1", 0);
 
-        if ((ret = ff_copy_whitelists(rt->asf_ctx, s)) < 0) {
+        if ((ret = ff_copy_whiteblacklists(rt->asf_ctx, s)) < 0) {
             av_dict_free(&opts);
             return ret;
         }

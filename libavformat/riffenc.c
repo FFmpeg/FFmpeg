@@ -209,12 +209,17 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
     int keep_height = enc->extradata_size >= 9 &&
                       !memcmp(enc->extradata + enc->extradata_size - 9, "BottomUp", 9);
     int extradata_size = enc->extradata_size - 9*keep_height;
-    int raw_pal_avi;
+    enum AVPixelFormat pix_fmt = enc->pix_fmt;
+    int pal_avi;
 
-    raw_pal_avi = !for_asf && enc->codec_id == AV_CODEC_ID_RAWVIDEO &&
-                  !enc->codec_tag &&
-            enc->bits_per_coded_sample >= 1 && enc->bits_per_coded_sample <= 8;
-    if (!enc->extradata_size && raw_pal_avi)
+    if (pix_fmt == AV_PIX_FMT_NONE && enc->bits_per_coded_sample == 1)
+        pix_fmt = AV_PIX_FMT_MONOWHITE;
+    pal_avi = !for_asf &&
+              (pix_fmt == AV_PIX_FMT_PAL8 ||
+               pix_fmt == AV_PIX_FMT_MONOWHITE ||
+               pix_fmt == AV_PIX_FMT_MONOBLACK);
+
+    if (!enc->extradata_size && pal_avi)
         extradata_size = 4 * (1 << enc->bits_per_coded_sample);
 
     /* size */
@@ -239,11 +244,8 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
             avio_write(pb, enc->extradata, extradata_size);
             if (!for_asf && extradata_size & 1)
                 avio_w8(pb, 0);
-        } else if (raw_pal_avi) {
+        } else if (pal_avi) {
             int i;
-            enum AVPixelFormat pix_fmt = enc->pix_fmt;
-            if (pix_fmt == AV_PIX_FMT_NONE && enc->bits_per_coded_sample == 1)
-                pix_fmt = AV_PIX_FMT_MONOWHITE;
             for (i = 0; i < 1 << enc->bits_per_coded_sample; i++) {
                 /* Initialize 1 bpp palette to black & white */
                 if (i == 0 && pix_fmt == AV_PIX_FMT_MONOWHITE)

@@ -142,18 +142,21 @@ void av_format_inject_global_side_data(AVFormatContext *s)
     }
 }
 
-int ff_copy_whitelists(AVFormatContext *dst, AVFormatContext *src)
+int ff_copy_whiteblacklists(AVFormatContext *dst, AVFormatContext *src)
 {
     av_assert0(!dst->codec_whitelist &&
                !dst->format_whitelist &&
-               !dst->protocol_whitelist);
+               !dst->protocol_whitelist &&
+               !dst->protocol_blacklist);
     dst-> codec_whitelist = av_strdup(src->codec_whitelist);
     dst->format_whitelist = av_strdup(src->format_whitelist);
     dst->protocol_whitelist = av_strdup(src->protocol_whitelist);
+    dst->protocol_blacklist = av_strdup(src->protocol_blacklist);
     if (   (src-> codec_whitelist && !dst-> codec_whitelist)
         || (src->  format_whitelist && !dst->  format_whitelist)
-        || (src->protocol_whitelist && !dst->protocol_whitelist)) {
-        av_log(dst, AV_LOG_ERROR, "Failed to duplicate whitelist\n");
+        || (src->protocol_whitelist && !dst->protocol_whitelist)
+        || (src->protocol_blacklist && !dst->protocol_blacklist)) {
+        av_log(dst, AV_LOG_ERROR, "Failed to duplicate black/whitelist\n");
         return AVERROR(ENOMEM);
     }
     return 0;
@@ -455,6 +458,14 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     if (!s->protocol_whitelist && s->pb && s->pb->protocol_whitelist) {
         s->protocol_whitelist = av_strdup(s->pb->protocol_whitelist);
         if (!s->protocol_whitelist) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
+    if (!s->protocol_blacklist && s->pb && s->pb->protocol_blacklist) {
+        s->protocol_blacklist = av_strdup(s->pb->protocol_blacklist);
+        if (!s->protocol_blacklist) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -4782,18 +4793,27 @@ int ff_standardize_creation_time(AVFormatContext *s)
     return ret;
 }
 
-int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, const uint8_t **palette)
+int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette)
 {
+    uint8_t *side_data;
     int size;
 
-    *palette = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
-    if (*palette && size != AVPALETTE_SIZE) {
-        av_log(s, AV_LOG_ERROR, "Invalid palette side data\n");
-        return AVERROR_INVALIDDATA;
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
+    if (side_data) {
+        if (size != AVPALETTE_SIZE) {
+            av_log(s, AV_LOG_ERROR, "Invalid palette side data\n");
+            return AVERROR_INVALIDDATA;
+        }
+        memcpy(palette, side_data, AVPALETTE_SIZE);
+        return 1;
     }
 
-    if (!*palette && ret == CONTAINS_PAL)
-        *palette = pkt->data + pkt->size - AVPALETTE_SIZE;
+    if (ret == CONTAINS_PAL) {
+        int i;
+        for (i = 0; i < AVPALETTE_COUNT; i++)
+            palette[i] = AV_RL32(pkt->data + pkt->size - AVPALETTE_SIZE + i*4);
+        return 1;
+    }
 
     return 0;
 }

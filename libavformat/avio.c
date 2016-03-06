@@ -55,6 +55,7 @@ static void *urlcontext_child_next(void *obj, void *prev)
 #define D AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     {"protocol_whitelist", "List of protocols that are allowed to be used", OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
+    {"protocol_blacklist", "List of protocols that are not allowed to be used", OFFSET(protocol_blacklist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
     { NULL }
 };
 
@@ -173,9 +174,16 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
     // Check that URLContext was initialized correctly and lists are matching if set
     av_assert0(!(e=av_dict_get(*options, "protocol_whitelist", NULL, 0)) ||
                (uc->protocol_whitelist && !strcmp(uc->protocol_whitelist, e->value)));
+    av_assert0(!(e=av_dict_get(*options, "protocol_blacklist", NULL, 0)) ||
+               (uc->protocol_blacklist && !strcmp(uc->protocol_blacklist, e->value)));
 
     if (uc->protocol_whitelist && av_match_list(uc->prot->name, uc->protocol_whitelist, ',') <= 0) {
         av_log(uc, AV_LOG_ERROR, "Protocol not on whitelist \'%s\'!\n", uc->protocol_whitelist);
+        return AVERROR(EINVAL);
+    }
+
+    if (uc->protocol_blacklist && av_match_list(uc->prot->name, uc->protocol_blacklist, ',') > 0) {
+        av_log(uc, AV_LOG_ERROR, "Protocol blacklisted \'%s\'!\n", uc->protocol_blacklist);
         return AVERROR(EINVAL);
     }
 
@@ -190,6 +198,8 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
 
     if ((err = av_dict_set(options, "protocol_whitelist", uc->protocol_whitelist, 0)) < 0)
         return err;
+    if ((err = av_dict_set(options, "protocol_blacklist", uc->protocol_blacklist, 0)) < 0)
+        return err;
 
     err =
         uc->prot->url_open2 ? uc->prot->url_open2(uc,
@@ -199,6 +209,7 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
         uc->prot->url_open(uc, uc->filename, uc->flags);
 
     av_dict_set(options, "protocol_whitelist", NULL, 0);
+    av_dict_set(options, "protocol_blacklist", NULL, 0);
 
     if (err)
         return err;
@@ -290,7 +301,8 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
 }
 
 int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
-                         const AVIOInterruptCB *int_cb, AVDictionary **options, const char *whitelist)
+                         const AVIOInterruptCB *int_cb, AVDictionary **options,
+                         const char *whitelist, const char* blacklist)
 {
     AVDictionary *tmp_opts = NULL;
     AVDictionaryEntry *e;
@@ -307,8 +319,14 @@ int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
     av_assert0(!whitelist ||
                !(e=av_dict_get(*options, "protocol_whitelist", NULL, 0)) ||
                !strcmp(whitelist, e->value));
+    av_assert0(!blacklist ||
+               !(e=av_dict_get(*options, "protocol_blacklist", NULL, 0)) ||
+               !strcmp(blacklist, e->value));
 
     if ((ret = av_dict_set(options, "protocol_whitelist", whitelist, 0)) < 0)
+        goto fail;
+
+    if ((ret = av_dict_set(options, "protocol_blacklist", blacklist, 0)) < 0)
         goto fail;
 
     if ((ret = av_opt_set_dict(*puc, options)) < 0)
@@ -328,7 +346,7 @@ int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options)
 {
     return ffurl_open_whitelist(puc, filename, flags,
-                                int_cb, options, NULL);
+                                int_cb, options, NULL, NULL);
 }
 
 static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,

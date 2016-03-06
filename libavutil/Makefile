@@ -176,6 +176,7 @@ TESTPROGS = adler32                                                     \
             bprint                                                      \
             cast5                                                       \
             camellia                                                    \
+            color_utils                                                 \
             cpu                                                         \
             crc                                                         \
             des                                                         \

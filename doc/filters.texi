@@ -4553,6 +4553,61 @@ ffmpeg -f lavfi -i color=c=black:s=1280x720 -i video.mp4 -shortest -filter_compl
 @end example
 @end itemize
 
+@section ciescope
+
+Display CIE color diagram with pixels overlaid onto it.
+
+The filter acccepts the following options:
+
+@table @option
+@item system
+Set color system.
+
+@table @samp
+@item ntsc, 470m
+@item ebu, 470bg
+@item smpte
+@item 240m
+@item apple
+@item widergb
+@item cie1931
+@item rec709, hdtv
+@item uhdtv, rec2020
+@end table
+
+@item cie
+Set CIE system.
+
+@table @samp
+@item xyy
+@item ucs
+@item luv
+@end table
+
+@item gamuts
+Set what gamuts to draw.
+
+See @code{system} option for avaiable values.
+
+@item size, s
+Set ciescope size, by default set to 512.
+
+@item intensity, i
+Set intensity used to map input pixel values to CIE diagram.
+
+@item contrast
+Set contrast used to draw tongue colors that are out of active color system gamut.
+
+@item corrgamma
+Correct gamma displayed on scope, by default enabled.
+
+@item showwhite
+Show white point on CIE diagram, by default disabled.
+
+@item gamma
+Set input gamma. Used only with XYZ input color space.
+@end table
+
 @section codecview
 
 Visualize information exported by some codecs.
@@ -12584,6 +12639,20 @@ Draw graticule for black point.
 
 @item bgopacity, b
 Set background opacity.
+
+@item lthreshold, l
+Set low threshold for color component not represented on X or Y axis.
+Values lower than this value will be ignored. Default is 0.
+Note this value is multiplied with actual max possible value one pixel component
+can have. So for 8-bit input and low threshold value of 0.1 actual threshold
+is 0.1 * 255 = 25.
+
+@item hthreshold, h
+Set high threshold for color component not represented on X or Y axis.
+Values higher than this value will be ignored. Default is 1.
+Note this value is multiplied with actual max possible value one pixel component
+can have. So for 8-bit input and high threshold value of 0.9 actual threshold
+is 0.9 * 255 = 230.
 @end table
 
 @anchor{vidstabdetect}
@@ -13092,6 +13161,20 @@ Similar as above, but shows difference between blue and red chroma.
 @item color
 Displays actual color value on waveform.
 @end table
+
+@item graticule, g
+Set which graticule to display.
+
+@table @samp
+@item none
+Do not display graticule.
+
+@item green
+Display green graticule showing legal broadcast ranges.
+@end table
+
+@item opacity, o
+Set graticule opacity.
 @end table
 
 @section xbr

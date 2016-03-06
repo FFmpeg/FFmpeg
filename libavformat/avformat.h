@@ -1865,6 +1865,13 @@ typedef struct AVFormatContext {
      * A callback for closing the streams opened with AVFormatContext.io_open().
      */
     void (*io_close)(struct AVFormatContext *s, AVIOContext *pb);
+
+    /**
+     * ',' separated list of disallowed protocols.
+     * - encoding: unused
+     * - decoding: set by user through AVOptions (NO direct access)
+     */
+    char *protocol_blacklist;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);

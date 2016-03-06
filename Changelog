@@ -9,6 +9,8 @@ version <next>:
 - firequalizer filter
 - datascope filter
 - bench and abench filters
+- ciescope filter
+- protocol blacklisting API
 
 
 version 3.0:
