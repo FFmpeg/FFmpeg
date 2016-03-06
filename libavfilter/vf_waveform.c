@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/xga_font_data.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -57,6 +58,7 @@ typedef struct WaveformContext {
     int            *emin[4][4];
     int            *peak;
     int            filter;
+    int            flags;
     int            bits;
     int            max;
     int            size;
@@ -104,6 +106,9 @@ static const AVOption waveform_options[] = {
         { "green", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "graticule" },
     { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
+    { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 1, FLAGS, "flags" },
+    { "fl",    "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 1, FLAGS, "flags" },
+        { "numbers",  "draw numbers", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "flags" },
     { NULL }
 };
 
@@ -1236,6 +1241,108 @@ static void blend_hline16(uint16_t *dst, int width, float o1, float o2, int v)
     }
 }
 
+static void draw_htext(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane];
+
+            uint8_t *p = out->data[plane] + y * out->linesize[plane] + (x + i * 8);
+            for (char_y = 0; char_y < font_height; char_y++) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + v * o1;
+                    p++;
+                }
+                p += out->linesize[plane] - 8;
+            }
+        }
+    }
+}
+
+static void draw_htext16(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane] * mult;
+
+            uint16_t *p = (uint16_t *)(out->data[plane] + y * out->linesize[plane]) + (x + i * 8);
+            for (char_y = 0; char_y < font_height; char_y++) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + v * o1;
+                    p++;
+                }
+                p += out->linesize[plane] / 2 - 8;
+            }
+        }
+    }
+}
+
+static void draw_vtext(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane];
+
+            for (char_y = font_height - 1; char_y >= 0; char_y--) {
+                uint8_t *p = out->data[plane] + (y + i * 10) * out->linesize[plane] + x;
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + font_height - 1 - char_y] & mask)
+                        p[char_y] = p[char_y] * o2 + v * o1;
+                    p += out->linesize[plane];
+                }
+            }
+        }
+    }
+}
+
+static void draw_vtext16(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane] * mult;
+
+            for (char_y = 0; char_y < font_height; char_y++) {
+                uint16_t *p = (uint16_t *)(out->data[plane] + (y + i * 10) * out->linesize[plane]) + x;
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + font_height - 1 - char_y] & mask)
+                        p[char_y] = p[char_y] * o2 + v * o1;
+                    p += out->linesize[plane] / 2;
+                }
+            }
+        }
+    }
+}
+
 static void graticule_none(WaveformContext *s, AVFrame *out)
 {
 }
@@ -1244,12 +1351,13 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
 {
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
-    int c, p, l, offset = 0;
+    int k = 0, c, p, l, offset = 0;
 
     for (c = 0; c < s->ncomp; c++) {
-        if (!((1 << c) & s->pcomp))
+        if (!((1 << c) & s->pcomp) || (!s->display && k > 0))
             continue;
 
+        k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p];
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
@@ -1258,6 +1366,14 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
 
                 blend_vline(dst, out->height, out->linesize[p], o1, o2, v);
             }
+        }
+
+        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
+            const int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
+            char text[16];
+
+            snprintf(text, sizeof(text), "%d", lines[c][l]);
+            draw_vtext(out, x, 2, o1, o2, text, green_yuva_color);
         }
 
         offset += 256 * s->display;
@@ -1269,20 +1385,29 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int mult = s->size / 256;
-    int c, p, l, offset = 0;
+    int k = 0, c, p, l, offset = 0;
 
     for (c = 0; c < s->ncomp; c++) {
-        if (!((1 << c) & s->pcomp))
+        if (!((1 << c) & s->pcomp) || (!s->display && k > 0))
             continue;
 
+        k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p] * mult;
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
-                int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) * mult;
+                int x = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult);
                 uint16_t *dst = (uint16_t *)(out->data[p]) + x;
 
                 blend_vline16(dst, out->height, out->linesize[p], o1, o2, v);
             }
+        }
+
+        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
+            const int x = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
+            char text[16];
+
+            snprintf(text, sizeof(text), "%d", lines[c][l] * mult);
+            draw_vtext16(out, x, 2, mult, o1, o2, text, green_yuva_color);
         }
 
         offset += s->size * s->display;
@@ -1293,12 +1418,13 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
 {
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
-    int c, p, l, offset = 0;
+    int k = 0, c, p, l, offset = 0;
 
     for (c = 0; c < s->ncomp; c++) {
-        if (!((1 << c) & s->pcomp))
+        if ((!((1 << c) & s->pcomp) || (!s->display && k > 0)))
             continue;
 
+        k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p];
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
@@ -1307,6 +1433,15 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
 
                 blend_hline(dst, out->width, o1, o2, v);
             }
+        }
+
+        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
+            const int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
+            char text[16];
+
+            snprintf(text, sizeof(text), "%d", lines[c][l]);
+            draw_htext(out, 2, y,
+                       o1, o2, text, green_yuva_color);
         }
 
         offset += 256 * s->display;
@@ -1318,20 +1453,30 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int mult = s->size / 256;
-    int c, p, l, offset = 0;
+    int k = 0, c, p, l, offset = 0;
 
     for (c = 0; c < s->ncomp; c++) {
-        if (!((1 << c) & s->pcomp))
+        if ((!((1 << c) & s->pcomp) || (!s->display && k > 0)))
             continue;
 
+        k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p] * mult;
             for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
-                int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) * mult;
+                int y = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult);
                 uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]);
 
                 blend_hline16(dst, out->width, o1, o2, v);
             }
+        }
+
+        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
+            const int y = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
+            char text[16];
+
+            snprintf(text, sizeof(text), "%d", lines[c][l] * mult);
+            draw_htext16(out, 2, y,
+                         mult, o1, o2, text, green_yuva_color);
         }
 
         offset += s->size * s->display;

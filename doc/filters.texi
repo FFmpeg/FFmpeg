@@ -13175,6 +13175,14 @@ Display green graticule showing legal broadcast ranges.
 
 @item opacity, o
 Set graticule opacity.
+
+@item flags, fl
+Set graticule flags.
+
+@table @samp
+@item numbers
+Draw numbers above lines. By default enabled.
+@end table
 @end table
 
 @section xbr
