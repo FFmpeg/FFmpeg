@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/xga_font_data.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -99,10 +100,11 @@ static const AVOption vectorscope_options[] = {
     {   "color",        0, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "graticule" },
     { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS},
     { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS},
-    { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, 3, FLAGS, "flags"},
-    { "f",     "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, 3, FLAGS, "flags"},
+    { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=4}, 0, 7, FLAGS, "flags"},
+    { "f",     "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=4}, 0, 7, FLAGS, "flags"},
     {   "white", "draw white point", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "flags" },
     {   "black", "draw black point", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "flags" },
+    {   "name",  "draw point name",  0, AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, "flags" },
     { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
     { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.3}, 0, 1, FLAGS},
     { "lthreshold", "set low threshold",  OFFSET(lthreshold), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, 1, FLAGS},
@@ -769,9 +771,14 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
     }
 }
 
+const static char *positions_name[] = {
+    "R", "B", "Cy", "Yl", "G", "M",
+};
+
 const static uint16_t positions[][14][3] = {
-  { { 210,  16, 146 }, { 170, 166,  16 }, { 145,  54,  34 },
-    { 106, 202, 222 }, {  81,  90, 240 }, {  41, 240, 110 },
+  {
+    {  81,  90, 240 }, {  41, 240, 110 }, { 170, 166,  16 },
+    { 210,  16, 146 }, { 145,  54,  34 }, { 106, 202, 222 },
     { 162,  44, 142 }, { 131, 156,  44 }, { 112,  72,  58 },
     {  84, 184, 198 }, {  65, 100, 212 }, {  35, 212, 114 },
     { 235, 128, 128 }, { 16, 128, 128 } },
@@ -780,8 +787,8 @@ const static uint16_t positions[][14][3] = {
     {  28, 212, 120 }, {  51, 109, 212 }, {  63, 193, 204 },
     { 133,  63,  52 }, { 145, 147,  44 }, { 168,  44, 136 },
     { 235, 128, 128 }, { 16, 128, 128 } },
-  { { 210*2,  16*2, 146*2 }, { 170*2, 166*2,  16*2 }, { 145*2,  54*2,  34*2 },
-    { 106*2, 202*2, 222*2 }, {  81*2,  90*2, 240*2 }, {  41*2, 240*2, 110*2 },
+  { {  81*2,  90*2, 240*2 }, {  41*2, 240*2, 110*2 }, { 170*2, 166*2,  16*2 },
+    { 210*2,  16*2, 146*2 }, { 145*2,  54*2,  34*2 }, { 106*2, 202*2, 222*2 },
     { 162*2,  44*2, 142*2 }, { 131*2, 156*2,  44*2 }, { 112*2,  72*2,  58*2 },
     {  84*2, 184*2, 198*2 }, {  65*2, 100*2, 212*2 }, {  35*2, 212*2, 114*2 },
     { 470, 256, 256 }, { 32, 256, 256 } },
@@ -790,8 +797,8 @@ const static uint16_t positions[][14][3] = {
     {  28*2, 212*2, 120*2 }, {  51*2, 109*2, 212*2 }, {  63*2, 193*2, 204*2 },
     { 133*2,  63*2,  52*2 }, { 145*2, 147*2,  44*2 }, { 168*2,  44*2, 136*2 },
     { 470, 256, 256 }, { 32, 256, 256 } },
-  { { 210*4,  16*4, 146*4 }, { 170*4, 166*4,  16*4 }, { 145*4,  54*4,  34*4 },
-    { 106*4, 202*4, 222*4 }, {  81*4,  90*4, 240*4 }, {  41*4, 240*4, 110*4 },
+  { {  81*4,  90*4, 240*4 }, {  41*4, 240*4, 110*4 }, { 170*4, 166*4,  16*4 },
+    { 210*4,  16*4, 146*4 }, { 145*4,  54*4,  34*4 }, { 106*4, 202*4, 222*4 },
     { 162*4,  44*4, 142*4 }, { 131*4, 156*4,  44*4 }, { 112*4,  72*4,  58*4 },
     {  84*4, 184*4, 198*4 }, {  65*4, 100*4, 212*4 }, {  35*4, 212*4, 114*4 },
     { 940, 512, 512 }, { 64, 512, 512 } },
@@ -800,18 +807,18 @@ const static uint16_t positions[][14][3] = {
     {  28*4, 212*4, 120*4 }, {  51*4, 109*4, 212*4 }, {  63*4, 193*4, 204*4 },
     { 133*4,  63*4,  52*4 }, { 145*4, 147*4,  44*4 }, { 168*4,  44*4, 136*4 },
     { 940, 512, 512 }, { 64, 512, 512 } },
-  { { 210*8,  16*8, 146*8 }, { 170*8, 166*8,  16*8 }, { 145*8,  54*8,  34*8 },
-    { 106*8, 202*8, 222*8 }, {  81*8,  90*8, 240*8 }, {  41*8, 240*8, 110*8 },
-    { 162*8,  44*8, 142*8 }, { 131*8, 156*8,  44*8 }, { 112*8,  72*8,  58*8 },
-    {  84*8, 184*8, 198*8 }, {  65*8, 100*8, 212*8 }, {  35*8, 212*8, 114*8 },
+  { {  81*8,  90*4, 240*8 }, {  41*8, 240*8, 110*8 }, { 170*8, 166*8,  16*8 },
+    { 210*8,  16*4, 146*8 }, { 145*8,  54*8,  34*8 }, { 106*8, 202*8, 222*8 },
+    { 162*8,  44*4, 142*8 }, { 131*8, 156*8,  44*8 }, { 112*8,  72*8,  58*8 },
+    {  84*8, 184*4, 198*8 }, {  65*8, 100*8, 212*8 }, {  35*8, 212*8, 114*8 },
     { 1880, 1024, 1024 }, { 128, 1024, 1024 } },
   { {  63*8, 102*8, 240*8 }, {  32*8, 240*8, 118*8 }, { 188*8, 154*8,  16*8 },
     { 219*8,  16*8, 138*8 }, { 173*8,  42*8,  26*8 }, {  78*8, 214*8, 230*8 },
     {  28*8, 212*8, 120*8 }, {  51*8, 109*8, 212*8 }, {  63*8, 193*8, 204*8 },
     { 133*8,  63*8,  52*8 }, { 145*8, 147*8,  44*8 }, { 168*8,  44*8, 136*8 },
     { 1880, 1024, 1024 }, { 128, 1024, 1024 } },
-  { { 210*16,  16*16, 146*16 }, { 170*16, 166*16,  16*16 }, { 145*16,  54*16,  34*16 },
-    { 106*16, 202*16, 222*16 }, {  81*16,  90*16, 240*16 }, {  41*16, 240*16, 110*16 },
+  { {  81*16,  90*16, 240*16 }, {  41*16, 240*16, 110*16 }, { 170*16, 166*16,  16*16 },
+    { 210*16,  16*16, 146*16 }, { 145*16,  54*16,  34*16 }, { 106*16, 202*16, 222*16 },
     { 162*16,  44*16, 142*16 }, { 131*16, 156*16,  44*16 }, { 112*16,  72*16,  58*16 },
     {  84*16, 184*16, 198*16 }, {  65*16, 100*16, 212*16 }, {  35*16, 212*16, 114*16 },
     { 3760, 2048, 2048 }, { 256, 2048, 2048 } },
@@ -872,6 +879,58 @@ static void none_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, in
 {
 }
 
+static void draw_htext(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane];
+
+            uint8_t *p = out->data[plane] + y * out->linesize[plane] + (x + i * 8);
+            for (char_y = 0; char_y < font_height; char_y++) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + v * o1;
+                    p++;
+                }
+                p += out->linesize[plane] - 8;
+            }
+        }
+    }
+}
+
+static void draw_htext16(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint16_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane];
+
+            uint16_t *p = (uint16_t *)(out->data[plane] + y * out->linesize[plane]) + (x + i * 8);
+            for (char_y = 0; char_y < font_height; char_y++) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + v * o1;
+                    p++;
+                }
+                p += out->linesize[plane] / 2 - 8;
+            }
+        }
+    }
+}
+
 static void color_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
 {
     const int max = s->size - 1;
@@ -912,6 +971,31 @@ static void color_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         draw_dots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, y, o);
         if (out->data[3])
             draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    for (i = 0; i < 6 && s->flags & 4; i++) {
+        uint16_t color[4] = { 0, 0, 0, 0 };
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+        int d = positions[P][i][D];
+
+        color[D] = d;
+        color[X] = x;
+        color[Y] = y;
+        color[3] = max;
+
+        if (x > max / 2)
+            x += 8;
+        else
+            x -= 14;
+        if (y > max / 2)
+            y += 8;
+        else
+            y -= 14;
+
+        x = av_clip(x, 0, out->width - 9);
+        y = av_clip(y, 0, out->height - 9);
+        draw_htext16(out, x, y, o, 1. - o, positions_name[i], color);
     }
 }
 
@@ -955,6 +1039,30 @@ static void color_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         if (out->data[3])
             draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
     }
+
+    for (i = 0; i < 6 && s->flags & 4; i++) {
+        uint8_t color[4] = { 0, 0, 0, 255 };
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+        int d = positions[P][i][D];
+
+        color[D] = d;
+        color[X] = x;
+        color[Y] = y;
+
+        if (x > 128)
+            x += 8;
+        else
+            x -= 14;
+        if (y > 128)
+            y += 8;
+        else
+            y -= 14;
+
+        x = av_clip(x, 0, out->width - 9);
+        y = av_clip(y, 0, out->height - 9);
+        draw_htext(out, x, y, o, 1. - o, positions_name[i], color);
+    }
 }
 
 static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
@@ -996,6 +1104,25 @@ static void green_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y,
         if (out->data[3])
             draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
     }
+
+    for (i = 0; i < 6 && s->flags & 4; i++) {
+        const uint16_t color[4] = { 128 * m, 0, 0, max };
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        if (x > max / 2)
+            x += 8;
+        else
+            x -= 14;
+        if (y > max / 2)
+            y += 8;
+        else
+            y -= 14;
+
+        x = av_clip(x, 0, out->width - 9);
+        y = av_clip(y, 0, out->height - 9);
+        draw_htext16(out, x, y, o, 1. - o, positions_name[i], color);
+    }
 }
 
 static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
@@ -1034,6 +1161,25 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
         draw_dots(out->data[2] + y * out->linesize[2] + x, out->linesize[2], 0, o);
         if (out->data[3])
             draw_dots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], 255, o);
+    }
+
+    for (i = 0; i < 6 && s->flags & 4; i++) {
+        const uint8_t color[4] = { 128, 0, 0, 255 };
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        if (x > 128)
+            x += 8;
+        else
+            x -= 14;
+        if (y > 128)
+            y += 8;
+        else
+            y -= 14;
+
+        x = av_clip(x, 0, out->width - 9);
+        y = av_clip(y, 0, out->height - 9);
+        draw_htext(out, x, y, o, 1. - o, positions_name[i], color);
     }
 }
 
