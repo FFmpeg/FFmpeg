@@ -1137,7 +1137,7 @@ static const enum AVPixelFormat mpeg12_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_D3D11VA_VLD,
 #endif
 #if CONFIG_MPEG2_VAAPI_HWACCEL
-    AV_PIX_FMT_VAAPI_VLD,
+    AV_PIX_FMT_VAAPI,
 #endif
 #if CONFIG_MPEG1_VDPAU_HWACCEL | CONFIG_MPEG2_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,

@@ -1093,6 +1093,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_RGB,
     },
+#if FF_API_VAAPI
     [AV_PIX_FMT_VAAPI_MOCO] = {
         .name = "vaapi_moco",
         .log2_chroma_w = 1,
@@ -1111,6 +1112,14 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+#else
+    [AV_PIX_FMT_VAAPI] = {
+        .name = "vaapi",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
+#endif
     [AV_PIX_FMT_VDA_VLD] = {
         .name = "vda_vld",
         .log2_chroma_w = 1,
@@ -1655,6 +1664,11 @@ enum AVPixelFormat av_get_pix_fmt(const char *name)
         snprintf(name2, sizeof(name2), "%s%s", name, X_NE("be", "le"));
         pix_fmt = get_pix_fmt_internal(name2);
     }
+
+#if FF_API_VAAPI
+    if (pix_fmt == AV_PIX_FMT_NONE && !strcmp(name, "vaapi"))
+        pix_fmt = AV_PIX_FMT_VAAPI;
+#endif
     return pix_fmt;
 }
 

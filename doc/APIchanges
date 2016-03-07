@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.8.0 - pixfmt.h
+  Deprecate all AV_PIX_FMT_VAAPI_* formats.
+  Replaced by AV_PIX_FMT_VAAPI.
+
 2016-xx-xx - xxxxxxx - lavu 55.7.0 - hwcontext.h
   Add AVHWFramesConstraints and associated API.
 
