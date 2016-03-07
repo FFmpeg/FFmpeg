@@ -106,14 +106,14 @@ static int query_formats(AVFilterContext *ctx)
         return AVERROR(EAGAIN);
     }
 
-    if (!ctx->inputs[0]->out_formats)
-        if ((ret = ff_formats_ref(ff_make_format_list(in_pixfmts), &ctx->inputs[0]->out_formats)) < 0)
-            return ret;
-
     avff = ctx->inputs[0]->in_formats;
     desc = av_pix_fmt_desc_get(avff->formats[0]);
     depth = desc->comp[0].depth;
     be = desc->flags & AV_PIX_FMT_FLAG_BE;
+    if (!ctx->inputs[0]->out_formats)
+        if ((ret = ff_formats_ref(ff_make_format_list(in_pixfmts), &ctx->inputs[0]->out_formats)) < 0)
+            return ret;
+
     for (i = 1; i < avff->nb_formats; i++) {
         desc = av_pix_fmt_desc_get(avff->formats[i]);
         if (depth != desc->comp[0].depth ||
