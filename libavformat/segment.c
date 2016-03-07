@@ -118,6 +118,7 @@ typedef struct SegmentContext {
     char *reference_stream_specifier; ///< reference stream specifier
     int   reference_stream_index;
     int   break_non_keyframes;
+    int   write_empty;
 
     int use_rename;
     char temp_list_filename[1024];
@@ -810,6 +811,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!seg->avf)
         return AVERROR(EINVAL);
 
+calc_times:
     if (seg->times) {
         end_pts = seg->segment_count < seg->nb_times ?
             seg->times[seg->segment_count] : INT64_MAX;
@@ -841,7 +843,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt->stream_index == seg->reference_stream_index &&
         (pkt->flags & AV_PKT_FLAG_KEY || seg->break_non_keyframes) &&
-        seg->segment_frame_count > 0 &&
+        (seg->segment_frame_count > 0 || seg->write_empty) &&
         (seg->cut_pending || seg->frame_count >= start_frame ||
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
@@ -861,6 +863,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         seg->cur_entry.start_time = (double)pkt->pts * av_q2d(st->time_base);
         seg->cur_entry.start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
         seg->cur_entry.end_time = seg->cur_entry.start_time;
+
+        if (seg->times || (!seg->frames && !seg->use_clocktime) && seg->write_empty)
+            goto calc_times;
     }
 
     if (pkt->stream_index == seg->reference_stream_index) {
@@ -1010,6 +1015,7 @@ static const AVOption options[] = {
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
     { "reset_timestamps", "reset timestamps at the begin of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     { "initial_offset", "set initial timestamp offset", OFFSET(initial_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, -INT64_MAX, INT64_MAX, E },
+    { "write_empty_segments", "allow writing empty 'filler' segments", OFFSET(write_empty), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     { NULL },
 };
 
