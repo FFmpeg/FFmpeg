@@ -860,11 +860,13 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         seg->cur_entry.index = seg->segment_idx + seg->segment_idx_wrap * seg->segment_idx_wrap_nb;
         seg->cur_entry.start_time = (double)pkt->pts * av_q2d(st->time_base);
         seg->cur_entry.start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
-        seg->cur_entry.end_time = seg->cur_entry.start_time +
-            pkt->pts != AV_NOPTS_VALUE ? (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base) : 0;
-    } else if (pkt->pts != AV_NOPTS_VALUE && pkt->stream_index == seg->reference_stream_index) {
-        seg->cur_entry.end_time =
-            FFMAX(seg->cur_entry.end_time, (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
+        seg->cur_entry.end_time = seg->cur_entry.start_time;
+    }
+
+    if (pkt->stream_index == seg->reference_stream_index) {
+        if (pkt->pts != AV_NOPTS_VALUE)
+            seg->cur_entry.end_time =
+                FFMAX(seg->cur_entry.end_time, (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
         seg->cur_entry.last_duration = pkt->duration;
     }
 
