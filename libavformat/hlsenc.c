@@ -127,12 +127,17 @@ static int hls_delete_old_segments(HLSContext *hls) {
     char *dirname = NULL, *p, *sub_path;
     char *path = NULL;
 
+	// Calculate the maximum playlist duration.
+	playlist_duration = hls->max_nb_segments * hls->time;
+
+	// Compensate for the segments that are currently in the playlist.
     segment = hls->segments;
     while (segment) {
-        playlist_duration += segment->duration;
+        playlist_duration -= segment->duration;
         segment = segment->next;
     }
 
+	// Check the old-segments.
     segment = hls->old_segments;
     while (segment) {
         playlist_duration -= segment->duration;
