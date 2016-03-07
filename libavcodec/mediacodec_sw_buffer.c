@@ -115,8 +115,8 @@ void ff_mediacodec_sw_buffer_copy_yuv420_planar(AVCodecContext *avctx,
 
             if (i == 0) {
                 width = avctx->width;
-            } else if (i == 1) {
-                width = FFMIN(frame->linesize[i], FFALIGN(avctx->width, 2));
+            } else if (i >= 1) {
+                width = FFMIN(frame->linesize[i], FFALIGN(avctx->width, 2) / 2);
             }
 
             for (j = 0; j < height; j++) {
