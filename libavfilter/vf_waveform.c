@@ -1518,6 +1518,10 @@ static int config_input(AVFilterLink *inlink)
             s->waveform = achroma; break;
     case COLOR:
             s->size = 256;
+            if (s->graticule && s->mode == 1)
+                s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+            else if (s->graticule && s->mode == 0)
+                s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
             s->waveform = s->bits > 8 ?   color16 :   color; break;
     }
 
