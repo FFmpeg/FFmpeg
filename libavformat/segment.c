@@ -845,7 +845,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         (seg->cut_pending || seg->frame_count >= start_frame ||
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
-                        end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
+                        end_pts - seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
         /* sanitize end time in case last packet didn't have a defined duration */
         if (seg->cur_entry.last_duration == 0)
             seg->cur_entry.end_time = (double)pkt->pts * av_q2d(st->time_base);
