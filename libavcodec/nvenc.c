@@ -1186,6 +1186,8 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOut
     NVENCSTATUS nv_status;
     int res = 0;
 
+    enum AVPictureType pict_type;
+
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H264:
       slice_mode_data = ctx->encode_config.encodeCodecConfig.h264Config.sliceModeData;
@@ -1230,28 +1232,33 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOut
     switch (lock_params.pictureType) {
     case NV_ENC_PIC_TYPE_IDR:
         pkt->flags |= AV_PKT_FLAG_KEY;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
     case NV_ENC_PIC_TYPE_I:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+        pict_type = AV_PICTURE_TYPE_I;
         break;
     case NV_ENC_PIC_TYPE_P:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
+        pict_type = AV_PICTURE_TYPE_P;
         break;
     case NV_ENC_PIC_TYPE_B:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
+        pict_type = AV_PICTURE_TYPE_B;
         break;
     case NV_ENC_PIC_TYPE_BI:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_BI;
+        pict_type = AV_PICTURE_TYPE_BI;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown picture type encountered, expect the output to be broken.\n");
         av_log(avctx, AV_LOG_ERROR, "Please report this error and include as much information on how to reproduce it as possible.\n");
         res = AVERROR_EXTERNAL;
         goto error;
+    }
+
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->coded_frame->pict_type = pict_type;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    }
+
+    ff_side_data_set_encoder_stats(pkt,
+        (lock_params.frameAvgQP - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     pkt->pts = lock_params.outputTimeStamp;
     pkt->dts = timestamp_queue_dequeue(&ctx->timestamp_list);
