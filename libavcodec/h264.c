@@ -313,7 +313,7 @@ int ff_h264_alloc_tables(H264Context *h)
         }
 
     if (!h->dequant4_coeff[0])
-        h264_init_dequant_tables(h);
+        ff_h264_init_dequant_tables(h);
 
     return 0;
 
