@@ -314,6 +314,22 @@ static av_always_inline float ff_exp10f(float x)
 }
 
 /**
+ * Compute x^y for floating point x, y. Note: this function is faster than the
+ * libm variant due to mainly 2 reasons:
+ * 1. It does not handle any edge cases. In particular, this is only guaranteed
+ * to work correctly for x > 0.
+ * 2. It is not as accurate as a standard nearly "correctly rounded" libm variant.
+ * @param x base
+ * @param y exponent
+ * @return x^y
+ */
+static av_always_inline float ff_fast_powf(float x, float y)
+{
+    return expf(logf(x) * y);
+}
+
+
+/**
  * A wrapper for open() setting O_CLOEXEC.
  */
 av_warn_unused_result
