@@ -13185,6 +13185,9 @@ Set graticule flags.
 @table @samp
 @item numbers
 Draw numbers above lines. By default enabled.
+
+@item dots
+Draw dots instead of lines.
 @end table
 @end table
 

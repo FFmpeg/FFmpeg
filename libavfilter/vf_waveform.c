@@ -106,9 +106,10 @@ static const AVOption waveform_options[] = {
         { "green", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "graticule" },
     { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
-    { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 1, FLAGS, "flags" },
-    { "fl",    "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 1, FLAGS, "flags" },
+    { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 3, FLAGS, "flags" },
+    { "fl",    "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 3, FLAGS, "flags" },
         { "numbers",  "draw numbers", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "flags" },
+        { "dots",     "draw dots instead of lines", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "flags" },
     { NULL }
 };
 
@@ -1201,42 +1202,42 @@ static const uint8_t green_yuva_color[4] = { 255, 0, 0, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
 static const uint8_t lines[4][2] = { { 16, 235 }, { 16, 240 }, { 16, 240 }, { 0, 255 } };
 
-static void blend_vline(uint8_t *dst, int height, int linesize, float o1, float o2, int v)
+static void blend_vline(uint8_t *dst, int height, int linesize, float o1, float o2, int v, int step)
 {
     int y;
 
-    for (y = 0; y < height; y++) {
+    for (y = 0; y < height; y += step) {
         dst[0] = v * o1 + dst[0] * o2;
 
-        dst += linesize;
+        dst += linesize * step;
     }
 }
 
-static void blend_vline16(uint16_t *dst, int height, int linesize, float o1, float o2, int v)
+static void blend_vline16(uint16_t *dst, int height, int linesize, float o1, float o2, int v, int step)
 {
     int y;
 
-    for (y = 0; y < height; y++) {
+    for (y = 0; y < height; y += step) {
         dst[0] = v * o1 + dst[0] * o2;
 
-        dst += linesize / 2;
+        dst += (linesize / 2) * step;
     }
 }
 
-static void blend_hline(uint8_t *dst, int width, float o1, float o2, int v)
+static void blend_hline(uint8_t *dst, int width, float o1, float o2, int v, int step)
 {
     int x;
 
-    for (x = 0; x < width; x++) {
+    for (x = 0; x < width; x += step) {
         dst[x] = v * o1 + dst[x] * o2;
     }
 }
 
-static void blend_hline16(uint16_t *dst, int width, float o1, float o2, int v)
+static void blend_hline16(uint16_t *dst, int width, float o1, float o2, int v, int step)
 {
     int x;
 
-    for (x = 0; x < width; x++) {
+    for (x = 0; x < width; x += step) {
         dst[x] = v * o1 + dst[x] * o2;
     }
 }
@@ -1349,6 +1350,7 @@ static void graticule_none(WaveformContext *s, AVFrame *out)
 
 static void graticule_green_row(WaveformContext *s, AVFrame *out)
 {
+    const int step = s->flags & 2 + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     int k = 0, c, p, l, offset = 0;
@@ -1364,7 +1366,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
                 int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
                 uint8_t *dst = out->data[p] + x;
 
-                blend_vline(dst, out->height, out->linesize[p], o1, o2, v);
+                blend_vline(dst, out->height, out->linesize[p], o1, o2, v, step);
             }
         }
 
@@ -1385,6 +1387,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
 
 static void graticule16_green_row(WaveformContext *s, AVFrame *out)
 {
+    const int step = s->flags & 2 + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int mult = s->size / 256;
@@ -1401,7 +1404,7 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
                 int x = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult);
                 uint16_t *dst = (uint16_t *)(out->data[p]) + x;
 
-                blend_vline16(dst, out->height, out->linesize[p], o1, o2, v);
+                blend_vline16(dst, out->height, out->linesize[p], o1, o2, v, step);
             }
         }
 
@@ -1422,6 +1425,7 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
 
 static void graticule_green_column(WaveformContext *s, AVFrame *out)
 {
+    const int step = s->flags & 2 + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     int k = 0, c, p, l, offset = 0;
@@ -1437,7 +1441,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
                 int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
                 uint8_t *dst = out->data[p] + y * out->linesize[p];
 
-                blend_hline(dst, out->width, o1, o2, v);
+                blend_hline(dst, out->width, o1, o2, v, step);
             }
         }
 
@@ -1458,6 +1462,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
 
 static void graticule16_green_column(WaveformContext *s, AVFrame *out)
 {
+    const int step = s->flags & 2 + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int mult = s->size / 256;
@@ -1474,7 +1479,7 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
                 int y = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult);
                 uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]);
 
-                blend_hline16(dst, out->width, o1, o2, v);
+                blend_hline16(dst, out->width, o1, o2, v, step);
             }
         }
 
