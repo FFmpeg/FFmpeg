@@ -75,6 +75,10 @@ fate-float-dsp: CMD = run libavutil/float_dsp-test $(CPUFLAGS:%=-c%)
 fate-float-dsp: CMP = null
 fate-float-dsp: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-hash
+fate-hash: libavutil/hash-test$(EXESUF)
+fate-hash: CMD = run libavutil/hash-test
+
 FATE_LIBAVUTIL += fate-hmac
 fate-hmac: libavutil/hmac-test$(EXESUF)
 fate-hmac: CMD = run libavutil/hmac-test

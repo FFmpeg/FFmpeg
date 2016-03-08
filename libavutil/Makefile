@@ -186,6 +186,7 @@ TESTPROGS = adler32                                                     \
             file                                                        \
             fifo                                                        \
             float_dsp                                                   \
+            hash                                                        \
             hmac                                                        \
             lfg                                                         \
             lls                                                         \
