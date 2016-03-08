@@ -1146,12 +1146,13 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
     }
 
-    if (pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY && has_decode_delay_been_guessed(st)) {
+    if (pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY) {
         st->pts_buffer[0] = pkt->pts;
         for (i = 0; i<delay && st->pts_buffer[i] > st->pts_buffer[i + 1]; i++)
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i + 1]);
 
-        pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);
+        if(has_decode_delay_been_guessed(st))
+            pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);
     }
     // We skipped it above so we try here.
     if (!onein_oneout)
