@@ -643,7 +643,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         } else if (!strcmp(ctx->preset, "default")) {
             encoder_preset = NV_ENC_PRESET_DEFAULT_GUID;
         } else {
-            av_log(avctx, AV_LOG_FATAL, "Preset \"%s\" is unknown! Supported presets: slow, medium, high, hp, hq, bd, ll, llhp, llhq, lossless, losslesshp, default\n", ctx->preset);
+            av_log(avctx, AV_LOG_FATAL, "Preset \"%s\" is unknown! Supported presets: slow, medium, fast, hp, hq, bd, ll, llhp, llhq, lossless, losslesshp, default\n", ctx->preset);
             res = AVERROR(EINVAL);
             goto error;
         }
