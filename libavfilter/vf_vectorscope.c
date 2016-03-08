@@ -772,7 +772,7 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
 }
 
 const static char *positions_name[] = {
-    "R", "B", "Cy", "Yl", "G", "M",
+    "R", "B", "Cy", "Yl", "G", "Mg",
 };
 
 const static uint16_t positions[][14][3] = {
