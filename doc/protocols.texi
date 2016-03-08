@@ -1285,6 +1285,9 @@ Set the UDP maximum socket buffer size in bytes. This is used to set either
 the receive or send buffer size, depending on what the socket is used for.
 Default is 64KB.  See also @var{fifo_size}.
 
+@item packet_gap=@var{seconds}
+Delay between packets
+
 @item localport=@var{port}
 Override the local UDP port to bind with.
 
