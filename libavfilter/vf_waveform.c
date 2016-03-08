@@ -1369,8 +1369,11 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            const int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
+            int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
             char text[16];
+
+            if (x < 0)
+                x = 4;
 
             snprintf(text, sizeof(text), "%d", lines[c][l]);
             draw_vtext(out, x, 2, o1, o2, text, green_yuva_color);
@@ -1403,8 +1406,11 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            const int x = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
+            int x = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
             char text[16];
+
+            if (x < 0)
+                x = 4;
 
             snprintf(text, sizeof(text), "%d", lines[c][l] * mult);
             draw_vtext16(out, x, 2, mult, o1, o2, text, green_yuva_color);
@@ -1436,12 +1442,14 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            const int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
+            int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
             char text[16];
 
+            if (y < 0)
+                y = 4;
+
             snprintf(text, sizeof(text), "%d", lines[c][l]);
-            draw_htext(out, 2, y,
-                       o1, o2, text, green_yuva_color);
+            draw_htext(out, 2, y, o1, o2, text, green_yuva_color);
         }
 
         offset += 256 * s->display;
@@ -1471,12 +1479,14 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            const int y = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
+            int y = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
             char text[16];
 
+            if (y < 0)
+                y = 4;
+
             snprintf(text, sizeof(text), "%d", lines[c][l] * mult);
-            draw_htext16(out, 2, y,
-                         mult, o1, o2, text, green_yuva_color);
+            draw_htext16(out, 2, y, mult, o1, o2, text, green_yuva_color);
         }
 
         offset += s->size * s->display;
