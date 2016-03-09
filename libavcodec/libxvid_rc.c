@@ -33,7 +33,7 @@
 #include <xvid.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/file.h"
+#include "libavutil/internal.h"
 
 #include "avcodec.h"
 #include "libxvid.h"
@@ -46,7 +46,7 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
     xvid_plg_create_t xvid_plg_create = { 0 };
     xvid_plugin_2pass2_t xvid_2pass2  = { 0 };
 
-    fd = av_tempfile("xvidrc.", &tmp_name, 0, s->avctx);
+    fd = avpriv_tempfile("xvidrc.", &tmp_name, 0, s->avctx);
     if (fd < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can't create temporary pass2 file.\n");
         return fd;

@@ -29,7 +29,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
-#include "libavutil/file.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/tree.h"
 #include "avformat.h"
@@ -77,7 +77,7 @@ static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **
 
     av_strstart(arg, "cache:", &arg);
 
-    c->fd = av_tempfile("ffcache", &buffername, 0, h);
+    c->fd = avpriv_tempfile("ffcache", &buffername, 0, h);
     if (c->fd < 0){
         av_log(h, AV_LOG_ERROR, "Failed to create tempfile\n");
         return c->fd;
