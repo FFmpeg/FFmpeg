@@ -41,7 +41,7 @@
 #include "mpegutils.h"
 
 #if ARCH_X86
-#include "x86/h264_i386.h"
+#include "x86/h264_cabac.c"
 #endif
 
 #include <assert.h>
