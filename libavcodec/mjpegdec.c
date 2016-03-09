@@ -1878,8 +1878,10 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             else if ((!strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32) && s->avctx->codec_tag) ||
                      (!strncmp(cbuf, "Metasoft MJPEG Codec", 20)))
                 s->flipped = 1;
-            else if (!strcmp(cbuf, "MULTISCOPE II"))
+            else if (!strcmp(cbuf, "MULTISCOPE II")) {
+                s->avctx->sample_aspect_ratio = (AVRational) { 1, 2 };
                 s->multiscope = 2;
+            }
 
             av_free(cbuf);
         }
