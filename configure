@@ -1954,6 +1954,7 @@ TYPES_LIST="
     struct_group_source_req
     struct_ip_mreq_source
     struct_ipv6_mreq
+    struct_msghdr_msg_flags
     struct_pollfd
     struct_rusage_ru_maxrss
     struct_sctp_event_subscribe
@@ -2865,7 +2866,7 @@ rtmpt_protocol_select="ffrtmphttp_protocol"
 rtmpte_protocol_select="ffrtmpcrypt_protocol ffrtmphttp_protocol"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtp_protocol_select="udp_protocol"
-sctp_protocol_deps="struct_sctp_event_subscribe"
+sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
 srtp_protocol_select="rtp_protocol"
 tcp_protocol_select="network"
@@ -5264,6 +5265,7 @@ if ! disabled network; then
     check_type netinet/in.h "struct ipv6_mreq" -D_DARWIN_C_SOURCE
     check_type poll.h "struct pollfd"
     check_type netinet/sctp.h "struct sctp_event_subscribe"
+    check_struct "sys/socket.h" "struct msghdr" msg_flags
     check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     check_type netinet/in.h "struct sockaddr_in6"
     check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
