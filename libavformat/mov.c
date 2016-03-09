@@ -4209,7 +4209,7 @@ static int mov_seek_auxiliary_info(AVFormatContext *s, MOVStreamContext *sc)
         auxiliary_info_seek_offset = sc->cenc.auxiliary_info_default_size * sc->current_sample;
     } else if (sc->cenc.auxiliary_info_sizes) {
         if (sc->current_sample > sc->cenc.auxiliary_info_sizes_count) {
-            av_log(s, AV_LOG_ERROR, "current sample %d greater than the number of auxiliary info sample sizes %zu\n",
+            av_log(s, AV_LOG_ERROR, "current sample %d greater than the number of auxiliary info sample sizes %"SIZE_SPECIFIER"\n",
                 sc->current_sample, sc->cenc.auxiliary_info_sizes_count);
             return AVERROR_INVALIDDATA;
         }
@@ -4220,7 +4220,7 @@ static int mov_seek_auxiliary_info(AVFormatContext *s, MOVStreamContext *sc)
     }
 
     if (auxiliary_info_seek_offset > sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info) {
-        av_log(s, AV_LOG_ERROR, "auxiliary info offset %zu greater than auxiliary info size %zu\n",
+        av_log(s, AV_LOG_ERROR, "auxiliary info offset %"SIZE_SPECIFIER" greater than auxiliary info size %"SIZE_SPECIFIER"\n",
             auxiliary_info_seek_offset, (size_t)(sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info));
         return AVERROR_INVALIDDATA;
     }

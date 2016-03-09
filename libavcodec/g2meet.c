@@ -900,7 +900,7 @@ static int epic_jb_decode_tile(G2MContext *c, int tile_x, int tile_y,
     }
 
     if (src_size < els_dsize) {
-        av_log(avctx, AV_LOG_ERROR, "ePIC: data too short, needed %zu, got %zu\n",
+        av_log(avctx, AV_LOG_ERROR, "ePIC: data too short, needed %"SIZE_SPECIFIER", got %"SIZE_SPECIFIER"\n",
                els_dsize, src_size);
         return AVERROR_INVALIDDATA;
     }
