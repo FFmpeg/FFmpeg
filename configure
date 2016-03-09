@@ -4851,6 +4851,14 @@ check_disable_warning -Wno-switch
 check_disable_warning -Wno-format-zero-length
 check_disable_warning -Wno-pointer-sign
 
+check_disable_warning_headers(){
+    warning_flag=-W${1#-Wno-}
+    test_cflags $warning_flag && append cflags_headers $1
+}
+
+check_disable_warning_headers -Wno-deprecated-declarations
+check_disable_warning_headers -Wno-unused-variable
+
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
@@ -5315,6 +5323,7 @@ TARGET_EXEC=$target_exec $target_exec_args
 TARGET_PATH=$target_path
 TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
 CFLAGS-avplay=$sdl_cflags
+CFLAGS_HEADERS=$cflags_headers
 ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
