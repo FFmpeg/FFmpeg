@@ -688,9 +688,9 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 target = d0 + x + d0_signed_linesize * c0;
                 update(target, max, intensity);
                 target = d1 + x + d1_signed_linesize * (c0 - c1);
-                update(target, max, 1);
+                update(target, max, intensity);
                 target = d1 + x + d1_signed_linesize * (c0 + c1);
-                update(target, max, 1);
+                update(target, max, intensity);
 
                 c0_data += c0_linesize;
                 c1_data += c1_linesize;
@@ -721,16 +721,16 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                     target = d0_data - c0;
                     update(target, max, intensity);
                     target = d1_data - (c0 - c1);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                     target = d1_data - (c0 + c1);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                 } else {
                     target = d0_data + c0;
                     update(target, max, intensity);
                     target = d1_data + (c0 - c1);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                     target = d1_data + (c0 + c1);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                 }
             }
 
@@ -791,10 +791,10 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 update(target, max, intensity);
 
                 target = d1 + x + d1_signed_linesize * (c0 + c1);
-                update(target, max, 1);
+                update(target, max, intensity);
 
                 target = d2 + x + d2_signed_linesize * (c0 + c2);
-                update(target, max, 1);
+                update(target, max, intensity);
 
                 c0_data += c0_linesize;
                 c1_data += c1_linesize;
@@ -829,16 +829,16 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
                     target = d0_data - c0;
                     update(target, max, intensity);
                     target = d1_data - (c0 + c1);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                     target = d2_data - (c0 + c2);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                 } else {
                     target = d0_data + c0;
                     update(target, max, intensity);
                     target = d1_data + (c0 + c1);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                     target = d2_data + (c0 + c2);
-                    update(target, max, 1);
+                    update(target, max, intensity);
                 }
             }
 
