@@ -62,6 +62,7 @@ void av_file_unmap(uint8_t *bufptr, size_t size);
  * @note On very old libcs it is necessary to set a secure umask before
  *       calling this, av_tempfile() can't call umask itself as it is used in
  *       libraries and could interfere with the calling application.
+ * @deprecated as fd numbers cannot be passed saftely between libs on some platforms
  */
 int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
 
