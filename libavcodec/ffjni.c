@@ -192,7 +192,7 @@ char *ff_jni_jstring_to_utf_chars(JNIEnv *env, jstring string, void *log_ctx)
     if ((*env)->ExceptionCheck(env)) {
         (*env)->ExceptionClear(env);
         av_log(log_ctx, AV_LOG_ERROR, "String.releaseStringUTFChars() threw an exception\n");
-        return NULL;;
+        return NULL;
     }
 
     return ret;
