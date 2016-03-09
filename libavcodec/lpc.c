@@ -176,9 +176,10 @@ double ff_lpc_calc_ref_coefs_f(LPCContext *s, const float *samples, int len,
     const double a = 0.5f, b = 1.0f - a;
 
     /* Apply windowing */
-    for (i = 0; i < len; i++) {
+    for (i = 0; i <= len / 2; i++) {
         double weight = a - b*cos((2*M_PI*i)/(len - 1));
         s->windowed_samples[i] = weight*samples[i];
+        s->windowed_samples[len-1-i] = weight*samples[len-1-i];
     }
 
     s->lpc_compute_autocorr(s->windowed_samples, len, order, autoc);
