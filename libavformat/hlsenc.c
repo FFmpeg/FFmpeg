@@ -396,7 +396,7 @@ static int hls_window(AVFormatContext *s, int last)
 
     set_http_options(&options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
-    if ((ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL)) < 0)
+    if ((ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, &options)) < 0)
         goto fail;
 
     for (en = hls->segments; en; en = en->next) {
