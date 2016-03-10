@@ -204,6 +204,7 @@ OBJS-$(CONFIG_NNEDI_FILTER)                  += vf_nnedi.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NOISE_FILTER)                  += vf_noise.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o
+OBJS-$(CONFIG_NVRESIZE_FILTER)               += vf_nvresize.o vf_nvresize_ptx.o
 OBJS-$(CONFIG_OCR_FILTER)                    += vf_ocr.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
 OBJS-$(CONFIG_OPENCL)                        += deshake_opencl.o unsharp_opencl.o
