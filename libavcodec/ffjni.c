@@ -227,7 +227,7 @@ int ff_jni_exception_get_summary(JNIEnv *env, jthrowable exception, char **error
     jclass exception_class = NULL;
     jmethodID get_message_id = NULL;
 
-    jstring string;
+    jstring string = NULL;
 
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
 
