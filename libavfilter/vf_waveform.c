@@ -39,6 +39,22 @@ enum FilterType {
     NB_FILTERS
 };
 
+enum ScaleType {
+    DIGITAL,
+    MILLIVOLTS,
+    IRE,
+    NB_SCALES
+};
+
+typedef struct GraticuleLine {
+    const char *name;
+    uint16_t pos;
+} GraticuleLine;
+
+typedef struct GraticuleLines {
+    struct GraticuleLine line[4];
+} GraticuleLines;
+
 typedef struct WaveformContext {
     const AVClass *class;
     int            mode;
@@ -62,6 +78,9 @@ typedef struct WaveformContext {
     int            bits;
     int            max;
     int            size;
+    int            scale;
+    GraticuleLines *glines;
+    int            nb_glines;
     void (*waveform)(struct WaveformContext *s, AVFrame *in, AVFrame *out,
                      int component, int intensity, int offset, int column);
     void (*graticulef)(struct WaveformContext *s, AVFrame *out);
@@ -110,6 +129,11 @@ static const AVOption waveform_options[] = {
     { "fl",    "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 3, FLAGS, "flags" },
         { "numbers",  "draw numbers", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "flags" },
         { "dots",     "draw dots instead of lines", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "flags" },
+    { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_SCALES-1, FLAGS, "scale" },
+    { "s",     "set scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_SCALES-1, FLAGS, "scale" },
+        { "digital",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=DIGITAL},    0, 0, FLAGS, "scale" },
+        { "ire",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=IRE},        0, 0, FLAGS, "scale" },
+        { "millivolts", NULL, 0, AV_OPT_TYPE_CONST, {.i64=MILLIVOLTS}, 0, 0, FLAGS, "scale" },
     { NULL }
 };
 
@@ -1200,7 +1224,82 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
 static const uint8_t green_yuva_color[4] = { 255, 0, 0, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
-static const uint8_t lines[4][2] = { { 16, 235 }, { 16, 240 }, { 16, 240 }, { 0, 255 } };
+
+static const GraticuleLines digital8[] = {
+    { { {  "16",  16 }, {  "16",  16 }, {  "16",  16 }, {   "0",   0 } } },
+    { { { "128", 128 }, { "128", 128 }, { "128", 128 }, { "128", 128 } } },
+    { { { "235", 235 }, { "240", 240 }, { "240", 240 }, { "255", 255 } } },
+};
+
+static const GraticuleLines digital9[] = {
+    { { {  "32",  32 }, {  "32",  32 }, {  "32",  32 }, {   "0",   0 } } },
+    { { { "256", 256 }, { "256", 256 }, { "256", 256 }, { "256", 256 } } },
+    { { { "470", 470 }, { "480", 480 }, { "480", 480 }, { "511", 511 } } },
+};
+
+static const GraticuleLines digital10[] = {
+    { { {  "64",  64 }, {  "64",  64 }, {  "64",  64 }, {    "0",    0 } } },
+    { { { "512", 512 }, { "512", 512 }, { "512", 512 }, {  "512",  512 } } },
+    { { { "940", 940 }, { "960", 960 }, { "960", 960 }, { "1023", 1023 } } },
+};
+
+static const GraticuleLines digital12[] = {
+    { { {  "256",  256 }, {  "256",  256 }, {  "256",  256 }, {    "0",    0 } } },
+    { { { "2048", 2048 }, { "2048", 2048 }, { "2048", 2048 }, { "2048", 2048 } } },
+    { { { "3760", 3760 }, { "3840", 3840 }, { "3840", 3840 }, { "4095", 4095 } } },
+};
+
+static const GraticuleLines millivolts8[] = {
+    { { {   "0",  16 }, {   "0",  16 }, {   "0",  16 }, {   "0",   0 } } },
+    { { { "714", 235 }, { "714", 240 }, { "714", 240 }, { "714", 255 } } },
+};
+
+static const GraticuleLines millivolts9[] = {
+    { { {   "0",  32 }, {   "0",  32 }, {   "0",  32 }, {   "0",   0 } } },
+    { { { "714", 470 }, { "714", 480 }, { "714", 480 }, { "714", 511 } } },
+};
+
+static const GraticuleLines millivolts10[] = {
+    { { {   "0",  64 }, {   "0",  64 }, {   "0",  64 }, {   "0",    0 } } },
+    { { { "714", 940 }, { "714", 960 }, { "714", 960 }, { "714", 1023 } } },
+};
+
+static const GraticuleLines millivolts12[] = {
+    { { {   "0",  256 }, {   "0",  256 }, {   "0",  256 }, {   "0",    0 } } },
+    { { { "714", 3760 }, { "714", 3840 }, { "714", 3840 }, { "714", 4095 } } },
+};
+
+static const GraticuleLines ire8[] = {
+    { { {   "0",  16 }, {   "0",  16 }, {   "0",  16 }, {   "0",   0 } } },
+    { { {  "25",  66 }, {  "25",  67 }, {  "25",  67 }, {  "25",  64 } } },
+    { { {  "50", 126 }, {  "50", 128 }, {  "50", 128 }, {  "50", 128 } } },
+    { { {  "75", 180 }, {  "75", 184 }, {  "75", 184 }, {  "75", 192 } } },
+    { { { "100", 235 }, { "100", 240 }, { "100", 240 }, { "100", 255 } } },
+};
+
+static const GraticuleLines ire9[] = {
+    { { {   "0",  32 }, {   "0",  32 }, {   "0",  32 }, {   "0",   0 } } },
+    { { {  "25", 142 }, {  "25", 144 }, {  "25", 144 }, {  "25", 128 } } },
+    { { {  "50", 251 }, {  "50", 256 }, {  "50", 256 }, {  "50", 256 } } },
+    { { {  "75", 361 }, {  "75", 368 }, {  "75", 368 }, {  "75", 384 } } },
+    { { { "100", 470 }, { "100", 480 }, { "100", 480 }, { "100", 511 } } },
+};
+
+static const GraticuleLines ire10[] = {
+    { { {   "0",  64 }, {   "0",  64 }, {  "0",   64 }, {   "0",    0 } } },
+    { { {  "25", 283 }, {  "25", 288 }, {  "25", 288 }, {  "25",  256 } } },
+    { { {  "50", 502 }, {  "50", 512 }, {  "50", 512 }, {  "50",  512 } } },
+    { { {  "75", 721 }, {  "75", 736 }, {  "75", 736 }, {  "75",  768 } } },
+    { { { "100", 940 }, { "100", 960 }, { "100", 960 }, { "100", 1023 } } },
+};
+
+static const GraticuleLines ire12[] = {
+    { { {   "0",  256 }, {   "0",  256 }, {   "0",  256 }, {   "0",    0 } } },
+    { { {  "25", 1132 }, {  "25", 1152 }, {  "25", 1152 }, {  "25", 1024 } } },
+    { { {  "50", 2008 }, {  "50", 2048 }, {  "50", 2048 }, {  "50", 2048 } } },
+    { { {  "75", 2884 }, {  "75", 2944 }, {  "75", 2944 }, {  "75", 3072 } } },
+    { { { "100", 3760 }, { "100", 3840 }, { "100", 3840 }, { "100", 4095 } } },
+};
 
 static void blend_vline(uint8_t *dst, int height, int linesize, float o1, float o2, int v, int step)
 {
@@ -1362,23 +1461,24 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
         k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p];
-            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
-                int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
+            for (l = 0; l < s->nb_glines; l++) {
+                const uint16_t pos = s->glines[l].line[c].pos;
+                int x = offset + (s->mirror ? 255 - pos : pos);
                 uint8_t *dst = out->data[p] + x;
 
                 blend_vline(dst, out->height, out->linesize[p], o1, o2, v, step);
             }
         }
 
-        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            int x = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
-            char text[16];
+        for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
+            const char *name = s->glines[l].line[c].name;
+            const uint16_t pos = s->glines[l].line[c].pos;
+            int x = offset + (s->mirror ? 255 - pos : pos) - 10;
 
             if (x < 0)
                 x = 4;
 
-            snprintf(text, sizeof(text), "%d", lines[c][l]);
-            draw_vtext(out, x, 2, o1, o2, text, green_yuva_color);
+            draw_vtext(out, x, 2, o1, o2, name, green_yuva_color);
         }
 
         offset += 256 * s->display;
@@ -1400,23 +1500,24 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
         k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p] * mult;
-            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
-                int x = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult);
+            for (l = 0; l < s->nb_glines ; l++) {
+                const uint16_t pos = s->glines[l].line[c].pos;
+                int x = offset + (s->mirror ? s->size - 1 - pos : pos);
                 uint16_t *dst = (uint16_t *)(out->data[p]) + x;
 
                 blend_vline16(dst, out->height, out->linesize[p], o1, o2, v, step);
             }
         }
 
-        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            int x = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
-            char text[16];
+        for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
+            const char *name = s->glines[l].line[c].name;
+            const uint16_t pos = s->glines[l].line[c].pos;
+            int x = offset + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (x < 0)
                 x = 4;
 
-            snprintf(text, sizeof(text), "%d", lines[c][l] * mult);
-            draw_vtext16(out, x, 2, mult, o1, o2, text, green_yuva_color);
+            draw_vtext16(out, x, 2, mult, o1, o2, name, green_yuva_color);
         }
 
         offset += s->size * s->display;
@@ -1437,23 +1538,24 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
         k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p];
-            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
-                int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]);
+            for (l = 0; l < s->nb_glines ; l++) {
+                const uint16_t pos = s->glines[l].line[c].pos;
+                int y = offset + (s->mirror ? 255 - pos : pos);
                 uint8_t *dst = out->data[p] + y * out->linesize[p];
 
                 blend_hline(dst, out->width, o1, o2, v, step);
             }
         }
 
-        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            int y = offset + (s->mirror ? 255 - lines[c][l] : lines[c][l]) - 10;
-            char text[16];
+        for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
+            const char *name = s->glines[l].line[c].name;
+            const uint16_t pos = s->glines[l].line[c].pos;
+            int y = offset + (s->mirror ? 255 - pos : pos) - 10;
 
             if (y < 0)
                 y = 4;
 
-            snprintf(text, sizeof(text), "%d", lines[c][l]);
-            draw_htext(out, 2, y, o1, o2, text, green_yuva_color);
+            draw_htext(out, 2, y, o1, o2, name, green_yuva_color);
         }
 
         offset += 256 * s->display;
@@ -1475,23 +1577,24 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
         k++;
         for (p = 0; p < s->ncomp; p++) {
             const int v = green_yuva_color[p] * mult;
-            for (l = 0; l < FF_ARRAY_ELEMS(lines[0]); l++) {
-                int y = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult);
+            for (l = 0; l < s->nb_glines ; l++) {
+                const uint16_t pos = s->glines[l].line[c].pos;
+                int y = offset + (s->mirror ? s->size - 1 - pos : pos);
                 uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]);
 
                 blend_hline16(dst, out->width, o1, o2, v, step);
             }
         }
 
-        for (l = 0; l < FF_ARRAY_ELEMS(lines[0]) && (s->flags & 1); l++) {
-            int y = offset + (s->mirror ? s->size - 1 - lines[c][l] * mult : lines[c][l] * mult) - 10;
-            char text[16];
+        for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
+            const char *name = s->glines[l].line[c].name;
+            const uint16_t pos = s->glines[l].line[c].pos;
+            int y = offset + (s->mirror ? s->size - 1 - pos: pos) - 10;
 
             if (y < 0)
                 y = 4;
 
-            snprintf(text, sizeof(text), "%d", lines[c][l] * mult);
-            draw_htext16(out, 2, y, mult, o1, o2, text, green_yuva_color);
+            draw_htext16(out, 2, y, mult, o1, o2, name, green_yuva_color);
         }
 
         offset += s->size * s->display;
@@ -1538,6 +1641,33 @@ static int config_input(AVFilterLink *inlink)
             else if (s->graticule && s->mode == 0)
                 s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
             s->waveform = s->bits > 8 ?   color16 :   color; break;
+    }
+
+    switch (s->scale) {
+    case DIGITAL:
+        switch (s->bits) {
+        case  8: s->glines = (GraticuleLines *)digital8;  s->nb_glines = FF_ARRAY_ELEMS(digital8); break;
+        case  9: s->glines = (GraticuleLines *)digital9;  s->nb_glines = FF_ARRAY_ELEMS(digital9); break;
+        case 10: s->glines = (GraticuleLines *)digital10; s->nb_glines = FF_ARRAY_ELEMS(digital10); break;
+        case 12: s->glines = (GraticuleLines *)digital12; s->nb_glines = FF_ARRAY_ELEMS(digital12); break;
+        }
+        break;
+    case MILLIVOLTS:
+        switch (s->bits) {
+        case  8: s->glines = (GraticuleLines *)millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(millivolts8); break;
+        case  9: s->glines = (GraticuleLines *)millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(millivolts9); break;
+        case 10: s->glines = (GraticuleLines *)millivolts10; s->nb_glines = FF_ARRAY_ELEMS(millivolts10); break;
+        case 12: s->glines = (GraticuleLines *)millivolts12; s->nb_glines = FF_ARRAY_ELEMS(millivolts12); break;
+        }
+        break;
+    case IRE:
+        switch (s->bits) {
+        case  8: s->glines = (GraticuleLines *)ire8;  s->nb_glines = FF_ARRAY_ELEMS(ire8); break;
+        case  9: s->glines = (GraticuleLines *)ire9;  s->nb_glines = FF_ARRAY_ELEMS(ire8); break;
+        case 10: s->glines = (GraticuleLines *)ire10; s->nb_glines = FF_ARRAY_ELEMS(ire8); break;
+        case 12: s->glines = (GraticuleLines *)ire12; s->nb_glines = FF_ARRAY_ELEMS(ire12); break;
+        }
+        break;
     }
 
     s->size = s->size << (s->bits - 8);

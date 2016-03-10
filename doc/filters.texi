@@ -13189,6 +13189,16 @@ Draw numbers above lines. By default enabled.
 @item dots
 Draw dots instead of lines.
 @end table
+
+@item scale, s
+Set scale used for displaying graticule.
+
+@table @samp
+@item digital
+@item millivolts
+@item ire
+@end table
+Default is digital.
 @end table
 
 @section xbr
