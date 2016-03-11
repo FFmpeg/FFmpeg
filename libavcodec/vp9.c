@@ -743,7 +743,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         if (s->s.h.lf_delta.enabled) {
             s->s.h.segmentation.feat[i].lflvl[0][0] =
             s->s.h.segmentation.feat[i].lflvl[0][1] =
-                av_clip_uintp2(lflvl + (s->s.h.lf_delta.ref[0] << sh), 6);
+                av_clip_uintp2(lflvl + (s->s.h.lf_delta.ref[0] * (1 << sh)), 6);
             for (j = 1; j < 4; j++) {
                 s->s.h.segmentation.feat[i].lflvl[j][0] =
                     av_clip_uintp2(lflvl + ((s->s.h.lf_delta.ref[j] +
@@ -2769,7 +2769,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
                                                 ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
                                                 int bw, int bh, int w, int h, int bytesperpixel)
 {
-    int mx = mv->x << !s->ss_h, my = mv->y << !s->ss_v, th;
+    int mx = mv->x * (1 << !s->ss_h), my = mv->y * (1 << !s->ss_v), th;
 
     y += my >> 4;
     x += mx >> 4;
@@ -2849,8 +2849,8 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
     int th;
     VP56mv mv;
 
-    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
-    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
+    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) * 8, (s->cols * 8 - x + px + 3) * 8);
+    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) * 8, (s->rows * 8 - y + py + 3) * 8);
     // BUG libvpx seems to scale the two components separately. This introduces
     // rounding errors but we have to reproduce them to be exactly compatible
     // with the output from libvpx...
@@ -2907,19 +2907,19 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
 
     if (s->ss_h) {
         // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 4, (s->cols * 4 - x + px + 3) << 4);
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) * 16, (s->cols * 4 - x + px + 3) * 16);
         mx = scale_mv(mv.x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
     } else {
-        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
-        mx = scale_mv(mv.x << 1, 0) + scale_mv(x * 16, 0);
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) * 8, (s->cols * 8 - x + px + 3) * 8);
+        mx = scale_mv(mv.x * 2, 0) + scale_mv(x * 16, 0);
     }
     if (s->ss_v) {
         // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 4, (s->rows * 4 - y + py + 3) << 4);
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) * 16, (s->rows * 4 - y + py + 3) * 16);
         my = scale_mv(mv.y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
     } else {
-        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
-        my = scale_mv(mv.y << 1, 1) + scale_mv(y * 16, 1);
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) * 8, (s->rows * 8 - y + py + 3) * 8);
+        my = scale_mv(mv.y * 2, 1) + scale_mv(y * 16, 1);
     }
 #undef scale_mv
     y = my >> 4;
