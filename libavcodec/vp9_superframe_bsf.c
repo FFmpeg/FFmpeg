@@ -82,13 +82,13 @@ static int merge_superframe(const struct CachedBuf *in, int n_in,
         wloop(mag, *ptr = in[n].size);
         break;
     case 1:
-        wloop(mag, AV_WB16(ptr, in[n].size));
+        wloop(mag, AV_WL16(ptr, in[n].size));
         break;
     case 2:
-        wloop(mag, AV_WB24(ptr, in[n].size));
+        wloop(mag, AV_WL24(ptr, in[n].size));
         break;
     case 3:
-        wloop(mag, AV_WB32(ptr, in[n].size));
+        wloop(mag, AV_WL32(ptr, in[n].size));
         break;
     }
     *ptr++ = marker;
