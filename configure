@@ -5118,7 +5118,8 @@ elif enabled mips; then
     fi
 
     enabled mipsfpu && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f2"' '-mhard-float'
-    enabled mipsfpu && enabled msa && check_inline_asm_flags msa '"addvi.b $w0, $w1, 1"' '-mfp64 -mmsa' && check_header msa.h || disable msa
+    enabled mipsfpu && (enabled mips32r5 || enabled mips32r6 || enabled mips64r6) && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f1"' '-mfp64'
+    enabled mipsfpu && enabled msa && check_inline_asm_flags msa '"addvi.b $w0, $w1, 1"' '-mmsa' && check_header msa.h || disable msa
     enabled mipsdsp && check_inline_asm_flags mipsdsp '"addu.qb $t0, $t1, $t2"' '-mdsp'
     enabled mipsdspr2 && check_inline_asm_flags mipsdspr2 '"absq_s.qb $t0, $t1"' '-mdspr2'
 
