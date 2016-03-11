@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 Paul B Mahol
+ * Copyright (c) 2012-2016 Paul B Mahol
  * Copyright (c) 2013 Marton Balint
  *
  * This file is part of FFmpeg.
@@ -39,6 +39,13 @@ enum FilterType {
     NB_FILTERS
 };
 
+enum DisplayType {
+    OVERLAY,
+    STACK,
+    PARADE,
+    NB_DISPLAYS
+};
+
 enum ScaleType {
     DIGITAL,
     MILLIVOLTS,
@@ -58,6 +65,7 @@ typedef struct GraticuleLines {
 typedef struct WaveformContext {
     const AVClass *class;
     int            mode;
+    int            acomp;
     int            ncomp;
     int            pcomp;
     const uint8_t  *bg_color;
@@ -82,7 +90,7 @@ typedef struct WaveformContext {
     GraticuleLines *glines;
     int            nb_glines;
     void (*waveform)(struct WaveformContext *s, AVFrame *in, AVFrame *out,
-                     int component, int intensity, int offset, int column);
+                     int component, int intensity, int offset_y, int offset_x, int column);
     void (*graticulef)(struct WaveformContext *s, AVFrame *out);
     const AVPixFmtDescriptor *desc;
 } WaveformContext;
@@ -99,10 +107,11 @@ static const AVOption waveform_options[] = {
     { "i",         "set intensity", OFFSET(fintensity), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 1, FLAGS },
     { "mirror", "set mirroring", OFFSET(mirror), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "r",      "set mirroring", OFFSET(mirror), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
-    { "display", "set display mode", OFFSET(display), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display" },
-    { "d",       "set display mode", OFFSET(display), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display" },
-        { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "display" },
-        { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "display" },
+    { "display", "set display mode", OFFSET(display), AV_OPT_TYPE_INT, {.i64=STACK}, 0, NB_DISPLAYS-1, FLAGS, "display" },
+    { "d",       "set display mode", OFFSET(display), AV_OPT_TYPE_INT, {.i64=STACK}, 0, NB_DISPLAYS-1, FLAGS, "display" },
+        { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY}, 0, 0, FLAGS, "display" },
+        { "stack",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=STACK},   0, 0, FLAGS, "display" },
+        { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=PARADE},  0, 0, FLAGS, "display" },
     { "components", "set components to display", OFFSET(pcomp), AV_OPT_TYPE_INT, {.i64=1}, 1, 15, FLAGS },
     { "c",          "set components to display", OFFSET(pcomp), AV_OPT_TYPE_INT, {.i64=1}, 1, 15, FLAGS },
     { "envelope", "set envelope to display", OFFSET(envelope), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS, "envelope" },
@@ -288,20 +297,20 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int component)
+static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int component, int offset)
 {
     const int dst_linesize = out->linesize[component] / 2;
     const int bg = s->bg_color[component] * (s->max / 256);
     const int limit = s->max - 1;
-    const int dst_h = out->height;
-    const int dst_w = out->width;
+    const int dst_h = s->display == PARADE ? out->height / s->acomp : out->height;
+    const int dst_w = s->display == PARADE ? out->width / s->acomp : out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     uint16_t *dst;
     int x, y;
 
     if (s->mode) {
-        for (x = 0; x < dst_w; x++) {
+        for (x = offset; x < offset + dst_w; x++) {
             for (y = start; y < end; y++) {
                 dst = (uint16_t *)out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
@@ -318,7 +327,7 @@ static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int 
             }
         }
     } else {
-        for (y = 0; y < dst_h; y++) {
+        for (y = offset; y < offset + dst_h; y++) {
             dst = (uint16_t *)out->data[component] + y * dst_linesize;
             for (x = start; x < end; x++) {
                 if (dst[x] != bg) {
@@ -336,19 +345,19 @@ static void envelope_instant16(WaveformContext *s, AVFrame *out, int plane, int 
     }
 }
 
-static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int component)
+static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int component, int offset)
 {
     const int dst_linesize = out->linesize[component];
     const uint8_t bg = s->bg_color[component];
-    const int dst_h = out->height;
-    const int dst_w = out->width;
+    const int dst_h = s->display == PARADE ? out->height / s->acomp : out->height;
+    const int dst_w = s->display == PARADE ? out->width / s->acomp : out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     uint8_t *dst;
     int x, y;
 
     if (s->mode) {
-        for (x = 0; x < dst_w; x++) {
+        for (x = offset; x < offset + dst_w; x++) {
             for (y = start; y < end; y++) {
                 dst = out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
@@ -365,7 +374,7 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int co
             }
         }
     } else {
-        for (y = 0; y < dst_h; y++) {
+        for (y = offset; y < offset + dst_h; y++) {
             dst = out->data[component] + y * dst_linesize;
             for (x = start; x < end; x++) {
                 if (dst[x] != bg) {
@@ -383,13 +392,13 @@ static void envelope_instant(WaveformContext *s, AVFrame *out, int plane, int co
     }
 }
 
-static void envelope_peak16(WaveformContext *s, AVFrame *out, int plane, int component)
+static void envelope_peak16(WaveformContext *s, AVFrame *out, int plane, int component, int offset)
 {
     const int dst_linesize = out->linesize[component] / 2;
     const int bg = s->bg_color[component] * (s->max / 256);
     const int limit = s->max - 1;
-    const int dst_h = out->height;
-    const int dst_w = out->width;
+    const int dst_h = s->display == PARADE ? out->height / s->acomp : out->height;
+    const int dst_w = s->display == PARADE ? out->width / s->acomp : out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     int *emax = s->emax[plane][component];
@@ -398,67 +407,67 @@ static void envelope_peak16(WaveformContext *s, AVFrame *out, int plane, int com
     int x, y;
 
     if (s->mode) {
-        for (x = 0; x < dst_w; x++) {
-            for (y = start; y < end && y < emin[x]; y++) {
+        for (x = offset; x < offset + dst_w; x++) {
+            for (y = start; y < end && y < emin[x - offset]; y++) {
                 dst = (uint16_t *)out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
-                    emin[x] = y;
+                    emin[x - offset] = y;
                     break;
                 }
             }
-            for (y = end - 1; y >= start && y >= emax[x]; y--) {
+            for (y = end - 1; y >= start && y >= emax[x - offset]; y--) {
                 dst = (uint16_t *)out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
-                    emax[x] = y;
+                    emax[x - offset] = y;
                     break;
                 }
             }
         }
 
         if (s->envelope == 3)
-            envelope_instant16(s, out, plane, component);
+            envelope_instant16(s, out, plane, component, offset);
 
-        for (x = 0; x < dst_w; x++) {
-            dst = (uint16_t *)out->data[component] + emin[x] * dst_linesize + x;
+        for (x = offset; x < offset + dst_w; x++) {
+            dst = (uint16_t *)out->data[component] + emin[x - offset] * dst_linesize + x;
             dst[0] = limit;
-            dst = (uint16_t *)out->data[component] + emax[x] * dst_linesize + x;
+            dst = (uint16_t *)out->data[component] + emax[x - offset] * dst_linesize + x;
             dst[0] = limit;
         }
     } else {
-        for (y = 0; y < dst_h; y++) {
+        for (y = offset; y < offset + dst_h; y++) {
             dst = (uint16_t *)out->data[component] + y * dst_linesize;
-            for (x = start; x < end && x < emin[y]; x++) {
+            for (x = start; x < end && x < emin[y - offset]; x++) {
                 if (dst[x] != bg) {
-                    emin[y] = x;
+                    emin[y - offset] = x;
                     break;
                 }
             }
-            for (x = end - 1; x >= start && x >= emax[y]; x--) {
+            for (x = end - 1; x >= start && x >= emax[y - offset]; x--) {
                 if (dst[x] != bg) {
-                    emax[y] = x;
+                    emax[y - offset] = x;
                     break;
                 }
             }
         }
 
         if (s->envelope == 3)
-            envelope_instant16(s, out, plane, component);
+            envelope_instant16(s, out, plane, component, offset);
 
-        for (y = 0; y < dst_h; y++) {
-            dst = (uint16_t *)out->data[component] + y * dst_linesize + emin[y];
+        for (y = offset; y < offset + dst_h; y++) {
+            dst = (uint16_t *)out->data[component] + y * dst_linesize + emin[y - offset];
             dst[0] = limit;
-            dst = (uint16_t *)out->data[component] + y * dst_linesize + emax[y];
+            dst = (uint16_t *)out->data[component] + y * dst_linesize + emax[y - offset];
             dst[0] = limit;
         }
     }
 }
 
-static void envelope_peak(WaveformContext *s, AVFrame *out, int plane, int component)
+static void envelope_peak(WaveformContext *s, AVFrame *out, int plane, int component, int offset)
 {
     const int dst_linesize = out->linesize[component];
     const int bg = s->bg_color[component];
-    const int dst_h = out->height;
-    const int dst_w = out->width;
+    const int dst_h = s->display == PARADE ? out->height / s->acomp : out->height;
+    const int dst_w = s->display == PARADE ? out->width / s->acomp : out->width;
     const int start = s->estart[plane];
     const int end = s->eend[plane];
     int *emax = s->emax[plane][component];
@@ -467,80 +476,80 @@ static void envelope_peak(WaveformContext *s, AVFrame *out, int plane, int compo
     int x, y;
 
     if (s->mode) {
-        for (x = 0; x < dst_w; x++) {
-            for (y = start; y < end && y < emin[x]; y++) {
+        for (x = offset; x < offset + dst_w; x++) {
+            for (y = start; y < end && y < emin[x - offset]; y++) {
                 dst = out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
-                    emin[x] = y;
+                    emin[x - offset] = y;
                     break;
                 }
             }
-            for (y = end - 1; y >= start && y >= emax[x]; y--) {
+            for (y = end - 1; y >= start && y >= emax[x - offset]; y--) {
                 dst = out->data[component] + y * dst_linesize + x;
                 if (dst[0] != bg) {
-                    emax[x] = y;
+                    emax[x - offset] = y;
                     break;
                 }
             }
         }
 
         if (s->envelope == 3)
-            envelope_instant(s, out, plane, component);
+            envelope_instant(s, out, plane, component, offset);
 
-        for (x = 0; x < dst_w; x++) {
-            dst = out->data[component] + emin[x] * dst_linesize + x;
+        for (x = offset; x < offset + dst_w; x++) {
+            dst = out->data[component] + emin[x - offset] * dst_linesize + x;
             dst[0] = 255;
-            dst = out->data[component] + emax[x] * dst_linesize + x;
+            dst = out->data[component] + emax[x - offset] * dst_linesize + x;
             dst[0] = 255;
         }
     } else {
-        for (y = 0; y < dst_h; y++) {
+        for (y = offset; y < offset + dst_h; y++) {
             dst = out->data[component] + y * dst_linesize;
-            for (x = start; x < end && x < emin[y]; x++) {
+            for (x = start; x < end && x < emin[y - offset]; x++) {
                 if (dst[x] != bg) {
-                    emin[y] = x;
+                    emin[y - offset] = x;
                     break;
                 }
             }
-            for (x = end - 1; x >= start && x >= emax[y]; x--) {
+            for (x = end - 1; x >= start && x >= emax[y - offset]; x--) {
                 if (dst[x] != bg) {
-                    emax[y] = x;
+                    emax[y - offset] = x;
                     break;
                 }
             }
         }
 
         if (s->envelope == 3)
-            envelope_instant(s, out, plane, component);
+            envelope_instant(s, out, plane, component, offset);
 
-        for (y = 0; y < dst_h; y++) {
-            dst = out->data[component] + y * dst_linesize + emin[y];
+        for (y = offset; y < offset + dst_h; y++) {
+            dst = out->data[component] + y * dst_linesize + emin[y - offset];
             dst[0] = 255;
-            dst = out->data[component] + y * dst_linesize + emax[y];
+            dst = out->data[component] + y * dst_linesize + emax[y - offset];
             dst[0] = 255;
         }
     }
 }
 
-static void envelope16(WaveformContext *s, AVFrame *out, int plane, int component)
+static void envelope16(WaveformContext *s, AVFrame *out, int plane, int component, int offset)
 {
     if (s->envelope == 0) {
         return;
     } else if (s->envelope == 1) {
-        envelope_instant16(s, out, plane, component);
+        envelope_instant16(s, out, plane, component, offset);
     } else {
-        envelope_peak16(s, out, plane, component);
+        envelope_peak16(s, out, plane, component, offset);
     }
 }
 
-static void envelope(WaveformContext *s, AVFrame *out, int plane, int component)
+static void envelope(WaveformContext *s, AVFrame *out, int plane, int component, int offset)
 {
     if (s->envelope == 0) {
         return;
     } else if (s->envelope == 1) {
-        envelope_instant(s, out, plane, component);
+        envelope_instant(s, out, plane, component, offset);
     } else {
-        envelope_peak(s, out, plane, component);
+        envelope_peak(s, out, plane, component, offset);
     }
 }
 
@@ -561,7 +570,7 @@ static void update(uint8_t *target, int max, int intensity)
 }
 
 static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                      int component, int intensity, int offset, int column)
+                      int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -576,7 +585,7 @@ static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
     const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
     const uint16_t *src_data = (const uint16_t *)in->data[plane];
-    uint16_t *dst_data = (uint16_t *)out->data[plane] + (column ? offset * dst_linesize : offset);
+    uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
     uint16_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint16_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
     const int step = column ? 1 << shift_w : 1 << shift_h;
@@ -615,11 +624,11 @@ static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
         dst_data += dst_linesize * step;
     }
 
-    envelope16(s, out, plane, plane);
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
 static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
-                    int component, int intensity, int offset, int column)
+                    int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -633,7 +642,7 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
     const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
     const uint8_t *src_data = in->data[plane];
-    uint8_t *dst_data = out->data[plane] + (column ? offset * dst_linesize : offset);
+    uint8_t *dst_data = out->data[plane] + offset_y * dst_linesize + offset_x;
     uint8_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint8_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
     const int step = column ? 1 << shift_w : 1 << shift_h;
@@ -671,11 +680,11 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
         dst_data += dst_linesize * step;
     }
 
-    envelope(s, out, plane, plane);
+    envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
 static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
-                 int component, int intensity, int offset, int column)
+                 int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -697,8 +706,8 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
             const uint8_t *c0_data = in->data[plane + 0];
             const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
             const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-            uint8_t *d0_data = out->data[plane] + offset * d0_linesize;
-            uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset * d1_linesize;
+            uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+            uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
             uint8_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
             uint8_t * const d0 = (mirror ? d0_bottom_line : d0_data);
             uint8_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
@@ -727,8 +736,8 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
         const uint8_t *c0_data = in->data[plane];
         const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
         const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-        uint8_t *d0_data = out->data[plane] + offset;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset;
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -766,12 +775,12 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
         }
     }
 
-    envelope(s, out, plane, plane);
-    envelope(s, out, plane, (plane + 1) % s->ncomp);
+    envelope(s, out, plane, plane, column ? offset_x : offset_y);
+    envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
-                  int component, int intensity, int offset, int column)
+                  int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -795,9 +804,9 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
             const uint8_t *c0_data = in->data[plane + 0];
             const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
             const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-            uint8_t *d0_data = out->data[plane] + offset * d0_linesize;
-            uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset * d1_linesize;
-            uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset * d2_linesize;
+            uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+            uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+            uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
             uint8_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
             uint8_t * const d0 = (mirror ? d0_bottom_line : d0_data);
             uint8_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
@@ -832,9 +841,9 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
         const uint8_t *c0_data = in->data[plane];
         const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
         const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-        uint8_t *d0_data = out->data[plane] + offset;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset;
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset;
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -875,13 +884,13 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
         }
     }
 
-    envelope(s, out, plane, (plane + 0) % s->ncomp);
-    envelope(s, out, plane, (plane + 1) % s->ncomp);
-    envelope(s, out, plane, (plane + 2) % s->ncomp);
+    envelope(s, out, plane, (plane + 0) % s->ncomp, column ? offset_x : offset_y);
+    envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+    envelope(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
-                   int component, int intensity, int offset, int column)
+                   int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -899,7 +908,7 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
         for (x = 0; x < src_w; x++) {
             const uint8_t *c0_data = in->data[(plane + 1) % s->ncomp];
             const uint8_t *c1_data = in->data[(plane + 2) % s->ncomp];
-            uint8_t *dst_data = out->data[plane] + offset * dst_linesize;
+            uint8_t *dst_data = out->data[plane] + offset_y * dst_linesize + offset_x;
             uint8_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
             uint8_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
             uint8_t *dst = dst_line;
@@ -921,7 +930,7 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
     } else {
         const uint8_t *c0_data = in->data[(plane + 1) % s->ncomp];
         const uint8_t *c1_data = in->data[(plane + 2) % s->ncomp];
-        uint8_t *dst_data = out->data[plane] + offset;
+        uint8_t *dst_data = out->data[plane] + offset_y * dst_linesize + offset_x;
 
         if (mirror)
             dst_data += s->size - 1;
@@ -949,11 +958,11 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
         }
     }
 
-    envelope(s, out, plane, (plane + 0) % s->ncomp);
+    envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
 static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
-                    int component, int intensity, int offset, int column)
+                    int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -973,8 +982,8 @@ static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
         for (x = 0; x < src_w; x++) {
             const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
             const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-            uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset * d1_linesize;
-            uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset * d2_linesize;
+            uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+            uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
             uint8_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
             uint8_t * const d1 = (mirror ? d1_bottom_line : d1_data);
             uint8_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
@@ -1000,12 +1009,10 @@ static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
     } else {
         const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
         const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-        uint8_t *d0_data = out->data[plane] + offset;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset;
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
 
         if (mirror) {
-            d0_data += s->size - 1;
             d1_data += s->size - 1;
             d2_data += s->size - 1;
         }
@@ -1036,12 +1043,12 @@ static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
         }
     }
 
-    envelope(s, out, plane, (plane + 1) % s->ncomp);
-    envelope(s, out, plane, (plane + 2) % s->ncomp);
+    envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+    envelope(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                    int component, int intensity, int offset, int column)
+                    int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -1063,9 +1070,9 @@ static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
-        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset * d0_linesize;
-        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset * d1_linesize;
-        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset * d2_linesize;
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
         uint16_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
         uint16_t * const d0 = (mirror ? d0_bottom_line : d0_data);
         uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
@@ -1092,9 +1099,9 @@ static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
             d2_data += d2_linesize;
         }
     } else {
-        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset;
-        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset;
-        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset;
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -1128,11 +1135,11 @@ static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
         }
     }
 
-    envelope16(s, out, plane, plane);
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
 static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
-                  int component, int intensity, int offset, int column)
+                  int component, int intensity, int offset_y, int offset_x, int column)
 {
     const int plane = s->desc->comp[component].plane;
     const int mirror = s->mirror;
@@ -1153,9 +1160,9 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
-        uint8_t *d0_data = out->data[plane] + offset * d0_linesize;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset * d1_linesize;
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset * d2_linesize;
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
         uint8_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
         uint8_t * const d0 = (mirror ? d0_bottom_line : d0_data);
         uint8_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
@@ -1182,9 +1189,9 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
             d2_data += d2_linesize;
         }
     } else {
-        uint8_t *d0_data = out->data[plane] + offset;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset;
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset;
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -1218,7 +1225,7 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
         }
     }
 
-    envelope(s, out, plane, plane);
+    envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
@@ -1461,10 +1468,11 @@ static void graticule_none(WaveformContext *s, AVFrame *out)
 
 static void graticule_green_row(WaveformContext *s, AVFrame *out)
 {
-    const int step = s->flags & 2 + 1;
+    const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
-    int k = 0, c, p, l, offset = 0;
+    const int height = s->display == PARADE ? out->height / s->acomp : out->height;
+    int k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if (!((1 << c) & s->pcomp) || (!s->display && k > 0))
@@ -1475,35 +1483,37 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p];
             for (l = 0; l < s->nb_glines; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int x = offset + (s->mirror ? 255 - pos : pos);
-                uint8_t *dst = out->data[p] + x;
+                int x = offset_x + (s->mirror ? 255 - pos : pos);
+                uint8_t *dst = out->data[p] + offset_y * out->linesize[p] + x;
 
-                blend_vline(dst, out->height, out->linesize[p], o1, o2, v, step);
+                blend_vline(dst, height, out->linesize[p], o1, o2, v, step);
             }
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int x = offset + (s->mirror ? 255 - pos : pos) - 10;
+            int x = offset_x + (s->mirror ? 255 - pos : pos) - 10;
 
             if (x < 0)
                 x = 4;
 
-            draw_vtext(out, x, 2, o1, o2, name, green_yuva_color);
+            draw_vtext(out, x, offset_y + 2, o1, o2, name, green_yuva_color);
         }
 
-        offset += 256 * s->display;
+        offset_x += 256 * (s->display == STACK);
+        offset_y += height * (s->display == PARADE);
     }
 }
 
 static void graticule16_green_row(WaveformContext *s, AVFrame *out)
 {
-    const int step = s->flags & 2 + 1;
+    const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int mult = s->size / 256;
-    int k = 0, c, p, l, offset = 0;
+    const int height = s->display == PARADE ? out->height / s->acomp : out->height;
+    int k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if (!((1 << c) & s->pcomp) || (!s->display && k > 0))
@@ -1514,34 +1524,36 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p] * mult;
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int x = offset + (s->mirror ? s->size - 1 - pos : pos);
-                uint16_t *dst = (uint16_t *)(out->data[p]) + x;
+                int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
+                uint16_t *dst = (uint16_t *)(out->data[p] + offset_y * out->linesize[p]) + x;
 
-                blend_vline16(dst, out->height, out->linesize[p], o1, o2, v, step);
+                blend_vline16(dst, height, out->linesize[p], o1, o2, v, step);
             }
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int x = offset + (s->mirror ? s->size - 1 - pos : pos) - 10;
+            int x = offset_x + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (x < 0)
                 x = 4;
 
-            draw_vtext16(out, x, 2, mult, o1, o2, name, green_yuva_color);
+            draw_vtext16(out, x, offset_y + 2, mult, o1, o2, name, green_yuva_color);
         }
 
-        offset += s->size * s->display;
+        offset_x += s->size * (s->display == STACK);
+        offset_y += height * (s->display == PARADE);
     }
 }
 
 static void graticule_green_column(WaveformContext *s, AVFrame *out)
 {
-    const int step = s->flags & 2 + 1;
+    const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
-    int k = 0, c, p, l, offset = 0;
+    const int width = s->display == PARADE ? out->width / s->acomp : out->width;
+    int k = 0, c, p, l, offset_y = 0, offset_x = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if ((!((1 << c) & s->pcomp) || (!s->display && k > 0)))
@@ -1552,35 +1564,37 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p];
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int y = offset + (s->mirror ? 255 - pos : pos);
-                uint8_t *dst = out->data[p] + y * out->linesize[p];
+                int y = offset_y + (s->mirror ? 255 - pos : pos);
+                uint8_t *dst = out->data[p] + y * out->linesize[p] + offset_x;
 
-                blend_hline(dst, out->width, o1, o2, v, step);
+                blend_hline(dst, width, o1, o2, v, step);
             }
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int y = offset + (s->mirror ? 255 - pos : pos) - 10;
+            int y = offset_y + (s->mirror ? 255 - pos : pos) - 10;
 
             if (y < 0)
                 y = 4;
 
-            draw_htext(out, 2, y, o1, o2, name, green_yuva_color);
+            draw_htext(out, 2 + offset_x, y, o1, o2, name, green_yuva_color);
         }
 
-        offset += 256 * s->display;
+        offset_y += 256 * (s->display == STACK);
+        offset_x += width * (s->display == PARADE);
     }
 }
 
 static void graticule16_green_column(WaveformContext *s, AVFrame *out)
 {
-    const int step = s->flags & 2 + 1;
+    const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int mult = s->size / 256;
-    int k = 0, c, p, l, offset = 0;
+    const int width = s->display == PARADE ? out->width / s->acomp : out->width;
+    int k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if ((!((1 << c) & s->pcomp) || (!s->display && k > 0)))
@@ -1591,25 +1605,26 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p] * mult;
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int y = offset + (s->mirror ? s->size - 1 - pos : pos);
-                uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]);
+                int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
+                uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]) + offset_x;
 
-                blend_hline16(dst, out->width, o1, o2, v, step);
+                blend_hline16(dst, width, o1, o2, v, step);
             }
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int y = offset + (s->mirror ? s->size - 1 - pos: pos) - 10;
+            int y = offset_y + (s->mirror ? s->size - 1 - pos: pos) - 10;
 
             if (y < 0)
                 y = 4;
 
-            draw_htext16(out, 2, y, mult, o1, o2, name, green_yuva_color);
+            draw_htext16(out, 2 + offset_x, y, mult, o1, o2, name, green_yuva_color);
         }
 
-        offset += s->size * s->display;
+        offset_y += s->size * (s->display == STACK);
+        offset_x += width * (s->display == PARADE);
     }
 }
 
@@ -1711,14 +1726,17 @@ static int config_output(AVFilterLink *outlink)
         if ((1 << i) & s->pcomp)
             comp++;
     }
+    s->acomp = comp;
 
     av_freep(&s->peak);
 
     if (s->mode) {
-        outlink->h = s->size * FFMAX(comp * s->display, 1);
+        outlink->h = s->size * FFMAX(comp * (s->display == STACK), 1);
+        outlink->w = inlink->w * FFMAX(comp * (s->display == PARADE), 1);
         size = inlink->w;
     } else {
-        outlink->w = s->size * FFMAX(comp * s->display, 1);
+        outlink->w = s->size * FFMAX(comp * (s->display == STACK), 1);
+        outlink->h = inlink->h * FFMAX(comp * (s->display == PARADE), 1);
         size = inlink->h;
     }
 
@@ -1738,7 +1756,7 @@ static int config_output(AVFilterLink *outlink)
             s->emin[plane][k] = s->peak + size * (plane * 4 + k + 16);
         }
 
-        offset = j++ * s->size * s->display;
+        offset = j++ * s->size * (s->display == STACK);
         s->estart[plane] = offset;
         s->eend[plane]   = (offset + s->size - 1);
         for (i = 0; i < size; i++) {
@@ -1789,8 +1807,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (k = 0, i = 0; k < s->ncomp; k++) {
         if ((1 << k) & s->pcomp) {
-            const int offset = i++ * s->size * s->display;
-            s->waveform(s, in, out, k, s->intensity, offset, s->mode);
+            int offset_y;
+            int offset_x;
+
+            if (s->display == PARADE) {
+                offset_x = s->mode ? i++ * inlink->w : 0;
+                offset_y = s->mode ? 0 : i++ * inlink->h;
+            } else {
+                offset_y = s->mode ? i++ * s->size * !!s->display : 0;
+                offset_x = s->mode ? 0 : i++ * s->size * !!s->display;
+            }
+            s->waveform(s, in, out, k, s->intensity, offset_y, offset_x, s->mode);
         }
     }
     s->graticulef(s, out);
