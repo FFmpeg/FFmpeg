@@ -41,7 +41,7 @@
 
 typedef struct MediaCodecH264DecContext {
 
-    MediaCodecDecContext ctx;
+    MediaCodecDecContext *ctx;
 
     AVBSFContext *bsf;
 
@@ -55,7 +55,8 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
 {
     MediaCodecH264DecContext *s = avctx->priv_data;
 
-    ff_mediacodec_dec_close(avctx, &s->ctx);
+    ff_mediacodec_dec_close(avctx, s->ctx);
+    s->ctx = NULL;
 
     av_fifo_free(s->fifo);
 
@@ -184,7 +185,15 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    if ((ret = ff_mediacodec_dec_init(avctx, &s->ctx, CODEC_MIME, format)) < 0) {
+    s->ctx = av_mallocz(sizeof(*s->ctx));
+    if (!s->ctx) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to allocate MediaCodecDecContext\n");
+        ret = AVERROR(ENOMEM);
+        goto done;
+    }
+
+    if ((ret = ff_mediacodec_dec_init(avctx, s->ctx, CODEC_MIME, format)) < 0) {
+        s->ctx = NULL;
         goto done;
     }
 
@@ -233,7 +242,7 @@ static int mediacodec_process_data(AVCodecContext *avctx, AVFrame *frame,
 {
     MediaCodecH264DecContext *s = avctx->priv_data;
 
-    return ff_mediacodec_dec_decode(avctx, &s->ctx, frame, got_frame, pkt);
+    return ff_mediacodec_dec_decode(avctx, s->ctx, frame, got_frame, pkt);
 }
 
 static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
@@ -260,6 +269,32 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
         av_fifo_generic_write(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
     }
 
+    /*
+     * MediaCodec.flush() discards both input and output buffers, thus we
+     * need to delay the call to this function until the user has released or
+     * renderered the frames he retains.
+     *
+     * After we have buffered an input packet, check if the codec is in the
+     * flushing state. If it is, we need to call ff_mediacodec_dec_flush.
+     *
+     * ff_mediacodec_dec_flush returns 0 if the flush cannot be performed on
+     * the codec (because the user retains frames). The codec stays in the
+     * flushing state.
+     *
+     * ff_mediacodec_dec_flush returns 1 if the flush can actually be
+     * performed on the codec. The codec leaves the flushing state and can
+     * process again packets.
+     *
+     * ff_mediacodec_dec_flush returns a negative value if an error has
+     * occured.
+     *
+     */
+    if (ff_mediacodec_dec_is_flushing(avctx, s->ctx)) {
+        if (!ff_mediacodec_dec_flush(avctx, s->ctx)) {
+            return avpkt->size;
+        }
+    }
+
     /* process buffered data */
     while (!*got_frame) {
         /* prepare the input data -- convert to Annex B if needed */
@@ -271,7 +306,7 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
             /* no more data */
             if (av_fifo_size(s->fifo) < sizeof(AVPacket)) {
                 return avpkt->size ? avpkt->size :
-                    ff_mediacodec_dec_decode(avctx, &s->ctx, frame, got_frame, avpkt);
+                    ff_mediacodec_dec_decode(avctx, s->ctx, frame, got_frame, avpkt);
             }
 
             av_fifo_generic_read(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
@@ -318,7 +353,7 @@ static void mediacodec_decode_flush(AVCodecContext *avctx)
 
     av_packet_unref(&s->filtered_pkt);
 
-    ff_mediacodec_dec_flush(avctx, &s->ctx);
+    ff_mediacodec_dec_flush(avctx, s->ctx);
 }
 
 AVCodec ff_h264_mediacodec_decoder = {

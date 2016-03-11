@@ -72,6 +72,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(H264_CUVID,        h264_cuvid);
     REGISTER_HWACCEL(H264_D3D11VA,      h264_d3d11va);
     REGISTER_HWACCEL(H264_DXVA2,        h264_dxva2);
+    REGISTER_HWACCEL(H264_MEDIACODEC,   h264_mediacodec);
     REGISTER_HWACCEL(H264_MMAL,         h264_mmal);
     REGISTER_HWACCEL(H264_QSV,          h264_qsv);
     REGISTER_HWACCEL(H264_VAAPI,        h264_vaapi);
