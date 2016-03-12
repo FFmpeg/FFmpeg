@@ -3188,6 +3188,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int64_t max_stream_analyze_duration;
     int64_t max_subtitle_analyze_duration;
     int64_t probesize = ic->probesize;
+    int eof_reached = 0;
 
     flush_codecs = probesize > 0;
 
@@ -3354,6 +3355,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         if (ret < 0) {
             /* EOF or error*/
+            eof_reached = 1;
             break;
         }
 
@@ -3475,6 +3477,17 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         st->codec_info_nb_frames++;
         count++;
+    }
+
+    if (eof_reached && ic->internal->packet_buffer) {
+        int stream_index;
+        for (stream_index = 0; stream_index < ic->nb_streams; stream_index++) {
+            // EOF already reached while reading the stream above.
+            // So continue with reoordering DTS with whatever delay we have.
+            if (!has_decode_delay_been_guessed(st)) {
+                update_dts_from_pts(ic, stream_index, ic->internal->packet_buffer);
+            }
+        }
     }
 
     if (flush_codecs) {
