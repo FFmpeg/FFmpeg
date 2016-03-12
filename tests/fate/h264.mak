@@ -203,6 +203,8 @@ FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_SAMPLES_AVCONV += $(FATE_H264-yes)
 fate-h264: $(FATE_H264-yes)
 
+fate-h264-dts_5frames: ffprobe$(PROGSSUF)$(EXESUF)
+
 fate-h264-conformance-aud_mw_e:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/AUD_MW_E.264
 fate-h264-conformance-ba1_ft_c:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA1_FT_C.264
 fate-h264-conformance-ba1_sony_d:                 CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA1_Sony_D.jsv
