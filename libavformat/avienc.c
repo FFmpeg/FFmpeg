@@ -44,7 +44,10 @@
  */
 
 typedef struct AVIIentry {
-    unsigned int flags, pos, len;
+    char tag[4];
+    unsigned int flags;
+    unsigned int pos;
+    unsigned int len;
 } AVIIentry;
 
 #define AVI_INDEX_CLUSTER_SIZE 16384
@@ -94,6 +97,43 @@ static inline AVIIentry *avi_get_ientry(const AVIIndex *idx, int ent_id)
     int cl = ent_id / AVI_INDEX_CLUSTER_SIZE;
     int id = ent_id % AVI_INDEX_CLUSTER_SIZE;
     return &idx->cluster[cl][id];
+}
+
+static int avi_add_ientry(AVFormatContext *s, int stream_index, char *tag,
+                          unsigned int flags, unsigned int size)
+{
+    AVIContext *avi  = s->priv_data;
+    AVIOContext *pb  = s->pb;
+    AVIStream *avist = s->streams[stream_index]->priv_data;
+    AVIIndex *idx    = &avist->indexes;
+    int cl           = idx->entry / AVI_INDEX_CLUSTER_SIZE;
+    int id           = idx->entry % AVI_INDEX_CLUSTER_SIZE;
+
+    if (idx->ents_allocated <= idx->entry) {
+        idx->cluster = av_realloc_f(idx->cluster, sizeof(void*), cl+1);
+        if (!idx->cluster) {
+            idx->ents_allocated = 0;
+            idx->entry          = 0;
+            return AVERROR(ENOMEM);
+        }
+        idx->cluster[cl] =
+            av_malloc(AVI_INDEX_CLUSTER_SIZE * sizeof(AVIIentry));
+        if (!idx->cluster[cl])
+            return AVERROR(ENOMEM);
+        idx->ents_allocated += AVI_INDEX_CLUSTER_SIZE;
+    }
+
+    if (tag)
+        memcpy(idx->cluster[cl][id].tag, tag, 4);
+    else
+        *(idx->cluster[cl][id].tag) = '\0';
+    idx->cluster[cl][id].flags = flags;
+    idx->cluster[cl][id].pos   = avio_tell(pb) - avi->movi_list;
+    idx->cluster[cl][id].len   = size;
+    avist->max_size = FFMAX(avist->max_size, size);
+    idx->entry++;
+
+    return 0;
 }
 
 static int64_t avi_start_new_riff(AVFormatContext *s, AVIOContext *pb,
@@ -775,28 +815,10 @@ static int avi_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         avist->audio_strm_length += size;
 
     if (s->pb->seekable) {
-        AVIIndex *idx = &avist->indexes;
-        int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
-        int id = idx->entry % AVI_INDEX_CLUSTER_SIZE;
-        if (idx->ents_allocated <= idx->entry) {
-            idx->cluster = av_realloc_f(idx->cluster, sizeof(void*), cl+1);
-            if (!idx->cluster) {
-                idx->ents_allocated = 0;
-                idx->entry          = 0;
-                return AVERROR(ENOMEM);
-            }
-            idx->cluster[cl] =
-                av_malloc(AVI_INDEX_CLUSTER_SIZE * sizeof(AVIIentry));
-            if (!idx->cluster[cl])
-                return AVERROR(ENOMEM);
-            idx->ents_allocated += AVI_INDEX_CLUSTER_SIZE;
-        }
-
-        idx->cluster[cl][id].flags = flags;
-        idx->cluster[cl][id].pos   = avio_tell(pb) - avi->movi_list;
-        idx->cluster[cl][id].len   = size;
-        avist->max_size = FFMAX(avist->max_size, size);
-        idx->entry++;
+        int ret;
+        ret = avi_add_ientry(s, stream_index, NULL, flags, size);
+        if (ret < 0)
+            return ret;
     }
 
     avio_write(pb, tag, 4);
