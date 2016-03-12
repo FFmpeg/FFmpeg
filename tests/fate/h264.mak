@@ -192,6 +192,7 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               $(FATE_H264_REINIT_TESTS:%=fate-h264-reinit-%)            \
               fate-h264-extreme-plane-pred                              \
               fate-h264-lossless                                        \
+              fate-h264-dts_5frames                                     \
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
@@ -395,3 +396,5 @@ fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAM
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
+
+fate-h264-dts_5frames:                            CMD = probeframes $(TARGET_SAMPLES)/h264/dts_5frames.mkv
