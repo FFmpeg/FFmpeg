@@ -30,11 +30,6 @@ typedef struct {
     int start, len;
 } Coeffs;
 
-enum CoeffsType {
-    COEFFS_TYPE_DEFAULT,
-    COEFFS_TYPE_INTERLEAVE
-};
-
 typedef struct {
     float r, g, b;
 } RGBFloat;
@@ -71,7 +66,6 @@ typedef struct {
     int                 fft_len;
     int                 cqt_len;
     int                 cqt_align;
-    enum CoeffsType     cqt_coeffs_type;
     ColorFloat          *c_buf;
     float               *h_buf;
     float               *rcp_h_buf;
@@ -85,6 +79,15 @@ typedef struct {
     void                (*draw_axis)(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off);
     void                (*draw_sono)(AVFrame *out, AVFrame *sono, int off, int idx);
     void                (*update_sono)(AVFrame *sono, const ColorFloat *c, int idx);
+    /* performance debugging */
+    int64_t             fft_time;
+    int64_t             cqt_time;
+    int64_t             process_cqt_time;
+    int64_t             update_sono_time;
+    int64_t             alloc_time;
+    int64_t             bar_time;
+    int64_t             axis_time;
+    int64_t             sono_time;
     /* option */
     int                 width, height;
     AVRational          rate;

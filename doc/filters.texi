@@ -12635,6 +12635,9 @@ Draw graticule for white point.
 
 @item black
 Draw graticule for black point.
+
+@item name
+Draw color points short names.
 @end table
 
 @item bgopacity, b
@@ -13106,9 +13109,13 @@ This display mode makes it easier to spot relative differences or similarities
 in overlapping areas of the color components that are supposed to be identical,
 such as neutral whites, grays, or blacks.
 
-@item parade
+@item stack
 Display separate graph for the color components side by side in
 @code{row} mode or one below the other in @code{column} mode.
+
+@item parade
+Display separate graph for the color components side by side in
+@code{column} mode or one below the other in @code{row} mode.
 
 Using this display mode makes it easy to spot color casts in the highlights
 and shadows of an image, by comparing the contours of the top and the bottom
@@ -13117,7 +13124,7 @@ by exactly equal amounts of red, green, and blue, neutral areas of the picture
 should display three waveforms of roughly equal width/height. If not, the
 correction is easy to perform by making level adjustments the three waveforms.
 @end table
-Default is @code{parade}.
+Default is @code{stack}.
 
 @item components, c
 Set which color components to display. Default is 1, which means only luminance
@@ -13175,6 +13182,27 @@ Display green graticule showing legal broadcast ranges.
 
 @item opacity, o
 Set graticule opacity.
+
+@item flags, fl
+Set graticule flags.
+
+@table @samp
+@item numbers
+Draw numbers above lines. By default enabled.
+
+@item dots
+Draw dots instead of lines.
+@end table
+
+@item scale, s
+Set scale used for displaying graticule.
+
+@table @samp
+@item digital
+@item millivolts
+@item ire
+@end table
+Default is digital.
 @end table
 
 @section xbr

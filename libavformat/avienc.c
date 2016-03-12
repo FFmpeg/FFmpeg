@@ -306,8 +306,7 @@ static int avi_write_header(AVFormatContext *s)
             avio_wl32(pb, enc->codec_tag);
         else
             avio_wl32(pb, 1);
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO && pb->seekable)
-            avist->strh_flags_offset = avio_tell(pb);
+        avist->strh_flags_offset = avio_tell(pb);
         avio_wl32(pb, 0); /* flags */
         avio_wl16(pb, 0); /* priority */
         avio_wl16(pb, 0); /* language */
@@ -369,8 +368,7 @@ static int avi_write_header(AVFormatContext *s)
                     && enc->pix_fmt == AV_PIX_FMT_RGB555LE
                     && enc->bits_per_coded_sample == 15)
                     enc->bits_per_coded_sample = 16;
-                if (pb->seekable)
-                    avist->pal_offset = avio_tell(pb) + 40;
+                avist->pal_offset = avio_tell(pb) + 40;
                 ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 0, 0);
                 pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
                                               enc->bits_per_coded_sample);
@@ -658,13 +656,8 @@ static int write_skip_frames(AVFormatContext *s, int stream_index, int64_t dts)
 
 static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    unsigned char tag[5];
     const int stream_index = pkt->stream_index;
-    AVIOContext *pb     = s->pb;
     AVCodecContext *enc = s->streams[stream_index]->codec;
-    AVIStream *avist    = s->streams[stream_index]->priv_data;
-    AVPacket *opkt = pkt;
-    enum AVPixelFormat pix_fmt = enc->pix_fmt;
     int ret;
 
     if (enc->codec_id == AV_CODEC_ID_H264 && enc->codec_tag == MKTAG('H','2','6','4') && pkt->size) {
@@ -680,6 +673,9 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         return avi_write_packet_internal(s, pkt); /* Passthrough */
 
     if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+        AVIStream *avist = s->streams[stream_index]->priv_data;
+        AVIOContext *pb  = s->pb;
+        AVPacket *opkt   = pkt;
         if (enc->codec_id == AV_CODEC_ID_RAWVIDEO && enc->codec_tag == 0) {
             int64_t bpc = enc->bits_per_coded_sample != 15 ? enc->bits_per_coded_sample : 16;
             int expected_stride = ((enc->width * bpc + 31) >> 5)*4;
@@ -688,11 +684,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                 return ret;
         } else
             ret = 0;
-        if (pix_fmt == AV_PIX_FMT_NONE && enc->bits_per_coded_sample == 1)
-            pix_fmt = AV_PIX_FMT_MONOWHITE;
-        if (pix_fmt == AV_PIX_FMT_PAL8 ||
-            pix_fmt == AV_PIX_FMT_MONOWHITE ||
-            pix_fmt == AV_PIX_FMT_MONOBLACK) {
+        if (enc->pix_fmt == AV_PIX_FMT_PAL8) {
             int ret2 = ff_get_packet_palette(s, opkt, ret, avist->palette);
             if (ret2 < 0)
                 return ret2;
@@ -714,6 +706,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                     avist->pal_offset = 0;
                 }
                 if (memcmp(avist->palette, avist->old_palette, pal_size * 4)) {
+                    unsigned char tag[5];
                     avi_stream2fourcc(tag, stream_index, enc->codec_type);
                     tag[2] = 'p'; tag[3] = 'c';
                     pc_tag = ff_start_tag(pb, tag);

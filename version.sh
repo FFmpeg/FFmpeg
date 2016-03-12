@@ -46,7 +46,7 @@ if [ -z "$2" ]; then
 fi
 
 NEW_REVISION="#define FFMPEG_VERSION \"$version\""
-OLD_REVISION=$(cat "$2" 2> /dev/null | head -3 | tail -1)
+OLD_REVISION=$(cat "$2" 2> /dev/null | head -4 | tail -1)
 
 # String used for preprocessor guard
 GUARD=$(echo "$2" | sed 's/\//_/' | sed 's/\./_/' | tr '[:lower:]' '[:upper:]' | sed 's/LIB//')

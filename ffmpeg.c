@@ -694,6 +694,8 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         if (exit_on_error)
             exit_program(1);
     }
+    if (pkt->size == 0 && pkt->side_data_elems == 0)
+        return;
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         if (pkt->dts != AV_NOPTS_VALUE &&
@@ -710,6 +712,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
      if(
         (avctx->codec_type == AVMEDIA_TYPE_AUDIO || avctx->codec_type == AVMEDIA_TYPE_VIDEO) &&
         pkt->dts != AV_NOPTS_VALUE &&
+        !(avctx->codec_id == AV_CODEC_ID_VP9 && ost->stream_copy) &&
         ost->last_mux_dts != AV_NOPTS_VALUE) {
       int64_t max = ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
       if (pkt->dts < max) {

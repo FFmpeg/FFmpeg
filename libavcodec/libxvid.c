@@ -541,7 +541,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
-        fd = av_tempfile("xvidff.", &x->twopassfile, 0, avctx);
+        fd = avpriv_tempfile("xvidff.", &x->twopassfile, 0, avctx);
         if (fd < 0) {
             av_log(avctx, AV_LOG_ERROR, "Xvid: Cannot write 2-pass pipe\n");
             return fd;

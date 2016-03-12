@@ -282,7 +282,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     }
 
     if (s->avctx->bits_per_raw_sample != bits) {
-        av_log(s->avctx, AV_LOG_INFO, "Changing bps to %d\n", bits);
+        av_log(s->avctx, s->avctx->bits_per_raw_sample > 0 ? AV_LOG_INFO : AV_LOG_DEBUG, "Changing bps from %d to %d\n", s->avctx->bits_per_raw_sample, bits);
         s->avctx->bits_per_raw_sample = bits;
         init_idct(s->avctx);
     }
@@ -612,6 +612,13 @@ unk_pixfmt:
     if (!s->pix_desc) {
         av_log(s->avctx, AV_LOG_ERROR, "Could not get a pixel format descriptor.\n");
         return AVERROR_BUG;
+    }
+
+    if (s->avctx->skip_frame == AVDISCARD_ALL) {
+        s->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
+        s->picture_ptr->key_frame = 1;
+        s->got_picture            = 1;
+        return 0;
     }
 
     av_frame_unref(s->picture_ptr);
@@ -1871,8 +1878,10 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             else if ((!strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32) && s->avctx->codec_tag) ||
                      (!strncmp(cbuf, "Metasoft MJPEG Codec", 20)))
                 s->flipped = 1;
-            else if (!strcmp(cbuf, "MULTISCOPE II"))
+            else if (!strcmp(cbuf, "MULTISCOPE II")) {
+                s->avctx->sample_aspect_ratio = (AVRational) { 1, 2 };
                 s->multiscope = 2;
+            }
 
             av_free(cbuf);
         }

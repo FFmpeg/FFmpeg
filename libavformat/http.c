@@ -370,7 +370,7 @@ static int http_write_reply(URLContext* h, int status_code)
         message_len = snprintf(message, sizeof(message),
                  "HTTP/1.1 %03d %s\r\n"
                  "Content-Type: %s\r\n"
-                 "Content-Length: %zu\r\n"
+                 "Content-Length: %"SIZE_SPECIFIER"\r\n"
                  "\r\n"
                  "%03d %s\r\n",
                  reply_code,

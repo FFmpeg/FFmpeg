@@ -401,10 +401,12 @@ static int ftp_file_size(FTPContext *s)
 static int ftp_retrieve(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    static const int retr_codes[] = {150, 0};
+    static const int retr_codes[] = {150, 125, 0};
+    int resp_code;
 
     snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
-    if (ftp_send_command(s, command, retr_codes, NULL) != 150)
+    resp_code = ftp_send_command(s, command, retr_codes, NULL);
+    if (resp_code != 125 && resp_code != 150)
         return AVERROR(EIO);
 
     s->state = DOWNLOADING;
@@ -415,10 +417,12 @@ static int ftp_retrieve(FTPContext *s)
 static int ftp_store(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    static const int stor_codes[] = {150, 0};
+    static const int stor_codes[] = {150, 125, 0};
+    int resp_code;
 
     snprintf(command, sizeof(command), "STOR %s\r\n", s->path);
-    if (ftp_send_command(s, command, stor_codes, NULL) != 150)
+    resp_code = ftp_send_command(s, command, stor_codes, NULL);
+    if (resp_code != 125 && resp_code != 150)
         return AVERROR(EIO);
 
     s->state = UPLOADING;

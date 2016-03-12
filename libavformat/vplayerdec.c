@@ -36,7 +36,8 @@ static int vplayer_probe(AVProbeData *p)
     char c;
     const unsigned char *ptr = p->buf;
 
-    if (sscanf(ptr, "%*d:%*d:%*d.%*d%c", &c) == 1 && strchr(": =", c))
+    if ((sscanf(ptr, "%*d:%*d:%*d.%*d%c", &c) == 1 ||
+         sscanf(ptr, "%*d:%*d:%*d%c",     &c) == 1) && strchr(": =", c))
         return AVPROBE_SCORE_MAX;
     return 0;
 }
@@ -44,12 +45,12 @@ static int vplayer_probe(AVProbeData *p)
 static int64_t read_ts(char **line)
 {
     char c;
-    int hh, mm, ss, ms, len;
+    int hh, mm, ss, ms, n, len;
 
-    if (sscanf(*line, "%d:%d:%d.%d%c%n",
-               &hh, &mm, &ss, &ms, &c, &len) >= 5) {
+    if (((n = sscanf(*line, "%d:%d:%d.%d%c%n", &hh, &mm, &ss, &ms, &c, &len)) >= 5 ||
+         (n = sscanf(*line, "%d:%d:%d%c%n",    &hh, &mm, &ss,      &c, &len)) >= 4) && strchr(": =", c)) {
         *line += len;
-        return (hh*3600LL + mm*60LL + ss) * 100LL + ms;
+        return (hh*3600LL + mm*60LL + ss) * 100LL + (n < 5 ? 0 : ms);
     }
     return AV_NOPTS_VALUE;
 }

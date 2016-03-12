@@ -1669,7 +1669,15 @@ typedef struct AVCodecContext {
      * timebase should be 1/framerate and timestamp increments should be
      * identically 1.
      * This often, but not always is the inverse of the frame rate or field rate
-     * for video.
+     * for video. 1/time_base is not the average frame rate if the frame rate is not
+     * constant.
+     *
+     * Like containers, elementary streams also can store timestamps, 1/time_base
+     * is the unit in which these timestamps are specified.
+     * As example of such codec time base see ISO/IEC 14496-2:2001(E)
+     * vop_time_increment_resolution and fixed_vop_rate
+     * (fixed_vop_rate == 0 implies that it is different from the framerate)
+     *
      * - encoding: MUST be set by user.
      * - decoding: the use of this field for decoding is deprecated.
      *             Use framerate instead.
@@ -5245,7 +5253,8 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
  * If the return value is 0, the output buffer is not allocated and
  * should be considered identical to the input buffer, or in case
  * *poutbuf was set it points to the input buffer (not necessarily to
- * its starting address).
+ * its starting address). A special case is if *poutbuf was set to NULL and
+ * *poutbuf_size was set to 0, which indicates the packet should be dropped.
  */
 int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                AVCodecContext *avctx, const char *args,

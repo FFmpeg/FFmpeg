@@ -78,11 +78,10 @@ static void put_audio_specific_config(AVCodecContext *avctx)
 
 void ff_quantize_band_cost_cache_init(struct AACEncContext *s)
 {
-    int sf, g;
-    for (sf = 0; sf < 256; sf++) {
-        for (g = 0; g < 128; g++) {
-            s->quantize_band_cost_cache[sf][g].bits = -1;
-        }
+    ++s->quantize_band_cost_cache_generation;
+    if (s->quantize_band_cost_cache_generation == 0) {
+        memset(s->quantize_band_cost_cache, 0, sizeof(s->quantize_band_cost_cache));
+        s->quantize_band_cost_cache_generation = 1;
     }
 }
 

@@ -177,6 +177,9 @@ typedef struct MOVStreamContext {
         uint8_t* auxiliary_info;
         uint8_t* auxiliary_info_end;
         uint8_t* auxiliary_info_pos;
+        uint8_t auxiliary_info_default_size;
+        uint8_t* auxiliary_info_sizes;
+        size_t auxiliary_info_sizes_count;
         struct AVAESCTR* aes_ctr;
     } cenc;
 } MOVStreamContext;

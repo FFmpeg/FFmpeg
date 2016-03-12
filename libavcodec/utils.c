@@ -2486,7 +2486,7 @@ static int convert_sub_to_old_ass_form(AVSubtitle *sub, const AVPacket *pkt, AVR
         int ts_start, ts_duration = -1;
         long int layer;
 
-        if (rect->type != SUBTITLE_ASS || !strncmp(rect->ass, "Dialogue ", 10))
+        if (rect->type != SUBTITLE_ASS || !strncmp(rect->ass, "Dialogue: ", 10))
             continue;
 
         av_bprint_clear(&buf);

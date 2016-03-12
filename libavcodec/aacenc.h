@@ -84,10 +84,10 @@ extern AACCoefficientsEncoder ff_aac_coders[];
 typedef struct AACQuantizeBandCostCacheEntry {
     float rd;
     float energy;
-    int bits; ///< -1 means uninitialized entry
+    int bits;
     char cb;
     char rtz;
-    char padding[2]; ///< Keeps the entry size a multiple of 32 bits
+    uint16_t generation;
 } AACQuantizeBandCostCacheEntry;
 
 /**
@@ -126,6 +126,7 @@ typedef struct AACEncContext {
     DECLARE_ALIGNED(16, int,   qcoefs)[96];      ///< quantized coefficients
     DECLARE_ALIGNED(32, float, scoefs)[1024];    ///< scaled coefficients
 
+    uint16_t quantize_band_cost_cache_generation;
     AACQuantizeBandCostCacheEntry quantize_band_cost_cache[256][128]; ///< memoization area for quantize_band_cost
 
     struct {

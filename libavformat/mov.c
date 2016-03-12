@@ -4078,6 +4078,62 @@ static int mov_read_senc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return av_aes_ctr_init(sc->cenc.aes_ctr, c->decryption_key);
 }
 
+static int mov_read_saiz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+    size_t data_size;
+    int atom_header_size;
+    int flags;
+
+    if (c->decryption_key_len == 0 || c->fc->nb_streams < 1)
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    sc = st->priv_data;
+
+    if (sc->cenc.auxiliary_info_sizes || sc->cenc.auxiliary_info_default_size) {
+        av_log(c->fc, AV_LOG_ERROR, "duplicate saiz atom\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    atom_header_size = 9;
+
+    avio_r8(pb); /* version */
+    flags = avio_rb24(pb);
+
+    if ((flags & 0x01) != 0) {
+        atom_header_size += 8;
+
+        avio_rb32(pb);    /* info type */
+        avio_rb32(pb);    /* info type param */
+    }
+
+    sc->cenc.auxiliary_info_default_size = avio_r8(pb);
+    avio_rb32(pb);    /* entries */
+
+    if (atom.size <= atom_header_size) {
+        return 0;
+    }
+
+    /* save the auxiliary info sizes as is */
+    data_size = atom.size - atom_header_size;
+
+    sc->cenc.auxiliary_info_sizes = av_malloc(data_size);
+    if (!sc->cenc.auxiliary_info_sizes) {
+        return AVERROR(ENOMEM);
+    }
+
+    sc->cenc.auxiliary_info_sizes_count = data_size;
+
+    if (avio_read(pb, sc->cenc.auxiliary_info_sizes, data_size) != data_size) {
+        av_log(c->fc, AV_LOG_ERROR, "failed to read the auxiliary info sizes");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
 static int cenc_filter(MOVContext *c, MOVStreamContext *sc, uint8_t *input, int size)
 {
     uint32_t encrypted_bytes;
@@ -4140,6 +4196,36 @@ static int cenc_filter(MOVContext *c, MOVStreamContext *sc, uint8_t *input, int 
         av_log(c->fc, AV_LOG_ERROR, "leftover packet bytes after subsample processing\n");
         return AVERROR_INVALIDDATA;
     }
+
+    return 0;
+}
+
+static int mov_seek_auxiliary_info(AVFormatContext *s, MOVStreamContext *sc)
+{
+    size_t auxiliary_info_seek_offset = 0;
+    int i;
+
+    if (sc->cenc.auxiliary_info_default_size) {
+        auxiliary_info_seek_offset = sc->cenc.auxiliary_info_default_size * sc->current_sample;
+    } else if (sc->cenc.auxiliary_info_sizes) {
+        if (sc->current_sample > sc->cenc.auxiliary_info_sizes_count) {
+            av_log(s, AV_LOG_ERROR, "current sample %d greater than the number of auxiliary info sample sizes %"SIZE_SPECIFIER"\n",
+                sc->current_sample, sc->cenc.auxiliary_info_sizes_count);
+            return AVERROR_INVALIDDATA;
+        }
+
+        for (i = 0; i < sc->current_sample; i++) {
+            auxiliary_info_seek_offset += sc->cenc.auxiliary_info_sizes[i];
+        }
+    }
+
+    if (auxiliary_info_seek_offset > sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info) {
+        av_log(s, AV_LOG_ERROR, "auxiliary info offset %"SIZE_SPECIFIER" greater than auxiliary info size %"SIZE_SPECIFIER"\n",
+            auxiliary_info_seek_offset, (size_t)(sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info));
+        return AVERROR_INVALIDDATA;
+    }
+
+    sc->cenc.auxiliary_info_pos = sc->cenc.auxiliary_info + auxiliary_info_seek_offset;
 
     return 0;
 }
@@ -4221,6 +4307,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','i','n','f'), mov_read_default },
 { MKTAG('f','r','m','a'), mov_read_frma },
 { MKTAG('s','e','n','c'), mov_read_senc },
+{ MKTAG('s','a','i','z'), mov_read_saiz },
 { 0, NULL }
 };
 
@@ -4581,6 +4668,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->display_matrix);
 
         av_freep(&sc->cenc.auxiliary_info);
+        av_freep(&sc->cenc.auxiliary_info_sizes);
         av_aes_ctr_free(sc->cenc.aes_ctr);
     }
 
@@ -5148,6 +5236,12 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
             time_sample = next;
         }
     }
+
+    ret = mov_seek_auxiliary_info(s, sc);
+    if (ret < 0) {
+        return ret;
+    }
+
     return sample;
 }
 

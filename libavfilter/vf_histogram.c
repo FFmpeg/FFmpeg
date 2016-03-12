@@ -75,8 +75,10 @@ static const enum AVPixelFormat levels_in_pix_fmts[] = {
     AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
     AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP12,   AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
 };
@@ -96,6 +98,11 @@ static const enum AVPixelFormat levels_out_yuv10_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static const enum AVPixelFormat levels_out_yuv12_pix_fmts[] = {
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_NONE
+};
+
 static const enum AVPixelFormat levels_out_rgb8_pix_fmts[] = {
     AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_NONE
@@ -108,6 +115,11 @@ static const enum AVPixelFormat levels_out_rgb9_pix_fmts[] = {
 
 static const enum AVPixelFormat levels_out_rgb10_pix_fmts[] = {
     AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat levels_out_rgb12_pix_fmts[] = {
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_NONE
 };
 
@@ -144,12 +156,16 @@ static int query_formats(AVFilterContext *ctx)
         out_pix_fmts = levels_out_rgb9_pix_fmts;
     else if (rgb && bits == 10)
         out_pix_fmts = levels_out_rgb10_pix_fmts;
+    else if (rgb && bits == 12)
+        out_pix_fmts = levels_out_rgb12_pix_fmts;
     else if (bits == 8)
         out_pix_fmts = levels_out_yuv8_pix_fmts;
     else if (bits == 9)
         out_pix_fmts = levels_out_yuv9_pix_fmts;
     else if (bits == 10)
         out_pix_fmts = levels_out_yuv10_pix_fmts;
+    else if (bits == 12)
+        out_pix_fmts = levels_out_yuv12_pix_fmts;
     else
         return AVERROR(EAGAIN);
     if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
@@ -173,6 +189,7 @@ static int config_input(AVFilterLink *inlink)
     h->mult = h->histogram_size / 256;
 
     switch (inlink->format) {
+    case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:

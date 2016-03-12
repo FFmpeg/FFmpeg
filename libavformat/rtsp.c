@@ -2316,7 +2316,7 @@ static int sdp_read_header(AVFormatContext *s)
             append_source_addrs(url, sizeof(url), "block",
                                 rtsp_st->nb_exclude_source_addrs,
                                 rtsp_st->exclude_source_addrs);
-            err = ffurl_open_whitelist(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
+            err = ffurl_open_whitelist(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ,
                            &s->interrupt_callback, &opts, s->protocol_whitelist, s->protocol_blacklist);
 
             av_dict_free(&opts);

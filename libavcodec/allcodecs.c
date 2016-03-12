@@ -196,6 +196,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (H263P,             h263p);
     REGISTER_DECODER(H264,              h264);
     REGISTER_DECODER(H264_CRYSTALHD,    h264_crystalhd);
+    REGISTER_DECODER(H264_MEDIACODEC,   h264_mediacodec);
     REGISTER_DECODER(H264_MMAL,         h264_mmal);
     REGISTER_DECODER(H264_QSV,          h264_qsv);
     REGISTER_DECODER(H264_VDA,          h264_vda);
@@ -667,4 +668,5 @@ void avcodec_register_all(void)
     REGISTER_BSF(NOISE,                 noise);
     REGISTER_BSF(REMOVE_EXTRADATA,      remove_extradata);
     REGISTER_BSF(TEXT2MOVSUB,           text2movsub);
+    REGISTER_BSF(VP9_SUPERFRAME,        vp9_superframe);
 }

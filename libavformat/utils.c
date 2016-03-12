@@ -1200,12 +1200,13 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
     }
 
-    if (pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY && has_decode_delay_been_guessed(st)) {
+    if (pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY) {
         st->pts_buffer[0] = pkt->pts;
         for (i = 0; i<delay && st->pts_buffer[i] > st->pts_buffer[i + 1]; i++)
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i + 1]);
 
-        pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);
+        if(has_decode_delay_been_guessed(st))
+            pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);
     }
     // We skipped it above so we try here.
     if (!onein_oneout)
@@ -4709,6 +4710,11 @@ int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
                                            &new_pkt.data, &new_pkt.size,
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
+        if (a == 0 && new_pkt.size == 0 && new_pkt.side_data_elems == 0) {
+            av_packet_unref(pkt);
+            memset(pkt, 0, sizeof(*pkt));
+            return 0;
+        }
         if(a == 0 && new_pkt.data != pkt->data) {
             uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
             if (t) {

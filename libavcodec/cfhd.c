@@ -333,7 +333,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG, "Sample type? %"PRIu16"\n", data);
         else if (tag == 10) {
             if (data != 0) {
-                avpriv_report_missing_feature(avctx, "Transform type of %"PRIu16" is unsupported\n", data);
+                avpriv_report_missing_feature(avctx, "Transform type of %"PRIu16, data);
                 ret = AVERROR_PATCHWELCOME;
                 break;
             }
@@ -343,7 +343,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             bytestream2_skipu(&gb, data * 4);
         } else if (tag == 23) {
             av_log(avctx, AV_LOG_DEBUG, "Skip frame\n");
-            avpriv_report_missing_feature(avctx, "Skip frame not supported\n");
+            avpriv_report_missing_feature(avctx, "Skip frame");
             ret = AVERROR_PATCHWELCOME;
             break;
         } else if (tag == 2) {
@@ -415,7 +415,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             else if (data == 4)
                 s->coded_format = AV_PIX_FMT_GBRAP12;
             else {
-                avpriv_report_missing_feature(avctx, "Sample format of %"PRIu16" is unsupported\n", data);
+                avpriv_report_missing_feature(avctx, "Sample format of %"PRIu16, data);
                 ret = AVERROR_PATCHWELCOME;
                 break;
             }
@@ -466,6 +466,9 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
                 coeff_data += lowpass_width;
             }
+
+            /* Align to mod-4 position to continue reading tags */
+            bytestream2_seek(&gb, bytestream2_tell(&gb) & 3, SEEK_CUR);
 
             /* Copy last line of coefficients if odd height */
             if (lowpass_height & 1) {

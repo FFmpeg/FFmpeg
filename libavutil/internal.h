@@ -244,6 +244,7 @@ void avpriv_request_sample(void *avc,
 #endif
 
 #define avpriv_open ff_open
+#define avpriv_tempfile ff_tempfile
 #define PTRDIFF_SPECIFIER "Id"
 #define SIZE_SPECIFIER "Iu"
 #else
@@ -318,6 +319,19 @@ static av_always_inline float ff_exp10f(float x)
  */
 av_warn_unused_result
 int avpriv_open(const char *filename, int flags, ...);
+
+/**
+ * Wrapper to work around the lack of mkstemp() on mingw.
+ * Also, tries to create file in /tmp first, if possible.
+ * *prefix can be a character constant; *filename will be allocated internally.
+ * @return file descriptor of opened file (or negative value corresponding to an
+ * AVERROR code on error)
+ * and opened file name in **filename.
+ * @note On very old libcs it is necessary to set a secure umask before
+ *       calling this, av_tempfile() can't call umask itself as it is used in
+ *       libraries and could interfere with the calling application.
+ */
+int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
 
 int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 

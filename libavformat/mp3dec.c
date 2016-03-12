@@ -388,7 +388,7 @@ static int mp3_read_header(AVFormatContext *s)
             if (ret >= 0 &&
                 (header & SAME_HEADER_MASK) == (header2 & SAME_HEADER_MASK))
             {
-                av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
+                av_log(s, i > 0 ? AV_LOG_INFO : AV_LOG_VERBOSE, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
                 ret = avio_seek(s->pb, off + i, SEEK_SET);
                 if (ret < 0)
                     return ret;

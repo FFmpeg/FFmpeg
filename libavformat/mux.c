@@ -1025,6 +1025,19 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
 
+        if (s->oformat->check_bitstream) {
+            if (!st->internal->bitstream_checked) {
+                if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
+                    goto fail;
+                else if (ret == 1)
+                    st->internal->bitstream_checked = 1;
+            }
+        }
+
+        av_apply_bitstream_filters(st->codec, pkt, st->internal->bsfc);
+        if (pkt->size == 0 && pkt->side_data_elems == 0)
+            return 0;
+
         if (s->debug & FF_FDEBUG_TS)
             av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
@@ -1038,17 +1051,6 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             ret = AVERROR(EINVAL);
             goto fail;
         }
-
-        if (s->oformat->check_bitstream) {
-            if (!st->internal->bitstream_checked) {
-                if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
-                    goto fail;
-                else if (ret == 1)
-                    st->internal->bitstream_checked = 1;
-            }
-        }
-
-        av_apply_bitstream_filters(st->codec, pkt, st->internal->bsfc);
     } else {
         av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
         flush = 1;
