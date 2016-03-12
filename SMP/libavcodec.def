@@ -55,6 +55,8 @@ EXPORTS
     av_imdct_calc
     av_imdct_half
     av_init_packet
+    av_jni_get_java_vm
+    av_jni_set_java_vm
     av_lockmgr_register
     av_log_ask_for_sample
     av_log_missing_feature

@@ -306,6 +306,9 @@
     <ClCompile Include="..\libavcodec\imgconvert.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\jni.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mathtables.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2478,6 +2481,9 @@
     <ClCompile Include="..\libavcodec\remove_extradata_bsf.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9_superframe_bsf.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\file_open.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2724,6 +2730,9 @@
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\dxva2.h">
+      <Filter>Header Files\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavcodec\jni.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\qsv.h">
