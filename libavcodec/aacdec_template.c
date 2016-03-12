@@ -1104,7 +1104,7 @@ static av_cold void aac_static_table_init(void)
     AAC_RENAME(ff_init_ff_sine_windows)( 9);
     AAC_RENAME(ff_init_ff_sine_windows)( 7);
 
-    AAC_RENAME(cbrt_tableinit)();
+    AAC_RENAME(ff_cbrt_tableinit)();
 }
 
 static AVOnce aac_table_init = AV_ONCE_INIT;
@@ -1795,7 +1795,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
                                         v = -v;
                                     *icf++ = v;
 #else
-                                    *icf++ = cbrt_tab[n] | (bits & 1U<<31);
+                                    *icf++ = ff_cbrt_tab[n] | (bits & 1U<<31);
 #endif /* USE_FIXED */
                                     bits <<= 1;
                                 } else {
