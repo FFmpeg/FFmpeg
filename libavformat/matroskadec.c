@@ -1661,9 +1661,16 @@ static int matroska_parse_tracks(AVFormatContext *s)
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
                    (track->codec_priv.size >= 86)          &&
                    (track->codec_priv.data)) {
-            track->video.fourcc = AV_RL32(track->codec_priv.data);
-            codec_id            = ff_codec_get_id(ff_codec_movvideo_tags,
-                                                  track->video.fourcc);
+            if (track->codec_priv.size == AV_RB32(track->codec_priv.data)) {
+                track->video.fourcc = AV_RL32(track->codec_priv.data + 4);
+                codec_id            = ff_codec_get_id(ff_codec_movvideo_tags,
+                                                      track->video.fourcc);
+            }
+            if (codec_id == AV_CODEC_ID_NONE) {
+                track->video.fourcc = AV_RL32(track->codec_priv.data);
+                codec_id            = ff_codec_get_id(ff_codec_movvideo_tags,
+                                                      track->video.fourcc);
+            }
             if (codec_id == AV_CODEC_ID_NONE) {
                 char buf[32];
                 av_get_codec_tag_string(buf, sizeof(buf), track->video.fourcc);
