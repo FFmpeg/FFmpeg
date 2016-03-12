@@ -52,8 +52,6 @@ typedef struct AVIIentry {
 
 #define AVI_INDEX_CLUSTER_SIZE 16384
 
-#define AVISF_VIDEO_PALCHANGES 0x00010000
-
 typedef struct AVIIndex {
     int64_t     indx_start;
     int64_t     audio_strm_offset;
@@ -652,9 +650,13 @@ static int avi_write_idx1(AVFormatContext *s)
             }
             if (!empty) {
                 avist = s->streams[stream_id]->priv_data;
-                avi_stream2fourcc(tag, stream_id,
+                if (*ie->tag)
+                    ffio_wfourcc(pb, ie->tag);
+                else {
+                    avi_stream2fourcc(tag, stream_id,
                                   s->streams[stream_id]->codec->codec_type);
-                ffio_wfourcc(pb, tag);
+                    ffio_wfourcc(pb, tag);
+                }
                 avio_wl32(pb, ie->flags);
                 avio_wl32(pb, ie->pos);
                 avio_wl32(pb, ie->len);
@@ -749,6 +751,20 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                     unsigned char tag[5];
                     avi_stream2fourcc(tag, stream_index, enc->codec_type);
                     tag[2] = 'p'; tag[3] = 'c';
+                    if (s->pb->seekable) {
+                        int ret;
+                        if (avist->strh_flags_offset) {
+                            int64_t cur_offset = avio_tell(pb);
+                            avio_seek(pb, avist->strh_flags_offset, SEEK_SET);
+                            avio_wl32(pb, AVISF_VIDEO_PALCHANGES);
+                            avio_seek(pb, cur_offset, SEEK_SET);
+                            avist->strh_flags_offset = 0;
+                        }
+                        ret = avi_add_ientry(s, stream_index, tag, AVIIF_NO_TIME,
+                                       pal_size * 4 + 4);
+                        if (ret < 0)
+                            return ret;
+                    }
                     pc_tag = ff_start_tag(pb, tag);
                     avio_w8(pb, 0);
                     avio_w8(pb, pal_size & 0xFF);
@@ -759,13 +775,6 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                     }
                     ff_end_tag(pb, pc_tag);
                     memcpy(avist->old_palette, avist->palette, pal_size * 4);
-                    if (pb->seekable && avist->strh_flags_offset) {
-                        int64_t cur_offset = avio_tell(pb);
-                        avio_seek(pb, avist->strh_flags_offset, SEEK_SET);
-                        avio_wl32(pb, AVISF_VIDEO_PALCHANGES);
-                        avio_seek(pb, cur_offset, SEEK_SET);
-                        avist->strh_flags_offset = 0;
-                    }
                 }
             }
         }
