@@ -62,6 +62,7 @@ typedef struct VectorscopeContext {
     int tmin;
     int tmax;
     int flags;
+    int colorspace;
     int cs;
     uint8_t peak[4096][4096];
 
@@ -111,6 +112,11 @@ static const AVOption vectorscope_options[] = {
     { "l",          "set low threshold",  OFFSET(lthreshold), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, 1, FLAGS},
     { "hthreshold", "set high threshold", OFFSET(hthreshold), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, FLAGS},
     { "h",          "set high threshold", OFFSET(hthreshold), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, FLAGS},
+    { "colorspace", "set colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "colorspace"},
+    { "c",          "set colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "colorspace"},
+    {   "auto",       0, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "colorspace" },
+    {   "601",        0, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "colorspace" },
+    {   "709",        0, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "colorspace" },
     { NULL }
 };
 
@@ -1190,14 +1196,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
 
-    switch (av_frame_get_colorspace(in)) {
-    case AVCOL_SPC_SMPTE170M:
-    case AVCOL_SPC_BT470BG:
-        s->cs = (s->depth - 8) * 2 + 0;
-        break;
-    case AVCOL_SPC_BT709:
-    default:
-        s->cs = (s->depth - 8) * 2 + 1;
+    if (s->colorspace) {
+        s->cs = (s->depth - 8) * 2 + s->colorspace - 1;
+    } else {
+        switch (av_frame_get_colorspace(in)) {
+        case AVCOL_SPC_SMPTE170M:
+        case AVCOL_SPC_BT470BG:
+            s->cs = (s->depth - 8) * 2 + 0;
+            break;
+        case AVCOL_SPC_BT709:
+        default:
+            s->cs = (s->depth - 8) * 2 + 1;
+        }
     }
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
