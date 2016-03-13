@@ -1215,7 +1215,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    out->pts = in->pts;
+    av_frame_copy_props(out, in);
 
     s->vectorscope(s, in, out, s->pd);
     s->graticulef(s, out, s->x, s->y, s->pd, s->cs);
