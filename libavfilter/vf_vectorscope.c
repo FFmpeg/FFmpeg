@@ -435,8 +435,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                         continue;
 
                     dpd[pos] = FFMIN(dpd[pos] + intensity, max);
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         } else {
@@ -456,8 +454,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                     dst[0][pos] = FFMIN(dst[0][pos] + intensity, max);
                     dst[1][pos] = FFMIN(dst[1][pos] + intensity, max);
                     dst[2][pos] = FFMIN(dst[2][pos] + intensity, max);
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         }
@@ -481,8 +477,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                         dpd[pos] = FFABS(mid - x) + FFABS(mid - y);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         } else {
@@ -503,8 +497,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                         dpd[pos] = FFMIN(x + y, max);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         }
@@ -526,8 +518,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                 dpd[pos] = FFMIN(max, dpd[pos] + intensity);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = max;
             }
         }
         break;
@@ -548,8 +538,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                 dpd[pos] = FFMAX(z, dpd[pos]);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = max;
             }
         }
         break;
@@ -558,6 +546,17 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
     }
 
     envelope16(s, out);
+
+    if (dst[3]) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                int pos = i * dlinesize + j;
+
+                if (dpd[pos])
+                    dst[3][pos] = max;
+            }
+        }
+    }
 
     if (s->mode == COLOR) {
         for (i = 0; i < out->height; i++) {
@@ -630,8 +629,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                         continue;
 
                     dpd[pos] = FFMIN(dpd[pos] + intensity, 255);
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         } else {
@@ -651,8 +648,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                     dst[0][pos] = FFMIN(dst[0][pos] + intensity, 255);
                     dst[1][pos] = FFMIN(dst[1][pos] + intensity, 255);
                     dst[2][pos] = FFMIN(dst[2][pos] + intensity, 255);
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         }
@@ -676,8 +671,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                         dpd[pos] = FFABS(128 - x) + FFABS(128 - y);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         } else {
@@ -698,8 +691,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                         dpd[pos] = FFMIN(x + y, 255);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         }
@@ -721,8 +712,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                 dpd[pos] = FFMIN(255, dpd[pos] + intensity);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = 255;
             }
         }
         break;
@@ -743,8 +732,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                 dpd[pos] = FFMAX(z, dpd[pos]);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = 255;
             }
         }
         break;
@@ -753,6 +740,17 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
     }
 
     envelope(s, out);
+
+    if (dst[3]) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                int pos = i * dlinesize + j;
+
+                if (dpd[pos])
+                    dst[3][pos] = 255;
+            }
+        }
+    }
 
     if (s->mode == COLOR) {
         for (i = 0; i < out->height; i++) {
