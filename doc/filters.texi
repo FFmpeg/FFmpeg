@@ -13176,6 +13176,9 @@ Similar as above, but shows difference between blue and red chroma.
 
 @item color
 Displays actual color value on waveform.
+
+@item acolor
+Similar as above, but with luma showing frequency of chroma values.
 @end table
 
 @item graticule, g

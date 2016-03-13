@@ -36,6 +36,7 @@ enum FilterType {
     CHROMA,
     ACHROMA,
     COLOR,
+    ACOLOR,
     NB_FILTERS
 };
 
@@ -128,6 +129,7 @@ static const AVOption waveform_options[] = {
         { "chroma",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=CHROMA},  0, 0, FLAGS, "filter" },
         { "achroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACHROMA}, 0, 0, FLAGS, "filter" },
         { "color",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},   0, 0, FLAGS, "filter" },
+        { "acolor",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACOLOR},  0, 0, FLAGS, "filter" },
     { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
     { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
         { "none",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "graticule" },
@@ -240,6 +242,7 @@ static int query_formats(AVFilterContext *ctx)
         case AFLAT:
         case CHROMA:
         case ACHROMA: pix_fmts = flat_pix_fmts;    break;
+        case ACOLOR:
         case COLOR:   pix_fmts = color_pix_fmts;   break;
         }
 
@@ -1228,6 +1231,189 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
+static void acolor16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                     int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0];
+    const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp];
+    const uint16_t *c2_data = (const uint16_t *)in->data[(plane + 2) % s->ncomp];
+    const int c0_linesize = in->linesize[ plane + 0 ] / 2;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d0_linesize = out->linesize[ plane + 0 ] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (s->mode) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint16_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+        uint16_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+        uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+        uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+        uint16_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+        uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit);
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                update16(d0 + d0_signed_linesize * c0 + x, max, intensity, limit);
+                *(d1 + d1_signed_linesize * c0 + x) = c1;
+                *(d2 + d2_signed_linesize * c0 + x) = c2;
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    } else {
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit);
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                if (mirror) {
+                    update16(d0_data - c0, max, intensity, limit);
+                    *(d1_data - c0) = c1;
+                    *(d2_data - c0) = c2;
+                } else {
+                    update16(d0_data + c0, max, intensity, limit);
+                    *(d1_data + c0) = c1;
+                    *(d2_data + c0) = c2;
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
+static void acolor(WaveformContext *s, AVFrame *in, AVFrame *out,
+                   int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const uint8_t *c0_data = in->data[plane + 0];
+    const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
+    const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
+    const int c0_linesize = in->linesize[ plane + 0 ];
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
+    const int d0_linesize = out->linesize[ plane + 0 ];
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];
+    const int max = 255 - intensity;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (s->mode) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint8_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+        uint8_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+        uint8_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+        uint8_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+        uint8_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+        uint8_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = c0_data[x];
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                update(d0 + d0_signed_linesize * c0 + x, max, intensity);
+                *(d1 + d1_signed_linesize * c0 + x) = c1;
+                *(d2 + d2_signed_linesize * c0 + x) = c2;
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    } else {
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = c0_data[x];
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                if (mirror) {
+                    update(d0_data - c0, max, intensity);
+                    *(d1_data - c0) = c1;
+                    *(d2_data - c0) = c2;
+                } else {
+                    update(d0_data + c0, max, intensity);
+                    *(d1_data + c0) = c1;
+                    *(d2_data + c0) = c2;
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
 static const uint8_t green_yuva_color[4] = { 255, 0, 0, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
@@ -1643,31 +1829,45 @@ static int config_input(AVFilterLink *inlink)
 
     switch (s->filter) {
     case LOWPASS:
-            s->size = 256;
-            if (s->graticule && s->mode == 1)
-                s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
-            else if (s->graticule && s->mode == 0)
-                s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
-            s->waveform = s->bits > 8 ? lowpass16 : lowpass; break;
+        s->size = 256;
+        if (s->graticule && s->mode == 1)
+            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+        else if (s->graticule && s->mode == 0)
+            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
+        s->waveform = s->bits > 8 ? lowpass16 : lowpass;
+        break;
     case FLAT:
-            s->size = 256 * 3;
-            s->waveform = flat;    break;
+        s->size = 256 * 3;
+        s->waveform = flat;
+        break;
     case AFLAT:
-            s->size = 256 * 2;
-            s->waveform = aflat;   break;
+        s->size = 256 * 2;
+        s->waveform = aflat;
+        break;
     case CHROMA:
-            s->size = 256 * 2;
-            s->waveform = chroma;  break;
+        s->size = 256 * 2;
+        s->waveform = chroma;
+        break;
     case ACHROMA:
-            s->size = 256;
-            s->waveform = achroma; break;
+        s->size = 256;
+        s->waveform = achroma;
+        break;
     case COLOR:
-            s->size = 256;
-            if (s->graticule && s->mode == 1)
-                s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
-            else if (s->graticule && s->mode == 0)
-                s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
-            s->waveform = s->bits > 8 ?   color16 :   color; break;
+        s->size = 256;
+        if (s->graticule && s->mode == 1)
+            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+        else if (s->graticule && s->mode == 0)
+            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
+        s->waveform = s->bits > 8 ? color16 : color;
+        break;
+    case ACOLOR:
+        s->size = 256;
+        if (s->graticule && s->mode == 1)
+            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+        else if (s->graticule && s->mode == 0)
+            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
+        s->waveform = s->bits > 8 ? acolor16 : acolor;
+        break;
     }
 
     switch (s->scale) {
