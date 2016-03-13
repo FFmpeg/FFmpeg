@@ -124,7 +124,7 @@ static int avi_add_ientry(AVFormatContext *s, int stream_index, char *tag,
     if (tag)
         memcpy(idx->cluster[cl][id].tag, tag, 4);
     else
-        *(idx->cluster[cl][id].tag) = '\0';
+        memset(idx->cluster[cl][id].tag, 0, 4);
     idx->cluster[cl][id].flags = flags;
     idx->cluster[cl][id].pos   = avio_tell(pb) - avi->movi_list;
     idx->cluster[cl][id].len   = size;
