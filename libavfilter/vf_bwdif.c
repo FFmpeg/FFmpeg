@@ -37,6 +37,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+#include "bwdif.h"
 
 /*
  * Filter coefficients coef_lf and coef_hf taken from BBC PH-2071 (Weston 3 Field Deinterlacer).
@@ -47,51 +48,6 @@
 static const uint16_t coef_lf[2] = { 4309, 213 };
 static const uint16_t coef_hf[3] = { 5570, 3801, 1016 };
 static const uint16_t coef_sp[2] = { 5077, 981 };
-
-enum BWDIFMode {
-    BWDIF_MODE_SEND_FRAME = 0, ///< send 1 frame for each frame
-    BWDIF_MODE_SEND_FIELD = 1, ///< send 1 frame for each field
-};
-
-enum BWDIFParity {
-    BWDIF_PARITY_TFF  =  0, ///< top field first
-    BWDIF_PARITY_BFF  =  1, ///< bottom field first
-    BWDIF_PARITY_AUTO = -1, ///< auto detection
-};
-
-enum BWDIFDeint {
-    BWDIF_DEINT_ALL        = 0, ///< deinterlace all frames
-    BWDIF_DEINT_INTERLACED = 1, ///< only deinterlace frames marked as interlaced
-};
-
-typedef struct BWDIFContext {
-    const AVClass *class;
-
-    int mode;           ///< BWDIFMode
-    int parity;         ///< BWDIFParity
-    int deint;          ///< BWDIFDeint
-
-    int frame_pending;
-
-    AVFrame *cur;
-    AVFrame *next;
-    AVFrame *prev;
-    AVFrame *out;
-
-    void (*filter_intra)(void *dst1, void *cur1, int w, int prefs, int mrefs,
-                         int prefs3, int mrefs3, int parity, int clip_max);
-    void (*filter_line)(void *dst, void *prev, void *cur, void *next,
-                        int w, int prefs, int mrefs, int prefs2, int mrefs2,
-                        int prefs3, int mrefs3, int prefs4, int mrefs4,
-                        int parity, int clip_max);
-    void (*filter_edge)(void *dst, void *prev, void *cur, void *next,
-                        int w, int prefs, int mrefs, int prefs2, int mrefs2,
-                        int parity, int clip_max, int spat);
-
-    const AVPixFmtDescriptor *csp;
-    int inter_field;
-    int eof;
-} BWDIFContext;
 
 typedef struct ThreadData {
     AVFrame *frame;
@@ -177,10 +133,10 @@ static void filter_intra(void *dst1, void *cur1, int w, int prefs, int mrefs,
     FILTER_INTRA()
 }
 
-static void filter_line(void *dst1, void *prev1, void *cur1, void *next1,
-                        int w, int prefs, int mrefs, int prefs2, int mrefs2,
-                        int prefs3, int mrefs3, int prefs4, int mrefs4,
-                        int parity, int clip_max)
+static void filter_line_c(void *dst1, void *prev1, void *cur1, void *next1,
+                          int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                          int prefs3, int mrefs3, int prefs4, int mrefs4,
+                          int parity, int clip_max)
 {
     uint8_t *dst   = dst1;
     uint8_t *prev  = prev1;
@@ -222,10 +178,10 @@ static void filter_intra_16bit(void *dst1, void *cur1, int w, int prefs, int mre
     FILTER_INTRA()
 }
 
-static void filter_line_16bit(void *dst1, void *prev1, void *cur1, void *next1,
-                              int w, int prefs, int mrefs, int prefs2, int mrefs2,
-                              int prefs3, int mrefs3, int prefs4, int mrefs4,
-                              int parity, int clip_max)
+static void filter_line_c_16bit(void *dst1, void *prev1, void *cur1, void *next1,
+                                int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                                int prefs3, int mrefs3, int prefs4, int mrefs4,
+                                int parity, int clip_max)
 {
     uint16_t *dst   = dst1;
     uint16_t *prev  = prev1;
@@ -557,13 +513,16 @@ static int config_props(AVFilterLink *link)
     s->csp = av_pix_fmt_desc_get(link->format);
     if (s->csp->comp[0].depth > 8) {
         s->filter_intra = filter_intra_16bit;
-        s->filter_line  = filter_line_16bit;
+        s->filter_line  = filter_line_c_16bit;
         s->filter_edge  = filter_edge_16bit;
     } else {
         s->filter_intra = filter_intra;
-        s->filter_line  = filter_line;
+        s->filter_line  = filter_line_c;
         s->filter_edge  = filter_edge;
     }
+
+    if (ARCH_X86)
+        ff_bwdif_init_x86(s);
 
     return 0;
 }
