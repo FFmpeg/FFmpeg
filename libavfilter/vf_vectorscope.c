@@ -64,7 +64,8 @@ typedef struct VectorscopeContext {
     int flags;
     int colorspace;
     int cs;
-    uint8_t peak[4096][4096];
+    uint8_t *peak_memory;
+    uint8_t **peak;
 
     void (*vectorscope)(struct VectorscopeContext *s,
                         AVFrame *in, AVFrame *out, int pd);
@@ -252,10 +253,23 @@ static int query_formats(AVFilterContext *ctx)
 static int config_output(AVFilterLink *outlink)
 {
     VectorscopeContext *s = outlink->src->priv;
+    int i;
 
     s->intensity = s->fintensity * (s->size - 1);
     outlink->h = outlink->w = s->size;
     outlink->sample_aspect_ratio = (AVRational){1,1};
+
+    s->peak_memory = av_calloc(s->size, s->size);
+    if (!s->peak_memory)
+        return AVERROR(ENOMEM);
+
+    s->peak = av_calloc(s->size, sizeof(*s->peak));
+    if (!s->peak)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < s->size; i++)
+        s->peak[i] = s->peak_memory + s->size * i;
+
     return 0;
 }
 
@@ -1298,6 +1312,14 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    VectorscopeContext *s = ctx->priv;
+
+    av_freep(&s->peak);
+    av_freep(&s->peak_memory);
+}
+
 static const AVFilterPad inputs[] = {
     {
         .name         = "default",
@@ -1323,6 +1345,7 @@ AVFilter ff_vf_vectorscope = {
     .priv_size     = sizeof(VectorscopeContext),
     .priv_class    = &vectorscope_class,
     .query_formats = query_formats,
+    .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
 };
