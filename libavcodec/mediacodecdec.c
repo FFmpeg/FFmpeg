@@ -389,7 +389,6 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
     int64_t input_dequeue_timeout_us = INPUT_DEQUEUE_TIMEOUT_US;
     int64_t output_dequeue_timeout_us = OUTPUT_DEQUEUE_TIMEOUT_US;
 
-
     if (pkt->size == 0) {
         need_flushing = 1;
     }

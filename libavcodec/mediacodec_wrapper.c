@@ -398,7 +398,6 @@ fail:
     return NULL;
 }
 
-
 int ff_AMediaFormat_delete(FFAMediaFormat* format)
 {
     int ret = 0;
@@ -658,7 +657,6 @@ fail:
     return ret;
 }
 
-
 void ff_AMediaFormat_setInt32(FFAMediaFormat* format, const char* name, int32_t value)
 {
     int attached = 0;
@@ -913,7 +911,6 @@ static const struct FFJniField jni_amediacodec_mapping[] = {
         { "android/media/MediaCodec", "getInputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffer_id), 0 },
         { "android/media/MediaCodec", "getInputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffers_id), 1 },
 
-
         { "android/media/MediaCodec", "dequeueOutputBuffer", "(Landroid/media/MediaCodec$BufferInfo;J)I", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, dequeue_output_buffer_id), 1 },
         { "android/media/MediaCodec", "getOutputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffer_id), 0 },
         { "android/media/MediaCodec", "getOutputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffers_id), 1 },
@@ -930,7 +927,6 @@ static const struct FFJniField jni_amediacodec_mapping[] = {
 
     { NULL }
 };
-
 
 static const AVClass amediacodec_class = {
     .class_name = "amediacodec",
@@ -1252,7 +1248,6 @@ fail:
     return NULL;
 }
 
-
 int ff_AMediaCodec_delete(FFAMediaCodec* codec)
 {
     int ret = 0;
@@ -1388,7 +1383,6 @@ fail:
     return ret;
 }
 
-
 int ff_AMediaCodec_releaseOutputBuffer(FFAMediaCodec* codec, size_t idx, int render)
 {
     int ret = 0;
@@ -1428,7 +1422,6 @@ fail:
 
     return ret;
 }
-
 
 ssize_t ff_AMediaCodec_dequeueInputBuffer(FFAMediaCodec* codec, int64_t timeoutUs)
 {
