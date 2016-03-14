@@ -316,6 +316,7 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     if (!strncmp(data_delay_dim_name, "I", 2)) {
         /* check 2 characters to assure string is 0-terminated after "I" */
         int delay[2]; /* delays get from SOFA file: */
+        int *data_delay_r;
 
         av_log(ctx, AV_LOG_DEBUG, "Data.Delay has dimension [I R]\n");
         status = nc_get_var_int(ncid, data_delay_id, &delay[0]);
@@ -324,7 +325,7 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
             ret = AVERROR(EINVAL);
             goto error;
         }
-        int *data_delay_r = data_delay + m_dim;
+        data_delay_r = data_delay + m_dim;
         for (i = 0; i < m_dim; i++) { /* extend given dimension [I R] to [M R] */
             /* assign constant delay value for all measurements to data_delay fields */
             data_delay[i]   = delay[0];
