@@ -1781,6 +1781,102 @@ static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
 static const uint8_t green_yuva_color[4] = { 255, 0, 0, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
 
+static const GraticuleLines flat_digital8[] = {
+    { { {  "16",  16+256 }, {  "16",  16+256 }, {  "16",  16+256 }, {   "0",   0+256 } } },
+    { { { "128", 128+256 }, { "128", 128+256 }, { "128", 128+256 }, { "128", 128+256 } } },
+    { { { "235", 235+256 }, { "240", 240+256 }, { "240", 240+256 }, { "255", 255+256 } } },
+};
+
+static const GraticuleLines flat_digital9[] = {
+    { { {  "32",  32+512 }, {  "32",  32+512 }, {  "32",  32+512 }, {   "0",   0+512 } } },
+    { { { "256", 256+512 }, { "256", 256+512 }, { "256", 256+512 }, { "256", 256+512 } } },
+    { { { "470", 470+512 }, { "480", 480+512 }, { "480", 480+512 }, { "511", 511+512 } } },
+};
+
+static const GraticuleLines flat_digital10[] = {
+    { { {  "64",  64+1024 }, {  "64",  64+1024 }, {  "64",  64+1024 }, {    "0",    0+1024 } } },
+    { { { "512", 512+1024 }, { "512", 512+1024 }, { "512", 512+1024 }, {  "512",  512+1024 } } },
+    { { { "940", 940+1024 }, { "960", 960+1024 }, { "960", 960+1024 }, { "1023", 1023+1024 } } },
+};
+
+static const GraticuleLines flat_digital12[] = {
+    { { {  "256",  256+4096 }, {  "256",  256+4096 }, {  "256",  256+4096 }, {    "0",    0+4096 } } },
+    { { { "2048", 2048+4096 }, { "2048", 2048+4096 }, { "2048", 2048+4096 }, { "2048", 2048+4096 } } },
+    { { { "3760", 3760+4096 }, { "3840", 3840+4096 }, { "3840", 3840+4096 }, { "4095", 4095+4096 } } },
+};
+
+static const GraticuleLines flat_millivolts8[] = {
+    { { {   "0",  16+256 }, {   "0",  16+256 }, {   "0",  16+256 }, {   "0",   0+256 } } },
+    { { { "175",  71+256 }, { "175",  72+256 }, { "175",  72+256 }, { "175",  64+256 } } },
+    { { { "350", 126+256 }, { "350", 128+256 }, { "350", 128+256 }, { "350", 128+256 } } },
+    { { { "525", 180+256 }, { "525", 184+256 }, { "525", 184+256 }, { "525", 192+256 } } },
+    { { { "700", 235+256 }, { "700", 240+256 }, { "700", 240+256 }, { "700", 255+256 } } },
+};
+
+static const GraticuleLines flat_millivolts9[] = {
+    { { {   "0",  32+512 }, {   "0",  32+512 }, {   "0",  32+512 }, {   "0",   0+512 } } },
+    { { { "175", 142+512 }, { "175", 144+512 }, { "175", 144+512 }, { "175", 128+512 } } },
+    { { { "350", 251+512 }, { "350", 256+512 }, { "350", 256+512 }, { "350", 256+512 } } },
+    { { { "525", 361+512 }, { "525", 368+512 }, { "525", 368+512 }, { "525", 384+512 } } },
+    { { { "700", 470+512 }, { "700", 480+512 }, { "700", 480+512 }, { "700", 511+512 } } },
+};
+
+static const GraticuleLines flat_millivolts10[] = {
+    { { {   "0",  64+1024 }, {   "0",  64+1024 }, {   "0",  64+1024 }, {   "0",    0+1024 } } },
+    { { { "175", 283+1024 }, { "175", 288+1024 }, { "175", 288+1024 }, { "175",  256+1024 } } },
+    { { { "350", 502+1024 }, { "350", 512+1024 }, { "350", 512+1024 }, { "350",  512+1024 } } },
+    { { { "525", 721+1024 }, { "525", 736+1024 }, { "525", 736+1024 }, { "525",  768+1024 } } },
+    { { { "700", 940+1024 }, { "700", 960+1024 }, { "700", 960+1024 }, { "700", 1023+1024 } } },
+};
+
+static const GraticuleLines flat_millivolts12[] = {
+    { { {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",    0+4096 } } },
+    { { { "175", 1132+4096 }, { "175", 1152+4096 }, { "175", 1152+4096 }, { "175", 1024+4096 } } },
+    { { { "350", 2008+4096 }, { "350", 2048+4096 }, { "350", 2048+4096 }, { "350", 2048+4096 } } },
+    { { { "525", 2884+4096 }, { "525", 2944+4096 }, { "525", 2944+4096 }, { "525", 3072+4096 } } },
+    { { { "700", 3760+4096 }, { "700", 3840+4096 }, { "700", 3840+4096 }, { "700", 4095+4096 } } },
+};
+
+static const GraticuleLines flat_ire8[] = {
+    { { { "-25", -39+256 }, { "-25", -40+256 }, { "-25", -40+256 }, { "-25", -64+256 } } },
+    { { {   "0",  16+256 }, {   "0",  16+256 }, {   "0",  16+256 }, {   "0",   0+256 } } },
+    { { {  "25",  71+256 }, {  "25",  72+256 }, {  "25",  72+256 }, {  "25",  64+256 } } },
+    { { {  "50", 126+256 }, {  "50", 128+256 }, {  "50", 128+256 }, {  "50", 128+256 } } },
+    { { {  "75", 180+256 }, {  "75", 184+256 }, {  "75", 184+256 }, {  "75", 192+256 } } },
+    { { { "100", 235+256 }, { "100", 240+256 }, { "100", 240+256 }, { "100", 256+256 } } },
+    { { { "125", 290+256 }, { "125", 296+256 }, { "125", 296+256 }, { "125", 320+256 } } },
+};
+
+static const GraticuleLines flat_ire9[] = {
+    { { { "-25", -78+512 }, { "-25", -80+512 }, { "-25", -80+512 }, { "-25",-128+512 } } },
+    { { {   "0",  32+512 }, {   "0",  32+512 }, {   "0",  32+512 }, {   "0",   0+512 } } },
+    { { {  "25", 142+512 }, {  "25", 144+512 }, {  "25", 144+512 }, {  "25", 128+512 } } },
+    { { {  "50", 251+512 }, {  "50", 256+512 }, {  "50", 256+512 }, {  "50", 256+512 } } },
+    { { {  "75", 361+512 }, {  "75", 368+512 }, {  "75", 368+512 }, {  "75", 384+512 } } },
+    { { { "100", 470+512 }, { "100", 480+512 }, { "100", 480+512 }, { "100", 512+512 } } },
+    { { { "125", 580+512 }, { "125", 592+512 }, { "125", 592+512 }, { "125", 640+512 } } },
+};
+
+static const GraticuleLines flat_ire10[] = {
+    { { { "-25",-156+1024 }, { "-25",-160+1024 }, { "-25",-160+1024 }, { "-25", -256+1024 } } },
+    { { {   "0",  64+1024 }, {   "0",  64+1024 }, {  "0",   64+1024 }, {   "0",    0+1024 } } },
+    { { {  "25", 283+1024 }, {  "25", 288+1024 }, {  "25", 288+1024 }, {  "25",  256+1024 } } },
+    { { {  "50", 502+1024 }, {  "50", 512+1024 }, {  "50", 512+1024 }, {  "50",  512+1024 } } },
+    { { {  "75", 721+1024 }, {  "75", 736+1024 }, {  "75", 736+1024 }, {  "75",  768+1024 } } },
+    { { { "100", 940+1024 }, { "100", 960+1024 }, { "100", 960+1024 }, { "100", 1024+1024 } } },
+    { { { "125",1160+1024 }, { "125",1184+1024 }, { "125",1184+1024 }, { "125", 1280+1024 } } },
+};
+
+static const GraticuleLines flat_ire12[] = {
+    { { { "-25", -624+4096 }, { "-25", -640+4096 }, { "-25", -640+4096 }, { "-25",-1024+4096 } } },
+    { { {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",    0+4096 } } },
+    { { {  "25", 1132+4096 }, {  "25", 1152+4096 }, {  "25", 1152+4096 }, {  "25", 1024+4096 } } },
+    { { {  "50", 2008+4096 }, {  "50", 2048+4096 }, {  "50", 2048+4096 }, {  "50", 2048+4096 } } },
+    { { {  "75", 2884+4096 }, {  "75", 2944+4096 }, {  "75", 2944+4096 }, {  "75", 3072+4096 } } },
+    { { { "100", 3760+4096 }, { "100", 3840+4096 }, { "100", 3840+4096 }, { "100", 4096+4096 } } },
+    { { { "125", 4640+4096 }, { "125", 4736+4096 }, { "125", 4736+4096 }, { "125", 5120+4096 } } },
+};
+
 static const GraticuleLines digital8[] = {
     { { {  "16",  16 }, {  "16",  16 }, {  "16",  16 }, {   "0",   0 } } },
     { { { "128", 128 }, { "128", 128 }, { "128", 128 }, { "128", 128 } } },
@@ -1867,6 +1963,38 @@ static const GraticuleLines ire12[] = {
     { { {  "50", 2008 }, {  "50", 2048 }, {  "50", 2048 }, {  "50", 2048 } } },
     { { {  "75", 2884 }, {  "75", 2944 }, {  "75", 2944 }, {  "75", 3072 } } },
     { { { "100", 3760 }, { "100", 3840 }, { "100", 3840 }, { "100", 4095 } } },
+};
+
+static const GraticuleLines chroma_digital8[] = {
+    { { {  "50",  50 }, {  "50",  50 }, {  "50",  50 }, {  "50",  50 } } },
+    { { { "100", 100 }, { "100", 100 }, { "100", 100 }, { "100", 100 } } },
+    { { { "150", 150 }, { "150", 150 }, { "150", 150 }, { "150", 150 } } },
+    { { { "200", 200 }, { "200", 200 }, { "200", 200 }, { "200", 200 } } },
+    { { { "255", 255 }, { "255", 255 }, { "255", 255 }, { "255", 255 } } },
+};
+
+static const GraticuleLines chroma_digital9[] = {
+    { { { "100", 100 }, { "100", 100 }, { "100", 100 }, { "100", 100 } } },
+    { { { "200", 200 }, { "200", 200 }, { "200", 200 }, { "200", 200 } } },
+    { { { "300", 300 }, { "300", 300 }, { "300", 300 }, { "300", 300 } } },
+    { { { "400", 400 }, { "400", 400 }, { "400", 400 }, { "400", 400 } } },
+    { { { "500", 500 }, { "500", 500 }, { "500", 500 }, { "500", 500 } } },
+};
+
+static const GraticuleLines chroma_digital10[] = {
+    { { { "200", 200 }, { "200", 200 }, { "200", 200 }, { "200", 200 } } },
+    { { { "400", 400 }, { "400", 400 }, { "400", 400 }, { "400", 400 } } },
+    { { { "600", 600 }, { "600", 600 }, { "600", 600 }, { "600", 600 } } },
+    { { { "800", 800 }, { "800", 800 }, { "800", 800 }, { "800", 800 } } },
+    { { {"1000",1000 }, {"1000",1000 }, {"1000",1000 }, {"1000",1000 } } },
+};
+
+static const GraticuleLines chroma_digital12[] = {
+    { { {  "800",  800 }, {  "800",  800 }, {  "800",  800 }, {  "800",  800 } } },
+    { { { "1600", 1600 }, { "1600", 1600 }, { "1600", 1600 }, { "1600", 1600 } } },
+    { { { "2400", 2400 }, { "2400", 2400 }, { "2400", 2400 }, { "2400", 2400 } } },
+    { { { "3200", 3200 }, { "3200", 3200 }, { "3200", 3200 }, { "3200", 3200 } } },
+    { { { "4000", 4000 }, { "4000", 4000 }, { "4000", 4000 }, { "4000", 4000 } } },
 };
 
 static void blend_vline(uint8_t *dst, int height, int linesize, float o1, float o2, int v, int step)
@@ -2032,7 +2160,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p];
             for (l = 0; l < s->nb_glines; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int x = offset_x + (s->mirror ? 255 - pos : pos);
+                int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + offset_y * out->linesize[p] + x;
 
                 blend_vline(dst, height, out->linesize[p], o1, o2, v, step);
@@ -2042,7 +2170,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int x = offset_x + (s->mirror ? 255 - pos : pos) - 10;
+            int x = offset_x + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (x < 0)
                 x = 4;
@@ -2050,7 +2178,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
             draw_vtext(out, x, offset_y + 2, o1, o2, name, green_yuva_color);
         }
 
-        offset_x += 256 * (s->display == STACK);
+        offset_x += s->size * (s->display == STACK);
         offset_y += height * (s->display == PARADE);
     }
 }
@@ -2113,7 +2241,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p];
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int y = offset_y + (s->mirror ? 255 - pos : pos);
+                int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + y * out->linesize[p] + offset_x;
 
                 blend_hline(dst, width, o1, o2, v, step);
@@ -2123,7 +2251,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int y = offset_y + (s->mirror ? 255 - pos : pos) - 10;
+            int y = offset_y + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (y < 0)
                 y = 4;
@@ -2131,7 +2259,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
             draw_htext(out, 2 + offset_x, y, o1, o2, name, green_yuva_color);
         }
 
-        offset_y += 256 * (s->display == STACK);
+        offset_y += s->size * (s->display == STACK);
         offset_x += width * (s->display == PARADE);
     }
 }
@@ -2193,10 +2321,6 @@ static int config_input(AVFilterLink *inlink)
     switch (s->filter) {
     case LOWPASS:
         s->size = 256;
-        if (s->graticule && s->mode == 1)
-            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
-        else if (s->graticule && s->mode == 0)
-            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
         s->waveform = s->bits > 8 ? lowpass16 : lowpass;
         break;
     case FLAT:
@@ -2217,45 +2341,110 @@ static int config_input(AVFilterLink *inlink)
         break;
     case COLOR:
         s->size = 256;
-        if (s->graticule && s->mode == 1)
-            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
-        else if (s->graticule && s->mode == 0)
-            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
         s->waveform = s->bits > 8 ? color16 : color;
         break;
     case ACOLOR:
         s->size = 256;
-        if (s->graticule && s->mode == 1)
-            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
-        else if (s->graticule && s->mode == 0)
-            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
         s->waveform = s->bits > 8 ? acolor16 : acolor;
         break;
     }
 
-    switch (s->scale) {
-    case DIGITAL:
-        switch (s->bits) {
-        case  8: s->glines = (GraticuleLines *)digital8;  s->nb_glines = FF_ARRAY_ELEMS(digital8);  break;
-        case  9: s->glines = (GraticuleLines *)digital9;  s->nb_glines = FF_ARRAY_ELEMS(digital9);  break;
-        case 10: s->glines = (GraticuleLines *)digital10; s->nb_glines = FF_ARRAY_ELEMS(digital10); break;
-        case 12: s->glines = (GraticuleLines *)digital12; s->nb_glines = FF_ARRAY_ELEMS(digital12); break;
+    switch (s->filter) {
+    case LOWPASS:
+    case COLOR:
+    case ACOLOR:
+    case CHROMA:
+    case FLAT:
+        if (s->graticule && s->mode == 1)
+            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+        else if (s->graticule && s->mode == 0)
+            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
+        break;
+    }
+
+    switch (s->filter) {
+    case LOWPASS:
+        switch (s->scale) {
+        case DIGITAL:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)digital8;  s->nb_glines = FF_ARRAY_ELEMS(digital8);  break;
+            case  9: s->glines = (GraticuleLines *)digital9;  s->nb_glines = FF_ARRAY_ELEMS(digital9);  break;
+            case 10: s->glines = (GraticuleLines *)digital10; s->nb_glines = FF_ARRAY_ELEMS(digital10); break;
+            case 12: s->glines = (GraticuleLines *)digital12; s->nb_glines = FF_ARRAY_ELEMS(digital12); break;
+            }
+            break;
+        case MILLIVOLTS:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(millivolts8);  break;
+            case  9: s->glines = (GraticuleLines *)millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(millivolts9);  break;
+            case 10: s->glines = (GraticuleLines *)millivolts10; s->nb_glines = FF_ARRAY_ELEMS(millivolts10); break;
+            case 12: s->glines = (GraticuleLines *)millivolts12; s->nb_glines = FF_ARRAY_ELEMS(millivolts12); break;
+            }
+            break;
+        case IRE:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)ire8;  s->nb_glines = FF_ARRAY_ELEMS(ire8);  break;
+            case  9: s->glines = (GraticuleLines *)ire9;  s->nb_glines = FF_ARRAY_ELEMS(ire9);  break;
+            case 10: s->glines = (GraticuleLines *)ire10; s->nb_glines = FF_ARRAY_ELEMS(ire10); break;
+            case 12: s->glines = (GraticuleLines *)ire12; s->nb_glines = FF_ARRAY_ELEMS(ire12); break;
+            }
+            break;
         }
         break;
-    case MILLIVOLTS:
-        switch (s->bits) {
-        case  8: s->glines = (GraticuleLines *)millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(millivolts8);  break;
-        case  9: s->glines = (GraticuleLines *)millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(millivolts9);  break;
-        case 10: s->glines = (GraticuleLines *)millivolts10; s->nb_glines = FF_ARRAY_ELEMS(millivolts10); break;
-        case 12: s->glines = (GraticuleLines *)millivolts12; s->nb_glines = FF_ARRAY_ELEMS(millivolts12); break;
+    case CHROMA:
+        switch (s->scale) {
+        case DIGITAL:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)chroma_digital8;  s->nb_glines = FF_ARRAY_ELEMS(chroma_digital8);  break;
+            case  9: s->glines = (GraticuleLines *)chroma_digital9;  s->nb_glines = FF_ARRAY_ELEMS(chroma_digital9);  break;
+            case 10: s->glines = (GraticuleLines *)chroma_digital10; s->nb_glines = FF_ARRAY_ELEMS(chroma_digital10); break;
+            case 12: s->glines = (GraticuleLines *)chroma_digital12; s->nb_glines = FF_ARRAY_ELEMS(chroma_digital12); break;
+            }
+            break;
+        case MILLIVOLTS:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(millivolts8);  break;
+            case  9: s->glines = (GraticuleLines *)millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(millivolts9);  break;
+            case 10: s->glines = (GraticuleLines *)millivolts10; s->nb_glines = FF_ARRAY_ELEMS(millivolts10); break;
+            case 12: s->glines = (GraticuleLines *)millivolts12; s->nb_glines = FF_ARRAY_ELEMS(millivolts12); break;
+            }
+            break;
+        case IRE:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)ire8;  s->nb_glines = FF_ARRAY_ELEMS(ire8);  break;
+            case  9: s->glines = (GraticuleLines *)ire9;  s->nb_glines = FF_ARRAY_ELEMS(ire9);  break;
+            case 10: s->glines = (GraticuleLines *)ire10; s->nb_glines = FF_ARRAY_ELEMS(ire10); break;
+            case 12: s->glines = (GraticuleLines *)ire12; s->nb_glines = FF_ARRAY_ELEMS(ire12); break;
+            }
+            break;
         }
         break;
-    case IRE:
-        switch (s->bits) {
-        case  8: s->glines = (GraticuleLines *)ire8;  s->nb_glines = FF_ARRAY_ELEMS(ire8);  break;
-        case  9: s->glines = (GraticuleLines *)ire9;  s->nb_glines = FF_ARRAY_ELEMS(ire9);  break;
-        case 10: s->glines = (GraticuleLines *)ire10; s->nb_glines = FF_ARRAY_ELEMS(ire10); break;
-        case 12: s->glines = (GraticuleLines *)ire12; s->nb_glines = FF_ARRAY_ELEMS(ire12); break;
+    case FLAT:
+        switch (s->scale) {
+        case DIGITAL:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)flat_digital8;  s->nb_glines = FF_ARRAY_ELEMS(flat_digital8);  break;
+            case  9: s->glines = (GraticuleLines *)flat_digital9;  s->nb_glines = FF_ARRAY_ELEMS(flat_digital9);  break;
+            case 10: s->glines = (GraticuleLines *)flat_digital10; s->nb_glines = FF_ARRAY_ELEMS(flat_digital10); break;
+            case 12: s->glines = (GraticuleLines *)flat_digital12; s->nb_glines = FF_ARRAY_ELEMS(flat_digital12); break;
+            }
+            break;
+        case MILLIVOLTS:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)flat_millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts8);  break;
+            case  9: s->glines = (GraticuleLines *)flat_millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts9);  break;
+            case 10: s->glines = (GraticuleLines *)flat_millivolts10; s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts10); break;
+            case 12: s->glines = (GraticuleLines *)flat_millivolts12; s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts12); break;
+            }
+            break;
+        case IRE:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)flat_ire8;  s->nb_glines = FF_ARRAY_ELEMS(flat_ire8);  break;
+            case  9: s->glines = (GraticuleLines *)flat_ire9;  s->nb_glines = FF_ARRAY_ELEMS(flat_ire9);  break;
+            case 10: s->glines = (GraticuleLines *)flat_ire10; s->nb_glines = FF_ARRAY_ELEMS(flat_ire10); break;
+            case 12: s->glines = (GraticuleLines *)flat_ire12; s->nb_glines = FF_ARRAY_ELEMS(flat_ire12); break;
+            }
+            break;
         }
         break;
     }
