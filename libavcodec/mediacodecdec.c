@@ -566,5 +566,7 @@ int ff_mediacodec_dec_close(AVCodecContext *avctx, MediaCodecDecContext *s)
         s->format = NULL;
     }
 
+    av_freep(&s->codec_name);
+
     return 0;
 }
