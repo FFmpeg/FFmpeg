@@ -1132,12 +1132,10 @@ static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint16_t *dst = dst_line;
 
             for (y = 0; y < src_h; y++) {
-                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid), limit);
+                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid - 1), limit);
                 uint16_t *target;
 
-                target = dst + x + dst_signed_linesize * (s->max - sum);
-                update16(target, max, intensity, limit);
-                target = dst + x + dst_signed_linesize * (s->max + sum);
+                target = dst + x + dst_signed_linesize * sum;
                 update16(target, max, intensity, limit);
 
                 c0_data += c0_linesize;
@@ -1154,18 +1152,14 @@ static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
             dst_data += s->size - 1;
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid), limit);
+                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid - 1), limit);
                 uint16_t *target;
 
                 if (mirror) {
-                    target = dst_data - (s->max - sum);
-                    update16(target, max, intensity, limit);
-                    target = dst_data - (s->max + sum);
+                    target = dst_data - sum;
                     update16(target, max, intensity, limit);
                 } else {
-                    target = dst_data + (s->max - sum);
-                    update16(target, max, intensity, limit);
-                    target = dst_data + (s->max + sum);
+                    target = dst_data + sum;
                     update16(target, max, intensity, limit);
                 }
             }
@@ -1204,12 +1198,10 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint8_t *dst = dst_line;
 
             for (y = 0; y < src_h; y++) {
-                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 128);
+                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 127);
                 uint8_t *target;
 
-                target = dst + x + dst_signed_linesize * (256 - sum);
-                update(target, max, intensity);
-                target = dst + x + dst_signed_linesize * (255 + sum);
+                target = dst + x + dst_signed_linesize * sum;
                 update(target, max, intensity);
 
                 c0_data += c0_linesize;
@@ -1226,18 +1218,14 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             dst_data += s->size - 1;
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 128);
+                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 127);
                 uint8_t *target;
 
                 if (mirror) {
-                    target = dst_data - (256 - sum);
-                    update(target, max, intensity);
-                    target = dst_data - (255 + sum);
+                    target = dst_data - sum;
                     update(target, max, intensity);
                 } else {
-                    target = dst_data + (256 - sum);
-                    update(target, max, intensity);
-                    target = dst_data + (255 + sum);
+                    target = dst_data + sum;
                     update(target, max, intensity);
                 }
             }
@@ -2220,7 +2208,7 @@ static int config_input(AVFilterLink *inlink)
         s->waveform = s->bits > 8 ? aflat16 : aflat;
         break;
     case CHROMA:
-        s->size = 256 * 2;
+        s->size = 256;
         s->waveform = s->bits > 8 ? chroma16 : chroma;
         break;
     case ACHROMA:
