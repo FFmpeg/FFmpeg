@@ -594,11 +594,19 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
 {
     HLSContext *c = s->priv_data;
     AVDictionary *tmp = NULL;
-    const char *proto_name = avio_find_protocol_name(url);
+    const char *proto_name = NULL;
     int ret;
 
     av_dict_copy(&tmp, opts, 0);
     av_dict_copy(&tmp, opts2, 0);
+
+    if (av_strstart(url, "crypto", NULL)) {
+        if (url[6] == '+' || url[6] == ':')
+            proto_name = avio_find_protocol_name(url + 7);
+    }
+
+    if (!proto_name)
+        proto_name = avio_find_protocol_name(url);
 
     if (!proto_name)
         return AVERROR_INVALIDDATA;
@@ -607,6 +615,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL))
         return AVERROR_INVALIDDATA;
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
+        ;
+    else if (av_strstart(url, "crypto", NULL) && !strncmp(proto_name, url + 7, strlen(proto_name)) && url[7 + strlen(proto_name)] == ':')
         ;
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
