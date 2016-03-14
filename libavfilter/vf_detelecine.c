@@ -195,21 +195,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         s->nskip_fields -= 2;
         return 0;
     } else if (s->nskip_fields >= 1) {
-        if (s->occupied) {
-            s->occupied = 0;
-            s->nskip_fields--;
+        for (i = 0; i < s->nb_planes; i++) {
+            av_image_copy_plane(s->temp->data[i], s->temp->linesize[i],
+                                inpicref->data[i], inpicref->linesize[i],
+                                s->stride[i],
+                                s->planeheight[i]);
         }
-        else {
-            for (i = 0; i < s->nb_planes; i++) {
-                av_image_copy_plane(s->temp->data[i], s->temp->linesize[i],
-                                    inpicref->data[i], inpicref->linesize[i],
-                                    s->stride[i],
-                                    s->planeheight[i]);
-            }
-            s->occupied = 1;
-            s->nskip_fields--;
-            return 0;
-        }
+        s->occupied = 1;
+        s->nskip_fields--;
+        return 0;
     }
 
     if (s->nskip_fields == 0) {
@@ -243,15 +237,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                                     s->stride[i],
                                     (s->planeheight[i] - !s->first_field + 1) / 2);
             }
-            len -= 2;
-            for (i = 0; i < s->nb_planes; i++) {
-                av_image_copy_plane(s->temp->data[i], s->temp->linesize[i],
-                                    inpicref->data[i], inpicref->linesize[i],
-                                    s->stride[i],
-                                    s->planeheight[i]);
+
+            s->occupied = 0;
+            if (len <= 2) {
+                for (i = 0; i < s->nb_planes; i++) {
+                    av_image_copy_plane(s->temp->data[i], s->temp->linesize[i],
+                                        inpicref->data[i], inpicref->linesize[i],
+                                        s->stride[i],
+                                        s->planeheight[i]);
+                }
+                s->occupied = 1;
             }
-            s->occupied = 1;
             out = 1;
+            len = (len >= 3) ? len - 3 : 0;
         } else {
             if (len >= 2) {
                 // output THIS image as-is
