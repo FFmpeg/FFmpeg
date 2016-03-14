@@ -584,7 +584,7 @@ static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url
 static void update_options(char **dest, const char *name, void *src)
 {
     av_freep(dest);
-    av_opt_get(src, name, 0, (uint8_t**)dest);
+    av_opt_get(src, name, AV_OPT_SEARCH_CHILDREN, (uint8_t**)dest);
     if (*dest && !strlen(*dest))
         av_freep(dest);
 }
@@ -614,8 +614,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
     if (ret >= 0) {
         // update cookies on http response with setcookies.
-        AVIOInternal *internal = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
-        void *u = internal ? internal->hlsopts : NULL;
+        void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
         update_options(&c->cookies, "cookies", u);
         av_dict_set(&opts, "cookies", c->cookies, 0);
     }
@@ -1497,8 +1496,7 @@ static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
 
 static int hls_read_header(AVFormatContext *s)
 {
-    AVIOInternal *internal = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
-    void *u = internal ? internal->hlsopts : NULL;
+    void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
     HLSContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;
 
