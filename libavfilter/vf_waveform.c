@@ -214,7 +214,10 @@ static const enum AVPixelFormat out_gray8_lowpass_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat flat_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
+    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat color_pix_fmts[] = {
@@ -686,6 +689,104 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
+static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                   int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c0_linesize = in->linesize[ plane + 0 ] / 2;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d0_linesize = out->linesize[ plane + 0 ] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c0_data = (uint16_t *)in->data[plane + 0];
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *d0_data = (uint16_t *)(out->data[plane]) + offset_y * d0_linesize + offset_x;
+            uint16_t *d1_data = (uint16_t *)(out->data[(plane + 1) % s->ncomp]) + offset_y * d1_linesize + offset_x;
+            uint16_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+            uint16_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+            uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+            uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+
+            for (y = 0; y < src_h; y++) {
+                const int c0 = FFMIN(c0_data[x], limit) + s->max;
+                const int c1 = FFMIN(FFABS(c1_data[x] - mid) + FFABS(c2_data[x] - mid), s->max - 1);
+                uint16_t *target;
+
+                target = d0 + x + d0_signed_linesize * c0;
+                update16(target, max, intensity, limit);
+                target = d1 + x + d1_signed_linesize * (c0 - c1);
+                update16(target, max, intensity, limit);
+                target = d1 + x + d1_signed_linesize * (c0 + c1);
+                update16(target, max, intensity, limit);
+
+                c0_data += c0_linesize;
+                c1_data += c1_linesize;
+                c2_data += c2_linesize;
+                d0_data += d0_linesize;
+                d1_data += d1_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c0_data = (uint16_t *)in->data[plane];
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *d0_data = (uint16_t *)(out->data[plane]) + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)(out->data[(plane + 1) % s->ncomp]) + offset_y * d1_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit) + s->max;
+                const int c1 = FFMIN(FFABS(c1_data[x] - mid) + FFABS(c2_data[x] - mid), s->max - 1);
+                uint16_t *target;
+
+                if (mirror) {
+                    target = d0_data - c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data - (c0 - c1);
+                    update16(target, max, intensity, limit);
+                    target = d1_data - (c0 + c1);
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = d0_data + c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data + (c0 - c1);
+                    update16(target, max, intensity, limit);
+                    target = d1_data + (c0 + c1);
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+}
+
 static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                  int component, int intensity, int offset_y, int offset_x, int column)
 {
@@ -780,6 +881,118 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
 
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
     envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+}
+
+static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                    int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c0_linesize = in->linesize[ plane + 0 ] / 2;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d0_linesize = out->linesize[ plane + 0 ] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c0_data = (uint16_t *)in->data[plane + 0];
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+            uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+            uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+            uint16_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+            uint16_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+            uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+            uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+            uint16_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+            uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+            for (y = 0; y < src_h; y++) {
+                const int c0 = FFMIN(c0_data[x], limit) + mid;
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                target = d0 + x + d0_signed_linesize * c0;
+                update16(target, max, intensity, limit);
+
+                target = d1 + x + d1_signed_linesize * (c0 + c1);
+                update16(target, max, intensity, limit);
+
+                target = d2 + x + d2_signed_linesize * (c0 + c2);
+                update16(target, max, intensity, limit);
+
+                c0_data += c0_linesize;
+                c1_data += c1_linesize;
+                c2_data += c2_linesize;
+                d0_data += d0_linesize;
+                d1_data += d1_linesize;
+                d2_data += d2_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c0_data = (uint16_t *)in->data[plane];
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit) + mid;
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                if (mirror) {
+                    target = d0_data - c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data - (c0 + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data - (c0 + c2);
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = d0_data + c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data + (c0 + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data + (c0 + c2);
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, (plane + 0) % s->ncomp, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -892,6 +1105,80 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
+static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                     int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c0_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c1_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int dst_linesize = out->linesize[plane] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c0_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
+            uint16_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
+            uint16_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
+            uint16_t *dst = dst_line;
+
+            for (y = 0; y < src_h; y++) {
+                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid), limit);
+                uint16_t *target;
+
+                target = dst + x + dst_signed_linesize * (s->max - sum);
+                update16(target, max, intensity, limit);
+                target = dst + x + dst_signed_linesize * (s->max + sum);
+                update16(target, max, intensity, limit);
+
+                c0_data += c0_linesize;
+                c1_data += c1_linesize;
+                dst_data += dst_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c0_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
+
+        if (mirror)
+            dst_data += s->size - 1;
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid), limit);
+                uint16_t *target;
+
+                if (mirror) {
+                    target = dst_data - (s->max - sum);
+                    update16(target, max, intensity, limit);
+                    target = dst_data - (s->max + sum);
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = dst_data + (s->max - sum);
+                    update16(target, max, intensity, limit);
+                    target = dst_data + (s->max + sum);
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            dst_data += dst_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
 static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
                    int component, int intensity, int offset_y, int offset_x, int column)
 {
@@ -962,6 +1249,94 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
     }
 
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
+static void achroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                      int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+            uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+            uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+            uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+            uint16_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+            uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+            for (y = 0; y < src_h; y++) {
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                target = d1 + x + d1_signed_linesize * (mid + c1);
+                update16(target, max, intensity, limit);
+
+                target = d2 + x + d2_signed_linesize * (mid + c2);
+                update16(target, max, intensity, limit);
+
+                c1_data += c1_linesize;
+                c2_data += c2_linesize;
+                d1_data += d1_linesize;
+                d2_data += d2_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                if (mirror) {
+                    target = d1_data - (mid + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data - (mid + c2);
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = d1_data + (mid + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data + (mid + c2);
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -1838,19 +2213,19 @@ static int config_input(AVFilterLink *inlink)
         break;
     case FLAT:
         s->size = 256 * 3;
-        s->waveform = flat;
+        s->waveform = s->bits > 8 ? flat16 : flat;
         break;
     case AFLAT:
         s->size = 256 * 2;
-        s->waveform = aflat;
+        s->waveform = s->bits > 8 ? aflat16 : aflat;
         break;
     case CHROMA:
         s->size = 256 * 2;
-        s->waveform = chroma;
+        s->waveform = s->bits > 8 ? chroma16 : chroma;
         break;
     case ACHROMA:
         s->size = 256;
-        s->waveform = achroma;
+        s->waveform = s->bits > 8 ? achroma16 : achroma;
         break;
     case COLOR:
         s->size = 256;
@@ -1994,7 +2369,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                        i * out->linesize[s->desc->comp[k].plane],
                        s->bg_color[k], outlink->w);
         } else {
-            const int mult = s->size / 256;
+            const int mult = s->max / 256;
             uint16_t *dst = (uint16_t *)out->data[s->desc->comp[k].plane];
 
             for (i = 0; i < outlink->h ; i++) {
