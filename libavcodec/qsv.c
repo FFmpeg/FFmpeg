@@ -133,6 +133,8 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
                 goto load_plugin_fail;
             }
 
+            if (*load_plugins)
+                load_plugins++;
 load_plugin_fail:
             av_freep(&plugin);
             if (err < 0)
