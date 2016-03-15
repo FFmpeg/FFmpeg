@@ -24,7 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
-#include "libavutil/internal.h"
+#include "libavutil/ffmath.h"
 #include "avcodec.h"
 #include "dca.h"
 #include "dcadata.h"

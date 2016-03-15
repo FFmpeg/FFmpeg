@@ -27,7 +27,7 @@
 #include <stdint.h>
 
 #include "libavutil/error.h"
-#include "libavutil/internal.h"
+#include "libavutil/ffmath.h"
 
 #include "opus.h"
 #include "vorbis.h"

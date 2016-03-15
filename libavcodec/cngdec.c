@@ -22,7 +22,7 @@
 #include <math.h>
 
 #include "libavutil/common.h"
-#include "libavutil/internal.h"
+#include "libavutil/ffmath.h"
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "internal.h"

@@ -25,8 +25,7 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavutil/internal.h"
-#include "libavutil/libm.h"
+#include "libavutil/ffmath.h"
 
 #include "avcodec.h"
 #include "aactab.h"

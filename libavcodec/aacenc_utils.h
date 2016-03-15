@@ -28,7 +28,7 @@
 #ifndef AVCODEC_AACENC_UTILS_H
 #define AVCODEC_AACENC_UTILS_H
 
-#include "libavutil/internal.h"
+#include "libavutil/ffmath.h"
 #include "aac.h"
 #include "aacenctab.h"
 #include "aactab.h"
