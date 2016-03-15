@@ -3,6 +3,10 @@
 ;*
 ;* Copyright (C) 2016 Thomas Mundt <loudmax@yahoo.de>
 ;*
+;* Based on yadif simd code
+;* Copyright (C) 2006 Michael Niedermayer <michaelni@gmx.at>
+;*               2013 Daniel Kang <daniel.d.kang@gmail.com>
+;*
 ;* This file is part of FFmpeg.
 ;*
 ;* FFmpeg is free software; you can redistribute it and/or
