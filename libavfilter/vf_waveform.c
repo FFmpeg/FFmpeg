@@ -2363,6 +2363,8 @@ static int config_input(AVFilterLink *inlink)
     }
 
     switch (s->filter) {
+    case COLOR:
+    case ACOLOR:
     case LOWPASS:
         switch (s->scale) {
         case DIGITAL:
