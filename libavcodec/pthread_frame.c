@@ -128,7 +128,6 @@ typedef struct FrameThreadContext {
 static attribute_align_arg void *frame_worker_thread(void *arg)
 {
     PerThreadContext *p = arg;
-    FrameThreadContext *fctx = p->parent;
     AVCodecContext *avctx = p->avctx;
     const AVCodec *codec = avctx->codec;
 

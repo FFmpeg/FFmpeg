@@ -1,7 +1,5 @@
 /*
- * Generate a header file for hardcoded AAC cube-root table
- *
- * Copyright (c) 2010 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
+ * Copyright (c) 2016 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
  *
  * This file is part of FFmpeg.
  *
@@ -20,23 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdlib.h>
-#define CONFIG_HARDCODED_TABLES 0
-#include "libavutil/tablegen.h"
-#include "cbrt_tablegen.h"
-#include "tableprint.h"
+#include "config.h"
+#include "cbrt_data.h"
 
-int main(void)
-{
-    AAC_RENAME(ff_cbrt_tableinit)();
+#include "libavutil/libm.h"
 
-    write_fileheader();
-
-#if USE_FIXED
-    WRITE_ARRAY("const", uint32_t, ff_cbrt_tab_fixed);
+#if CONFIG_HARDCODED_TABLES
+#include "libavcodec/cbrt_tables.h"
 #else
-    WRITE_ARRAY("const", uint32_t, ff_cbrt_tab);
+#include "cbrt_tablegen.h"
 #endif
-
-    return 0;
-}

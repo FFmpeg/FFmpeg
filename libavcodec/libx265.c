@@ -154,6 +154,12 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV422P12:
         ctx->params->internalCsp = X265_CSP_I422;
         break;
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+        ctx->params->vui.matrixCoeffs = AVCOL_SPC_RGB;
+        ctx->params->vui.bEnableVideoSignalTypePresentFlag  = 1;
+        ctx->params->vui.bEnableColorDescriptionPresentFlag = 1;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV444P12:
@@ -318,6 +324,7 @@ static const enum AVPixelFormat x265_csp_eight[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_NONE
 };
 
@@ -325,9 +332,11 @@ static const enum AVPixelFormat x265_csp_ten[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUV422P10,
     AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_GBRP10,
     AV_PIX_FMT_NONE
 };
 
@@ -335,12 +344,15 @@ static const enum AVPixelFormat x265_csp_twelve[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUV422P10,
     AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_GBRP10,
     AV_PIX_FMT_YUV420P12,
     AV_PIX_FMT_YUV422P12,
     AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_GBRP12,
     AV_PIX_FMT_NONE
 };
 

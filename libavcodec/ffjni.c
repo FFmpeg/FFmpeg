@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <dlfcn.h>
 #include <jni.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -35,80 +34,6 @@
 static JavaVM *java_vm = NULL;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-/**
- * Check if JniInvocation has been initialized. Only available on
- * Android >= 4.4.
- *
- * @param log_ctx context used for logging, can be NULL
- * @return 0 on success, < 0 otherwise
- */
-static int check_jni_invocation(void *log_ctx)
-{
-    int ret = AVERROR_EXTERNAL;
-    void *handle = NULL;
-    void **jni_invocation = NULL;
-
-    handle = dlopen(NULL, RTLD_LOCAL);
-    if (!handle) {
-        goto done;
-    }
-
-    jni_invocation = (void **)dlsym(handle, "_ZN13JniInvocation15jni_invocation_E");
-    if (!jni_invocation) {
-        av_log(log_ctx, AV_LOG_ERROR, "Could not find JniInvocation::jni_invocation_ symbol\n");
-        goto done;
-    }
-
-    ret = !(jni_invocation != NULL && *jni_invocation != NULL);
-
-done:
-    if (handle) {
-        dlclose(handle);
-    }
-
-    return ret;
-}
-
-/**
- * Return created Java virtual machine using private JNI_GetCreatedJavaVMs
- * function from the specified library name.
- *
- * @param name library name used for symbol lookups, can be NULL
- * @param log_ctx context used for logging, can be NULL
- * @return the current Java virtual machine in use
- */
-static JavaVM *get_java_vm(const char *name, void *log_ctx)
-{
-    JavaVM *vm = NULL;
-    jsize nb_vm = 0;
-
-    void *handle = NULL;
-    jint (*get_created_java_vms) (JavaVM ** vmBuf, jsize bufLen, jsize *nVMs) = NULL;
-
-    handle = dlopen(name, RTLD_LOCAL);
-    if (!handle) {
-        return NULL;
-    }
-
-    get_created_java_vms = (jint (*)(JavaVM **, jsize, jsize *)) dlsym(handle, "JNI_GetCreatedJavaVMs");
-    if (!get_created_java_vms) {
-        av_log(log_ctx, AV_LOG_ERROR, "Could not find JNI_GetCreatedJavaVMs symbol in library '%s'\n", name);
-        goto done;
-    }
-
-    if (get_created_java_vms(&vm, 1, &nb_vm) != JNI_OK) {
-        av_log(log_ctx, AV_LOG_ERROR, "Could not get created Java virtual machines\n");
-        goto done;
-    }
-
-done:
-    if (handle) {
-        dlclose(handle);
-    }
-
-    return vm;
-}
-
 JNIEnv *ff_jni_attach_env(int *attached, void *log_ctx)
 {
     int ret = 0;
@@ -117,21 +42,13 @@ JNIEnv *ff_jni_attach_env(int *attached, void *log_ctx)
     *attached = 0;
 
     pthread_mutex_lock(&lock);
-    if (java_vm == NULL && (java_vm = av_jni_get_java_vm(log_ctx)) == NULL) {
-
-        av_log(log_ctx, AV_LOG_INFO, "Retrieving current Java virtual machine using Android JniInvocation wrapper\n");
-        if (check_jni_invocation(log_ctx) == 0) {
-            if ((java_vm = get_java_vm(NULL, log_ctx)) != NULL ||
-                (java_vm = get_java_vm("libdvm.so", log_ctx)) != NULL ||
-                (java_vm = get_java_vm("libart.so", log_ctx)) != NULL) {
-                av_log(log_ctx, AV_LOG_INFO, "Found Java virtual machine using Android JniInvocation wrapper\n");
-            }
-        }
+    if (java_vm == NULL) {
+        java_vm = av_jni_get_java_vm(log_ctx);
     }
     pthread_mutex_unlock(&lock);
 
     if (!java_vm) {
-        av_log(log_ctx, AV_LOG_ERROR, "Could not retrieve a Java virtual machine\n");
+        av_log(log_ctx, AV_LOG_ERROR, "No Java virtual machine has been registered\n");
         return NULL;
     }
 

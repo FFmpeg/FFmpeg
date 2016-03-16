@@ -36,6 +36,7 @@ enum FilterType {
     CHROMA,
     ACHROMA,
     COLOR,
+    ACOLOR,
     NB_FILTERS
 };
 
@@ -128,6 +129,7 @@ static const AVOption waveform_options[] = {
         { "chroma",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=CHROMA},  0, 0, FLAGS, "filter" },
         { "achroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACHROMA}, 0, 0, FLAGS, "filter" },
         { "color",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},   0, 0, FLAGS, "filter" },
+        { "acolor",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACOLOR},  0, 0, FLAGS, "filter" },
     { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
     { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
         { "none",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "graticule" },
@@ -212,7 +214,10 @@ static const enum AVPixelFormat out_gray8_lowpass_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat flat_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
+    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat color_pix_fmts[] = {
@@ -240,6 +245,7 @@ static int query_formats(AVFilterContext *ctx)
         case AFLAT:
         case CHROMA:
         case ACHROMA: pix_fmts = flat_pix_fmts;    break;
+        case ACOLOR:
         case COLOR:   pix_fmts = color_pix_fmts;   break;
         }
 
@@ -683,6 +689,104 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
+static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                   int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c0_linesize = in->linesize[ plane + 0 ] / 2;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d0_linesize = out->linesize[ plane + 0 ] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c0_data = (uint16_t *)in->data[plane + 0];
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *d0_data = (uint16_t *)(out->data[plane]) + offset_y * d0_linesize + offset_x;
+            uint16_t *d1_data = (uint16_t *)(out->data[(plane + 1) % s->ncomp]) + offset_y * d1_linesize + offset_x;
+            uint16_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+            uint16_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+            uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+            uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+
+            for (y = 0; y < src_h; y++) {
+                const int c0 = FFMIN(c0_data[x], limit) + s->max;
+                const int c1 = FFMIN(FFABS(c1_data[x] - mid) + FFABS(c2_data[x] - mid), s->max - 1);
+                uint16_t *target;
+
+                target = d0 + x + d0_signed_linesize * c0;
+                update16(target, max, intensity, limit);
+                target = d1 + x + d1_signed_linesize * (c0 - c1);
+                update16(target, max, intensity, limit);
+                target = d1 + x + d1_signed_linesize * (c0 + c1);
+                update16(target, max, intensity, limit);
+
+                c0_data += c0_linesize;
+                c1_data += c1_linesize;
+                c2_data += c2_linesize;
+                d0_data += d0_linesize;
+                d1_data += d1_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c0_data = (uint16_t *)in->data[plane];
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *d0_data = (uint16_t *)(out->data[plane]) + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)(out->data[(plane + 1) % s->ncomp]) + offset_y * d1_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit) + s->max;
+                const int c1 = FFMIN(FFABS(c1_data[x] - mid) + FFABS(c2_data[x] - mid), s->max - 1);
+                uint16_t *target;
+
+                if (mirror) {
+                    target = d0_data - c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data - (c0 - c1);
+                    update16(target, max, intensity, limit);
+                    target = d1_data - (c0 + c1);
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = d0_data + c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data + (c0 - c1);
+                    update16(target, max, intensity, limit);
+                    target = d1_data + (c0 + c1);
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+}
+
 static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                  int component, int intensity, int offset_y, int offset_x, int column)
 {
@@ -777,6 +881,118 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
 
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
     envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+}
+
+static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                    int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c0_linesize = in->linesize[ plane + 0 ] / 2;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d0_linesize = out->linesize[ plane + 0 ] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c0_data = (uint16_t *)in->data[plane + 0];
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+            uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+            uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+            uint16_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+            uint16_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+            uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+            uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+            uint16_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+            uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+            for (y = 0; y < src_h; y++) {
+                const int c0 = FFMIN(c0_data[x], limit) + mid;
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                target = d0 + x + d0_signed_linesize * c0;
+                update16(target, max, intensity, limit);
+
+                target = d1 + x + d1_signed_linesize * (c0 + c1);
+                update16(target, max, intensity, limit);
+
+                target = d2 + x + d2_signed_linesize * (c0 + c2);
+                update16(target, max, intensity, limit);
+
+                c0_data += c0_linesize;
+                c1_data += c1_linesize;
+                c2_data += c2_linesize;
+                d0_data += d0_linesize;
+                d1_data += d1_linesize;
+                d2_data += d2_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c0_data = (uint16_t *)in->data[plane];
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit) + mid;
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                if (mirror) {
+                    target = d0_data - c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data - (c0 + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data - (c0 + c2);
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = d0_data + c0;
+                    update16(target, max, intensity, limit);
+                    target = d1_data + (c0 + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data + (c0 + c2);
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, (plane + 0) % s->ncomp, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -889,6 +1105,74 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
+static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                     int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c0_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c1_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int dst_linesize = out->linesize[plane] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c0_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
+            uint16_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
+            uint16_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
+            uint16_t *dst = dst_line;
+
+            for (y = 0; y < src_h; y++) {
+                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid - 1), limit);
+                uint16_t *target;
+
+                target = dst + x + dst_signed_linesize * sum;
+                update16(target, max, intensity, limit);
+
+                c0_data += c0_linesize;
+                c1_data += c1_linesize;
+                dst_data += dst_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c0_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
+
+        if (mirror)
+            dst_data += s->size - 1;
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid - 1), limit);
+                uint16_t *target;
+
+                if (mirror) {
+                    target = dst_data - sum;
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = dst_data + sum;
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            dst_data += dst_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
 static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
                    int component, int intensity, int offset_y, int offset_x, int column)
 {
@@ -914,12 +1198,10 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint8_t *dst = dst_line;
 
             for (y = 0; y < src_h; y++) {
-                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 128);
+                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 127);
                 uint8_t *target;
 
-                target = dst + x + dst_signed_linesize * (256 - sum);
-                update(target, max, intensity);
-                target = dst + x + dst_signed_linesize * (255 + sum);
+                target = dst + x + dst_signed_linesize * sum;
                 update(target, max, intensity);
 
                 c0_data += c0_linesize;
@@ -936,18 +1218,14 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             dst_data += s->size - 1;
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 128);
+                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 127);
                 uint8_t *target;
 
                 if (mirror) {
-                    target = dst_data - (256 - sum);
-                    update(target, max, intensity);
-                    target = dst_data - (255 + sum);
+                    target = dst_data - sum;
                     update(target, max, intensity);
                 } else {
-                    target = dst_data + (256 - sum);
-                    update(target, max, intensity);
-                    target = dst_data + (255 + sum);
+                    target = dst_data + sum;
                     update(target, max, intensity);
                 }
             }
@@ -959,6 +1237,94 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
     }
 
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
+static void achroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                      int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const int mid = s->max / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (column) {
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+
+        for (x = 0; x < src_w; x++) {
+            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+            const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+            uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+            uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+            uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+            uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+            uint16_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+            uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+            for (y = 0; y < src_h; y++) {
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                target = d1 + x + d1_signed_linesize * (mid + c1);
+                update16(target, max, intensity, limit);
+
+                target = d2 + x + d2_signed_linesize * (mid + c2);
+                update16(target, max, intensity, limit);
+
+                c1_data += c1_linesize;
+                c2_data += c2_linesize;
+                d1_data += d1_linesize;
+                d2_data += d2_linesize;
+            }
+        }
+    } else {
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
+        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c1 = FFMIN(c1_data[x], limit) - mid;
+                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                uint16_t *target;
+
+                if (mirror) {
+                    target = d1_data - (mid + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data - (mid + c2);
+                    update16(target, max, intensity, limit);
+                } else {
+                    target = d1_data + (mid + c1);
+                    update16(target, max, intensity, limit);
+                    target = d2_data + (mid + c2);
+                    update16(target, max, intensity, limit);
+                }
+            }
+
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
+    envelope16(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -1228,9 +1594,288 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
+static void acolor16(WaveformContext *s, AVFrame *in, AVFrame *out,
+                     int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const int limit = s->max - 1;
+    const int max = limit - intensity;
+    const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0];
+    const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp];
+    const uint16_t *c2_data = (const uint16_t *)in->data[(plane + 2) % s->ncomp];
+    const int c0_linesize = in->linesize[ plane + 0 ] / 2;
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int d0_linesize = out->linesize[ plane + 0 ] / 2;
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (s->mode) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint16_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+        uint16_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+        uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+        uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+        uint16_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+        uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit);
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                update16(d0 + d0_signed_linesize * c0 + x, max, intensity, limit);
+                *(d1 + d1_signed_linesize * c0 + x) = c1;
+                *(d2 + d2_signed_linesize * c0 + x) = c2;
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    } else {
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = FFMIN(c0_data[x], limit);
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                if (mirror) {
+                    update16(d0_data - c0, max, intensity, limit);
+                    *(d1_data - c0) = c1;
+                    *(d2_data - c0) = c2;
+                } else {
+                    update16(d0_data + c0, max, intensity, limit);
+                    *(d1_data + c0) = c1;
+                    *(d2_data + c0) = c2;
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
+static void acolor(WaveformContext *s, AVFrame *in, AVFrame *out,
+                   int component, int intensity, int offset_y, int offset_x, int column)
+{
+    const int plane = s->desc->comp[component].plane;
+    const int mirror = s->mirror;
+    const uint8_t *c0_data = in->data[plane + 0];
+    const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
+    const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
+    const int c0_linesize = in->linesize[ plane + 0 ];
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
+    const int d0_linesize = out->linesize[ plane + 0 ];
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];
+    const int max = 255 - intensity;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    int x, y;
+
+    if (s->mode) {
+        const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
+        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
+        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint8_t * const d0_bottom_line = d0_data + d0_linesize * (s->size - 1);
+        uint8_t * const d0 = (mirror ? d0_bottom_line : d0_data);
+        uint8_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
+        uint8_t * const d1 = (mirror ? d1_bottom_line : d1_data);
+        uint8_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
+        uint8_t * const d2 = (mirror ? d2_bottom_line : d2_data);
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = c0_data[x];
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                update(d0 + d0_signed_linesize * c0 + x, max, intensity);
+                *(d1 + d1_signed_linesize * c0 + x) = c1;
+                *(d2 + d2_signed_linesize * c0 + x) = c2;
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    } else {
+        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+
+        if (mirror) {
+            d0_data += s->size - 1;
+            d1_data += s->size - 1;
+            d2_data += s->size - 1;
+        }
+
+        for (y = 0; y < src_h; y++) {
+            for (x = 0; x < src_w; x++) {
+                const int c0 = c0_data[x];
+                const int c1 = c1_data[x];
+                const int c2 = c2_data[x];
+
+                if (mirror) {
+                    update(d0_data - c0, max, intensity);
+                    *(d1_data - c0) = c1;
+                    *(d2_data - c0) = c2;
+                } else {
+                    update(d0_data + c0, max, intensity);
+                    *(d1_data + c0) = c1;
+                    *(d2_data + c0) = c2;
+                }
+            }
+
+            c0_data += c0_linesize;
+            c1_data += c1_linesize;
+            c2_data += c2_linesize;
+            d0_data += d0_linesize;
+            d1_data += d1_linesize;
+            d2_data += d2_linesize;
+        }
+    }
+
+    envelope(s, out, plane, plane, column ? offset_x : offset_y);
+}
+
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
 static const uint8_t green_yuva_color[4] = { 255, 0, 0, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
+
+static const GraticuleLines flat_digital8[] = {
+    { { {  "16",  16+256 }, {  "16",  16+256 }, {  "16",  16+256 }, {   "0",   0+256 } } },
+    { { { "128", 128+256 }, { "128", 128+256 }, { "128", 128+256 }, { "128", 128+256 } } },
+    { { { "235", 235+256 }, { "240", 240+256 }, { "240", 240+256 }, { "255", 255+256 } } },
+};
+
+static const GraticuleLines flat_digital9[] = {
+    { { {  "32",  32+512 }, {  "32",  32+512 }, {  "32",  32+512 }, {   "0",   0+512 } } },
+    { { { "256", 256+512 }, { "256", 256+512 }, { "256", 256+512 }, { "256", 256+512 } } },
+    { { { "470", 470+512 }, { "480", 480+512 }, { "480", 480+512 }, { "511", 511+512 } } },
+};
+
+static const GraticuleLines flat_digital10[] = {
+    { { {  "64",  64+1024 }, {  "64",  64+1024 }, {  "64",  64+1024 }, {    "0",    0+1024 } } },
+    { { { "512", 512+1024 }, { "512", 512+1024 }, { "512", 512+1024 }, {  "512",  512+1024 } } },
+    { { { "940", 940+1024 }, { "960", 960+1024 }, { "960", 960+1024 }, { "1023", 1023+1024 } } },
+};
+
+static const GraticuleLines flat_digital12[] = {
+    { { {  "256",  256+4096 }, {  "256",  256+4096 }, {  "256",  256+4096 }, {    "0",    0+4096 } } },
+    { { { "2048", 2048+4096 }, { "2048", 2048+4096 }, { "2048", 2048+4096 }, { "2048", 2048+4096 } } },
+    { { { "3760", 3760+4096 }, { "3840", 3840+4096 }, { "3840", 3840+4096 }, { "4095", 4095+4096 } } },
+};
+
+static const GraticuleLines flat_millivolts8[] = {
+    { { {   "0",  16+256 }, {   "0",  16+256 }, {   "0",  16+256 }, {   "0",   0+256 } } },
+    { { { "175",  71+256 }, { "175",  72+256 }, { "175",  72+256 }, { "175",  64+256 } } },
+    { { { "350", 126+256 }, { "350", 128+256 }, { "350", 128+256 }, { "350", 128+256 } } },
+    { { { "525", 180+256 }, { "525", 184+256 }, { "525", 184+256 }, { "525", 192+256 } } },
+    { { { "700", 235+256 }, { "700", 240+256 }, { "700", 240+256 }, { "700", 255+256 } } },
+};
+
+static const GraticuleLines flat_millivolts9[] = {
+    { { {   "0",  32+512 }, {   "0",  32+512 }, {   "0",  32+512 }, {   "0",   0+512 } } },
+    { { { "175", 142+512 }, { "175", 144+512 }, { "175", 144+512 }, { "175", 128+512 } } },
+    { { { "350", 251+512 }, { "350", 256+512 }, { "350", 256+512 }, { "350", 256+512 } } },
+    { { { "525", 361+512 }, { "525", 368+512 }, { "525", 368+512 }, { "525", 384+512 } } },
+    { { { "700", 470+512 }, { "700", 480+512 }, { "700", 480+512 }, { "700", 511+512 } } },
+};
+
+static const GraticuleLines flat_millivolts10[] = {
+    { { {   "0",  64+1024 }, {   "0",  64+1024 }, {   "0",  64+1024 }, {   "0",    0+1024 } } },
+    { { { "175", 283+1024 }, { "175", 288+1024 }, { "175", 288+1024 }, { "175",  256+1024 } } },
+    { { { "350", 502+1024 }, { "350", 512+1024 }, { "350", 512+1024 }, { "350",  512+1024 } } },
+    { { { "525", 721+1024 }, { "525", 736+1024 }, { "525", 736+1024 }, { "525",  768+1024 } } },
+    { { { "700", 940+1024 }, { "700", 960+1024 }, { "700", 960+1024 }, { "700", 1023+1024 } } },
+};
+
+static const GraticuleLines flat_millivolts12[] = {
+    { { {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",    0+4096 } } },
+    { { { "175", 1132+4096 }, { "175", 1152+4096 }, { "175", 1152+4096 }, { "175", 1024+4096 } } },
+    { { { "350", 2008+4096 }, { "350", 2048+4096 }, { "350", 2048+4096 }, { "350", 2048+4096 } } },
+    { { { "525", 2884+4096 }, { "525", 2944+4096 }, { "525", 2944+4096 }, { "525", 3072+4096 } } },
+    { { { "700", 3760+4096 }, { "700", 3840+4096 }, { "700", 3840+4096 }, { "700", 4095+4096 } } },
+};
+
+static const GraticuleLines flat_ire8[] = {
+    { { { "-25", -39+256 }, { "-25", -40+256 }, { "-25", -40+256 }, { "-25", -64+256 } } },
+    { { {   "0",  16+256 }, {   "0",  16+256 }, {   "0",  16+256 }, {   "0",   0+256 } } },
+    { { {  "25",  71+256 }, {  "25",  72+256 }, {  "25",  72+256 }, {  "25",  64+256 } } },
+    { { {  "50", 126+256 }, {  "50", 128+256 }, {  "50", 128+256 }, {  "50", 128+256 } } },
+    { { {  "75", 180+256 }, {  "75", 184+256 }, {  "75", 184+256 }, {  "75", 192+256 } } },
+    { { { "100", 235+256 }, { "100", 240+256 }, { "100", 240+256 }, { "100", 256+256 } } },
+    { { { "125", 290+256 }, { "125", 296+256 }, { "125", 296+256 }, { "125", 320+256 } } },
+};
+
+static const GraticuleLines flat_ire9[] = {
+    { { { "-25", -78+512 }, { "-25", -80+512 }, { "-25", -80+512 }, { "-25",-128+512 } } },
+    { { {   "0",  32+512 }, {   "0",  32+512 }, {   "0",  32+512 }, {   "0",   0+512 } } },
+    { { {  "25", 142+512 }, {  "25", 144+512 }, {  "25", 144+512 }, {  "25", 128+512 } } },
+    { { {  "50", 251+512 }, {  "50", 256+512 }, {  "50", 256+512 }, {  "50", 256+512 } } },
+    { { {  "75", 361+512 }, {  "75", 368+512 }, {  "75", 368+512 }, {  "75", 384+512 } } },
+    { { { "100", 470+512 }, { "100", 480+512 }, { "100", 480+512 }, { "100", 512+512 } } },
+    { { { "125", 580+512 }, { "125", 592+512 }, { "125", 592+512 }, { "125", 640+512 } } },
+};
+
+static const GraticuleLines flat_ire10[] = {
+    { { { "-25",-156+1024 }, { "-25",-160+1024 }, { "-25",-160+1024 }, { "-25", -256+1024 } } },
+    { { {   "0",  64+1024 }, {   "0",  64+1024 }, {  "0",   64+1024 }, {   "0",    0+1024 } } },
+    { { {  "25", 283+1024 }, {  "25", 288+1024 }, {  "25", 288+1024 }, {  "25",  256+1024 } } },
+    { { {  "50", 502+1024 }, {  "50", 512+1024 }, {  "50", 512+1024 }, {  "50",  512+1024 } } },
+    { { {  "75", 721+1024 }, {  "75", 736+1024 }, {  "75", 736+1024 }, {  "75",  768+1024 } } },
+    { { { "100", 940+1024 }, { "100", 960+1024 }, { "100", 960+1024 }, { "100", 1024+1024 } } },
+    { { { "125",1160+1024 }, { "125",1184+1024 }, { "125",1184+1024 }, { "125", 1280+1024 } } },
+};
+
+static const GraticuleLines flat_ire12[] = {
+    { { { "-25", -624+4096 }, { "-25", -640+4096 }, { "-25", -640+4096 }, { "-25",-1024+4096 } } },
+    { { {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",  256+4096 }, {   "0",    0+4096 } } },
+    { { {  "25", 1132+4096 }, {  "25", 1152+4096 }, {  "25", 1152+4096 }, {  "25", 1024+4096 } } },
+    { { {  "50", 2008+4096 }, {  "50", 2048+4096 }, {  "50", 2048+4096 }, {  "50", 2048+4096 } } },
+    { { {  "75", 2884+4096 }, {  "75", 2944+4096 }, {  "75", 2944+4096 }, {  "75", 3072+4096 } } },
+    { { { "100", 3760+4096 }, { "100", 3840+4096 }, { "100", 3840+4096 }, { "100", 4096+4096 } } },
+    { { { "125", 4640+4096 }, { "125", 4736+4096 }, { "125", 4736+4096 }, { "125", 5120+4096 } } },
+};
 
 static const GraticuleLines digital8[] = {
     { { {  "16",  16 }, {  "16",  16 }, {  "16",  16 }, {   "0",   0 } } },
@@ -1318,6 +1963,38 @@ static const GraticuleLines ire12[] = {
     { { {  "50", 2008 }, {  "50", 2048 }, {  "50", 2048 }, {  "50", 2048 } } },
     { { {  "75", 2884 }, {  "75", 2944 }, {  "75", 2944 }, {  "75", 3072 } } },
     { { { "100", 3760 }, { "100", 3840 }, { "100", 3840 }, { "100", 4095 } } },
+};
+
+static const GraticuleLines chroma_digital8[] = {
+    { { {  "50",  50 }, {  "50",  50 }, {  "50",  50 }, {  "50",  50 } } },
+    { { { "100", 100 }, { "100", 100 }, { "100", 100 }, { "100", 100 } } },
+    { { { "150", 150 }, { "150", 150 }, { "150", 150 }, { "150", 150 } } },
+    { { { "200", 200 }, { "200", 200 }, { "200", 200 }, { "200", 200 } } },
+    { { { "255", 255 }, { "255", 255 }, { "255", 255 }, { "255", 255 } } },
+};
+
+static const GraticuleLines chroma_digital9[] = {
+    { { { "100", 100 }, { "100", 100 }, { "100", 100 }, { "100", 100 } } },
+    { { { "200", 200 }, { "200", 200 }, { "200", 200 }, { "200", 200 } } },
+    { { { "300", 300 }, { "300", 300 }, { "300", 300 }, { "300", 300 } } },
+    { { { "400", 400 }, { "400", 400 }, { "400", 400 }, { "400", 400 } } },
+    { { { "500", 500 }, { "500", 500 }, { "500", 500 }, { "500", 500 } } },
+};
+
+static const GraticuleLines chroma_digital10[] = {
+    { { { "200", 200 }, { "200", 200 }, { "200", 200 }, { "200", 200 } } },
+    { { { "400", 400 }, { "400", 400 }, { "400", 400 }, { "400", 400 } } },
+    { { { "600", 600 }, { "600", 600 }, { "600", 600 }, { "600", 600 } } },
+    { { { "800", 800 }, { "800", 800 }, { "800", 800 }, { "800", 800 } } },
+    { { {"1000",1000 }, {"1000",1000 }, {"1000",1000 }, {"1000",1000 } } },
+};
+
+static const GraticuleLines chroma_digital12[] = {
+    { { {  "800",  800 }, {  "800",  800 }, {  "800",  800 }, {  "800",  800 } } },
+    { { { "1600", 1600 }, { "1600", 1600 }, { "1600", 1600 }, { "1600", 1600 } } },
+    { { { "2400", 2400 }, { "2400", 2400 }, { "2400", 2400 }, { "2400", 2400 } } },
+    { { { "3200", 3200 }, { "3200", 3200 }, { "3200", 3200 }, { "3200", 3200 } } },
+    { { { "4000", 4000 }, { "4000", 4000 }, { "4000", 4000 }, { "4000", 4000 } } },
 };
 
 static void blend_vline(uint8_t *dst, int height, int linesize, float o1, float o2, int v, int step)
@@ -1483,7 +2160,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p];
             for (l = 0; l < s->nb_glines; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int x = offset_x + (s->mirror ? 255 - pos : pos);
+                int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + offset_y * out->linesize[p] + x;
 
                 blend_vline(dst, height, out->linesize[p], o1, o2, v, step);
@@ -1493,7 +2170,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int x = offset_x + (s->mirror ? 255 - pos : pos) - 10;
+            int x = offset_x + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (x < 0)
                 x = 4;
@@ -1501,7 +2178,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
             draw_vtext(out, x, offset_y + 2, o1, o2, name, green_yuva_color);
         }
 
-        offset_x += 256 * (s->display == STACK);
+        offset_x += s->size * (s->display == STACK);
         offset_y += height * (s->display == PARADE);
     }
 }
@@ -1564,7 +2241,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
             const int v = green_yuva_color[p];
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
-                int y = offset_y + (s->mirror ? 255 - pos : pos);
+                int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + y * out->linesize[p] + offset_x;
 
                 blend_hline(dst, width, o1, o2, v, step);
@@ -1574,7 +2251,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
             const char *name = s->glines[l].line[c].name;
             const uint16_t pos = s->glines[l].line[c].pos;
-            int y = offset_y + (s->mirror ? 255 - pos : pos) - 10;
+            int y = offset_y + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (y < 0)
                 y = 4;
@@ -1582,7 +2259,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
             draw_htext(out, 2 + offset_x, y, o1, o2, name, green_yuva_color);
         }
 
-        offset_y += 256 * (s->display == STACK);
+        offset_y += s->size * (s->display == STACK);
         offset_x += width * (s->display == PARADE);
     }
 }
@@ -1643,56 +2320,133 @@ static int config_input(AVFilterLink *inlink)
 
     switch (s->filter) {
     case LOWPASS:
-            s->size = 256;
-            if (s->graticule && s->mode == 1)
-                s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
-            else if (s->graticule && s->mode == 0)
-                s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
-            s->waveform = s->bits > 8 ? lowpass16 : lowpass; break;
+        s->size = 256;
+        s->waveform = s->bits > 8 ? lowpass16 : lowpass;
+        break;
     case FLAT:
-            s->size = 256 * 3;
-            s->waveform = flat;    break;
+        s->size = 256 * 3;
+        s->waveform = s->bits > 8 ? flat16 : flat;
+        break;
     case AFLAT:
-            s->size = 256 * 2;
-            s->waveform = aflat;   break;
+        s->size = 256 * 2;
+        s->waveform = s->bits > 8 ? aflat16 : aflat;
+        break;
     case CHROMA:
-            s->size = 256 * 2;
-            s->waveform = chroma;  break;
+        s->size = 256;
+        s->waveform = s->bits > 8 ? chroma16 : chroma;
+        break;
     case ACHROMA:
-            s->size = 256;
-            s->waveform = achroma; break;
+        s->size = 256;
+        s->waveform = s->bits > 8 ? achroma16 : achroma;
+        break;
     case COLOR:
-            s->size = 256;
-            if (s->graticule && s->mode == 1)
-                s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
-            else if (s->graticule && s->mode == 0)
-                s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
-            s->waveform = s->bits > 8 ?   color16 :   color; break;
+        s->size = 256;
+        s->waveform = s->bits > 8 ? color16 : color;
+        break;
+    case ACOLOR:
+        s->size = 256;
+        s->waveform = s->bits > 8 ? acolor16 : acolor;
+        break;
     }
 
-    switch (s->scale) {
-    case DIGITAL:
-        switch (s->bits) {
-        case  8: s->glines = (GraticuleLines *)digital8;  s->nb_glines = FF_ARRAY_ELEMS(digital8);  break;
-        case  9: s->glines = (GraticuleLines *)digital9;  s->nb_glines = FF_ARRAY_ELEMS(digital9);  break;
-        case 10: s->glines = (GraticuleLines *)digital10; s->nb_glines = FF_ARRAY_ELEMS(digital10); break;
-        case 12: s->glines = (GraticuleLines *)digital12; s->nb_glines = FF_ARRAY_ELEMS(digital12); break;
+    switch (s->filter) {
+    case LOWPASS:
+    case COLOR:
+    case ACOLOR:
+    case CHROMA:
+    case FLAT:
+        if (s->graticule && s->mode == 1)
+            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+        else if (s->graticule && s->mode == 0)
+            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
+        break;
+    }
+
+    switch (s->filter) {
+    case COLOR:
+    case ACOLOR:
+    case LOWPASS:
+        switch (s->scale) {
+        case DIGITAL:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)digital8;  s->nb_glines = FF_ARRAY_ELEMS(digital8);  break;
+            case  9: s->glines = (GraticuleLines *)digital9;  s->nb_glines = FF_ARRAY_ELEMS(digital9);  break;
+            case 10: s->glines = (GraticuleLines *)digital10; s->nb_glines = FF_ARRAY_ELEMS(digital10); break;
+            case 12: s->glines = (GraticuleLines *)digital12; s->nb_glines = FF_ARRAY_ELEMS(digital12); break;
+            }
+            break;
+        case MILLIVOLTS:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(millivolts8);  break;
+            case  9: s->glines = (GraticuleLines *)millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(millivolts9);  break;
+            case 10: s->glines = (GraticuleLines *)millivolts10; s->nb_glines = FF_ARRAY_ELEMS(millivolts10); break;
+            case 12: s->glines = (GraticuleLines *)millivolts12; s->nb_glines = FF_ARRAY_ELEMS(millivolts12); break;
+            }
+            break;
+        case IRE:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)ire8;  s->nb_glines = FF_ARRAY_ELEMS(ire8);  break;
+            case  9: s->glines = (GraticuleLines *)ire9;  s->nb_glines = FF_ARRAY_ELEMS(ire9);  break;
+            case 10: s->glines = (GraticuleLines *)ire10; s->nb_glines = FF_ARRAY_ELEMS(ire10); break;
+            case 12: s->glines = (GraticuleLines *)ire12; s->nb_glines = FF_ARRAY_ELEMS(ire12); break;
+            }
+            break;
         }
         break;
-    case MILLIVOLTS:
-        switch (s->bits) {
-        case  8: s->glines = (GraticuleLines *)millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(millivolts8);  break;
-        case  9: s->glines = (GraticuleLines *)millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(millivolts9);  break;
-        case 10: s->glines = (GraticuleLines *)millivolts10; s->nb_glines = FF_ARRAY_ELEMS(millivolts10); break;
-        case 12: s->glines = (GraticuleLines *)millivolts12; s->nb_glines = FF_ARRAY_ELEMS(millivolts12); break;
+    case CHROMA:
+        switch (s->scale) {
+        case DIGITAL:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)chroma_digital8;  s->nb_glines = FF_ARRAY_ELEMS(chroma_digital8);  break;
+            case  9: s->glines = (GraticuleLines *)chroma_digital9;  s->nb_glines = FF_ARRAY_ELEMS(chroma_digital9);  break;
+            case 10: s->glines = (GraticuleLines *)chroma_digital10; s->nb_glines = FF_ARRAY_ELEMS(chroma_digital10); break;
+            case 12: s->glines = (GraticuleLines *)chroma_digital12; s->nb_glines = FF_ARRAY_ELEMS(chroma_digital12); break;
+            }
+            break;
+        case MILLIVOLTS:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(millivolts8);  break;
+            case  9: s->glines = (GraticuleLines *)millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(millivolts9);  break;
+            case 10: s->glines = (GraticuleLines *)millivolts10; s->nb_glines = FF_ARRAY_ELEMS(millivolts10); break;
+            case 12: s->glines = (GraticuleLines *)millivolts12; s->nb_glines = FF_ARRAY_ELEMS(millivolts12); break;
+            }
+            break;
+        case IRE:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)ire8;  s->nb_glines = FF_ARRAY_ELEMS(ire8);  break;
+            case  9: s->glines = (GraticuleLines *)ire9;  s->nb_glines = FF_ARRAY_ELEMS(ire9);  break;
+            case 10: s->glines = (GraticuleLines *)ire10; s->nb_glines = FF_ARRAY_ELEMS(ire10); break;
+            case 12: s->glines = (GraticuleLines *)ire12; s->nb_glines = FF_ARRAY_ELEMS(ire12); break;
+            }
+            break;
         }
         break;
-    case IRE:
-        switch (s->bits) {
-        case  8: s->glines = (GraticuleLines *)ire8;  s->nb_glines = FF_ARRAY_ELEMS(ire8);  break;
-        case  9: s->glines = (GraticuleLines *)ire9;  s->nb_glines = FF_ARRAY_ELEMS(ire9);  break;
-        case 10: s->glines = (GraticuleLines *)ire10; s->nb_glines = FF_ARRAY_ELEMS(ire10); break;
-        case 12: s->glines = (GraticuleLines *)ire12; s->nb_glines = FF_ARRAY_ELEMS(ire12); break;
+    case FLAT:
+        switch (s->scale) {
+        case DIGITAL:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)flat_digital8;  s->nb_glines = FF_ARRAY_ELEMS(flat_digital8);  break;
+            case  9: s->glines = (GraticuleLines *)flat_digital9;  s->nb_glines = FF_ARRAY_ELEMS(flat_digital9);  break;
+            case 10: s->glines = (GraticuleLines *)flat_digital10; s->nb_glines = FF_ARRAY_ELEMS(flat_digital10); break;
+            case 12: s->glines = (GraticuleLines *)flat_digital12; s->nb_glines = FF_ARRAY_ELEMS(flat_digital12); break;
+            }
+            break;
+        case MILLIVOLTS:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)flat_millivolts8;  s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts8);  break;
+            case  9: s->glines = (GraticuleLines *)flat_millivolts9;  s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts9);  break;
+            case 10: s->glines = (GraticuleLines *)flat_millivolts10; s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts10); break;
+            case 12: s->glines = (GraticuleLines *)flat_millivolts12; s->nb_glines = FF_ARRAY_ELEMS(flat_millivolts12); break;
+            }
+            break;
+        case IRE:
+            switch (s->bits) {
+            case  8: s->glines = (GraticuleLines *)flat_ire8;  s->nb_glines = FF_ARRAY_ELEMS(flat_ire8);  break;
+            case  9: s->glines = (GraticuleLines *)flat_ire9;  s->nb_glines = FF_ARRAY_ELEMS(flat_ire9);  break;
+            case 10: s->glines = (GraticuleLines *)flat_ire10; s->nb_glines = FF_ARRAY_ELEMS(flat_ire10); break;
+            case 12: s->glines = (GraticuleLines *)flat_ire12; s->nb_glines = FF_ARRAY_ELEMS(flat_ire12); break;
+            }
+            break;
         }
         break;
     }
@@ -1794,7 +2548,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                        i * out->linesize[s->desc->comp[k].plane],
                        s->bg_color[k], outlink->w);
         } else {
-            const int mult = s->size / 256;
+            const int mult = s->max / 256;
             uint16_t *dst = (uint16_t *)out->data[s->desc->comp[k].plane];
 
             for (i = 0; i < outlink->h ; i++) {

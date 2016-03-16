@@ -62,8 +62,10 @@ typedef struct VectorscopeContext {
     int tmin;
     int tmax;
     int flags;
+    int colorspace;
     int cs;
-    uint8_t peak[4096][4096];
+    uint8_t *peak_memory;
+    uint8_t **peak;
 
     void (*vectorscope)(struct VectorscopeContext *s,
                         AVFrame *in, AVFrame *out, int pd);
@@ -111,6 +113,11 @@ static const AVOption vectorscope_options[] = {
     { "l",          "set low threshold",  OFFSET(lthreshold), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, 1, FLAGS},
     { "hthreshold", "set high threshold", OFFSET(hthreshold), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, FLAGS},
     { "h",          "set high threshold", OFFSET(hthreshold), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, FLAGS},
+    { "colorspace", "set colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "colorspace"},
+    { "c",          "set colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "colorspace"},
+    {   "auto",       0, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "colorspace" },
+    {   "601",        0, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "colorspace" },
+    {   "709",        0, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "colorspace" },
     { NULL }
 };
 
@@ -246,10 +253,23 @@ static int query_formats(AVFilterContext *ctx)
 static int config_output(AVFilterLink *outlink)
 {
     VectorscopeContext *s = outlink->src->priv;
+    int i;
 
     s->intensity = s->fintensity * (s->size - 1);
     outlink->h = outlink->w = s->size;
     outlink->sample_aspect_ratio = (AVRational){1,1};
+
+    s->peak_memory = av_calloc(s->size, s->size);
+    if (!s->peak_memory)
+        return AVERROR(ENOMEM);
+
+    s->peak = av_calloc(s->size, sizeof(*s->peak));
+    if (!s->peak)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < s->size; i++)
+        s->peak[i] = s->peak_memory + s->size * i;
+
     return 0;
 }
 
@@ -429,8 +449,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                         continue;
 
                     dpd[pos] = FFMIN(dpd[pos] + intensity, max);
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         } else {
@@ -450,8 +468,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                     dst[0][pos] = FFMIN(dst[0][pos] + intensity, max);
                     dst[1][pos] = FFMIN(dst[1][pos] + intensity, max);
                     dst[2][pos] = FFMIN(dst[2][pos] + intensity, max);
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         }
@@ -475,8 +491,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                         dpd[pos] = FFABS(mid - x) + FFABS(mid - y);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         } else {
@@ -497,8 +511,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                         dpd[pos] = FFMIN(x + y, max);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = max;
                 }
             }
         }
@@ -520,8 +532,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                 dpd[pos] = FFMIN(max, dpd[pos] + intensity);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = max;
             }
         }
         break;
@@ -542,8 +552,6 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
                 dpd[pos] = FFMAX(z, dpd[pos]);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = max;
             }
         }
         break;
@@ -552,6 +560,17 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
     }
 
     envelope16(s, out);
+
+    if (dst[3]) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                int pos = i * dlinesize + j;
+
+                if (dpd[pos])
+                    dst[3][pos] = max;
+            }
+        }
+    }
 
     if (s->mode == COLOR) {
         for (i = 0; i < out->height; i++) {
@@ -624,8 +643,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                         continue;
 
                     dpd[pos] = FFMIN(dpd[pos] + intensity, 255);
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         } else {
@@ -645,8 +662,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                     dst[0][pos] = FFMIN(dst[0][pos] + intensity, 255);
                     dst[1][pos] = FFMIN(dst[1][pos] + intensity, 255);
                     dst[2][pos] = FFMIN(dst[2][pos] + intensity, 255);
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         }
@@ -670,8 +685,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                         dpd[pos] = FFABS(128 - x) + FFABS(128 - y);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         } else {
@@ -692,8 +705,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                         dpd[pos] = FFMIN(x + y, 255);
                     dpx[pos] = x;
                     dpy[pos] = y;
-                    if (dst[3])
-                        dst[3][pos] = 255;
                 }
             }
         }
@@ -715,8 +726,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                 dpd[pos] = FFMIN(255, dpd[pos] + intensity);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = 255;
             }
         }
         break;
@@ -737,8 +746,6 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
                 dpd[pos] = FFMAX(z, dpd[pos]);
                 dpx[pos] = x;
                 dpy[pos] = y;
-                if (dst[3])
-                    dst[3][pos] = 255;
             }
         }
         break;
@@ -747,6 +754,17 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
     }
 
     envelope(s, out);
+
+    if (dst[3]) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                int pos = i * dlinesize + j;
+
+                if (dpd[pos])
+                    dst[3][pos] = 255;
+            }
+        }
+    }
 
     if (s->mode == COLOR) {
         for (i = 0; i < out->height; i++) {
@@ -1190,14 +1208,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
 
-    switch (av_frame_get_colorspace(in)) {
-    case AVCOL_SPC_SMPTE170M:
-    case AVCOL_SPC_BT470BG:
-        s->cs = (s->depth - 8) * 2 + 0;
-        break;
-    case AVCOL_SPC_BT709:
-    default:
-        s->cs = (s->depth - 8) * 2 + 1;
+    if (s->colorspace) {
+        s->cs = (s->depth - 8) * 2 + s->colorspace - 1;
+    } else {
+        switch (av_frame_get_colorspace(in)) {
+        case AVCOL_SPC_SMPTE170M:
+        case AVCOL_SPC_BT470BG:
+            s->cs = (s->depth - 8) * 2 + 0;
+            break;
+        case AVCOL_SPC_BT709:
+        default:
+            s->cs = (s->depth - 8) * 2 + 1;
+        }
     }
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -1205,7 +1227,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    out->pts = in->pts;
+    av_frame_copy_props(out, in);
 
     s->vectorscope(s, in, out, s->pd);
     s->graticulef(s, out, s->x, s->y, s->pd, s->cs);
@@ -1290,6 +1312,14 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    VectorscopeContext *s = ctx->priv;
+
+    av_freep(&s->peak);
+    av_freep(&s->peak_memory);
+}
+
 static const AVFilterPad inputs[] = {
     {
         .name         = "default",
@@ -1315,6 +1345,7 @@ AVFilter ff_vf_vectorscope = {
     .priv_size     = sizeof(VectorscopeContext),
     .priv_class    = &vectorscope_class,
     .query_formats = query_formats,
+    .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
 };

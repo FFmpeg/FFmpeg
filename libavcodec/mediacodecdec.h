@@ -34,7 +34,7 @@
 
 typedef struct MediaCodecDecContext {
 
-    const char *codec_name;
+    char *codec_name;
 
     FFAMediaCodec *codec;
     FFAMediaFormat *format;

@@ -98,7 +98,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             av_free(tag->value);
         av_free(tag->key);
         *tag = m->elems[--m->count];
-    } else {
+    } else if (copy_value) {
         AVDictionaryEntry *tmp = av_realloc(m->elems,
                                             (m->count + 1) * sizeof(*m->elems));
         if (!tmp)

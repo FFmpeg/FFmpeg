@@ -219,11 +219,8 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
                pix_fmt == AV_PIX_FMT_MONOWHITE ||
                pix_fmt == AV_PIX_FMT_MONOBLACK);
 
-    if (!enc->extradata_size && pal_avi)
-        extradata_size = 4 * (1 << enc->bits_per_coded_sample);
-
-    /* size */
-    avio_wl32(pb, 40 + (ignore_extradata ? 0 :extradata_size));
+    /* Size (not including the size of the color table or color masks) */
+    avio_wl32(pb, 40 + (ignore_extradata || pal_avi ? 0 : extradata_size));
     avio_wl32(pb, enc->width);
     //We always store RGB TopDown
     avio_wl32(pb, enc->codec_tag || keep_height ? enc->height : -enc->height);
@@ -236,7 +233,10 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
     avio_wl32(pb, (enc->width * enc->height * (enc->bits_per_coded_sample ? enc->bits_per_coded_sample : 24)+7) / 8);
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
-    avio_wl32(pb, 0);
+    /* Number of color indices in the color table that are used.
+     * A value of 0 means 2^biBitCount indices, but this doesn't work
+     * with Windows Media Player and files containing xxpc chunks. */
+    avio_wl32(pb, pal_avi ? 1 << enc->bits_per_coded_sample : 0);
     avio_wl32(pb, 0);
 
     if (!ignore_extradata) {

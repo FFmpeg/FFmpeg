@@ -116,6 +116,9 @@ int av_dict_count(const AVDictionary *m);
  * Note: If AV_DICT_DONT_STRDUP_KEY or AV_DICT_DONT_STRDUP_VAL is set,
  * these arguments will be freed on error.
  *
+ * Warning: Adding a new entry to a dictionary invalidates all existing entries
+ * previously returned with av_dict_get.
+ *
  * @param pm pointer to a pointer to a dictionary struct. If *pm is NULL
  * a dictionary struct is allocated and put in *pm.
  * @param key entry key to add to *pm (will be av_strduped depending on flags)

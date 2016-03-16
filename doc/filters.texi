@@ -12656,6 +12656,15 @@ Values higher than this value will be ignored. Default is 1.
 Note this value is multiplied with actual max possible value one pixel component
 can have. So for 8-bit input and high threshold value of 0.9 actual threshold
 is 0.9 * 255 = 230.
+
+@item colorspace, c
+Set what kind of colorspace to use when drawing graticule.
+@table @samp
+@item auto
+@item 601
+@item 709
+@end table
+Default is auto.
 @end table
 
 @anchor{vidstabdetect}
@@ -13167,6 +13176,9 @@ Similar as above, but shows difference between blue and red chroma.
 
 @item color
 Displays actual color value on waveform.
+
+@item acolor
+Similar as above, but with luma showing frequency of chroma values.
 @end table
 
 @item graticule, g

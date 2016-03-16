@@ -561,6 +561,19 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
                 vui->transfer_characteristic = AVCOL_TRC_UNSPECIFIED;
             if (vui->matrix_coeffs >= AVCOL_SPC_NB)
                 vui->matrix_coeffs = AVCOL_SPC_UNSPECIFIED;
+            if (vui->matrix_coeffs == AVCOL_SPC_RGB) {
+                switch (sps->pix_fmt) {
+                case AV_PIX_FMT_YUV444P:
+                    sps->pix_fmt = AV_PIX_FMT_GBRP;
+                    break;
+                case AV_PIX_FMT_YUV444P10:
+                    sps->pix_fmt = AV_PIX_FMT_GBRP10;
+                    break;
+                case AV_PIX_FMT_YUV444P12:
+                    sps->pix_fmt = AV_PIX_FMT_GBRP12;
+                    break;
+                }
+            }
         }
     }
 
@@ -583,11 +596,12 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
     memcpy(&backup, gb, sizeof(backup));
 
     if (vui->default_display_window_flag) {
-        //TODO: * 2 is only valid for 420
-        vui->def_disp_win.left_offset   = get_ue_golomb_long(gb) * 2;
-        vui->def_disp_win.right_offset  = get_ue_golomb_long(gb) * 2;
-        vui->def_disp_win.top_offset    = get_ue_golomb_long(gb) * 2;
-        vui->def_disp_win.bottom_offset = get_ue_golomb_long(gb) * 2;
+        int vert_mult  = 1 + (sps->chroma_format_idc < 2);
+        int horiz_mult = 1 + (sps->chroma_format_idc < 3);
+        vui->def_disp_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
+        vui->def_disp_win.right_offset  = get_ue_golomb_long(gb) * horiz_mult;
+        vui->def_disp_win.top_offset    = get_ue_golomb_long(gb) *  vert_mult;
+        vui->def_disp_win.bottom_offset = get_ue_golomb_long(gb) *  vert_mult;
 
         if (apply_defdispwin &&
             avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) {

@@ -198,9 +198,11 @@ FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
 FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
 FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
+FATE_H264_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-h264-dts_5frames
 
 FATE_SAMPLES_AVCONV += $(FATE_H264-yes)
-fate-h264: $(FATE_H264-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_H264_FFPROBE-yes)
+fate-h264: $(FATE_H264-yes) $(FATE_H264_FFPROBE-yes)
 
 fate-h264-conformance-aud_mw_e:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/AUD_MW_E.264
 fate-h264-conformance-ba1_ft_c:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA1_FT_C.264
@@ -395,3 +397,5 @@ fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAM
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
+
+fate-h264-dts_5frames:                            CMD = probeframes $(TARGET_SAMPLES)/h264/dts_5frames.mkv

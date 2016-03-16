@@ -37,7 +37,7 @@
 #define QCOM_TILE_GROUP_SIZE (4 * QCOM_TILE_SIZE)
 
 /**
- * The code handling the the various YUV color formats is taken from the
+ * The code handling the various YUV color formats is taken from the
  * GStreamer project.
  *
  * Gstreamer reference:

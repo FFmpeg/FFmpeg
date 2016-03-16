@@ -41,6 +41,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/time.h"
+#include "libavutil/timecode.h"
 #include "libavutil/time_internal.h"
 #include "libavutil/timestamp.h"
 
@@ -95,6 +96,7 @@ typedef struct SegmentContext {
     char *time_str;        ///< segment duration specification string
     int64_t time;          ///< segment duration
     int use_strftime;      ///< flag to expand filename with strftime
+    int increment_tc;      ///< flag to increment timecode if found
 
     char *times_str;       ///< segment times specification string
     int64_t *times;        ///< list of segment interval specification
@@ -337,6 +339,12 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     int ret = 0;
+    AVTimecode tc;
+    AVRational rate;
+    AVDictionaryEntry *tcr;
+    char buf[AV_TIMECODE_STR_SIZE];
+    int i;
+    int err;
 
     av_write_frame(oc, NULL); /* Flush any buffered data (fragmented mp4) */
     if (write_trailer)
@@ -389,6 +397,29 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
     av_log(s, AV_LOG_VERBOSE, "segment:'%s' count:%d ended\n",
            seg->avf->filename, seg->segment_count);
     seg->segment_count++;
+
+    if (seg->increment_tc) {
+        tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
+        if (tcr) {
+            /* search the first video stream */
+            for (i = 0; i < s->nb_streams; i++) {
+                if (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                    rate = s->streams[i]->avg_frame_rate;/* Get fps from the video stream */
+                    err = av_timecode_init_from_string(&tc, rate, tcr->value, s);
+                    if (err < 0) {
+                        av_log(s, AV_LOG_WARNING, "Could not increment timecode, error occured during timecode creation.");
+                        break;
+                    }
+                    tc.start += (int)((seg->cur_entry.end_time - seg->cur_entry.start_time) * av_q2d(rate));/* increment timecode */
+                    av_dict_set(&s->metadata, "timecode",
+                                av_timecode_make_string(&tc, buf, 0), 0);
+                    break;
+                }
+            }
+        } else {
+            av_log(s, AV_LOG_WARNING, "Could not increment timecode, no timecode metadata found");
+        }
+    }
 
 end:
     ff_format_io_close(oc, &oc->pb);
@@ -948,6 +979,7 @@ static const AVOption options[] = {
     { "segment_start_number", "set the sequence number of the first segment", OFFSET(segment_idx), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
     { "segment_wrap_number", "set the number of wrap before the first segment", OFFSET(segment_idx_wrap_nb), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
     { "strftime",          "set filename expansion with strftime at segment creation", OFFSET(use_strftime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+    { "increment_tc", "increment timecode between each segment", OFFSET(increment_tc), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     { "break_non_keyframes", "allow breaking segments on non-keyframes", OFFSET(break_non_keyframes), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
 
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },

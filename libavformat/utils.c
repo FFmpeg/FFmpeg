@@ -936,14 +936,44 @@ static int64_t select_from_pts_buffer(AVStream *st, int64_t *pts_buffer, int64_t
     return dts;
 }
 
+/**
+ * Updates the dts of packets of a stream in pkt_buffer, by re-ordering the pts
+ * of the packets in a window.
+ */
+static void update_dts_from_pts(AVFormatContext *s, int stream_index,
+                                AVPacketList *pkt_buffer)
+{
+    AVStream *st       = s->streams[stream_index];
+    int delay          = st->codec->has_b_frames;
+    int i;
+
+    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+
+    for (i = 0; i<MAX_REORDER_DELAY+1; i++)
+        pts_buffer[i] = AV_NOPTS_VALUE;
+
+    for (; pkt_buffer; pkt_buffer = get_next_pkt(s, st, pkt_buffer)) {
+        if (pkt_buffer->pkt.stream_index != stream_index)
+            continue;
+
+        if (pkt_buffer->pkt.pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY) {
+            pts_buffer[0] = pkt_buffer->pkt.pts;
+            for (i = 0; i<delay && pts_buffer[i] > pts_buffer[i + 1]; i++)
+                FFSWAP(int64_t, pts_buffer[i], pts_buffer[i + 1]);
+
+            pkt_buffer->pkt.dts = select_from_pts_buffer(st, pts_buffer, pkt_buffer->pkt.dts);
+        }
+    }
+}
+
 static void update_initial_timestamps(AVFormatContext *s, int stream_index,
                                       int64_t dts, int64_t pts, AVPacket *pkt)
 {
     AVStream *st       = s->streams[stream_index];
     AVPacketList *pktl = s->internal->packet_buffer ? s->internal->packet_buffer : s->internal->parse_queue;
-    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+    AVPacketList *pktl_it;
+
     uint64_t shift;
-    int i, delay;
 
     if (st->first_dts != AV_NOPTS_VALUE ||
         dts           == AV_NOPTS_VALUE ||
@@ -951,36 +981,28 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
         is_relative(dts))
         return;
 
-    delay         = st->codec->has_b_frames;
     st->first_dts = dts - (st->cur_dts - RELATIVE_TS_BASE);
     st->cur_dts   = dts;
     shift         = (uint64_t)st->first_dts - RELATIVE_TS_BASE;
 
-    for (i = 0; i<MAX_REORDER_DELAY+1; i++)
-        pts_buffer[i] = AV_NOPTS_VALUE;
-
     if (is_relative(pts))
         pts += shift;
 
-    for (; pktl; pktl = get_next_pkt(s, st, pktl)) {
-        if (pktl->pkt.stream_index != stream_index)
+    for (pktl_it = pktl; pktl_it; pktl_it = get_next_pkt(s, st, pktl_it)) {
+        if (pktl_it->pkt.stream_index != stream_index)
             continue;
-        if (is_relative(pktl->pkt.pts))
-            pktl->pkt.pts += shift;
+        if (is_relative(pktl_it->pkt.pts))
+            pktl_it->pkt.pts += shift;
 
-        if (is_relative(pktl->pkt.dts))
-            pktl->pkt.dts += shift;
+        if (is_relative(pktl_it->pkt.dts))
+            pktl_it->pkt.dts += shift;
 
-        if (st->start_time == AV_NOPTS_VALUE && pktl->pkt.pts != AV_NOPTS_VALUE)
-            st->start_time = pktl->pkt.pts;
+        if (st->start_time == AV_NOPTS_VALUE && pktl_it->pkt.pts != AV_NOPTS_VALUE)
+            st->start_time = pktl_it->pkt.pts;
+    }
 
-        if (pktl->pkt.pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY && has_decode_delay_been_guessed(st)) {
-            pts_buffer[0] = pktl->pkt.pts;
-            for (i = 0; i<delay && pts_buffer[i] > pts_buffer[i + 1]; i++)
-                FFSWAP(int64_t, pts_buffer[i], pts_buffer[i + 1]);
-
-            pktl->pkt.dts = select_from_pts_buffer(st, pts_buffer, pktl->pkt.dts);
-        }
+    if (has_decode_delay_been_guessed(st)) {
+        update_dts_from_pts(s, stream_index, pktl);
     }
 
     if (st->start_time == AV_NOPTS_VALUE)
@@ -3166,6 +3188,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int64_t max_stream_analyze_duration;
     int64_t max_subtitle_analyze_duration;
     int64_t probesize = ic->probesize;
+    int eof_reached = 0;
 
     flush_codecs = probesize > 0;
 
@@ -3332,6 +3355,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         if (ret < 0) {
             /* EOF or error*/
+            eof_reached = 1;
             break;
         }
 
@@ -3453,6 +3477,17 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         st->codec_info_nb_frames++;
         count++;
+    }
+
+    if (eof_reached && ic->internal->packet_buffer) {
+        int stream_index;
+        for (stream_index = 0; stream_index < ic->nb_streams; stream_index++) {
+            // EOF already reached while reading the stream above.
+            // So continue with reoordering DTS with whatever delay we have.
+            if (!has_decode_delay_been_guessed(st)) {
+                update_dts_from_pts(ic, stream_index, ic->internal->packet_buffer);
+            }
+        }
     }
 
     if (flush_codecs) {

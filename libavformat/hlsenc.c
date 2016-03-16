@@ -64,6 +64,13 @@ typedef enum HLSFlags {
     HLS_OMIT_ENDLIST = (1 << 4),
 } HLSFlags;
 
+typedef enum {
+    PLAYLIST_TYPE_NONE,
+    PLAYLIST_TYPE_EVENT,
+    PLAYLIST_TYPE_VOD,
+    PLAYLIST_TYPE_NB,
+} PlaylistType;
+
 typedef struct HLSContext {
     const AVClass *class;  // Class for private options.
     unsigned number;
@@ -79,6 +86,7 @@ typedef struct HLSContext {
     int max_nb_segments;   // Set by a private option.
     int  wrap;             // Set by a private option.
     uint32_t flags;        // enum HLSFlags
+    uint32_t pl_type;      // enum PlaylistType
     char *segment_filename;
 
     int use_localtime;      ///< flag to expand filename with localtime
@@ -357,6 +365,10 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
 
     hls->last_segment = en;
 
+    // EVENT or VOD playlists imply sliding window cannot be used
+    if (hls->pl_type != PLAYLIST_TYPE_NONE)
+        hls->max_nb_segments = 0;
+
     if (hls->max_nb_segments && hls->nb_entries >= hls->max_nb_segments) {
         en = hls->segments;
         hls->segments = en->next;
@@ -432,6 +444,11 @@ static int hls_window(AVFormatContext *s, int last)
     }
     avio_printf(out, "#EXT-X-TARGETDURATION:%d\n", target_duration);
     avio_printf(out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
+    if (hls->pl_type == PLAYLIST_TYPE_EVENT) {
+        avio_printf(out, "#EXT-X-PLAYLIST-TYPE:EVENT\n");
+    } else if (hls->pl_type == PLAYLIST_TYPE_VOD) {
+        avio_printf(out, "#EXT-X-PLAYLIST-TYPE:VOD\n");
+    }
 
     av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
            sequence);
@@ -908,6 +925,9 @@ static const AVOption options[] = {
     {"omit_endlist", "Do not append an endlist when ending stream", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_OMIT_ENDLIST }, 0, UINT_MAX,   E, "flags"},
     {"use_localtime", "set filename expansion with strftime at segment creation", OFFSET(use_localtime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     {"use_localtime_mkdir", "create last directory component in strftime-generated filename", OFFSET(use_localtime_mkdir), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+    {"hls_playlist_type", "set the HLS playlist type", OFFSET(pl_type), AV_OPT_TYPE_INT, {.i64 = PLAYLIST_TYPE_NONE }, 0, PLAYLIST_TYPE_NB-1, E, "pl_type" },
+    {"event", "EVENT playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_EVENT }, INT_MIN, INT_MAX, E, "pl_type" },
+    {"vod", "VOD playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_VOD }, INT_MIN, INT_MAX, E, "pl_type" },
     {"method", "set the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
 
     { NULL },

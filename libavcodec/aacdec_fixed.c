@@ -75,7 +75,7 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
-#include "cbrt_tablegen.h"
+#include "cbrt_data.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
@@ -155,9 +155,9 @@ static void vector_pow43(int *coefs, int len)
     for (i=0; i<len; i++) {
         coef = coefs[i];
         if (coef < 0)
-            coef = -(int)cbrt_tab[-coef];
+            coef = -(int)ff_cbrt_tab_fixed[-coef];
         else
-            coef = (int)cbrt_tab[coef];
+            coef = (int)ff_cbrt_tab_fixed[coef];
         coefs[i] = coef;
     }
 }

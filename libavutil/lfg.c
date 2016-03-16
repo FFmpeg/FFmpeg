@@ -84,17 +84,33 @@ int main(void)
     {
         double mean   = 1000;
         double stddev = 53;
+        double samp_mean = 0.0, samp_stddev = 0.0;
+        double samp0, samp1;
 
         av_lfg_init(&state, 42);
 
         for (i = 0; i < 1000; i += 2) {
             double bmg_out[2];
             av_bmg_get(&state, bmg_out);
+            samp0 = bmg_out[0] * stddev + mean;
+            samp1 = bmg_out[1] * stddev + mean;
+            samp_mean += samp0 + samp1;
+            samp_stddev += samp0 * samp0 + samp1 * samp1;
             av_log(NULL, AV_LOG_INFO,
                    "%f\n%f\n",
-                   bmg_out[0] * stddev + mean,
-                   bmg_out[1] * stddev + mean);
+                   samp0,
+                   samp1);
         }
+        /* TODO: add proper normality test */
+        samp_mean /= 1000;
+        samp_stddev /= 999;
+        samp_stddev -= (1000.0/999.0)*samp_mean*samp_mean;
+        samp_stddev = sqrt(samp_stddev);
+        av_log(NULL, AV_LOG_INFO, "sample mean  : %f\n"
+                                  "true mean    : %f\n"
+                                  "sample stddev: %f\n"
+                                  "true stddev  : %f\n",
+                                   samp_mean, mean, samp_stddev, stddev);
     }
 
     return 0;

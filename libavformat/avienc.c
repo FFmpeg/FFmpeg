@@ -44,12 +44,13 @@
  */
 
 typedef struct AVIIentry {
-    unsigned int flags, pos, len;
+    char tag[4];
+    unsigned int flags;
+    unsigned int pos;
+    unsigned int len;
 } AVIIentry;
 
 #define AVI_INDEX_CLUSTER_SIZE 16384
-
-#define AVISF_VIDEO_PALCHANGES 0x00010000
 
 typedef struct AVIIndex {
     int64_t     indx_start;
@@ -94,6 +95,43 @@ static inline AVIIentry *avi_get_ientry(const AVIIndex *idx, int ent_id)
     int cl = ent_id / AVI_INDEX_CLUSTER_SIZE;
     int id = ent_id % AVI_INDEX_CLUSTER_SIZE;
     return &idx->cluster[cl][id];
+}
+
+static int avi_add_ientry(AVFormatContext *s, int stream_index, char *tag,
+                          unsigned int flags, unsigned int size)
+{
+    AVIContext *avi  = s->priv_data;
+    AVIOContext *pb  = s->pb;
+    AVIStream *avist = s->streams[stream_index]->priv_data;
+    AVIIndex *idx    = &avist->indexes;
+    int cl           = idx->entry / AVI_INDEX_CLUSTER_SIZE;
+    int id           = idx->entry % AVI_INDEX_CLUSTER_SIZE;
+
+    if (idx->ents_allocated <= idx->entry) {
+        idx->cluster = av_realloc_f(idx->cluster, sizeof(void*), cl+1);
+        if (!idx->cluster) {
+            idx->ents_allocated = 0;
+            idx->entry          = 0;
+            return AVERROR(ENOMEM);
+        }
+        idx->cluster[cl] =
+            av_malloc(AVI_INDEX_CLUSTER_SIZE * sizeof(AVIIentry));
+        if (!idx->cluster[cl])
+            return AVERROR(ENOMEM);
+        idx->ents_allocated += AVI_INDEX_CLUSTER_SIZE;
+    }
+
+    if (tag)
+        memcpy(idx->cluster[cl][id].tag, tag, 4);
+    else
+        memset(idx->cluster[cl][id].tag, 0, 4);
+    idx->cluster[cl][id].flags = flags;
+    idx->cluster[cl][id].pos   = avio_tell(pb) - avi->movi_list;
+    idx->cluster[cl][id].len   = size;
+    avist->max_size = FFMAX(avist->max_size, size);
+    idx->entry++;
+
+    return 0;
 }
 
 static int64_t avi_start_new_riff(AVFormatContext *s, AVIOContext *pb,
@@ -612,9 +650,13 @@ static int avi_write_idx1(AVFormatContext *s)
             }
             if (!empty) {
                 avist = s->streams[stream_id]->priv_data;
-                avi_stream2fourcc(tag, stream_id,
+                if (*ie->tag)
+                    ffio_wfourcc(pb, ie->tag);
+                else {
+                    avi_stream2fourcc(tag, stream_id,
                                   s->streams[stream_id]->codec->codec_type);
-                ffio_wfourcc(pb, tag);
+                    ffio_wfourcc(pb, tag);
+                }
                 avio_wl32(pb, ie->flags);
                 avio_wl32(pb, ie->pos);
                 avio_wl32(pb, ie->len);
@@ -709,6 +751,20 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                     unsigned char tag[5];
                     avi_stream2fourcc(tag, stream_index, enc->codec_type);
                     tag[2] = 'p'; tag[3] = 'c';
+                    if (s->pb->seekable) {
+                        int ret;
+                        if (avist->strh_flags_offset) {
+                            int64_t cur_offset = avio_tell(pb);
+                            avio_seek(pb, avist->strh_flags_offset, SEEK_SET);
+                            avio_wl32(pb, AVISF_VIDEO_PALCHANGES);
+                            avio_seek(pb, cur_offset, SEEK_SET);
+                            avist->strh_flags_offset = 0;
+                        }
+                        ret = avi_add_ientry(s, stream_index, tag, AVIIF_NO_TIME,
+                                       pal_size * 4 + 4);
+                        if (ret < 0)
+                            return ret;
+                    }
                     pc_tag = ff_start_tag(pb, tag);
                     avio_w8(pb, 0);
                     avio_w8(pb, pal_size & 0xFF);
@@ -719,13 +775,6 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                     }
                     ff_end_tag(pb, pc_tag);
                     memcpy(avist->old_palette, avist->palette, pal_size * 4);
-                    if (pb->seekable && avist->strh_flags_offset) {
-                        int64_t cur_offset = avio_tell(pb);
-                        avio_seek(pb, avist->strh_flags_offset, SEEK_SET);
-                        avio_wl32(pb, AVISF_VIDEO_PALCHANGES);
-                        avio_seek(pb, cur_offset, SEEK_SET);
-                        avist->strh_flags_offset = 0;
-                    }
                 }
             }
         }
@@ -775,28 +824,10 @@ static int avi_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         avist->audio_strm_length += size;
 
     if (s->pb->seekable) {
-        AVIIndex *idx = &avist->indexes;
-        int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
-        int id = idx->entry % AVI_INDEX_CLUSTER_SIZE;
-        if (idx->ents_allocated <= idx->entry) {
-            idx->cluster = av_realloc_f(idx->cluster, sizeof(void*), cl+1);
-            if (!idx->cluster) {
-                idx->ents_allocated = 0;
-                idx->entry          = 0;
-                return AVERROR(ENOMEM);
-            }
-            idx->cluster[cl] =
-                av_malloc(AVI_INDEX_CLUSTER_SIZE * sizeof(AVIIentry));
-            if (!idx->cluster[cl])
-                return AVERROR(ENOMEM);
-            idx->ents_allocated += AVI_INDEX_CLUSTER_SIZE;
-        }
-
-        idx->cluster[cl][id].flags = flags;
-        idx->cluster[cl][id].pos   = avio_tell(pb) - avi->movi_list;
-        idx->cluster[cl][id].len   = size;
-        avist->max_size = FFMAX(avist->max_size, size);
-        idx->entry++;
+        int ret;
+        ret = avi_add_ientry(s, stream_index, NULL, flags, size);
+        if (ret < 0)
+            return ret;
     }
 
     avio_write(pb, tag, 4);

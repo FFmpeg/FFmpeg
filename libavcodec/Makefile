@@ -137,17 +137,17 @@ OBJS-$(CONFIG_A64MULTI_ENCODER)        += a64multienc.o elbg.o
 OBJS-$(CONFIG_A64MULTI5_ENCODER)       += a64multienc.o elbg.o
 OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps_float.o \
                                           aacadtsdec.o mpeg4audio.o kbdwin.o \
-                                          sbrdsp.o aacpsdsp_float.o
+                                          sbrdsp.o aacpsdsp_float.o cbrt_data.o
 OBJS-$(CONFIG_AAC_FIXED_DECODER)       += aacdec_fixed.o aactab.o aacsbr_fixed.o aacps_fixed.o \
                                           aacadtsdec.o mpeg4audio.o kbdwin.o \
-                                          sbrdsp_fixed.o aacpsdsp_fixed.o
+                                          sbrdsp_fixed.o aacpsdsp_fixed.o cbrt_data_fixed.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacpsy.o aactab.o      \
                                           aacenc_is.o \
                                           aacenc_tns.o \
                                           aacenc_ltp.o \
                                           aacenc_pred.o \
-                                          psymodel.o mpeg4audio.o kbdwin.o
+                                          psymodel.o mpeg4audio.o kbdwin.o cbrt_data.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o kbdwin.o
@@ -1017,8 +1017,8 @@ $(GEN_HEADERS): $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
 	$(M)./$< > $@
 
 ifdef CONFIG_HARDCODED_TABLES
-$(SUBDIR)aacdec.o: $(SUBDIR)cbrt_tables.h
-$(SUBDIR)aacdec_fixed.o: $(SUBDIR)cbrt_fixed_tables.h
+$(SUBDIR)cbrt_data.o: $(SUBDIR)cbrt_tables.h
+$(SUBDIR)cbrt_data_fixed.o: $(SUBDIR)cbrt_fixed_tables.h
 $(SUBDIR)aacps_float.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aacps_fixed.o: $(SUBDIR)aacps_fixed_tables.h
 $(SUBDIR)aactab_fixed.o: $(SUBDIR)aac_fixed_tables.h
