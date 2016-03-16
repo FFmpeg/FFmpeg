@@ -5695,7 +5695,7 @@ disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreF
     enable securetransport; }
 
 disabled schannel || { check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
-                       enable schannel && add_extralibs -lsecur32; }
+                       check_cpp_condition winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" && enable schannel && add_extralibs -lsecur32; }
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 enabled makeinfo \
