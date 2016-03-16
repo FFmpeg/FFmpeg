@@ -426,7 +426,12 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         slice_data = ctx_pic->slice_long;
         slice_size = ctx_pic->slice_count * sizeof(*ctx_pic->slice_long);
     }
-    assert((bs->DataSize & 127) == 0);
+#if CONFIG_D3D11VA
+    assert((((D3D11_VIDEO_DECODER_BUFFER_DESC *)bs)->DataSize & 127) == 0);
+#endif
+#if CONFIG_DXVA2
+    assert((((DXVA2_DecodeBufferDesc *)bs)->DataSize & 127) == 0);
+#endif
     return ff_dxva2_commit_buffer(avctx, ctx, sc,
                                   type,
                                   slice_data, slice_size, mb_count);
