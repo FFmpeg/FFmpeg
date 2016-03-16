@@ -584,7 +584,7 @@ static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url
 static void update_options(char **dest, const char *name, void *src)
 {
     av_freep(dest);
-    av_opt_get(src, name, 0, (uint8_t**)dest);
+    av_opt_get(src, name, AV_OPT_SEARCH_CHILDREN, (uint8_t**)dest);
     if (*dest && !strlen(*dest))
         av_freep(dest);
 }
@@ -594,11 +594,19 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
 {
     HLSContext *c = s->priv_data;
     AVDictionary *tmp = NULL;
-    const char *proto_name = avio_find_protocol_name(url);
+    const char *proto_name = NULL;
     int ret;
 
     av_dict_copy(&tmp, opts, 0);
     av_dict_copy(&tmp, opts2, 0);
+
+    if (av_strstart(url, "crypto", NULL)) {
+        if (url[6] == '+' || url[6] == ':')
+            proto_name = avio_find_protocol_name(url + 7);
+    }
+
+    if (!proto_name)
+        proto_name = avio_find_protocol_name(url);
 
     if (!proto_name)
         return AVERROR_INVALIDDATA;
@@ -608,14 +616,15 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
         return AVERROR_INVALIDDATA;
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
         ;
+    else if (av_strstart(url, "crypto", NULL) && !strncmp(proto_name, url + 7, strlen(proto_name)) && url[7 + strlen(proto_name)] == ':')
+        ;
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
 
     ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
     if (ret >= 0) {
         // update cookies on http response with setcookies.
-        AVIOInternal *internal = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
-        void *u = internal ? internal->hlsopts : NULL;
+        void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
         update_options(&c->cookies, "cookies", u);
         av_dict_set(&opts, "cookies", c->cookies, 0);
     }
@@ -1497,8 +1506,7 @@ static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
 
 static int hls_read_header(AVFormatContext *s)
 {
-    AVIOInternal *internal = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
-    void *u = internal ? internal->hlsopts : NULL;
+    void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
     HLSContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;
 

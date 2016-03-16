@@ -5694,8 +5694,8 @@ disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreF
     check_lib2 "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     enable securetransport; }
 
-disabled schannel || { check_func_headers "windows.h Security.h" InitializeSecurityContext -DSECURITY_WIN32 -lSecur32 &&
-                       enable schannel && add_extralibs -lSecur32; }
+disabled schannel || { check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
+                       enable schannel && add_extralibs -lsecur32; }
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 enabled makeinfo \
