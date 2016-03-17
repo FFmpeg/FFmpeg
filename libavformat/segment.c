@@ -407,7 +407,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
                     rate = s->streams[i]->avg_frame_rate;/* Get fps from the video stream */
                     err = av_timecode_init_from_string(&tc, rate, tcr->value, s);
                     if (err < 0) {
-                        av_log(s, AV_LOG_WARNING, "Could not increment timecode, error occured during timecode creation.");
+                        av_log(s, AV_LOG_WARNING, "Could not increment timecode, error occurred during timecode creation.");
                         break;
                     }
                     tc.start += (int)((seg->cur_entry.end_time - seg->cur_entry.start_time) * av_q2d(rate));/* increment timecode */
