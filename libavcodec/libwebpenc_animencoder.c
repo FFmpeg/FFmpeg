@@ -43,6 +43,7 @@ static av_cold int libwebp_anim_encode_init(AVCodecContext *avctx)
         LibWebPAnimContext *s = avctx->priv_data;
         WebPAnimEncoderOptions enc_options = { 0 };
         WebPAnimEncoderOptionsInit(&enc_options);
+        enc_options.verbose = av_log_get_level() >= AV_LOG_VERBOSE;
         // TODO(urvang): Expose some options on command-line perhaps.
         s->enc = WebPAnimEncoderNew(avctx->width, avctx->height, &enc_options);
         if (!s->enc)
