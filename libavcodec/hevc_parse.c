@@ -232,8 +232,14 @@ int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, in
                 ++buf;
                 --length;
                 if (length < 4) {
-                    av_log(avctx, AV_LOG_ERROR, "No start code is found.\n");
-                    return AVERROR_INVALIDDATA;
+                    if (pkt->nb_nals > 0) {
+                        // No more start codes: we discarded some irrelevant
+                        // bytes at the end of the packet.
+                        return 0;
+                    } else {
+                        av_log(avctx, AV_LOG_ERROR, "No start code is found.\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                 }
             }
 
