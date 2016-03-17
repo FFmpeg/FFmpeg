@@ -37,6 +37,7 @@ typedef struct {
     int first_field;
     char *pattern;
     int start_frame;
+    int init_len;
     unsigned int pattern_pos;
     unsigned int nskip_fields;
     int64_t start_time;
@@ -74,6 +75,7 @@ static av_cold int init(AVFilterContext *ctx)
     DetelecineContext *s = ctx->priv;
     const char *p;
     int max = 0;
+    int sum = 0;
 
     if (!strlen(s->pattern)) {
         av_log(ctx, AV_LOG_ERROR, "No pattern provided.\n");
@@ -86,14 +88,21 @@ static av_cold int init(AVFilterContext *ctx)
             return AVERROR_INVALIDDATA;
         }
 
+        sum += *p - '0';
         max = FFMAX(*p - '0', max);
         s->pts.num += *p - '0';
         s->pts.den += 2;
     }
 
+    if (s->start_frame >= sum) {
+        av_log(ctx, AV_LOG_ERROR, "Provided start_frame is too big.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->nskip_fields = 0;
     s->pattern_pos = 0;
     s->start_time = AV_NOPTS_VALUE;
+    s->init_len = 0;
 
     if (s->start_frame != 0) {
         int nfields = 0;
@@ -101,7 +110,7 @@ static av_cold int init(AVFilterContext *ctx)
             nfields += *p - '0';
             s->pattern_pos++;
             if (nfields >= 2*s->start_frame) {
-                s->nskip_fields = nfields - 2*s->start_frame;
+                s->init_len = nfields - 2*s->start_frame;
                 break;
             }
         }
@@ -211,6 +220,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
 
     if (s->nskip_fields == 0) {
+        len = s->init_len;
+        s->init_len = 0;
         while(!len && s->pattern[s->pattern_pos]) {
             len = s->pattern[s->pattern_pos] - '0';
             s->pattern_pos++;
