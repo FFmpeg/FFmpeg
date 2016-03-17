@@ -105,7 +105,7 @@ static const int8_t chroma_adjust[2][8] = {
     { 0, 1, 1,  1,  0, -1, -1, -1 }
 };
 
-const uint8_t chroma_vals[] = {
+static const uint8_t chroma_vals[] = {
      20,  28,  36,  44,  52,  60,  68,  76,
      84,  92, 100, 106, 112, 116, 120, 124,
     128, 132, 136, 140, 144, 150, 156, 164,
