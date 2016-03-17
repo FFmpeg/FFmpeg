@@ -386,7 +386,7 @@ MC_CACHE MC10
 ; void ff_h264_qpel_mc02(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro V_FILT 10
-v_filt%9_%10_10
+v_filt%9_%10_10:
     add    r4, r2
 .no_addr4:
     FILT_V m0, m1, m2, m3, m4, m5, m6, m7

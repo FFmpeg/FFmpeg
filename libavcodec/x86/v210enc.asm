@@ -56,7 +56,7 @@ cglobal v210_planar_pack_10, 5, 5, 4+cpuflag(avx2), y, u, v, dst, width
     mova    m2, [v210_enc_min_10]
     mova    m3, [v210_enc_max_10]
 
-.loop
+.loop:
     movu        xm0, [yq+2*widthq]
 %if cpuflag(avx2)
     vinserti128 m0, m0, [yq+2*widthq+12], 1
@@ -112,7 +112,7 @@ cglobal v210_planar_pack_8, 5, 5, 7, y, u, v, dst, width
     mova    m5, [v210_enc_max_8]
     pxor    m6, m6
 
-.loop
+.loop:
     movu        xm1, [yq+2*widthq]
 %if cpuflag(avx2)
     vinserti128 m1, m1, [yq+2*widthq+12], 1

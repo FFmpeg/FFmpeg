@@ -184,7 +184,7 @@ cglobal hevc_qpel_ %+ postfix %+ _ %+ %1 %+ _8, 7, 7, 7, dst, dststride, src, sr
     sub       src_m3, pixstride3
 %endif
 
-.loop
+.loop:
 
 %assign i 0
 %rep nb_blocks
@@ -285,7 +285,7 @@ QPEL_8 64, 1
     sub       srcm3q, sstride3q
 %endif
 
-.loop
+.loop:
 
 %assign i 0
 %rep nb_blocks
@@ -444,7 +444,7 @@ cglobal hevc_epel_ %+ postfix %+ _ %+ %1 %+ _8, 7, 7, 6, dst, dststride, src, sr
 %endif
     sub       srcq, pixstride
 
-.loop
+.loop:
 
 %assign i 0
 %rep nb_blocks
@@ -519,7 +519,7 @@ EPEL_8 32, 1
 %endif
     sub       srcq, pixstride
 
-.loop
+.loop:
 
 %assign i 0
 %rep nb_blocks
@@ -651,7 +651,7 @@ cglobal hevc_put_unweighted_pred_ %+ %2 %+ _ %+ %3, 5, 5, 4, dst, dststride, src
     %define STORE_HALF  movd
 %endif
 
-.loop
+.loop:
 %assign i 0
 %rep (%2 + 7) / 8
 
@@ -772,7 +772,7 @@ cglobal hevc_put_weighted_pred_ %+ %2 %+ _ %+ %3, 8, 8, 8, denom, weight0, offse
     SPLATD      m3
 %endif
 
-.loop
+.loop:
 %assign i 0
 %rep (%2 + 3) / 4
 
