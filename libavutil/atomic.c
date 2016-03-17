@@ -107,21 +107,3 @@ void *avpriv_atomic_ptr_cas(void * volatile *ptr, void *oldval, void *newval)
 #endif /* HAVE_PTHREADS */
 
 #endif /* !HAVE_ATOMICS_NATIVE */
-
-#ifdef TEST
-#include <assert.h>
-
-int main(void)
-{
-    volatile int val = 1;
-    int res;
-
-    res = avpriv_atomic_int_add_and_fetch(&val, 1);
-    assert(res == 2);
-    avpriv_atomic_int_set(&val, 3);
-    res = avpriv_atomic_int_get(&val);
-    assert(res == 3);
-
-    return 0;
-}
-#endif

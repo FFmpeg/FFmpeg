@@ -10,18 +10,6 @@ INSTHEADERS := $(INSTHEADERS) $(HEADERS:%=$(SUBDIR)%)
 all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)
 all-$(CONFIG_SHARED): $(SUBDIR)$(SLIBNAME)
 
-$(SUBDIR)%-test.o: $(SUBDIR)%-test.c
-	$(COMPILE_C)
-
-$(SUBDIR)%-test.o: $(SUBDIR)%.c
-	$(COMPILE_C)
-
-$(SUBDIR)%-test.i: $(SUBDIR)%-test.c
-	$(CC) $(CCFLAGS) $(CC_E) $<
-
-$(SUBDIR)%-test.i: $(SUBDIR)%.c
-	$(CC) $(CCFLAGS) $(CC_E) $<
-
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
 	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $<
@@ -29,7 +17,6 @@ $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 
 LIBOBJS := $(OBJS) $(SUBDIR)%.h.o $(TESTOBJS)
 $(LIBOBJS) $(LIBOBJS:.o=.i):   CPPFLAGS += -DHAVE_AV_CONFIG_H
-$(TESTOBJS) $(TESTOBJS:.o=.i): CPPFLAGS += -DTEST
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@

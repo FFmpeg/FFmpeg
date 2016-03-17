@@ -131,37 +131,3 @@ void av_fifo_drain(AVFifoBuffer *f, int size)
         f->rptr -= f->end - f->buffer;
     f->rndx += size;
 }
-
-#ifdef TEST
-
-int main(void)
-{
-    /* create a FIFO buffer */
-    AVFifoBuffer *fifo = av_fifo_alloc(13 * sizeof(int));
-    int i, j, n;
-
-    /* fill data */
-    for (i = 0; av_fifo_space(fifo) >= sizeof(int); i++)
-        av_fifo_generic_write(fifo, &i, sizeof(int), NULL);
-
-    /* peek at FIFO */
-    n = av_fifo_size(fifo) / sizeof(int);
-    for (i = -n + 1; i < n; i++) {
-        int *v = (int *)av_fifo_peek2(fifo, i * sizeof(int));
-        printf("%d: %d\n", i, *v);
-    }
-    printf("\n");
-
-    /* read data */
-    for (i = 0; av_fifo_size(fifo) >= sizeof(int); i++) {
-        av_fifo_generic_read(fifo, &j, sizeof(int), NULL);
-        printf("%d ", j);
-    }
-    printf("\n");
-
-    av_fifo_free(fifo);
-
-    return 0;
-}
-
-#endif
