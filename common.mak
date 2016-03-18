@@ -58,7 +58,6 @@ LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
 clean::
-	$(RM) $(OBJS) $(OBJS:.o=.d)
 	$(RM) $(HOSTPROGS)
 	$(RM) $(TOOLS)
 endef
