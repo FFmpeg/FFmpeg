@@ -393,6 +393,8 @@ static void guess_mv(ERContext *s)
     set_mv_strides(s, &mot_step, &mot_stride);
 
     num_avail = 0;
+    if (s->last_pic.motion_val[0])
+        ff_thread_await_progress(s->last_pic.tf, mb_height-1, 0);
     for (i = 0; i < mb_width * mb_height; i++) {
         const int mb_xy = s->mb_index2xy[i];
         int f = 0;
