@@ -971,7 +971,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int64_t max_frame_bytes, r_bitrate = avctx->bit_rate >> (s->interlaced);
 
     s->avctx = avctx;
-    s->size_scaler = 1;
+    s->size_scaler = 2;
     s->prefix_bytes = 0;
     s->last_parse_code = 0;
     s->next_parse_offset = 0;
