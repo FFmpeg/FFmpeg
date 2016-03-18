@@ -54,9 +54,9 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o                       \
                                             rtpdec_svq3.o               \
                                             rtpdec_vp8.o                \
                                             rtpdec_vp9.o                \
-                                            rtpdec_xiph.o               \
-                                            srtp.o
+                                            rtpdec_xiph.o
 OBJS-$(CONFIG_RTPENC_CHAIN)              += rtpenc_chain.o rtp.o
+OBJS-$(CONFIG_SRTP)                      += srtp.o
 
 # muxers/demuxers
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o rawenc.o
@@ -416,12 +416,12 @@ SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 
 TESTPROGS = seek                                                        \
-            srtp                                                        \
             url                                                         \
 
 TESTPROGS-$(CONFIG_MOV_MUXER)            += movenc
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy
 TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
+TESTPROGS-$(CONFIG_SRTP)                 += srtp
 
 TOOLS     = aviocat                                                     \
             ismindex                                                    \
