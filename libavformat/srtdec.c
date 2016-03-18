@@ -53,7 +53,7 @@ static int srt_probe(AVProbeData *p)
     if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
         return 0;
     if (buf[0] >= '0' && buf[0] <= '9' && strstr(buf, " --> ")
-        && sscanf(buf, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
+        && sscanf(buf, "%*d:%*d:%*d%*1[,.]%*d --> %*d:%*d:%*d%*1[,.]%d", &v) == 1)
         return AVPROBE_SCORE_MAX;
 
     return 0;
@@ -74,7 +74,7 @@ static int get_event_info(const char *line, struct event_info *ei)
     ei->x1 = ei->x2 = ei->y1 = ei->y2 = ei->duration = -1;
     ei->pts = AV_NOPTS_VALUE;
     ei->pos = -1;
-    if (sscanf(line, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d"
+    if (sscanf(line, "%d:%d:%d%*1[,.]%d --> %d:%d:%d%*1[,.]%d"
                "%*[ ]X1:%u X2:%u Y1:%u Y2:%u",
                &hh1, &mm1, &ss1, &ms1,
                &hh2, &mm2, &ss2, &ms2,
