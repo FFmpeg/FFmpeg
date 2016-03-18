@@ -17,7 +17,6 @@
 *.so.*
 *.swp
 *.ver
-*-example
 *-test
 /.config
 /.version

@@ -19,11 +19,8 @@ all
 install
     Install headers, libraries and programs.
 
-libavformat/output-example
+doc/examples/output
     Build the libavformat basic example.
-
-libavcodec/api-example
-    Build the libavcodec basic example.
 
 libswscale/swscale-test
     Build the swscale self-test (useful also as example).

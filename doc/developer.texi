@@ -15,11 +15,11 @@
 
 @itemize @bullet
 @item libavcodec is the library containing the codecs (both encoding and
-decoding). Look at @file{libavcodec/apiexample.c} to see how to use it.
+decoding). Look at @file{doc/examples/avcodec.c} to see how to use it.
 
 @item libavformat is the library containing the file format handling (mux and
 demux code for several formats). Look at @file{avplay.c} to use it in a
-player. See @file{libavformat/output-example.c} to use it to generate
+player. See @file{doc/examples/output.c} to use it to generate
 audio or video streams.
 @end itemize
 
