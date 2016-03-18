@@ -49,6 +49,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/aarch64/cpu.h"
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
@@ -1614,7 +1615,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 #endif /* HAVE_MMXEXT_INLINE */
         {
             const int filterAlign = X86_MMX(cpu_flags)     ? 4 :
-                                    PPC_ALTIVEC(cpu_flags) ? 8 : 1;
+                                    PPC_ALTIVEC(cpu_flags) ? 8 :
+                                    have_neon(cpu_flags)   ? 4 : 1;
 
             if ((ret = initFilter(&c->hLumFilter, &c->hLumFilterPos,
                            &c->hLumFilterSize, c->lumXInc,
