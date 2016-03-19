@@ -26,8 +26,8 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
-#include "golomb_legacy.h"
+#include "bitstream.h"
+#include "golomb.h"
 #include "h264chroma.h"
 #include "idctdsp.h"
 #include "internal.h"
@@ -603,8 +603,8 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
         mv_pred_median(h, mvP, mvA, mvB, mvC);
 
     if (mode < MV_PRED_PSKIP) {
-        mvP->x += get_se_golomb(&h->gb);
-        mvP->y += get_se_golomb(&h->gb);
+        mvP->x += get_se_golomb(&h->bc);
+        mvP->y += get_se_golomb(&h->bc);
     }
     set_mvs(mvP, size);
 }

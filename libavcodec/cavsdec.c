@@ -26,9 +26,9 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
-#include "golomb_legacy.h"
+#include "bitstream.h"
 #include "cavs.h"
+#include "golomb.h"
 #include "internal.h"
 #include "mpeg12data.h"
 
@@ -506,13 +506,13 @@ static inline void mv_pred_sym(AVSContext *h, cavs_vector *src,
  ****************************************************************************/
 
 /** kth-order exponential golomb code */
-static inline int get_ue_code(GetBitContext *gb, int order)
+static inline int get_ue_code(BitstreamContext *bc, int order)
 {
     if (order) {
-        int ret = get_ue_golomb(gb) << order;
-        return ret + get_bits(gb, order);
+        int ret = get_ue_golomb(bc) << order;
+        return ret + bitstream_read(bc, order);
     }
-    return get_ue_golomb(gb);
+    return get_ue_golomb(bc);
 }
 
 static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
@@ -545,7 +545,7 @@ static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
  * @param dst location of sample block
  * @param stride line stride in frame buffer
  */
-static int decode_residual_block(AVSContext *h, GetBitContext *gb,
+static int decode_residual_block(AVSContext *h, BitstreamContext *bc,
                                  const struct dec_2dvlc *r, int esc_golomb_order,
                                  int qp, uint8_t *dst, ptrdiff_t stride)
 {
@@ -555,10 +555,10 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
     int16_t *block = h->block;
 
     for (i = 0;i < 65; i++) {
-        level_code = get_ue_code(gb, r->golomb_order);
+        level_code = get_ue_code(bc, r->golomb_order);
         if (level_code >= ESCAPE_CODE) {
             run      = ((level_code - ESCAPE_CODE) >> 1) + 1;
-            esc_code = get_ue_code(gb, esc_golomb_order);
+            esc_code = get_ue_code(bc, esc_golomb_order);
             level    = esc_code + (run > r->max_run ? 1 : r->level_add[run]);
             while (level > r->inc_limit)
                 r++;
@@ -588,10 +588,10 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
 static inline void decode_residual_chroma(AVSContext *h)
 {
     if (h->cbp & (1 << 4))
-        decode_residual_block(h, &h->gb, chroma_dec, 0,
+        decode_residual_block(h, &h->bc, chroma_dec, 0,
                               cavs_chroma_qp[h->qp], h->cu, h->c_stride);
     if (h->cbp & (1 << 5))
-        decode_residual_block(h, &h->gb, chroma_dec, 0,
+        decode_residual_block(h, &h->bc, chroma_dec, 0,
                               cavs_chroma_qp[h->qp], h->cv, h->c_stride);
 }
 
@@ -600,7 +600,7 @@ static inline int decode_residual_inter(AVSContext *h)
     int block;
 
     /* get coded block pattern */
-    int cbp = get_ue_golomb(&h->gb);
+    int cbp = get_ue_golomb(&h->bc);
     if (cbp > 63 || cbp < 0) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal inter cbp %d\n", cbp);
         return AVERROR_INVALIDDATA;
@@ -609,10 +609,10 @@ static inline int decode_residual_inter(AVSContext *h)
 
     /* get quantizer */
     if (h->cbp && !h->qp_fixed)
-        h->qp = (h->qp + get_se_golomb(&h->gb)) & 63;
+        h->qp = (h->qp + get_se_golomb(&h->bc)) & 63;
     for (block = 0; block < 4; block++)
         if (h->cbp & (1 << block))
-            decode_residual_block(h, &h->gb, inter_dec, 0, h->qp,
+            decode_residual_block(h, &h->bc, inter_dec, 0, h->qp,
                                   h->cy + h->luma_scan[block], h->l_stride);
     decode_residual_chroma(h);
 
@@ -637,7 +637,7 @@ static inline void set_mv_intra(AVSContext *h)
 
 static int decode_mb_i(AVSContext *h, int cbp_code)
 {
-    GetBitContext *gb = &h->gb;
+    BitstreamContext *bc = &h->bc;
     unsigned pred_mode_uv;
     int block;
     uint8_t top[18];
@@ -656,13 +656,13 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
         predpred = FFMIN(nA, nB);
         if (predpred == NOT_AVAIL) // if either is not available
             predpred = INTRA_L_LP;
-        if (!get_bits1(gb)) {
-            int rem_mode = get_bits(gb, 2);
+        if (!bitstream_read_bit(bc)) {
+            int rem_mode = bitstream_read(bc, 2);
             predpred     = rem_mode + (rem_mode >= predpred);
         }
         h->pred_mode_Y[pos] = predpred;
     }
-    pred_mode_uv = get_ue_golomb(gb);
+    pred_mode_uv = get_ue_golomb(bc);
     if (pred_mode_uv > 6) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal intra chroma pred mode\n");
         return AVERROR_INVALIDDATA;
@@ -671,14 +671,14 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
 
     /* get coded block pattern */
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_I)
-        cbp_code = get_ue_golomb(gb);
+        cbp_code = get_ue_golomb(bc);
     if (cbp_code > 63 || cbp_code < 0) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal intra cbp\n");
         return AVERROR_INVALIDDATA;
     }
     h->cbp = cbp_tab[cbp_code][0];
     if (h->cbp && !h->qp_fixed)
-        h->qp = (h->qp + get_se_golomb(gb)) & 63; //qp_delta
+        h->qp = (h->qp + get_se_golomb(bc)) & 63; // qp_delta
 
     /* luma intra prediction interleaved with residual decode/transform/add */
     for (block = 0; block < 4; block++) {
@@ -687,7 +687,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
         h->intra_pred_l[h->pred_mode_Y[scan3x3[block]]]
             (d, top, left, h->l_stride);
         if (h->cbp & (1<<block))
-            decode_residual_block(h, gb, intra_dec, 1, h->qp, d, h->l_stride);
+            decode_residual_block(h, bc, intra_dec, 1, h->qp, d, h->l_stride);
     }
 
     /* chroma intra prediction */
@@ -716,7 +716,7 @@ static inline void set_intra_mode_default(AVSContext *h)
 
 static void decode_mb_p(AVSContext *h, enum cavs_mb mb_type)
 {
-    GetBitContext *gb = &h->gb;
+    BitstreamContext *bc = &h->bc;
     int ref[4];
 
     ff_cavs_init_mb(h);
@@ -725,26 +725,26 @@ static void decode_mb_p(AVSContext *h, enum cavs_mb mb_type)
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP,  BLK_16X16, 0);
         break;
     case P_16X16:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
+        ref[0] = h->ref_flag ? 0 : bitstream_read_bit(bc);
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, ref[0]);
         break;
     case P_16X8:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[2] = h->ref_flag ? 0 : get_bits1(gb);
+        ref[0] = h->ref_flag ? 0 : bitstream_read_bit(bc);
+        ref[2] = h->ref_flag ? 0 : bitstream_read_bit(bc);
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,    BLK_16X8, ref[0]);
         ff_cavs_mv(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT,   BLK_16X8, ref[2]);
         break;
     case P_8X16:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[1] = h->ref_flag ? 0 : get_bits1(gb);
+        ref[0] = h->ref_flag ? 0 : bitstream_read_bit(bc);
+        ref[1] = h->ref_flag ? 0 : bitstream_read_bit(bc);
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT,     BLK_8X16, ref[0]);
         ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, ref[1]);
         break;
     case P_8X8:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[1] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[2] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[3] = h->ref_flag ? 0 : get_bits1(gb);
+        ref[0] = h->ref_flag ? 0 : bitstream_read_bit(bc);
+        ref[1] = h->ref_flag ? 0 : bitstream_read_bit(bc);
+        ref[2] = h->ref_flag ? 0 : bitstream_read_bit(bc);
+        ref[3] = h->ref_flag ? 0 : bitstream_read_bit(bc);
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_MEDIAN,   BLK_8X8, ref[0]);
         ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_8X8, ref[1]);
         ff_cavs_mv(h, MV_FWD_X2, MV_FWD_X1, MV_PRED_MEDIAN,   BLK_8X8, ref[2]);
@@ -797,7 +797,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
         break;
     case B_8X8:
         for (block = 0; block < 4; block++)
-            sub_type[block] = get_bits(&h->gb, 2);
+            sub_type[block] = bitstream_read(&h->bc, 2);
         for (block = 0; block < 4; block++) {
             switch (sub_type[block]) {
             case B_SUB_DIRECT:
@@ -874,7 +874,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
  *
  ****************************************************************************/
 
-static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
+static inline int decode_slice_header(AVSContext *h, BitstreamContext *bc)
 {
     if (h->stc > 0xAF)
         av_log(h->avctx, AV_LOG_ERROR, "unexpected start code 0x%02x\n", h->stc);
@@ -884,13 +884,13 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
     /* mark top macroblocks as unavailable */
     h->flags &= ~(B_AVAIL | C_AVAIL);
     if ((h->mby == 0) && (!h->qp_fixed)) {
-        h->qp_fixed = get_bits1(gb);
-        h->qp       = get_bits(gb, 6);
+        h->qp_fixed = bitstream_read_bit(bc);
+        h->qp       = bitstream_read(bc, 6);
     }
     /* inter frame or second slice can have weighting params */
     if ((h->cur.f->pict_type != AV_PICTURE_TYPE_I) ||
         (!h->pic_structure && h->mby >= h->mb_width / 2))
-        if (get_bits1(gb)) { //slice_weighting_flag
+        if (bitstream_read_bit(bc)) { // slice_weighting_flag
             av_log(h->avctx, AV_LOG_ERROR,
                    "weighted prediction not yet supported\n");
         }
@@ -899,21 +899,21 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
 
 static inline int check_for_slice(AVSContext *h)
 {
-    GetBitContext *gb = &h->gb;
+    BitstreamContext *bc = &h->bc;
     int align;
 
     if (h->mbx)
         return 0;
-    align = (-get_bits_count(gb)) & 7;
+    align = (-bitstream_tell(bc)) & 7;
     /* check for stuffing byte */
-    if (!align && (show_bits(gb, 8) == 0x80))
+    if (!align && (bitstream_peek(bc, 8) == 0x80))
         align = 8;
-    if ((show_bits_long(gb, 24 + align) & 0xFFFFFF) == 0x000001) {
-        skip_bits_long(gb, 24 + align);
-        h->stc = get_bits(gb, 8);
+    if ((bitstream_peek(bc, 24 + align) & 0xFFFFFF) == 0x000001) {
+        bitstream_skip(bc, 24 + align);
+        h->stc = bitstream_read(bc, 8);
         if (h->stc >= h->mb_height)
             return 0;
-        decode_slice_header(h, gb);
+        decode_slice_header(h, bc);
         return 1;
     }
     return 0;
@@ -938,9 +938,9 @@ static int decode_pic(AVSContext *h)
 
     av_frame_unref(h->cur.f);
 
-    skip_bits(&h->gb, 16);//bbv_dwlay
+    bitstream_skip(&h->bc, 16); // bbv_dwlay
     if (h->stc == PIC_PB_START_CODE) {
-        h->cur.f->pict_type = get_bits(&h->gb, 2) + AV_PICTURE_TYPE_I;
+        h->cur.f->pict_type = bitstream_read(&h->bc, 2) + AV_PICTURE_TYPE_I;
         if (h->cur.f->pict_type > AV_PICTURE_TYPE_B) {
             av_log(h->avctx, AV_LOG_ERROR, "illegal picture type\n");
             return AVERROR_INVALIDDATA;
@@ -951,17 +951,17 @@ static int decode_pic(AVSContext *h)
             return AVERROR_INVALIDDATA;
     } else {
         h->cur.f->pict_type = AV_PICTURE_TYPE_I;
-        if (get_bits1(&h->gb))
-            skip_bits(&h->gb, 24);//time_code
+        if (bitstream_read_bit(&h->bc))
+            bitstream_skip(&h->bc, 24); // time_code
         /* old sample clips were all progressive and no low_delay,
            bump stream revision if detected otherwise */
-        if (h->low_delay || !(show_bits(&h->gb, 9) & 1))
+        if (h->low_delay || !(bitstream_peek(&h->bc, 9) & 1))
             h->stream_revision = 1;
         /* similarly test top_field_first and repeat_first_field */
-        else if (show_bits(&h->gb, 11) & 3)
+        else if (bitstream_peek(&h->bc, 11) & 3)
             h->stream_revision = 1;
         if (h->stream_revision > 0)
-            skip_bits(&h->gb, 1); //marker_bit
+            bitstream_skip(&h->bc, 1); // marker_bit
     }
 
     ret = ff_get_buffer(h->avctx, h->cur.f, h->cur.f->pict_type == AV_PICTURE_TYPE_B ?
@@ -977,7 +977,7 @@ static int decode_pic(AVSContext *h)
     }
 
     ff_cavs_init_pic(h);
-    h->cur.poc = get_bits(&h->gb, 8) * 2;
+    h->cur.poc = bitstream_read(&h->bc, 8) * 2;
 
     /* get temporal distances and MV scaling factors */
     if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
@@ -996,31 +996,31 @@ static int decode_pic(AVSContext *h)
     }
 
     if (h->low_delay)
-        get_ue_golomb(&h->gb); //bbv_check_times
-    h->progressive   = get_bits1(&h->gb);
+        get_ue_golomb(&h->bc); // bbv_check_times
+    h->progressive   = bitstream_read_bit(&h->bc);
     h->pic_structure = 1;
     if (!h->progressive)
-        h->pic_structure = get_bits1(&h->gb);
+        h->pic_structure = bitstream_read_bit(&h->bc);
     if (!h->pic_structure && h->stc == PIC_PB_START_CODE)
-        skip_bits1(&h->gb);     //advanced_pred_mode_disable
-    skip_bits1(&h->gb);        //top_field_first
-    skip_bits1(&h->gb);        //repeat_first_field
-    h->qp_fixed = get_bits1(&h->gb);
-    h->qp       = get_bits(&h->gb, 6);
+        bitstream_skip(&h->bc, 1);  // advanced_pred_mode_disable
+    bitstream_skip(&h->bc, 1);      // top_field_first
+    bitstream_skip(&h->bc, 1);      // repeat_first_field
+    h->qp_fixed = bitstream_read_bit(&h->bc);
+    h->qp       = bitstream_read(&h->bc, 6);
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
         if (!h->progressive && !h->pic_structure)
-            skip_bits1(&h->gb);//what is this?
-        skip_bits(&h->gb, 4);   //reserved bits
+            bitstream_skip(&h->bc, 1);  // what is this?
+        bitstream_skip(&h->bc, 4);      // reserved bits
     } else {
         if (!(h->cur.f->pict_type == AV_PICTURE_TYPE_B && h->pic_structure == 1))
-            h->ref_flag        = get_bits1(&h->gb);
-        skip_bits(&h->gb, 4);   //reserved bits
-        h->skip_mode_flag      = get_bits1(&h->gb);
+            h->ref_flag        = bitstream_read_bit(&h->bc);
+        bitstream_skip(&h->bc, 4);  // reserved bits
+        h->skip_mode_flag      = bitstream_read_bit(&h->bc);
     }
-    h->loop_filter_disable     = get_bits1(&h->gb);
-    if (!h->loop_filter_disable && get_bits1(&h->gb)) {
-        h->alpha_offset        = get_se_golomb(&h->gb);
-        h->beta_offset         = get_se_golomb(&h->gb);
+    h->loop_filter_disable     = bitstream_read_bit(&h->bc);
+    if (!h->loop_filter_disable && bitstream_read_bit(&h->bc)) {
+        h->alpha_offset        = get_se_golomb(&h->bc);
+        h->beta_offset         = get_se_golomb(&h->bc);
     } else {
         h->alpha_offset = h->beta_offset  = 0;
     }
@@ -1034,11 +1034,11 @@ static int decode_pic(AVSContext *h)
             if (check_for_slice(h))
                 skip_count = -1;
             if (h->skip_mode_flag && (skip_count < 0))
-                skip_count = get_ue_golomb(&h->gb);
+                skip_count = get_ue_golomb(&h->bc);
             if (h->skip_mode_flag && skip_count--) {
                 decode_mb_p(h, P_SKIP);
             } else {
-                mb_type = get_ue_golomb(&h->gb) + P_SKIP + h->skip_mode_flag;
+                mb_type = get_ue_golomb(&h->bc) + P_SKIP + h->skip_mode_flag;
                 if (mb_type > P_8X8)
                     decode_mb_i(h, mb_type - P_8X8 - 1);
                 else
@@ -1050,11 +1050,11 @@ static int decode_pic(AVSContext *h)
             if (check_for_slice(h))
                 skip_count = -1;
             if (h->skip_mode_flag && (skip_count < 0))
-                skip_count = get_ue_golomb(&h->gb);
+                skip_count = get_ue_golomb(&h->bc);
             if (h->skip_mode_flag && skip_count--) {
                 decode_mb_b(h, B_SKIP);
             } else {
-                mb_type = get_ue_golomb(&h->gb) + B_SKIP + h->skip_mode_flag;
+                mb_type = get_ue_golomb(&h->bc) + B_SKIP + h->skip_mode_flag;
                 if (mb_type > B_8X8)
                     decode_mb_i(h, mb_type - B_8X8 - 1);
                 else
@@ -1081,12 +1081,12 @@ static int decode_seq_header(AVSContext *h)
     int frame_rate_code;
     int width, height;
 
-    h->profile = get_bits(&h->gb, 8);
-    h->level   = get_bits(&h->gb, 8);
-    skip_bits1(&h->gb); //progressive sequence
+    h->profile = bitstream_read(&h->bc, 8);
+    h->level   = bitstream_read(&h->bc, 8);
+    bitstream_skip(&h->bc, 1); // progressive sequence
 
-    width  = get_bits(&h->gb, 14);
-    height = get_bits(&h->gb, 14);
+    width  = bitstream_read(&h->bc, 14);
+    height = bitstream_read(&h->bc, 14);
     if ((h->width || h->height) && (h->width != width || h->height != height)) {
         avpriv_report_missing_feature(h->avctx,
                                       "Width/height changing in CAVS");
@@ -1095,14 +1095,14 @@ static int decode_seq_header(AVSContext *h)
     h->width  = width;
     h->height = height;
 
-    skip_bits(&h->gb, 2); //chroma format
-    skip_bits(&h->gb, 3); //sample_precision
-    h->aspect_ratio = get_bits(&h->gb, 4);
-    frame_rate_code = get_bits(&h->gb, 4);
-    skip_bits(&h->gb, 18); //bit_rate_lower
-    skip_bits1(&h->gb);    //marker_bit
-    skip_bits(&h->gb, 12); //bit_rate_upper
-    h->low_delay =  get_bits1(&h->gb);
+    bitstream_skip(&h->bc, 2); // chroma format
+    bitstream_skip(&h->bc, 3); // sample_precision
+    h->aspect_ratio = bitstream_read(&h->bc, 4);
+    frame_rate_code = bitstream_read(&h->bc, 4);
+    bitstream_skip(&h->bc, 18); // bit_rate_lower
+    bitstream_skip(&h->bc, 1);  // marker_bit
+    bitstream_skip(&h->bc, 12); // bit_rate_upper
+    h->low_delay =  bitstream_read_bit(&h->bc);
     h->mb_width  = (h->width  + 15) >> 4;
     h->mb_height = (h->height + 15) >> 4;
     h->avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
@@ -1147,7 +1147,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         input_size = (buf_end - buf_ptr) * 8;
         switch (stc) {
         case CAVS_START_CODE:
-            init_get_bits(&h->gb, buf_ptr, input_size);
+            bitstream_init(&h->bc, buf_ptr, input_size);
             decode_seq_header(h);
             break;
         case PIC_I_START_CODE:
@@ -1160,7 +1160,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             *got_frame = 0;
             if (!h->got_keyframe)
                 break;
-            init_get_bits(&h->gb, buf_ptr, input_size);
+            bitstream_init(&h->bc, buf_ptr, input_size);
             h->stc = stc;
             if (decode_pic(h))
                 break;
@@ -1184,8 +1184,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             break;
         default:
             if (stc <= SLICE_MAX_START_CODE) {
-                init_get_bits(&h->gb, buf_ptr, input_size);
-                decode_slice_header(h, &h->gb);
+                bitstream_init(&h->bc, buf_ptr, input_size);
+                decode_slice_header(h, &h->bc);
             }
             break;
         }

@@ -22,11 +22,11 @@
 #ifndef AVCODEC_CAVS_H
 #define AVCODEC_CAVS_H
 
+#include "bitstream.h"
 #include "cavsdsp.h"
 #include "blockdsp.h"
 #include "h264chroma.h"
 #include "idctdsp.h"
-#include "get_bits.h"
 #include "videodsp.h"
 
 #define SLICE_MAX_START_CODE    0x000001af
@@ -167,7 +167,7 @@ typedef struct AVSContext {
     IDCTDSPContext idsp;
     VideoDSPContext vdsp;
     CAVSDSPContext  cdsp;
-    GetBitContext gb;
+    BitstreamContext bc;
     AVSFrame cur;     ///< currently decoded frame
     AVSFrame DPB[2];  ///< reference frames
     int dist[2];     ///< temporal distances from current frame to ref frames
