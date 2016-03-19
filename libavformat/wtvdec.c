@@ -1005,6 +1005,8 @@ static int read_header(AVFormatContext *s)
         wtvfile_close(pb);
     }
 
+    s->ctx_flags |= AVFMTCTX_NOHEADER; // Needed for noStreams.wtv
+
     /* read seek index */
     if (s->nb_streams) {
         AVStream *st = s->streams[0];
