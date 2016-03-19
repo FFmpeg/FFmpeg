@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavc 57.24.0 - avcodec.h
+  Decoders now export the frame timestamp as AVFrame.pts. It was
+  previously exported as AVFrame.pkt_pts, which is now deprecated.
+
 2016-xx-xx - xxxxxxx - lavu 55.16.0 - hwcontext.h hwcontext_qsv.h
   Add AV_HWDEVICE_TYPE_QSV and a new installed header with QSV-specific
   hwcontext definitions.

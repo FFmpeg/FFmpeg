@@ -397,7 +397,11 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->palette_has_changed    = src->palette_has_changed;
     dst->sample_rate            = src->sample_rate;
     dst->opaque                 = src->opaque;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->pkt_pts                = src->pkt_pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     dst->pkt_dts                = src->pkt_dts;
     dst->reordered_opaque       = src->reordered_opaque;
     dst->quality                = src->quality;

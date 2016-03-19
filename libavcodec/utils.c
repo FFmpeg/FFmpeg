@@ -551,11 +551,21 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 
     frame->reordered_opaque = avctx->reordered_opaque;
     if (!pkt) {
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = AV_NOPTS_VALUE;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        frame->pts     = AV_NOPTS_VALUE;
         return 0;
     }
 
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_pts = pkt->pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    frame->pts     = pkt->pts;
 
     for (i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
         int size;
