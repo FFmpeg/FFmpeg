@@ -33,9 +33,9 @@
 #include "libavutil/timer.h"
 
 #include "avcodec.h"
-#include "golomb_legacy.h"
+#include "bitstream.h"
+#include "golomb.h"
 #include "internal.h"
-#include "get_bits.h"
 #include "put_bits.h"
 #include "rangecoder.h"
 #include "mathops.h"
@@ -66,7 +66,7 @@ static av_noinline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed)
     return get_symbol_inline(c, state, is_signed);
 }
 
-static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
+static inline int get_vlc_symbol(BitstreamContext *bc, VlcState *const state,
                                  int bits)
 {
     int k, i, v, ret;
@@ -80,7 +80,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
 
     assert(k <= 8);
 
-    v = get_sr_golomb(gb, k, 12, bits);
+    v = get_sr_golomb(bc, k, 12, bits);
     ff_dlog(NULL, "v:%d bias:%d error:%d drift:%d count:%d k:%d",
             v, state->bias, state->error_sum, state->drift, state->count, k);
 
@@ -124,13 +124,13 @@ static av_always_inline void decode_line(FFV1Context *s, int w,
 
             if (run_mode) {
                 if (run_count == 0 && run_mode == 1) {
-                    if (get_bits1(&s->gb)) {
+                    if (bitstream_read_bit(&s->bc)) {
                         run_count = 1 << ff_log2_run[run_index];
                         if (x + run_count <= w)
                             run_index++;
                     } else {
                         if (ff_log2_run[run_index])
-                            run_count = get_bits(&s->gb, ff_log2_run[run_index]);
+                            run_count = bitstream_read(&s->bc, ff_log2_run[run_index]);
                         else
                             run_count = 0;
                         if (run_index)
@@ -142,17 +142,17 @@ static av_always_inline void decode_line(FFV1Context *s, int w,
                 if (run_count < 0) {
                     run_mode  = 0;
                     run_count = 0;
-                    diff      = get_vlc_symbol(&s->gb, &p->vlc_state[context],
+                    diff      = get_vlc_symbol(&s->bc, &p->vlc_state[context],
                                                bits);
                     if (diff >= 0)
                         diff++;
                 } else
                     diff = 0;
             } else
-                diff = get_vlc_symbol(&s->gb, &p->vlc_state[context], bits);
+                diff = get_vlc_symbol(&s->bc, &p->vlc_state[context], bits);
 
             ff_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
-                    run_count, run_index, run_mode, x, get_bits_count(&s->gb));
+                    run_count, run_index, run_mode, x, bitstream_tell(&s->bc));
         }
 
         if (sign)
@@ -364,9 +364,9 @@ static int decode_slice(AVCodecContext *c, void *arg)
         if (f->version == 3 && f->minor_version > 1 || f->version > 3)
             get_rac(&fs->c, (uint8_t[]) { 129 });
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
-        init_get_bits(&fs->gb, fs->c.bytestream_start + fs->ac_byte_count,
-                      (fs->c.bytestream_end - fs->c.bytestream_start -
-                       fs->ac_byte_count) * 8);
+        bitstream_init8(&fs->bc, fs->c.bytestream_start + fs->ac_byte_count,
+                        (fs->c.bytestream_end - fs->c.bytestream_start -
+                         fs->ac_byte_count));
     }
 
     av_assert1(width && height);

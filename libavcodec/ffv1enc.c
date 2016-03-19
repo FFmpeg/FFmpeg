@@ -33,7 +33,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
-#include "golomb_legacy.h"
+#include "golomb.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "rangecoder.h"

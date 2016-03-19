@@ -26,7 +26,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "put_bits.h"
 #include "rangecoder.h"
 
@@ -70,7 +70,7 @@ typedef struct FFV1Context {
     AVClass *class;
     AVCodecContext *avctx;
     RangeCoder c;
-    GetBitContext gb;
+    BitstreamContext bc;
     PutBitContext pb;
     uint64_t rc_stat[256][2];
     uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
