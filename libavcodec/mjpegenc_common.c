@@ -122,6 +122,16 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
     uint8_t *ptr;
 
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
+        AVRational sar = avctx->sample_aspect_ratio;
+
+        if (sar.num > 65535 || sar.den > 65535) {
+            if (!av_reduce(&sar.num, &sar.den, avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den, 65535))
+                av_log(avctx, AV_LOG_WARNING,
+                    "Cannot store exact aspect ratio %d:%d\n",
+                    avctx->sample_aspect_ratio.num,
+                    avctx->sample_aspect_ratio.den);
+        }
+
         /* JFIF header */
         put_marker(p, APP0);
         put_bits(p, 16, 16);
@@ -131,8 +141,8 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
          * released revision. */
         put_bits(p, 16, 0x0102);
         put_bits(p,  8, 0);              /* units type: 0 - aspect ratio */
-        put_bits(p, 16, avctx->sample_aspect_ratio.num);
-        put_bits(p, 16, avctx->sample_aspect_ratio.den);
+        put_bits(p, 16, sar.num);
+        put_bits(p, 16, sar.den);
         put_bits(p, 8, 0); /* thumbnail width */
         put_bits(p, 8, 0); /* thumbnail height */
     }
