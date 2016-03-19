@@ -34,7 +34,6 @@ enum FilterType {
     FLAT,
     AFLAT,
     CHROMA,
-    ACHROMA,
     COLOR,
     ACOLOR,
     NB_FILTERS
@@ -128,7 +127,6 @@ static const AVOption waveform_options[] = {
         { "flat"   , NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAT},    0, 0, FLAGS, "filter" },
         { "aflat"  , NULL, 0, AV_OPT_TYPE_CONST, {.i64=AFLAT},   0, 0, FLAGS, "filter" },
         { "chroma",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=CHROMA},  0, 0, FLAGS, "filter" },
-        { "achroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACHROMA}, 0, 0, FLAGS, "filter" },
         { "color",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},   0, 0, FLAGS, "filter" },
         { "acolor",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACOLOR},  0, 0, FLAGS, "filter" },
     { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
@@ -172,6 +170,21 @@ static const enum AVPixelFormat in_lowpass_pix_fmts[] = {
 static const enum AVPixelFormat in_color_pix_fmts[] = {
     AV_PIX_FMT_GBRP,     AV_PIX_FMT_GBRAP,
     AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
+    AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV440P,
+    AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P,
+    AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV420P9,
+    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
+    AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV420P10,
+    AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
+    AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV440P12,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat in_flat_pix_fmts[] = {
     AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV440P,
     AV_PIX_FMT_YUV411P,
@@ -241,29 +254,11 @@ static const enum AVPixelFormat flat_pix_fmts[] = {
 static int query_formats(AVFilterContext *ctx)
 {
     WaveformContext *s = ctx->priv;
-    AVFilterFormats *fmts_list;
     const enum AVPixelFormat *out_pix_fmts;
     const enum AVPixelFormat *in_pix_fmts;
-    const enum AVPixelFormat *pix_fmts;
     const AVPixFmtDescriptor *desc;
     AVFilterFormats *avff;
     int depth, rgb, i, ret, ncomp;
-
-    if (s->filter != LOWPASS &&
-        s->filter != COLOR &&
-        s->filter != ACOLOR) {
-        switch (s->filter) {
-        case FLAT:
-        case AFLAT:
-        case CHROMA:
-        case ACHROMA: pix_fmts = flat_pix_fmts;    break;
-        }
-
-        fmts_list = ff_make_format_list(pix_fmts);
-        if (!fmts_list)
-            return AVERROR(ENOMEM);
-        return ff_set_common_formats(ctx, fmts_list);
-    }
 
     if (!ctx->inputs[0]->in_formats ||
         !ctx->inputs[0]->in_formats->nb_formats) {
@@ -272,6 +267,9 @@ static int query_formats(AVFilterContext *ctx)
 
     switch (s->filter) {
     case LOWPASS: in_pix_fmts = in_lowpass_pix_fmts; break;
+    case CHROMA:
+    case AFLAT:
+    case FLAT:    in_pix_fmts = in_flat_pix_fmts;    break;
     case ACOLOR:
     case COLOR:   in_pix_fmts = in_color_pix_fmts;   break;
     }
@@ -711,6 +709,12 @@ static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int c0_shift_w = s->shift_w[ component + 0 ];
+    const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
+    const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
+    const int c0_shift_h = s->shift_h[ component + 0 ];
+    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int d0_linesize = out->linesize[ plane + 0 ] / 2;
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
     const int limit = s->max - 1;
@@ -736,8 +740,8 @@ static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
 
             for (y = 0; y < src_h; y++) {
-                const int c0 = FFMIN(c0_data[x], limit) + s->max;
-                const int c1 = FFMIN(FFABS(c1_data[x] - mid) + FFABS(c2_data[x] - mid), s->max - 1);
+                const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit) + s->max;
+                const int c1 = FFMIN(FFABS(c1_data[x >> c1_shift_w] - mid) + FFABS(c2_data[x >> c2_shift_w] - mid), limit);
                 uint16_t *target;
 
                 target = d0 + x + d0_signed_linesize * c0;
@@ -747,9 +751,12 @@ static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
                 target = d1 + x + d1_signed_linesize * (c0 + c1);
                 update16(target, max, intensity, limit);
 
-                c0_data += c0_linesize;
-                c1_data += c1_linesize;
-                c2_data += c2_linesize;
+                if (!c0_shift_h || (y & c0_shift_h))
+                    c0_data += c0_linesize;
+                if (!c1_shift_h || (y & c1_shift_h))
+                    c1_data += c1_linesize;
+                if (!c2_shift_h || (y & c2_shift_h))
+                    c2_data += c2_linesize;
                 d0_data += d0_linesize;
                 d1_data += d1_linesize;
             }
@@ -768,8 +775,8 @@ static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
 
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int c0 = FFMIN(c0_data[x], limit) + s->max;
-                const int c1 = FFMIN(FFABS(c1_data[x] - mid) + FFABS(c2_data[x] - mid), s->max - 1);
+                const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit) + s->max;
+                const int c1 = FFMIN(FFABS(c1_data[x >> c1_shift_w] - mid) + FFABS(c2_data[x >> c2_shift_w] - mid), limit);
                 uint16_t *target;
 
                 if (mirror) {
@@ -789,9 +796,12 @@ static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
                 }
             }
 
-            c0_data += c0_linesize;
-            c1_data += c1_linesize;
-            c2_data += c2_linesize;
+            if (!c0_shift_h || (y & c0_shift_h))
+                c0_data += c0_linesize;
+            if (!c1_shift_h || (y & c1_shift_h))
+                c1_data += c1_linesize;
+            if (!c2_shift_h || (y & c2_shift_h))
+                c2_data += c2_linesize;
             d0_data += d0_linesize;
             d1_data += d1_linesize;
         }
@@ -809,6 +819,12 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int c0_linesize = in->linesize[ plane + 0 ];
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
+    const int c0_shift_w = s->shift_w[ component + 0 ];
+    const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
+    const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
+    const int c0_shift_h = s->shift_h[ component + 0 ];
+    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int d0_linesize = out->linesize[ plane + 0 ];
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
     const int max = 255 - intensity;
@@ -832,8 +848,8 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint8_t * const d1 = (mirror ? d1_bottom_line : d1_data);
 
             for (y = 0; y < src_h; y++) {
-                const int c0 = c0_data[x] + 256;
-                const int c1 = FFABS(c1_data[x] - 128) + FFABS(c2_data[x] - 128);
+                const int c0 = c0_data[x >> c0_shift_w] + 256;
+                const int c1 = FFABS(c1_data[x >> c1_shift_w] - 128) + FFABS(c2_data[x >> c2_shift_w] - 128);
                 uint8_t *target;
 
                 target = d0 + x + d0_signed_linesize * c0;
@@ -843,9 +859,12 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 target = d1 + x + d1_signed_linesize * (c0 + c1);
                 update(target, max, intensity);
 
-                c0_data += c0_linesize;
-                c1_data += c1_linesize;
-                c2_data += c2_linesize;
+                if (!c0_shift_h || (y & c0_shift_h))
+                    c0_data += c0_linesize;
+                if (!c1_shift_h || (y & c1_shift_h))
+                    c1_data += c1_linesize;
+                if (!c2_shift_h || (y & c2_shift_h))
+                    c2_data += c2_linesize;
                 d0_data += d0_linesize;
                 d1_data += d1_linesize;
             }
@@ -864,8 +883,8 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
 
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                int c0 = c0_data[x] + 256;
-                const int c1 = FFABS(c1_data[x] - 128) + FFABS(c2_data[x] - 128);
+                int c0 = c0_data[x >> c0_shift_w] + 256;
+                const int c1 = FFABS(c1_data[x >> c1_shift_w] - 128) + FFABS(c2_data[x >> c2_shift_w] - 128);
                 uint8_t *target;
 
                 if (mirror) {
@@ -885,9 +904,12 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 }
             }
 
-            c0_data += c0_linesize;
-            c1_data += c1_linesize;
-            c2_data += c2_linesize;
+            if (!c0_shift_h || (y & c0_shift_h))
+                c0_data += c0_linesize;
+            if (!c1_shift_h || (y & c1_shift_h))
+                c1_data += c1_linesize;
+            if (!c2_shift_h || (y & c2_shift_h))
+                c2_data += c2_linesize;
             d0_data += d0_linesize;
             d1_data += d1_linesize;
         }
@@ -905,6 +927,12 @@ static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int c0_shift_w = s->shift_w[ component + 0 ];
+    const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
+    const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
+    const int c0_shift_h = s->shift_h[ component + 0 ];
+    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int d0_linesize = out->linesize[ plane + 0 ] / 2;
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
     const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
@@ -935,9 +963,9 @@ static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
 
             for (y = 0; y < src_h; y++) {
-                const int c0 = FFMIN(c0_data[x], limit) + mid;
-                const int c1 = FFMIN(c1_data[x], limit) - mid;
-                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit) + mid;
+                const int c1 = FFMIN(c1_data[x >> c1_shift_w], limit) - mid;
+                const int c2 = FFMIN(c2_data[x >> c2_shift_w], limit) - mid;
                 uint16_t *target;
 
                 target = d0 + x + d0_signed_linesize * c0;
@@ -949,9 +977,12 @@ static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
                 target = d2 + x + d2_signed_linesize * (c0 + c2);
                 update16(target, max, intensity, limit);
 
-                c0_data += c0_linesize;
-                c1_data += c1_linesize;
-                c2_data += c2_linesize;
+                if (!c0_shift_h || (y & c0_shift_h))
+                    c0_data += c0_linesize;
+                if (!c1_shift_h || (y & c1_shift_h))
+                    c1_data += c1_linesize;
+                if (!c2_shift_h || (y & c2_shift_h))
+                    c2_data += c2_linesize;
                 d0_data += d0_linesize;
                 d1_data += d1_linesize;
                 d2_data += d2_linesize;
@@ -973,9 +1004,9 @@ static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
 
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int c0 = FFMIN(c0_data[x], limit) + mid;
-                const int c1 = FFMIN(c1_data[x], limit) - mid;
-                const int c2 = FFMIN(c2_data[x], limit) - mid;
+                const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit) + mid;
+                const int c1 = FFMIN(c1_data[x >> c1_shift_w], limit) - mid;
+                const int c2 = FFMIN(c2_data[x >> c2_shift_w], limit) - mid;
                 uint16_t *target;
 
                 if (mirror) {
@@ -995,9 +1026,12 @@ static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
                 }
             }
 
-            c0_data += c0_linesize;
-            c1_data += c1_linesize;
-            c2_data += c2_linesize;
+            if (!c0_shift_h || (y & c0_shift_h))
+                c0_data += c0_linesize;
+            if (!c1_shift_h || (y & c1_shift_h))
+                c1_data += c1_linesize;
+            if (!c2_shift_h || (y & c2_shift_h))
+                c2_data += c2_linesize;
             d0_data += d0_linesize;
             d1_data += d1_linesize;
             d2_data += d2_linesize;
@@ -1017,6 +1051,12 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int c0_linesize = in->linesize[ plane + 0 ];
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
+    const int c0_shift_w = s->shift_w[ component + 0 ];
+    const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
+    const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
+    const int c0_shift_h = s->shift_h[ component + 0 ];
+    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int d0_linesize = out->linesize[ plane + 0 ];
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
     const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];
@@ -1045,9 +1085,9 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint8_t * const d2 = (mirror ? d2_bottom_line : d2_data);
 
             for (y = 0; y < src_h; y++) {
-                const int c0 = c0_data[x] + 128;
-                const int c1 = c1_data[x] - 128;
-                const int c2 = c2_data[x] - 128;
+                const int c0 = c0_data[x >> c0_shift_w] + 128;
+                const int c1 = c1_data[x >> c1_shift_w] - 128;
+                const int c2 = c2_data[x >> c2_shift_w] - 128;
                 uint8_t *target;
 
                 target = d0 + x + d0_signed_linesize * c0;
@@ -1059,9 +1099,12 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 target = d2 + x + d2_signed_linesize * (c0 + c2);
                 update(target, max, intensity);
 
-                c0_data += c0_linesize;
-                c1_data += c1_linesize;
-                c2_data += c2_linesize;
+                if (!c0_shift_h || (y & c0_shift_h))
+                    c0_data += c0_linesize;
+                if (!c1_shift_h || (y & c1_shift_h))
+                    c1_data += c1_linesize;
+                if (!c1_shift_h || (y & c1_shift_h))
+                    c2_data += c1_linesize;
                 d0_data += d0_linesize;
                 d1_data += d1_linesize;
                 d2_data += d2_linesize;
@@ -1083,9 +1126,9 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
 
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int c0 = c0_data[x] + 128;
-                const int c1 = c1_data[x] - 128;
-                const int c2 = c2_data[x] - 128;
+                const int c0 = c0_data[x >> c0_shift_w] + 128;
+                const int c1 = c1_data[x >> c1_shift_w] - 128;
+                const int c2 = c2_data[x >> c2_shift_w] - 128;
                 uint8_t *target;
 
                 if (mirror) {
@@ -1105,9 +1148,12 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
                 }
             }
 
-            c0_data += c0_linesize;
-            c1_data += c1_linesize;
-            c2_data += c2_linesize;
+            if (!c0_shift_h || (y & c0_shift_h))
+                c0_data += c0_linesize;
+            if (!c1_shift_h || (y & c1_shift_h))
+                c1_data += c1_linesize;
+            if (!c2_shift_h || (y & c2_shift_h))
+                c2_data += c2_linesize;
             d0_data += d0_linesize;
             d1_data += d1_linesize;
             d2_data += d2_linesize;
@@ -1130,6 +1176,10 @@ static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int limit = s->max - 1;
     const int max = limit - intensity;
     const int mid = s->max / 2;
+    const int c0_shift_w = s->shift_w[(component + 1) % s->ncomp];
+    const int c1_shift_w = s->shift_w[(component + 2) % s->ncomp];
+    const int c0_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c1_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int src_h = in->height;
     const int src_w = in->width;
     int x, y;
@@ -1146,14 +1196,16 @@ static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint16_t *dst = dst_line;
 
             for (y = 0; y < src_h; y++) {
-                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid - 1), limit);
+                const int sum = FFMIN(FFABS(c0_data[x >> c0_shift_w] - mid) + FFABS(c1_data[x >> c1_shift_w] - mid - 1), limit);
                 uint16_t *target;
 
                 target = dst + x + dst_signed_linesize * sum;
                 update16(target, max, intensity, limit);
 
-                c0_data += c0_linesize;
-                c1_data += c1_linesize;
+                if (!c0_shift_h || (y & c0_shift_h))
+                    c0_data += c0_linesize;
+                if (!c1_shift_h || (y & c1_shift_h))
+                    c1_data += c1_linesize;
                 dst_data += dst_linesize;
             }
         }
@@ -1166,7 +1218,7 @@ static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
             dst_data += s->size - 1;
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int sum = FFMIN(FFABS(c0_data[x] - mid) + FFABS(c1_data[x] - mid - 1), limit);
+                const int sum = FFMIN(FFABS(c0_data[x >> c0_shift_w] - mid) + FFABS(c1_data[x >> c1_shift_w] - mid - 1), limit);
                 uint16_t *target;
 
                 if (mirror) {
@@ -1178,8 +1230,10 @@ static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
                 }
             }
 
-            c0_data += c0_linesize;
-            c1_data += c1_linesize;
+            if (!c0_shift_h || (y & c0_shift_h))
+                c0_data += c0_linesize;
+            if (!c1_shift_h || (y & c1_shift_h))
+                c1_data += c1_linesize;
             dst_data += dst_linesize;
         }
     }
@@ -1196,6 +1250,10 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int c1_linesize = in->linesize[(plane + 2) % s->ncomp];
     const int dst_linesize = out->linesize[plane];
     const int max = 255 - intensity;
+    const int c0_shift_w = s->shift_w[(component + 1) % s->ncomp];
+    const int c1_shift_w = s->shift_w[(component + 2) % s->ncomp];
+    const int c0_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c1_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int src_h = in->height;
     const int src_w = in->width;
     int x, y;
@@ -1212,14 +1270,16 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             uint8_t *dst = dst_line;
 
             for (y = 0; y < src_h; y++) {
-                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 127);
+                const int sum = FFABS(c0_data[x >> c0_shift_w] - 128) + FFABS(c1_data[x >> c1_shift_w] - 127);
                 uint8_t *target;
 
                 target = dst + x + dst_signed_linesize * sum;
                 update(target, max, intensity);
 
-                c0_data += c0_linesize;
-                c1_data += c1_linesize;
+                if (!c0_shift_h || (y & c0_shift_h))
+                    c0_data += c0_linesize;
+                if (!c1_shift_h || (y & c1_shift_h))
+                    c1_data += c1_linesize;
                 dst_data += dst_linesize;
             }
         }
@@ -1232,7 +1292,7 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
             dst_data += s->size - 1;
         for (y = 0; y < src_h; y++) {
             for (x = 0; x < src_w; x++) {
-                const int sum = FFABS(c0_data[x] - 128) + FFABS(c1_data[x] - 127);
+                const int sum = FFABS(c0_data[x >> c0_shift_w] - 128) + FFABS(c1_data[x >> c1_shift_w] - 127);
                 uint8_t *target;
 
                 if (mirror) {
@@ -1244,187 +1304,15 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
                 }
             }
 
-            c0_data += c0_linesize;
-            c1_data += c1_linesize;
+            if (!c0_shift_h || (y & c0_shift_h))
+                c0_data += c0_linesize;
+            if (!c1_shift_h || (y & c1_shift_h))
+                c1_data += c1_linesize;
             dst_data += dst_linesize;
         }
     }
 
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
-}
-
-static void achroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                      int component, int intensity, int offset_y, int offset_x, int column)
-{
-    const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
-    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
-    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
-    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
-    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
-    const int limit = s->max - 1;
-    const int max = limit - intensity;
-    const int mid = s->max / 2;
-    const int src_h = in->height;
-    const int src_w = in->width;
-    int x, y;
-
-    if (column) {
-        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
-        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
-
-        for (x = 0; x < src_w; x++) {
-            const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
-            const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
-            uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-            uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
-            uint16_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
-            uint16_t * const d1 = (mirror ? d1_bottom_line : d1_data);
-            uint16_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
-            uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
-
-            for (y = 0; y < src_h; y++) {
-                const int c1 = FFMIN(c1_data[x], limit) - mid;
-                const int c2 = FFMIN(c2_data[x], limit) - mid;
-                uint16_t *target;
-
-                target = d1 + x + d1_signed_linesize * (mid + c1);
-                update16(target, max, intensity, limit);
-
-                target = d2 + x + d2_signed_linesize * (mid + c2);
-                update16(target, max, intensity, limit);
-
-                c1_data += c1_linesize;
-                c2_data += c2_linesize;
-                d1_data += d1_linesize;
-                d2_data += d2_linesize;
-            }
-        }
-    } else {
-        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
-        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
-        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
-
-        if (mirror) {
-            d1_data += s->size - 1;
-            d2_data += s->size - 1;
-        }
-
-        for (y = 0; y < src_h; y++) {
-            for (x = 0; x < src_w; x++) {
-                const int c1 = FFMIN(c1_data[x], limit) - mid;
-                const int c2 = FFMIN(c2_data[x], limit) - mid;
-                uint16_t *target;
-
-                if (mirror) {
-                    target = d1_data - (mid + c1);
-                    update16(target, max, intensity, limit);
-                    target = d2_data - (mid + c2);
-                    update16(target, max, intensity, limit);
-                } else {
-                    target = d1_data + (mid + c1);
-                    update16(target, max, intensity, limit);
-                    target = d2_data + (mid + c2);
-                    update16(target, max, intensity, limit);
-                }
-            }
-
-            c1_data += c1_linesize;
-            c2_data += c2_linesize;
-            d1_data += d1_linesize;
-            d2_data += d2_linesize;
-        }
-    }
-
-    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
-    envelope16(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
-}
-
-static void achroma(WaveformContext *s, AVFrame *in, AVFrame *out,
-                    int component, int intensity, int offset_y, int offset_x, int column)
-{
-    const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
-    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
-    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
-    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
-    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];
-    const int max = 255 - intensity;
-    const int src_h = in->height;
-    const int src_w = in->width;
-    int x, y;
-
-    if (column) {
-        const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
-        const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
-
-        for (x = 0; x < src_w; x++) {
-            const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
-            const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-            uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-            uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
-            uint8_t * const d1_bottom_line = d1_data + d1_linesize * (s->size - 1);
-            uint8_t * const d1 = (mirror ? d1_bottom_line : d1_data);
-            uint8_t * const d2_bottom_line = d2_data + d2_linesize * (s->size - 1);
-            uint8_t * const d2 = (mirror ? d2_bottom_line : d2_data);
-
-            for (y = 0; y < src_h; y++) {
-                const int c1 = c1_data[x] - 128;
-                const int c2 = c2_data[x] - 128;
-                uint8_t *target;
-
-                target = d1 + x + d1_signed_linesize * (128 + c1);
-                update(target, max, intensity);
-
-                target = d2 + x + d2_signed_linesize * (128 + c2);
-                update(target, max, intensity);
-
-                c1_data += c1_linesize;
-                c2_data += c2_linesize;
-                d1_data += d1_linesize;
-                d2_data += d2_linesize;
-            }
-        }
-    } else {
-        const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
-        const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
-
-        if (mirror) {
-            d1_data += s->size - 1;
-            d2_data += s->size - 1;
-        }
-
-        for (y = 0; y < src_h; y++) {
-            for (x = 0; x < src_w; x++) {
-                const int c1 = c1_data[x] - 128;
-                const int c2 = c2_data[x] - 128;
-                uint8_t *target;
-
-                if (mirror) {
-                    target = d1_data - (128 + c1);
-                    update(target, max, intensity);
-                    target = d2_data - (128 + c2);
-                    update(target, max, intensity);
-                } else {
-                    target = d1_data + (128 + c1);
-                    update(target, max, intensity);
-                    target = d2_data + (128 + c2);
-                    update(target, max, intensity);
-                }
-            }
-
-            c1_data += c1_linesize;
-            c2_data += c2_linesize;
-            d1_data += d1_linesize;
-            d2_data += d2_linesize;
-        }
-    }
-
-    envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
-    envelope(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
 static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
@@ -2401,10 +2289,6 @@ static int config_input(AVFilterLink *inlink)
     case CHROMA:
         s->size = 256;
         s->waveform = s->bits > 8 ? chroma16 : chroma;
-        break;
-    case ACHROMA:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? achroma16 : achroma;
         break;
     case COLOR:
         s->size = 256;

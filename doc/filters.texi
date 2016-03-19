@@ -13171,9 +13171,6 @@ Similar as above, but shows difference between blue and red chroma.
 @item chroma
 Displays only chroma.
 
-@item achroma
-Similar as above, but shows difference between blue and red chroma.
-
 @item color
 Displays actual color value on waveform.
 
