@@ -122,10 +122,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     if (ctx->frame_type == IVI4_FRAMETYPE_BIDIR)
         ctx->has_b_frames = 1;
 
-    ctx->transp_status = get_bits1(&ctx->gb);
-    if (ctx->transp_status) {
-        ctx->has_transp = 1;
-    }
+    ctx->has_transp = get_bits1(&ctx->gb);
 
     /* unknown bit: Mac decoder ignores this bit, XANIM returns error */
     if (get_bits1(&ctx->gb)) {
@@ -159,10 +156,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     /* Decode tile dimensions. */
-    if (get_bits1(&ctx->gb)) {
+    ctx->uses_tiling = get_bits1(&ctx->gb);
+    if (ctx->uses_tiling) {
         pic_conf.tile_height = scale_tile_size(pic_conf.pic_height, get_bits(&ctx->gb, 4));
         pic_conf.tile_width  = scale_tile_size(pic_conf.pic_width,  get_bits(&ctx->gb, 4));
-        ctx->uses_tiling = 1;
     } else {
         pic_conf.tile_height = pic_conf.pic_height;
         pic_conf.tile_width  = pic_conf.pic_width;
