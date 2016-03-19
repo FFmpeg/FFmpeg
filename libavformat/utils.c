@@ -3208,6 +3208,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         max_subtitle_analyze_duration = 30*AV_TIME_BASE;
         if (!strcmp(ic->iformat->name, "flv"))
             max_stream_analyze_duration = 90*AV_TIME_BASE;
+        if (!strcmp(ic->iformat->name, "mpeg") || !strcmp(ic->iformat->name, "mpegts"))
+            max_stream_analyze_duration = 7*AV_TIME_BASE;
     }
 
     if (ic->pb)
