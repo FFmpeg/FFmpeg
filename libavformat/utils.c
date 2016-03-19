@@ -3313,7 +3313,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 break;
             if (st->first_dts == AV_NOPTS_VALUE &&
                 !(ic->iformat->flags & AVFMT_NOTIMESTAMPS) &&
-                st->codec_info_nb_frames < ic->max_ts_probe &&
+                st->codec_info_nb_frames < ((st->disposition & AV_DISPOSITION_ATTACHED_PIC) ? 1 : ic->max_ts_probe) &&
                 (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
                  st->codec->codec_type == AVMEDIA_TYPE_AUDIO))
                 break;
