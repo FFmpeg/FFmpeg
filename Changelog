@@ -15,6 +15,7 @@ version <next>:
 - VC-2 HQ RTP payload format (draft v1) depacketizer
 - AudioToolbox audio decoders
 - AudioToolbox audio encoders
+- coreimage filter (GPU based image filtering on OSX)
 
 
 version 3.0:

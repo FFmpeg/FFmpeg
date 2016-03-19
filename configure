@@ -5287,6 +5287,8 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
 nvenc_encoder_extralibs='$ldl'
+coreimage_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
+coreimagesrc_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
 
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
@@ -5516,6 +5518,8 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
                                die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
 enabled cuda              && check_lib cuda.h cuInit -lcuda
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
+enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disable coreimage_filter; }
+enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }
 enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
