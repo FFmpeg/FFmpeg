@@ -47,7 +47,6 @@ enum {
 };
 
 #define IVI_VLC_BITS 13 ///< max number of bits of the ivi's huffman codes
-#define IVI4_STREAM_ANALYSER    0
 #define IVI5_IS_PROTECTED       0x20
 
 /**
@@ -249,13 +248,12 @@ typedef struct IVI45DecContext {
     uint8_t         gop_flags;
     uint32_t        lock_word;
 
-#if IVI4_STREAM_ANALYSER
+    int             show_indeo4_info;
     uint8_t         has_b_frames;
     uint8_t         has_transp;
     uint8_t         uses_tiling;
     uint8_t         uses_haar;
     uint8_t         uses_fullpel;
-#endif
 
     int             (*decode_pic_hdr)  (struct IVI45DecContext *ctx, AVCodecContext *avctx);
     int             (*decode_band_hdr) (struct IVI45DecContext *ctx, IVIBandDesc *band, AVCodecContext *avctx);
