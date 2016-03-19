@@ -325,7 +325,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
     s->nskip_fields = len;
 
-    for (int i = 0; i < out; ++i) {
+    for (i = 0; i < out; ++i) {
         AVFrame *frame = av_frame_clone(s->frame[i]);
 
         if (!frame) {
