@@ -28,8 +28,9 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "dirac.h"
-#include "golomb_legacy.h"
+#include "golomb.h"
 #include "internal.h"
 #include "mpeg12data.h"
 
@@ -138,7 +139,7 @@ static const enum AVPixelFormat dirac_pix_fmt[2][3] = {
 
 /* [DIRAC_STD] 10.3 Parse Source Parameters.
  * source_parameters(base_video_format) */
-static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
+static int parse_source_parameters(AVDiracSeqHeader *dsh, BitstreamContext *bc,
                                    void *log_ctx)
 {
     AVRational frame_rate = { 0, 0 };
@@ -147,17 +148,17 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
 
     /* [DIRAC_STD] 10.3.2 Frame size. frame_size(video_params) */
     /* [DIRAC_STD] custom_dimensions_flag */
-    if (get_bits1(gb)) {
-        dsh->width  = get_interleaved_ue_golomb(gb); /* [DIRAC_STD] FRAME_WIDTH  */
-        dsh->height = get_interleaved_ue_golomb(gb); /* [DIRAC_STD] FRAME_HEIGHT */
+    if (bitstream_read_bit(bc)) {
+        dsh->width  = get_interleaved_ue_golomb(bc); /* [DIRAC_STD] FRAME_WIDTH  */
+        dsh->height = get_interleaved_ue_golomb(bc); /* [DIRAC_STD] FRAME_HEIGHT */
     }
 
     /* [DIRAC_STD] 10.3.3 Chroma Sampling Format.
      *  chroma_sampling_format(video_params) */
     /* [DIRAC_STD] custom_chroma_format_flag */
-    if (get_bits1(gb))
+    if (bitstream_read_bit(bc))
         /* [DIRAC_STD] CHROMA_FORMAT_INDEX */
-        dsh->chroma_format = get_interleaved_ue_golomb(gb);
+        dsh->chroma_format = get_interleaved_ue_golomb(bc);
     if (dsh->chroma_format > 2) {
         if (log_ctx)
             av_log(log_ctx, AV_LOG_ERROR, "Unknown chroma format %d\n",
@@ -167,24 +168,24 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
 
     /* [DIRAC_STD] 10.3.4 Scan Format. scan_format(video_params) */
     /* [DIRAC_STD] custom_scan_format_flag */
-    if (get_bits1(gb))
+    if (bitstream_read_bit(bc))
         /* [DIRAC_STD] SOURCE_SAMPLING */
-        dsh->interlaced = get_interleaved_ue_golomb(gb);
+        dsh->interlaced = get_interleaved_ue_golomb(bc);
     if (dsh->interlaced > 1)
         return AVERROR_INVALIDDATA;
 
     /* [DIRAC_STD] 10.3.5 Frame Rate. frame_rate(video_params) */
-    if (get_bits1(gb)) { /* [DIRAC_STD] custom_frame_rate_flag */
-        dsh->frame_rate_index = get_interleaved_ue_golomb(gb);
+    if (bitstream_read_bit(bc)) { /* [DIRAC_STD] custom_frame_rate_flag */
+        dsh->frame_rate_index = get_interleaved_ue_golomb(bc);
 
         if (dsh->frame_rate_index > 10)
             return AVERROR_INVALIDDATA;
 
         if (!dsh->frame_rate_index) {
             /* [DIRAC_STD] FRAME_RATE_NUMER */
-            frame_rate.num = get_interleaved_ue_golomb(gb);
+            frame_rate.num = get_interleaved_ue_golomb(bc);
             /* [DIRAC_STD] FRAME_RATE_DENOM */
-            frame_rate.den = get_interleaved_ue_golomb(gb);
+            frame_rate.den = get_interleaved_ue_golomb(bc);
         }
     }
     /* [DIRAC_STD] preset_frame_rate(video_params, index) */
@@ -199,16 +200,16 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
 
     /* [DIRAC_STD] 10.3.6 Pixel Aspect Ratio.
      * pixel_aspect_ratio(video_params) */
-    if (get_bits1(gb)) { /* [DIRAC_STD] custom_pixel_aspect_ratio_flag */
+    if (bitstream_read_bit(bc)) { /* [DIRAC_STD] custom_pixel_aspect_ratio_flag */
         /* [DIRAC_STD] index */
-        dsh->aspect_ratio_index = get_interleaved_ue_golomb(gb);
+        dsh->aspect_ratio_index = get_interleaved_ue_golomb(bc);
 
         if (dsh->aspect_ratio_index > 6)
             return AVERROR_INVALIDDATA;
 
         if (!dsh->aspect_ratio_index) {
-            dsh->sample_aspect_ratio.num = get_interleaved_ue_golomb(gb);
-            dsh->sample_aspect_ratio.den = get_interleaved_ue_golomb(gb);
+            dsh->sample_aspect_ratio.num = get_interleaved_ue_golomb(bc);
+            dsh->sample_aspect_ratio.den = get_interleaved_ue_golomb(bc);
         }
     }
     /* [DIRAC_STD] Take value from Table 10.4 Available preset pixel
@@ -218,33 +219,33 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
             dirac_preset_aspect_ratios[dsh->aspect_ratio_index - 1];
 
     /* [DIRAC_STD] 10.3.7 Clean area. clean_area(video_params) */
-    if (get_bits1(gb)) { /* [DIRAC_STD] custom_clean_area_flag */
+    if (bitstream_read_bit(bc)) { /* [DIRAC_STD] custom_clean_area_flag */
         /* [DIRAC_STD] CLEAN_WIDTH */
-        dsh->clean_width = get_interleaved_ue_golomb(gb);
+        dsh->clean_width = get_interleaved_ue_golomb(bc);
         /* [DIRAC_STD] CLEAN_HEIGHT */
-        dsh->clean_height = get_interleaved_ue_golomb(gb);
+        dsh->clean_height = get_interleaved_ue_golomb(bc);
         /* [DIRAC_STD] CLEAN_LEFT_OFFSET */
-        dsh->clean_left_offset = get_interleaved_ue_golomb(gb);
+        dsh->clean_left_offset = get_interleaved_ue_golomb(bc);
         /* [DIRAC_STD] CLEAN_RIGHT_OFFSET */
-        dsh->clean_right_offset = get_interleaved_ue_golomb(gb);
+        dsh->clean_right_offset = get_interleaved_ue_golomb(bc);
     }
 
     /* [DIRAC_STD] 10.3.8 Signal range. signal_range(video_params)
      * WARNING: Some adaptation seems to be done using the
      * AVCOL_RANGE_MPEG/JPEG values */
-    if (get_bits1(gb)) { /* [DIRAC_STD] custom_signal_range_flag */
+    if (bitstream_read_bit(bc)) { /* [DIRAC_STD] custom_signal_range_flag */
         /* [DIRAC_STD] index */
-        dsh->pixel_range_index = get_interleaved_ue_golomb(gb);
+        dsh->pixel_range_index = get_interleaved_ue_golomb(bc);
 
         if (dsh->pixel_range_index > 4)
             return AVERROR_INVALIDDATA;
 
         // This assumes either fullrange or MPEG levels only
         if (!dsh->pixel_range_index) {
-            luma_offset = get_interleaved_ue_golomb(gb);
-            luma_depth  = av_log2(get_interleaved_ue_golomb(gb)) + 1;
-            get_interleaved_ue_golomb(gb); /* chroma offset    */
-            get_interleaved_ue_golomb(gb); /* chroma excursion */
+            luma_offset = get_interleaved_ue_golomb(bc);
+            luma_depth  = av_log2(get_interleaved_ue_golomb(bc)) + 1;
+            get_interleaved_ue_golomb(bc); /* chroma offset    */
+            get_interleaved_ue_golomb(bc); /* chroma excursion */
             dsh->color_range = luma_offset ? AVCOL_RANGE_MPEG
                                            : AVCOL_RANGE_JPEG;
         }
@@ -263,9 +264,9 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
     dsh->pix_fmt = dirac_pix_fmt[!luma_offset][dsh->chroma_format];
 
     /* [DIRAC_STD] 10.3.9 Colour specification. colour_spec(video_params) */
-    if (get_bits1(gb)) { /* [DIRAC_STD] custom_colour_spec_flag */
+    if (bitstream_read_bit(bc)) { /* [DIRAC_STD] custom_colour_spec_flag */
         /* [DIRAC_STD] index */
-        idx = dsh->color_spec_index = get_interleaved_ue_golomb(gb);
+        idx = dsh->color_spec_index = get_interleaved_ue_golomb(bc);
 
         if (dsh->color_spec_index > 4)
             return AVERROR_INVALIDDATA;
@@ -276,21 +277,21 @@ static int parse_source_parameters(AVDiracSeqHeader *dsh, GetBitContext *gb,
 
         if (!dsh->color_spec_index) {
             /* [DIRAC_STD] 10.3.9.1 Colour primaries */
-            if (get_bits1(gb)) {
-                idx = get_interleaved_ue_golomb(gb);
+            if (bitstream_read_bit(bc)) {
+                idx = get_interleaved_ue_golomb(bc);
                 if (idx < 3)
                     dsh->color_primaries = dirac_primaries[idx];
             }
             /* [DIRAC_STD] 10.3.9.2 Colour matrix */
-            if (get_bits1(gb)) {
-                idx = get_interleaved_ue_golomb(gb);
+            if (bitstream_read_bit(bc)) {
+                idx = get_interleaved_ue_golomb(bc);
                 if (!idx)
                     dsh->colorspace = AVCOL_SPC_BT709;
                 else if (idx == 1)
                     dsh->colorspace = AVCOL_SPC_BT470BG;
             }
             /* [DIRAC_STD] 10.3.9.3 Transfer function */
-            if (get_bits1(gb) && !get_interleaved_ue_golomb(gb))
+            if (bitstream_read_bit(bc) && !get_interleaved_ue_golomb(bc))
                 dsh->color_trc = AVCOL_TRC_BT709;
         }
     } else {
@@ -309,7 +310,7 @@ int av_dirac_parse_sequence_header(AVDiracSeqHeader **pdsh,
                                    void *log_ctx)
 {
     AVDiracSeqHeader *dsh;
-    GetBitContext gb;
+    BitstreamContext bc;
     unsigned version_major;
     unsigned video_format, picture_coding_mode;
     int ret;
@@ -318,18 +319,18 @@ int av_dirac_parse_sequence_header(AVDiracSeqHeader **pdsh,
     if (!dsh)
         return AVERROR(ENOMEM);
 
-    ret = init_get_bits8(&gb, buf, buf_size);
+    ret = bitstream_init8(&bc, buf, buf_size);
     if (ret < 0)
         goto fail;
 
     /* [DIRAC_SPEC] 10.1 Parse Parameters. parse_parameters() */
-    version_major = get_interleaved_ue_golomb(&gb);
-    get_interleaved_ue_golomb(&gb); /* version_minor */
-    dsh->profile = get_interleaved_ue_golomb(&gb);
-    dsh->level   = get_interleaved_ue_golomb(&gb);
+    version_major = get_interleaved_ue_golomb(&bc);
+    get_interleaved_ue_golomb(&bc); /* version_minor */
+    dsh->profile = get_interleaved_ue_golomb(&bc);
+    dsh->level   = get_interleaved_ue_golomb(&bc);
     /* [DIRAC_SPEC] sequence_header() -> base_video_format as defined in
      * 10.2 Base Video Format, table 10.1 Dirac predefined video formats */
-    video_format = get_interleaved_ue_golomb(&gb);
+    video_format = get_interleaved_ue_golomb(&bc);
 
     if (log_ctx) {
         if (version_major < 2)
@@ -360,13 +361,13 @@ int av_dirac_parse_sequence_header(AVDiracSeqHeader **pdsh,
 
     /* [DIRAC_STD] 10.3 Source Parameters
      * Override the defaults. */
-    ret = parse_source_parameters(dsh, &gb, log_ctx);
+    ret = parse_source_parameters(dsh, &bc, log_ctx);
     if (ret < 0)
         goto fail;
 
     /* [DIRAC_STD] picture_coding_mode shall be 0 for fields and 1 for frames
      * currently only used to signal field coding */
-    picture_coding_mode = get_interleaved_ue_golomb(&gb);
+    picture_coding_mode = get_interleaved_ue_golomb(&bc);
     if (picture_coding_mode != 0) {
         if (log_ctx) {
             av_log(log_ctx, AV_LOG_ERROR, "Unsupported picture coding mode %d",
