@@ -2616,6 +2616,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     out->pts = in->pts;
+    av_frame_set_color_range(out, AVCOL_RANGE_JPEG);
 
     for (k = 0; k < s->ncomp; k++) {
         if (s->bits <= 8) {
