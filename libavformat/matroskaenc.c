@@ -850,8 +850,12 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         return 0;
     }
 
-    if (!bit_depth && codec->codec_id != AV_CODEC_ID_ADPCM_G726)
-        bit_depth = av_get_bytes_per_sample(codec->sample_fmt) << 3;
+    if (!bit_depth && codec->codec_id != AV_CODEC_ID_ADPCM_G726) {
+        if (codec->bits_per_raw_sample)
+            bit_depth = codec->bits_per_raw_sample;
+        else
+            bit_depth = av_get_bytes_per_sample(codec->sample_fmt) << 3;
+    }
     if (!bit_depth)
         bit_depth = codec->bits_per_coded_sample;
 

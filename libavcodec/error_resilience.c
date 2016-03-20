@@ -393,6 +393,8 @@ static void guess_mv(ERContext *s)
     set_mv_strides(s, &mot_step, &mot_stride);
 
     num_avail = 0;
+    if (s->last_pic.motion_val[0])
+        ff_thread_await_progress(s->last_pic.tf, mb_height-1, 0);
     for (i = 0; i < mb_width * mb_height; i++) {
         const int mb_xy = s->mb_index2xy[i];
         int f = 0;
@@ -580,24 +582,9 @@ skip_mean_and_median:
                     /* zero MV */
                     pred_count++;
 
-                    if (!fixed[mb_xy] && 0) {
-                        if (s->avctx->codec_id == AV_CODEC_ID_H264) {
-                            // FIXME
-                        } else {
-                            ff_thread_await_progress(s->last_pic.tf,
-                                                     mb_y, 0);
-                        }
-                        if (!s->last_pic.motion_val[0] ||
-                            !s->last_pic.ref_index[0])
-                            goto skip_last_mv;
-                        prev_x   = s->last_pic.motion_val[0][mot_index][0];
-                        prev_y   = s->last_pic.motion_val[0][mot_index][1];
-                        prev_ref = s->last_pic.ref_index[0][4 * mb_xy];
-                    } else {
-                        prev_x   = s->cur_pic.motion_val[0][mot_index][0];
-                        prev_y   = s->cur_pic.motion_val[0][mot_index][1];
-                        prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
-                    }
+                    prev_x   = s->cur_pic.motion_val[0][mot_index][0];
+                    prev_y   = s->cur_pic.motion_val[0][mot_index][1];
+                    prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
 
                     /* last MV */
                     mv_predictor[pred_count][0] = prev_x;

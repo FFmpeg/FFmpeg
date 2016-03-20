@@ -291,12 +291,6 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
     short *output_bak = NULL;
     int lenout;
 
-    if (s->input_channels == s->output_channels && s->ratio == 1.0 && 0) {
-        /* nothing to do */
-        memcpy(output, input, nb_samples * s->input_channels * sizeof(short));
-        return nb_samples;
-    }
-
     if (s->sample_fmt[0] != AV_SAMPLE_FMT_S16) {
         int istride[1] = { s->sample_size[0] };
         int ostride[1] = { 2 };

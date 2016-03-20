@@ -27,8 +27,6 @@
 
 typedef int16_t dwtcoef;
 
-/* Only Deslauriers-Dubuc (9,7) and LeGall (5,3) supported! */
-
 enum VC2TransformType {
     VC2_TRANSFORM_9_7    = 0,   /* Deslauriers-Dubuc (9,7)  */
     VC2_TRANSFORM_5_3    = 1,   /* LeGall (5,3)             */
