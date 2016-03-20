@@ -198,7 +198,7 @@ static int nuv_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         ctx->v_id = vst->index;
 
-        ret = av_image_check_size(width, height, 0, ctx);
+        ret = av_image_check_size(width, height, 0, s);
         if (ret < 0)
             return ret;
 
