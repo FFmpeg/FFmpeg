@@ -37,45 +37,7 @@ extern const AVBitStreamFilter ff_text2movsub_bsf;
 extern const AVBitStreamFilter ff_noise_bsf;
 extern const AVBitStreamFilter ff_remove_extradata_bsf;
 
-static const AVBitStreamFilter *bitstream_filters[] = {
-#if CONFIG_AAC_ADTSTOASC_BSF
-    &ff_aac_adtstoasc_bsf,
-#endif
-#if CONFIG_CHOMP_BSF
-    &ff_chomp_bsf,
-#endif
-#if CONFIG_DUMP_EXTRADATA_BSF
-    &ff_dump_extradata_bsf,
-#endif
-#if CONFIG_H264_MP4TOANNEXB_BSF
-    &ff_h264_mp4toannexb_bsf,
-#endif
-#if CONFIG_HEVC_MP4TOANNEXB_BSF
-    &ff_hevc_mp4toannexb_bsf,
-#endif
-#if CONFIG_IMX_DUMP_HEADER_BSF
-    &ff_imx_dump_header_bsf,
-#endif
-#if CONFIG_MJPEG2JPEG_BSF
-    &ff_mjpeg2jpeg_bsf,
-#endif
-#if CONFIG_MJPEGA_DUMP_HEADER_BSF
-    &ff_mjpeg2jpeg_bsf,
-#endif
-#if CONFIG_MOV2TEXTSUB_BSF
-    &ff_mov2textsub_bsf,
-#endif
-#if CONFIG_TEXT2MOVSUB_BSF
-    &ff_text2movsub_bsf,
-#endif
-#if CONFIG_NOISE_BSF
-    &ff_noise_bsf,
-#endif
-#if CONFIG_REMOVE_EXTRADATA_BSF
-    &ff_remove_extradata_bsf,
-#endif
-    NULL,
-};
+#include "libavcodec/bsf_list.c"
 
 const AVBitStreamFilter *av_bsf_next(void **opaque)
 {

@@ -217,7 +217,8 @@ clean::
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version avversion.h
+	$(RM) config.* .config libavutil/avconfig.h .version avversion.h \
+          libavcodec/bsf_list.c libavformat/protocol_list.c
 
 config:
 	$(SRC_PATH)/configure $(value LIBAV_CONFIGURATION)

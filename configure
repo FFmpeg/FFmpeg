@@ -5310,6 +5310,23 @@ cp_if_changed $TMPH libavutil/avconfig.h
 
 test -n "$WARNINGS" && printf "\n$WARNINGS"
 
+# generate the lists of enabled components
+print_enabled_components(){
+    file=$1
+    struct_name=$2
+    name=$3
+    shift 3
+    echo "static const $struct_name *$name[] = {" > $TMPH
+    for c in $*; do
+        enabled $c && printf "    &ff_%s,\n" $c >> $TMPH
+    done
+    echo "    NULL };" >> $TMPH
+    cp_if_changed $TMPH $file
+}
+
+print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
+print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
+
 # build pkg-config files
 
 lib_version(){
