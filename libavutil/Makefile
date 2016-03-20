@@ -181,6 +181,7 @@ TESTPROGS = adler32                                                     \
             crc                                                         \
             des                                                         \
             dict                                                        \
+            display                                                     \
             error                                                       \
             eval                                                        \
             file                                                        \
