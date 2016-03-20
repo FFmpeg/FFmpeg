@@ -1406,9 +1406,9 @@ static int get_video_frame(PlayerState *is, AVFrame *frame, int64_t *pts, AVPack
 
     if (got_picture) {
         if (decoder_reorder_pts == -1) {
-            *pts = guess_correct_pts(&is->pts_ctx, frame->pkt_pts, frame->pkt_dts);
+            *pts = guess_correct_pts(&is->pts_ctx, frame->pts, frame->pkt_dts);
         } else if (decoder_reorder_pts) {
-            *pts = frame->pkt_pts;
+            *pts = frame->pts;
         } else {
             *pts = frame->pkt_dts;
         }

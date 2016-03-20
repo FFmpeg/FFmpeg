@@ -228,8 +228,6 @@ static int movie_get_frame(AVFilterLink *outlink)
             avcodec_decode_video2(movie->codec_ctx, movie->frame, &frame_decoded, &pkt);
 
             if (frame_decoded) {
-                if (movie->frame->pkt_pts != AV_NOPTS_VALUE)
-                    movie->frame->pts = movie->frame->pkt_pts;
                 av_log(outlink->src, AV_LOG_TRACE,
                         "movie_get_frame(): file:'%s' pts:%"PRId64" time:%f aspect:%d/%d\n",
                         movie->file_name, movie->frame->pts,

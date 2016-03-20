@@ -1279,7 +1279,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     }
     ist->hwaccel_retrieved_pix_fmt = decoded_frame->format;
 
-    decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
+    decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pts,
                                            decoded_frame->pkt_dts);
 
     if (ist->st->sample_aspect_ratio.num)
