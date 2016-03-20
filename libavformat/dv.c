@@ -284,9 +284,7 @@ static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
     const uint8_t *vsc_pack;
     AVCodecContext *avctx;
     int apt, is16_9;
-    int size = 0;
 
-    if (c->sys) {
         avctx = c->vst->codec;
 
         avpriv_set_pts_info(c->vst, 64, c->sys->time_base.num,
@@ -302,9 +300,7 @@ static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
         avctx->bit_rate = av_rescale_q(c->sys->frame_size,
                                        (AVRational) { 8, 1 },
                                        c->sys->time_base);
-        size = c->sys->frame_size;
-    }
-    return size;
+    return c->sys->frame_size;
 }
 
 static int dv_extract_timecode(DVDemuxContext* c, const uint8_t* frame, char *tc)
