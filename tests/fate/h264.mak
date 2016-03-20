@@ -205,7 +205,10 @@ FATE_SAMPLES_FFPROBE += $(FATE_H264_FFPROBE-yes)
 fate-h264: $(FATE_H264-yes) $(FATE_H264_FFPROBE-yes)
 
 fate-h264-conformance-aud_mw_e:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/AUD_MW_E.264
-fate-h264-conformance-ba1_ft_c:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA1_FT_C.264
+
+#force framerate so that the option is tested, theres no other case that tests it, its not needed at all otherwise here
+fate-h264-conformance-ba1_ft_c:                   CMD = framecrc -vsync drop -framerate 19 -i $(TARGET_SAMPLES)/h264-conformance/BA1_FT_C.264
+
 fate-h264-conformance-ba1_sony_d:                 CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA1_Sony_D.jsv
 fate-h264-conformance-ba2_sony_f:                 CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA2_Sony_F.jsv
 fate-h264-conformance-ba3_sva_c:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA3_SVA_C.264
