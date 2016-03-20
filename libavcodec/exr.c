@@ -1,5 +1,6 @@
 /*
  * OpenEXR (.exr) image decoder
+ * Copyright (c) 2006 Industrial Light & Magic, a division of Lucas Digital Ltd. LLC
  * Copyright (c) 2009 Jimmy Christensen
  *
  * This file is part of FFmpeg.
@@ -34,6 +35,7 @@
 #include <float.h>
 #include <zlib.h>
 
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/opt.h"
@@ -826,6 +828,116 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
     return 0;
 }
 
+static void unpack_14(const uint8_t b[14], uint16_t s[16])
+{
+    unsigned short shift = (b[ 2] >> 2);
+    unsigned short bias = (0x20 << shift);
+    int i;
+
+    s[ 0] = (b[0] << 8) | b[1];
+
+    s[ 4] = s[ 0] + ((((b[ 2] << 4) | (b[ 3] >> 4)) & 0x3f) << shift) - bias;
+    s[ 8] = s[ 4] + ((((b[ 3] << 2) | (b[ 4] >> 6)) & 0x3f) << shift) - bias;
+    s[12] = s[ 8] +   ((b[ 4]                       & 0x3f) << shift) - bias;
+
+    s[ 1] = s[ 0] +   ((b[ 5] >> 2)                         << shift) - bias;
+    s[ 5] = s[ 4] + ((((b[ 5] << 4) | (b[ 6] >> 4)) & 0x3f) << shift) - bias;
+    s[ 9] = s[ 8] + ((((b[ 6] << 2) | (b[ 7] >> 6)) & 0x3f) << shift) - bias;
+    s[13] = s[12] +   ((b[ 7]                       & 0x3f) << shift) - bias;
+
+    s[ 2] = s[ 1] +   ((b[ 8] >> 2)                         << shift) - bias;
+    s[ 6] = s[ 5] + ((((b[ 8] << 4) | (b[ 9] >> 4)) & 0x3f) << shift) - bias;
+    s[10] = s[ 9] + ((((b[ 9] << 2) | (b[10] >> 6)) & 0x3f) << shift) - bias;
+    s[14] = s[13] +   ((b[10]                       & 0x3f) << shift) - bias;
+
+    s[ 3] = s[ 2] +   ((b[11] >> 2)                         << shift) - bias;
+    s[ 7] = s[ 6] + ((((b[11] << 4) | (b[12] >> 4)) & 0x3f) << shift) - bias;
+    s[11] = s[10] + ((((b[12] << 2) | (b[13] >> 6)) & 0x3f) << shift) - bias;
+    s[15] = s[14] +   ((b[13]                       & 0x3f) << shift) - bias;
+
+    for (i = 0; i < 16; ++i) {
+        if (s[i] & 0x8000)
+            s[i] &= 0x7fff;
+        else
+            s[i] = ~s[i];
+    }
+}
+
+static void unpack_3(const uint8_t b[3], uint16_t s[16])
+{
+    int i;
+
+    s[0] = (b[0] << 8) | b[1];
+
+    if (s[0] & 0x8000)
+        s[0] &= 0x7fff;
+    else
+        s[0] = ~s[0];
+
+    for (i = 1; i < 16; i++)
+        s[i] = s[0];
+}
+
+
+static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
+                          int uncompressed_size, EXRThreadData *td){
+    const int8_t *sr = src;
+    int stayToUncompress = compressed_size;
+    int nbB44BlockW, nbB44BlockH;
+    int indexHgX, indexHgY, indexOut, indexTmp;
+    uint16_t tmpBuffer[16]; /* B44 use 4x4 half float pixel */
+    int c, iY, iX, y, x;
+
+    /* calc B44 block count */
+    nbB44BlockW = s->xdelta / 4;
+    if ((s->xdelta % 4) != 0)
+        nbB44BlockW++;
+
+    nbB44BlockH = s->ysize / 4;
+    if ((s->ysize % 4) != 0)
+        nbB44BlockH++;
+
+    for (c = 0; c < s->nb_channels; c++) {
+        for (iY = 0; iY < nbB44BlockH; iY++) {
+            for (iX = 0; iX < nbB44BlockW; iX++) {/* For each B44 block */
+                if (stayToUncompress < 3){
+                    av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stayToUncompress);
+                    return AVERROR_INVALIDDATA;
+                }
+
+                if (src[compressed_size - stayToUncompress + 2] == 0xfc) { /* B44A block */
+                    unpack_3(sr, tmpBuffer);
+                    sr += 3;
+                    stayToUncompress -= 3;
+                }  else {/* B44 Block */
+                    if (stayToUncompress < 14) {
+                        av_log(s, AV_LOG_ERROR, "Not enough data for B44 block: %d", stayToUncompress);
+                        return AVERROR_INVALIDDATA;
+                    }
+                    unpack_14(sr, tmpBuffer);
+                    sr += 14;
+                    stayToUncompress -= 14;
+                }
+
+                /* copy data to uncompress buffer (B44 block can exceed target resolution)*/
+                indexHgX = iX * 4;
+                indexHgY = iY * 4;
+
+                for (y = indexHgY; y < FFMIN(indexHgY + 4, s->ysize); y++) {
+                    for (x = indexHgX; x < FFMIN(indexHgX + 4, s->xdelta); x++) {
+                        indexOut = (c * s->xdelta + y * s->xdelta * s->nb_channels + x) * 2;
+                        indexTmp = (y-indexHgY) * 4 + (x-indexHgX);
+                        td->uncompressed_data[indexOut] = tmpBuffer[indexTmp] & 0xff;
+                        td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int decode_block(AVCodecContext *avctx, void *tdata,
                         int jobnr, int threadnr)
 {
@@ -891,6 +1003,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             break;
         case EXR_RLE:
             ret = rle_uncompress(src, data_size, uncompressed_size, td);
+            break;
+        case EXR_B44:
+        case EXR_B44A:
+            ret = b44_uncompress(s, src, data_size, uncompressed_size, td);
+            break;
         }
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "decode_block() failed.\n");
@@ -1323,6 +1440,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         s->scan_lines_per_block = 16;
         break;
     case EXR_PIZ:
+    case EXR_B44:
+    case EXR_B44A:
         s->scan_lines_per_block = 32;
         break;
     default:
