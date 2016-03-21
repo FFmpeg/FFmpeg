@@ -195,11 +195,14 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     H264Context      *h = &p->h;
     H264SliceContext *sl = &h->slice_ctx[0];
     const uint8_t *buf_end = buf + buf_size;
+
+    H2645NAL nal = { NULL };
+
     unsigned int pps_id;
     unsigned int slice_type;
     int state = -1, got_reset = 0;
-    const uint8_t *ptr;
     int field_poc[2];
+    int ret;
 
     /* set some sane default values */
     s->pict_type         = AV_PICTURE_TYPE_I;
@@ -213,7 +216,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         return 0;
 
     for (;;) {
-        int src_length, dst_length, consumed;
+        int src_length, consumed;
         buf = avpriv_find_start_code(buf, buf_end, &state);
         if (buf >= buf_end)
             break;
@@ -235,11 +238,22 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             break;
         }
-        ptr = ff_h264_decode_nal(h, sl, buf, &dst_length, &consumed, src_length);
-        if (!ptr || dst_length < 0)
+
+        consumed = ff_h2645_extract_rbsp(buf, src_length, &nal);
+        if (consumed < 0)
             break;
 
-        init_get_bits(&h->gb, ptr, 8 * dst_length);
+        ret = init_get_bits(&nal.gb, nal.data, nal.size * 8);
+        if (ret < 0)
+            goto fail;
+        get_bits1(&nal.gb);
+        nal.ref_idc = get_bits(&nal.gb, 2);
+        nal.type    = get_bits(&nal.gb, 5);
+
+        h->gb            = nal.gb;
+        h->nal_ref_idc   = nal.ref_idc;
+        h->nal_unit_type = nal.type;
+
         switch (h->nal_unit_type) {
         case NAL_SPS:
             ff_h264_decode_seq_parameter_set(h);
@@ -259,7 +273,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             h->prev_poc_lsb          = 0;
         /* fall through */
         case NAL_SLICE:
-            init_get_bits(&sl->gb, ptr, 8 * dst_length);
+            sl->gb = nal.gb;
             get_ue_golomb(&sl->gb);  // skip first_mb_in_slice
             slice_type   = get_ue_golomb_31(&sl->gb);
             s->pict_type = ff_h264_golomb_to_pict_type[slice_type % 5];
@@ -271,18 +285,18 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             if (pps_id >= MAX_PPS_COUNT) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "pps_id %u out of range\n", pps_id);
-                return -1;
+                goto fail;
             }
             if (!h->pps_buffers[pps_id]) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "non-existing PPS %u referenced\n", pps_id);
-                return -1;
+                goto fail;
             }
             h->pps = *h->pps_buffers[pps_id];
             if (!h->sps_buffers[h->pps.sps_id]) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "non-existing SPS %u referenced\n", h->pps.sps_id);
-                return -1;
+                goto fail;
             }
             h->sps       = *h->sps_buffers[h->pps.sps_id];
             h->frame_num = get_bits(&sl->gb, h->sps.log2_max_frame_num);
@@ -360,7 +374,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             if (h->nal_ref_idc && h->nal_unit_type != NAL_IDR_SLICE) {
                 got_reset = scan_mmco_reset(s);
                 if (got_reset < 0)
-                    return got_reset;
+                    goto fail;
             }
 
             /* Set up the prev_ values for decoding POC of the next picture. */
@@ -438,12 +452,15 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 s->field_order = AV_FIELD_UNKNOWN;
             }
 
+            av_freep(&nal.rbsp_buffer);
             return 0; /* no need to evaluate the rest */
         }
         buf += consumed;
     }
     /* didn't find a picture! */
     av_log(h->avctx, AV_LOG_ERROR, "missing picture in access unit\n");
+fail:
+    av_freep(&nal.rbsp_buffer);
     return -1;
 }
 
