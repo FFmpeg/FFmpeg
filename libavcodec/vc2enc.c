@@ -1182,7 +1182,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     s->num_x = s->plane[0].dwt_width/s->slice_width;
     s->num_y = s->plane[0].dwt_height/s->slice_height;
 
-    s->slice_args = av_malloc(s->num_x*s->num_y*sizeof(SliceArgs));
+    s->slice_args = av_calloc(s->num_x*s->num_y, sizeof(SliceArgs));
     if (!s->slice_args)
         goto alloc_fail;
 
