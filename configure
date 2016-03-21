@@ -139,6 +139,12 @@ Hardware accelerators:
   --enable-vda             enable VDA code
   --enable-vdpau           enable VDPAU code
 
+Hardware-accelerated decoding/encoding:
+  --enable-cuda            enable dynamically linked CUDA [no]
+  --enable-libmfx          enable HW acceleration through libmfx
+  --enable-mmal            enable decoding via MMAL [no]
+  --enable-nvenc           enable encoding via NVENC [no]
+
 Individual component options:
   --disable-everything     disable all components listed below
   --disable-encoder=NAME   disable encoder NAME
@@ -179,7 +185,6 @@ Individual component options:
 External library support:
   --enable-avisynth        enable reading of AviSynth script files [no]
   --enable-bzlib           enable bzlib [autodetect]
-  --enable-cuda            enable dynamically linked CUDA [no]
   --enable-frei0r          enable frei0r video filtering
   --enable-gnutls          enable gnutls [no]
   --enable-libbs2b         enable bs2b DSP library [no]
@@ -193,7 +198,6 @@ External library support:
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
-  --enable-libmfx          enable HW acceleration through libmfx
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnpp          enable NVIDIA Performance Primitives-based code [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
@@ -223,8 +227,6 @@ External library support:
   --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [auto]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
-  --enable-mmal            enable decoding via MMAL [no]
-  --enable-nvenc           enable encoding via NVENC [no]
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing (legacy) [no]
   --enable-zlib            enable zlib [autodetect]
@@ -1207,7 +1209,6 @@ EXAMPLE_LIST="
 EXTERNAL_LIBRARY_LIST="
     avisynth
     bzlib
-    cuda
     frei0r
     gnutls
     libbs2b
@@ -1221,7 +1222,6 @@ EXTERNAL_LIBRARY_LIST="
     libgsm
     libilbc
     libkvazaar
-    libmfx
     libmp3lame
     libnpp
     libopencore_amrnb
@@ -1250,8 +1250,6 @@ EXTERNAL_LIBRARY_LIST="
     libxcb_shm
     libxcb_xfixes
     libxvid
-    mmal
-    nvenc
     openssl
     x11grab
     zlib
@@ -1267,6 +1265,13 @@ FEATURE_LIST="
     sram
     static
     swscale_alpha
+"
+
+HW_CODECS_LIST="
+    cuda
+    libmfx
+    mmal
+    nvenc
 "
 
 HWACCEL_LIST="
@@ -1317,6 +1322,7 @@ CONFIG_LIST="
     $EXAMPLE_LIST
     $EXTERNAL_LIBRARY_LIST
     $FEATURE_LIST
+    $HW_CODECS_LIST
     $HWACCEL_LIST
     $LICENSE_LIST
     $LIBRARY_LIST
@@ -1876,11 +1882,6 @@ mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp hpeldsp idctdsp me_cmp mpeg_er videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
-nvenc_deps_any="dlopen LoadLibrary"
-nvenc_extralibs='$ldl'
-qsvdec_select="qsv"
-qsvenc_select="qsv"
-vaapi_encode_deps="vaapi"
 vc1dsp_select="h264chroma qpeldsp startcode"
 
 # decoders / encoders
@@ -1953,24 +1954,10 @@ h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
 h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel videodsp"
 h264_decoder_suggest="error_resilience"
-h264_nvenc_encoder_deps="nvenc"
-h264_qsv_decoder_deps="libmfx"
-h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
-h264_qsv_encoder_deps="libmfx"
-h264_qsv_encoder_select="qsvenc"
-h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
-h264_vaapi_encoder_select="vaapi_encode golomb"
 hap_decoder_select="snappy texturedsp"
 hap_encoder_deps="libsnappy"
 hap_encoder_select="texturedspenc"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
-hevc_nvenc_encoder_deps="nvenc"
-hevc_qsv_encoder_deps="libmfx"
-hevc_qsv_decoder_deps="libmfx"
-hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec hevc_qsv_hwaccel"
-hevc_qsv_encoder_select="qsvenc"
-hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
-hevc_vaapi_encoder_select="vaapi_encode golomb"
 huffyuv_decoder_select="bswapdsp huffyuvdsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp"
 iac_decoder_select="imc_decoder"
@@ -2013,10 +2000,6 @@ mpeg1video_decoder_select="error_resilience mpeg_er mpegvideo"
 mpeg1video_encoder_select="aandcttables mpegvideoenc"
 mpeg2video_decoder_select="error_resilience mpeg_er mpegvideo"
 mpeg2video_encoder_select="aandcttables mpegvideoenc"
-mpeg2_qsv_decoder_deps="libmfx"
-mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel mpegvideo_parser"
-mpeg2_qsv_encoder_deps="libmfx"
-mpeg2_qsv_encoder_select="qsvenc"
 mpeg4_decoder_select="h263_decoder mpeg4video_parser"
 mpeg4_encoder_select="h263_encoder"
 msa1_decoder_select="mss34dsp"
@@ -2031,8 +2014,6 @@ mxpeg_decoder_select="mjpeg_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 nuv_decoder_select="idctdsp lzo"
-nvenc_h264_encoder_deps="nvenc"
-nvenc_hevc_encoder_deps="nvenc"
 on2avc_decoder_select="mdct"
 opus_decoder_deps="avresample"
 opus_decoder_select="imdct15"
@@ -2168,6 +2149,39 @@ wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
+
+# hardware-accelerated codecs
+nvenc_deps_any="dlopen LoadLibrary"
+nvenc_extralibs='$ldl'
+qsvdec_select="qsv"
+qsvenc_select="qsv"
+vaapi_encode_deps="vaapi"
+
+hwupload_cuda_filter_deps="cuda"
+scale_npp_filter_deps="cuda libnpp"
+
+h264_nvenc_encoder_deps="nvenc"
+h264_qsv_decoder_deps="libmfx"
+h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
+h264_qsv_encoder_deps="libmfx"
+h264_qsv_encoder_select="qsvenc"
+h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
+h264_vaapi_encoder_select="vaapi_encode golomb"
+
+hevc_nvenc_encoder_deps="nvenc"
+hevc_qsv_decoder_deps="libmfx"
+hevc_qsv_encoder_deps="libmfx"
+hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser hevc_qsv_hwaccel qsvdec"
+hevc_qsv_encoder_select="qsvenc"
+hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
+hevc_vaapi_encoder_select="vaapi_encode golomb"
+mpeg2_qsv_decoder_deps="libmfx"
+mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel mpegvideo_parser"
+mpeg2_qsv_encoder_deps="libmfx"
+mpeg2_qsv_encoder_select="qsvenc"
+
+nvenc_h264_encoder_deps="nvenc"
+nvenc_hevc_encoder_deps="nvenc"
 
 # parsers
 h264_parser_select="h264_decoder"
@@ -2369,12 +2383,10 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
 frei0r_src_filter_extralibs='$ldl'
 hqdn3d_filter_deps="gpl"
-hwupload_cuda_filter_deps="cuda"
 interlace_filter_deps="gpl"
 ocv_filter_deps="libopencv"
 resample_filter_deps="avresample"
 scale_filter_deps="swscale"
-scale_npp_filter_deps="cuda libnpp"
 scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
@@ -5080,6 +5092,10 @@ for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf ind
     print_enabled '_*' $list | print_3_columns
     echo
 done
+
+echo "Enabled Hardware-accelerated codecs:"
+print_enabled '' $HW_CODECS_LIST | print_3_columns
+echo
 
 license="LGPL version 2.1 or later"
 if enabled nonfree; then
