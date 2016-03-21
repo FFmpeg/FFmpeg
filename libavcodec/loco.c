@@ -25,8 +25,8 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
-#include "golomb_legacy.h"
+#include "bitstream.h"
+#include "golomb.h"
 #include "internal.h"
 #include "mathops.h"
 
@@ -50,7 +50,7 @@ typedef struct LOCOContext {
 } LOCOContext;
 
 typedef struct RICEContext {
-    GetBitContext gb;
+    BitstreamContext bc;
     int save, run, run2; /* internal rice decoder state */
     int sum, count; /* sum and count for getting rice parameter */
     int lossy;
@@ -88,11 +88,11 @@ static inline int loco_get_rice(RICEContext *r)
         loco_update_rice_param(r, 0);
         return 0;
     }
-    v = get_ur_golomb_jpegls(&r->gb, loco_get_rice_param(r), INT_MAX, 0);
+    v = get_ur_golomb_jpegls(&r->bc, loco_get_rice_param(r), INT_MAX, 0);
     loco_update_rice_param(r, (v + 1) >> 1);
     if (!v) {
         if (r->save >= 0) {
-            r->run = get_ur_golomb_jpegls(&r->gb, 2, INT_MAX, 0);
+            r->run = get_ur_golomb_jpegls(&r->bc, 2, INT_MAX, 0);
             if (r->run > 1)
                 r->save += r->run + 1;
             else
@@ -132,7 +132,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     int val;
     int i, j;
 
-    init_get_bits(&rc.gb, buf, buf_size*8);
+    bitstream_init8(&rc.bc, buf, buf_size);
     rc.save  = 0;
     rc.run   = 0;
     rc.run2  = 0;
@@ -162,7 +162,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
         data += stride;
     }
 
-    return (get_bits_count(&rc.gb) + 7) >> 3;
+    return (bitstream_tell(&rc.bc) + 7) >> 3;
 }
 
 static int decode_frame(AVCodecContext *avctx,
