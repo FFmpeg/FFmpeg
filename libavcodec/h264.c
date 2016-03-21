@@ -32,6 +32,7 @@
 #include "libavutil/stereo3d.h"
 #include "libavutil/timer.h"
 #include "internal.h"
+#include "bytestream.h"
 #include "cabac.h"
 #include "cabac_functions.h"
 #include "error_resilience.h"
@@ -407,6 +408,55 @@ fail:
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                             int parse_extradata);
 
+/* There are (invalid) samples in the wild with mp4-style extradata, where the
+ * parameter sets are stored unescaped (i.e. as RBSP).
+ * This function catches the parameter set decoding failure and tries again
+ * after escaping it */
+static int decode_extradata_ps_mp4(H264Context *h, const uint8_t *buf, int buf_size)
+{
+    int ret;
+
+    ret = decode_nal_units(h, buf, buf_size, 1);
+    if (ret < 0 && !(h->avctx->err_recognition & AV_EF_EXPLODE)) {
+        GetByteContext gbc;
+        PutByteContext pbc;
+        uint8_t *escaped_buf;
+        int escaped_buf_size;
+
+        av_log(h->avctx, AV_LOG_WARNING,
+               "SPS decoding failure, trying again after escaping the NAL\n");
+
+        if (buf_size / 2 >= (INT16_MAX - AV_INPUT_BUFFER_PADDING_SIZE) / 3)
+            return AVERROR(ERANGE);
+        escaped_buf_size = buf_size * 3 / 2 + AV_INPUT_BUFFER_PADDING_SIZE;
+        escaped_buf = av_mallocz(escaped_buf_size);
+        if (!escaped_buf)
+            return AVERROR(ENOMEM);
+
+        bytestream2_init(&gbc, buf, buf_size);
+        bytestream2_init_writer(&pbc, escaped_buf, escaped_buf_size);
+
+        while (bytestream2_get_bytes_left(&gbc)) {
+            if (bytestream2_get_bytes_left(&gbc) >= 3 &&
+                bytestream2_peek_be24(&gbc) <= 3) {
+                bytestream2_put_be24(&pbc, 3);
+                bytestream2_skip(&gbc, 2);
+            } else
+                bytestream2_put_byte(&pbc, bytestream2_get_byte(&gbc));
+        }
+
+        escaped_buf_size = bytestream2_tell_p(&pbc);
+        AV_WB16(escaped_buf, escaped_buf_size - 2);
+
+        ret = decode_nal_units(h, escaped_buf, escaped_buf_size, 1);
+        av_freep(&escaped_buf);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 int ff_h264_decode_extradata(H264Context *h)
 {
     AVCodecContext *avctx = h->avctx;
@@ -433,7 +483,7 @@ int ff_h264_decode_extradata(H264Context *h)
             nalsize = AV_RB16(p) + 2;
             if (p - avctx->extradata + nalsize > avctx->extradata_size)
                 return AVERROR_INVALIDDATA;
-            ret = decode_nal_units(h, p, nalsize, 1);
+            ret = decode_extradata_ps_mp4(h, p, nalsize);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Decoding sps %d from avcC failed\n", i);
@@ -447,7 +497,7 @@ int ff_h264_decode_extradata(H264Context *h)
             nalsize = AV_RB16(p) + 2;
             if (p - avctx->extradata + nalsize > avctx->extradata_size)
                 return AVERROR_INVALIDDATA;
-            ret = decode_nal_units(h, p, nalsize, 1);
+            ret = decode_extradata_ps_mp4(h, p, nalsize);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Decoding pps %d from avcC failed\n", i);
@@ -1379,14 +1429,8 @@ again:
             case NAL_SPS:
                 init_get_bits(&h->gb, ptr, bit_length);
                 ret = ff_h264_decode_seq_parameter_set(h);
-                if (ret < 0 && h->is_avc && (nalsize != consumed) && nalsize) {
-                    av_log(h->avctx, AV_LOG_DEBUG,
-                           "SPS decoding failure, trying again with the complete NAL\n");
-                    init_get_bits(&h->gb, buf + buf_index + 1 - consumed,
-                                  8 * (nalsize - 1));
-                    ff_h264_decode_seq_parameter_set(h);
-                }
-
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                    goto end;
                 break;
             case NAL_PPS:
                 init_get_bits(&h->gb, ptr, bit_length);
