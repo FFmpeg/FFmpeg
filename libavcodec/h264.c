@@ -978,68 +978,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
     }
 }
 
-int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
-{
-    int list, i;
-    int luma_def, chroma_def;
-
-    sl->use_weight             = 0;
-    sl->use_weight_chroma      = 0;
-    sl->luma_log2_weight_denom = get_ue_golomb(&sl->gb);
-    if (h->sps.chroma_format_idc)
-        sl->chroma_log2_weight_denom = get_ue_golomb(&sl->gb);
-    luma_def   = 1 << sl->luma_log2_weight_denom;
-    chroma_def = 1 << sl->chroma_log2_weight_denom;
-
-    for (list = 0; list < 2; list++) {
-        sl->luma_weight_flag[list]   = 0;
-        sl->chroma_weight_flag[list] = 0;
-        for (i = 0; i < sl->ref_count[list]; i++) {
-            int luma_weight_flag, chroma_weight_flag;
-
-            luma_weight_flag = get_bits1(&sl->gb);
-            if (luma_weight_flag) {
-                sl->luma_weight[i][list][0] = get_se_golomb(&sl->gb);
-                sl->luma_weight[i][list][1] = get_se_golomb(&sl->gb);
-                if (sl->luma_weight[i][list][0] != luma_def ||
-                    sl->luma_weight[i][list][1] != 0) {
-                    sl->use_weight             = 1;
-                    sl->luma_weight_flag[list] = 1;
-                }
-            } else {
-                sl->luma_weight[i][list][0] = luma_def;
-                sl->luma_weight[i][list][1] = 0;
-            }
-
-            if (h->sps.chroma_format_idc) {
-                chroma_weight_flag = get_bits1(&sl->gb);
-                if (chroma_weight_flag) {
-                    int j;
-                    for (j = 0; j < 2; j++) {
-                        sl->chroma_weight[i][list][j][0] = get_se_golomb(&sl->gb);
-                        sl->chroma_weight[i][list][j][1] = get_se_golomb(&sl->gb);
-                        if (sl->chroma_weight[i][list][j][0] != chroma_def ||
-                            sl->chroma_weight[i][list][j][1] != 0) {
-                            sl->use_weight_chroma        = 1;
-                            sl->chroma_weight_flag[list] = 1;
-                        }
-                    }
-                } else {
-                    int j;
-                    for (j = 0; j < 2; j++) {
-                        sl->chroma_weight[i][list][j][0] = chroma_def;
-                        sl->chroma_weight[i][list][j][1] = 0;
-                    }
-                }
-            }
-        }
-        if (sl->slice_type_nos != AV_PICTURE_TYPE_B)
-            break;
-    }
-    sl->use_weight = sl->use_weight || sl->use_weight_chroma;
-    return 0;
-}
-
 /**
  * instantaneous decoder refresh.
  */

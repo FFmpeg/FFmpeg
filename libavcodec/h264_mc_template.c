@@ -48,9 +48,9 @@ static void mc_part(const H264Context *h, H264SliceContext *sl,
                     const h264_biweight_func *weight_avg,
                     int list0, int list1)
 {
-    if ((sl->use_weight == 2 && list0 && list1 &&
-         (sl->implicit_weight[sl->ref_cache[0][scan8[n]]][sl->ref_cache[1][scan8[n]]][sl->mb_y & 1] != 32)) ||
-        sl->use_weight == 1)
+    if ((sl->pwt.use_weight == 2 && list0 && list1 &&
+         (sl->pwt.implicit_weight[sl->ref_cache[0][scan8[n]]][sl->ref_cache[1][scan8[n]]][sl->mb_y & 1] != 32)) ||
+        sl->pwt.use_weight == 1)
         mc_part_weighted(h, sl, n, square, height, delta, dest_y, dest_cb, dest_cr,
                          x_offset, y_offset, qpix_put, chroma_put,
                          weight_op[0], weight_op[1], weight_avg[0],
