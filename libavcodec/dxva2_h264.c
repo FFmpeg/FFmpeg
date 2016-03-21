@@ -143,7 +143,7 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
     pp->num_ref_idx_l0_active_minus1  = pps->ref_count[0] - 1;
     pp->num_ref_idx_l1_active_minus1  = pps->ref_count[1] - 1;
     pp->Reserved8BitsA                = 0;
-    pp->frame_num                     = h->frame_num;
+    pp->frame_num                     = h->poc.frame_num;
     pp->log2_max_frame_num_minus4     = sps->log2_max_frame_num - 4;
     pp->pic_order_cnt_type            = sps->poc_type;
     if (sps->poc_type == 0)

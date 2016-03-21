@@ -409,7 +409,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->nal_length_size = h1->nal_length_size;
 
     // POC timing
-    copy_fields(h, h1, poc_lsb, current_slice);
+    copy_fields(h, h1, poc, current_slice);
 
     copy_picture_range(h->short_ref, h1->short_ref, 32, h, h1);
     copy_picture_range(h->long_ref, h1->long_ref, 32, h, h1);
@@ -421,11 +421,11 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     if (!h->droppable) {
         err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
-        h->prev_poc_msb = h->poc_msb;
-        h->prev_poc_lsb = h->poc_lsb;
+        h->poc.prev_poc_msb = h->poc.poc_msb;
+        h->poc.prev_poc_lsb = h->poc.poc_lsb;
     }
-    h->prev_frame_num_offset = h->frame_num_offset;
-    h->prev_frame_num        = h->frame_num;
+    h->poc.prev_frame_num_offset = h->poc.frame_num_offset;
+    h->poc.prev_frame_num        = h->poc.frame_num;
 
     h->recovery_frame        = h1->recovery_frame;
     h->frame_recovered       = h1->frame_recovered;
@@ -447,7 +447,7 @@ static int h264_frame_start(H264Context *h)
     pic->reference              = h->droppable ? 0 : h->picture_structure;
     pic->f->coded_picture_number = h->coded_picture_number++;
     pic->field_picture          = h->picture_structure != PICT_FRAME;
-    pic->frame_num               = h->frame_num;
+    pic->frame_num               = h->poc.frame_num;
     /*
      * Zero key_frame here; IDR markings per slice in frame or fields are ORed
      * in later.
@@ -1106,7 +1106,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     frame_num = get_bits(&sl->gb, sps->log2_max_frame_num);
     if (!h->setup_finished)
-        h->frame_num = frame_num;
+        h->poc.frame_num = frame_num;
 
     sl->mb_mbaff       = 0;
 
@@ -1149,19 +1149,19 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     } else {
         /* Shorten frame num gaps so we don't have to allocate reference
          * frames just to throw them away */
-        if (h->frame_num != h->prev_frame_num) {
-            int unwrap_prev_frame_num = h->prev_frame_num;
+        if (h->poc.frame_num != h->poc.prev_frame_num) {
+            int unwrap_prev_frame_num = h->poc.prev_frame_num;
             int max_frame_num         = 1 << sps->log2_max_frame_num;
 
-            if (unwrap_prev_frame_num > h->frame_num)
+            if (unwrap_prev_frame_num > h->poc.frame_num)
                 unwrap_prev_frame_num -= max_frame_num;
 
-            if ((h->frame_num - unwrap_prev_frame_num) > sps->ref_frame_count) {
-                unwrap_prev_frame_num = (h->frame_num - sps->ref_frame_count) - 1;
+            if ((h->poc.frame_num - unwrap_prev_frame_num) > sps->ref_frame_count) {
+                unwrap_prev_frame_num = (h->poc.frame_num - sps->ref_frame_count) - 1;
                 if (unwrap_prev_frame_num < 0)
                     unwrap_prev_frame_num += max_frame_num;
 
-                h->prev_frame_num = unwrap_prev_frame_num;
+                h->poc.prev_frame_num = unwrap_prev_frame_num;
             }
         }
 
@@ -1184,7 +1184,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                                               last_pic_structure == PICT_TOP_FIELD);
                 }
             } else {
-                if (h->cur_pic_ptr->frame_num != h->frame_num) {
+                if (h->cur_pic_ptr->frame_num != h->poc.frame_num) {
                     /* This and previous field were reference, but had
                      * different frame_nums. Consider this field first in
                      * pair. Throw away previous field except for reference
@@ -1216,20 +1216,20 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             }
         }
 
-        while (h->frame_num != h->prev_frame_num &&
-               h->frame_num != (h->prev_frame_num + 1) % (1 << sps->log2_max_frame_num)) {
+        while (h->poc.frame_num != h->poc.prev_frame_num &&
+               h->poc.frame_num != (h->poc.prev_frame_num + 1) % (1 << sps->log2_max_frame_num)) {
             H264Picture *prev = h->short_ref_count ? h->short_ref[0] : NULL;
             av_log(h->avctx, AV_LOG_DEBUG, "Frame num gap %d %d\n",
-                   h->frame_num, h->prev_frame_num);
+                   h->poc.frame_num, h->poc.prev_frame_num);
             ret = initialize_cur_frame(h);
             if (ret < 0) {
                 h->first_field = 0;
                 return ret;
             }
 
-            h->prev_frame_num++;
-            h->prev_frame_num        %= 1 << sps->log2_max_frame_num;
-            h->cur_pic_ptr->frame_num = h->prev_frame_num;
+            h->poc.prev_frame_num++;
+            h->poc.prev_frame_num        %= 1 << sps->log2_max_frame_num;
+            h->cur_pic_ptr->frame_num = h->poc.prev_frame_num;
             ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 0);
             ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 1);
             ret = ff_generate_sliding_window_mmcos(h, 1);
@@ -1259,7 +1259,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                                   h->mb_height * 16);
                     h->short_ref[0]->poc = prev->poc + 2;
                 }
-                h->short_ref[0]->frame_num = h->prev_frame_num;
+                h->short_ref[0]->frame_num = h->poc.prev_frame_num;
             }
         }
 
@@ -1278,7 +1278,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                 h->cur_pic_ptr = NULL;
                 h->first_field = FIELD_PICTURE(h);
             } else {
-                if (h->cur_pic_ptr->frame_num != h->frame_num) {
+                if (h->cur_pic_ptr->frame_num != h->poc.frame_num) {
                     /* This and the previous field had different frame_nums.
                      * Consider this field first in pair. Throw away previous
                      * one except for reference purposes. */
@@ -1318,10 +1318,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     assert(sl->mb_y < h->mb_height);
 
     if (h->picture_structure == PICT_FRAME) {
-        h->curr_pic_num = h->frame_num;
+        h->curr_pic_num = h->poc.frame_num;
         h->max_pic_num  = 1 << sps->log2_max_frame_num;
     } else {
-        h->curr_pic_num = 2 * h->frame_num + 1;
+        h->curr_pic_num = 2 * h->poc.frame_num + 1;
         h->max_pic_num  = 1 << (sps->log2_max_frame_num + 1);
     }
 
@@ -1332,12 +1332,12 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         int poc_lsb = get_bits(&sl->gb, sps->log2_max_poc_lsb);
 
         if (!h->setup_finished)
-            h->poc_lsb = poc_lsb;
+            h->poc.poc_lsb = poc_lsb;
 
         if (pps->pic_order_present == 1 && h->picture_structure == PICT_FRAME) {
             int delta_poc_bottom = get_se_golomb(&sl->gb);
             if (!h->setup_finished)
-                h->delta_poc_bottom = delta_poc_bottom;
+                h->poc.delta_poc_bottom = delta_poc_bottom;
         }
     }
 
@@ -1345,18 +1345,19 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         int delta_poc = get_se_golomb(&sl->gb);
 
         if (!h->setup_finished)
-            h->delta_poc[0] = delta_poc;
+            h->poc.delta_poc[0] = delta_poc;
 
         if (pps->pic_order_present == 1 && h->picture_structure == PICT_FRAME) {
             delta_poc = get_se_golomb(&sl->gb);
 
             if (!h->setup_finished)
-                h->delta_poc[1] = delta_poc;
+                h->poc.delta_poc[1] = delta_poc;
         }
     }
 
     if (!h->setup_finished)
-        ff_init_poc(h, h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc);
+        ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
+                         sps, &h->poc, h->picture_structure, h->nal_ref_idc);
 
     if (pps->redundant_pic_cnt_present)
         sl->redundant_pic_count = get_ue_golomb(&sl->gb);
@@ -1557,7 +1558,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                av_get_picture_type_char(sl->slice_type),
                sl->slice_type_fixed ? " fix" : "",
                h->nal_unit_type == NAL_IDR_SLICE ? " IDR" : "",
-               pps_id, h->frame_num,
+               pps_id, h->poc.frame_num,
                h->cur_pic_ptr->field_poc[0],
                h->cur_pic_ptr->field_poc[1],
                sl->ref_count[0], sl->ref_count[1],

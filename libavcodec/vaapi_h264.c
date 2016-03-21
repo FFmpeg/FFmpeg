@@ -278,7 +278,7 @@ static int vaapi_h264_start_frame(AVCodecContext          *avctx,
     pic_param->pic_fields.bits.deblocking_filter_control_present_flag = pps->deblocking_filter_parameters_present;
     pic_param->pic_fields.bits.redundant_pic_cnt_present_flag   = pps->redundant_pic_cnt_present;
     pic_param->pic_fields.bits.reference_pic_flag               = h->nal_ref_idc != 0;
-    pic_param->frame_num                                        = h->frame_num;
+    pic_param->frame_num                                        = h->poc.frame_num;
 
     /* Fill in VAIQMatrixBufferH264. */
     iq_matrix = ff_vaapi_alloc_iq_matrix(vactx, sizeof(VAIQMatrixBufferH264));
