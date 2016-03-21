@@ -24,6 +24,7 @@
 
 #include "golomb.h"
 #include "hevc.h"
+#include "h2645_parse.h"
 #include "parser.h"
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
@@ -33,13 +34,13 @@
 typedef struct HEVCParserContext {
     ParseContext pc;
 
-    HEVCPacket pkt;
+    H2645Packet pkt;
     HEVCParamSets ps;
 
     int parsed_extradata;
 } HEVCParserContext;
 
-static int hevc_parse_slice_header(AVCodecParserContext *s, HEVCNAL *nal,
+static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
                                    AVCodecContext *avctx)
 {
     HEVCParserContext *ctx = s->priv_data;
@@ -81,12 +82,12 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     HEVCParserContext *ctx = s->priv_data;
     int ret, i;
 
-    ret = ff_hevc_split_packet(&ctx->pkt, buf, buf_size, avctx, 0, 0);
+    ret = ff_h2645_packet_split(&ctx->pkt, buf, buf_size, avctx, 0, 0);
     if (ret < 0)
         return ret;
 
     for (i = 0; i < ctx->pkt.nb_nals; i++) {
-        HEVCNAL *nal = &ctx->pkt.nals[i];
+        H2645NAL *nal = &ctx->pkt.nals[i];
 
         /* ignore everything except parameter sets and VCL NALUs */
         switch (nal->type) {
