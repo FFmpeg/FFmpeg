@@ -2798,10 +2798,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++)
         av_buffer_unref(&s->ps.pps_list[i]);
 
-    for (i = 0; i < s->pkt.nals_allocated; i++)
-        av_freep(&s->pkt.nals[i].rbsp_buffer);
-    av_freep(&s->pkt.nals);
-    s->pkt.nals_allocated = 0;
+    ff_h2645_packet_uninit(&s->pkt);
 
     return 0;
 }
