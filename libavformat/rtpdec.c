@@ -105,6 +105,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_quicktime_rtp_vid_handler);
     ff_register_dynamic_payload_handler(&ff_svq3_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_theora_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_vc2hq_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vp9_dynamic_handler);
@@ -713,6 +714,7 @@ static int enqueue_packet(RTPDemuxContext *s, uint8_t *buf, int len)
     packet->next     = *cur;
     *cur = packet;
     s->queue_len++;
+    av_log(0, AV_LOG_ERROR, "queue: %d\n", s->queue_len);
 
     return 0;
 }

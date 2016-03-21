@@ -12,6 +12,7 @@ version <next>:
 - ciescope filter
 - protocol blacklisting API
 - MediaCodec H264 decoding
+- VC-2 HQ RTP payload format (draft v1) depacketizer
 
 
 version 3.0:
