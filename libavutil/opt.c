@@ -801,46 +801,45 @@ static const AVClass test_class = {
 int main(void)
 {
     int i;
+    TestContext test_ctx;
+    const char *options[] = {
+        "",
+        ":",
+        "=",
+        "foo=:",
+        ":=foo",
+        "=foo",
+        "foo=",
+        "foo",
+        "foo=val",
+        "foo==val",
+        "toggle=:",
+        "string=:",
+        "toggle=1 : foo",
+        "toggle=100",
+        "toggle==1",
+        "flags=+mu-lame : num=42: toggle=0",
+        "num=42 : string=blahblah",
+        "rational=0 : rational=1/2 : rational=1/-1",
+        "rational=-1/0",
+    };
+
+    test_ctx.class = &test_class;
 
     printf("\nTesting av_set_options_string()\n");
-    {
-        TestContext test_ctx;
-        const char *options[] = {
-            "",
-            ":",
-            "=",
-            "foo=:",
-            ":=foo",
-            "=foo",
-            "foo=",
-            "foo",
-            "foo=val",
-            "foo==val",
-            "toggle=:",
-            "string=:",
-            "toggle=1 : foo",
-            "toggle=100",
-            "toggle==1",
-            "flags=+mu-lame : num=42: toggle=0",
-            "num=42 : string=blahblah",
-            "rational=0 : rational=1/2 : rational=1/-1",
-            "rational=-1/0",
-        };
 
-        test_ctx.class = &test_class;
-        av_opt_set_defaults(&test_ctx);
-        test_ctx.string = av_strdup("default");
-        if (!test_ctx.string)
-            return AVERROR(ENOMEM);
+    av_opt_set_defaults(&test_ctx);
+    test_ctx.string = av_strdup("default");
+    if (!test_ctx.string)
+        return AVERROR(ENOMEM);
 
-        av_log_set_level(AV_LOG_DEBUG);
+    av_log_set_level(AV_LOG_DEBUG);
 
-        for (i=0; i < FF_ARRAY_ELEMS(options); i++) {
-            av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
-            if (av_set_options_string(&test_ctx, options[i], "=", ":") < 0)
-                av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
-            printf("\n");
-        }
+    for (i = 0; i < FF_ARRAY_ELEMS(options); i++) {
+        av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
+        if (av_set_options_string(&test_ctx, options[i], "=", ":") < 0)
+            av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
+        printf("\n");
     }
 
     return 0;
