@@ -194,11 +194,11 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
         if (num_ref_idx_active_override_flag) {
             ref_count[0] = get_ue_golomb(gb) + 1;
             if (ref_count[0] < 1)
-                return AVERROR_INVALIDDATA;
+                goto fail;
             if (slice_type_nos == AV_PICTURE_TYPE_B) {
                 ref_count[1] = get_ue_golomb(gb) + 1;
                 if (ref_count[1] < 1)
-                    return AVERROR_INVALIDDATA;
+                    goto fail;
             }
         }
 
@@ -213,12 +213,15 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
 
     max_refs = picture_structure == PICT_FRAME ? 16 : 32;
 
-    if (ref_count[0] > max_refs || ref_count[1] > max_refs) {
-        ref_count[0] = ref_count[1] = 0;
-        return AVERROR_INVALIDDATA;
-    }
+    if (ref_count[0] > max_refs || ref_count[1] > max_refs)
+        goto fail;
 
     *plist_count = list_count;
 
     return 0;
+fail:
+    *plist_count = 0;
+    ref_count[0] = 0;
+    ref_count[1] = 0;
+    return AVERROR_INVALIDDATA;
 }
