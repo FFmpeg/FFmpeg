@@ -277,6 +277,18 @@ gaplessenc(){
     probegaplessinfo "$file1"
 }
 
+audio_match(){
+    sample=$(target_path $1)
+    trefile=$(target_path $2)
+    extra_args=$3
+
+    decfile="${outdir}/${test}.wav"
+    cleanfiles="$cleanfiles $decfile"
+
+    ffmpeg -i "$sample" -flags +bitexact -fflags +bitexact $extra_args -y $decfile
+    tests/audiomatch $decfile $trefile
+}
+
 concat(){
     template=$1
     sample=$2

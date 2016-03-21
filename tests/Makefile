@@ -200,7 +200,7 @@ $(FATE_EXTERN):
 	@echo "$@ requires external samples and SAMPLES not specified"; false
 endif
 
-FATE_UTILS = base64 tiny_psnr tiny_ssim
+FATE_UTILS = base64 tiny_psnr tiny_ssim audiomatch
 
 TOOL = ffmpeg
 

@@ -66,6 +66,7 @@
 /libavutil/ffversion.h
 /src
 /tests/audiogen
+/tests/audiomatch
 /tests/base64
 /tests/checkasm/checkasm
 /tests/data/
