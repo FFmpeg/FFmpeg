@@ -801,7 +801,7 @@ static const AVClass test_class = {
 int main(void)
 {
     int i;
-    TestContext test_ctx;
+    TestContext test_ctx = { .class = &test_class };
     const char *options[] = {
         "",
         ":",
@@ -823,8 +823,6 @@ int main(void)
         "rational=0 : rational=1/2 : rational=1/-1",
         "rational=-1/0",
     };
-
-    test_ctx.class = &test_class;
 
     printf("\nTesting av_set_options_string()\n");
 
