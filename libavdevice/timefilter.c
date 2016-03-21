@@ -24,7 +24,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
-#include "config.h"
+
 #include "timefilter.h"
 
 struct TimeFilter {

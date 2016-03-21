@@ -26,9 +26,17 @@
  * RTMP Diffie-Hellmann utilities
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include "config.h"
-#include "rtmpdh.h"
+
+#include "libavutil/attributes.h"
+#include "libavutil/error.h"
+#include "libavutil/mem.h"
 #include "libavutil/random_seed.h"
+
+#include "rtmpdh.h"
 
 #define P1024                                          \
     "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
