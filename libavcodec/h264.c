@@ -975,8 +975,6 @@ int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
     ref_count[1] = h->pps.ref_count[1];
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-        if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
-            sl->direct_spatial_mv_pred = get_bits1(&sl->gb);
         num_ref_idx_active_override_flag = get_bits1(&sl->gb);
 
         if (num_ref_idx_active_override_flag) {
