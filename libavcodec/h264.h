@@ -34,6 +34,7 @@
 #include "error_resilience.h"
 #include "get_bits.h"
 #include "h264_parse.h"
+#include "h2645_parse.h"
 #include "h264chroma.h"
 #include "h264dsp.h"
 #include "h264pred.h"
@@ -470,6 +471,8 @@ typedef struct H264Context {
 
     H264SliceContext *slice_ctx;
     int            nb_slice_ctx;
+
+    H2645Packet pkt;
 
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
 
