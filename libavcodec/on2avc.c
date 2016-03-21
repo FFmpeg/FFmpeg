@@ -22,11 +22,13 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
+
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
 #include "fft.h"
-#include "get_bits.h"
 #include "internal.h"
+#include "vlc.h"
 
 #include "on2avcdata.h"
 
@@ -84,11 +86,11 @@ typedef struct On2AVCContext {
     DECLARE_ALIGNED(32, float, short_win)[ON2AVC_SUBFRAME_SIZE / 8];
 } On2AVCContext;
 
-static void on2avc_read_ms_info(On2AVCContext *c, GetBitContext *gb)
+static void on2avc_read_ms_info(On2AVCContext *c, BitstreamContext *bc)
 {
     int w, b, band_off = 0;
 
-    c->ms_present = get_bits1(gb);
+    c->ms_present = bitstream_read_bit(bc);
     if (!c->ms_present)
         return;
     for (w = 0; w < c->num_windows; w++) {
@@ -100,12 +102,12 @@ static void on2avc_read_ms_info(On2AVCContext *c, GetBitContext *gb)
             continue;
         }
         for (b = 0; b < c->num_bands; b++)
-            c->ms_info[band_off++] = get_bits1(gb);
+            c->ms_info[band_off++] = bitstream_read_bit(bc);
     }
 }
 
 // do not see Table 17 in ISO/IEC 13818-7
-static int on2avc_decode_band_types(On2AVCContext *c, GetBitContext *gb)
+static int on2avc_decode_band_types(On2AVCContext *c, BitstreamContext *bc)
 {
     int bits_per_sect = c->is_long ? 5 : 3;
     int esc_val = (1 << bits_per_sect) - 1;
@@ -113,10 +115,10 @@ static int on2avc_decode_band_types(On2AVCContext *c, GetBitContext *gb)
     int band = 0, i, band_type, run_len, run;
 
     while (band < num_bands) {
-        band_type = get_bits(gb, 4);
+        band_type = bitstream_read(bc, 4);
         run_len   = 1;
         do {
-            run = get_bits(gb, bits_per_sect);
+            run = bitstream_read(bc, bits_per_sect);
             run_len += run;
         } while (run == esc_val);
         if (band + run_len > num_bands) {
@@ -135,7 +137,7 @@ static int on2avc_decode_band_types(On2AVCContext *c, GetBitContext *gb)
 
 // completely not like Table 18 in ISO/IEC 13818-7
 // (no intensity stereo, different coding for the first coefficient)
-static int on2avc_decode_band_scales(On2AVCContext *c, GetBitContext *gb)
+static int on2avc_decode_band_scales(On2AVCContext *c, BitstreamContext *bc)
 {
     int w, w2, b, scale, first = 1;
     int band_off = 0;
@@ -165,10 +167,10 @@ static int on2avc_decode_band_scales(On2AVCContext *c, GetBitContext *gb)
                 }
             }
             if (first) {
-                scale = get_bits(gb, 7);
+                scale = bitstream_read(bc, 7);
                 first = 0;
             } else {
-                scale += get_vlc2(gb, c->scale_diff.table, 9, 3) - 60;
+                scale += bitstream_read_vlc(bc, c->scale_diff.table, 9, 3) - 60;
             }
             if (scale < 0 || scale > 127) {
                 av_log(c->avctx, AV_LOG_ERROR, "Invalid scale value %d\n",
@@ -188,13 +190,13 @@ static inline float on2avc_scale(int v, float scale)
 }
 
 // spectral data is coded completely differently - there are no unsigned codebooks
-static int on2avc_decode_quads(On2AVCContext *c, GetBitContext *gb, float *dst,
+static int on2avc_decode_quads(On2AVCContext *c, BitstreamContext *bc, float *dst,
                                int dst_size, int type, float band_scale)
 {
     int i, j, val, val1;
 
     for (i = 0; i < dst_size; i += 4) {
-        val = get_vlc2(gb, c->cb_vlc[type].table, 9, 3);
+        val = bitstream_read_vlc(bc, c->cb_vlc[type].table, 9, 3);
 
         for (j = 0; j < 4; j++) {
             val1 = sign_extend((val >> (12 - j * 4)) & 0xF, 4);
@@ -205,11 +207,11 @@ static int on2avc_decode_quads(On2AVCContext *c, GetBitContext *gb, float *dst,
     return 0;
 }
 
-static inline int get_egolomb(GetBitContext *gb)
+static inline int get_egolomb(BitstreamContext *bc)
 {
     int v = 4;
 
-    while (get_bits1(gb)) {
+    while (bitstream_read_bit(bc)) {
         v++;
         if (v > 30) {
             av_log(NULL, AV_LOG_WARNING, "Too large golomb code in get_egolomb.\n");
@@ -218,27 +220,27 @@ static inline int get_egolomb(GetBitContext *gb)
         }
     }
 
-    return (1 << v) + get_bits_long(gb, v);
+    return (1 << v) + bitstream_read(bc, v);
 }
 
-static int on2avc_decode_pairs(On2AVCContext *c, GetBitContext *gb, float *dst,
+static int on2avc_decode_pairs(On2AVCContext *c, BitstreamContext *bc, float *dst,
                                int dst_size, int type, float band_scale)
 {
     int i, val, val1, val2, sign;
 
     for (i = 0; i < dst_size; i += 2) {
-        val = get_vlc2(gb, c->cb_vlc[type].table, 9, 3);
+        val = bitstream_read_vlc(bc, c->cb_vlc[type].table, 9, 3);
 
         val1 = sign_extend(val >> 8,   8);
         val2 = sign_extend(val & 0xFF, 8);
         if (type == ON2AVC_ESC_CB) {
             if (val1 <= -16 || val1 >= 16) {
                 sign = 1 - (val1 < 0) * 2;
-                val1 = sign * get_egolomb(gb);
+                val1 = sign * get_egolomb(bc);
             }
             if (val2 <= -16 || val2 >= 16) {
                 sign = 1 - (val2 < 0) * 2;
-                val2 = sign * get_egolomb(gb);
+                val2 = sign * get_egolomb(bc);
             }
         }
 
@@ -249,15 +251,15 @@ static int on2avc_decode_pairs(On2AVCContext *c, GetBitContext *gb, float *dst,
     return 0;
 }
 
-static int on2avc_read_channel_data(On2AVCContext *c, GetBitContext *gb, int ch)
+static int on2avc_read_channel_data(On2AVCContext *c, BitstreamContext *bc, int ch)
 {
     int ret;
     int w, b, band_idx;
     float *coeff_ptr;
 
-    if ((ret = on2avc_decode_band_types(c, gb)) < 0)
+    if ((ret = on2avc_decode_band_types(c, bc)) < 0)
         return ret;
-    if ((ret = on2avc_decode_band_scales(c, gb)) < 0)
+    if ((ret = on2avc_decode_band_scales(c, bc)) < 0)
         return ret;
 
     coeff_ptr = c->coeffs[ch];
@@ -273,10 +275,10 @@ static int on2avc_read_channel_data(On2AVCContext *c, GetBitContext *gb, int ch)
                 continue;
             }
             if (band_type < 9)
-                on2avc_decode_quads(c, gb, coeff_ptr, band_size, band_type,
+                on2avc_decode_quads(c, bc, coeff_ptr, band_size, band_type,
                                     c->band_scales[band_idx + b]);
             else
-                on2avc_decode_pairs(c, gb, coeff_ptr, band_size, band_type,
+                on2avc_decode_pairs(c, bc, coeff_ptr, band_size, band_type,
                                     c->band_scales[band_idx + b]);
             coeff_ptr += band_size;
         }
@@ -797,16 +799,16 @@ static int on2avc_reconstruct_channel(On2AVCContext *c, int channel,
 static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
                                   int buf_size, AVFrame *dst, int offset)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     int i, ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
-    if (get_bits1(&gb)) {
+    bitstream_init8(&bc, buf, buf_size);
+    if (bitstream_read_bit(&bc)) {
         av_log(c->avctx, AV_LOG_ERROR, "enh bit set\n");
         return AVERROR_INVALIDDATA;
     }
     c->prev_window_type = c->window_type;
-    c->window_type      = get_bits(&gb, 3);
+    c->window_type      = bitstream_read(&bc, 3);
     if (c->window_type >= WINDOW_TYPE_EXT4 && c->avctx->channels == 1) {
         av_log(c->avctx, AV_LOG_ERROR, "stereo mode window for mono audio\n");
         return AVERROR_INVALIDDATA;
@@ -819,11 +821,11 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
 
     c->grouping[0] = 1;
     for (i = 1; i < c->num_windows; i++)
-        c->grouping[i] = !get_bits1(&gb);
+        c->grouping[i] = !bitstream_read_bit(&bc);
 
-    on2avc_read_ms_info(c, &gb);
+    on2avc_read_ms_info(c, &bc);
     for (i = 0; i < c->avctx->channels; i++)
-        if ((ret = on2avc_read_channel_data(c, &gb, i)) < 0)
+        if ((ret = on2avc_read_channel_data(c, &bc, i)) < 0)
             return AVERROR_INVALIDDATA;
     if (c->avctx->channels == 2 && c->ms_present)
         on2avc_apply_ms(c);
