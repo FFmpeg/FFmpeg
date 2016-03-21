@@ -22,13 +22,12 @@
 
 #include "config.h"
 
+#include "libavutil/intmath.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
 #include "h2645_parse.h"
 
-/* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
- * between these functions would be nice. */
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,
                           H2645NAL *nal)
 {
@@ -128,6 +127,31 @@ nsc:
     return si;
 }
 
+static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
+{
+    int size = nal->size;
+    int v;
+
+    while (skip_trailing_zeros && size > 0 && nal->data[size - 1] == 0)
+        size--;
+
+    if (!size)
+        return 0;
+
+    v = nal->data[size - 1];
+
+    if (size > INT_MAX / 8)
+        return AVERROR(ERANGE);
+    size *= 8;
+
+    /* remove the stop bit and following trailing zeros,
+     * or nothing for damaged bitstreams */
+    if (v)
+        size -= av_ctz(v) + 1;
+
+    return size;
+}
+
 /**
  * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
  * 0 if the unit should be skipped, 1 otherwise
@@ -181,6 +205,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
     while (length >= 4) {
         H2645NAL *nal;
         int extract_length = 0;
+        int skip_trailing_zeros = 1;
 
         if (is_nalff) {
             int i;
@@ -224,7 +249,15 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         if (consumed < 0)
             return consumed;
 
-        ret = init_get_bits8(&nal->gb, nal->data, nal->size);
+        /* see commit 3566042a0 */
+        if (consumed < length - 3 &&
+            buf[consumed]     == 0x00 && buf[consumed + 1] == 0x00 &&
+            buf[consumed + 2] == 0x01 && buf[consumed + 3] == 0xE0)
+            skip_trailing_zeros = 0;
+
+        nal->size_bits = get_bit_length(nal, skip_trailing_zeros);
+
+        ret = init_get_bits(&nal->gb, nal->data, nal->size_bits);
         if (ret < 0)
             return ret;
 

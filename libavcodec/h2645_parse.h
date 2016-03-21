@@ -33,6 +33,12 @@ typedef struct H2645NAL {
     int size;
     const uint8_t *data;
 
+    /**
+     * Size, in bits, of just the data, excluding the stop bit and any trailing
+     * padding. I.e. what HEVC calls SODB.
+     */
+    int size_bits;
+
     int raw_size;
     const uint8_t *raw_data;
 
