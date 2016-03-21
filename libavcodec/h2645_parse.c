@@ -154,9 +154,26 @@ static int hevc_parse_nal_header(H2645NAL *nal, void *logctx)
     return nuh_layer_id == 0;
 }
 
+static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
+{
+    GetBitContext *gb = &nal->gb;
+
+    if (get_bits1(gb) != 0)
+        return AVERROR_INVALIDDATA;
+
+    nal->ref_idc = get_bits(gb, 2);
+    nal->type    = get_bits(gb, 5);
+
+    av_log(logctx, AV_LOG_DEBUG,
+           "nal_unit_type: %d, nal_ref_idc: %d\n",
+           nal->type, nal->ref_idc);
+
+    return 1;
+}
 
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
-                          void *logctx, int is_nalff, int nal_length_size)
+                          void *logctx, int is_nalff, int nal_length_size,
+                          enum AVCodecID codec_id)
 {
     int consumed, ret = 0;
 
@@ -211,7 +228,10 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         if (ret < 0)
             return ret;
 
-        ret = hevc_parse_nal_header(nal, logctx);
+        if (codec_id == AV_CODEC_ID_HEVC)
+            ret = hevc_parse_nal_header(nal, logctx);
+        else
+            ret = h264_parse_nal_header(nal, logctx);
         if (ret <= 0) {
             if (ret < 0) {
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
