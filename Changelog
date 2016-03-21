@@ -51,6 +51,7 @@ version <next>:
 - support Apple AVFoundation video capture
 - G.723.1 muxer and encoder
 - compressed SWF
+- VAAPI-accelerated format conversion and scaling
 
 
 version 11:

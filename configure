@@ -2359,6 +2359,7 @@ interlace_filter_deps="gpl"
 ocv_filter_deps="libopencv"
 resample_filter_deps="avresample"
 scale_filter_deps="swscale"
+scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
 avcodec_example_deps="avcodec avutil"
@@ -4456,6 +4457,8 @@ check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
+
+check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
