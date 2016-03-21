@@ -1457,7 +1457,9 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
         sl->direct_spatial_mv_pred = get_bits1(&sl->gb);
 
-    ret = ff_set_ref_count(h, sl);
+    ret = ff_h264_parse_ref_count(&sl->list_count, sl->ref_count,
+                                  &sl->gb, &h->pps, sl->slice_type_nos,
+                                  h->picture_structure);
     if (ret < 0)
         return ret;
 

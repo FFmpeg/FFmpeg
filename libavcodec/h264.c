@@ -965,53 +965,6 @@ int ff_h264_get_profile(SPS *sps)
     return profile;
 }
 
-int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
-{
-    int ref_count[2], list_count;
-    int num_ref_idx_active_override_flag, max_refs;
-
-    // set defaults, might be overridden a few lines later
-    ref_count[0] = h->pps.ref_count[0];
-    ref_count[1] = h->pps.ref_count[1];
-
-    if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-        num_ref_idx_active_override_flag = get_bits1(&sl->gb);
-
-        if (num_ref_idx_active_override_flag) {
-            ref_count[0] = get_ue_golomb(&sl->gb) + 1;
-            if (ref_count[0] < 1)
-                return AVERROR_INVALIDDATA;
-            if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-                ref_count[1] = get_ue_golomb(&sl->gb) + 1;
-                if (ref_count[1] < 1)
-                    return AVERROR_INVALIDDATA;
-            }
-        }
-
-        if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
-            list_count = 2;
-        else
-            list_count = 1;
-    } else {
-        list_count   = 0;
-        ref_count[0] = ref_count[1] = 0;
-    }
-
-    max_refs = h->picture_structure == PICT_FRAME ? 16 : 32;
-
-    if (ref_count[0] > max_refs || ref_count[1] > max_refs) {
-        av_log(h->avctx, AV_LOG_ERROR, "reference overflow\n");
-        sl->ref_count[0] = sl->ref_count[1] = 0;
-        return AVERROR_INVALIDDATA;
-    }
-
-    sl->ref_count[0] = ref_count[0];
-    sl->ref_count[1] = ref_count[1];
-    sl->list_count   = list_count;
-
-    return 0;
-}
-
 static int get_last_needed_nal(H264Context *h)
 {
     int nals_needed = 0;

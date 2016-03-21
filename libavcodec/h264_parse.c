@@ -176,3 +176,49 @@ int ff_h264_check_intra_pred_mode(void *logctx, int top_samples_available,
 
     return mode;
 }
+
+int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
+                            GetBitContext *gb, const PPS *pps,
+                            int slice_type_nos, int picture_structure)
+{
+    int list_count;
+    int num_ref_idx_active_override_flag, max_refs;
+
+    // set defaults, might be overridden a few lines later
+    ref_count[0] = pps->ref_count[0];
+    ref_count[1] = pps->ref_count[1];
+
+    if (slice_type_nos != AV_PICTURE_TYPE_I) {
+        num_ref_idx_active_override_flag = get_bits1(gb);
+
+        if (num_ref_idx_active_override_flag) {
+            ref_count[0] = get_ue_golomb(gb) + 1;
+            if (ref_count[0] < 1)
+                return AVERROR_INVALIDDATA;
+            if (slice_type_nos == AV_PICTURE_TYPE_B) {
+                ref_count[1] = get_ue_golomb(gb) + 1;
+                if (ref_count[1] < 1)
+                    return AVERROR_INVALIDDATA;
+            }
+        }
+
+        if (slice_type_nos == AV_PICTURE_TYPE_B)
+            list_count = 2;
+        else
+            list_count = 1;
+    } else {
+        list_count   = 0;
+        ref_count[0] = ref_count[1] = 0;
+    }
+
+    max_refs = picture_structure == PICT_FRAME ? 16 : 32;
+
+    if (ref_count[0] > max_refs || ref_count[1] > max_refs) {
+        ref_count[0] = ref_count[1] = 0;
+        return AVERROR_INVALIDDATA;
+    }
+
+    *plist_count = list_count;
+
+    return 0;
+}
