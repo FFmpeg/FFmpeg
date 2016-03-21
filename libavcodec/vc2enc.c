@@ -557,15 +557,15 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
     }
 }
 
-static int count_hq_slice(VC2EncContext *s, int *cache,
-                          int slice_x, int slice_y, int quant_idx)
+static int count_hq_slice(SliceArgs *slice, int quant_idx)
 {
     int x, y;
     uint8_t quants[MAX_DWT_LEVELS][4];
     int bits = 0, p, level, orientation;
+    VC2EncContext *s = slice->ctx;
 
-    if (cache && cache[quant_idx])
-        return cache[quant_idx];
+    if (slice->cache[quant_idx])
+        return slice->cache[quant_idx];
 
     bits += 8*s->prefix_bytes;
     bits += 8; /* quant_idx */
@@ -586,10 +586,10 @@ static int count_hq_slice(VC2EncContext *s, int *cache,
                 const uint8_t *len_lut = &s->coef_lut_len[q_idx*COEF_LUT_TAB];
                 const int qfactor = ff_dirac_qscale_tab[q_idx];
 
-                const int left   = b->width  * slice_x    / s->num_x;
-                const int right  = b->width  *(slice_x+1) / s->num_x;
-                const int top    = b->height * slice_y    / s->num_y;
-                const int bottom = b->height *(slice_y+1) / s->num_y;
+                const int left   = b->width  * slice->x    / s->num_x;
+                const int right  = b->width  *(slice->x+1) / s->num_x;
+                const int top    = b->height * slice->y    / s->num_y;
+                const int bottom = b->height *(slice->y+1) / s->num_y;
 
                 dwtcoef *buf = b->buf + top * b->stride;
 
@@ -616,8 +616,7 @@ static int count_hq_slice(VC2EncContext *s, int *cache,
         bits += pad_c*8;
     }
 
-    if (cache)
-        cache[quant_idx] = bits;
+    slice->cache[quant_idx] = bits;
 
     return bits;
 }
@@ -629,17 +628,15 @@ static int rate_control(AVCodecContext *avctx, void *arg)
 {
     SliceArgs *slice_dat = arg;
     VC2EncContext *s = slice_dat->ctx;
-    const int sx = slice_dat->x;
-    const int sy = slice_dat->y;
     const int top = slice_dat->bits_ceil;
     const int bottom = slice_dat->bits_floor;
     int quant_buf[2] = {-1, -1};
     int quant = slice_dat->quant_idx, step = 1;
-    int bits_last, bits = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
+    int bits_last, bits = count_hq_slice(slice_dat, quant);
     while ((bits > top) || (bits < bottom)) {
         const int signed_step = bits > top ? +step : -step;
         quant  = av_clip(quant + signed_step, 0, s->q_ceil-1);
-        bits   = count_hq_slice(s, slice_dat->cache, sx, sy, quant);
+        bits   = count_hq_slice(slice_dat, quant);
         if (quant_buf[1] == quant) {
             quant = FFMAX(quant_buf[0], quant);
             bits  = quant == quant_buf[0] ? bits_last : bits;
@@ -710,7 +707,7 @@ static int calc_slice_sizes(VC2EncContext *s)
             args = top_loc[i];
             prev_bytes = args->bytes;
             new_idx = FFMAX(args->quant_idx - 1, 0);
-            bits  = count_hq_slice(s, args->cache, args->x, args->y, new_idx);
+            bits  = count_hq_slice(args, new_idx);
             bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
             diff  = bytes - prev_bytes;
             if ((bytes_left - diff) > 0) {
