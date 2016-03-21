@@ -39,6 +39,46 @@
 /* Decides the cutoff point in # of slices to distribute the leftover bytes */
 #define SLICE_REDIST_TOTAL 150
 
+typedef struct VC2BaseVideoFormat {
+    enum AVPixelFormat pix_fmt;
+    AVRational time_base;
+    int width, height, interlaced, level;
+    const char *name;
+} VC2BaseVideoFormat;
+
+static const VC2BaseVideoFormat base_video_fmts[] = {
+    { 0 }, /* Custom format, here just to make indexing equal to base_vf */
+    { AV_PIX_FMT_YUV420P,   { 1001, 15000 },  176,  120, 0, 1,     "QSIF525" },
+    { AV_PIX_FMT_YUV420P,   {    2,    25 },  176,  144, 0, 1,     "QCIF"    },
+    { AV_PIX_FMT_YUV420P,   { 1001, 15000 },  352,  240, 0, 1,     "SIF525"  },
+    { AV_PIX_FMT_YUV420P,   {    2,    25 },  352,  288, 0, 1,     "CIF"     },
+    { AV_PIX_FMT_YUV420P,   { 1001, 15000 },  704,  480, 0, 1,     "4SIF525" },
+    { AV_PIX_FMT_YUV420P,   {    2,    25 },  704,  576, 0, 1,     "4CIF"    },
+
+    { AV_PIX_FMT_YUV422P10, { 1001, 30000 },  720,  480, 1, 2,   "SD480I-60" },
+    { AV_PIX_FMT_YUV422P10, {    1,    25 },  720,  576, 1, 2,   "SD576I-50" },
+
+    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 1280,  720, 0, 3,  "HD720P-60"  },
+    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1280,  720, 0, 3,  "HD720P-50"  },
+    { AV_PIX_FMT_YUV422P10, { 1001, 30000 }, 1920, 1080, 1, 3,  "HD1080I-60" },
+    { AV_PIX_FMT_YUV422P10, {    1,    25 }, 1920, 1080, 1, 3,  "HD1080I-50" },
+    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 1920, 1080, 1, 3,  "HD1080P-60" },
+    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1920, 1080, 1, 3,  "HD1080P-50" },
+
+    { AV_PIX_FMT_YUV444P12, {    1,    24 }, 2048, 1080, 0, 4,        "DC2K" },
+    { AV_PIX_FMT_YUV444P12, {    1,    24 }, 4096, 2160, 0, 5,        "DC4K" },
+
+    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 3840, 2160, 0, 6, "UHDTV 4K-60" },
+    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 3840, 2160, 0, 6, "UHDTV 4K-50" },
+
+    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 7680, 4320, 0, 7, "UHDTV 8K-60" },
+    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 7680, 4320, 0, 7, "UHDTV 8K-50" },
+
+    { AV_PIX_FMT_YUV422P10, { 1001, 24000 }, 1920, 1080, 0, 3,  "HD1080P-24" },
+    { AV_PIX_FMT_YUV422P10, { 1001, 30000 },  720,  486, 1, 2,  "SD Pro486"  },
+};
+static const int base_video_fmts_len = FF_ARRAY_ELEMS(base_video_fmts);
+
 enum VC2_QM {
     VC2_QM_DEF = 0,
     VC2_QM_COL,
@@ -1054,40 +1094,23 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     s->interlaced = !((avctx->field_order == AV_FIELD_UNKNOWN) ||
                       (avctx->field_order == AV_FIELD_PROGRESSIVE));
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV422P10) {
-        if (avctx->width == 1280 && avctx->height == 720) {
-            s->level = 3;
-            if (avctx->time_base.num == 1001 && avctx->time_base.den == 60000)
-                s->base_vf = 9;
-            if (avctx->time_base.num == 1 && avctx->time_base.den == 50)
-                s->base_vf = 10;
-        } else if (avctx->width == 1920 && avctx->height == 1080) {
-            s->level = 3;
-            if (s->interlaced) {
-                if (avctx->time_base.num == 1001 && avctx->time_base.den == 30000)
-                    s->base_vf = 11;
-                if (avctx->time_base.num == 1 && avctx->time_base.den == 50)
-                    s->base_vf = 12;
-            } else {
-                if (avctx->time_base.num == 1001 && avctx->time_base.den == 60000)
-                    s->base_vf = 13;
-                if (avctx->time_base.num == 1 && avctx->time_base.den == 50)
-                    s->base_vf = 14;
-                if (avctx->time_base.num == 1001 && avctx->time_base.den == 24000)
-                    s->base_vf = 21;
-            }
-        } else if (avctx->width == 3840 && avctx->height == 2160) {
-            s->level = 6;
-            if (avctx->time_base.num == 1001 && avctx->time_base.den == 60000)
-                s->base_vf = 17;
-            if (avctx->time_base.num == 1 && avctx->time_base.den == 50)
-                s->base_vf = 18;
-        }
-    }
-
-    if (s->interlaced && s->base_vf <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Interlacing not supported with non standard formats!\n");
-        return AVERROR_UNKNOWN;
+    for (i = 0; i < base_video_fmts_len; i++) {
+        const VC2BaseVideoFormat *fmt = &base_video_fmts[i];
+        if (avctx->pix_fmt != fmt->pix_fmt)
+            continue;
+        if (avctx->time_base.num != fmt->time_base.num)
+            continue;
+        if (avctx->time_base.den != fmt->time_base.den)
+            continue;
+        if (avctx->width != fmt->width)
+            continue;
+        if (avctx->height != fmt->height)
+            continue;
+        if (s->interlaced != fmt->interlaced)
+            continue;
+        s->base_vf = i;
+        s->level   = base_video_fmts[i].level;
+        break;
     }
 
     if (s->interlaced)
@@ -1115,7 +1138,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
             return AVERROR_UNKNOWN;
         }
     } else {
-        av_log(avctx, AV_LOG_INFO, "Selected base video format = %i\n", s->base_vf);
+        av_log(avctx, AV_LOG_INFO, "Selected base video format = %i (%s)\n",
+               s->base_vf, base_video_fmts[s->base_vf].name);
     }
 
     /* Chroma subsampling */
