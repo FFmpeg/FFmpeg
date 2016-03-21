@@ -19,8 +19,9 @@
  */
 
 #include "config.h"
-#include "common.h"
+
 #include "bswap.h"
+#include "common.h"
 #include "crc.h"
 
 #if CONFIG_HARDCODED_TABLES
@@ -287,7 +288,7 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size)
     if (ctx_size >= sizeof(AVCRC) * 1024)
         for (i = 0; i < 256; i++)
             for (j = 0; j < 3; j++)
-                ctx[256 *(j + 1) + i] =
+                ctx[256 * (j + 1) + i] =
                     (ctx[256 * j + i] >> 8) ^ ctx[ctx[256 * j + i] & 0xFF];
 #endif
 
@@ -338,11 +339,12 @@ int main(void)
 {
     uint8_t buf[1999];
     int i;
-    int p[5][3] = { { AV_CRC_32_IEEE_LE, 0xEDB88320, 0x3D5CDD04 },
-                    { AV_CRC_32_IEEE   , 0x04C11DB7, 0xC0F5BAE0 },
-                    { AV_CRC_16_ANSI_LE, 0xA001    , 0xBFD8     },
-                    { AV_CRC_16_ANSI   , 0x8005    , 0x1FBB     },
-                    { AV_CRC_8_ATM     , 0x07      , 0xE3       }
+    int p[5][3] = {
+        { AV_CRC_32_IEEE_LE, 0xEDB88320, 0x3D5CDD04 },
+        { AV_CRC_32_IEEE,    0x04C11DB7, 0xC0F5BAE0 },
+        { AV_CRC_16_ANSI_LE,     0xA001,     0xBFD8 },
+        { AV_CRC_16_ANSI,        0x8005,     0x1FBB },
+        { AV_CRC_8_ATM,            0x07,       0xE3 }
     };
     const AVCRC *ctx;
 
