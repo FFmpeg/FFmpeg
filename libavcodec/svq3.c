@@ -60,7 +60,6 @@
 #endif
 
 #include "svq1.h"
-#include "svq3.h"
 
 /**
  * @file
@@ -160,7 +159,7 @@ static const uint32_t svq3_dequant_coeff[32] = {
     61694, 68745, 77615, 89113, 100253, 109366, 126635, 141533
 };
 
-void ff_svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
+static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 {
     const int qmul = svq3_dequant_coeff[qp];
 #define stride 16
@@ -195,8 +194,8 @@ void ff_svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 }
 #undef stride
 
-void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block,
-                        int stride, int qp, int dc)
+static void svq3_add_idct_c(uint8_t *dst, int16_t *block,
+                            int stride, int qp, int dc)
 {
     const int qmul = svq3_dequant_coeff[qp];
     int i;
@@ -491,8 +490,8 @@ static av_always_inline void hl_decode_mb_idct_luma(const H264Context *h, H264Sl
         for (i = 0; i < 16; i++)
             if (sl->non_zero_count_cache[scan8[i]] || sl->mb[i * 16]) {
                 uint8_t *const ptr = dest_y + block_offset[i];
-                ff_svq3_add_idct_c(ptr, sl->mb + i * 16, linesize,
-                                   sl->qscale, IS_INTRA(mb_type) ? 1 : 0);
+                svq3_add_idct_c(ptr, sl->mb + i * 16, linesize,
+                                sl->qscale, IS_INTRA(mb_type) ? 1 : 0);
             }
     }
 }
@@ -533,13 +532,12 @@ static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
             h->hpc.pred4x4[dir](ptr, topright, linesize);
             nnz = sl->non_zero_count_cache[scan8[i]];
             if (nnz) {
-                ff_svq3_add_idct_c(ptr, sl->mb + i * 16, linesize, qscale, 0);
+                svq3_add_idct_c(ptr, sl->mb + i * 16, linesize, qscale, 0);
             }
         }
     } else {
         h->hpc.pred16x16[sl->intra16x16_pred_mode](dest_y, linesize);
-        ff_svq3_luma_dc_dequant_idct_c(sl->mb,
-                                       sl->mb_luma_dc[0], qscale);
+        svq3_luma_dc_dequant_idct_c(sl->mb, sl->mb_luma_dc[0], qscale);
     }
 }
 
@@ -586,9 +584,8 @@ static void hl_decode_mb(const H264Context *h, H264SliceContext *sl)
             for (i = j * 16; i < j * 16 + 4; i++)
                 if (sl->non_zero_count_cache[scan8[i]] || sl->mb[i * 16]) {
                     uint8_t *const ptr = dest[j - 1] + block_offset[i];
-                    ff_svq3_add_idct_c(ptr, sl->mb + i * 16,
-                                       uvlinesize,
-                                       ff_h264_chroma_qp[0][sl->qscale + 12] - 12, 2);
+                    svq3_add_idct_c(ptr, sl->mb + i * 16,
+                                    uvlinesize, ff_h264_chroma_qp[0][sl->qscale + 12] - 12, 2);
                 }
         }
     }
