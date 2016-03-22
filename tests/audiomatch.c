@@ -100,7 +100,7 @@ int main(int argc, char **argv){
             c += signal[i] * data[j];
         }
         if(fabs(c) > sigamp * 0.94)
-            maxshift = FFMIN(maxshift, fabs(pos)+128);
+            maxshift = FFMIN(maxshift, fabs(pos)+32);
         if(fabs(c)>fabs(bestc)){
             bestc= c;
             bestpos = pos;
