@@ -15,6 +15,11 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavc 57.37.100 - avcodec.h
+  Add a new audio/video encoding and decoding API with decoupled input
+  and output -- avcodec_send_packet(), avcodec_receive_frame(),
+  avcodec_send_frame() and avcodec_receive_packet().
+
 2016-xx-xx - xxxxxxx - lavc 57.15.0 - avcodec.h
   Add a new bitstream filtering API working with AVPackets.
   Deprecate the old bistream filtering API.

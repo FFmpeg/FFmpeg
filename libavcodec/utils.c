@@ -167,12 +167,12 @@ static av_cold void avcodec_init(void)
 
 int av_codec_is_encoder(const AVCodec *codec)
 {
-    return codec && (codec->encode_sub || codec->encode2);
+    return codec && (codec->encode_sub || codec->encode2 ||codec->send_frame);
 }
 
 int av_codec_is_decoder(const AVCodec *codec)
 {
-    return codec && codec->decode;
+    return codec && (codec->decode || codec->send_packet);
 }
 
 av_cold void avcodec_register(AVCodec *codec)
@@ -1254,6 +1254,18 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         goto free_and_end;
     }
 
+    avctx->internal->buffer_frame = av_frame_alloc();
+    if (!avctx->internal->buffer_frame) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
+    avctx->internal->buffer_pkt = av_packet_alloc();
+    if (!avctx->internal->buffer_pkt) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
     if (codec->priv_data_size > 0) {
         if (!avctx->priv_data) {
             avctx->priv_data = av_mallocz(codec->priv_data_size);
@@ -1765,6 +1777,11 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
 
     *got_packet_ptr = 0;
 
+    if (!avctx->codec->encode2) {
+        av_log(avctx, AV_LOG_ERROR, "This encoder requires using the avcodec_send_frame() API.\n");
+        return AVERROR(ENOSYS);
+    }
+
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) && !frame) {
         av_packet_unref(avpkt);
         av_init_packet(avpkt);
@@ -1903,6 +1920,11 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     int needs_realloc = !user_pkt.data;
 
     *got_packet_ptr = 0;
+
+    if (!avctx->codec->encode2) {
+        av_log(avctx, AV_LOG_ERROR, "This encoder requires using the avcodec_send_frame() API.\n");
+        return AVERROR(ENOSYS);
+    }
 
     if(CONFIG_FRAME_THREAD_ENCODER &&
        avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
@@ -2162,9 +2184,19 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         return AVERROR(EINVAL);
     }
 
+    if (!avctx->codec->decode) {
+        av_log(avctx, AV_LOG_ERROR, "This decoder requires using the avcodec_send_packet() API.\n");
+        return AVERROR(ENOSYS);
+    }
+
     *got_picture_ptr = 0;
     if ((avctx->coded_width || avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         return AVERROR(EINVAL);
+
+    avctx->internal->pkt = avpkt;
+    ret = apply_param_change(avctx, avpkt);
+    if (ret < 0)
+        return ret;
 
     av_frame_unref(picture);
 
@@ -2246,6 +2278,11 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     int ret = 0;
 
     *got_frame_ptr = 0;
+
+    if (!avctx->codec->decode) {
+        av_log(avctx, AV_LOG_ERROR, "This decoder requires using the avcodec_send_packet() API.\n");
+        return AVERROR(ENOSYS);
+    }
 
     if (!avpkt->data && avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
@@ -2659,6 +2696,246 @@ void avsubtitle_free(AVSubtitle *sub)
     memset(sub, 0, sizeof(AVSubtitle));
 }
 
+static int do_decode(AVCodecContext *avctx, AVPacket *pkt)
+{
+    int got_frame;
+    int ret;
+
+    av_assert0(!avctx->internal->buffer_frame->buf[0]);
+
+    if (!pkt)
+        pkt = avctx->internal->buffer_pkt;
+
+    // This is the lesser evil. The field is for compatibility with legacy users
+    // of the legacy API, and users using the new API should not be forced to
+    // even know about this field.
+    avctx->refcounted_frames = 1;
+
+    // Some codecs (at least wma lossless) will crash when feeding drain packets
+    // after EOF was signaled.
+    if (avctx->internal->draining_done)
+        return AVERROR_EOF;
+
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        ret = avcodec_decode_video2(avctx, avctx->internal->buffer_frame,
+                                    &got_frame, pkt);
+        if (ret >= 0)
+            ret = pkt->size;
+    } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        ret = avcodec_decode_audio4(avctx, avctx->internal->buffer_frame,
+                                    &got_frame, pkt);
+    } else {
+        ret = AVERROR(EINVAL);
+    }
+
+    if (ret == AVERROR(EAGAIN))
+        ret = pkt->size;
+
+    if (ret < 0)
+        return ret;
+
+    if (avctx->internal->draining && !got_frame)
+        avctx->internal->draining_done = 1;
+
+    if (ret >= pkt->size) {
+        av_packet_unref(avctx->internal->buffer_pkt);
+    } else {
+        int consumed = ret;
+
+        if (pkt != avctx->internal->buffer_pkt) {
+            av_packet_unref(avctx->internal->buffer_pkt);
+            if ((ret = av_packet_ref(avctx->internal->buffer_pkt, pkt)) < 0)
+                return ret;
+        }
+
+        avctx->internal->buffer_pkt->data += consumed;
+        avctx->internal->buffer_pkt->size -= consumed;
+        avctx->internal->buffer_pkt->pts   = AV_NOPTS_VALUE;
+        avctx->internal->buffer_pkt->dts   = AV_NOPTS_VALUE;
+    }
+
+    if (got_frame)
+        av_assert0(avctx->internal->buffer_frame->buf[0]);
+
+    return 0;
+}
+
+int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt)
+{
+    int ret;
+
+    if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
+        return AVERROR(EINVAL);
+
+    if (avctx->internal->draining)
+        return AVERROR_EOF;
+
+    if (!avpkt || !avpkt->size) {
+        avctx->internal->draining = 1;
+        avpkt = NULL;
+
+        if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
+            return 0;
+    }
+
+    if (avctx->codec->send_packet) {
+        if (avpkt) {
+            ret = apply_param_change(avctx, (AVPacket *)avpkt);
+            if (ret < 0)
+                return ret;
+        }
+        return avctx->codec->send_packet(avctx, avpkt);
+    }
+
+    // Emulation via old API. Assume avpkt is likely not refcounted, while
+    // decoder output is always refcounted, and avoid copying.
+
+    if (avctx->internal->buffer_pkt->size || avctx->internal->buffer_frame->buf[0])
+        return AVERROR(EAGAIN);
+
+    // The goal is decoding the first frame of the packet without using memcpy,
+    // because the common case is having only 1 frame per packet (especially
+    // with video, but audio too). In other cases, it can't be avoided, unless
+    // the user is feeding refcounted packets.
+    return do_decode(avctx, (AVPacket *)avpkt);
+}
+
+int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    int ret;
+
+    av_frame_unref(frame);
+
+    if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
+        return AVERROR(EINVAL);
+
+    if (avctx->codec->receive_frame) {
+        if (avctx->internal->draining && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
+            return AVERROR_EOF;
+        return avctx->codec->receive_frame(avctx, frame);
+    }
+
+    // Emulation via old API.
+
+    if (!avctx->internal->buffer_frame->buf[0]) {
+        if (!avctx->internal->buffer_pkt->size && !avctx->internal->draining)
+            return AVERROR(EAGAIN);
+
+        while (1) {
+            if ((ret = do_decode(avctx, avctx->internal->buffer_pkt)) < 0) {
+                av_packet_unref(avctx->internal->buffer_pkt);
+                return ret;
+            }
+            // Some audio decoders may consume partial data without returning
+            // a frame (fate-wmapro-2ch). There is no way to make the caller
+            // call avcodec_receive_frame() again without returning a frame,
+            // so try to decode more in these cases.
+            if (avctx->internal->buffer_frame->buf[0] ||
+                !avctx->internal->buffer_pkt->size)
+                break;
+        }
+    }
+
+    if (!avctx->internal->buffer_frame->buf[0])
+        return avctx->internal->draining ? AVERROR_EOF : AVERROR(EAGAIN);
+
+    av_frame_move_ref(frame, avctx->internal->buffer_frame);
+    return 0;
+}
+
+static int do_encode(AVCodecContext *avctx, const AVFrame *frame, int *got_packet)
+{
+    int ret;
+    *got_packet = 0;
+
+    av_packet_unref(avctx->internal->buffer_pkt);
+    avctx->internal->buffer_pkt_valid = 0;
+
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        ret = avcodec_encode_video2(avctx, avctx->internal->buffer_pkt,
+                                    frame, got_packet);
+    } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        ret = avcodec_encode_audio2(avctx, avctx->internal->buffer_pkt,
+                                    frame, got_packet);
+    } else {
+        ret = AVERROR(EINVAL);
+    }
+
+    if (ret >= 0 && *got_packet) {
+        // Encoders must always return ref-counted buffers.
+        // Side-data only packets have no data and can be not ref-counted.
+        av_assert0(!avctx->internal->buffer_pkt->data || avctx->internal->buffer_pkt->buf);
+        avctx->internal->buffer_pkt_valid = 1;
+        ret = 0;
+    } else {
+        av_packet_unref(avctx->internal->buffer_pkt);
+    }
+
+    return ret;
+}
+
+int attribute_align_arg avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame)
+{
+    if (!avcodec_is_open(avctx) || !av_codec_is_encoder(avctx->codec))
+        return AVERROR(EINVAL);
+
+    if (avctx->internal->draining)
+        return AVERROR_EOF;
+
+    if (!frame) {
+        avctx->internal->draining = 1;
+
+        if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
+            return 0;
+    }
+
+    if (avctx->codec->send_frame)
+        return avctx->codec->send_frame(avctx, frame);
+
+    // Emulation via old API. Do it here instead of avcodec_receive_packet, because:
+    // 1. if the AVFrame is not refcounted, the copying will be much more
+    //    expensive than copying the packet data
+    // 2. assume few users use non-refcounted AVPackets, so usually no copy is
+    //    needed
+
+    if (avctx->internal->buffer_pkt_valid)
+        return AVERROR(EAGAIN);
+
+    return do_encode(avctx, frame, &(int){0});
+}
+
+int attribute_align_arg avcodec_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
+{
+    av_packet_unref(avpkt);
+
+    if (!avcodec_is_open(avctx) || !av_codec_is_encoder(avctx->codec))
+        return AVERROR(EINVAL);
+
+    if (avctx->codec->receive_packet) {
+        if (avctx->internal->draining && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
+            return AVERROR_EOF;
+        return avctx->codec->receive_packet(avctx, avpkt);
+    }
+
+    // Emulation via old API.
+
+    if (!avctx->internal->buffer_pkt_valid) {
+        int got_packet;
+        int ret;
+        if (!avctx->internal->draining)
+            return AVERROR(EAGAIN);
+        ret = do_encode(avctx, NULL, &got_packet);
+        if (ret < 0)
+            return ret;
+        if (ret >= 0 && !got_packet)
+            return AVERROR_EOF;
+    }
+
+    av_packet_move_ref(avpkt, avctx->internal->buffer_pkt);
+    avctx->internal->buffer_pkt_valid = 0;
+    return 0;
+}
+
 av_cold int avcodec_close(AVCodecContext *avctx)
 {
     int i;
@@ -2679,6 +2956,8 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         avctx->internal->byte_buffer_size = 0;
         av_freep(&avctx->internal->byte_buffer);
         av_frame_free(&avctx->internal->to_free);
+        av_frame_free(&avctx->internal->buffer_frame);
+        av_packet_free(&avctx->internal->buffer_pkt);
         for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);
@@ -3049,6 +3328,12 @@ const char *avcodec_license(void)
 
 void avcodec_flush_buffers(AVCodecContext *avctx)
 {
+    avctx->internal->draining      = 0;
+    avctx->internal->draining_done = 0;
+    av_frame_unref(avctx->internal->buffer_frame);
+    av_packet_unref(avctx->internal->buffer_pkt);
+    avctx->internal->buffer_pkt_valid = 0;
+
     if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
         ff_thread_flush(avctx);
     else if (avctx->codec->flush)

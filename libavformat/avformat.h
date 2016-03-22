@@ -161,8 +161,8 @@
  * av_read_frame() on it. Each call, if successful, will return an AVPacket
  * containing encoded data for one AVStream, identified by
  * AVPacket.stream_index. This packet may be passed straight into the libavcodec
- * decoding functions avcodec_decode_video2(), avcodec_decode_audio4() or
- * avcodec_decode_subtitle2() if the caller wishes to decode the data.
+ * decoding functions avcodec_send_packet() or avcodec_decode_subtitle2() if the
+ * caller wishes to decode the data.
  *
  * AVPacket.pts, AVPacket.dts and AVPacket.duration timing information will be
  * set if known. They may also be unset (i.e. AV_NOPTS_VALUE for
