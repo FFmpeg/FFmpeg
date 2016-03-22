@@ -922,6 +922,37 @@ static void test_av_parse_time(void)
     }
 }
 
+static void test_av_get_known_color_name(void)
+{
+    int i;
+    const uint8_t *rgba;
+    const char *color;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(color_table); ++i) {
+        color = av_get_known_color_name(i, &rgba);
+        if (color)
+            printf("%s -> R(%d) G(%d) B(%d) A(%d)\n",
+                    color, rgba[0], rgba[1], rgba[2], rgba[3]);
+        else
+            printf("Color ID: %d not found\n", i);
+    }
+}
+
+static void test_av_find_info_tag(void)
+{
+    char args[] = "?tag1=val1&tag2=val2&tag3=val3&tag41=value 41&tag42=random1";
+    static const char *tags[] = {"tag1", "tag2", "tag3", "tag4", "tag41", "41", "random1"};
+    char buff[16];
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(tags); ++i) {
+        if (av_find_info_tag(buff, sizeof(buff), tags[i], args))
+            printf("%d. %s found: %s\n", i, tags[i], buff);
+        else
+            printf("%d. %s not found\n", i, tags[i]);
+    }
+}
+
 int main(void)
 {
     printf("Testing av_parse_video_rate()\n");
@@ -936,6 +967,11 @@ int main(void)
     printf("\nTesting av_parse_time()\n");
     test_av_parse_time();
 
+    printf("\nTesting av_get_known_color_name()\n");
+    test_av_get_known_color_name();
+
+    printf("\nTesting av_find_info_tag()\n");
+    test_av_find_info_tag();
     return 0;
 }
 
