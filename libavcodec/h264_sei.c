@@ -50,14 +50,19 @@ void ff_h264_reset_sei(H264Context *h)
 
 static int decode_picture_timing(H264Context *h)
 {
-    if (h->sps.nal_hrd_parameters_present_flag ||
-        h->sps.vcl_hrd_parameters_present_flag) {
+    const SPS *sps = h->ps.sps;
+
+    if (!sps)
+        return AVERROR_INVALIDDATA;
+
+    if (sps->nal_hrd_parameters_present_flag ||
+        sps->vcl_hrd_parameters_present_flag) {
         h->sei_cpb_removal_delay = get_bits(&h->gb,
-                                            h->sps.cpb_removal_delay_length);
+                                            sps->cpb_removal_delay_length);
         h->sei_dpb_output_delay  = get_bits(&h->gb,
-                                            h->sps.dpb_output_delay_length);
+                                            sps->dpb_output_delay_length);
     }
-    if (h->sps.pic_struct_present_flag) {
+    if (sps->pic_struct_present_flag) {
         unsigned int i, num_clock_ts;
 
         h->sei_pic_struct = get_bits(&h->gb, 4);
@@ -93,9 +98,9 @@ static int decode_picture_timing(H264Context *h)
                         }
                     }
                 }
-                if (h->sps.time_offset_length > 0)
+                if (sps->time_offset_length > 0)
                     skip_bits(&h->gb,
-                              h->sps.time_offset_length); /* time_offset */
+                              sps->time_offset_length); /* time_offset */
             }
         }
 
@@ -259,12 +264,12 @@ static int decode_buffering_period(H264Context *h)
     SPS *sps;
 
     sps_id = get_ue_golomb_31(&h->gb);
-    if (sps_id > 31 || !h->sps_buffers[sps_id]) {
+    if (sps_id > 31 || !h->ps.sps_list[sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR,
                "non-existing SPS %d referenced in buffering period\n", sps_id);
         return AVERROR_INVALIDDATA;
     }
-    sps = h->sps_buffers[sps_id];
+    sps = (SPS*)h->ps.sps_list[sps_id]->data;
 
     // NOTE: This is really so duplicated in the standard... See H.264, D.1.1
     if (sps->nal_hrd_parameters_present_flag) {

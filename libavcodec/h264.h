@@ -28,6 +28,7 @@
 #ifndef AVCODEC_H264_H
 #define AVCODEC_H264_H
 
+#include "libavutil/buffer.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/thread.h"
 #include "cabac.h"
@@ -92,11 +93,11 @@
 #define FIELD_OR_MBAFF_PICTURE(h) (FRAME_MBAFF(h) || FIELD_PICTURE(h))
 
 #ifndef CABAC
-#define CABAC(h) h->pps.cabac
+#define CABAC(h) h->ps.pps->cabac
 #endif
 
-#define CHROMA422(h) (h->sps.chroma_format_idc == 2)
-#define CHROMA444(h) (h->sps.chroma_format_idc == 3)
+#define CHROMA422(h) (h->ps.sps->chroma_format_idc == 2)
+#define CHROMA444(h) (h->ps.sps->chroma_format_idc == 3)
 
 #define EXTENDED_SAR       255
 
@@ -214,7 +215,6 @@ typedef struct SPS {
     int bit_depth_chroma;                 ///< bit_depth_chroma_minus8 + 8
     int residual_color_transform_flag;    ///< residual_colour_transform_flag
     int constraint_set_flags;             ///< constraint_set[0-3]_flag
-    int new;                              ///< flag to keep track if the decoder context needs re-init due to changed SPS
 } SPS;
 
 /**
@@ -240,7 +240,22 @@ typedef struct PPS {
     uint8_t scaling_matrix8[6][64];
     uint8_t chroma_qp_table[2][64]; ///< pre-scaled (with chroma_qp_index_offset) version of qp_table
     int chroma_qp_diff;
+
+    uint32_t dequant4_buffer[6][QP_MAX_NUM + 1][16];
+    uint32_t dequant8_buffer[6][QP_MAX_NUM + 1][64];
+    uint32_t(*dequant4_coeff[6])[16];
+    uint32_t(*dequant8_coeff[6])[64];
 } PPS;
+
+typedef struct H264ParamSets {
+    AVBufferRef *sps_list[MAX_SPS_COUNT];
+    AVBufferRef *pps_list[MAX_PPS_COUNT];
+
+    /* currently active parameters sets */
+    const PPS *pps;
+    // FIXME this should properly be const
+    SPS *sps;
+} H264ParamSets;
 
 /**
  * Memory management control operation opcode.
@@ -506,14 +521,6 @@ typedef struct H264Context {
     uint32_t *mb2br_xy;
     int b_stride;       // FIXME use s->b4_stride
 
-    SPS sps; ///< current sps
-    PPS pps; ///< current pps
-
-    uint32_t dequant4_buffer[6][QP_MAX_NUM + 1][16]; // FIXME should these be moved down?
-    uint32_t dequant8_buffer[6][QP_MAX_NUM + 1][64];
-    uint32_t(*dequant4_coeff[6])[16];
-    uint32_t(*dequant8_coeff[6])[64];
-
     uint16_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1
 
     // interlacing specific flags
@@ -566,10 +573,7 @@ typedef struct H264Context {
     int bit_depth_luma;         ///< luma bit depth from sps to detect changes
     int chroma_format_idc;      ///< chroma format from sps to detect changes
 
-    SPS *sps_buffers[MAX_SPS_COUNT];
-    PPS *pps_buffers[MAX_PPS_COUNT];
-
-    int dequant_coeff_pps;      ///< reinit tables when pps changes
+    H264ParamSets ps;
 
     uint16_t *slice_table_base;
 
@@ -756,17 +760,19 @@ int ff_h264_decode_sei(H264Context *h);
 /**
  * Decode SPS
  */
-int ff_h264_decode_seq_parameter_set(H264Context *h);
+int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
+                                     H264ParamSets *ps);
 
 /**
  * compute profile from sps
  */
-int ff_h264_get_profile(SPS *sps);
+int ff_h264_get_profile(const SPS *sps);
 
 /**
  * Decode PPS
  */
-int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length);
+int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
+                                         H264ParamSets *ps, int bit_length);
 
 /**
  * Free any data that may have been allocated in the H264 context
@@ -912,7 +918,7 @@ static av_always_inline uint16_t pack8to16(int a, int b)
  */
 static av_always_inline int get_chroma_qp(const H264Context *h, int t, int qscale)
 {
-    return h->pps.chroma_qp_table[t][qscale];
+    return h->ps.pps->chroma_qp_table[t][qscale];
 }
 
 /**
@@ -1035,7 +1041,7 @@ static av_always_inline void write_back_motion(const H264Context *h,
 
 static av_always_inline int get_dct8x8_allowed(const H264Context *h, H264SliceContext *sl)
 {
-    if (h->sps.direct_8x8_inference_flag)
+    if (h->ps.sps->direct_8x8_inference_flag)
         return !(AV_RN64A(sl->sub_mb_type) &
                  ((MB_TYPE_16x8 | MB_TYPE_8x16 | MB_TYPE_8x8) *
                   0x0001000100010001ULL));

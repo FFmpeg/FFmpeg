@@ -526,10 +526,10 @@ int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
     MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = first_slice ? h->mmco : mmco_temp;
     int mmco_index = 0, i = 0;
 
-    assert(h->long_ref_count + h->short_ref_count <= h->sps.ref_frame_count);
+    assert(h->long_ref_count + h->short_ref_count <= h->ps.sps->ref_frame_count);
 
     if (h->short_ref_count &&
-        h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count &&
+        h->long_ref_count + h->short_ref_count == h->ps.sps->ref_frame_count &&
         !(FIELD_PICTURE(h) && !h->first_field && h->cur_pic_ptr->reference)) {
         mmco[0].opcode        = MMCO_SHORT2UNUSED;
         mmco[0].short_pic_num = h->short_ref[h->short_ref_count - 1]->frame_num;
@@ -698,7 +698,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
     }
 
     if (h->long_ref_count + h->short_ref_count -
-        (h->short_ref[0] == h->cur_pic_ptr) > h->sps.ref_frame_count) {
+        (h->short_ref[0] == h->cur_pic_ptr) > h->ps.sps->ref_frame_count) {
 
         /* We have too many reference frames, probably due to corrupted
          * stream. Need to discard one frame. Prevents overrun of the
@@ -707,7 +707,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
         av_log(h->avctx, AV_LOG_ERROR,
                "number of reference frames (%d+%d) exceeds max (%d; probably "
                "corrupt input), discarding one\n",
-               h->long_ref_count, h->short_ref_count, h->sps.ref_frame_count);
+               h->long_ref_count, h->short_ref_count, h->ps.sps->ref_frame_count);
         err = AVERROR_INVALIDDATA;
 
         if (h->long_ref_count && !h->short_ref_count) {

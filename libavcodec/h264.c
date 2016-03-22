@@ -206,9 +206,6 @@ int ff_h264_alloc_tables(H264Context *h)
             h->mb2br_xy[mb_xy] = 8 * (FMO ? mb_xy : (mb_xy % (2 * h->mb_stride)));
         }
 
-    if (!h->dequant4_coeff[0])
-        ff_h264_init_dequant_tables(h);
-
     return 0;
 
 fail:
@@ -397,7 +394,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     int i;
 
     h->avctx                 = avctx;
-    h->dequant_coeff_pps     = -1;
 
     h->picture_structure     = PICT_FRAME;
     h->slice_context_count   = 1;
@@ -474,9 +470,9 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
        }
     }
 
-    if (h->sps.bitstream_restriction_flag &&
-        h->avctx->has_b_frames < h->sps.num_reorder_frames) {
-        h->avctx->has_b_frames = h->sps.num_reorder_frames;
+    if (h->ps.sps && h->ps.sps->bitstream_restriction_flag &&
+        h->avctx->has_b_frames < h->ps.sps->num_reorder_frames) {
+        h->avctx->has_b_frames = h->ps.sps->num_reorder_frames;
         h->low_delay           = 0;
     }
 
@@ -520,6 +516,7 @@ static int decode_init_thread_copy(AVCodecContext *avctx)
  */
 static void decode_postinit(H264Context *h, int setup_finished)
 {
+    const SPS *sps = h->ps.sps;
     H264Picture *out = h->cur_pic_ptr;
     H264Picture *cur = h->cur_pic_ptr;
     int i, pics, out_of_order, out_idx;
@@ -547,7 +544,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
     /* Prioritize picture timing SEI information over used
      * decoding process if it exists. */
 
-    if (h->sps.pic_struct_present_flag) {
+    if (sps->pic_struct_present_flag) {
         switch (h->sei_pic_struct) {
         case SEI_PIC_STRUCT_FRAME:
             break;
@@ -591,7 +588,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
         /* Derive top_field_first from field pocs. */
         cur->f->top_field_first = cur->field_poc[0] < cur->field_poc[1];
     } else {
-        if (cur->f->interlaced_frame || h->sps.pic_struct_present_flag) {
+        if (cur->f->interlaced_frame || sps->pic_struct_present_flag) {
             /* Use picture timing SEI information. Even if it is a
              * information of a past frame, better than nothing. */
             if (h->sei_pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM ||
@@ -684,9 +681,9 @@ static void decode_postinit(H264Context *h, int setup_finished)
     // FIXME do something with unavailable reference frames
 
     /* Sort B-frames into display order */
-    if (h->sps.bitstream_restriction_flag ||
+    if (sps->bitstream_restriction_flag ||
         h->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
-        h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, h->sps.num_reorder_frames);
+        h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, sps->num_reorder_frames);
     }
     h->low_delay = !h->avctx->has_b_frames;
 
@@ -746,8 +743,8 @@ static void decode_postinit(H264Context *h, int setup_finished)
     out_of_order = !out->f->key_frame && !h->mmco_reset &&
                    (out->poc < h->next_outputed_poc);
 
-    if (h->sps.bitstream_restriction_flag &&
-        h->avctx->has_b_frames >= h->sps.num_reorder_frames) {
+    if (sps->bitstream_restriction_flag &&
+        h->avctx->has_b_frames >= sps->num_reorder_frames) {
     } else if (out_of_order && pics - 1 == h->avctx->has_b_frames &&
                h->avctx->has_b_frames < MAX_DELAYED_PIC_COUNT) {
         if (invalid + cnt < MAX_DELAYED_PIC_COUNT) {
@@ -862,15 +859,16 @@ static void flush_dpb(AVCodecContext *avctx)
 
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc)
 {
-    const int max_frame_num = 1 << h->sps.log2_max_frame_num;
+    const SPS *sps = h->ps.sps;
+    const int max_frame_num = 1 << sps->log2_max_frame_num;
     int field_poc[2];
 
     h->frame_num_offset = h->prev_frame_num_offset;
     if (h->frame_num < h->prev_frame_num)
         h->frame_num_offset += max_frame_num;
 
-    if (h->sps.poc_type == 0) {
-        const int max_poc_lsb = 1 << h->sps.log2_max_poc_lsb;
+    if (sps->poc_type == 0) {
+        const int max_poc_lsb = 1 << sps->log2_max_poc_lsb;
 
         if (h->poc_lsb < h->prev_poc_lsb &&
             h->prev_poc_lsb - h->poc_lsb >= max_poc_lsb / 2)
@@ -884,11 +882,11 @@ int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc)
         field_poc[1] = h->poc_msb + h->poc_lsb;
         if (h->picture_structure == PICT_FRAME)
             field_poc[1] += h->delta_poc_bottom;
-    } else if (h->sps.poc_type == 1) {
+    } else if (sps->poc_type == 1) {
         int abs_frame_num, expected_delta_per_poc_cycle, expectedpoc;
         int i;
 
-        if (h->sps.poc_cycle_length != 0)
+        if (sps->poc_cycle_length != 0)
             abs_frame_num = h->frame_num_offset + h->frame_num;
         else
             abs_frame_num = 0;
@@ -897,25 +895,25 @@ int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc)
             abs_frame_num--;
 
         expected_delta_per_poc_cycle = 0;
-        for (i = 0; i < h->sps.poc_cycle_length; i++)
+        for (i = 0; i < sps->poc_cycle_length; i++)
             // FIXME integrate during sps parse
-            expected_delta_per_poc_cycle += h->sps.offset_for_ref_frame[i];
+            expected_delta_per_poc_cycle += sps->offset_for_ref_frame[i];
 
         if (abs_frame_num > 0) {
-            int poc_cycle_cnt          = (abs_frame_num - 1) / h->sps.poc_cycle_length;
-            int frame_num_in_poc_cycle = (abs_frame_num - 1) % h->sps.poc_cycle_length;
+            int poc_cycle_cnt          = (abs_frame_num - 1) / sps->poc_cycle_length;
+            int frame_num_in_poc_cycle = (abs_frame_num - 1) % sps->poc_cycle_length;
 
             expectedpoc = poc_cycle_cnt * expected_delta_per_poc_cycle;
             for (i = 0; i <= frame_num_in_poc_cycle; i++)
-                expectedpoc = expectedpoc + h->sps.offset_for_ref_frame[i];
+                expectedpoc = expectedpoc + sps->offset_for_ref_frame[i];
         } else
             expectedpoc = 0;
 
         if (h->nal_ref_idc == 0)
-            expectedpoc = expectedpoc + h->sps.offset_for_non_ref_pic;
+            expectedpoc = expectedpoc + sps->offset_for_non_ref_pic;
 
         field_poc[0] = expectedpoc + h->delta_poc[0];
-        field_poc[1] = field_poc[0] + h->sps.offset_for_top_to_bottom_field;
+        field_poc[1] = field_poc[0] + sps->offset_for_top_to_bottom_field;
 
         if (h->picture_structure == PICT_FRAME)
             field_poc[1] += h->delta_poc[1];
@@ -945,7 +943,7 @@ int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc)
  *
  * @return profile as defined by FF_PROFILE_H264_*
  */
-int ff_h264_get_profile(SPS *sps)
+int ff_h264_get_profile(const SPS *sps)
 {
     int profile = sps->profile_idc;
 
@@ -1067,7 +1065,7 @@ again:
 
             if (h->sei_recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
                 h->recovery_frame = (h->frame_num + h->sei_recovery_frame_cnt) &
-                                    ((1 << h->sps.log2_max_frame_num) - 1);
+                                    ((1 << h->ps.sps->log2_max_frame_num) - 1);
             }
 
             h->cur_pic_ptr->f->key_frame |=
@@ -1121,14 +1119,13 @@ again:
                 goto end;
             break;
         case NAL_SPS:
-            h->gb = nal->gb;
-            ret = ff_h264_decode_seq_parameter_set(h);
+            ret = ff_h264_decode_seq_parameter_set(&nal->gb, avctx, &h->ps);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
             break;
         case NAL_PPS:
-            h->gb = nal->gb;
-            ret = ff_h264_decode_picture_parameter_set(h, nal->size_bits);
+            ret = ff_h264_decode_picture_parameter_set(&nal->gb, avctx, &h->ps,
+                                                       nal->size_bits);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
             break;
@@ -1201,14 +1198,14 @@ static int output_frame(H264Context *h, AVFrame *dst, AVFrame *src)
     if (ret < 0)
         return ret;
 
-    if (!h->sps.crop)
+    if (!h->ps.sps || !h->ps.sps->crop)
         return 0;
 
     for (i = 0; i < 3; i++) {
         int hshift = (i > 0) ? h->chroma_x_shift : 0;
         int vshift = (i > 0) ? h->chroma_y_shift : 0;
-        int off    = ((h->sps.crop_left >> hshift) << h->pixel_shift) +
-                     (h->sps.crop_top >> vshift) * dst->linesize[i];
+        int off    = ((h->ps.sps->crop_left >> hshift) << h->pixel_shift) +
+                     (h->ps.sps->crop_top >> vshift) * dst->linesize[i];
         dst->data[i] += off;
     }
     return 0;
@@ -1321,10 +1318,10 @@ av_cold void ff_h264_free_context(H264Context *h)
     h->nb_slice_ctx = 0;
 
     for (i = 0; i < MAX_SPS_COUNT; i++)
-        av_freep(h->sps_buffers + i);
+        av_buffer_unref(&h->ps.sps_list[i]);
 
     for (i = 0; i < MAX_PPS_COUNT; i++)
-        av_freep(h->pps_buffers + i);
+        av_buffer_unref(&h->ps.pps_list[i]);
 
     ff_h2645_packet_uninit(&h->pkt);
 }

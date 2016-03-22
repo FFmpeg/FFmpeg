@@ -464,7 +464,7 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
 
     if (!IS_SKIP(mb_type)) {
         if (IS_INTRA(mb_type)) {
-            int type_mask = h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
+            int type_mask = h->ps.pps->constrained_intra_pred ? IS_INTRA(-1) : -1;
             sl->topleft_samples_available     =
                 sl->top_samples_available     =
                     sl->left_samples_available = 0xFFFF;
