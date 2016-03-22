@@ -1094,6 +1094,33 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     output_packet(of->ctx, &opkt, ost);
 }
 
+// This does not quite work like avcodec_decode_audio4/avcodec_decode_video2.
+// There is the following difference: if you got a frame, you must call
+// it again with pkt=NULL. pkt==NULL is treated differently from pkt.size==0
+// (pkt==NULL means get more output, pkt.size==0 is a flush/drain packet)
+static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *pkt)
+{
+    int ret;
+
+    *got_frame = 0;
+
+    if (pkt) {
+        ret = avcodec_send_packet(avctx, pkt);
+        // In particular, we don't expect AVERROR(EAGAIN), because we read all
+        // decoded frames with avcodec_receive_frame() until done.
+        if (ret < 0)
+            return ret == AVERROR_EOF ? 0 : ret;
+    }
+
+    ret = avcodec_receive_frame(avctx, frame);
+    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+        return ret;
+    if (ret >= 0)
+        *got_frame = 1;
+
+    return 0;
+}
+
 int guess_input_channel_layout(InputStream *ist)
 {
     AVCodecContext *dec = ist->dec_ctx;
@@ -1124,7 +1151,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         return AVERROR(ENOMEM);
     decoded_frame = ist->decoded_frame;
 
-    ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
+    ret = decode(avctx, decoded_frame, got_output, pkt);
     if (!*got_output || ret < 0)
         return ret;
 
@@ -1135,9 +1162,9 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
        the decoder could be delaying output by a packet or more. */
     if (decoded_frame->pts != AV_NOPTS_VALUE)
         ist->next_dts = decoded_frame->pts;
-    else if (pkt->pts != AV_NOPTS_VALUE)
+    else if (pkt && pkt->pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = pkt->pts;
-    pkt->pts           = AV_NOPTS_VALUE;
+    }
 
     resample_changed = ist->resample_sample_fmt     != decoded_frame->format         ||
                        ist->resample_channels       != avctx->channels               ||
@@ -1215,8 +1242,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         return AVERROR(ENOMEM);
     decoded_frame = ist->decoded_frame;
 
-    ret = avcodec_decode_video2(ist->dec_ctx,
-                                decoded_frame, got_output, pkt);
+    ret = decode(ist->dec_ctx, decoded_frame, got_output, pkt);
     if (!*got_output || ret < 0)
         return ret;
 
@@ -1231,7 +1257,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
                                            decoded_frame->pkt_dts);
-    pkt->size = 0;
 
     if (ist->st->sample_aspect_ratio.num)
         decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
@@ -1326,7 +1351,7 @@ static int send_filter_eof(InputStream *ist)
 static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
     int i;
-    int got_output;
+    int repeating = 0;
     AVPacket avpkt;
 
     if (ist->next_dts == AV_NOPTS_VALUE)
@@ -1337,29 +1362,31 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_e
         av_init_packet(&avpkt);
         avpkt.data = NULL;
         avpkt.size = 0;
-        goto handle_eof;
     } else {
         avpkt = *pkt;
     }
 
-    if (pkt->dts != AV_NOPTS_VALUE)
+    if (pkt && pkt->dts != AV_NOPTS_VALUE)
         ist->next_dts = ist->last_dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
 
     // while we have more to decode or while the decoder did output something on EOF
-    while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
+    while (ist->decoding_needed && (!pkt || avpkt.size > 0)) {
         int ret = 0;
-    handle_eof:
+        int got_output = 0;
 
-        ist->last_dts = ist->next_dts;
+        if (!repeating)
+            ist->last_dts = ist->next_dts;
 
         switch (ist->dec_ctx->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            ret = decode_audio    (ist, &avpkt, &got_output);
+            ret = decode_audio    (ist, repeating ? NULL : &avpkt, &got_output);
             break;
         case AVMEDIA_TYPE_VIDEO:
-            ret = decode_video    (ist, &avpkt, &got_output);
-            if (avpkt.duration)
-                ist->next_dts += av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
+            ret = decode_video    (ist, repeating ? NULL : &avpkt, &got_output);
+            if (repeating && !got_output)
+                ;
+            else if (pkt && pkt->duration)
+                ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
             else if (ist->st->avg_frame_rate.num)
                 ist->next_dts += av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate),
                                               AV_TIME_BASE_Q);
@@ -1370,6 +1397,8 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_e
             }
             break;
         case AVMEDIA_TYPE_SUBTITLE:
+            if (repeating)
+                break;
             ret = transcode_subtitles(ist, &avpkt, &got_output);
             break;
         default:
@@ -1384,14 +1413,10 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_e
             break;
         }
 
-        // touch data and size only if not EOF
-        if (pkt) {
-            avpkt.data += ret;
-            avpkt.size -= ret;
-        }
-        if (!got_output) {
-            continue;
-        }
+        if (!got_output)
+            break;
+
+        repeating = 1;
     }
 
     /* after flushing, send an EOF on all the filter inputs attached to the stream */
