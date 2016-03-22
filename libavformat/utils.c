@@ -2891,27 +2891,27 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
             (!st->codec_info_nb_frames &&
              (avctx->codec->capabilities & AV_CODEC_CAP_CHANNEL_CONF)))) {
         got_picture = 0;
-        switch (avctx->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:
-            ret = avcodec_decode_video2(avctx, frame,
-                                        &got_picture, &pkt);
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            ret = avcodec_decode_audio4(avctx, frame, &got_picture, &pkt);
-            break;
-        case AVMEDIA_TYPE_SUBTITLE:
+        if (avctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+            avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+            ret = avcodec_send_packet(avctx, &pkt);
+            if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+                break;
+            if (ret >= 0)
+                pkt.size = 0;
+            ret = avcodec_receive_frame(avctx, frame);
+            if (ret >= 0)
+                got_picture = 1;
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                ret = 0;
+        } else if (avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             ret = avcodec_decode_subtitle2(avctx, &subtitle,
                                            &got_picture, &pkt);
-            ret = pkt.size;
-            break;
-        default:
-            break;
+            if (ret >= 0)
+                pkt.size = 0;
         }
         if (ret >= 0) {
             if (got_picture)
                 st->nb_decoded_frames++;
-            pkt.data += ret;
-            pkt.size -= ret;
             ret       = got_picture;
         }
     }
