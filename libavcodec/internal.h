@@ -140,6 +140,19 @@ typedef struct AVCodecInternal {
      * hwaccel-specific private data
      */
     void *hwaccel_priv_data;
+
+    /**
+     * checks API usage: after codec draining, flush is required to resume operation
+     */
+    int draining;
+
+    /**
+     * buffers for using new encode/decode API through legacy API
+     */
+    AVPacket *buffer_pkt;
+    int buffer_pkt_valid; // encoding: packet without data can be valid
+    AVFrame *buffer_frame;
+    int draining_done;
 } AVCodecInternal;
 
 struct AVCodecDefault {
