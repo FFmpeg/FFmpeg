@@ -28,11 +28,13 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
-#include "golomb_legacy.h"
+#include "bitstream.h"
+#include "golomb.h"
 #include "internal.h"
-#include "unary_legacy.h"
+#include "unary.h"
+#include "vlc.h"
 #include "ralfdata.h"
 
 #define FILTER_NONE 0
@@ -210,21 +212,21 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static inline int extend_code(GetBitContext *gb, int val, int range, int bits)
+static inline int extend_code(BitstreamContext *bc, int val, int range, int bits)
 {
     if (val == 0) {
-        val = -range - get_ue_golomb(gb);
+        val = -range - get_ue_golomb(bc);
     } else if (val == range * 2) {
-        val =  range + get_ue_golomb(gb);
+        val =  range + get_ue_golomb(bc);
     } else {
         val -= range;
     }
     if (bits)
-        val = (val << bits) | get_bits(gb, bits);
+        val = (val << bits) | bitstream_read(bc, bits);
     return val;
 }
 
-static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
+static int decode_channel(RALFContext *ctx, BitstreamContext *bc, int ch,
                           int length, int mode, int bits)
 {
     int i, t;
@@ -233,19 +235,19 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
     VLC *code_vlc; int range, range2, add_bits;
     int *dst = ctx->channel_data[ch];
 
-    ctx->filter_params = get_vlc2(gb, set->filter_params.table, 9, 2);
+    ctx->filter_params = bitstream_read_vlc(bc, set->filter_params.table, 9, 2);
     ctx->filter_bits   = (ctx->filter_params - 2) >> 6;
     ctx->filter_length = ctx->filter_params - (ctx->filter_bits << 6) - 1;
 
     if (ctx->filter_params == FILTER_RAW) {
         for (i = 0; i < length; i++)
-            dst[i] = get_bits(gb, bits);
+            dst[i] = bitstream_read(bc, bits);
         ctx->bias[ch] = 0;
         return 0;
     }
 
-    ctx->bias[ch] = get_vlc2(gb, set->bias.table, 9, 2);
-    ctx->bias[ch] = extend_code(gb, ctx->bias[ch], 127, 4);
+    ctx->bias[ch] = bitstream_read_vlc(bc, set->bias.table, 9, 2);
+    ctx->bias[ch] = extend_code(bc, ctx->bias[ch], 127, 4);
 
     if (ctx->filter_params == FILTER_NONE) {
         memset(dst, 0, sizeof(*dst) * length);
@@ -259,8 +261,8 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
         add_bits = ctx->filter_bits;
 
         for (i = 0; i < ctx->filter_length; i++) {
-            t = get_vlc2(gb, vlc[cmode].table, vlc[cmode].bits, 2);
-            t = extend_code(gb, t, 21, add_bits);
+            t = bitstream_read_vlc(bc, vlc[cmode].table, vlc[cmode].bits, 2);
+            t = extend_code(bc, t, 21, add_bits);
             if (!cmode)
                 coeff -= 12 << add_bits;
             coeff = t - coeff;
@@ -279,7 +281,7 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
         }
     }
 
-    code_params = get_vlc2(gb, set->coding_mode.table, set->coding_mode.bits, 2);
+    code_params = bitstream_read_vlc(bc, set->coding_mode.table, set->coding_mode.bits, 2);
     if (code_params >= 15) {
         add_bits = av_clip((code_params / 5 - 3) / 2, 0, 10);
         if (add_bits > 9 && (code_params % 5) != 2)
@@ -297,14 +299,14 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
     for (i = 0; i < length; i += 2) {
         int code1, code2;
 
-        t = get_vlc2(gb, code_vlc->table, code_vlc->bits, 2);
+        t = bitstream_read_vlc(bc, code_vlc->table, code_vlc->bits, 2);
         code1 = t / range2;
         code2 = t % range2;
-        dst[i]     = extend_code(gb, code1, range, 0) << add_bits;
-        dst[i + 1] = extend_code(gb, code2, range, 0) << add_bits;
+        dst[i]     = extend_code(bc, code1, range, 0) << add_bits;
+        dst[i + 1] = extend_code(bc, code2, range, 0) << add_bits;
         if (add_bits) {
-            dst[i]     |= get_bits(gb, add_bits);
-            dst[i + 1] |= get_bits(gb, add_bits);
+            dst[i]     |= bitstream_read(bc, add_bits);
+            dst[i + 1] |= bitstream_read(bc, add_bits);
         }
     }
 
@@ -335,7 +337,7 @@ static void apply_lpc(RALFContext *ctx, int ch, int length, int bits)
     }
 }
 
-static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
+static int decode_block(AVCodecContext *avctx, BitstreamContext *bc,
                         int16_t *dst0, int16_t *dst1)
 {
     RALFContext *ctx = avctx->priv_data;
@@ -344,7 +346,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
     int *ch0, *ch1;
     int i, t, t2;
 
-    len = 12 - get_unary(gb, 0, 6);
+    len = 12 - get_unary(bc, 0, 6);
 
     if (len <= 7) len ^= 1; // codes for length = 6 and 7 are swapped
     len = 1 << len;
@@ -356,7 +358,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
     }
 
     if (avctx->channels > 1)
-        dmode = get_bits(gb, 2) + 1;
+        dmode = bitstream_read(bc, 2) + 1;
     else
         dmode = 0;
 
@@ -366,13 +368,13 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
     bits[1] = (mode[1] == 2) ? 17 : 16;
 
     for (ch = 0; ch < avctx->channels; ch++) {
-        if ((ret = decode_channel(ctx, gb, ch, len, mode[ch], bits[ch])) < 0)
+        if ((ret = decode_channel(ctx, bc, ch, len, mode[ch], bits[ch])) < 0)
             return ret;
         if (ctx->filter_params > 1 && ctx->filter_params != FILTER_RAW) {
             ctx->filter_bits += 3;
             apply_lpc(ctx, ch, len, bits[ch]);
         }
-        if (get_bits_left(gb) < 0)
+        if (bitstream_bits_left(bc) < 0)
             return AVERROR_INVALIDDATA;
     }
     ch0 = ctx->channel_data[0];
@@ -426,7 +428,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int16_t *samples0;
     int16_t *samples1;
     int ret;
-    GetBitContext gb;
+    BitstreamContext bc;
     int table_size, table_bytes, i;
     const uint8_t *src, *block_pointer;
     int src_size;
@@ -478,12 +480,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         av_log(avctx, AV_LOG_ERROR, "short packets are short!\n");
         return AVERROR_INVALIDDATA;
     }
-    init_get_bits(&gb, src + 2, table_size);
+    bitstream_init(&bc, src + 2, table_size);
     ctx->num_blocks = 0;
-    while (get_bits_left(&gb) > 0) {
-        ctx->block_size[ctx->num_blocks] = get_bits(&gb, 15);
-        if (get_bits1(&gb)) {
-            ctx->block_pts[ctx->num_blocks] = get_bits(&gb, 9);
+    while (bitstream_bits_left(&bc) > 0) {
+        ctx->block_size[ctx->num_blocks] = bitstream_read(&bc, 15);
+        if (bitstream_read_bit(&bc)) {
+            ctx->block_pts[ctx->num_blocks] = bitstream_read(&bc, 9);
         } else {
             ctx->block_pts[ctx->num_blocks] = 0;
         }
@@ -498,8 +500,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             av_log(avctx, AV_LOG_ERROR, "I'm pedaling backwards\n");
             break;
         }
-        init_get_bits(&gb, block_pointer, ctx->block_size[i] * 8);
-        if (decode_block(avctx, &gb, samples0 + ctx->sample_offset,
+        bitstream_init8(&bc, block_pointer, ctx->block_size[i]);
+        if (decode_block(avctx, &bc, samples0 + ctx->sample_offset,
                                      samples1 + ctx->sample_offset) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Sir, I got carsick in your office. Not decoding the rest of packet.\n");
             break;
