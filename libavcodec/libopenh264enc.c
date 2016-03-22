@@ -85,7 +85,7 @@ static int libopenh264_to_libav_log_level(int libopenh264_log_level)
 //
 //        typedef void (*WelsTraceCallback) (void* ctx, int level, const char* string);
 
-static void libopenh264_trace_callback(void *ctx, int level, char const *msg)
+static void libopenh264_trace_callback(void *ctx, int level, const char *msg)
 {
     // The message will be logged only if the requested EQUIVALENT libav log level is
     // less than or equal to the current libav log level.

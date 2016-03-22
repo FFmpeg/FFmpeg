@@ -81,7 +81,7 @@ typedef struct AlacEncodeContext {
 
 
 static void init_sample_buffers(AlacEncodeContext *s, int channels,
-                                uint8_t const *samples[2])
+                                const uint8_t *samples[2])
 {
     int ch, i;
     int shift = av_get_bytes_per_sample(s->avctx->sample_fmt) * 8 -
@@ -364,7 +364,7 @@ static void write_element(AlacEncodeContext *s,
                           enum AlacRawDataBlockType element, int instance,
                           const uint8_t *samples0, const uint8_t *samples1)
 {
-    uint8_t const *samples[2] = { samples0, samples1 };
+    const uint8_t *samples[2] = { samples0, samples1 };
     int i, j, channels;
     int prediction_type = 0;
     PutBitContext *pb = &s->pbctx;
@@ -376,14 +376,14 @@ static void write_element(AlacEncodeContext *s,
         /* samples are channel-interleaved in verbatim mode */
         if (s->avctx->sample_fmt == AV_SAMPLE_FMT_S32P) {
             int shift = 32 - s->avctx->bits_per_raw_sample;
-            int32_t const *samples_s32[2] = { (const int32_t *)samples0,
+            const int32_t *samples_s32[2] = { (const int32_t *)samples0,
                                               (const int32_t *)samples1 };
             for (i = 0; i < s->frame_size; i++)
                 for (j = 0; j < channels; j++)
                     put_sbits(pb, s->avctx->bits_per_raw_sample,
                               samples_s32[j][i] >> shift);
         } else {
-            int16_t const *samples_s16[2] = { (const int16_t *)samples0,
+            const int16_t *samples_s16[2] = { (const int16_t *)samples0,
                                               (const int16_t *)samples1 };
             for (i = 0; i < s->frame_size; i++)
                 for (j = 0; j < channels; j++)

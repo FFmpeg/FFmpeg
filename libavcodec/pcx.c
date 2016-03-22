@@ -81,7 +81,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                  bytes_per_scanline;
     uint8_t *ptr;
     const uint8_t *buf_end = buf + buf_size;
-    uint8_t const *bufstart = buf;
+    const uint8_t *bufstart = buf;
     uint8_t *scanline;
     int ret = -1;
 
