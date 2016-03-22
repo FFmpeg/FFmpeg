@@ -115,7 +115,8 @@ static av_cold void x8_vlc_init(void){
         init_or_vlc( j_orient_vlc[1][i], x8_orient_lowquant_table [i][0]);
     }
     if (offset != sizeof(table)/sizeof(VLC_TYPE)/2)
-        av_log(NULL, AV_LOG_ERROR, "table size %i does not match needed %i\n", (int)(sizeof(table)/sizeof(VLC_TYPE)/2), offset);
+        av_log(NULL, AV_LOG_ERROR, "table size %zd does not match needed %i\n",
+               sizeof(table) / sizeof(VLC_TYPE) / 2, offset);
 }
 #undef init_or_vlc
 
