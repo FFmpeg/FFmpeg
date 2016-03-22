@@ -35,6 +35,7 @@
 #include "error_resilience.h"
 #include "get_bits.h"
 #include "h264_parse.h"
+#include "h264_sei.h"
 #include "h2645_parse.h"
 #include "h264chroma.h"
 #include "h264dsp.h"
@@ -126,34 +127,6 @@ enum {
     NAL_AUXILIARY_SLICE = 19,
     NAL_FF_IGNORE       = 0xff0f001,
 };
-
-/**
- * SEI message types
- */
-typedef enum {
-    SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
-    SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
-    SEI_TYPE_USER_DATA_REGISTERED   = 4,   ///< registered user data as specified by Rec. ITU-T T.35
-    SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
-    SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
-    SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
-    SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
-} SEI_Type;
-
-/**
- * pic_struct in picture timing SEI message
- */
-typedef enum {
-    SEI_PIC_STRUCT_FRAME             = 0, ///<  0: %frame
-    SEI_PIC_STRUCT_TOP_FIELD         = 1, ///<  1: top field
-    SEI_PIC_STRUCT_BOTTOM_FIELD      = 2, ///<  2: bottom field
-    SEI_PIC_STRUCT_TOP_BOTTOM        = 3, ///<  3: top field, bottom field, in that order
-    SEI_PIC_STRUCT_BOTTOM_TOP        = 4, ///<  4: bottom field, top field, in that order
-    SEI_PIC_STRUCT_TOP_BOTTOM_TOP    = 5, ///<  5: top field, bottom field, top field repeated, in that order
-    SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM = 6, ///<  6: bottom field, top field, bottom field repeated, in that order
-    SEI_PIC_STRUCT_FRAME_DOUBLING    = 7, ///<  7: %frame doubling
-    SEI_PIC_STRUCT_FRAME_TRIPLING    = 8  ///<  8: %frame tripling
-} SEI_PicStructType;
 
 /**
  * Sequence parameter set
@@ -551,8 +524,6 @@ typedef struct H264Context {
     const uint8_t *field_scan8x8_q0;
     const uint8_t *field_scan8x8_cavlc_q0;
 
-    int x264_build;
-
     int mb_y;
     int mb_height, mb_width;
     int mb_stride;
@@ -636,66 +607,12 @@ typedef struct H264Context {
     /** @} */
 
     /**
-     * pic_struct in picture timing SEI message
-     */
-    SEI_PicStructType sei_pic_struct;
-
-    /**
      * Complement sei_pic_struct
      * SEI_PIC_STRUCT_TOP_BOTTOM and SEI_PIC_STRUCT_BOTTOM_TOP indicate interlaced frames.
      * However, soft telecined frames may have these values.
      * This is used in an attempt to flag soft telecine progressive.
      */
     int prev_interlaced_frame;
-
-    /**
-     * frame_packing_arrangment SEI message
-     */
-    int sei_frame_packing_present;
-    int frame_packing_arrangement_type;
-    int content_interpretation_type;
-    int quincunx_subsampling;
-
-    /**
-     * display orientation SEI message
-     */
-    int sei_display_orientation_present;
-    int sei_anticlockwise_rotation;
-    int sei_hflip, sei_vflip;
-
-    /**
-     * User data registered by Rec. ITU-T T.35 SEI
-     */
-    int sei_reguserdata_afd_present;
-    uint8_t active_format_description;
-    int a53_caption_size;
-    uint8_t *a53_caption;
-
-    /**
-     * Bit set of clock types for fields/frames in picture timing SEI message.
-     * For each found ct_type, appropriate bit is set (e.g., bit 1 for
-     * interlaced).
-     */
-    int sei_ct_type;
-
-    /**
-     * dpb_output_delay in picture timing SEI message, see H.264 C.2.2
-     */
-    int sei_dpb_output_delay;
-
-    /**
-     * cpb_removal_delay in picture timing SEI message, see H.264 C.1.2
-     */
-    int sei_cpb_removal_delay;
-
-    /**
-     * recovery_frame_cnt from SEI message
-     *
-     * Set to -1 if no recovery point SEI message found or to number of frames
-     * before playback synchronizes. Frames having recovery point are key
-     * frames.
-     */
-    int sei_recovery_frame_cnt;
 
     /**
      * recovery_frame is the frame_num at which the next frame should
@@ -724,11 +641,9 @@ typedef struct H264Context {
      * slices) anymore */
     int setup_finished;
 
-    // Timestamp stuff
-    int sei_buffering_period_present;   ///< Buffering period SEI flag
-    int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
-
     int enable_er;
+
+    H264SEIContext sei;
 
     AVBufferPool *qscale_table_pool;
     AVBufferPool *mb_type_pool;
@@ -741,11 +656,6 @@ typedef struct H264Context {
 } H264Context;
 
 extern const uint16_t ff_h264_mb_sizes[4];
-
-/**
- * Decode SEI
- */
-int ff_h264_decode_sei(H264Context *h);
 
 /**
  * Decode SPS
@@ -827,13 +737,6 @@ void ff_h264_filter_mb_fast(const H264Context *h, H264SliceContext *sl, int mb_x
 void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
                        uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
                        unsigned int linesize, unsigned int uvlinesize);
-
-/**
- * Reset SEI values at the beginning of the frame.
- *
- * @param h H.264 context.
- */
-void ff_h264_reset_sei(H264Context *h);
 
 /*
  * o-o o-o

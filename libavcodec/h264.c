@@ -400,7 +400,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->workaround_bugs       = avctx->workaround_bugs;
     h->flags                 = avctx->flags;
     h->poc.prev_poc_msb      = 1 << 16;
-    h->x264_build            = -1;
     h->recovery_frame        = -1;
     h->frame_recovered       = 0;
 
@@ -408,7 +407,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
 
-    ff_h264_reset_sei(h);
+    ff_h264_sei_uninit(&h->sei);
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
@@ -545,7 +544,8 @@ static void decode_postinit(H264Context *h, int setup_finished)
      * decoding process if it exists. */
 
     if (sps->pic_struct_present_flag) {
-        switch (h->sei_pic_struct) {
+        H264SEIPictureTiming *pt = &h->sei.picture_timing;
+        switch (pt->pic_struct) {
         case SEI_PIC_STRUCT_FRAME:
             break;
         case SEI_PIC_STRUCT_TOP_FIELD:
@@ -575,9 +575,9 @@ static void decode_postinit(H264Context *h, int setup_finished)
             break;
         }
 
-        if ((h->sei_ct_type & 3) &&
-            h->sei_pic_struct <= SEI_PIC_STRUCT_BOTTOM_TOP)
-            cur->f->interlaced_frame = (h->sei_ct_type & (1 << 1)) != 0;
+        if ((pt->ct_type & 3) &&
+            pt->pic_struct <= SEI_PIC_STRUCT_BOTTOM_TOP)
+            cur->f->interlaced_frame = (pt->ct_type & (1 << 1)) != 0;
     } else {
         /* Derive interlacing flag from used decoding process. */
         cur->f->interlaced_frame = FIELD_OR_MBAFF_PICTURE(h);
@@ -591,8 +591,8 @@ static void decode_postinit(H264Context *h, int setup_finished)
         if (cur->f->interlaced_frame || sps->pic_struct_present_flag) {
             /* Use picture timing SEI information. Even if it is a
              * information of a past frame, better than nothing. */
-            if (h->sei_pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM ||
-                h->sei_pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
+            if (h->sei.picture_timing.pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM ||
+                h->sei.picture_timing.pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
                 cur->f->top_field_first = 1;
             else
                 cur->f->top_field_first = 0;
@@ -602,16 +602,17 @@ static void decode_postinit(H264Context *h, int setup_finished)
         }
     }
 
-    if (h->sei_frame_packing_present &&
-        h->frame_packing_arrangement_type >= 0 &&
-        h->frame_packing_arrangement_type <= 6 &&
-        h->content_interpretation_type > 0 &&
-        h->content_interpretation_type < 3) {
+    if (h->sei.frame_packing.present &&
+        h->sei.frame_packing.arrangement_type >= 0 &&
+        h->sei.frame_packing.arrangement_type <= 6 &&
+        h->sei.frame_packing.content_interpretation_type > 0 &&
+        h->sei.frame_packing.content_interpretation_type < 3) {
+        H264SEIFramePacking *fp = &h->sei.frame_packing;
         AVStereo3D *stereo = av_stereo3d_create_side_data(cur->f);
         if (!stereo)
             return;
 
-        switch (h->frame_packing_arrangement_type) {
+        switch (fp->arrangement_type) {
         case 0:
             stereo->type = AV_STEREO3D_CHECKERBOARD;
             break;
@@ -622,7 +623,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
             stereo->type = AV_STEREO3D_LINES;
             break;
         case 3:
-            if (h->quincunx_subsampling)
+            if (fp->quincunx_subsampling)
                 stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
             else
                 stereo->type = AV_STEREO3D_SIDEBYSIDE;
@@ -638,13 +639,16 @@ static void decode_postinit(H264Context *h, int setup_finished)
             break;
         }
 
-        if (h->content_interpretation_type == 2)
+        if (fp->content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
     }
 
-    if (h->sei_display_orientation_present &&
-        (h->sei_anticlockwise_rotation || h->sei_hflip || h->sei_vflip)) {
-        double angle = h->sei_anticlockwise_rotation * 360 / (double) (1 << 16);
+    if (h->sei.display_orientation.present &&
+        (h->sei.display_orientation.anticlockwise_rotation ||
+         h->sei.display_orientation.hflip ||
+         h->sei.display_orientation.vflip)) {
+        H264SEIDisplayOrientation *o = &h->sei.display_orientation;
+        double angle = o->anticlockwise_rotation * 360 / (double) (1 << 16);
         AVFrameSideData *rotation = av_frame_new_side_data(cur->f,
                                                            AV_FRAME_DATA_DISPLAYMATRIX,
                                                            sizeof(int32_t) * 9);
@@ -653,29 +657,30 @@ static void decode_postinit(H264Context *h, int setup_finished)
 
         av_display_rotation_set((int32_t *)rotation->data, angle);
         av_display_matrix_flip((int32_t *)rotation->data,
-                               h->sei_hflip, h->sei_vflip);
+                               o->hflip, o->vflip);
     }
 
-    if (h->sei_reguserdata_afd_present) {
+    if (h->sei.afd.present) {
         AVFrameSideData *sd = av_frame_new_side_data(cur->f, AV_FRAME_DATA_AFD,
                                                      sizeof(uint8_t));
         if (!sd)
             return;
 
-        *sd->data = h->active_format_description;
-        h->sei_reguserdata_afd_present = 0;
+        *sd->data = h->sei.afd.active_format_description;
+        h->sei.afd.present = 0;
     }
 
-    if (h->a53_caption) {
+    if (h->sei.a53_caption.a53_caption) {
+        H264SEIA53Caption *a53 = &h->sei.a53_caption;
         AVFrameSideData *sd = av_frame_new_side_data(cur->f,
                                                      AV_FRAME_DATA_A53_CC,
-                                                     h->a53_caption_size);
+                                                     a53->a53_caption_size);
         if (!sd)
             return;
 
-        memcpy(sd->data, h->a53_caption, h->a53_caption_size);
-        av_freep(&h->a53_caption);
-        h->a53_caption_size = 0;
+        memcpy(sd->data, a53->a53_caption, a53->a53_caption_size);
+        av_freep(&a53->a53_caption);
+        a53->a53_caption_size = 0;
     }
 
     // FIXME do something with unavailable reference frames
@@ -831,7 +836,7 @@ void ff_h264_flush_change(H264Context *h)
     if (h->cur_pic_ptr)
         h->cur_pic_ptr->reference = 0;
     h->first_field = 0;
-    ff_h264_reset_sei(h);
+    ff_h264_sei_uninit(&h->sei);
     h->recovery_frame = -1;
     h->frame_recovered = 0;
 }
@@ -927,7 +932,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
         h->current_slice = 0;
         if (!h->first_field)
             h->cur_pic_ptr = NULL;
-        ff_h264_reset_sei(h);
+        ff_h264_sei_uninit(&h->sei);
     }
 
     ret = ff_h2645_packet_split(&h->pkt, buf, buf_size, avctx, h->is_avc,
@@ -984,13 +989,13 @@ again:
             if ((err = ff_h264_decode_slice_header(h, sl)))
                 break;
 
-            if (h->sei_recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
-                h->recovery_frame = (h->poc.frame_num + h->sei_recovery_frame_cnt) &
+            if (h->sei.recovery_point.recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
+                h->recovery_frame = (h->poc.frame_num + h->sei.recovery_point.recovery_frame_cnt) &
                                     ((1 << h->ps.sps->log2_max_frame_num) - 1);
             }
 
             h->cur_pic_ptr->f->key_frame |=
-                (nal->type == NAL_IDR_SLICE) || (h->sei_recovery_frame_cnt >= 0);
+                (nal->type == NAL_IDR_SLICE) || (h->sei.recovery_point.recovery_frame_cnt >= 0);
 
             if (nal->type == NAL_IDR_SLICE || h->recovery_frame == h->poc.frame_num) {
                 h->recovery_frame         = -1;
@@ -1034,8 +1039,7 @@ again:
             goto end;
             break;
         case NAL_SEI:
-            h->gb = nal->gb;
-            ret = ff_h264_decode_sei(h);
+            ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
             break;

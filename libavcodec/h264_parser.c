@@ -37,6 +37,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "h264.h"
+#include "h264_sei.h"
 #include "h264data.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -48,6 +49,7 @@ typedef struct H264ParseContext {
     H264ParamSets ps;
     H264DSPContext h264dsp;
     H264POCContext poc;
+    H264SEIContext sei;
     int got_first;
 } H264ParseContext;
 
@@ -216,7 +218,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
     h->avctx = avctx;
-    ff_h264_reset_sei(h);
+    ff_h264_sei_uninit(&p->sei);
 
     if (!buf_size)
         return 0;
@@ -270,7 +272,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                                                  nal.size_bits);
             break;
         case NAL_SEI:
-            ff_h264_decode_sei(h);
+            ff_h264_sei_decode(&p->sei, &nal.gb, &p->ps, avctx);
             break;
         case NAL_IDR_SLICE:
             s->key_frame = 1;
@@ -284,7 +286,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             get_ue_golomb(&nal.gb);  // skip first_mb_in_slice
             slice_type   = get_ue_golomb_31(&nal.gb);
             s->pict_type = ff_h264_golomb_to_pict_type[slice_type % 5];
-            if (h->sei_recovery_frame_cnt >= 0) {
+            if (p->sei.recovery_point.recovery_frame_cnt >= 0) {
                 /* key frame, since recovery_frame_cnt is set */
                 s->key_frame = 1;
             }
@@ -405,7 +407,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
 
             if (sps->pic_struct_present_flag) {
-                switch (h->sei_pic_struct) {
+                switch (p->sei.picture_timing.pic_struct) {
                 case SEI_PIC_STRUCT_TOP_FIELD:
                 case SEI_PIC_STRUCT_BOTTOM_FIELD:
                     s->repeat_pict = 0;
@@ -436,7 +438,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             if (h->picture_structure == PICT_FRAME) {
                 s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
                 if (sps->pic_struct_present_flag) {
-                    switch (h->sei_pic_struct) {
+                    switch (p->sei.picture_timing.pic_struct) {
                     case SEI_PIC_STRUCT_TOP_BOTTOM:
                     case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
                         s->field_order = AV_FIELD_TT;
@@ -521,10 +523,10 @@ static int h264_parse(AVCodecParserContext *s,
 
     parse_nal_units(s, avctx, buf, buf_size);
 
-    if (h->sei_cpb_removal_delay >= 0) {
-        s->dts_sync_point    = h->sei_buffering_period_present;
-        s->dts_ref_dts_delta = h->sei_cpb_removal_delay;
-        s->pts_dts_delta     = h->sei_dpb_output_delay;
+    if (p->sei.picture_timing.cpb_removal_delay >= 0) {
+        s->dts_sync_point    = p->sei.buffering_period.present;
+        s->dts_ref_dts_delta = p->sei.picture_timing.cpb_removal_delay;
+        s->pts_dts_delta     = p->sei.picture_timing.dpb_output_delay;
     } else {
         s->dts_sync_point    = INT_MIN;
         s->dts_ref_dts_delta = INT_MIN;
@@ -580,6 +582,8 @@ static void h264_close(AVCodecParserContext *s)
 
     av_free(pc->buffer);
     ff_h264_free_context(h);
+
+    ff_h264_sei_uninit(&p->sei);
 
     for (i = 0; i < FF_ARRAY_ELEMS(p->ps.sps_list); i++)
         av_buffer_unref(&p->ps.sps_list[i]);
