@@ -2643,7 +2643,6 @@ mjpeg2jpeg_bsf_select="jpegtables"
 # external libraries
 chromaprint_muxer_deps="chromaprint"
 h264_videotoolbox_encoder_deps="videotoolbox_encoder pthreads"
-h264_videotoolbox_encoder_select="bzlib zlib iconv"
 libcelt_decoder_deps="libcelt"
 libdcadec_decoder_deps="libdcadec"
 libfaac_encoder_deps="libfaac"
