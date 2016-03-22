@@ -22,7 +22,7 @@
 #include "libavutil/arm/asm.S"
 
 
-.macro compute_premult_16 half_u1, half_u2, half_v1, half_v2
+.macro compute_premult half_u1, half_u2, half_v1, half_v2
     vmov                d2, \half_u1                                   @ copy left q14 to left q1
     vmov                d3, \half_u1                                   @ copy left q14 to right q1
     vmov                d4, \half_u2                                   @ copy right q14 to left q2
@@ -49,56 +49,22 @@
     vmul.s16            q13, q2, d1[3]                                 @  U * u2b             (right, blue)
 .endm
 
-.macro compute_premult_32 half_u half_v
-    vmov                d2, \half_u                                    @ copy left q14 to left q1
-    vmov                d3, \half_u                                    @ copy left q14 to right q1
-    vmov                d4, \half_v                                    @ copy left q15 to left q2
-    vmov                d5, \half_v                                    @ copy left q15 to right q2
-
-    vzip.16             d2, d3                                         @ U1U1U2U2U3U3U4U4
-    vzip.16             d4, d5                                         @ V1V1V2V2V3V3V4V4
-
-    vmull.s16           q8,  d4, d1[0]                                 @  V * v2r             (left,  red)
-    vmull.s16           q9,  d5, d1[0]                                 @  V * v2r             (right, red)
-    vmull.s16           q10, d2, d1[1]                                 @  U * u2g
-    vmull.s16           q11, d3, d1[1]                                 @  U * u2g
-    vmlal.s16           q10, d4, d1[2]                                 @  U * u2g + V * v2g   (left,  green)
-    vmlal.s16           q11, d5, d1[2]                                 @  U * u2g + V * v2g   (right, green)
-    vmull.s16           q12, d2, d1[3]                                 @  U * u2b             (left,  blue)
-    vmull.s16           q13, d3, d1[3]                                 @  U * u2b             (right, blue)
-.endm
-
-.macro compute_color_16 dst_comp1 dst_comp2 pre1 pre2
+.macro compute_color dst_comp1 dst_comp2 pre1 pre2
     vadd.s16            q1, q14, \pre1
     vadd.s16            q2, q15, \pre2
     vqrshrun.s16        \dst_comp1, q1, #6
     vqrshrun.s16        \dst_comp2, q2, #6
 .endm
 
-.macro compute_color_32 dst_comp pre1 pre2
-    vadd.s32            q3, q1, \pre1
-    vadd.s32            q4, q2, \pre2
-    vqrshrun.s32        d10, q3, #13
-    vqrshrun.s32        d11, q4, #13                                   @ q5 = ({q3,q4} + (1<<12)) >> 13
-    vqmovn.u16          \dst_comp, q5                                  @ saturate 16bit -> 8bit
-.endm
-
-.macro compute_rgba_16 r1 r2 g1 g2 b1 b2 a1 a2
-    compute_color_16    \r1, \r2, q8,  q9
-    compute_color_16    \g1, \g2, q10, q11
-    compute_color_16    \b1, \b2, q12, q13
+.macro compute_rgba r1 r2 g1 g2 b1 b2 a1 a2
+    compute_color       \r1, \r2, q8,  q9
+    compute_color       \g1, \g2, q10, q11
+    compute_color       \b1, \b2, q12, q13
     vmov.u8             \a1, #255
     vmov.u8             \a2, #255
 .endm
 
-.macro compute_rgba_32 r g b a
-    compute_color_32    \r, q8,  q9
-    compute_color_32    \g, q10, q11
-    compute_color_32    \b, q12, q13
-    vmov.u8             \a, #255
-.endm
-
-.macro compute_16px_16 dst y0 y1 ofmt
+.macro compute_16px dst y0 y1 ofmt
     vmovl.u8            q14, \y0                                       @ 8px of y
     vmovl.u8            q15, \y1                                       @ 8px of y
 
@@ -114,91 +80,39 @@
 
 
 .ifc \ofmt,argb
-    compute_rgba_16     d7, d11, d8, d12, d9, d13, d6, d10
+    compute_rgba        d7, d11, d8, d12, d9, d13, d6, d10
 .endif
 
 .ifc \ofmt,rgba
-    compute_rgba_16     d6, d10, d7, d11, d8, d12, d9, d13
+    compute_rgba        d6, d10, d7, d11, d8, d12, d9, d13
 .endif
 
 .ifc \ofmt,abgr
-    compute_rgba_16     d9, d13, d8, d12, d7, d11, d6, d10
+    compute_rgba        d9, d13, d8, d12, d7, d11, d6, d10
 .endif
 
 .ifc \ofmt,bgra
-    compute_rgba_16     d8, d12, d7, d11, d6, d10, d9, d13
+    compute_rgba        d8, d12, d7, d11, d6, d10, d9, d13
 .endif
     vst4.8              {q3, q4}, [\dst,:128]!
     vst4.8              {q5, q6}, [\dst,:128]!
 
 .endm
 
-.macro compute_8px_32 dst half_y ofmt
-    vmovl.u8            q7, \half_y                                    @ 8px of Y
-    vdup.16             q5, r9
-    vsub.s16            q7, q5
-    vmull.s16           q1, d14, d0                                    @ q1 = (srcY - y_offset) * y_coeff (left)
-    vmull.s16           q2, d15, d0                                    @ q2 = (srcY - y_offset) * y_coeff (right)
-
-.ifc \ofmt,argb
-    compute_rgba_32     d13, d14, d15, d12
-.endif
-
-.ifc \ofmt,rgba
-    compute_rgba_32     d12, d13, d14, d15
-.endif
-
-.ifc \ofmt,abgr
-    compute_rgba_32     d15, d14, d13, d12
-.endif
-
-.ifc \ofmt,bgra
-    compute_rgba_32     d14, d13, d12, d15
-.endif
-
-    vst4.8              {q6, q7}, [\dst,:128]!
-.endm
-
-.macro process_1l_16px_16 ofmt
-    compute_premult_16  d28, d29, d30, d31
+.macro process_1l_16px ofmt
+    compute_premult     d28, d29, d30, d31
     vld1.8              {q7}, [r4]!
-    compute_16px_16     r2, d14, d15, \ofmt
+    compute_16px        r2, d14, d15, \ofmt
 .endm
 
-.macro process_1l_16px_32 ofmt
-    compute_premult_32  d28, d30
-    vld1.8              {q7}, [r4]!
-    vmov                d28, d15                                       @ save right of the line of luma for later use
-    compute_8px_32      r2, d14, \ofmt
-
-    compute_premult_32  d29, d31
-    compute_8px_32      r2,  d28, \ofmt
-.endm
-
-.macro process_2l_16px_16 ofmt
-    compute_premult_16  d28, d29, d30, d31
+.macro process_2l_16px ofmt
+    compute_premult     d28, d29, d30, d31
 
     vld1.8              {q7}, [r4]!                                    @ first line of luma
-    compute_16px_16     r2, d14, d15, \ofmt
+    compute_16px        r2, d14, d15, \ofmt
 
     vld1.8              {q7}, [r12]!                                   @ second line of luma
-    compute_16px_16     r11, d14, d15, \ofmt
-.endm
-
-.macro process_2l_16px_32 ofmt
-    compute_premult_32  d28, d30
-
-    vld1.8              {q7}, [r4]!                                    @ first line of luma
-    vmov                d28, d15                                       @ save right of the first line of luma for later use
-    compute_8px_32      r2, d14, \ofmt
-
-    vld1.8              {q7}, [r12]!                                   @ second line of luma
-    vmov                d30, d15                                       @ save right of the second line of luma for later use
-    compute_8px_32      r11, d14, \ofmt
-
-    compute_premult_32  d29, d31
-    compute_8px_32      r2,  d28, \ofmt
-    compute_8px_32      r11, d30, \ofmt
+    compute_16px        r11, d14, d15, \ofmt
 .endm
 
 .macro load_args_nvx
@@ -266,8 +180,8 @@
     ldr                 r10,[sp, #120]                                 @ r10 = srcV
 .endm
 
-.macro declare_func ifmt ofmt precision
-function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
+.macro declare_func ifmt ofmt
+function ff_\ifmt\()_to_\ofmt\()_neon, export=1
 
 .ifc \ifmt,nv12
     load_args_nvx
@@ -301,7 +215,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
 
-    process_2l_16px_\precision \ofmt
+    process_2l_16px \ofmt
 .endif
 
 .ifc \ifmt,nv21
@@ -311,7 +225,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     vsubl.u8            q14, d3, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d2, d10                                   @ q15 = V - 128
 
-    process_2l_16px_\precision \ofmt
+    process_2l_16px \ofmt
 .endif
 
 .ifc \ifmt,yuv420p
@@ -323,7 +237,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
 
-    process_2l_16px_\precision \ofmt
+    process_2l_16px \ofmt
 .endif
 
 .ifc \ifmt,yuv422p
@@ -334,7 +248,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
 
-    process_1l_16px_\precision \ofmt
+    process_1l_16px \ofmt
 .endif
 
     subs                r8, r8, #16                                    @ width -= 16
@@ -390,18 +304,14 @@ function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
 endfunc
 .endm
 
-.macro declare_rgb_funcs ifmt precision
-    declare_func \ifmt, argb, \precision
-    declare_func \ifmt, rgba, \precision
-    declare_func \ifmt, abgr, \precision
-    declare_func \ifmt, bgra, \precision
+.macro declare_rgb_funcs ifmt
+    declare_func \ifmt, argb
+    declare_func \ifmt, rgba
+    declare_func \ifmt, abgr
+    declare_func \ifmt, bgra
 .endm
 
-declare_rgb_funcs nv12, 16
-declare_rgb_funcs nv21, 16
-declare_rgb_funcs nv12, 32
-declare_rgb_funcs nv21, 32
-declare_rgb_funcs yuv420p, 16
-declare_rgb_funcs yuv420p, 32
-declare_rgb_funcs yuv422p, 16
-declare_rgb_funcs yuv422p, 32
+declare_rgb_funcs nv12
+declare_rgb_funcs nv21
+declare_rgb_funcs yuv420p
+declare_rgb_funcs yuv422p
