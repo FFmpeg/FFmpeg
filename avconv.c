@@ -375,7 +375,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
 {
     AVCodecContext *enc = ost->enc_ctx;
     AVPacket pkt;
-    int got_packet = 0;
+    int ret;
 
     av_init_packet(&pkt);
     pkt.data = NULL;
@@ -388,15 +388,25 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     ost->samples_encoded += frame->nb_samples;
     ost->frames_encoded++;
 
-    if (avcodec_encode_audio2(enc, &pkt, frame, &got_packet) < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
-        exit_program(1);
-    }
+    ret = avcodec_send_frame(enc, frame);
+    if (ret < 0)
+        goto error;
 
-    if (got_packet) {
+    while (1) {
+        ret = avcodec_receive_packet(enc, &pkt);
+        if (ret == AVERROR(EAGAIN))
+            break;
+        if (ret < 0)
+            goto error;
+
         av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
         output_packet(s, &pkt, ost);
     }
+
+    return;
+error:
+    av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
+    exit_program(1);
 }
 
 static void do_subtitle_out(AVFormatContext *s,
@@ -473,7 +483,7 @@ static void do_video_out(AVFormatContext *s,
                          AVFrame *in_picture,
                          int *frame_size)
 {
-    int ret, format_video_sync, got_packet;
+    int ret, format_video_sync;
     AVPacket pkt;
     AVCodecContext *enc = ost->enc_ctx;
 
@@ -523,13 +533,17 @@ static void do_video_out(AVFormatContext *s,
 
     ost->frames_encoded++;
 
-    ret = avcodec_encode_video2(enc, &pkt, in_picture, &got_packet);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
-        exit_program(1);
-    }
+    ret = avcodec_send_frame(enc, in_picture);
+    if (ret < 0)
+        goto error;
 
-    if (got_packet) {
+    while (1) {
+        ret = avcodec_receive_packet(enc, &pkt);
+        if (ret == AVERROR(EAGAIN))
+            break;
+        if (ret < 0)
+            goto error;
+
         av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
         output_packet(s, &pkt, ost);
         *frame_size = pkt.size;
@@ -538,15 +552,21 @@ static void do_video_out(AVFormatContext *s,
         if (ost->logfile && enc->stats_out) {
             fprintf(ost->logfile, "%s", enc->stats_out);
         }
+
+        ost->sync_opts++;
+        /*
+        * For video, number of frames in == number of packets out.
+        * But there may be reordering, so we can't throw away frames on encoder
+        * flush, we need to limit them here, before they go into encoder.
+        */
+        ost->frame_number++;
     }
 
-    ost->sync_opts++;
-    /*
-     * For video, number of frames in == number of packets out.
-     * But there may be reordering, so we can't throw away frames on encoder
-     * flush, we need to limit them here, before they go into encoder.
-     */
-    ost->frame_number++;
+    return;
+error:
+    av_assert0(ret != AVERROR(EAGAIN) && ret != AVERROR_EOF);
+    av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
+    exit_program(1);
 }
 
 static double psnr(double d)
@@ -961,39 +981,41 @@ static void flush_encoders(void)
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <= 1)
             continue;
 
+        if (enc->codec_type != AVMEDIA_TYPE_VIDEO && enc->codec_type != AVMEDIA_TYPE_AUDIO)
+            continue;
+
+        avcodec_send_frame(enc, NULL);
+
         for (;;) {
-            int (*encode)(AVCodecContext*, AVPacket*, const AVFrame*, int*) = NULL;
-            const char *desc;
+            const char *desc = NULL;
 
             switch (enc->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
-                encode = avcodec_encode_audio2;
                 desc   = "Audio";
                 break;
             case AVMEDIA_TYPE_VIDEO:
-                encode = avcodec_encode_video2;
                 desc   = "Video";
                 break;
             default:
-                stop_encoding = 1;
+                av_assert0(0);
             }
 
-            if (encode) {
+            if (1) {
                 AVPacket pkt;
                 int got_packet;
                 av_init_packet(&pkt);
                 pkt.data = NULL;
                 pkt.size = 0;
 
-                ret = encode(enc, &pkt, NULL, &got_packet);
-                if (ret < 0) {
+                ret = avcodec_receive_packet(enc, &pkt);
+                if (ret < 0 && ret != AVERROR_EOF) {
                     av_log(NULL, AV_LOG_FATAL, "%s encoding failed\n", desc);
                     exit_program(1);
                 }
                 if (ost->logfile && enc->stats_out) {
                     fprintf(ost->logfile, "%s", enc->stats_out);
                 }
-                if (!got_packet) {
+                if (ret == AVERROR_EOF) {
                     stop_encoding = 1;
                     break;
                 }
