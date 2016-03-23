@@ -806,6 +806,7 @@ static int mpegts_init(AVFormatContext *s)
 
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
+        AVProgram *program;
         st = s->streams[i];
 
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
@@ -823,6 +824,17 @@ static int mpegts_init(AVFormatContext *s)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+
+        program = av_find_program_from_stream(s, NULL, i);
+        if (program) {
+            for (j = 0; j < ts->nb_services; j++) {
+                if (ts->services[j]->program == program) {
+                    service = ts->services[j];
+                    break;
+                }
+            }
+        }
+
         ts_st->service = service;
         /* MPEG pid values < 16 are reserved. Applications which set st->id in
          * this range are assigned a calculated pid. */
