@@ -36,6 +36,9 @@
  * (COEF_LUT_TAB*MAX_QUANT_INDEX) since the sign is appended during encoding */
 #define COEF_LUT_TAB 2048
 
+/* The limited size resolution of each slice forces us to do this */
+#define SSIZE_ROUND(b) (FFALIGN((b), s->size_scaler) + 4 + s->prefix_bytes)
+
 /* Decides the cutoff point in # of slices to distribute the leftover bytes */
 #define SLICE_REDIST_TOTAL 150
 
@@ -688,7 +691,7 @@ static int rate_control(AVCodecContext *avctx, void *arg)
         bits_last    = bits;
     }
     slice_dat->quant_idx = av_clip(quant, 0, s->q_ceil-1);
-    slice_dat->bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
+    slice_dat->bytes = SSIZE_ROUND(bits >> 3);
     slice_dat->bytes_left = s->slice_max_bytes - slice_dat->bytes;
     return 0;
 }
@@ -748,7 +751,7 @@ static int calc_slice_sizes(VC2EncContext *s)
             prev_bytes = args->bytes;
             new_idx = FFMAX(args->quant_idx - 1, 0);
             bits  = count_hq_slice(args, new_idx);
-            bytes = FFALIGN((bits >> 3), s->size_scaler) + 4 + s->prefix_bytes;
+            bytes = SSIZE_ROUND(bits >> 3);
             diff  = bytes - prev_bytes;
             if ((bytes_left - diff) > 0) {
                 args->quant_idx = new_idx;
@@ -1016,16 +1019,16 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     /* Rate control */
     max_frame_bytes = (av_rescale(r_bitrate, s->avctx->time_base.num,
                                   s->avctx->time_base.den) >> 3) - header_size;
+    s->slice_max_bytes = av_rescale(max_frame_bytes, 1, s->num_x*s->num_y);
 
     /* Find an appropriate size scaler */
     while (sig_size > 255) {
-        s->slice_max_bytes = FFALIGN(av_rescale(max_frame_bytes, 1,
-                                                s->num_x*s->num_y), s->size_scaler);
-        s->slice_max_bytes += 4 + s->prefix_bytes;
-        sig_size = s->slice_max_bytes/s->size_scaler; /* Signalled slize size */
+        int r_size = SSIZE_ROUND(s->slice_max_bytes);
+        sig_size = r_size/s->size_scaler; /* Signalled slize size */
         s->size_scaler <<= 1;
     }
 
+    s->slice_max_bytes = SSIZE_ROUND(s->slice_max_bytes);
     s->slice_min_bytes = s->slice_max_bytes - s->slice_max_bytes*(s->tolerance/100.0f);
 
     ret = encode_frame(s, avpkt, frame, aux_data, header_size, s->interlaced);
