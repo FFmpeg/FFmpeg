@@ -146,6 +146,86 @@ static int get_ilbc_mode(AVCodecContext *avctx)
         return 30;
 }
 
+static av_cold int get_channel_label(int channel)
+{
+    uint64_t map = 1 << channel;
+    if (map <= AV_CH_LOW_FREQUENCY)
+        return channel + 1;
+    else if (map <= AV_CH_BACK_RIGHT)
+        return channel + 29;
+    else if (map <= AV_CH_BACK_CENTER)
+        return channel - 1;
+    else if (map <= AV_CH_SIDE_RIGHT)
+        return channel - 4;
+    else if (map <= AV_CH_TOP_BACK_RIGHT)
+        return channel + 1;
+    else if (map <= AV_CH_STEREO_RIGHT)
+        return -1;
+    else if (map <= AV_CH_WIDE_RIGHT)
+        return channel + 4;
+    else if (map <= AV_CH_SURROUND_DIRECT_RIGHT)
+        return channel - 23;
+    else if (map == AV_CH_LOW_FREQUENCY_2)
+        return kAudioChannelLabel_LFE2;
+    else
+        return -1;
+}
+
+static int remap_layout(AudioChannelLayout *layout, uint64_t in_layout, int count)
+{
+    int i;
+    int c = 0;
+    layout->mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelDescriptions;
+    layout->mNumberChannelDescriptions = count;
+    for (i = 0; i < count; i++) {
+        int label;
+        while (!(in_layout & (1 << c)) && c < 64)
+            c++;
+        if (c == 64)
+            return AVERROR(EINVAL); // This should never happen
+        label = get_channel_label(c);
+        layout->mChannelDescriptions[i].mChannelLabel = label;
+        if (label < 0)
+            return AVERROR(EINVAL);
+        c++;
+    }
+    return 0;
+}
+
+static int get_aac_tag(uint64_t in_layout)
+{
+    switch (in_layout) {
+    case AV_CH_LAYOUT_MONO:
+        return kAudioChannelLayoutTag_Mono;
+    case AV_CH_LAYOUT_STEREO:
+        return kAudioChannelLayoutTag_Stereo;
+    case AV_CH_LAYOUT_QUAD:
+        return kAudioChannelLayoutTag_AAC_Quadraphonic;
+    case AV_CH_LAYOUT_OCTAGONAL:
+        return kAudioChannelLayoutTag_AAC_Octagonal;
+    case AV_CH_LAYOUT_SURROUND:
+        return kAudioChannelLayoutTag_AAC_3_0;
+    case AV_CH_LAYOUT_4POINT0:
+        return kAudioChannelLayoutTag_AAC_4_0;
+    case AV_CH_LAYOUT_5POINT0:
+        return kAudioChannelLayoutTag_AAC_5_0;
+    case AV_CH_LAYOUT_5POINT1:
+        return kAudioChannelLayoutTag_AAC_5_1;
+    case AV_CH_LAYOUT_6POINT0:
+        return kAudioChannelLayoutTag_AAC_6_0;
+    case AV_CH_LAYOUT_6POINT1:
+        return kAudioChannelLayoutTag_AAC_6_1;
+    case AV_CH_LAYOUT_7POINT0:
+        return kAudioChannelLayoutTag_AAC_7_0;
+    case AV_CH_LAYOUT_7POINT1_WIDE_BACK:
+        return kAudioChannelLayoutTag_AAC_7_1;
+    case AV_CH_LAYOUT_7POINT1:
+        return kAudioChannelLayoutTag_MPEG_7_1_C;
+    default:
+        return 0;
+    }
+}
+
 static av_cold int ffat_init_encoder(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
@@ -170,11 +250,12 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
         .mFormatID = ffat_get_format_id(avctx->codec_id, avctx->profile),
         .mChannelsPerFrame = in_format.mChannelsPerFrame,
     };
-    AudioChannelLayout channel_layout = {
-        .mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap,
-        .mChannelBitmap = avctx->channel_layout,
-    };
-    UInt32 size = sizeof(channel_layout);
+    UInt32 layout_size = sizeof(AudioChannelLayout) +
+                         sizeof(AudioChannelDescription) * avctx->channels;
+    AudioChannelLayout *channel_layout = av_malloc(layout_size);
+
+    if (!channel_layout)
+        return AVERROR(ENOMEM);
 
     if (avctx->codec_id == AV_CODEC_ID_ILBC) {
         int mode = get_ilbc_mode(avctx);
@@ -186,22 +267,45 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
 
     if (status != 0) {
         av_log(avctx, AV_LOG_ERROR, "AudioToolbox init error: %i\n", (int)status);
+        av_free(channel_layout);
         return AVERROR_UNKNOWN;
     }
 
-    size = sizeof(UInt32);
+    if (!avctx->channel_layout)
+        avctx->channel_layout = av_get_default_channel_layout(avctx->channels);
 
-    AudioConverterSetProperty(at->converter, kAudioConverterInputChannelLayout,
-                              size, &channel_layout);
-    AudioConverterSetProperty(at->converter, kAudioConverterOutputChannelLayout,
-                              size, &channel_layout);
+    if ((status = remap_layout(channel_layout, avctx->channel_layout, avctx->channels)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel layout\n");
+        av_free(channel_layout);
+        return status;
+    }
 
-    if (avctx->bits_per_raw_sample) {
-        size = sizeof(avctx->bits_per_raw_sample);
+    if (AudioConverterSetProperty(at->converter, kAudioConverterInputChannelLayout,
+                                  layout_size, channel_layout)) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported input channel layout\n");
+        av_free(channel_layout);
+        return AVERROR(EINVAL);
+    }
+    if (avctx->codec_id == AV_CODEC_ID_AAC) {
+        int tag = get_aac_tag(avctx->channel_layout);
+        if (tag) {
+            channel_layout->mChannelLayoutTag = tag;
+            channel_layout->mNumberChannelDescriptions = 0;
+        }
+    }
+    if (AudioConverterSetProperty(at->converter, kAudioConverterOutputChannelLayout,
+                                  layout_size, channel_layout)) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported output channel layout\n");
+        av_free(channel_layout);
+        return AVERROR(EINVAL);
+    }
+    av_free(channel_layout);
+
+    if (avctx->bits_per_raw_sample)
         AudioConverterSetProperty(at->converter,
                                   kAudioConverterPropertyBitDepthHint,
-                                  size, &avctx->bits_per_raw_sample);
-    }
+                                  sizeof(avctx->bits_per_raw_sample),
+                                  &avctx->bits_per_raw_sample);
 
     if (at->mode == -1)
         at->mode = (avctx->flags & AV_CODEC_FLAG_QSCALE) ?
@@ -209,7 +313,7 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
                    kAudioCodecBitRateControlMode_Constant;
 
     AudioConverterSetProperty(at->converter, kAudioCodecPropertyBitRateControlMode,
-                              size, &at->mode);
+                              sizeof(at->mode), &at->mode);
 
     if (at->mode == kAudioCodecBitRateControlMode_Variable) {
         int q = avctx->global_quality / FF_QP2LAMBDA;
@@ -220,16 +324,50 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
         }
         q = 127 - q * 9;
         AudioConverterSetProperty(at->converter, kAudioCodecPropertySoundQualityForVBR,
-                                  size, &q);
+                                  sizeof(q), &q);
     } else if (avctx->bit_rate > 0) {
         UInt32 rate = avctx->bit_rate;
+        UInt32 size;
+        status = AudioConverterGetPropertyInfo(at->converter,
+                                               kAudioConverterApplicableEncodeBitRates,
+                                               &size, NULL);
+        if (!status && size) {
+            UInt32 new_rate = rate;
+            int count;
+            int i;
+            AudioValueRange *ranges = av_malloc(size);
+            if (!ranges)
+                return AVERROR(ENOMEM);
+            AudioConverterGetProperty(at->converter,
+                                      kAudioConverterApplicableEncodeBitRates,
+                                      &size, ranges);
+            count = size / sizeof(AudioValueRange);
+            for (i = 0; i < count; i++) {
+                AudioValueRange *range = &ranges[i];
+                if (rate >= range->mMinimum && rate <= range->mMaximum) {
+                    new_rate = rate;
+                    break;
+                } else if (rate > range->mMaximum) {
+                    new_rate = range->mMaximum;
+                } else {
+                    new_rate = range->mMinimum;
+                    break;
+                }
+            }
+            if (new_rate != rate) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "Bitrate %u not allowed; changing to %u\n", rate, new_rate);
+                rate = new_rate;
+            }
+            av_free(ranges);
+        }
         AudioConverterSetProperty(at->converter, kAudioConverterEncodeBitRate,
-                                  size, &rate);
+                                  sizeof(rate), &rate);
     }
 
     at->quality = 96 - at->quality * 32;
     AudioConverterSetProperty(at->converter, kAudioConverterCodecQuality,
-                              size, &at->quality);
+                              sizeof(at->quality), &at->quality);
 
     if (!AudioConverterGetPropertyInfo(at->converter, kAudioConverterCompressionMagicCookie,
                                        &avctx->extradata_size, NULL) &&
@@ -289,10 +427,10 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
 
 #if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
     if (at->mode == kAudioCodecBitRateControlMode_Variable && avctx->rc_max_rate) {
-        int max_size = avctx->rc_max_rate * avctx->frame_size / avctx->sample_rate;
+        UInt32 max_size = avctx->rc_max_rate * avctx->frame_size / avctx->sample_rate;
         if (max_size)
-        AudioConverterSetProperty(at->converter, kAudioCodecPropertyPacketSizeLimitForVBR,
-                                  size, &max_size);
+            AudioConverterSetProperty(at->converter, kAudioCodecPropertyPacketSizeLimitForVBR,
+                                      sizeof(max_size), &max_size);
     }
 #endif
 
@@ -455,7 +593,23 @@ static const AVOption options[] = {
         .profiles       = PROFILES, \
     };
 
-FFAT_ENC(aac,          AV_CODEC_ID_AAC,          aac_profiles)
+static const uint64_t aac_at_channel_layouts[] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0,
+    AV_CH_LAYOUT_5POINT1,
+    AV_CH_LAYOUT_6POINT0,
+    AV_CH_LAYOUT_6POINT1,
+    AV_CH_LAYOUT_7POINT0,
+    AV_CH_LAYOUT_7POINT1_WIDE_BACK,
+    AV_CH_LAYOUT_QUAD,
+    AV_CH_LAYOUT_OCTAGONAL,
+    0,
+};
+
+FFAT_ENC(aac,          AV_CODEC_ID_AAC,          aac_profiles, , .channel_layouts = aac_at_channel_layouts)
 //FFAT_ENC(adpcm_ima_qt, AV_CODEC_ID_ADPCM_IMA_QT, NULL)
 FFAT_ENC(alac,         AV_CODEC_ID_ALAC,         NULL, | AV_CODEC_CAP_VARIABLE_FRAME_SIZE | AV_CODEC_CAP_LOSSLESS)
 FFAT_ENC(ilbc,         AV_CODEC_ID_ILBC,         NULL)
