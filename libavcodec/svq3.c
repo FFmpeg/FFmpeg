@@ -127,6 +127,7 @@ typedef struct SVQ3Context {
     DECLARE_ALIGNED(16, int16_t, mb_luma_dc)[3][16 * 2];
     DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)[15 * 8];
     uint32_t dequant4_coeff[QP_MAX_NUM + 1][16];
+    int block_offset[2 * (16 * 3)];
 } SVQ3Context;
 
 #define FULLPEL_MODE  1
@@ -663,7 +664,7 @@ static void hl_decode_mb(SVQ3Context *s, const H264Context *h)
     uint8_t *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize;
     int i, j;
-    const int *block_offset = &h->block_offset[0];
+    const int *block_offset = &s->block_offset[0];
     const int block_h   = 16 >> h->chroma_y_shift;
 
     linesize   = s->cur_pic->f->linesize[0];
@@ -1419,14 +1420,14 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     for (i = 0; i < 16; i++) {
-        h->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * s->cur_pic->f->linesize[0] * ((scan8[i] - scan8[0]) >> 3);
-        h->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * s->cur_pic->f->linesize[0] * ((scan8[i] - scan8[0]) >> 3);
+        s->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * s->cur_pic->f->linesize[0] * ((scan8[i] - scan8[0]) >> 3);
+        s->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * s->cur_pic->f->linesize[0] * ((scan8[i] - scan8[0]) >> 3);
     }
     for (i = 0; i < 16; i++) {
-        h->block_offset[16 + i]      =
-        h->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * s->cur_pic->f->linesize[1] * ((scan8[i] - scan8[0]) >> 3);
-        h->block_offset[48 + 16 + i] =
-        h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * s->cur_pic->f->linesize[1] * ((scan8[i] - scan8[0]) >> 3);
+        s->block_offset[16 + i]      =
+        s->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * s->cur_pic->f->linesize[1] * ((scan8[i] - scan8[0]) >> 3);
+        s->block_offset[48 + 16 + i] =
+        s->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * s->cur_pic->f->linesize[1] * ((scan8[i] - scan8[0]) >> 3);
     }
 
     if (s->pict_type != AV_PICTURE_TYPE_I) {
