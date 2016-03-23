@@ -116,7 +116,6 @@ typedef struct SliceArgs {
     int quant_idx;
     int bits_ceil;
     int bits_floor;
-    int bytes_left;
     int bytes;
 } SliceArgs;
 
@@ -692,13 +691,12 @@ static int rate_control(AVCodecContext *avctx, void *arg)
     }
     slice_dat->quant_idx = av_clip(quant, 0, s->q_ceil-1);
     slice_dat->bytes = SSIZE_ROUND(bits >> 3);
-    slice_dat->bytes_left = s->slice_max_bytes - slice_dat->bytes;
     return 0;
 }
 
 static int calc_slice_sizes(VC2EncContext *s)
 {
-    int i, slice_x, slice_y, bytes_left = 0;
+    int i, j, slice_x, slice_y, bytes_left = 0;
     int bytes_top[SLICE_REDIST_TOTAL] = {0};
     int64_t total_bytes_needed = 0;
     int slice_redist_range = FFMIN(SLICE_REDIST_TOTAL, s->num_x*s->num_y);
@@ -723,16 +721,14 @@ static int calc_slice_sizes(VC2EncContext *s)
     s->avctx->execute(s->avctx, rate_control, enc_args, NULL, s->num_x*s->num_y,
                       sizeof(SliceArgs));
 
-    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
-        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
-            SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
-            bytes_left += args->bytes_left;
-            for (i = 0; i < slice_redist_range; i++) {
-                if (args->bytes > bytes_top[i]) {
-                    bytes_top[i] = args->bytes;
-                    top_loc[i]   = args;
-                    break;
-                }
+    for (i = 0; i < s->num_x*s->num_y; i++) {
+        SliceArgs *args = &enc_args[i];
+        bytes_left += s->slice_max_bytes - args->bytes;
+        for (j = 0; j < slice_redist_range; j++) {
+            if (args->bytes > bytes_top[j]) {
+                bytes_top[j] = args->bytes;
+                top_loc[j]   = args;
+                break;
             }
         }
     }
@@ -764,12 +760,10 @@ static int calc_slice_sizes(VC2EncContext *s)
             break;
     }
 
-    for (slice_y = 0; slice_y < s->num_y; slice_y++) {
-        for (slice_x = 0; slice_x < s->num_x; slice_x++) {
-            SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
-            total_bytes_needed += args->bytes;
-            s->q_avg = (s->q_avg + args->quant_idx)/2;
-        }
+    for (i = 0; i < s->num_x*s->num_y; i++) {
+        SliceArgs *args = &enc_args[i];
+        total_bytes_needed += args->bytes;
+        s->q_avg = (s->q_avg + args->quant_idx)/2;
     }
 
     return total_bytes_needed;
