@@ -103,6 +103,8 @@ typedef struct SVQ3Context {
     unsigned int top_samples_available;
     unsigned int topright_samples_available;
     unsigned int left_samples_available;
+
+    uint8_t *edge_emu_buffer;
 } SVQ3Context;
 
 #define FULLPEL_MODE  1
@@ -336,11 +338,11 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
     src  = pic->f->data[0] + mx + my * sl->linesize;
 
     if (emu) {
-        s->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src,
                                  sl->linesize, sl->linesize,
                                  width + 1, height + 1,
                                  mx, my, s->h_edge_pos, s->v_edge_pos);
-        src = sl->edge_emu_buffer;
+        src = s->edge_emu_buffer;
     }
     if (thirdpel)
         (avg ? s->tdsp.avg_tpel_pixels_tab
@@ -363,12 +365,12 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
             src  = pic->f->data[i] + mx + my * sl->uvlinesize;
 
             if (emu) {
-                s->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src,
+                s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src,
                                          sl->uvlinesize, sl->uvlinesize,
                                          width + 1, height + 1,
                                          mx, my, (s->h_edge_pos >> 1),
                                          s->v_edge_pos >> 1);
-                src = sl->edge_emu_buffer;
+                src = s->edge_emu_buffer;
             }
             if (thirdpel)
                 (avg ? s->tdsp.avg_tpel_pixels_tab
@@ -1264,9 +1266,9 @@ static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
     if (ret < 0)
         goto fail;
 
-    if (!sl->edge_emu_buffer) {
-        sl->edge_emu_buffer = av_mallocz(pic->f->linesize[0] * 17);
-        if (!sl->edge_emu_buffer)
+    if (!s->edge_emu_buffer) {
+        s->edge_emu_buffer = av_mallocz(pic->f->linesize[0] * 17);
+        if (!s->edge_emu_buffer)
             return AVERROR(ENOMEM);
     }
 
@@ -1491,6 +1493,7 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
     av_freep(&s->last_pic);
     av_freep(&s->slice_buf);
     av_freep(&s->intra4x4_pred_mode);
+    av_freep(&s->edge_emu_buffer);
 
     memset(&h->cur_pic, 0, sizeof(h->cur_pic));
 
