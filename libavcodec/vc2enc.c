@@ -715,7 +715,7 @@ static int calc_slice_sizes(VC2EncContext *s)
             args->y   = slice_y;
             args->bits_ceil  = s->slice_max_bytes << 3;
             args->bits_floor = s->slice_min_bytes << 3;
-            memset(args, 0, s->q_ceil*sizeof(int));
+            memset(args->cache, 0, s->q_ceil*sizeof(*args->cache));
         }
     }
 
