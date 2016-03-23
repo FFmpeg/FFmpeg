@@ -53,7 +53,7 @@ version <next>:
 - compressed SWF
 - VAAPI-accelerated format conversion and scaling
 - libnpp/CUDA-accelerated format conversion and scaling
-- VAAPI-accelerate H.264 encoding
+- VAAPI-accelerate H.264/HEVC encoding
 
 
 version 11:
