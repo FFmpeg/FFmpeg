@@ -632,10 +632,10 @@ static void seg_free_context(SegmentContext *seg)
     seg->avf = NULL;
 }
 
-static int seg_write_header(AVFormatContext *s)
+static int seg_init(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
-    AVFormatContext *oc = NULL;
+    AVFormatContext *oc = seg->avf;
     AVDictionary *options = NULL;
     int ret;
     int i;
@@ -706,6 +706,7 @@ static int seg_write_header(AVFormatContext *s)
             seg->use_rename = proto && !strcmp(proto, "file");
         }
     }
+
     if (seg->list_type == LIST_TYPE_EXT)
         av_log(s, AV_LOG_WARNING, "'ext' list type option is deprecated in favor of 'csv'\n");
 
@@ -730,10 +731,10 @@ static int seg_write_header(AVFormatContext *s)
 
     if ((ret = segment_mux_init(s)) < 0)
         goto fail;
-    oc = seg->avf;
 
     if ((ret = set_segment_filename(s)) < 0)
         goto fail;
+    oc = seg->avf;
 
     if (seg->write_header_trailer) {
         if ((ret = s->io_open(s, &oc->pb,
@@ -948,6 +949,23 @@ fail:
     return ret;
 }
 
+static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc = seg->avf;
+    if (oc->oformat->check_bitstream) {
+        int ret = oc->oformat->check_bitstream(oc, pkt);
+        if (ret == 1) {
+            AVStream *st = s->streams[pkt->stream_index];
+            AVStream *ost = oc->streams[pkt->stream_index];
+            st->internal->bsfc = ost->internal->bsfc;
+            ost->internal->bsfc = NULL;
+        }
+        return ret;
+    }
+    return 1;
+}
+
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -1005,9 +1023,10 @@ AVOutputFormat ff_segment_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("segment"),
     .priv_data_size = sizeof(SegmentContext),
     .flags          = AVFMT_NOFILE|AVFMT_GLOBALHEADER,
-    .write_header   = seg_write_header,
+    .init           = seg_init,
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
+    .check_bitstream = seg_check_bitstream,
     .priv_class     = &seg_class,
 };
 
@@ -1023,8 +1042,9 @@ AVOutputFormat ff_stream_segment_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("streaming segment muxer"),
     .priv_data_size = sizeof(SegmentContext),
     .flags          = AVFMT_NOFILE,
-    .write_header   = seg_write_header,
+    .init           = seg_init,
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
+    .check_bitstream = seg_check_bitstream,
     .priv_class     = &sseg_class,
 };
