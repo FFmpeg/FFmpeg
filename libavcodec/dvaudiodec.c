@@ -52,7 +52,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     s->is_pal = s->block_size == 8640;
-    s->is_12bit = avctx->bits_per_raw_sample == 12;
+    s->is_12bit = avctx->bits_per_coded_sample == 12;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
