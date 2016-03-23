@@ -43,19 +43,6 @@
 #include "rectangle.h"
 #include "thread.h"
 
-
-static const uint8_t rem6[QP_MAX_NUM + 1] = {
-    0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2,
-    3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5,
-    0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
-};
-
-static const uint8_t div6[QP_MAX_NUM + 1] = {
-    0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3,  3,  3,
-    3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6,  6,  6,
-    7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10,
-};
-
 static const uint8_t field_scan[16] = {
     0 + 0 * 4, 0 + 1 * 4, 1 + 0 * 4, 0 + 2 * 4,
     0 + 3 * 4, 1 + 1 * 4, 1 + 2 * 4, 1 + 3 * 4,
@@ -120,29 +107,6 @@ static const uint8_t zigzag_scan8x8_cavlc[64] = {
     0 + 7 * 8, 4 + 4 * 8, 7 + 2 * 8, 3 + 6 * 8,
     5 + 5 * 8, 6 + 5 * 8, 6 + 6 * 8, 7 + 7 * 8,
 };
-
-static const uint8_t dequant4_coeff_init[6][3] = {
-    { 10, 13, 16 },
-    { 11, 14, 18 },
-    { 13, 16, 20 },
-    { 14, 18, 23 },
-    { 16, 20, 25 },
-    { 18, 23, 29 },
-};
-
-static const uint8_t dequant8_coeff_init_scan[16] = {
-    0, 3, 4, 3, 3, 1, 5, 1, 4, 5, 2, 5, 3, 1, 5, 1
-};
-
-static const uint8_t dequant8_coeff_init[6][6] = {
-    { 20, 18, 32, 19, 25, 24 },
-    { 22, 19, 35, 21, 28, 26 },
-    { 26, 23, 42, 24, 33, 31 },
-    { 28, 25, 45, 26, 35, 33 },
-    { 32, 28, 51, 30, 40, 38 },
-    { 36, 32, 58, 34, 46, 43 },
-};
-
 
 static void release_unused_pictures(H264Context *h, int remove_current)
 {
@@ -335,11 +299,11 @@ static void init_dequant8_coeff_table(H264Context *h)
             continue;
 
         for (q = 0; q < max_qp + 1; q++) {
-            int shift = div6[q];
-            int idx   = rem6[q];
+            int shift = ff_h264_quant_div6[q];
+            int idx   = ff_h264_quant_rem6[q];
             for (x = 0; x < 64; x++)
                 h->dequant8_coeff[i][q][(x >> 3) | ((x & 7) << 3)] =
-                    ((uint32_t)dequant8_coeff_init[idx][dequant8_coeff_init_scan[((x >> 1) & 12) | (x & 3)]] *
+                    ((uint32_t)ff_h264_dequant8_coeff_init[idx][ff_h264_dequant8_coeff_init_scan[((x >> 1) & 12) | (x & 3)]] *
                      h->pps.scaling_matrix8[i][x]) << shift;
         }
     }
@@ -361,11 +325,11 @@ static void init_dequant4_coeff_table(H264Context *h)
             continue;
 
         for (q = 0; q < max_qp + 1; q++) {
-            int shift = div6[q] + 2;
-            int idx   = rem6[q];
+            int shift = ff_h264_quant_div6[q] + 2;
+            int idx   = ff_h264_quant_rem6[q];
             for (x = 0; x < 16; x++)
                 h->dequant4_coeff[i][q][(x >> 2) | ((x << 2) & 0xF)] =
-                    ((uint32_t)dequant4_coeff_init[idx][(x & 1) + ((x >> 2) & 1)] *
+                    ((uint32_t)ff_h264_dequant4_coeff_init[idx][(x & 1) + ((x >> 2) & 1)] *
                      h->pps.scaling_matrix4[i][x]) << shift;
         }
     }
