@@ -38,7 +38,6 @@ typedef struct ATDecodeContext {
     int quality;
 
     AudioConverterRef converter;
-    AudioStreamPacketDescription pkt_desc;
     AVFrame in_frame;
     AVFrame new_in_frame;
 
@@ -312,10 +311,6 @@ static OSStatus ffat_encode_callback(AudioConverterRef converter, UInt32 *nb_pac
 
     if (at->eof) {
         *nb_packets = 0;
-        if (packets) {
-            *packets = &at->pkt_desc;
-            at->pkt_desc.mDataByteSize = 0;
-        }
         return 0;
     }
 
@@ -328,18 +323,13 @@ static OSStatus ffat_encode_callback(AudioConverterRef converter, UInt32 *nb_pac
     }
 
     data->mNumberBuffers              = 1;
-    data->mBuffers[0].mNumberChannels = 0;
+    data->mBuffers[0].mNumberChannels = avctx->channels;
     data->mBuffers[0].mDataByteSize   = at->in_frame.nb_samples *
                                         av_get_bytes_per_sample(avctx->sample_fmt) *
                                         avctx->channels;
     data->mBuffers[0].mData           = at->in_frame.data[0];
-    *nb_packets = (at->in_frame.nb_samples + (at->frame_size - 1)) / at->frame_size;
-
-    if (packets) {
-        *packets = &at->pkt_desc;
-        at->pkt_desc.mDataByteSize = data->mBuffers[0].mDataByteSize;
-        at->pkt_desc.mVariableFramesInPacket = at->in_frame.nb_samples;
-    }
+    if (*nb_packets > at->in_frame.nb_samples)
+        *nb_packets = at->in_frame.nb_samples;
 
     return 0;
 }
