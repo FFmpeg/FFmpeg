@@ -152,8 +152,7 @@
     add                 r12, r4, r5                                    @ r12 = srcY + linesizeY (srcY2)
     lsl                 r3, r3, #1
     lsl                 r5, r5, #1
-    lsl                 r8, r0, #2
-    sub                 r3, r3, r8                                     @ r3 = linesize  * 2 - width * 4 (padding)
+    sub                 r3, r3, r0, lsl #2                             @ r3 = linesize  * 2 - width * 4 (padding)
     sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
     ldr                 r10,[sp, #120]                                 @ r10 = srcV
 .endm
