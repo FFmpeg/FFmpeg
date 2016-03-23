@@ -418,7 +418,7 @@ OBJS-$(CONFIG_SUNRAST_ENCODER)         += sunrastenc.o
 OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o svq13.o h263data.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o  h263data.o  \
                                           h263.o ituh263enc.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o svq13.o mpegutils.o h264_parse.o
+OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o svq13.o mpegutils.o h264_parse.o h264data.o
 OBJS-$(CONFIG_TAK_DECODER)             += takdec.o tak.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o

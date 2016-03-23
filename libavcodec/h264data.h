@@ -54,4 +54,6 @@ extern const uint8_t ff_h264_dequant8_coeff_init[6][6];
 extern const uint8_t ff_h264_quant_rem6[QP_MAX_NUM + 1];
 extern const uint8_t ff_h264_quant_div6[QP_MAX_NUM + 1];
 
+extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM + 1];
+
 #endif /* AVCODEC_H264DATA_H */
