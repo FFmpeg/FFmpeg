@@ -1956,6 +1956,8 @@ h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
 h264_qsv_encoder_deps="libmfx"
 h264_qsv_encoder_select="qsvenc"
+h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
+h264_vaapi_encoder_select="vaapi_encode golomb"
 hap_decoder_select="snappy texturedsp"
 hap_encoder_deps="libsnappy"
 hap_encoder_select="texturedspenc"
@@ -4467,6 +4469,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
+check_type "va/va.h va/va_enc_h264.h" "VAEncPictureParameterBufferH264"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
