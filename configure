@@ -1636,6 +1636,7 @@ HAVE_LIST="
     sdl
     section_data_rel_ro
     threads
+    vaapi_drm
     vaapi_x11
     vdpau_x11
     xlib
@@ -4694,9 +4695,14 @@ enabled vaapi &&
     check_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
     disable vaapi
 
-enabled vaapi && enabled xlib &&
+if enabled vaapi ; then
+    enabled xlib &&
     check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
     enable vaapi_x11
+
+    check_lib2 "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm &&
+    enable vaapi_drm
+fi
 
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||

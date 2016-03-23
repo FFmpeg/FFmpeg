@@ -55,6 +55,7 @@ enum HWAccelID {
     HWACCEL_DXVA2,
     HWACCEL_VDA,
     HWACCEL_QSV,
+    HWACCEL_VAAPI,
 };
 
 typedef struct HWAccel {
@@ -115,6 +116,8 @@ typedef struct OptionsContext {
     int        nb_hwaccels;
     SpecifierOpt *hwaccel_devices;
     int        nb_hwaccel_devices;
+    SpecifierOpt *hwaccel_output_formats;
+    int        nb_hwaccel_output_formats;
     SpecifierOpt *autorotate;
     int        nb_autorotate;
 
@@ -261,6 +264,7 @@ typedef struct InputStream {
     /* hwaccel options */
     enum HWAccelID hwaccel_id;
     char  *hwaccel_device;
+    enum AVPixelFormat hwaccel_output_format;
 
     /* hwaccel context */
     enum HWAccelID active_hwaccel_id;
@@ -270,6 +274,7 @@ typedef struct InputStream {
     int  (*hwaccel_retrieve_data)(AVCodecContext *s, AVFrame *frame);
     enum AVPixelFormat hwaccel_pix_fmt;
     enum AVPixelFormat hwaccel_retrieved_pix_fmt;
+    AVBufferRef *hw_frames_ctx;
 
     /* stats */
     // combined size of all the packets read
@@ -428,6 +433,8 @@ extern const AVIOInterruptCB int_cb;
 extern const OptionDef options[];
 
 extern const HWAccel hwaccels[];
+extern int hwaccel_lax_profile_check;
+extern AVBufferRef *hw_device_ctx;
 
 void reset_options(OptionsContext *o);
 void show_usage(void);
@@ -451,5 +458,7 @@ int dxva2_init(AVCodecContext *s);
 int vda_init(AVCodecContext *s);
 int qsv_init(AVCodecContext *s);
 int qsv_transcode_init(OutputStream *ost);
+int vaapi_decode_init(AVCodecContext *avctx);
+int vaapi_device_init(const char *device);
 
 #endif /* AVCONV_H */

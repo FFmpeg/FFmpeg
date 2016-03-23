@@ -307,7 +307,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (ret < 0)
         return ret;
 
-    if (codec->width || codec->height) {
+    if (!hw_device_ctx && (codec->width || codec->height)) {
         char args[255];
         AVFilterContext *filter;
 
@@ -513,6 +513,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     par->format              = ist->hwaccel_retrieve_data ?
                                ist->hwaccel_retrieved_pix_fmt : ist->dec_ctx->pix_fmt;
     par->time_base           = tb;
+    par->hw_frames_ctx       = ist->hw_frames_ctx;
 
     ret = av_buffersrc_parameters_set(ifilter->filter, par);
     av_freep(&par);
@@ -718,6 +719,12 @@ int configure_filtergraph(FilterGraph *fg)
 
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)
         return ret;
+
+    if (hw_device_ctx) {
+        for (i = 0; i < fg->graph->nb_filters; i++) {
+            fg->graph->filters[i]->hw_device_ctx = av_buffer_ref(hw_device_ctx);
+        }
+    }
 
     if (simple && (!inputs || inputs->next || !outputs || outputs->next)) {
         av_log(NULL, AV_LOG_ERROR, "Simple filtergraph '%s' does not have "

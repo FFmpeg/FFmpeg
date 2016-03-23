@@ -86,6 +86,7 @@ OBJS-avconv-$(HAVE_VDPAU_X11) += avconv_vdpau.o
 OBJS-avconv-$(HAVE_DXVA2_LIB) += avconv_dxva2.o
 OBJS-avconv-$(CONFIG_VDA)     += avconv_vda.o
 OBJS-avconv-$(CONFIG_LIBMFX)  += avconv_qsv.o
+OBJS-avconv-$(CONFIG_VAAPI)   += avconv_vaapi.o
 
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
