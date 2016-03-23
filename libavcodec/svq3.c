@@ -93,6 +93,10 @@ typedef struct SVQ3Context {
     int slice_num;
     int qscale;
     int cbp;
+    int frame_num;
+    int frame_num_offset;
+    int prev_frame_num_offset;
+    int prev_frame_num;
 
     enum AVPictureType pict_type;
 
@@ -503,15 +507,15 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 my = s->next_pic->motion_val[0][b_xy][1] << 1;
 
                 if (dir == 0) {
-                    mx = mx * h->frame_num_offset /
-                         h->prev_frame_num_offset + 1 >> 1;
-                    my = my * h->frame_num_offset /
-                         h->prev_frame_num_offset + 1 >> 1;
+                    mx = mx * s->frame_num_offset /
+                         s->prev_frame_num_offset + 1 >> 1;
+                    my = my * s->frame_num_offset /
+                         s->prev_frame_num_offset + 1 >> 1;
                 } else {
-                    mx = mx * (h->frame_num_offset - h->prev_frame_num_offset) /
-                         h->prev_frame_num_offset + 1 >> 1;
-                    my = my * (h->frame_num_offset - h->prev_frame_num_offset) /
-                         h->prev_frame_num_offset + 1 >> 1;
+                    mx = mx * (s->frame_num_offset - s->prev_frame_num_offset) /
+                         s->prev_frame_num_offset + 1 >> 1;
+                    my = my * (s->frame_num_offset - s->prev_frame_num_offset) /
+                         s->prev_frame_num_offset + 1 >> 1;
                 }
             }
 
@@ -1470,22 +1474,22 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_B) {
-        h->frame_num_offset = s->slice_num - h->prev_frame_num;
+        s->frame_num_offset = s->slice_num - s->prev_frame_num;
 
-        if (h->frame_num_offset < 0)
-            h->frame_num_offset += 256;
-        if (h->frame_num_offset == 0 ||
-            h->frame_num_offset >= h->prev_frame_num_offset) {
+        if (s->frame_num_offset < 0)
+            s->frame_num_offset += 256;
+        if (s->frame_num_offset == 0 ||
+            s->frame_num_offset >= s->prev_frame_num_offset) {
             av_log(h->avctx, AV_LOG_ERROR, "error in B-frame picture id\n");
             return -1;
         }
     } else {
-        h->prev_frame_num        = h->frame_num;
-        h->frame_num             = s->slice_num;
-        h->prev_frame_num_offset = h->frame_num - h->prev_frame_num;
+        s->prev_frame_num        = s->frame_num;
+        s->frame_num             = s->slice_num;
+        s->prev_frame_num_offset = s->frame_num - s->prev_frame_num;
 
-        if (h->prev_frame_num_offset < 0)
-            h->prev_frame_num_offset += 256;
+        if (s->prev_frame_num_offset < 0)
+            s->prev_frame_num_offset += 256;
     }
 
     for (m = 0; m < 2; m++) {
