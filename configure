@@ -1708,6 +1708,7 @@ CONFIG_EXTRA="
     texturedsp
     texturedspenc
     tpeldsp
+    vaapi_encode
     vc1dsp
     videodsp
     vp3dsp
@@ -1877,6 +1878,7 @@ nvenc_deps_any="dlopen LoadLibrary"
 nvenc_extralibs='$ldl'
 qsvdec_select="qsv"
 qsvenc_select="qsv"
+vaapi_encode_deps="vaapi"
 vc1dsp_select="h264chroma qpeldsp startcode"
 
 # decoders / encoders
