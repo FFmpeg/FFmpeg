@@ -592,6 +592,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     ConcatStream *cs;
     AVStream *st;
     int try_counter = 0;
+    int is_new_st = 0;
 
     if (cat->error) {
         ret = cat->error;
@@ -607,12 +608,17 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     while (1) {
         ret = av_read_frame(cat->avf, pkt);
         if (ret == AVERROR_EOF) {
+            is_new_st = 1;
             if ((ret = open_next_file(avf)) < 0)
                 goto open_fail;
             continue;
         }
         if (ret < 0)
             return ret;
+        if (is_new_st) {
+            pkt->flags |= AV_PKT_FLAG_NEW_SEG;
+            is_new_st = 0;
+        }
         if ((ret = match_streams(avf)) < 0) {
             av_packet_unref(pkt);
             return ret;
