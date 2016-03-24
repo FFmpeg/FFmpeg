@@ -34,6 +34,7 @@ extern const uint8_t  ff_reverse[256];
 extern const uint8_t ff_sqrt_tab[256];
 extern const uint8_t ff_crop_tab[256 + 2 * MAX_NEG_CROP];
 extern const uint8_t ff_zigzag_direct[64];
+extern const uint8_t ff_zigzag_scan[16];
 
 #if   ARCH_ARM
 #   include "arm/mathops.h"

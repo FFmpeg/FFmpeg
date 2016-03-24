@@ -790,7 +790,7 @@ static void init_scan_tables(H264Context *h)
     int i;
     for (i = 0; i < 16; i++) {
 #define TRANSPOSE(x) (x >> 2) | ((x << 2) & 0xF)
-        h->zigzag_scan[i] = TRANSPOSE(zigzag_scan[i]);
+        h->zigzag_scan[i] = TRANSPOSE(ff_zigzag_scan[i]);
         h->field_scan[i]  = TRANSPOSE(field_scan[i]);
 #undef TRANSPOSE
     }
@@ -803,7 +803,7 @@ static void init_scan_tables(H264Context *h)
 #undef TRANSPOSE
     }
     if (h->sps.transform_bypass) { // FIXME same ugly
-        h->zigzag_scan_q0          = zigzag_scan;
+        h->zigzag_scan_q0          = ff_zigzag_scan;
         h->zigzag_scan8x8_q0       = ff_zigzag_direct;
         h->zigzag_scan8x8_cavlc_q0 = zigzag_scan8x8_cavlc;
         h->field_scan_q0           = field_scan;

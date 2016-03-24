@@ -53,6 +53,7 @@
 #include "h264_mvpred.h"
 #include "golomb.h"
 #include "hpeldsp.h"
+#include "mathops.h"
 #include "rectangle.h"
 #include "tpeldsp.h"
 
@@ -239,8 +240,9 @@ void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block,
 static inline int svq3_decode_block(GetBitContext *gb, int16_t *block,
                                     int index, const int type)
 {
-    static const uint8_t *const scan_patterns[4] =
-    { luma_dc_zigzag_scan, zigzag_scan, svq3_scan, chroma_dc_scan };
+    static const uint8_t *const scan_patterns[4] = {
+        luma_dc_zigzag_scan, ff_zigzag_scan, svq3_scan, chroma_dc_scan
+    };
 
     int run, level, limit;
     unsigned vlc;

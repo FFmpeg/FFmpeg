@@ -24,13 +24,6 @@
 
 #include <stdint.h>
 
-static const uint8_t tscc2_zigzag[16] = {
-   0,  1,  4,  8,
-   5,  2,  3,  6,
-   9, 12, 13, 10,
-   7, 11, 14, 15
-};
-
 #define NUM_VLC_SETS 13
 
 static const uint16_t tscc2_quants[NUM_VLC_SETS][3] = {
