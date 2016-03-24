@@ -37,6 +37,7 @@ typedef struct ATDecodeContext {
     AudioStreamPacketDescription pkt_desc;
     AVPacket in_pkt;
     AVPacket new_in_pkt;
+    AVBitStreamFilterContext *bsf;
 
     unsigned pkt_size;
     int64_t last_pts;
@@ -233,6 +234,8 @@ static int ffat_decode(AVCodecContext *avctx, void *data,
 {
     ATDecodeContext *at = avctx->priv_data;
     AVFrame *frame = data;
+    int pkt_size = avpkt->size;
+    AVPacket filtered_packet;
     OSStatus ret;
 
     AudioBufferList out_buffers = {
@@ -245,11 +248,41 @@ static int ffat_decode(AVCodecContext *avctx, void *data,
         }
     };
 
+    if (avctx->codec_id == AV_CODEC_ID_AAC && avpkt->size > 2 &&
+        (AV_RB16(avpkt->data) & 0xfff0) == 0xfff0) {
+        int first = 0;
+        uint8_t *p_filtered = NULL;
+        int      n_filtered = 0;
+        if (!at->bsf) {
+            first = 1;
+            if(!(at->bsf = av_bitstream_filter_init("aac_adtstoasc")))
+                return AVERROR(ENOMEM);
+        }
+
+        ret = av_bitstream_filter_filter(at->bsf, avctx, NULL, &p_filtered, &n_filtered,
+                                         avpkt->data, avpkt->size, 0);
+        if (ret >= 0 && p_filtered != avpkt->data) {
+            filtered_packet = *avpkt;
+            avpkt = &filtered_packet;
+            avpkt->data = p_filtered;
+            avpkt->size = n_filtered;
+        }
+
+        if (first) {
+            if ((ret = ffat_set_extradata(avctx)) < 0)
+                return ret;
+            ffat_update_ctx(avctx);
+            out_buffers.mBuffers[0].mNumberChannels = avctx->channels;
+            out_buffers.mBuffers[0].mDataByteSize = av_get_bytes_per_sample(avctx->sample_fmt) * at->pkt_size * avctx->channels;
+        }
+    }
+
     av_packet_unref(&at->new_in_pkt);
 
     if (avpkt->size) {
         if ((ret = av_packet_ref(&at->new_in_pkt, avpkt)) < 0)
             return ret;
+        at->new_in_pkt.data = avpkt->data;
     } else {
         at->eof = 1;
     }
@@ -275,7 +308,7 @@ static int ffat_decode(AVCodecContext *avctx, void *data,
         at->last_pts = avpkt->pts;
     }
 
-    return avpkt->size;
+    return pkt_size;
 }
 
 static av_cold void ffat_decode_flush(AVCodecContext *avctx)
