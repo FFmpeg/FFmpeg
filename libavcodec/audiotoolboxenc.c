@@ -307,6 +307,7 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
                                   sizeof(avctx->bits_per_raw_sample),
                                   &avctx->bits_per_raw_sample);
 
+#if !TARGET_OS_IPHONE
     if (at->mode == -1)
         at->mode = (avctx->flags & AV_CODEC_FLAG_QSCALE) ?
                    kAudioCodecBitRateControlMode_Variable :
@@ -325,7 +326,9 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
         q = 127 - q * 9;
         AudioConverterSetProperty(at->converter, kAudioCodecPropertySoundQualityForVBR,
                                   sizeof(q), &q);
-    } else if (avctx->bit_rate > 0) {
+    } else
+#endif
+    if (avctx->bit_rate > 0) {
         UInt32 rate = avctx->bit_rate;
         UInt32 size;
         status = AudioConverterGetPropertyInfo(at->converter,
@@ -553,12 +556,14 @@ static const AVProfile aac_profiles[] = {
 
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+#if !TARGET_OS_IPHONE
     {"aac_at_mode", "ratecontrol mode", offsetof(ATDecodeContext, mode), AV_OPT_TYPE_INT, {.i64 = -1}, -1, kAudioCodecBitRateControlMode_Variable, AE, "mode"},
         {"auto", "VBR if global quality is given; CBR otherwise", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, INT_MIN, INT_MAX, AE, "mode"},
         {"cbr",  "constant bitrate", 0, AV_OPT_TYPE_CONST, {.i64 = kAudioCodecBitRateControlMode_Constant}, INT_MIN, INT_MAX, AE, "mode"},
         {"abr",  "long-term average bitrate", 0, AV_OPT_TYPE_CONST, {.i64 = kAudioCodecBitRateControlMode_LongTermAverage}, INT_MIN, INT_MAX, AE, "mode"},
         {"cvbr", "constrained variable bitrate", 0, AV_OPT_TYPE_CONST, {.i64 = kAudioCodecBitRateControlMode_VariableConstrained}, INT_MIN, INT_MAX, AE, "mode"},
         {"vbr" , "variable bitrate", 0, AV_OPT_TYPE_CONST, {.i64 = kAudioCodecBitRateControlMode_Variable}, INT_MIN, INT_MAX, AE, "mode"},
+#endif
     {"aac_at_quality", "quality vs speed control", offsetof(ATDecodeContext, quality), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 2, AE},
     { NULL },
 };
