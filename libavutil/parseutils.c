@@ -940,7 +940,7 @@ static void test_av_get_known_color_name(void)
 
 static void test_av_find_info_tag(void)
 {
-    char args[] = "?tag1=val1&tag2=val2&tag3=val3&tag41=value 41&tag42=random1";
+    static const char args[] = "?tag1=val1&tag2=val2&tag3=val3&tag41=value 41&tag42=random1";
     static const char *tags[] = {"tag1", "tag2", "tag3", "tag4", "tag41", "41", "random1"};
     char buff[16];
     int i;
