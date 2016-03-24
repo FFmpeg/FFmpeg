@@ -62,22 +62,12 @@ void  free(void *ptr);
 void *av_malloc(size_t size)
 {
     void *ptr = NULL;
-#if CONFIG_MEMALIGN_HACK
-    long diff;
-#endif
 
     /* let's disallow possibly ambiguous cases */
     if (size > (INT_MAX - 32) || !size)
         return NULL;
 
-#if CONFIG_MEMALIGN_HACK
-    ptr = malloc(size + 32);
-    if (!ptr)
-        return ptr;
-    diff              = ((-(long)ptr - 1) & 31) + 1;
-    ptr               = (char *)ptr + diff;
-    ((char *)ptr)[-1] = diff;
-#elif HAVE_POSIX_MEMALIGN
+#if HAVE_POSIX_MEMALIGN
     if (posix_memalign(&ptr, 32, size))
         ptr = NULL;
 #elif HAVE_ALIGNED_MALLOC
@@ -116,21 +106,11 @@ void *av_malloc(size_t size)
 
 void *av_realloc(void *ptr, size_t size)
 {
-#if CONFIG_MEMALIGN_HACK
-    int diff;
-#endif
-
     /* let's disallow possibly ambiguous cases */
     if (size > (INT_MAX - 16))
         return NULL;
 
-#if CONFIG_MEMALIGN_HACK
-    //FIXME this isn't aligned correctly, though it probably isn't needed
-    if (!ptr)
-        return av_malloc(size);
-    diff = ((char *)ptr)[-1];
-    return (char *)realloc((char *)ptr - diff, size + diff) + diff;
-#elif HAVE_ALIGNED_MALLOC
+#if HAVE_ALIGNED_MALLOC
     return _aligned_realloc(ptr, size, 32);
 #else
     return realloc(ptr, size);
@@ -189,10 +169,7 @@ int av_reallocp_array(void *ptr, size_t nmemb, size_t size)
 
 void av_free(void *ptr)
 {
-#if CONFIG_MEMALIGN_HACK
-    if (ptr)
-        free((char *)ptr - ((char *)ptr)[-1]);
-#elif HAVE_ALIGNED_MALLOC
+#if HAVE_ALIGNED_MALLOC
     _aligned_free(ptr);
 #else
     free(ptr);
