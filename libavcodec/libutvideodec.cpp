@@ -222,9 +222,19 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
         pic->data[0] = utv->buffer + utv->buf_size + pic->linesize[0];
         break;
     }
+    pic->width  = w;
+    pic->height = h;
+    pic->format = avctx->pix_fmt;
+
+    if (avctx->refcounted_frames) {
+        int ret = av_frame_ref((AVFrame*)data, pic);
+        if (ret < 0)
+             return ret;
+    } else {
+        av_frame_move_ref((AVFrame*)data, pic);
+    }
 
     *got_frame = 1;
-    av_frame_move_ref((AVFrame*)data, pic);
 
     return avpkt->size;
 }
