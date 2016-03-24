@@ -171,7 +171,6 @@
     ldr                 r10,[sp, #136]                                 @ r10 = y_coeff
     vdup.16             d0, r10                                        @ d0  = y_coeff
     vld1.16             {d1}, [r8]                                     @ d1  = *table
-    add                 r11, r2, r3                                    @ r11 = dst + linesize (dst2)
     sub                 r3, r3, r0, lsl #2                             @ r3  = linesize  - width * 4 (padding)
     sub                 r5, r5, r0                                     @ r5  = linesizeY - width     (paddingY)
     sub                 r7, r7, r0, lsr #1                             @ r7  = linesizeU - width / 2 (paddingU)
