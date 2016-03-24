@@ -217,9 +217,9 @@ static void x8_get_ac_rlf(IntraX8Context *const w, const int mode,
     if (i < 46) { // [0-45]
         int t, l;
         if (i < 0) {
-            (*level) =
-            (*final) =      // prevent 'may be used unilitialized'
-            (*run)   = 64;  // this would cause error exit in the ac loop
+            *level =
+            *final =      // prevent 'may be used unilitialized'
+            *run   = 64;  // this would cause error exit in the ac loop
             return;
         }
 
@@ -230,20 +230,20 @@ static void x8_get_ac_rlf(IntraX8Context *const w, const int mode,
          * i == 22    r = 0    l = 3; r = i & %00000
          */
 
-        (*final) =
-        t        = (i > 22);
-        i       -= 23 * t;
+        *final =
+        t      = i > 22;
+        i     -= 23 * t;
 
         /* l = lut_l[i / 2] = { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3 }[i >> 1];
          *     11 10'01 01'00 00'00 00'00 00'00 00 => 0xE50000 */
-        l = (0xE50000 >> (i & (0x1E))) & 3; // 0x1E or (~1) or ((i >> 1) << 1)
+        l = (0xE50000 >> (i & 0x1E)) & 3; // 0x1E or ~1 or (i >> 1 << 1)
 
         /* t = lut_mask[l] = { 0x0f, 0x03, 0x01, 0x00 }[l];
          *     as i < 256 the higher bits do not matter */
-        t = (0x01030F >> (l << 3));
+        t = 0x01030F >> (l << 3);
 
-        (*run)   = i & t;
-        (*level) = l;
+        *run   = i & t;
+        *level = l;
     } else if (i < 73) { // [46-72]
         uint32_t sm;
         uint32_t mask;
@@ -256,9 +256,9 @@ static void x8_get_ac_rlf(IntraX8Context *const w, const int mode,
         mask = sm & 0xff;
         sm >>= 8;                               // 1bit
 
-        (*run)   = (sm & 0xff) + (e & (mask));  // 6bits
-        (*level) = (sm >> 8)   + (e & (~mask)); // 5bits
-        (*final) = i > (58 - 46);
+        *run   = (sm &  0xff) + (e &  mask);    // 6bits
+        *level = (sm >>    8) + (e & ~mask);    // 5bits
+        *final = i > (58 - 46);
     } else if (i < 75) { // [73-74]
         static const uint8_t crazy_mix_runlevel[32] = {
             0x22, 0x32, 0x33, 0x53, 0x23, 0x42, 0x43, 0x63,
@@ -267,14 +267,14 @@ static void x8_get_ac_rlf(IntraX8Context *const w, const int mode,
             0x28, 0x92, 0x36, 0x74, 0x29, 0xa2, 0x46, 0x84,
         };
 
-        (*final) = !(i & 1);
-        e        = get_bits(w->gb, 5); // get the extra bits
-        (*run)   = crazy_mix_runlevel[e] >> 4;
-        (*level) = crazy_mix_runlevel[e] & 0x0F;
+        *final = !(i & 1);
+        e      = get_bits(w->gb, 5); // get the extra bits
+        *run   = crazy_mix_runlevel[e] >> 4;
+        *level = crazy_mix_runlevel[e] & 0x0F;
     } else {
-        (*level) = get_bits(w->gb, 7 - 3 * (i & 1));
-        (*run)   = get_bits(w->gb, 6);
-        (*final) = get_bits1(w->gb);
+        *level = get_bits(w->gb, 7 - 3 * (i & 1));
+        *run   = get_bits(w->gb, 6);
+        *final = get_bits1(w->gb);
     }
     return;
 }
@@ -303,12 +303,12 @@ static int x8_get_dc_rlf(IntraX8Context *const w, const int mode,
     i = get_vlc2(w->gb, w->j_dc_vlc[mode]->table, DC_VLC_BITS, DC_VLC_MTD);
 
     /* (i >= 17) { i -= 17; final =1; } */
-    c        = i > 16;
-    (*final) = c;
-    i       -= 17 * c;
+    c      = i > 16;
+    *final = c;
+    i      -= 17 * c;
 
     if (i <= 0) {
-        (*level) = 0;
+        *level = 0;
         return -i;
     }
     c  = (i + 1) >> 1; // hackish way to calculate dc_extra_sbits[]
@@ -317,8 +317,8 @@ static int x8_get_dc_rlf(IntraX8Context *const w, const int mode,
     e = get_bits(w->gb, c); // get the extra bits
     i = dc_index_offset[i] + (e >> 1);
 
-    e        = -(e & 1); // 0, 0xffffff
-    (*level) = (i ^ e) - e; // (i ^ 0) -0  , (i ^ 0xff) - (-1)
+    e      = -(e & 1);     // 0, 0xffffff
+    *level =  (i ^ e) - e; // (i ^ 0) - 0, (i ^ 0xff) - (-1)
     return 0;
 }
 
@@ -349,7 +349,7 @@ static int x8_setup_spatial_predictor(IntraX8Context *const w, const int chroma)
             w->flat_dc      = 1;
             sum            += 9;
             // ((1 << 17) + 9) / (8 + 8 + 1 + 2) = 6899
-            w->predicted_dc = (sum * 6899) >> 17;
+            w->predicted_dc = sum * 6899 >> 17;
         }
     }
     if (chroma)
@@ -394,8 +394,8 @@ static void x8_update_predictions(IntraX8Context *const w, const int orient,
 
 static void x8_get_prediction_chroma(IntraX8Context *const w)
 {
-    w->edges  = 1 * (!(w->mb_x >> 1));
-    w->edges |= 2 * (!(w->mb_y >> 1));
+    w->edges  = 1 * !(w->mb_x >> 1);
+    w->edges |= 2 * !(w->mb_y >> 1);
     w->edges |= 4 * (w->mb_x >= (2 * w->mb_width - 1)); // mb_x for chroma would always be odd
 
     w->raw_orient = 0;
@@ -412,8 +412,8 @@ static void x8_get_prediction(IntraX8Context *const w)
 {
     int a, b, c, i;
 
-    w->edges  = 1 * (!w->mb_x);
-    w->edges |= 2 * (!w->mb_y);
+    w->edges  = 1 * !w->mb_x;
+    w->edges |= 2 * !w->mb_y;
     w->edges |= 4 * (w->mb_x >= (2 * w->mb_width - 1));
 
     switch (w->edges & 3) {
@@ -663,7 +663,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
 
             goto block_placed;
         }
-        zeros_only = (dc_level == 0);
+        zeros_only = dc_level == 0;
     }
     if (!chroma)
         w->block[0][0] = dc_level * w->quant;
@@ -724,10 +724,10 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame)
     w->dest[1] = frame->data[1];
     w->dest[2] = frame->data[2];
 
-    w->dest[0] +=  w->mb_y         * linesize   << 3;
+    w->dest[0] +=  w->mb_y       * linesize   << 3;
     // chroma blocks are on add rows
-    w->dest[1] += (w->mb_y & (~1)) * uvlinesize << 2;
-    w->dest[2] += (w->mb_y & (~1)) * uvlinesize << 2;
+    w->dest[1] += (w->mb_y & ~1) * uvlinesize << 2;
+    w->dest[2] += (w->mb_y & ~1) * uvlinesize << 2;
 }
 
 av_cold int ff_intrax8_common_init(AVCodecContext *avctx,

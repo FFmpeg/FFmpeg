@@ -91,7 +91,7 @@ static void x8_setup_spatial_compensation(uint8_t *src, uint8_t *dst,
         for (i = 7; i >= 0; i--) {
             c              = *(ptr - 1); // area1, same mb as area2, no need to check
             dst[area1 + i] = c;
-            c              = *(ptr);
+            c              = *ptr;
 
             sum           += c;
             min_pix        = FFMIN(min_pix, c);
@@ -136,9 +136,9 @@ static void x8_setup_spatial_compensation(uint8_t *src, uint8_t *dst,
         sum       += c;
         // edge pixel is not part of min/max
     }
-    (*range) = max_pix - min_pix;
-    sum     += *(dst + area5) + *(dst + area5 + 1);
-    *psum    = sum;
+    *range = max_pix - min_pix;
+    sum   += *(dst + area5) + *(dst + area5 + 1);
+    *psum  = sum;
 }
 
 static const uint16_t zero_prediction_weights[64 * 2] = {
@@ -419,7 +419,7 @@ static void x8_loop_filter(uint8_t *ptr, const int a_stride, const int b_stride,
                     m    = (m ^ sign) - sign; // abs(m)
                     m  >>= 1;
 
-                    x = (5 * x) >> 3;
+                    x = 5 * x >> 3;
 
                     if (x > m)
                         x = m;
