@@ -583,11 +583,7 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
             const int neg = coeff[x] < 0;
             uint32_t c_abs = FFABS(coeff[x]);
             if (c_abs < COEF_LUT_TAB) {
-                const uint8_t len = len_lut[c_abs];
-                if (len == 1)
-                    put_bits(pb, 1, 1);
-                else
-                    put_bits(pb, len + 1, (val_lut[c_abs] << 1) | neg);
+                put_bits(pb, len_lut[c_abs], val_lut[c_abs] | neg);
             } else {
                 c_abs = QUANT(c_abs, qfactor);
                 put_vc2_ue_uint(pb, c_abs);
@@ -639,8 +635,7 @@ static int count_hq_slice(SliceArgs *slice, int quant_idx)
                     for (x = left; x < right; x++) {
                         uint32_t c_abs = FFABS(buf[x]);
                         if (c_abs < COEF_LUT_TAB) {
-                            const int len = len_lut[c_abs];
-                            bits += len + (len != 1);
+                            bits += len_lut[c_abs];
                         } else {
                             c_abs = QUANT(c_abs, qfactor);
                             bits += count_vc2_ue_uint(c_abs);
@@ -1219,6 +1214,12 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         for (j = 0; j < COEF_LUT_TAB; j++) {
             get_vc2_ue_uint(QUANT(j, ff_dirac_qscale_tab[i]),
                             &len_lut[j], &val_lut[j]);
+            if (len_lut[j] != 1) {
+                len_lut[j] += 1;
+                val_lut[j] <<= 1;
+            } else {
+                val_lut[j] = 1;
+            }
         }
     }
 
