@@ -1282,9 +1282,13 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     if (first_slice) {
         h->pps = *h->pps_buffers[pps_id];
-    } else if (h->setup_finished && h->dequant_coeff_pps != pps_id) {
-        av_log(h->avctx, AV_LOG_ERROR, "PPS changed between slices\n");
-        return AVERROR_INVALIDDATA;
+    } else {
+        if (h->pps.sps_id != pps->sps_id ||
+            h->pps.transform_8x8_mode != pps->transform_8x8_mode ||
+            (h->setup_finished && h->dequant_coeff_pps != pps_id)) {
+            av_log(h->avctx, AV_LOG_ERROR, "PPS changed between slices\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if (pps->sps_id != h->sps.sps_id ||
