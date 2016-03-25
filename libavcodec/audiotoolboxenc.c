@@ -288,12 +288,14 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
 
     ffat_update_ctx(avctx);
 
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
     if (at->mode == kAudioCodecBitRateControlMode_Variable && avctx->rc_max_rate) {
         int max_size = avctx->rc_max_rate * avctx->frame_size / avctx->sample_rate;
         if (max_size)
         AudioConverterSetProperty(at->converter, kAudioCodecPropertyPacketSizeLimitForVBR,
                                   size, &max_size);
     }
+#endif
 
     ff_af_queue_init(avctx, &at->afq);
 
