@@ -219,7 +219,6 @@ External library support:
   --enable-libcdio         enable audio CD grabbing with libcdio [no]
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
-  --enable-libdcadec       enable DCA decoding via libdcadec [no]
   --enable-libfaac         enable AAC encoding via libfaac [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
@@ -1468,7 +1467,6 @@ EXTERNAL_LIBRARY_LIST="
     libcdio
     libcelt
     libdc1394
-    libdcadec
     libfaac
     libfdk_aac
     libflite
@@ -2674,7 +2672,6 @@ pcm_mulaw_at_encoder_select="audio_frame_queue"
 chromaprint_muxer_deps="chromaprint"
 h264_videotoolbox_encoder_deps="videotoolbox_encoder pthreads"
 libcelt_decoder_deps="libcelt"
-libdcadec_decoder_deps="libdcadec"
 libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
 libfdk_aac_decoder_deps="libfdk_aac"
@@ -5535,7 +5532,6 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
-enabled libdcadec         && require_pkg_config "dcadec >= 0.1.0" libdcadec/dca_context.h dcadec_context_create
 enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
