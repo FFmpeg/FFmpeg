@@ -362,6 +362,9 @@ fail:
 }
 
 #ifdef TEST
+
+#include <stdio.h>
+
 static int test_random_shared_secret(void)
 {
     FF_DH *peer1 = NULL, *peer2 = NULL;
