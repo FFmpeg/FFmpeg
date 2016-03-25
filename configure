@@ -5513,7 +5513,8 @@ enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActi
 enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
                                { check_lib2 "dlfcn.h" dlopen -ldl; } ||
                                die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
-enabled cuda              && check_lib cuda.h cuInit -lcuda
+enabled cuda              && { check_lib cuda.h cuInit -lcuda ||
+                               die "ERROR: CUDA not found"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disable coreimage_filter; }
 enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }
