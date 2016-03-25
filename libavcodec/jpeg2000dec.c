@@ -737,9 +737,9 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     bytestream2_get_byteu(&s->g);               // TNsot
 
     if (!Psot)
-        Psot = bytestream2_get_bytes_left(&s->g) + n + 2;
+        Psot = bytestream2_get_bytes_left(&s->g) - 2 + n + 2;
 
-    if (Psot > bytestream2_get_bytes_left(&s->g) + n + 2) {
+    if (Psot > bytestream2_get_bytes_left(&s->g) - 2 + n + 2) {
         av_log(s->avctx, AV_LOG_ERROR, "Psot %"PRIu32" too big\n", Psot);
         return AVERROR_INVALIDDATA;
     }
