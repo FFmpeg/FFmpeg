@@ -271,6 +271,7 @@ static void register_all(void)
     REGISTER_FILTER(SAB,            sab,            vf);
     REGISTER_FILTER(SCALE,          scale,          vf);
     REGISTER_FILTER(SCALE_NPP,      scale_npp,      vf);
+    REGISTER_FILTER(SCALE_QSV,      scale_qsv,      vf);
     REGISTER_FILTER(SCALE_VAAPI,    scale_vaapi,    vf);
     REGISTER_FILTER(SCALE2REF,      scale2ref,      vf);
     REGISTER_FILTER(SELECT,         select,         vf);
