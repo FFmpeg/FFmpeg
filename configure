@@ -1447,6 +1447,7 @@ BUILTIN_LIST="
     MemoryBarrier
     mm_empty
     rdtsc
+    sem_timedwait
     sync_val_compare_and_swap
 "
 HAVE_LIST_CMDLINE="
@@ -1467,6 +1468,7 @@ HEADERS_LIST="
     arpa_inet_h
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
+    dispatch_dispatch_h
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
     dev_ic_bt8xx_h
@@ -2300,7 +2302,8 @@ bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr
 dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
-jack_indev_deps="jack_jack_h pthreads"
+jack_indev_deps="jack_jack_h"
+jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
@@ -3747,6 +3750,8 @@ case $target_os in
         enabled x86_64 && objformat="macho64"
         enabled_any pic shared ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
+        check_header dispatch/dispatch.h &&
+            add_cppflags '-I\$(SRC_PATH)/compat/dispatch_semaphore'
         ;;
     msys*)
         die "Native MSYS builds are discouraged, please use the MINGW environment.";
@@ -4502,6 +4507,9 @@ if ! disabled pthreads && ! enabled w32threads; then
         disable pthreads
     fi
 fi
+
+enabled pthreads &&
+    check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)"
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
