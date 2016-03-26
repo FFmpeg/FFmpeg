@@ -25,6 +25,7 @@
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "internal.h"
 #include "rawenc.h"
 
 #define MAX_EXTRADATA_SIZE 1024
@@ -153,11 +154,6 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (s->streams[0]->codec->codec_id == AV_CODEC_ID_AAC_LATM)
         return ff_raw_write_packet(s, pkt);
 
-    if (pkt->size > 2 && pkt->data[0] == 0xff && (pkt->data[1] >> 4) == 0xf) {
-        av_log(s, AV_LOG_ERROR, "ADTS header detected - ADTS will not be incorrectly muxed into LATM\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     if (!s->streams[0]->codec->extradata) {
         if(pkt->size > 2 && pkt->data[0] == 0x56 && (pkt->data[1] >> 4) == 0xe &&
             (AV_RB16(pkt->data + 1) & 0x1FFF) + 3 == pkt->size)
@@ -217,6 +213,19 @@ too_large:
     return AVERROR_INVALIDDATA;
 }
 
+static int latm_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    int ret = 1;
+    AVStream *st = s->streams[pkt->stream_index];
+
+    if (st->codec->codec_id == AV_CODEC_ID_AAC) {
+        if (pkt->size > 2 && (AV_RB16(pkt->data) & 0xfff0) == 0xfff0)
+            ret = ff_stream_add_bitstream_filter(st, "aac_adtstoasc", NULL);
+    }
+
+    return ret;
+}
+
 AVOutputFormat ff_latm_muxer = {
     .name           = "latm",
     .long_name      = NULL_IF_CONFIG_SMALL("LOAS/LATM"),
@@ -228,5 +237,6 @@ AVOutputFormat ff_latm_muxer = {
     .write_header   = latm_write_header,
     .write_packet   = latm_write_packet,
     .priv_class     = &latm_muxer_class,
+    .check_bitstream= latm_check_bitstream,
     .flags          = AVFMT_NOTIMESTAMPS,
 };
