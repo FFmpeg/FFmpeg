@@ -59,6 +59,7 @@ version <next>:
 - G.729 raw demuxer
 - MagicYUV decoder
 - Duck TrueMotion 2.0 Real Time decoder
+- Intel QSV video scaling filter
 
 
 version 11:
