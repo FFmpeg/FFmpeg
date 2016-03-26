@@ -714,7 +714,6 @@ static int enqueue_packet(RTPDemuxContext *s, uint8_t *buf, int len)
     packet->next     = *cur;
     *cur = packet;
     s->queue_len++;
-    av_log(0, AV_LOG_ERROR, "queue: %d\n", s->queue_len);
 
     return 0;
 }
