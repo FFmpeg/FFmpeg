@@ -99,23 +99,23 @@
 
 .endm
 
+.macro process_1l_16px_internal dst src ofmt
+    vld1.8              {q7}, [\src]!
+    compute_16px        \dst, d14, d15, \ofmt
+.endm
+
 .macro process_1l_16px ofmt
     compute_premult     d28, d29, d30, d31
-    vld1.8              {q7}, [r4]!
-    compute_16px        r2, d14, d15, \ofmt
+    process_1l_16px_internal r2, r4, \ofmt
 .endm
 
 .macro process_2l_16px ofmt
     compute_premult     d28, d29, d30, d31
-
-    vld1.8              {q7}, [r4]!                                    @ first line of luma
-    compute_16px        r2, d14, d15, \ofmt
-
-    vld1.8              {q7}, [r12]!                                   @ second line of luma
-    compute_16px        r11, d14, d15, \ofmt
+    process_1l_16px_internal r2, r4, \ofmt
+    process_1l_16px_internal r11,r12,\ofmt
 .endm
 
-.macro load_args_nvx
+.macro load_args_nv12
     push                {r4-r12, lr}
     vpush               {q4-q7}
     ldr                 r4, [sp, #104]                                 @ r4  = srcY
@@ -134,6 +134,10 @@
     sub                 r3, r3, r0, lsl #2                             @ r3 = linesize  * 2 - width * 4 (padding)
     sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
     sub                 r7, r7, r0                                     @ r7 = linesizeC     - width     (paddingC)
+.endm
+
+.macro load_args_nv21
+    load_args_nv12
 .endm
 
 .macro load_args_yuv420p
@@ -176,55 +180,23 @@
     ldr                 r10,[sp, #120]                                 @ r10 = srcV
 .endm
 
-.macro declare_func ifmt ofmt
-function ff_\ifmt\()_to_\ofmt\()_neon, export=1
-
-.ifc \ifmt,nv12
-    load_args_nvx
-.endif
-
-.ifc \ifmt,nv21
-    load_args_nvx
-.endif
-
-.ifc \ifmt,yuv420p
-    load_args_yuv420p
-.endif
-
-
-.ifc \ifmt,yuv422p
-    load_args_yuv422p
-.endif
-
-1:
-    mov                 r8, r0                                         @ r8 = width
-2:
-    pld [r6, #64*3]
-    pld [r4, #64*3]
-
-    vmov.i8             d10, #128
-
-.ifc \ifmt,nv12
+.macro load_chroma_nv12
     pld [r12, #64*3]
 
     vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+.endm
 
-    process_2l_16px \ofmt
-.endif
-
-.ifc \ifmt,nv21
+.macro load_chroma_nv21
     pld [r12, #64*3]
 
     vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
     vsubl.u8            q14, d3, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d2, d10                                   @ q15 = V - 128
+.endm
 
-    process_2l_16px \ofmt
-.endif
-
-.ifc \ifmt,yuv420p
+.macro load_chroma_yuv420p
     pld [r10, #64*3]
     pld [r12, #64*3]
 
@@ -232,68 +204,79 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     vld1.8              d3, [r10]!                                     @ d3: chroma blue line
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+.endm
 
-    process_2l_16px \ofmt
-.endif
-
-.ifc \ifmt,yuv422p
+.macro load_chroma_yuv422p
     pld [r10, #64*3]
 
     vld1.8              d2, [r6]!                                      @ d2: chroma red line
     vld1.8              d3, [r10]!                                     @ d3: chroma blue line
     vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
     vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+.endm
 
-    process_1l_16px \ofmt
-.endif
-
-    subs                r8, r8, #16                                    @ width -= 16
-    bgt                 2b
-
-    add                 r2, r2, r3                                     @ dst   += padding
-    add                 r4, r4, r5                                     @ srcY  += paddingY
-
-.ifc \ifmt,nv12
+.macro increment_and_test_nv12
     add                 r11, r11, r3                                   @ dst2  += padding
     add                 r12, r12, r5                                   @ srcY2 += paddingY
-
-    add                 r6, r6, r7                                     @ srcC  += paddingC
-
-    subs                r1, r1, #2                                     @ height -= 2
-.endif
-
-.ifc \ifmt,nv21
-    add                 r11, r11, r3                                   @ dst2  += padding
-    add                 r12, r12, r5                                   @ srcY2 += paddingY
-
     add                 r6, r6, r7                                     @ srcC  += paddingC
     subs                r1, r1, #2                                     @ height -= 2
-.endif
+.endm
 
-.ifc \ifmt,yuv420p
+.macro increment_and_test_nv21
+    increment_and_test_nv12
+.endm
+
+.macro increment_and_test_yuv420p
     add                 r11, r11, r3                                   @ dst2  += padding
     add                 r12, r12, r5                                   @ srcY2 += paddingY
-
     ldr                 r7, [sp, #116]                                 @ r7     = linesizeU
     sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeU - width / 2 (paddingU)
     add                 r6, r6, r7                                     @ srcU  += paddingU
-
     ldr                 r7, [sp, #124]                                 @ r7     = linesizeV
     sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeV - width / 2 (paddingV)
     add                 r10, r10, r7                                   @ srcV  += paddingV
-
     subs                r1, r1, #2                                     @ height -= 2
-.endif
+.endm
 
-.ifc \ifmt,yuv422p
+.macro increment_and_test_yuv422p
     add                 r6, r6, r7                                     @ srcU  += paddingU
     add                 r10,r10,r12                                    @ srcV  += paddingV
-
     subs                r1, r1, #1                                     @ height -= 1
-.endif
+.endm
 
+.macro process_nv12 ofmt
+    process_2l_16px \ofmt
+.endm
+
+.macro process_nv21 ofmt
+    process_2l_16px \ofmt
+.endm
+
+.macro process_yuv420p ofmt
+    process_2l_16px \ofmt
+.endm
+
+.macro process_yuv422p ofmt
+    process_1l_16px \ofmt
+.endm
+
+.macro declare_func ifmt ofmt
+function ff_\ifmt\()_to_\ofmt\()_neon, export=1
+    load_args_\ifmt
+1:
+    mov                 r8, r0                                         @ r8 = width
+2:
+    pld [r6, #64*3]
+    pld [r4, #64*3]
+    vmov.i8             d10, #128
+    load_chroma_\ifmt
+    process_\ifmt \ofmt
+    subs                r8, r8, #16                                    @ width -= 16
+    bgt                 2b
+    add                 r2, r2, r3                                     @ dst   += padding
+    add                 r4, r4, r5                                     @ srcY  += paddingY
+    increment_and_test_\ifmt
     bgt                 1b
-
     vpop                {q4-q7}
     pop                 {r4-r12, lr}
     mov                 pc, lr
