@@ -924,6 +924,7 @@ OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aacadtsdec.o \
                                              mpeg4audio.o
 OBJS-$(CONFIG_CHOMP_BSF)                  += chomp_bsf.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
+OBJS-$(CONFIG_DCA_CORE_BSF)               += dca_core_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)       += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_HEVC_MP4TOANNEXB_BSF)       += hevc_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)        += imx_dump_header_bsf.o
