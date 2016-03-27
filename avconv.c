@@ -537,6 +537,12 @@ static void do_video_out(AVFormatContext *s,
     if (ret < 0)
         goto error;
 
+    /*
+     * For video, there may be reordering, so we can't throw away frames on
+     * encoder flush, we need to limit them here, before they go into encoder.
+     */
+    ost->frame_number++;
+
     while (1) {
         ret = avcodec_receive_packet(enc, &pkt);
         if (ret == AVERROR(EAGAIN))
@@ -554,12 +560,6 @@ static void do_video_out(AVFormatContext *s,
         }
 
         ost->sync_opts++;
-        /*
-        * For video, number of frames in == number of packets out.
-        * But there may be reordering, so we can't throw away frames on encoder
-        * flush, we need to limit them here, before they go into encoder.
-        */
-        ost->frame_number++;
     }
 
     return;
