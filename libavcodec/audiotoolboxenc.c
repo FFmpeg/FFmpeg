@@ -428,7 +428,7 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
 
     ffat_update_ctx(avctx);
 
-#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+#if !TARGET_OS_IPHONE && defined(__MAC_10_9)
     if (at->mode == kAudioCodecBitRateControlMode_Variable && avctx->rc_max_rate) {
         UInt32 max_size = avctx->rc_max_rate * avctx->frame_size / avctx->sample_rate;
         if (max_size)
