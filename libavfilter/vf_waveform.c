@@ -708,6 +708,22 @@ static av_always_inline void lowpass(WaveformContext *s,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
+#define LOWPASS_FUNC(name, column, mirror)               \
+static void lowpass_##name(WaveformContext *s,           \
+                           AVFrame *in, AVFrame *out,    \
+                           int component, int intensity, \
+                           int offset_y, int offset_x,   \
+                           int unused1, int unused2)     \
+{                                                        \
+    lowpass(s, in, out, component, intensity,            \
+            offset_y, offset_x, column, mirror);         \
+}
+
+LOWPASS_FUNC(column_mirror, 1, 1)
+LOWPASS_FUNC(column,        1, 0)
+LOWPASS_FUNC(row_mirror,    0, 1)
+LOWPASS_FUNC(row,           0, 0)
+
 static av_always_inline void flat16(WaveformContext *s,
                                     AVFrame *in, AVFrame *out,
                                     int component, int intensity,
@@ -2397,30 +2413,61 @@ static int config_input(AVFilterLink *inlink)
     s->graticulef = graticule_none;
 
     switch (s->filter) {
-    case LOWPASS:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? lowpass16 : lowpass;
-        break;
-    case FLAT:
-        s->size = 256 * 3;
-        s->waveform = s->bits > 8 ? flat16 : flat;
-        break;
-    case AFLAT:
-        s->size = 256 * 2;
-        s->waveform = s->bits > 8 ? aflat16 : aflat;
-        break;
-    case CHROMA:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? chroma16 : chroma;
-        break;
-    case COLOR:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? color16 : color;
-        break;
-    case ACOLOR:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? acolor16 : acolor;
-        break;
+    case AFLAT: s->size = 256 * 2; break;
+    case FLAT:  s->size = 256 * 3; break;
+    default:    s->size = 256;     break;
+    }
+
+    switch (s->filter | ((s->bits > 8) << 4) |
+            (s->mode << 8) | (s->mirror << 12)) {
+    case 0x1100: s->waveform = lowpass_column_mirror; break;
+    case 0x1000: s->waveform = lowpass_row_mirror;    break;
+    case 0x0100: s->waveform = lowpass_column;        break;
+    case 0x0000: s->waveform = lowpass_row;           break;
+    case 0x1110:
+    case 0x1010:
+    case 0x0110:
+    case 0x0010: s->waveform = lowpass16; break;
+    case 0x1101:
+    case 0x1001:
+    case 0x0101:
+    case 0x0001: s->waveform = flat;      break;
+    case 0x1111:
+    case 0x1011:
+    case 0x0111:
+    case 0x0011: s->waveform = flat16;    break;
+    case 0x1102:
+    case 0x1002:
+    case 0x0102:
+    case 0x0002: s->waveform = aflat;     break;
+    case 0x1112:
+    case 0x1012:
+    case 0x0112:
+    case 0x0012: s->waveform = aflat16;   break;
+    case 0x1103:
+    case 0x1003:
+    case 0x0103:
+    case 0x0003: s->waveform = chroma;    break;
+    case 0x1113:
+    case 0x1013:
+    case 0x0113:
+    case 0x0013: s->waveform = chroma16;  break;
+    case 0x1104:
+    case 0x1004:
+    case 0x0104:
+    case 0x0004: s->waveform = color;     break;
+    case 0x1114:
+    case 0x1014:
+    case 0x0114:
+    case 0x0014: s->waveform = color16;   break;
+    case 0x1105:
+    case 0x1005:
+    case 0x0105:
+    case 0x0005: s->waveform = acolor;    break;
+    case 0x1115:
+    case 0x1015:
+    case 0x0115:
+    case 0x0015: s->waveform = acolor16;  break;
     }
 
     switch (s->filter) {
