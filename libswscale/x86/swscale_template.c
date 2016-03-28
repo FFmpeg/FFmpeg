@@ -348,7 +348,7 @@ static void RENAME(yuv2rgb32_X_ar)(SwsContext *c, const int16_t *lumFilter,
     x86_reg dstW_reg = dstW;
     x86_reg uv_off = c->uv_offx2;
 
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
         YSCALEYUV2PACKEDX_ACCURATE
         YSCALEYUV2RGBX
         "movq                      %%mm2, "U_TEMP"(%0)  \n\t"
@@ -381,7 +381,7 @@ static void RENAME(yuv2rgb32_X)(SwsContext *c, const int16_t *lumFilter,
     x86_reg dstW_reg = dstW;
     x86_reg uv_off = c->uv_offx2;
 
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
         YSCALEYUV2PACKEDX
         YSCALEYUV2RGBX
         YSCALEYUV2PACKEDX_YA(ALP_MMX_FILTER_OFFSET, %%mm0, %%mm3, %%mm6, %%mm1, %%mm7)
@@ -410,7 +410,7 @@ static void RENAME(yuv2bgr32_X)(SwsContext *c, const int16_t *lumFilter,
     x86_reg dstW_reg = dstW;
     x86_reg uv_off = c->uv_offx2;
 
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
         YSCALEYUV2PACKEDX
         YSCALEYUV2RGBX
         YSCALEYUV2PACKEDX_YA(ALP_MMX_FILTER_OFFSET, %%mm0, %%mm3, %%mm6, %%mm1, %%mm7)
@@ -889,7 +889,7 @@ static void RENAME(yuv2rgb32_2)(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1];
 
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
         const int16_t *abuf0 = abuf[0], *abuf1 = abuf[1];
 #if ARCH_X86_64
         __asm__ volatile(
@@ -1215,7 +1215,7 @@ static void RENAME(yuv2rgb32_1)(SwsContext *c, const int16_t *buf0,
 
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         const int16_t *ubuf1 = ubuf[0];
-        if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+        if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
@@ -1244,7 +1244,7 @@ static void RENAME(yuv2rgb32_1)(SwsContext *c, const int16_t *buf0,
         }
     } else {
         const int16_t *ubuf1 = ubuf[1];
-        if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+        if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
