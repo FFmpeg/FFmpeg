@@ -38,7 +38,7 @@ lavf/http: Add httpproxy to the default protocol whitelist.
 doc/utils: fix typo for min() description
 ffserver&ffm: Fixed issues preventing ffserver write_index and files_size from being set correctly which was breaking ffserver streaming.
 postproc: fix unaligned access
-vc2enc: fix use of uninitialized variables in the rate control system
+vc2enc: fix use of uninitialized variables in the rate control system, correctly zero out coefficient array padding
 aacenc: optimize encoding speed
 
 
