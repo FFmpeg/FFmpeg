@@ -46,6 +46,7 @@ typedef struct H264ParseContext {
     H264Context h;
     ParseContext pc;
     H264ParamSets ps;
+    H264DSPContext h264dsp;
     int got_first;
 } H264ParseContext;
 
@@ -53,7 +54,6 @@ typedef struct H264ParseContext {
 static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
                                int buf_size)
 {
-    H264Context *h = &p->h;
     int i;
     uint32_t state;
     ParseContext *pc = &p->pc;
@@ -64,7 +64,7 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
 
     for (i = 0; i < buf_size; i++) {
         if (state == 7) {
-            i += h->h264dsp.startcode_find_candidate(buf + i, buf_size - i);
+            i += p->h264dsp.startcode_find_candidate(buf + i, buf_size - i);
             if (i < buf_size)
                 state = 2;
         } else if (state <= 2) {
@@ -597,7 +597,7 @@ static av_cold int init(AVCodecParserContext *s)
     h->nb_slice_ctx = 1;
 
     h->slice_context_count = 1;
-    ff_h264dsp_init(&h->h264dsp, 8, 1);
+    ff_h264dsp_init(&p->h264dsp, 8, 1);
     return 0;
 }
 
