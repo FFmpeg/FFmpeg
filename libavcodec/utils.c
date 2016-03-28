@@ -3788,6 +3788,10 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
         par->initial_padding = codec->initial_padding;
         par->seek_preroll    = codec->seek_preroll;
         break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        par->width  = codec->width;
+        par->height = codec->height;
+        break;
     }
 
     if (codec->extradata) {
@@ -3836,6 +3840,10 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         codec->frame_size      = par->frame_size;
         codec->initial_padding = par->initial_padding;
         codec->seek_preroll    = par->seek_preroll;
+        break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        codec->width  = par->width;
+        codec->height = par->height;
         break;
     }
 
