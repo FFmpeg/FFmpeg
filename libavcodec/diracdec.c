@@ -173,7 +173,7 @@ typedef struct DiracContext {
 
     struct {
         unsigned prefix_bytes;
-        unsigned size_scaler;
+        uint64_t size_scaler;
     } highquality;
 
     struct {
@@ -826,9 +826,15 @@ static int decode_hq_slice(AVCodecContext *avctx, void *arg)
 
     /* Luma + 2 Chroma planes */
     for (i = 0; i < 3; i++) {
-        int length = s->highquality.size_scaler * get_bits(gb, 8);
-        int bits_left = 8 * length;
-        int bits_end = get_bits_count(gb) + bits_left;
+        int64_t length = s->highquality.size_scaler * get_bits(gb, 8);
+        int64_t bits_left = 8 * length;
+        int64_t bits_end = get_bits_count(gb) + bits_left;
+
+        if (bits_end >= INT_MAX) {
+            av_log(s->avctx, AV_LOG_ERROR, "end too far away\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         for (level = 0; level < s->wavelet_depth; level++) {
             for (orientation = !!level; orientation < 4; orientation++) {
                 decode_subband(s, gb, quants[level][orientation], slice->slice_x, slice->slice_y, bits_end,
@@ -848,7 +854,8 @@ static int decode_hq_slice(AVCodecContext *avctx, void *arg)
 static int decode_lowdelay(DiracContext *s)
 {
     AVCodecContext *avctx = s->avctx;
-    int slice_x, slice_y, bytes = 0, bufsize;
+    int slice_x, slice_y, bufsize;
+    int64_t bytes = 0;
     const uint8_t *buf;
     DiracSlice *slices;
     int slice_num = 0;
@@ -871,6 +878,11 @@ static int decode_lowdelay(DiracContext *s)
                 for (i = 0; i < 3; i++) {
                     if (bytes <= bufsize/8)
                         bytes += buf[bytes] * s->highquality.size_scaler + 1;
+                }
+                if (bytes >= INT_MAX) {
+                    av_log(s->avctx, AV_LOG_ERROR, "too many bytes\n");
+                    av_free(slices);
+                    return AVERROR_INVALIDDATA;
                 }
 
                 slices[slice_num].bytes   = bytes;
@@ -1151,6 +1163,10 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         } else if (s->hq_picture) {
             s->highquality.prefix_bytes = svq3_get_ue_golomb(gb);
             s->highquality.size_scaler  = svq3_get_ue_golomb(gb);
+            if (s->highquality.prefix_bytes >= INT_MAX / 8) {
+                av_log(s->avctx,AV_LOG_ERROR,"too many prefix bytes\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
 
         /* [DIRAC_STD] 11.3.5 Quantisation matrices (low-delay syntax). quant_matrix() */
