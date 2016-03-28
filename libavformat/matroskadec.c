@@ -123,6 +123,8 @@ typedef struct MatroskaTrackVideo {
     uint64_t pixel_width;
     uint64_t pixel_height;
     uint64_t fourcc;
+    uint64_t interlaced;
+    uint64_t field_order;
     uint64_t stereo_mode;
 } MatroskaTrackVideo;
 
@@ -319,7 +321,8 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELCROPL,     EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPR,     EBML_NONE },
     { MATROSKA_ID_VIDEODISPLAYUNIT,    EBML_NONE },
-    { MATROSKA_ID_VIDEOFLAGINTERLACED, EBML_NONE },
+    { MATROSKA_ID_VIDEOFLAGINTERLACED, EBML_UINT,  0, offsetof(MatroskaTrackVideo, interlaced),  { .u = MATROSKA_VIDEO_INTERLACE_FLAG_UNDETERMINED } },
+    { MATROSKA_ID_VIDEOFIELDORDER,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, field_order), { .u = MATROSKA_VIDEO_FIELDORDER_UNDETERMINED } },
     { MATROSKA_ID_VIDEOSTEREOMODE,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, stereo_mode), { .u = MATROSKA_VIDEO_STEREOMODE_TYPE_NB } },
     { MATROSKA_ID_VIDEOASPECTRATIO,    EBML_NONE },
     { 0 }
@@ -1525,6 +1528,26 @@ static int matroska_parse_flac(AVFormatContext *s,
     return 0;
 }
 
+static int mkv_field_order(int64_t field_order)
+{
+    switch (field_order) {
+    case MATROSKA_VIDEO_FIELDORDER_PROGRESSIVE:
+        return AV_FIELD_PROGRESSIVE;
+    case MATROSKA_VIDEO_FIELDORDER_UNDETERMINED:
+        return AV_FIELD_UNKNOWN;
+    case MATROSKA_VIDEO_FIELDORDER_TT:
+        return AV_FIELD_TT;
+    case MATROSKA_VIDEO_FIELDORDER_BB:
+        return AV_FIELD_BB;
+    case MATROSKA_VIDEO_FIELDORDER_BT:
+        return AV_FIELD_BT;
+    case MATROSKA_VIDEO_FIELDORDER_TB:
+        return AV_FIELD_TB;
+    default:
+        return AV_FIELD_UNKNOWN;
+    }
+}
+
 static void mkv_stereo_mode_display_mul(int stereo_mode,
                                         int *h_width, int *h_height)
 {
@@ -1849,6 +1872,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->codecpar->codec_tag  = track->video.fourcc;
             st->codecpar->width      = track->video.pixel_width;
             st->codecpar->height     = track->video.pixel_height;
+
+            if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED)
+                st->codecpar->field_order = mkv_field_order(track->video.field_order);
 
             if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
                 mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
