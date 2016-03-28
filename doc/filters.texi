@@ -3220,6 +3220,16 @@ Set processing type. Can be @var{time} or @var{freq}. @var{time} is
 processing audio in time domain which is slow but gives high quality output.
 @var{freq} is processing audio in frequency domain which is fast but gives
 mediocre output. Default is @var{freq}.
+
+@item speakers
+Set custom positions of virtual loudspeakers. Syntax for this option is:
+<CH> <AZIM> <ELEV>[|<CH> <AZIM> <ELEV>|...].
+Each virtual loudspeaker is described with short channel name following with
+azimuth and elevation in degreees.
+Each virtual loudspeaker description is separated by '|'.
+For example to override front left and front right channel positions use:
+'speakers=FL 45 15|FR 345 15'.
+Descriptions with unrecognised channel names are ignored.
 @end table
 
 @section stereotools
