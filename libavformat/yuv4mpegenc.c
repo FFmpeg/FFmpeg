@@ -267,7 +267,7 @@ static int yuv4_write_header(AVFormatContext *s)
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV444P16:
         if (s->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
-            av_log(s, AV_LOG_ERROR, "'%s' is not a official yuv4mpegpipe pixel format. "
+            av_log(s, AV_LOG_ERROR, "'%s' is not an official yuv4mpegpipe pixel format. "
                    "Use '-strict -1' to encode to this pixel format.\n",
                    av_get_pix_fmt_name(s->streams[0]->codec->pix_fmt));
             return AVERROR(EINVAL);

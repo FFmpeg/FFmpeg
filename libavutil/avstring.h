@@ -156,7 +156,7 @@ static inline size_t av_strnlen(const char *s, size_t len)
 char *av_asprintf(const char *fmt, ...) av_printf_format(1, 2);
 
 /**
- * Convert a number to a av_malloced string.
+ * Convert a number to an av_malloced string.
  */
 char *av_d2str(double d);
 

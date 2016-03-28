@@ -830,7 +830,7 @@ static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos,
     }
 }
 
-/* Following is a optimized code for
+/* Following is an optimized code for
             INTFLOAT v = *src
             if(get_bits1(&s->gb))
                 v = -v;

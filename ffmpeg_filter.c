@@ -656,7 +656,7 @@ int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOu
     DESCRIBE_FILTER_LINK(ofilter, out, 0);
 
     if (!ofilter->ost) {
-        av_log(NULL, AV_LOG_FATAL, "Filter %s has a unconnected output\n", ofilter->name);
+        av_log(NULL, AV_LOG_FATAL, "Filter %s has an unconnected output\n", ofilter->name);
         exit_program(1);
     }
 

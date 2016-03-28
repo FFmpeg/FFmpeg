@@ -120,8 +120,8 @@ void av_tree_destroy(struct AVTreeNode *t);
 /**
  * Apply enu(opaque, &elem) to all the elements in the tree in a given range.
  *
- * @param cmp a comparison function that returns < 0 for a element below the
- *            range, > 0 for a element above the range and == 0 for a
+ * @param cmp a comparison function that returns < 0 for an element below the
+ *            range, > 0 for an element above the range and == 0 for an
  *            element inside the range
  *
  * @note The cmp function should use the same ordering used to construct the

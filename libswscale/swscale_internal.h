@@ -960,7 +960,7 @@ typedef struct SwsPlane
 } SwsPlane;
 
 /**
- * Struct which defines a slice of an image to be scaled or a output for
+ * Struct which defines a slice of an image to be scaled or an output for
  * a scaled slice.
  * A slice can also be used as intermediate ring buffer for scaling steps.
  */

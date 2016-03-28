@@ -257,7 +257,7 @@ Specify how strictly to follow the standards.
 Possible values:
 @table @samp
 @item very
-strictly conform to a older more strict version of the spec or reference software
+strictly conform to an older more strict version of the spec or reference software
 @item strict
 strictly conform to all the things in the spec no matter what consequences
 @item normal
