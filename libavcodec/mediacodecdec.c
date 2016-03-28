@@ -247,7 +247,7 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
         av_freep(&format);
         return AVERROR_EXTERNAL;
     }
-    s->stride = value >= 0 ? value : s->width;
+    s->stride = value > 0 ? value : s->width;
 
     if (!ff_AMediaFormat_getInt32(s->format, "slice-height", &value)) {
         format = ff_AMediaFormat_toString(s->format);
