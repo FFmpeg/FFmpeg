@@ -23,17 +23,20 @@
 
 
 .macro compute_premult
-    vmul.s16            q8, q15, d1[0]                                 @ q8  = V * v2r
-    vmul.s16            q9, q14, d1[1]                                 @ q9  = U * u2g
-    vmla.s16            q9, q15, d1[2]                                 @ q9  = U * u2g + V * v2g
-    vmul.s16            q10,q14, d1[3]                                 @ q10 = U * u2b
+    vsub.u16            q14,q11                                        @ q14 = U * (1 << 3) - 128 * (1 << 3)
+    vsub.u16            q15,q11                                        @ q15 = V * (1 << 3) - 128 * (1 << 3)
+    vqdmulh.s16         q8, q15, d1[0]                                 @ q8  = V * v2r
+    vqdmulh.s16         q9, q14, d1[1]                                 @ q9  = U * u2g
+    vqdmulh.s16         q5, q15, d1[2]                                 @ q5  = V * v2g
+    vadd.s16            q9, q5                                         @ q9  = U * u2g + V * v2g
+    vqdmulh.s16         q10,q14, d1[3]                                 @ q10 = U * u2b
 .endm
 
 .macro compute_color dst_comp1 dst_comp2 pre
     vadd.s16            q1, q14, \pre
     vadd.s16            q2, q15, \pre
-    vqrshrun.s16        \dst_comp1, q1, #6
-    vqrshrun.s16        \dst_comp2, q2, #6
+    vqrshrun.s16        \dst_comp1, q1, #1
+    vqrshrun.s16        \dst_comp2, q2, #1
 .endm
 
 .macro compute_rgba r1 g1 b1 a1 r2 g2 b2 a2
@@ -45,12 +48,12 @@
 .endm
 
 .macro compute dst ofmt
-    vmovl.u8            q14, d14                                       @ q14 = Y
-    vmovl.u8            q15, d15                                       @ q15 = Y
+    vshll.u8            q14, d14, #3                                   @ q14 = Y * (1 << 3)
+    vshll.u8            q15, d15, #3                                   @ q15 = Y * (1 << 3)
     vsub.s16            q14, q12                                       @ q14 = (Y - y_offset)
     vsub.s16            q15, q12                                       @ q15 = (Y - y_offset)
-    vmul.s16            q14, q13                                       @ q14 = (Y - y_offset) * y_coeff
-    vmul.s16            q15, q13                                       @ q15 = (Y - y_offset) * y_coeff
+    vqdmulh.s16         q14, q13                                       @ q14 = (Y - y_offset) * y_coeff
+    vqdmulh.s16         q15, q13                                       @ q15 = (Y - y_offset) * y_coeff
 
 .ifc \ofmt,argb
     compute_rgba        d7, d8, d9, d6, d11, d12, d13, d10
@@ -161,16 +164,16 @@
     pld [r12, #64*3]
 
     vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
-    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+    vshll.u8            q14, d2, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d3, #3                                    @ q15 = V * (1 << 3)
 .endm
 
 .macro load_chroma_nv21
     pld [r12, #64*3]
 
     vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
-    vsubl.u8            q14, d3, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d2, d10                                   @ q15 = V - 128
+    vshll.u8            q14, d3, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d2, #3                                    @ q15 = V * (1 << 3)
 .endm
 
 .macro load_chroma_yuv420p
@@ -179,8 +182,8 @@
 
     vld1.8              d2, [r6]!                                      @ d2: chroma red line
     vld1.8              d3, [r10]!                                     @ d3: chroma blue line
-    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+    vshll.u8            q14, d2, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d3, #3                                    @ q15 = V * (1 << 3)
 .endm
 
 .macro load_chroma_yuv422p
@@ -188,8 +191,8 @@
 
     vld1.8              d2, [r6]!                                      @ d2: chroma red line
     vld1.8              d3, [r10]!                                     @ d3: chroma blue line
-    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
+    vshll.u8            q14, d2, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d3, #3                                    @ q15 = V * (1 << 3)
 .endm
 
 .macro increment_and_test_nv12
@@ -240,6 +243,7 @@
 .macro declare_func ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     load_args_\ifmt
+    vmov.u16            q11, #1024                                     @ q11 = 128 * (1 << 3)
     vdup.16             q12, r9                                        @ q12 = y_offset
     vmov                d26, d0                                        @ q13 = y_coeff
     vmov                d27, d0                                        @ q13 = y_coeff
