@@ -1754,8 +1754,16 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     } else {
         /* is setting low delay flag only once the smartest thing to do?
          * low delay detection won't be overridden. */
-        if (s->picture_number == 0)
-            s->low_delay = 0;
+        if (s->picture_number == 0) {
+            switch(s->vo_type) {
+            case SIMPLE_VO_TYPE:
+            case ADV_SIMPLE_VO_TYPE:
+                s->low_delay = 1;
+                break;
+            default:
+                s->low_delay = 0;
+            }
+        }
     }
 
     ctx->shape = get_bits(gb, 2); /* vol shape */
