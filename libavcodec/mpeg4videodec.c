@@ -2052,11 +2052,12 @@ no_cplx_est:
     }
 
     if (s->avctx->debug&FF_DEBUG_PICT_INFO) {
-        av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d,  %s%s%s%s\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d, low_delay:%d  %s%s%s%s\n",
                s->avctx->framerate.den, s->avctx->framerate.num,
                ctx->time_increment_bits,
                s->quant_precision,
                s->progressive_sequence,
+               s->low_delay,
                ctx->scalability ? "scalability " :"" , s->quarter_sample ? "qpel " : "",
                s->data_partitioning ? "partition " : "", ctx->rvlc ? "rvlc " : ""
         );
