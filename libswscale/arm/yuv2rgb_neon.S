@@ -56,8 +56,8 @@
     vqrshrun.s16        \dst_comp2, q2, #6
 .endm
 
-.macro compute_rgba r1 r2 g1 g2 b1 b2 a1 a2
-    compute_color       \r1, \r2, q8,  q9
+.macro compute_rgba r1 g1 b1 a1 r2 g2 b2 a2
+    compute_color       \r1, \r2, q8, q9
     compute_color       \g1, \g2, q10, q11
     compute_color       \b1, \b2, q12, q13
     vmov.u8             \a1, #255
@@ -80,19 +80,19 @@
 
 
 .ifc \ofmt,argb
-    compute_rgba        d7, d11, d8, d12, d9, d13, d6, d10
+    compute_rgba        d7, d8, d9, d6, d11, d12, d13, d10
 .endif
 
 .ifc \ofmt,rgba
-    compute_rgba        d6, d10, d7, d11, d8, d12, d9, d13
+    compute_rgba        d6, d7, d8, d9, d10, d11, d12, d13
 .endif
 
 .ifc \ofmt,abgr
-    compute_rgba        d9, d13, d8, d12, d7, d11, d6, d10
+    compute_rgba        d9, d8, d7, d6, d13, d12, d11, d10
 .endif
 
 .ifc \ofmt,bgra
-    compute_rgba        d8, d12, d7, d11, d6, d10, d9, d13
+    compute_rgba        d8, d7, d6, d9, d12, d11, d10, d13
 .endif
     vst4.8              {q3, q4}, [\dst,:128]!
     vst4.8              {q5, q6}, [\dst,:128]!
