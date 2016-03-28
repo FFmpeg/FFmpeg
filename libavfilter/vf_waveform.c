@@ -651,6 +651,22 @@ static av_always_inline void lowpass16(WaveformContext *s,
     envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
+#define LOWPASS16_FUNC(name, column, mirror)               \
+static void lowpass16_##name(WaveformContext *s,           \
+                             AVFrame *in, AVFrame *out,    \
+                             int component, int intensity, \
+                             int offset_y, int offset_x,   \
+                             int unused1, int unused2)     \
+{                                                          \
+    lowpass16(s, in, out, component, intensity,            \
+              offset_y, offset_x, column, mirror);         \
+}
+
+LOWPASS16_FUNC(column_mirror, 1, 1)
+LOWPASS16_FUNC(column,        1, 0)
+LOWPASS16_FUNC(row_mirror,    0, 1)
+LOWPASS16_FUNC(row,           0, 0)
+
 static av_always_inline void lowpass(WaveformContext *s,
                                      AVFrame *in, AVFrame *out,
                                      int component, int intensity,
@@ -2424,10 +2440,10 @@ static int config_input(AVFilterLink *inlink)
     case 0x1000: s->waveform = lowpass_row_mirror;    break;
     case 0x0100: s->waveform = lowpass_column;        break;
     case 0x0000: s->waveform = lowpass_row;           break;
-    case 0x1110:
-    case 0x1010:
-    case 0x0110:
-    case 0x0010: s->waveform = lowpass16; break;
+    case 0x1110: s->waveform = lowpass16_column_mirror; break;
+    case 0x1010: s->waveform = lowpass16_row_mirror;    break;
+    case 0x0110: s->waveform = lowpass16_column;        break;
+    case 0x0010: s->waveform = lowpass16_row;           break;
     case 0x1101:
     case 0x1001:
     case 0x0101:
