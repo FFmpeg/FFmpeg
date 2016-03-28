@@ -2585,8 +2585,11 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 
 #if FF_API_ASS_TIMING
             if (avctx->sub_text_format == FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS
-                && *got_sub_ptr && sub->num_rects)
-                ret = convert_sub_to_old_ass_form(sub, avpkt, avctx->time_base);
+                && *got_sub_ptr && sub->num_rects) {
+                const AVRational tb = avctx->pkt_timebase.num ? avctx->pkt_timebase
+                                                              : avctx->time_base;
+                ret = convert_sub_to_old_ass_form(sub, avpkt, tb);
+            }
 #endif
 
             if (sub->num_rects && !sub->end_display_time && avpkt->duration &&
