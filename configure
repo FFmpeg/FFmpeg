@@ -2192,7 +2192,7 @@ nvenc_h264_encoder_deps="nvenc"
 nvenc_hevc_encoder_deps="nvenc"
 
 # parsers
-h264_parser_select="h264_decoder"
+h264_parser_select="golomb h264dsp"
 hevc_parser_select="golomb"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"

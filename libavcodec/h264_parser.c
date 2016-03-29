@@ -44,7 +44,6 @@
 #include "parser.h"
 
 typedef struct H264ParseContext {
-    H264Context h;
     ParseContext pc;
     H264ParamSets ps;
     H264DSPContext h264dsp;
@@ -53,6 +52,7 @@ typedef struct H264ParseContext {
     int is_avc;
     int nal_length_size;
     int got_first;
+    int picture_structure;
 } H264ParseContext;
 
 
@@ -112,12 +112,12 @@ found:
     return i - (state & 5);
 }
 
-static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb)
+static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb,
+                           AVCodecContext *avctx)
 {
     H264PredWeightTable pwt;
     int slice_type_nos = s->pict_type & 3;
     H264ParseContext *p = s->priv_data;
-    H264Context      *h = &p->h;
     int list_count, ref_count[2];
 
 
@@ -128,7 +128,7 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb)
         get_bits1(gb); // direct_spatial_mv_pred
 
     if (ff_h264_parse_ref_count(&list_count, ref_count, gb, p->ps.pps,
-                                slice_type_nos, h->picture_structure) < 0)
+                                slice_type_nos, p->picture_structure) < 0)
         return AVERROR_INVALIDDATA;
 
     if (slice_type_nos != AV_PICTURE_TYPE_I) {
@@ -142,7 +142,7 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb)
                     if (reordering_of_pic_nums_idc < 3)
                         get_ue_golomb(gb);
                     else if (reordering_of_pic_nums_idc > 3) {
-                        av_log(h->avctx, AV_LOG_ERROR,
+                        av_log(avctx, AV_LOG_ERROR,
                                "illegal reordering_of_pic_nums_idc %d\n",
                                reordering_of_pic_nums_idc);
                         return AVERROR_INVALIDDATA;
@@ -150,7 +150,7 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb)
                         break;
 
                     if (index >= ref_count[list]) {
-                        av_log(h->avctx, AV_LOG_ERROR,
+                        av_log(avctx, AV_LOG_ERROR,
                                "reference count %d overflow\n", index);
                         return AVERROR_INVALIDDATA;
                     }
@@ -169,7 +169,7 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb)
         for (i = 0; i < MAX_MMCO_COUNT; i++) {
             MMCOOpcode opcode = get_ue_golomb_31(gb);
             if (opcode > (unsigned) MMCO_LONG) {
-                av_log(h->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "illegal memory management control operation %d\n",
                        opcode);
                 return AVERROR_INVALIDDATA;
@@ -203,7 +203,6 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                                   const uint8_t *buf, int buf_size)
 {
     H264ParseContext *p = s->priv_data;
-    H264Context      *h = &p->h;
     const uint8_t *buf_end = buf + buf_size;
 
     H2645NAL nal = { NULL };
@@ -219,7 +218,6 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     s->key_frame         = 0;
     s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
-    h->avctx = avctx;
     ff_h264_sei_uninit(&p->sei);
 
     if (!buf_size)
@@ -261,11 +259,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         nal.ref_idc = get_bits(&nal.gb, 2);
         nal.type    = get_bits(&nal.gb, 5);
 
-        h->gb            = nal.gb;
-        h->nal_ref_idc   = nal.ref_idc;
-        h->nal_unit_type = nal.type;
-
-        switch (h->nal_unit_type) {
+        switch (nal.type) {
         case NAL_SPS:
             ff_h264_decode_seq_parameter_set(&nal.gb, avctx, &p->ps);
             break;
@@ -294,25 +288,23 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             pps_id = get_ue_golomb(&nal.gb);
             if (pps_id >= MAX_PPS_COUNT) {
-                av_log(h->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "pps_id %u out of range\n", pps_id);
                 goto fail;
             }
             if (!p->ps.pps_list[pps_id]) {
-                av_log(h->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "non-existing PPS %u referenced\n", pps_id);
                 goto fail;
             }
             p->ps.pps = (const PPS*)p->ps.pps_list[pps_id]->data;
             if (!p->ps.sps_list[p->ps.pps->sps_id]) {
-                av_log(h->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "non-existing SPS %u referenced\n", p->ps.pps->sps_id);
                 goto fail;
             }
             p->ps.sps = (SPS*)p->ps.sps_list[p->ps.pps->sps_id]->data;
 
-            h->ps.sps = p->ps.sps;
-            h->ps.pps = p->ps.pps;
             sps = p->ps.sps;
 
             p->poc.frame_num = get_bits(&nal.gb, sps->log2_max_frame_num);
@@ -328,19 +320,19 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
             switch (sps->bit_depth_luma) {
             case 9:
-                if (CHROMA444(h))      s->format = AV_PIX_FMT_YUV444P9;
-                else if (CHROMA422(h)) s->format = AV_PIX_FMT_YUV422P9;
-                else                   s->format = AV_PIX_FMT_YUV420P9;
+                if (sps->chroma_format_idc == 3)      s->format = AV_PIX_FMT_YUV444P9;
+                else if (sps->chroma_format_idc == 2) s->format = AV_PIX_FMT_YUV422P9;
+                else                                  s->format = AV_PIX_FMT_YUV420P9;
                 break;
             case 10:
-                if (CHROMA444(h))      s->format = AV_PIX_FMT_YUV444P10;
-                else if (CHROMA422(h)) s->format = AV_PIX_FMT_YUV422P10;
-                else                   s->format = AV_PIX_FMT_YUV420P10;
+                if (sps->chroma_format_idc == 3)      s->format = AV_PIX_FMT_YUV444P10;
+                else if (sps->chroma_format_idc == 2) s->format = AV_PIX_FMT_YUV422P10;
+                else                                  s->format = AV_PIX_FMT_YUV420P10;
                 break;
             case 8:
-                if (CHROMA444(h))      s->format = AV_PIX_FMT_YUV444P;
-                else if (CHROMA422(h)) s->format = AV_PIX_FMT_YUV422P;
-                else                   s->format = AV_PIX_FMT_YUV420P;
+                if (sps->chroma_format_idc == 3)      s->format = AV_PIX_FMT_YUV444P;
+                else if (sps->chroma_format_idc == 2) s->format = AV_PIX_FMT_YUV422P;
+                else                                  s->format = AV_PIX_FMT_YUV420P;
                 break;
             default:
                 s->format = AV_PIX_FMT_NONE;
@@ -350,22 +342,22 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             avctx->level   = sps->level_idc;
 
             if (sps->frame_mbs_only_flag) {
-                h->picture_structure = PICT_FRAME;
+                p->picture_structure = PICT_FRAME;
             } else {
                 if (get_bits1(&nal.gb)) { // field_pic_flag
-                    h->picture_structure = PICT_TOP_FIELD + get_bits1(&nal.gb); // bottom_field_flag
+                    p->picture_structure = PICT_TOP_FIELD + get_bits1(&nal.gb); // bottom_field_flag
                 } else {
-                    h->picture_structure = PICT_FRAME;
+                    p->picture_structure = PICT_FRAME;
                 }
             }
 
-            if (h->nal_unit_type == NAL_IDR_SLICE)
+            if (nal.type == NAL_IDR_SLICE)
                 get_ue_golomb(&nal.gb); /* idr_pic_id */
             if (sps->poc_type == 0) {
                 p->poc.poc_lsb = get_bits(&nal.gb, sps->log2_max_poc_lsb);
 
                 if (p->ps.pps->pic_order_present == 1 &&
-                    h->picture_structure == PICT_FRAME)
+                    p->picture_structure == PICT_FRAME)
                     p->poc.delta_poc_bottom = get_se_golomb(&nal.gb);
             }
 
@@ -374,7 +366,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 p->poc.delta_poc[0] = get_se_golomb(&nal.gb);
 
                 if (p->ps.pps->pic_order_present == 1 &&
-                    h->picture_structure == PICT_FRAME)
+                    p->picture_structure == PICT_FRAME)
                     p->poc.delta_poc[1] = get_se_golomb(&nal.gb);
             }
 
@@ -382,14 +374,14 @@ static inline int parse_nal_units(AVCodecParserContext *s,
              * The prev_ values needed for decoding POC of the next picture are not set here. */
             field_poc[0] = field_poc[1] = INT_MAX;
             ff_h264_init_poc(field_poc, &s->output_picture_number, sps,
-                             &p->poc, h->picture_structure, nal.ref_idc);
+                             &p->poc, p->picture_structure, nal.ref_idc);
 
             /* Continue parsing to check if MMCO_RESET is present.
              * FIXME: MMCO_RESET could appear in non-first slice.
              *        Maybe, we should parse all undisposable non-IDR slice of this
              *        picture until encountering MMCO_RESET in a slice of it. */
-            if (h->nal_ref_idc && h->nal_unit_type != NAL_IDR_SLICE) {
-                got_reset = scan_mmco_reset(s, &nal.gb);
+            if (nal.ref_idc && nal.type != NAL_IDR_SLICE) {
+                got_reset = scan_mmco_reset(s, &nal.gb, avctx);
                 if (got_reset < 0)
                     goto fail;
             }
@@ -397,14 +389,14 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             /* Set up the prev_ values for decoding POC of the next picture. */
             p->poc.prev_frame_num        = got_reset ? 0 : p->poc.frame_num;
             p->poc.prev_frame_num_offset = got_reset ? 0 : p->poc.frame_num_offset;
-            if (h->nal_ref_idc != 0) {
+            if (nal.ref_idc != 0) {
                 if (!got_reset) {
                     p->poc.prev_poc_msb = p->poc.poc_msb;
                     p->poc.prev_poc_lsb = p->poc.poc_lsb;
                 } else {
                     p->poc.prev_poc_msb = 0;
                     p->poc.prev_poc_lsb =
-                        h->picture_structure == PICT_BOTTOM_FIELD ? 0 : field_poc[0];
+                        p->picture_structure == PICT_BOTTOM_FIELD ? 0 : field_poc[0];
                 }
             }
 
@@ -430,14 +422,14 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                     s->repeat_pict = 5;
                     break;
                 default:
-                    s->repeat_pict = h->picture_structure == PICT_FRAME ? 1 : 0;
+                    s->repeat_pict = p->picture_structure == PICT_FRAME ? 1 : 0;
                     break;
                 }
             } else {
-                s->repeat_pict = h->picture_structure == PICT_FRAME ? 1 : 0;
+                s->repeat_pict = p->picture_structure == PICT_FRAME ? 1 : 0;
             }
 
-            if (h->picture_structure == PICT_FRAME) {
+            if (p->picture_structure == PICT_FRAME) {
                 s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
                 if (sps->pic_struct_present_flag) {
                     switch (p->sei.picture_timing.pic_struct) {
@@ -462,7 +454,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                         s->field_order = AV_FIELD_PROGRESSIVE;
                 }
             } else {
-                if (h->picture_structure == PICT_TOP_FIELD)
+                if (p->picture_structure == PICT_TOP_FIELD)
                     s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;
                 else
                     s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
@@ -475,7 +467,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         buf += consumed;
     }
     /* didn't find a picture! */
-    av_log(h->avctx, AV_LOG_ERROR, "missing picture in access unit\n");
+    av_log(avctx, AV_LOG_ERROR, "missing picture in access unit\n");
 fail:
     av_freep(&nal.rbsp_buffer);
     return -1;
@@ -487,21 +479,12 @@ static int h264_parse(AVCodecParserContext *s,
                       const uint8_t *buf, int buf_size)
 {
     H264ParseContext *p = s->priv_data;
-    H264Context      *h = &p->h;
     ParseContext *pc = &p->pc;
     int next;
 
     if (!p->got_first) {
         p->got_first = 1;
         if (avctx->extradata_size) {
-            h->avctx = avctx;
-            // must be done like in the decoder.
-            // otherwise opening the parser, creating extradata,
-            // and then closing and opening again
-            // will cause has_b_frames to be always set.
-            // NB: estimate_timings_from_pts behaves exactly like this.
-            if (!avctx->has_b_frames)
-                h->low_delay = 1;
             ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
                                      &p->ps, &p->is_avc, &p->nal_length_size,
                                      avctx->err_recognition, avctx);
@@ -580,12 +563,10 @@ static int h264_split(AVCodecContext *avctx,
 static void h264_close(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
-    H264Context      *h = &p->h;
     ParseContext *pc = &p->pc;
     int i;
 
     av_free(pc->buffer);
-    ff_h264_free_context(h);
 
     ff_h264_sei_uninit(&p->sei);
 
@@ -599,14 +580,7 @@ static void h264_close(AVCodecParserContext *s)
 static av_cold int init(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
-    H264Context      *h = &p->h;
 
-    h->slice_ctx = av_mallocz(sizeof(*h->slice_ctx));
-    if (!h->slice_ctx)
-        return 0;
-    h->nb_slice_ctx = 1;
-
-    h->slice_context_count = 1;
     ff_h264dsp_init(&p->h264dsp, 8, 1);
     return 0;
 }

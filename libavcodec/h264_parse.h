@@ -87,4 +87,9 @@ int ff_h264_decode_extradata(const uint8_t *data, int size, struct H264ParamSets
                              int *is_avc, int *nal_length_size,
                              int err_recognition, void *logctx);
 
+/**
+ * compute profile from sps
+ */
+int ff_h264_get_profile(const struct SPS *sps);
+
 #endif /* AVCODEC_H264_PARSE_H */
