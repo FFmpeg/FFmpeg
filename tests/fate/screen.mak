@@ -56,8 +56,17 @@ fate-rscc-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/32bpp.avi -an
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, RSCC) += $(FATE_RSCC)
 fate-rscc: $(FATE_RSCC)
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, SCREENPRESSO) += fate-screenpresso
-fate-screenpresso: CMD = framecrc -i $(TARGET_SAMPLES)/spv1/bunny.avi
+FATE_SCREENPRESSO += fate-screenpresso-16bit
+fate-screenpresso-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/spv1/16bpp_555.avi -an
+
+FATE_SCREENPRESSO += fate-screenpresso-24bit
+fate-screenpresso-24bit: CMD = framecrc -i $(TARGET_SAMPLES)/spv1/bunny.avi -an
+
+FATE_SCREENPRESSO += fate-screenpresso-32bit
+fate-screenpresso-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/spv1/32bpp.avi -an
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, SCREENPRESSO) += $(FATE_SCREENPRESSO)
+fate-screenpresso: $(FATE_SCREENPRESSO)
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, TDSC) += fate-tdsc
 fate-tdsc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/tdsc/tdsc.asf -an -pix_fmt bgr24
