@@ -350,7 +350,6 @@ Toolchain options:
 Advanced options (experts only):
   --malloc-prefix=PREFIX   prefix malloc and related names with PREFIX
   --custom-allocator=NAME  use a supported custom allocator
-  --disable-symver         disable symbol versioning
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --disable-safe-bitstream-reader
                            disable buffer boundary checking in bitreaders
@@ -1766,7 +1765,6 @@ BUILTIN_LIST="
 "
 HAVE_LIST_CMDLINE="
     inline_asm
-    symver
     yasm
 "
 
@@ -1940,8 +1938,6 @@ TOOLCHAIN_FEATURES="
     inline_asm_nonlocal_labels
     pragma_deprecated
     rsync_contimeout
-    symver_asm_label
-    symver_gnu_asm
     vfp_args
     xform_asm
     xmm_clobbers
@@ -2239,7 +2235,6 @@ fast_unaligned_if_any="aarch64 ppc x86"
 simd_align_16_if_any="altivec neon sse"
 
 # system capabilities
-symver_if_any="symver_asm_label symver_gnu_asm"
 valgrind_backtrace_deps="!optimizations valgrind_valgrind_h"
 
 # threading support
@@ -4520,7 +4515,6 @@ case $target_os in
         enabled shared && add_ldflags -Wl,-brtl
         ;;
     android)
-        disable symver
         enable section_data_rel_ro
         SLIB_INSTALL_NAME='$(SLIBNAME)'
         SLIB_INSTALL_LINKS=
@@ -4548,13 +4542,11 @@ case $target_os in
         SLIB_CREATE_DEF_CMD='$(Q)perl $(SRC_PATH)/compat/solaris/make_sunver.pl $$(filter %.ver,$$^) $(OBJS) | grep -v @ > $(SUBDIR)lib$(NAME).ver-sol2'
         ;;
     netbsd)
-        disable symver
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
         enabled gcc || check_ldflags -Wl,-zmuldefs
         ;;
     openbsd|bitrig)
-        disable symver
         SHFLAGS='-shared'
         SLIB_INSTALL_NAME='$(SLIBNAME).$(LIBMAJOR).$(LIBMINOR)'
         SLIB_INSTALL_LINKS=
@@ -4562,7 +4554,6 @@ case $target_os in
         oss_outdev_extralibs="-lossaudio"
         ;;
     dragonfly)
-        disable symver
         ;;
     freebsd)
         ;;
@@ -4644,7 +4635,6 @@ case $target_os in
         fi
         ;;
     win32|win64)
-        disable symver
         if enabled shared; then
             # Link to the import library instead of the normal static library
             # for shared libs.
@@ -5928,15 +5918,6 @@ elif test_ldflags -Wl,-M,$TMPV; then
     append SHFLAGS '-Wl,-M,\$(SUBDIR)lib\$(NAME).ver-sol2'
 fi
 
-check_cc <<EOF && enable symver_asm_label
-void ff_foo(void) __asm__ ("av_foo@VERSION");
-void ff_foo(void) { ${inline_asm+__asm__($quotes);} }
-EOF
-    check_cc <<EOF && enable symver_gnu_asm
-__asm__(".symver ff_foo,av_foo@VERSION");
-void ff_foo(void) {}
-EOF
-
 if [ -z "$optflags" ]; then
     if enabled small; then
         optflags=$cflags_size
@@ -5990,8 +5971,6 @@ if enabled icc; then
     check_ldflags -wd10156,11030
     # icc 11.0 and 11.1 work with ebp_available, but don't pass the test
     enable ebp_available
-    # The test above does not test linking
-    enabled lto && disable symver_asm_label
     if enabled x86_32; then
         icc_version=$($cc -dumpversion)
         test ${icc_version%%.*} -ge 11 &&
