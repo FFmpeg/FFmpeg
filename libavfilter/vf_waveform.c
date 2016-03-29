@@ -698,27 +698,52 @@ static av_always_inline void lowpass(WaveformContext *s,
         uint8_t *dst = dst_line;
 
         for (p = src_data; p < src_data_end; p++) {
-            int i = 0;
             uint8_t *target;
             if (column) {
-                do {
-                    target = dst++ + dst_signed_linesize * *p;
-                    update(target, max, intensity);
-                } while (++i < step);
+                target = dst + dst_signed_linesize * *p;
+                dst += step;
+                update(target, max, intensity);
             } else {
                 uint8_t *row = dst_data;
-                do {
-                    if (mirror)
-                        target = row - *p - 1;
-                    else
-                        target = row + *p;
-                    update(target, max, intensity);
-                    row += dst_linesize;
-                } while (++i < step);
+                if (mirror)
+                    target = row - *p - 1;
+                else
+                    target = row + *p;
+                update(target, max, intensity);
+                row += dst_linesize;
             }
         }
         src_data += src_linesize;
         dst_data += dst_linesize * step;
+    }
+
+    if (column && step > 1) {
+        const int dst_w = s->display == PARADE ? out->width / s->acomp : out->width;
+        const int dst_h = 256;
+        uint8_t *dst;
+        int x, z;
+
+        dst = out->data[plane] + offset_y * dst_linesize + offset_x;
+        for (y = 0; y < dst_h; y++) {
+            for (x = 0; x < dst_w; x+=step) {
+                for (z = 1; z < step; z++) {
+                    dst[x + z] = dst[x];
+                }
+            }
+            dst += dst_linesize;
+        }
+    } else if (step > 1) {
+        const int dst_h = s->display == PARADE ? out->height / s->acomp : out->height;
+        const int dst_w = 256;
+        uint8_t *dst;
+        int z;
+
+        dst = out->data[plane] + offset_y * dst_linesize + offset_x;
+        for (y = 0; y < dst_h; y+=step) {
+            for (z = 1; z < step; z++)
+                memcpy(dst + dst_linesize * z, dst, dst_w);
+            dst += dst_linesize * step;
+        }
     }
 
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
