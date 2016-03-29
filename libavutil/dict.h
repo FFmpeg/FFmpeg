@@ -76,6 +76,7 @@
 #define AV_DICT_DONT_OVERWRITE 16   ///< Don't overwrite existing entries.
 #define AV_DICT_APPEND         32   /**< If the entry already exists, append to it.  Note that no
                                       delimiter is added, the strings are simply concatenated. */
+#define AV_DICT_MULTIKEY       64   /**< Allow to store several equal keys in the dictionary */
 
 typedef struct AVDictionaryEntry {
     char *key;
@@ -121,8 +122,8 @@ int av_dict_count(const AVDictionary *m);
  *
  * @param pm pointer to a pointer to a dictionary struct. If *pm is NULL
  * a dictionary struct is allocated and put in *pm.
- * @param key entry key to add to *pm (will be av_strduped depending on flags)
- * @param value entry value to add to *pm (will be av_strduped depending on flags).
+ * @param key entry key to add to *pm (will either be av_strduped or added as a new key depending on flags)
+ * @param value entry value to add to *pm (will be av_strduped or added as a new key depending on flags).
  *        Passing a NULL value will cause an existing entry to be deleted.
  * @return >= 0 on success otherwise an error code <0
  */

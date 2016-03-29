@@ -2688,6 +2688,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 st->codec->has_b_frames = 1;
             }
         }
+
+        if (!unsupported && st->codec->codec_id == AV_CODEC_ID_AAC && start_time > 0)
+            sc->start_pad = start_time;
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */

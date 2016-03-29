@@ -354,7 +354,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
             av_freep(&match);
             av_freep(&input);
         } else {
-            /* Not in the list, so add the first input as a open_output */
+            /* Not in the list, so add the first input as an open_output */
             input->name = name;
             insert_inout(open_outputs, input);
         }

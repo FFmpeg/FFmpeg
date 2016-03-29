@@ -194,6 +194,7 @@ Individual component options:
   --disable-filters        disable all filters
 
 External library support:
+  --disable-audiotoolbox   enable AudioToolbox decoders and encoders [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
   --enable-cuda            enable dynamically linked CUDA [no]
@@ -218,7 +219,6 @@ External library support:
   --enable-libcdio         enable audio CD grabbing with libcdio [no]
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
-  --enable-libdcadec       enable DCA decoding via libdcadec [no]
   --enable-libfaac         enable AAC encoding via libfaac [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
@@ -1446,6 +1446,7 @@ EXAMPLE_LIST="
 "
 
 EXTERNAL_LIBRARY_LIST="
+    audiotoolbox
     avisynth
     bzlib
     chromaprint
@@ -1466,7 +1467,6 @@ EXTERNAL_LIBRARY_LIST="
     libcdio
     libcelt
     libdc1394
-    libdcadec
     libfaac
     libfdk_aac
     libflite
@@ -2506,6 +2506,10 @@ zlib_encoder_select="zlib"
 zmbv_decoder_select="zlib"
 zmbv_encoder_select="zlib"
 
+# platform codecs
+audiotoolbox_deps="AudioToolbox_AudioToolbox_h"
+audiotoolbox_extralibs="-framework CoreFoundation -framework AudioToolbox -framework CoreMedia"
+
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
@@ -2641,11 +2645,33 @@ vc1_parser_select="vc1dsp"
 mjpeg2jpeg_bsf_select="jpegtables"
 
 # external libraries
+aac_at_decoder_deps="audiotoolbox"
+ac3_at_decoder_deps="audiotoolbox"
+adpcm_ima_qt_at_decoder_deps="audiotoolbox"
+alac_at_decoder_deps="audiotoolbox"
+amr_nb_at_decoder_deps="audiotoolbox"
+gsm_ms_at_decoder_deps="audiotoolbox"
+ilbc_at_decoder_deps="audiotoolbox"
+mp1_at_decoder_deps="audiotoolbox"
+mp2_at_decoder_deps="audiotoolbox"
+mp3_at_decoder_deps="audiotoolbox"
+pcm_alaw_at_decoder_deps="audiotoolbox"
+pcm_mulaw_at_decoder_deps="audiotoolbox"
+qdmc_at_decoder_deps="audiotoolbox"
+qdm2_at_decoder_deps="audiotoolbox"
+aac_at_encoder_deps="audiotoolbox"
+aac_at_encoder_select="audio_frame_queue"
+alac_at_encoder_deps="audiotoolbox"
+alac_at_encoder_select="audio_frame_queue"
+ilbc_at_encoder_deps="audiotoolbox"
+ilbc_at_encoder_select="audio_frame_queue"
+pcm_alaw_at_encoder_deps="audiotoolbox"
+pcm_alaw_at_encoder_select="audio_frame_queue"
+pcm_mulaw_at_encoder_deps="audiotoolbox"
+pcm_mulaw_at_encoder_select="audio_frame_queue"
 chromaprint_muxer_deps="chromaprint"
 h264_videotoolbox_encoder_deps="videotoolbox_encoder pthreads"
-h264_videotoolbox_encoder_select="bzlib zlib iconv"
 libcelt_decoder_deps="libcelt"
-libdcadec_decoder_deps="libdcadec"
 libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
 libfdk_aac_decoder_deps="libfdk_aac"
@@ -3087,6 +3113,9 @@ enable valgrind_backtrace
 
 sws_max_filter_size_default=256
 set_default sws_max_filter_size
+
+# Enable platform codecs by default.
+enable audiotoolbox
 
 # Enable hwaccels by default.
 enable d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
@@ -5255,6 +5284,8 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
 nvenc_encoder_extralibs='$ldl'
+coreimage_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
+coreimagesrc_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
 
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
@@ -5366,6 +5397,7 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
+check_header AudioToolbox/AudioToolbox.h
 check_header direct.h
 check_header dirent.h
 check_header dlfcn.h
@@ -5481,8 +5513,11 @@ enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActi
 enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
                                { check_lib2 "dlfcn.h" dlopen -ldl; } ||
                                die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
-enabled cuda              && check_lib cuda.h cuInit -lcuda
+enabled cuda              && { check_lib cuda.h cuInit -lcuda ||
+                               die "ERROR: CUDA not found"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
+enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disable coreimage_filter; }
+enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }
 enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
@@ -5498,7 +5533,6 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
-enabled libdcadec         && require_pkg_config "dcadec >= 0.1.0" libdcadec/dca_context.h dcadec_context_create
 enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&

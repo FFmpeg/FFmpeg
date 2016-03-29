@@ -90,8 +90,11 @@ typedef struct WaveformContext {
     int            shift_w[4], shift_h[4];
     GraticuleLines *glines;
     int            nb_glines;
-    void (*waveform)(struct WaveformContext *s, AVFrame *in, AVFrame *out,
-                     int component, int intensity, int offset_y, int offset_x, int column);
+    void (*waveform)(struct WaveformContext *s,
+                     AVFrame *in, AVFrame *out,
+                     int component, int intensity,
+                     int offset_y, int offset_x,
+                     int column, int mirror);
     void (*graticulef)(struct WaveformContext *s, AVFrame *out);
     const AVPixFmtDescriptor *desc;
 } WaveformContext;
@@ -589,11 +592,13 @@ static void update(uint8_t *target, int max, int intensity)
         *target = 255;
 }
 
-static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                      int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void lowpass16(WaveformContext *s,
+                                       AVFrame *in, AVFrame *out,
+                                       int component, int intensity,
+                                       int offset_y, int offset_x,
+                                       int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int shift_w = s->shift_w[component];
     const int shift_h = s->shift_h[component];
     const int src_linesize = in->linesize[plane] / 2;
@@ -646,11 +651,29 @@ static void lowpass16(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
-                    int component, int intensity, int offset_y, int offset_x, int column)
+#define LOWPASS16_FUNC(name, column, mirror)               \
+static void lowpass16_##name(WaveformContext *s,           \
+                             AVFrame *in, AVFrame *out,    \
+                             int component, int intensity, \
+                             int offset_y, int offset_x,   \
+                             int unused1, int unused2)     \
+{                                                          \
+    lowpass16(s, in, out, component, intensity,            \
+              offset_y, offset_x, column, mirror);         \
+}
+
+LOWPASS16_FUNC(column_mirror, 1, 1)
+LOWPASS16_FUNC(column,        1, 0)
+LOWPASS16_FUNC(row_mirror,    0, 1)
+LOWPASS16_FUNC(row,           0, 0)
+
+static av_always_inline void lowpass(WaveformContext *s,
+                                     AVFrame *in, AVFrame *out,
+                                     int component, int intensity,
+                                     int offset_y, int offset_x,
+                                     int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int shift_w = s->shift_w[component];
     const int shift_h = s->shift_h[component];
     const int src_linesize = in->linesize[plane];
@@ -701,11 +724,29 @@ static void lowpass(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                   int component, int intensity, int offset_y, int offset_x, int column)
+#define LOWPASS_FUNC(name, column, mirror)               \
+static void lowpass_##name(WaveformContext *s,           \
+                           AVFrame *in, AVFrame *out,    \
+                           int component, int intensity, \
+                           int offset_y, int offset_x,   \
+                           int unused1, int unused2)     \
+{                                                        \
+    lowpass(s, in, out, component, intensity,            \
+            offset_y, offset_x, column, mirror);         \
+}
+
+LOWPASS_FUNC(column_mirror, 1, 1)
+LOWPASS_FUNC(column,        1, 0)
+LOWPASS_FUNC(row_mirror,    0, 1)
+LOWPASS_FUNC(row,           0, 0)
+
+static av_always_inline void flat16(WaveformContext *s,
+                                    AVFrame *in, AVFrame *out,
+                                    int component, int intensity,
+                                    int offset_y, int offset_x,
+                                    int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
@@ -811,11 +852,13 @@ static void flat16(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
 }
 
-static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
-                 int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void flat(WaveformContext *s,
+                                  AVFrame *in, AVFrame *out,
+                                  int component, int intensity,
+                                  int offset_y, int offset_x,
+                                  int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int c0_linesize = in->linesize[ plane + 0 ];
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
@@ -919,11 +962,13 @@ static void flat(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
 }
 
-static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                    int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void aflat16(WaveformContext *s,
+                                     AVFrame *in, AVFrame *out,
+                                     int component, int intensity,
+                                     int offset_y, int offset_x,
+                                     int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
@@ -1043,11 +1088,13 @@ static void aflat16(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope16(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
-static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
-                  int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void aflat(WaveformContext *s,
+                                   AVFrame *in, AVFrame *out,
+                                   int component, int intensity,
+                                   int offset_y, int offset_x,
+                                   int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int c0_linesize = in->linesize[ plane + 0 ];
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
@@ -1165,11 +1212,13 @@ static void aflat(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);
 }
 
-static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                     int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void chroma16(WaveformContext *s,
+                                      AVFrame *in, AVFrame *out,
+                                      int component, int intensity,
+                                      int offset_y, int offset_x,
+                                      int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int c0_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
     const int c1_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
     const int dst_linesize = out->linesize[plane] / 2;
@@ -1241,11 +1290,13 @@ static void chroma16(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
-                   int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void chroma(WaveformContext *s,
+                                    AVFrame *in, AVFrame *out,
+                                    int component, int intensity,
+                                    int offset_y, int offset_x,
+                                    int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int c0_linesize = in->linesize[(plane + 1) % s->ncomp];
     const int c1_linesize = in->linesize[(plane + 2) % s->ncomp];
     const int dst_linesize = out->linesize[plane];
@@ -1315,11 +1366,13 @@ static void chroma(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                    int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void color16(WaveformContext *s,
+                                     AVFrame *in, AVFrame *out,
+                                     int component, int intensity,
+                                     int offset_y, int offset_x,
+                                     int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int limit = s->max - 1;
     const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0];
     const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp];
@@ -1340,7 +1393,7 @@ static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
     const int src_w = in->width;
     int x, y;
 
-    if (s->mode) {
+    if (column) {
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
@@ -1418,11 +1471,13 @@ static void color16(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
-                  int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void color(WaveformContext *s,
+                                   AVFrame *in, AVFrame *out,
+                                   int component, int intensity,
+                                   int offset_y, int offset_x,
+                                   int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const uint8_t *c0_data = in->data[plane + 0];
     const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
     const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
@@ -1520,11 +1575,13 @@ static void color(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-static void acolor16(WaveformContext *s, AVFrame *in, AVFrame *out,
-                     int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void acolor16(WaveformContext *s,
+                                      AVFrame *in, AVFrame *out,
+                                      int component, int intensity,
+                                      int offset_y, int offset_x,
+                                      int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const int limit = s->max - 1;
     const int max = limit - intensity;
     const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0];
@@ -1624,11 +1681,13 @@ static void acolor16(WaveformContext *s, AVFrame *in, AVFrame *out,
     envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-static void acolor(WaveformContext *s, AVFrame *in, AVFrame *out,
-                   int component, int intensity, int offset_y, int offset_x, int column)
+static av_always_inline void acolor(WaveformContext *s,
+                                    AVFrame *in, AVFrame *out,
+                                    int component, int intensity,
+                                    int offset_y, int offset_x,
+                                    int column, int mirror)
 {
     const int plane = s->desc->comp[component].plane;
-    const int mirror = s->mirror;
     const uint8_t *c0_data = in->data[plane + 0];
     const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
     const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
@@ -2370,30 +2429,61 @@ static int config_input(AVFilterLink *inlink)
     s->graticulef = graticule_none;
 
     switch (s->filter) {
-    case LOWPASS:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? lowpass16 : lowpass;
-        break;
-    case FLAT:
-        s->size = 256 * 3;
-        s->waveform = s->bits > 8 ? flat16 : flat;
-        break;
-    case AFLAT:
-        s->size = 256 * 2;
-        s->waveform = s->bits > 8 ? aflat16 : aflat;
-        break;
-    case CHROMA:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? chroma16 : chroma;
-        break;
-    case COLOR:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? color16 : color;
-        break;
-    case ACOLOR:
-        s->size = 256;
-        s->waveform = s->bits > 8 ? acolor16 : acolor;
-        break;
+    case AFLAT: s->size = 256 * 2; break;
+    case FLAT:  s->size = 256 * 3; break;
+    default:    s->size = 256;     break;
+    }
+
+    switch (s->filter | ((s->bits > 8) << 4) |
+            (s->mode << 8) | (s->mirror << 12)) {
+    case 0x1100: s->waveform = lowpass_column_mirror; break;
+    case 0x1000: s->waveform = lowpass_row_mirror;    break;
+    case 0x0100: s->waveform = lowpass_column;        break;
+    case 0x0000: s->waveform = lowpass_row;           break;
+    case 0x1110: s->waveform = lowpass16_column_mirror; break;
+    case 0x1010: s->waveform = lowpass16_row_mirror;    break;
+    case 0x0110: s->waveform = lowpass16_column;        break;
+    case 0x0010: s->waveform = lowpass16_row;           break;
+    case 0x1101:
+    case 0x1001:
+    case 0x0101:
+    case 0x0001: s->waveform = flat;      break;
+    case 0x1111:
+    case 0x1011:
+    case 0x0111:
+    case 0x0011: s->waveform = flat16;    break;
+    case 0x1102:
+    case 0x1002:
+    case 0x0102:
+    case 0x0002: s->waveform = aflat;     break;
+    case 0x1112:
+    case 0x1012:
+    case 0x0112:
+    case 0x0012: s->waveform = aflat16;   break;
+    case 0x1103:
+    case 0x1003:
+    case 0x0103:
+    case 0x0003: s->waveform = chroma;    break;
+    case 0x1113:
+    case 0x1013:
+    case 0x0113:
+    case 0x0013: s->waveform = chroma16;  break;
+    case 0x1104:
+    case 0x1004:
+    case 0x0104:
+    case 0x0004: s->waveform = color;     break;
+    case 0x1114:
+    case 0x1014:
+    case 0x0114:
+    case 0x0014: s->waveform = color16;   break;
+    case 0x1105:
+    case 0x1005:
+    case 0x0105:
+    case 0x0005: s->waveform = acolor;    break;
+    case 0x1115:
+    case 0x1015:
+    case 0x0115:
+    case 0x0015: s->waveform = acolor16;  break;
     }
 
     switch (s->filter) {
@@ -2616,6 +2706,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     out->pts = in->pts;
+    av_frame_set_color_range(out, AVCOL_RANGE_JPEG);
 
     for (k = 0; k < s->ncomp; k++) {
         if (s->bits <= 8) {
@@ -2647,7 +2738,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 offset_y = s->mode ? i++ * s->size * !!s->display : 0;
                 offset_x = s->mode ? 0 : i++ * s->size * !!s->display;
             }
-            s->waveform(s, in, out, k, s->intensity, offset_y, offset_x, s->mode);
+            s->waveform(s, in, out, k, s->intensity, offset_y, offset_x, s->mode, s->mirror);
         }
     }
     s->graticulef(s, out);

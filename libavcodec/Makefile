@@ -801,8 +801,26 @@ OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o mpegaudiodata.o  \
 OBJS-$(CONFIG_ELBG_FILTER)             += elbg.o
 
 # external codec libraries
+OBJS-$(CONFIG_AAC_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_AC3_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_ADPCM_IMA_QT_AT_DECODER)    += audiotoolboxdec.o
+OBJS-$(CONFIG_ALAC_AT_DECODER)            += audiotoolboxdec.o
+OBJS-$(CONFIG_AMR_NB_AT_DECODER)          += audiotoolboxdec.o
+OBJS-$(CONFIG_GSM_MS_AT_DECODER)          += audiotoolboxdec.o
+OBJS-$(CONFIG_ILBC_AT_DECODER)            += audiotoolboxdec.o
+OBJS-$(CONFIG_MP1_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_MP2_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_MP3_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_PCM_MULAW_AT_DECODER)       += audiotoolboxdec.o
+OBJS-$(CONFIG_PCM_ALAW_AT_DECODER)        += audiotoolboxdec.o
+OBJS-$(CONFIG_QDMC_AT_DECODER)            += audiotoolboxdec.o
+OBJS-$(CONFIG_QDM2_AT_DECODER)            += audiotoolboxdec.o
+OBJS-$(CONFIG_AAC_AT_ENCODER)             += audiotoolboxenc.o
+OBJS-$(CONFIG_ALAC_AT_ENCODER)            += audiotoolboxenc.o
+OBJS-$(CONFIG_ILBC_AT_ENCODER)            += audiotoolboxenc.o
+OBJS-$(CONFIG_PCM_ALAW_AT_ENCODER)        += audiotoolboxenc.o
+OBJS-$(CONFIG_PCM_MULAW_AT_ENCODER)       += audiotoolboxenc.o
 OBJS-$(CONFIG_LIBCELT_DECODER)            += libcelt_dec.o
-OBJS-$(CONFIG_LIBDCADEC_DECODER)          += libdcadec.o dca.o
 OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
 OBJS-$(CONFIG_LIBFDK_AAC_DECODER)         += libfdk-aacdec.o
 OBJS-$(CONFIG_LIBFDK_AAC_ENCODER)         += libfdk-aacenc.o
@@ -906,6 +924,7 @@ OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aacadtsdec.o \
                                              mpeg4audio.o
 OBJS-$(CONFIG_CHOMP_BSF)                  += chomp_bsf.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
+OBJS-$(CONFIG_DCA_CORE_BSF)               += dca_core_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)       += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_HEVC_MP4TOANNEXB_BSF)       += hevc_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)        += imx_dump_header_bsf.o

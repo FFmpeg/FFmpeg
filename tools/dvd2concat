@@ -36,7 +36,7 @@ I<path/to/dvd/structure> is the path to the DVD structure hierarchy; it
 normally contains a directory named B<VIDEO_TS>. It must not be encrypted
 with CSS.
 
-I<file.concat> is the output file. It can be used a input to ffmpeg.
+I<file.concat> is the output file. It can be used as an input to ffmpeg.
 It will require the B<-safe 0> option.
 
 =cut

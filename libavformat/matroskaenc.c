@@ -41,6 +41,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
@@ -730,6 +731,64 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
+static int mkv_write_video_color(AVIOContext *pb, AVCodecContext *codec, AVStream *st) {
+    int side_data_size = 0;
+    const uint8_t *side_data = av_stream_get_side_data(
+        st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, &side_data_size);
+    ebml_master colorinfo = start_ebml_master(pb, MATROSKA_ID_VIDEOCOLOR, 0);
+
+    if (codec->color_trc != AVCOL_TRC_UNSPECIFIED &&
+        codec->color_trc < AVCOL_TRC_NB) {
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOCOLORTRANSFERCHARACTERISTICS,
+                      codec->color_trc);
+    }
+    if (codec->colorspace != AVCOL_SPC_UNSPECIFIED &&
+        codec->colorspace < AVCOL_SPC_NB) {
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOCOLORMATRIXCOEFF, codec->colorspace);
+    }
+    if (codec->color_primaries != AVCOL_PRI_UNSPECIFIED &&
+        codec->color_primaries < AVCOL_PRI_NB) {
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOCOLORPRIMARIES, codec->color_primaries);
+    }
+    if (codec->color_range != AVCOL_RANGE_UNSPECIFIED &&
+        codec->color_range < AVCOL_RANGE_NB) {
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOCOLORRANGE, codec->color_range);
+    }
+    if (side_data_size == sizeof(AVMasteringDisplayMetadata)) {
+        ebml_master meta_element = start_ebml_master(
+            pb, MATROSKA_ID_VIDEOCOLORMASTERINGMETA, 0);
+        const AVMasteringDisplayMetadata *metadata =
+            (const AVMasteringDisplayMetadata*)side_data;
+        if (metadata->has_primaries) {
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_RX,
+                           av_q2d(metadata->display_primaries[0][0]));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_RY,
+                           av_q2d(metadata->display_primaries[0][1]));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_GX,
+                           av_q2d(metadata->display_primaries[1][0]));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_GY,
+                           av_q2d(metadata->display_primaries[1][1]));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_BX,
+                           av_q2d(metadata->display_primaries[2][0]));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_BY,
+                           av_q2d(metadata->display_primaries[2][1]));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_WHITEX,
+                           av_q2d(metadata->white_point[0]));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_WHITEY,
+                           av_q2d(metadata->white_point[1]));
+        }
+        if (metadata->has_luminance) {
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_LUMINANCEMAX,
+                           av_q2d(metadata->max_luminance));
+            put_ebml_float(pb, MATROSKA_ID_VIDEOCOLOR_LUMINANCEMIN,
+                           av_q2d(metadata->min_luminance));
+        }
+        end_ebml_master(pb, meta_element);
+    }
+    end_ebml_master(pb, colorinfo);
+    return 0;
+}
+
 
 static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
                                  AVStream *st, int mode, int *h_width, int *h_height)
@@ -1019,7 +1078,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             uint32_t color_space = av_le2ne32(codec->codec_tag);
             put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
         }
-
+        if (s->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
+            mkv_write_video_color(pb, codec, st);
+        }
         end_ebml_master(pb, subinfo);
         break;
 

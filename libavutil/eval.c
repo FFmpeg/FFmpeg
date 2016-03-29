@@ -31,6 +31,7 @@
 #include "avutil.h"
 #include "common.h"
 #include "eval.h"
+#include "ffmath.h"
 #include "internal.h"
 #include "log.h"
 #include "mathematics.h"

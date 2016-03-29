@@ -70,9 +70,12 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
                 int flags)
 {
     AVDictionary *m = *pm;
-    AVDictionaryEntry *tag = av_dict_get(m, key, NULL, flags);
+    AVDictionaryEntry *tag = NULL;
     char *oldval = NULL, *copy_key = NULL, *copy_value = NULL;
 
+    if (!(flags & AV_DICT_MULTIKEY)) {
+        tag = av_dict_get(m, key, NULL, flags);
+    }
     if (flags & AV_DICT_DONT_STRDUP_KEY)
         copy_key = (void *)key;
     else

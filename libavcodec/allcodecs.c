@@ -563,8 +563,21 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (XSUB,              xsub);
 
     /* external libraries */
+    REGISTER_ENCDEC (AAC_AT,            aac_at);
+    REGISTER_DECODER(AC3_AT,            ac3_at);
+    REGISTER_DECODER(ADPCM_IMA_QT_AT,   adpcm_ima_qt_at);
+    REGISTER_ENCDEC (ALAC_AT,           alac_at);
+    REGISTER_DECODER(AMR_NB_AT,         amr_nb_at);
+    REGISTER_DECODER(GSM_MS_AT,         gsm_ms_at);
+    REGISTER_ENCDEC (ILBC_AT,           ilbc_at);
+    REGISTER_DECODER(MP1_AT,            mp1_at);
+    REGISTER_DECODER(MP2_AT,            mp2_at);
+    REGISTER_DECODER(MP3_AT,            mp3_at);
+    REGISTER_ENCDEC (PCM_ALAW_AT,       pcm_alaw_at);
+    REGISTER_ENCDEC (PCM_MULAW_AT,      pcm_mulaw_at);
+    REGISTER_DECODER(QDMC_AT,           qdmc_at);
+    REGISTER_DECODER(QDM2_AT,           qdm2_at);
     REGISTER_DECODER(LIBCELT,           libcelt);
-    REGISTER_DECODER(LIBDCADEC,         libdcadec)
     REGISTER_ENCODER(LIBFAAC,           libfaac);
     REGISTER_ENCDEC (LIBFDK_AAC,        libfdk_aac);
     REGISTER_ENCDEC (LIBGSM,            libgsm);
@@ -657,6 +670,7 @@ void avcodec_register_all(void)
     REGISTER_BSF(AAC_ADTSTOASC,         aac_adtstoasc);
     REGISTER_BSF(CHOMP,                 chomp);
     REGISTER_BSF(DUMP_EXTRADATA,        dump_extradata);
+    REGISTER_BSF(DCA_CORE,              dca_core);
     REGISTER_BSF(H264_MP4TOANNEXB,      h264_mp4toannexb);
     REGISTER_BSF(HEVC_MP4TOANNEXB,      hevc_mp4toannexb);
     REGISTER_BSF(IMX_DUMP_HEADER,       imx_dump_header);

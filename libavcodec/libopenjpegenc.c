@@ -595,6 +595,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #else // OPENJPEG_MAJOR_VERSION == 2
     opj_codec_t *compress   = NULL;
     opj_stream_t *stream    = NULL;
+    PacketWriter writer     = { 0 };
 #endif // OPENJPEG_MAJOR_VERSION == 1
     int cpyresult = 0;
     int ret;
@@ -746,7 +747,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     memcpy(pkt->data, stream->buffer, len);
 #else // OPENJPEG_MAJOR_VERSION == 2
-    PacketWriter writer = {0, pkt};
+    writer.packet = pkt;
     opj_stream_set_write_function(stream, stream_write);
     opj_stream_set_skip_function(stream, stream_skip);
     opj_stream_set_seek_function(stream, stream_seek);

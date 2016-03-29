@@ -370,6 +370,7 @@ Filters:
   vf_colorbalance.c                     Paul B Mahol
   vf_colorkey.c                         Timo Rothenpieler
   vf_colorlevels.c                      Paul B Mahol
+  vf_coreimage.m                        Thilo Borgmann
   vf_deband.c                           Paul B Mahol
   vf_dejudder.c                         Nicholas Robbins
   vf_delogo.c                           Jean Delvare (CC <jdelvare@suse.com>)

@@ -70,7 +70,7 @@
 /**
  * Return the flags which specify extensions supported by the CPU.
  * The returned value is affected by av_force_cpu_flags() if that was used
- * before. So av_get_cpu_flags() can easily be used in a application to
+ * before. So av_get_cpu_flags() can easily be used in an application to
  * detect the enabled cpu flags.
  */
 int av_get_cpu_flags(void);

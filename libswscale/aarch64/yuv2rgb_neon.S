@@ -143,20 +143,17 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     load_chroma_\ifmt
     sub                 v18.8H, v18.8H, v5.8H                           // U*(1<<3) - 128*(1<<3)
     sub                 v19.8H, v19.8H, v5.8H                           // V*(1<<3) - 128*(1<<3)
-    zip1                v6.8H, v19.8H, v19.8H                           // V1
-    zip2                v7.8H, v19.8H, v19.8H                           // V2
-    zip1                v4.8H, v18.8H, v18.8H                           // U1
-    zip2                v5.8H, v18.8H, v18.8H                           // U2
-    sqdmulh             v20.8H, v6.8H, v1.H[0]                          // V1 * v2r             (R1)
-    sqdmulh             v21.8H, v7.8H, v1.H[0]                          // V2 * v2r             (R2)
-    sqdmulh             v22.8H, v4.8H, v1.H[1]                          // U1 * u2g
-    sqdmulh             v23.8H, v5.8H, v1.H[1]                          // U2 * u2g
-    sqdmulh             v6.8H,  v6.8H, v1.H[2]                          //            V1 * v2g
-    sqdmulh             v7.8H,  v7.8H, v1.H[2]                          //            V2 * v2g
-    add                 v22.8H, v22.8H, v6.8H                           // U1 * u2g + V1 * v2g  (G1)
-    add                 v23.8H, v23.8H, v7.8H                           // U2 * u2g + V2 * v2g  (G2)
-    sqdmulh             v24.8H, v4.8H, v1.H[3]                          // U1 * u2b             (B1)
-    sqdmulh             v25.8H, v5.8H, v1.H[3]                          // U2 * u2b             (B2)
+    sqdmulh             v20.8H, v19.8H, v1.H[0]                         // V * v2r            (R)
+    sqdmulh             v22.8H, v18.8H, v1.H[1]                         // U * u2g
+    sqdmulh             v19.8H, v19.8H, v1.H[2]                         //           V * v2g
+    add                 v22.8H, v22.8H, v19.8H                          // U * u2g + V * v2g  (G)
+    sqdmulh             v24.8H, v18.8H, v1.H[3]                         // U * u2b            (B)
+    zip2                v21.8H, v20.8H, v20.8H                          // R2
+    zip1                v20.8H, v20.8H, v20.8H                          // R1
+    zip2                v23.8H, v22.8H, v22.8H                          // G2
+    zip1                v22.8H, v22.8H, v22.8H                          // G1
+    zip2                v25.8H, v24.8H, v24.8H                          // B2
+    zip1                v24.8H, v24.8H, v24.8H                          // B1
     ld1                 {v2.16B}, [x4], #16                             // load luma
     ushll               v26.8H, v2.8B,  #3                              // Y1*(1<<3)
     ushll2              v27.8H, v2.16B, #3                              // Y2*(1<<3)

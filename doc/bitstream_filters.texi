@@ -67,6 +67,10 @@ the header stored in extradata to the key packets:
 ffmpeg -i INPUT -map 0 -flags:v +global_header -c:v libx264 -bsf:v dump_extra out.ts
 @end example
 
+@section dca_core
+
+Extract DCA core from DTS-HD streams.
+
 @section h264_mp4toannexb
 
 Convert an H.264 bitstream from length prefixed mode to start code

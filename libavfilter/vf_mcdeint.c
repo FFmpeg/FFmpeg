@@ -38,7 +38,7 @@
  *
  * Only past frames are used, we should ideally use future frames too,
  * something like filtering the whole movie in forward and then
- * backward direction seems like a interesting idea but the current
+ * backward direction seems like an interesting idea but the current
  * filter framework is FAR from supporting such things.
  *
  * Combining the motion compensated image with the input image also is

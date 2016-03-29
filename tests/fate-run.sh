@@ -96,6 +96,21 @@ probeframes(){
     run ffprobe${PROGSUF} -show_frames -v 0 "$@"
 }
 
+probegaplessinfo(){
+    filename="$1"
+    shift
+    run ffprobe${PROGSUF} -bitexact -select_streams a -show_entries format=start_time,duration:stream=index,start_pts,duration_ts -v 0 "$filename" "$@"
+    pktfile1="${outdir}/${test}.pkts"
+    framefile1="${outdir}/${test}.frames"
+    cleanfiles="$cleanfiles $pktfile1 $framefile1"
+    run ffprobe${PROGSUF} -bitexact -select_streams a -of compact -count_packets -show_entries packet=pts,dts,duration:stream=nb_read_packets -v 0 "$filename" "$@" > "$pktfile1"
+    head -n 8 "$pktfile1"
+    tail -n 9 "$pktfile1"
+    run ffprobe${PROGSUF} -bitexact -select_streams a -of compact -count_frames -show_entries frame=pkt_pts,pkt_dts,best_effort_timestamp,pkt_duration,nb_samples:stream=nb_read_frames -v 0 "$filename" "$@" > "$framefile1"
+    head -n 8 "$framefile1"
+    tail -n 9 "$framefile1"
+}
+
 ffmpeg(){
     dec_opts="-hwaccel $hwaccel -threads $threads -thread_type $thread_type"
     ffmpeg_args="-nostdin -nostats -cpuflags $cpuflags"
@@ -247,6 +262,31 @@ gapless(){
     # test packet data, with seeking to a specific position
     ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile3
     do_md5sum $decfile3
+}
+
+gaplessenc(){
+    sample=$(target_path $1)
+    format=$2
+    codec=$3
+
+    file1="${outdir}/${test}.out-1"
+    cleanfiles="$cleanfiles $file1"
+
+    # test data after reencoding
+    ffmpeg -i "$sample" -flags +bitexact -fflags +bitexact -map 0:a -c:a $codec -f $format -y "$file1"
+    probegaplessinfo "$file1"
+}
+
+audio_match(){
+    sample=$(target_path $1)
+    trefile=$(target_path $2)
+    extra_args=$3
+
+    decfile="${outdir}/${test}.wav"
+    cleanfiles="$cleanfiles $decfile"
+
+    ffmpeg -i "$sample" -flags +bitexact -fflags +bitexact $extra_args -y $decfile
+    tests/audiomatch $decfile $trefile
 }
 
 concat(){

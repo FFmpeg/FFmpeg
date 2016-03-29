@@ -911,7 +911,7 @@ static void draw_htext(AVFrame *out, int x, int y, float o1, float o2, const cha
             int v = color[plane];
 
             uint8_t *p = out->data[plane] + y * out->linesize[plane] + (x + i * 8);
-            for (char_y = 0; char_y < font_height; char_y++) {
+            for (char_y = font_height - 1; char_y >= 0; char_y--) {
                 for (mask = 0x80; mask; mask >>= 1) {
                     if (font[txt[i] * font_height + char_y] & mask)
                         p[0] = p[0] * o2 + v * o1;
@@ -937,7 +937,7 @@ static void draw_htext16(AVFrame *out, int x, int y, float o1, float o2, const c
             int v = color[plane];
 
             uint16_t *p = (uint16_t *)(out->data[plane] + y * out->linesize[plane]) + (x + i * 8);
-            for (char_y = 0; char_y < font_height; char_y++) {
+            for (char_y = font_height - 1; char_y >= 0; char_y--) {
                 for (mask = 0x80; mask; mask >>= 1) {
                     if (font[txt[i] * font_height + char_y] & mask)
                         p[0] = p[0] * o2 + v * o1;
@@ -1207,6 +1207,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     VectorscopeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
+    int plane;
 
     if (s->colorspace) {
         s->cs = (s->depth - 8) * 2 + s->colorspace - 1;
@@ -1231,6 +1232,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     s->vectorscope(s, in, out, s->pd);
     s->graticulef(s, out, s->x, s->y, s->pd, s->cs);
+
+    for (plane = 0; plane < 4; plane++) {
+        if (out->data[plane]) {
+            out->data[plane]    += (s->size - 1) * out->linesize[plane];
+            out->linesize[plane] = -out->linesize[plane];
+        }
+    }
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

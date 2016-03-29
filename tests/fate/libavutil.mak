@@ -99,6 +99,10 @@ FATE_LIBAVUTIL-$(CONFIG_PIXELUTILS) += fate-pixelutils
 fate-pixelutils: libavutil/pixelutils-test$(EXESUF)
 fate-pixelutils: CMD = run libavutil/pixelutils-test
 
+FATE_LIBAVUTIL += fate-display
+fate-display: libavutil/display-test$(EXESUF)
+fate-display: CMD = run libavutil/display-test
+
 FATE_LIBAVUTIL += fate-random_seed
 fate-random_seed: libavutil/random_seed-test$(EXESUF)
 fate-random_seed: CMD = run libavutil/random_seed-test

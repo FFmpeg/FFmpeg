@@ -56,6 +56,7 @@ typedef struct MpegTSService {
     int pcr_pid;
     int pcr_packet_count;
     int pcr_packet_period;
+    AVProgram *program;
 } MpegTSService;
 
 // service_type values as defined in ETSI 300 468
@@ -275,15 +276,12 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
 
         if (s->nb_programs) {
-            int j, k, found = 0;
+            int k, found = 0;
+            AVProgram *program = service->program;
 
-            for (j = 0; j < s->nb_programs; j++)
-                if (s->programs[j]->id == service->sid) {
-                    for (k = 0; k < s->programs[j]->nb_stream_indexes; k++)
-                        if (s->programs[j]->stream_index[k] == i) {
-                            found = 1;
-                            break;
-                        }
+            for (k = 0; k < program->nb_stream_indexes; k++)
+                if (program->stream_index[k] == i) {
+                    found = 1;
                     break;
                 }
 
@@ -784,6 +782,7 @@ static int mpegts_init(AVFormatContext *s)
             service->pmt.write_packet = section_write_packet;
             service->pmt.opaque       = s;
             service->pmt.cc           = 15;
+            service->program          = program;
         }
     }
 
@@ -807,6 +806,7 @@ static int mpegts_init(AVFormatContext *s)
 
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
+        AVProgram *program;
         st = s->streams[i];
 
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
@@ -824,6 +824,17 @@ static int mpegts_init(AVFormatContext *s)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+
+        program = av_find_program_from_stream(s, NULL, i);
+        if (program) {
+            for (j = 0; j < ts->nb_services; j++) {
+                if (ts->services[j]->program == program) {
+                    service = ts->services[j];
+                    break;
+                }
+            }
+        }
+
         ts_st->service = service;
         /* MPEG pid values < 16 are reserved. Applications which set st->id in
          * this range are assigned a calculated pid. */
