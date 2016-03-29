@@ -50,6 +50,8 @@ typedef struct H264ParseContext {
     H264DSPContext h264dsp;
     H264POCContext poc;
     H264SEIContext sei;
+    int is_avc;
+    int nal_length_size;
     int got_first;
 } H264ParseContext;
 
@@ -500,7 +502,9 @@ static int h264_parse(AVCodecParserContext *s,
             // NB: estimate_timings_from_pts behaves exactly like this.
             if (!avctx->has_b_frames)
                 h->low_delay = 1;
-            ff_h264_decode_extradata(h);
+            ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                     &p->ps, &p->is_avc, &p->nal_length_size,
+                                     avctx->err_recognition, avctx);
         }
     }
 

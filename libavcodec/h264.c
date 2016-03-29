@@ -278,117 +278,6 @@ fail:
     return AVERROR(ENOMEM); // ff_h264_free_tables will clean up for us
 }
 
-static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
-                            int parse_extradata);
-
-/* There are (invalid) samples in the wild with mp4-style extradata, where the
- * parameter sets are stored unescaped (i.e. as RBSP).
- * This function catches the parameter set decoding failure and tries again
- * after escaping it */
-static int decode_extradata_ps_mp4(H264Context *h, const uint8_t *buf, int buf_size)
-{
-    int ret;
-
-    ret = decode_nal_units(h, buf, buf_size, 1);
-    if (ret < 0 && !(h->avctx->err_recognition & AV_EF_EXPLODE)) {
-        GetByteContext gbc;
-        PutByteContext pbc;
-        uint8_t *escaped_buf;
-        int escaped_buf_size;
-
-        av_log(h->avctx, AV_LOG_WARNING,
-               "SPS decoding failure, trying again after escaping the NAL\n");
-
-        if (buf_size / 2 >= (INT16_MAX - AV_INPUT_BUFFER_PADDING_SIZE) / 3)
-            return AVERROR(ERANGE);
-        escaped_buf_size = buf_size * 3 / 2 + AV_INPUT_BUFFER_PADDING_SIZE;
-        escaped_buf = av_mallocz(escaped_buf_size);
-        if (!escaped_buf)
-            return AVERROR(ENOMEM);
-
-        bytestream2_init(&gbc, buf, buf_size);
-        bytestream2_init_writer(&pbc, escaped_buf, escaped_buf_size);
-
-        while (bytestream2_get_bytes_left(&gbc)) {
-            if (bytestream2_get_bytes_left(&gbc) >= 3 &&
-                bytestream2_peek_be24(&gbc) <= 3) {
-                bytestream2_put_be24(&pbc, 3);
-                bytestream2_skip(&gbc, 2);
-            } else
-                bytestream2_put_byte(&pbc, bytestream2_get_byte(&gbc));
-        }
-
-        escaped_buf_size = bytestream2_tell_p(&pbc);
-        AV_WB16(escaped_buf, escaped_buf_size - 2);
-
-        ret = decode_nal_units(h, escaped_buf, escaped_buf_size, 1);
-        av_freep(&escaped_buf);
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
-}
-
-int ff_h264_decode_extradata(H264Context *h)
-{
-    AVCodecContext *avctx = h->avctx;
-    int ret;
-
-    if (avctx->extradata[0] == 1) {
-        int i, cnt, nalsize;
-        unsigned char *p = avctx->extradata;
-
-        h->is_avc = 1;
-
-        if (avctx->extradata_size < 7) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "avcC %d too short\n", avctx->extradata_size);
-            return AVERROR_INVALIDDATA;
-        }
-        /* sps and pps in the avcC always have length coded with 2 bytes,
-         * so put a fake nal_length_size = 2 while parsing them */
-        h->nal_length_size = 2;
-        // Decode sps from avcC
-        cnt = *(p + 5) & 0x1f; // Number of sps
-        p  += 6;
-        for (i = 0; i < cnt; i++) {
-            nalsize = AV_RB16(p) + 2;
-            if (p - avctx->extradata + nalsize > avctx->extradata_size)
-                return AVERROR_INVALIDDATA;
-            ret = decode_extradata_ps_mp4(h, p, nalsize);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Decoding sps %d from avcC failed\n", i);
-                return ret;
-            }
-            p += nalsize;
-        }
-        // Decode pps from avcC
-        cnt = *(p++); // Number of pps
-        for (i = 0; i < cnt; i++) {
-            nalsize = AV_RB16(p) + 2;
-            if (p - avctx->extradata + nalsize > avctx->extradata_size)
-                return AVERROR_INVALIDDATA;
-            ret = decode_extradata_ps_mp4(h, p, nalsize);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Decoding pps %d from avcC failed\n", i);
-                return ret;
-            }
-            p += nalsize;
-        }
-        // Store right nal length size that will be used to parse all other nals
-        h->nal_length_size = (avctx->extradata[4] & 0x03) + 1;
-    } else {
-        h->is_avc = 0;
-        ret = decode_nal_units(h, avctx->extradata, avctx->extradata_size, 1);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
-}
-
 static int h264_init_context(AVCodecContext *avctx, H264Context *h)
 {
     int i;
@@ -462,7 +351,9 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     }
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
-       ret = ff_h264_decode_extradata(h);
+       ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                      &h->ps, &h->is_avc, &h->nal_length_size,
+                                      avctx->err_recognition, avctx);
        if (ret < 0) {
            ff_h264_free_context(h);
            return ret;
@@ -919,8 +810,7 @@ static int get_last_needed_nal(H264Context *h)
     return nals_needed;
 }
 
-static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
-                            int parse_extradata)
+static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 {
     AVCodecContext *const avctx = h->avctx;
     unsigned context_count = 0;
@@ -956,19 +846,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
             continue;
 
 again:
-        /* Ignore every NAL unit type except PPS and SPS during extradata
-         * parsing. Decoding slices is not possible in codec init
-         * with frame-mt */
-        if (parse_extradata && HAVE_THREADS &&
-            (h->avctx->active_thread_type & FF_THREAD_FRAME) &&
-            (nal->type != NAL_PPS && nal->type != NAL_SPS)) {
-            if (nal->type < NAL_AUD || nal->type > NAL_AUXILIARY_SLICE)
-                av_log(avctx, AV_LOG_INFO,
-                       "Ignoring NAL unit %d during extradata parsing\n",
-                       nal->type);
-            nal->type = NAL_FF_IGNORE;
-        }
-
         // FIXME these should stop being context-global variables
         h->nal_ref_idc   = nal->ref_idc;
         h->nal_unit_type = nal->type;
@@ -1183,7 +1060,7 @@ out:
         return buf_index;
     }
 
-    buf_index = decode_nal_units(h, buf, buf_size, 0);
+    buf_index = decode_nal_units(h, buf, buf_size);
     if (buf_index < 0)
         return AVERROR_INVALIDDATA;
 

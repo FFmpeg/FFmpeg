@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
 #include "h264.h"
@@ -303,5 +304,148 @@ int ff_h264_init_poc(int pic_field_poc[2], int *pic_poc,
         pic_field_poc[1] = field_poc[1];
     *pic_poc = FFMIN(pic_field_poc[0], pic_field_poc[1]);
 
+    return 0;
+}
+
+static int decode_extradata_ps(const uint8_t *data, int size, H264ParamSets *ps,
+                               int is_avc, void *logctx)
+{
+    H2645Packet pkt = { 0 };
+    int i, ret = 0;
+
+    ret = ff_h2645_packet_split(&pkt, data, size, logctx, is_avc, 2, AV_CODEC_ID_H264);
+    if (ret < 0)
+        goto fail;
+
+    for (i = 0; i < pkt.nb_nals; i++) {
+        H2645NAL *nal = &pkt.nals[i];
+        switch (nal->type) {
+        case NAL_SPS:
+            ret = ff_h264_decode_seq_parameter_set(&nal->gb, logctx, ps);
+            if (ret < 0)
+                goto fail;
+            break;
+        case NAL_PPS:
+            ret = ff_h264_decode_picture_parameter_set(&nal->gb, logctx, ps,
+                                                       nal->size_bits);
+            if (ret < 0)
+                goto fail;
+            break;
+        default:
+            av_log(logctx, AV_LOG_VERBOSE, "Ignoring NAL type %d in extradata\n",
+                   nal->type);
+            break;
+        }
+    }
+
+fail:
+    ff_h2645_packet_uninit(&pkt);
+    return ret;
+}
+
+/* There are (invalid) samples in the wild with mp4-style extradata, where the
+ * parameter sets are stored unescaped (i.e. as RBSP).
+ * This function catches the parameter set decoding failure and tries again
+ * after escaping it */
+static int decode_extradata_ps_mp4(const uint8_t *buf, int buf_size, H264ParamSets *ps,
+                                   int err_recognition, void *logctx)
+{
+    int ret;
+
+    ret = decode_extradata_ps(buf, buf_size, ps, 1, logctx);
+    if (ret < 0 && !(err_recognition & AV_EF_EXPLODE)) {
+        GetByteContext gbc;
+        PutByteContext pbc;
+        uint8_t *escaped_buf;
+        int escaped_buf_size;
+
+        av_log(logctx, AV_LOG_WARNING,
+               "SPS decoding failure, trying again after escaping the NAL\n");
+
+        if (buf_size / 2 >= (INT16_MAX - AV_INPUT_BUFFER_PADDING_SIZE) / 3)
+            return AVERROR(ERANGE);
+        escaped_buf_size = buf_size * 3 / 2 + AV_INPUT_BUFFER_PADDING_SIZE;
+        escaped_buf = av_mallocz(escaped_buf_size);
+        if (!escaped_buf)
+            return AVERROR(ENOMEM);
+
+        bytestream2_init(&gbc, buf, buf_size);
+        bytestream2_init_writer(&pbc, escaped_buf, escaped_buf_size);
+
+        while (bytestream2_get_bytes_left(&gbc)) {
+            if (bytestream2_get_bytes_left(&gbc) >= 3 &&
+                bytestream2_peek_be24(&gbc) <= 3) {
+                bytestream2_put_be24(&pbc, 3);
+                bytestream2_skip(&gbc, 2);
+            } else
+                bytestream2_put_byte(&pbc, bytestream2_get_byte(&gbc));
+        }
+
+        escaped_buf_size = bytestream2_tell_p(&pbc);
+        AV_WB16(escaped_buf, escaped_buf_size - 2);
+
+        ret = decode_extradata_ps(escaped_buf, escaped_buf_size, ps, 1, logctx);
+        av_freep(&escaped_buf);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+int ff_h264_decode_extradata(const uint8_t *data, int size, H264ParamSets *ps,
+                             int *is_avc, int *nal_length_size,
+                             int err_recognition, void *logctx)
+{
+    int ret;
+
+    if (data[0] == 1) {
+        int i, cnt, nalsize;
+        const uint8_t *p = data;
+
+        *is_avc = 1;
+
+        if (size < 7) {
+            av_log(logctx, AV_LOG_ERROR, "avcC %d too short\n", size);
+            return AVERROR_INVALIDDATA;
+        }
+
+        // Decode sps from avcC
+        cnt = *(p + 5) & 0x1f; // Number of sps
+        p  += 6;
+        for (i = 0; i < cnt; i++) {
+            nalsize = AV_RB16(p) + 2;
+            if (p - data + nalsize > size)
+                return AVERROR_INVALIDDATA;
+            ret = decode_extradata_ps_mp4(p, nalsize, ps, err_recognition, logctx);
+            if (ret < 0) {
+                av_log(logctx, AV_LOG_ERROR,
+                       "Decoding sps %d from avcC failed\n", i);
+                return ret;
+            }
+            p += nalsize;
+        }
+        // Decode pps from avcC
+        cnt = *(p++); // Number of pps
+        for (i = 0; i < cnt; i++) {
+            nalsize = AV_RB16(p) + 2;
+            if (p - data + nalsize > size)
+                return AVERROR_INVALIDDATA;
+            ret = decode_extradata_ps_mp4(p, nalsize, ps, err_recognition, logctx);
+            if (ret < 0) {
+                av_log(logctx, AV_LOG_ERROR,
+                       "Decoding pps %d from avcC failed\n", i);
+                return ret;
+            }
+            p += nalsize;
+        }
+        // Store right nal length size that will be used to parse all other nals
+        *nal_length_size = (data[4] & 0x03) + 1;
+    } else {
+        *is_avc = 0;
+        ret = decode_extradata_ps(data, size, ps, 0, logctx);
+        if (ret < 0)
+            return ret;
+    }
     return 0;
 }
