@@ -40,6 +40,8 @@ ffserver&ffm: Fixed issues preventing ffserver write_index and files_size from b
 postproc: fix unaligned access
 vc2enc: fix use of uninitialized variables in the rate control system, correctly zero out coefficient array padding
 aacenc: optimize encoding speed
+avcodec/diracdec: check bitstream size related fields for overflows
+avcodec/h264_slice: Check PPS more extensively when its not copied
 
 
 version 3.0:
