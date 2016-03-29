@@ -48,7 +48,7 @@ static int svag_read_header(AVFormatContext *s)
     if (st->codec->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
     st->codec->channels    = avio_rl32(s->pb);
-    if (st->codec->channels <= 0)
+    if (st->codec->channels <= 0 || st->codec->channels > 8)
         return AVERROR_INVALIDDATA;
     st->duration           = size / (16 * st->codec->channels) * 28;
     align                  = avio_rl32(s->pb);
