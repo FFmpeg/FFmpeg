@@ -115,10 +115,9 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    /* Basic sanity check, but not really harmful */
-    if (avpkt->data[0] != 0x73 && avpkt->data[0] != 0x72)
-        av_log(avctx, AV_LOG_WARNING, "Unknown header 0x%02X\n", avpkt->data[0]);
-    keyframe = (avpkt->data[0] == 0x73);
+    /* Compression level (4 bits) and keyframe information (1 bit) */
+    av_log(avctx, AV_LOG_DEBUG, "Compression level %d\n", avpkt->data[0] >> 4);
+    keyframe = avpkt->data[0] & 1;
 
     /* Pixel size */
     component_size = ((avpkt->data[1] >> 2) & 0x03) + 1;
