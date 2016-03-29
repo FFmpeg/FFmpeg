@@ -4634,9 +4634,9 @@ case $target_os in
         # however ld then forgets what the entry point should be (oops) so we
         # have to manually (re)set it.
         if enabled x86_32; then
-            add_ldexeflags -Wl,--pic-executable,-e,_mainCRTStartup
+            disabled debug && add_ldexeflags -Wl,--pic-executable,-e,_mainCRTStartup
         elif enabled x86_64; then
-            add_ldexeflags -Wl,--pic-executable,-e,mainCRTStartup
+            disabled debug && add_ldexeflags -Wl,--pic-executable,-e,mainCRTStartup
             check_ldflags -Wl,--high-entropy-va # binutils 2.25
             # Set image base >4GB for extra entropy with HEASLR
             add_ldexeflags -Wl,--image-base,0x140000000
