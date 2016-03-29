@@ -31,7 +31,7 @@
  * and it can be deflated or not. Similarly, pixel data comes after the header
  * and a variable size value, and it can be deflated or just raw.
  *
- * Supports: BGRA
+ * Supports: BGRA, BGR24, RGB555, RGB8
  */
 
 #include <stdint.h>
@@ -57,6 +57,7 @@ typedef struct RsccContext {
     AVFrame *reference;
     Tile *tiles;
     unsigned int tiles_size;
+    int component_size;
 
     /* zlib interaction */
     uint8_t *inflated_buf;
@@ -80,10 +81,37 @@ static av_cold int rscc_init(AVCodecContext *avctx)
     if (!ctx->reference)
         return AVERROR(ENOMEM);
 
-    avctx->pix_fmt = AV_PIX_FMT_BGRA;
+    /* Get pixel format and the size of the pixel */
+    if (avctx->codec_tag == MKTAG('I', 'S', 'C', 'C')) {
+        avctx->pix_fmt = AV_PIX_FMT_BGRA;
+        ctx->component_size = 4;
+    } else if (avctx->codec_tag == MKTAG('R', 'S', 'C', 'C')) {
+        ctx->component_size = avctx->bits_per_coded_sample / 8;
+        switch (avctx->bits_per_coded_sample) {
+        case 8:
+            avpriv_report_missing_feature(avctx, "8 bits per pixel");
+            return AVERROR_PATCHWELCOME;
+        case 16:
+            avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
+            break;
+        case 24:
+            avctx->pix_fmt = AV_PIX_FMT_BGR24;
+            break;
+        case 32:
+            avctx->pix_fmt = AV_PIX_FMT_BGRA;
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Invalid bits per pixel value (%d)\n",
+                   avctx->bits_per_coded_sample);
+            return AVERROR_INVALIDDATA;
+        }
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Invalid codec tag\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     /* Store the value to check for keyframes */
-    ctx->inflated_size = avctx->width * avctx->height * 4;
+    ctx->inflated_size = avctx->width * avctx->height * ctx->component_size;
 
     /* Allocate maximum size possible, a full frame */
     ctx->inflated_buf = av_malloc(ctx->inflated_size);
@@ -180,7 +208,7 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
         ctx->tiles[i].y = bytestream2_get_le16(gbc);
         ctx->tiles[i].h = bytestream2_get_le16(gbc);
 
-        pixel_size += ctx->tiles[i].w * ctx->tiles[i].h * 4;
+        pixel_size += ctx->tiles[i].w * ctx->tiles[i].h * ctx->component_size;
 
         ff_dlog(avctx, "tile %d orig(%d,%d) %dx%d.\n", i,
                 ctx->tiles[i].x, ctx->tiles[i].y,
@@ -243,11 +271,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0; i < tiles_nb; i++) {
         uint8_t *dst = ctx->reference->data[0] + ctx->reference->linesize[0] *
                        (avctx->height - ctx->tiles[i].y - 1) +
-                       ctx->tiles[i].x * 4;
+                       ctx->tiles[i].x * ctx->component_size;
         av_image_copy_plane(dst, -1 * ctx->reference->linesize[0],
-                            raw, ctx->tiles[i].w * 4,
-                            ctx->tiles[i].w * 4, ctx->tiles[i].h);
-        raw += ctx->tiles[i].w * 4 * ctx->tiles[i].h;
+                            raw, ctx->tiles[i].w * ctx->component_size,
+                            ctx->tiles[i].w * ctx->component_size,
+                            ctx->tiles[i].h);
+        raw += ctx->tiles[i].w * ctx->component_size * ctx->tiles[i].h;
     }
 
     /* Frame is ready to be output */
