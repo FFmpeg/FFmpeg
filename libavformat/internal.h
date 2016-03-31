@@ -22,6 +22,8 @@
 #define AVFORMAT_INTERNAL_H
 
 #include <stdint.h>
+
+#include "libavutil/bprint.h"
 #include "avformat.h"
 #include "os_support.h"
 
@@ -595,5 +597,10 @@ int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *en
  *         1 if the packet has a palette, else 0
  */
 int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette);
+
+/**
+ * Finalize buf into extradata and set its size appropriately.
+ */
+int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf);
 
 #endif /* AVFORMAT_INTERNAL_H */
