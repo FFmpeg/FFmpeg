@@ -173,10 +173,10 @@
     vld1.16             {d1}, [r8]                                     @ d1  = *table
     add                 r11, r2, r3                                    @ r11 = dst + linesize (dst2)
     lsl                 r8, r0, #2
-    sub                 r3, r3, r8                                     @ r3 = linesize  * 2 - width * 4 (padding)
-    sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
-    sub                 r7, r7, r0, lsr #1                             @ r7 = linesizeU     - width / 2 (paddingU)
-    sub                 r12,r12,r0, lsr #1                             @ r12 = linesizeV    - width / 2 (paddingV)
+    sub                 r3, r3, r8                                     @ r3  = linesize  - width * 4 (padding)
+    sub                 r5, r5, r0                                     @ r5  = linesizeY - width     (paddingY)
+    sub                 r7, r7, r0, lsr #1                             @ r7  = linesizeU - width / 2 (paddingU)
+    sub                 r12,r12,r0, lsr #1                             @ r12 = linesizeV - width / 2 (paddingV)
     ldr                 r10,[sp, #120]                                 @ r10 = srcV
 .endm
 
