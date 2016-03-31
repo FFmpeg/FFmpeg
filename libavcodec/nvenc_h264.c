@@ -73,7 +73,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass nvenc_hevc_class = {
+static const AVClass nvenc_h264_class = {
     .class_name = "nvenc_h264",
     .item_name = av_default_item_name,
     .option = options,
@@ -99,7 +99,7 @@ AVCodec ff_h264_nvenc_encoder = {
     .encode2        = ff_nvenc_encode_frame,
     .close          = ff_nvenc_encode_close,
     .priv_data_size = sizeof(NVENCContext),
-    .priv_class     = &nvenc_hevc_class,
+    .priv_class     = &nvenc_h264_class,
     .defaults       = defaults,
     .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
