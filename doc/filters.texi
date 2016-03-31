@@ -3352,6 +3352,22 @@ Set S/C level. Default is 1. Allowed range is from 1 to 100.
 Set the stereo phase in degrees. Default is 0. Allowed range is from 0 to 360.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Apply karaoke like effect:
+@example
+stereotools=mlev=0.015625
+@end example
+
+@item
+Convert M/S signal to L/R:
+@example
+"stereotools=mode=ms>lr"
+@end example
+@end itemize
+
 @section stereowiden
 
 This filter enhance the stereo effect by suppressing signal common to both
