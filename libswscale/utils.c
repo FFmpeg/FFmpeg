@@ -53,9 +53,22 @@
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
+
+// We have to implement deprecated functions until they are removed, this is the
+// simplest way to prevent warnings
+#undef attribute_deprecated
+#define attribute_deprecated
+
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
+
+#if !FF_API_SWS_VECTOR
+static SwsVector *sws_getIdentityVec(void);
+static void sws_addVec(SwsVector *a, SwsVector *b);
+static void sws_shiftVec(SwsVector *a, int shift);
+static void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
+#endif
 
 static void handle_formats(SwsContext *c);
 
@@ -2049,6 +2062,13 @@ SwsVector *sws_getGaussianVec(double variance, double quality)
     return vec;
 }
 
+/**
+ * Allocate and return a vector with length coefficients, all
+ * with the same value c.
+ */
+#if !FF_API_SWS_VECTOR
+static
+#endif
 SwsVector *sws_getConstVec(double c, int length)
 {
     int i;
@@ -2063,6 +2083,13 @@ SwsVector *sws_getConstVec(double c, int length)
     return vec;
 }
 
+/**
+ * Allocate and return a vector with just one coefficient, with
+ * value 1.0.
+ */
+#if !FF_API_SWS_VECTOR
+static
+#endif
 SwsVector *sws_getIdentityVec(void)
 {
     return sws_getConstVec(1.0, 1);
@@ -2092,6 +2119,7 @@ void sws_normalizeVec(SwsVector *a, double height)
     sws_scaleVec(a, height / sws_dcVec(a));
 }
 
+#if FF_API_SWS_VECTOR
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b)
 {
     int length = a->length + b->length - 1;
@@ -2109,6 +2137,7 @@ static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b)
 
     return vec;
 }
+#endif
 
 static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b)
 {
@@ -2127,6 +2156,7 @@ static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b)
     return vec;
 }
 
+#if FF_API_SWS_VECTOR
 static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b)
 {
     int length = FFMAX(a->length, b->length);
@@ -2143,6 +2173,7 @@ static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b)
 
     return vec;
 }
+#endif
 
 /* shift left / or right if "shift" is negative */
 static SwsVector *sws_getShiftedVec(SwsVector *a, int shift)
@@ -2162,6 +2193,9 @@ static SwsVector *sws_getShiftedVec(SwsVector *a, int shift)
     return vec;
 }
 
+#if !FF_API_SWS_VECTOR
+static
+#endif
 void sws_shiftVec(SwsVector *a, int shift)
 {
     SwsVector *shifted = sws_getShiftedVec(a, shift);
@@ -2175,6 +2209,9 @@ void sws_shiftVec(SwsVector *a, int shift)
     av_free(shifted);
 }
 
+#if !FF_API_SWS_VECTOR
+static
+#endif
 void sws_addVec(SwsVector *a, SwsVector *b)
 {
     SwsVector *sum = sws_sumVec(a, b);
@@ -2188,6 +2225,7 @@ void sws_addVec(SwsVector *a, SwsVector *b)
     av_free(sum);
 }
 
+#if FF_API_SWS_VECTOR
 void sws_subVec(SwsVector *a, SwsVector *b)
 {
     SwsVector *diff = sws_diffVec(a, b);
@@ -2225,7 +2263,15 @@ SwsVector *sws_cloneVec(SwsVector *a)
 
     return vec;
 }
+#endif
 
+/**
+ * Print with av_log() a textual representation of the vector a
+ * if log_level <= av_log_level.
+ */
+#if !FF_API_SWS_VECTOR
+static
+#endif
 void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level)
 {
     int i;
