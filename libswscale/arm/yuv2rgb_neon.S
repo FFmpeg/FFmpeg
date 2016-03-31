@@ -64,7 +64,7 @@
     vmov.u8             \a2, #255
 .endm
 
-.macro compute_16px dst y0 y1 ofmt
+.macro compute dst y0 y1 ofmt
     vmovl.u8            q14, \y0                                       @ 8px of y
     vmovl.u8            q15, \y1                                       @ 8px of y
 
@@ -99,20 +99,20 @@
 
 .endm
 
-.macro process_1l_16px_internal dst src ofmt
+.macro process_1l_internal dst src ofmt
     vld1.8              {q7}, [\src]!
-    compute_16px        \dst, d14, d15, \ofmt
+    compute             \dst, d14, d15, \ofmt
 .endm
 
-.macro process_1l_16px ofmt
+.macro process_1l ofmt
     compute_premult     d28, d29, d30, d31
-    process_1l_16px_internal r2, r4, \ofmt
+    process_1l_internal r2, r4, \ofmt
 .endm
 
-.macro process_2l_16px ofmt
+.macro process_2l ofmt
     compute_premult     d28, d29, d30, d31
-    process_1l_16px_internal r2, r4, \ofmt
-    process_1l_16px_internal r11,r12,\ofmt
+    process_1l_internal r2, r4, \ofmt
+    process_1l_internal r11,r12,\ofmt
 .endm
 
 .macro load_args_nv12
@@ -245,19 +245,19 @@
 .endm
 
 .macro process_nv12 ofmt
-    process_2l_16px \ofmt
+    process_2l \ofmt
 .endm
 
 .macro process_nv21 ofmt
-    process_2l_16px \ofmt
+    process_2l \ofmt
 .endm
 
 .macro process_yuv420p ofmt
-    process_2l_16px \ofmt
+    process_2l \ofmt
 .endm
 
 .macro process_yuv422p ofmt
-    process_1l_16px \ofmt
+    process_1l \ofmt
 .endm
 
 .macro declare_func ifmt ofmt
