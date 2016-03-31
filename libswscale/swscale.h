@@ -91,6 +91,7 @@ const char *swscale_license(void);
 #define SWS_CS_SMPTE170M      5
 #define SWS_CS_SMPTE240M      7
 #define SWS_CS_DEFAULT        5
+#define SWS_CS_BT2020         9
 
 /**
  * Return a pointer to yuv<->rgb coefficients for the given colorspace
