@@ -568,6 +568,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(ADPCM_IMA_QT_AT,   adpcm_ima_qt_at);
     REGISTER_ENCDEC (ALAC_AT,           alac_at);
     REGISTER_DECODER(AMR_NB_AT,         amr_nb_at);
+    REGISTER_DECODER(EAC3_AT,           eac3_at);
     REGISTER_DECODER(GSM_MS_AT,         gsm_ms_at);
     REGISTER_ENCDEC (ILBC_AT,           ilbc_at);
     REGISTER_DECODER(MP1_AT,            mp1_at);

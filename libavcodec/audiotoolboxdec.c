@@ -30,6 +30,10 @@
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 
+#ifndef __MAC_10_11
+#define kAudioFormatEnhancedAC3 'ec-3'
+#endif
+
 typedef struct ATDecodeContext {
     AVClass *av_class;
 
@@ -58,6 +62,8 @@ static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
         return kAudioFormatAppleLossless;
     case AV_CODEC_ID_AMR_NB:
         return kAudioFormatAMR;
+    case AV_CODEC_ID_EAC3:
+        return kAudioFormatEnhancedAC3;
     case AV_CODEC_ID_GSM_MS:
         return kAudioFormatMicrosoftGSM;
     case AV_CODEC_ID_ILBC:
@@ -512,6 +518,7 @@ FFAT_DEC(ac3,          AV_CODEC_ID_AC3)
 FFAT_DEC(adpcm_ima_qt, AV_CODEC_ID_ADPCM_IMA_QT)
 FFAT_DEC(alac,         AV_CODEC_ID_ALAC)
 FFAT_DEC(amr_nb,       AV_CODEC_ID_AMR_NB)
+FFAT_DEC(eac3,         AV_CODEC_ID_EAC3)
 FFAT_DEC(gsm_ms,       AV_CODEC_ID_GSM_MS)
 FFAT_DEC(ilbc,         AV_CODEC_ID_ILBC)
 FFAT_DEC(mp1,          AV_CODEC_ID_MP1)

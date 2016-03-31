@@ -806,6 +806,7 @@ OBJS-$(CONFIG_AC3_AT_DECODER)             += audiotoolboxdec.o
 OBJS-$(CONFIG_ADPCM_IMA_QT_AT_DECODER)    += audiotoolboxdec.o
 OBJS-$(CONFIG_ALAC_AT_DECODER)            += audiotoolboxdec.o
 OBJS-$(CONFIG_AMR_NB_AT_DECODER)          += audiotoolboxdec.o
+OBJS-$(CONFIG_EAC3_AT_DECODER)            += audiotoolboxdec.o
 OBJS-$(CONFIG_GSM_MS_AT_DECODER)          += audiotoolboxdec.o
 OBJS-$(CONFIG_ILBC_AT_DECODER)            += audiotoolboxdec.o
 OBJS-$(CONFIG_MP1_AT_DECODER)             += audiotoolboxdec.o
