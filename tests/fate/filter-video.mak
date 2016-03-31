@@ -620,6 +620,15 @@ FATE_METADATA_FILTER-$(call ALLYES, $(EBUR128_METADATA_DEPS)) += fate-filter-met
 fate-filter-metadata-ebur128: SRC = $(TARGET_SAMPLES)/filter/seq-3341-7_seq-3342-5-24bit.flac
 fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',ebur128=metadata=1"
 
+tests/data/file4560-override2rotate0.mov: TAG = GEN
+tests/data/file4560-override2rotate0.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	-i $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov -c copy -flags +bitexact -metadata:s:v:0 rotate=0 $(TARGET_PATH)/$@ -y 2>/dev/null
+
+FATE_AFILTER-$(call ALLYES, MOV_DEMUXER MOV_MUXER) += fate-filter-meta-4560-rotate0
+fate-filter-meta-4560-rotate0: tests/data/file4560-override2rotate0.mov
+fate-filter-meta-4560-rotate0: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/file4560-override2rotate0.mov
+
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
 fate-vfilter: $(FATE_FILTER-yes) $(FATE_FILTER_VSYNTH-yes)
