@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavc 57.33.0 - avcodec.h
+  xxxxxxx - Add AVCodecParameters and its related API.
+
 2016-03-11 - xxxxxxx - lavf/lavc 57.28.101
   Add requirement to bitstream filtering API that returned packets with
   size == 0 and side_data_elems == 0 are to be skipped by the caller.
