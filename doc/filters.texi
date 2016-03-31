@@ -3232,6 +3232,29 @@ For example to override front left and front right channel positions use:
 Descriptions with unrecognised channel names are ignored.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Using ClubFritz6 sofa file:
+@example
+sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=1
+@end example
+
+@item
+Using ClubFritz12 sofa file and bigger radius with small rotation:
+@example
+sofalizer=sofa=/path/to/ClubFritz12.sofa:type=freq:radius=2:rotation=5
+@end example
+
+@item
+Similar as above but with custom speaker positions for front left, front right, rear left and rear right
+and also with custom gain:
+@example
+"sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=2:speakers=FL 45|FR 315|RL 135|RR 225:gain=28"
+@end example
+@end itemize
+
 @section stereotools
 
 This filter has some handy utilities to manage stereo signals, for converting
