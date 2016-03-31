@@ -104,13 +104,7 @@ static int str_probe(AVProbeData *p)
                      && sector_count*VIDEO_DATA_CHUNK_SIZE >=frame_size)){
                     return 0;
                 }
-
-                /*st->codec->width      = AV_RL16(&sector[0x28]);
-                st->codec->height     = AV_RL16(&sector[0x2A]);*/
-
-//                 if (current_sector == sector_count-1) {
-                    vid++;
-//                 }
+                vid++;
 
             }
             break;
