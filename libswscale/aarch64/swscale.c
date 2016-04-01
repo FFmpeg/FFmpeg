@@ -31,7 +31,7 @@ av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
 
     if (have_neon(cpu_flags)) {
         if (c->srcBpc == 8 && c->dstBpc <= 14) {
-            c->hyScale = c->hcScale = ff_hscale_8_to_15_neon;
+            //c->hyScale = c->hcScale = ff_hscale_8_to_15_neon;
         }
     }
 }
