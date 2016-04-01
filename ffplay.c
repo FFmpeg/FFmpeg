@@ -364,13 +364,26 @@ static AVPacket flush_pkt;
 static SDL_Surface *screen;
 
 
-static int draw_larry_stuff(AVFrame *frame, float pts) {
-    // LARRY: Let's write some stuff on top of the frame
-    fprintf(stderr, "Yesterday, frame->height was such an easy %d\n", frame->height);
-    fprintf(stderr, "Asked a girl what she wanted to be. She said pts = %lf\n", pts);
-    for (int x = 0; x < frame->height; x++) {
-        int width = frame->linesize[0];
-        frame->data[0][x * width + x] = 255;
+static int draw_larry_stuff(AVFrame *frame, double pts, double duration) {
+    // Draw a progress bar at the bottom of the video
+    int progress_bar_height = frame->width/2 > 128 ? 128 : frame->width/2;
+    double progress = pts / duration;
+    fprintf(stderr, "PTS %f duration %f progress %f\n", pts, duration, progress);
+    uint8_t **data = frame->data;
+    for (int x = 0; x < progress * frame->width; x++) {
+        for (int y = frame->height - progress_bar_height; y < frame->height; y++) {
+            int luma = data[0][x + y * frame->linesize[0]];
+            int ux = x/2, uy = y/2;
+            int u = data[1][ux + uy * frame->linesize[1]];
+            int v = data[2][ux + uy * frame->linesize[2]];
+
+            luma = 255 - luma;
+            u = 255 - u;
+            v = 255 - v;
+            data[0][x + y * frame->linesize[0]] = luma;
+            data[1][ux + uy * frame->linesize[1]] = u;
+            data[2][ux + uy * frame->linesize[2]] = v;
+        }
     }
     return 0;
 }
@@ -1656,7 +1669,7 @@ display:
             else if (is->audio_st)
                 av_diff = get_master_clock(is) - get_clock(&is->audclk);
             av_log(NULL, AV_LOG_INFO,
-                   "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \n",
+                   "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
                    get_master_clock(is),
                    (is->audio_st && is->video_st) ? "A-V" : (is->video_st ? "M-V" : (is->audio_st ? "M-A" : "   ")),
                    av_diff,
@@ -2274,7 +2287,7 @@ static int video_thread(void *arg)
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
 
-            draw_larry_stuff(frame, pts);
+            draw_larry_stuff(frame, pts, (double)is->ic->duration / AV_TIME_BASE);
 
             ret = queue_picture(is, frame, pts, duration, av_frame_get_pkt_pos(frame), is->viddec.pkt_serial);
             av_frame_unref(frame);
