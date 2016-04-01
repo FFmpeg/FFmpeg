@@ -1655,7 +1655,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     /* precalculate vertical scaler filter coefficients */
     {
         const int filterAlign = X86_MMX(cpu_flags)     ? 2 :
-                                PPC_ALTIVEC(cpu_flags) ? 8 : 1;
+                                PPC_ALTIVEC(cpu_flags) ? 8 :
+                                have_neon(cpu_flags)   ? 2 : 1;
 
         if ((ret = initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize,
                        c->lumYInc, srcH, dstH, filterAlign, (1 << 12),
