@@ -363,6 +363,18 @@ static AVPacket flush_pkt;
 
 static SDL_Surface *screen;
 
+
+static int draw_larry_stuff(AVFrame *frame, float pts) {
+    // LARRY: Let's write some stuff on top of the frame
+    fprintf(stderr, "Yesterday, frame->height was such an easy %d\n", frame->height);
+    fprintf(stderr, "Asked a girl what she wanted to be. She said pts = %lf\n", pts);
+    for (int x = 0; x < frame->height; x++) {
+        int width = frame->linesize[0];
+        frame->data[0][x * width + x] = 255;
+    }
+    return 0;
+}
+
 #if CONFIG_AVFILTER
 static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
 {
@@ -1644,7 +1656,7 @@ display:
             else if (is->audio_st)
                 av_diff = get_master_clock(is) - get_clock(&is->audclk);
             av_log(NULL, AV_LOG_INFO,
-                   "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
+                   "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \n",
                    get_master_clock(is),
                    (is->audio_st && is->video_st) ? "A-V" : (is->video_st ? "M-V" : (is->audio_st ? "M-A" : "   ")),
                    av_diff,
@@ -2261,6 +2273,9 @@ static int video_thread(void *arg)
 #endif
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
+
+            draw_larry_stuff(frame, pts);
+
             ret = queue_picture(is, frame, pts, duration, av_frame_get_pkt_pos(frame), is->viddec.pkt_serial);
             av_frame_unref(frame);
 #if CONFIG_AVFILTER
@@ -2269,6 +2284,8 @@ static int video_thread(void *arg)
 
         if (ret < 0)
             goto the_end;
+
+
     }
  the_end:
 #if CONFIG_AVFILTER
