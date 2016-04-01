@@ -1002,7 +1002,6 @@ static void flush_encoders(void)
 
             if (1) {
                 AVPacket pkt;
-                int got_packet;
                 av_init_packet(&pkt);
                 pkt.data = NULL;
                 pkt.size = 0;
