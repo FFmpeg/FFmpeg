@@ -366,7 +366,7 @@ static SDL_Surface *screen;
 
 static int draw_larry_stuff(AVFrame *frame, double pts, double duration) {
     // Draw a progress bar at the bottom of the video
-    int progress_bar_height = frame->width/2 > 128 ? 128 : frame->width/2;
+    int progress_bar_height = frame->width/2 > 32 ? 32 : frame->width/2;
     double progress = pts / duration;
     fprintf(stderr, "PTS %f duration %f progress %f\n", pts, duration, progress);
     uint8_t **data = frame->data;
