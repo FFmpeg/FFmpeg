@@ -3506,11 +3506,9 @@ static void event_loop(VideoState *cur_stream)
             }
             cursor_last_shown = av_gettime_relative();
             if (event.type == SDL_MOUSEBUTTONDOWN) {
-                if (event.button.button != SDL_BUTTON_RIGHT)
-                    break;
                 x = event.button.x;
             } else {
-                if (!(event.motion.state & SDL_BUTTON_RMASK))
+                if (event.motion.state != SDL_PRESSED)
                     break;
                 x = event.motion.x;
             }
