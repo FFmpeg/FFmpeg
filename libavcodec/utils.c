@@ -2032,7 +2032,8 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE)) {
         av_log(avctx, AV_LOG_ERROR, "This decoder does not support parameter "
                "changes, but PARAM_CHANGE side data was sent to it.\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto fail2;
     }
 
     if (size < 4)
@@ -2047,7 +2048,8 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
         val = bytestream_get_le32(&data);
         if (val <= 0 || val > INT_MAX) {
             av_log(avctx, AV_LOG_ERROR, "Invalid channel count");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail2;
         }
         avctx->channels = val;
         size -= 4;
@@ -2064,7 +2066,8 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
         val = bytestream_get_le32(&data);
         if (val <= 0 || val > INT_MAX) {
             av_log(avctx, AV_LOG_ERROR, "Invalid sample rate");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail2;
         }
         avctx->sample_rate = val;
         size -= 4;
@@ -2077,13 +2080,20 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
         size -= 8;
         ret = ff_set_dimensions(avctx, avctx->width, avctx->height);
         if (ret < 0)
-            return ret;
+            goto fail2;
     }
 
     return 0;
 fail:
     av_log(avctx, AV_LOG_ERROR, "PARAM_CHANGE side data too small.\n");
-    return AVERROR_INVALIDDATA;
+    ret = AVERROR_INVALIDDATA;
+fail2:
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
+        if (avctx->err_recognition & AV_EF_EXPLODE)
+            return ret;
+    }
+    return 0;
 }
 
 static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
@@ -2158,11 +2168,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         (avctx->active_thread_type & FF_THREAD_FRAME)) {
         int did_split = av_packet_split_side_data(&tmp);
         ret = apply_param_change(avctx, &tmp);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
-            if (avctx->err_recognition & AV_EF_EXPLODE)
-                goto fail;
-        }
+        if (ret < 0)
+            goto fail;
 
         avctx->internal->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
@@ -2259,11 +2266,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
         ret = apply_param_change(avctx, &tmp);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
-            if (avctx->err_recognition & AV_EF_EXPLODE)
-                goto fail;
-        }
+        if (ret < 0)
+            goto fail;
 
         avctx->internal->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
