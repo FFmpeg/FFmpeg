@@ -57,6 +57,7 @@
 #include <SDL_thread.h>
 
 #include "cmdutils.h"
+#include "labeling.h"
 
 #include <assert.h>
 
@@ -362,70 +363,6 @@ static AVPacket flush_pkt;
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Surface *screen;
-
-
-////////////////////////
-// TODO: Move the following into its own module
-typedef struct {
-    int label;
-    double start_time;
-    double duration;
-} TimePeriod;
-TimePeriod positive_labels[4] = {
-    {1, 1.0, 4.0},
-    {2, 8.0, 2.0},
-    {3, 11.0, 3.0},
-    {2, 16.0, 10.0}
-};
-
-static void index_to_yuv(int index, uint8_t *y, uint8_t *u, uint8_t *v) {
-    if (index < 0) {
-        *y = 64;
-        *u = *v = 128;
-    } else if (index == 0) {
-        *y = 192;
-        *u = *v = 128;
-    } else {
-        *y = (128 + index * 79) % 256;
-        *u = (index * 71) % 256;
-        *v = (255 - index * 193) % 256;
-    }
-}
-
-static int draw_larry_stuff(AVFrame *frame, double pts, double duration) {
-    // Draw a progress bar at the bottom of the video
-    int progress_bar_height = frame->width/2 > 32 ? 32 : frame->width/2;
-    double progress = pts / duration;
-    fprintf(stderr, "PTS %f duration %f progress %f\n", pts, duration, progress);
-
-    int *progress_bar_color = calloc(frame->width, sizeof(int));
-    for (int x = 0; x < progress * frame->width; x++) {
-        progress_bar_color[x] = -1;
-    }
-    for (int x = progress * frame->width; x < frame->width; x++) {
-        progress_bar_color[x] = 0;
-    }
-    for (int i = 0; i < 4; i++) {
-        int left = frame->width * (positive_labels[i].start_time / duration);
-        int right = left + frame->width * (positive_labels[i].duration / duration);
-        for (int x = fmax(0, left); x < fmin(right, frame->width); x++) {
-            progress_bar_color[x] = positive_labels[i].label;
-        }
-    }
-
-    for (int x = 0; x < frame->width; x++) {
-        for (int y = frame->height - progress_bar_height; y < frame->height; y++) {
-            int ux = x/2, uy = y/2;
-            index_to_yuv(progress_bar_color[x],
-                &frame->data[0][x + y * frame->linesize[0]],
-                &frame->data[1][ux + uy * frame->linesize[1]], 
-                &frame->data[2][ux + uy * frame->linesize[2]]);
-        }
-    }
-    free(progress_bar_color);
-    return 0;
-}
-////////////////////////
 
 #if CONFIG_AVFILTER
 static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
@@ -2326,7 +2263,7 @@ static int video_thread(void *arg)
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
 
-            draw_larry_stuff(frame, pts, (double)is->ic->duration / AV_TIME_BASE);
+            draw_timeline(frame, pts, (double)is->ic->duration / AV_TIME_BASE);
 
             ret = queue_picture(is, frame, pts, duration, av_frame_get_pkt_pos(frame), is->viddec.pkt_serial);
             av_frame_unref(frame);
@@ -3426,6 +3363,20 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
             switch (event.key.keysym.sym) {
+            ////// LARRY KEYBINDINGS
+            case SDLK_1:
+                fprintf(stderr, "Starting label 1\n");
+                break;
+            case SDLK_2:
+                fprintf(stderr, "Starting label 2\n");
+                break;
+            case SDLK_3:
+                fprintf(stderr, "Starting label 3\n");
+                break;
+            case SDLK_4:
+                fprintf(stderr, "Starting label 4\n");
+                break;
+            /////
             case SDLK_ESCAPE:
             case SDLK_q:
                 do_exit(cur_stream);
@@ -3533,6 +3484,17 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
             break;
+        case SDL_KEYUP:
+            switch (event.key.keysym.sym) {
+            ////// LARRY KEYBINDINGS
+            case SDLK_1:
+            case SDLK_2:
+            case SDLK_3:
+            case SDLK_4:
+                fprintf(stderr, "Ending and applying current label\n");
+                break;
+            /////
+            }
         case SDL_VIDEOEXPOSE:
             cur_stream->force_refresh = 1;
             break;
