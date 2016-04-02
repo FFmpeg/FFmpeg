@@ -3,8 +3,9 @@
 
 #include "libavformat/avformat.h"
 
-void draw_timeline(AVFrame *frame, double pts, double duration);
-void new_label_keydown(int label);
-void new_label_keyup(int label);
+void timeline_update(AVFrame *frame, double pts, double duration);
+void timeline_keydown(int label);
+void timeline_keyup(int label);
+void timeline_write_output(FILE *out);
 
 #endif

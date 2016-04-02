@@ -1230,6 +1230,8 @@ static void stream_close(VideoState *is)
 
 static void do_exit(VideoState *is)
 {
+    timeline_write_output(stdout);
+
     if (is) {
         stream_close(is);
     }
@@ -2265,7 +2267,7 @@ static int video_thread(void *arg)
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
 
-            draw_timeline(frame, pts, (double)is->ic->duration / AV_TIME_BASE);
+            timeline_update(frame, pts, (double)is->ic->duration / AV_TIME_BASE);
 
             ret = queue_picture(is, frame, pts, duration, av_frame_get_pkt_pos(frame), is->viddec.pkt_serial);
             av_frame_unref(frame);
@@ -3146,6 +3148,8 @@ static int read_thread(void *arg)
         SDL_PushEvent(&event);
     }
     SDL_DestroyMutex(wait_mutex);
+
+    printf("done\n");
     return 0;
 }
 
@@ -3370,7 +3374,7 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_2:
             case SDLK_3:
             case SDLK_4:
-                new_label_keydown(event.key.keysym.sym - SDLK_0);
+                timeline_keydown(event.key.keysym.sym - SDLK_0);
                 break;
             /////
             case SDLK_ESCAPE:
@@ -3487,7 +3491,7 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_2:
             case SDLK_3:
             case SDLK_4:
-                new_label_keyup(event.key.keysym.sym - SDLK_0);
+                timeline_keyup(event.key.keysym.sym - SDLK_0);
                 fprintf(stderr, "Ending and applying current label\n");
                 break;
             /////

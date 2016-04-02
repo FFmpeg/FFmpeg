@@ -13,7 +13,7 @@ int label_count = 0;
 TimePeriod labels[MAX_LABEL_COUNT];
 double current_pts = 0;
 
-void new_label_keydown(int label) {
+void timeline_keydown(int label) {
     if (!key_down) {
         fprintf(stderr, "Starting new label at PTS %lf with label %d\n", current_pts, label);
         labels[label_count].start_time = current_pts;
@@ -22,7 +22,7 @@ void new_label_keydown(int label) {
     key_down = 1;
 }
 
-void new_label_keyup() {
+void timeline_keyup() {
     if (key_down && label_count < MAX_LABEL_COUNT - 2) {
         fprintf(stderr, "Writing new label at PTS %lf\n", current_pts);
         labels[label_count].duration = current_pts - labels[label_count].start_time;
@@ -49,8 +49,7 @@ static void index_to_yuv(int index, uint8_t *y, uint8_t *u, uint8_t *v) {
     }
 }
 
-
-void draw_timeline(AVFrame *frame, double pts, double duration) {
+void timeline_update(AVFrame *frame, double pts, double duration) {
     current_pts = pts;
     if (key_down) {
         labels[label_count].duration = current_pts - labels[label_count].start_time;
@@ -84,4 +83,11 @@ void draw_timeline(AVFrame *frame, double pts, double duration) {
         }
     }
     free(progress_bar_color);
+}
+
+void timeline_write_output(FILE *out) {
+    fprintf(out, "Label,Start,Duration\n");
+    for (int i = 0; i < label_count; i++) {
+        fprintf(out, "%d,%.2lf,%.2lf\n", labels[i].label, labels[i].start_time, labels[i].duration);
+    }
 }
