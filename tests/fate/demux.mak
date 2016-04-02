@@ -123,6 +123,9 @@ fate-siff-demux: CMD = framecrc -i $(TARGET_SAMPLES)/SIFF/INTRO_B.VB -c copy
 FATE_SAMPLES_DEMUX-$(CONFIG_SMJPEG_DEMUXER) += fate-smjpeg-demux
 fate-smjpeg-demux: CMD = framecrc -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -c copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_WAV_DEMUXER) += fate-wav-ac3
+fate-wav-ac3: CMD = framecrc -i $(TARGET_SAMPLES)/ac3/diatonis_invisible_order_anfos_ac3-small.wav -c copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_WSAUD_DEMUXER) += fate-westwood-aud
 fate-westwood-aud: CMD = framecrc -i $(TARGET_SAMPLES)/westwood-aud/excellent.aud -c copy
 
