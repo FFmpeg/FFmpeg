@@ -626,6 +626,45 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
+static void mkv_write_field_order(AVIOContext *pb,
+                                  enum AVFieldOrder field_order)
+{
+    switch (field_order) {
+    case AV_FIELD_UNKNOWN:
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
+                      MATROSKA_VIDEO_INTERLACE_FLAG_UNDETERMINED);
+        break;
+    case AV_FIELD_PROGRESSIVE:
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
+                      MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE);
+        break;
+    case AV_FIELD_TT:
+    case AV_FIELD_BB:
+    case AV_FIELD_TB:
+    case AV_FIELD_BT:
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
+                      MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED);
+        switch (field_order) {
+        case AV_FIELD_TT:
+            put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                          MATROSKA_VIDEO_FIELDORDER_TT);
+            break;
+        case AV_FIELD_BB:
+             put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                          MATROSKA_VIDEO_FIELDORDER_BB);
+            break;
+        case AV_FIELD_TB:
+            put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                          MATROSKA_VIDEO_FIELDORDER_TB);
+            break;
+        case AV_FIELD_BT:
+            put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                          MATROSKA_VIDEO_FIELDORDER_BT);
+            break;
+        }
+    }
+}
+
 static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
                                  AVStream *st, int mode)
 {
@@ -825,9 +864,11 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         }
 
         subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
-        // XXX: interlace flag?
+
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , par->width);
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, par->height);
+
+        mkv_write_field_order(pb, par->field_order);
 
         // check both side data and metadata for stereo information,
         // write the result to the bitstream if any is found
@@ -1145,7 +1186,7 @@ static int mkv_write_header(AVFormatContext *s)
     put_ebml_uint   (pb, EBML_ID_EBMLMAXIDLENGTH    ,           4);
     put_ebml_uint   (pb, EBML_ID_EBMLMAXSIZELENGTH  ,           8);
     put_ebml_string (pb, EBML_ID_DOCTYPE            , s->oformat->name);
-    put_ebml_uint   (pb, EBML_ID_DOCTYPEVERSION     ,           2);
+    put_ebml_uint   (pb, EBML_ID_DOCTYPEVERSION     ,           4);
     put_ebml_uint   (pb, EBML_ID_DOCTYPEREADVERSION ,           2);
     end_ebml_master(pb, ebml_header);
 
