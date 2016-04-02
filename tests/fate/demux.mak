@@ -63,6 +63,9 @@ fate-mlv-demux: CMD = crc -i $(TARGET_SAMPLES)/mlv/M19-0333-cut.MLV -c copy
 FATE_SAMPLES_DEMUX-$(CONFIG_MOV_DEMUXER) += fate-mov-mp3-demux
 fate-mov-mp3-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mpegaudio/packed_maindata.mp3.mp4 -c copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_MPEGTS_DEMUXER) += fate-ts-opus-demux
+fate-ts-opus-demux: CMD = framecrc -i $(TARGET_SAMPLES)/opus/test-8-7.1.opus-small.ts -c copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_MTV_DEMUXER) += fate-mtv
 fate-mtv: CMD = framecrc -i $(TARGET_SAMPLES)/mtv/comedian_auto-partial.mtv -c copy
 
