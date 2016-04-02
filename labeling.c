@@ -1,17 +1,39 @@
 #include "labeling.h"
 
+#define MAX_LABEL_COUNT 1024
+
 typedef struct {
     int label;
     double start_time;
     double duration;
 } TimePeriod;
 
-TimePeriod positive_labels[4] = {
-    {1, 1.0, 4.0},
-    {2, 8.0, 2.0},
-    {3, 11.0, 3.0},
-    {2, 16.0, 10.0}
-};
+int key_down = 0;
+int label_count = 0;
+TimePeriod labels[MAX_LABEL_COUNT];
+double current_pts = 0;
+
+void new_label_keydown(int label) {
+    if (!key_down) {
+        fprintf(stderr, "Starting new label at PTS %lf with label %d\n", current_pts, label);
+        labels[label_count].start_time = current_pts;
+        labels[label_count].label = label;
+    }
+    key_down = 1;
+}
+
+void new_label_keyup() {
+    if (key_down && label_count < MAX_LABEL_COUNT - 2) {
+        fprintf(stderr, "Writing new label at PTS %lf\n", current_pts);
+        labels[label_count].duration = current_pts - labels[label_count].start_time;
+        if (labels[label_count].duration < 0) {
+            labels[label_count].start_time = current_pts;
+            labels[label_count].duration *= -1;
+        }
+        label_count++;
+    }
+    key_down = 0;
+}
 
 static void index_to_yuv(int index, uint8_t *y, uint8_t *u, uint8_t *v) {
     if (index < 0) {
@@ -29,6 +51,10 @@ static void index_to_yuv(int index, uint8_t *y, uint8_t *u, uint8_t *v) {
 
 
 void draw_timeline(AVFrame *frame, double pts, double duration) {
+    current_pts = pts;
+    if (key_down) {
+        labels[label_count].duration = current_pts - labels[label_count].start_time;
+    }
     // Draw a progress bar at the bottom of the video
     int progress_bar_height = frame->width/2 > 32 ? 32 : frame->width/2;
     double progress = pts / duration;
@@ -40,11 +66,11 @@ void draw_timeline(AVFrame *frame, double pts, double duration) {
     for (int x = progress * frame->width; x < frame->width; x++) {
         progress_bar_color[x] = 0;
     }
-    for (int i = 0; i < 4; i++) {
-        int left = frame->width * (positive_labels[i].start_time / duration);
-        int right = left + frame->width * (positive_labels[i].duration / duration);
+    for (int i = 0; i < label_count + key_down; i++) {
+        int left = frame->width * (labels[i].start_time / duration);
+        int right = left + frame->width * (labels[i].duration / duration);
         for (int x = fmax(0, left); x < fmin(right, frame->width); x++) {
-            progress_bar_color[x] = positive_labels[i].label;
+            progress_bar_color[x] = labels[i].label;
         }
     }
 

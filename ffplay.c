@@ -1644,6 +1644,7 @@ display:
                 av_diff = get_master_clock(is) - get_clock(&is->vidclk);
             else if (is->audio_st)
                 av_diff = get_master_clock(is) - get_clock(&is->audclk);
+            /*
             av_log(NULL, AV_LOG_INFO,
                    "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
                    get_master_clock(is),
@@ -1655,6 +1656,7 @@ display:
                    sqsize,
                    is->video_st ? is->video_st->codec->pts_correction_num_faulty_dts : 0,
                    is->video_st ? is->video_st->codec->pts_correction_num_faulty_pts : 0);
+            */
             fflush(stdout);
             last_time = cur_time;
         }
@@ -3365,16 +3367,10 @@ static void event_loop(VideoState *cur_stream)
             switch (event.key.keysym.sym) {
             ////// LARRY KEYBINDINGS
             case SDLK_1:
-                fprintf(stderr, "Starting label 1\n");
-                break;
             case SDLK_2:
-                fprintf(stderr, "Starting label 2\n");
-                break;
             case SDLK_3:
-                fprintf(stderr, "Starting label 3\n");
-                break;
             case SDLK_4:
-                fprintf(stderr, "Starting label 4\n");
+                new_label_keydown(event.key.keysym.sym - SDLK_0);
                 break;
             /////
             case SDLK_ESCAPE:
@@ -3491,6 +3487,7 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_2:
             case SDLK_3:
             case SDLK_4:
+                new_label_keyup(event.key.keysym.sym - SDLK_0);
                 fprintf(stderr, "Ending and applying current label\n");
                 break;
             /////
@@ -3542,9 +3539,11 @@ static void event_loop(VideoState *cur_stream)
                     hh   = ns / 3600;
                     mm   = (ns % 3600) / 60;
                     ss   = (ns % 60);
+                    /*
                     av_log(NULL, AV_LOG_INFO,
                            "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
                             hh, mm, ss, thh, tmm, tss);
+                    */
                     ts = frac * cur_stream->ic->duration;
                     if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
                         ts += cur_stream->ic->start_time;
