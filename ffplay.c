@@ -3506,7 +3506,7 @@ static void event_loop(VideoState *cur_stream)
             if (event.button.button == SDL_BUTTON_LEFT) {
                 static int64_t last_mouse_left_click = 0;
                 if (av_gettime_relative() - last_mouse_left_click <= 500000) {
-                    toggle_full_screen(cur_stream);
+                    //toggle_full_screen(cur_stream);
                     cur_stream->force_refresh = 1;
                     last_mouse_left_click = 0;
                 } else {
