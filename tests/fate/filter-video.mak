@@ -304,6 +304,10 @@ FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILT
 fate-filter-hqdn3d-sample: tests/data/filtergraphs/hqdn3d
 fate-filter-hqdn3d-sample: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/hqdn3d -an
 
+FATE_FILTER-$(call ALLYES, MATROSKA_DEMUXER OVERLAY_FILTER H264_DECODER DVDSUB_DECODER) += fate-filter-overlay-dvdsub-2397
+fate-filter-overlay-dvdsub-2397: tests/data/filtergraphs/overlay-dvdsub-2397
+fate-filter-overlay-dvdsub-2397: CMD = framecrc -flags bitexact -i $(TARGET_SAMPLES)/filter/242_4.mkv -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay-dvdsub-2397 -c:a copy
+
 FATE_FILTER_HQX-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER HQX_FILTER) = fate-filter-hq2x fate-filter-hq3x fate-filter-hq4x
 FATE_FILTER-yes += $(FATE_FILTER_HQX-yes)
 fate-filter-hq2x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf hqx=2 -pix_fmt bgra
