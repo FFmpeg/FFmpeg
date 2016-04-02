@@ -1,6 +1,7 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+<<<<<<< HEAD
 version <next>:
 - DXVA2-accelerated HEVC Main10 decoding
 - fieldhint filter
@@ -18,6 +19,8 @@ version <next>:
 - coreimage filter (GPU based image filtering on OSX)
 - libdcadec removed
 
+=======
+>>>>>>> n3.0
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support
 - DXV decoding
