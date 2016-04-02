@@ -78,6 +78,9 @@ fate-nistsphere-demux: CMD = crc -i $(TARGET_SAMPLES)/nistsphere/nist-ulaw.nist 
 FATE_SAMPLES_DEMUX-$(CONFIG_NSV_DEMUXER) += fate-nsv-demux
 fate-nsv-demux: CMD = framecrc -i $(TARGET_SAMPLES)/nsv/witchblade-51kbps.nsv -t 6 -vcodec copy -acodec copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_OGG_DEMUXER) += fate-oggopus-demux
+fate-oggopus-demux: CMD = framecrc -i $(TARGET_SAMPLES)/ogg/intro-partial.opus -c:a copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_OGG_DEMUXER) += fate-oggvp8-demux
 fate-oggvp8-demux: CMD = framecrc -i $(TARGET_SAMPLES)/ogg/videotest.ogv -c:v copy
 
