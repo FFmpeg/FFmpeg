@@ -6557,6 +6557,12 @@ drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y
 @end example
 
 @item
+Show the text at a random position, switching to a new position every 30 seconds:
+@example
+drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=if(eq(mod(t\,30)\,0)\,rand(0\,(w-text_w))\,x):y=if(eq(mod(t\,30)\,0)\,rand(0\,(h-text_h))\,y)"
+@end example
+
+@item
 Show a text line sliding from right to left in the last row of the video
 frame. The file @file{LONG_LINE} is assumed to contain a single line
 with no newlines.
