@@ -96,6 +96,9 @@ struct xvid_ff_pass1 {
 };
 
 static int xvid_encode_close(AVCodecContext *avctx);
+static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                             const AVFrame *picture, int *got_packet);
+
 
 /*
  * Xvid 2-Pass Kludge Section
@@ -706,6 +709,43 @@ FF_ENABLE_DEPRECATION_WARNINGS
         xvid_enc_create.global |= XVID_GLOBAL_PACKED;
 
     av_assert0(xvid_enc_create.num_plugins + (!!x->ssim) + (!!x->variance_aq) + (!!x->lumi_aq) <= FF_ARRAY_ELEMS(plugins));
+
+    /* Encode a dummy frame to get the extradata immediately */
+    if (x->quicktime_format) {
+        AVFrame *picture;
+        AVPacket packet;
+        int size, got_packet, ret;
+
+        av_init_packet(&packet);
+
+        picture = av_frame_alloc();
+        if (!picture)
+            return AVERROR(ENOMEM);
+
+        xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
+        if( xerr ) {
+            av_frame_free(&picture);
+            av_log(avctx, AV_LOG_ERROR, "Xvid: Could not create encoder reference\n");
+            return AVERROR_EXTERNAL;
+        }
+        x->encoder_handle = xvid_enc_create.handle;
+        size = ((avctx->width + 1) & ~1) * ((avctx->height + 1) & ~1);
+        picture->data[0] = av_malloc(size + size / 2);
+        if (!picture->data[0]) {
+            av_frame_free(&picture);
+            return AVERROR(ENOMEM);
+        }
+        picture->data[1] = picture->data[0] + size;
+        picture->data[2] = picture->data[1] + size / 4;
+        memset(picture->data[0], 0, size);
+        memset(picture->data[1], 128, size / 2);
+        ret = xvid_encode_frame(avctx, &packet, picture, &got_packet);
+        if (!ret && got_packet)
+            av_packet_unref(&packet);
+        av_free(picture->data[0]);
+        av_frame_free(&picture);
+        xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
+    }
 
     /* Create encoder context */
     xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
