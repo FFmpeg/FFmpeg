@@ -207,6 +207,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (MSF,              msf);
     REGISTER_DEMUXER (MSNWC_TCP,        msnwc_tcp);
     REGISTER_DEMUXER (MTV,              mtv);
+    REGISTER_DEMUXER (MUSX,             musx);
     REGISTER_DEMUXER (MV,               mv);
     REGISTER_DEMUXER (MVI,              mvi);
     REGISTER_MUXDEMUX(MXF,              mxf);
