@@ -110,6 +110,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_PSX:
         max_channels = 8;
         break;
+    case AV_CODEC_ID_ADPCM_IMA_DAT4:
     case AV_CODEC_ID_ADPCM_THP:
     case AV_CODEC_ID_ADPCM_THP_LE:
         max_channels = 14;
@@ -144,6 +145,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 
     switch(avctx->codec->id) {
         case AV_CODEC_ID_ADPCM_AICA:
+        case AV_CODEC_ID_ADPCM_IMA_DAT4:
         case AV_CODEC_ID_ADPCM_IMA_QT:
         case AV_CODEC_ID_ADPCM_IMA_WAV:
         case AV_CODEC_ID_ADPCM_4XM:
@@ -533,6 +535,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     header_size = 0;
     switch (avctx->codec->id) {
         case AV_CODEC_ID_ADPCM_4XM:
+        case AV_CODEC_ID_ADPCM_IMA_DAT4:
         case AV_CODEC_ID_ADPCM_IMA_ISS:     header_size = 4 * ch;      break;
         case AV_CODEC_ID_ADPCM_IMA_AMV:     header_size = 8;           break;
         case AV_CODEC_ID_ADPCM_IMA_SMJPEG:  header_size = 4 * ch;      break;
@@ -982,6 +985,18 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             }
             *samples++ = adpcm_ima_expand_nibble(&c->status[0 ], v1, 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v2, 3);
+        }
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_DAT4:
+        for (channel = 0; channel < avctx->channels; channel++) {
+            cs = &c->status[channel];
+            samples = samples_p[channel];
+            bytestream2_skip(&gb, 4);
+            for (n = 0; n < nb_samples; n += 2) {
+                int v = bytestream2_get_byteu(&gb);
+                *samples++ = adpcm_ima_expand_nibble(cs, v >> 4  , 3);
+                *samples++ = adpcm_ima_expand_nibble(cs, v & 0x0F, 3);
+            }
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_APC:
@@ -1670,6 +1685,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_R3,       sample_fmts_s16p, adpcm_ea_r3,     
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_XAS,      sample_fmts_s16p, adpcm_ea_xas,      "ADPCM Electronic Arts XAS");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_AMV,     sample_fmts_s16,  adpcm_ima_amv,     "ADPCM IMA AMV");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_APC,     sample_fmts_s16,  adpcm_ima_apc,     "ADPCM IMA CRYO APC");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DAT4,    sample_fmts_s16,  adpcm_ima_dat4,    "ADPCM IMA Eurocom DAT4");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK3,     sample_fmts_s16,  adpcm_ima_dk3,     "ADPCM IMA Duck DK3");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK4,     sample_fmts_s16,  adpcm_ima_dk4,     "ADPCM IMA Duck DK4");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_EA_EACS, sample_fmts_s16,  adpcm_ima_ea_eacs, "ADPCM IMA Electronic Arts EACS");

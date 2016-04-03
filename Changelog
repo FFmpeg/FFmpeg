@@ -18,6 +18,7 @@ version <next>:
 - coreimage filter (GPU based image filtering on OSX)
 - libdcadec removed
 - bitstream filter for extracting DTS core
+- ADPCM IMA DAT4 decoder
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support
