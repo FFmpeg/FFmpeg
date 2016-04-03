@@ -57,6 +57,7 @@
 #include <SDL_thread.h>
 
 #include "cmdutils.h"
+#include "labeling.h"
 
 #include <assert.h>
 
@@ -1229,6 +1230,8 @@ static void stream_close(VideoState *is)
 
 static void do_exit(VideoState *is)
 {
+    timeline_write_output(stdout);
+
     if (is) {
         stream_close(is);
     }
@@ -1643,6 +1646,7 @@ display:
                 av_diff = get_master_clock(is) - get_clock(&is->vidclk);
             else if (is->audio_st)
                 av_diff = get_master_clock(is) - get_clock(&is->audclk);
+            /*
             av_log(NULL, AV_LOG_INFO,
                    "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
                    get_master_clock(is),
@@ -1654,6 +1658,7 @@ display:
                    sqsize,
                    is->video_st ? is->video_st->codec->pts_correction_num_faulty_dts : 0,
                    is->video_st ? is->video_st->codec->pts_correction_num_faulty_pts : 0);
+            */
             fflush(stdout);
             last_time = cur_time;
         }
@@ -2261,6 +2266,9 @@ static int video_thread(void *arg)
 #endif
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
+
+            timeline_update(frame, pts, (double)is->ic->duration / AV_TIME_BASE);
+
             ret = queue_picture(is, frame, pts, duration, av_frame_get_pkt_pos(frame), is->viddec.pkt_serial);
             av_frame_unref(frame);
 #if CONFIG_AVFILTER
@@ -2269,6 +2277,8 @@ static int video_thread(void *arg)
 
         if (ret < 0)
             goto the_end;
+
+
     }
  the_end:
 #if CONFIG_AVFILTER
@@ -3138,6 +3148,7 @@ static int read_thread(void *arg)
         SDL_PushEvent(&event);
     }
     SDL_DestroyMutex(wait_mutex);
+
     return 0;
 }
 
@@ -3357,6 +3368,14 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
             switch (event.key.keysym.sym) {
+            ////// LARRY KEYBINDINGS
+            case SDLK_1:
+            case SDLK_2:
+            case SDLK_3:
+            case SDLK_4:
+                timeline_keydown(event.key.keysym.sym - SDLK_0);
+                break;
+            /////
             case SDLK_ESCAPE:
             case SDLK_q:
                 do_exit(cur_stream);
@@ -3464,6 +3483,18 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
             break;
+        case SDL_KEYUP:
+            switch (event.key.keysym.sym) {
+            ////// LARRY KEYBINDINGS
+            case SDLK_1:
+            case SDLK_2:
+            case SDLK_3:
+            case SDLK_4:
+                timeline_keyup(event.key.keysym.sym - SDLK_0);
+                fprintf(stderr, "Ending and applying current label\n");
+                break;
+            /////
+            }
         case SDL_VIDEOEXPOSE:
             cur_stream->force_refresh = 1;
             break;
@@ -3475,7 +3506,7 @@ static void event_loop(VideoState *cur_stream)
             if (event.button.button == SDL_BUTTON_LEFT) {
                 static int64_t last_mouse_left_click = 0;
                 if (av_gettime_relative() - last_mouse_left_click <= 500000) {
-                    toggle_full_screen(cur_stream);
+                    //toggle_full_screen(cur_stream);
                     cur_stream->force_refresh = 1;
                     last_mouse_left_click = 0;
                 } else {
@@ -3489,11 +3520,9 @@ static void event_loop(VideoState *cur_stream)
             }
             cursor_last_shown = av_gettime_relative();
             if (event.type == SDL_MOUSEBUTTONDOWN) {
-                if (event.button.button != SDL_BUTTON_RIGHT)
-                    break;
                 x = event.button.x;
             } else {
-                if (!(event.motion.state & SDL_BUTTON_RMASK))
+                if (event.motion.state != SDL_PRESSED)
                     break;
                 x = event.motion.x;
             }
@@ -3513,9 +3542,11 @@ static void event_loop(VideoState *cur_stream)
                     hh   = ns / 3600;
                     mm   = (ns % 3600) / 60;
                     ss   = (ns % 60);
+                    /*
                     av_log(NULL, AV_LOG_INFO,
                            "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
                             hh, mm, ss, thh, tmm, tss);
+                    */
                     ts = frac * cur_stream->ic->duration;
                     if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
                         ts += cur_stream->ic->start_time;
