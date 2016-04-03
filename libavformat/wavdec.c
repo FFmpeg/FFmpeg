@@ -64,12 +64,34 @@ static void set_spdif(AVFormatContext *s, WAVDemuxContext *wav)
 {
     if (CONFIG_SPDIF_DEMUXER && s->streams[0]->codec->codec_tag == 1) {
         enum AVCodecID codec;
-        int ret = ff_spdif_probe(s->pb->buffer, s->pb->buf_end - s->pb->buffer,
-                                 &codec);
+        uint8_t *buf = NULL;
+        int ret = ffio_ensure_seekback(s->pb, sizeof(buf));
+        int len = 1<<16;
+        int64_t pos = avio_tell(s->pb);
+
+        if (ret < 0)
+            goto end;
+
+        buf = av_malloc(len);
+        if (!buf) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+
+        len = ret = avio_read(s->pb, buf, len);
+        if (ret < 0)
+            goto end;
+
+        ret = ff_spdif_probe(buf, len, &codec);
         if (ret > AVPROBE_SCORE_EXTENSION) {
             s->streams[0]->codec->codec_id = codec;
             wav->spdif = 1;
         }
+end:
+        avio_seek(s->pb, pos, SEEK_SET);
+        if (ret < 0)
+            av_log(s, AV_LOG_WARNING, "Cannot check for SPDIF\n");
+        av_free(buf);
     }
 }
 
