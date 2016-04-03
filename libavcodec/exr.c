@@ -778,14 +778,23 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                             int compressed_size, int uncompressed_size,
                             EXRThreadData *td)
 {
-    unsigned long dest_len = uncompressed_size;
+    unsigned long dest_len, expected_len;
     const uint8_t *in = td->tmp;
     uint8_t *out;
     int c, i, j;
 
-    if (uncompress(td->tmp, &dest_len, src, compressed_size) != Z_OK ||
-        dest_len != uncompressed_size)
+    if (s->pixel_type == EXR_FLOAT)
+        expected_len = (uncompressed_size / 4) * 3; /* PRX 24 store float in 24 bit instead of 32 */
+    else
+        expected_len = uncompressed_size;
+
+    dest_len = expected_len;
+
+    if (uncompress(td->tmp, &dest_len, src, compressed_size) != Z_OK) {
         return AVERROR_INVALIDDATA;
+    } else if (dest_len != expected_len){
+        return AVERROR_INVALIDDATA;
+    }
 
     out = td->uncompressed_data;
     for (i = 0; i < s->ysize; i++)
