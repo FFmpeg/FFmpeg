@@ -3149,7 +3149,6 @@ static int read_thread(void *arg)
     }
     SDL_DestroyMutex(wait_mutex);
 
-    printf("done\n");
     return 0;
 }
 

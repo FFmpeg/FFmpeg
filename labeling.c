@@ -59,12 +59,6 @@ void timeline_update(AVFrame *frame, double pts, double duration) {
     double progress = pts / duration;
 
     int *progress_bar_color = calloc(frame->width, sizeof(int));
-    for (int x = 0; x < progress * frame->width; x++) {
-        progress_bar_color[x] = -1;
-    }
-    for (int x = progress * frame->width; x < frame->width; x++) {
-        progress_bar_color[x] = 0;
-    }
     for (int i = 0; i < label_count + key_down; i++) {
         int left = frame->width * (labels[i].start_time / duration);
         int right = left + frame->width * (labels[i].duration / duration);
@@ -75,6 +69,13 @@ void timeline_update(AVFrame *frame, double pts, double duration) {
 
     for (int x = 0; x < frame->width; x++) {
         for (int y = frame->height - progress_bar_height; y < frame->height; y++) {
+            int color = x < progress * frame->width ? 128 : 32;
+            frame->data[0][x + y * frame->linesize[0]] = color;
+        }
+    }
+
+    for (int x = 0; x < frame->width; x++) {
+        for (int y = frame->height - progress_bar_height/2; y < frame->height; y++) {
             int ux = x/2, uy = y/2;
             index_to_yuv(progress_bar_color[x],
                 &frame->data[0][x + y * frame->linesize[0]],
@@ -86,7 +87,7 @@ void timeline_update(AVFrame *frame, double pts, double duration) {
 }
 
 void timeline_write_output(FILE *out) {
-    fprintf(out, "Label,Start,Duration\n");
+    fprintf(out, "#Label,Start,Duration\n");
     for (int i = 0; i < label_count; i++) {
         fprintf(out, "%d,%.2lf,%.2lf\n", labels[i].label, labels[i].start_time, labels[i].duration);
     }
