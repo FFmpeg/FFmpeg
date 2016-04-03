@@ -36,17 +36,9 @@ void timeline_keyup() {
 }
 
 static void index_to_yuv(int index, uint8_t *y, uint8_t *u, uint8_t *v) {
-    if (index < 0) {
-        *y = 64;
-        *u = *v = 128;
-    } else if (index == 0) {
-        *y = 192;
-        *u = *v = 128;
-    } else {
-        *y = (128 + index * 79) % 256;
-        *u = (index * 71) % 256;
-        *v = (255 - index * 193) % 256;
-    }
+    *y = 128 + (index * 79) % 128;
+    *u = (index * 71) % 256;
+    *v = (255 - index * 193) % 256;
 }
 
 void timeline_update(AVFrame *frame, double pts, double duration) {
@@ -77,10 +69,12 @@ void timeline_update(AVFrame *frame, double pts, double duration) {
     for (int x = 0; x < frame->width; x++) {
         for (int y = frame->height - progress_bar_height/2; y < frame->height; y++) {
             int ux = x/2, uy = y/2;
-            index_to_yuv(progress_bar_color[x],
-                &frame->data[0][x + y * frame->linesize[0]],
-                &frame->data[1][ux + uy * frame->linesize[1]], 
-                &frame->data[2][ux + uy * frame->linesize[2]]);
+            if (progress_bar_color[x] > 0) {
+                index_to_yuv(progress_bar_color[x],
+                    &frame->data[0][x + y * frame->linesize[0]],
+                    &frame->data[1][ux + uy * frame->linesize[1]], 
+                    &frame->data[2][ux + uy * frame->linesize[2]]);
+            }
         }
     }
     free(progress_bar_color);
