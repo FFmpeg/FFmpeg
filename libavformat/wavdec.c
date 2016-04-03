@@ -65,8 +65,8 @@ static void set_spdif(AVFormatContext *s, WAVDemuxContext *wav)
     if (CONFIG_SPDIF_DEMUXER && s->streams[0]->codec->codec_tag == 1) {
         enum AVCodecID codec;
         uint8_t *buf = NULL;
-        int ret = ffio_ensure_seekback(s->pb, sizeof(buf));
         int len = 1<<16;
+        int ret = ffio_ensure_seekback(s->pb, len);
         int64_t pos = avio_tell(s->pb);
 
         if (ret < 0)
