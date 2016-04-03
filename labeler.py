@@ -1,31 +1,31 @@
 #!/usr/bin/env python2
 import intervaltree
+import sys
 import os
 import json
 import subprocess
 from Tkinter import Tk
 import tkFileDialog
 
-SAVE_MSG = 'Save video labels as...'
+SAVE_MSG = 'Save video label file'
 
 
 def main():
     root = Tk()
-    root.title('Oregon State University Video Labeler')
+    root.title('Video Labeler')
     root.focus_force()
     root.update()
-    input_filename = tkFileDialog.askopenfilename(title="Select a video file to label")
+    input_filename = tkFileDialog.askopenfilename(title="Select a video file to label", initialdir=os.path.expanduser('~'))
+    if not input_filename:
+        sys.exit()
     root.update()
     root.withdraw()
 
-    print("subprocess ./ffplay {}".format(input_filename))
-
-    cmd = ['./ffplay', input_filename]
+    cmd = ['./ffplay', input_filename, '-vf', 'pad=iw:ih+32']
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=open('/dev/null'))
     csv_output, _ = proc.communicate()
 
     lines = csv_output.splitlines()
-    print lines
 
     intervals = {}
 
@@ -46,9 +46,12 @@ def main():
         output_json[class_name] = [{'start': i[0], 'end': i[1]} for i in tree.items()]
     default_filename = os.path.splitext(os.path.basename(input_filename))[0] + '.txt'
     out_filename = tkFileDialog.asksaveasfilename(defaultextension=".txt", initialfile=default_filename,
-        initialdir='.', message=SAVE_MSG, title=SAVE_MSG)
+        message=SAVE_MSG, title=SAVE_MSG)
+    if not out_filename:
+        sys.exit()
     open(out_filename, 'w').write(json.dumps(output_json, indent=4))
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        main()
