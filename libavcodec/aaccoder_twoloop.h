@@ -302,10 +302,11 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             const float *scaled = s->scoefs + start;
             int minsfidx;
             maxvals[w*16+g] = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled);
-            if (maxvals[w*16+g] > 0)
+            if (maxvals[w*16+g] > 0) {
                 minsfidx = coef2minsf(maxvals[w*16+g]);
-            for (w2 = 0; w2 < sce->ics.group_len[w]; w2++)
-                minsf[(w+w2)*16+g] = minsfidx;
+                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++)
+                    minsf[(w+w2)*16+g] = minsfidx;
+            }
             start += sce->ics.swb_sizes[g];
         }
     }
