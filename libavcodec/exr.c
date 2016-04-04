@@ -780,9 +780,9 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
         int size = channel->pixel_type;
 
         for (j = 0; j < size; j++)
-            wav_decode(ptr + j, s->xdelta, size, s->ysize,
-                       s->xdelta * size, maxval);
-        ptr += s->xdelta * s->ysize * size;
+            wav_decode(ptr + j, s->xsize, size, s->ysize,
+                       s->xsize * size, maxval);
+        ptr += s->xsize * s->ysize * size;
     }
 
     apply_lut(td->lut, tmp, dsize / sizeof(uint16_t));
@@ -790,9 +790,9 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     out = td->uncompressed_data;
     for (i = 0; i < s->ysize; i++)
         for (j = 0; j < s->nb_channels; j++) {
-            uint16_t *in = tmp + j * s->xdelta * s->ysize + i * s->xdelta;
-            memcpy(out, in, s->xdelta * 2);
-            out += s->xdelta * 2;
+            uint16_t *in = tmp + j * s->xsize * s->ysize + i * s->xsize;
+            memcpy(out, in, s->xsize * 2);
+            out += s->xsize * 2;
         }
 
     return 0;
@@ -830,11 +830,11 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
             switch (channel->pixel_type) {
             case EXR_FLOAT:
                 ptr[0] = in;
-                ptr[1] = ptr[0] + s->xdelta;
-                ptr[2] = ptr[1] + s->xdelta;
-                in     = ptr[2] + s->xdelta;
+                ptr[1] = ptr[0] + s->xsize;
+                ptr[2] = ptr[1] + s->xsize;
+                in     = ptr[2] + s->xsize;
 
-                for (j = 0; j < s->xdelta; ++j) {
+                for (j = 0; j < s->xsize; ++j) {
                     uint32_t diff = (*(ptr[0]++) << 24) |
                                     (*(ptr[1]++) << 16) |
                                     (*(ptr[2]++) << 8);
@@ -844,9 +844,9 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                 break;
             case EXR_HALF:
                 ptr[0] = in;
-                ptr[1] = ptr[0] + s->xdelta;
-                in     = ptr[1] + s->xdelta;
-                for (j = 0; j < s->xdelta; j++) {
+                ptr[1] = ptr[0] + s->xsize;
+                in     = ptr[1] + s->xsize;
+                for (j = 0; j < s->xsize; j++) {
                     uint32_t diff = (*(ptr[0]++) << 8) | *(ptr[1]++);
 
                     pixel += diff;
@@ -922,8 +922,8 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     int c, iY, iX, y, x;
 
     /* calc B44 block count */
-    nbB44BlockW = s->xdelta / 4;
-    if ((s->xdelta % 4) != 0)
+    nbB44BlockW = s->xsize / 4;
+    if ((s->xsize % 4) != 0)
         nbB44BlockW++;
 
     nbB44BlockH = s->ysize / 4;
@@ -957,8 +957,8 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
                 indexHgY = iY * 4;
 
                 for (y = indexHgY; y < FFMIN(indexHgY + 4, s->ysize); y++) {
-                    for (x = indexHgX; x < FFMIN(indexHgX + 4, s->xdelta); x++) {
-                        indexOut = (c * s->xdelta + y * s->xdelta * s->nb_channels + x) * 2;
+                    for (x = indexHgX; x < FFMIN(indexHgX + 4, s->xsize); x++) {
+                        indexOut = (c * s->xsize + y * s->xsize * s->nb_channels + x) * 2;
                         indexTmp = (y-indexHgY) * 4 + (x-indexHgX);
                         td->uncompressed_data[indexOut] = tmpBuffer[indexTmp] & 0xff;
                         td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
@@ -1530,11 +1530,6 @@ static int decode_header(EXRContext *s)
         if (s->tile_attr.xSize < 1 || s->tile_attr.ySize < 1) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid tile attribute.\n");
             return AVERROR_INVALIDDATA;
-        }
-
-        if (s->compression != EXR_RAW) {
-            avpriv_report_missing_feature(s->avctx, "Compression in tile %d", s->compression);
-            return AVERROR_PATCHWELCOME;
         }
     }
 
