@@ -1201,8 +1201,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             channel_buffer[2] += channelLineSize;
             if (channel_buffer[3])
                 channel_buffer[3] += channelLineSize;
-        }
-        else{
+        } else {
             channel_buffer[0] += s->scan_line_size;
             channel_buffer[1] += s->scan_line_size;
             channel_buffer[2] += s->scan_line_size;
