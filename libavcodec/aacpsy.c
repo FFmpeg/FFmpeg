@@ -685,7 +685,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
 
             band->thr_quiet = band->thr = FFMAX(band->thr, coeffs[g].ath);
             //5.4.2.5 "Pre-echo control"
-            if (!(wi->window_type[0] == LONG_STOP_SEQUENCE || (wi->window_type[1] == LONG_START_SEQUENCE && !w)))
+            if (!(wi->window_type[0] == LONG_STOP_SEQUENCE || (!w && wi->window_type[1] == LONG_START_SEQUENCE)))
                 band->thr = FFMAX(PSY_3GPP_RPEMIN*band->thr, FFMIN(band->thr,
                                   PSY_3GPP_RPELEV*pch->prev_band[w+g].thr_quiet));
 
@@ -1018,9 +1018,10 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         for (i = 0; i < 8; i += wi.grouping[i]) {
             int w;
             float clipping = 0.0f;
-            for (w = 0; w < wi.grouping[i] && !clipping; w++)
+            for (w = 0; w < wi.grouping[i]; w++)
                 clipping = FFMAX(clipping, clippings[i+w]);
-            wi.clipping[i] = clipping;
+            for (w = 0; w < wi.grouping[i]; w++)
+                wi.clipping[i+w] = clipping;
         }
     }
 
