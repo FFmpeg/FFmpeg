@@ -21,6 +21,7 @@ version <next>:
 - ADPCM IMA DAT4 decoder
 - musx demuxer
 - aix demuxer
+- remap filter
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

@@ -10419,6 +10419,18 @@ less than @code{0}, the filter will try to use a good random seed on a
 best effort basis.
 @end table
 
+@section remap
+
+Remap pixels using 2nd: Xmap and 3rd: Ymap input video stream.
+
+Destination pixel at position (X, Y) will be picked from source (x, y) position
+where x = Xmap(X, Y) and y = Ymap(X, Y). If mapping values are out of range, zero
+value for pixel will be used for destination pixel.
+
+Xmap and Ymap input video streams must be of same dimensions. Output video stream
+will have Xmap/Ymap video stream dimensions.
+Xmap and Ymap input video streams are 16bit depth, single channel.
+
 @section removegrain
 
 The removegrain filter is a spatial denoiser for progressive video.
