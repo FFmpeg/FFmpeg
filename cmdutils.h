@@ -59,7 +59,7 @@ void register_exit(void (*cb)(int ret));
 /**
  * Wraps exit with a program-specific cleanup routine.
  */
-void exit_program(int ret) av_noreturn;
+int exit_program(int ret);
 
 /**
  * Initialize the cmdutils option system, in particular

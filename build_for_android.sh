@@ -65,8 +65,8 @@ FFMPEG_FLAGS=" \
   --cpu=armv7-a \
   --enable-cross-compile \
   --cross-prefix=arm-linux-androideabi- \
-  --enable-static \
   --enable-shared \
+  --enable-static \
   --disable-debug \
   --disable-symver \
   --disable-doc \
@@ -89,6 +89,7 @@ FFMPEG_FLAGS=" \
   --enable-decoders \
   --enable-bsfs \
   --enable-swscale \
+  --enable-avresample \
   --enable-asm \
   --enable-version3 \
   --enable-demuxer=image2  \
@@ -158,30 +159,52 @@ FFMPEG_FLAGS=" \
   --enable-parser=png  \
   --enable-protocol=file"
 
-rm -rf $X264/build
+#rm -rf $X264/build
 
-cd $X264
-export CFLAGS=$X264_CFLAGS
-./configure $X264_FLAGS  || exit 1
-make clean
-make -j4 || exit 1
-make install || exit 1
+#cd $X264
+#export CFLAGS=$X264_CFLAGS
+#./configure $X264_FLAGS  || exit 1
+#make clean
+#make -j4 || exit 1
+#make install || exit 1
   
 cd $FFMPEG
-export CFLAGS=""
-export EXTRA_CFLAGS=""
-export EXTRA_LDFLAGS=""
-./configure $FFMPEG_FLAGS --extra-cflags="$FFMPEG_CFLAGS $FFMPEG_EXTRA_CFLAGS" \
-  --extra-ldflags="$FFMPEG_EXTRA_LDFLAGS" --prefix=$PREFIX || exit 1
-make clean
-make -j4 || exit 1
-make install || exit 1
+#export CFLAGS=""
+#export EXTRA_CFLAGS=""
+#export EXTRA_LDFLAGS=""
+#./configure $FFMPEG_FLAGS --extra-cflags="$FFMPEG_CFLAGS $FFMPEG_EXTRA_CFLAGS" \
+#  --extra-ldflags="$FFMPEG_EXTRA_LDFLAGS" --prefix=$PREFIX || exit 1
+#make clean
+#make -j4 || exit 1
+#make install || exit 1
 
-#mkdir $PREFIX/objs
-#find $X264 -name "*.o" -exec cp -f {} $PREFIX/objs/ \;  
-#find $FDK_AAC -name "*.o" -exec cp -f {} $PREFIX/objs/ \; 
-#find $FFMPEG -name "*.o" -exec cp -f {} $PREFIX/objs/ \; 
-#$CC -lm -lz -shared --sysroot=$SYSROOT -Wl,--no-undefined -Wl,-z,noexecstack $FFMPEG_EXTRA_LDFLAGS $PREFIX/objs/*.o -o $PREFIX/libffmpeg.so
-#rm -rf $PREFIX/objs
+#$SYSROOT/usr/include/linux $FFMPEG
 
-#$STRIP --strip-unneeded $PREFIX/libffmpeg.so
+$CC ffmpeg.c ffmpeg_opt.c cmdutils.c ffmpeg_filter.c \
+    $FFMPEG_CFLAGS \
+    -I"$PREFIX/include" \
+    -I"$SYSROOT/usr/include" \
+    -I"$FFMPEG" \
+    -L"$PREFIX/lib" \
+    -Wl,--fix-cortex-a8 \
+    -shared -o $PREFIX/lib/libffmpeg.so || exit 1
+cp -f ffmpeg.h $PREFIX/include/ 
+cp -f cmdutils.h $PREFIX/include/
+cp -f config.h $PREFIX/include/
+
+
+#$LD -rpath-link=$SYSROOT/usr/lib \
+#    -L$SYSROOT/usr/lib \
+#    -soname libffmpeg.so \
+#    -shared -nostdlib  \
+#    -Bsymbolic \
+#    --whole-archive --no-undefined \
+#    -o $PREFIX/libffmpeg.so \
+#    $PREFIX/lib/libavcodec.a \
+#    $PREFIX/lib/libavfilter.a \
+#    $PREFIX/lib/libswresample.a \
+#    $PREFIX/lib/libavformat.a \
+#    $PREFIX/lib/libavutil.a \
+#    $PREFIX/lib/libswscale.a \
+#    -lc -lm -lz -ldl -llog \
+#    $TOOLCHAIN/lib/gcc/arm-linux-androideabi/4.8/libgcc.a # 这里使用的工具链包含gcc4.8
