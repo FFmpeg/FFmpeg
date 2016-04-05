@@ -167,7 +167,7 @@ static int h263_decode_gob_header(MpegEncContext *s)
         /* We have a GBSC probably with GSTUFF */
     skip_bits(&s->gb, 16); /* Drop the zeros */
     left= get_bits_left(&s->gb);
-    //MN: we must check the bits left or we might end in a infinite loop (or segfault)
+    //MN: we must check the bits left or we might end in an infinite loop (or segfault)
     for(;left>13; left--){
         if(get_bits1(&s->gb)) break; /* Seek the '1' bit */
     }
@@ -313,7 +313,7 @@ static int h263p_decode_umotion(MpegEncContext * s, int pred)
 }
 
 /**
- * read the next MVs for OBMC. yes this is a ugly hack, feel free to send a patch :)
+ * read the next MVs for OBMC. yes this is an ugly hack, feel free to send a patch :)
  */
 static void preview_obmc(MpegEncContext *s){
     GetBitContext gb= s->gb;

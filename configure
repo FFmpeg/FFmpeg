@@ -2650,6 +2650,7 @@ ac3_at_decoder_deps="audiotoolbox"
 adpcm_ima_qt_at_decoder_deps="audiotoolbox"
 alac_at_decoder_deps="audiotoolbox"
 amr_nb_at_decoder_deps="audiotoolbox"
+eac3_at_decoder_deps="audiotoolbox"
 gsm_ms_at_decoder_deps="audiotoolbox"
 ilbc_at_decoder_deps="audiotoolbox"
 mp1_at_decoder_deps="audiotoolbox"
@@ -4634,9 +4635,9 @@ case $target_os in
         # however ld then forgets what the entry point should be (oops) so we
         # have to manually (re)set it.
         if enabled x86_32; then
-            add_ldexeflags -Wl,--pic-executable,-e,_mainCRTStartup
+            disabled debug && add_ldexeflags -Wl,--pic-executable,-e,_mainCRTStartup
         elif enabled x86_64; then
-            add_ldexeflags -Wl,--pic-executable,-e,mainCRTStartup
+            disabled debug && add_ldexeflags -Wl,--pic-executable,-e,mainCRTStartup
             check_ldflags -Wl,--high-entropy-va # binutils 2.25
             # Set image base >4GB for extra entropy with HEASLR
             add_ldexeflags -Wl,--image-base,0x140000000

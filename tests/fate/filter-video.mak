@@ -604,6 +604,12 @@ FATE_METADATA_FILTER-$(call ALLYES, $(SCENEDETECT_DEPS)) += fate-filter-metadata
 fate-filter-metadata-scenedetect: SRC = $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
 fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie='$(SRC)',select=gt(scene\,.4)"
 
+CROPDETECT_DEPS = FFPROBE LAVFI_INDEV MOVIE_FILTER CROPDETECT_FILTER SCALE_FILTER \
+                  AVCODEC AVDEVICE MOV_DEMUXER H264_DECODER
+FATE_METADATA_FILTER-$(call ALLYES, $(CROPDETECT_DEPS)) += fate-filter-metadata-cropdetect
+fate-filter-metadata-cropdetect: SRC = $(TARGET_SAMPLES)/filter/cropdetect.mp4
+fate-filter-metadata-cropdetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie='$(SRC)',cropdetect=max_outliers=3"
+
 SILENCEDETECT_DEPS = FFPROBE AVDEVICE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER SILENCEDETECT_FILTER
 FATE_METADATA_FILTER-$(call ALLYES, $(SILENCEDETECT_DEPS)) += fate-filter-metadata-silencedetect
 fate-filter-metadata-silencedetect: SRC = $(TARGET_SAMPLES)/amrwb/seed-12k65.awb
@@ -613,6 +619,15 @@ EBUR128_METADATA_DEPS = FFPROBE AVDEVICE LAVFI_INDEV AMOVIE_FILTER FLAC_DEMUXER 
 FATE_METADATA_FILTER-$(call ALLYES, $(EBUR128_METADATA_DEPS)) += fate-filter-metadata-ebur128
 fate-filter-metadata-ebur128: SRC = $(TARGET_SAMPLES)/filter/seq-3341-7_seq-3342-5-24bit.flac
 fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',ebur128=metadata=1"
+
+tests/data/file4560-override2rotate0.mov: TAG = GEN
+tests/data/file4560-override2rotate0.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	-i $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov -c copy -flags +bitexact -metadata:s:v:0 rotate=0 $(TARGET_PATH)/$@ -y 2>/dev/null
+
+FATE_AFILTER-$(call ALLYES, MOV_DEMUXER MOV_MUXER) += fate-filter-meta-4560-rotate0
+fate-filter-meta-4560-rotate0: tests/data/file4560-override2rotate0.mov
+fate-filter-meta-4560-rotate0: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/file4560-override2rotate0.mov
 
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 

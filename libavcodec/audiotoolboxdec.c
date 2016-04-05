@@ -30,6 +30,10 @@
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 
+#ifndef __MAC_10_11
+#define kAudioFormatEnhancedAC3 'ec-3'
+#endif
+
 typedef struct ATDecodeContext {
     AVClass *av_class;
 
@@ -37,8 +41,10 @@ typedef struct ATDecodeContext {
     AudioStreamPacketDescription pkt_desc;
     AVPacket in_pkt;
     AVPacket new_in_pkt;
+    AVBitStreamFilterContext *bsf;
+    char *decoded_data;
+    int channel_map[64];
 
-    unsigned pkt_size;
     int64_t last_pts;
     int eof;
 } ATDecodeContext;
@@ -56,6 +62,8 @@ static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
         return kAudioFormatAppleLossless;
     case AV_CODEC_ID_AMR_NB:
         return kAudioFormatAMR;
+    case AV_CODEC_ID_EAC3:
+        return kAudioFormatEnhancedAC3;
     case AV_CODEC_ID_GSM_MS:
         return kAudioFormatMicrosoftGSM;
     case AV_CODEC_ID_ILBC:
@@ -80,20 +88,127 @@ static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
     }
 }
 
-static void ffat_update_ctx(AVCodecContext *avctx)
+static int ffat_get_channel_id(AudioChannelLabel label)
+{
+    if (label == 0)
+        return -1;
+    else if (label <= kAudioChannelLabel_LFEScreen)
+        return label - 1;
+    else if (label <= kAudioChannelLabel_RightSurround)
+        return label + 4;
+    else if (label <= kAudioChannelLabel_CenterSurround)
+        return label + 1;
+    else if (label <= kAudioChannelLabel_RightSurroundDirect)
+        return label + 23;
+    else if (label <= kAudioChannelLabel_TopBackRight)
+        return label - 1;
+    else if (label < kAudioChannelLabel_RearSurroundLeft)
+        return -1;
+    else if (label <= kAudioChannelLabel_RearSurroundRight)
+        return label - 29;
+    else if (label <= kAudioChannelLabel_RightWide)
+        return label - 4;
+    else if (label == kAudioChannelLabel_LFE2)
+        return ff_ctzll(AV_CH_LOW_FREQUENCY_2);
+    else if (label == kAudioChannelLabel_Mono)
+        return ff_ctzll(AV_CH_FRONT_CENTER);
+    else
+        return -1;
+}
+
+static int ffat_compare_channel_descriptions(const void* a, const void* b)
+{
+    const AudioChannelDescription* da = a;
+    const AudioChannelDescription* db = b;
+    return ffat_get_channel_id(da->mChannelLabel) - ffat_get_channel_id(db->mChannelLabel);
+}
+
+static AudioChannelLayout *ffat_convert_layout(AudioChannelLayout *layout, UInt32* size)
+{
+    AudioChannelLayoutTag tag = layout->mChannelLayoutTag;
+    AudioChannelLayout *new_layout;
+    if (tag == kAudioChannelLayoutTag_UseChannelDescriptions)
+        return layout;
+    else if (tag == kAudioChannelLayoutTag_UseChannelBitmap)
+        AudioFormatGetPropertyInfo(kAudioFormatProperty_ChannelLayoutForBitmap,
+                                   sizeof(UInt32), &layout->mChannelBitmap, size);
+    else
+        AudioFormatGetPropertyInfo(kAudioFormatProperty_ChannelLayoutForTag,
+                                   sizeof(AudioChannelLayoutTag), &tag, size);
+    new_layout = av_malloc(*size);
+    if (!new_layout) {
+        av_free(layout);
+        return NULL;
+    }
+    if (tag == kAudioChannelLayoutTag_UseChannelBitmap)
+        AudioFormatGetProperty(kAudioFormatProperty_ChannelLayoutForBitmap,
+                               sizeof(UInt32), &layout->mChannelBitmap, size, new_layout);
+    else
+        AudioFormatGetProperty(kAudioFormatProperty_ChannelLayoutForTag,
+                               sizeof(AudioChannelLayoutTag), &tag, size, new_layout);
+    new_layout->mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelDescriptions;
+    av_free(layout);
+    return new_layout;
+}
+
+static int ffat_update_ctx(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
-    AudioStreamBasicDescription in_format;
-    UInt32 size = sizeof(in_format);
+    AudioStreamBasicDescription format;
+    UInt32 size = sizeof(format);
     if (!AudioConverterGetProperty(at->converter,
                                    kAudioConverterCurrentInputStreamDescription,
-                                   &size, &in_format)) {
-        avctx->channels = in_format.mChannelsPerFrame;
-        at->pkt_size = in_format.mFramesPerPacket;
+                                   &size, &format)) {
+        if (format.mSampleRate)
+            avctx->sample_rate = format.mSampleRate;
+        avctx->channels = format.mChannelsPerFrame;
+        avctx->channel_layout = av_get_default_channel_layout(avctx->channels);
+        avctx->frame_size = format.mFramesPerPacket;
     }
 
-    if (!at->pkt_size)
-        at->pkt_size = 2048;
+    if (!AudioConverterGetProperty(at->converter,
+                                   kAudioConverterCurrentOutputStreamDescription,
+                                   &size, &format)) {
+        format.mSampleRate = avctx->sample_rate;
+        format.mChannelsPerFrame = avctx->channels;
+        AudioConverterSetProperty(at->converter,
+                                  kAudioConverterCurrentOutputStreamDescription,
+                                  size, &format);
+    }
+
+    if (!AudioConverterGetPropertyInfo(at->converter, kAudioConverterOutputChannelLayout,
+                                       &size, NULL) && size) {
+        AudioChannelLayout *layout = av_malloc(size);
+        uint64_t layout_mask = 0;
+        int i;
+        if (!layout)
+            return AVERROR(ENOMEM);
+        AudioConverterGetProperty(at->converter, kAudioConverterOutputChannelLayout,
+                                  &size, layout);
+        if (!(layout = ffat_convert_layout(layout, &size)))
+            return AVERROR(ENOMEM);
+        for (i = 0; i < layout->mNumberChannelDescriptions; i++) {
+            int id = ffat_get_channel_id(layout->mChannelDescriptions[i].mChannelLabel);
+            if (id < 0)
+                goto done;
+            if (layout_mask & (1 << id))
+                goto done;
+            layout_mask |= 1 << id;
+            layout->mChannelDescriptions[i].mChannelFlags = i; // Abusing flags as index
+        }
+        avctx->channel_layout = layout_mask;
+        qsort(layout->mChannelDescriptions, layout->mNumberChannelDescriptions,
+              sizeof(AudioChannelDescription), &ffat_compare_channel_descriptions);
+        for (i = 0; i < layout->mNumberChannelDescriptions; i++)
+            at->channel_map[i] = layout->mChannelDescriptions[i].mChannelFlags;
+done:
+        av_free(layout);
+    }
+
+    if (!avctx->frame_size)
+        avctx->frame_size = 2048;
+
+    return 0;
 }
 
 static void put_descr(PutByteContext *pb, int tag, unsigned int size)
@@ -105,42 +220,11 @@ static void put_descr(PutByteContext *pb, int tag, unsigned int size)
     bytestream2_put_byte(pb, size & 0x7F);
 }
 
-static av_cold int ffat_init_decoder(AVCodecContext *avctx)
+static int ffat_set_extradata(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
-    OSStatus status;
-
-    enum AVSampleFormat sample_fmt = (avctx->bits_per_raw_sample == 32) ?
-                                     AV_SAMPLE_FMT_S32 : AV_SAMPLE_FMT_S16;
-
-    AudioStreamBasicDescription in_format = {
-        .mSampleRate = avctx->sample_rate ? avctx->sample_rate : 44100,
-        .mFormatID = ffat_get_format_id(avctx->codec_id, avctx->profile),
-        .mBytesPerPacket = avctx->block_align,
-        .mChannelsPerFrame = avctx->channels ? avctx->channels : 1,
-    };
-    AudioStreamBasicDescription out_format = {
-        .mSampleRate = in_format.mSampleRate,
-        .mFormatID = kAudioFormatLinearPCM,
-        .mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked,
-        .mFramesPerPacket = 1,
-        .mChannelsPerFrame = in_format.mChannelsPerFrame,
-        .mBitsPerChannel = av_get_bytes_per_sample(sample_fmt) * 8,
-    };
-
-    avctx->sample_fmt = sample_fmt;
-
-    if (avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_QT)
-        in_format.mFramesPerPacket = 64;
-
-    status = AudioConverterNew(&in_format, &out_format, &at->converter);
-
-    if (status != 0) {
-        av_log(avctx, AV_LOG_ERROR, "AudioToolbox init error: %i\n", (int)status);
-        return AVERROR_UNKNOWN;
-    }
-
     if (avctx->extradata_size) {
+        OSStatus status;
         char *extradata = avctx->extradata;
         int extradata_size = avctx->extradata_size;
         if (avctx->codec_id == AV_CODEC_ID_AAC) {
@@ -179,13 +263,72 @@ static av_cold int ffat_init_decoder(AVCodecContext *avctx)
                                            extradata_size, extradata);
         if (status != 0)
             av_log(avctx, AV_LOG_WARNING, "AudioToolbox cookie error: %i\n", (int)status);
+
+        if (avctx->codec_id == AV_CODEC_ID_AAC)
+            av_free(extradata);
+    }
+    return 0;
+}
+
+static av_cold int ffat_create_decoder(AVCodecContext *avctx)
+{
+    ATDecodeContext *at = avctx->priv_data;
+    OSStatus status;
+    int i;
+
+    enum AVSampleFormat sample_fmt = (avctx->bits_per_raw_sample == 32) ?
+                                     AV_SAMPLE_FMT_S32 : AV_SAMPLE_FMT_S16;
+
+    AudioStreamBasicDescription in_format = {
+        .mSampleRate = avctx->sample_rate ? avctx->sample_rate : 44100,
+        .mFormatID = ffat_get_format_id(avctx->codec_id, avctx->profile),
+        .mBytesPerPacket = avctx->block_align,
+        .mChannelsPerFrame = avctx->channels ? avctx->channels : 1,
+    };
+    AudioStreamBasicDescription out_format = {
+        .mSampleRate = in_format.mSampleRate,
+        .mFormatID = kAudioFormatLinearPCM,
+        .mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked,
+        .mFramesPerPacket = 1,
+        .mChannelsPerFrame = in_format.mChannelsPerFrame,
+        .mBitsPerChannel = av_get_bytes_per_sample(sample_fmt) * 8,
+    };
+
+    avctx->sample_fmt = sample_fmt;
+
+    if (avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_QT)
+        in_format.mFramesPerPacket = 64;
+
+    status = AudioConverterNew(&in_format, &out_format, &at->converter);
+
+    if (status != 0) {
+        av_log(avctx, AV_LOG_ERROR, "AudioToolbox init error: %i\n", (int)status);
+        return AVERROR_UNKNOWN;
     }
 
+    if ((status = ffat_set_extradata(avctx)) < 0)
+        return status;
+
+    for (i = 0; i < (sizeof(at->channel_map) / sizeof(at->channel_map[0])); i++)
+        at->channel_map[i] = i;
+
     ffat_update_ctx(avctx);
+
+    if(!(at->decoded_data = av_malloc(av_get_bytes_per_sample(avctx->sample_fmt)
+                                      * avctx->frame_size * avctx->channels)))
+        return AVERROR(ENOMEM);
 
     at->last_pts = AV_NOPTS_VALUE;
 
     return 0;
+}
+
+static av_cold int ffat_init_decoder(AVCodecContext *avctx)
+{
+    if (avctx->channels || avctx->extradata_size)
+        return ffat_create_decoder(avctx);
+    else
+        return 0;
 }
 
 static OSStatus ffat_decode_callback(AudioConverterRef converter, UInt32 *nb_packets,
@@ -228,19 +371,67 @@ static OSStatus ffat_decode_callback(AudioConverterRef converter, UInt32 *nb_pac
     return 0;
 }
 
+#define COPY_SAMPLES(type) \
+    type *in_ptr = (type*)at->decoded_data; \
+    type *end_ptr = in_ptr + frame->nb_samples * avctx->channels; \
+    type *out_ptr = (type*)frame->data[0]; \
+    for (; in_ptr < end_ptr; in_ptr += avctx->channels, out_ptr += avctx->channels) { \
+        int c; \
+        for (c = 0; c < avctx->channels; c++) \
+            out_ptr[c] = in_ptr[at->channel_map[c]]; \
+    }
+
+static void ffat_copy_samples(AVCodecContext *avctx, AVFrame *frame)
+{
+    ATDecodeContext *at = avctx->priv_data;
+    if (avctx->sample_fmt == AV_SAMPLE_FMT_S32) {
+        COPY_SAMPLES(int32_t);
+    } else {
+        COPY_SAMPLES(int16_t);
+    }
+}
+
 static int ffat_decode(AVCodecContext *avctx, void *data,
                        int *got_frame_ptr, AVPacket *avpkt)
 {
     ATDecodeContext *at = avctx->priv_data;
     AVFrame *frame = data;
+    int pkt_size = avpkt->size;
+    AVPacket filtered_packet;
     OSStatus ret;
+    AudioBufferList out_buffers;
 
-    AudioBufferList out_buffers = {
+    if (avctx->codec_id == AV_CODEC_ID_AAC && avpkt->size > 2 &&
+        (AV_RB16(avpkt->data) & 0xfff0) == 0xfff0) {
+        uint8_t *p_filtered = NULL;
+        int      n_filtered = 0;
+        if (!at->bsf) {
+            if(!(at->bsf = av_bitstream_filter_init("aac_adtstoasc")))
+                return AVERROR(ENOMEM);
+        }
+
+        ret = av_bitstream_filter_filter(at->bsf, avctx, NULL, &p_filtered, &n_filtered,
+                                         avpkt->data, avpkt->size, 0);
+        if (ret >= 0 && p_filtered != avpkt->data) {
+            filtered_packet = *avpkt;
+            avpkt = &filtered_packet;
+            avpkt->data = p_filtered;
+            avpkt->size = n_filtered;
+        }
+    }
+
+    if (!at->converter) {
+        if ((ret = ffat_create_decoder(avctx)) < 0)
+            return ret;
+    }
+
+    out_buffers = (AudioBufferList){
         .mNumberBuffers = 1,
         .mBuffers = {
             {
                 .mNumberChannels = avctx->channels,
-                .mDataByteSize = av_get_bytes_per_sample(avctx->sample_fmt) * at->pkt_size * avctx->channels,
+                .mDataByteSize = av_get_bytes_per_sample(avctx->sample_fmt) * avctx->frame_size
+                                 * avctx->channels,
             }
         }
     };
@@ -250,23 +441,26 @@ static int ffat_decode(AVCodecContext *avctx, void *data,
     if (avpkt->size) {
         if ((ret = av_packet_ref(&at->new_in_pkt, avpkt)) < 0)
             return ret;
+        at->new_in_pkt.data = avpkt->data;
     } else {
         at->eof = 1;
     }
 
     frame->sample_rate = avctx->sample_rate;
 
-    frame->nb_samples = at->pkt_size;
-    ff_get_buffer(avctx, frame, 0);
+    frame->nb_samples = avctx->frame_size;
 
-    out_buffers.mBuffers[0].mData = frame->data[0];
+    out_buffers.mBuffers[0].mData = at->decoded_data;
 
     ret = AudioConverterFillComplexBuffer(at->converter, ffat_decode_callback, avctx,
                                           &frame->nb_samples, &out_buffers, NULL);
     if ((!ret || ret == 1) && frame->nb_samples) {
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+        ffat_copy_samples(avctx, frame);
         *got_frame_ptr = 1;
         if (at->last_pts != AV_NOPTS_VALUE) {
-            frame->pts = at->last_pts;
+            frame->pkt_pts = at->last_pts;
             at->last_pts = avpkt->pts;
         }
     } else if (ret && ret != 1) {
@@ -275,7 +469,7 @@ static int ffat_decode(AVCodecContext *avctx, void *data,
         at->last_pts = avpkt->pts;
     }
 
-    return avpkt->size;
+    return pkt_size;
 }
 
 static av_cold void ffat_decode_flush(AVCodecContext *avctx)
@@ -292,6 +486,7 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
     AudioConverterDispose(at->converter);
     av_packet_unref(&at->new_in_pkt);
     av_packet_unref(&at->in_pkt);
+    av_free(at->decoded_data);
     return 0;
 }
 
@@ -323,6 +518,7 @@ FFAT_DEC(ac3,          AV_CODEC_ID_AC3)
 FFAT_DEC(adpcm_ima_qt, AV_CODEC_ID_ADPCM_IMA_QT)
 FFAT_DEC(alac,         AV_CODEC_ID_ALAC)
 FFAT_DEC(amr_nb,       AV_CODEC_ID_AMR_NB)
+FFAT_DEC(eac3,         AV_CODEC_ID_EAC3)
 FFAT_DEC(gsm_ms,       AV_CODEC_ID_GSM_MS)
 FFAT_DEC(ilbc,         AV_CODEC_ID_ILBC)
 FFAT_DEC(mp1,          AV_CODEC_ID_MP1)

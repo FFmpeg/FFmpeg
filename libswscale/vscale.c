@@ -218,7 +218,7 @@ int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsS
         desc[0].instance = lumCtx;
         desc[0].src = src;
         desc[0].dst = dst;
-        desc[0].alpha = c->alpPixBuf != 0;
+        desc[0].alpha = c->needAlpha;
 
         if (!isGray(c->dstFormat)) {
             chrCtx = av_mallocz(sizeof(VScalerContext));
@@ -239,7 +239,7 @@ int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsS
         desc[0].instance = lumCtx;
         desc[0].src = src;
         desc[0].dst = dst;
-        desc[0].alpha = c->alpPixBuf != 0;
+        desc[0].alpha = c->needAlpha;
     }
 
     ff_init_vscale_pfn(c, c->yuv2plane1, c->yuv2planeX, c->yuv2nv12cX,

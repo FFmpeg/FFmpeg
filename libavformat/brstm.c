@@ -169,7 +169,7 @@ static int read_header(AVFormatContext *s)
     }
 
     size = read32(s);
-    if (size < 192)
+    if (size < 40)
         return AVERROR_INVALIDDATA;
     avio_skip(s->pb, 4); // unknown
     h1offset = read32(s);

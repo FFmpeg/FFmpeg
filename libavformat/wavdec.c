@@ -60,6 +60,41 @@ typedef struct WAVDemuxContext {
     int rifx; // RIFX: integer byte order for parameters is big endian
 } WAVDemuxContext;
 
+static void set_spdif(AVFormatContext *s, WAVDemuxContext *wav)
+{
+    if (CONFIG_SPDIF_DEMUXER && s->streams[0]->codec->codec_tag == 1) {
+        enum AVCodecID codec;
+        uint8_t *buf = NULL;
+        int len = 1<<16;
+        int ret = ffio_ensure_seekback(s->pb, len);
+        int64_t pos = avio_tell(s->pb);
+
+        if (ret < 0)
+            goto end;
+
+        buf = av_malloc(len);
+        if (!buf) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+
+        len = ret = avio_read(s->pb, buf, len);
+        if (ret < 0)
+            goto end;
+
+        ret = ff_spdif_probe(buf, len, &codec);
+        if (ret > AVPROBE_SCORE_EXTENSION) {
+            s->streams[0]->codec->codec_id = codec;
+            wav->spdif = 1;
+        }
+end:
+        avio_seek(s->pb, pos, SEEK_SET);
+        if (ret < 0)
+            av_log(s, AV_LOG_WARNING, "Cannot check for SPDIF\n");
+        av_free(buf);
+    }
+}
+
 #if CONFIG_WAV_DEMUXER
 
 static int64_t next_tag(AVIOContext *pb, uint32_t *tag, int big_endian)
@@ -528,6 +563,8 @@ break_loop:
     ff_metadata_conv_ctx(s, NULL, wav_metadata_conv);
     ff_metadata_conv_ctx(s, NULL, ff_riff_info_conv);
 
+    set_spdif(s, wav);
+
     return 0;
 }
 
@@ -561,18 +598,6 @@ static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st;
     WAVDemuxContext *wav = s->priv_data;
 
-    if (CONFIG_SPDIF_DEMUXER && wav->spdif == 0 &&
-        s->streams[0]->codec->codec_tag == 1) {
-        enum AVCodecID codec;
-        ret = ff_spdif_probe(s->pb->buffer, s->pb->buf_end - s->pb->buffer,
-                             &codec);
-        if (ret > AVPROBE_SCORE_EXTENSION) {
-            s->streams[0]->codec->codec_id = codec;
-            wav->spdif = 1;
-        } else {
-            wav->spdif = -1;
-        }
-    }
     if (CONFIG_SPDIF_DEMUXER && wav->spdif == 1)
         return ff_spdif_read_packet(s, pkt);
 
@@ -832,6 +857,8 @@ static int w64_read_header(AVFormatContext *s)
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     avio_seek(pb, data_ofs, SEEK_SET);
+
+    set_spdif(s, wav);
 
     return 0;
 }

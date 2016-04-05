@@ -18,6 +18,7 @@ version <next>:
 - AudioToolbox audio encoders
 - coreimage filter (GPU based image filtering on OSX)
 - libdcadec removed
+- bitstream filter for extracting DTS core
 
 =======
 >>>>>>> n3.0

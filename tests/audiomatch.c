@@ -100,11 +100,11 @@ int main(int argc, char **argv){
             c += signal[i] * data[j];
         }
         if(fabs(c) > sigamp * 0.94)
-            maxshift = FFMIN(maxshift, fabs(pos)+128);
+            maxshift = FFMIN(maxshift, fabs(pos)+32);
         if(fabs(c)>fabs(bestc)){
             bestc= c;
             bestpos = pos;
         }
     }
-    printf("presig: %d postsig:%d c:%7.4f\n", bestpos, datlen - siglen - bestpos, bestc / sigamp);
+    printf("presig: %d postsig:%d c:%7.4f lenerr:%d\n", bestpos, datlen - siglen - bestpos, bestc / sigamp, datlen - siglen);
 }

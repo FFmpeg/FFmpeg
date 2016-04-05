@@ -2608,7 +2608,7 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf)
     if (mxf->op != OPAtom)
         return 0;
 
-    /* TODO: support raw video without a index if they exist */
+    /* TODO: support raw video without an index if they exist */
     if (s->nb_streams != 1 || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO || !is_pcm(s->streams[0]->codec->codec_id))
         return 0;
 

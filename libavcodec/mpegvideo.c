@@ -772,7 +772,7 @@ static int init_context_frame(MpegEncContext *s)
 
     if (s->h263_pred || s->h263_plus || !s->encoding) {
         /* dc values */
-        // MN: we need these for  error resilience of intra-frames
+        // MN: we need these for error resilience of intra-frames
         FF_ALLOCZ_OR_GOTO(s->avctx, s->dc_val_base, yc_size * sizeof(int16_t), fail);
         s->dc_val[0] = s->dc_val_base + s->b8_stride + 1;
         s->dc_val[1] = s->dc_val_base + y_size + s->mb_stride + 1;
@@ -781,13 +781,13 @@ static int init_context_frame(MpegEncContext *s)
             s->dc_val_base[i] = 1024;
     }
 
-    /* which mb is a intra block */
+    /* which mb is an intra block */
     FF_ALLOCZ_OR_GOTO(s->avctx, s->mbintra_table, mb_array_size, fail);
     memset(s->mbintra_table, 1, mb_array_size);
 
     /* init macroblock skip table */
     FF_ALLOCZ_OR_GOTO(s->avctx, s->mbskip_table, mb_array_size + 2, fail);
-    // Note the + 1 is for  a quicker mpeg4 slice_end detection
+    // Note the + 1 is for a quicker mpeg4 slice_end detection
 
     return ff_mpeg_er_init(s);
 fail:
@@ -1224,7 +1224,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     }
 
     if (s->current_picture_ptr && !s->current_picture_ptr->f->buf[0]) {
-        // we already have a unused image
+        // we already have an unused image
         // (maybe it was set before reading the header)
         pic = s->current_picture_ptr;
     } else {

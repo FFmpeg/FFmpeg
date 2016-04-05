@@ -30,7 +30,7 @@
 #define UNSET_FLAG(var, val) ( (var) &=  ~( 1 << (val)) )
 #define CHECK_FLAG(var, val) ( (var) &    ( 1 << (val)) )
 
-static const AVRational ass_tb = {1, 100};
+static const AVRational ms_tb = {1, 1000};
 
 /*
  * TODO list
@@ -723,6 +723,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
 {
     CCaptionSubContext *ctx = avctx->priv_data;
     AVSubtitle *sub = data;
+    const int64_t start_time = sub->pts;
     uint8_t *bptr = NULL;
     int len = avpkt->size;
     int ret = 0;
@@ -747,7 +748,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
         if(cc_type == 1)
             continue;
         else
-            process_cc608(ctx, avpkt->pts, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
+            process_cc608(ctx, start_time, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
 
         if (!ctx->buffer_changed)
             continue;
@@ -759,21 +760,21 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
             ret = ff_ass_add_rect(sub, ctx->buffer.str, ctx->readorder++, 0, NULL, NULL);
             if (ret < 0)
                 return ret;
-            sub->pts = av_rescale_q(ctx->start_time, avctx->time_base, AV_TIME_BASE_Q);
+            sub->pts = ctx->start_time;
             if (!ctx->real_time)
                 sub->end_display_time = av_rescale_q(ctx->end_time - ctx->start_time,
-                                                     avctx->time_base, av_make_q(1, 1000));
+                                                     AV_TIME_BASE_Q, ms_tb);
             else
                 sub->end_display_time = -1;
             ctx->buffer_changed = 0;
-            ctx->last_real_time = avpkt->pts;
+            ctx->last_real_time = sub->pts;
             ctx->screen_touched = 0;
         }
     }
 
     if (ctx->real_time && ctx->screen_touched &&
-        avpkt->pts > ctx->last_real_time + av_rescale_q(20, ass_tb, avctx->time_base)) {
-        ctx->last_real_time = avpkt->pts;
+        sub->pts > ctx->last_real_time + av_rescale_q(200, ms_tb, AV_TIME_BASE_Q)) {
+        ctx->last_real_time = sub->pts;
         ctx->screen_touched = 0;
 
         capture_screen(ctx);

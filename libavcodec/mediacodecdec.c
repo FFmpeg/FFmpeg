@@ -247,7 +247,7 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
         av_freep(&format);
         return AVERROR_EXTERNAL;
     }
-    s->stride = value >= 0 ? value : s->width;
+    s->stride = value > 0 ? value : s->width;
 
     if (!ff_AMediaFormat_getInt32(s->format, "slice-height", &value)) {
         format = ff_AMediaFormat_toString(s->format);
@@ -255,11 +255,7 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
         av_freep(&format);
         return AVERROR_EXTERNAL;
     }
-    if (value > 0) {
-        s->slice_height = value;
-    } else {
-        s->slice_height = s->height;
-    }
+    s->slice_height = value > 0 ? value : s->height;
 
     if (strstr(s->codec_name, "OMX.Nvidia.")) {
         s->slice_height = FFALIGN(s->height, 16);

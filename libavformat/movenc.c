@@ -2523,7 +2523,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
     } else {
         /* Avoid accidentally ending up with start_ct = -1 which has got a
          * special meaning. Normally start_ct should end up positive or zero
-         * here, but use FFMIN in case dts is a a small positive integer
+         * here, but use FFMIN in case dts is a small positive integer
          * rounded to 0 when represented in MOV_TIMESCALE units. */
         av_assert0(av_rescale_rnd(start_dts, MOV_TIMESCALE, track->timescale, AV_ROUND_DOWN) <= 0);
         start_ct  = -FFMIN(start_dts, 0);

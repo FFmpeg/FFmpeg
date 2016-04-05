@@ -134,7 +134,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
         v_end = v + frame->linesize[2] - 1;
 
         if ((i & 1) && header[17] == SUBSAMPLE_420) {
-            /* We are on a odd line and 420 subsample is used.
+            /* We are on an odd line and 420 subsample is used.
              * On this line only Y values are specified, one per pixel.
              */
             for (j = 0; j < linelength - 1; j++) {

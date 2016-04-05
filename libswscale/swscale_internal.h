@@ -350,12 +350,6 @@ typedef struct SwsContext {
      * vertical scaler is called.
      */
     //@{
-    int16_t **lumPixBuf;          ///< Ring buffer for scaled horizontal luma   plane lines to be fed to the vertical scaler.
-    int16_t **chrUPixBuf;         ///< Ring buffer for scaled horizontal chroma plane lines to be fed to the vertical scaler.
-    int16_t **chrVPixBuf;         ///< Ring buffer for scaled horizontal chroma plane lines to be fed to the vertical scaler.
-    int16_t **alpPixBuf;          ///< Ring buffer for scaled horizontal alpha  plane lines to be fed to the vertical scaler.
-    int vLumBufSize;              ///< Number of vertical luma/alpha lines allocated in the ring buffer.
-    int vChrBufSize;              ///< Number of vertical chroma     lines allocated in the ring buffer.
     int lastInLumBuf;             ///< Last scaled horizontal luma/alpha line from source in the ring buffer.
     int lastInChrBuf;             ///< Last scaled horizontal chroma     line from source in the ring buffer.
     int lumBufIndex;              ///< Index in ring buffer of the last scaled horizontal luma/alpha line from source.
@@ -363,6 +357,7 @@ typedef struct SwsContext {
     //@}
 
     uint8_t *formatConvBuffer;
+    int needAlpha;
 
     /**
      * @name Horizontal and vertical filters.
@@ -866,7 +861,7 @@ extern const uint8_t ff_dither_8x8_73[9][8];
 extern const uint8_t ff_dither_8x8_128[9][8];
 extern const uint8_t ff_dither_8x8_220[9][8];
 
-extern const int32_t ff_yuv2rgb_coeffs[8][4];
+extern const int32_t ff_yuv2rgb_coeffs[11][4];
 
 extern const AVClass ff_sws_context_class;
 
@@ -896,6 +891,7 @@ void ff_sws_init_output_funcs(SwsContext *c,
                               yuv2anyX_fn *yuv2anyX);
 void ff_sws_init_swscale_ppc(SwsContext *c);
 void ff_sws_init_swscale_x86(SwsContext *c);
+void ff_sws_init_swscale_aarch64(SwsContext *c);
 
 void ff_hyscale_fast_c(SwsContext *c, int16_t *dst, int dstWidth,
                        const uint8_t *src, int srcW, int xInc);
@@ -960,7 +956,7 @@ typedef struct SwsPlane
 } SwsPlane;
 
 /**
- * Struct which defines a slice of an image to be scaled or a output for
+ * Struct which defines a slice of an image to be scaled or an output for
  * a scaled slice.
  * A slice can also be used as intermediate ring buffer for scaling steps.
  */
@@ -1036,8 +1032,5 @@ void ff_init_vscale_pfn(SwsContext *c, yuv2planar1_fn yuv2plane1, yuv2planarX_fn
 
 //number of extra lines to process
 #define MAX_LINES_AHEAD 4
-
-// enable use of refactored scaler code
-#define NEW_FILTER
 
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */

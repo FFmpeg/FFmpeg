@@ -111,7 +111,7 @@ ASSSplitContext *ff_ass_split(const char *buf);
 
 /**
  * Split one or several ASS "Dialogue" lines from a string buffer and store
- * them in a already initialized context.
+ * them in an already initialized context.
  *
  * @param ctx Context previously initialized by ff_ass_split().
  * @param buf String containing the ASS "Dialogue" lines.

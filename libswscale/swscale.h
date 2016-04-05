@@ -91,6 +91,7 @@ const char *swscale_license(void);
 #define SWS_CS_SMPTE170M      5
 #define SWS_CS_SMPTE240M      7
 #define SWS_CS_DEFAULT        5
+#define SWS_CS_BT2020         9
 
 /**
  * Return a pointer to yuv<->rgb coefficients for the given colorspace
@@ -248,18 +249,6 @@ SwsVector *sws_allocVec(int length);
 SwsVector *sws_getGaussianVec(double variance, double quality);
 
 /**
- * Allocate and return a vector with length coefficients, all
- * with the same value c.
- */
-SwsVector *sws_getConstVec(double c, int length);
-
-/**
- * Allocate and return a vector with just one coefficient, with
- * value 1.0.
- */
-SwsVector *sws_getIdentityVec(void);
-
-/**
  * Scale all the coefficients of a by the scalar value.
  */
 void sws_scaleVec(SwsVector *a, double scalar);
@@ -268,22 +257,17 @@ void sws_scaleVec(SwsVector *a, double scalar);
  * Scale all the coefficients of a so that their sum equals height.
  */
 void sws_normalizeVec(SwsVector *a, double height);
-void sws_convVec(SwsVector *a, SwsVector *b);
-void sws_addVec(SwsVector *a, SwsVector *b);
-void sws_subVec(SwsVector *a, SwsVector *b);
-void sws_shiftVec(SwsVector *a, int shift);
 
-/**
- * Allocate and return a clone of the vector a, that is a vector
- * with the same coefficients as a.
- */
-SwsVector *sws_cloneVec(SwsVector *a);
-
-/**
- * Print with av_log() a textual representation of the vector a
- * if log_level <= av_log_level.
- */
-void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
+#if FF_API_SWS_VECTOR
+attribute_deprecated SwsVector *sws_getConstVec(double c, int length);
+attribute_deprecated SwsVector *sws_getIdentityVec(void);
+attribute_deprecated void sws_convVec(SwsVector *a, SwsVector *b);
+attribute_deprecated void sws_addVec(SwsVector *a, SwsVector *b);
+attribute_deprecated void sws_subVec(SwsVector *a, SwsVector *b);
+attribute_deprecated void sws_shiftVec(SwsVector *a, int shift);
+attribute_deprecated SwsVector *sws_cloneVec(SwsVector *a);
+attribute_deprecated void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
+#endif
 
 void sws_freeVec(SwsVector *a);
 

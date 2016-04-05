@@ -651,6 +651,22 @@ static av_always_inline void lowpass16(WaveformContext *s,
     envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
+#define LOWPASS16_FUNC(name, column, mirror)               \
+static void lowpass16_##name(WaveformContext *s,           \
+                             AVFrame *in, AVFrame *out,    \
+                             int component, int intensity, \
+                             int offset_y, int offset_x,   \
+                             int unused1, int unused2)     \
+{                                                          \
+    lowpass16(s, in, out, component, intensity,            \
+              offset_y, offset_x, column, mirror);         \
+}
+
+LOWPASS16_FUNC(column_mirror, 1, 1)
+LOWPASS16_FUNC(column,        1, 0)
+LOWPASS16_FUNC(row_mirror,    0, 1)
+LOWPASS16_FUNC(row,           0, 0)
+
 static av_always_inline void lowpass(WaveformContext *s,
                                      AVFrame *in, AVFrame *out,
                                      int component, int intensity,
@@ -682,27 +698,52 @@ static av_always_inline void lowpass(WaveformContext *s,
         uint8_t *dst = dst_line;
 
         for (p = src_data; p < src_data_end; p++) {
-            int i = 0;
             uint8_t *target;
             if (column) {
-                do {
-                    target = dst++ + dst_signed_linesize * *p;
-                    update(target, max, intensity);
-                } while (++i < step);
+                target = dst + dst_signed_linesize * *p;
+                dst += step;
+                update(target, max, intensity);
             } else {
                 uint8_t *row = dst_data;
-                do {
-                    if (mirror)
-                        target = row - *p - 1;
-                    else
-                        target = row + *p;
-                    update(target, max, intensity);
-                    row += dst_linesize;
-                } while (++i < step);
+                if (mirror)
+                    target = row - *p - 1;
+                else
+                    target = row + *p;
+                update(target, max, intensity);
+                row += dst_linesize;
             }
         }
         src_data += src_linesize;
         dst_data += dst_linesize * step;
+    }
+
+    if (column && step > 1) {
+        const int dst_w = s->display == PARADE ? out->width / s->acomp : out->width;
+        const int dst_h = 256;
+        uint8_t *dst;
+        int x, z;
+
+        dst = out->data[plane] + offset_y * dst_linesize + offset_x;
+        for (y = 0; y < dst_h; y++) {
+            for (x = 0; x < dst_w; x+=step) {
+                for (z = 1; z < step; z++) {
+                    dst[x + z] = dst[x];
+                }
+            }
+            dst += dst_linesize;
+        }
+    } else if (step > 1) {
+        const int dst_h = s->display == PARADE ? out->height / s->acomp : out->height;
+        const int dst_w = 256;
+        uint8_t *dst;
+        int z;
+
+        dst = out->data[plane] + offset_y * dst_linesize + offset_x;
+        for (y = 0; y < dst_h; y+=step) {
+            for (z = 1; z < step; z++)
+                memcpy(dst + dst_linesize * z, dst, dst_w);
+            dst += dst_linesize * step;
+        }
     }
 
     envelope(s, out, plane, plane, column ? offset_x : offset_y);
@@ -2424,10 +2465,10 @@ static int config_input(AVFilterLink *inlink)
     case 0x1000: s->waveform = lowpass_row_mirror;    break;
     case 0x0100: s->waveform = lowpass_column;        break;
     case 0x0000: s->waveform = lowpass_row;           break;
-    case 0x1110:
-    case 0x1010:
-    case 0x0110:
-    case 0x0010: s->waveform = lowpass16; break;
+    case 0x1110: s->waveform = lowpass16_column_mirror; break;
+    case 0x1010: s->waveform = lowpass16_row_mirror;    break;
+    case 0x0110: s->waveform = lowpass16_column;        break;
+    case 0x0010: s->waveform = lowpass16_row;           break;
     case 0x1101:
     case 0x1001:
     case 0x0101:

@@ -49,12 +49,26 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/aarch64/cpu.h"
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
+
+// We have to implement deprecated functions until they are removed, this is the
+// simplest way to prevent warnings
+#undef attribute_deprecated
+#define attribute_deprecated
+
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
+
+#if !FF_API_SWS_VECTOR
+static SwsVector *sws_getIdentityVec(void);
+static void sws_addVec(SwsVector *a, SwsVector *b);
+static void sws_shiftVec(SwsVector *a, int shift);
+static void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
+#endif
 
 static void handle_formats(SwsContext *c);
 
@@ -1614,7 +1628,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 #endif /* HAVE_MMXEXT_INLINE */
         {
             const int filterAlign = X86_MMX(cpu_flags)     ? 4 :
-                                    PPC_ALTIVEC(cpu_flags) ? 8 : 1;
+                                    PPC_ALTIVEC(cpu_flags) ? 8 :
+                                    have_neon(cpu_flags)   ? 4 : 1;
 
             if ((ret = initFilter(&c->hLumFilter, &c->hLumFilterPos,
                            &c->hLumFilterSize, c->lumXInc,
@@ -1681,69 +1696,14 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 #endif
     }
 
-    // calculate buffer sizes so that they won't run out while handling these damn slices
-    c->vLumBufSize = c->vLumFilterSize;
-    c->vChrBufSize = c->vChrFilterSize;
-    for (i = 0; i < dstH; i++) {
-        int chrI      = (int64_t)i * c->chrDstH / dstH;
-        int nextSlice = FFMAX(c->vLumFilterPos[i] + c->vLumFilterSize - 1,
-                              ((c->vChrFilterPos[chrI] + c->vChrFilterSize - 1)
-                               << c->chrSrcVSubSample));
-
-        nextSlice >>= c->chrSrcVSubSample;
-        nextSlice <<= c->chrSrcVSubSample;
-        if (c->vLumFilterPos[i] + c->vLumBufSize < nextSlice)
-            c->vLumBufSize = nextSlice - c->vLumFilterPos[i];
-        if (c->vChrFilterPos[chrI] + c->vChrBufSize <
-            (nextSlice >> c->chrSrcVSubSample))
-            c->vChrBufSize = (nextSlice >> c->chrSrcVSubSample) -
-                             c->vChrFilterPos[chrI];
-    }
-
     for (i = 0; i < 4; i++)
         FF_ALLOCZ_OR_GOTO(c, c->dither_error[i], (c->dstW+2) * sizeof(int), fail);
 
-    /* Allocate pixbufs (we use dynamic allocation because otherwise we would
-     * need to allocate several megabytes to handle all possible cases) */
-    FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf,  c->vLumBufSize * 3 * sizeof(int16_t *), fail);
-    FF_ALLOCZ_OR_GOTO(c, c->chrUPixBuf, c->vChrBufSize * 3 * sizeof(int16_t *), fail);
-    FF_ALLOCZ_OR_GOTO(c, c->chrVPixBuf, c->vChrBufSize * 3 * sizeof(int16_t *), fail);
-    if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat))
-        FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf, c->vLumBufSize * 3 * sizeof(int16_t *), fail);
-    /* Note we need at least one pixel more at the end because of the MMX code
-     * (just in case someone wants to replace the 4000/8000). */
-    /* align at 16 bytes for AltiVec */
-    for (i = 0; i < c->vLumBufSize; i++) {
-        FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i + c->vLumBufSize],
-                          dst_stride + 16, fail);
-        c->lumPixBuf[i] = c->lumPixBuf[i + c->vLumBufSize];
-    }
+    c->needAlpha = (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat)) ? 1 : 0;
+
     // 64 / c->scalingBpp is the same as 16 / sizeof(scaling_intermediate)
     c->uv_off   = (dst_stride>>1) + 64 / (c->dstBpc &~ 7);
     c->uv_offx2 = dst_stride + 16;
-    for (i = 0; i < c->vChrBufSize; i++) {
-        FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i + c->vChrBufSize],
-                         dst_stride * 2 + 32, fail);
-        c->chrUPixBuf[i] = c->chrUPixBuf[i + c->vChrBufSize];
-        c->chrVPixBuf[i] = c->chrVPixBuf[i + c->vChrBufSize]
-                         = c->chrUPixBuf[i] + (dst_stride >> 1) + 8;
-    }
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
-        for (i = 0; i < c->vLumBufSize; i++) {
-            FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf[i + c->vLumBufSize],
-                              dst_stride + 16, fail);
-            c->alpPixBuf[i] = c->alpPixBuf[i + c->vLumBufSize];
-        }
-
-    // try to avoid drawing green stuff between the right end and the stride end
-    for (i = 0; i < c->vChrBufSize; i++)
-        if(desc_dst->comp[0].depth == 16){
-            av_assert0(c->dstBpc > 14);
-            for(j=0; j<dst_stride/2+1; j++)
-                ((int32_t*)(c->chrUPixBuf[i]))[j] = 1<<18;
-        } else
-            for(j=0; j<dst_stride+1; j++)
-                ((int16_t*)(c->chrUPixBuf[i]))[j] = 1<<14;
 
     av_assert0(c->chrDstH <= dstH);
 
@@ -2047,6 +2007,13 @@ SwsVector *sws_getGaussianVec(double variance, double quality)
     return vec;
 }
 
+/**
+ * Allocate and return a vector with length coefficients, all
+ * with the same value c.
+ */
+#if !FF_API_SWS_VECTOR
+static
+#endif
 SwsVector *sws_getConstVec(double c, int length)
 {
     int i;
@@ -2061,6 +2028,13 @@ SwsVector *sws_getConstVec(double c, int length)
     return vec;
 }
 
+/**
+ * Allocate and return a vector with just one coefficient, with
+ * value 1.0.
+ */
+#if !FF_API_SWS_VECTOR
+static
+#endif
 SwsVector *sws_getIdentityVec(void)
 {
     return sws_getConstVec(1.0, 1);
@@ -2090,6 +2064,7 @@ void sws_normalizeVec(SwsVector *a, double height)
     sws_scaleVec(a, height / sws_dcVec(a));
 }
 
+#if FF_API_SWS_VECTOR
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b)
 {
     int length = a->length + b->length - 1;
@@ -2107,6 +2082,7 @@ static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b)
 
     return vec;
 }
+#endif
 
 static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b)
 {
@@ -2125,6 +2101,7 @@ static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b)
     return vec;
 }
 
+#if FF_API_SWS_VECTOR
 static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b)
 {
     int length = FFMAX(a->length, b->length);
@@ -2141,6 +2118,7 @@ static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b)
 
     return vec;
 }
+#endif
 
 /* shift left / or right if "shift" is negative */
 static SwsVector *sws_getShiftedVec(SwsVector *a, int shift)
@@ -2160,6 +2138,9 @@ static SwsVector *sws_getShiftedVec(SwsVector *a, int shift)
     return vec;
 }
 
+#if !FF_API_SWS_VECTOR
+static
+#endif
 void sws_shiftVec(SwsVector *a, int shift)
 {
     SwsVector *shifted = sws_getShiftedVec(a, shift);
@@ -2173,6 +2154,9 @@ void sws_shiftVec(SwsVector *a, int shift)
     av_free(shifted);
 }
 
+#if !FF_API_SWS_VECTOR
+static
+#endif
 void sws_addVec(SwsVector *a, SwsVector *b)
 {
     SwsVector *sum = sws_sumVec(a, b);
@@ -2186,6 +2170,7 @@ void sws_addVec(SwsVector *a, SwsVector *b)
     av_free(sum);
 }
 
+#if FF_API_SWS_VECTOR
 void sws_subVec(SwsVector *a, SwsVector *b)
 {
     SwsVector *diff = sws_diffVec(a, b);
@@ -2223,7 +2208,15 @@ SwsVector *sws_cloneVec(SwsVector *a)
 
     return vec;
 }
+#endif
 
+/**
+ * Print with av_log() a textual representation of the vector a
+ * if log_level <= av_log_level.
+ */
+#if !FF_API_SWS_VECTOR
+static
+#endif
 void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level)
 {
     int i;
@@ -2276,25 +2269,6 @@ void sws_freeContext(SwsContext *c)
     int i;
     if (!c)
         return;
-
-    if (c->lumPixBuf) {
-        for (i = 0; i < c->vLumBufSize; i++)
-            av_freep(&c->lumPixBuf[i]);
-        av_freep(&c->lumPixBuf);
-    }
-
-    if (c->chrUPixBuf) {
-        for (i = 0; i < c->vChrBufSize; i++)
-            av_freep(&c->chrUPixBuf[i]);
-        av_freep(&c->chrUPixBuf);
-        av_freep(&c->chrVPixBuf);
-    }
-
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
-        for (i = 0; i < c->vLumBufSize; i++)
-            av_freep(&c->alpPixBuf[i]);
-        av_freep(&c->alpPixBuf);
-    }
 
     for (i = 0; i < 4; i++)
         av_freep(&c->dither_error[i]);

@@ -91,7 +91,7 @@
  * details.
  *
  * If you add a codec ID to this list, add it so that
- * 1. no value of a existing codec ID changes (that would break ABI),
+ * 1. no value of an existing codec ID changes (that would break ABI),
  * 2. it is as close as possible to similar codecs
  *
  * After adding new codec IDs, do not forget to add an entry to the codec
@@ -3786,6 +3786,140 @@ typedef struct AVSubtitle {
 } AVSubtitle;
 
 /**
+ * This struct describes the properties of an encoded stream.
+ *
+ * sizeof(AVCodecParameters) is not a part of the public ABI, this struct must
+ * be allocated with avcodec_parameters_alloc() and freed with
+ * avcodec_parameters_free().
+ */
+typedef struct AVCodecParameters {
+    /**
+     * General type of the encoded data.
+     */
+    enum AVMediaType codec_type;
+    /**
+     * Specific type of the encoded data (the codec used).
+     */
+    enum AVCodecID   codec_id;
+    /**
+     * Additional information about the codec (corresponds to the AVI FOURCC).
+     */
+    uint32_t         codec_tag;
+
+    /**
+     * Extra binary data needed for initializing the decoder, codec-dependent.
+     *
+     * Must be allocated with av_malloc() and will be freed by
+     * avcodec_parameters_free(). The allocated size of extradata must be at
+     * least extradata_size + AV_INPUT_BUFFER_PADDING_SIZE, with the padding
+     * bytes zeroed.
+     */
+    uint8_t *extradata;
+    /**
+     * Size of the extradata content in bytes.
+     */
+    int      extradata_size;
+
+    /**
+     * - video: the pixel format, the value corresponds to enum AVPixelFormat.
+     * - audio: the sample format, the value corresponds to enum AVSampleFormat.
+     */
+    int format;
+
+    /**
+     * The average bitrate of the encoded data (in bits per second).
+     */
+    int64_t bit_rate;
+
+    int bits_per_coded_sample;
+
+    /**
+     * Codec-specific bitstream restrictions that the stream conforms to.
+     */
+    int profile;
+    int level;
+
+    /**
+     * Video only. The dimensions of the video frame in pixels.
+     */
+    int width;
+    int height;
+
+    /**
+     * Video only. The aspect ratio (width / height) which a single pixel
+     * should have when displayed.
+     *
+     * When the aspect ratio is unknown / undefined, the numerator should be
+     * set to 0 (the denominator may have any value).
+     */
+    AVRational sample_aspect_ratio;
+
+    /**
+     * Video only. The order of the fields in interlaced video.
+     */
+    enum AVFieldOrder                  field_order;
+
+    /**
+     * Video only. Additional colorspace characteristics.
+     */
+    enum AVColorRange                  color_range;
+    enum AVColorPrimaries              color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace                  color_space;
+    enum AVChromaLocation              chroma_location;
+
+    /**
+     * Video only. Number of delayed frames.
+     */
+    int video_delay;
+
+    /**
+     * Audio only. The channel layout bitmask. May be 0 if the channel layout is
+     * unknown or unspecified, otherwise the number of bits set must be equal to
+     * the channels field.
+     */
+    uint64_t channel_layout;
+    /**
+     * Audio only. The number of audio channels.
+     */
+    int      channels;
+    /**
+     * Audio only. The number of audio samples per second.
+     */
+    int      sample_rate;
+    /**
+     * Audio only. The number of bytes per coded audio frame, required by some
+     * formats.
+     *
+     * Corresponds to nBlockAlign in WAVEFORMATEX.
+     */
+    int      block_align;
+    /**
+     * Audio only. Audio frame size, if known. Required by some formats to be static.
+     */
+    int      frame_size;
+
+    /**
+     * Audio only. The amount of padding (in samples) inserted by the encoder at
+     * the beginning of the audio. I.e. this number of leading decoded samples
+     * must be discarded by the caller to get the original audio without leading
+     * padding.
+     */
+    int initial_padding;
+    /**
+     * Audio only. The amount of padding (in samples) appended by the encoder to
+     * the end of the audio. I.e. this number of decoded samples must be
+     * discarded by the caller from the end of the stream to get the original
+     * audio without any trailing padding.
+     */
+    int trailing_padding;
+    /**
+     * Audio only. Number of samples to skip after a discontinuity.
+     */
+    int seek_preroll;
+} AVCodecParameters;
+
+/**
  * If c is NULL, returns the first registered codec,
  * if c is non-NULL, returns the next registered codec after c,
  * or NULL if c is the last one.
@@ -3898,6 +4032,48 @@ const AVClass *avcodec_get_subtitle_rect_class(void);
  * @return AVERROR() on error (e.g. memory allocation error), 0 on success
  */
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
+
+/**
+ * Allocate a new AVCodecParameters and set its fields to default values
+ * (unknown/invalid/0). The returned struct must be freed with
+ * avcodec_parameters_free().
+ */
+AVCodecParameters *avcodec_parameters_alloc(void);
+
+/**
+ * Free an AVCodecParameters instance and everything associated with it and
+ * write NULL to the supplied pointer.
+ */
+void avcodec_parameters_free(AVCodecParameters **par);
+
+/**
+ * Copy the contents of src to dst. Any allocated fields in dst are freed and
+ * replaced with newly allocated duplicates of the corresponding fields in src.
+ *
+ * @return >= 0 on success, a negative AVERROR code on failure.
+ */
+int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src);
+
+/**
+ * Fill the parameters struct based on the values from the supplied codec
+ * context. Any allocated fields in par are freed and replaced with duplicates
+ * of the corresponding fields in codec.
+ *
+ * @return >= 0 on success, a negative AVERROR code on failure
+ */
+int avcodec_parameters_from_context(AVCodecParameters *par,
+                                    const AVCodecContext *codec);
+
+/**
+ * Fill the codec context based on the values from the supplied codec
+ * parameters. Any allocated fields in codec that have a corresponding field in
+ * par are freed and replaced with duplicates of the corresponding field in par.
+ * Fields in codec that do not have a counterpart in par are not touched.
+ *
+ * @return >= 0 on success, a negative AVERROR code on failure.
+ */
+int avcodec_parameters_to_context(AVCodecContext *codec,
+                                  const AVCodecParameters *par);
 
 /**
  * Initialize the AVCodecContext to use the given AVCodec. Prior to using this
@@ -5178,6 +5354,12 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id);
  *                     determine.
  */
 int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes);
+
+/**
+ * This function is the same as av_get_audio_frame_duration(), except it works
+ * with AVCodecParameters instead of an AVCodecContext.
+ */
+int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes);
 
 
 typedef struct AVBitStreamFilterContext {

@@ -3217,10 +3217,43 @@ HRTFs. Default is 1.
 
 @item type
 Set processing type. Can be @var{time} or @var{freq}. @var{time} is
-processing audio in time domain which is slow but gives high quality output.
-@var{freq} is processing audio in frequency domain which is fast but gives
-mediocre output. Default is @var{freq}.
+processing audio in time domain which is slow.
+@var{freq} is processing audio in frequency domain which is fast.
+Default is @var{freq}.
+
+@item speakers
+Set custom positions of virtual loudspeakers. Syntax for this option is:
+<CH> <AZIM> <ELEV>[|<CH> <AZIM> <ELEV>|...].
+Each virtual loudspeaker is described with short channel name following with
+azimuth and elevation in degreees.
+Each virtual loudspeaker description is separated by '|'.
+For example to override front left and front right channel positions use:
+'speakers=FL 45 15|FR 345 15'.
+Descriptions with unrecognised channel names are ignored.
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Using ClubFritz6 sofa file:
+@example
+sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=1
+@end example
+
+@item
+Using ClubFritz12 sofa file and bigger radius with small rotation:
+@example
+sofalizer=sofa=/path/to/ClubFritz12.sofa:type=freq:radius=2:rotation=5
+@end example
+
+@item
+Similar as above but with custom speaker positions for front left, front right, rear left and rear right
+and also with custom gain:
+@example
+"sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=2:speakers=FL 45|FR 315|RL 135|RR 225:gain=28"
+@end example
+@end itemize
 
 @section stereotools
 
@@ -3318,6 +3351,22 @@ Set S/C level. Default is 1. Allowed range is from 1 to 100.
 @item phase
 Set the stereo phase in degrees. Default is 0. Allowed range is from 0 to 360.
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply karaoke like effect:
+@example
+stereotools=mlev=0.015625
+@end example
+
+@item
+Convert M/S signal to L/R:
+@example
+"stereotools=mode=ms>lr"
+@end example
+@end itemize
 
 @section stereowiden
 

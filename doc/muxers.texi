@@ -1238,6 +1238,11 @@ muxers/codecs. It is set to @code{0} by default.
 @item initial_offset @var{offset}
 Specify timestamp offset to apply to the output packet timestamps. The
 argument must be a time duration specification, and defaults to 0.
+
+@item write_empty_segments @var{1|0}
+If enabled, write an empty segment if there are no packets during the period a
+segment would usually span. Otherwise, the segment will be filled with the next
+packet written. Defaults to @code{0}.
 @end table
 
 @subsection Examples

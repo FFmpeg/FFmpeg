@@ -29,6 +29,8 @@
 #include <netcdf.h>
 
 #include "libavcodec/avfft.h"
+#include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intmath.h"
 #include "libavutil/opt.h"
@@ -52,6 +54,12 @@ typedef struct NCSofa {  /* contains data of one SOFA file */
     float *data_ir;      /* IRs (time-domain) */
 } NCSofa;
 
+typedef struct VirtualSpeaker {
+    uint8_t set;
+    float azim;
+    float elev;
+} VirtualSpeaker;
+
 typedef struct SOFAlizerContext {
     const AVClass *class;
 
@@ -61,6 +69,7 @@ typedef struct SOFAlizerContext {
     int sample_rate;            /* sample rate from SOFA file */
     float *speaker_azim;        /* azimuth of the virtual loudspeakers */
     float *speaker_elev;        /* elevation of the virtual loudspeakers */
+    char *speakers_pos;         /* custom positions of the virtual loudspeakers */
     float gain_lfe;             /* gain applied to LFE channel */
     int lfe_channel;            /* LFE channel position in channel layout */
 
@@ -88,6 +97,8 @@ typedef struct SOFAlizerContext {
     float elevation;     /* elevation of virtual loudspeakers (in deg.) */
     float radius;        /* distance virtual loudspeakers to listener (in metres) */
     int type;            /* processing type */
+
+    VirtualSpeaker vspkrpos[64];
 
     FFTContext *fft[2], *ifft[2];
     FFTComplex *data_hrtf[2];
@@ -362,6 +373,62 @@ error:
     return ret;
 }
 
+static int parse_channel_name(char **arg, int *rchannel)
+{
+    char buf[8];
+    int len, i, channel_id = 0;
+    int64_t layout, layout0;
+
+    /* try to parse a channel name, e.g. "FL" */
+    if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
+        layout0 = layout = av_get_channel_layout(buf);
+        /* channel_id <- first set bit in layout */
+        for (i = 32; i > 0; i >>= 1) {
+            if (layout >= (int64_t)1 << i) {
+                channel_id += i;
+                layout >>= i;
+            }
+        }
+        /* reject layouts that are not a single channel */
+        if (channel_id >= 64 || layout0 != (int64_t)1 << channel_id)
+            return AVERROR(EINVAL);
+        *rchannel = channel_id;
+        *arg += len;
+        return 0;
+    }
+    return AVERROR(EINVAL);
+}
+
+static void parse_speaker_pos(AVFilterContext *ctx, int64_t in_channel_layout)
+{
+    SOFAlizerContext *s = ctx->priv;
+    char *arg, *tokenizer, *p, *args = av_strdup(s->speakers_pos);
+
+    if (!args)
+        return;
+    p = args;
+
+    while ((arg = av_strtok(p, "|", &tokenizer))) {
+        float azim, elev;
+        int out_ch_id;
+
+        p = NULL;
+        if (parse_channel_name(&arg, &out_ch_id))
+            continue;
+        if (sscanf(arg, "%f %f", &azim, &elev) == 2) {
+            s->vspkrpos[out_ch_id].set = 1;
+            s->vspkrpos[out_ch_id].azim = azim;
+            s->vspkrpos[out_ch_id].elev = elev;
+        } else if (sscanf(arg, "%f", &azim) == 1) {
+            s->vspkrpos[out_ch_id].set = 1;
+            s->vspkrpos[out_ch_id].azim = azim;
+            s->vspkrpos[out_ch_id].elev = 0;
+        }
+    }
+
+    av_free(args);
+}
+
 static int get_speaker_pos(AVFilterContext *ctx,
                            float *speaker_azim, float *speaker_elev)
 {
@@ -375,6 +442,9 @@ static int get_speaker_pos(AVFilterContext *ctx,
         return AVERROR(EINVAL);
 
     s->lfe_channel = -1;
+
+    if (s->speakers_pos)
+        parse_speaker_pos(ctx, channels_layout);
 
     /* set speaker positions according to input channel configuration: */
     for (m = 0, ch = 0; ch < n_conv && m < 64; m++) {
@@ -417,6 +487,12 @@ static int get_speaker_pos(AVFilterContext *ctx,
         default:
             return AVERROR(EINVAL);
         }
+
+        if (s->vspkrpos[m].set) {
+            azim[ch] = s->vspkrpos[m].azim;
+            elev[ch] = s->vspkrpos[m].elev;
+        }
+
         if (mask)
             ch++;
     }
@@ -1114,6 +1190,7 @@ static const AVOption sofalizer_options[] = {
     { "type",      "set processing", OFFSET(type),      AV_OPT_TYPE_INT,    {.i64=1},       0,   1, .flags = FLAGS, "type" },
     { "time",      "time domain",      0,               AV_OPT_TYPE_CONST,  {.i64=0},       0,   0, .flags = FLAGS, "type" },
     { "freq",      "frequency domain", 0,               AV_OPT_TYPE_CONST,  {.i64=1},       0,   0, .flags = FLAGS, "type" },
+    { "speakers",  "set speaker custom positions", OFFSET(speakers_pos), AV_OPT_TYPE_STRING,  {.str=0},    0, 0, .flags = FLAGS },
     { NULL }
 };
 

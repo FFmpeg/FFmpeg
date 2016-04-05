@@ -194,6 +194,7 @@ static int get_params_size(
 {
     size_t total_size = 0;
     size_t ps_count;
+    int is_count_bad = 0;
     size_t i;
     int status;
     status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(vid_fmt,
@@ -203,11 +204,12 @@ static int get_params_size(
                                                                 &ps_count,
                                                                 NULL);
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting parameter set count: %d\n", status);
-        return AVERROR_EXTERNAL;
+        is_count_bad = 1;
+        ps_count     = 0;
+        status       = 0;
     }
 
-    for(i = 0; i < ps_count; i++){
+    for (i = 0; i < ps_count || is_count_bad; i++) {
         const uint8_t *ps;
         size_t ps_size;
         status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(vid_fmt,
@@ -216,12 +218,22 @@ static int get_params_size(
                                                                     &ps_size,
                                                                     NULL,
                                                                     NULL);
-        if(status){
-            av_log(avctx, AV_LOG_ERROR, "Error getting parameter set size for index %zd: %d\n", i, status);
-            return AVERROR_EXTERNAL;
+        if (status) {
+            /*
+             * When ps_count is invalid, status != 0 ends the loop normally
+             * unless we didn't get any parameter sets.
+             */
+            if (i > 0 && is_count_bad) status = 0;
+
+            break;
         }
 
         total_size += ps_size + sizeof(start_code);
+    }
+
+    if (status) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting parameter set sizes: %d\n", status);
+        return AVERROR_EXTERNAL;
     }
 
     *size = total_size;
@@ -235,6 +247,7 @@ static int copy_param_sets(
     size_t                      dst_size)
 {
     size_t ps_count;
+    int is_count_bad = 0;
     int status;
     size_t offset = 0;
     size_t i;
@@ -246,11 +259,13 @@ static int copy_param_sets(
                                                                 &ps_count,
                                                                 NULL);
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting parameter set count for copying: %d\n", status);
-        return AVERROR_EXTERNAL;
+        is_count_bad = 1;
+        ps_count     = 0;
+        status       = 0;
     }
 
-    for (i = 0; i < ps_count; i++) {
+
+    for (i = 0; i < ps_count || is_count_bad; i++) {
         const uint8_t *ps;
         size_t ps_size;
         size_t next_offset;
@@ -262,8 +277,9 @@ static int copy_param_sets(
                                                                     NULL,
                                                                     NULL);
         if (status) {
-            av_log(avctx, AV_LOG_ERROR, "Error getting parameter set data for index %zd: %d\n", i, status);
-            return AVERROR_EXTERNAL;
+            if (i > 0 && is_count_bad) status = 0;
+
+            break;
         }
 
         next_offset = offset + sizeof(start_code) + ps_size;
@@ -277,6 +293,11 @@ static int copy_param_sets(
 
         memcpy(dst + offset, ps, ps_size);
         offset = next_offset;
+    }
+
+    if (status) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting parameter set data: %d\n", status);
+        return AVERROR_EXTERNAL;
     }
 
     return 0;
@@ -1275,7 +1296,6 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
 
     if(!vtctx->session) return 0;
 
-    VTCompressionSessionInvalidate(vtctx->session);
     pthread_cond_destroy(&vtctx->cv_sample_sent);
     pthread_mutex_destroy(&vtctx->lock);
     CFRelease(vtctx->session);

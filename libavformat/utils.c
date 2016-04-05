@@ -3124,7 +3124,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
         if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO)
             continue;
         // the check for tb_unreliable() is not completely correct, since this is not about handling
-        // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
+        // an unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
         // ipmovie.c produces.
         if (tb_unreliable(st->codec) && st->info->duration_count > 15 && st->info->duration_gcd > FFMAX(1, st->time_base.den/(500LL*st->time_base.num)) && !st->r_frame_rate.num)
             av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, st->time_base.den, st->time_base.num * st->info->duration_gcd, INT_MAX);
@@ -4864,5 +4864,28 @@ int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *
         return 1;
     }
 
+    return 0;
+}
+
+int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf)
+{
+    int ret;
+    char *str;
+
+    ret = av_bprint_finalize(buf, &str);
+    if (ret < 0)
+        return ret;
+    if (!av_bprint_is_complete(buf)) {
+        av_free(str);
+        return AVERROR(ENOMEM);
+    }
+
+    par->extradata = str;
+    /* Note: the string is NUL terminated (so extradata can be read as a
+     * string), but the ending character is not accounted in the size (in
+     * binary formats you are likely not supposed to mux that character). When
+     * extradata is copied, it is also padded with AV_INPUT_BUFFER_PADDING_SIZE
+     * zeros. */
+    par->extradata_size = buf->len;
     return 0;
 }
