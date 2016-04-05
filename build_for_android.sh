@@ -159,26 +159,24 @@ FFMPEG_FLAGS=" \
   --enable-parser=png  \
   --enable-protocol=file"
 
-#rm -rf $X264/build
+rm -rf $X264/build
 
-#cd $X264
-#export CFLAGS=$X264_CFLAGS
-#./configure $X264_FLAGS  || exit 1
-#make clean
-#make -j4 || exit 1
-#make install || exit 1
+cd $X264
+export CFLAGS=$X264_CFLAGS
+./configure $X264_FLAGS  || exit 1
+make clean
+make -j4 || exit 1
+make install || exit 1
   
 cd $FFMPEG
-#export CFLAGS=""
-#export EXTRA_CFLAGS=""
-#export EXTRA_LDFLAGS=""
-#./configure $FFMPEG_FLAGS --extra-cflags="$FFMPEG_CFLAGS $FFMPEG_EXTRA_CFLAGS" \
-#  --extra-ldflags="$FFMPEG_EXTRA_LDFLAGS" --prefix=$PREFIX || exit 1
-#make clean
-#make -j4 || exit 1
-#make install || exit 1
-
-#$SYSROOT/usr/include/linux $FFMPEG
+export CFLAGS=""
+export EXTRA_CFLAGS=""
+export EXTRA_LDFLAGS=""
+./configure $FFMPEG_FLAGS --extra-cflags="$FFMPEG_CFLAGS $FFMPEG_EXTRA_CFLAGS" \
+  --extra-ldflags="$FFMPEG_EXTRA_LDFLAGS" --prefix=$PREFIX || exit 1
+make clean
+make -j4 || exit 1
+make install || exit 1
 
 $CC ffmpeg.c ffmpeg_opt.c cmdutils.c ffmpeg_filter.c \
     $FFMPEG_CFLAGS \
