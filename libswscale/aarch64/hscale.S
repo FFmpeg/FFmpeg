@@ -51,7 +51,7 @@ function ff_hscale_8_to_15_neon, export=1
         add                 x10, x10, w6, UXTW #1       // filter2 += filterSize*2
         addp                v4.4S, v4.4S, v5.4S         // horizontal pair adding of the 8x32-bit sums into 4x32-bit
         addp                v4.4S, v4.4S, v4.4S         // horizontal pair adding of the 4x32-bit sums into 2x32-bit
-        sqrshrun            v4.4H, v4.4S, #7            // shift and clip the 2x16-bit final values
+        sqshrn              v4.4H, v4.4S, #7            // shift and clip the 2x16-bit final values
         st1                 {v4.S}[0], [x1], #4         // write to destination
         subs                w2, w2, #2                  // dstW -= 2
         b.gt                1b                          // loop until end of line
