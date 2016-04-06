@@ -128,4 +128,7 @@ void ff_colorspacedsp_init(ColorSpaceDSPContext *dsp)
     init_yuv2yuv_fns(2, 12);
 
     dsp->multiply3x3 = multiply3x3_c;
+
+    if (ARCH_X86)
+        ff_colorspacedsp_x86_init(dsp);
 }

@@ -48,4 +48,7 @@ typedef struct ColorSpaceDSPContext {
 
 void ff_colorspacedsp_init(ColorSpaceDSPContext *dsp);
 
+/* internal */
+void ff_colorspacedsp_x86_init(ColorSpaceDSPContext *dsp);
+
 #endif /* AVFILTER_COLORSPACEDSP_H */
