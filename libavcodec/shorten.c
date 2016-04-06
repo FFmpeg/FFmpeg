@@ -387,6 +387,9 @@ static int read_header(ShortenContext *s)
     if (s->version > 1)
         s->lpcqoffset = V2LPCQOFFSET;
 
+    if (s->avctx->extradata_size > 0)
+        goto end;
+
     if (get_ur_golomb_shorten(&s->gb, FNSIZE) != FN_VERBATIM) {
         av_log(s->avctx, AV_LOG_ERROR,
                "missing verbatim section at beginning of stream\n");
@@ -407,6 +410,7 @@ static int read_header(ShortenContext *s)
     if ((ret = decode_wave_header(s->avctx, s->header, s->header_size)) < 0)
         return ret;
 
+end:
     s->cur_chan = 0;
     s->bitshift = 0;
 
