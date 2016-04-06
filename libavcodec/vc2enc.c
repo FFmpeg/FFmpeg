@@ -164,6 +164,7 @@ typedef struct VC2EncContext {
     int chroma_y_shift;
 
     /* Rate control stuff */
+    int frame_max_bytes;
     int slice_max_bytes;
     int slice_min_bytes;
     int q_ceil;
@@ -715,7 +716,7 @@ static int calc_slice_sizes(VC2EncContext *s)
 
     for (i = 0; i < s->num_x*s->num_y; i++) {
         SliceArgs *args = &enc_args[i];
-        bytes_left += s->slice_max_bytes - args->bytes;
+        bytes_left += args->bytes;
         for (j = 0; j < slice_redist_range; j++) {
             if (args->bytes > bytes_top[j]) {
                 bytes_top[j] = args->bytes;
@@ -725,8 +726,10 @@ static int calc_slice_sizes(VC2EncContext *s)
         }
     }
 
+    bytes_left = s->frame_max_bytes - bytes_left;
+
     /* Second pass - distribute leftover bytes */
-    while (1) {
+    while (bytes_left > 0) {
         int distributed = 0;
         for (i = 0; i < slice_redist_range; i++) {
             SliceArgs *args;
@@ -994,13 +997,13 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                                       const AVFrame *frame, int *got_packet)
 {
     int ret = 0;
-    int sig_size = 256;
+    int slice_ceil, sig_size = 256;
     VC2EncContext *s = avctx->priv_data;
     const int bitexact = avctx->flags & AV_CODEC_FLAG_BITEXACT;
     const char *aux_data = bitexact ? "Lavc" : LIBAVCODEC_IDENT;
     const int aux_data_size = bitexact ? sizeof("Lavc") : sizeof(LIBAVCODEC_IDENT);
     const int header_size = 100 + aux_data_size;
-    int64_t max_frame_bytes, r_bitrate = avctx->bit_rate >> (s->interlaced);
+    int64_t r_bitrate = avctx->bit_rate >> (s->interlaced);
 
     s->avctx = avctx;
     s->size_scaler = 2;
@@ -1009,18 +1012,21 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     s->next_parse_offset = 0;
 
     /* Rate control */
-    max_frame_bytes = (av_rescale(r_bitrate, s->avctx->time_base.num,
-                                  s->avctx->time_base.den) >> 3) - header_size;
-    s->slice_max_bytes = av_rescale(max_frame_bytes, 1, s->num_x*s->num_y);
+    s->frame_max_bytes = (av_rescale(r_bitrate, s->avctx->time_base.num,
+                                     s->avctx->time_base.den) >> 3) - header_size;
+    s->slice_max_bytes = slice_ceil = av_rescale(s->frame_max_bytes, 1, s->num_x*s->num_y);
 
     /* Find an appropriate size scaler */
     while (sig_size > 255) {
         int r_size = SSIZE_ROUND(s->slice_max_bytes);
+        if (r_size > slice_ceil) {
+            s->slice_max_bytes -= r_size - slice_ceil;
+            r_size = SSIZE_ROUND(s->slice_max_bytes);
+        }
         sig_size = r_size/s->size_scaler; /* Signalled slize size */
         s->size_scaler <<= 1;
     }
 
-    s->slice_max_bytes = SSIZE_ROUND(s->slice_max_bytes);
     s->slice_min_bytes = s->slice_max_bytes - s->slice_max_bytes*(s->tolerance/100.0f);
 
     ret = encode_frame(s, avpkt, frame, aux_data, header_size, s->interlaced);
