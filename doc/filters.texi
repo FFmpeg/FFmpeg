@@ -4937,6 +4937,189 @@ For example to convert from BT.601 to SMPTE-240M, use the command:
 colormatrix=bt601:smpte240m
 @end example
 
+@section colorspace
+
+Convert colorspace, transfer characteristics or color primaries.
+
+The filter accepts the following options:
+
+@table @option
+@item all
+Specify all color properties at once.
+
+The accepted values are:
+@table @samp
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG
+
+@item bt601-6-525
+BT.601-6 525
+
+@item bt601-6-625
+BT.601-6 625
+
+@item bt709
+BT.709
+
+@item smpte170m
+SMPTE-170M
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020
+BT.2020
+
+@end table
+
+@item space
+Specify output colorspace.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item fcc
+FCC
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020ncl
+BT.2020 with non-constant luminance
+
+@end table
+
+@item trc
+Specify output transfer characteristics.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item gamma22
+Constant gamma of 2.2
+
+@item gamma28
+Constant gamma of 2.8
+
+@item smpte170m
+SMPTE-170M, BT.601-6 625 or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020-10
+BT.2020 for 10-bits content
+
+@item bt2020-12
+BT.2020 for 12-bits content
+
+@end table
+
+@item prm
+Specify output color primaries.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020
+BT.2020
+
+@end table
+
+@item rng
+Specify output color range.
+
+The accepted values are:
+@table @samp
+@item mpeg
+MPEG (restricted) range
+
+@item jpeg
+JPEG (full) range
+
+@end table
+
+@item format
+Specify output color format.
+
+The accepted values are:
+@table @samp
+@item yuv420p
+YUV 4:2:0 planar 8-bits
+
+@item yuv420p10
+YUV 4:2:0 planar 10-bits
+
+@item yuv420p12
+YUV 4:2:0 planar 12-bits
+
+@item yuv422p
+YUV 4:2:2 planar 8-bits
+
+@item yuv422p10
+YUV 4:2:2 planar 10-bits
+
+@item yuv422p12
+YUV 4:2:2 planar 12-bits
+
+@item yuv444p
+YUV 4:4:4 planar 8-bits
+
+@item yuv444p10
+YUV 4:4:4 planar 10-bits
+
+@item yuv444p12
+YUV 4:4:4 planar 12-bits
+
+@end table
+
+@item fast
+Do a fast conversion, which skips gamma/primary correction. This will take
+significantly less CPU, but will be mathematically incorrect. To get output
+compatible with that produced by the colormatrix filter, use fast=1.
+@end table
+
+The filter converts the transfer characteristics, color space and color
+primaries to the specified user values. The output value, if not specified,
+is set to a default value based on the "all" property. If that property is
+also not specified, the filter will log an error. The output color range and
+format default to the same value as the input color range and format. The
+input transfer characteristics, color space, color primaries and color range
+should be set on the input data. If any of these are missing, the filter will
+log an error and no conversion will take place.
+
+For example to convert the input to SMPTE-240M, use the command:
+@example
+colorspace=smpte240m
+@end example
+
 @section convolution
 
 Apply convolution 3x3 or 5x5 filter.

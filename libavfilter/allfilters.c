@@ -152,6 +152,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(COLORKEY,       colorkey,       vf);
     REGISTER_FILTER(COLORLEVELS,    colorlevels,    vf);
     REGISTER_FILTER(COLORMATRIX,    colormatrix,    vf);
+    REGISTER_FILTER(COLORSPACE,     colorspace,     vf);
     REGISTER_FILTER(CONVOLUTION,    convolution,    vf);
     REGISTER_FILTER(COPY,           copy,           vf);
     REGISTER_FILTER(COREIMAGE,      coreimage,      vf);
