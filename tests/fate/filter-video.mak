@@ -627,7 +627,7 @@ tests/data/file4560-override2rotate0.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/dat
 
 FATE_AFILTER-$(call ALLYES, MOV_DEMUXER MOV_MUXER) += fate-filter-meta-4560-rotate0
 fate-filter-meta-4560-rotate0: tests/data/file4560-override2rotate0.mov
-fate-filter-meta-4560-rotate0: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/file4560-override2rotate0.mov
+fate-filter-meta-4560-rotate0: CMD = framecrc -flags +bitexact -c:a aac_fixed -i $(TARGET_PATH)/tests/data/file4560-override2rotate0.mov
 
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
