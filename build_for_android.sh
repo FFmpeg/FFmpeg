@@ -81,16 +81,16 @@ FFMPEG_FLAGS=" \
   --enable-hwaccels \
   --enable-avdevice\
   --enable-postproc \
+  --enable-avfilter \
+  --enable-swscale \
+  --enable-avresample \
   --enable-jni \
   --enable-protocols \
   --enable-parsers \
-  --enable-avfilter \
   --enable-demuxers \
   --disable-demuxer=sbg \
   --enable-decoders \
   --enable-bsfs \
-  --enable-swscale \
-  --enable-avresample \
   --enable-asm \
   --enable-version3 \
   --enable-demuxers \
@@ -115,13 +115,11 @@ FFMPEG_FLAGS=" \
   --enable-encoder=rawvideo  \
   --enable-decoder=aac  \
   --enable-encoder=aac  \
-  --enable-bsf=aac_adtstoasc  \
   --enable-libx264  \
   --enable-encoder=libx264  \
   --enable-mediacodec \
   --enable-decoder=h264 \
   --enable-decoder=h264_mediacodec \
-  --enable-bsf=h264_mp4toannexb  \
   --enable-filters \
   --enable-parsers"
 
