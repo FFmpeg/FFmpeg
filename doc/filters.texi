@@ -10618,6 +10618,43 @@ less than @code{0}, the filter will try to use a good random seed on a
 best effort basis.
 @end table
 
+@section readvitc
+
+Read vertical interval timecode (VITC) information from the top lines of a
+video frame.
+
+The filter adds frame metadata key @code{lavfi.readvitc.tc_str} with the
+timecode value, if a valid timecode has been detected. Further metadata key
+@code{lavfi.readvitc.found} is set to 0/1 depending on whether
+timecode data has been found or not.
+
+This filter accepts the following options:
+
+@table @option
+@item scan_max
+Set the maximum number of lines to scan for VITC data. If the value is set to
+@code{-1} the full video frame is scanned. Default is @code{45}.
+
+@item thr_b
+Set the luma threshold for black. Accepts float numbers in the range [0.0,1.0],
+default value is @code{0.2}. The value must be equal or less than @code{thr_w}.
+
+@item thr_w
+Set the luma threshold for white. Accepts float numbers in the range [0.0,1.0],
+default value is @code{0.6}. The value must be equal or greater than @code{thr_b}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Detect and draw VITC data onto the video frame; if no valid VITC is detected,
+draw @code{--:--:--:--} as a placeholder:
+@example
+ffmpeg -i input.avi -filter:v 'readvitc,drawtext=fontfile=FreeMono.ttf:text=%@{metadata\\:lavfi.readvitc.tc_str\\:--\\\\\\:--\\\\\\:--\\\\\\:--@}:x=(w-tw)/2:y=400-ascent'
+@end example
+@end itemize
+
 @section remap
 
 Remap pixels using 2nd: Xmap and 3rd: Ymap input video stream.

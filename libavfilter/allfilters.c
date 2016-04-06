@@ -247,6 +247,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(PULLUP,         pullup,         vf);
     REGISTER_FILTER(QP,             qp,             vf);
     REGISTER_FILTER(RANDOM,         random,         vf);
+    REGISTER_FILTER(READVITC,       readvitc,       vf);
     REGISTER_FILTER(REALTIME,       realtime,       vf);
     REGISTER_FILTER(REMAP,          remap,          vf);
     REGISTER_FILTER(REMOVEGRAIN,    removegrain,    vf);
