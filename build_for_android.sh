@@ -44,7 +44,7 @@ FFMPEG_CFLAGS="-O3 -Wall -mthumb -pipe -fpic -fasm \
   -mfpu=neon \
   -mfloat-abi=softfp \
   -mvectorize-with-neon-quad"
-FFMPEG_EXTRA_CFLAGS="-I$X264/build/include" #for ffmpeg
+FFMPEG_EXTRA_CFLAGS="-I$X264/build/include -DHAVE_ISNAN -DHAVE_ISINF" #for ffmpeg
 FFMPEG_EXTRA_LDFLAGS="-L$X264/build/lib -Wl,--fix-cortex-a8"
 
 X264_FLAGS="--prefix=$X264/build \
@@ -78,8 +78,9 @@ FFMPEG_FLAGS=" \
   --disable-ffmpeg \
   --disable-ffprobe \
   --disable-ffserver \
-  --disable-avdevice\
-  --disable-postproc \
+  --enable-hwaccels \
+  --enable-avdevice\
+  --enable-postproc \
   --enable-jni \
   --enable-protocols \
   --enable-parsers \
@@ -92,23 +93,8 @@ FFMPEG_FLAGS=" \
   --enable-avresample \
   --enable-asm \
   --enable-version3 \
-  --enable-demuxer=image2  \
-  --enable-demuxer=image2pipe  \
-  --enable-demuxer=image_png_pipe  \
-  --enable-demuxer=matroska  \
-  --enable-demuxer=mov  \
-  --enable-demuxer=mpegts  \
-  --enable-demuxer=mp3  \
-  --enable-demuxer=pcm_s16le  \
-  --enable-demuxer=rawvideo  \
-  --enable-muxer=image2  \
-  --enable-muxer=image2pipe  \
-  --enable-muxer=matroska  \
-  --enable-muxer=mov  \
-  --enable-muxer=mpegts  \
-  --enable-muxer=mp4  \
-  --enable-muxer=pcm_s16le  \
-  --enable-muxer=rawvideo  \
+  --enable-demuxers \
+  --enable-muxers \
   --enable-decoder=amrnb  \
   --enable-decoder=amrwb  \
   --enable-decoder=mp3  \
@@ -136,28 +122,8 @@ FFMPEG_FLAGS=" \
   --enable-decoder=h264 \
   --enable-decoder=h264_mediacodec \
   --enable-bsf=h264_mp4toannexb  \
-  --enable-filter=amovie  \
-  --enable-filter=movie  \
-  --enable-filter=amerge  \
-  --enable-filter=amix  \
-  --enable-filter=aresample  \
-  --enable-filter=pan  \
-  --enable-filter=resample  \
-  --enable-filter=volume  \
-  --enable-filter=null  \
-  --enable-filter=anull  \
-  --enable-filter=crop  \
-  --enable-filter=transpose  \
-  --enable-filter=scale  \
-  --enable-filter=alphaextract  \
-  --enable-parser=aac  \
-  --enable-parser=aac_latm  \
-  --enable-parser=mpegaudio  \
-  --enable-parser=h263  \
-  --enable-parser=h264  \
-  --enable-parser=mpeg4video  \
-  --enable-parser=png  \
-  --enable-protocol=file"
+  --enable-filters \
+  --enable-parsers"
 
 rm -rf $X264/build
 
@@ -178,31 +144,45 @@ make clean
 make -j4 || exit 1
 make install || exit 1
 
-$CC ffmpeg.c ffmpeg_opt.c cmdutils.c ffmpeg_filter.c \
+$CC -c ffmpeg.c ffmpeg_opt.c cmdutils.c ffmpeg_filter.c \
     $FFMPEG_CFLAGS \
     -I"$PREFIX/include" \
     -I"$SYSROOT/usr/include" \
     -I"$FFMPEG" \
     -L"$PREFIX/lib" \
-    -Wl,--fix-cortex-a8 \
-    -shared -o $PREFIX/lib/libffmpeg.so || exit 1
+    -Wl,--fix-cortex-a8 || exit 1
+
+
+$AR -crv $FFMPEG/ffmpeg.a ffmpeg.o
+$AR -crv $FFMPEG/ffmpeg_opt.a ffmpeg_opt.o
+$AR -crv $FFMPEG/ffmpeg_filter.a ffmpeg_filter.o
+$AR -crv $FFMPEG/cmdutils.a cmdutils.o
+
 cp -f ffmpeg.h $PREFIX/include/ 
 cp -f cmdutils.h $PREFIX/include/
 cp -f config.h $PREFIX/include/
 
 
-#$LD -rpath-link=$SYSROOT/usr/lib \
-#    -L$SYSROOT/usr/lib \
-#    -soname libffmpeg.so \
-#    -shared -nostdlib  \
-#    -Bsymbolic \
-#    --whole-archive --no-undefined \
-#    -o $PREFIX/libffmpeg.so \
-#    $PREFIX/lib/libavcodec.a \
-#    $PREFIX/lib/libavfilter.a \
-#    $PREFIX/lib/libswresample.a \
-#    $PREFIX/lib/libavformat.a \
-#    $PREFIX/lib/libavutil.a \
-#    $PREFIX/lib/libswscale.a \
-#    -lc -lm -lz -ldl -llog \
-#    $TOOLCHAIN/lib/gcc/arm-linux-androideabi/4.8/libgcc.a # 这里使用的工具链包含gcc4.8
+$LD -rpath-link=$SYSROOT/usr/lib \
+    -L$SYSROOT/usr/lib \
+    -soname libffmpeg.so \
+    -shared -nostdlib  \
+    -Bsymbolic \
+    --whole-archive --no-undefined \
+    -o $PREFIX/libffmpeg.so \
+    $X264/build/lib/libx264.a \
+    $PREFIX/lib/libavcodec.a \
+    $PREFIX/lib/libavfilter.a \
+    $PREFIX/lib/libswresample.a \
+    $PREFIX/lib/libavformat.a \
+    $PREFIX/lib/libavutil.a \
+    $PREFIX/lib/libswscale.a \
+    $PREFIX/lib/libavdevice.a \
+    $PREFIX/lib/libpostproc.a \
+    $PREFIX/lib/libavresample.a \
+    $FFMPEG/cmdutils.a \
+    $FFMPEG/ffmpeg_opt.a \
+    $FFMPEG/ffmpeg_filter.a \
+    $FFMPEG/ffmpeg.a \
+    -lc -lz -lm -ldl -llog \
+    $TOOLCHAIN/lib/gcc/arm-linux-androideabi/4.8/libgcc.a # 这里使用的工具链包含gcc4.8

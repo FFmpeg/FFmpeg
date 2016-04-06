@@ -324,7 +324,7 @@ SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl_internal.h deshake_opencl_kernel.h unsharp_opencl_kernel.h
 
 OBJS-$(HAVE_THREADS)                         += pthread.o
-OBJS-$(CONFIG_SHARED)                        += log2_tab.o
+#OBJS-$(CONFIG_SHARED)                        += log2_tab.o
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats

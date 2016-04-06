@@ -16,7 +16,7 @@ OBJS = audioconvert.o                        \
        swresample_frame.o                    \
 
 OBJS-$(CONFIG_LIBSOXR) += soxr_resample.o
-OBJS-$(CONFIG_SHARED)  += log2_tab.o
+#OBJS-$(CONFIG_SHARED)  += log2_tab.o
 
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES) += swresampleres.o

@@ -20,7 +20,7 @@ OBJS = alphablend.o                                     \
        vscale.o                                         \
        gamma.o                                          \
 
-OBJS-$(CONFIG_SHARED)        += log2_tab.o
+#OBJS-$(CONFIG_SHARED)        += log2_tab.o
 
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES) += swscaleres.o

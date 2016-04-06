@@ -118,7 +118,6 @@ OBJS = adler32.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
        log.o                                                            \
-       log2_tab.o                                                       \
        mathematics.o                                                    \
        mastering_display_metadata.o                                     \
        md5.o                                                            \
@@ -131,7 +130,6 @@ OBJS = adler32.o                                                        \
        pixelutils.o                                                     \
        random_seed.o                                                    \
        rational.o                                                       \
-       reverse.o                                                        \
        rc4.o                                                            \
        ripemd.o                                                         \
        samplefmt.o                                                      \
