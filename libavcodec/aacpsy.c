@@ -975,21 +975,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
 
     lame_apply_block_type(pch, &wi, uselongblock);
 
-    /* Calculate input sample maximums and evaluate clipping risk */
-    if (audio) {
-        for (i = 0; i < AAC_NUM_BLOCKS_SHORT; i++) {
-            const float *wbuf = audio + i * AAC_BLOCK_SIZE_SHORT;
-            float max = 0;
-            int j;
-            for (j = 0; j < AAC_BLOCK_SIZE_SHORT; j++)
-                max = FFMAX(max, fabsf(wbuf[j]));
-            clippings[i] = max;
-        }
-    } else {
-        for (i = 0; i < 8; i++)
-            clippings[i] = 0;
-    }
-
     wi.window_type[1] = prev_type;
     if (wi.window_type[0] != EIGHT_SHORT_SEQUENCE) {
         float clipping = 0.0f;

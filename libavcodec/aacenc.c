@@ -554,10 +554,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             if (!frame)
                 la = NULL;
             if (tag == TYPE_LFE) {
-                wi[ch].window_type[0] = ONLY_LONG_SEQUENCE;
+                wi[ch].window_type[0] = wi[ch].window_type[1] = ONLY_LONG_SEQUENCE;
                 wi[ch].window_shape   = 0;
                 wi[ch].num_windows    = 1;
                 wi[ch].grouping[0]    = 1;
+                wi[ch].clipping[0]    = 0;
 
                 /* Only the lowest 12 coefficients are used in a LFE channel.
                  * The expression below results in only the bottom 8 coefficients
@@ -582,9 +583,22 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->tns_max_bands      = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
                                         ff_tns_max_bands_128 [s->samplerate_index]:
                                         ff_tns_max_bands_1024[s->samplerate_index];
-            clip_avoidance_factor = 0.0f;
+
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
+
+            /* Calculate input sample maximums and evaluate clipping risk */
+            clip_avoidance_factor = 0.0f;
+            for (w = 0; w < ics->num_windows; w++) {
+                const float *wbuf = overlap + w * 128;
+                const int wlen = 2048 / ics->num_windows;
+                float max = 0;
+                int j;
+                /* mdct input is 2 * output */
+                for (j = 0; j < wlen; j++)
+                    max = FFMAX(max, fabsf(wbuf[j]));
+                wi[ch].clipping[w] = max;
+            }
             for (w = 0; w < ics->num_windows; w++) {
                 if (wi[ch].clipping[w] > CLIP_AVOIDANCE_FACTOR) {
                     ics->window_clipping[w] = 1;
