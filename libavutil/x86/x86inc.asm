@@ -1130,20 +1130,25 @@ INIT_XMM
     %if __emulate_avx
         %xdefine __src1 %7
         %xdefine __src2 %8
-        %ifnidn %6, %7
-            %if %0 >= 9
-                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8, %9}, %6, %8, %9
-            %else
-                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8}, %6, %8
-            %endif
-            %if %5 && %4 == 0
-                %ifnnum sizeof%8
+        %if %5 && %4 == 0
+            %ifnidn %6, %7
+                %ifidn %6, %8
+                    %xdefine __src1 %8
+                    %xdefine __src2 %7
+                %elifnnum sizeof%8
                     ; 3-operand AVX instructions with a memory arg can only have it in src2,
                     ; whereas SSE emulation prefers to have it in src1 (i.e. the mov).
                     ; So, if the instruction is commutative with a memory arg, swap them.
                     %xdefine __src1 %8
                     %xdefine __src2 %7
                 %endif
+            %endif
+        %endif
+        %ifnidn %6, __src1
+            %if %0 >= 9
+                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8, %9}, %6, __src2, %9
+            %else
+                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8}, %6, __src2
             %endif
             %if __sizeofreg == 8
                 MOVQ %6, __src1
