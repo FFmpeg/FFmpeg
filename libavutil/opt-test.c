@@ -68,7 +68,7 @@ int main(void)
 {
     int i;
     TestContext test_ctx = { .class = &test_class };
-    const char *options[] = {
+    static const char *options[] = {
         "",
         ":",
         "=",

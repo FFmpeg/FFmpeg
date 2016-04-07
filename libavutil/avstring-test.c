@@ -25,7 +25,7 @@
 int main(void)
 {
     int i;
-    const char *strings[] = {
+    static const char *strings[] = {
         "''",
         "",
         ":",
