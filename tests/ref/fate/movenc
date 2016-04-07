@@ -133,3 +133,14 @@ write_data len 476, time 1566667, type sync atom moof
 write_data len 340, time 2233333, type boundary atom moof
 write_data len 262, time nopts, type trailer atom -
 a4280bdc23af2c4334ec2da3fa946d3a 3541 vfr-noduration-interleave
+write_data len 1219, time nopts, type header atom ftyp
+write_data len 620, time 0, type sync atom moof
+write_data len 616, time 1000000, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
+35bc6a836b76484daa366b0284cf8c23 2603 delay-moov-elst-neg-cts
+write_data len 36, time nopts, type header atom ftyp
+write_data len 1147, time nopts, type header atom -
+write_data len 900, time 0, type sync atom moof
+write_data len 616, time 1033333, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
+af285c1617bfd4799aa7280447f1947d 2847 empty-moov-neg-cts
