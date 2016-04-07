@@ -29,11 +29,12 @@
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
+#include "bitstream.h"
 #include "blockdsp.h"
 #include "bswapdsp.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "internal.h"
 
 #define BLOCK_TYPE_VLC_BITS 5
@@ -136,8 +137,8 @@ typedef struct FourXContext {
     BswapDSPContext bbdsp;
     uint16_t *frame_buffer;
     uint16_t *last_frame_buffer;
-    GetBitContext pre_gb;          ///< ac/dc prefix
-    GetBitContext gb;
+    BitstreamContext pre_bc;    // ac/dc prefix
+    BitstreamContext bc;
     GetByteContext g;
     GetByteContext g2;
     int mv[256];
@@ -352,8 +353,8 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
         return AVERROR_INVALIDDATA;
 
     h     = 1 << log2h;
-    code  = get_vlc2(&f->gb, block_type_vlc[1 - (f->version > 1)][index].table,
-                     BLOCK_TYPE_VLC_BITS, 1);
+    code  = bitstream_read_vlc(&f->bc, block_type_vlc[1 - (f->version > 1)][index].table,
+                               BLOCK_TYPE_VLC_BITS, 1);
     if (code < 0 || code > 6)
         return AVERROR_INVALIDDATA;
 
@@ -453,7 +454,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
                        bitstream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + bitstream_size,
            0, AV_INPUT_BUFFER_PADDING_SIZE);
-    init_get_bits(&f->gb, f->bitstream_buffer, 8 * bitstream_size);
+    bitstream_init(&f->bc, f->bitstream_buffer, 8 * bitstream_size);
 
     wordstream_offset = extra + bitstream_size;
     bytestream_offset = extra + bitstream_size + wordstream_size;
@@ -484,19 +485,19 @@ static int decode_i_block(FourXContext *f, int16_t *block)
     int code, i, j, level, val;
 
     /* DC coef */
-    val = get_vlc2(&f->pre_gb, f->pre_vlc.table, ACDC_VLC_BITS, 3);
+    val = bitstream_read_vlc(&f->pre_bc, f->pre_vlc.table, ACDC_VLC_BITS, 3);
     if (val >> 4)
         av_log(f->avctx, AV_LOG_ERROR, "error dc run != 0\n");
 
     if (val)
-        val = get_xbits(&f->gb, val);
+        val = bitstream_read_xbits(&f->bc, val);
 
     val        = val * dequant_table[0] + f->last_dc;
     f->last_dc = block[0] = val;
     /* AC coefs */
     i = 1;
     for (;;) {
-        code = get_vlc2(&f->pre_gb, f->pre_vlc.table, ACDC_VLC_BITS, 3);
+        code = bitstream_read_vlc(&f->pre_bc, f->pre_vlc.table, ACDC_VLC_BITS, 3);
 
         /* EOB */
         if (code == 0)
@@ -504,7 +505,7 @@ static int decode_i_block(FourXContext *f, int16_t *block)
         if (code == 0xf0) {
             i += 16;
         } else {
-            level = get_xbits(&f->gb, code & 0xf);
+            level = bitstream_read_xbits(&f->bc, code & 0xf);
             i    += code >> 4;
             if (i >= 64) {
                 av_log(f->avctx, AV_LOG_ERROR, "run %d oveflow\n", i);
@@ -764,7 +765,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
         return AVERROR_INVALIDDATA;
     }
 
-    init_get_bits(&f->gb, buf + 4, 8 * bitstream_size);
+    bitstream_init(&f->bc, buf + 4, 8 * bitstream_size);
 
     prestream_size = length + buf - prestream;
 
@@ -776,7 +777,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
                        prestream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + prestream_size,
            0, AV_INPUT_BUFFER_PADDING_SIZE);
-    init_get_bits(&f->pre_gb, f->bitstream_buffer, 8 * prestream_size);
+    bitstream_init(&f->pre_bc, f->bitstream_buffer, 8 * prestream_size);
 
     f->last_dc = 0 * 128 * 8 * 8;
 
@@ -789,7 +790,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
         }
     }
 
-    if (get_vlc2(&f->pre_gb, f->pre_vlc.table, ACDC_VLC_BITS, 3) != 256)
+    if (bitstream_read_vlc(&f->pre_bc, f->pre_vlc.table, ACDC_VLC_BITS, 3) != 256)
         av_log(f->avctx, AV_LOG_ERROR, "end mismatch\n");
 
     return 0;
