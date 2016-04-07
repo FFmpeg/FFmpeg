@@ -209,6 +209,8 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
     h->avctx = avctx;
 
+    ff_hevc_reset_sei(h);
+
     if (!buf_size)
         return 0;
 
