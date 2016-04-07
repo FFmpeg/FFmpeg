@@ -1137,7 +1137,7 @@ INIT_XMM
                 CHECK_AVX_INSTR_EMU {%1 %6, %7, %8}, %6, %8
             %endif
             %if %5 && %4 == 0
-                %ifnid %8
+                %ifnnum sizeof%8
                     ; 3-operand AVX instructions with a memory arg can only have it in src2,
                     ; whereas SSE emulation prefers to have it in src1 (i.e. the mov).
                     ; So, if the instruction is commutative with a memory arg, swap them.
@@ -1501,7 +1501,7 @@ FMA_INSTR pmadcswd, pmaddwd, paddd
                 v%5%6 %1, %2, %3, %4
             %elifidn %1, %2
                 ; If %3 or %4 is a memory operand it needs to be encoded as the last operand.
-                %ifid %3
+                %ifnum sizeof%3
                     v%{5}213%6 %2, %3, %4
                 %else
                     v%{5}132%6 %2, %4, %3
