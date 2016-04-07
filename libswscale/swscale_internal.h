@@ -892,6 +892,7 @@ void ff_sws_init_output_funcs(SwsContext *c,
 void ff_sws_init_swscale_ppc(SwsContext *c);
 void ff_sws_init_swscale_x86(SwsContext *c);
 void ff_sws_init_swscale_aarch64(SwsContext *c);
+void ff_sws_init_swscale_arm(SwsContext *c);
 
 void ff_hyscale_fast_c(SwsContext *c, int16_t *dst, int dstWidth,
                        const uint8_t *src, int srcW, int xInc);

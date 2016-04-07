@@ -597,6 +597,8 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
         ff_sws_init_swscale_x86(c);
     if (ARCH_AARCH64)
         ff_sws_init_swscale_aarch64(c);
+    if (ARCH_ARM)
+        ff_sws_init_swscale_arm(c);
 
     return swscale;
 }
