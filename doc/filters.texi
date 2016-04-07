@@ -6682,7 +6682,12 @@ The time at which the filter is running, expressed in the local time zone.
 It can accept an argument: a strftime() format string.
 
 @item metadata
-Frame metadata. It must take one argument specifying metadata key.
+Frame metadata. Takes one or two arguments.
+
+The first argument is mandatory and specifies the metadata key.
+
+The second argument is optional and specifies a default value, used when the
+metadata key is not found or empty.
 
 @item n, frame_num
 The frame number, starting from 0.
