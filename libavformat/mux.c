@@ -500,7 +500,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     if ((ret = init_muxer(s, options)) < 0)
         return ret;
 
-    if (!s->oformat->check_bitstream) {
+    if (!(s->oformat->check_bitstream && s->flags & AVFMT_FLAG_AUTO_BSF)) {
         ret = write_header_internal(s);
         if (ret < 0)
             goto fail;
@@ -829,6 +829,9 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
 static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
     AVStream *st = s->streams[pkt->stream_index];
     int i, ret;
+
+    if (!(s->flags & AVFMT_FLAG_AUTO_BSF))
+        return 1;
 
     if (s->oformat->check_bitstream) {
         if (!st->internal->bitstream_checked) {
