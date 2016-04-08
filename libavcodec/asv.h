@@ -31,11 +31,11 @@
 #include "libavutil/mem.h"
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "blockdsp.h"
 #include "bswapdsp.h"
 #include "fdctdsp.h"
 #include "idctdsp.h"
-#include "get_bits.h"
 #include "pixblockdsp.h"
 #include "put_bits.h"
 
@@ -47,7 +47,7 @@ typedef struct ASV1Context {
     IDCTDSPContext idsp;
     PixblockDSPContext pdsp;
     PutBitContext pb;
-    GetBitContext gb;
+    BitstreamContext bc;
     ScanTable scantable;
     int inv_qscale;
     int mb_width;
