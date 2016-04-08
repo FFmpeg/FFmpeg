@@ -975,7 +975,8 @@ static int avi_read_header(AVFormatContext *s)
                 break;
             }
         default:
-            if (size > 1000000) {
+/*
+             if (size > 1000000) {     if Hearder Size larger than 1 MB automatically consider as Error  Untrue for larger files.
                 av_log(s, AV_LOG_ERROR,
                        "Something went wrong during header parsing, "
                        "I will ignore it and try to continue anyway.\n");
@@ -985,6 +986,7 @@ static int avi_read_header(AVFormatContext *s)
                 avi->movi_end  = avi->fsize;
                 goto end_of_header;
             }
+*/
             /* skip tag */
             size += (size & 1);
             avio_skip(pb, size);
