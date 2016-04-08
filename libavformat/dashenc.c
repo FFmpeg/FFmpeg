@@ -551,7 +551,7 @@ static int write_manifest(AVFormatContext *s, int final)
     return avpriv_io_move(temp_filename, s->filename);
 }
 
-static int dash_write_header(AVFormatContext *s)
+static int dash_init(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
     int ret = 0, i;
@@ -643,7 +643,7 @@ static int dash_write_header(AVFormatContext *s)
         os->init_start_pos = 0;
 
         av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
-        if ((ret = avformat_write_header(ctx, &opts)) < 0)
+        if ((ret = avformat_init_output(ctx, &opts)) < 0)
             return ret;
         os->ctx_inited = 1;
         avio_flush(ctx->pb);
@@ -681,6 +681,20 @@ static int dash_write_header(AVFormatContext *s)
     if (!c->has_video && c->min_seg_duration <= 0) {
         av_log(s, AV_LOG_WARNING, "no video stream and no min seg duration set\n");
         return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
+static int dash_write_header(AVFormatContext *s)
+{
+    DASHContext *c = s->priv_data;
+    int i, ret;
+    for (i = 0; i < s->nb_streams; i++) {
+        OutputStream *os = &c->streams[i];
+        if ((ret = avformat_write_header(os->ctx, NULL)) < 0) {
+            dash_free(s);
+            return ret;
+        }
     }
     ret = write_manifest(s, 0);
     if (!ret)
@@ -978,6 +992,29 @@ static int dash_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static int dash_check_bitstream(struct AVFormatContext *s, const AVPacket *avpkt)
+{
+    DASHContext *c = s->priv_data;
+    OutputStream *os = &c->streams[avpkt->stream_index];
+    AVFormatContext *oc = os->ctx;
+    if (oc->oformat->check_bitstream) {
+        int ret;
+        AVPacket pkt = *avpkt;
+        pkt.stream_index = 0;
+        ret = oc->oformat->check_bitstream(oc, &pkt);
+        if (ret == 1) {
+            AVStream *st = s->streams[avpkt->stream_index];
+            AVStream *ost = oc->streams[0];
+            st->internal->bsfcs = ost->internal->bsfcs;
+            st->internal->nb_bsfcs = ost->internal->nb_bsfcs;
+            ost->internal->bsfcs = NULL;
+            ost->internal->nb_bsfcs = 0;
+        }
+        return ret;
+    }
+    return 1;
+}
+
 #define OFFSET(x) offsetof(DASHContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -1008,10 +1045,12 @@ AVOutputFormat ff_dash_muxer = {
     .audio_codec    = AV_CODEC_ID_AAC,
     .video_codec    = AV_CODEC_ID_H264,
     .flags          = AVFMT_GLOBALHEADER | AVFMT_NOFILE | AVFMT_TS_NEGATIVE,
+    .init           = dash_init,
     .write_header   = dash_write_header,
     .write_packet   = dash_write_packet,
     .write_trailer  = dash_write_trailer,
     .deinit         = dash_free,
     .codec_tag      = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
+    .check_bitstream = dash_check_bitstream,
     .priv_class     = &dash_class,
 };

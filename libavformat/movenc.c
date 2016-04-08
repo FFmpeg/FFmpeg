@@ -5459,11 +5459,10 @@ static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
     return 0;
 }
 
-static int mov_write_header(AVFormatContext *s)
+static int mov_init(AVFormatContext *s)
 {
-    AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
-    AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
+    AVDictionaryEntry *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
     int i, ret, hint_track = 0, tmcd_track = 0;
 
     mov->fc = s;
@@ -5499,6 +5498,11 @@ static int mov_write_header(AVFormatContext *s)
     if (mov->flags & FF_MOV_FLAG_DASH)
         mov->flags |= FF_MOV_FLAG_FRAGMENT | FF_MOV_FLAG_EMPTY_MOOV |
                       FF_MOV_FLAG_DEFAULT_BASE_MOOF;
+
+    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV && s->flags & AVFMT_FLAG_AUTO_BSF) {
+        av_log(s, AV_LOG_VERBOSE, "Empty MOOV enabled; disabling automatic bitstream filtering\n");
+        s->flags &= ~AVFMT_FLAG_AUTO_BSF;
+    }
 
     if (mov->flags & FF_MOV_FLAG_FASTSTART) {
         mov->reserved_moov_size = -1;
@@ -5546,11 +5550,6 @@ static int mov_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (!(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {
-        if ((ret = mov_write_identification(pb, s)) < 0)
-            return ret;
-    }
-
     mov->nb_streams = s->nb_streams;
     if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters)
         mov->chapter_track = mov->nb_streams++;
@@ -5574,7 +5573,7 @@ static int mov_write_header(AVFormatContext *s)
         /* +1 tmcd track for each video stream with a timecode */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
-            t = global_tcr;
+            AVDictionaryEntry *t = global_tcr;
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                 (t || (t=av_dict_get(st->metadata, "timecode", NULL, 0)))) {
                 AVTimecode tc;
@@ -5750,6 +5749,48 @@ static int mov_write_header(AVFormatContext *s)
 
         avpriv_set_pts_info(st, 64, 1, track->timescale);
 
+        if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+            ret = ff_mov_cenc_init(&track->cenc, mov->encryption_key,
+                track->par->codec_id == AV_CODEC_ID_H264, s->flags & AVFMT_FLAG_BITEXACT);
+            if (ret)
+                return ret;
+        }
+    }
+
+    enable_tracks(s);
+    return 0;
+}
+
+static int mov_write_header(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    MOVMuxContext *mov = s->priv_data;
+    AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
+    int i, ret, hint_track = 0, tmcd_track = 0, nb_tracks = s->nb_streams;
+
+    if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters)
+        nb_tracks++;
+
+    if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
+        /* Add hint tracks for each audio and video stream */
+        hint_track = nb_tracks;
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+                st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+                nb_tracks++;
+            }
+        }
+    }
+
+    if (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
+        tmcd_track = nb_tracks;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        int j;
+        AVStream *st= s->streams[i];
+        MOVTrack *track= &mov->tracks[i];
+
         /* copy extradata if it exists */
         if (st->codecpar->extradata_size) {
             if (st->codecpar->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
@@ -5763,19 +5804,6 @@ static int mov_write_header(AVFormatContext *s)
                 memcpy(track->vos_data, st->codecpar->extradata, track->vos_len);
             }
         }
-
-        if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
-            ret = ff_mov_cenc_init(&track->cenc, mov->encryption_key,
-                track->par->codec_id == AV_CODEC_ID_H264, s->flags & AVFMT_FLAG_BITEXACT);
-            if (ret)
-                return ret;
-        }
-    }
-
-    for (i = 0; i < s->nb_streams; i++) {
-        int j;
-        AVStream *st= s->streams[i];
-        MOVTrack *track= &mov->tracks[i];
 
         if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO ||
             track->par->channel_layout != AV_CH_LAYOUT_MONO)
@@ -5797,8 +5825,10 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
-    enable_tracks(s);
-
+    if (!(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {
+        if ((ret = mov_write_identification(pb, s)) < 0)
+            return ret;
+    }
 
     if (mov->reserved_moov_size){
         mov->reserved_header_pos = avio_tell(pb);
@@ -6130,6 +6160,19 @@ static int mov_write_trailer(AVFormatContext *s)
     return res;
 }
 
+static int mov_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    int ret = 1;
+    AVStream *st = s->streams[pkt->stream_index];
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
+        if (pkt->size > 2 && (AV_RB16(pkt->data) & 0xfff0) == 0xfff0)
+            ret = ff_stream_add_bitstream_filter(st, "aac_adtstoasc", NULL);
+    }
+
+    return ret;
+}
+
 #if CONFIG_MOV_MUXER
 MOV_CLASS(mov)
 AVOutputFormat ff_mov_muxer = {
@@ -6140,6 +6183,7 @@ AVOutputFormat ff_mov_muxer = {
     .audio_codec       = AV_CODEC_ID_AAC,
     .video_codec       = CONFIG_LIBX264_ENCODER ?
                          AV_CODEC_ID_H264 : AV_CODEC_ID_MPEG4,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
@@ -6148,6 +6192,7 @@ AVOutputFormat ff_mov_muxer = {
     .codec_tag         = (const AVCodecTag* const []){
         ff_codec_movvideo_tags, ff_codec_movaudio_tags, 0
     },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &mov_muxer_class,
 };
 #endif
@@ -6160,12 +6205,14 @@ AVOutputFormat ff_tgp_muxer = {
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = AV_CODEC_ID_AMR_NB,
     .video_codec       = AV_CODEC_ID_H263,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .deinit            = mov_free,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ codec_3gp_tags, 0 },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &tgp_muxer_class,
 };
 #endif
@@ -6180,12 +6227,14 @@ AVOutputFormat ff_mp4_muxer = {
     .audio_codec       = AV_CODEC_ID_AAC,
     .video_codec       = CONFIG_LIBX264_ENCODER ?
                          AV_CODEC_ID_H264 : AV_CODEC_ID_MPEG4,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .deinit            = mov_free,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &mp4_muxer_class,
 };
 #endif
@@ -6199,12 +6248,14 @@ AVOutputFormat ff_psp_muxer = {
     .audio_codec       = AV_CODEC_ID_AAC,
     .video_codec       = CONFIG_LIBX264_ENCODER ?
                          AV_CODEC_ID_H264 : AV_CODEC_ID_MPEG4,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .deinit            = mov_free,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &psp_muxer_class,
 };
 #endif
@@ -6217,12 +6268,14 @@ AVOutputFormat ff_tg2_muxer = {
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = AV_CODEC_ID_AMR_NB,
     .video_codec       = AV_CODEC_ID_H263,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .deinit            = mov_free,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ codec_3gp_tags, 0 },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &tg2_muxer_class,
 };
 #endif
@@ -6236,12 +6289,14 @@ AVOutputFormat ff_ipod_muxer = {
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = AV_CODEC_ID_AAC,
     .video_codec       = AV_CODEC_ID_H264,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .deinit            = mov_free,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ codec_ipod_tags, 0 },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &ipod_muxer_class,
 };
 #endif
@@ -6255,12 +6310,14 @@ AVOutputFormat ff_ismv_muxer = {
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = AV_CODEC_ID_AAC,
     .video_codec       = AV_CODEC_ID_H264,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .deinit            = mov_free,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &ismv_muxer_class,
 };
 #endif
@@ -6274,12 +6331,14 @@ AVOutputFormat ff_f4v_muxer = {
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = AV_CODEC_ID_AAC,
     .video_codec       = AV_CODEC_ID_H264,
+    .init              = mov_init,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .deinit            = mov_free,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH,
     .codec_tag         = (const AVCodecTag* const []){ codec_f4v_tags, 0 },
+    .check_bitstream   = mov_check_bitstream,
     .priv_class        = &f4v_muxer_class,
 };
 #endif
