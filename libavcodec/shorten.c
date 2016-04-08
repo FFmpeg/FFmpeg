@@ -476,8 +476,10 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
     if (!s->got_header) {
         if ((ret = read_header(s)) < 0)
             return ret;
-        *got_frame_ptr = 0;
-        goto finish_frame;
+        if (avpkt->size) {
+            *got_frame_ptr = 0;
+            goto finish_frame;
+        }
     }
 
     /* if quit command was read previously, don't decode anything */
