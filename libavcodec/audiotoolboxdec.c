@@ -261,10 +261,17 @@ static uint8_t* ffat_get_magic_cookie(AVCodecContext *avctx, UInt32 *cookie_size
     }
 }
 
+static av_cold int ffat_usable_extradata(AVCodecContext *avctx)
+{
+    return avctx->extradata_size &&
+           (avctx->codec_id == AV_CODEC_ID_ALAC ||
+            avctx->codec_id == AV_CODEC_ID_AAC);
+}
+
 static int ffat_set_extradata(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
-    if (avctx->extradata_size) {
+    if (ffat_usable_extradata(avctx)) {
         OSStatus status;
         UInt32 cookie_size;
         uint8_t *cookie = ffat_get_magic_cookie(avctx, &cookie_size);
@@ -305,7 +312,7 @@ static av_cold int ffat_create_decoder(AVCodecContext *avctx, AVPacket *pkt)
 
     avctx->sample_fmt = sample_fmt;
 
-    if (avctx->extradata) {
+    if (ffat_usable_extradata(avctx)) {
         UInt32 format_size = sizeof(in_format);
         UInt32 cookie_size;
         uint8_t *cookie = ffat_get_magic_cookie(avctx, &cookie_size);
@@ -384,7 +391,7 @@ static av_cold int ffat_create_decoder(AVCodecContext *avctx, AVPacket *pkt)
 
 static av_cold int ffat_init_decoder(AVCodecContext *avctx)
 {
-    if ((avctx->channels && avctx->sample_rate) || avctx->extradata_size)
+    if ((avctx->channels && avctx->sample_rate) || ffat_usable_extradata(avctx))
         return ffat_create_decoder(avctx, NULL);
     else
         return 0;
