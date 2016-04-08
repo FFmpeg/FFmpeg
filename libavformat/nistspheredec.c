@@ -62,8 +62,9 @@ static int nist_read_header(AVFormatContext *s)
                 st->codec->bits_per_coded_sample = bps << 3;
 
             if (!av_strcasecmp(coding, "pcm")) {
-                st->codec->codec_id = ff_get_pcm_codec_id(st->codec->bits_per_coded_sample,
-                                                          0, be, 0xFFFF);
+                if (st->codec->codec_id == AV_CODEC_ID_NONE)
+                    st->codec->codec_id = ff_get_pcm_codec_id(st->codec->bits_per_coded_sample,
+                                                              0, be, 0xFFFF);
             } else if (!av_strcasecmp(coding, "alaw")) {
                 st->codec->codec_id = AV_CODEC_ID_PCM_ALAW;
             } else if (!av_strcasecmp(coding, "ulaw") ||
@@ -96,6 +97,8 @@ static int nist_read_header(AVFormatContext *s)
                 be = 0;
             } else if (!av_strcasecmp(format, "10")) {
                 be = 1;
+            } else if (!av_strcasecmp(format, "mu-law")) {
+                st->codec->codec_id = AV_CODEC_ID_PCM_MULAW;
             } else if (av_strcasecmp(format, "1")) {
                 avpriv_request_sample(s, "sample byte format %s", format);
                 return AVERROR_PATCHWELCOME;
