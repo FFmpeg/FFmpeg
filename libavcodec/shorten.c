@@ -543,10 +543,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 s->got_quit_command = 1;
                 break;
             }
-            if (cmd == FN_BLOCKSIZE || cmd == FN_QUIT) {
-                *got_frame_ptr = 0;
+            if (cmd == FN_QUIT)
                 break;
-            }
         } else {
             /* process audio command */
             int residual_size = 0;
