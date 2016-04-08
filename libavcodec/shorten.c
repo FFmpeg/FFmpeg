@@ -445,29 +445,27 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* append current packet data to bitstream buffer */
-    if (1 && s->max_framesize) { //FIXME truncated
-        buf_size       = FFMIN(buf_size, s->max_framesize - s->bitstream_size);
-        input_buf_size = buf_size;
+    buf_size       = FFMIN(buf_size, s->max_framesize - s->bitstream_size);
+    input_buf_size = buf_size;
 
-        if (s->bitstream_index + s->bitstream_size + buf_size + AV_INPUT_BUFFER_PADDING_SIZE >
-            s->allocated_bitstream_size) {
-            memmove(s->bitstream, &s->bitstream[s->bitstream_index],
-                    s->bitstream_size);
-            s->bitstream_index = 0;
-        }
-        if (buf)
-            memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf,
-                   buf_size);
-        buf               = &s->bitstream[s->bitstream_index];
-        buf_size         += s->bitstream_size;
-        s->bitstream_size = buf_size;
+    if (s->bitstream_index + s->bitstream_size + buf_size + AV_INPUT_BUFFER_PADDING_SIZE >
+        s->allocated_bitstream_size) {
+        memmove(s->bitstream, &s->bitstream[s->bitstream_index],
+                s->bitstream_size);
+        s->bitstream_index = 0;
+    }
+    if (buf)
+        memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf,
+               buf_size);
+    buf               = &s->bitstream[s->bitstream_index];
+    buf_size         += s->bitstream_size;
+    s->bitstream_size = buf_size;
 
-        /* do not decode until buffer has at least max_framesize bytes or
-         * the end of the file has been reached */
-        if (buf_size < s->max_framesize && avpkt->data) {
-            *got_frame_ptr = 0;
-            return input_buf_size;
-        }
+    /* do not decode until buffer has at least max_framesize bytes or
+     * the end of the file has been reached */
+    if (buf_size < s->max_framesize && avpkt->data) {
+        *got_frame_ptr = 0;
+        return input_buf_size;
     }
     /* init and position bitstream reader */
     if ((ret = init_get_bits8(&s->gb, buf, buf_size)) < 0)
