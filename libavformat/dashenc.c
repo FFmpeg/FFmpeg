@@ -580,16 +580,12 @@ static int dash_write_header(AVFormatContext *s)
         *ptr = '\0';
 
     oformat = av_guess_format("mp4", NULL, NULL);
-    if (!oformat) {
-        ret = AVERROR_MUXER_NOT_FOUND;
-        goto fail;
-    }
+    if (!oformat)
+        return AVERROR_MUXER_NOT_FOUND;
 
     c->streams = av_mallocz(sizeof(*c->streams) * s->nb_streams);
-    if (!c->streams) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!c->streams)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
@@ -606,17 +602,13 @@ static int dash_write_header(AVFormatContext *s)
             int level = s->strict_std_compliance >= FF_COMPLIANCE_STRICT ?
                         AV_LOG_ERROR : AV_LOG_WARNING;
             av_log(s, level, "No bit rate set for stream %d\n", i);
-            if (s->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
-                ret = AVERROR(EINVAL);
-                goto fail;
-            }
+            if (s->strict_std_compliance >= FF_COMPLIANCE_STRICT)
+                return AVERROR(EINVAL);
         }
 
         ctx = avformat_alloc_context();
-        if (!ctx) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!ctx)
+            return AVERROR(ENOMEM);
         os->ctx = ctx;
         ctx->oformat = oformat;
         ctx->interrupt_callback = s->interrupt_callback;
@@ -624,10 +616,8 @@ static int dash_write_header(AVFormatContext *s)
         ctx->io_close           = s->io_close;
         ctx->io_open            = s->io_open;
 
-        if (!(st = avformat_new_stream(ctx, NULL))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!(st = avformat_new_stream(ctx, NULL)))
+            return AVERROR(ENOMEM);
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
@@ -635,10 +625,8 @@ static int dash_write_header(AVFormatContext *s)
         ctx->flags = s->flags;
 
         ctx->pb = avio_alloc_context(os->iobuf, sizeof(os->iobuf), AVIO_FLAG_WRITE, os, NULL, dash_write, NULL);
-        if (!ctx->pb) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!ctx->pb)
+            return AVERROR(ENOMEM);
 
         if (c->single_file) {
             if (c->single_file_name)
@@ -651,13 +639,12 @@ static int dash_write_header(AVFormatContext *s)
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
         ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, NULL);
         if (ret < 0)
-            goto fail;
+            return ret;
         os->init_start_pos = 0;
 
         av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
-        if ((ret = avformat_write_header(ctx, &opts)) < 0) {
-             goto fail;
-        }
+        if ((ret = avformat_write_header(ctx, &opts)) < 0)
+            return ret;
         os->ctx_inited = 1;
         avio_flush(ctx->pb);
         av_dict_free(&opts);
@@ -693,15 +680,11 @@ static int dash_write_header(AVFormatContext *s)
 
     if (!c->has_video && c->min_seg_duration <= 0) {
         av_log(s, AV_LOG_WARNING, "no video stream and no min seg duration set\n");
-        ret = AVERROR(EINVAL);
+        return AVERROR(EINVAL);
     }
     ret = write_manifest(s, 0);
     if (!ret)
         av_log(s, AV_LOG_VERBOSE, "Manifest written to: %s\n", s->filename);
-
-fail:
-    if (ret)
-        dash_free(s);
     return ret;
 }
 
@@ -992,7 +975,6 @@ static int dash_write_trailer(AVFormatContext *s)
         unlink(s->filename);
     }
 
-    dash_free(s);
     return 0;
 }
 
@@ -1029,6 +1011,7 @@ AVOutputFormat ff_dash_muxer = {
     .write_header   = dash_write_header,
     .write_packet   = dash_write_packet,
     .write_trailer  = dash_write_trailer,
+    .deinit         = dash_free,
     .codec_tag      = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
     .priv_class     = &dash_class,
 };
