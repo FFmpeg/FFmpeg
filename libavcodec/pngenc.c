@@ -768,7 +768,9 @@ static int apng_encode_frame(AVCodecContext *avctx, const AVFrame *pict,
             if (last_fctl_chunk.dispose_op != APNG_DISPOSE_OP_PREVIOUS) {
                 diffFrame->width = pict->width;
                 diffFrame->height = pict->height;
-                av_frame_copy(diffFrame, s->last_frame);
+                ret = av_frame_copy(diffFrame, s->last_frame);
+                if (ret < 0)
+                    goto fail;
 
                 if (last_fctl_chunk.dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
                     for (y = last_fctl_chunk.y_offset; y < last_fctl_chunk.y_offset + last_fctl_chunk.height; ++y) {
@@ -782,7 +784,9 @@ static int apng_encode_frame(AVCodecContext *avctx, const AVFrame *pict,
 
                 diffFrame->width = pict->width;
                 diffFrame->height = pict->height;
-                av_frame_copy(diffFrame, s->prev_frame);
+                ret = av_frame_copy(diffFrame, s->prev_frame);
+                if (ret < 0)
+                    goto fail;
             }
 
             // Do inverse blending
