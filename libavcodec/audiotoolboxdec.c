@@ -224,37 +224,37 @@ static void put_descr(PutByteContext *pb, int tag, unsigned int size)
 
 static uint8_t* ffat_get_magic_cookie(AVCodecContext *avctx, UInt32 *cookie_size)
 {
-        if (avctx->codec_id == AV_CODEC_ID_AAC) {
-            char *extradata;
-            PutByteContext pb;
-            *cookie_size = 5 + 3 + 5+13 + 5+avctx->extradata_size;
-            if (!(extradata = av_malloc(*cookie_size)))
-                return NULL;
+    if (avctx->codec_id == AV_CODEC_ID_AAC) {
+        char *extradata;
+        PutByteContext pb;
+        *cookie_size = 5 + 3 + 5+13 + 5+avctx->extradata_size;
+        if (!(extradata = av_malloc(*cookie_size)))
+            return NULL;
 
-            bytestream2_init_writer(&pb, extradata, *cookie_size);
+        bytestream2_init_writer(&pb, extradata, *cookie_size);
 
-            // ES descriptor
-            put_descr(&pb, 0x03, 3 + 5+13 + 5+avctx->extradata_size);
-            bytestream2_put_be16(&pb, 0);
-            bytestream2_put_byte(&pb, 0x00); // flags (= no flags)
+        // ES descriptor
+        put_descr(&pb, 0x03, 3 + 5+13 + 5+avctx->extradata_size);
+        bytestream2_put_be16(&pb, 0);
+        bytestream2_put_byte(&pb, 0x00); // flags (= no flags)
 
-            // DecoderConfig descriptor
-            put_descr(&pb, 0x04, 13 + 5+avctx->extradata_size);
+        // DecoderConfig descriptor
+        put_descr(&pb, 0x04, 13 + 5+avctx->extradata_size);
 
-            // Object type indication
-            bytestream2_put_byte(&pb, 0x40);
+        // Object type indication
+        bytestream2_put_byte(&pb, 0x40);
 
-            bytestream2_put_byte(&pb, 0x15); // flags (= Audiostream)
+        bytestream2_put_byte(&pb, 0x15); // flags (= Audiostream)
 
-            bytestream2_put_be24(&pb, 0); // Buffersize DB
+        bytestream2_put_be24(&pb, 0); // Buffersize DB
 
-            bytestream2_put_be32(&pb, 0); // maxbitrate
-            bytestream2_put_be32(&pb, 0); // avgbitrate
+        bytestream2_put_be32(&pb, 0); // maxbitrate
+        bytestream2_put_be32(&pb, 0); // avgbitrate
 
-            // DecoderSpecific info descriptor
-            put_descr(&pb, 0x05, avctx->extradata_size);
-            bytestream2_put_buffer(&pb, avctx->extradata, avctx->extradata_size);
-            return extradata;
+        // DecoderSpecific info descriptor
+        put_descr(&pb, 0x05, avctx->extradata_size);
+        bytestream2_put_buffer(&pb, avctx->extradata, avctx->extradata_size);
+        return extradata;
     } else {
         *cookie_size = avctx->extradata_size;
         return avctx->extradata;
