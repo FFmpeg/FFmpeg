@@ -301,7 +301,7 @@ static av_cold int ffat_create_decoder(AVCodecContext *avctx, AVPacket *pkt)
 
     AudioStreamBasicDescription in_format = {
         .mFormatID = ffat_get_format_id(avctx->codec_id, avctx->profile),
-        .mBytesPerPacket = avctx->block_align,
+        .mBytesPerPacket = (avctx->codec_id == AV_CODEC_ID_ILBC) ? avctx->block_align : 0,
     };
     AudioStreamBasicDescription out_format = {
         .mFormatID = kAudioFormatLinearPCM,
