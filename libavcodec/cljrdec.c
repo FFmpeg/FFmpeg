@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 static int decode_frame(AVCodecContext *avctx,
@@ -34,7 +34,7 @@ static int decode_frame(AVCodecContext *avctx,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    GetBitContext gb;
+    BitstreamContext bc;
     AVFrame * const p = data;
     int x, y, ret;
 
@@ -56,20 +56,20 @@ static int decode_frame(AVCodecContext *avctx,
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    bitstream_init(&bc, buf, buf_size * 8);
 
     for (y = 0; y < avctx->height; y++) {
         uint8_t *luma = &p->data[0][y * p->linesize[0]];
         uint8_t *cb   = &p->data[1][y * p->linesize[1]];
         uint8_t *cr   = &p->data[2][y * p->linesize[2]];
         for (x = 0; x < avctx->width; x += 4) {
-            luma[3] = get_bits(&gb, 5) << 3;
-            luma[2] = get_bits(&gb, 5) << 3;
-            luma[1] = get_bits(&gb, 5) << 3;
-            luma[0] = get_bits(&gb, 5) << 3;
+            luma[3] = bitstream_read(&bc, 5) << 3;
+            luma[2] = bitstream_read(&bc, 5) << 3;
+            luma[1] = bitstream_read(&bc, 5) << 3;
+            luma[0] = bitstream_read(&bc, 5) << 3;
             luma += 4;
-            *(cb++) = get_bits(&gb, 6) << 2;
-            *(cr++) = get_bits(&gb, 6) << 2;
+            *(cb++) = bitstream_read(&bc, 6) << 2;
+            *(cr++) = bitstream_read(&bc, 6) << 2;
         }
     }
 
