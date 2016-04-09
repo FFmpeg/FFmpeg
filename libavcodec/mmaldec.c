@@ -88,7 +88,6 @@ typedef struct MMALDecodeContext {
     int eos_sent;
     int extradata_sent;
     int interlaced_frame;
-
 } MMALDecodeContext;
 
 // Assume decoder is guaranteed to produce output after at least this many
