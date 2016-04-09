@@ -20,7 +20,7 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 #include "libavutil/attributes.h"
@@ -50,13 +50,13 @@ static void yuv_a_to_rgba(const uint8_t *ycbcr, const uint8_t *alpha, uint32_t *
     }
 }
 
-static int decode_run_2bit(GetBitContext *gb, int *color)
+static int decode_run_2bit(BitstreamContext *bc, int *color)
 {
     unsigned int v, t;
 
     v = 0;
     for (t = 1; v < t && t <= 0x40; t <<= 2)
-        v = (v << 4) | get_bits(gb, 4);
+        v = (v << 4) | bitstream_read(bc, 4);
     *color = v & 3;
     if (v < 4) { /* Code for fill rest of line */
         return INT_MAX;
@@ -64,23 +64,23 @@ static int decode_run_2bit(GetBitContext *gb, int *color)
     return v >> 2;
 }
 
-static int decode_run_8bit(GetBitContext *gb, int *color)
+static int decode_run_8bit(BitstreamContext *bc, int *color)
 {
     int len;
-    int has_run = get_bits1(gb);
-    if (get_bits1(gb))
-        *color = get_bits(gb, 8);
+    int has_run = bitstream_read_bit(bc);
+    if (bitstream_read_bit(bc))
+        *color = bitstream_read(bc, 8);
     else
-        *color = get_bits(gb, 2);
+        *color = bitstream_read(bc, 2);
     if (has_run) {
-        if (get_bits1(gb)) {
-            len = get_bits(gb, 7);
+        if (bitstream_read_bit(bc)) {
+            len = bitstream_read(bc, 7);
             if (len == 0)
                 len = INT_MAX;
             else
                 len += 9;
         } else
-            len = get_bits(gb, 3) + 2;
+            len = bitstream_read(bc, 3) + 2;
     } else
         len = 1;
     return len;
@@ -89,24 +89,24 @@ static int decode_run_8bit(GetBitContext *gb, int *color)
 static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
                       const uint8_t *buf, int start, int buf_size, int is_8bit)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     int bit_len;
     int x, y, len, color;
     uint8_t *d;
 
     bit_len = (buf_size - start) * 8;
-    init_get_bits(&gb, buf + start, bit_len);
+    bitstream_init(&bc, buf + start, bit_len);
 
     x = 0;
     y = 0;
     d = bitmap;
     for(;;) {
-        if (get_bits_count(&gb) > bit_len)
+        if (bitstream_tell(&bc) > bit_len)
             return -1;
         if (is_8bit)
-            len = decode_run_8bit(&gb, &color);
+            len = decode_run_8bit(&bc, &color);
         else
-            len = decode_run_2bit(&gb, &color);
+            len = decode_run_2bit(&bc, &color);
         len = FFMIN(len, w - x);
         memset(d + x, color, len);
         x += len;
@@ -117,7 +117,7 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
             d += linesize;
             x = 0;
             /* byte align */
-            align_get_bits(&gb);
+            bitstream_align(&bc);
         }
     }
     return 0;
