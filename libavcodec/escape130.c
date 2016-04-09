@@ -24,7 +24,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 typedef struct Escape130Context {
@@ -163,23 +163,23 @@ static av_cold int escape130_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_skip_count(GetBitContext* gb)
+static int decode_skip_count(BitstreamContext *bc)
 {
     int value;
 
-    value = get_bits1(gb);
+    value = bitstream_read_bit(bc);
     if (value)
         return 0;
 
-    value = get_bits(gb, 3);
+    value = bitstream_read(bc, 3);
     if (value)
         return value;
 
-    value = get_bits(gb, 8);
+    value = bitstream_read(bc, 8);
     if (value)
         return value + 7;
 
-    value = get_bits(gb, 15);
+    value = bitstream_read(bc, 15);
     if (value)
         return value + 262;
 
@@ -193,7 +193,7 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size        = avpkt->size;
     Escape130Context *s = avctx->priv_data;
     AVFrame *pic        = data;
-    GetBitContext gb;
+    BitstreamContext bc;
     int ret;
 
     uint8_t *old_y, *old_cb, *old_cr,
@@ -216,7 +216,7 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
-    init_get_bits(&gb, buf + 16, (buf_size - 16) * 8);
+    bitstream_init(&bc, buf + 16, (buf_size - 16) * 8);
 
     new_y  = s->new_y;
     new_cb = s->new_u;
@@ -235,7 +235,7 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
         // Note that this call will make us skip the rest of the blocks
         // if the frame ends prematurely.
         if (skip == -1)
-            skip = decode_skip_count(&gb);
+            skip = decode_skip_count(&bc);
         if (skip == -1) {
             av_log(avctx, AV_LOG_ERROR, "Error decoding skip value\n");
             return AVERROR_INVALIDDATA;
@@ -250,31 +250,31 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
             cb = old_cb[0];
             cr = old_cr[0];
         } else {
-            if (get_bits1(&gb)) {
-                unsigned sign_selector       = get_bits(&gb, 6);
-                unsigned difference_selector = get_bits(&gb, 2);
-                y_avg = 2 * get_bits(&gb, 5);
+            if (bitstream_read_bit(&bc)) {
+                unsigned sign_selector       = bitstream_read(&bc, 6);
+                unsigned difference_selector = bitstream_read(&bc, 2);
+                y_avg = 2 * bitstream_read(&bc, 5);
                 for (i = 0; i < 4; i++) {
                     y[i] = av_clip(y_avg + offset_table[difference_selector] *
                                    sign_table[sign_selector][i], 0, 63);
                 }
-            } else if (get_bits1(&gb)) {
-                if (get_bits1(&gb)) {
-                    y_avg = get_bits(&gb, 6);
+            } else if (bitstream_read_bit(&bc)) {
+                if (bitstream_read_bit(&bc)) {
+                    y_avg = bitstream_read(&bc, 6);
                 } else {
-                    unsigned adjust_index = get_bits(&gb, 3);
+                    unsigned adjust_index = bitstream_read(&bc, 3);
                     y_avg = (y_avg + luma_adjust[adjust_index]) & 63;
                 }
                 for (i = 0; i < 4; i++)
                     y[i] = y_avg;
             }
 
-            if (get_bits1(&gb)) {
-                if (get_bits1(&gb)) {
-                    cb = get_bits(&gb, 5);
-                    cr = get_bits(&gb, 5);
+            if (bitstream_read_bit(&bc)) {
+                if (bitstream_read_bit(&bc)) {
+                    cb = bitstream_read(&bc, 5);
+                    cr = bitstream_read(&bc, 5);
                 } else {
-                    unsigned adjust_index = get_bits(&gb, 3);
+                    unsigned adjust_index = bitstream_read(&bc, 3);
                     cb = (cb + chroma_adjust[0][adjust_index]) & 31;
                     cr = (cr + chroma_adjust[1][adjust_index]) & 31;
                 }
@@ -333,7 +333,7 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     ff_dlog(avctx, "Frame data: provided %d bytes, used %d bytes\n",
-            buf_size, get_bits_count(&gb) >> 3);
+            buf_size, bitstream_tell(&bc) >> 3);
 
     FFSWAP(uint8_t*, s->old_y, s->new_y);
     FFSWAP(uint8_t*, s->old_u, s->new_u);
