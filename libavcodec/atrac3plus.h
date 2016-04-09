@@ -31,10 +31,11 @@
 #include <stdint.h>
 
 #include "libavutil/float_dsp.h"
+
 #include "atrac.h"
+#include "bitstream.h"
 #include "avcodec.h"
 #include "fft.h"
-#include "get_bits.h"
 
 /** Global unit sizes */
 #define ATRAC3P_SUBBANDS        16  ///< number of PQF subbands
@@ -163,13 +164,13 @@ void ff_atrac3p_init_vlcs(AVCodec *codec);
 /**
  * Decode bitstream data of a channel unit.
  *
- * @param[in]     gb            the GetBit context
+ * @param[in]     bc            the Bitstream context
  * @param[in,out] ctx           ptr to the channel unit context
  * @param[in]     num_channels  number of channels to process
  * @param[in]     avctx         ptr to the AVCodecContext
  * @return result code: 0 = OK, otherwise - error code
  */
-int  ff_atrac3p_decode_channel_unit(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
+int  ff_atrac3p_decode_channel_unit(BitstreamContext *bc, Atrac3pChanUnitCtx *ctx,
                                     int num_channels, AVCodecContext *avctx);
 
 /**

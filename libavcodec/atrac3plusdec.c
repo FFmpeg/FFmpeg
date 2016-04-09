@@ -39,14 +39,15 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 #include "atrac.h"
 #include "atrac3plus.h"
 
 typedef struct ATRAC3PContext {
-    GetBitContext gb;
+    BitstreamContext bc;
     AVFloatDSPContext fdsp;
 
     DECLARE_ALIGNED(32, float, samples)[2][ATRAC3P_FRAME_SAMPLES];  ///< quantized MDCT spectrum
@@ -334,16 +335,16 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     }
 
-    if ((ret = init_get_bits8(&ctx->gb, avpkt->data, avpkt->size)) < 0)
+    if ((ret = bitstream_init8(&ctx->bc, avpkt->data, avpkt->size)) < 0)
         return ret;
 
-    if (get_bits1(&ctx->gb)) {
+    if (bitstream_read_bit(&ctx->bc)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid start bit!\n");
         return AVERROR_INVALIDDATA;
     }
 
-    while (get_bits_left(&ctx->gb) >= 2 &&
-           (ch_unit_id = get_bits(&ctx->gb, 2)) != CH_UNIT_TERMINATOR) {
+    while (bitstream_bits_left(&ctx->bc) >= 2 &&
+           (ch_unit_id = bitstream_read(&ctx->bc, 2)) != CH_UNIT_TERMINATOR) {
         if (ch_unit_id == CH_UNIT_EXTENSION) {
             avpriv_report_missing_feature(avctx, "Channel unit extension");
             return AVERROR_PATCHWELCOME;
@@ -358,7 +359,7 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, void *data,
         ctx->ch_units[ch_block].unit_type = ch_unit_id;
         channels_to_process               = ch_unit_id + 1;
 
-        if ((ret = ff_atrac3p_decode_channel_unit(&ctx->gb,
+        if ((ret = ff_atrac3p_decode_channel_unit(&ctx->bc,
                                                   &ctx->ch_units[ch_block],
                                                   channels_to_process,
                                                   avctx)) < 0)
