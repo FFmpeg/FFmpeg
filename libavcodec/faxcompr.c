@@ -25,7 +25,7 @@
  * @author Konstantin Shishkov
  */
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "put_bits.h"
 #include "faxcompr.h"
 
@@ -123,7 +123,7 @@ av_cold void ff_ccitt_unpack_init(void)
 }
 
 
-static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
+static int decode_group3_1d_line(AVCodecContext *avctx, BitstreamContext *bc,
                                  unsigned int pix_left, int *runs,
                                  const int *runend)
 {
@@ -131,7 +131,7 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
     unsigned int run = 0;
     unsigned int t;
     for (;;) {
-        t    = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
+        t    = bitstream_read_vlc(bc, ccitt_vlc[mode].table, 9, 2);
         run += t;
         if (t < 64) {
             *runs++ = run;
@@ -157,7 +157,7 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
     return 0;
 }
 
-static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
+static int decode_group3_2d_line(AVCodecContext *avctx, BitstreamContext *bc,
                                  unsigned int width, int *runs,
                                  const int *runend, const int *ref)
 {
@@ -168,7 +168,7 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
     runend--; // for the last written 0
 
     while (offs < width) {
-        int cmode = get_vlc2(gb, ccitt_group3_2d_vlc.table, 9, 1);
+        int cmode = bitstream_read_vlc(bc, ccitt_group3_2d_vlc.table, 9, 1);
         if (cmode == -1) {
             av_log(avctx, AV_LOG_ERROR, "Incorrect mode VLC\n");
             return AVERROR_INVALIDDATA;
@@ -188,7 +188,7 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             for (k = 0; k < 2; k++) {
                 run = 0;
                 for (;;) {
-                    t = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
+                    t = bitstream_read_vlc(bc, ccitt_vlc[mode].table, 9, 2);
                     if (t == -1) {
                         av_log(avctx, AV_LOG_ERROR, "Incorrect code\n");
                         return AVERROR_INVALIDDATA;
@@ -258,12 +258,12 @@ static void put_line(uint8_t *dst, int size, int width, const int *runs)
     flush_put_bits(&pb);
 }
 
-static int find_group3_syncmarker(GetBitContext *gb, int srcsize)
+static int find_group3_syncmarker(BitstreamContext *bc, int srcsize)
 {
     unsigned int state = -1;
-    srcsize -= get_bits_count(gb);
+    srcsize -= bitstream_tell(bc);
     while (srcsize-- > 0) {
-        state += state + get_bits1(gb);
+        state += state + bitstream_read_bit(bc);
         if ((state & 0xFFF) == 1)
             return 0;
     }
@@ -275,7 +275,7 @@ int ff_ccitt_unpack(AVCodecContext *avctx, const uint8_t *src, int srcsize,
                     enum TiffCompr compr, int opts)
 {
     int j;
-    GetBitContext gb;
+    BitstreamContext bc;
     int *runs, *ref = NULL, *runend;
     int ret;
     int runsize = avctx->width + 2;
@@ -289,27 +289,27 @@ int ff_ccitt_unpack(AVCodecContext *avctx, const uint8_t *src, int srcsize,
     ref[0] = avctx->width;
     ref[1] = 0;
     ref[2] = 0;
-    init_get_bits(&gb, src, srcsize * 8);
+    bitstream_init(&bc, src, srcsize * 8);
     for (j = 0; j < height; j++) {
         runend = runs + runsize;
         if (compr == TIFF_G4) {
-            ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend,
+            ret = decode_group3_2d_line(avctx, &bc, avctx->width, runs, runend,
                                         ref);
             if (ret < 0)
                 goto fail;
         } else {
             int g3d1 = (compr == TIFF_G3) && !(opts & 1);
             if (compr != TIFF_CCITT_RLE &&
-                find_group3_syncmarker(&gb, srcsize * 8) < 0)
+                find_group3_syncmarker(&bc, srcsize * 8) < 0)
                 break;
-            if (compr == TIFF_CCITT_RLE || g3d1 || get_bits1(&gb))
-                ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs,
+            if (compr == TIFF_CCITT_RLE || g3d1 || bitstream_read_bit(&bc))
+                ret = decode_group3_1d_line(avctx, &bc, avctx->width, runs,
                                             runend);
             else
-                ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs,
+                ret = decode_group3_2d_line(avctx, &bc, avctx->width, runs,
                                             runend, ref);
             if (compr == TIFF_CCITT_RLE)
-                align_get_bits(&gb);
+                bitstream_align(&bc);
         }
         if (avctx->err_recognition & AV_EF_EXPLODE && ret < 0)
             goto fail;
