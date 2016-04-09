@@ -47,7 +47,7 @@
 
 #include "audiodsp.h"
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "bytestream.h"
 #include "fft.h"
 #include "internal.h"
@@ -124,7 +124,7 @@ typedef struct cook {
 
     AVCodecContext*     avctx;
     AudioDSPContext     adsp;
-    GetBitContext       gb;
+    BitstreamContext    bc;
     /* stream data */
     int                 num_vectors;
     int                 samples_per_channel;
@@ -325,23 +325,23 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
 /**
  * Fill the gain array for the timedomain quantization.
  *
- * @param gb          pointer to the GetBitContext
+ * @param bc          pointer to the BitstreamContext
  * @param gaininfo    array[9] of gain indexes
  */
-static void decode_gain_info(GetBitContext *gb, int *gaininfo)
+static void decode_gain_info(BitstreamContext *bc, int *gaininfo)
 {
     int i, n;
 
-    while (get_bits1(gb)) {
+    while (bitstream_read_bit(bc)) {
         /* NOTHING */
     }
 
-    n = get_bits_count(gb) - 1;     // amount of elements*2 to update
+    n = bitstream_tell(bc) - 1;     // amount of elements * 2 to update
 
     i = 0;
     while (n--) {
-        int index = get_bits(gb, 3);
-        int gain = get_bits1(gb) ? get_bits(gb, 4) - 7 : -1;
+        int index = bitstream_read(bc, 3);
+        int gain = bitstream_read_bit(bc) ? bitstream_read(bc, 4) - 7 : -1;
 
         while (i <= index)
             gaininfo[i++] = gain;
@@ -361,7 +361,7 @@ static int decode_envelope(COOKContext *q, COOKSubpacket *p,
 {
     int i, j, vlc_index;
 
-    quant_index_table[0] = get_bits(&q->gb, 6) - 6; // This is used later in categorize
+    quant_index_table[0] = bitstream_read(&q->bc, 6) - 6; // This is used later in categorize
 
     for (i = 1; i < p->total_subbands; i++) {
         vlc_index = i;
@@ -375,8 +375,8 @@ static int decode_envelope(COOKContext *q, COOKSubpacket *p,
         if (vlc_index > 13)
             vlc_index = 13; // the VLC tables >13 are identical to No. 13
 
-        j = get_vlc2(&q->gb, q->envelope_quant_index[vlc_index - 1].table,
-                     q->envelope_quant_index[vlc_index - 1].bits, 2);
+        j = bitstream_read_vlc(&q->bc, q->envelope_quant_index[vlc_index - 1].table,
+                               q->envelope_quant_index[vlc_index - 1].bits, 2);
         quant_index_table[i] = quant_index_table[i - 1] + j - 12; // differential encoding
         if (quant_index_table[i] > 63 || quant_index_table[i] < -63) {
             av_log(q->avctx, AV_LOG_ERROR,
@@ -408,7 +408,7 @@ static void categorize(COOKContext *q, COOKSubpacket *p, int *quant_index_table,
     int tmp_categorize_array1_idx = p->numvector_size;
     int tmp_categorize_array2_idx = p->numvector_size;
 
-    bits_left = p->bits_per_subpacket - get_bits_count(&q->gb);
+    bits_left = p->bits_per_subpacket - bitstream_tell(&q->bc);
 
     if (bits_left > q->samples_per_channel)
         bits_left = q->samples_per_channel +
@@ -554,8 +554,8 @@ static int unpack_SQVH(COOKContext *q, COOKSubpacket *p, int category,
     vd = vd_tab[category];
     result = 0;
     for (i = 0; i < vpr_tab[category]; i++) {
-        vlc = get_vlc2(&q->gb, q->sqvh[category].table, q->sqvh[category].bits, 3);
-        if (p->bits_per_subpacket < get_bits_count(&q->gb)) {
+        vlc = bitstream_read_vlc(&q->bc, q->sqvh[category].table, q->sqvh[category].bits, 3);
+        if (p->bits_per_subpacket < bitstream_tell(&q->bc)) {
             vlc = 0;
             result = 1;
         }
@@ -566,8 +566,8 @@ static int unpack_SQVH(COOKContext *q, COOKSubpacket *p, int category,
         }
         for (j = 0; j < vd; j++) {
             if (subband_coef_index[i * vd + j]) {
-                if (get_bits_count(&q->gb) < p->bits_per_subpacket) {
-                    subband_coef_sign[i * vd + j] = get_bits1(&q->gb);
+                if (bitstream_tell(&q->bc) < p->bits_per_subpacket) {
+                    subband_coef_sign[i * vd + j] = bitstream_read_bit(&q->bc);
                 } else {
                     result = 1;
                     subband_coef_sign[i * vd + j] = 0;
@@ -634,7 +634,7 @@ static int mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
 
     if ((res = decode_envelope(q, p, quant_index_table)) < 0)
         return res;
-    q->num_vectors = get_bits(&q->gb, p->log2_numvector_size);
+    q->num_vectors = bitstream_read(&q->bc, p->log2_numvector_size);
     categorize(q, p, quant_index_table, category, category_index);
     expand_category(q, category, category_index);
     decode_vectors(q, p, category, quant_index_table, mlt_buffer);
@@ -739,7 +739,7 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
 static void decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 {
     int i;
-    int vlc    = get_bits1(&q->gb);
+    int vlc    = bitstream_read_bit(&q->bc);
     int start  = cplband[p->js_subband_start];
     int end    = cplband[p->subbands - 1];
     int length = end - start + 1;
@@ -749,12 +749,13 @@ static void decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 
     if (vlc)
         for (i = 0; i < length; i++)
-            decouple_tab[start + i] = get_vlc2(&q->gb,
-                                               p->channel_coupling.table,
-                                               p->channel_coupling.bits, 2);
+            decouple_tab[start + i] =
+                bitstream_read_vlc(&q->bc,
+                                   p->channel_coupling.table,
+                                   p->channel_coupling.bits, 2);
     else
         for (i = 0; i < length; i++)
-            decouple_tab[start + i] = get_bits(&q->gb, p->js_vlc_bits);
+            decouple_tab[start + i] = bitstream_read(&q->bc, p->js_vlc_bits);
 }
 
 /*
@@ -850,9 +851,9 @@ static inline void decode_bytes_and_gain(COOKContext *q, COOKSubpacket *p,
 
     offset = decode_bytes(inbuffer, q->decoded_bytes_buffer,
                           p->bits_per_subpacket / 8);
-    init_get_bits(&q->gb, q->decoded_bytes_buffer + offset,
-                  p->bits_per_subpacket);
-    decode_gain_info(&q->gb, gains_ptr->now);
+    bitstream_init(&q->bc, q->decoded_bytes_buffer + offset,
+                   p->bits_per_subpacket);
+    decode_gain_info(&q->bc, gains_ptr->now);
 
     /* Swap current and previous gains */
     FFSWAP(int *, gains_ptr->now, gains_ptr->previous);
@@ -994,7 +995,7 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
         offset += q->subpacket[i].size;
         chidx += q->subpacket[i].num_channels;
         av_log(avctx, AV_LOG_DEBUG, "subpacket[%i] %i %i\n",
-               i, q->subpacket[i].size * 8, get_bits_count(&q->gb));
+               i, q->subpacket[i].size * 8, bitstream_tell(&q->bc));
     }
 
     /* Discard the first two frames: no valid audio. */
