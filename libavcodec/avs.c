@@ -20,7 +20,7 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 typedef struct AvsContext {
@@ -57,7 +57,7 @@ avs_decode_frame(AVCodecContext * avctx,
     int i, j, x, y, stride, ret, vect_w = 3, vect_h = 3;
     AvsVideoSubType sub_type;
     AvsBlockType type;
-    GetBitContext change_map;
+    BitstreamContext change_map;
 
     if ((ret = ff_reget_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
@@ -125,13 +125,13 @@ avs_decode_frame(AVCodecContext * avctx,
         int map_size = ((318 / vect_w + 7) / 8) * (198 / vect_h);
         if (buf_end - table < map_size)
             return AVERROR_INVALIDDATA;
-        init_get_bits(&change_map, table, map_size * 8);
+        bitstream_init(&change_map, table, map_size * 8);
         table += map_size;
     }
 
     for (y=0; y<198; y+=vect_h) {
         for (x=0; x<318; x+=vect_w) {
-            if (sub_type == AVS_I_FRAME || get_bits1(&change_map)) {
+            if (sub_type == AVS_I_FRAME || bitstream_read_bit(&change_map)) {
                 if (buf_end - table < 1)
                     return AVERROR_INVALIDDATA;
                 vect = &buf[*table++ * (vect_w * vect_h)];
@@ -145,7 +145,7 @@ avs_decode_frame(AVCodecContext * avctx,
             }
         }
         if (sub_type != AVS_I_FRAME)
-            align_get_bits(&change_map);
+            bitstream_align(&change_map);
     }
 
     if ((ret = av_frame_ref(picture, p)) < 0)
