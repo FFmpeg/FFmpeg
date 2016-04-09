@@ -27,10 +27,10 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "internal.h"
-#include "unary_legacy.h"
+#include "unary.h"
 
 static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
@@ -176,13 +176,13 @@ static const uint8_t def_lru[8] = { 0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0x
 static const uint8_t def_lru_555[8] = { 0x00, 0x08, 0x10, 0x18, 0x1F };
 static const uint8_t def_lru_565[8] = { 0x00, 0x08, 0x10, 0x20, 0x30, 0x3F };
 
-static inline uint8_t decode_sym(GetBitContext *gb, uint8_t lru[8])
+static inline uint8_t decode_sym(BitstreamContext *bc, uint8_t lru[8])
 {
     uint8_t c, val;
 
-    c = get_unary(gb, 0, 8);
+    c = get_unary(bc, 0, 8);
     if (!c) {
-        val = get_bits(gb, 8);
+        val = bitstream_read(bc, 8);
         memmove(lru + 1, lru, sizeof(*lru) * (8 - 1));
     } else {
         val = lru[c - 1];
@@ -243,14 +243,14 @@ static int load_buffer(AVCodecContext *avctx,
     return 0;
 }
 
-static inline uint8_t decode_sym_565(GetBitContext *gb, uint8_t lru[8],
+static inline uint8_t decode_sym_565(BitstreamContext *bc, uint8_t lru[8],
                                      int bits)
 {
     uint8_t c, val;
 
-    c = get_unary(gb, 0, bits);
+    c = get_unary(bc, 0, bits);
     if (!c) {
-        val = get_bits(gb, bits);
+        val = bitstream_read(bc, bits);
         memmove(lru + 1, lru, sizeof(*lru) * (6 - 1));
     } else {
         val = lru[c - 1];
@@ -261,7 +261,7 @@ static inline uint8_t decode_sym_565(GetBitContext *gb, uint8_t lru[8],
     return val;
 }
 
-typedef int (*decode_slice_func)(GetBitContext *gb, AVFrame *frame,
+typedef int (*decode_slice_func)(BitstreamContext *bc, AVFrame *frame,
                                  int line, int height, uint8_t lru[3][8]);
 
 typedef void (*setup_lru_func)(uint8_t lru[3][8]);
@@ -273,7 +273,7 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
                             enum AVPixelFormat fmt)
 {
     GetByteContext gb;
-    GetBitContext  gb2;
+    BitstreamContext bc;
     int nslices, slice, line = 0;
     uint32_t off, slice_size;
     uint8_t lru[3][8];
@@ -296,9 +296,9 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
         if (ret < 0)
             return ret;
 
-        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
+        bitstream_init8(&bc, src + off + 16, slice_size - 16);
 
-        line += decode_slice(&gb2, pic, line, avctx->height - line, lru);
+        line += decode_slice(&bc, pic, line, avctx->height - line, lru);
 
         off += slice_size;
     }
@@ -315,7 +315,7 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
 }
 
 av_always_inline
-static int dx2_decode_slice_5x5(GetBitContext *gb, AVFrame *frame,
+static int dx2_decode_slice_5x5(BitstreamContext *bc, AVFrame *frame,
                                 int line, int left, uint8_t lru[3][8],
                                 int is_565)
 {
@@ -325,11 +325,11 @@ static int dx2_decode_slice_5x5(GetBitContext *gb, AVFrame *frame,
     int stride   = frame->linesize[0];
     uint8_t *dst = frame->data[0] + stride * line;
 
-    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
+    for (y = 0; y < left && bitstream_bits_left(bc) > 16; y++) {
         for (x = 0; x < width; x++) {
-            b = decode_sym_565(gb, lru[0], 5);
-            g = decode_sym_565(gb, lru[1], is_565 ? 6 : 5);
-            r = decode_sym_565(gb, lru[2], 5);
+            b = decode_sym_565(bc, lru[0], 5);
+            g = decode_sym_565(bc, lru[1], is_565 ? 6 : 5);
+            r = decode_sym_565(bc, lru[2], 5);
             dst[x * 3 + 0] = (r << 3) | (r >> 2);
             dst[x * 3 + 1] = is_565 ? (g << 2) | (g >> 4) : (g << 3) | (g >> 2);
             dst[x * 3 + 2] = (b << 3) | (b >> 2);
@@ -355,16 +355,16 @@ static void setup_lru_565(uint8_t lru[3][8])
     memcpy(lru[2], def_lru_555, 8 * sizeof(*def_lru));
 }
 
-static int dx2_decode_slice_555(GetBitContext *gb, AVFrame *frame,
+static int dx2_decode_slice_555(BitstreamContext *bc, AVFrame *frame,
                                 int line, int left, uint8_t lru[3][8])
 {
-    return dx2_decode_slice_5x5(gb, frame, line, left, lru, 0);
+    return dx2_decode_slice_5x5(bc, frame, line, left, lru, 0);
 }
 
-static int dx2_decode_slice_565(GetBitContext *gb, AVFrame *frame,
+static int dx2_decode_slice_565(BitstreamContext *bc, AVFrame *frame,
                                 int line, int left, uint8_t lru[3][8])
 {
-    return dx2_decode_slice_5x5(gb, frame, line, left, lru, 1);
+    return dx2_decode_slice_5x5(bc, frame, line, left, lru, 1);
 }
 
 static int dxtory_decode_v2_565(AVCodecContext *avctx, AVFrame *pic,
@@ -383,7 +383,7 @@ static int dxtory_decode_v2_565(AVCodecContext *avctx, AVFrame *pic,
                                 fmt);
 }
 
-static int dx2_decode_slice_rgb(GetBitContext *gb, AVFrame *frame,
+static int dx2_decode_slice_rgb(BitstreamContext *bc, AVFrame *frame,
                                 int line, int left, uint8_t lru[3][8])
 {
     int x, y;
@@ -391,11 +391,11 @@ static int dx2_decode_slice_rgb(GetBitContext *gb, AVFrame *frame,
     int stride   = frame->linesize[0];
     uint8_t *dst = frame->data[0] + stride * line;
 
-    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
+    for (y = 0; y < left && bitstream_bits_left(bc) > 16; y++) {
         for (x = 0; x < width; x++) {
-            dst[x * 3 + 0] = decode_sym(gb, lru[0]);
-            dst[x * 3 + 1] = decode_sym(gb, lru[1]);
-            dst[x * 3 + 2] = decode_sym(gb, lru[2]);
+            dst[x * 3 + 0] = decode_sym(bc, lru[0]);
+            dst[x * 3 + 1] = decode_sym(bc, lru[1]);
+            dst[x * 3 + 2] = decode_sym(bc, lru[2]);
         }
 
         dst += stride;
@@ -421,7 +421,7 @@ static int dxtory_decode_v2_rgb(AVCodecContext *avctx, AVFrame *pic,
                             AV_PIX_FMT_BGR24);
 }
 
-static int dx2_decode_slice_410(GetBitContext *gb, AVFrame *frame,
+static int dx2_decode_slice_410(BitstreamContext *bc, AVFrame *frame,
                                 int line, int left,
                                 uint8_t lru[3][8])
 {
@@ -436,13 +436,13 @@ static int dx2_decode_slice_410(GetBitContext *gb, AVFrame *frame,
     uint8_t *U  = frame->data[1] + (ustride >> 2) * line;
     uint8_t *V  = frame->data[2] + (vstride >> 2) * line;
 
-    for (y = 0; y < left - 3 && get_bits_left(gb) > 16; y += 4) {
+    for (y = 0; y < left - 3 && bitstream_bits_left(bc) > 16; y += 4) {
         for (x = 0; x < width; x += 4) {
             for (j = 0; j < 4; j++)
                 for (i = 0; i < 4; i++)
-                    Y[x + i + j * ystride] = decode_sym(gb, lru[0]);
-            U[x >> 2] = decode_sym(gb, lru[1]) ^ 0x80;
-            V[x >> 2] = decode_sym(gb, lru[2]) ^ 0x80;
+                    Y[x + i + j * ystride] = decode_sym(bc, lru[0]);
+            U[x >> 2] = decode_sym(bc, lru[1]) ^ 0x80;
+            V[x >> 2] = decode_sym(bc, lru[2]) ^ 0x80;
         }
 
         Y += ystride << 2;
@@ -463,7 +463,7 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
                             AV_PIX_FMT_YUV410P);
 }
 
-static int dx2_decode_slice_420(GetBitContext *gb, AVFrame *frame,
+static int dx2_decode_slice_420(BitstreamContext *bc, AVFrame *frame,
                                 int line, int left,
                                 uint8_t lru[3][8])
 {
@@ -480,14 +480,14 @@ static int dx2_decode_slice_420(GetBitContext *gb, AVFrame *frame,
     uint8_t *V  = frame->data[2] + (vstride >> 1) * line;
 
 
-    for (y = 0; y < left - 1 && get_bits_left(gb) > 16; y += 2) {
+    for (y = 0; y < left - 1 && bitstream_bits_left(bc) > 16; y += 2) {
         for (x = 0; x < width; x += 2) {
-            Y[x + 0 + 0 * ystride] = decode_sym(gb, lru[0]);
-            Y[x + 1 + 0 * ystride] = decode_sym(gb, lru[0]);
-            Y[x + 0 + 1 * ystride] = decode_sym(gb, lru[0]);
-            Y[x + 1 + 1 * ystride] = decode_sym(gb, lru[0]);
-            U[x >> 1] = decode_sym(gb, lru[1]) ^ 0x80;
-            V[x >> 1] = decode_sym(gb, lru[2]) ^ 0x80;
+            Y[x + 0 + 0 * ystride] = decode_sym(bc, lru[0]);
+            Y[x + 1 + 0 * ystride] = decode_sym(bc, lru[0]);
+            Y[x + 0 + 1 * ystride] = decode_sym(bc, lru[0]);
+            Y[x + 1 + 1 * ystride] = decode_sym(bc, lru[0]);
+            U[x >> 1] = decode_sym(bc, lru[1]) ^ 0x80;
+            V[x >> 1] = decode_sym(bc, lru[2]) ^ 0x80;
         }
 
         Y += ystride << 1;
@@ -507,7 +507,7 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
                             AV_PIX_FMT_YUV420P);
 }
 
-static int dx2_decode_slice_444(GetBitContext *gb, AVFrame *frame,
+static int dx2_decode_slice_444(BitstreamContext *bc, AVFrame *frame,
                                 int line, int left,
                                 uint8_t lru[3][8])
 {
@@ -523,11 +523,11 @@ static int dx2_decode_slice_444(GetBitContext *gb, AVFrame *frame,
     uint8_t *U  = frame->data[1] + ustride * line;
     uint8_t *V  = frame->data[2] + vstride * line;
 
-    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
+    for (y = 0; y < left && bitstream_bits_left(bc) > 16; y++) {
         for (x = 0; x < width; x++) {
-            Y[x] = decode_sym(gb, lru[0]);
-            U[x] = decode_sym(gb, lru[1]) ^ 0x80;
-            V[x] = decode_sym(gb, lru[2]) ^ 0x80;
+            Y[x] = decode_sym(bc, lru[0]);
+            U[x] = decode_sym(bc, lru[1]) ^ 0x80;
+            V[x] = decode_sym(bc, lru[2]) ^ 0x80;
         }
 
         Y += ystride;
