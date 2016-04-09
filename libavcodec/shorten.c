@@ -195,6 +195,70 @@ static int init_offset(ShortenContext *s)
     return 0;
 }
 
+static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
+                              int header_size)
+{
+    int len, bps, exp;
+    GetByteContext gb;
+    uint64_t val;
+    uint32_t tag;
+
+    bytestream2_init(&gb, header, header_size);
+
+    if (bytestream2_get_le32(&gb) != MKTAG('F', 'O', 'R', 'M')) {
+        av_log(avctx, AV_LOG_ERROR, "missing FORM tag\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    bytestream2_skip(&gb, 4); /* chunk size */
+
+    tag = bytestream2_get_le32(&gb);
+    if (tag != MKTAG('A', 'I', 'F', 'F')) {
+        av_log(avctx, AV_LOG_ERROR, "missing AIFF tag\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    while (bytestream2_get_le32(&gb) != MKTAG('C', 'O', 'M', 'M')) {
+        len = bytestream2_get_be32(&gb);
+        bytestream2_skip(&gb, len + (len & 1));
+        if (len < 0 || bytestream2_get_bytes_left(&gb) < 18) {
+            av_log(avctx, AV_LOG_ERROR, "no COMM chunk found\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    len = bytestream2_get_be32(&gb);
+
+    if (len < 18) {
+        av_log(avctx, AV_LOG_ERROR, "COMM chunk was too short\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    bytestream2_skip(&gb, 6);
+    bps = bytestream2_get_be16(&gb);
+    avctx->bits_per_coded_sample = bps;
+
+    if (bps != 16 && bps != 8) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample: %d\n", bps);
+        return AVERROR(ENOSYS);
+    }
+
+    exp = bytestream2_get_be16(&gb) - 16383 - 63;
+    val = bytestream2_get_be64(&gb);
+    if (exp < -63 || exp > 63) {
+        av_log(avctx, AV_LOG_ERROR, "exp %d is out of range\n", exp);
+        return AVERROR_INVALIDDATA;
+    }
+    if (exp >= 0)
+        avctx->sample_rate = val << exp;
+    else
+        avctx->sample_rate = (val + (1ULL<<(-exp-1))) >> -exp;
+    len -= 18;
+    if (len > 0)
+        av_log(avctx, AV_LOG_INFO, "%d header bytes unparsed\n", len);
+
+    return 0;
+}
+
 static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
                               int header_size)
 {
@@ -407,8 +471,16 @@ static int read_header(ShortenContext *s)
     for (i = 0; i < s->header_size; i++)
         s->header[i] = (char)get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
 
-    if ((ret = decode_wave_header(s->avctx, s->header, s->header_size)) < 0)
-        return ret;
+    if (AV_RL32(s->header) == MKTAG('R','I','F','F')) {
+        if ((ret = decode_wave_header(s->avctx, s->header, s->header_size)) < 0)
+            return ret;
+    } else if (AV_RL32(s->header) == MKTAG('F','O','R','M')) {
+        if ((ret = decode_aiff_header(s->avctx, s->header, s->header_size)) < 0)
+            return ret;
+    } else {
+        avpriv_report_missing_feature(s->avctx, "unsupported bit packing %X", AV_RL32(s->header));
+        return AVERROR_PATCHWELCOME;
+    }
 
 end:
     s->cur_chan = 0;
