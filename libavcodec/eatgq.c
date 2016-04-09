@@ -31,9 +31,9 @@
 #define BITSTREAM_READER_LE
 #include "aandcttab.h"
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
 #include "eaidct.h"
-#include "get_bits.h"
 #include "idctdsp.h"
 #include "internal.h"
 
@@ -58,44 +58,44 @@ static av_cold int tgq_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb)
+static void tgq_decode_block(TgqContext *s, int16_t block[64], BitstreamContext *bc)
 {
     uint8_t *perm = s->scantable.permutated;
     int i, j, value;
-    block[0] = get_sbits(gb, 8) * s->qtable[0];
+    block[0] = bitstream_read_signed(bc, 8) * s->qtable[0];
     for (i = 1; i < 64;) {
-        switch (show_bits(gb, 3)) {
+        switch (bitstream_peek(bc, 3)) {
         case 4:
             block[perm[i++]] = 0;
         case 0:
             block[perm[i++]] = 0;
-            skip_bits(gb, 3);
+            bitstream_skip(bc, 3);
             break;
         case 5:
         case 1:
-            skip_bits(gb, 2);
-            value = get_bits(gb, 6);
+            bitstream_skip(bc, 2);
+            value = bitstream_read(bc, 6);
             for (j = 0; j < value; j++)
                 block[perm[i++]] = 0;
             break;
         case 6:
-            skip_bits(gb, 3);
+            bitstream_skip(bc, 3);
             block[perm[i]] = -s->qtable[perm[i]];
             i++;
             break;
         case 2:
-            skip_bits(gb, 3);
+            bitstream_skip(bc, 3);
             block[perm[i]] = s->qtable[perm[i]];
             i++;
             break;
         case 7: // 111b
         case 3: // 011b
-            skip_bits(gb, 2);
-            if (show_bits(gb, 6) == 0x3F) {
-                skip_bits(gb, 6);
-                block[perm[i]] = get_sbits(gb, 8) * s->qtable[perm[i]];
+            bitstream_skip(bc, 2);
+            if (bitstream_peek(bc, 6) == 0x3F) {
+                bitstream_skip(bc, 6);
+                block[perm[i]] = bitstream_read_signed(bc, 8) * s->qtable[perm[i]];
             } else {
-                block[perm[i]] = get_sbits(gb, 6) * s->qtable[perm[i]];
+                block[perm[i]] = bitstream_read_signed(bc, 6) * s->qtable[perm[i]];
             }
             i++;
             break;
@@ -156,10 +156,10 @@ static void tgq_decode_mb(TgqContext *s, AVFrame *frame, int mb_y, int mb_x)
 
     mode = bytestream2_get_byte(&s->gb);
     if (mode > 12) {
-        GetBitContext gb;
-        init_get_bits(&gb, s->gb.buffer, FFMIN(s->gb.buffer_end - s->gb.buffer, mode) * 8);
+        BitstreamContext bc;
+        bitstream_init(&bc, s->gb.buffer, FFMIN(s->gb.buffer_end - s->gb.buffer, mode) * 8);
         for (i = 0; i < 6; i++)
-            tgq_decode_block(s, s->block[i], &gb);
+            tgq_decode_block(s, s->block[i], &bc);
         tgq_idct_put_mb(s, s->block, frame, mb_x, mb_y);
         bytestream2_skip(&s->gb, mode);
     } else {

@@ -33,7 +33,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 #define EA_PREAMBLE_SIZE    8
@@ -153,7 +153,7 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
     int num_blocks_packed;
     int vector_bits;
     int i,j,x,y;
-    GetBitContext gb;
+    BitstreamContext bc;
     int mvbits;
     const uint8_t *blocks_raw;
 
@@ -166,7 +166,7 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
     vector_bits       = AV_RL16(&buf[6]);
     buf += 12;
 
-    if (vector_bits > MIN_CACHE_BITS || !vector_bits) {
+    if (vector_bits > 32 || !vector_bits) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Invalid value for motion vector bits: %d\n", vector_bits);
         return AVERROR_INVALIDDATA;
@@ -195,10 +195,10 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
     if (buf + (mvbits >> 3) + 16 * num_blocks_raw + 8 * num_blocks_packed > buf_end)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(&gb, buf, mvbits);
+    bitstream_init(&bc, buf, mvbits);
     for (i = 0; i < num_mvs; i++) {
-        s->mv_codebook[i][0] = get_sbits(&gb, 10);
-        s->mv_codebook[i][1] = get_sbits(&gb, 10);
+        s->mv_codebook[i][0] = bitstream_read_signed(&bc, 10);
+        s->mv_codebook[i][1] = bitstream_read_signed(&bc, 10);
     }
     buf += mvbits >> 3;
 
@@ -207,23 +207,23 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
     buf       += num_blocks_raw * 16;
 
     /* read compressed blocks */
-    init_get_bits(&gb, buf, (buf_end - buf) << 3);
+    bitstream_init(&bc, buf, (buf_end - buf) << 3);
     for (i = 0; i < num_blocks_packed; i++) {
         int tmp[4];
         for (j = 0; j < 4; j++)
-            tmp[j] = get_bits(&gb, 8);
+            tmp[j] = bitstream_read(&bc, 8);
         for (j = 0; j < 16; j++)
-            s->block_codebook[i][15-j] = tmp[get_bits(&gb, 2)];
+            s->block_codebook[i][15-j] = tmp[bitstream_read(&bc, 2)];
     }
 
-    if (get_bits_left(&gb) < vector_bits *
+    if (bitstream_bits_left(&bc) < vector_bits *
         (s->avctx->height / 4) * (s->avctx->width / 4))
         return AVERROR_INVALIDDATA;
 
     /* read vectors and build frame */
     for (y = 0; y < s->avctx->height / 4; y++)
         for (x = 0; x < s->avctx->width / 4; x++) {
-            unsigned int vector = get_bits(&gb, vector_bits);
+            unsigned int vector = bitstream_read(&bc, vector_bits);
             const uint8_t *src;
             ptrdiff_t src_stride;
 
