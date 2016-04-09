@@ -181,6 +181,7 @@ OBJS-$(CONFIG_FSB_DEMUXER)               += fsb.o
 OBJS-$(CONFIG_GIF_MUXER)                 += gif.o
 OBJS-$(CONFIG_GIF_DEMUXER)               += gifdec.o
 OBJS-$(CONFIG_GSM_DEMUXER)               += gsmdec.o
+OBJS-$(CONFIG_GSM_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_GXF_DEMUXER)               += gxf.o
 OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o audiointerleave.o
 OBJS-$(CONFIG_G722_DEMUXER)              += g722.o rawdec.o

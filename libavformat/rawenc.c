@@ -193,6 +193,20 @@ AVOutputFormat ff_g723_1_muxer = {
 };
 #endif
 
+#if CONFIG_GSM_MUXER
+AVOutputFormat ff_gsm_muxer = {
+    .name              = "gsm",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw GSM"),
+    .mime_type         = "audio/x-gsm",
+    .extensions        = "gsm",
+    .audio_codec       = AV_CODEC_ID_GSM,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_H261_MUXER
 AVOutputFormat ff_h261_muxer = {
     .name              = "h261",

@@ -139,7 +139,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (G729,             g729);
     REGISTER_DEMUXER (GENH,             genh);
     REGISTER_MUXDEMUX(GIF,              gif);
-    REGISTER_DEMUXER (GSM,              gsm);
+    REGISTER_MUXDEMUX(GSM,              gsm);
     REGISTER_MUXDEMUX(GXF,              gxf);
     REGISTER_MUXDEMUX(H261,             h261);
     REGISTER_MUXDEMUX(H263,             h263);
