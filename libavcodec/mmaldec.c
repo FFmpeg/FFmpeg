@@ -88,7 +88,6 @@ typedef struct MMALDecodeContext {
     int eos_sent;
     int extradata_sent;
     int interlaced_frame;
-    int top_field_first;
 
 } MMALDecodeContext;
 
@@ -619,12 +618,12 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
     MMALDecodeContext *ctx = avctx->priv_data;
     int ret = 0;
 
+    frame->interlaced_frame = ctx->interlaced_frame;
+
     if (avctx->pix_fmt == AV_PIX_FMT_MMAL) {
 
-        frame->interlaced_frame = ctx->interlaced_frame;
-
-        // in opaque userdata give the format struct for configure deinterlacer and renderer
-        frame->opaque = ctx->decoder->output[0]->format;
+        // in data[2] give the format struct for configure deinterlacer and renderer
+        frame->data[2] = ctx->decoder->output[0]->format;
 
         if (!ctx->pool_out)
             return AVERROR_UNKNOWN; // format change code failed with OOM previously
@@ -640,8 +639,6 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
         char *ptr;
         int plane;
         int i;
-
-        frame->interlaced_frame = ctx->interlaced_frame;
 
         if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             goto done;
