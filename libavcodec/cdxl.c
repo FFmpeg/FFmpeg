@@ -21,8 +21,9 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 #define BIT_PLANAR   0x00
@@ -69,30 +70,30 @@ static void import_palette(CDXLVideoContext *c, uint32_t *new_palette)
 
 static void bitplanar2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     int x, y, plane;
 
-    init_get_bits(&gb, c->video, c->video_size * 8);
+    bitstream_init(&bc, c->video, c->video_size * 8);
     for (plane = 0; plane < c->bpp; plane++) {
         for (y = 0; y < c->avctx->height; y++) {
             for (x = 0; x < c->avctx->width; x++)
-                out[linesize * y + x] |= get_bits1(&gb) << plane;
-            skip_bits(&gb, c->padded_bits);
+                out[linesize * y + x] |= bitstream_read_bit(&bc) << plane;
+            bitstream_skip(&bc, c->padded_bits);
         }
     }
 }
 
 static void bitline2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
 {
-    GetBitContext  gb;
+    BitstreamContext bc;
     int x, y, plane;
 
-    init_get_bits(&gb, c->video, c->video_size * 8);
+    bitstream_init(&bc, c->video, c->video_size * 8);
     for (y = 0; y < c->avctx->height; y++) {
         for (plane = 0; plane < c->bpp; plane++) {
             for (x = 0; x < c->avctx->width; x++)
-                out[linesize * y + x] |= get_bits1(&gb) << plane;
-            skip_bits(&gb, c->padded_bits);
+                out[linesize * y + x] |= bitstream_read_bit(&bc) << plane;
+            bitstream_skip(&bc, c->padded_bits);
         }
     }
 }
