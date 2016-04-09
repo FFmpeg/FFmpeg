@@ -25,7 +25,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 #define SUBFRAMES 4
@@ -302,7 +302,7 @@ static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
 
 static void dss_sp_unpack_coeffs(DssSpContext *p, const uint8_t *src)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     DssSpFrame *fparam = &p->fparam;
     int i;
     int subframe_idx;
@@ -315,24 +315,24 @@ static void dss_sp_unpack_coeffs(DssSpContext *p, const uint8_t *src)
         p->bits[i + 1] = src[i];
     }
 
-    init_get_bits(&gb, p->bits, DSS_SP_FRAME_SIZE * 8);
+    bitstream_init(&bc, p->bits, DSS_SP_FRAME_SIZE * 8);
 
     for (i = 0; i < 2; i++)
-        fparam->filter_idx[i] = get_bits(&gb, 5);
+        fparam->filter_idx[i] = bitstream_read(&bc, 5);
     for (; i < 8; i++)
-        fparam->filter_idx[i] = get_bits(&gb, 4);
+        fparam->filter_idx[i] = bitstream_read(&bc, 4);
     for (; i < 14; i++)
-        fparam->filter_idx[i] = get_bits(&gb, 3);
+        fparam->filter_idx[i] = bitstream_read(&bc, 3);
 
     for (subframe_idx = 0; subframe_idx < 4; subframe_idx++) {
-        fparam->sf_adaptive_gain[subframe_idx] = get_bits(&gb, 5);
+        fparam->sf_adaptive_gain[subframe_idx] = bitstream_read(&bc, 5);
 
-        fparam->sf[subframe_idx].combined_pulse_pos = get_bits_long(&gb, 31);
+        fparam->sf[subframe_idx].combined_pulse_pos = bitstream_read(&bc, 31);
 
-        fparam->sf[subframe_idx].gain = get_bits(&gb, 6);
+        fparam->sf[subframe_idx].gain = bitstream_read(&bc, 6);
 
         for (i = 0; i < 7; i++)
-            fparam->sf[subframe_idx].pulse_val[i] = get_bits(&gb, 3);
+            fparam->sf[subframe_idx].pulse_val[i] = bitstream_read(&bc, 3);
     }
 
     for (subframe_idx = 0; subframe_idx < 4; subframe_idx++) {
@@ -394,7 +394,7 @@ static void dss_sp_unpack_coeffs(DssSpContext *p, const uint8_t *src)
         }
     }
 
-    combined_pitch = get_bits(&gb, 24);
+    combined_pitch = bitstream_read(&bc, 24);
 
     fparam->pitch_lag[0] = (combined_pitch % 151) + 36;
 
