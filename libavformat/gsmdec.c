@@ -34,6 +34,23 @@ typedef struct GSMDemuxerContext {
     int sample_rate;
 } GSMDemuxerContext;
 
+static int gsm_probe(AVProbeData *p)
+{
+    int valid = 0, invalid = 0;
+    uint8_t *b = p->buf;
+    while (b < p->buf + p->buf_size - 32) {
+        if ((*b & 0xf0) == 0xd0) {
+            valid++;
+        } else {
+            invalid++;
+        }
+        b += 33;
+    }
+    if (valid >> 5 > invalid)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
 static int gsm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
@@ -91,6 +108,7 @@ AVInputFormat ff_gsm_demuxer = {
     .name           = "gsm",
     .long_name      = NULL_IF_CONFIG_SMALL("raw GSM"),
     .priv_data_size = sizeof(GSMDemuxerContext),
+    .read_probe     = gsm_probe,
     .read_header    = gsm_read_header,
     .read_packet    = gsm_read_packet,
     .flags          = AVFMT_GENERIC_INDEX,
