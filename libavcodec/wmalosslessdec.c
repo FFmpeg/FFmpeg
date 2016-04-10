@@ -1043,6 +1043,9 @@ static int decode_frame(WmallDecodeCtx *s)
         if (get_bits1(gb)) {
             skip = get_bits(gb, av_log2(s->samples_per_frame * 2));
             ff_dlog(s->avctx, "end skip: %i\n", skip);
+            s->frame->nb_samples -= skip;
+            if (s->frame->nb_samples <= 0)
+                return AVERROR_INVALIDDATA;
         }
 
     }
@@ -1163,7 +1166,11 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
     s->frame->nb_samples = 0;
 
-    if (s->packet_done || s->packet_loss) {
+    if (!buf_size && s->num_saved_bits > get_bits_count(&s->gb)) {
+        s->packet_done = 0;
+        if (!decode_frame(s))
+            s->num_saved_bits = 0;
+    } else if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
 
         if (!buf_size)
@@ -1264,7 +1271,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
     s->packet_offset = get_bits_count(gb) & 7;
 
-    return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
+    return (s->packet_loss) ? AVERROR_INVALIDDATA : buf_size ? get_bits_count(gb) >> 3 : 0;
 }
 
 static void flush(AVCodecContext *avctx)
