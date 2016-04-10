@@ -137,11 +137,17 @@ static void vert_filter(int16_t *output, int out_stride, int16_t *low, int low_s
 static void free_buffers(AVCodecContext *avctx)
 {
     CFHDContext *s = avctx->priv_data;
-    int i;
+    int i, j;
 
     for (i = 0; i < 4; i++) {
         av_freep(&s->plane[i].idwt_buf);
         av_freep(&s->plane[i].idwt_tmp);
+
+        for (j = 0; j < 9; j++)
+            s->plane[i].subband[j] = NULL;
+
+        for (j = 0; j < 8; j++)
+            s->plane[i].l_h[j] = NULL;
     }
     s->a_height = 0;
     s->a_width  = 0;
@@ -450,6 +456,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             int lowpass_a_height = s->plane[s->channel_num].band[0][0].a_height;
             int lowpass_a_width  = s->plane[s->channel_num].band[0][0].a_width;
 
+            if (!got_buffer) {
+                av_log(avctx, AV_LOG_ERROR, "No end of header tag found\n");
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
+
             if (lowpass_height > lowpass_a_height || lowpass_width > lowpass_a_width ||
                 lowpass_a_width * lowpass_a_height * sizeof(int16_t) > bytestream2_get_bytes_left(&gb)) {
                 av_log(avctx, AV_LOG_ERROR, "Too many lowpass coefficients\n");
@@ -488,6 +500,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             int a_expected = highpass_a_height * highpass_a_width;
             int level, run, coeff;
             int count = 0, bytes;
+
+            if (!got_buffer) {
+                av_log(avctx, AV_LOG_ERROR, "No end of header tag found\n");
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
 
             if (highpass_height > highpass_a_height || highpass_width > highpass_a_width || a_expected < expected) {
                 av_log(avctx, AV_LOG_ERROR, "Too many highpass coefficents\n");
