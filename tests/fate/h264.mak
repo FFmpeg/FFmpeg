@@ -185,6 +185,11 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
+
+# this sample has invalid reference list modification, but decodes fine
+# by using a previous ref frame instead of a missing one
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-invalid-ref-mod
+
 FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
 FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
 
@@ -371,5 +376,6 @@ fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAM
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
+fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
