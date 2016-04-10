@@ -2354,11 +2354,14 @@ static void reanalyze(MpegTSContext *ts) {
 
 /* XXX: try to find a better synchro over several packets (use
  * get_packet_size() ?) */
-static int mpegts_resync(AVFormatContext *s)
+static int mpegts_resync(AVFormatContext *s, int seekback)
 {
     MpegTSContext *ts = s->priv_data;
     AVIOContext *pb = s->pb;
     int c, i;
+    uint64_t pos = avio_tell(pb);
+
+    avio_seek(pb, -FFMIN(seekback, pos), SEEK_CUR);
 
     for (i = 0; i < ts->resync_size; i++) {
         c = avio_r8(pb);
@@ -2390,10 +2393,8 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size,
         /* check packet sync byte */
         if ((*data)[0] != 0x47) {
             /* find a new packet start */
-            uint64_t pos = avio_tell(pb);
-            avio_seek(pb, -FFMIN(raw_packet_size, pos), SEEK_CUR);
 
-            if (mpegts_resync(s) < 0)
+            if (mpegts_resync(s, raw_packet_size) < 0)
                 return AVERROR(EAGAIN);
             else
                 continue;
@@ -2748,8 +2749,7 @@ static av_unused int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
         if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
             return AV_NOPTS_VALUE;
         if (buf[0] != 0x47) {
-            avio_seek(s->pb, -TS_PACKET_SIZE, SEEK_CUR);
-            if (mpegts_resync(s) < 0)
+            if (mpegts_resync(s, TS_PACKET_SIZE) < 0)
                 return AV_NOPTS_VALUE;
             pos = avio_tell(s->pb);
             continue;
