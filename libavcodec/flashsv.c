@@ -38,9 +38,10 @@
 #include <zlib.h>
 
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "internal.h"
 
 typedef struct BlockInfo {
@@ -175,7 +176,7 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
 }
 
 static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
-                                GetBitContext *gb, int block_size,
+                                BitstreamContext *bc, int block_size,
                                 int width, int height, int x_pos, int y_pos,
                                 int blk_idx)
 {
@@ -194,7 +195,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
         if (ret < 0)
             return ret;
     }
-    s->zstream.next_in   = avpkt->data + get_bits_count(gb) / 8;
+    s->zstream.next_in   = avpkt->data + bitstream_tell(bc) / 8;
     s->zstream.avail_in  = block_size;
     s->zstream.next_out  = s->tmpblock;
     s->zstream.avail_out = s->block_size * 3;
@@ -210,7 +211,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     if (s->is_keyframe) {
-        s->blocks[blk_idx].pos  = s->keyframedata + (get_bits_count(gb) / 8);
+        s->blocks[blk_idx].pos  = s->keyframedata + (bitstream_tell(bc) / 8);
         s->blocks[blk_idx].size = block_size;
     }
 
@@ -233,7 +234,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
                       x_pos, s->diff_height, width,
                       s->frame->linesize[0], s->pal);
     }
-    skip_bits_long(gb, 8 * block_size); /* skip the consumed bits */
+    bitstream_skip(bc, 8 * block_size); /* skip the consumed bits */
     return 0;
 }
 
@@ -259,7 +260,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size = avpkt->size;
     FlashSVContext *s = avctx->priv_data;
     int h_blocks, v_blocks, h_part, v_part, i, j, ret;
-    GetBitContext gb;
+    BitstreamContext bc;
 
     /* no supplementary picture */
     if (buf_size == 0)
@@ -267,21 +268,21 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size < 4)
         return -1;
 
-    init_get_bits(&gb, avpkt->data, buf_size * 8);
+    bitstream_init(&bc, avpkt->data, buf_size * 8);
 
     /* start to parse the bitstream */
-    s->block_width  = 16 * (get_bits(&gb, 4) + 1);
-    s->image_width  = get_bits(&gb, 12);
-    s->block_height = 16 * (get_bits(&gb, 4) + 1);
-    s->image_height = get_bits(&gb, 12);
+    s->block_width  = 16 * (bitstream_read(&bc, 4) + 1);
+    s->image_width  = bitstream_read(&bc, 12);
+    s->block_height = 16 * (bitstream_read(&bc, 4) + 1);
+    s->image_height = bitstream_read(&bc, 12);
 
     if (s->ver == 2) {
-        skip_bits(&gb, 6);
-        if (get_bits1(&gb)) {
+        bitstream_skip(&bc, 6);
+        if (bitstream_read_bit(&bc)) {
             avpriv_request_sample(avctx, "iframe");
             return AVERROR_PATCHWELCOME;
         }
-        if (get_bits1(&gb)) {
+        if (bitstream_read_bit(&bc)) {
             avpriv_request_sample(avctx, "Custom palette");
             return AVERROR_PATCHWELCOME;
         }
@@ -371,7 +372,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             int has_diff = 0;
 
             /* get the size of the compressed zlib chunk */
-            int size = get_bits(&gb, 16);
+            int size = bitstream_read(&bc, 16);
 
             s->color_depth    = 0;
             s->zlibprime_curr = 0;
@@ -379,17 +380,17 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             s->diff_start     = 0;
             s->diff_height    = cur_blk_height;
 
-            if (8 * size > get_bits_left(&gb)) {
+            if (8 * size > bitstream_bits_left(&bc)) {
                 av_frame_unref(s->frame);
                 return AVERROR_INVALIDDATA;
             }
 
             if (s->ver == 2 && size) {
-                skip_bits(&gb, 3);
-                s->color_depth    = get_bits(&gb, 2);
-                has_diff          = get_bits1(&gb);
-                s->zlibprime_curr = get_bits1(&gb);
-                s->zlibprime_prev = get_bits1(&gb);
+                bitstream_skip(&bc, 3);
+                s->color_depth    = bitstream_read(&bc, 2);
+                has_diff          = bitstream_read_bit(&bc);
+                s->zlibprime_curr = bitstream_read_bit(&bc);
+                s->zlibprime_prev = bitstream_read_bit(&bc);
 
                 if (s->color_depth != 0 && s->color_depth != 2) {
                     av_log(avctx, AV_LOG_ERROR,
@@ -404,8 +405,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                                "Inter frame without keyframe\n");
                         return AVERROR_INVALIDDATA;
                     }
-                    s->diff_start  = get_bits(&gb, 8);
-                    s->diff_height = get_bits(&gb, 8);
+                    s->diff_start  = bitstream_read(&bc, 8);
+                    s->diff_height = bitstream_read(&bc, 8);
                     if (s->diff_start + s->diff_height > cur_blk_height) {
                         av_log(avctx, AV_LOG_ERROR,
                                "Block parameters invalid: %d + %d > %d\n",
@@ -422,8 +423,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     av_log(avctx, AV_LOG_DEBUG, "%dx%d zlibprime_prev\n", i, j);
 
                 if (s->zlibprime_curr) {
-                    int col = get_bits(&gb, 8);
-                    int row = get_bits(&gb, 8);
+                    int col = bitstream_read(&bc, 8);
+                    int row = bitstream_read(&bc, 8);
                     av_log(avctx, AV_LOG_DEBUG, "%dx%d zlibprime_curr %dx%d\n",
                            i, j, col, row);
                     size -= 2;
@@ -451,7 +452,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 
             /* skip unchanged blocks, which have size 0 */
             if (size) {
-                if (flashsv_decode_block(avctx, avpkt, &gb, size,
+                if (flashsv_decode_block(avctx, avpkt, &bc, size,
                                          cur_blk_width, cur_blk_height,
                                          x_pos, y_pos,
                                          i + j * (h_blocks + !!h_part)))
@@ -477,9 +478,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame = 1;
 
-    if ((get_bits_count(&gb) / 8) != buf_size)
+    if ((bitstream_tell(&bc) / 8) != buf_size)
         av_log(avctx, AV_LOG_ERROR, "buffer not fully consumed (%d != %d)\n",
-               buf_size, (get_bits_count(&gb) / 8));
+               buf_size, (bitstream_tell(&bc) / 8));
 
     /* report that the buffer was completely consumed */
     return buf_size;
