@@ -24,8 +24,8 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "canopus.h"
-#include "get_bits.h"
 #include "internal.h"
 
 #include "hq_hqa.h"
@@ -59,7 +59,7 @@ static inline void put_blocks(HQContext *c, AVFrame *pic,
                          pic->linesize[plane] << ilace, block1);
 }
 
-static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
+static int hq_decode_block(HQContext *c, BitstreamContext *bc, int16_t block[64],
                            int qsel, int is_chroma, int is_hqa)
 {
     const int32_t *q;
@@ -68,15 +68,15 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
     memset(block, 0, 64 * sizeof(*block));
 
     if (!is_hqa) {
-        block[0] = get_sbits(gb, 9) << 6;
-        q = ff_hq_quants[qsel][is_chroma][get_bits(gb, 2)];
+        block[0] = bitstream_read_signed(bc, 9) << 6;
+        q = ff_hq_quants[qsel][is_chroma][bitstream_read(bc, 2)];
     } else {
-        q = ff_hq_quants[qsel][is_chroma][get_bits(gb, 2)];
-        block[0] = get_sbits(gb, 9) << 6;
+        q = ff_hq_quants[qsel][is_chroma][bitstream_read(bc, 2)];
+        block[0] = bitstream_read_signed(bc, 9) << 6;
     }
 
     for (;;) {
-        val = get_vlc2(gb, c->hq_ac_vlc.table, 9, 2);
+        val = bitstream_read_vlc(bc, c->hq_ac_vlc.table, 9, 2);
         if (val < 0)
             return AVERROR_INVALIDDATA;
 
@@ -91,16 +91,16 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
 }
 
 static int hq_decode_mb(HQContext *c, AVFrame *pic,
-                        GetBitContext *gb, int x, int y)
+                        BitstreamContext *bc, int x, int y)
 {
     int qgroup, flag;
     int i, ret;
 
-    qgroup = get_bits(gb, 4);
-    flag = get_bits1(gb);
+    qgroup = bitstream_read(bc, 4);
+    flag   = bitstream_read_bit(bc);
 
     for (i = 0; i < 8; i++) {
-        ret = hq_decode_block(c, gb, c->block[i], qgroup, i >= 4, 0);
+        ret = hq_decode_block(c, bc, c->block[i], qgroup, i >= 4, 0);
         if (ret < 0)
             return ret;
     }
@@ -117,7 +117,7 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic,
                            int prof_num, size_t data_size)
 {
     const HQProfile *profile;
-    GetBitContext gb;
+    BitstreamContext bc;
     const uint8_t *perm, *src = ctx->gbc.buffer;
     uint32_t slice_off[21];
     int slice, start_off, next_off, i, ret;
@@ -160,11 +160,11 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic,
                    "Invalid slice size %zu.\n", data_size);
             break;
         }
-        init_get_bits(&gb, src + slice_off[slice],
-                      (slice_off[slice + 1] - slice_off[slice]) * 8);
+        bitstream_init(&bc, src + slice_off[slice],
+                       (slice_off[slice + 1] - slice_off[slice]) * 8);
 
         for (i = 0; i < (next_off - start_off) * profile->tab_w; i++) {
-            ret = hq_decode_mb(ctx, pic, &gb, perm[0] * 16, perm[1] * 16);
+            ret = hq_decode_mb(ctx, pic, &bc, perm[0] * 16, perm[1] * 16);
             if (ret < 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR,
                        "Error decoding macroblock %d at slice %d.\n", i, slice);
@@ -178,12 +178,12 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic,
 }
 
 static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
-                         GetBitContext *gb, int x, int y)
+                         BitstreamContext *bc, int x, int y)
 {
     int flag = 0;
     int i, ret, cbp;
 
-    cbp = get_vlc2(gb, c->hqa_cbp_vlc.table, 5, 1);
+    cbp = bitstream_read_vlc(bc, c->hqa_cbp_vlc.table, 5, 1);
 
     for (i = 0; i < 12; i++)
         memset(c->block[i], 0, sizeof(*c->block));
@@ -191,7 +191,7 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
         c->block[i][0] = -128 * (1 << 6);
 
     if (cbp) {
-        flag = get_bits1(gb);
+        flag = bitstream_read_bit(bc);
 
         cbp |= cbp << 4;
         if (cbp & 0x3)
@@ -201,7 +201,7 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
         for (i = 0; i < 12; i++) {
             if (!(cbp & (1 << i)))
                 continue;
-            ret = hq_decode_block(c, gb, c->block[i], qgroup, i >= 8, 1);
+            ret = hq_decode_block(c, bc, c->block[i], qgroup, i >= 8, 1);
             if (ret < 0)
                 return ret;
         }
@@ -217,7 +217,7 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
     return 0;
 }
 
-static int hqa_decode_slice(HQContext *ctx, AVFrame *pic, GetBitContext *gb,
+static int hqa_decode_slice(HQContext *ctx, AVFrame *pic, BitstreamContext *bc,
                             int quant, int slice_no, int w, int h)
 {
     int i, j, off;
@@ -226,7 +226,7 @@ static int hqa_decode_slice(HQContext *ctx, AVFrame *pic, GetBitContext *gb,
     for (i = 0; i < h; i += 16) {
         off = (slice_no * 16 + i * 3) & 0x70;
         for (j = off; j < w; j += 128) {
-            ret = hqa_decode_mb(ctx, pic, quant, gb, j, i);
+            ret = hqa_decode_mb(ctx, pic, quant, bc, j, i);
             if (ret < 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR,
                        "Error decoding macroblock at %dx%d.\n", i, j);
@@ -240,7 +240,7 @@ static int hqa_decode_slice(HQContext *ctx, AVFrame *pic, GetBitContext *gb,
 
 static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, size_t data_size)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     const int num_slices = 8;
     uint32_t slice_off[9];
     int i, slice, ret;
@@ -285,10 +285,10 @@ static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, size_t data_size)
                    "Invalid slice size %zu.\n", data_size);
             break;
         }
-        init_get_bits(&gb, src + slice_off[slice],
+        bitstream_init(&bc, src + slice_off[slice],
                       (slice_off[slice + 1] - slice_off[slice]) * 8);
 
-        ret = hqa_decode_slice(ctx, pic, &gb, quant, slice, width, height);
+        ret = hqa_decode_slice(ctx, pic, &bc, quant, slice, width, height);
         if (ret < 0)
             return ret;
     }
