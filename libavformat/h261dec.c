@@ -19,7 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
+#include "libavcodec/bitstream.h"
+
 #include "avformat.h"
 #include "rawdec.h"
 
@@ -31,16 +32,16 @@ static int h261_probe(AVProbeData *p)
     int invalid_psc=0;
     int next_gn=0;
     int src_fmt=0;
-    GetBitContext gb;
+    BitstreamContext bc;
 
-    init_get_bits(&gb, p->buf, p->buf_size*8);
+    bitstream_init(&bc, p->buf, p->buf_size * 8);
 
     for(i=0; i<p->buf_size*8; i++){
         if ((code & 0x01ff0000) || !(code & 0xff00)) {
-            code = (code<<8) + get_bits(&gb, 8);
+            code = (code << 8) + bitstream_read(&bc, 8);
             i += 7;
         } else
-            code = (code<<1) + get_bits1(&gb);
+            code = (code << 1) + bitstream_read_bit(&bc);
         if ((code & 0xffff0000) == 0x10000) {
             int gn= (code>>12)&0xf;
             if(!gn)

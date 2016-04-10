@@ -31,6 +31,7 @@
 #include <float.h>
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "blockdsp.h"
 #include "error_resilience.h"
 #include "fdctdsp.h"
@@ -344,6 +345,7 @@ typedef struct MpegEncContext {
     int resync_mb_x;                 ///< x position of last resync marker
     int resync_mb_y;                 ///< y position of last resync marker
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker
+    BitstreamContext last_resync_bc; ///< used to search for the next resync marker
     int mb_num_left;                 ///< number of MBs left in this video packet (for partitioned Slices only)
     int next_p_frame_damaged;        ///< set if the next p frame is damaged, to avoid showing trashed B-frames
 
@@ -428,6 +430,7 @@ typedef struct MpegEncContext {
 
     /* decompression specific */
     GetBitContext gb;
+    BitstreamContext bc;
 
     /* MPEG-1 specific */
     int gop_picture_number;  ///< index of the first picture of a GOP based on fake_pic_num & MPEG-1 specific
