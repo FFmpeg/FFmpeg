@@ -28,7 +28,7 @@
 #include <inttypes.h>
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "mathops.h"
 #include "huffyuvdsp.h"
 #include "lagarithrac.h"
@@ -101,7 +101,7 @@ static uint8_t lag_calc_zero_run(int8_t x)
     return (x << 1) ^ (x >> 7);
 }
 
-static int lag_decode_prob(GetBitContext *gb, uint32_t *value)
+static int lag_decode_prob(BitstreamContext *bc, uint32_t *value)
 {
     static const uint8_t series[] = { 1, 2, 3, 5, 8, 13, 21 };
     int i;
@@ -114,7 +114,7 @@ static int lag_decode_prob(GetBitContext *gb, uint32_t *value)
         if (prevbit && bit)
             break;
         prevbit = bit;
-        bit = get_bits1(gb);
+        bit = bitstream_read_bit(bc);
         if (bit && !prevbit)
             bits += series[i];
     }
@@ -127,7 +127,7 @@ static int lag_decode_prob(GetBitContext *gb, uint32_t *value)
         return 0;
     }
 
-    val  = get_bits_long(gb, bits);
+    val  = bitstream_read(bc, bits);
     val |= 1 << bits;
 
     *value = val - 1;
@@ -135,7 +135,7 @@ static int lag_decode_prob(GetBitContext *gb, uint32_t *value)
     return 0;
 }
 
-static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
+static int lag_read_prob_header(lag_rac *rac, BitstreamContext *bc)
 {
     int i, j, scale_factor;
     unsigned prob, cumulative_target;
@@ -146,7 +146,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
     rac->prob[257] = UINT_MAX;
     /* Read probabilities from bitstream */
     for (i = 1; i < 257; i++) {
-        if (lag_decode_prob(gb, &rac->prob[i]) < 0) {
+        if (lag_decode_prob(bc, &rac->prob[i]) < 0) {
             av_log(rac->avctx, AV_LOG_ERROR, "Invalid probability encountered.\n");
             return -1;
         }
@@ -156,7 +156,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
         }
         cumul_prob += rac->prob[i];
         if (!rac->prob[i]) {
-            if (lag_decode_prob(gb, &prob)) {
+            if (lag_decode_prob(bc, &prob)) {
                 av_log(rac->avctx, AV_LOG_ERROR, "Invalid probability run encountered.\n");
                 return -1;
             }
@@ -422,7 +422,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
     uint32_t length;
     uint32_t offset = 1;
     int esc_count = src[0];
-    GetBitContext gb;
+    BitstreamContext bc;
     lag_rac rac;
     const uint8_t *src_end = src + src_size;
 
@@ -436,12 +436,12 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
             offset += 4;
         }
 
-        init_get_bits(&gb, src + offset, src_size * 8);
+        bitstream_init(&bc, src + offset, src_size * 8);
 
-        if (lag_read_prob_header(&rac, &gb) < 0)
+        if (lag_read_prob_header(&rac, &bc) < 0)
             return -1;
 
-        ff_lag_rac_init(&rac, &gb, length - stride);
+        ff_lag_rac_init(&rac, &bc, length - stride);
 
         for (i = 0; i < height; i++)
             read += lag_decode_line(l, &rac, dst + (i * stride), width,

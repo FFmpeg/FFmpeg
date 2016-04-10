@@ -31,10 +31,12 @@
 #define AVCODEC_LAGARITHRAC_H
 
 #include <stdint.h>
+
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 
 typedef struct lag_rac {
     AVCodecContext *avctx;
@@ -51,7 +53,7 @@ typedef struct lag_rac {
     uint8_t  range_hash[256];   /**< Hash table mapping upper byte to approximate symbol. */
 } lag_rac;
 
-void ff_lag_rac_init(lag_rac *l, GetBitContext *gb, int length);
+void ff_lag_rac_init(lag_rac *l, BitstreamContext *bc, int length);
 
 /* TODO: Optimize */
 static inline void lag_rac_refill(lag_rac *l)
