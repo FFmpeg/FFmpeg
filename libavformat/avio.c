@@ -297,7 +297,7 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
     *puc = NULL;
     if (av_strstart(filename, "https:", NULL))
         av_log(NULL, AV_LOG_WARNING, "https protocol not found, recompile FFmpeg with "
-                                     "openssl, gnutls,\n"
+                                     "openssl, gnutls "
                                      "or securetransport enabled.\n");
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
