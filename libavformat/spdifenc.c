@@ -444,7 +444,7 @@ static int spdif_write_header(AVFormatContext *s)
 {
     IEC61937Context *ctx = s->priv_data;
 
-    switch (s->streams[0]->codec->codec_id) {
+    switch (s->streams[0]->codecpar->codec_id) {
     case AV_CODEC_ID_AC3:
         ctx->header_info = spdif_header_ac3;
         break;

@@ -1384,7 +1384,7 @@ static void add_metadata_from_renditions(AVFormatContext *s, struct playlist *pl
     for (i = 0; i < pls->ctx->nb_streams; i++) {
         AVStream *st = s->streams[pls->stream_offset + i];
 
-        if (st->codec->codec_type != type)
+        if (st->codecpar->codec_type != type)
             continue;
 
         for (; rend_idx < pls->n_renditions; rend_idx++) {
@@ -1659,7 +1659,7 @@ static int hls_read_header(AVFormatContext *s)
             }
             st->id = i;
 
-            avcodec_copy_context(st->codec, pls->ctx->streams[j]->codec);
+            avcodec_parameters_copy(st->codecpar, pls->ctx->streams[j]->codecpar);
 
             if (pls->is_id3_timestamped) /* custom timestamps via id3 */
                 avpriv_set_pts_info(st, 33, 1, MPEG_TIME_BASE);

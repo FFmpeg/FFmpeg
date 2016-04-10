@@ -355,11 +355,11 @@ static int x11grab_read_header(AVFormatContext *s1)
     x11grab->image      = image;
     x11grab->use_shm    = use_shm;
 
-    ret = pixfmt_from_image(s1, image, &st->codec->pix_fmt);
+    ret = pixfmt_from_image(s1, image, &st->codecpar->format);
     if (ret < 0)
         goto out;
 
-    if (st->codec->pix_fmt == AV_PIX_FMT_PAL8) {
+    if (st->codecpar->format == AV_PIX_FMT_PAL8) {
         color_map = DefaultColormap(dpy, screen);
         for (i = 0; i < 256; ++i)
             color[i].pixel = i;
@@ -372,12 +372,13 @@ static int x11grab_read_header(AVFormatContext *s1)
     }
 
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->width      = x11grab->width;
-    st->codec->height     = x11grab->height;
-    st->codec->time_base  = x11grab->time_base;
-    st->codec->bit_rate   = x11grab->frame_size * 1 / av_q2d(x11grab->time_base) * 8;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->width      = x11grab->width;
+    st->codecpar->height     = x11grab->height;
+    st->codecpar->bit_rate   = x11grab->frame_size * 1 / av_q2d(x11grab->time_base) * 8;
+
+    st->avg_frame_rate       = av_inv_q(x11grab->time_base);
 
 out:
     av_free(dpyname);

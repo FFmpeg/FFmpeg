@@ -74,6 +74,9 @@
 #ifndef FF_API_OLD_OPEN_CALLBACKS
 #define FF_API_OLD_OPEN_CALLBACKS       (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
+#ifndef FF_API_LAVF_AVCTX
+#define FF_API_LAVF_AVCTX               (LIBAVFORMAT_VERSION_MAJOR < 58)
+#endif
 
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1

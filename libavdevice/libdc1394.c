@@ -171,13 +171,12 @@ static inline int dc1394_read_common(AVFormatContext *c,
         goto out;
     }
     avpriv_set_pts_info(vst, 64, 1, 1000);
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
-    vst->codec->time_base.den = framerate.num;
-    vst->codec->time_base.num = framerate.den;
-    vst->codec->width = fmt->width;
-    vst->codec->height = fmt->height;
-    vst->codec->pix_fmt = fmt->pix_fmt;
+    vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
+    vst->codecpar->width = fmt->width;
+    vst->codecpar->height = fmt->height;
+    vst->codecpar->format = fmt->pix_fmt;
+    vst->avg_frame_rate = framerate;
 
     /* packet init */
     av_init_packet(&dc1394->packet);
@@ -188,7 +187,7 @@ static inline int dc1394_read_common(AVFormatContext *c,
 
     dc1394->current_frame = 0;
 
-    vst->codec->bit_rate = av_rescale(dc1394->packet.size * 8, fps->frame_rate, 1000);
+    vst->codecpar->bit_rate = av_rescale(dc1394->packet.size * 8, fps->frame_rate, 1000);
     *select_fps = fps;
     *select_fmt = fmt;
 out:

@@ -133,7 +133,7 @@ static int write_frame(struct AVFormatContext *s, int stream_index,
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprintf(&bp, "%d, %10"PRId64"",
                stream_index, (*frame)->pts);
-    type = s->streams[stream_index]->codec->codec_type;
+    type = s->streams[stream_index]->codecpar->codec_type;
     type_name = av_get_media_type_string(type);
     av_bprintf(&bp, ", %s", type_name ? type_name : "unknown");
     switch (type) {

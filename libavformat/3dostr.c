@@ -61,17 +61,17 @@ static int threedostr_read_header(AVFormatContext *s)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-            st->codec->sample_rate = avio_rb32(s->pb);
-            st->codec->channels    = avio_rb32(s->pb);
-            if (st->codec->channels <= 0)
+            st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->sample_rate = avio_rb32(s->pb);
+            st->codecpar->channels    = avio_rb32(s->pb);
+            if (st->codecpar->channels <= 0)
                 return AVERROR_INVALIDDATA;
             codec                  = avio_rl32(s->pb);
             avio_skip(s->pb, 4);
             if (ctrl_size == 20 || ctrl_size == 3 || ctrl_size == -1)
-                st->duration       = (avio_rb32(s->pb) - 1) / st->codec->channels;
+                st->duration       = (avio_rb32(s->pb) - 1) / st->codecpar->channels;
             else
-                st->duration       = avio_rb32(s->pb) * 16 / st->codec->channels;
+                st->duration       = avio_rb32(s->pb) * 16 / st->codecpar->channels;
             size -= 56;
             found_shdr = 1;
             break;
@@ -95,15 +95,15 @@ static int threedostr_read_header(AVFormatContext *s)
 
     switch (codec) {
     case MKTAG('S','D','X','2'):
-        st->codec->codec_id    = AV_CODEC_ID_SDX2_DPCM;
-        st->codec->block_align = 1 * st->codec->channels;
+        st->codecpar->codec_id    = AV_CODEC_ID_SDX2_DPCM;
+        st->codecpar->block_align = 1 * st->codecpar->channels;
         break;
     default:
         avpriv_request_sample(s, "codec %X", codec);
         return AVERROR_PATCHWELCOME;
     }
 
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
@@ -142,7 +142,7 @@ static int threedostr_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = av_get_packet(s->pb, pkt, size);
             pkt->pos = pos;
             pkt->stream_index = 0;
-            pkt->duration = size / st->codec->channels;
+            pkt->duration = size / st->codecpar->channels;
             size = 0;
             found_ssmp = 1;
             break;

@@ -55,32 +55,32 @@ static int musx_read_header(AVFormatContext *s)
     if (version == 201) {
         avio_skip(s->pb, 8);
         offset = avio_rl32(s->pb);
-        st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id    = AV_CODEC_ID_ADPCM_PSX;
-        st->codec->channels    = 2;
-        st->codec->sample_rate = 32000;
-        st->codec->block_align = 0x80 * st->codec->channels;
+        st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
+        st->codecpar->channels    = 2;
+        st->codecpar->sample_rate = 32000;
+        st->codecpar->block_align = 0x80 * st->codecpar->channels;
     }  else if (version == 10) {
         type = avio_rl32(s->pb);
-        st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
         offset = 0x800;
         switch (type) {
         case MKTAG('P', 'S', '3', '_'):
-            st->codec->channels    = 2;
-            st->codec->sample_rate = 44100;
+            st->codecpar->channels    = 2;
+            st->codecpar->sample_rate = 44100;
             avio_skip(s->pb, 44);
             coding = avio_rl32(s->pb);
             if (coding == MKTAG('D', 'A', 'T', '4') ||
                 coding == MKTAG('D', 'A', 'T', '8')) {
                 avio_skip(s->pb, 4);
-                st->codec->channels   = avio_rl32(s->pb);
-                if (st->codec->channels <= 0 ||
-                    st->codec->channels > INT_MAX / 0x20)
+                st->codecpar->channels   = avio_rl32(s->pb);
+                if (st->codecpar->channels <= 0 ||
+                    st->codecpar->channels > INT_MAX / 0x20)
                     return AVERROR_INVALIDDATA;
-                st->codec->sample_rate = avio_rl32(s->pb);
+                st->codecpar->sample_rate = avio_rl32(s->pb);
             }
-            st->codec->codec_id   = AV_CODEC_ID_ADPCM_IMA_DAT4;
-            st->codec->block_align = 0x20 * st->codec->channels;
+            st->codecpar->codec_id   = AV_CODEC_ID_ADPCM_IMA_DAT4;
+            st->codecpar->block_align = 0x20 * st->codecpar->channels;
             break;
         case MKTAG('W', 'I', 'I', '_'):
             avio_skip(s->pb, 44);
@@ -91,31 +91,31 @@ static int musx_read_header(AVFormatContext *s)
                 return AVERROR_PATCHWELCOME;
             }
             avio_skip(s->pb, 4);
-            st->codec->codec_id   = AV_CODEC_ID_ADPCM_IMA_DAT4;
-            st->codec->channels   = avio_rl32(s->pb);
-            if (st->codec->channels <= 0 ||
-                st->codec->channels > INT_MAX / 0x20)
+            st->codecpar->codec_id   = AV_CODEC_ID_ADPCM_IMA_DAT4;
+            st->codecpar->channels   = avio_rl32(s->pb);
+            if (st->codecpar->channels <= 0 ||
+                st->codecpar->channels > INT_MAX / 0x20)
                 return AVERROR_INVALIDDATA;
-            st->codec->sample_rate = avio_rl32(s->pb);
-            st->codec->block_align = 0x20 * st->codec->channels;
+            st->codecpar->sample_rate = avio_rl32(s->pb);
+            st->codecpar->block_align = 0x20 * st->codecpar->channels;
             break;
         case MKTAG('X', 'E', '_', '_'):
-            st->codec->codec_id    = AV_CODEC_ID_ADPCM_IMA_DAT4;
-            st->codec->channels    = 2;
-            st->codec->sample_rate = 32000;
-            st->codec->block_align = 0x20 * st->codec->channels;
+            st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_IMA_DAT4;
+            st->codecpar->channels    = 2;
+            st->codecpar->sample_rate = 32000;
+            st->codecpar->block_align = 0x20 * st->codecpar->channels;
             break;
         case MKTAG('P', 'S', 'P', '_'):
-            st->codec->codec_id    = AV_CODEC_ID_ADPCM_PSX;
-            st->codec->channels    = 2;
-            st->codec->sample_rate = 32768;
-            st->codec->block_align = 0x80 * st->codec->channels;
+            st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
+            st->codecpar->channels    = 2;
+            st->codecpar->sample_rate = 32768;
+            st->codecpar->block_align = 0x80 * st->codecpar->channels;
             break;
         case MKTAG('P', 'S', '2', '_'):
-            st->codec->codec_id    = AV_CODEC_ID_ADPCM_PSX;
-            st->codec->channels    = 2;
-            st->codec->sample_rate = 32000;
-            st->codec->block_align = 0x80 * st->codec->channels;
+            st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
+            st->codecpar->channels    = 2;
+            st->codecpar->sample_rate = 32000;
+            st->codecpar->block_align = 0x80 * st->codecpar->channels;
             break;
         default:
             avpriv_request_sample(s, "Unsupported type: %X", type);
@@ -124,25 +124,25 @@ static int musx_read_header(AVFormatContext *s)
     } else if (version == 6 || version == 5 || version == 4) {
         type = avio_rl32(s->pb);
         avio_skip(s->pb, 20);
-        st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        st->codec->channels    = 2;
+        st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->channels    = 2;
         switch (type) {
         case MKTAG('G', 'C', '_', '_'):
-            st->codec->codec_id    = AV_CODEC_ID_ADPCM_IMA_DAT4;
-            st->codec->block_align = 0x20 * st->codec->channels;
-            st->codec->sample_rate = 32000;
+            st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_IMA_DAT4;
+            st->codecpar->block_align = 0x20 * st->codecpar->channels;
+            st->codecpar->sample_rate = 32000;
             offset = avio_rb32(s->pb);
             break;
         case MKTAG('P', 'S', '2', '_'):
-            st->codec->codec_id    = AV_CODEC_ID_ADPCM_PSX;
-            st->codec->block_align = 0x80 * st->codec->channels;
-            st->codec->sample_rate = 32000;
+            st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
+            st->codecpar->block_align = 0x80 * st->codecpar->channels;
+            st->codecpar->sample_rate = 32000;
             offset = avio_rl32(s->pb);
             break;
         case MKTAG('X', 'B', '_', '_'):
-            st->codec->codec_id    = AV_CODEC_ID_ADPCM_IMA_DAT4;
-            st->codec->block_align = 0x20 * st->codec->channels;
-            st->codec->sample_rate = 44100;
+            st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_IMA_DAT4;
+            st->codecpar->block_align = 0x20 * st->codecpar->channels;
+            st->codecpar->sample_rate = 44100;
             offset = avio_rl32(s->pb);
             break;
         default:
@@ -155,16 +155,16 @@ static int musx_read_header(AVFormatContext *s)
 
     avio_seek(s->pb, offset, SEEK_SET);
 
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
 
 static int musx_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
-    return av_get_packet(s->pb, pkt, codec->block_align);
+    return av_get_packet(s->pb, pkt, par->block_align);
 }
 
 AVInputFormat ff_musx_demuxer = {

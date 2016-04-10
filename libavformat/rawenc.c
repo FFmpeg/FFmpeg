@@ -60,11 +60,11 @@ AVOutputFormat ff_ac3_muxer = {
 static int adx_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    AVCodecContext *avctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (pb->seekable) {
         int64_t file_size = avio_tell(pb);
-        uint64_t sample_count = (file_size - 36) / avctx->channels / 18 * 32;
+        uint64_t sample_count = (file_size - 36) / par->channels / 18 * 32;
         if (sample_count <= UINT32_MAX) {
             avio_seek(pb, 12, SEEK_SET);
             avio_wb32(pb, sample_count);

@@ -51,16 +51,16 @@ static int vp8_header(AVFormatContext *s, int idx)
             return AVERROR_INVALIDDATA;
         }
 
-        st->codec->width            = AV_RB16(p +  8);
-        st->codec->height           = AV_RB16(p + 10);
+        st->codecpar->width         = AV_RB16(p +  8);
+        st->codecpar->height        = AV_RB16(p + 10);
         st->sample_aspect_ratio.num = AV_RB24(p + 12);
         st->sample_aspect_ratio.den = AV_RB24(p + 15);
         framerate.num               = AV_RB32(p + 18);
         framerate.den               = AV_RB32(p + 22);
 
         avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = AV_CODEC_ID_VP8;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = AV_CODEC_ID_VP8;
         st->need_parsing      = AVSTREAM_PARSE_HEADERS;
         break;
     case 0x02:

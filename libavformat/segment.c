@@ -165,19 +165,19 @@ static int segment_mux_init(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st;
-        AVCodecContext *icodec, *ocodec;
+        AVCodecParameters *ipar, *opar;
 
         if (!(st = avformat_new_stream(oc, NULL)))
             return AVERROR(ENOMEM);
-        icodec = s->streams[i]->codec;
-        ocodec = st->codec;
-        avcodec_copy_context(ocodec, icodec);
+        ipar = s->streams[i]->codecpar;
+        opar = st->codecpar;
+        avcodec_parameters_copy(opar, ipar);
         if (!oc->oformat->codec_tag ||
-            av_codec_get_id (oc->oformat->codec_tag, icodec->codec_tag) == ocodec->codec_id ||
-            av_codec_get_tag(oc->oformat->codec_tag, icodec->codec_id) <= 0) {
-            ocodec->codec_tag = icodec->codec_tag;
+            av_codec_get_id (oc->oformat->codec_tag, ipar->codec_tag) == opar->codec_id ||
+            av_codec_get_tag(oc->oformat->codec_tag, ipar->codec_id) <= 0) {
+            opar->codec_tag = ipar->codec_tag;
         } else {
-            ocodec->codec_tag = 0;
+            opar->codec_tag = 0;
         }
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
@@ -408,7 +408,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
         if (tcr) {
             /* search the first video stream */
             for (i = 0; i < s->nb_streams; i++) {
-                if (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                     rate = s->streams[i]->avg_frame_rate;/* Get fps from the video stream */
                     err = av_timecode_init_from_string(&tc, rate, tcr->value, s);
                     if (err < 0) {
@@ -592,7 +592,7 @@ static int select_reference_stream(AVFormatContext *s)
 
         /* select first index for each type */
         for (i = 0; i < s->nb_streams; i++) {
-            type = s->streams[i]->codec->codec_type;
+            type = s->streams[i]->codecpar->codec_type;
             if ((unsigned)type < AVMEDIA_TYPE_NB && type_index_map[type] == -1
                 /* ignore attached pictures/cover art streams */
                 && !(s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC))
@@ -715,7 +715,7 @@ static int seg_init(AVFormatContext *s)
         goto fail;
     av_log(s, AV_LOG_VERBOSE, "Selected stream id:%d type:%s\n",
            seg->reference_stream_index,
-           av_get_media_type_string(s->streams[seg->reference_stream_index]->codec->codec_type));
+           av_get_media_type_string(s->streams[seg->reference_stream_index]->codecpar->codec_type));
 
     seg->oformat = av_guess_format(seg->format, s->filename, NULL);
 

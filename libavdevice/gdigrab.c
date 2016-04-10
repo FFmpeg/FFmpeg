@@ -403,10 +403,11 @@ gdigrab_read_header(AVFormatContext *s1)
         }
     }
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_BMP;
-    st->codec->time_base  = gdigrab->time_base;
-    st->codec->bit_rate   = (gdigrab->header_size + gdigrab->frame_size) * 1/av_q2d(gdigrab->time_base) * 8;
+    st->avg_frame_rate = av_inv_q(gdigrab->time_base);
+
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_BMP;
+    st->codecpar->bit_rate   = (gdigrab->header_size + gdigrab->frame_size) * 1/av_q2d(gdigrab->time_base) * 8;
 
     return 0;
 

@@ -128,7 +128,7 @@ static int read_header(AVFormatContext *ctx)
     int error = 0;
     const char *error_msg;
     AVStream *st = NULL;
-    AVCodecContext *codec = NULL;
+    AVCodecParameters *par = NULL;
 
     if (ad->list_devices) {
         print_al_capture_devices(ctx);
@@ -156,11 +156,11 @@ static int read_header(AVFormatContext *ctx)
     avpriv_set_pts_info(st, 64, 1, 1000000);
 
     /* Set codec parameters */
-    codec = st->codec;
-    codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    codec->sample_rate = ad->sample_rate;
-    codec->channels = get_al_format_info(ad->sample_format)->channels;
-    codec->codec_id = get_al_format_info(ad->sample_format)->codec_id;
+    par = st->codecpar;
+    par->codec_type = AVMEDIA_TYPE_AUDIO;
+    par->sample_rate = ad->sample_rate;
+    par->channels = get_al_format_info(ad->sample_format)->channels;
+    par->codec_id = get_al_format_info(ad->sample_format)->codec_id;
 
     /* This is needed to read the audio data */
     ad->sample_step = (av_get_bits_per_sample(get_al_format_info(ad->sample_format)->codec_id) *

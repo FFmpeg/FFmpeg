@@ -226,7 +226,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
         st2->sample_aspect_ratio = st->sample_aspect_ratio;
         st2->avg_frame_rate      = st->avg_frame_rate;
         av_dict_copy(&st2->metadata, st->metadata, 0);
-        if ((ret = avcodec_copy_context(st2->codec, st->codec)) < 0)
+        if ((ret = avcodec_parameters_copy(st2->codecpar, st->codecpar)) < 0)
             goto end;
     }
 
@@ -347,8 +347,8 @@ static void log_slave(TeeSlave *slave, void *log_ctx, int log_level)
         AVBitStreamFilterContext *bsf = slave->bsfs[i];
 
         av_log(log_ctx, log_level, "    stream:%d codec:%s type:%s",
-               i, avcodec_get_name(st->codec->codec_id),
-               av_get_media_type_string(st->codec->codec_type));
+               i, avcodec_get_name(st->codecpar->codec_id),
+               av_get_media_type_string(st->codecpar->codec_type));
         if (bsf) {
             av_log(log_ctx, log_level, " bsfs:");
             while (bsf) {

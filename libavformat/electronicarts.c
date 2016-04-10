@@ -499,14 +499,14 @@ static int init_video_stream(AVFormatContext *s, VideoProperties *video)
     if (!st)
         return AVERROR(ENOMEM);
     video->stream_index = st->index;
-    st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id    = video->codec;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id    = video->codec;
     // parsing is necessary to make FFmpeg generate correct timestamps
-    if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO)
+    if (st->codecpar->codec_id == AV_CODEC_ID_MPEG2VIDEO)
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
-    st->codec->codec_tag   = 0; /* no fourcc */
-    st->codec->width       = video->width;
-    st->codec->height      = video->height;
+    st->codecpar->codec_tag   = 0; /* no fourcc */
+    st->codecpar->width       = video->width;
+    st->codecpar->height      = video->height;
     st->duration           = st->nb_frames = video->nb_frames;
     if (video->time_base.num)
         avpriv_set_pts_info(st, 64, video->time_base.num, video->time_base.den);
@@ -551,17 +551,17 @@ static int ea_read_header(AVFormatContext *s)
         if (!st)
             return AVERROR(ENOMEM);
         avpriv_set_pts_info(st, 33, 1, ea->sample_rate);
-        st->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id              = ea->audio_codec;
-        st->codec->codec_tag             = 0;   /* no tag */
-        st->codec->channels              = ea->num_channels;
-        st->codec->sample_rate           = ea->sample_rate;
-        st->codec->bits_per_coded_sample = ea->bytes * 8;
-        st->codec->bit_rate              = st->codec->channels *
-                                           st->codec->sample_rate *
-                                           st->codec->bits_per_coded_sample / 4;
-        st->codec->block_align           = st->codec->channels *
-                                           st->codec->bits_per_coded_sample;
+        st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id              = ea->audio_codec;
+        st->codecpar->codec_tag             = 0;   /* no tag */
+        st->codecpar->channels              = ea->num_channels;
+        st->codecpar->sample_rate           = ea->sample_rate;
+        st->codecpar->bits_per_coded_sample = ea->bytes * 8;
+        st->codecpar->bit_rate              = st->codecpar->channels *
+                                              st->codecpar->sample_rate *
+                                              st->codecpar->bits_per_coded_sample / 4;
+        st->codecpar->block_align           = st->codecpar->channels *
+                                              st->codecpar->bits_per_coded_sample;
         ea->audio_stream_index           = st->index;
         st->start_time                   = 0;
     }

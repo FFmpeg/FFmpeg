@@ -38,10 +38,10 @@ static int g729_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_G729;
-    st->codec->sample_rate = 8000;
-    st->codec->channels = 1;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_G729;
+    st->codecpar->sample_rate = 8000;
+    st->codecpar->channels = 1;
 
     if (s1 && s1->bit_rate) {
         s->bit_rate = s1->bit_rate;
@@ -53,28 +53,28 @@ static int g729_read_header(AVFormatContext *s)
     }
 
     if (s->bit_rate == 6400) {
-        st->codec->block_align = 8;
+        st->codecpar->block_align = 8;
     } else if (s->bit_rate == 8000) {
-        st->codec->block_align = 10;
+        st->codecpar->block_align = 10;
     } else {
         av_log(s, AV_LOG_ERROR, "Only 8000 b/s and 6400 b/s bitrates are supported. Provided: %"PRId64" b/s\n", (int64_t)s->bit_rate);
         return AVERROR_INVALIDDATA;
     }
 
-    avpriv_set_pts_info(st, st->codec->block_align << 3, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, st->codecpar->block_align << 3, 1, st->codecpar->sample_rate);
     return 0;
 }
 static int g729_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
 
-    ret = av_get_packet(s->pb, pkt, s->streams[0]->codec->block_align);
+    ret = av_get_packet(s->pb, pkt, s->streams[0]->codecpar->block_align);
 
     pkt->stream_index = 0;
     if (ret < 0)
         return ret;
 
-    pkt->dts = pkt->pts = pkt->pos / s->streams[0]->codec->block_align;
+    pkt->dts = pkt->pts = pkt->pos / s->streams[0]->codecpar->block_align;
 
     return ret;
 }

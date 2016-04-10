@@ -221,19 +221,19 @@ static int init_audio(AVFormatContext *s)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 32, 1, ipmovie->audio_sample_rate);
     ipmovie->audio_stream_index = st->index;
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = ipmovie->audio_type;
-    st->codec->codec_tag = 0;  /* no tag */
-    st->codec->channels = ipmovie->audio_channels;
-    st->codec->channel_layout = st->codec->channels == 1 ? AV_CH_LAYOUT_MONO :
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = ipmovie->audio_type;
+    st->codecpar->codec_tag = 0;  /* no tag */
+    st->codecpar->channels = ipmovie->audio_channels;
+    st->codecpar->channel_layout = st->codecpar->channels == 1 ? AV_CH_LAYOUT_MONO :
                                                             AV_CH_LAYOUT_STEREO;
-    st->codec->sample_rate = ipmovie->audio_sample_rate;
-    st->codec->bits_per_coded_sample = ipmovie->audio_bits;
-    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-        st->codec->bits_per_coded_sample;
-    if (st->codec->codec_id == AV_CODEC_ID_INTERPLAY_DPCM)
-        st->codec->bit_rate /= 2;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+    st->codecpar->sample_rate = ipmovie->audio_sample_rate;
+    st->codecpar->bits_per_coded_sample = ipmovie->audio_bits;
+    st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate *
+        st->codecpar->bits_per_coded_sample;
+    if (st->codecpar->codec_id == AV_CODEC_ID_INTERPLAY_DPCM)
+        st->codecpar->bit_rate /= 2;
+    st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
 
     return 0;
 }
@@ -623,12 +623,12 @@ static int ipmovie_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 63, 1, 1000000);
     ipmovie->video_stream_index = st->index;
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_INTERPLAY_VIDEO;
-    st->codec->codec_tag = 0;  /* no fourcc */
-    st->codec->width = ipmovie->video_width;
-    st->codec->height = ipmovie->video_height;
-    st->codec->bits_per_coded_sample = ipmovie->video_bpp;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_INTERPLAY_VIDEO;
+    st->codecpar->codec_tag = 0;  /* no fourcc */
+    st->codecpar->width = ipmovie->video_width;
+    st->codecpar->height = ipmovie->video_height;
+    st->codecpar->bits_per_coded_sample = ipmovie->video_bpp;
 
     if (ipmovie->audio_type) {
         return init_audio(s);

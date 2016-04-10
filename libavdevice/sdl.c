@@ -94,12 +94,12 @@ static void compute_overlay_rect(AVFormatContext *s)
     AVRational sar, dar; /* sample and display aspect ratios */
     SDLContext *sdl = s->priv_data;
     AVStream *st = s->streams[0];
-    AVCodecContext *encctx = st->codec;
+    AVCodecParameters *par = st->codecpar;
     SDL_Rect *overlay_rect = &sdl->overlay_rect;
 
     /* compute overlay width and height from the codec context information */
     sar = st->sample_aspect_ratio.num ? st->sample_aspect_ratio : (AVRational){ 1, 1 };
-    dar = av_mul_q(sar, (AVRational){ encctx->width, encctx->height });
+    dar = av_mul_q(sar, (AVRational){ par->width, par->height });
 
     /* we suppose the screen has a 1/1 sample aspect ratio */
     if (sdl->window_width && sdl->window_height) {
@@ -115,10 +115,10 @@ static void compute_overlay_rect(AVFormatContext *s)
         }
     } else {
         if (sar.num > sar.den) {
-            overlay_rect->w = encctx->width;
+            overlay_rect->w = par->width;
             overlay_rect->h = av_rescale(overlay_rect->w, dar.den, dar.num);
         } else {
-            overlay_rect->h = encctx->height;
+            overlay_rect->h = par->height;
             overlay_rect->w = av_rescale(overlay_rect->h, dar.num, dar.den);
         }
         sdl->window_width  = overlay_rect->w;
@@ -137,7 +137,7 @@ static int event_thread(void *arg)
     SDLContext *sdl = s->priv_data;
     int flags = SDL_BASE_FLAGS | (sdl->window_fullscreen ? SDL_FULLSCREEN : 0);
     AVStream *st = s->streams[0];
-    AVCodecContext *encctx = st->codec;
+    AVCodecParameters *par = st->codecpar;
 
     /* initialization */
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -155,19 +155,19 @@ static int event_thread(void *arg)
         goto init_end;
     }
 
-    sdl->overlay = SDL_CreateYUVOverlay(encctx->width, encctx->height,
+    sdl->overlay = SDL_CreateYUVOverlay(par->width, par->height,
                                         sdl->overlay_fmt, sdl->surface);
-    if (!sdl->overlay || sdl->overlay->pitches[0] < encctx->width) {
+    if (!sdl->overlay || sdl->overlay->pitches[0] < par->width) {
         av_log(s, AV_LOG_ERROR,
                "SDL does not support an overlay with size of %dx%d pixels\n",
-               encctx->width, encctx->height);
+               par->width, par->height);
         sdl->init_ret = AVERROR(EINVAL);
         goto init_end;
     }
 
     sdl->init_ret = 0;
     av_log(s, AV_LOG_VERBOSE, "w:%d h:%d fmt:%s -> w:%d h:%d\n",
-           encctx->width, encctx->height, av_get_pix_fmt_name(encctx->pix_fmt),
+           par->width, par->height, av_get_pix_fmt_name(par->format),
            sdl->overlay_rect.w, sdl->overlay_rect.h);
 
 init_end:
@@ -234,7 +234,7 @@ static int sdl_write_header(AVFormatContext *s)
 {
     SDLContext *sdl = s->priv_data;
     AVStream *st = s->streams[0];
-    AVCodecContext *encctx = st->codec;
+    AVCodecParameters *par = st->codecpar;
     int i, ret;
 
     if (!sdl->window_title)
@@ -251,15 +251,15 @@ static int sdl_write_header(AVFormatContext *s)
     }
 
     if (   s->nb_streams > 1
-        || encctx->codec_type != AVMEDIA_TYPE_VIDEO
-        || encctx->codec_id   != AV_CODEC_ID_RAWVIDEO) {
+        || par->codec_type != AVMEDIA_TYPE_VIDEO
+        || par->codec_id   != AV_CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
     for (i = 0; sdl_overlay_pix_fmt_map[i].pix_fmt != AV_PIX_FMT_NONE; i++) {
-        if (sdl_overlay_pix_fmt_map[i].pix_fmt == encctx->pix_fmt) {
+        if (sdl_overlay_pix_fmt_map[i].pix_fmt == par->format) {
             sdl->overlay_fmt = sdl_overlay_pix_fmt_map[i].overlay_fmt;
             break;
         }
@@ -268,7 +268,7 @@ static int sdl_write_header(AVFormatContext *s)
     if (!sdl->overlay_fmt) {
         av_log(s, AV_LOG_ERROR,
                "Unsupported pixel format '%s', choose one of yuv420p, yuyv422, or uyvy422\n",
-               av_get_pix_fmt_name(encctx->pix_fmt));
+               av_get_pix_fmt_name(par->format));
         ret = AVERROR(EINVAL);
         goto fail;
     }
@@ -315,7 +315,7 @@ fail:
 static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SDLContext *sdl = s->priv_data;
-    AVCodecContext *encctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     uint8_t *data[4];
     int linesize[4];
     int i;
@@ -324,7 +324,7 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
         sdl_write_trailer(s);
         return AVERROR(EIO);
     }
-    av_image_fill_arrays(data, linesize, pkt->data, encctx->pix_fmt, encctx->width, encctx->height, 1);
+    av_image_fill_arrays(data, linesize, pkt->data, par->format, par->width, par->height, 1);
 
     SDL_LockMutex(sdl->mutex);
     SDL_FillRect(sdl->surface, &sdl->surface->clip_rect,

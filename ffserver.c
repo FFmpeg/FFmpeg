@@ -2996,6 +2996,8 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
     for(i = 0; i < stream->nb_streams; i++) {
         avc->streams[i] = &avs[i];
         avc->streams[i]->codec = stream->streams[i]->codec;
+        avcodec_parameters_from_context(stream->streams[i]->codecpar, stream->streams[i]->codec);
+        avc->streams[i]->codecpar = stream->streams[i]->codecpar;
     }
     *pbuffer = av_mallocz(2048);
     if (!*pbuffer)
@@ -3536,6 +3538,8 @@ static AVStream *add_av_stream1(FFServerStream *stream,
 
     fst->priv_data = av_mallocz(sizeof(FeedData));
     fst->internal = av_mallocz(sizeof(*fst->internal));
+    fst->internal->avctx = avcodec_alloc_context3(NULL);
+    fst->codecpar = avcodec_parameters_alloc();
     fst->index = stream->nb_streams;
     avpriv_set_pts_info(fst, 33, 1, 90000);
     fst->sample_aspect_ratio = codec->sample_aspect_ratio;

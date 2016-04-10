@@ -46,16 +46,16 @@ typedef struct ASSContext {
 static int write_header(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
-    AVCodecContext *avctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (s->nb_streams != 1 || avctx->codec_id != AV_CODEC_ID_ASS) {
+    if (s->nb_streams != 1 || par->codec_id != AV_CODEC_ID_ASS) {
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
         return AVERROR(EINVAL);
     }
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
-    if (avctx->extradata_size > 0) {
-        size_t header_size = avctx->extradata_size;
-        uint8_t *trailer = strstr(avctx->extradata, "\n[Events]");
+    if (par->extradata_size > 0) {
+        size_t header_size = par->extradata_size;
+        uint8_t *trailer = strstr(par->extradata, "\n[Events]");
 
         if (trailer)
             trailer = strstr(trailer, "Format:");
@@ -63,17 +63,17 @@ static int write_header(AVFormatContext *s)
             trailer = strstr(trailer, "\n");
 
         if (trailer++) {
-            header_size = (trailer - avctx->extradata);
-            ass->trailer_size = avctx->extradata_size - header_size;
+            header_size = (trailer - par->extradata);
+            ass->trailer_size = par->extradata_size - header_size;
             if (ass->trailer_size)
                 ass->trailer = trailer;
         }
 
-        avio_write(s->pb, avctx->extradata, header_size);
-        if (avctx->extradata[header_size - 1] != '\n')
+        avio_write(s->pb, par->extradata, header_size);
+        if (par->extradata[header_size - 1] != '\n')
             avio_write(s->pb, "\r\n", 2);
-        ass->ssa_mode = !strstr(avctx->extradata, "\n[V4+ Styles]");
-        if (!strstr(avctx->extradata, "\n[Events]"))
+        ass->ssa_mode = !strstr(par->extradata, "\n[V4+ Styles]");
+        if (!strstr(par->extradata, "\n[Events]"))
             avio_printf(s->pb, "[Events]\r\nFormat: %s, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
                         ass->ssa_mode ? "Marked" : "Layer");
     }
