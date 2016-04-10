@@ -25,8 +25,9 @@
  */
 
 #include "libavutil/channel_layout.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 #include "msgsmdec.h"
 
@@ -67,7 +68,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
 {
     AVFrame *frame = data;
     int res;
-    GetBitContext gb;
+    BitstreamContext bc;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int16_t *samples;
@@ -87,10 +88,10 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_GSM:
-        init_get_bits(&gb, buf, buf_size * 8);
-        if (get_bits(&gb, 4) != 0xd)
+        bitstream_init(&bc, buf, buf_size * 8);
+        if (bitstream_read(&bc, 4) != 0xd)
             av_log(avctx, AV_LOG_WARNING, "Missing GSM magic!\n");
-        res = gsm_decode_block(avctx, samples, &gb, GSM_13000);
+        res = gsm_decode_block(avctx, samples, &bc, GSM_13000);
         if (res < 0)
             return res;
         break;

@@ -24,17 +24,17 @@
  * GSM decoder
  */
 
-#include "get_bits.h"
+#include "bitstream.h"
 #include "gsm.h"
 #include "gsmdec_data.h"
 
-static void apcm_dequant_add(GetBitContext *gb, int16_t *dst, const int *frame_bits)
+static void apcm_dequant_add(BitstreamContext *bc, int16_t *dst, const int *frame_bits)
 {
     int i, val;
-    int maxidx = get_bits(gb, 6);
+    int maxidx = bitstream_read(bc, 6);
     const int16_t *tab = ff_gsm_dequant_tab[maxidx];
     for (i = 0; i < 13; i++) {
-        val = get_bits(gb, frame_bits[i]);
+        val = bitstream_read(bc, frame_bits[i]);
         dst[3 * i] += tab[ff_gsm_requant_tab[frame_bits[i]][val]];
     }
 }
@@ -120,28 +120,28 @@ static int postprocess(int16_t *data, int msr)
 }
 
 static int gsm_decode_block(AVCodecContext *avctx, int16_t *samples,
-                            GetBitContext *gb, int mode)
+                            BitstreamContext *bc, int mode)
 {
     GSMContext *ctx = avctx->priv_data;
     int i;
     int16_t *ref_dst = ctx->ref_buf + 120;
     int *lar = ctx->lar[ctx->lar_idx];
-    lar[0] = decode_log_area(get_bits(gb, 6), 13107,  1 << 15);
-    lar[1] = decode_log_area(get_bits(gb, 6), 13107,  1 << 15);
-    lar[2] = decode_log_area(get_bits(gb, 5), 13107, (1 << 14) + 2048*2);
-    lar[3] = decode_log_area(get_bits(gb, 5), 13107, (1 << 14) - 2560*2);
-    lar[4] = decode_log_area(get_bits(gb, 4), 19223, (1 << 13) +   94*2);
-    lar[5] = decode_log_area(get_bits(gb, 4), 17476, (1 << 13) - 1792*2);
-    lar[6] = decode_log_area(get_bits(gb, 3), 31454, (1 << 12) -  341*2);
-    lar[7] = decode_log_area(get_bits(gb, 3), 29708, (1 << 12) - 1144*2);
+    lar[0] = decode_log_area(bitstream_read(bc, 6), 13107,  1 << 15);
+    lar[1] = decode_log_area(bitstream_read(bc, 6), 13107,  1 << 15);
+    lar[2] = decode_log_area(bitstream_read(bc, 5), 13107, (1 << 14) + 2048 * 2);
+    lar[3] = decode_log_area(bitstream_read(bc, 5), 13107, (1 << 14) - 2560 * 2);
+    lar[4] = decode_log_area(bitstream_read(bc, 4), 19223, (1 << 13) +   94 * 2);
+    lar[5] = decode_log_area(bitstream_read(bc, 4), 17476, (1 << 13) - 1792 * 2);
+    lar[6] = decode_log_area(bitstream_read(bc, 3), 31454, (1 << 12) -  341 * 2);
+    lar[7] = decode_log_area(bitstream_read(bc, 3), 29708, (1 << 12) - 1144 * 2);
 
     for (i = 0; i < 4; i++) {
-        int lag      = get_bits(gb, 7);
-        int gain_idx = get_bits(gb, 2);
-        int offset   = get_bits(gb, 2);
+        int lag      = bitstream_read(bc, 7);
+        int gain_idx = bitstream_read(bc, 2);
+        int offset   = bitstream_read(bc, 2);
         lag = av_clip(lag, 40, 120);
         long_term_synth(ref_dst, lag, gain_idx);
-        apcm_dequant_add(gb, ref_dst + offset, ff_gsm_apcm_bits[mode][i]);
+        apcm_dequant_add(bc, ref_dst + offset, ff_gsm_apcm_bits[mode][i]);
         ref_dst += 40;
     }
     memcpy(ctx->ref_buf, ctx->ref_buf + 160, 120 * sizeof(*ctx->ref_buf));
