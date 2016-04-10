@@ -27,7 +27,7 @@
 #ifndef AVCODEC_MLP_PARSER_H
 #define AVCODEC_MLP_PARSER_H
 
-#include "get_bits.h"
+#include "bitstream.h"
 
 typedef struct MLPHeaderInfo
 {
@@ -61,6 +61,6 @@ typedef struct MLPHeaderInfo
 } MLPHeaderInfo;
 
 
-int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb);
+int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, BitstreamContext *bc);
 
 #endif /* AVCODEC_MLP_PARSER_H */
