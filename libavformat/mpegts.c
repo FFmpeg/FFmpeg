@@ -543,7 +543,7 @@ static int analyze(const uint8_t *buf, int size, int packet_size, int *index,
 
     for (i = 0; i < size - 3; i++) {
         if (buf[i] == 0x47 &&
-            (!probe || (!(buf[i + 1] & 0x80) && buf[i + 3] != 0x47))) {
+            (!probe || (buf[i + 3] & 0x30))) {
             int x = i % packet_size;
             stat[x]++;
             stat_all++;
