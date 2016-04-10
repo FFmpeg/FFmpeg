@@ -48,6 +48,7 @@ typedef struct PerspectiveContext {
     int hsub, vsub;
     int nb_planes;
     int sense;
+    int eval_mode;
 
     int (*perspective)(AVFilterContext *ctx,
                        void *arg, int job, int nb_jobs);
@@ -59,6 +60,12 @@ typedef struct PerspectiveContext {
 enum PERSPECTIVESense {
     PERSPECTIVE_SENSE_SOURCE      = 0, ///< coordinates give locations in source of corners of destination.
     PERSPECTIVE_SENSE_DESTINATION = 1, ///< coordinates give locations in destination of corners of source.
+};
+
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
 };
 
 static const AVOption perspective_options[] = {
@@ -78,6 +85,9 @@ static const AVOption perspective_options[] = {
                 0, AV_OPT_TYPE_CONST, {.i64=PERSPECTIVE_SENSE_SOURCE}, 0, 0, FLAGS, "sense"},
     {       "destination", "specify locations in destination to send corners of source",
                 0, AV_OPT_TYPE_CONST, {.i64=PERSPECTIVE_SENSE_DESTINATION}, 0, 0, FLAGS, "sense"},
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+         { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
+         { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
 
     { NULL }
 };
@@ -115,20 +125,22 @@ static inline double get_coeff(double d)
     return coeff;
 }
 
-static const char *const var_names[] = {   "W",   "H",        NULL };
-enum                                   { VAR_W, VAR_H, VAR_VARS_NB };
+static const char *const var_names[] = {   "W",   "H",   "in",   "on",        NULL };
+enum                                   { VAR_W, VAR_H, VAR_IN, VAR_ON, VAR_VARS_NB };
 
-static int config_input(AVFilterLink *inlink)
+static int calc_persp_luts(AVFilterContext *ctx, AVFilterLink *inlink)
 {
+    PerspectiveContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    double (*ref)[2]      = s->ref;
+
+    double values[VAR_VARS_NB] = { [VAR_W] = inlink->w, [VAR_H] = inlink->h,
+                                   [VAR_IN] = inlink->frame_count  + 1,
+                                   [VAR_ON] = outlink->frame_count + 1 };
+    const int h = values[VAR_H];
+    const int w = values[VAR_W];
     double x0, x1, x2, x3, x4, x5, x6, x7, x8, q;
     double t0, t1, t2, t3;
-    AVFilterContext *ctx = inlink->dst;
-    PerspectiveContext *s = ctx->priv;
-    double (*ref)[2] = s->ref;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    double values[VAR_VARS_NB] = { [VAR_W] = inlink->w, [VAR_H] = inlink->h };
-    int h = inlink->h;
-    int w = inlink->w;
     int x, y, i, j, ret;
 
     for (i = 0; i < 4; i++) {
@@ -143,19 +155,6 @@ static int config_input(AVFilterLink *inlink)
                 return ret;
         }
     }
-
-    s->hsub = desc->log2_chroma_w;
-    s->vsub = desc->log2_chroma_h;
-    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
-        return ret;
-
-    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-    s->height[0] = s->height[3] = inlink->h;
-
-    s->pv = av_realloc_f(s->pv, w * h, 2 * sizeof(*s->pv));
-    if (!s->pv)
-        return AVERROR(ENOMEM);
 
     switch (s->sense) {
     case PERSPECTIVE_SENSE_SOURCE:
@@ -220,6 +219,36 @@ static int config_input(AVFilterLink *inlink)
 
             s->pv[x + y * w][0] = u;
             s->pv[x + y * w][1] = v;
+        }
+    }
+
+    return 0;
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    PerspectiveContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int h = inlink->h;
+    int w = inlink->w;
+    int i, j, ret;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+        return ret;
+
+    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->height[0] = s->height[3] = inlink->h;
+
+    s->pv = av_realloc_f(s->pv, w * h, 2 * sizeof(*s->pv));
+    if (!s->pv)
+        return AVERROR(ENOMEM);
+
+    if (s->eval_mode == EVAL_MODE_INIT) {
+        if ((ret = calc_persp_luts(ctx, inlink)) < 0) {
+            return ret;
         }
     }
 
@@ -423,6 +452,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     PerspectiveContext *s = ctx->priv;
     AVFrame *out;
     int plane;
+    int ret;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -430,6 +460,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, frame);
+
+    if (s->eval_mode == EVAL_MODE_FRAME) {
+        if ((ret = calc_persp_luts(ctx, inlink)) < 0) {
+            return ret;
+        }
+    }
 
     for (plane = 0; plane < s->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? s->hsub : 0;

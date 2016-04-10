@@ -10128,6 +10128,10 @@ The expressions can use the following variables:
 @item W
 @item H
 the width and height of video frame.
+@item in
+Input frame count.
+@item on
+Output frame count.
 @end table
 
 @item interpolation
@@ -10158,6 +10162,21 @@ by the given coordinates.
 
 Default value is @samp{source}.
 @end table
+
+@item eval
+Set when the expressions for coordinates @option{x0,y0,...x3,y3} are evaluated.
+
+It accepts the following values:
+@table @samp
+@item init
+only evaluate expressions once during the filter initialization or
+when a command is processed
+
+@item frame
+evaluate expressions for each incoming frame
+@end table
+
+Default value is @samp{init}.
 @end table
 
 @section phase
