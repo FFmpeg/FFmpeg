@@ -162,6 +162,7 @@ static int segment_mux_init(AVFormatContext *s)
     oc->opaque             = s->opaque;
     oc->io_close           = s->io_close;
     oc->io_open            = s->io_open;
+    oc->flags              = s->flags;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st;
