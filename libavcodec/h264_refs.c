@@ -74,7 +74,7 @@ static int split_field_copy(H264Ref *dest, H264Picture *src, int parity, int id_
 }
 
 static int build_def_list(H264Ref *def, int def_len,
-                          H264Picture **in, int len, int is_long, int sel)
+                          H264Picture * const *in, int len, int is_long, int sel)
 {
     int  i[2] = { 0 };
     int index = 0;
@@ -97,7 +97,8 @@ static int build_def_list(H264Ref *def, int def_len,
     return index;
 }
 
-static int add_sorted(H264Picture **sorted, H264Picture **src, int len, int limit, int dir)
+static int add_sorted(H264Picture **sorted, H264Picture * const *src,
+                      int len, int limit, int dir)
 {
     int i, best_poc;
     int out_i = 0;
@@ -119,7 +120,7 @@ static int add_sorted(H264Picture **sorted, H264Picture **src, int len, int limi
     return out_i;
 }
 
-static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
+static void h264_initialise_ref_list(const H264Context *h, H264SliceContext *sl)
 {
     int i, len;
 
@@ -172,7 +173,7 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
 /**
  * print short term list
  */
-static void print_short_term(H264Context *h)
+static void print_short_term(const H264Context *h)
 {
     uint32_t i;
     if (h->avctx->debug & FF_DEBUG_MMCO) {
@@ -188,7 +189,7 @@ static void print_short_term(H264Context *h)
 /**
  * print long term list
  */
-static void print_long_term(H264Context *h)
+static void print_long_term(const H264Context *h)
 {
     uint32_t i;
     if (h->avctx->debug & FF_DEBUG_MMCO) {
@@ -213,7 +214,7 @@ static void print_long_term(H264Context *h)
  * @return frame number (short term) or long term index of picture
  *         described by pic_num
  */
-static int pic_num_extract(H264Context *h, int pic_num, int *structure)
+static int pic_num_extract(const H264Context *h, int pic_num, int *structure)
 {
     *structure = h->picture_structure;
     if (FIELD_PICTURE(h)) {
@@ -226,7 +227,7 @@ static int pic_num_extract(H264Context *h, int pic_num, int *structure)
     return pic_num;
 }
 
-int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
+int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContext *sl)
 {
     int list, index, pic_structure;
 
