@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libm.h"
 #include "timer.h"
 #include "eval.h"
 

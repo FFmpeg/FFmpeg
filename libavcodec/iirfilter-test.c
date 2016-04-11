@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "libavutil/libm.h"
+
 #include "iirfilter.h"
 
 #define FILT_ORDER 4
