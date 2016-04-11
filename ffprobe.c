@@ -49,6 +49,10 @@
 #include "libpostproc/postprocess.h"
 #include "cmdutils.h"
 
+typedef struct InputFile {
+    AVFormatContext *fmt_ctx;
+} InputFile;
+
 const char program_name[] = "ffprobe";
 const int program_birth_year = 2007;
 
@@ -2105,8 +2109,9 @@ end:
     return ret;
 }
 
-static int read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
+static int read_packets(WriterContext *w, InputFile *ifile)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
     int64_t cur_ts = fmt_ctx->start_time;
 
@@ -2355,8 +2360,9 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     return ret;
 }
 
-static int show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_streams(WriterContext *w, InputFile *ifile)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
 
     writer_print_section_header(w, SECTION_ID_STREAMS);
@@ -2405,8 +2411,9 @@ end:
     return ret;
 }
 
-static int show_programs(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_programs(WriterContext *w, InputFile *ifile)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
 
     writer_print_section_header(w, SECTION_ID_PROGRAMS);
@@ -2422,8 +2429,9 @@ static int show_programs(WriterContext *w, AVFormatContext *fmt_ctx)
     return ret;
 }
 
-static int show_chapters(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_chapters(WriterContext *w, InputFile *ifile)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
 
     writer_print_section_header(w, SECTION_ID_CHAPTERS);
@@ -2446,8 +2454,9 @@ static int show_chapters(WriterContext *w, AVFormatContext *fmt_ctx)
     return ret;
 }
 
-static int show_format(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_format(WriterContext *w, InputFile *ifile)
 {
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     char val_str[128];
     int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
     int ret = 0;
@@ -2490,7 +2499,7 @@ static void show_error(WriterContext *w, int err)
     writer_print_section_footer(w);
 }
 
-static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
+static int open_input_file(InputFile *ifile, const char *filename)
 {
     int err, i, orig_nb_streams;
     AVFormatContext *fmt_ctx = NULL;
@@ -2507,7 +2516,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         print_error(filename, err);
         return err;
     }
-    *fmt_ctx_ptr = fmt_ctx;
+    ifile->fmt_ctx = fmt_ctx;
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
     if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
@@ -2560,47 +2569,47 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         }
     }
 
-    *fmt_ctx_ptr = fmt_ctx;
+    ifile->fmt_ctx = fmt_ctx;
     return 0;
 }
 
-static void close_input_file(AVFormatContext **ctx_ptr)
+static void close_input_file(InputFile *ifile)
 {
     int i;
-    AVFormatContext *fmt_ctx = *ctx_ptr;
+    AVFormatContext *fmt_ctx = ifile->fmt_ctx;
 
     /* close decoder for each stream */
     for (i = 0; i < fmt_ctx->nb_streams; i++)
         if (fmt_ctx->streams[i]->codec->codec_id != AV_CODEC_ID_NONE)
             avcodec_close(fmt_ctx->streams[i]->codec);
 
-    avformat_close_input(ctx_ptr);
+    avformat_close_input(&ifile->fmt_ctx);
 }
 
 static int probe_file(WriterContext *wctx, const char *filename)
 {
-    AVFormatContext *fmt_ctx = NULL;
+    InputFile ifile = { 0 };
     int ret, i;
     int section_id;
 
     do_read_frames = do_show_frames || do_count_frames;
     do_read_packets = do_show_packets || do_count_packets;
 
-    ret = open_input_file(&fmt_ctx, filename);
+    ret = open_input_file(&ifile, filename);
     if (ret < 0)
         goto end;
 
 #define CHECK_END if (ret < 0) goto end
 
-    nb_streams = fmt_ctx->nb_streams;
-    REALLOCZ_ARRAY_STREAM(nb_streams_frames,0,fmt_ctx->nb_streams);
-    REALLOCZ_ARRAY_STREAM(nb_streams_packets,0,fmt_ctx->nb_streams);
-    REALLOCZ_ARRAY_STREAM(selected_streams,0,fmt_ctx->nb_streams);
+    nb_streams = ifile.fmt_ctx->nb_streams;
+    REALLOCZ_ARRAY_STREAM(nb_streams_frames,0,ifile.fmt_ctx->nb_streams);
+    REALLOCZ_ARRAY_STREAM(nb_streams_packets,0,ifile.fmt_ctx->nb_streams);
+    REALLOCZ_ARRAY_STREAM(selected_streams,0,ifile.fmt_ctx->nb_streams);
 
-    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+    for (i = 0; i < ifile.fmt_ctx->nb_streams; i++) {
         if (stream_specifier) {
-            ret = avformat_match_stream_specifier(fmt_ctx,
-                                                  fmt_ctx->streams[i],
+            ret = avformat_match_stream_specifier(ifile.fmt_ctx,
+                                                  ifile.fmt_ctx->streams[i],
                                                   stream_specifier);
             CHECK_END;
             else
@@ -2621,33 +2630,33 @@ static int probe_file(WriterContext *wctx, const char *filename)
             section_id = SECTION_ID_FRAMES;
         if (do_show_frames || do_show_packets)
             writer_print_section_header(wctx, section_id);
-        ret = read_packets(wctx, fmt_ctx);
+        ret = read_packets(wctx, &ifile);
         if (do_show_frames || do_show_packets)
             writer_print_section_footer(wctx);
         CHECK_END;
     }
 
     if (do_show_programs) {
-        ret = show_programs(wctx, fmt_ctx);
+        ret = show_programs(wctx, &ifile);
         CHECK_END;
     }
 
     if (do_show_streams) {
-        ret = show_streams(wctx, fmt_ctx);
+        ret = show_streams(wctx, &ifile);
         CHECK_END;
     }
     if (do_show_chapters) {
-        ret = show_chapters(wctx, fmt_ctx);
+        ret = show_chapters(wctx, &ifile);
         CHECK_END;
     }
     if (do_show_format) {
-        ret = show_format(wctx, fmt_ctx);
+        ret = show_format(wctx, &ifile);
         CHECK_END;
     }
 
 end:
-    if (fmt_ctx)
-        close_input_file(&fmt_ctx);
+    if (ifile.fmt_ctx)
+        close_input_file(&ifile);
     av_freep(&nb_streams_frames);
     av_freep(&nb_streams_packets);
     av_freep(&selected_streams);
