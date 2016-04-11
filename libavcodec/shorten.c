@@ -164,9 +164,13 @@ static void fix_bitshift(ShortenContext *s, int32_t *buffer)
 {
     int i;
 
-    if (s->bitshift != 0)
+    if (s->bitshift == 32) {
+        for (i = 0; i < s->blocksize; i++)
+            buffer[i] = 0;
+    } else if (s->bitshift != 0) {
         for (i = 0; i < s->blocksize; i++)
             buffer[i] <<= s->bitshift;
+    }
 }
 
 static int init_offset(ShortenContext *s)
@@ -602,7 +606,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 break;
             case FN_BITSHIFT: {
                 unsigned bitshift = get_ur_golomb_shorten(&s->gb, BITSHIFTSIZE);
-                if (bitshift > 31) {
+                if (bitshift > 32) {
                     av_log(avctx, AV_LOG_ERROR, "bitshift %d is invalid\n",
                            bitshift);
                     return AVERROR_INVALIDDATA;
@@ -680,7 +684,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 if (s->version < 2)
                     s->offset[channel][s->nmean - 1] = sum / s->blocksize;
                 else
-                    s->offset[channel][s->nmean - 1] = (sum / s->blocksize) << s->bitshift;
+                    s->offset[channel][s->nmean - 1] = s->bitshift == 32 ? 0 : (sum / s->blocksize) << s->bitshift;
             }
 
             /* copy wrap samples for use with next block */
