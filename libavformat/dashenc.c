@@ -632,6 +632,7 @@ static int dash_write_header(AVFormatContext *s)
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
         ctx->avoid_negative_ts = s->avoid_negative_ts;
+        ctx->flags = s->flags;
 
         ctx->pb = avio_alloc_context(os->iobuf, sizeof(os->iobuf), AVIO_FLAG_WRITE, os, NULL, dash_write, NULL);
         if (!ctx->pb) {
