@@ -565,6 +565,7 @@ int main(int argc, char **argv)
     int have_video = 0, have_audio = 0;
     int encode_video = 0, encode_audio = 0;
     AVDictionary *opt = NULL;
+    int i;
 
     /* Initialize libavcodec, and register all codecs and formats. */
     av_register_all();
@@ -581,8 +582,9 @@ int main(int argc, char **argv)
     }
 
     filename = argv[1];
-    if (argc > 3 && !strcmp(argv[2], "-flags")) {
-        av_dict_set(&opt, argv[2]+1, argv[3], 0);
+    for (i = 2; i+1 < argc; i+=2) {
+        if (!strcmp(argv[i], "-flags") || !strcmp(argv[i], "-fflags"))
+            av_dict_set(&opt, argv[i]+1, argv[i+1], 0);
     }
 
     /* allocate the output media context */
