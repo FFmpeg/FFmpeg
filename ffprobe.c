@@ -2128,7 +2128,6 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
 {
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
-    const AVCodec *dec;
     char val_str[128];
     const char *s;
     AVRational sar, dar;
@@ -2144,18 +2143,11 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     print_int("index", stream->index);
 
     dec_ctx = stream->codec;
-    dec = dec_ctx->codec;
-    if (dec) {
-        print_str("codec_name", dec->name);
+    if (cd = avcodec_descriptor_get(stream->codec->codec_id)) {
+        print_str("codec_name", cd->name);
         if (!do_bitexact) {
-            if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
-            else                print_str_opt("codec_long_name", "unknown");
-        }
-   } else if ((cd = avcodec_descriptor_get(stream->codec->codec_id))) {
-        print_str_opt("codec_name", cd->name);
-        if (!do_bitexact) {
-            print_str_opt("codec_long_name",
-                          cd->long_name ? cd->long_name : "unknown");
+            print_str("codec_long_name",
+                      cd->long_name ? cd->long_name : "unknown");
         }
     } else {
         print_str_opt("codec_name", "unknown");
@@ -2164,7 +2156,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         }
     }
 
-    if (!do_bitexact && dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
+    if (!do_bitexact && (profile = avcodec_profile_name(dec_ctx->codec_id, dec_ctx->profile)))
         print_str("profile", profile);
     else {
         if (dec_ctx->profile != FF_PROFILE_UNKNOWN) {
