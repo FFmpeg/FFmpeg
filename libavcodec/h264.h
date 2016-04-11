@@ -687,7 +687,7 @@ int ff_h264_get_slice_type(const H264SliceContext *sl);
 int ff_h264_alloc_tables(H264Context *h);
 
 int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContext *sl);
-void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl);
+void ff_h264_fill_mbaff_ref_list(H264SliceContext *sl);
 void ff_h264_remove_all_refs(H264Context *h);
 
 /**
