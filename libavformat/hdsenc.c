@@ -374,6 +374,7 @@ static int hds_write_header(AVFormatContext *s)
             os->ctx = ctx;
             ctx->oformat = oformat;
             ctx->interrupt_callback = s->interrupt_callback;
+            ctx->flags = s->flags;
 
             ctx->pb = avio_alloc_context(os->iobuf, sizeof(os->iobuf),
                                          AVIO_FLAG_WRITE, os,
