@@ -2135,6 +2135,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     AVBPrint pbuf;
     const AVCodecDescriptor *cd;
     int ret = 0;
+    const char *profile = NULL;
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -2142,139 +2143,137 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
 
     print_int("index", stream->index);
 
-    if ((dec_ctx = stream->codec)) {
-        const char *profile = NULL;
-        dec = dec_ctx->codec;
-        if (dec) {
-            print_str("codec_name", dec->name);
-            if (!do_bitexact) {
-                if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
-                else                print_str_opt("codec_long_name", "unknown");
-            }
-        } else if ((cd = avcodec_descriptor_get(stream->codec->codec_id))) {
-            print_str_opt("codec_name", cd->name);
-            if (!do_bitexact) {
-                print_str_opt("codec_long_name",
-                              cd->long_name ? cd->long_name : "unknown");
-            }
-        } else {
-            print_str_opt("codec_name", "unknown");
-            if (!do_bitexact) {
-                print_str_opt("codec_long_name", "unknown");
-            }
+    dec_ctx = stream->codec;
+    dec = dec_ctx->codec;
+    if (dec) {
+        print_str("codec_name", dec->name);
+        if (!do_bitexact) {
+            if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
+            else                print_str_opt("codec_long_name", "unknown");
         }
-
-        if (!do_bitexact && dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
-            print_str("profile", profile);
-        else {
-            if (dec_ctx->profile != FF_PROFILE_UNKNOWN) {
-                char profile_num[12];
-                snprintf(profile_num, sizeof(profile_num), "%d", dec_ctx->profile);
-                print_str("profile", profile_num);
-            } else
-                print_str_opt("profile", "unknown");
-        }
-
-        s = av_get_media_type_string(dec_ctx->codec_type);
-        if (s) print_str    ("codec_type", s);
-        else   print_str_opt("codec_type", "unknown");
-        print_q("codec_time_base", dec_ctx->time_base, '/');
-
-        /* print AVI/FourCC tag */
-        av_get_codec_tag_string(val_str, sizeof(val_str), dec_ctx->codec_tag);
-        print_str("codec_tag_string",    val_str);
-        print_fmt("codec_tag", "0x%04x", dec_ctx->codec_tag);
-
-        switch (dec_ctx->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:
-            print_int("width",        dec_ctx->width);
-            print_int("height",       dec_ctx->height);
-            print_int("coded_width",  dec_ctx->coded_width);
-            print_int("coded_height", dec_ctx->coded_height);
-            print_int("has_b_frames", dec_ctx->has_b_frames);
-            sar = av_guess_sample_aspect_ratio(fmt_ctx, stream, NULL);
-            if (sar.den) {
-                print_q("sample_aspect_ratio", sar, ':');
-                av_reduce(&dar.num, &dar.den,
-                          dec_ctx->width  * sar.num,
-                          dec_ctx->height * sar.den,
-                          1024*1024);
-                print_q("display_aspect_ratio", dar, ':');
-            } else {
-                print_str_opt("sample_aspect_ratio", "N/A");
-                print_str_opt("display_aspect_ratio", "N/A");
-            }
-            s = av_get_pix_fmt_name(dec_ctx->pix_fmt);
-            if (s) print_str    ("pix_fmt", s);
-            else   print_str_opt("pix_fmt", "unknown");
-            print_int("level",   dec_ctx->level);
-            if (dec_ctx->color_range != AVCOL_RANGE_UNSPECIFIED)
-                print_str    ("color_range", av_color_range_name(dec_ctx->color_range));
-            else
-                print_str_opt("color_range", "N/A");
-            s = av_get_colorspace_name(dec_ctx->colorspace);
-            if (s) print_str    ("color_space", s);
-            else   print_str_opt("color_space", "unknown");
-
-            if (dec_ctx->color_trc != AVCOL_TRC_UNSPECIFIED)
-                print_str("color_transfer", av_color_transfer_name(dec_ctx->color_trc));
-            else
-                print_str_opt("color_transfer", av_color_transfer_name(dec_ctx->color_trc));
-
-            if (dec_ctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
-                print_str("color_primaries", av_color_primaries_name(dec_ctx->color_primaries));
-            else
-                print_str_opt("color_primaries", av_color_primaries_name(dec_ctx->color_primaries));
-
-            if (dec_ctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
-                print_str("chroma_location", av_chroma_location_name(dec_ctx->chroma_sample_location));
-            else
-                print_str_opt("chroma_location", av_chroma_location_name(dec_ctx->chroma_sample_location));
-
-#if FF_API_PRIVATE_OPT
-            if (dec_ctx->timecode_frame_start >= 0) {
-                char tcbuf[AV_TIMECODE_STR_SIZE];
-                av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);
-                print_str("timecode", tcbuf);
-            } else {
-                print_str_opt("timecode", "N/A");
-            }
-#endif
-            print_int("refs", dec_ctx->refs);
-            break;
-
-        case AVMEDIA_TYPE_AUDIO:
-            s = av_get_sample_fmt_name(dec_ctx->sample_fmt);
-            if (s) print_str    ("sample_fmt", s);
-            else   print_str_opt("sample_fmt", "unknown");
-            print_val("sample_rate",     dec_ctx->sample_rate, unit_hertz_str);
-            print_int("channels",        dec_ctx->channels);
-
-            if (dec_ctx->channel_layout) {
-                av_bprint_clear(&pbuf);
-                av_bprint_channel_layout(&pbuf, dec_ctx->channels, dec_ctx->channel_layout);
-                print_str    ("channel_layout", pbuf.str);
-            } else {
-                print_str_opt("channel_layout", "unknown");
-            }
-
-            print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
-            break;
-
-        case AVMEDIA_TYPE_SUBTITLE:
-            if (dec_ctx->width)
-                print_int("width",       dec_ctx->width);
-            else
-                print_str_opt("width",   "N/A");
-            if (dec_ctx->height)
-                print_int("height",      dec_ctx->height);
-            else
-                print_str_opt("height",  "N/A");
-            break;
+   } else if ((cd = avcodec_descriptor_get(stream->codec->codec_id))) {
+        print_str_opt("codec_name", cd->name);
+        if (!do_bitexact) {
+            print_str_opt("codec_long_name",
+                          cd->long_name ? cd->long_name : "unknown");
         }
     } else {
-        print_str_opt("codec_type", "unknown");
+        print_str_opt("codec_name", "unknown");
+        if (!do_bitexact) {
+            print_str_opt("codec_long_name", "unknown");
+        }
     }
+
+    if (!do_bitexact && dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
+        print_str("profile", profile);
+    else {
+        if (dec_ctx->profile != FF_PROFILE_UNKNOWN) {
+            char profile_num[12];
+            snprintf(profile_num, sizeof(profile_num), "%d", dec_ctx->profile);
+            print_str("profile", profile_num);
+        } else
+            print_str_opt("profile", "unknown");
+    }
+
+    s = av_get_media_type_string(dec_ctx->codec_type);
+    if (s) print_str    ("codec_type", s);
+    else   print_str_opt("codec_type", "unknown");
+    print_q("codec_time_base", dec_ctx->time_base, '/');
+
+    /* print AVI/FourCC tag */
+    av_get_codec_tag_string(val_str, sizeof(val_str), dec_ctx->codec_tag);
+    print_str("codec_tag_string",    val_str);
+    print_fmt("codec_tag", "0x%04x", dec_ctx->codec_tag);
+
+    switch (dec_ctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        print_int("width",        dec_ctx->width);
+        print_int("height",       dec_ctx->height);
+        print_int("coded_width",  dec_ctx->coded_width);
+        print_int("coded_height", dec_ctx->coded_height);
+        print_int("has_b_frames", dec_ctx->has_b_frames);
+        sar = av_guess_sample_aspect_ratio(fmt_ctx, stream, NULL);
+        if (sar.den) {
+            print_q("sample_aspect_ratio", sar, ':');
+            av_reduce(&dar.num, &dar.den,
+                      dec_ctx->width  * sar.num,
+                      dec_ctx->height * sar.den,
+                      1024*1024);
+            print_q("display_aspect_ratio", dar, ':');
+        } else {
+            print_str_opt("sample_aspect_ratio", "N/A");
+            print_str_opt("display_aspect_ratio", "N/A");
+        }
+        s = av_get_pix_fmt_name(dec_ctx->pix_fmt);
+        if (s) print_str    ("pix_fmt", s);
+        else   print_str_opt("pix_fmt", "unknown");
+        print_int("level",   dec_ctx->level);
+        if (dec_ctx->color_range != AVCOL_RANGE_UNSPECIFIED)
+            print_str    ("color_range", av_color_range_name(dec_ctx->color_range));
+        else
+            print_str_opt("color_range", "N/A");
+
+        s = av_get_colorspace_name(dec_ctx->colorspace);
+        if (s) print_str    ("color_space", s);
+        else   print_str_opt("color_space", "unknown");
+
+        if (dec_ctx->color_trc != AVCOL_TRC_UNSPECIFIED)
+            print_str("color_transfer", av_color_transfer_name(dec_ctx->color_trc));
+        else
+            print_str_opt("color_transfer", av_color_transfer_name(dec_ctx->color_trc));
+
+        if (dec_ctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
+            print_str("color_primaries", av_color_primaries_name(dec_ctx->color_primaries));
+        else
+            print_str_opt("color_primaries", av_color_primaries_name(dec_ctx->color_primaries));
+
+        if (dec_ctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
+            print_str("chroma_location", av_chroma_location_name(dec_ctx->chroma_sample_location));
+        else
+            print_str_opt("chroma_location", av_chroma_location_name(dec_ctx->chroma_sample_location));
+
+#if FF_API_PRIVATE_OPT
+        if (dec_ctx->timecode_frame_start >= 0) {
+            char tcbuf[AV_TIMECODE_STR_SIZE];
+            av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);
+            print_str("timecode", tcbuf);
+        } else {
+            print_str_opt("timecode", "N/A");
+        }
+#endif
+        print_int("refs", dec_ctx->refs);
+        break;
+
+    case AVMEDIA_TYPE_AUDIO:
+        s = av_get_sample_fmt_name(dec_ctx->sample_fmt);
+        if (s) print_str    ("sample_fmt", s);
+        else   print_str_opt("sample_fmt", "unknown");
+        print_val("sample_rate",     dec_ctx->sample_rate, unit_hertz_str);
+        print_int("channels",        dec_ctx->channels);
+
+        if (dec_ctx->channel_layout) {
+            av_bprint_clear(&pbuf);
+            av_bprint_channel_layout(&pbuf, dec_ctx->channels, dec_ctx->channel_layout);
+            print_str    ("channel_layout", pbuf.str);
+        } else {
+            print_str_opt("channel_layout", "unknown");
+        }
+
+        print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
+        break;
+
+    case AVMEDIA_TYPE_SUBTITLE:
+        if (dec_ctx->width)
+            print_int("width",       dec_ctx->width);
+        else
+            print_str_opt("width",   "N/A");
+        if (dec_ctx->height)
+            print_int("height",      dec_ctx->height);
+        else
+            print_str_opt("height",  "N/A");
+        break;
+    }
+
     if (dec_ctx->codec && dec_ctx->codec->priv_class && show_private_data) {
         const AVOption *opt = NULL;
         while (opt = av_opt_next(dec_ctx->priv_data,opt)) {
