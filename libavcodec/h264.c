@@ -337,8 +337,6 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
 
     h->cur_pic_ptr = NULL;
 
-    for (i = 0; i < h->nb_slice_ctx; i++)
-        av_freep(&h->slice_ctx[i].rbsp_buffer);
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
 
@@ -952,9 +950,7 @@ again:
             av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
             sl->ref_count[0] = sl->ref_count[1] = sl->list_count = 0;
         } else if (err == 1) {
-            /* Slice could not be decoded in parallel mode, restart. Note
-             * that rbsp_buffer is not transferred, but since we no longer
-             * run in parallel mode this should not be an issue. */
+            /* Slice could not be decoded in parallel mode, restart. */
             sl               = &h->slice_ctx[0];
             goto again;
         }
