@@ -384,4 +384,32 @@ static inline int bitstream_apply_sign(BitstreamContext *bc, int val)
     return (val ^ sign) - sign;
 }
 
+/* Unwind the cache so a refill_32 can fill it again. */
+static inline void bitstream_unwind(BitstreamContext *bc)
+{
+    int unwind = 4;
+    int unwind_bits = unwind * 8;
+
+    if (bc->bits_left < unwind_bits)
+        return;
+
+    bc->bits      >>= unwind_bits;
+    bc->bits      <<= unwind_bits;
+    bc->bits_left  -= unwind_bits;
+    bc->ptr        -= unwind;
+}
+
+/* Unget up to 32 bits. */
+static inline void bitstream_unget(BitstreamContext *bc, uint64_t value,
+                                   size_t amount)
+{
+    size_t cache_size = sizeof(bc->bits) * 8;
+
+    if (bc->bits_left + amount > cache_size)
+        bitstream_unwind(bc);
+
+    bc->bits       = (bc->bits >> amount) | (value << (cache_size - amount));
+    bc->bits_left += amount;
+}
+
 #endif /* AVCODEC_BITSTREAM_H */
