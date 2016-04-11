@@ -657,8 +657,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
 
     if (pics > h->avctx->has_b_frames) {
         out->reference &= ~DELAYED_PIC_REF;
-        // for frame threading, the owner must be the second field's thread or
-        // else the first thread can release the picture and reuse it unsafely
         for (i = out_idx; h->delayed_pic[i]; i++)
             h->delayed_pic[i] = h->delayed_pic[i + 1];
     }
