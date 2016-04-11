@@ -470,7 +470,6 @@ typedef struct H264Context {
 
     int droppable;
     int coded_picture_number;
-    int low_delay;
 
     int context_initialized;
     int flags;

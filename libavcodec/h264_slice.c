@@ -378,7 +378,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->first_field          = h1->first_field;
     h->picture_structure    = h1->picture_structure;
     h->droppable            = h1->droppable;
-    h->low_delay            = h1->low_delay;
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         ff_h264_unref_picture(h, &h->DPB[i]);
@@ -397,7 +396,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->enable_er       = h1->enable_er;
     h->workaround_bugs = h1->workaround_bugs;
-    h->low_delay       = h1->low_delay;
     h->droppable       = h1->droppable;
 
     // extradata/NAL handling
@@ -1014,20 +1012,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         if (h->bit_depth_luma    != h->ps.sps->bit_depth_luma ||
             h->chroma_format_idc != h->ps.sps->chroma_format_idc)
             needs_reinit         = 1;
-
-        if (h->flags & AV_CODEC_FLAG_LOW_DELAY ||
-            (h->ps.sps->bitstream_restriction_flag &&
-             !h->ps.sps->num_reorder_frames)) {
-            if (h->avctx->has_b_frames > 1 || h->delayed_pic[0])
-                av_log(h->avctx, AV_LOG_WARNING, "Delayed frames seen. "
-                       "Reenabling low delay requires a codec flush.\n");
-            else
-                h->low_delay = 1;
-        }
-
-        if (h->avctx->has_b_frames < 2)
-            h->avctx->has_b_frames = !h->low_delay;
-
     }
 
     pps = h->ps.pps;
