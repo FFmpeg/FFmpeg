@@ -2595,10 +2595,6 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
     Vp3DecodeContext *s = dst->priv_data, *s1 = src->priv_data;
     int qps_changed = 0, i, err;
 
-#define copy_fields(to, from, start_field, end_field)                         \
-    memcpy(&to->start_field, &from->start_field,                              \
-           (char *) &to->end_field - (char *) &to->start_field)
-
     if (!s1->current_frame.f->data[0] ||
         s->width != s1->width || s->height != s1->height) {
         if (s != s1)
@@ -2642,9 +2638,11 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
             memcpy(&s->bounding_values_array, &s1->bounding_values_array,
                    sizeof(s->bounding_values_array));
 
-        if (qps_changed)
-            copy_fields(s, s1, qps, superblock_count);
-#undef copy_fields
+        if (qps_changed) {
+            memcpy(s->qps,      s1->qps,      sizeof(s->qps));
+            memcpy(s->last_qps, s1->last_qps, sizeof(s->last_qps));
+            s->nqps = s1->nqps;
+        }
     }
 
     return update_frames(dst);
