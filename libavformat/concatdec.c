@@ -364,7 +364,7 @@ static int concat_read_close(AVFormatContext *avf)
 
     for (i = 0; i < cat->nb_files; i++) {
         av_freep(&cat->files[i].url);
-        for (j = 0; j < cat->avf->nb_streams; j++) {
+        for (j = 0; j < cat->files[i].nb_streams; j++) {
             if (cat->files[i].streams[j].avctx)
                 avcodec_free_context(&cat->files[i].streams[j].avctx);
             if (cat->files[i].streams[j].bsf)
