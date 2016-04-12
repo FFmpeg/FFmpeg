@@ -194,6 +194,10 @@ typedef struct VAAPIEncodeH265Context {
     } hrd_params;
 } VAAPIEncodeH265Context;
 
+typedef struct VAAPIEncodeH265Options {
+    int qp;
+} VAAPIEncodeH265Options;
+
 
 #define vseq_var(name)     vseq->name, name
 #define vseq_field(name)   vseq->seq_fields.bits.name, name
@@ -1201,8 +1205,9 @@ static av_cold int vaapi_encode_h265_init_fixed_qp(AVCodecContext *avctx)
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH265Context *priv = ctx->priv_data;
+    VAAPIEncodeH265Options  *opt = ctx->codec_options;
 
-    priv->fixed_qp_p = avctx->global_quality;
+    priv->fixed_qp_p = opt->qp;
     if (avctx->i_quant_factor > 0.0)
         priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
                                     avctx->i_quant_offset) + 0.5);
@@ -1312,13 +1317,21 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
     return ff_vaapi_encode_init(avctx, &vaapi_encode_type_h265);
 }
 
+#define OFFSET(x) (offsetof(VAAPIEncodeContext, codec_options_data) + \
+                   offsetof(VAAPIEncodeH265Options, x))
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
+static const AVOption vaapi_encode_h265_options[] = {
+    { "qp", "Constant QP (for P frames; scaled by qfactor/qoffset for I/B)",
+      OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 25 }, 0, 52, FLAGS },
+    { NULL },
+};
+
 static const AVCodecDefault vaapi_encode_h265_defaults[] = {
     { "profile",        "1"   },
     { "level",          "51"  },
     { "b",              "0"   },
     { "bf",             "2"   },
     { "g",              "120" },
-    { "global_quality", "25"  },
     { "i_qfactor",      "1.0" },
     { "i_qoffset",      "0.0" },
     { "b_qfactor",      "1.2" },
@@ -1329,6 +1342,7 @@ static const AVCodecDefault vaapi_encode_h265_defaults[] = {
 static const AVClass vaapi_encode_h265_class = {
     .class_name = "h265_vaapi",
     .item_name  = av_default_item_name,
+    .option     = vaapi_encode_h265_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -1337,7 +1351,8 @@ AVCodec ff_hevc_vaapi_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("H.265/HEVC (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
-    .priv_data_size = sizeof(VAAPIEncodeContext),
+    .priv_data_size = (sizeof(VAAPIEncodeContext) +
+                       sizeof(VAAPIEncodeH265Options)),
     .init           = &vaapi_encode_h265_init,
     .encode2        = &ff_vaapi_encode2,
     .close          = &ff_vaapi_encode_close,
