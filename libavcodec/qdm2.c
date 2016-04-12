@@ -39,7 +39,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
@@ -361,31 +361,31 @@ static av_cold void qdm2_init_vlc(void)
              INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);
 }
 
-static int qdm2_get_vlc(GetBitContext *gb, VLC *vlc, int flag, int depth)
+static int qdm2_get_vlc(BitstreamContext *bc, VLC *vlc, int flag, int depth)
 {
     int value;
 
-    value = get_vlc2(gb, vlc->table, vlc->bits, depth);
+    value = bitstream_read_vlc(bc, vlc->table, vlc->bits, depth);
 
     /* stage-2, 3 bits exponent escape sequence */
     if (value-- == 0)
-        value = get_bits(gb, get_bits(gb, 3) + 1);
+        value = bitstream_read(bc, bitstream_read(bc, 3) + 1);
 
     /* stage-3, optional */
     if (flag) {
         int tmp = vlc_stage3_values[value];
 
         if ((value & ~3) > 0)
-            tmp += get_bits(gb, (value >> 2));
+            tmp += bitstream_read(bc, value >> 2);
         value = tmp;
     }
 
     return value;
 }
 
-static int qdm2_get_se_vlc(VLC *vlc, GetBitContext *gb, int depth)
+static int qdm2_get_se_vlc(VLC *vlc, BitstreamContext *bc, int depth)
 {
-    int value = qdm2_get_vlc(gb, vlc, 0, depth);
+    int value = qdm2_get_vlc(bc, vlc, 0, depth);
 
     return (value & 1) ? ((value + 1) >> 1) : -(value >> 1);
 }
@@ -412,35 +412,35 @@ static uint16_t qdm2_packet_checksum(const uint8_t *data, int length, int value)
 /**
  * Fill a QDM2SubPacket structure with packet type, size, and data pointer.
  *
- * @param gb            bitreader context
+ * @param bc            bitreader context
  * @param sub_packet    packet under analysis
  */
-static void qdm2_decode_sub_packet_header(GetBitContext *gb,
+static void qdm2_decode_sub_packet_header(BitstreamContext *bc,
                                           QDM2SubPacket *sub_packet)
 {
-    sub_packet->type = get_bits(gb, 8);
+    sub_packet->type = bitstream_read(bc, 8);
 
     if (sub_packet->type == 0) {
         sub_packet->size = 0;
         sub_packet->data = NULL;
     } else {
-        sub_packet->size = get_bits(gb, 8);
+        sub_packet->size = bitstream_read(bc, 8);
 
         if (sub_packet->type & 0x80) {
             sub_packet->size <<= 8;
-            sub_packet->size  |= get_bits(gb, 8);
+            sub_packet->size  |= bitstream_read(bc, 8);
             sub_packet->type  &= 0x7f;
         }
 
         if (sub_packet->type == 0x7f)
-            sub_packet->type |= (get_bits(gb, 8) << 8);
+            sub_packet->type |= bitstream_read(bc, 8) << 8;
 
         // FIXME: this depends on bitreader-internal data
-        sub_packet->data = &gb->buffer[get_bits_count(gb) / 8];
+        sub_packet->data = &bc->buffer[bitstream_tell(bc) / 8];
     }
 
     av_log(NULL, AV_LOG_DEBUG, "Subpacket: type=%d size=%d start_offs=%x\n",
-           sub_packet->type, sub_packet->size, get_bits_count(gb) / 8);
+           sub_packet->type, sub_packet->size, bitstream_tell(bc) / 8);
 }
 
 /**
@@ -799,12 +799,12 @@ static void fill_coding_method_array(sb_int8_array tone_level_idx,
  * sb 8-sb_used.
  *
  * @param q         context
- * @param gb        bitreader context
+ * @param bc        bitreader context
  * @param length    packet length in bits
  * @param sb_min    lower subband processed (sb_min included)
  * @param sb_max    higher subband processed (sb_max excluded)
  */
-static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
+static void synthfilt_build_sb_samples(QDM2Context *q, BitstreamContext *bc,
                                        int length, int sb_min, int sb_max)
 {
     int sb, j, k, n, ch, run, channels;
@@ -830,12 +830,12 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
         else if (sb >= 24)
             joined_stereo = 1;
         else
-            joined_stereo = (get_bits_left(gb) >= 1) ? get_bits1(gb) : 0;
+            joined_stereo = (bitstream_bits_left(bc) >= 1) ? bitstream_read_bit(bc) : 0;
 
         if (joined_stereo) {
-            if (get_bits_left(gb) >= 16)
+            if (bitstream_bits_left(bc) >= 16)
                 for (j = 0; j < 16; j++)
-                    sign_bits[j] = get_bits1(gb);
+                    sign_bits[j] = bitstream_read_bit(bc);
 
             for (j = 0; j < 64; j++)
                 if (q->coding_method[1][sb][j] > q->coding_method[0][sb][j])
@@ -851,22 +851,22 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
 
         for (ch = 0; ch < channels; ch++) {
             FIX_NOISE_IDX(q->noise_idx);
-            zero_encoding = (get_bits_left(gb) >= 1) ? get_bits1(gb) : 0;
+            zero_encoding = (bitstream_bits_left(bc) >= 1) ? bitstream_read_bit(bc) : 0;
             type34_predictor = 0.0;
             type34_first = 1;
 
             for (j = 0; j < 128; ) {
                 switch (q->coding_method[ch][sb][j / 2]) {
                     case 8:
-                        if (get_bits_left(gb) >= 10) {
+                        if (bitstream_bits_left(bc) >= 10) {
                             if (zero_encoding) {
                                 for (k = 0; k < 5; k++) {
                                     if ((j + 2 * k) >= 128)
                                         break;
-                                    samples[2 * k] = get_bits1(gb) ? dequant_1bit[joined_stereo][2 * get_bits1(gb)] : 0;
+                                    samples[2 * k] = bitstream_read_bit(bc) ? dequant_1bit[joined_stereo][2 * bitstream_read_bit(bc)] : 0;
                                 }
                             } else {
-                                n = get_bits(gb, 8);
+                                n = bitstream_read(bc, 8);
                                 for (k = 0; k < 5; k++)
                                     samples[2 * k] = dequant_1bit[joined_stereo][random_dequant_index[n][k]];
                             }
@@ -880,10 +880,10 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                         break;
 
                     case 10:
-                        if (get_bits_left(gb) >= 1) {
+                        if (bitstream_bits_left(bc) >= 1) {
                             float f = 0.81;
 
-                            if (get_bits1(gb))
+                            if (bitstream_read_bit(bc))
                                 f = -f;
                             f -= noise_samples[((sb + 1) * (j +5 * ch + 1)) & 127] * 9.0 / 40.0;
                             samples[0] = f;
@@ -894,15 +894,15 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                         break;
 
                     case 16:
-                        if (get_bits_left(gb) >= 10) {
+                        if (bitstream_bits_left(bc) >= 10) {
                             if (zero_encoding) {
                                 for (k = 0; k < 5; k++) {
                                     if ((j + k) >= 128)
                                         break;
-                                    samples[k] = (get_bits1(gb) == 0) ? 0 : dequant_1bit[joined_stereo][2 * get_bits1(gb)];
+                                    samples[k] = (bitstream_read_bit(bc) == 0) ? 0 : dequant_1bit[joined_stereo][2 * bitstream_read_bit(bc)];
                                 }
                             } else {
-                                n = get_bits (gb, 8);
+                                n = bitstream_read (bc, 8);
                                 for (k = 0; k < 5; k++)
                                     samples[k] = dequant_1bit[joined_stereo][random_dequant_index[n][k]];
                             }
@@ -914,8 +914,8 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                         break;
 
                     case 24:
-                        if (get_bits_left(gb) >= 7) {
-                            n = get_bits(gb, 7);
+                        if (bitstream_bits_left(bc) >= 7) {
+                            n = bitstream_read(bc, 7);
                             for (k = 0; k < 3; k++)
                                 samples[k] = (random_dequant_type24[n][k] - 2.0) * 0.5;
                         } else {
@@ -926,8 +926,8 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                         break;
 
                     case 30:
-                        if (get_bits_left(gb) >= 4) {
-                            unsigned index = qdm2_get_vlc(gb, &vlc_tab_type30, 0, 1);
+                        if (bitstream_bits_left(bc) >= 4) {
+                            unsigned index = qdm2_get_vlc(bc, &vlc_tab_type30, 0, 1);
                             if (index < FF_ARRAY_ELEMS(type30_dequant)) {
                                 samples[0] = type30_dequant[index];
                             } else
@@ -939,14 +939,14 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                         break;
 
                     case 34:
-                        if (get_bits_left(gb) >= 7) {
+                        if (bitstream_bits_left(bc) >= 7) {
                             if (type34_first) {
-                                type34_div = (float)(1 << get_bits(gb, 2));
-                                samples[0] = ((float)get_bits(gb, 5) - 16.0) / 15.0;
+                                type34_div = (float)(1 << bitstream_read(bc, 2));
+                                samples[0] = ((float)bitstream_read(bc, 5) - 16.0) / 15.0;
                                 type34_predictor = samples[0];
                                 type34_first = 0;
                             } else {
-                                unsigned index = qdm2_get_vlc(gb, &vlc_tab_type34, 0, 1);
+                                unsigned index = qdm2_get_vlc(bc, &vlc_tab_type34, 0, 1);
                                 if (index < FF_ARRAY_ELEMS(type34_delta)) {
                                     samples[0] = type34_delta[index] / type34_div + type34_predictor;
                                     type34_predictor = samples[0];
@@ -998,27 +998,27 @@ static void synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
  * same VLC tables as process_subpacket_9 are used.
  *
  * @param quantized_coeffs    pointer to quantized_coeffs[ch][0]
- * @param gb        bitreader context
+ * @param bc        bitreader context
  */
 static void init_quantized_coeffs_elem0(int8_t *quantized_coeffs,
-                                        GetBitContext *gb)
+                                        BitstreamContext *bc)
 {
     int i, k, run, level, diff;
 
-    if (get_bits_left(gb) < 16)
+    if (bitstream_bits_left(bc) < 16)
         return;
-    level = qdm2_get_vlc(gb, &vlc_tab_level, 0, 2);
+    level = qdm2_get_vlc(bc, &vlc_tab_level, 0, 2);
 
     quantized_coeffs[0] = level;
 
     for (i = 0; i < 7; ) {
-        if (get_bits_left(gb) < 16)
+        if (bitstream_bits_left(bc) < 16)
             break;
-        run = qdm2_get_vlc(gb, &vlc_tab_run, 0, 1) + 1;
+        run = qdm2_get_vlc(bc, &vlc_tab_run, 0, 1) + 1;
 
-        if (get_bits_left(gb) < 16)
+        if (bitstream_bits_left(bc) < 16)
             break;
-        diff = qdm2_get_se_vlc(&vlc_tab_diff, gb, 2);
+        diff = qdm2_get_se_vlc(&vlc_tab_diff, bc, 2);
 
         for (k = 1; k <= run; k++)
             quantized_coeffs[i + k] = (level + ((k * diff) / run));
@@ -1035,16 +1035,16 @@ static void init_quantized_coeffs_elem0(int8_t *quantized_coeffs,
  * data from packet 10
  *
  * @param q         context
- * @param gb        bitreader context
+ * @param bc        bitreader context
  */
-static void init_tone_level_dequantization(QDM2Context *q, GetBitContext *gb)
+static void init_tone_level_dequantization(QDM2Context *q, BitstreamContext *bc)
 {
     int sb, j, k, n, ch;
 
     for (ch = 0; ch < q->nb_channels; ch++) {
-        init_quantized_coeffs_elem0(q->quantized_coeffs[ch][0], gb);
+        init_quantized_coeffs_elem0(q->quantized_coeffs[ch][0], bc);
 
-        if (get_bits_left(gb) < 16) {
+        if (bitstream_bits_left(bc) < 16) {
             memset(q->quantized_coeffs[ch][0], 0, 8);
             break;
         }
@@ -1055,13 +1055,13 @@ static void init_tone_level_dequantization(QDM2Context *q, GetBitContext *gb)
     for (sb = 0; sb < n; sb++)
         for (ch = 0; ch < q->nb_channels; ch++)
             for (j = 0; j < 8; j++) {
-                if (get_bits_left(gb) < 1)
+                if (bitstream_bits_left(bc) < 1)
                     break;
-                if (get_bits1(gb)) {
+                if (bitstream_read_bit(bc)) {
                     for (k=0; k < 8; k++) {
-                        if (get_bits_left(gb) < 16)
+                        if (bitstream_bits_left(bc) < 16)
                             break;
-                        q->tone_level_idx_hi1[ch][sb][j][k] = qdm2_get_vlc(gb, &vlc_tab_tone_level_idx_hi1, 0, 2);
+                        q->tone_level_idx_hi1[ch][sb][j][k] = qdm2_get_vlc(bc, &vlc_tab_tone_level_idx_hi1, 0, 2);
                     }
                 } else {
                     for (k=0; k < 8; k++)
@@ -1073,9 +1073,9 @@ static void init_tone_level_dequantization(QDM2Context *q, GetBitContext *gb)
 
     for (sb = 0; sb < n; sb++)
         for (ch = 0; ch < q->nb_channels; ch++) {
-            if (get_bits_left(gb) < 16)
+            if (bitstream_bits_left(bc) < 16)
                 break;
-            q->tone_level_idx_hi2[ch][sb] = qdm2_get_vlc(gb, &vlc_tab_tone_level_idx_hi2, 0, 2);
+            q->tone_level_idx_hi2[ch][sb] = qdm2_get_vlc(bc, &vlc_tab_tone_level_idx_hi2, 0, 2);
             if (sb > 19)
                 q->tone_level_idx_hi2[ch][sb] -= 16;
             else
@@ -1088,9 +1088,9 @@ static void init_tone_level_dequantization(QDM2Context *q, GetBitContext *gb)
     for (sb = 0; sb < n; sb++)
         for (ch = 0; ch < q->nb_channels; ch++)
             for (j = 0; j < 8; j++) {
-                if (get_bits_left(gb) < 16)
+                if (bitstream_bits_left(bc) < 16)
                     break;
-                q->tone_level_idx_mid[ch][sb][j] = qdm2_get_vlc(gb, &vlc_tab_tone_level_idx_mid, 0, 2) - 32;
+                q->tone_level_idx_mid[ch][sb][j] = qdm2_get_vlc(bc, &vlc_tab_tone_level_idx_mid, 0, 2) - 32;
             }
 }
 
@@ -1102,21 +1102,21 @@ static void init_tone_level_dequantization(QDM2Context *q, GetBitContext *gb)
  */
 static void process_subpacket_9(QDM2Context *q, QDM2SubPNode *node)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     int i, j, k, n, ch, run, level, diff;
 
-    init_get_bits(&gb, node->packet->data, node->packet->size * 8);
+    bitstream_init(&bc, node->packet->data, node->packet->size * 8);
 
     n = coeff_per_sb_for_avg[q->coeff_per_sb_select][QDM2_SB_USED(q->sub_sampling) - 1] + 1;
 
     for (i = 1; i < n; i++)
         for (ch = 0; ch < q->nb_channels; ch++) {
-            level = qdm2_get_vlc(&gb, &vlc_tab_level, 0, 2);
+            level = qdm2_get_vlc(&bc, &vlc_tab_level, 0, 2);
             q->quantized_coeffs[ch][i][0] = level;
 
             for (j = 0; j < (8 - 1); ) {
-                run  = qdm2_get_vlc(&gb, &vlc_tab_run, 0, 1) + 1;
-                diff = qdm2_get_se_vlc(&vlc_tab_diff, &gb, 2);
+                run  = qdm2_get_vlc(&bc, &vlc_tab_run, 0, 1) + 1;
+                diff = qdm2_get_se_vlc(&vlc_tab_diff, &bc, 2);
 
                 for (k = 1; k <= run; k++)
                     q->quantized_coeffs[ch][i][j + k] = (level + ((k * diff) / run));
@@ -1139,11 +1139,11 @@ static void process_subpacket_9(QDM2Context *q, QDM2SubPNode *node)
  */
 static void process_subpacket_10(QDM2Context *q, QDM2SubPNode *node)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
 
     if (node) {
-        init_get_bits(&gb, node->packet->data, node->packet->size * 8);
-        init_tone_level_dequantization(q, &gb);
+        bitstream_init(&bc, node->packet->data, node->packet->size * 8);
+        init_tone_level_dequantization(q, &bc);
         fill_tone_level_array(q, 1);
     } else {
         fill_tone_level_array(q, 0);
@@ -1158,16 +1158,16 @@ static void process_subpacket_10(QDM2Context *q, QDM2SubPNode *node)
  */
 static void process_subpacket_11(QDM2Context *q, QDM2SubPNode *node)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     int length = 0;
 
     if (node) {
         length = node->packet->size * 8;
-        init_get_bits(&gb, node->packet->data, length);
+        bitstream_init(&bc, node->packet->data, length);
     }
 
     if (length >= 32) {
-        int c = get_bits(&gb, 13);
+        int c = bitstream_read(&bc, 13);
 
         if (c > 3)
             fill_coding_method_array(q->tone_level_idx,
@@ -1176,7 +1176,7 @@ static void process_subpacket_11(QDM2Context *q, QDM2SubPNode *node)
                                      q->superblocktype_2_3, q->cm_table_select);
     }
 
-    synthfilt_build_sb_samples(q, &gb, length, 0, 8);
+    synthfilt_build_sb_samples(q, &bc, length, 0, 8);
 }
 
 /**
@@ -1187,15 +1187,15 @@ static void process_subpacket_11(QDM2Context *q, QDM2SubPNode *node)
  */
 static void process_subpacket_12(QDM2Context *q, QDM2SubPNode *node)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     int length = 0;
 
     if (node) {
         length = node->packet->size * 8;
-        init_get_bits(&gb, node->packet->data, length);
+        bitstream_init(&bc, node->packet->data, length);
     }
 
-    synthfilt_build_sb_samples(q, &gb, length, 8, QDM2_SB_USED(q->sub_sampling));
+    synthfilt_build_sb_samples(q, &bc, length, 8, QDM2_SB_USED(q->sub_sampling));
 }
 
 /*
@@ -1238,7 +1238,7 @@ static void process_synthesis_subpackets(QDM2Context *q, QDM2SubPNode *list)
  */
 static void qdm2_decode_super_block(QDM2Context *q)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     QDM2SubPacket header, *packet;
     int i, packet_bytes, sub_packet_size, sub_packets_D;
     unsigned int next_index = 0;
@@ -1252,8 +1252,8 @@ static void qdm2_decode_super_block(QDM2Context *q)
 
     average_quantized_coeffs(q); // average elements in quantized_coeffs[max_ch][10][8]
 
-    init_get_bits(&gb, q->compressed_data, q->compressed_size * 8);
-    qdm2_decode_sub_packet_header(&gb, &header);
+    bitstream_init(&bc, q->compressed_data, q->compressed_size * 8);
+    qdm2_decode_sub_packet_header(&bc, &header);
 
     if (header.type < 2 || header.type >= 8) {
         q->has_errors = 1;
@@ -1262,13 +1262,13 @@ static void qdm2_decode_super_block(QDM2Context *q)
     }
 
     q->superblocktype_2_3 = (header.type == 2 || header.type == 3);
-    packet_bytes          = (q->compressed_size - get_bits_count(&gb) / 8);
+    packet_bytes          = (q->compressed_size - bitstream_tell(&bc) / 8);
 
-    init_get_bits(&gb, header.data, header.size * 8);
+    bitstream_init(&bc, header.data, header.size * 8);
 
     if (header.type == 2 || header.type == 4 || header.type == 5) {
-        int csum = 257 * get_bits(&gb, 8);
-        csum += 2 * get_bits(&gb, 8);
+        int csum = 257 * bitstream_read(&bc, 8);
+        csum    +=   2 * bitstream_read(&bc, 8);
 
         csum = qdm2_packet_checksum(q->compressed_data, q->checksum_size, csum);
 
@@ -1300,8 +1300,8 @@ static void qdm2_decode_super_block(QDM2Context *q)
             q->sub_packet_list_A[i - 1].next = &q->sub_packet_list_A[i];
 
             /* seek to next block */
-            init_get_bits(&gb, header.data, header.size * 8);
-            skip_bits(&gb, next_index * 8);
+            bitstream_init(&bc, header.data, header.size * 8);
+            bitstream_skip(&bc, next_index * 8);
 
             if (next_index >= header.size)
                 break;
@@ -1309,8 +1309,8 @@ static void qdm2_decode_super_block(QDM2Context *q)
 
         /* decode subpacket */
         packet = &q->sub_packets[i];
-        qdm2_decode_sub_packet_header(&gb, packet);
-        next_index      = packet->size + get_bits_count(&gb) / 8;
+        qdm2_decode_sub_packet_header(&bc, packet);
+        next_index      = packet->size + bitstream_tell(&bc) / 8;
         sub_packet_size = ((packet->size > 0xff) ? 1 : 0) + packet->size + 2;
 
         if (packet->type == 0)
@@ -1336,10 +1336,10 @@ static void qdm2_decode_super_block(QDM2Context *q)
             QDM2_LIST_ADD(q->sub_packet_list_D, sub_packets_D, packet);
         } else if (packet->type == 13) {
             for (j = 0; j < 6; j++)
-                q->fft_level_exp[j] = get_bits(&gb, 6);
+                q->fft_level_exp[j] = bitstream_read(&bc, 6);
         } else if (packet->type == 14) {
             for (j = 0; j < 6; j++)
-                q->fft_level_exp[j] = qdm2_get_vlc(&gb, &fft_level_exp_vlc, 0, 2);
+                q->fft_level_exp[j] = qdm2_get_vlc(&bc, &fft_level_exp_vlc, 0, 2);
         } else if (packet->type == 15) {
             SAMPLES_NEEDED_2("packet type 15")
             return;
@@ -1377,7 +1377,7 @@ static void qdm2_fft_init_coefficient(QDM2Context *q, int sub_packet,
 }
 
 static void qdm2_fft_decode_tones(QDM2Context *q, int duration,
-                                  GetBitContext *gb, int b)
+                                  BitstreamContext *bc, int b)
 {
     int channel, stereo, phase, exp;
     int local_int_4, local_int_8, stereo_phase, local_int_10;
@@ -1393,7 +1393,7 @@ static void qdm2_fft_decode_tones(QDM2Context *q, int duration,
 
     while (1) {
         if (q->superblocktype_2_3) {
-            while ((n = qdm2_get_vlc(gb, &vlc_tab_fft_tone_offset[local_int_8], 1, 2)) < 2) {
+            while ((n = qdm2_get_vlc(bc, &vlc_tab_fft_tone_offset[local_int_8], 1, 2)) < 2) {
                 offset = 1;
                 if (n == 0) {
                     local_int_4  += local_int_10;
@@ -1405,7 +1405,7 @@ static void qdm2_fft_decode_tones(QDM2Context *q, int duration,
             }
             offset += (n - 2);
         } else {
-            offset += qdm2_get_vlc(gb, &vlc_tab_fft_tone_offset[local_int_8], 1, 2);
+            offset += qdm2_get_vlc(bc, &vlc_tab_fft_tone_offset[local_int_8], 1, 2);
             while (offset >= (local_int_10 - 1)) {
                 offset       += (1 - (local_int_10 - 1));
                 local_int_4  += local_int_10;
@@ -1421,24 +1421,24 @@ static void qdm2_fft_decode_tones(QDM2Context *q, int duration,
             return;
 
         if (q->nb_channels > 1) {
-            channel = get_bits1(gb);
-            stereo  = get_bits1(gb);
+            channel = bitstream_read_bit(bc);
+            stereo  = bitstream_read_bit(bc);
         } else {
             channel = 0;
             stereo  = 0;
         }
 
-        exp  = qdm2_get_vlc(gb, (b ? &fft_level_exp_vlc : &fft_level_exp_alt_vlc), 0, 2);
+        exp  = qdm2_get_vlc(bc, (b ? &fft_level_exp_vlc : &fft_level_exp_alt_vlc), 0, 2);
         exp += q->fft_level_exp[fft_level_index_table[local_int_14]];
         exp  = (exp < 0) ? 0 : exp;
 
-        phase        = get_bits(gb, 3);
+        phase        = bitstream_read(bc, 3);
         stereo_exp   = 0;
         stereo_phase = 0;
 
         if (stereo) {
-            stereo_exp   = (exp - qdm2_get_vlc(gb, &fft_stereo_exp_vlc, 0, 1));
-            stereo_phase = (phase - qdm2_get_vlc(gb, &fft_stereo_phase_vlc, 0, 1));
+            stereo_exp   = (exp   - qdm2_get_vlc(bc, &fft_stereo_exp_vlc,   0, 1));
+            stereo_phase = (phase - qdm2_get_vlc(bc, &fft_stereo_phase_vlc, 0, 1));
             if (stereo_phase < 0)
                 stereo_phase += 8;
         }
@@ -1460,7 +1460,7 @@ static void qdm2_fft_decode_tones(QDM2Context *q, int duration,
 static void qdm2_decode_fft_packets(QDM2Context *q)
 {
     int i, j, min, max, value, type, unknown_flag;
-    GetBitContext gb;
+    BitstreamContext bc;
 
     if (!q->sub_packet_list_B[0].packet)
         return;
@@ -1495,7 +1495,7 @@ static void qdm2_decode_fft_packets(QDM2Context *q)
             return;
 
         /* decode FFT tones */
-        init_get_bits(&gb, packet->data, packet->size * 8);
+        bitstream_init(&bc, packet->data, packet->size * 8);
 
         if (packet->type >= 32 && packet->type < 48 && !fft_subpackets[packet->type - 16])
             unknown_flag = 1;
@@ -1508,15 +1508,15 @@ static void qdm2_decode_fft_packets(QDM2Context *q)
             int duration = q->sub_sampling + 5 - (type & 15);
 
             if (duration >= 0 && duration < 4)
-                qdm2_fft_decode_tones(q, duration, &gb, unknown_flag);
+                qdm2_fft_decode_tones(q, duration, &bc, unknown_flag);
         } else if (type == 31) {
             for (j = 0; j < 4; j++)
-                qdm2_fft_decode_tones(q, j, &gb, unknown_flag);
+                qdm2_fft_decode_tones(q, j, &bc, unknown_flag);
         } else if (type == 46) {
             for (j = 0; j < 6; j++)
-                q->fft_level_exp[j] = get_bits(&gb, 6);
+                q->fft_level_exp[j] = bitstream_read(&bc, 6);
             for (j = 0; j < 4; j++)
-                qdm2_fft_decode_tones(q, j, &gb, unknown_flag);
+                qdm2_fft_decode_tones(q, j, &bc, unknown_flag);
         }
     } // Loop on B packets
 
