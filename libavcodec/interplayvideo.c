@@ -40,8 +40,8 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "hpeldsp.h"
 #include "internal.h"
 
@@ -881,7 +881,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
     int x, y;
     unsigned char opcode;
     int ret;
-    GetBitContext gb;
+    BitstreamContext bc;
 
     bytestream2_skip(&s->stream_ptr, 14); /* data starts 14 bytes in */
     if (!s->is_16bpp) {
@@ -898,10 +898,10 @@ static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
     s->upper_motion_limit_offset = (s->avctx->height - 8) * frame->linesize[0]
                                   + (s->avctx->width - 8) * (1 + s->is_16bpp);
 
-    init_get_bits(&gb, s->decoding_map, s->decoding_map_size * 8);
+    bitstream_init(&bc, s->decoding_map, s->decoding_map_size * 8);
     for (y = 0; y < s->avctx->height; y += 8) {
         for (x = 0; x < s->avctx->width; x += 8) {
-            opcode = get_bits(&gb, 4);
+            opcode = bitstream_read(&bc, 4);
 
             ff_dlog(s->avctx,
                     "  block @ (%3d, %3d): encoding 0x%X, data ptr offset %d\n",
