@@ -3771,6 +3771,7 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
 
     par->bit_rate              = codec->bit_rate;
     par->bits_per_coded_sample = codec->bits_per_coded_sample;
+    par->bits_per_raw_sample   = codec->bits_per_raw_sample;
     par->profile               = codec->profile;
     par->level                 = codec->level;
 
@@ -3824,6 +3825,7 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
 
     codec->bit_rate              = par->bit_rate;
     codec->bits_per_coded_sample = par->bits_per_coded_sample;
+    codec->bits_per_raw_sample   = par->bits_per_raw_sample;
     codec->profile               = par->profile;
     codec->level                 = par->level;
 
