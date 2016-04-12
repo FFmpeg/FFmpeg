@@ -135,6 +135,38 @@ end:
     return ret;
 }
 
+static void close_slave(TeeSlave *tee_slave)
+{
+    AVFormatContext *avf;
+    unsigned i;
+
+    avf = tee_slave->avf;
+    for (i = 0; i < avf->nb_streams; ++i) {
+        AVBitStreamFilterContext *bsf_next, *bsf = tee_slave->bsfs[i];
+        while (bsf) {
+            bsf_next = bsf->next;
+            av_bitstream_filter_close(bsf);
+            bsf = bsf_next;
+        }
+    }
+    av_freep(&tee_slave->stream_map);
+    av_freep(&tee_slave->bsfs);
+
+    ff_format_io_close(avf, &avf->pb);
+    avformat_free_context(avf);
+    tee_slave->avf = NULL;
+}
+
+static void close_slaves(AVFormatContext *avf)
+{
+    TeeContext *tee = avf->priv_data;
+    unsigned i;
+
+    for (i = 0; i < tee->nb_slaves; i++) {
+        close_slave(&tee->slaves[i]);
+    }
+}
+
 static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 {
     int i, ret;
@@ -309,32 +341,6 @@ end:
     av_dict_free(&options);
     av_freep(&tmp_select);
     return ret;
-}
-
-static void close_slaves(AVFormatContext *avf)
-{
-    TeeContext *tee = avf->priv_data;
-    AVFormatContext *avf2;
-    unsigned i, j;
-
-    for (i = 0; i < tee->nb_slaves; i++) {
-        avf2 = tee->slaves[i].avf;
-
-        for (j = 0; j < avf2->nb_streams; j++) {
-            AVBitStreamFilterContext *bsf_next, *bsf = tee->slaves[i].bsfs[j];
-            while (bsf) {
-                bsf_next = bsf->next;
-                av_bitstream_filter_close(bsf);
-                bsf = bsf_next;
-            }
-        }
-        av_freep(&tee->slaves[i].stream_map);
-        av_freep(&tee->slaves[i].bsfs);
-
-        ff_format_io_close(avf2, &avf2->pb);
-        avformat_free_context(avf2);
-        tee->slaves[i].avf = NULL;
-    }
 }
 
 static void log_slave(TeeSlave *slave, void *log_ctx, int log_level)
