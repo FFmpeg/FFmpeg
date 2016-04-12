@@ -207,12 +207,12 @@ static void check_rgb2yuv(void)
     LOCAL_ALIGNED_32(int16_t, src_u, [W * H * 2]);
     LOCAL_ALIGNED_32(int16_t, src_v, [W * H * 2]);
     int16_t *src[3] = { src_y, src_u, src_v };
-    LOCAL_ALIGNED_32(uint8_t, dst0_y, [W * H]);
-    LOCAL_ALIGNED_32(uint8_t, dst0_u, [W * H]);
-    LOCAL_ALIGNED_32(uint8_t, dst0_v, [W * H]);
-    LOCAL_ALIGNED_32(uint8_t, dst1_y, [W * H]);
-    LOCAL_ALIGNED_32(uint8_t, dst1_u, [W * H]);
-    LOCAL_ALIGNED_32(uint8_t, dst1_v, [W * H]);
+    LOCAL_ALIGNED_32(uint8_t, dst0_y, [W * H * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst0_u, [W * H * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst0_v, [W * H * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1_y, [W * H * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1_u, [W * H * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1_v, [W * H * 2]);
     uint8_t *dst0[3] = { dst0_y, dst0_u, dst0_v }, *dst1[3] = { dst1_y, dst1_u, dst1_v };
     LOCAL_ALIGNED_32(int16_t, offset, [8]);
     LOCAL_ALIGNED_32(int16_t, coeff_buf, [3 * 3 * 8]);
