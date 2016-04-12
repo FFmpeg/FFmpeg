@@ -38,8 +38,8 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "bitstream.h"
 #include "fft.h"
-#include "get_bits.h"
 #include "internal.h"
 #include "nellymoser.h"
 #include "sinewin.h"
@@ -48,7 +48,7 @@
 typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
     AVLFG           random_state;
-    GetBitContext   gb;
+    BitstreamContext bc;
     float           scale_bias;
     AVFloatDSPContext fdsp;
     FFTContext      imdct_ctx;
@@ -67,14 +67,14 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     int bits[NELLY_BUF_LEN];
     unsigned char v;
 
-    init_get_bits(&s->gb, block, NELLY_BLOCK_LEN * 8);
+    bitstream_init(&s->bc, block, NELLY_BLOCK_LEN * 8);
 
     bptr = buf;
     pptr = pows;
-    val = ff_nelly_init_table[get_bits(&s->gb, 6)];
+    val = ff_nelly_init_table[bitstream_read(&s->bc, 6)];
     for (i=0 ; i<NELLY_BANDS ; i++) {
         if (i > 0)
-            val += ff_nelly_delta_table[get_bits(&s->gb, 5)];
+            val += ff_nelly_delta_table[bitstream_read(&s->bc, 5)];
         pval = -pow(2, val/2048) * s->scale_bias;
         for (j = 0; j < ff_nelly_band_sizes_table[i]; j++) {
             *bptr++ = val;
@@ -88,8 +88,8 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     for (i = 0; i < 2; i++) {
         aptr = audio + i * NELLY_BUF_LEN;
 
-        init_get_bits(&s->gb, block, NELLY_BLOCK_LEN * 8);
-        skip_bits_long(&s->gb, NELLY_HEADER_BITS + i*NELLY_DETAIL_BITS);
+        bitstream_init(&s->bc, block, NELLY_BLOCK_LEN * 8);
+        bitstream_skip(&s->bc, NELLY_HEADER_BITS + i * NELLY_DETAIL_BITS);
 
         for (j = 0; j < NELLY_FILL_LEN; j++) {
             if (bits[j] <= 0) {
@@ -97,7 +97,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
                 if (av_lfg_get(&s->random_state) & 1)
                     aptr[j] *= -1.0;
             } else {
-                v = get_bits(&s->gb, bits[j]);
+                v = bitstream_read(&s->bc, bits[j]);
                 aptr[j] = ff_nelly_dequantization_table[(1<<bits[j])-1+v]*pows[j];
             }
         }
