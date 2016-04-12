@@ -1765,7 +1765,7 @@ static int is_extra(const uint8_t *buf, int buf_size)
     const uint8_t *p= buf+6;
     while(cnt--){
         int nalsize= AV_RB16(p) + 2;
-        if(nalsize > buf_size - (p-buf) || p[2]!=0x67)
+        if(nalsize > buf_size - (p-buf) || (p[2] & 0x9F) != 7)
             return 0;
         p += nalsize;
     }
@@ -1774,7 +1774,7 @@ static int is_extra(const uint8_t *buf, int buf_size)
         return 0;
     while(cnt--){
         int nalsize= AV_RB16(p) + 2;
-        if(nalsize > buf_size - (p-buf) || p[2]!=0x68)
+        if(nalsize > buf_size - (p-buf) || (p[2] & 0x9F) != 8)
             return 0;
         p += nalsize;
     }
