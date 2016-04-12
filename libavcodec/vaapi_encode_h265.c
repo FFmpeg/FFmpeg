@@ -182,6 +182,16 @@ typedef struct VAAPIEncodeH265Context {
     int fixed_qp_b;
 
     int64_t last_idr_frame;
+
+    // Rate control configuration.
+    struct {
+        VAEncMiscParameterBuffer misc;
+        VAEncMiscParameterRateControl rc;
+    } rc_params;
+    struct {
+        VAEncMiscParameterBuffer misc;
+        VAEncMiscParameterHRD hrd;
+    } hrd_params;
 } VAAPIEncodeH265Context;
 
 
@@ -806,6 +816,19 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         vseq->max_transform_hierarchy_depth_intra = 3;
 
         vseq->vui_parameters_present_flag = 0;
+
+        vseq->bits_per_second = avctx->bit_rate;
+        if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+            vseq->vui_num_units_in_tick = avctx->framerate.num;
+            vseq->vui_time_scale        = avctx->framerate.den;
+        } else {
+            vseq->vui_num_units_in_tick = avctx->time_base.num;
+            vseq->vui_time_scale        = avctx->time_base.den;
+        }
+
+        vseq->intra_period     = ctx->p_per_i * (ctx->b_per_p + 1);
+        vseq->intra_idr_period = vseq->intra_period;
+        vseq->ip_period        = ctx->b_per_p + 1;
     }
 
     {
@@ -841,8 +864,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         vpic->pic_fields.bits.screen_content_flag = 0;
         vpic->pic_fields.bits.enable_gpu_weighted_prediction = 0;
-
-        //vpic->pic_fields.bits.cu_qp_delta_enabled_flag = 1;
+        vpic->pic_fields.bits.cu_qp_delta_enabled_flag = 1;
     }
 
     {
@@ -1125,6 +1147,79 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
+static av_cold int vaapi_encode_h265_init_constant_bitrate(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext      *ctx = avctx->priv_data;
+    VAAPIEncodeH265Context *priv = ctx->priv_data;
+    int hrd_buffer_size;
+    int hrd_initial_buffer_fullness;
+
+    if (avctx->rc_buffer_size)
+        hrd_buffer_size = avctx->rc_buffer_size;
+    else
+        hrd_buffer_size = avctx->bit_rate;
+    if (avctx->rc_initial_buffer_occupancy)
+        hrd_initial_buffer_fullness = avctx->rc_initial_buffer_occupancy;
+    else
+        hrd_initial_buffer_fullness = hrd_buffer_size * 3 / 4;
+
+    priv->rc_params.misc.type = VAEncMiscParameterTypeRateControl;
+    priv->rc_params.rc = (VAEncMiscParameterRateControl) {
+        .bits_per_second   = avctx->bit_rate,
+        .target_percentage = 66,
+        .window_size       = 1000,
+        .initial_qp        = (avctx->qmax >= 0 ? avctx->qmax : 40),
+        .min_qp            = (avctx->qmin >= 0 ? avctx->qmin : 20),
+        .basic_unit_size   = 0,
+    };
+    ctx->global_params[ctx->nb_global_params] =
+        &priv->rc_params.misc;
+    ctx->global_params_size[ctx->nb_global_params++] =
+        sizeof(priv->rc_params);
+
+    priv->hrd_params.misc.type = VAEncMiscParameterTypeHRD;
+    priv->hrd_params.hrd = (VAEncMiscParameterHRD) {
+        .initial_buffer_fullness = hrd_initial_buffer_fullness,
+        .buffer_size             = hrd_buffer_size,
+    };
+    ctx->global_params[ctx->nb_global_params] =
+        &priv->hrd_params.misc;
+    ctx->global_params_size[ctx->nb_global_params++] =
+        sizeof(priv->hrd_params);
+
+    // These still need to be  set for pic_init_qp/slice_qp_delta.
+    priv->fixed_qp_idr = 30;
+    priv->fixed_qp_p   = 30;
+    priv->fixed_qp_b   = 30;
+
+    av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %d bps.\n",
+           avctx->bit_rate);
+    return 0;
+}
+
+static av_cold int vaapi_encode_h265_init_fixed_qp(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext      *ctx = avctx->priv_data;
+    VAAPIEncodeH265Context *priv = ctx->priv_data;
+
+    priv->fixed_qp_p = avctx->global_quality;
+    if (avctx->i_quant_factor > 0.0)
+        priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
+                                    avctx->i_quant_offset) + 0.5);
+    else
+        priv->fixed_qp_idr = priv->fixed_qp_p;
+    if (avctx->b_quant_factor > 0.0)
+        priv->fixed_qp_b = (int)((priv->fixed_qp_p * avctx->b_quant_factor +
+                                  avctx->b_quant_offset) + 0.5);
+    else
+        priv->fixed_qp_b = priv->fixed_qp_p;
+
+    av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
+           "%d / %d / %d for IDR / P / B frames.\n",
+           priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
+    return 0;
+}
+
 static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
 {
     static const VAConfigAttrib default_config_attributes[] = {
@@ -1133,13 +1228,11 @@ static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
         { .type  = VAConfigAttribEncPackedHeaders,
           .value = (VA_ENC_PACKED_HEADER_SEQUENCE |
                     VA_ENC_PACKED_HEADER_SLICE) },
-        { .type  = VAConfigAttribRateControl,
-          .value = VA_RC_CQP },
     };
 
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH265Context *priv = ctx->priv_data;
-    int i;
+    int i, err;
 
     switch (avctx->profile) {
     case FF_PROFILE_HEVC_MAIN:
@@ -1174,26 +1267,19 @@ static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
     }
 
     if (avctx->bit_rate > 0) {
-        av_log(avctx, AV_LOG_ERROR, "H.265 constant-bitrate encoding "
-               "is not supported.\n");
-        return AVERROR_PATCHWELCOME;
+        ctx->va_rc_mode = VA_RC_CBR;
+        err = vaapi_encode_h265_init_constant_bitrate(avctx);
+    } else {
+        ctx->va_rc_mode = VA_RC_CQP;
+        err = vaapi_encode_h265_init_fixed_qp(avctx);
     }
+    if (err < 0)
+        return err;
 
-    ctx->va_rc_mode = VA_RC_CQP;
-
-    priv->fixed_qp_p = avctx->global_quality;
-    if (avctx->i_quant_factor > 0.0)
-        priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
-                                    avctx->i_quant_offset) + 0.5);
-    else
-        priv->fixed_qp_idr = priv->fixed_qp_p;
-    if (avctx->b_quant_factor > 0.0)
-        priv->fixed_qp_b = (int)((priv->fixed_qp_p * avctx->b_quant_factor +
-                                  avctx->b_quant_offset) + 0.5);
-    else
-        priv->fixed_qp_b = priv->fixed_qp_p;
-    av_log(avctx, AV_LOG_DEBUG, "QP = %d / %d / %d for IDR / P / B frames.\n",
-           priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
+    ctx->config_attributes[ctx->nb_config_attributes++] = (VAConfigAttrib) {
+        .type  = VAConfigAttribRateControl,
+        .value = ctx->va_rc_mode,
+    };
 
     ctx->nb_recon_frames = 20;
 
