@@ -113,10 +113,19 @@ typedef struct VAAPIEncodeH264Context {
         VAEncMiscParameterBuffer misc;
         VAEncMiscParameterHRD hrd;
     } hrd_params;
+
+#if VA_CHECK_VERSION(0, 36, 0)
+    // Speed-quality tradeoff setting.
+    struct {
+        VAEncMiscParameterBuffer misc;
+        VAEncMiscParameterBufferQualityLevel quality;
+    } quality_params;
+#endif
 } VAAPIEncodeH264Context;
 
 typedef struct VAAPIEncodeH264Options {
     int qp;
+    int quality;
 } VAAPIEncodeH264Options;
 
 
@@ -801,6 +810,7 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
 
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH264Context *priv = ctx->priv_data;
+    VAAPIEncodeH264Options  *opt = ctx->codec_options;
     int i, err;
 
     switch (avctx->profile) {
@@ -869,6 +879,22 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
         .value = ctx->va_rc_mode,
     };
 
+    if (opt->quality > 0) {
+#if VA_CHECK_VERSION(0, 36, 0)
+        priv->quality_params.misc.type =
+            VAEncMiscParameterTypeQualityLevel;
+        priv->quality_params.quality.quality_level = opt->quality;
+
+        ctx->global_params[ctx->nb_global_params] =
+            &priv->quality_params.misc;
+        ctx->global_params_size[ctx->nb_global_params++] =
+            sizeof(priv->quality_params);
+#else
+        av_log(avctx, AV_LOG_WARNING, "The encode quality option is not "
+               "supported with this VAAPI version.\n");
+#endif
+    }
+
     ctx->nb_recon_frames = 20;
 
     return 0;
@@ -906,6 +932,8 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 static const AVOption vaapi_encode_h264_options[] = {
     { "qp", "Constant QP (for P frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 20 }, 0, 52, FLAGS },
+    { "quality", "Set encode quality (trades off against speed, higher is faster)",
+      OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, FLAGS },
     { NULL },
 };
 
