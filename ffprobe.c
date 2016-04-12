@@ -2190,7 +2190,8 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     if (s) print_str    ("codec_type", s);
     else   print_str_opt("codec_type", "unknown");
 #if FF_API_LAVF_AVCTX
-    print_q("codec_time_base", dec_ctx->time_base, '/');
+    if (dec_ctx)
+        print_q("codec_time_base", dec_ctx->time_base, '/');
 #endif
 
     /* print AVI/FourCC tag */
