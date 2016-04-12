@@ -1125,20 +1125,21 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
-static VAConfigAttrib vaapi_encode_h265_config_attributes[] = {
-    { .type  = VAConfigAttribRTFormat,
-      .value = VA_RT_FORMAT_YUV420 },
-    { .type  = VAConfigAttribRateControl,
-      .value = VA_RC_CQP },
-    { .type  = VAConfigAttribEncPackedHeaders,
-      .value = (VA_ENC_PACKED_HEADER_SEQUENCE |
-                VA_ENC_PACKED_HEADER_SLICE) },
-};
-
 static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
 {
+    static const VAConfigAttrib default_config_attributes[] = {
+        { .type  = VAConfigAttribRTFormat,
+          .value = VA_RT_FORMAT_YUV420 },
+        { .type  = VAConfigAttribEncPackedHeaders,
+          .value = (VA_ENC_PACKED_HEADER_SEQUENCE |
+                    VA_ENC_PACKED_HEADER_SLICE) },
+        { .type  = VAConfigAttribRateControl,
+          .value = VA_RC_CQP },
+    };
+
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH265Context *priv = ctx->priv_data;
+    int i;
 
     switch (avctx->profile) {
     case FF_PROFILE_HEVC_MAIN:
@@ -1156,8 +1157,6 @@ static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
     }
     ctx->va_entrypoint = VAEntrypointEncSlice;
 
-    ctx->va_rc_mode  = VA_RC_CQP;
-
     ctx->input_width    = avctx->width;
     ctx->input_height   = avctx->height;
     ctx->aligned_width  = FFALIGN(ctx->input_width,  16);
@@ -1168,6 +1167,19 @@ static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_VERBOSE, "Input %ux%u -> Aligned %ux%u -> CTU %ux%u.\n",
            ctx->input_width, ctx->input_height, ctx->aligned_width,
            ctx->aligned_height, priv->ctu_width, priv->ctu_height);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(default_config_attributes); i++) {
+        ctx->config_attributes[ctx->nb_config_attributes++] =
+            default_config_attributes[i];
+    }
+
+    if (avctx->bit_rate > 0) {
+        av_log(avctx, AV_LOG_ERROR, "H.265 constant-bitrate encoding "
+               "is not supported.\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    ctx->va_rc_mode = VA_RC_CQP;
 
     priv->fixed_qp_p = avctx->global_quality;
     if (avctx->i_quant_factor > 0.0)
@@ -1182,10 +1194,6 @@ static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
         priv->fixed_qp_b = priv->fixed_qp_p;
     av_log(avctx, AV_LOG_DEBUG, "QP = %d / %d / %d for IDR / P / B frames.\n",
            priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
-
-    ctx->config_attributes = vaapi_encode_h265_config_attributes;
-    ctx->nb_config_attributes =
-        FF_ARRAY_ELEMS(vaapi_encode_h265_config_attributes);
 
     ctx->nb_recon_frames = 20;
 

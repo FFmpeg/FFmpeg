@@ -690,20 +690,21 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
-static VAConfigAttrib vaapi_encode_h264_config_attributes[] = {
-    { .type  = VAConfigAttribRTFormat,
-      .value = VA_RT_FORMAT_YUV420 },
-    { .type  = VAConfigAttribRateControl,
-      .value = VA_RC_CQP },
-    { .type  = VAConfigAttribEncPackedHeaders,
-      .value = (VA_ENC_PACKED_HEADER_SEQUENCE |
-                VA_ENC_PACKED_HEADER_SLICE) },
-};
-
 static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
 {
+    static const VAConfigAttrib default_config_attributes[] = {
+        { .type  = VAConfigAttribRTFormat,
+          .value = VA_RT_FORMAT_YUV420 },
+        { .type  = VAConfigAttribRateControl,
+          .value = VA_RC_CQP },
+        { .type  = VAConfigAttribEncPackedHeaders,
+          .value = (VA_ENC_PACKED_HEADER_SEQUENCE |
+                    VA_ENC_PACKED_HEADER_SLICE) },
+    };
+
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH264Context *priv = ctx->priv_data;
+    int i;
 
     switch (avctx->profile) {
     case FF_PROFILE_H264_CONSTRAINED_BASELINE:
@@ -759,6 +760,11 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    for (i = 0; i < FF_ARRAY_ELEMS(default_config_attributes); i++) {
+        ctx->config_attributes[ctx->nb_config_attributes++] =
+            default_config_attributes[i];
+    }
+
     priv->fixed_qp_p = avctx->global_quality;
     if (avctx->i_quant_factor > 0.0)
         priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
@@ -772,10 +778,6 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
         priv->fixed_qp_b = priv->fixed_qp_p;
     av_log(avctx, AV_LOG_DEBUG, "QP = %d / %d / %d for IDR / P / B frames.\n",
            priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
-
-    ctx->config_attributes = vaapi_encode_h264_config_attributes;
-    ctx->nb_config_attributes =
-        FF_ARRAY_ELEMS(vaapi_encode_h264_config_attributes);
 
     ctx->nb_recon_frames = 20;
 

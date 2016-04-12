@@ -32,6 +32,8 @@ struct VAAPIEncodeType;
 struct VAAPIEncodePicture;
 
 enum {
+    MAX_CONFIG_ATTRIBUTES  = 4,
+    MAX_GLOBAL_PARAMS      = 4,
     MAX_PICTURE_REFERENCES = 2,
     MAX_PICTURE_SLICES     = 1,
     MAX_PARAM_BUFFERS      = 16,
@@ -128,15 +130,19 @@ typedef struct VAAPIEncodeContext {
     AVBufferRef    *recon_frames_ref;
     AVHWFramesContext *recon_frames;
 
-    VAConfigAttrib *config_attributes;
+    VAConfigAttrib  config_attributes[MAX_CONFIG_ATTRIBUTES];
     int          nb_config_attributes;
+
+    VAEncMiscParameterBuffer *global_params[MAX_GLOBAL_PARAMS];
+    size_t          global_params_size[MAX_GLOBAL_PARAMS];
+    int          nb_global_params;
 
     // Per-sequence parameter structure (VAEncSequenceParameterBuffer*).
     void           *codec_sequence_params;
 
     // Per-sequence parameters found in the per-picture parameter
     // structure (VAEncPictureParameterBuffer*).
-    void *codec_picture_params;
+    void           *codec_picture_params;
 
     // Current encoding window, in display (input) order.
     VAAPIEncodePicture *pic_start, *pic_end;
