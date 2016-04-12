@@ -264,6 +264,23 @@ static void mpegts_write_pat(AVFormatContext *s)
                           data, q - data);
 }
 
+/* NOTE: !str is accepted for an empty string */
+static void putstr8(uint8_t **q_ptr, const char *str)
+{
+    uint8_t *q;
+    int len;
+
+    q = *q_ptr;
+    if (!str)
+        len = 0;
+    else
+        len = strlen(str);
+    *q++ = len;
+    memcpy(q, str, len);
+    q     += len;
+    *q_ptr = q;
+}
+
 static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
     MpegTSWrite *ts = s->priv_data;
@@ -644,23 +661,6 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     mpegts_write_section1(&service->pmt, PMT_TID, service->sid, ts->tables_version, 0, 0,
                           data, q - data);
     return 0;
-}
-
-/* NOTE: !str is accepted for an empty string */
-static void putstr8(uint8_t **q_ptr, const char *str)
-{
-    uint8_t *q;
-    int len;
-
-    q = *q_ptr;
-    if (!str)
-        len = 0;
-    else
-        len = strlen(str);
-    *q++ = len;
-    memcpy(q, str, len);
-    q     += len;
-    *q_ptr = q;
 }
 
 static void mpegts_write_sdt(AVFormatContext *s)
