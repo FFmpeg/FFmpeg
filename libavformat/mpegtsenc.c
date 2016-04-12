@@ -265,7 +265,7 @@ static void mpegts_write_pat(AVFormatContext *s)
 }
 
 /* NOTE: !str is accepted for an empty string */
-static void putstr8(uint8_t **q_ptr, const char *str)
+static void putstr8(uint8_t **q_ptr, const char *str, int write_len)
 {
     uint8_t *q;
     int len;
@@ -275,7 +275,8 @@ static void putstr8(uint8_t **q_ptr, const char *str)
         len = 0;
     else
         len = strlen(str);
-    *q++ = len;
+    if (write_len)
+        *q++ = len;
     memcpy(q, str, len);
     q     += len;
     *q_ptr = q;
@@ -637,12 +638,15 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 'V';
                 *q++ = 'A';
             } else if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
-                *q++ = 0x5; /* MPEG-2 registration descriptor */
-                *q++ = 4;
-                *q++ = 'I';
-                *q++ = 'D';
-                *q++ = '3';
-                *q++ = ' ';
+                const char *tag = "ID3 ";
+                *q++ = 0x26; /* metadata descriptor */
+                *q++ = 13;
+                put16(&q, 0xffff);    /* metadata application format */
+                putstr8(&q, tag, 0);
+                *q++ = 0xff;        /* metadata format */
+                putstr8(&q, tag, 0);
+                *q++ = 0;            /* metadata service ID */
+                *q++ = 0xF;          /* metadata_locator_record_flag|MPEG_carriage_flags|reserved */
             }
             break;
         }
@@ -687,8 +691,8 @@ static void mpegts_write_sdt(AVFormatContext *s)
         desc_len_ptr = q;
         q++;
         *q++         = ts->service_type;
-        putstr8(&q, service->provider_name);
-        putstr8(&q, service->name);
+        putstr8(&q, service->provider_name, 1);
+        putstr8(&q, service->name, 1);
         desc_len_ptr[0] = q - desc_len_ptr - 1;
 
         /* fill descriptor length */
