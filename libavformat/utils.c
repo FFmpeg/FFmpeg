@@ -3766,7 +3766,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (ret < 0)
                 goto find_stream_info_err;
             // The decoder might reduce the video size by the lowres factor.
-            if (st->internal->avctx->lowres && orig_w) {
+            if (av_codec_get_lowres(st->internal->avctx) && orig_w) {
                 st->codecpar->width = orig_w;
                 st->codecpar->height = orig_h;
             }
@@ -3780,8 +3780,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
 
         // The old API (AVStream.codec) "requires" the resolution to be adjusted
         // by the lowres factor.
-        if (st->internal->avctx->lowres && st->internal->avctx->width) {
-            st->codec->lowres = st->internal->avctx->lowres;
+        if (av_codec_get_lowres(st->internal->avctx) && st->internal->avctx->width) {
+            av_codec_set_lowres(st->codec, av_codec_get_lowres(st->internal->avctx));
             st->codec->width = st->internal->avctx->width;
             st->codec->height = st->internal->avctx->height;
             st->codec->coded_width = st->internal->avctx->coded_width;
