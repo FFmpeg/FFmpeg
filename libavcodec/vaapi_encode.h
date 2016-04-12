@@ -172,6 +172,11 @@ typedef struct VAAPIEncodeContext {
     int p_counter;
     int end_of_stream;
 
+    // Codec-local options are allocated to follow this structure in
+    // memory (in the AVCodec definition, set priv_data_size to
+    // sizeof(VAAPIEncodeContext) + sizeof(VAAPIEncodeFooOptions)).
+    void *codec_options;
+    char codec_options_data[0];
 } VAAPIEncodeContext;
 
 

@@ -905,6 +905,7 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx,
     }
 
     ctx->codec = type;
+    ctx->codec_options = ctx->codec_options_data;
 
     ctx->priv_data = av_mallocz(type->priv_data_size);
     if (!ctx->priv_data) {
