@@ -28,8 +28,8 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "blockdsp.h"
-#include "get_bits.h"
 #include "internal.h"
 
 typedef struct JvContext {
@@ -62,84 +62,84 @@ static av_cold int decode_init(AVCodecContext *avctx)
 /**
  * Decode 2x2 block
  */
-static inline void decode2x2(GetBitContext *gb, uint8_t *dst, int linesize)
+static inline void decode2x2(BitstreamContext *bc, uint8_t *dst, int linesize)
 {
     int i, j, v[2];
 
-    switch (get_bits(gb, 2)) {
+    switch (bitstream_read(bc, 2)) {
     case 1:
-        v[0] = get_bits(gb, 8);
+        v[0] = bitstream_read(bc, 8);
         for (j = 0; j < 2; j++)
             memset(dst + j * linesize, v[0], 2);
         break;
     case 2:
-        v[0] = get_bits(gb, 8);
-        v[1] = get_bits(gb, 8);
+        v[0] = bitstream_read(bc, 8);
+        v[1] = bitstream_read(bc, 8);
         for (j = 0; j < 2; j++)
             for (i = 0; i < 2; i++)
-                dst[j * linesize + i] = v[get_bits1(gb)];
+                dst[j * linesize + i] = v[bitstream_read_bit(bc)];
         break;
     case 3:
         for (j = 0; j < 2; j++)
             for (i = 0; i < 2; i++)
-                dst[j * linesize + i] = get_bits(gb, 8);
+                dst[j * linesize + i] = bitstream_read(bc, 8);
     }
 }
 
 /**
  * Decode 4x4 block
  */
-static inline void decode4x4(GetBitContext *gb, uint8_t *dst, int linesize)
+static inline void decode4x4(BitstreamContext *bc, uint8_t *dst, int linesize)
 {
     int i, j, v[2];
 
-    switch (get_bits(gb, 2)) {
+    switch (bitstream_read(bc, 2)) {
     case 1:
-        v[0] = get_bits(gb, 8);
+        v[0] = bitstream_read(bc, 8);
         for (j = 0; j < 4; j++)
             memset(dst + j * linesize, v[0], 4);
         break;
     case 2:
-        v[0] = get_bits(gb, 8);
-        v[1] = get_bits(gb, 8);
+        v[0] = bitstream_read(bc, 8);
+        v[1] = bitstream_read(bc, 8);
         for (j = 2; j >= 0; j -= 2) {
             for (i = 0; i < 4; i++)
-                dst[j * linesize + i] = v[get_bits1(gb)];
+                dst[j * linesize + i] = v[bitstream_read_bit(bc)];
             for (i = 0; i < 4; i++)
-                dst[(j + 1) * linesize + i] = v[get_bits1(gb)];
+                dst[(j + 1) * linesize + i] = v[bitstream_read_bit(bc)];
         }
         break;
     case 3:
         for (j = 0; j < 4; j += 2)
             for (i = 0; i < 4; i += 2)
-                decode2x2(gb, dst + j * linesize + i, linesize);
+                decode2x2(bc, dst + j * linesize + i, linesize);
     }
 }
 
 /**
  * Decode 8x8 block
  */
-static inline void decode8x8(GetBitContext *gb, uint8_t *dst, int linesize,
+static inline void decode8x8(BitstreamContext *bc, uint8_t *dst, int linesize,
                              BlockDSPContext *bdsp)
 {
     int i, j, v[2];
 
-    switch (get_bits(gb, 2)) {
+    switch (bitstream_read(bc, 2)) {
     case 1:
-        v[0] = get_bits(gb, 8);
+        v[0] = bitstream_read(bc, 8);
         bdsp->fill_block_tab[1](dst, v[0], linesize, 8);
         break;
     case 2:
-        v[0] = get_bits(gb, 8);
-        v[1] = get_bits(gb, 8);
+        v[0] = bitstream_read(bc, 8);
+        v[1] = bitstream_read(bc, 8);
         for (j = 7; j >= 0; j--)
             for (i = 0; i < 8; i++)
-                dst[j * linesize + i] = v[get_bits1(gb)];
+                dst[j * linesize + i] = v[bitstream_read_bit(bc)];
         break;
     case 3:
         for (j = 0; j < 8; j += 4)
             for (i = 0; i < 8; i += 4)
-                decode4x4(gb, dst + j * linesize + i, linesize);
+                decode4x4(bc, dst + j * linesize + i, linesize);
     }
 }
 
@@ -163,12 +163,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
 
         if (video_type == 0 || video_type == 1) {
-            GetBitContext gb;
-            init_get_bits(&gb, buf, 8 * FFMIN(video_size, buf_end - buf));
+            BitstreamContext bc;
+            bitstream_init(&bc, buf, 8 * FFMIN(video_size, buf_end - buf));
 
             for (j = 0; j < avctx->height; j += 8)
                 for (i = 0; i < avctx->width; i += 8)
-                    decode8x8(&gb,
+                    decode8x8(&bc,
                               s->frame->data[0] + j * s->frame->linesize[0] + i,
                               s->frame->linesize[0], &s->bdsp);
 
