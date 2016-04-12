@@ -520,7 +520,8 @@ static int huf_decode(const uint64_t *hcode, const HufDec *hdecod,
     uint16_t *outb    = out;
     uint16_t *oe      = out + no;
     const uint8_t *ie = gb->buffer + (nbits + 7) / 8; // input byte size
-    uint8_t cs, s;
+    uint8_t cs;
+    uint16_t s;
     int i, lc = 0;
 
     while (gb->buffer < ie) {
