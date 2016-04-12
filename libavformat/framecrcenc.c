@@ -39,7 +39,7 @@ static int framecrc_write_header(struct AVFormatContext *s)
         }
     }
 
-    return ff_framehash_write_header(s);
+    return ff_framehash_write_header(s, 1);
 }
 
 static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)

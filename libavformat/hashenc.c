@@ -57,7 +57,7 @@ static void hash_finish(struct AVFormatContext *s, char *buf)
 #if CONFIG_HASH_MUXER || CONFIG_FRAMEHASH_MUXER
 static const AVOption hash_options[] = {
     { "hash", "set hash to use", OFFSET(hash_name), AV_OPT_TYPE_STRING, {.str = "sha256"}, 0, 0, ENC },
-    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 1, ENC },
+    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 2, ENC },
     { NULL },
 };
 #endif
@@ -65,7 +65,7 @@ static const AVOption hash_options[] = {
 #if CONFIG_MD5_MUXER || CONFIG_FRAMEMD5_MUXER
 static const AVOption md5_options[] = {
     { "hash", "set hash to use", OFFSET(hash_name), AV_OPT_TYPE_STRING, {.str = "md5"}, 0, 0, ENC },
-    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 1, ENC },
+    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 2, ENC },
     { NULL },
 };
 #endif
@@ -158,7 +158,7 @@ static int framehash_write_header(struct AVFormatContext *s)
     avio_printf(s->pb, "#format: frame checksums\n");
     avio_printf(s->pb, "#version: %d\n", c->format_version);
     avio_printf(s->pb, "#hash: %s\n", av_hash_get_name(c->hash));
-    ff_framehash_write_header(s);
+    ff_framehash_write_header(s, c->format_version);
     avio_printf(s->pb, "#stream#, dts,        pts, duration,     size, hash\n");
     return 0;
 }
