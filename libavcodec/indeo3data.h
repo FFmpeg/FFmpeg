@@ -238,9 +238,9 @@
  * according with endianness of the host machine.
  */
 #if HAVE_BIGENDIAN
-#define PD(a,b) (((a) << 8) + (b))
+#define PD(a,b) (((a) * (1 << 8)) + (b))
 #else
-#define PD(a,b) (((b) << 8) + (a))
+#define PD(a,b) (((b) * (1 << 8)) + (a))
 #endif
 
 /**
@@ -285,9 +285,9 @@ static const int16_t delta_tab_3_5[79]  = { TAB_3_5 };
  * according with endianness of the host machine.
  */
 #if HAVE_BIGENDIAN
-#define PD(a,b) (((a) << 24) + ((a) << 16) + ((b) << 8) + (b))
+#define PD(a,b) (((a) * (1 << 24)) + ((a) * (1 << 16)) + ((b) * (1 << 8)) + (b))
 #else
-#define PD(a,b) (((b) << 24) + ((b) << 16) + ((a) << 8) + (a))
+#define PD(a,b) (((b) * (1 << 24)) + ((b) * (1 << 16)) + ((a) * (1 << 8)) + (a))
 #endif
 
 /*
