@@ -43,9 +43,9 @@
 #include "libavresample/avresample.h"
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "celp_filters.h"
 #include "fft.h"
-#include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
 #include "opus.h"
@@ -80,12 +80,12 @@ static int get_silk_samplerate(int config)
  */
 static int opus_rc_init(OpusRangeCoder *rc, const uint8_t *data, int size)
 {
-    int ret = init_get_bits8(&rc->gb, data, size);
+    int ret = bitstream_init8(&rc->bc, data, size);
     if (ret < 0)
         return ret;
 
     rc->range = 128;
-    rc->value = 127 - get_bits(&rc->gb, 7);
+    rc->value = 127 - bitstream_read(&rc->bc, 7);
     rc->total_read_bits = 9;
     opus_rc_normalize(rc);
 

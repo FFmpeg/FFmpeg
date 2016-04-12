@@ -32,7 +32,7 @@
 #include "libavresample/avresample.h"
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 
 #define MAX_FRAME_SIZE               1275
 #define MAX_FRAMES                   48
@@ -92,7 +92,7 @@ typedef struct RawBitsContext {
 } RawBitsContext;
 
 typedef struct OpusRangeCoder {
-    GetBitContext gb;
+    BitstreamContext bc;
     RawBitsContext rb;
     unsigned int range;
     unsigned int value;
@@ -196,7 +196,7 @@ typedef struct OpusContext {
 static av_always_inline void opus_rc_normalize(OpusRangeCoder *rc)
 {
     while (rc->range <= 1<<23) {
-        rc->value = ((rc->value << 8) | (get_bits(&rc->gb, 8) ^ 0xFF)) & ((1u << 31) - 1);
+        rc->value = ((rc->value << 8) | (bitstream_read(&rc->bc, 8) ^ 0xFF)) & ((1u << 31) - 1);
         rc->range          <<= 8;
         rc->total_read_bits += 8;
     }
