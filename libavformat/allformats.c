@@ -131,6 +131,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (LIVE_FLV,         live_flv);
     REGISTER_DEMUXER (FOURXM,           fourxm);
     REGISTER_MUXER   (FRAMECRC,         framecrc);
+    REGISTER_MUXER   (FRAMEHASH,        framehash);
     REGISTER_MUXER   (FRAMEMD5,         framemd5);
     REGISTER_DEMUXER (FRM,              frm);
     REGISTER_DEMUXER (FSB,              fsb);
@@ -144,6 +145,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(H261,             h261);
     REGISTER_MUXDEMUX(H263,             h263);
     REGISTER_MUXDEMUX(H264,             h264);
+    REGISTER_MUXER   (HASH,             hash);
     REGISTER_MUXER   (HDS,              hds);
     REGISTER_MUXDEMUX(HEVC,             hevc);
     REGISTER_MUXDEMUX(HLS,              hls);

@@ -174,30 +174,70 @@ ffmpeg -i INPUT -c:a pcm_u8 -c:v mpeg2video -f framecrc -
 
 See also the @ref{crc} muxer.
 
+@anchor{framehash}
+@section framehash
+
+Per-packet hash testing format.
+
+This muxer computes and prints a cryptographic hash for each audio
+and video packet. This can be used for packet-by-packet equality
+checks without having to individually do a binary comparison on each.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. It uses the
+SHA-256 cryptographic hash function by default, but supports several
+other algorithms.
+
+The output of the muxer consists of a line for each audio and video
+packet of the form:
+@example
+@var{stream_index}, @var{packet_dts}, @var{packet_pts}, @var{packet_duration}, @var{packet_size}, @var{hash}
+@end example
+
+@var{hash} is a hexadecimal number representing the computed hash
+for the packet.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the audio and video frames in @file{INPUT},
+converted to raw audio and video packets, and store it in the file
+@file{out.sha256}:
+@example
+ffmpeg -i INPUT -f framehash out.sha256
+@end example
+
+To print the information to stdout, using the MD5 hash function, use
+the command:
+@example
+ffmpeg -i INPUT -f framehash -hash md5 -
+@end example
+
+See also the @ref{hash} muxer.
+
 @anchor{framemd5}
 @section framemd5
 
 Per-packet MD5 testing format.
 
-This muxer computes and prints the MD5 hash for each audio
-and video packet. By default audio frames are converted to signed
-16-bit raw audio and video frames to raw video before computing the
-hash.
-
-The output of the muxer consists of a line for each audio and video
-packet of the form:
-@example
-@var{stream_index}, @var{packet_dts}, @var{packet_pts}, @var{packet_duration}, @var{packet_size}, @var{MD5}
-@end example
-
-@var{MD5} is a hexadecimal number representing the computed MD5 hash
-for the packet.
+This is a variant of the @ref{framehash} muxer. Unlike that muxer,
+it defaults to using the MD5 hash function.
 
 @subsection Examples
 
-For example to compute the MD5 of the audio and video frames in
-@file{INPUT}, converted to raw audio and video packets, and store it
-in the file @file{out.md5}:
+To compute the MD5 hash of the audio and video frames in @file{INPUT},
+converted to raw audio and video packets, and store it in the file
+@file{out.md5}:
 @example
 ffmpeg -i INPUT -f framemd5 out.md5
 @end example
@@ -207,7 +247,7 @@ To print the information to stdout, use the command:
 ffmpeg -i INPUT -f framemd5 -
 @end example
 
-See also the @ref{md5} muxer.
+See also the @ref{framehash} and @ref{md5} muxers.
 
 @anchor{gif}
 @section gif
@@ -242,6 +282,51 @@ ffmpeg -i INPUT -c:v gif -f image2 "out%d.gif"
 
 Note 2: the GIF format has a very small time base: the delay between two frames
 can not be smaller than one centi second.
+
+@anchor{hash}
+@section hash
+
+Hash testing format.
+
+This muxer computes and prints a cryptographic hash of all the input
+audio and video frames. This can be used for equality checks without
+having to do a complete binary comparison.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. Timestamps
+are ignored. It uses the SHA-256 cryptographic hash function by default,
+but supports several other algorithms.
+
+The output of the muxer consists of a single line of the form:
+@var{algo}=@var{hash}, where @var{algo} is a short string representing
+the hash function used, and @var{hash} is a hexadecimal number
+representing the computed hash.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the input converted to raw audio and
+video, and store it in the file @file{out.sha256}:
+@example
+ffmpeg -i INPUT -f hash out.sha256
+@end example
+
+To print an MD5 hash to stdout use the command:
+@example
+ffmpeg -i INPUT -f hash -hash md5 -
+@end example
+
+See also the @ref{framehash} muxer.
 
 @anchor{hls}
 @section hls
@@ -629,16 +714,12 @@ have no effect if it is not.
 
 MD5 testing format.
 
-This muxer computes and prints the MD5 hash of all the input audio
-and video frames. By default audio frames are converted to signed
-16-bit raw audio and video frames to raw video before computing the
-hash. Timestamps are ignored.
+This is a variant of the @ref{hash} muxer. Unlike that muxer, it
+defaults to using the MD5 hash function.
 
-The output of the muxer consists of a single line of the form:
-MD5=@var{MD5}, where @var{MD5} is a hexadecimal number representing
-the computed MD5 hash.
+@subsection Examples
 
-For example to compute the MD5 hash of the input converted to raw
+To compute the MD5 hash of the input converted to raw
 audio and video, and store it in the file @file{out.md5}:
 @example
 ffmpeg -i INPUT -f md5 out.md5
@@ -649,7 +730,7 @@ You can print the MD5 to stdout with the command:
 ffmpeg -i INPUT -f md5 -
 @end example
 
-See also the @ref{framemd5} muxer.
+See also the @ref{hash} and @ref{framemd5} muxers.
 
 @section mov, mp4, ismv
 
