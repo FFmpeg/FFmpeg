@@ -1956,7 +1956,7 @@ static av_always_inline int process_frame(WriterContext *w,
     AVSubtitle sub;
     int ret = 0, got_frame = 0;
 
-    if (dec_ctx->codec) {
+    if (dec_ctx && dec_ctx->codec) {
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             ret = avcodec_decode_video2(dec_ctx, frame, &got_frame, pkt);
