@@ -1,5 +1,13 @@
 #tb 0: 100/2997
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 720x480
+#sar 0: 1/1
 #tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: dts
+#sample_rate 1: 48000
+#channel_layout 1: 60f
 0,          0,          0,        1,   518400, 0x6b05d48a
 1,         27,         27,       10,     2013, 0x68e7b03a
 0,          1,          1,        1,   518400, 0x2c2219cd

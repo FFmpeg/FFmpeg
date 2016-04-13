@@ -1,4 +1,8 @@
 #tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: msmpeg4v3
+#dimensions 0: 640x480
+#sar 0: 0/1
 0,          0,          0,        0,    23374, 0x8725b3b8
 0,        122,        122,        0,    13732, 0x3ac8531a, F=0x0
 0,        245,        245,        0,      615, 0xd31641b4, F=0x0

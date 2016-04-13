@@ -1,4 +1,8 @@
 #tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: ac3
+#sample_rate 0: 44100
+#channel_layout 0: 60f
 0,          0,          0,     1536,     2786, 0xe2fd0f40
 0,       1536,       1536,     1536,     2786, 0x7a6207c2
 0,       3072,       3072,     1536,     2786, 0x7a6207c2

@@ -121,7 +121,7 @@ static void audio_frame_cksum(AVBPrint *bp, AVFrame *frame)
 
 static int write_header(struct AVFormatContext *s)
 {
-    return ff_framehash_write_header(s, 1);
+    return ff_framehash_write_header(s, 2);
 }
 
 static int write_frame(struct AVFormatContext *s, int stream_index,

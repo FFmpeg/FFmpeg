@@ -1,5 +1,13 @@
 #tb 0: 1/15
+#media_type 0: video
+#codec_id 0: mdec
+#dimensions 0: 320x240
+#sar 0: 0/1
 #tb 1: 4/75
+#media_type 1: audio
+#codec_id 1: adpcm_xa
+#sample_rate 1: 37800
+#channel_layout 1: 3
 0,          0,          0,        1,     8832, 0x01ad3eeb
 1,          0,          0,        1,     2304, 0xf0ad1000
 1,          1,          1,        1,     2304, 0x69269ce6
