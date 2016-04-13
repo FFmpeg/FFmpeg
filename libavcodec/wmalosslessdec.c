@@ -135,8 +135,8 @@ typedef struct WmallDecodeCtx {
     int8_t  mclms_scaling;
     int16_t mclms_coeffs[WMALL_MAX_CHANNELS * WMALL_MAX_CHANNELS * 32];
     int16_t mclms_coeffs_cur[WMALL_MAX_CHANNELS * WMALL_MAX_CHANNELS];
-    int16_t mclms_prevvalues[WMALL_MAX_CHANNELS * 2 * 32];
-    int16_t mclms_updates[WMALL_MAX_CHANNELS * 2 * 32];
+    int32_t mclms_prevvalues[WMALL_MAX_CHANNELS * 2 * 32];
+    int32_t mclms_updates[WMALL_MAX_CHANNELS * 2 * 32];
     int     mclms_recent;
 
     int     movave_scaling;
@@ -147,9 +147,9 @@ typedef struct WmallDecodeCtx {
         int scaling;
         int coefsend;
         int bitsend;
-        DECLARE_ALIGNED(16, int16_t, coefs)[MAX_ORDER + WMALL_COEFF_PAD_SIZE/sizeof(int16_t)];
-        DECLARE_ALIGNED(16, int16_t, lms_prevvalues)[MAX_ORDER * 2 + WMALL_COEFF_PAD_SIZE/sizeof(int16_t)];
-        DECLARE_ALIGNED(16, int16_t, lms_updates)[MAX_ORDER * 2 + WMALL_COEFF_PAD_SIZE/sizeof(int16_t)];
+        DECLARE_ALIGNED(16, int32_t, coefs)[MAX_ORDER + WMALL_COEFF_PAD_SIZE/sizeof(int16_t)];
+        DECLARE_ALIGNED(16, int32_t, lms_prevvalues)[MAX_ORDER * 2 + WMALL_COEFF_PAD_SIZE/sizeof(int16_t)];
+        DECLARE_ALIGNED(16, int32_t, lms_updates)[MAX_ORDER * 2 + WMALL_COEFF_PAD_SIZE/sizeof(int16_t)];
         int recent;
     } cdlms[WMALL_MAX_CHANNELS][9];
 
@@ -657,10 +657,10 @@ static void mclms_update(WmallDecodeCtx *s, int icoef, int *pred)
     if (s->mclms_recent == 0) {
         memcpy(&s->mclms_prevvalues[order * num_channels],
                s->mclms_prevvalues,
-               sizeof(int16_t) * order * num_channels);
+               sizeof(int32_t) * order * num_channels);
         memcpy(&s->mclms_updates[order * num_channels],
                s->mclms_updates,
-               sizeof(int16_t) * order * num_channels);
+               sizeof(int32_t) * order * num_channels);
         s->mclms_recent = num_channels * order;
     }
 }
@@ -719,7 +719,7 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input)
     s->cdlms[ich][ilms].lms_updates[recent + (order >> 3)] >>= 1;
     s->cdlms[ich][ilms].recent = recent;
     memset(s->cdlms[ich][ilms].lms_updates + recent + order, 0,
-           sizeof(s->cdlms[ich][ilms].lms_updates) - 2*(recent+order));
+           sizeof(s->cdlms[ich][ilms].lms_updates) - 4*(recent+order));
 }
 
 static void use_high_update_speed(WmallDecodeCtx *s, int ich)
@@ -767,7 +767,7 @@ static void revert_cdlms(WmallDecodeCtx *s, int ch,
         for (icoef = coef_begin; icoef < coef_end; icoef++) {
             pred = 1 << (s->cdlms[ch][ilms].scaling - 1);
             residue = s->channel_residues[ch][icoef];
-            pred += s->dsp.scalarproduct_and_madd_int16(s->cdlms[ch][ilms].coefs,
+            pred += s->dsp.scalarproduct_and_madd_int32(s->cdlms[ch][ilms].coefs,
                                                         s->cdlms[ch][ilms].lms_prevvalues
                                                             + s->cdlms[ch][ilms].recent,
                                                         s->cdlms[ch][ilms].lms_updates
