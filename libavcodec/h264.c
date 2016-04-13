@@ -837,7 +837,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             nal->ref_idc == 0 && nal->type != NAL_SEI)
             continue;
 
-again:
         // FIXME these should stop being context-global variables
         h->nal_ref_idc   = nal->ref_idc;
         h->nal_unit_type = nal->type;
@@ -947,10 +946,6 @@ again:
         if (err < 0) {
             av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
             sl->ref_count[0] = sl->ref_count[1] = sl->list_count = 0;
-        } else if (err == 1) {
-            /* Slice could not be decoded in parallel mode, restart. */
-            sl               = &h->slice_ctx[0];
-            goto again;
         }
     }
     if (context_count) {
