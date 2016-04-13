@@ -901,22 +901,14 @@ static int h264_slice_header_init(H264Context *h)
     return 0;
 }
 
-/**
- * Decode a slice header.
- * This will (re)initialize the decoder and call h264_frame_start() as needed.
- *
- * @param h h264context
- *
- * @return 0 if okay, <0 if an error occurred
- */
-int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
+static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
 {
     const SPS *sps;
     const PPS *pps;
     unsigned int first_mb_in_slice;
     unsigned int pps_id;
     int ret;
-    unsigned int slice_type, tmp, i, j;
+    unsigned int slice_type, tmp, i;
     int last_pic_structure, last_pic_droppable;
     int needs_reinit = 0;
     int field_pic_flag, bottom_field_flag;
@@ -1453,6 +1445,25 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         }
     }
 
+    return 0;
+}
+
+/**
+ * Decode a slice header.
+ * This will (re)initialize the decoder and call h264_frame_start() as needed.
+ *
+ * @param h h264context
+ *
+ * @return 0 if okay, <0 if an error occurred
+ */
+int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
+{
+    int i, j, ret = 0;
+
+    ret = h264_slice_header_parse(h, sl);
+    if (ret < 0)
+        return ret;
+
     if (h->avctx->skip_loop_filter >= AVDISCARD_ALL ||
         (h->avctx->skip_loop_filter >= AVDISCARD_NONKEY &&
          sl->slice_type_nos != AV_PICTURE_TYPE_I) ||
@@ -1474,9 +1485,9 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     sl->qp_thresh = 15 -
                    FFMIN(sl->slice_alpha_c0_offset, sl->slice_beta_offset) -
                    FFMAX3(0,
-                          pps->chroma_qp_index_offset[0],
-                          pps->chroma_qp_index_offset[1]) +
-                   6 * (sps->bit_depth_luma - 8);
+                          h->ps.pps->chroma_qp_index_offset[0],
+                          h->ps.pps->chroma_qp_index_offset[1]) +
+                   6 * (h->ps.sps->bit_depth_luma - 8);
 
     sl->slice_num       = ++h->current_slice;
     if (sl->slice_num >= MAX_SLICES) {
@@ -1519,14 +1530,14 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,
-               "slice:%d %s mb:%d %c%s%s pps:%u frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s %s\n",
+               "slice:%d %s mb:%d %c%s%s frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s %s\n",
                sl->slice_num,
                (h->picture_structure == PICT_FRAME ? "F" : h->picture_structure == PICT_TOP_FIELD ? "T" : "B"),
-               first_mb_in_slice,
+               sl->mb_y * h->mb_width + sl->mb_x,
                av_get_picture_type_char(sl->slice_type),
                sl->slice_type_fixed ? " fix" : "",
                h->nal_unit_type == NAL_IDR_SLICE ? " IDR" : "",
-               pps_id, h->poc.frame_num,
+               h->poc.frame_num,
                h->cur_pic_ptr->field_poc[0],
                h->cur_pic_ptr->field_poc[1],
                sl->ref_count[0], sl->ref_count[1],
