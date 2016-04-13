@@ -1462,7 +1462,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
          h->nal_ref_idc == 0))
         sl->deblocking_filter = 0;
 
-    if (sl->deblocking_filter == 1 && h->max_contexts > 1) {
+    if (sl->deblocking_filter == 1 && h->nb_slice_ctx > 1) {
         if (h->avctx->flags2 & AV_CODEC_FLAG2_FAST) {
             /* Cheat slightly for speed:
              * Do not bother to deblock across slices. */

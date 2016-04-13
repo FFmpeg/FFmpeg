@@ -584,14 +584,6 @@ typedef struct H264Context {
      */
     int current_slice;
 
-    /**
-     * Max number of threads / contexts.
-     * This is equal to AVCodecContext.thread_count unless
-     * multithreaded decoding is impossible, in which case it is
-     * reduced to 1.
-     */
-    int max_contexts;
-
     /** @} */
 
     /**

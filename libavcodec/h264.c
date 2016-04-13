@@ -808,7 +808,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int i, ret = 0;
 
-    h->max_contexts = h->nb_slice_ctx;
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
         if (!h->first_field)
@@ -935,7 +934,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                    nal->type, nal->size_bits);
         }
 
-        if (context_count == h->max_contexts) {
+        if (context_count == h->nb_slice_ctx) {
             ret = ff_h264_execute_decode_slices(h, context_count);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
