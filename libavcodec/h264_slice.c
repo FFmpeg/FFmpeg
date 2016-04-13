@@ -1668,9 +1668,6 @@ static int fill_filter_caches(const H264Context *h, H264SliceContext *sl, int mb
 
     top_xy = mb_xy - (h->mb_stride << MB_FIELD(sl));
 
-    /* Wow, what a mess, why didn't they simplify the interlacing & intra
-     * stuff, I can't imagine that these complex rules are worth it. */
-
     left_xy[LBOT] = left_xy[LTOP] = mb_xy - 1;
     if (FRAME_MBAFF(h)) {
         const int left_mb_field_flag = IS_INTERLACED(h->cur_pic.mb_type[mb_xy - 1]);
