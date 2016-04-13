@@ -23,8 +23,9 @@
  */
 
 #include "libavutil/channel_layout.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 #include "ra144.h"
 
@@ -46,12 +47,12 @@ static av_cold int ra144_decode_init(AVCodecContext * avctx)
 }
 
 static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
-                               int gval, GetBitContext *gb)
+                               int gval, BitstreamContext *bc)
 {
-    int cba_idx = get_bits(gb, 7); // index of the adaptive CB, 0 if none
-    int gain    = get_bits(gb, 8);
-    int cb1_idx = get_bits(gb, 7);
-    int cb2_idx = get_bits(gb, 7);
+    int cba_idx = bitstream_read(bc, 7); // index of the adaptive CB, 0 if none
+    int gain    = bitstream_read(bc, 8);
+    int cb1_idx = bitstream_read(bc, 7);
+    int cb2_idx = bitstream_read(bc, 7);
 
     ff_subblock_synthesis(ractx, lpc_coefs, cba_idx, cb1_idx, cb2_idx, gval,
                           gain);
@@ -74,7 +75,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     unsigned int energy;
 
     RA144Context *ractx = avctx->priv_data;
-    GetBitContext gb;
+    BitstreamContext bc;
 
     if (buf_size < FRAMESIZE) {
         av_log(avctx, AV_LOG_ERROR,
@@ -91,15 +92,15 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     }
     samples = (int16_t *)frame->data[0];
 
-    init_get_bits(&gb, buf, FRAMESIZE * 8);
+    bitstream_init(&bc, buf, FRAMESIZE * 8);
 
     for (i = 0; i < LPC_ORDER; i++)
-        lpc_refl[i] = ff_lpc_refl_cb[i][get_bits(&gb, sizes[i])];
+        lpc_refl[i] = ff_lpc_refl_cb[i][bitstream_read(&bc, sizes[i])];
 
     ff_eval_coefs(ractx->lpc_coef[0], lpc_refl);
     ractx->lpc_refl_rms[0] = ff_rms(lpc_refl);
 
-    energy = ff_energy_tab[get_bits(&gb, 5)];
+    energy = ff_energy_tab[bitstream_read(&bc, 5)];
 
     refl_rms[0] = ff_interp(ractx, block_coefs[0], 1, 1, ractx->old_energy);
     refl_rms[1] = ff_interp(ractx, block_coefs[1], 2,
@@ -111,7 +112,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     ff_int_to_int16(block_coefs[3], ractx->lpc_coef[0]);
 
     for (i=0; i < NBLOCKS; i++) {
-        do_output_subblock(ractx, block_coefs[i], refl_rms[i], &gb);
+        do_output_subblock(ractx, block_coefs[i], refl_rms[i], &bc);
 
         for (j=0; j < BLOCKSIZE; j++)
             *samples++ = av_clip_int16(ractx->curr_sblock[j + 10] << 2);
