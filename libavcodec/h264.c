@@ -285,7 +285,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->avctx                 = avctx;
 
     h->picture_structure     = PICT_FRAME;
-    h->slice_context_count   = 1;
     h->workaround_bugs       = avctx->workaround_bugs;
     h->flags                 = avctx->flags;
     h->poc.prev_poc_msb      = 1 << 16;
@@ -300,7 +299,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
-    h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ?  H264_MAX_THREADS : 1;
+    h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ? avctx->thread_count : 1;
     h->slice_ctx = av_mallocz_array(h->nb_slice_ctx, sizeof(*h->slice_ctx));
     if (!h->slice_ctx) {
         h->nb_slice_ctx = 0;
@@ -809,7 +808,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int i, ret = 0;
 
-    h->max_contexts = h->slice_context_count;
+    h->max_contexts = h->nb_slice_ctx;
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
         if (!h->first_field)

@@ -49,7 +49,6 @@
 #include "videodsp.h"
 
 #define H264_MAX_PICTURE_COUNT 32
-#define H264_MAX_THREADS       16
 
 #define MAX_SPS_COUNT          32
 #define MAX_PPS_COUNT         256
@@ -592,8 +591,6 @@ typedef struct H264Context {
      * reduced to 1.
      */
     int max_contexts;
-
-    int slice_context_count;
 
     /** @} */
 
