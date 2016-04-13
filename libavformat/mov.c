@@ -515,9 +515,11 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_rb32(pb); // version + flags
     entries = avio_rb32(pb);
-    if (entries >  (atom.size - 1) / MIN_DATA_ENTRY_BOX_SIZE + 1 ||
+    if (!entries ||
+        entries >  (atom.size - 1) / MIN_DATA_ENTRY_BOX_SIZE + 1 ||
         entries >= UINT_MAX / sizeof(*sc->drefs))
         return AVERROR_INVALIDDATA;
+    sc->drefs_count = 0;
     av_free(sc->drefs);
     sc->drefs_count = 0;
     sc->drefs = av_mallocz(entries * sizeof(*sc->drefs));
