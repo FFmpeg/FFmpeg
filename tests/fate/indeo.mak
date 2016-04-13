@@ -1,5 +1,11 @@
-FATE_INDEO-$(call DEMDEC, AVI, INDEO2) += fate-indeo2
-fate-indeo2: CMD = framecrc -i $(TARGET_SAMPLES)/rt21/VPAR0026.AVI
+FATE_INDEO2 += fate-indeo2-delta
+fate-indeo2-delta: CMD = framecrc -i $(TARGET_SAMPLES)/rt21/ISKATE.AVI -an
+
+FATE_INDEO2 += fate-indeo2-intra
+fate-indeo2-intra: CMD = framecrc -i $(TARGET_SAMPLES)/rt21/VPAR0026.AVI
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, INDEO2) += $(FATE_INDEO2)
+fate-indeo2: $(FATE_INDEO2)
 
 FATE_INDEO-$(call DEMDEC, MOV, INDEO3) += fate-indeo3
 fate-indeo3: CMD = framecrc -i $(TARGET_SAMPLES)/iv32/cubes.mov
@@ -14,4 +20,4 @@ FATE_INDEO-$(call DEMDEC, AVI, INDEO5) += fate-indeo5
 fate-indeo5: CMD = framecrc -i $(TARGET_SAMPLES)/iv50/Educ_Movie_DeadlyForce.avi -an
 
 FATE_SAMPLES_AVCONV += $(FATE_INDEO-yes)
-fate-indeo: $(FATE_INDEO-yes)
+fate-indeo: $(FATE_INDEO2) $(FATE_INDEO-yes)
