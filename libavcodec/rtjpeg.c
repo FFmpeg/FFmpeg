@@ -18,8 +18,10 @@
  * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
 #include "libavutil/common.h"
-#include "get_bits.h"
+
+#include "bitstream.h"
 #include "rtjpeg.h"
 
 #define PUT_COEFF(c) \
@@ -28,34 +30,36 @@
 
 /// aligns the bitstream to the given power of two
 #define ALIGN(a) \
-    n = (-get_bits_count(gb)) & (a - 1); \
-    if (n) {skip_bits(gb, n);}
+    n = (-bitstream_tell(bc)) & (a - 1); \
+    if (n)                               \
+        bitstream_skip(bc, n);
 
 /**
  * @brief read one block from stream
- * @param gb contains stream data
+ * @param bc contains stream data
  * @param block where data is written to
  * @param scan array containing the mapping stream address -> block position
  * @param quant quantization factors
  * @return 0 means the block is not coded, < 0 means an error occurred.
  *
- * Note: GetBitContext is used to make the code simpler, since all data is
+ * Note: BitstreamContext is used to make the code simpler, since all data is
  * aligned this could be done faster in a different way, e.g. as it is done
  * in MPlayer libmpcodecs/native/rtjpegn.c.
  */
-static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *scan,
-                            const uint32_t *quant) {
+static inline int get_block(BitstreamContext *bc, int16_t *block,
+                            const uint8_t *scan, const uint32_t *quant)
+{
     int coeff, i, n;
     int8_t ac;
-    uint8_t dc = get_bits(gb, 8);
+    uint8_t dc = bitstream_read(bc, 8);
 
     // block not coded
     if (dc == 255)
        return 0;
 
     // number of non-zero coefficients
-    coeff = get_bits(gb, 6);
-    if (get_bits_left(gb) < (coeff << 1))
+    coeff = bitstream_read(bc, 6);
+    if (bitstream_bits_left(bc) < (coeff << 1))
         return AVERROR_INVALIDDATA;
 
     // normally we would only need to clear the (63 - coeff) last values,
@@ -64,7 +68,7 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
 
     // 2 bits per coefficient
     while (coeff) {
-        ac = get_sbits(gb, 2);
+        ac = bitstream_read_signed(bc, 2);
         if (ac == -2)
             break; // continue with more bits
         PUT_COEFF(ac);
@@ -72,10 +76,10 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
 
     // 4 bits per coefficient
     ALIGN(4);
-    if (get_bits_left(gb) < (coeff << 2))
+    if (bitstream_bits_left(bc) < (coeff << 2))
         return AVERROR_INVALIDDATA;
     while (coeff) {
-        ac = get_sbits(gb, 4);
+        ac = bitstream_read_signed(bc, 4);
         if (ac == -8)
             break; // continue with more bits
         PUT_COEFF(ac);
@@ -83,10 +87,10 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
 
     // 8 bits per coefficient
     ALIGN(8);
-    if (get_bits_left(gb) < (coeff << 3))
+    if (bitstream_bits_left(bc) < (coeff << 3))
         return AVERROR_INVALIDDATA;
     while (coeff) {
-        ac = get_sbits(gb, 8);
+        ac = bitstream_read_signed(bc, 8);
         PUT_COEFF(ac);
     }
 
@@ -105,19 +109,19 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
  */
 int ff_rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
                                   const uint8_t *buf, int buf_size) {
-    GetBitContext gb;
+    BitstreamContext bc;
     int w = c->w / 16, h = c->h / 16;
     int x, y, ret;
     uint8_t *y1 = f->data[0], *y2 = f->data[0] + 8 * f->linesize[0];
     uint8_t *u = f->data[1], *v = f->data[2];
 
-    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+    if ((ret = bitstream_init8(&bc, buf, buf_size)) < 0)
         return ret;
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
 #define BLOCK(quant, dst, stride) do { \
-    int res = get_block(&gb, block, c->scan, quant); \
+    int res = get_block(&bc, block, c->scan, quant); \
     if (res < 0) \
         return res; \
     if (res > 0) \
@@ -142,7 +146,7 @@ int ff_rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
         u += 8 * (f->linesize[1] - w);
         v += 8 * (f->linesize[2] - w);
     }
-    return get_bits_count(&gb) / 8;
+    return bitstream_tell(&bc) / 8;
 }
 
 /**
