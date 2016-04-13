@@ -5881,7 +5881,10 @@ check_cflags -Wdeclaration-after-statement
 check_cflags -Wall
 check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
-check_cflags -Wredundant-decls
+if test "$host_os" != "os/2"; then
+    # This causes too much noise in libc headers on OS/2
+    check_cflags -Wredundant-decls
+fi
 check_cflags -Wwrite-strings
 check_cflags -Wtype-limits
 check_cflags -Wundef
