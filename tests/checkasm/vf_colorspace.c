@@ -48,7 +48,7 @@ static const char *format_string[] = {
     "444", "422", "420"
 };
 
-static unsigned bpp_mask[] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
+static const unsigned bpp_mask[] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
 
 static void check_yuv2yuv(void)
 {
