@@ -3395,6 +3395,11 @@ case "$toolchain" in
         add_cflags  -fsanitize=address
         add_ldflags -fsanitize=address
     ;;
+    *-msan)
+        cc_default="${toolchain%-msan}"
+        add_cflags  -fsanitize=memory -fsanitize-memory-track-origins
+        add_ldflags -fsanitize=memory
+    ;;
     *-tsan)
         cc_default="${toolchain%-tsan}"
         add_cflags  -fsanitize=thread -pie
