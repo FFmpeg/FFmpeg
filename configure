@@ -734,7 +734,12 @@ check_deps(){
 
 print_config(){
     pfx=$1
-    files=$2
+    if test "$host_os" = "os/2"; then
+        # awk treats \ as escape chars, convert them to / in paths
+        files=`echo "$2" | tr '\\\' /`
+    else
+        files=$2
+    fi
     shift 2
     map 'eval echo "$v \${$v:-no}"' "$@" |
     awk "BEGIN { split(\"$files\", files) }
@@ -3550,10 +3555,10 @@ fi
 
 tmpfile(){
     tmp=$(mktemp -u "${TMPDIR}/ffconf.XXXXXXXX")$2 &&
-        (set -C; exec > $tmp) 2>/dev/null ||
+        (set -C; exec > "$tmp") 2>/dev/null ||
         die "Unable to create temporary file in $TMPDIR."
-    append TMPFILES $tmp
-    eval $1=$tmp
+    append TMPFILES "$tmp"
+    eval $1=\"$tmp\"
 }
 
 trap 'rm -f -- $TMPFILES' EXIT
