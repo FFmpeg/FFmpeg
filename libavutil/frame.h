@@ -634,8 +634,9 @@ void av_frame_move_ref(AVFrame *dst, AVFrame *src);
  * necessary, allocate and fill AVFrame.extended_data and AVFrame.extended_buf.
  * For planar formats, one buffer will be allocated for each plane.
  *
- * @warning: if frame already has been allocated, undefined behaviour, including
- *           memory leaks, can occur.
+ * @warning: if frame already has been allocated, calling this function will
+ *           leak memory. In addition, undefined behavior can occur in certain
+ *           cases.
  *
  * @param frame frame in which to store the new buffers.
  * @param align required buffer size alignment
