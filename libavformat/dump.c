@@ -559,10 +559,12 @@ void av_dump_format(AVFormatContext *ic, int index,
         if (ic->start_time != AV_NOPTS_VALUE) {
             int secs, us;
             av_log(NULL, AV_LOG_INFO, ", start: ");
-            secs = ic->start_time / AV_TIME_BASE;
+            secs = llabs(ic->start_time / AV_TIME_BASE);
             us   = llabs(ic->start_time % AV_TIME_BASE);
-            av_log(NULL, AV_LOG_INFO, "%d.%06d",
-                   secs, (int) av_rescale(us, 1000000, AV_TIME_BASE));
+            av_log(NULL, AV_LOG_INFO, "%s%d.%06d",
+                   ic->start_time >= 0 ? "" : "-",
+                   secs,
+                   (int) av_rescale(us, 1000000, AV_TIME_BASE));
         }
         av_log(NULL, AV_LOG_INFO, ", bitrate: ");
         if (ic->bit_rate)
