@@ -3723,6 +3723,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+    if (probesize)
+        estimate_timings(ic, old_offset);
+
     av_opt_set(ic, "skip_clear", "0", AV_OPT_SEARCH_CHILDREN);
 
     if (ret >= 0 && ic->nb_streams)
@@ -3802,9 +3805,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         st->internal->avctx_inited = 0;
     }
-
-    if (probesize)
-        estimate_timings(ic, old_offset);
 
 find_stream_info_err:
     for (i = 0; i < ic->nb_streams; i++) {
