@@ -22,6 +22,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/hash.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
@@ -189,13 +190,38 @@ static int framehash_write_header(struct AVFormatContext *s)
 static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     struct HashContext *c = s->priv_data;
-    char buf[256];
+    char buf[AV_HASH_MAX_SIZE*2+128];
+    int len;
     av_hash_init(c->hash);
     av_hash_update(c->hash, pkt->data, pkt->size);
 
-    snprintf(buf, sizeof(buf) - 64, "%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, ",
+    snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1), "%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, ",
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size);
-    hash_finish(s, buf);
+    len = strlen(buf);
+    av_hash_final_hex(c->hash, buf + len, sizeof(buf) - len);
+    avio_write(s->pb, buf, strlen(buf));
+
+    if (c->format_version > 1 && pkt->side_data_elems) {
+        int i, j;
+        avio_printf(s->pb, ", S=%d", pkt->side_data_elems);
+        for (i = 0; i < pkt->side_data_elems; i++) {
+            av_hash_init(c->hash);
+            if (HAVE_BIGENDIAN && pkt->side_data[i].type == AV_PKT_DATA_PALETTE) {
+                for (j = 0; j < pkt->side_data[i].size; j += sizeof(uint32_t)) {
+                    uint32_t data = AV_RL32(pkt->side_data[i].data + j);
+                    av_hash_update(c->hash, (uint8_t *)&data, sizeof(uint32_t));
+                }
+            } else
+                av_hash_update(c->hash, pkt->side_data[i].data, pkt->side_data[i].size);
+            snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1), ", %8d, ", pkt->side_data[i].size);
+            len = strlen(buf);
+            av_hash_final_hex(c->hash, buf + len, sizeof(buf) - len);
+            avio_write(s->pb, buf, strlen(buf));
+        }
+    }
+
+    avio_printf(s->pb, "\n");
+    avio_flush(s->pb);
     return 0;
 }
 
