@@ -72,7 +72,8 @@ typedef struct WmallDecodeCtx {
     AVCodecContext  *avctx;
     AVFrame         *frame;
     LLAudDSPContext dsp;                           ///< accelerated DSP functions
-    uint8_t         frame_data[MAX_FRAMESIZE + AV_INPUT_BUFFER_PADDING_SIZE];  ///< compressed frame data
+    uint8_t         *frame_data;                    ///< compressed frame data
+    int             max_frame_size;                 ///< max bitstream size
     PutBitContext   pb;                             ///< context for filling the frame_data buffer
 
     /* frame size dependent frame information (set during initialization) */
@@ -190,9 +191,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    s->max_frame_size = MAX_FRAMESIZE * avctx->channels;
+    s->frame_data = av_mallocz(s->max_frame_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!s->frame_data)
+        return AVERROR(ENOMEM);
+
     s->avctx = avctx;
     ff_llauddsp_init(&s->dsp);
-    init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
+    init_put_bits(&s->pb, s->frame_data, s->max_frame_size);
 
     if (avctx->extradata_size >= 18) {
         s->decode_flags    = AV_RL16(edata_ptr + 14);
@@ -1124,12 +1130,12 @@ static void save_bits(WmallDecodeCtx *s, GetBitContext* gb, int len,
     if (!append) {
         s->frame_offset   = get_bits_count(gb) & 7;
         s->num_saved_bits = s->frame_offset;
-        init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
+        init_put_bits(&s->pb, s->frame_data, s->max_frame_size);
     }
 
     buflen = (s->num_saved_bits + len + 8) >> 3;
 
-    if (len <= 0 || buflen > MAX_FRAMESIZE) {
+    if (len <= 0 || buflen > s->max_frame_size) {
         avpriv_request_sample(s->avctx, "Too small input buffer");
         s->packet_loss = 1;
         return;
@@ -1175,14 +1181,9 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         if (!buf_size)
             return 0;
-        /* sanity check for the buffer length */
-        if (buf_size < avctx->block_align) {
-            av_log(avctx, AV_LOG_ERROR, "buf size %d invalid\n", buf_size);
-            return AVERROR_INVALIDDATA;
-        }
 
-        s->next_packet_start = buf_size - avctx->block_align;
-        buf_size             = avctx->block_align;
+        s->next_packet_start = buf_size - FFMIN(avctx->block_align, buf_size);
+        buf_size             = FFMIN(avctx->block_align, buf_size);
         s->buf_bit_size      = buf_size << 3;
 
         /* parse packet header */
@@ -1230,7 +1231,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
              * to decode incomplete frames in the s->len_prefix == 0 case. */
             s->num_saved_bits = 0;
             s->packet_loss    = 0;
-            init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
+            init_put_bits(&s->pb, s->frame_data, s->max_frame_size);
         }
 
     } else {
@@ -1284,7 +1285,7 @@ static void flush(AVCodecContext *avctx)
     s->next_packet_start = 0;
     s->cdlms[0][0].order = 0;
     s->frame->nb_samples = 0;
-    init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
+    init_put_bits(&s->pb, s->frame_data, s->max_frame_size);
 }
 
 static av_cold int decode_close(AVCodecContext *avctx)
@@ -1292,6 +1293,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     WmallDecodeCtx *s = avctx->priv_data;
 
     av_frame_free(&s->frame);
+    av_freep(&s->frame_data);
 
     return 0;
 }
