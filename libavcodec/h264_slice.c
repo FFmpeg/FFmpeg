@@ -1817,9 +1817,7 @@ static void loop_filter(const H264Context *h, H264SliceContext *sl, int start_x,
             for (mb_y = end_mb_y - FRAME_MBAFF(h); mb_y <= end_mb_y; mb_y++) {
                 int mb_xy, mb_type;
                 mb_xy         = sl->mb_xy = mb_x + mb_y * h->mb_stride;
-                sl->slice_num = h->slice_table[mb_xy];
                 mb_type       = h->cur_pic.mb_type[mb_xy];
-                sl->list_count = h->list_counts[mb_xy];
 
                 if (FRAME_MBAFF(h))
                     sl->mb_mbaff               =
