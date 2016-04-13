@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 
 #define BITSTREAM_READER_LE
+#include "bitstream.h"
 #include "tak.h"
 
 static const uint16_t frame_duration_type_quants[] = {
@@ -85,30 +86,30 @@ int ff_tak_check_crc(const uint8_t *buf, unsigned int buf_size)
     return 0;
 }
 
-void avpriv_tak_parse_streaminfo(GetBitContext *gb, TAKStreamInfo *s)
+void avpriv_tak_parse_streaminfo(BitstreamContext *bc, TAKStreamInfo *s)
 {
     uint64_t channel_mask = 0;
     int frame_type, i;
 
-    s->codec = get_bits(gb, TAK_ENCODER_CODEC_BITS);
-    skip_bits(gb, TAK_ENCODER_PROFILE_BITS);
+    s->codec = bitstream_read(bc, TAK_ENCODER_CODEC_BITS);
+    bitstream_skip(bc, TAK_ENCODER_PROFILE_BITS);
 
-    frame_type = get_bits(gb, TAK_SIZE_FRAME_DURATION_BITS);
-    s->samples = get_bits64(gb, TAK_SIZE_SAMPLES_NUM_BITS);
+    frame_type = bitstream_read(bc, TAK_SIZE_FRAME_DURATION_BITS);
+    s->samples = bitstream_read_63(bc, TAK_SIZE_SAMPLES_NUM_BITS);
 
-    s->data_type   = get_bits(gb, TAK_FORMAT_DATA_TYPE_BITS);
-    s->sample_rate = get_bits(gb, TAK_FORMAT_SAMPLE_RATE_BITS) +
+    s->data_type   = bitstream_read(bc, TAK_FORMAT_DATA_TYPE_BITS);
+    s->sample_rate = bitstream_read(bc, TAK_FORMAT_SAMPLE_RATE_BITS) +
                      TAK_SAMPLE_RATE_MIN;
-    s->bps         = get_bits(gb, TAK_FORMAT_BPS_BITS) +
+    s->bps         = bitstream_read(bc, TAK_FORMAT_BPS_BITS) +
                      TAK_BPS_MIN;
-    s->channels    = get_bits(gb, TAK_FORMAT_CHANNEL_BITS) +
+    s->channels    = bitstream_read(bc, TAK_FORMAT_CHANNEL_BITS) +
                      TAK_CHANNELS_MIN;
 
-    if (get_bits1(gb)) {
-        skip_bits(gb, TAK_FORMAT_VALID_BITS);
-        if (get_bits1(gb)) {
+    if (bitstream_read_bit(bc)) {
+        bitstream_skip(bc, TAK_FORMAT_VALID_BITS);
+        if (bitstream_read_bit(bc)) {
             for (i = 0; i < s->channels; i++) {
-                int value = get_bits(gb, TAK_FORMAT_CH_LAYOUT_BITS);
+                int value = bitstream_read(bc, TAK_FORMAT_CH_LAYOUT_BITS);
 
                 if (value > 0 && value <= 18)
                     channel_mask |= 1 << (value - 1);
@@ -120,33 +121,33 @@ void avpriv_tak_parse_streaminfo(GetBitContext *gb, TAKStreamInfo *s)
     s->frame_samples = tak_get_nb_samples(s->sample_rate, frame_type);
 }
 
-int ff_tak_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
+int ff_tak_decode_frame_header(AVCodecContext *avctx, BitstreamContext *bc,
                                TAKStreamInfo *ti, int log_level_offset)
 {
-    if (get_bits(gb, TAK_FRAME_HEADER_SYNC_ID_BITS) != TAK_FRAME_HEADER_SYNC_ID) {
+    if (bitstream_read(bc, TAK_FRAME_HEADER_SYNC_ID_BITS) != TAK_FRAME_HEADER_SYNC_ID) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset, "missing sync id\n");
         return AVERROR_INVALIDDATA;
     }
 
-    ti->flags     = get_bits(gb, TAK_FRAME_HEADER_FLAGS_BITS);
-    ti->frame_num = get_bits(gb, TAK_FRAME_HEADER_NO_BITS);
+    ti->flags     = bitstream_read(bc, TAK_FRAME_HEADER_FLAGS_BITS);
+    ti->frame_num = bitstream_read(bc, TAK_FRAME_HEADER_NO_BITS);
 
     if (ti->flags & TAK_FRAME_FLAG_IS_LAST) {
-        ti->last_frame_samples = get_bits(gb, TAK_FRAME_HEADER_SAMPLE_COUNT_BITS) + 1;
-        skip_bits(gb, 2);
+        ti->last_frame_samples = bitstream_read(bc, TAK_FRAME_HEADER_SAMPLE_COUNT_BITS) + 1;
+        bitstream_skip(bc, 2);
     } else {
         ti->last_frame_samples = 0;
     }
 
     if (ti->flags & TAK_FRAME_FLAG_HAS_INFO) {
-        avpriv_tak_parse_streaminfo(gb, ti);
+        avpriv_tak_parse_streaminfo(bc, ti);
 
-        if (get_bits(gb, 6))
-            skip_bits(gb, 25);
-        align_get_bits(gb);
+        if (bitstream_read(bc, 6))
+            bitstream_skip(bc, 25);
+        bitstream_align(bc);
     }
 
-    skip_bits(gb, 24);
+    bitstream_skip(bc, 24);
 
     return 0;
 }

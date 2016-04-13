@@ -20,6 +20,7 @@
  */
 
 #define BITSTREAM_READER_LE
+#include "libavcodec/bitstream.h"
 #include "libavcodec/tak.h"
 
 #include "apetag.h"
@@ -43,7 +44,7 @@ static int tak_read_header(AVFormatContext *s)
 {
     TAKDemuxContext *tc = s->priv_data;
     AVIOContext *pb     = s->pb;
-    GetBitContext gb;
+    BitstreamContext bc;
     AVStream *st;
     uint8_t *buffer = NULL;
     int ret;
@@ -82,7 +83,7 @@ static int tak_read_header(AVFormatContext *s)
                 return AVERROR(EIO);
             }
 
-            init_get_bits(&gb, buffer, size * 8);
+            bitstream_init8(&bc, buffer, size);
             break;
         case TAK_METADATA_MD5: {
             uint8_t md5[16];
@@ -118,7 +119,7 @@ static int tak_read_header(AVFormatContext *s)
         if (type == TAK_METADATA_STREAMINFO) {
             TAKStreamInfo ti;
 
-            avpriv_tak_parse_streaminfo(&gb, &ti);
+            avpriv_tak_parse_streaminfo(&bc, &ti);
             if (ti.samples > 0)
                 st->duration = ti.samples;
             st->codecpar->bits_per_coded_sample = ti.bps;
@@ -135,12 +136,12 @@ static int tak_read_header(AVFormatContext *s)
             if (size != 11)
                 return AVERROR_INVALIDDATA;
             tc->mlast_frame = 1;
-            tc->data_end    = get_bits64(&gb, TAK_LAST_FRAME_POS_BITS) +
-                              get_bits(&gb, TAK_LAST_FRAME_SIZE_BITS);
+            tc->data_end    = bitstream_read_63(&bc, TAK_LAST_FRAME_POS_BITS) +
+                              bitstream_read(&bc, TAK_LAST_FRAME_SIZE_BITS);
             av_freep(&buffer);
         } else if (type == TAK_METADATA_ENCODER) {
             av_log(s, AV_LOG_VERBOSE, "encoder version: %0X\n",
-                   get_bits_long(&gb, TAK_ENCODER_VERSION_BITS));
+                   bitstream_read(&bc, TAK_ENCODER_VERSION_BITS));
             av_freep(&buffer);
         }
     }

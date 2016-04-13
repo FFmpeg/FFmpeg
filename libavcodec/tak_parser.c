@@ -25,6 +25,7 @@
  **/
 
 #define BITSTREAM_READER_LE
+#include "bitstream.h"
 #include "parser.h"
 #include "tak.h"
 
@@ -47,14 +48,14 @@ static int tak_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     TAKParseContext *t = s->priv_data;
     ParseContext *pc   = &t->pc;
     int next           = END_NOT_FOUND;
-    GetBitContext gb;
+    BitstreamContext bc;
     int consumed = 0;
     int needed   = buf_size ? TAK_MAX_FRAME_HEADER_BYTES : 8;
 
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         TAKStreamInfo ti;
-        init_get_bits(&gb, buf, buf_size);
-        if (!ff_tak_decode_frame_header(avctx, &gb, &ti, 127))
+        bitstream_init(&bc, buf, buf_size);
+        if (!ff_tak_decode_frame_header(avctx, &bc, &ti, 127))
             s->duration = t->ti.last_frame_samples ? t->ti.last_frame_samples
                                                    : t->ti.frame_samples;
         *poutbuf      = buf;
@@ -79,14 +80,14 @@ static int tak_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                 pc->buffer[t->index + 1] == 0xA0) {
                 TAKStreamInfo ti;
 
-                init_get_bits(&gb, pc->buffer + t->index,
-                              8 * (pc->index - t->index));
-                if (!ff_tak_decode_frame_header(avctx, &gb,
+                bitstream_init8(&bc, pc->buffer + t->index,
+                                pc->index - t->index);
+                if (!ff_tak_decode_frame_header(avctx, &bc,
                                                 pc->frame_start_found ? &ti
                                                                       : &t->ti,
                                                 127) &&
                     !ff_tak_check_crc(pc->buffer + t->index,
-                                      get_bits_count(&gb) / 8)) {
+                                      bitstream_tell(&bc) / 8)) {
                     if (!pc->frame_start_found) {
                         pc->frame_start_found = 1;
                         s->duration           = t->ti.last_frame_samples ?

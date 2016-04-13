@@ -31,8 +31,9 @@
 #define BITSTREAM_READER_LE
 #include "audiodsp.h"
 #include "avcodec.h"
+#include "bitstream.h"
 #include "internal.h"
-#include "unary_legacy.h"
+#include "unary.h"
 #include "tak.h"
 
 #define MAX_SUBFRAMES     8                         // max number of subframes per channel
@@ -49,7 +50,7 @@ typedef struct TAKDecContext {
     AVCodecContext *avctx;                          // parent AVCodecContext
     AudioDSPContext adsp;
     TAKStreamInfo   ti;
-    GetBitContext   gb;                             // bitstream reader initialized to start at the current frame
+    BitstreamContext bc;                            // bitstream reader initialized to start at the current frame
 
     int             uval;
     int             nb_samples;                     // number of samples in the current frame
@@ -238,7 +239,7 @@ static void decode_lpc(int32_t *coeffs, int mode, int length)
     }
 }
 
-static int decode_segment(GetBitContext *gb, int mode, int32_t *decoded,
+static int decode_segment(BitstreamContext *bc, int mode, int32_t *decoded,
                           int len)
 {
     struct CParam code;
@@ -254,20 +255,20 @@ static int decode_segment(GetBitContext *gb, int mode, int32_t *decoded,
     code = xcodes[mode - 1];
 
     for (i = 0; i < len; i++) {
-        int x = get_bits_long(gb, code.init);
-        if (x >= code.escape && get_bits1(gb)) {
+        int x = bitstream_read(bc, code.init);
+        if (x >= code.escape && bitstream_read_bit(bc)) {
             x |= 1 << code.init;
             if (x >= code.aescape) {
-                int scale = get_unary(gb, 1, 9);
+                int scale = get_unary(bc, 1, 9);
                 if (scale == 9) {
-                    int scale_bits = get_bits(gb, 3);
+                    int scale_bits = bitstream_read(bc, 3);
                     if (scale_bits > 0) {
                         if (scale_bits == 7) {
-                            scale_bits += get_bits(gb, 5);
+                            scale_bits += bitstream_read(bc, 5);
                             if (scale_bits > 29)
                                 return AVERROR_INVALIDDATA;
                         }
-                        scale = get_bits_long(gb, scale_bits) + 1;
+                        scale = bitstream_read(bc, scale_bits) + 1;
                         x    += code.scale * scale;
                     }
                     x += code.bias;
@@ -284,13 +285,13 @@ static int decode_segment(GetBitContext *gb, int mode, int32_t *decoded,
 
 static int decode_residues(TAKDecContext *s, int32_t *decoded, int length)
 {
-    GetBitContext *gb = &s->gb;
+    BitstreamContext *bc = &s->bc;
     int i, mode, ret;
 
     if (length > s->nb_samples)
         return AVERROR_INVALIDDATA;
 
-    if (get_bits1(gb)) {
+    if (bitstream_read_bit(bc)) {
         int wlength, rval;
         int coding_mode[128];
 
@@ -306,20 +307,21 @@ static int decode_residues(TAKDecContext *s, int32_t *decoded, int length)
         if (wlength <= 1 || wlength > 128)
             return AVERROR_INVALIDDATA;
 
-        coding_mode[0] = mode = get_bits(gb, 6);
+        coding_mode[0] =
+        mode           = bitstream_read(bc, 6);
 
         for (i = 1; i < wlength; i++) {
-            int c = get_unary(gb, 1, 6);
+            int c = get_unary(bc, 1, 6);
 
             switch (c) {
             case 6:
-                mode = get_bits(gb, 6);
+                mode = bitstream_read(bc, 6);
                 break;
             case 5:
             case 4:
             case 3: {
                 /* mode += sign ? (1 - c) : (c - 1) */
-                int sign = get_bits1(gb);
+                int sign = bitstream_read_bit(bc);
                 mode    += (-sign ^ (c - 1)) + sign;
                 break;
             }
@@ -349,23 +351,23 @@ static int decode_residues(TAKDecContext *s, int32_t *decoded, int length)
                     break;
             } while (coding_mode[i] == mode);
 
-            if ((ret = decode_segment(gb, mode, decoded, len)) < 0)
+            if ((ret = decode_segment(bc, mode, decoded, len)) < 0)
                 return ret;
             decoded += len;
         }
     } else {
-        mode = get_bits(gb, 6);
-        if ((ret = decode_segment(gb, mode, decoded, length)) < 0)
+        mode = bitstream_read(bc, 6);
+        if ((ret = decode_segment(bc, mode, decoded, length)) < 0)
             return ret;
     }
 
     return 0;
 }
 
-static int get_bits_esc4(GetBitContext *gb)
+static int bits_esc4(BitstreamContext *bc)
 {
-    if (get_bits1(gb))
-        return get_bits(gb, 4) + 1;
+    if (bitstream_read_bit(bc))
+        return bitstream_read(bc, 4) + 1;
     else
         return 0;
 }
@@ -373,23 +375,23 @@ static int get_bits_esc4(GetBitContext *gb)
 static void decode_filter_coeffs(TAKDecContext *s, int filter_order, int size,
                                  int filter_quant, int16_t *filter)
 {
-    GetBitContext *gb = &s->gb;
+    BitstreamContext *bc = &s->bc;
     int i, j, a, b;
     int filter_tmp[MAX_PREDICTORS];
     int16_t predictors[MAX_PREDICTORS];
 
-    predictors[0] = get_sbits(gb, 10);
-    predictors[1] = get_sbits(gb, 10);
-    predictors[2] = get_sbits(gb, size) << (10 - size);
-    predictors[3] = get_sbits(gb, size) << (10 - size);
+    predictors[0] = bitstream_read_signed(bc, 10);
+    predictors[1] = bitstream_read_signed(bc, 10);
+    predictors[2] = bitstream_read_signed(bc, size) << (10 - size);
+    predictors[3] = bitstream_read_signed(bc, size) << (10 - size);
     if (filter_order > 4) {
         int av_uninit(code_size);
-        int code_size_base = size - get_bits1(gb);
+        int code_size_base = size - bitstream_read_bit(bc);
 
         for (i = 4; i < filter_order; i++) {
             if (!(i & 3))
-                code_size = code_size_base - get_bits(gb, 2);
-            predictors[i] = get_sbits(gb, code_size) << (10 - size);
+            code_size     = code_size_base - bitstream_read(bc, 2);
+            predictors[i] = bitstream_read_signed(bc, code_size) << (10 - size);
         }
     }
 
@@ -421,18 +423,18 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                            int subframe_size, int prev_subframe_size)
 {
     LOCAL_ALIGNED_16(int16_t, filter, [MAX_PREDICTORS]);
-    GetBitContext *gb = &s->gb;
+    BitstreamContext *bc = &s->bc;
     int i, ret;
     int dshift, size, filter_quant, filter_order;
 
     memset(filter, 0, MAX_PREDICTORS * sizeof(*filter));
 
-    if (!get_bits1(gb))
+    if (!bitstream_read_bit(bc))
         return decode_residues(s, decoded, subframe_size);
 
-    filter_order = predictor_sizes[get_bits(gb, 4)];
+    filter_order = predictor_sizes[bitstream_read(bc, 4)];
 
-    if (prev_subframe_size > 0 && get_bits1(gb)) {
+    if (prev_subframe_size > 0 && bitstream_read_bit(bc)) {
         if (filter_order > prev_subframe_size)
             return AVERROR_INVALIDDATA;
 
@@ -447,7 +449,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
         if (filter_order > subframe_size)
             return AVERROR_INVALIDDATA;
 
-        lpc_mode = get_bits(gb, 2);
+        lpc_mode = bitstream_read(bc, 2);
         if (lpc_mode > 2)
             return AVERROR_INVALIDDATA;
 
@@ -458,12 +460,12 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
             decode_lpc(decoded, lpc_mode, filter_order);
     }
 
-    dshift = get_bits_esc4(gb);
-    size   = get_bits1(gb) + 6;
+    dshift = bits_esc4(bc);
+    size   = bitstream_read_bit(bc) + 6;
 
     filter_quant = 10;
-    if (get_bits1(gb)) {
-        filter_quant -= get_bits(gb, 3) + 1;
+    if (bitstream_read_bit(bc)) {
+        filter_quant -= bitstream_read(bc, 3) + 1;
         if (filter_quant < 3)
             return AVERROR_INVALIDDATA;
     }
@@ -502,35 +504,35 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
 static int decode_channel(TAKDecContext *s, int chan)
 {
     AVCodecContext *avctx = s->avctx;
-    GetBitContext *gb     = &s->gb;
+    BitstreamContext *bc  = &s->bc;
     int32_t *decoded      = s->decoded[chan];
     int left              = s->nb_samples - 1;
     int i, prev, ret, nb_subframes;
     int subframe_len[MAX_SUBFRAMES];
 
-    s->sample_shift[chan] = get_bits_esc4(gb);
+    s->sample_shift[chan] = bits_esc4(bc);
     if (s->sample_shift[chan] >= avctx->bits_per_coded_sample)
         return AVERROR_INVALIDDATA;
 
     /* NOTE: TAK 2.2.0 appears to set the sample value to 0 if
      *       bits_per_coded_sample - sample_shift is 1, but this produces
-     *       non-bit-exact output. Reading the 1 bit using get_sbits() instead
-     *       of skipping it produces bit-exact output. This has been reported
-     *       to the TAK author. */
-    *decoded++        = get_sbits(gb,
-                                  avctx->bits_per_coded_sample -
-                                  s->sample_shift[chan]);
-    s->lpc_mode[chan] = get_bits(gb, 2);
-    nb_subframes      = get_bits(gb, 3) + 1;
+     *       non-bit-exact output. Reading the 1 bit using bitstream_read_signed()
+     *       instead of skipping it produces bit-exact output. This has been
+     *       reported to the TAK author. */
+    *decoded++        = bitstream_read_signed(bc,
+                                              avctx->bits_per_coded_sample -
+                                              s->sample_shift[chan]);
+    s->lpc_mode[chan] = bitstream_read(bc, 2);
+    nb_subframes      = bitstream_read(bc, 3) + 1;
 
     i = 0;
     if (nb_subframes > 1) {
-        if (get_bits_left(gb) < (nb_subframes - 1) * 6)
+        if (bitstream_bits_left(bc) < (nb_subframes - 1) * 6)
             return AVERROR_INVALIDDATA;
 
         prev = 0;
         for (; i < nb_subframes - 1; i++) {
-            int subframe_end = get_bits(gb, 6) * s->subframe_scale;
+            int subframe_end = bitstream_read(bc, 6) * s->subframe_scale;
             if (subframe_end <= prev)
                 return AVERROR_INVALIDDATA;
             subframe_len[i] = subframe_end - prev;
@@ -556,7 +558,7 @@ static int decode_channel(TAKDecContext *s, int chan)
 
 static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
 {
-    GetBitContext *gb = &s->gb;
+    BitstreamContext *bc = &s->bc;
     int32_t *p1       = s->decoded[c1] + 1;
     int32_t *p2       = s->decoded[c2] + 1;
     int i;
@@ -589,8 +591,8 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
     case 4: /* side/left with scale factor */
         FFSWAP(int32_t*, p1, p2);
     case 5: /* side/right with scale factor */
-        dshift  = get_bits_esc4(gb);
-        dfactor = get_sbits(gb, 10);
+        dshift  = bits_esc4(bc);
+        dfactor = bitstream_read_signed(bc, 10);
         for (i = 0; i < length; i++) {
             int32_t a = p1[i];
             int32_t b = p2[i];
@@ -610,15 +612,15 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
         if (length < 256)
             return AVERROR_INVALIDDATA;
 
-        dshift       = get_bits_esc4(gb);
-        filter_order = 8 << get_bits1(gb);
-        dval1        = get_bits1(gb);
-        dval2        = get_bits1(gb);
+        dshift       = bits_esc4(bc);
+        filter_order = 8 << bitstream_read_bit(bc);
+        dval1        = bitstream_read_bit(bc);
+        dval2        = bitstream_read_bit(bc);
 
         for (i = 0; i < filter_order; i++) {
             if (!(i & 3))
-                code_size = 14 - get_bits(gb, 3);
-            filter[i] = get_sbits(gb, code_size);
+                code_size = 14 - bitstream_read(bc, 3);
+            filter[i] = bitstream_read_signed(bc, code_size);
         }
 
         order_half = filter_order / 2;
@@ -675,15 +677,15 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
 {
     TAKDecContext *s  = avctx->priv_data;
     AVFrame *frame    = data;
-    GetBitContext *gb = &s->gb;
+    BitstreamContext *bc = &s->bc;
     int chan, i, ret, hsize;
 
     if (pkt->size < TAK_MIN_FRAME_HEADER_BYTES)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(gb, pkt->data, pkt->size * 8);
+    bitstream_init8(bc, pkt->data, pkt->size);
 
-    if ((ret = ff_tak_decode_frame_header(avctx, gb, &s->ti, 0)) < 0)
+    if ((ret = ff_tak_decode_frame_header(avctx, bc, &s->ti, 0)) < 0)
         return ret;
 
     if (s->ti.flags & TAK_FRAME_FLAG_HAS_METADATA) {
@@ -691,7 +693,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_PATCHWELCOME;
     }
 
-    hsize = get_bits_count(gb) / 8;
+    hsize = bitstream_tell(bc) / 8;
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
         if (ff_tak_check_crc(pkt->data, hsize)) {
             av_log(avctx, AV_LOG_ERROR, "CRC error\n");
@@ -769,7 +771,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         for (chan = 0; chan < avctx->channels; chan++) {
             int32_t *decoded = s->decoded[chan];
             for (i = 0; i < s->nb_samples; i++)
-                decoded[i] = get_sbits(gb, avctx->bits_per_coded_sample);
+                decoded[i] = bitstream_read_signed(bc, avctx->bits_per_coded_sample);
         }
     } else {
         if (s->ti.codec == TAK_CODEC_MONO_STEREO) {
@@ -778,25 +780,25 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
                     return ret;
 
             if (avctx->channels == 2) {
-                if (get_bits1(gb)) {
+                if (bitstream_read_bit(bc)) {
                     // some kind of subframe length, but it seems to be unused
-                    skip_bits(gb, 6);
+                    bitstream_skip(bc, 6);
                 }
 
-                s->dmode = get_bits(gb, 3);
+                s->dmode = bitstream_read(bc, 3);
                 if (ret = decorrelate(s, 0, 1, s->nb_samples - 1))
                     return ret;
             }
         } else if (s->ti.codec == TAK_CODEC_MULTICHANNEL) {
-            if (get_bits1(gb)) {
+            if (bitstream_read_bit(bc)) {
                 int ch_mask = 0;
 
-                chan = get_bits(gb, 4) + 1;
+                chan = bitstream_read(bc, 4) + 1;
                 if (chan > avctx->channels)
                     return AVERROR_INVALIDDATA;
 
                 for (i = 0; i < chan; i++) {
-                    int nbit = get_bits(gb, 4);
+                    int nbit = bitstream_read(bc, 4);
 
                     if (nbit >= avctx->channels)
                         return AVERROR_INVALIDDATA;
@@ -804,10 +806,10 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
                     if (ch_mask & 1 << nbit)
                         return AVERROR_INVALIDDATA;
 
-                    s->mcdparams[i].present = get_bits1(gb);
+                    s->mcdparams[i].present = bitstream_read_bit(bc);
                     if (s->mcdparams[i].present) {
-                        s->mcdparams[i].index = get_bits(gb, 2);
-                        s->mcdparams[i].chan2 = get_bits(gb, 4);
+                        s->mcdparams[i].index = bitstream_read(bc, 2);
+                        s->mcdparams[i].chan2 = bitstream_read(bc, 4);
                         if (s->mcdparams[i].chan2 >= avctx->channels) {
                             av_log(avctx, AV_LOG_ERROR,
                                    "invalid channel 2 (%d) for %d channel(s)\n",
@@ -867,16 +869,16 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    align_get_bits(gb);
-    skip_bits(gb, 24);
-    if (get_bits_left(gb) < 0)
+    bitstream_align(bc);
+    bitstream_skip(bc, 24);
+    if (bitstream_bits_left(bc) < 0)
         av_log(avctx, AV_LOG_DEBUG, "overread\n");
-    else if (get_bits_left(gb) > 0)
+    else if (bitstream_bits_left(bc) > 0)
         av_log(avctx, AV_LOG_DEBUG, "underread\n");
 
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
         if (ff_tak_check_crc(pkt->data + hsize,
-                             get_bits_count(gb) / 8 - hsize)) {
+                             bitstream_tell(bc) / 8 - hsize)) {
             av_log(avctx, AV_LOG_ERROR, "CRC error\n");
             if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
