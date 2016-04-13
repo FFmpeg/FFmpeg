@@ -93,6 +93,9 @@ fate-cljr: CMD = framecrc -i $(TARGET_SAMPLES)/cljr/testcljr-partial.avi
 FATE_VIDEO-$(call DEMDEC, AVI, PNG) += fate-corepng
 fate-corepng: CMD = framecrc -i $(TARGET_SAMPLES)/png1/corepng-partial.avi
 
+FATE_VIDEO-$(call DEMDEC, AVI, PNG) += fate-rgbapng-4816
+fate-rgbapng-4816: CMD = framecrc -i $(TARGET_SAMPLES)/png1/55c99e750a5fd6_50314226.png
+
 FATE_VIDEO-$(call DEMDEC, AVS, AVS) += fate-creatureshock-avs
 fate-creatureshock-avs: CMD = framecrc -i $(TARGET_SAMPLES)/creatureshock-avs/OUTATIME.AVS -pix_fmt rgb24
 
