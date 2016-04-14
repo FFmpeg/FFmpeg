@@ -63,7 +63,7 @@ restart:
                     continue;
                 }
                 bpc->pc.frame_start_found++;
-                bpc->remaining_size = bpc->fsize + i - 17;
+                bpc->remaining_size = bpc->fsize + FFMAX(i - 17, 0);
 
                 if (bpc->pc.index + i > 17) {
                     next = i - 17;
