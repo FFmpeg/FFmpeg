@@ -34,25 +34,6 @@ struct HashContext {
     int format_version;
 };
 
-static void hash_finish(struct AVFormatContext *s, char *buf)
-{
-    struct HashContext *c = s->priv_data;
-    uint8_t hash[AV_HASH_MAX_SIZE];
-    int i, offset = strlen(buf);
-    int len = av_hash_get_size(c->hash);
-    av_assert0(len > 0 && len <= sizeof(hash));
-    av_hash_final(c->hash, hash);
-    for (i = 0; i < len; i++) {
-        snprintf(buf + offset, 3, "%02"PRIx8, hash[i]);
-        offset += 2;
-    }
-    buf[offset] = '\n';
-    buf[offset+1] = 0;
-
-    avio_write(s->pb, buf, strlen(buf));
-    avio_flush(s->pb);
-}
-
 #define OFFSET(x) offsetof(struct HashContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 #if CONFIG_HASH_MUXER || CONFIG_FRAMEHASH_MUXER
@@ -92,11 +73,12 @@ static int hash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 static int hash_write_trailer(struct AVFormatContext *s)
 {
     struct HashContext *c = s->priv_data;
-    char buf[256];
-    av_strlcpy(buf, av_hash_get_name(c->hash), sizeof(buf) - 200);
-    av_strlcat(buf, "=", sizeof(buf) - 200);
+    char buf[AV_HASH_MAX_SIZE*2+128];
+    snprintf(buf, sizeof(buf) - 200, "%s=", av_hash_get_name(c->hash));
 
-    hash_finish(s, buf);
+    av_hash_final_hex(c->hash, buf + strlen(buf), sizeof(buf) - strlen(buf));
+    av_strlcatf(buf, sizeof(buf), "\n");
+    avio_write(s->pb, buf, strlen(buf));
 
     av_hash_freep(&c->hash);
     return 0;
