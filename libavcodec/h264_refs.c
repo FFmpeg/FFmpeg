@@ -355,7 +355,7 @@ int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContex
 void ff_h264_fill_mbaff_ref_list(H264SliceContext *sl)
 {
     int list, i, j;
-    for (list = 0; list < sl->list_count; list++) { //FIXME try list_count
+    for (list = 0; list < sl->list_count; list++) {
         for (i = 0; i < sl->ref_count[list]; i++) {
             H264Ref *frame = &sl->ref_list[list][i];
             H264Ref *field = &sl->ref_list[list][16 + 2 * i];
