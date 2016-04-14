@@ -762,7 +762,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
 
     ret = decode_frame(avctx, databuf, (float **)frame->extended_data);
     if (ret) {
-        av_log(NULL, AV_LOG_ERROR, "Frame decoding error!\n");
+        av_log(avctx, AV_LOG_ERROR, "Frame decoding error!\n");
         return ret;
     }
 
@@ -843,7 +843,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->scrambled_stream    = 1;
 
     } else {
-        av_log(NULL, AV_LOG_ERROR, "Unknown extradata size %d.\n",
+        av_log(avctx, AV_LOG_ERROR, "Unknown extradata size %d.\n",
                avctx->extradata_size);
         return AVERROR(EINVAL);
     }
