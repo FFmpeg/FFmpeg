@@ -29,7 +29,7 @@
 
 #include "adpcm_data.h"
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 static int predict_table_init = 0;
@@ -118,7 +118,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame_ptr, AVPacket *pkt)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     AVFrame *frame = data;
     int16_t pcm_data[2];
     uint32_t samples;
@@ -129,19 +129,19 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (pkt->size < 13)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = init_get_bits8(&gb, pkt->data, pkt->size)) < 0)
+    if ((ret = bitstream_init8(&bc, pkt->data, pkt->size)) < 0)
         return ret;
 
-    samples = get_bits_long(&gb, 32);
+    samples = bitstream_read(&bc, 32);
     if (samples == 0xffffffff) {
-        skip_bits_long(&gb, 32);
-        samples = get_bits_long(&gb, 32);
+        bitstream_skip(&bc, 32);
+        samples = bitstream_read(&bc, 32);
     }
 
     if (samples > pkt->size * 2)
         return AVERROR_INVALIDDATA;
 
-    channel_hint[0] = get_sbits(&gb, 8);
+    channel_hint[0] = bitstream_read_signed(&bc, 8);
     if (channel_hint[0] & 0x80) {
         channel_hint[0] = ~channel_hint[0];
         channels = 2;
@@ -149,10 +149,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     avctx->channels = channels;
     avctx->channel_layout = (channels == 2) ? AV_CH_LAYOUT_STEREO
                                             : AV_CH_LAYOUT_MONO;
-    pcm_data[0] = get_sbits(&gb, 16);
+    pcm_data[0] = bitstream_read_signed(&bc, 16);
     if (channels > 1) {
-        channel_hint[1] = get_sbits(&gb, 8);
-        pcm_data[1]     = get_sbits(&gb, 16);
+        channel_hint[1] = bitstream_read_signed(&bc, 8);
+        pcm_data[1]     = bitstream_read_signed(&bc, 16);
     }
 
     frame->nb_samples = samples;
@@ -170,7 +170,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
             step_index  = av_clip(step_index, 0, 88);
             lookup_size = size_table[step_index];
-            lookup      = get_bits(&gb, lookup_size);
+            lookup      = bitstream_read(&bc, lookup_size);
             highbit     = 1 << (lookup_size - 1);
             lowbits     = highbit - 1;
 
@@ -180,7 +180,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 highbit = 0;
 
             if (lookup == lowbits) {
-                output = get_sbits(&gb, 16);
+                output = bitstream_read_signed(&bc, 16);
             } else {
                 int predict_index, diff;
 
