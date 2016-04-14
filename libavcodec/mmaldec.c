@@ -333,6 +333,7 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     MMAL_STATUS_T status;
     MMAL_ES_FORMAT_T *format_in;
     MMAL_COMPONENT_T *decoder;
+    char tmp[32];
     int ret = 0;
 
     bcm_host_init();
@@ -357,16 +358,13 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MPEG2VIDEO:
         format_in->encoding = MMAL_ENCODING_MP2V;
-        av_log(avctx, AV_LOG_DEBUG, "Use MMAL MP2V encoding\n");
         break;
     case AV_CODEC_ID_VC1:
         format_in->encoding = MMAL_ENCODING_WVC1;
-        av_log(avctx, AV_LOG_DEBUG, "Use MMAL WVC1 encoding\n");
         break;
     case AV_CODEC_ID_H264:
     default:
         format_in->encoding = MMAL_ENCODING_H264;
-        av_log(avctx, AV_LOG_DEBUG, "Use MMAL H264 encoding\n");
         break;
     }
     format_in->es->video.width = FFALIGN(avctx->width, 32);
@@ -378,6 +376,9 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     format_in->es->video.par.num = avctx->sample_aspect_ratio.num;
     format_in->es->video.par.den = avctx->sample_aspect_ratio.den;
     format_in->flags = MMAL_ES_FORMAT_FLAG_FRAMED;
+
+    av_get_codec_tag_string(tmp, sizeof(tmp), format_in->encoding);
+    av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n", tmp);
 
     if ((status = mmal_port_format_commit(decoder->input[0])))
         goto fail;
