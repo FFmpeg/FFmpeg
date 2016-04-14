@@ -2134,6 +2134,11 @@ enum AVPixelFormat av_get_pix_fmt(const char *name)
         snprintf(name2, sizeof(name2), "%s%s", name, X_NE("be", "le"));
         pix_fmt = get_pix_fmt_internal(name2);
     }
+
+#if FF_API_VAAPI
+    if (pix_fmt == AV_PIX_FMT_NONE && !strcmp(name, "vaapi"))
+        pix_fmt = AV_PIX_FMT_VAAPI;
+#endif
     return pix_fmt;
 }
 
