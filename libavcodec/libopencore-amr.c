@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
@@ -112,13 +114,13 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     packet_size = block_size[dec_mode] + 1;
 
     if (packet_size > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
+        av_log(avctx, AV_LOG_ERROR, "AMR frame too short (%d, should be %d)\n",
                buf_size, packet_size);
         return AVERROR_INVALIDDATA;
     }
 
-    ff_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
-              packet_size, buf[0], buf[1], buf[2], buf[3]);
+    ff_dlog(avctx, "packet_size=%d buf= 0x%"PRIx8" %"PRIx8" %"PRIx8" %"PRIx8"\n",
+            packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
     Decoder_Interface_Decode(s->dec_state, buf, (short *)frame->data[0], 0);
 
@@ -268,8 +270,8 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, samples,
                                        avpkt->data, 0);
-    ff_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
-            written, s->enc_mode, frame[0]);
+    ff_dlog(avctx, "amr_nb_encode_frame encoded %d bytes, bitrate %d, first byte was %#02"PRIx8"\n",
+            written, s->enc_mode, *frame->data[0]);
 
     /* Get the next frame pts/duration */
     ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
@@ -344,7 +346,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     packet_size = block_size[mode];
 
     if (packet_size > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
+        av_log(avctx, AV_LOG_ERROR, "AMR frame too short (%d, should be %d)\n",
                buf_size, packet_size + 1);
         return AVERROR_INVALIDDATA;
     }
