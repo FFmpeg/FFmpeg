@@ -28,12 +28,17 @@
 #include "internal.h"
 #include "libavutil/opt.h"
 
+typedef struct RenameIO {
+    AVIOContext *pb;
+    char filename[1024];
+    char tmp[1024];
+} RenameIO;
+
 typedef struct VideoMuxData {
     const AVClass *class;  /**< Class for private options. */
     int img_number;
     int is_pipe;
     char path[1024];
-    char tmp[1024];
     int update;
 } VideoMuxData;
 
@@ -42,7 +47,6 @@ static int write_header(AVFormatContext *s)
     VideoMuxData *img = s->priv_data;
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
-    snprintf(img->tmp, sizeof(img->tmp), "%s.tmp", s->filename);
 
     /* find format */
     if (s->oformat->flags & AVFMT_NOFILE)
@@ -53,10 +57,28 @@ static int write_header(AVFormatContext *s)
     return 0;
 }
 
+static int open_temporary(AVFormatContext *s, RenameIO *out, const char *filename)
+{
+    snprintf(out->tmp, sizeof(out->tmp), "%s.tmp", filename);
+    av_strlcpy(out->filename, filename, sizeof(out->filename));
+    if (s->io_open(s, &out->pb, out->tmp, AVIO_FLAG_WRITE, NULL) < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", out->tmp);
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
+static void close_and_rename(AVFormatContext *s, RenameIO *out)
+{
+    ff_format_io_close(s, &out->pb);
+    ff_rename(out->tmp, out->filename);
+}
+
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoMuxData *img = s->priv_data;
-    AVIOContext *pb[3];
+    RenameIO out[3];
     char filename[1024];
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     int i;
@@ -72,26 +94,24 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for (i = 0; i < 3; i++) {
-            if (s->io_open(s, &pb[i], img->tmp, AVIO_FLAG_WRITE, NULL) < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->tmp);
-                return AVERROR(EIO);
-            }
-
+            int ret = open_temporary(s, &out[i], filename);
+            if (ret < 0)
+                return ret;
             if (par->codec_id != AV_CODEC_ID_RAWVIDEO)
                 break;
             filename[strlen(filename) - 1] = 'U' + i;
         }
     } else {
-        pb[0] = s->pb;
+        out[0].pb = s->pb;
     }
 
     if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
         int ysize = par->width * par->height;
-        avio_write(pb[0], pkt->data, ysize);
-        avio_write(pb[1], pkt->data + ysize,                           (pkt->size - ysize) / 2);
-        avio_write(pb[2], pkt->data + ysize + (pkt->size - ysize) / 2, (pkt->size - ysize) / 2);
-        ff_format_io_close(s, &pb[1]);
-        ff_format_io_close(s, &pb[2]);
+        avio_write(out[0].pb, pkt->data, ysize);
+        avio_write(out[1].pb, pkt->data + ysize,                           (pkt->size - ysize) / 2);
+        avio_write(out[2].pb, pkt->data + ysize + (pkt->size - ysize) / 2, (pkt->size - ysize) / 2);
+        close_and_rename(s, &out[1]);
+        close_and_rename(s, &out[2]);
     } else {
         if (ff_guess_image2_codec(s->filename) == AV_CODEC_ID_JPEG2000) {
             AVStream *st = s->streams[0];
@@ -100,15 +120,15 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 if (pkt->size < 8 ||
                     AV_RL32(pkt->data + 4) != MKTAG('j', 'p', '2', 'c'))
                     goto error;
-                avio_wb32(pb[0], 12);
-                ffio_wfourcc(pb[0], "jP  ");
-                avio_wb32(pb[0], 0x0D0A870A); // signature
-                avio_wb32(pb[0], 20);
-                ffio_wfourcc(pb[0], "ftyp");
-                ffio_wfourcc(pb[0], "jp2 ");
-                avio_wb32(pb[0], 0);
-                ffio_wfourcc(pb[0], "jp2 ");
-                avio_write(pb[0], st->codecpar->extradata, st->codecpar->extradata_size);
+                avio_wb32(out[0].pb, 12);
+                ffio_wfourcc(out[0].pb, "jP  ");
+                avio_wb32(out[0].pb, 0x0D0A870A); // signature
+                avio_wb32(out[0].pb, 20);
+                ffio_wfourcc(out[0].pb, "ftyp");
+                ffio_wfourcc(out[0].pb, "jp2 ");
+                avio_wb32(out[0].pb, 0);
+                ffio_wfourcc(out[0].pb, "jp2 ");
+                avio_write(out[0].pb, st->codecpar->extradata, st->codecpar->extradata_size);
             } else if (pkt->size < 8 ||
                        (!st->codecpar->extradata_size &&
                         AV_RL32(pkt->data + 4) != MKTAG('j', 'P', ' ', ' '))) { // signature
@@ -117,12 +137,11 @@ error:
                 return -1;
             }
         }
-        avio_write(pb[0], pkt->data, pkt->size);
+        avio_write(out[0].pb, pkt->data, pkt->size);
     }
-    avio_flush(pb[0]);
+    avio_flush(out[0].pb);
     if (!img->is_pipe) {
-        ff_format_io_close(s, &pb[0]);
-        ff_rename(img->tmp, filename);
+        close_and_rename(s, &out[0]);
     }
 
     img->img_number++;
