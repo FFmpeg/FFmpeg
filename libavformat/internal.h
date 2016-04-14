@@ -401,7 +401,7 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
  * Set the timebase for each stream from the corresponding codec timebase and
  * print it.
  */
-int ff_framehash_write_header(AVFormatContext *s, int version);
+int ff_framehash_write_header(AVFormatContext *s);
 
 /**
  * Read a transport packet from a media file.

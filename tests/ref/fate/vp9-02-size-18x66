@@ -1,7 +1,11 @@
 #format: frame checksums
-#version: 1
+#version: 2
 #hash: MD5
 #tb 0: 1001/30000
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 18x66
+#sar 0: 1/1
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,        1,     1782, c3fc4a1593b9cc2f3752106af8539386
 0,          1,          1,        1,     1782, 7f2ffe6bc1750f6749bb5ad12cbaf34b
