@@ -72,12 +72,6 @@ static int yop_read_header(AVFormatContext *s)
     if (ff_alloc_extradata(video_stream->codecpar, 8))
         return AVERROR(ENOMEM);
 
-    video_stream->codecpar->extradata = av_mallocz(8 + AV_INPUT_BUFFER_PADDING_SIZE);
-
-    if (!video_stream->codecpar->extradata)
-        return AVERROR(ENOMEM);
-    video_stream->codecpar->extradata_size = 8;
-
     // Audio
     audio_par                 = audio_stream->codecpar;
     audio_par->codec_type     = AVMEDIA_TYPE_AUDIO;
