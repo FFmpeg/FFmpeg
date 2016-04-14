@@ -1568,7 +1568,7 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         st->codecpar->codec_id == AV_CODEC_ID_SPEEX) {
         // pass all frma atom to codec, needed at least for QDMC and QDM2
         av_freep(&st->codecpar->extradata);
-        ret = ff_get_extradata(st->codecpar, pb, atom.size);
+        ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size);
         if (ret < 0)
             return ret;
     } else if (atom.size > 8) { /* to read frma, esds atoms */
@@ -1635,7 +1635,7 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
     av_freep(&st->codecpar->extradata);
-    ret = ff_get_extradata(st->codecpar, pb, atom.size);
+    ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size);
     if (ret < 0)
         return ret;
 
@@ -1661,7 +1661,7 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_seek(pb, 6, SEEK_CUR);
     av_freep(&st->codecpar->extradata);
-    ret = ff_get_extradata(st->codecpar, pb, atom.size - 7);
+    ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size - 7);
     if (ret < 0)
         return ret;
 
@@ -1689,7 +1689,7 @@ static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_skip(pb, 40);
     av_freep(&st->codecpar->extradata);
-    ret = ff_get_extradata(st->codecpar, pb, atom.size - 40);
+    ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size - 40);
     if (ret < 0)
         return ret;
 
@@ -2028,7 +2028,7 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
         if ((int)size != size)
             return AVERROR(ENOMEM);
 
-        ret = ff_get_extradata(st->codecpar, pb, size);
+        ret = ff_get_extradata(c->fc, st->codecpar, pb, size);
         if (ret < 0)
             return ret;
         if (size > 16) {

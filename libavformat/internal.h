@@ -522,7 +522,7 @@ int ff_alloc_extradata(AVCodecParameters *par, int size);
  * @param size size of extradata
  * @return >= 0 if OK, AVERROR_xxx on error
  */
-int ff_get_extradata(AVCodecParameters *par, AVIOContext *pb, int size);
+int ff_get_extradata(AVFormatContext *s, AVCodecParameters *par, AVIOContext *pb, int size);
 
 /**
  * add frame for rfps calculation.

@@ -129,7 +129,7 @@ static int read_header(AVFormatContext *s)
         vst->codecpar->codec_id = AV_CODEC_ID_NONE;
     }
 
-    if (ff_get_extradata(vst->codecpar, pb, 4) < 0)
+    if (ff_get_extradata(s, vst->codecpar, pb, 4) < 0)
         return AVERROR(ENOMEM);
 
     bink->num_audio_tracks = avio_rl32(pb);

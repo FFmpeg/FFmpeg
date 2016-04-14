@@ -127,7 +127,7 @@ static int rsd_read_header(AVFormatContext *s)
 
         start = avio_rl32(pb);
 
-        if ((ret = ff_get_extradata(par, s->pb, 32)) < 0)
+        if ((ret = ff_get_extradata(s, par, s->pb, 32)) < 0)
             return ret;
         if (pb->seekable)
             st->duration = av_get_audio_frame_duration2(par, avio_size(pb) - start);

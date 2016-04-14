@@ -168,7 +168,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         }
     } else {
         av_freep(&st->codecpar->extradata);
-        if (ff_get_extradata(st->codecpar, pb, size) < 0)
+        if (ff_get_extradata(s, st->codecpar, pb, size) < 0)
             return AVERROR(ENOMEM);
     }
 

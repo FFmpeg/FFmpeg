@@ -205,7 +205,7 @@ static int idcin_read_header(AVFormatContext *s)
     st->codecpar->height = height;
 
     /* load up the Huffman tables into extradata */
-    if ((ret = ff_get_extradata(st->codecpar, pb, HUFFMAN_TABLE_SIZE)) < 0)
+    if ((ret = ff_get_extradata(s, st->codecpar, pb, HUFFMAN_TABLE_SIZE)) < 0)
         return ret;
 
     if (idcin->audio_present) {

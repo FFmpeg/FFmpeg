@@ -53,7 +53,7 @@ static int apc_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = avio_rl32(pb);
 
     /* initial predictor values for adpcm decoder */
-    if (ff_get_extradata(st->codecpar, pb, 2 * 4) < 0)
+    if (ff_get_extradata(s, st->codecpar, pb, 2 * 4) < 0)
         return AVERROR(ENOMEM);
 
     if (avio_rl32(pb)) {

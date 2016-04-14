@@ -3117,7 +3117,7 @@ int ff_alloc_extradata(AVCodecParameters *par, int size)
     return ret;
 }
 
-int ff_get_extradata(AVCodecParameters *par, AVIOContext *pb, int size)
+int ff_get_extradata(AVFormatContext *s, AVCodecParameters *par, AVIOContext *pb, int size)
 {
     int ret = ff_alloc_extradata(par, size);
     if (ret < 0)
@@ -3126,7 +3126,7 @@ int ff_get_extradata(AVCodecParameters *par, AVIOContext *pb, int size)
     if (ret != size) {
         av_freep(&par->extradata);
         par->extradata_size = 0;
-        av_log(par, AV_LOG_ERROR, "Failed to read extradata of size %d\n", size);
+        av_log(s, AV_LOG_ERROR, "Failed to read extradata of size %d\n", size);
         return ret < 0 ? ret : AVERROR_INVALIDDATA;
     }
 

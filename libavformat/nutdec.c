@@ -463,7 +463,7 @@ static int decode_stream_header(NUTContext *nut)
 
     GET_V(st->codecpar->extradata_size, tmp < (1 << 30));
     if (st->codecpar->extradata_size) {
-        if (ff_get_extradata(st->codecpar, bc, st->codecpar->extradata_size) < 0)
+        if (ff_get_extradata(s, st->codecpar, bc, st->codecpar->extradata_size) < 0)
             return AVERROR(ENOMEM);
     }
 

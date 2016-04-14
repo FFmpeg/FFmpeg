@@ -94,7 +94,7 @@ static int adx_read_header(AVFormatContext *s)
     c->header_size = avio_rb16(s->pb) + 4;
     avio_seek(s->pb, -4, SEEK_CUR);
 
-    if (ff_get_extradata(par, s->pb, c->header_size) < 0)
+    if (ff_get_extradata(s, par, s->pb, c->header_size) < 0)
         return AVERROR(ENOMEM);
 
     if (par->extradata_size < 12) {

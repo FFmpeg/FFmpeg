@@ -659,7 +659,7 @@ static int flv_read_close(AVFormatContext *s)
 static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 {
     av_freep(&st->codecpar->extradata);
-    if (ff_get_extradata(st->codecpar, s->pb, size) < 0)
+    if (ff_get_extradata(s, st->codecpar, s->pb, size) < 0)
         return AVERROR(ENOMEM);
     return 0;
 }

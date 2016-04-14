@@ -252,7 +252,7 @@ static int mpc8_read_header(AVFormatContext *s)
     st->codecpar->codec_id = AV_CODEC_ID_MUSEPACK8;
     st->codecpar->bits_per_coded_sample = 16;
 
-    if (ff_get_extradata(st->codecpar, pb, 2) < 0)
+    if (ff_get_extradata(s, st->codecpar, pb, 2) < 0)
         return AVERROR(ENOMEM);
 
     st->codecpar->channels = (st->codecpar->extradata[1] >> 4) + 1;

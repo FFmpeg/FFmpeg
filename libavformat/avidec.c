@@ -762,7 +762,7 @@ static int avi_read_header(AVFormatContext *s)
                             st->codecpar->extradata_size = esize - 10 * 4;
                         } else
                             st->codecpar->extradata_size =  size - 10 * 4;
-                        if (ff_get_extradata(st->codecpar, pb, st->codecpar->extradata_size) < 0)
+                        if (ff_get_extradata(s, st->codecpar, pb, st->codecpar->extradata_size) < 0)
                             return AVERROR(ENOMEM);
                     }
 
@@ -917,7 +917,7 @@ static int avi_read_header(AVFormatContext *s)
                 st = s->streams[stream_index];
 
                 if (size<(1<<30)) {
-                    if (ff_get_extradata(st->codecpar, pb, size) < 0)
+                    if (ff_get_extradata(s, st->codecpar, pb, size) < 0)
                         return AVERROR(ENOMEM);
                 }
 

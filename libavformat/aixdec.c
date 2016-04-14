@@ -77,7 +77,7 @@ static int aix_read_header(AVFormatContext *s)
         if (size <= 8)
             return AVERROR_INVALIDDATA;
         avio_skip(s->pb, 8);
-        ff_get_extradata(s->streams[i]->codecpar, s->pb, size - 8);
+        ff_get_extradata(s, s->streams[i]->codecpar, s->pb, size - 8);
     }
 
     return 0;

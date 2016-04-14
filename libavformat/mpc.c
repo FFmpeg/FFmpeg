@@ -95,7 +95,7 @@ static int mpc_read_header(AVFormatContext *s)
     st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
     st->codecpar->bits_per_coded_sample = 16;
 
-    if (ff_get_extradata(st->codecpar, s->pb, 16) < 0)
+    if (ff_get_extradata(s, st->codecpar, s->pb, 16) < 0)
         return AVERROR(ENOMEM);
     st->codecpar->sample_rate = mpc_rate[st->codecpar->extradata[2] & 3];
     avpriv_set_pts_info(st, 32, MPC_FRAMESIZE, st->codecpar->sample_rate);

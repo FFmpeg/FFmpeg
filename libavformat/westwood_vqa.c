@@ -101,7 +101,7 @@ static int wsvqa_read_header(AVFormatContext *s)
     avio_seek(pb, 20, SEEK_SET);
 
     /* the VQA header needs to go to the decoder */
-    if (ff_get_extradata(st->codecpar, pb, VQA_HEADER_SIZE) < 0)
+    if (ff_get_extradata(s, st->codecpar, pb, VQA_HEADER_SIZE) < 0)
         return AVERROR(ENOMEM);
     header = st->codecpar->extradata;
     st->codecpar->width = AV_RL16(&header[6]);
