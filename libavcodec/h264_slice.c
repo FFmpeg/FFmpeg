@@ -1352,25 +1352,16 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
            return ret;
     }
 
+    sl->pwt.use_weight = 0;
+    for (i = 0; i < 2; i++) {
+        sl->pwt.luma_weight_flag[i]   = 0;
+        sl->pwt.chroma_weight_flag[i] = 0;
+    }
     if ((pps->weighted_pred && sl->slice_type_nos == AV_PICTURE_TYPE_P) ||
         (pps->weighted_bipred_idc == 1 &&
          sl->slice_type_nos == AV_PICTURE_TYPE_B))
         ff_h264_pred_weight_table(&sl->gb, sps, sl->ref_count,
                                   sl->slice_type_nos, &sl->pwt);
-    else if (pps->weighted_bipred_idc == 2 &&
-             sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-        implicit_weight_table(h, sl, -1);
-        if (FRAME_MBAFF(h)) {
-            implicit_weight_table(h, sl, 0);
-            implicit_weight_table(h, sl, 1);
-        }
-    } else {
-        sl->pwt.use_weight = 0;
-        for (i = 0; i < 2; i++) {
-            sl->pwt.luma_weight_flag[i]   = 0;
-            sl->pwt.chroma_weight_flag[i] = 0;
-        }
-    }
 
     // If frame-mt is enabled, only update mmco tables for the first slice
     // in a field. Subsequent slices can temporarily clobber h->mmco_index
@@ -1457,6 +1448,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     ret = h264_slice_header_parse(h, sl);
     if (ret < 0)
         return ret;
+
+    if (h->ps.pps->weighted_bipred_idc == 2 &&
+        sl->slice_type_nos == AV_PICTURE_TYPE_B) {
+        implicit_weight_table(h, sl, -1);
+        if (FRAME_MBAFF(h)) {
+            implicit_weight_table(h, sl, 0);
+            implicit_weight_table(h, sl, 1);
+        }
+    }
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !sl->direct_spatial_mv_pred)
         ff_h264_direct_dist_scale_factor(h, sl);
