@@ -67,6 +67,7 @@ typedef struct FFBufferRef {
 typedef struct MMALDecodeContext {
     AVClass *av_class;
     int extra_buffers;
+    int extra_decoder_buffers;
 
     MMAL_COMPONENT_T *decoder;
     MMAL_QUEUE_T *queue_decoded_frames;
@@ -379,6 +380,13 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
 
     av_get_codec_tag_string(tmp, sizeof(tmp), format_in->encoding);
     av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n", tmp);
+
+#if HAVE_MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
+    if (mmal_port_parameter_set_uint32(decoder->input[0], MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS,
+                                       -1 - ctx->extra_decoder_buffers)) {
+        av_log(avctx, AV_LOG_WARNING, "Could not set input buffering limit.\n");
+    }
+#endif
 
     if ((status = mmal_port_format_commit(decoder->input[0])))
         goto fail;
@@ -796,6 +804,7 @@ AVHWAccel ff_vc1_mmal_hwaccel = {
 
 static const AVOption options[]={
     {"extra_buffers", "extra buffers", offsetof(MMALDecodeContext, extra_buffers), AV_OPT_TYPE_INT, {.i64 = 10}, 0, 256, 0},
+    {"extra_decoder_buffers", "extra MMAL internal buffered frames", offsetof(MMALDecodeContext, extra_decoder_buffers), AV_OPT_TYPE_INT, {.i64 = 10}, 0, 256, 0},
     {NULL}
 };
 
