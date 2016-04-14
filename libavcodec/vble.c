@@ -28,7 +28,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "huffyuvdsp.h"
 #include "internal.h"
 #include "mathops.h"
@@ -41,18 +41,18 @@ typedef struct VBLEContext {
     uint8_t        *val; /* First holds the lengths of vlc symbols and then their values */
 } VBLEContext;
 
-static uint8_t vble_read_reverse_unary(GetBitContext *gb)
+static uint8_t vble_read_reverse_unary(BitstreamContext *bc)
 {
     /* At most we need to read 9 bits total to get indices up to 8 */
-    uint8_t val = show_bits(gb, 8);
+    uint8_t val = bitstream_peek(bc, 8);
 
     if (val) {
         val = 7 - av_log2_16bit(ff_reverse[val]);
-        skip_bits(gb, val + 1);
+        bitstream_skip(bc, val + 1);
         return val;
     } else {
-        skip_bits(gb, 8);
-        if (get_bits1(gb))
+        bitstream_skip(bc, 8);
+        if (bitstream_read_bit(bc))
             return 8;
     }
 
@@ -60,13 +60,13 @@ static uint8_t vble_read_reverse_unary(GetBitContext *gb)
     return UINT8_MAX;
 }
 
-static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
+static int vble_unpack(VBLEContext *ctx, BitstreamContext *bc)
 {
     int i;
 
     /* Read all the lengths in first */
     for (i = 0; i < ctx->size; i++) {
-        ctx->val[i] = vble_read_reverse_unary(gb);
+        ctx->val[i] = vble_read_reverse_unary(bc);
 
         if (ctx->val[i] == UINT8_MAX)
             return -1;
@@ -74,12 +74,12 @@ static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
 
     for (i = 0; i < ctx->size; i++) {
         /* Check we have enough bits left */
-        if (get_bits_left(gb) < ctx->val[i])
+        if (bitstream_bits_left(bc) < ctx->val[i])
             return -1;
 
         /* get_bits can't take a length of 0 */
         if (ctx->val[i])
-            ctx->val[i] = (1 << ctx->val[i]) + get_bits(gb, ctx->val[i]) - 1;
+            ctx->val[i] = (1 << ctx->val[i]) + bitstream_read(bc, ctx->val[i]) - 1;
     }
 
     return 0;
@@ -118,7 +118,7 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 {
     VBLEContext *ctx = avctx->priv_data;
     AVFrame *pic     = data;
-    GetBitContext gb;
+    BitstreamContext bc;
     const uint8_t *src = avpkt->data;
     int version;
     int offset = 0;
@@ -140,10 +140,10 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (version != 1)
         av_log(avctx, AV_LOG_WARNING, "Unsupported VBLE Version: %d\n", version);
 
-    init_get_bits(&gb, src + 4, (avpkt->size - 4) * 8);
+    bitstream_init(&bc, src + 4, (avpkt->size - 4) * 8);
 
     /* Unpack */
-    if (vble_unpack(ctx, &gb) < 0) {
+    if (vble_unpack(ctx, &bc) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid Code\n");
         return AVERROR_INVALIDDATA;
     }
