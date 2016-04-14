@@ -181,8 +181,6 @@ void ff_vaapi_common_end_frame(AVCodecContext *avctx)
 {
     struct vaapi_context * const vactx = avctx->hwaccel_context;
 
-    ff_dlog(avctx, "ff_vaapi_common_end_frame()\n");
-
     destroy_buffers(vactx->display, &vactx->pic_param_buf_id, 1);
     destroy_buffers(vactx->display, &vactx->iq_matrix_buf_id, 1);
     destroy_buffers(vactx->display, &vactx->bitplane_buf_id, 1);

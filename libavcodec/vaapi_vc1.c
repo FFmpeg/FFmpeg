@@ -151,8 +151,6 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
     struct vaapi_context * const vactx = avctx->hwaccel_context;
     VAPictureParameterBufferVC1 *pic_param;
 
-    ff_dlog(avctx, "vaapi_vc1_start_frame()\n");
-
     vactx->slice_param_size = sizeof(VASliceParameterBufferVC1);
 
     /* Fill in VAPictureParameterBufferVC1 */
@@ -316,8 +314,6 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
     VC1Context * const v = avctx->priv_data;
     MpegEncContext * const s = &v->s;
     VASliceParameterBufferVC1 *slice_param;
-
-    ff_dlog(avctx, "vaapi_vc1_decode_slice(): buffer %p, size %d\n", buffer, size);
 
     /* Current bit buffer is beyond any marker for VC-1, so skip it */
     if (avctx->codec_id == AV_CODEC_ID_VC1 && IS_MARKER(AV_RB32(buffer))) {
