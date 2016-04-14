@@ -28,8 +28,8 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
 #include "tscc2data.h"
@@ -41,7 +41,7 @@ typedef struct TSCC2Context {
     uint8_t        *slice_quants;
     int            quant[2];
     int            q[2][3];
-    GetBitContext  gb;
+    BitstreamContext bc;
 
     VLC            dc_vlc, nc_vlc[NUM_VLC_SETS], ac_vlc[NUM_VLC_SETS];
     int            block[16];
@@ -127,21 +127,21 @@ static void tscc2_idct4_put(int *in, int q[3], uint8_t *dst, int stride)
 static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
                            uint8_t *dst, int stride, int plane)
 {
-    GetBitContext *gb = &c->gb;
+    BitstreamContext *bc = &c->bc;
     int prev_dc, dc, nc, ac, bpos, val;
     int i, j, k, l;
 
-    if (get_bits1(gb)) {
-        if (get_bits1(gb)) {
-            val = get_bits(gb, 8);
+    if (bitstream_read_bit(bc)) {
+        if (bitstream_read_bit(bc)) {
+            val = bitstream_read(bc, 8);
             for (i = 0; i < 8; i++, dst += stride)
                 memset(dst, val, 16);
         } else {
-            if (get_bits_left(gb) < 16 * 8 * 8)
+            if (bitstream_bits_left(bc) < 16 * 8 * 8)
                 return AVERROR_INVALIDDATA;
             for (i = 0; i < 8; i++) {
                 for (j = 0; j < 16; j++)
-                    dst[j] = get_bits(gb, 8);
+                    dst[j] = bitstream_read(bc, 8);
                 dst += stride;
             }
         }
@@ -152,30 +152,30 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
     for (j = 0; j < 2; j++) {
         for (k = 0; k < 4; k++) {
             if (!(j | k)) {
-                dc = get_bits(gb, 8);
+                dc = bitstream_read(bc, 8);
             } else {
-                dc = get_vlc2(gb, c->dc_vlc.table, 9, 2);
+                dc = bitstream_read_vlc(bc, c->dc_vlc.table, 9, 2);
                 if (dc == -1)
                     return AVERROR_INVALIDDATA;
                 if (dc == 0x100)
-                    dc = get_bits(gb, 8);
+                    dc = bitstream_read(bc, 8);
             }
             dc          = (dc + prev_dc) & 0xFF;
             prev_dc     = dc;
             c->block[0] = dc;
 
-            nc = get_vlc2(gb, c->nc_vlc[vlc_set].table, 9, 1);
+            nc = bitstream_read_vlc(bc, c->nc_vlc[vlc_set].table, 9, 1);
             if (nc == -1)
                 return AVERROR_INVALIDDATA;
 
             bpos = 1;
             memset(c->block + 1, 0, 15 * sizeof(*c->block));
             for (l = 0; l < nc; l++) {
-                ac = get_vlc2(gb, c->ac_vlc[vlc_set].table, 9, 2);
+                ac = bitstream_read_vlc(bc, c->ac_vlc[vlc_set].table, 9, 2);
                 if (ac == -1)
                     return AVERROR_INVALIDDATA;
                 if (ac == 0x1000)
-                    ac = get_bits(gb, 12);
+                    ac = bitstream_read(bc, 12);
                 bpos += ac & 0xF;
                 if (bpos >= 16)
                     return AVERROR_INVALIDDATA;
@@ -195,7 +195,7 @@ static int tscc2_decode_slice(TSCC2Context *c, int mb_y,
     int i, mb_x, q, ret;
     int off;
 
-    init_get_bits(&c->gb, buf, buf_size * 8);
+    bitstream_init(&c->bc, buf, buf_size * 8);
 
     for (mb_x = 0; mb_x < c->mb_width; mb_x++) {
         q = c->slice_quants[mb_x + c->mb_width * mb_y];
