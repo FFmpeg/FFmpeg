@@ -130,7 +130,7 @@ static const uint16_t bark_tab_s44_128[] = {
 /**
  * TwinVQ codebooks. They are coded in a struct so we can use code such as
  *
- * float val = tab.fcb0808l[get_bits(gb, 12)];
+ * float val = tab.fcb0808l[bitstream_read(bc, 12)];
  *
  * without risking a segfault on malformed files.
  */
