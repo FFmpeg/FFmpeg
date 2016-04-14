@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.21.0 - hwcontext.h
+  Add AVHWFramesConstraints and associated API.
+
 2016-04-11 - xxxxxxx - lavf 57.33.0 - avformat.h
   Add AVStream.codecpar, deprecate AVStream.codec.
 
