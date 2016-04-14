@@ -5852,6 +5852,10 @@ enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
     disable vaapi
 
+enabled vaapi &&
+    check_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
+    disable vaapi
+
 enabled vaapi && enabled xlib &&
     check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
     enable vaapi_x11
