@@ -55,6 +55,7 @@ version <next>:
 - libnpp/CUDA-accelerated format conversion and scaling
 - VAAPI-accelerate H.264/HEVC/MJPEG encoding
 - Generic OpenMAX IL encoder with support for Raspberry Pi
+- MMAL-accelerated MPEG-2 decoding
 
 
 version 11:
