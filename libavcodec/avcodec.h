@@ -3850,8 +3850,8 @@ typedef struct AVCodecParameters {
      * sample format has more bits, the least significant bits are additional
      * padding bits, which are always 0. Use right shifts to reduce the sample
      * to its actual size. For example, audio formats with 24 bit samples will
-     * have bits_per_raw_sample set to 24, and format set to AV_SAMPLEFMT_S32.
-     * To get the original sample use "(uint32_t)sample >> 8"."
+     * have bits_per_raw_sample set to 24, and format set to AV_SAMPLE_FMT_S32.
+     * To get the original sample use "(int32_t)sample >> 8"."
      *
      * For ADPCM this might be 12 or 16 or similar
      * Can be 0
