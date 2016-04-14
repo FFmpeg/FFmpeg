@@ -29,7 +29,6 @@
 #include "libavutil/pixdesc.h"
 #include "metadata.h"
 #include "id3v2.h"
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"

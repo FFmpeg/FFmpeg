@@ -22,15 +22,11 @@
  */
 
 #include <limits.h>
-#include "libavutil/avassert.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "h264.h"
 #include "vc1.h"
-
-#undef NDEBUG
-#include <assert.h>
-
 #include "vdpau.h"
 #include "vdpau_internal.h"
 

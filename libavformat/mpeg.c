@@ -23,9 +23,6 @@
 #include "internal.h"
 #include "mpeg.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 /*********************************************/
 /* demux code */
 

@@ -89,7 +89,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <assert.h>
 
 #include "config.h"
 #include "libswscale/rgb2rgb.h"

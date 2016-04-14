@@ -37,10 +37,6 @@
 #include "internal.h"
 #include "libschroedinger.h"
 
-#undef NDEBUG
-#include <assert.h>
-
-
 #include <schroedinger/schro.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schrovideoformat.h>

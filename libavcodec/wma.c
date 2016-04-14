@@ -29,9 +29,6 @@
 #include "wma_freqs.h"
 #include "wmadata.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 /* XXX: use same run/length optimization as mpeg decoders */
 // FIXME maybe split decode / encode or pass flag
 static av_cold int init_coef_vlc(VLC *vlc, uint16_t **prun_table,

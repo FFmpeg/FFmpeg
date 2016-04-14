@@ -54,9 +54,6 @@
 #include "qtpalette.h"
 
 
-#undef NDEBUG
-#include <assert.h>
-
 /* those functions parse an atom */
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {

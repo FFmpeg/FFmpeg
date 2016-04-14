@@ -22,8 +22,8 @@
 #include <opus.h>
 #include <opus_multistream.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "vorbis.h"

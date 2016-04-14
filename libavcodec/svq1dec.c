@@ -40,9 +40,6 @@
 #include "mathops.h"
 #include "svq1.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 static VLC svq1_block_type;
 static VLC svq1_motion_component;
 static VLC svq1_intra_multistage[6];

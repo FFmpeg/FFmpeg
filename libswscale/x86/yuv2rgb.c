@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <assert.h>
 
 #include "config.h"
 #include "libswscale/rgb2rgb.h"
