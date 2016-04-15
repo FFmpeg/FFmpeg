@@ -1357,6 +1357,10 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
     else if (pps->weighted_bipred_idc == 2 &&
              sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         implicit_weight_table(h, sl, -1);
+        if (FRAME_MBAFF(h)) {
+            implicit_weight_table(h, sl, 0);
+            implicit_weight_table(h, sl, 1);
+        }
     } else {
         sl->pwt.use_weight = 0;
         for (i = 0; i < 2; i++) {
@@ -1376,13 +1380,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
                                              h->current_slice == 0);
         if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
-    }
-
-    if (FRAME_MBAFF(h)) {
-        if (pps->weighted_bipred_idc == 2 && sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-            implicit_weight_table(h, sl, 0);
-            implicit_weight_table(h, sl, 1);
-        }
     }
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I && pps->cabac) {
