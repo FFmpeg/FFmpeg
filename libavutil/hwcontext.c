@@ -321,6 +321,7 @@ int av_hwframe_transfer_get_formats(AVBufferRef *hwframe_ref,
 
 static int transfer_data_alloc(AVFrame *dst, const AVFrame *src, int flags)
 {
+    AVHWFramesContext *ctx = (AVHWFramesContext*)src->hw_frames_ctx->data;
     AVFrame *frame_tmp;
     int ret = 0;
 
@@ -343,8 +344,8 @@ static int transfer_data_alloc(AVFrame *dst, const AVFrame *src, int flags)
         frame_tmp->format = formats[0];
         av_freep(&formats);
     }
-    frame_tmp->width  = src->width;
-    frame_tmp->height = src->height;
+    frame_tmp->width  = ctx->width;
+    frame_tmp->height = ctx->height;
 
     ret = av_frame_get_buffer(frame_tmp, 32);
     if (ret < 0)
@@ -353,6 +354,9 @@ static int transfer_data_alloc(AVFrame *dst, const AVFrame *src, int flags)
     ret = av_hwframe_transfer_data(frame_tmp, src, flags);
     if (ret < 0)
         goto fail;
+
+    frame_tmp->width  = src->width;
+    frame_tmp->height = src->height;
 
     av_frame_move_ref(dst, frame_tmp);
 
