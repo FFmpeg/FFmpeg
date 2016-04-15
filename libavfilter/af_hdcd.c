@@ -31,7 +31,7 @@
 */
 
 /*
-  More informations about high definition audio cds:
+  More information about high definition audio cds:
   http://www.audiomisc.co.uk/HFN/HDCD/Enigma.html
   http://www.audiomisc.co.uk/HFN/HDCD/Examined.html
  */
