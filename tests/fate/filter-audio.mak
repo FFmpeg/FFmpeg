@@ -102,6 +102,12 @@ fate-filter-volume: CMD = md5 -i $(SRC) -af aperms=random,volume=precision=fixed
 fate-filter-volume: CMP = oneline
 fate-filter-volume: REF = 4d6ba75ef3e32d305d066b9bc771d6f4
 
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd
+fate-filter-hdcd: SRC = $(TARGET_SAMPLES)/filter/hdcd.flac
+fate-filter-hdcd: CMD = md5 -i $(SRC) -af hdcd -f s24le
+fate-filter-hdcd: CMP = oneline
+fate-filter-hdcd: REF = 5db465a58d2fd0d06ca944b883b33476
+
 FATE_AFILTER-yes += fate-filter-formats
 fate-filter-formats: libavfilter/formats-test$(EXESUF)
 fate-filter-formats: CMD = run libavfilter/formats-test

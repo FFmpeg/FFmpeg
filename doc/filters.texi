@@ -8255,6 +8255,11 @@ Then, the effect of this Hald CLUT can be visualized with:
 ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
 @end example
 
+@section hdcd
+
+Decodes high definition audio cd data. 16-Bit PCM stream containing hdcd flags
+is converted to 20-bit PCM stream.
+
 @section hflip
 
 Flip the input video horizontally.

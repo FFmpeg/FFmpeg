@@ -24,6 +24,7 @@ version <next>:
 - remap filter
 - hash and framehash muxers
 - colorspace filter
+- hdcd filter
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support
