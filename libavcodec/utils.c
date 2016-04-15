@@ -3157,6 +3157,7 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                                     uint8_t * extradata, int frame_size, int frame_bytes)
 {
     int bps = av_get_exact_bits_per_sample(id);
+    int framecount = ba>0 && frame_bytes / ba>0 ? frame_bytes / ba : 1;
 
     /* codecs with an exact constant bits per sample */
     if (bps > 0 && ch > 0 && frame_bytes > 0 && ch < 32768 && bps < 32768)
@@ -3177,7 +3178,7 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
     case AV_CODEC_ID_GSM_MS:       return  320;
     case AV_CODEC_ID_MP1:          return  384;
     case AV_CODEC_ID_ATRAC1:       return  512;
-    case AV_CODEC_ID_ATRAC3:       return 1024;
+    case AV_CODEC_ID_ATRAC3:       return 1024 * framecount;
     case AV_CODEC_ID_ATRAC3P:      return 2048;
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MUSEPACK7:    return 1152;
