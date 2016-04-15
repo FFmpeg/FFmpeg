@@ -91,9 +91,10 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
+#include "bitstream.h"
 #include "internal.h"
-#include "get_bits.h"
 #include "put_bits.h"
 #include "wmaprodata.h"
 #include "sinewin.h"
@@ -197,7 +198,7 @@ typedef struct WMAProDecodeCtx {
     int16_t          subwoofer_cutoffs[WMAPRO_BLOCK_SIZES]; ///< subwoofer cutoff values
 
     /* packet decode state */
-    GetBitContext    pgb;                           ///< bitstream reader context for the packet
+    BitstreamContext pbc;                           ///< bitstream reader context for the packet
     int              next_packet_start;             ///< start offset of the next wma packet in the demuxer packet
     uint8_t          packet_offset;                 ///< frame offset in the packet
     uint8_t          packet_sequence_number;        ///< current packet number
@@ -209,7 +210,7 @@ typedef struct WMAProDecodeCtx {
 
     /* frame decode state */
     uint32_t         frame_num;                     ///< current frame number (not used for decoding)
-    GetBitContext    gb;                            ///< bitstream reader context
+    BitstreamContext bc;                            ///< bitstream reader context
     int              buf_bit_size;                  ///< buffer size in bits
     uint8_t          drc_gain;                      ///< gain for the DRC tool
     int8_t           skip_frame;                    ///< skip output step
@@ -495,10 +496,11 @@ static int decode_subframe_length(WMAProDecodeCtx *s, int offset)
 
     /** 1 bit indicates if the subframe is of maximum length */
     if (s->max_subframe_len_bit) {
-        if (get_bits1(&s->gb))
-            frame_len_shift = 1 + get_bits(&s->gb, s->subframe_len_bits-1);
+        if (bitstream_read_bit(&s->bc))
+            frame_len_shift = 1 + bitstream_read(&s->bc,
+                                                 s->subframe_len_bits - 1);
     } else
-        frame_len_shift = get_bits(&s->gb, s->subframe_len_bits);
+        frame_len_shift = bitstream_read(&s->bc, s->subframe_len_bits);
 
     subframe_len = s->samples_per_frame >> frame_len_shift;
 
@@ -551,7 +553,7 @@ static int decode_tilehdr(WMAProDecodeCtx *s)
     for (c = 0; c < s->avctx->channels; c++)
         s->channel[c].num_subframes = 0;
 
-    if (s->max_num_subframes == 1 || get_bits1(&s->gb))
+    if (s->max_num_subframes == 1 || bitstream_read_bit(&s->bc))
         fixed_channel_layout = 1;
 
     /** loop until the frame data is split between the subframes */
@@ -565,7 +567,7 @@ static int decode_tilehdr(WMAProDecodeCtx *s)
                    (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe))
                     contains_subframe[c] = 1;
                 else
-                    contains_subframe[c] = get_bits1(&s->gb);
+                    contains_subframe[c] = bitstream_read_bit(&s->bc);
             } else
                 contains_subframe[c] = 0;
         }
@@ -633,11 +635,11 @@ static void decode_decorrelation_matrix(WMAProDecodeCtx *s,
            s->avctx->channels * sizeof(*chgroup->decorrelation_matrix));
 
     for (i = 0; i < chgroup->num_channels * (chgroup->num_channels - 1) >> 1; i++)
-        rotation_offset[i] = get_bits(&s->gb, 6);
+        rotation_offset[i] = bitstream_read(&s->bc, 6);
 
     for (i = 0; i < chgroup->num_channels; i++)
         chgroup->decorrelation_matrix[chgroup->num_channels * i + i] =
-            get_bits1(&s->gb) ? 1.0 : -1.0;
+            bitstream_read_bit(&s->bc) ? 1.0 : -1.0;
 
     for (i = 1; i < chgroup->num_channels; i++) {
         int x;
@@ -686,7 +688,7 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
     if (s->avctx->channels > 1) {
         int remaining_channels = s->channels_for_cur_subframe;
 
-        if (get_bits1(&s->gb)) {
+        if (bitstream_read_bit(&s->bc)) {
             avpriv_request_sample(s->avctx,
                                   "Channel transform bit");
             return AVERROR_PATCHWELCOME;
@@ -704,7 +706,7 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
                 for (i = 0; i < s->channels_for_cur_subframe; i++) {
                     int channel_idx = s->channel_indexes_for_cur_subframe[i];
                     if (!s->channel[channel_idx].grouped
-                        && get_bits1(&s->gb)) {
+                        && bitstream_read_bit(&s->bc)) {
                         ++chgroup->num_channels;
                         s->channel[channel_idx].grouped = 1;
                         *channel_data++ = s->channel[channel_idx].coeffs;
@@ -722,8 +724,8 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
 
             /** decode transform type */
             if (chgroup->num_channels == 2) {
-                if (get_bits1(&s->gb)) {
-                    if (get_bits1(&s->gb)) {
+                if (bitstream_read_bit(&s->bc)) {
+                    if (bitstream_read_bit(&s->bc)) {
                         avpriv_request_sample(s->avctx,
                                               "Unknown channel transform type");
                         return AVERROR_PATCHWELCOME;
@@ -744,9 +746,9 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
                     }
                 }
             } else if (chgroup->num_channels > 2) {
-                if (get_bits1(&s->gb)) {
+                if (bitstream_read_bit(&s->bc)) {
                     chgroup->transform = 1;
-                    if (get_bits1(&s->gb)) {
+                    if (bitstream_read_bit(&s->bc)) {
                         decode_decorrelation_matrix(s, chgroup);
                     } else {
                         /** FIXME: more than 6 coupled channels not supported */
@@ -765,11 +767,11 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
 
             /** decode transform on / off */
             if (chgroup->transform) {
-                if (!get_bits1(&s->gb)) {
+                if (!bitstream_read_bit(&s->bc)) {
                     int i;
                     /** transform can be enabled for individual bands */
                     for (i = 0; i < s->num_bands; i++) {
-                        chgroup->transform_band[i] = get_bits1(&s->gb);
+                        chgroup->transform_band[i] = bitstream_read_bit(&s->bc);
                     }
                 } else {
                     memset(chgroup->transform_band, 1, s->num_bands);
@@ -809,7 +811,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
 
     ff_dlog(s->avctx, "decode coefficients for channel %i\n", c);
 
-    vlctable = get_bits1(&s->gb);
+    vlctable = bitstream_read_bit(&s->bc);
     vlc = &coef_vlc[vlctable];
 
     if (vlctable) {
@@ -828,19 +830,19 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
         int i;
         unsigned int idx;
 
-        idx = get_vlc2(&s->gb, vec4_vlc.table, VLCBITS, VEC4MAXDEPTH);
+        idx = bitstream_read_vlc(&s->bc, vec4_vlc.table, VLCBITS, VEC4MAXDEPTH);
 
         if (idx == HUFF_VEC4_SIZE - 1) {
             for (i = 0; i < 4; i += 2) {
-                idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
+                idx = bitstream_read_vlc(&s->bc, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
                 if (idx == HUFF_VEC2_SIZE - 1) {
                     uint32_t v0, v1;
-                    v0 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                    v0 = bitstream_read_vlc(&s->bc, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v0 == HUFF_VEC1_SIZE - 1)
-                        v0 += ff_wma_get_large_val(&s->gb);
-                    v1 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                        v0 += ff_wma_get_large_val(&s->bc);
+                    v1 = bitstream_read_vlc(&s->bc, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v1 == HUFF_VEC1_SIZE - 1)
-                        v1 += ff_wma_get_large_val(&s->gb);
+                        v1 += ff_wma_get_large_val(&s->bc);
                     vals[i  ] = av_float2int(v0);
                     vals[i+1] = av_float2int(v1);
                 } else {
@@ -858,7 +860,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
         /** decode sign */
         for (i = 0; i < 4; i++) {
             if (vals[i]) {
-                uint32_t sign = get_bits1(&s->gb) - 1;
+                uint32_t sign = bitstream_read_bit(&s->bc) - 1;
                 AV_WN32A(&ci->coeffs[cur_coeff], vals[i] ^ sign << 31);
                 num_zeros = 0;
             } else {
@@ -875,7 +877,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
     if (cur_coeff < s->subframe_len) {
         memset(&ci->coeffs[cur_coeff], 0,
                sizeof(*ci->coeffs) * (s->subframe_len - cur_coeff));
-        if (ff_wma_run_level_decode(s->avctx, &s->gb, vlc,
+        if (ff_wma_run_level_decode(s->avctx, &s->bc, vlc,
                                     level, run, 1, ci->coeffs,
                                     cur_coeff, s->subframe_len,
                                     s->subframe_len, s->esc_len, 0))
@@ -918,15 +920,14 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
                     s->channel[c].saved_scale_factors[s->channel[c].scale_factor_idx][*sf_offsets++];
         }
 
-        if (!s->channel[c].cur_subframe || get_bits1(&s->gb)) {
-
+        if (!s->channel[c].cur_subframe || bitstream_read_bit(&s->bc)) {
             if (!s->channel[c].reuse_sf) {
                 int val;
                 /** decode DPCM coded scale factors */
-                s->channel[c].scale_factor_step = get_bits(&s->gb, 2) + 1;
+                s->channel[c].scale_factor_step = bitstream_read(&s->bc, 2) + 1;
                 val = 45 / s->channel[c].scale_factor_step;
                 for (sf = s->channel[c].scale_factors; sf < sf_end; sf++) {
-                    val += get_vlc2(&s->gb, sf_vlc.table, SCALEVLCBITS, SCALEMAXDEPTH) - 60;
+                    val += bitstream_read_vlc(&s->bc, sf_vlc.table, SCALEVLCBITS, SCALEMAXDEPTH) - 60;
                     *sf = val;
                 }
             } else {
@@ -938,10 +939,10 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
                     int val;
                     int sign;
 
-                    idx = get_vlc2(&s->gb, sf_rl_vlc.table, VLCBITS, SCALERLMAXDEPTH);
+                    idx = bitstream_read_vlc(&s->bc, sf_rl_vlc.table, VLCBITS, SCALERLMAXDEPTH);
 
                     if (!idx) {
-                        uint32_t code = get_bits(&s->gb, 14);
+                        uint32_t code = bitstream_read(&s->bc, 14);
                         val  =  code >> 6;
                         sign = (code & 1) - 1;
                         skip = (code & 0x3f) >> 1;
@@ -950,7 +951,7 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
                     } else {
                         skip = scale_rl_run[idx];
                         val  = scale_rl_level[idx];
-                        sign = get_bits1(&s->gb)-1;
+                        sign = bitstream_read_bit(&s->bc)-1;
                     }
 
                     i += skip;
@@ -1077,7 +1078,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
     int transmit_coeffs = 0;
     int cur_subwoofer_cutoff;
 
-    s->subframe_offset = get_bits_count(&s->gb);
+    s->subframe_offset = bitstream_tell(&s->bc);
 
     /** reset channel context and find the next block offset and size
         == the next block of the channel with the smallest number of
@@ -1141,25 +1142,25 @@ static int decode_subframe(WMAProDecodeCtx *s)
     s->esc_len = av_log2(s->subframe_len - 1) + 1;
 
     /** skip extended header if any */
-    if (get_bits1(&s->gb)) {
+    if (bitstream_read_bit(&s->bc)) {
         int num_fill_bits;
-        if (!(num_fill_bits = get_bits(&s->gb, 2))) {
-            int len = get_bits(&s->gb, 4);
-            num_fill_bits = get_bitsz(&s->gb, len) + 1;
+        if (!(num_fill_bits = bitstream_read(&s->bc, 2))) {
+            int len       = bitstream_read(&s->bc, 4);
+            num_fill_bits = bitstream_read(&s->bc, len) + 1;
         }
 
         if (num_fill_bits >= 0) {
-            if (get_bits_count(&s->gb) + num_fill_bits > s->num_saved_bits) {
+            if (bitstream_tell(&s->bc) + num_fill_bits > s->num_saved_bits) {
                 av_log(s->avctx, AV_LOG_ERROR, "invalid number of fill bits\n");
                 return AVERROR_INVALIDDATA;
             }
 
-            skip_bits_long(&s->gb, num_fill_bits);
+            bitstream_skip(&s->bc, num_fill_bits);
         }
     }
 
     /** no idea for what the following bit is used */
-    if (get_bits1(&s->gb)) {
+    if (bitstream_read_bit(&s->bc)) {
         avpriv_request_sample(s->avctx, "Reserved bit");
         return AVERROR_PATCHWELCOME;
     }
@@ -1171,7 +1172,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
 
     for (i = 0; i < s->channels_for_cur_subframe; i++) {
         int c = s->channel_indexes_for_cur_subframe[i];
-        if ((s->channel[c].transmit_coefs = get_bits1(&s->gb)))
+        if ((s->channel[c].transmit_coefs = bitstream_read_bit(&s->bc)))
             transmit_coeffs = 1;
     }
 
@@ -1180,11 +1181,11 @@ static int decode_subframe(WMAProDecodeCtx *s)
         int quant_step = 90 * s->bits_per_sample >> 4;
 
         /** decode number of vector coded coefficients */
-        if ((s->transmit_num_vec_coeffs = get_bits1(&s->gb))) {
+        if ((s->transmit_num_vec_coeffs = bitstream_read_bit(&s->bc))) {
             int num_bits = av_log2((s->subframe_len + 3)/4) + 1;
             for (i = 0; i < s->channels_for_cur_subframe; i++) {
                 int c = s->channel_indexes_for_cur_subframe[i];
-                int num_vec_coeffs = get_bits(&s->gb, num_bits) << 2;
+                int num_vec_coeffs = bitstream_read(&s->bc, num_bits) << 2;
                 if (num_vec_coeffs + offset > FF_ARRAY_ELEMS(s->channel[c].out)) {
                     av_log(s->avctx, AV_LOG_ERROR, "num_vec_coeffs %d is too large\n", num_vec_coeffs);
                     return AVERROR_INVALIDDATA;
@@ -1198,13 +1199,13 @@ static int decode_subframe(WMAProDecodeCtx *s)
             }
         }
         /** decode quantization step */
-        step = get_sbits(&s->gb, 6);
+        step = bitstream_read_signed(&s->bc, 6);
         quant_step += step;
         if (step == -32 || step == 31) {
             const int sign = (step == 31) - 1;
             int quant = 0;
-            while (get_bits_count(&s->gb) + 5 < s->num_saved_bits &&
-                   (step = get_bits(&s->gb, 5)) == 31) {
+            while (bitstream_tell(&s->bc) + 5 < s->num_saved_bits &&
+                   (step = bitstream_read(&s->bc, 5)) == 31) {
                 quant += 31;
             }
             quant_step += ((quant + step) ^ sign) - sign;
@@ -1218,13 +1219,13 @@ static int decode_subframe(WMAProDecodeCtx *s)
         if (s->channels_for_cur_subframe == 1) {
             s->channel[s->channel_indexes_for_cur_subframe[0]].quant_step = quant_step;
         } else {
-            int modifier_len = get_bits(&s->gb, 3);
+            int modifier_len = bitstream_read(&s->bc, 3);
             for (i = 0; i < s->channels_for_cur_subframe; i++) {
                 int c = s->channel_indexes_for_cur_subframe[i];
                 s->channel[c].quant_step = quant_step;
-                if (get_bits1(&s->gb)) {
+                if (bitstream_read_bit(&s->bc)) {
                     if (modifier_len) {
-                        s->channel[c].quant_step += get_bits(&s->gb, modifier_len) + 1;
+                        s->channel[c].quant_step += bitstream_read(&s->bc, modifier_len) + 1;
                     } else
                         ++s->channel[c].quant_step;
                 }
@@ -1237,13 +1238,13 @@ static int decode_subframe(WMAProDecodeCtx *s)
     }
 
     ff_dlog(s->avctx, "BITSTREAM: subframe header length was %i\n",
-            get_bits_count(&s->gb) - s->subframe_offset);
+            bitstream_tell(&s->bc) - s->subframe_offset);
 
     /** parse coefficients */
     for (i = 0; i < s->channels_for_cur_subframe; i++) {
         int c = s->channel_indexes_for_cur_subframe[i];
         if (s->channel[c].transmit_coefs &&
-            get_bits_count(&s->gb) < s->num_saved_bits) {
+            bitstream_tell(&s->bc) < s->num_saved_bits) {
             decode_coeffs(s, c);
         } else
             memset(s->channel[c].coeffs, 0,
@@ -1251,7 +1252,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
     }
 
     ff_dlog(s->avctx, "BITSTREAM: subframe length was %i\n",
-            get_bits_count(&s->gb) - s->subframe_offset);
+            bitstream_tell(&s->bc) - s->subframe_offset);
 
     if (transmit_coeffs) {
         FFTContext *mdct = &s->mdct_ctx[av_log2(subframe_len) - WMAPRO_BLOCK_MIN_BITS];
@@ -1309,14 +1310,14 @@ static int decode_subframe(WMAProDecodeCtx *s)
 static int decode_frame(WMAProDecodeCtx *s, AVFrame *frame, int *got_frame_ptr)
 {
     AVCodecContext *avctx = s->avctx;
-    GetBitContext* gb = &s->gb;
+    BitstreamContext *bc = &s->bc;
     int more_frames = 0;
     int len = 0;
     int i, ret;
 
     /** get frame length */
     if (s->len_prefix)
-        len = get_bits(gb, s->log2_frame_size);
+        len = bitstream_read(bc, s->log2_frame_size);
 
     ff_dlog(s->avctx, "decoding frame with length %x\n", len);
 
@@ -1327,40 +1328,40 @@ static int decode_frame(WMAProDecodeCtx *s, AVFrame *frame, int *got_frame_ptr)
     }
 
     /** read postproc transform */
-    if (s->avctx->channels > 1 && get_bits1(gb)) {
-        if (get_bits1(gb)) {
+    if (s->avctx->channels > 1 && bitstream_read_bit(bc)) {
+        if (bitstream_read_bit(bc)) {
             for (i = 0; i < avctx->channels * avctx->channels; i++)
-                skip_bits(gb, 4);
+                bitstream_skip(bc, 4);
         }
     }
 
     /** read drc info */
     if (s->dynamic_range_compression) {
-        s->drc_gain = get_bits(gb, 8);
+        s->drc_gain = bitstream_read(bc, 8);
         ff_dlog(s->avctx, "drc_gain %i\n", s->drc_gain);
     }
 
     /** no idea what these are for, might be the number of samples
         that need to be skipped at the beginning or end of a stream */
-    if (get_bits1(gb)) {
+    if (bitstream_read_bit(bc)) {
         int av_unused skip;
 
         /** usually true for the first frame */
-        if (get_bits1(gb)) {
-            skip = get_bits(gb, av_log2(s->samples_per_frame * 2));
+        if (bitstream_read_bit(bc)) {
+            skip = bitstream_read(bc, av_log2(s->samples_per_frame * 2));
             ff_dlog(s->avctx, "start skip: %i\n", skip);
         }
 
         /** sometimes true for the last frame */
-        if (get_bits1(gb)) {
-            skip = get_bits(gb, av_log2(s->samples_per_frame * 2));
+        if (bitstream_read_bit(bc)) {
+            skip = bitstream_read(bc, av_log2(s->samples_per_frame * 2));
             ff_dlog(s->avctx, "end skip: %i\n", skip);
         }
 
     }
 
     ff_dlog(s->avctx, "BITSTREAM: frame header length was %i\n",
-            get_bits_count(gb) - s->frame_offset);
+            bitstream_tell(bc) - s->frame_offset);
 
     /** reset subframe states */
     s->parsed_all_subframes = 0;
@@ -1407,25 +1408,25 @@ static int decode_frame(WMAProDecodeCtx *s, AVFrame *frame, int *got_frame_ptr)
     }
 
     if (s->len_prefix) {
-        if (len != (get_bits_count(gb) - s->frame_offset) + 2) {
+        if (len != (bitstream_tell(bc) - s->frame_offset) + 2) {
             /** FIXME: not sure if this is always an error */
             av_log(s->avctx, AV_LOG_ERROR,
                    "frame[%"PRIu32"] would have to skip %i bits\n",
                    s->frame_num,
-                   len - (get_bits_count(gb) - s->frame_offset) - 1);
+                   len - (bitstream_tell(bc) - s->frame_offset) - 1);
             s->packet_loss = 1;
             return 0;
         }
 
         /** skip the rest of the frame data */
-        skip_bits_long(gb, len - (get_bits_count(gb) - s->frame_offset) - 1);
+        bitstream_skip(bc, len - (bitstream_tell(bc) - s->frame_offset) - 1);
     } else {
-        while (get_bits_count(gb) < s->num_saved_bits && get_bits1(gb) == 0) {
+        while (bitstream_tell(bc) < s->num_saved_bits && bitstream_read_bit(bc) == 0) {
         }
     }
 
     /** decode trailer bit */
-    more_frames = get_bits1(gb);
+    more_frames = bitstream_read_bit(bc);
 
     ++s->frame_num;
     return more_frames;
@@ -1434,22 +1435,22 @@ static int decode_frame(WMAProDecodeCtx *s, AVFrame *frame, int *got_frame_ptr)
 /**
  *@brief Calculate remaining input buffer length.
  *@param s codec context
- *@param gb bitstream reader context
+ *@param bc bitstream reader context
  *@return remaining size in bits
  */
-static int remaining_bits(WMAProDecodeCtx *s, GetBitContext *gb)
+static int remaining_bits(WMAProDecodeCtx *s, BitstreamContext *bc)
 {
-    return s->buf_bit_size - get_bits_count(gb);
+    return s->buf_bit_size - bitstream_tell(bc);
 }
 
 /**
  *@brief Fill the bit reservoir with a (partial) frame.
  *@param s codec context
- *@param gb bitstream reader context
+ *@param bc bitstream reader context
  *@param len length of the partial frame
  *@param append decides whether to reset the buffer or not
  */
-static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
+static void save_bits(WMAProDecodeCtx *s, BitstreamContext *bc, int len,
                       int append)
 {
     int buflen;
@@ -1459,7 +1460,7 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
         and skipped later so that a fast byte copy is possible */
 
     if (!append) {
-        s->frame_offset = get_bits_count(gb) & 7;
+        s->frame_offset = bitstream_tell(bc) & 7;
         s->num_saved_bits = s->frame_offset;
         init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
     }
@@ -1482,24 +1483,24 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
 
     s->num_saved_bits += len;
     if (!append) {
-        avpriv_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3),
-                     s->num_saved_bits);
+        avpriv_copy_bits(&s->pb, bc->buffer + (bitstream_tell(bc) >> 3),
+                         s->num_saved_bits);
     } else {
-        int align = 8 - (get_bits_count(gb) & 7);
+        int align = 8 - (bitstream_tell(bc) & 7);
         align = FFMIN(align, len);
-        put_bits(&s->pb, align, get_bits(gb, align));
+        put_bits(&s->pb, align, bitstream_read(bc, align));
         len -= align;
-        avpriv_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3), len);
+        avpriv_copy_bits(&s->pb, bc->buffer + (bitstream_tell(bc) >> 3), len);
     }
-    skip_bits_long(gb, len);
+    bitstream_skip(bc, len);
 
     {
         PutBitContext tmp = s->pb;
         flush_put_bits(&tmp);
     }
 
-    init_get_bits(&s->gb, s->frame_data, s->num_saved_bits);
-    skip_bits(&s->gb, s->frame_offset);
+    bitstream_init(&s->bc, s->frame_data, s->num_saved_bits);
+    bitstream_skip(&s->bc, s->frame_offset);
 }
 
 /**
@@ -1513,7 +1514,7 @@ static int decode_packet(AVCodecContext *avctx, void *data,
                          int *got_frame_ptr, AVPacket* avpkt)
 {
     WMAProDecodeCtx *s = avctx->priv_data;
-    GetBitContext* gb  = &s->pgb;
+    BitstreamContext *bc = &s->pbc;
     const uint8_t* buf = avpkt->data;
     int buf_size       = avpkt->size;
     int num_bits_prev_frame;
@@ -1536,12 +1537,12 @@ static int decode_packet(AVCodecContext *avctx, void *data,
         s->buf_bit_size = buf_size << 3;
 
         /** parse packet header */
-        init_get_bits(gb, buf, s->buf_bit_size);
-        packet_sequence_number = get_bits(gb, 4);
-        skip_bits(gb, 2);
+        bitstream_init(bc, buf, s->buf_bit_size);
+        packet_sequence_number = bitstream_read(bc, 4);
+        bitstream_skip(bc, 2);
 
         /** get number of bits that need to be added to the previous frame */
-        num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
+        num_bits_prev_frame = bitstream_read(bc, s->log2_frame_size);
         ff_dlog(avctx, "packet[%d]: nbpf %x\n", avctx->frame_number,
                 num_bits_prev_frame);
 
@@ -1556,7 +1557,7 @@ static int decode_packet(AVCodecContext *avctx, void *data,
         s->packet_sequence_number = packet_sequence_number;
 
         if (num_bits_prev_frame > 0) {
-            int remaining_packet_bits = s->buf_bit_size - get_bits_count(gb);
+            int remaining_packet_bits = s->buf_bit_size - bitstream_tell(bc);
             if (num_bits_prev_frame >= remaining_packet_bits) {
                 num_bits_prev_frame = remaining_packet_bits;
                 s->packet_done = 1;
@@ -1564,7 +1565,7 @@ static int decode_packet(AVCodecContext *avctx, void *data,
 
             /** append the previous frame data to the remaining data from the
                 previous packet to create a full frame */
-            save_bits(s, gb, num_bits_prev_frame, 1);
+            save_bits(s, bc, num_bits_prev_frame, 1);
             ff_dlog(avctx, "accumulated %x bits of frame data\n",
                     s->num_saved_bits - s->frame_offset);
 
@@ -1587,15 +1588,15 @@ static int decode_packet(AVCodecContext *avctx, void *data,
     } else {
         int frame_size;
         s->buf_bit_size = (avpkt->size - s->next_packet_start) << 3;
-        init_get_bits(gb, avpkt->data, s->buf_bit_size);
-        skip_bits(gb, s->packet_offset);
-        if (s->len_prefix && remaining_bits(s, gb) > s->log2_frame_size &&
-            (frame_size = show_bits(gb, s->log2_frame_size)) &&
-            frame_size <= remaining_bits(s, gb)) {
-            save_bits(s, gb, frame_size, 0);
+        bitstream_init(bc, avpkt->data, s->buf_bit_size);
+        bitstream_skip(bc, s->packet_offset);
+        if (s->len_prefix && remaining_bits(s, bc) > s->log2_frame_size &&
+            (frame_size = bitstream_peek(bc, s->log2_frame_size)) &&
+            frame_size <= remaining_bits(s, bc)) {
+            save_bits(s, bc, frame_size, 0);
             s->packet_done = !decode_frame(s, data, got_frame_ptr);
         } else if (!s->len_prefix
-                   && s->num_saved_bits > get_bits_count(&s->gb)) {
+                   && s->num_saved_bits > bitstream_tell(&s->bc)) {
             /** when the frames do not have a length prefix, we don't know
                 the compressed length of the individual frames
                 however, we know what part of a new packet belongs to the
@@ -1609,17 +1610,17 @@ static int decode_packet(AVCodecContext *avctx, void *data,
     }
 
     if (s->packet_done && !s->packet_loss &&
-        remaining_bits(s, gb) > 0) {
+        remaining_bits(s, bc) > 0) {
         /** save the rest of the data so that it can be decoded
             with the next packet */
-        save_bits(s, gb, remaining_bits(s, gb), 0);
+        save_bits(s, bc, remaining_bits(s, bc), 0);
     }
 
-    s->packet_offset = get_bits_count(gb) & 7;
+    s->packet_offset = bitstream_tell(bc) & 7;
     if (s->packet_loss)
         return AVERROR_INVALIDDATA;
 
-    return get_bits_count(gb) >> 3;
+    return bitstream_tell(bc) >> 3;
 }
 
 /**
