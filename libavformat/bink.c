@@ -65,16 +65,16 @@ static int probe(AVProbeData *p)
     int smush = AV_RN32(p->buf) == AV_RN32("SMUS");
 
     do {
-    if (((b[0] == 'B' && b[1] == 'I' && b[2] == 'K' &&
-         (b[3] == 'b' || b[3] == 'f' || b[3] == 'g' || b[3] == 'h' || b[3] == 'i')) ||
-         (b[0] == 'K' && b[1] == 'B' && b[2] == '2' && /* Bink 2 */
-         (b[3] == 'a' || b[3] == 'd' || b[3] == 'f' || b[3] == 'g'))) &&
-        AV_RL32(b+8) > 0 &&  // num_frames
-        AV_RL32(b+20) > 0 && AV_RL32(b+20) <= BINK_MAX_WIDTH &&
-        AV_RL32(b+24) > 0 && AV_RL32(b+24) <= BINK_MAX_HEIGHT &&
-        AV_RL32(b+28) > 0 && AV_RL32(b+32) > 0)  // fps num,den
-        return AVPROBE_SCORE_MAX;
-        b += SMUSH_BLOCK_SIZE;
+        if (((b[0] == 'B' && b[1] == 'I' && b[2] == 'K' &&
+             (b[3] == 'b' || b[3] == 'f' || b[3] == 'g' || b[3] == 'h' || b[3] == 'i')) ||
+             (b[0] == 'K' && b[1] == 'B' && b[2] == '2' && /* Bink 2 */
+             (b[3] == 'a' || b[3] == 'd' || b[3] == 'f' || b[3] == 'g'))) &&
+            AV_RL32(b+8) > 0 &&  // num_frames
+            AV_RL32(b+20) > 0 && AV_RL32(b+20) <= BINK_MAX_WIDTH &&
+            AV_RL32(b+24) > 0 && AV_RL32(b+24) <= BINK_MAX_HEIGHT &&
+            AV_RL32(b+28) > 0 && AV_RL32(b+32) > 0)  // fps num,den
+            return AVPROBE_SCORE_MAX;
+            b += SMUSH_BLOCK_SIZE;
     } while (smush && b < p->buf + p->buf_size - 32);
     return 0;
 }
