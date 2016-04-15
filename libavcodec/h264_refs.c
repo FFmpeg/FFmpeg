@@ -227,6 +227,31 @@ static int pic_num_extract(const H264Context *h, int pic_num, int *structure)
     return pic_num;
 }
 
+static void h264_fill_mbaff_ref_list(H264SliceContext *sl)
+{
+    int list, i, j;
+    for (list = 0; list < sl->list_count; list++) {
+        for (i = 0; i < sl->ref_count[list]; i++) {
+            H264Ref *frame = &sl->ref_list[list][i];
+            H264Ref *field = &sl->ref_list[list][16 + 2 * i];
+
+            field[0] = *frame;
+
+            for (j = 0; j < 3; j++)
+                field[0].linesize[j] <<= 1;
+            field[0].reference = PICT_TOP_FIELD;
+            field[0].poc       = field[0].parent->field_poc[0];
+
+            field[1] = field[0];
+
+            for (j = 0; j < 3; j++)
+                field[1].data[j] += frame->parent->f->linesize[j];
+            field[1].reference = PICT_BOTTOM_FIELD;
+            field[1].poc       = field[1].parent->field_poc[1];
+        }
+    }
+}
+
 int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContext *sl)
 {
     int list, index, pic_structure;
@@ -349,32 +374,10 @@ int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContex
         }
     }
 
+    if (FRAME_MBAFF(h))
+        h264_fill_mbaff_ref_list(sl);
+
     return 0;
-}
-
-void ff_h264_fill_mbaff_ref_list(H264SliceContext *sl)
-{
-    int list, i, j;
-    for (list = 0; list < sl->list_count; list++) {
-        for (i = 0; i < sl->ref_count[list]; i++) {
-            H264Ref *frame = &sl->ref_list[list][i];
-            H264Ref *field = &sl->ref_list[list][16 + 2 * i];
-
-            field[0] = *frame;
-
-            for (j = 0; j < 3; j++)
-                field[0].linesize[j] <<= 1;
-            field[0].reference = PICT_TOP_FIELD;
-            field[0].poc       = field[0].parent->field_poc[0];
-
-            field[1] = field[0];
-
-            for (j = 0; j < 3; j++)
-                field[1].data[j] += frame->parent->f->linesize[j];
-            field[1].reference = PICT_BOTTOM_FIELD;
-            field[1].poc       = field[1].parent->field_poc[1];
-        }
-    }
 }
 
 /**
