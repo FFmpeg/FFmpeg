@@ -21,8 +21,9 @@
 
 #include "libavutil/mathematics.h"
 #include "libavutil/imgutils.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "bytestream.h"
 
 static av_cold int decode_init(AVCodecContext *avctx) {
@@ -55,7 +56,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     uint8_t *bitmap;
     int w, h, x, y, i;
     int64_t packet_time = 0;
-    GetBitContext gb;
+    BitstreamContext bc;
     int has_alpha = avctx->codec_tag == MKTAG('D','X','S','A');
 
     memset(sub, 0, sizeof(*sub));
@@ -146,15 +147,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     // process RLE-compressed data
-    init_get_bits(&gb, buf, (buf_end - buf) * 8);
+    bitstream_init(&bc, buf, (buf_end - buf) * 8);
     bitmap = sub->rects[0]->data[0];
     for (y = 0; y < h; y++) {
         // interlaced: do odd lines
         if (y == (h + 1) / 2) bitmap = sub->rects[0]->data[0] + w;
         for (x = 0; x < w; ) {
-            int log2 = ff_log2_tab[show_bits(&gb, 8)];
-            int run = get_bits(&gb, 14 - 4 * (log2 >> 1));
-            int color = get_bits(&gb, 2);
+            int log2 = ff_log2_tab[bitstream_peek(&bc, 8)];
+            int run = bitstream_read(&bc, 14 - 4 * (log2 >> 1));
+            int color = bitstream_read(&bc, 2);
             run = FFMIN(run, w - x);
             // run length 0 means till end of row
             if (!run) run = w - x;
@@ -164,7 +165,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         // interlaced, skip every second line
         bitmap += w;
-        align_get_bits(&gb);
+        bitstream_align(&bc);
     }
     *data_size = 1;
     return buf_size;
