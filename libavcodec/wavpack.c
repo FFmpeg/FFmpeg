@@ -23,10 +23,10 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "internal.h"
-#include "unary_legacy.h"
+#include "unary.h"
 
 /**
  * @file
@@ -109,10 +109,10 @@ typedef struct WavpackFrameContext {
     int stereo, stereo_in;
     int joint;
     uint32_t CRC;
-    GetBitContext gb;
+    BitstreamContext bc;
     int got_extra_bits;
     uint32_t crc_extra_bits;
-    GetBitContext gb_extra_bits;
+    BitstreamContext bc_extra_bits;
     int data_size; // in bits
     int samples;
     int terms;
@@ -240,7 +240,7 @@ static av_always_inline int wp_log2(int32_t val)
         } \
     }
 
-static av_always_inline int get_tail(GetBitContext *gb, int k)
+static av_always_inline int get_tail(BitstreamContext *bc, int k)
 {
     int p, e, res;
 
@@ -248,9 +248,9 @@ static av_always_inline int get_tail(GetBitContext *gb, int k)
         return 0;
     p   = av_log2(k);
     e   = (1 << (p + 1)) - k - 1;
-    res = get_bitsz(gb, p);
+    res = bitstream_read(bc, p);
     if (res >= e)
-        res = (res << 1) - e + get_bits1(gb);
+        res = (res << 1) - e + bitstream_read_bit(bc);
     return res;
 }
 
@@ -288,7 +288,7 @@ static void update_error_limit(WavpackFrameContext *ctx)
     }
 }
 
-static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
+static int wv_get_value(WavpackFrameContext *ctx, BitstreamContext *bc,
                         int channel, int *last)
 {
     int t, t2;
@@ -306,13 +306,13 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
                 return 0;
             }
         } else {
-            t = get_unary_0_33(gb);
+            t = get_unary_0_33(bc);
             if (t >= 2) {
-                if (get_bits_left(gb) < t - 1)
+                if (bitstream_bits_left(bc) < t - 1)
                     goto error;
-                t = get_bits(gb, t - 1) | (1 << (t - 1));
+                t = bitstream_read(bc, t - 1) | (1 << (t - 1));
             } else {
-                if (get_bits_left(gb) < 0)
+                if (bitstream_bits_left(bc) < 0)
                     goto error;
             }
             ctx->zeroes = t;
@@ -329,19 +329,19 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         t         = 0;
         ctx->zero = 0;
     } else {
-        t = get_unary_0_33(gb);
-        if (get_bits_left(gb) < 0)
+        t = get_unary_0_33(bc);
+        if (bitstream_bits_left(bc) < 0)
             goto error;
         if (t == 16) {
-            t2 = get_unary_0_33(gb);
+            t2 = get_unary_0_33(bc);
             if (t2 < 2) {
-                if (get_bits_left(gb) < 0)
+                if (bitstream_bits_left(bc) < 0)
                     goto error;
                 t += t2;
             } else {
-                if (get_bits_left(gb) < t2 - 1)
+                if (bitstream_bits_left(bc) < t2 - 1)
                     goto error;
-                t += get_bits(gb, t2 - 1) | (1 << (t2 - 1));
+                t += bitstream_read(bc, t2 - 1) | (1 << (t2 - 1));
             }
         }
 
@@ -381,15 +381,15 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         INC_MED(2);
     }
     if (!c->error_limit) {
-        ret = base + get_tail(gb, add);
-        if (get_bits_left(gb) <= 0)
+        ret = base + get_tail(bc, add);
+        if (bitstream_bits_left(bc) <= 0)
             goto error;
     } else {
         int mid = (base * 2 + add + 1) >> 1;
         while (add > c->error_limit) {
-            if (get_bits_left(gb) <= 0)
+            if (bitstream_bits_left(bc) <= 0)
                 goto error;
-            if (get_bits1(gb)) {
+            if (bitstream_read_bit(bc)) {
                 add -= (mid - base);
                 base = mid;
             } else
@@ -398,7 +398,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         }
         ret = mid;
     }
-    sign = get_bits1(gb);
+    sign = bitstream_read_bit(bc);
     if (ctx->hybrid_bitrate)
         c->slow_level += wp_log2(ret) - LEVEL_DECAY(c->slow_level);
     return sign ? ~ret : ret;
@@ -417,8 +417,8 @@ static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc,
         S <<= s->extra_bits;
 
         if (s->got_extra_bits &&
-            get_bits_left(&s->gb_extra_bits) >= s->extra_bits) {
-            S   |= get_bits(&s->gb_extra_bits, s->extra_bits);
+            bitstream_bits_left(&s->bc_extra_bits) >= s->extra_bits) {
+            S   |= bitstream_read(&s->bc_extra_bits, s->extra_bits);
             *crc = *crc * 9 + (S & 0xffff) * 3 + ((unsigned)S >> 16);
         }
     }
@@ -444,7 +444,7 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
 
     if (s->got_extra_bits) {
         const int max_bits  = 1 + 23 + 8 + 1;
-        const int left_bits = get_bits_left(&s->gb_extra_bits);
+        const int left_bits = bitstream_bits_left(&s->bc_extra_bits);
 
         if (left_bits + 8 * AV_INPUT_BUFFER_PADDING_SIZE < max_bits)
             return 0.0;
@@ -456,8 +456,8 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
         if (sign)
             S = -S;
         if (S >= 0x1000000) {
-            if (s->got_extra_bits && get_bits1(&s->gb_extra_bits))
-                S = get_bits(&s->gb_extra_bits, 23);
+            if (s->got_extra_bits && bitstream_read_bit(&s->bc_extra_bits))
+                S = bitstream_read(&s->bc_extra_bits, 23);
             else
                 S = 0;
             exp = 255;
@@ -473,11 +473,11 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
                 if ((s->float_flag & WV_FLT_SHIFT_ONES) ||
                     (s->got_extra_bits &&
                      (s->float_flag & WV_FLT_SHIFT_SAME) &&
-                     get_bits1(&s->gb_extra_bits))) {
+                     bitstream_read_bit(&s->bc_extra_bits))) {
                     S |= (1 << shift) - 1;
                 } else if (s->got_extra_bits &&
                            (s->float_flag & WV_FLT_SHIFT_SENT)) {
-                    S |= get_bits(&s->gb_extra_bits, shift);
+                    S |= bitstream_read(&s->bc_extra_bits, shift);
                 }
             }
         } else {
@@ -488,14 +488,14 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
         sign = 0;
         exp  = 0;
         if (s->got_extra_bits && (s->float_flag & WV_FLT_ZERO_SENT)) {
-            if (get_bits1(&s->gb_extra_bits)) {
-                S = get_bits(&s->gb_extra_bits, 23);
+            if (bitstream_read_bit(&s->bc_extra_bits)) {
+                S = bitstream_read(&s->bc_extra_bits, 23);
                 if (s->float_max_exp >= 25)
-                    exp = get_bits(&s->gb_extra_bits, 8);
-                sign = get_bits1(&s->gb_extra_bits);
+                    exp = bitstream_read(&s->bc_extra_bits, 8);
+                sign = bitstream_read_bit(&s->bc_extra_bits);
             } else {
                 if (s->float_flag & WV_FLT_ZERO_SIGN)
-                    sign = get_bits1(&s->gb_extra_bits);
+                    sign = bitstream_read_bit(&s->bc_extra_bits);
             }
         }
     }
@@ -527,7 +527,7 @@ static inline int wv_check_crc(WavpackFrameContext *s, uint32_t crc,
     return 0;
 }
 
-static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
+static inline int wv_unpack_stereo(WavpackFrameContext *s, BitstreamContext *bc,
                                    void *dst_l, void *dst_r, const int type)
 {
     int i, j, count = 0;
@@ -545,10 +545,10 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
 
     s->one = s->zero = s->zeroes = 0;
     do {
-        L = wv_get_value(s, gb, 0, &last);
+        L = wv_get_value(s, bc, 0, &last);
         if (last)
             break;
-        R = wv_get_value(s, gb, 1, &last);
+        R = wv_get_value(s, bc, 1, &last);
         if (last)
             break;
         for (i = 0; i < s->terms; i++) {
@@ -645,7 +645,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
     return 0;
 }
 
-static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
+static inline int wv_unpack_mono(WavpackFrameContext *s, BitstreamContext *bc,
                                  void *dst, const int type)
 {
     int i, j, count = 0;
@@ -660,7 +660,7 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
 
     s->one = s->zero = s->zeroes = 0;
     do {
-        T = wv_get_value(s, gb, 0, &last);
+        T = wv_get_value(s, bc, 0, &last);
         S = 0;
         if (last)
             break;
@@ -990,7 +990,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         case WP_ID_DATA:
             s->sc.offset = bytestream2_tell(&gb);
             s->sc.size   = size * 8;
-            init_get_bits(&s->gb, gb.buffer, size * 8);
+            bitstream_init8(&s->bc, gb.buffer, size);
             s->data_size = size * 8;
             bytestream2_skip(&gb, size);
             got_bs       = 1;
@@ -1004,8 +1004,8 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             }
             s->extra_sc.offset = bytestream2_tell(&gb);
             s->extra_sc.size   = size * 8;
-            init_get_bits(&s->gb_extra_bits, gb.buffer, size * 8);
-            s->crc_extra_bits  = get_bits_long(&s->gb_extra_bits, 32);
+            bitstream_init8(&s->bc_extra_bits, gb.buffer, size);
+            s->crc_extra_bits  = bitstream_read(&s->bc_extra_bits, 32);
             bytestream2_skip(&gb, size);
             s->got_extra_bits  = 1;
             break;
@@ -1084,7 +1084,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         return AVERROR_INVALIDDATA;
     }
     if (s->got_extra_bits && avctx->sample_fmt != AV_SAMPLE_FMT_FLTP) {
-        const int size   = get_bits_left(&s->gb_extra_bits);
+        const int size   = bitstream_bits_left(&s->bc_extra_bits);
         const int wanted = s->samples * s->extra_bits << s->stereo_in;
         if (size < wanted) {
             av_log(avctx, AV_LOG_ERROR, "Too small EXTRABITS\n");
@@ -1134,11 +1134,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     wc->ch_offset += 1 + s->stereo;
 
     if (s->stereo_in) {
-        ret = wv_unpack_stereo(s, &s->gb, samples_l, samples_r, avctx->sample_fmt);
+        ret = wv_unpack_stereo(s, &s->bc, samples_l, samples_r, avctx->sample_fmt);
         if (ret < 0)
             return ret;
     } else {
-        ret = wv_unpack_mono(s, &s->gb, samples_l, avctx->sample_fmt);
+        ret = wv_unpack_mono(s, &s->bc, samples_l, avctx->sample_fmt);
         if (ret < 0)
             return ret;
 
