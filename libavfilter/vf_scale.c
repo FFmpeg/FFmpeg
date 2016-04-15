@@ -237,9 +237,11 @@ static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
         colorspace = AVCOL_SPC_SMPTE240M;
     } else if (s && (strstr(s, "bt601") || strstr(s, "bt470") || strstr(s, "smpte170m"))) {
         colorspace = AVCOL_SPC_BT470BG;
+    } else if (s && strstr(s, "bt2020")) {
+        colorspace = AVCOL_SPC_BT2020_NCL;
     }
 
-    if (colorspace < 1 || colorspace > 7) {
+    if (colorspace < 1 || colorspace > 10 || colorspace == 8) {
         colorspace = AVCOL_SPC_BT470BG;
     }
 
