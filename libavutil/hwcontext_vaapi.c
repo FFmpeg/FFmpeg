@@ -770,6 +770,9 @@ static int vaapi_transfer_data_from(AVHWFramesContext *hwfc,
     AVFrame *map;
     int err;
 
+    if (dst->width > hwfc->width || dst->height > hwfc->height)
+        return AVERROR(EINVAL);
+
     map = av_frame_alloc();
     if (!map)
         return AVERROR(ENOMEM);
@@ -778,6 +781,9 @@ static int vaapi_transfer_data_from(AVHWFramesContext *hwfc,
     err = vaapi_map_frame(hwfc, map, src, VAAPI_MAP_READ);
     if (err)
         goto fail;
+
+    map->width  = dst->width;
+    map->height = dst->height;
 
     err = av_frame_copy(dst, map);
     if (err)
@@ -795,6 +801,9 @@ static int vaapi_transfer_data_to(AVHWFramesContext *hwfc,
     AVFrame *map;
     int err;
 
+    if (src->width > hwfc->width || src->height > hwfc->height)
+        return AVERROR(EINVAL);
+
     map = av_frame_alloc();
     if (!map)
         return AVERROR(ENOMEM);
@@ -803,6 +812,9 @@ static int vaapi_transfer_data_to(AVHWFramesContext *hwfc,
     err = vaapi_map_frame(hwfc, map, dst, VAAPI_MAP_WRITE);
     if (err)
         goto fail;
+
+    map->width  = src->width;
+    map->height = src->height;
 
     err = av_frame_copy(map, src);
     if (err)
