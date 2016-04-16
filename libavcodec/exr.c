@@ -1484,6 +1484,8 @@ static int decode_header(EXRContext *s)
             continue;
         } else if ((var_size = check_header_variable(s, "tiles",
                                                      "tiledesc", 22)) >= 0) {
+            char tileLevel;
+
             if (!s->is_tile)
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Found tile attribute and scanline flags. Exr will be interpreted as scanline.\n");
@@ -1491,7 +1493,7 @@ static int decode_header(EXRContext *s)
             s->tile_attr.xSize = bytestream2_get_le32(&s->gb);
             s->tile_attr.ySize = bytestream2_get_le32(&s->gb);
 
-            char tileLevel = bytestream2_get_byte(&s->gb);
+            tileLevel = bytestream2_get_byte(&s->gb);
             s->tile_attr.level_mode = tileLevel & 0x0f;
             s->tile_attr.level_round = (tileLevel >> 4) & 0x0f;
 
