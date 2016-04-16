@@ -905,7 +905,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
 {
     const SPS *sps;
     const PPS *pps;
-    unsigned int first_mb_in_slice;
     unsigned int pps_id;
     int ret;
     unsigned int slice_type, tmp, i;
@@ -915,9 +914,9 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
     int frame_num, droppable, picture_structure;
     int mb_aff_frame = 0;
 
-    first_mb_in_slice = get_ue_golomb(&sl->gb);
+    sl->first_mb_addr = get_ue_golomb(&sl->gb);
 
-    if (first_mb_in_slice == 0) { // FIXME better field boundary detection
+    if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
         if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
             ff_h264_field_end(h, sl, 1);
         }
@@ -936,7 +935,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
     if (slice_type > 9) {
         av_log(h->avctx, AV_LOG_ERROR,
                "slice type %d too large at %d\n",
-               slice_type, first_mb_in_slice);
+               slice_type, sl->first_mb_addr);
         return AVERROR_INVALIDDATA;
     }
     if (slice_type > 4) {
@@ -1274,19 +1273,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    assert(h->mb_num == h->mb_width * h->mb_height);
-    if (first_mb_in_slice << FIELD_OR_MBAFF_PICTURE(h) >= h->mb_num ||
-        first_mb_in_slice >= h->mb_num) {
-        av_log(h->avctx, AV_LOG_ERROR, "first_mb_in_slice overflow\n");
-        return AVERROR_INVALIDDATA;
-    }
-    sl->resync_mb_x = sl->mb_x =  first_mb_in_slice % h->mb_width;
-    sl->resync_mb_y = sl->mb_y = (first_mb_in_slice / h->mb_width) <<
-                                 FIELD_OR_MBAFF_PICTURE(h);
-    if (h->picture_structure == PICT_BOTTOM_FIELD)
-        sl->resync_mb_y = sl->mb_y = sl->mb_y + 1;
-    assert(sl->mb_y < h->mb_height);
-
     if (h->picture_structure == PICT_FRAME) {
         h->curr_pic_num = h->poc.frame_num;
         h->max_pic_num  = 1 << sps->log2_max_frame_num;
@@ -1441,6 +1427,19 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     ret = h264_slice_header_parse(h, sl);
     if (ret < 0)
         return ret;
+
+    assert(h->mb_num == h->mb_width * h->mb_height);
+    if (sl->first_mb_addr << FIELD_OR_MBAFF_PICTURE(h) >= h->mb_num ||
+        sl->first_mb_addr >= h->mb_num) {
+        av_log(h->avctx, AV_LOG_ERROR, "first_mb_in_slice overflow\n");
+        return AVERROR_INVALIDDATA;
+    }
+    sl->resync_mb_x = sl->mb_x =  sl->first_mb_addr % h->mb_width;
+    sl->resync_mb_y = sl->mb_y = (sl->first_mb_addr / h->mb_width) <<
+                                 FIELD_OR_MBAFF_PICTURE(h);
+    if (h->picture_structure == PICT_BOTTOM_FIELD)
+        sl->resync_mb_y = sl->mb_y = sl->mb_y + 1;
+    assert(sl->mb_y < h->mb_height);
 
     if (!h->setup_finished)
         ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
