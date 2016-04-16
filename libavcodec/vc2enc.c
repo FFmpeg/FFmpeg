@@ -65,8 +65,8 @@ static const VC2BaseVideoFormat base_video_fmts[] = {
     { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1280,  720, 0, 3,  "HD720P-50"  },
     { AV_PIX_FMT_YUV422P10, { 1001, 30000 }, 1920, 1080, 1, 3,  "HD1080I-60" },
     { AV_PIX_FMT_YUV422P10, {    1,    25 }, 1920, 1080, 1, 3,  "HD1080I-50" },
-    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 1920, 1080, 1, 3,  "HD1080P-60" },
-    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1920, 1080, 1, 3,  "HD1080P-50" },
+    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 1920, 1080, 0, 3,  "HD1080P-60" },
+    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1920, 1080, 0, 3,  "HD1080P-50" },
 
     { AV_PIX_FMT_YUV444P12, {    1,    24 }, 2048, 1080, 0, 4,        "DC2K" },
     { AV_PIX_FMT_YUV444P12, {    1,    24 }, 4096, 2160, 0, 5,        "DC4K" },
