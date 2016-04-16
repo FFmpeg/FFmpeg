@@ -1,6 +1,9 @@
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, MSMPEG4V1) += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/msmpeg4v1/mpg4.avi -an
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MSS1) += fate-mss1
+fate-mss1: CMD = framecrc -i $(TARGET_SAMPLES)/mss1/screen_codec.wmv -an -pix_fmt rgb24
+
 FATE_MSS2 += fate-mss2-pal
 fate-mss2-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rlepal.wmv
 
