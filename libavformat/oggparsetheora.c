@@ -23,8 +23,11 @@
  **/
 
 #include <stdlib.h>
+
 #include "libavutil/bswap.h"
-#include "libavcodec/get_bits.h"
+
+#include "libavcodec/bitstream.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "oggdec.h"
@@ -57,41 +60,41 @@ static int theora_header(AVFormatContext *s, int idx)
 
     switch (os->buf[os->pstart]) {
     case 0x80: {
-        GetBitContext gb;
+        BitstreamContext bc;
         AVRational timebase;
 
-        init_get_bits(&gb, os->buf + os->pstart, os->psize * 8);
+        bitstream_init(&bc, os->buf + os->pstart, os->psize * 8);
 
         /* 0x80"theora" */
-        skip_bits_long(&gb, 7 * 8);
+        bitstream_skip(&bc, 7 * 8);
 
-        thp->version = get_bits_long(&gb, 24);
+        thp->version = bitstream_read(&bc, 24);
         if (thp->version < 0x030100) {
             av_log(s, AV_LOG_ERROR,
                    "Too old or unsupported Theora (%x)\n", thp->version);
             return AVERROR(ENOSYS);
         }
 
-        st->codecpar->width  = get_bits(&gb, 16) << 4;
-        st->codecpar->height = get_bits(&gb, 16) << 4;
+        st->codecpar->width  = bitstream_read(&bc, 16) << 4;
+        st->codecpar->height = bitstream_read(&bc, 16) << 4;
 
         if (thp->version >= 0x030400)
-            skip_bits(&gb, 100);
+            bitstream_skip(&bc, 100);
 
         if (thp->version >= 0x030200) {
-            int width  = get_bits_long(&gb, 24);
-            int height = get_bits_long(&gb, 24);
+            int width  = bitstream_read(&bc, 24);
+            int height = bitstream_read(&bc, 24);
             if (width  <= st->codecpar->width  && width  > st->codecpar->width  - 16 &&
                 height <= st->codecpar->height && height > st->codecpar->height - 16) {
                 st->codecpar->width  = width;
                 st->codecpar->height = height;
             }
 
-            skip_bits(&gb, 16);
+            bitstream_skip(&bc, 16);
         }
 
-        timebase.den = get_bits_long(&gb, 32);
-        timebase.num = get_bits_long(&gb, 32);
+        timebase.den = bitstream_read(&bc, 32);
+        timebase.num = bitstream_read(&bc, 32);
         if (!(timebase.num > 0 && timebase.den > 0)) {
             av_log(s, AV_LOG_WARNING, "Invalid time base in theora stream, assuming 25 FPS\n");
             timebase.num = 1;
@@ -99,15 +102,15 @@ static int theora_header(AVFormatContext *s, int idx)
         }
         avpriv_set_pts_info(st, 64, timebase.num, timebase.den);
 
-        st->sample_aspect_ratio.num = get_bits_long(&gb, 24);
-        st->sample_aspect_ratio.den = get_bits_long(&gb, 24);
+        st->sample_aspect_ratio.num = bitstream_read(&bc, 24);
+        st->sample_aspect_ratio.den = bitstream_read(&bc, 24);
 
         if (thp->version >= 0x030200)
-            skip_bits_long(&gb, 38);
+            bitstream_skip(&bc, 38);
         if (thp->version >= 0x304000)
-            skip_bits(&gb, 2);
+            bitstream_skip(&bc, 2);
 
-        thp->gpshift = get_bits(&gb, 5);
+        thp->gpshift = bitstream_read(&bc, 5);
         thp->gpmask  = (1 << thp->gpshift) - 1;
 
         st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
