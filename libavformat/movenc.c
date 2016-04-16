@@ -31,7 +31,8 @@
 #include "avio.h"
 #include "isom.h"
 #include "avc.h"
-#include "libavcodec/get_bits.h"
+
+#include "libavcodec/bitstream.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
 #include "internal.h"
@@ -240,7 +241,7 @@ static int mov_write_amr_tag(AVIOContext *pb, MOVTrack *track)
 
 static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
 {
-    GetBitContext gbc;
+    BitstreamContext bc;
     PutBitContext pbc;
     uint8_t buf[3];
     int fscod, bsid, bsmod, acmod, lfeon, frmsizecod;
@@ -251,21 +252,21 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 11);
     ffio_wfourcc(pb, "dac3");
 
-    init_get_bits(&gbc, track->vos_data + 4, (track->vos_len - 4) * 8);
-    fscod      = get_bits(&gbc, 2);
-    frmsizecod = get_bits(&gbc, 6);
-    bsid       = get_bits(&gbc, 5);
-    bsmod      = get_bits(&gbc, 3);
-    acmod      = get_bits(&gbc, 3);
+    bitstream_init(&bc, track->vos_data + 4, (track->vos_len - 4) * 8);
+    fscod      = bitstream_read(&bc, 2);
+    frmsizecod = bitstream_read(&bc, 6);
+    bsid       = bitstream_read(&bc, 5);
+    bsmod      = bitstream_read(&bc, 3);
+    acmod      = bitstream_read(&bc, 3);
     if (acmod == 2) {
-        skip_bits(&gbc, 2); // dsurmod
+        bitstream_skip(&bc, 2); // dsurmod
     } else {
         if ((acmod & 1) && acmod != 1)
-            skip_bits(&gbc, 2); // cmixlev
+            bitstream_skip(&bc, 2); // cmixlev
         if (acmod & 4)
-            skip_bits(&gbc, 2); // surmixlev
+            bitstream_skip(&bc, 2); // surmixlev
     }
-    lfeon = get_bits1(&gbc);
+    lfeon = bitstream_read_bit(&bc);
 
     init_put_bits(&pbc, buf, sizeof(buf));
     put_bits(&pbc, 2, fscod);
@@ -462,28 +463,28 @@ static int mov_write_dvc1_structs(MOVTrack *track, uint8_t *buf)
         return AVERROR(ENOMEM);
     start = find_next_marker(track->vos_data, end);
     for (next = start; next < end; start = next) {
-        GetBitContext gb;
+        BitstreamContext bc;
         int size;
         next = find_next_marker(start + 4, end);
         size = next - start - 4;
         if (size <= 0)
             continue;
         unescaped_size = vc1_unescape_buffer(start + 4, size, unescaped);
-        init_get_bits(&gb, unescaped, 8 * unescaped_size);
+        bitstream_init(&bc, unescaped, 8 * unescaped_size);
         if (AV_RB32(start) == VC1_CODE_SEQHDR) {
-            int profile = get_bits(&gb, 2);
+            int profile = bitstream_read(&bc, 2);
             if (profile != PROFILE_ADVANCED) {
                 av_free(unescaped);
                 return AVERROR(ENOSYS);
             }
             seq_found = 1;
-            level = get_bits(&gb, 3);
+            level = bitstream_read(&bc, 3);
             /* chromaformat, frmrtq_postproc, bitrtq_postproc, postprocflag,
              * width, height */
-            skip_bits_long(&gb, 2 + 3 + 5 + 1 + 2*12);
-            skip_bits(&gb, 1); /* broadcast */
-            interlace = get_bits1(&gb);
-            skip_bits(&gb, 4); /* tfcntrflag, finterpflag, reserved, psf */
+            bitstream_skip(&bc, 2 + 3 + 5 + 1 + 2 * 12);
+            bitstream_skip(&bc, 1); /* broadcast */
+            interlace = bitstream_read_bit(&bc);
+            bitstream_skip(&bc, 4); /* tfcntrflag, finterpflag, reserved, psf */
         }
     }
     if (!seq_found) {
