@@ -62,7 +62,7 @@ static av_cold void x8_vlc_init(void){
 
     static VLC_TYPE table[28150][2];
 
-#define  init_ac_vlc(dst,src) \
+#define  init_ac_vlc(dst,src) do { \
     dst.table = &table[offset]; \
     dst.table_allocated = sizes[sizeidx]; \
     offset += sizes[sizeidx++]; \
@@ -70,7 +70,8 @@ static av_cold void x8_vlc_init(void){
               AC_VLC_BITS,77, \
               &src[1],4,2, \
               &src[0],4,2, \
-              INIT_VLC_USE_NEW_STATIC)
+              INIT_VLC_USE_NEW_STATIC); \
+    } while(0)
 //set ac tables
     for(i=0;i<8;i++){
         init_ac_vlc( j_ac_vlc[0][0][i], x8_ac0_highquant_table[i][0] );
@@ -81,7 +82,7 @@ static av_cold void x8_vlc_init(void){
 #undef init_ac_vlc
 
 //set dc tables
-#define init_dc_vlc(dst,src) \
+#define init_dc_vlc(dst,src) do { \
     dst.table = &table[offset]; \
     dst.table_allocated = sizes[sizeidx]; \
     offset += sizes[sizeidx++]; \
@@ -89,7 +90,8 @@ static av_cold void x8_vlc_init(void){
         DC_VLC_BITS,34, \
         &src[1],4,2, \
         &src[0],4,2, \
-        INIT_VLC_USE_NEW_STATIC);
+        INIT_VLC_USE_NEW_STATIC); \
+    } while(0)
     for(i=0;i<8;i++){
         init_dc_vlc( j_dc_vlc[0][i], x8_dc_highquant_table[i][0]);
         init_dc_vlc( j_dc_vlc[1][i], x8_dc_lowquant_table [i][0]);
@@ -97,7 +99,7 @@ static av_cold void x8_vlc_init(void){
 #undef init_dc_vlc
 
 //set orient tables
-#define init_or_vlc(dst,src) \
+#define init_or_vlc(dst,src) do { \
     dst.table = &table[offset]; \
     dst.table_allocated = sizes[sizeidx]; \
     offset += sizes[sizeidx++]; \
@@ -105,12 +107,13 @@ static av_cold void x8_vlc_init(void){
     OR_VLC_BITS,12, \
     &src[1],4,2, \
     &src[0],4,2, \
-    INIT_VLC_USE_NEW_STATIC);
+    INIT_VLC_USE_NEW_STATIC); \
+    } while(0)
     for(i=0;i<2;i++){
         init_or_vlc( j_orient_vlc[0][i], x8_orient_highquant_table[i][0]);
     }
     for(i=0;i<4;i++){
-        init_or_vlc( j_orient_vlc[1][i], x8_orient_lowquant_table [i][0])
+        init_or_vlc( j_orient_vlc[1][i], x8_orient_lowquant_table [i][0]);
     }
     if (offset != sizeof(table)/sizeof(VLC_TYPE)/2)
         av_log(NULL, AV_LOG_ERROR, "table size %i does not match needed %i\n", (int)(sizeof(table)/sizeof(VLC_TYPE)/2), offset);
