@@ -38,10 +38,11 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/float_dsp.h"
+
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
 #include "fft.h"
-#include "get_bits.h"
 #include "internal.h"
 
 #include "atrac.h"
@@ -80,7 +81,7 @@ typedef struct ChannelUnit {
 } ChannelUnit;
 
 typedef struct ATRAC3Context {
-    GetBitContext gb;
+    BitstreamContext bc;
     //@{
     /** stream data */
     int coding_mode;
@@ -203,7 +204,7 @@ static av_cold int atrac3_decode_close(AVCodecContext *avctx)
  * @param mantissas    mantissa output table
  * @param num_codes    number of values to get
  */
-static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
+static void read_quant_spectral_coeffs(BitstreamContext *bc, int selector,
                                        int coding_flag, int *mantissas,
                                        int num_codes)
 {
@@ -219,7 +220,7 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
         if (selector > 1) {
             for (i = 0; i < num_codes; i++) {
                 if (num_bits)
-                    code = get_sbits(gb, num_bits);
+                    code = bitstream_read_signed(bc, num_bits);
                 else
                     code = 0;
                 mantissas[i] = code;
@@ -227,7 +228,7 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
         } else {
             for (i = 0; i < num_codes; i++) {
                 if (num_bits)
-                    code = get_bits(gb, num_bits); // num_bits is always 4 in this case
+                    code = bitstream_read(bc, num_bits); // num_bits is always 4 in this case
                 else
                     code = 0;
                 mantissas[i * 2    ] = mantissa_clc_tab[code >> 2];
@@ -238,8 +239,8 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
         /* variable length coding (VLC) */
         if (selector != 1) {
             for (i = 0; i < num_codes; i++) {
-                huff_symb = get_vlc2(gb, spectral_coeff_tab[selector-1].table,
-                                     spectral_coeff_tab[selector-1].bits, 3);
+                huff_symb = bitstream_read_vlc(bc, spectral_coeff_tab[selector-1].table,
+                                               spectral_coeff_tab[selector-1].bits, 3);
                 huff_symb += 1;
                 code = huff_symb >> 1;
                 if (huff_symb & 1)
@@ -248,8 +249,8 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
             }
         } else {
             for (i = 0; i < num_codes; i++) {
-                huff_symb = get_vlc2(gb, spectral_coeff_tab[selector - 1].table,
-                                     spectral_coeff_tab[selector - 1].bits, 3);
+                huff_symb = bitstream_read_vlc(bc, spectral_coeff_tab[selector - 1].table,
+                                               spectral_coeff_tab[selector - 1].bits, 3);
                 mantissas[i * 2    ] = mantissa_vlc_tab[huff_symb * 2    ];
                 mantissas[i * 2 + 1] = mantissa_vlc_tab[huff_symb * 2 + 1];
             }
@@ -262,24 +263,24 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
  *
  * @return subband count, fix for broken specification/files
  */
-static int decode_spectrum(GetBitContext *gb, float *output)
+static int decode_spectrum(BitstreamContext *bc, float *output)
 {
     int num_subbands, coding_mode, i, j, first, last, subband_size;
     int subband_vlc_index[32], sf_index[32];
     int mantissas[128];
     float scale_factor;
 
-    num_subbands = get_bits(gb, 5);  // number of coded subbands
-    coding_mode  = get_bits1(gb);    // coding Mode: 0 - VLC/ 1-CLC
+    num_subbands = bitstream_read(bc, 5);   // number of coded subbands
+    coding_mode  = bitstream_read_bit(bc);  // coding Mode: 0 - VLC/ 1 - CLC
 
     /* get the VLC selector table for the subbands, 0 means not coded */
     for (i = 0; i <= num_subbands; i++)
-        subband_vlc_index[i] = get_bits(gb, 3);
+        subband_vlc_index[i] = bitstream_read(bc, 3);
 
     /* read the scale factor indexes from the stream */
     for (i = 0; i <= num_subbands; i++) {
         if (subband_vlc_index[i] != 0)
-            sf_index[i] = get_bits(gb, 6);
+            sf_index[i] = bitstream_read(bc, 6);
     }
 
     for (i = 0; i <= num_subbands; i++) {
@@ -292,7 +293,7 @@ static int decode_spectrum(GetBitContext *gb, float *output)
             /* decode spectral coefficients for this subband */
             /* TODO: This can be done faster is several blocks share the
              * same VLC selector (subband_vlc_index) */
-            read_quant_spectral_coeffs(gb, subband_vlc_index[i], coding_mode,
+            read_quant_spectral_coeffs(bc, subband_vlc_index[i], coding_mode,
                                        mantissas, subband_size);
 
             /* decode the scale factor for this subband */
@@ -320,7 +321,7 @@ static int decode_spectrum(GetBitContext *gb, float *output)
  * @param components tonal components
  * @param num_bands  number of coded bands
  */
-static int decode_tonal_components(GetBitContext *gb,
+static int decode_tonal_components(BitstreamContext *bc,
                                    TonalComponent *components, int num_bands)
 {
     int i, b, c, m;
@@ -328,13 +329,13 @@ static int decode_tonal_components(GetBitContext *gb,
     int band_flags[4], mantissa[8];
     int component_count = 0;
 
-    nb_components = get_bits(gb, 5);
+    nb_components = bitstream_read(bc, 5);
 
     /* no tonal components */
     if (nb_components == 0)
         return 0;
 
-    coding_mode_selector = get_bits(gb, 2);
+    coding_mode_selector = bitstream_read(bc, 2);
     if (coding_mode_selector == 2)
         return AVERROR_INVALIDDATA;
 
@@ -344,16 +345,16 @@ static int decode_tonal_components(GetBitContext *gb,
         int coded_values_per_component, quant_step_index;
 
         for (b = 0; b <= num_bands; b++)
-            band_flags[b] = get_bits1(gb);
+            band_flags[b] = bitstream_read_bit(bc);
 
-        coded_values_per_component = get_bits(gb, 3);
+        coded_values_per_component = bitstream_read(bc, 3);
 
-        quant_step_index = get_bits(gb, 3);
+        quant_step_index = bitstream_read(bc, 3);
         if (quant_step_index <= 1)
             return AVERROR_INVALIDDATA;
 
         if (coding_mode_selector == 3)
-            coding_mode = get_bits1(gb);
+            coding_mode = bitstream_read_bit(bc);
 
         for (b = 0; b < (num_bands + 1) * 4; b++) {
             int coded_components;
@@ -361,18 +362,18 @@ static int decode_tonal_components(GetBitContext *gb,
             if (band_flags[b >> 2] == 0)
                 continue;
 
-            coded_components = get_bits(gb, 3);
+            coded_components = bitstream_read(bc, 3);
 
             for (c = 0; c < coded_components; c++) {
                 TonalComponent *cmp = &components[component_count];
                 int sf_index, coded_values, max_coded_values;
                 float scale_factor;
 
-                sf_index = get_bits(gb, 6);
+                sf_index = bitstream_read(bc, 6);
                 if (component_count >= 64)
                     return AVERROR_INVALIDDATA;
 
-                cmp->pos = b * 64 + get_bits(gb, 6);
+                cmp->pos = b * 64 + bitstream_read(bc, 6);
 
                 max_coded_values = SAMPLES_PER_FRAME - cmp->pos;
                 coded_values     = coded_values_per_component + 1;
@@ -381,7 +382,7 @@ static int decode_tonal_components(GetBitContext *gb,
                 scale_factor = ff_atrac_sf_table[sf_index] *
                                inv_max_quant[quant_step_index];
 
-                read_quant_spectral_coeffs(gb, quant_step_index, coding_mode,
+                read_quant_spectral_coeffs(bc, quant_step_index, coding_mode,
                                            mantissa, coded_values);
 
                 cmp->num_coefs = coded_values;
@@ -404,7 +405,7 @@ static int decode_tonal_components(GetBitContext *gb,
  * @param block      the gainblock for the current band
  * @param num_bands  amount of coded bands
  */
-static int decode_gain_control(GetBitContext *gb, GainBlock *block,
+static int decode_gain_control(BitstreamContext *bc, GainBlock *block,
                                int num_bands)
 {
     int i, j;
@@ -413,13 +414,13 @@ static int decode_gain_control(GetBitContext *gb, GainBlock *block,
     AtracGainInfo *gain = block->g_block;
 
     for (i = 0; i <= num_bands; i++) {
-        gain[i].num_points    = get_bits(gb, 3);
+        gain[i].num_points    = bitstream_read(bc, 3);
         level                 = gain[i].lev_code;
         loc                   = gain[i].loc_code;
 
         for (j = 0; j < gain[i].num_points; j++) {
-            level[j] = get_bits(gb, 4);
-            loc[j]   = get_bits(gb, 5);
+            level[j] = bitstream_read(bc, 4);
+            loc[j]   = bitstream_read(bc, 5);
             if (j && loc[j] <= loc[j - 1])
                 return AVERROR_INVALIDDATA;
         }
@@ -567,7 +568,7 @@ static void channel_weighting(float *su1, float *su2, int *p3)
  * @param channel_num   channel number
  * @param coding_mode   the coding mode (JOINT_STEREO or regular stereo/mono)
  */
-static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
+static int decode_channel_sound_unit(ATRAC3Context *q, BitstreamContext *bc,
                                      ChannelUnit *snd, float *output,
                                      int channel_num, int coding_mode)
 {
@@ -576,30 +577,30 @@ static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
     GainBlock *gain2 = &snd->gain_block[1 - snd->gc_blk_switch];
 
     if (coding_mode == JOINT_STEREO && channel_num == 1) {
-        if (get_bits(gb, 2) != 3) {
+        if (bitstream_read(bc, 2) != 3) {
             av_log(NULL,AV_LOG_ERROR,"JS mono Sound Unit id != 3.\n");
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if (get_bits(gb, 6) != 0x28) {
+        if (bitstream_read(bc, 6) != 0x28) {
             av_log(NULL,AV_LOG_ERROR,"Sound Unit id != 0x28.\n");
             return AVERROR_INVALIDDATA;
         }
     }
 
     /* number of coded QMF bands */
-    snd->bands_coded = get_bits(gb, 2);
+    snd->bands_coded = bitstream_read(bc, 2);
 
-    ret = decode_gain_control(gb, gain2, snd->bands_coded);
+    ret = decode_gain_control(bc, gain2, snd->bands_coded);
     if (ret)
         return ret;
 
-    snd->num_components = decode_tonal_components(gb, snd->components,
+    snd->num_components = decode_tonal_components(bc, snd->components,
                                                   snd->bands_coded);
     if (snd->num_components < 0)
         return snd->num_components;
 
-    num_subbands = decode_spectrum(gb, snd->spectrum);
+    num_subbands = decode_spectrum(bc, snd->spectrum);
 
     /* Merge the decoded spectrum and tonal components. */
     last_tonal = add_tonal_components(snd->spectrum, snd->num_components,
@@ -644,9 +645,9 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
     if (q->coding_mode == JOINT_STEREO) {
         /* channel coupling mode */
         /* decode Sound Unit 1 */
-        init_get_bits(&q->gb, databuf, avctx->block_align * 8);
+        bitstream_init(&q->bc, databuf, avctx->block_align * 8);
 
-        ret = decode_channel_sound_unit(q, &q->gb, q->units, out_samples[0], 0,
+        ret = decode_channel_sound_unit(q, &q->bc, q->units, out_samples[0], 0,
                                         JOINT_STEREO);
         if (ret != 0)
             return ret;
@@ -673,22 +674,22 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
 
 
         /* set the bitstream reader at the start of the second Sound Unit*/
-        init_get_bits(&q->gb, ptr1, (avctx->block_align - i) * 8);
+        bitstream_init(&q->bc, ptr1, (avctx->block_align - i) * 8);
 
         /* Fill the Weighting coeffs delay buffer */
         memmove(q->weighting_delay, &q->weighting_delay[2],
                 4 * sizeof(*q->weighting_delay));
-        q->weighting_delay[4] = get_bits1(&q->gb);
-        q->weighting_delay[5] = get_bits(&q->gb, 3);
+        q->weighting_delay[4] = bitstream_read_bit(&q->bc);
+        q->weighting_delay[5] = bitstream_read(&q->bc, 3);
 
         for (i = 0; i < 4; i++) {
             q->matrix_coeff_index_prev[i] = q->matrix_coeff_index_now[i];
             q->matrix_coeff_index_now[i]  = q->matrix_coeff_index_next[i];
-            q->matrix_coeff_index_next[i] = get_bits(&q->gb, 2);
+            q->matrix_coeff_index_next[i] = bitstream_read(&q->bc, 2);
         }
 
         /* Decode Sound Unit 2. */
-        ret = decode_channel_sound_unit(q, &q->gb, &q->units[1],
+        ret = decode_channel_sound_unit(q, &q->bc, &q->units[1],
                                         out_samples[1], 1, JOINT_STEREO);
         if (ret != 0)
             return ret;
@@ -704,11 +705,11 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
         /* Decode the channel sound units. */
         for (i = 0; i < avctx->channels; i++) {
             /* Set the bitstream reader at the start of a channel sound unit. */
-            init_get_bits(&q->gb,
-                          databuf + i * avctx->block_align / avctx->channels,
-                          avctx->block_align * 8 / avctx->channels);
+            bitstream_init(&q->bc,
+                           databuf + i * avctx->block_align / avctx->channels,
+                           avctx->block_align * 8 / avctx->channels);
 
-            ret = decode_channel_sound_unit(q, &q->gb, &q->units[i],
+            ret = decode_channel_sound_unit(q, &q->bc, &q->units[i],
                                             out_samples[i], i, q->coding_mode);
             if (ret != 0)
                 return ret;
