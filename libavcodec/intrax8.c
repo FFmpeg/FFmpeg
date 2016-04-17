@@ -738,12 +738,6 @@ static void x8_init_block_index(MpegEncContext *s)
     s->dest[2] += (s->mb_y & (~1)) * uvlinesize << 2;
 }
 
-/**
- * Initialize IntraX8 frame decoder.
- * Requires valid MpegEncContext with valid s->mb_width before calling.
- * @param w pointer to IntraX8Context
- * @param s pointer to MpegEncContext of the parent codec
- */
 av_cold void ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
 {
     w->s = s;
@@ -768,26 +762,11 @@ av_cold void ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
     ff_intrax8dsp_init(&w->dsp);
 }
 
-/**
- * Destroy IntraX8 frame structure.
- * @param w pointer to IntraX8Context
- */
 av_cold void ff_intrax8_common_end(IntraX8Context *w)
 {
     av_freep(&w->prediction_table);
 }
 
-/**
- * Decode single IntraX8 frame.
- * The parent codec must fill s->loopfilter and s->gb (bitstream).
- * The parent codec must call ff_mpv_frame_start() before calling this function.
- * The parent codec must call ff_mpv_frame_end() after calling this function.
- * This function does not use ff_mpv_decode_mb().
- * lowres decoding is theoretically impossible.
- * @param w pointer to IntraX8Context
- * @param dquant doubled quantizer, it would be odd in case of VC-1 halfpq==1.
- * @param quant_offset offset away from zero
- */
 int ff_intrax8_decode_picture(IntraX8Context *const w, int dquant,
                               int quant_offset)
 {
