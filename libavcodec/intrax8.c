@@ -290,8 +290,8 @@ static const uint8_t dc_index_offset[] = {
     0, 1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
 };
 
-static int x8_get_dc_rlf(IntraX8Context *const w,
-                         int const mode, int *const level, int *const final)
+static int x8_get_dc_rlf(IntraX8Context *const w, const int mode,
+                         int *const level, int *const final)
 {
     MpegEncContext *const s = w->s;
     int i, e, c;
@@ -486,8 +486,8 @@ static void x8_get_prediction(IntraX8Context *const w)
  */
 }
 
-static void x8_ac_compensation(IntraX8Context *const w, int const direction,
-                               int const dc_level)
+static void x8_ac_compensation(IntraX8Context *const w, const int direction,
+                               const int dc_level)
 {
     MpegEncContext *const s = w->s;
     int t;
@@ -558,8 +558,8 @@ static void x8_ac_compensation(IntraX8Context *const w, int const direction,
 #undef T
 }
 
-static void dsp_x8_put_solidcolor(uint8_t const pix, uint8_t *dst,
-                                  int const linesize)
+static void dsp_x8_put_solidcolor(const uint8_t pix, uint8_t *dst,
+                                  const int linesize)
 {
     int k;
     for (k = 0; k < 8; k++) {
