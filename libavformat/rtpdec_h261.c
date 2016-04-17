@@ -19,7 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
+#include "libavcodec/bitstream.h"
+
 #include "avformat.h"
 #include "avio_internal.h"
 #include "rtpdec_formats.h"
@@ -118,18 +119,18 @@ static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx
             avio_w8(rtp_h261_ctx->buf, rtp_h261_ctx->endbyte);
         } else {
             /* ebit/sbit values inconsistent, assuming packet loss */
-            GetBitContext gb;
-            init_get_bits(&gb, buf, len*8 - ebit);
-            skip_bits(&gb, sbit);
+            BitstreamContext bc;
+            bitstream_init(&bc, buf, len * 8 - ebit);
+            bitstream_skip(&bc, sbit);
             if (rtp_h261_ctx->endbyte_bits) {
-                rtp_h261_ctx->endbyte |= get_bits(&gb, 8 - rtp_h261_ctx->endbyte_bits);
+                rtp_h261_ctx->endbyte |= bitstream_read(&bc, 8 - rtp_h261_ctx->endbyte_bits);
                 avio_w8(rtp_h261_ctx->buf, rtp_h261_ctx->endbyte);
             }
-            while (get_bits_left(&gb) >= 8)
-                avio_w8(rtp_h261_ctx->buf, get_bits(&gb, 8));
-            rtp_h261_ctx->endbyte_bits = get_bits_left(&gb);
+            while (bitstream_bits_left(&bc) >= 8)
+                avio_w8(rtp_h261_ctx->buf, bitstream_read(&bc, 8));
+            rtp_h261_ctx->endbyte_bits = bitstream_bits_left(&bc);
             if (rtp_h261_ctx->endbyte_bits)
-                rtp_h261_ctx->endbyte = get_bits(&gb, rtp_h261_ctx->endbyte_bits) <<
+                rtp_h261_ctx->endbyte = bitstream_read(&bc, rtp_h261_ctx->endbyte_bits) <<
                                         (8 - rtp_h261_ctx->endbyte_bits);
             ebit = 0;
             len  = 0;

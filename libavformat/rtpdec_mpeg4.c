@@ -27,11 +27,13 @@
  * @author Romain Degez
  */
 
-#include "rtpdec_formats.h"
-#include "internal.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
-#include "libavcodec/get_bits.h"
+
+#include "libavcodec/bitstream.h"
+
+#include "rtpdec_formats.h"
+#include "internal.h"
 
 #define MAX_AAC_HBR_FRAME_SIZE 8191
 
@@ -113,7 +115,7 @@ static int parse_fmtp_config(AVCodecParameters *par, const char *value)
 static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
 {
     int au_headers_length, au_header_size, i;
-    GetBitContext getbitcontext;
+    BitstreamContext bctx;
 
     if (len < 2)
         return AVERROR_INVALIDDATA;
@@ -134,7 +136,7 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
     if (len < data->au_headers_length_bytes)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(&getbitcontext, buf, data->au_headers_length_bytes * 8);
+    bitstream_init(&bctx, buf, data->au_headers_length_bytes * 8);
 
     /* XXX: Wrong if optional additional sections are present (cts, dts etc...) */
     au_header_size = data->sizelength + data->indexlength;
@@ -151,8 +153,8 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
     }
 
     for (i = 0; i < data->nb_au_headers; ++i) {
-        data->au_headers[i].size  = get_bits_long(&getbitcontext, data->sizelength);
-        data->au_headers[i].index = get_bits_long(&getbitcontext, data->indexlength);
+        data->au_headers[i].size  = bitstream_read(&bctx, data->sizelength);
+        data->au_headers[i].index = bitstream_read(&bctx, data->indexlength);
     }
 
     return 0;

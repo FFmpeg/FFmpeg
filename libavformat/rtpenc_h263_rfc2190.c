@@ -19,10 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/bitstream.h"
+#include "libavcodec/put_bits.h"
+
 #include "avformat.h"
 #include "rtpenc.h"
-#include "libavcodec/put_bits.h"
-#include "libavcodec/get_bits.h"
 
 struct H263Info {
     int src;
@@ -103,7 +104,7 @@ void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf, int size,
 {
     RTPMuxContext *s = s1->priv_data;
     int len, sbits = 0, ebits = 0;
-    GetBitContext gb;
+    BitstreamContext bc;
     struct H263Info info = { 0 };
     struct H263State state = { 0 };
     int mb_info_pos = 0, mb_info_count = mb_info_size / 12;
@@ -111,17 +112,17 @@ void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf, int size,
 
     s->timestamp = s->cur_timestamp;
 
-    init_get_bits(&gb, buf, size*8);
-    if (get_bits(&gb, 22) == 0x20) { /* Picture Start Code */
-        info.tr  = get_bits(&gb, 8);
-        skip_bits(&gb, 2); /* PTYPE start, H.261 disambiguation */
-        skip_bits(&gb, 3); /* Split screen, document camera, freeze picture release */
-        info.src = get_bits(&gb, 3);
-        info.i   = get_bits(&gb, 1);
-        info.u   = get_bits(&gb, 1);
-        info.s   = get_bits(&gb, 1);
-        info.a   = get_bits(&gb, 1);
-        info.pb  = get_bits(&gb, 1);
+    bitstream_init(&bc, buf, size * 8);
+    if (bitstream_read(&bc, 22) == 0x20) { /* Picture Start Code */
+        info.tr  = bitstream_read(&bc, 8);
+        bitstream_skip(&bc, 2); /* PTYPE start, H.261 disambiguation */
+        bitstream_skip(&bc, 3); /* Split screen, document camera, freeze picture release */
+        info.src = bitstream_read(&bc, 3);
+        info.i   = bitstream_read(&bc, 1);
+        info.u   = bitstream_read(&bc, 1);
+        info.s   = bitstream_read(&bc, 1);
+        info.a   = bitstream_read(&bc, 1);
+        info.pb  = bitstream_read(&bc, 1);
     }
 
     while (size > 0) {
