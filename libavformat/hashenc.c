@@ -79,6 +79,7 @@ static int hash_write_trailer(struct AVFormatContext *s)
     av_hash_final_hex(c->hash, buf + strlen(buf), sizeof(buf) - strlen(buf));
     av_strlcatf(buf, sizeof(buf), "\n");
     avio_write(s->pb, buf, strlen(buf));
+    avio_flush(s->pb);
 
     av_hash_freep(&c->hash);
     return 0;
