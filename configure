@@ -2066,6 +2066,7 @@ CONFIG_EXTRA="
     rv34dsp
     sinewin
     snappy
+    srtp
     startcode
     texturedsp
     texturedspenc
@@ -2789,7 +2790,7 @@ ogg_demuxer_select="dirac_parse"
 opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"
-rtpdec_select="asf_demuxer jpegtables mov_demuxer mpegts_demuxer rm_demuxer rtp_protocol"
+rtpdec_select="asf_demuxer jpegtables mov_demuxer mpegts_demuxer rm_demuxer rtp_protocol srtp"
 rtsp_demuxer_select="http_protocol rtpdec"
 rtsp_muxer_select="rtp_muxer http_protocol rtp_protocol rtpenc_chain"
 sap_demuxer_select="sdp_demuxer"
@@ -2896,7 +2897,7 @@ rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtp_protocol_select="udp_protocol"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
-srtp_protocol_select="rtp_protocol"
+srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
 tls_gnutls_protocol_deps="gnutls !tls_schannel_protocol !tls_securetransport_protocol"
 tls_gnutls_protocol_select="tcp_protocol"
