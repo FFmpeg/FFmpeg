@@ -24,6 +24,7 @@
 #include "libavutil/atomic.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
 #if FF_API_OLD_BSF
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -113,6 +114,16 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
             return ret;
 
         priv->ctx->time_base_in = avctx->time_base;
+
+        if (bsfc->args && bsfc->filter->priv_class) {
+            const AVOption *opt = av_opt_next(priv->ctx->priv_data, NULL);
+            const char * shorthand[2] = {NULL};
+
+            if (opt)
+                shorthand[0] = opt->name;
+
+            ret = av_opt_set_from_string(priv->ctx->priv_data, bsfc->args, shorthand, "=", ":");
+        }
 
         ret = av_bsf_init(priv->ctx);
         if (ret < 0)
