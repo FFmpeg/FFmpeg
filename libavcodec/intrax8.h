@@ -64,8 +64,9 @@ typedef struct IntraX8Context {
  * Requires valid MpegEncContext with valid s->mb_width before calling.
  * @param w pointer to IntraX8Context
  * @param s pointer to MpegEncContext of the parent codec
+ * @return 0 on success, a negative AVERROR value on error
  */
-void ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s);
+int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s);
 
 /**
  * Destroy IntraX8 frame structure.
