@@ -25,27 +25,31 @@
 #include "wmv2dsp.h"
 
 typedef struct IntraX8Context {
-    VLC * j_ac_vlc[4];//they point to the static j_mb_vlc
-    VLC * j_orient_vlc;
-    VLC * j_dc_vlc[3];
+    VLC *j_ac_vlc[4]; // they point to the static j_mb_vlc
+    VLC *j_orient_vlc;
+    VLC *j_dc_vlc[3];
 
     int use_quant_matrix;
-//set by ff_intrax8_common_init
-    uint8_t * prediction_table;//2*(mb_w*2)
+
+    // set by ff_intrax8_common_init
+    uint8_t *prediction_table; // 2 * (mb_w * 2)
     ScanTable scantable[3];
     WMV2DSPContext wdsp;
     uint8_t idct_permutation[64];
-//set by the caller codec
+
+    //set by the caller codec
     MpegEncContext * s;
     IntraX8DSPContext dsp;
     int quant;
     int dquant;
     int qsum;
-//calculated per frame
+
+    // calculated per frame
     int quant_dc_chroma;
     int divide_quant_dc_luma;
     int divide_quant_dc_chroma;
-//changed per block
+
+    // changed per block
     int edges;
     int flat_dc;
     int predicted_dc;
@@ -55,8 +59,8 @@ typedef struct IntraX8Context {
     int est_run;
 } IntraX8Context;
 
-void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s);
-void ff_intrax8_common_end(IntraX8Context * w);
-int  ff_intrax8_decode_picture(IntraX8Context * w, int quant, int halfpq);
+void ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s);
+void ff_intrax8_common_end(IntraX8Context *w);
+int ff_intrax8_decode_picture(IntraX8Context *w, int quant, int halfpq);
 
 #endif /* AVCODEC_INTRAX8_H */
