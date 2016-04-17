@@ -144,9 +144,6 @@ static inline void x8_select_ac_table(IntraX8Context *const w, int mode)
     table_index       = get_bits(&s->gb, 3);
     // 2 modes use same tables
     w->j_ac_vlc[mode] = &j_ac_vlc[w->quant < 13][mode >> 1][table_index];
-
-    table_index = get_bits(&s->gb, 3);
-    w->j_ac_vlc[mode] = &j_ac_vlc[w->quant<13][mode>>1][table_index];//2 modes use same tables
     av_assert2(w->j_ac_vlc[mode]);
 }
 
