@@ -324,7 +324,7 @@ static void vc1_sprite_flush(AVCodecContext *avctx)
 av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    int i;
+    int i, ret = AVERROR(ENOMEM);
     int mb_height = FFALIGN(s->mb_height, 2);
 
     /* Allocate mb bitplanes */
@@ -381,19 +381,21 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     v->mv_f_next[0]     = v->mv_f_next_base + s->b8_stride + 1;
     v->mv_f_next[1]     = v->mv_f_next[0] + (s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
 
-    ff_intrax8_common_init(&v->x8,s);
-
     if (s->avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || s->avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         for (i = 0; i < 4; i++)
             if (!(v->sr_rows[i >> 1][i & 1] = av_malloc(v->output_width)))
                 return AVERROR(ENOMEM);
     }
 
+    ret = ff_intrax8_common_init(&v->x8, s);
+    if (ret < 0)
+        goto error;
+
     return 0;
 
 error:
     ff_vc1_decode_end(s->avctx);
-    return AVERROR(ENOMEM);
+    return ret;
 }
 
 av_cold void ff_vc1_init_transposed_scantables(VC1Context *v)
