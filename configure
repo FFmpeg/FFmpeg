@@ -3204,7 +3204,6 @@ ENCODER_LIST=$(find_things  encoder  ENC      libavcodec/allcodecs.c)
 DECODER_LIST=$(find_things  decoder  DEC      libavcodec/allcodecs.c)
 HWACCEL_LIST=$(find_things  hwaccel  HWACCEL  libavcodec/allcodecs.c)
 PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
-BSF_LIST=$(find_things      bsf      BSF      libavcodec/allcodecs.c)
 MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
 DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
 OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
@@ -3218,6 +3217,7 @@ find_things_extern(){
     sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$thing/p" "$file"
 }
 
+BSF_LIST=$(find_things_extern bsf AVBitStreamFilter libavcodec/bitstream_filters.c)
 PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
 
 ALL_COMPONENTS="

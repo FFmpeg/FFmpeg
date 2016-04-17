@@ -26,6 +26,8 @@ OBJS = allcodecs.o                                                      \
        avpicture.o                                                      \
        bitstream.o                                                      \
        bitstream_filter.o                                               \
+       bitstream_filters.o                                              \
+       bsf.o                                                            \
        codec_desc.o                                                     \
        d3d11va.o                                                        \
        dirac.o                                                          \
