@@ -28,10 +28,10 @@
 #define avg(a,b,c,d) (a)
 #elif SS_H == 0
 #define ss 422
-#define avg(a,b,c,d) ((a + b + 1) >> 1)
+#define avg(a,b,c,d) (((a) + (b) + 1) >> 1)
 #else
 #define ss 420
-#define avg(a,b,c,d) ((a + b + c + d + 2) >> 2)
+#define avg(a,b,c,d) (((a) + (b) + (c) + (d) + 2) >> 2)
 #endif
 
 #undef fn
