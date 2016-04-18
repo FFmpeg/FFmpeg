@@ -25,9 +25,10 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
+
 #include "avcodec.h"
+#include "bitstream.h"
 #include "internal.h"
-#include "get_bits.h"
 #include "put_bits.h"
 
 /**
@@ -429,7 +430,7 @@ static int g726_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size = avpkt->size;
     G726Context *c = avctx->priv_data;
     int16_t *samples;
-    GetBitContext gb;
+    BitstreamContext bc;
     int out_samples, ret;
 
     out_samples = buf_size * 8 / c->code_size;
@@ -442,12 +443,12 @@ static int g726_decode_frame(AVCodecContext *avctx, void *data,
     }
     samples = (int16_t *)frame->data[0];
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    bitstream_init(&bc, buf, buf_size * 8);
 
     while (out_samples--)
-        *samples++ = g726_decode(c, get_bits(&gb, c->code_size));
+        *samples++ = g726_decode(c, bitstream_read(&bc, c->code_size));
 
-    if (get_bits_left(&gb) > 0)
+    if (bitstream_bits_left(&bc) > 0)
         av_log(avctx, AV_LOG_ERROR, "Frame invalidly split, missing parser?\n");
 
     *got_frame_ptr = 1;
