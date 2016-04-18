@@ -7,6 +7,9 @@ fate-4xm-2: CMD = framecrc -i $(TARGET_SAMPLES)/4xm/version2.4xm -pix_fmt rgb24 
 FATE_VIDEO-$(call DEMDEC, FOURXM, FOURXM) += $(FATE_4XM)
 fate-4xm: $(FATE_4XM)
 
+FATE_VIDEO-$(call DEMDEC, AVI, ZERO12V) += fate-012v
+fate-012v: CMD = framecrc -i $(TARGET_SAMPLES)/012v/sample.avi -pix_fmt yuv422p16le
+
 FATE_VIDEO-$(call DEMDEC, AVI, AASC) += fate-aasc
 fate-aasc: CMD = framecrc -i $(TARGET_SAMPLES)/aasc/AASC-1.5MB.AVI -pix_fmt rgb24
 
