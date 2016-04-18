@@ -81,7 +81,9 @@ fail:
 static const AVOption options[] = {
     { "freq", "When do dump extradata", OFFSET(freq), AV_OPT_TYPE_INT,
         { .i64 = DUMP_FREQ_KEYFRAME }, DUMP_FREQ_KEYFRAME, DUMP_FREQ_ALL, 0, "freq" },
+        { "k",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_KEYFRAME }, .unit = "freq" },
         { "keyframe", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_KEYFRAME }, .unit = "freq" },
+        { "e",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_ALL      }, .unit = "freq" },
         { "all",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_ALL      }, .unit = "freq" },
     { NULL },
 };
