@@ -56,6 +56,7 @@ static void *urlcontext_child_next(void *obj, void *prev)
 static const AVOption options[] = {
     {"protocol_whitelist", "List of protocols that are allowed to be used", OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
     {"protocol_blacklist", "List of protocols that are not allowed to be used", OFFSET(protocol_blacklist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
+    {"rw_timeout", "Timeout for IO operations (in microseconds)", offsetof(URLContext, rw_timeout), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_DECODING_PARAM },
     { NULL }
 };
 
@@ -388,8 +389,10 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
             }
         } else if (ret < 1)
             return (ret < 0 && ret != AVERROR_EOF) ? ret : len;
-        if (ret)
+        if (ret) {
             fast_retries = FFMAX(fast_retries, 2);
+            wait_since = 0;
+        }
         len += ret;
     }
     return len;
