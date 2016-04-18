@@ -31,9 +31,10 @@
 
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "hpeldsp.h"
 #include "internal.h"
 
@@ -83,7 +84,7 @@ typedef struct Indeo3DecodeContext {
     AVCodecContext *avctx;
     HpelDSPContext  hdsp;
 
-    GetBitContext   gb;
+    BitstreamContext bc;
     int             need_resync;
     int             skip_bits;
     const uint8_t   *next_cell_data;
@@ -725,8 +726,8 @@ enum {
     ctx->need_resync = 1
 
 #define RESYNC_BITSTREAM \
-    if (ctx->need_resync && !(get_bits_count(&ctx->gb) & 7)) { \
-        skip_bits_long(&ctx->gb, ctx->skip_bits);              \
+    if (ctx->need_resync && !(bitstream_tell(&ctx->bc) & 7)) { \
+        bitstream_skip(&ctx->bc, ctx->skip_bits);              \
         ctx->skip_bits   = 0;                                  \
         ctx->need_resync = 0;                                  \
     }
@@ -773,7 +774,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
     while (1) { /* loop until return */
         RESYNC_BITSTREAM;
-        switch (code = get_bits(&ctx->gb, 2)) {
+        switch (code = bitstream_read(&ctx->bc, 2)) {
         case H_SPLIT:
         case V_SPLIT:
             if (parse_bintree(ctx, avctx, plane, code, &curr_cell, depth - 1, strip_width))
@@ -785,7 +786,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 curr_cell.tree   = 1; /* enter the VQ tree */
             } else { /* VQ tree NULL code */
                 RESYNC_BITSTREAM;
-                code = get_bits(&ctx->gb, 2);
+                code = bitstream_read(&ctx->bc, 2);
                 if (code >= 2) {
                     av_log(avctx, AV_LOG_ERROR, "Invalid VQ_NULL code: %d\n", code);
                     return AVERROR_INVALIDDATA;
@@ -805,7 +806,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 unsigned mv_idx;
                 /* get motion vector index and setup the pointer to the mv set */
                 if (!ctx->need_resync)
-                    ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
+                    ctx->next_cell_data = &ctx->bc.buffer[(bitstream_tell(&ctx->bc) + 7) >> 3];
                 mv_idx = *(ctx->next_cell_data++);
                 if (mv_idx >= ctx->num_vectors) {
                     av_log(avctx, AV_LOG_ERROR, "motion vector index out of range\n");
@@ -816,7 +817,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 UPDATE_BITPOS(8);
             } else { /* VQ tree DATA code */
                 if (!ctx->need_resync)
-                    ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
+                    ctx->next_cell_data = &ctx->bc.buffer[(bitstream_tell(&ctx->bc) + 7) >> 3];
 
                 CHECK_CELL
                 bytes_used = decode_cell(ctx, avctx, plane, &curr_cell,
@@ -856,7 +857,7 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->mc_vectors  = num_vectors ? data : 0;
 
     /* init the bitreader */
-    init_get_bits(&ctx->gb, &data[num_vectors * 2], (data_size - num_vectors * 2) << 3);
+    bitstream_init(&ctx->bc, &data[num_vectors * 2], (data_size - num_vectors * 2) << 3);
     ctx->skip_bits   = 0;
     ctx->need_resync = 0;
 

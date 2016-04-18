@@ -29,9 +29,10 @@
 #ifndef AVCODEC_IVI_H
 #define AVCODEC_IVI_H
 
-#include "avcodec.h"
-#include "get_bits.h"
 #include <stdint.h>
+
+#include "avcodec.h"
+#include "bitstream.h"
 
 /**
  *  Indeo 4 frame types.
@@ -210,7 +211,7 @@ typedef struct IVIPicConfig {
 } IVIPicConfig;
 
 typedef struct IVI45DecContext {
-    GetBitContext   gb;
+    BitstreamContext bc;
     RVMapDesc       rvmap_tabs[9];   ///< local corrected copy of the static rvmap tables
 
     uint32_t        frame_num;
@@ -302,14 +303,14 @@ void ff_ivi_init_static_vlc(void);
  *  Decode a huffman codebook descriptor from the bitstream
  *  and select specified huffman table.
  *
- *  @param[in,out]  gb          the GetBit context
+ *  @param[in,out]  bc          the Bitstream context
  *  @param[in]      desc_coded  flag signalling if table descriptor was coded
  *  @param[in]      which_tab   codebook purpose (IVI_MB_HUFF or IVI_BLK_HUFF)
  *  @param[out]     huff_tab    pointer to the descriptor of the selected table
  *  @param[in]      avctx       AVCodecContext pointer
  *  @return             zero on success, negative value otherwise
  */
-int  ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
+int  ff_ivi_dec_huff_desc(BitstreamContext *bc, int desc_coded, int which_tab,
                           IVIHuffTab *huff_tab, AVCodecContext *avctx);
 
 /**

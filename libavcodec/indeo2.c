@@ -28,7 +28,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "indeo2data.h"
 #include "internal.h"
 #include "mathops.h"
@@ -36,7 +36,7 @@
 typedef struct Ir2Context{
     AVCodecContext *avctx;
     AVFrame *picture;
-    GetBitContext gb;
+    BitstreamContext bc;
     int decode_delta;
 } Ir2Context;
 
@@ -44,9 +44,9 @@ typedef struct Ir2Context{
 static VLC ir2_vlc;
 
 /* Indeo 2 codes are in range 0x01..0x7F and 0x81..0x90 */
-static inline int ir2_get_code(GetBitContext *gb)
+static inline int ir2_get_code(BitstreamContext *bc)
 {
-    return get_vlc2(gb, ir2_vlc.table, CODE_VLC_BITS, 1) + 1;
+    return bitstream_read_vlc(bc, ir2_vlc.table, CODE_VLC_BITS, 1) + 1;
 }
 
 static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst,
@@ -63,7 +63,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
 
     /* first line contain absolute values, other lines contain deltas */
     while (out < width) {
-        c = ir2_get_code(&ctx->gb);
+        c = ir2_get_code(&ctx->bc);
         if (c >= 0x80) { /* we have a run */
             c -= 0x7F;
             if (out + c*2 > width)
@@ -80,7 +80,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     for (j = 1; j < height; j++) {
         out = 0;
         while (out < width) {
-            c = ir2_get_code(&ctx->gb);
+            c = ir2_get_code(&ctx->bc);
             if (c >= 0x80) { /* we have a skip */
                 c -= 0x7F;
                 if (out + c*2 > width)
@@ -119,7 +119,7 @@ static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_
     for (j = 0; j < height; j++) {
         out = 0;
         while (out < width) {
-            c = ir2_get_code(&ctx->gb);
+            c = ir2_get_code(&ctx->bc);
             if (c >= 0x80) { /* we have a skip */
                 c   -= 0x7F;
                 out += c * 2;
@@ -171,7 +171,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
         buf[i] = ff_reverse[buf[i]];
 #endif
 
-    init_get_bits(&s->gb, buf + start, (buf_size - start) * 8);
+    bitstream_init(&s->bc, buf + start, (buf_size - start) * 8);
 
     ltab = buf[0x22] & 3;
     ctab = buf[0x22] >> 2;

@@ -33,7 +33,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 #include "mathops.h"
 #include "ivi.h"
@@ -225,7 +225,7 @@ static int ivi_huff_desc_cmp(const IVIHuffDesc *desc1,
            memcmp(desc1->xbits, desc2->xbits, desc1->num_rows);
 }
 
-int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
+int ff_ivi_dec_huff_desc(BitstreamContext *bc, int desc_coded, int which_tab,
                          IVIHuffTab *huff_tab, AVCodecContext *avctx)
 {
     int i, result;
@@ -238,17 +238,17 @@ int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
         return 0;
     }
 
-    huff_tab->tab_sel = get_bits(gb, 3);
+    huff_tab->tab_sel = bitstream_read(bc, 3);
     if (huff_tab->tab_sel == 7) {
         /* custom huffman table (explicitly encoded) */
-        new_huff.num_rows = get_bits(gb, 4);
+        new_huff.num_rows = bitstream_read(bc, 4);
         if (!new_huff.num_rows) {
             av_log(avctx, AV_LOG_ERROR, "Empty custom Huffman table!\n");
             return AVERROR_INVALIDDATA;
         }
 
         for (i = 0; i < new_huff.num_rows; i++)
-            new_huff.xbits[i] = get_bits(gb, 4);
+            new_huff.xbits[i] = bitstream_read(bc, 4);
 
         /* Have we got the same custom table? Rebuild if not. */
         if (ivi_huff_desc_cmp(&new_huff, &huff_tab->cust_desc)) {
@@ -461,22 +461,22 @@ av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes,
  *  if (tile_data_size >= 255) than this field four is byte long: 0xFF X1 X2 X3
  *  where X1-X3 is size of the tile data
  *
- *  @param[in,out]  gb  the GetBit context
+ *  @param[in,out]  bc  the Bitstream context
  *  @return     size of the tile data in bytes
  */
-static int ivi_dec_tile_data_size(GetBitContext *gb)
+static int ivi_dec_tile_data_size(BitstreamContext *bc)
 {
     int    len;
 
     len = 0;
-    if (get_bits1(gb)) {
-        len = get_bits(gb, 8);
+    if (bitstream_read_bit(bc)) {
+        len = bitstream_read(bc, 8);
         if (len == 255)
-            len = get_bits_long(gb, 24);
+            len = bitstream_read(bc, 24);
     }
 
     /* align the bitstream reader on the byte boundary */
-    align_get_bits(gb);
+    bitstream_align(bc);
 
     return len;
 }
@@ -500,7 +500,7 @@ static int ivi_dc_transform(IVIBandDesc *band, int *prev_dc, int buf_offs,
     return 0;
 }
 
-static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
+static int ivi_decode_coded_blocks(BitstreamContext *bc, IVIBandDesc *band,
                                    ivi_mc_func mc, ivi_mc_avg_func mc_avg,
                                    int mv_x, int mv_y,
                                    int mv_x2, int mv_y2,
@@ -536,16 +536,15 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
     /* zero column flags */
     memset(col_flags, 0, sizeof(col_flags));
     while (scan_pos <= num_coeffs) {
-        sym = get_vlc2(gb, band->blk_vlc.tab->table,
-                       IVI_VLC_BITS, 1);
+        sym = bitstream_read_vlc(bc, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
         if (sym == rvmap->eob_sym)
             break; /* End of block */
 
         /* Escape - run/val explicitly coded using 3 vlc codes */
         if (sym == rvmap->esc_sym) {
-            run = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1) + 1;
-            lo  = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
-            hi  = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
+            run = bitstream_read_vlc(bc, band->blk_vlc.tab->table, IVI_VLC_BITS, 1) + 1;
+            lo  = bitstream_read_vlc(bc, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
+            hi  = bitstream_read_vlc(bc, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
             /* merge them and convert into signed val */
             val = IVI_TOSIGNED((hi << 6) | lo);
         } else {
@@ -601,12 +600,12 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
  *  dequantize them, apply inverse transform and motion compensation
  *  in order to reconstruct the picture.
  *
- *  @param[in,out]  gb    the GetBit context
+ *  @param[in,out]  bc    the Bitstream context
  *  @param[in]      band  pointer to the band descriptor
  *  @param[in]      tile  pointer to the tile descriptor
  *  @return     result code: 0 - OK, -1 = error (corrupted blocks data)
  */
-static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
+static int ivi_decode_blocks(BitstreamContext *bc, IVIBandDesc *band,
                              IVITile *tile, AVCodecContext *avctx)
 {
     int mbn, blk, num_blocks, blk_size, ret, is_intra;
@@ -710,7 +709,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
             }
 
             if (cbp & 1) { /* block coded ? */
-                ret = ivi_decode_coded_blocks(gb, band, mc_with_delta_func,
+                ret = ivi_decode_coded_blocks(bc, band, mc_with_delta_func,
                                               mc_avg_with_delta_func,
                                               mv_x, mv_y, mv_x2, mv_y2,
                                               &prev_dc, is_intra,
@@ -739,7 +738,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
         }// for blk
     }// for mbn
 
-    align_get_bits(gb);
+    bitstream_align(bc);
 
     return 0;
 }
@@ -925,7 +924,7 @@ static int decode_band(IVI45DecContext *ctx,
         band->ref_buf   = band->bufs[ctx->ref_buf];
         band->b_ref_buf = 0;
     }
-    band->data_ptr  = ctx->frame_data + (get_bits_count(&ctx->gb) >> 3);
+    band->data_ptr  = ctx->frame_data + (bitstream_tell(&ctx->bc) >> 3);
 
     result = ctx->decode_band_hdr(ctx, band, avctx);
     if (result) {
@@ -949,7 +948,7 @@ static int decode_band(IVI45DecContext *ctx,
         FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
     }
 
-    pos = get_bits_count(&ctx->gb);
+    pos = bitstream_tell(&ctx->bc);
 
     for (t = 0; t < band->num_tiles; t++) {
         tile = &band->tiles[t];
@@ -959,7 +958,7 @@ static int decode_band(IVI45DecContext *ctx,
                    band->mb_size, tile->mb_size);
             return AVERROR_INVALIDDATA;
         }
-        tile->is_empty = get_bits1(&ctx->gb);
+        tile->is_empty = bitstream_read_bit(&ctx->bc);
         if (tile->is_empty) {
             result = ivi_process_empty_tile(avctx, band, tile,
                                       (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
@@ -967,7 +966,7 @@ static int decode_band(IVI45DecContext *ctx,
                 break;
             ff_dlog(avctx, "Empty tile encountered!\n");
         } else {
-            tile->data_size = ivi_dec_tile_data_size(&ctx->gb);
+            tile->data_size = ivi_dec_tile_data_size(&ctx->bc);
             if (!tile->data_size) {
                 av_log(avctx, AV_LOG_ERROR, "Tile data size is zero!\n");
                 return AVERROR_INVALIDDATA;
@@ -977,14 +976,14 @@ static int decode_band(IVI45DecContext *ctx,
             if (result < 0)
                 break;
 
-            result = ivi_decode_blocks(&ctx->gb, band, tile, avctx);
+            result = ivi_decode_blocks(&ctx->bc, band, tile, avctx);
             if (result < 0) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Corrupted tile data encountered!\n");
                 break;
             }
 
-            if (((get_bits_count(&ctx->gb) - pos) >> 3) != tile->data_size) {
+            if (((bitstream_tell(&ctx->bc) - pos) >> 3) != tile->data_size) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Tile data_size mismatch!\n");
                 result = AVERROR_INVALIDDATA;
@@ -1016,7 +1015,7 @@ static int decode_band(IVI45DecContext *ctx,
     }
 #endif
 
-    align_get_bits(&ctx->gb);
+    bitstream_align(&ctx->bc);
 
     return result;
 }
@@ -1030,7 +1029,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int             buf_size = avpkt->size;
     int             result, p, b;
 
-    init_get_bits(&ctx->gb, buf, buf_size * 8);
+    bitstream_init(&ctx->bc, buf, buf_size * 8);
     ctx->frame_data = buf;
     ctx->frame_size = buf_size;
 
@@ -1122,14 +1121,14 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ctx->is_indeo4 && ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
         int left;
 
-        while (get_bits(&ctx->gb, 8)); // skip version string
-        left = get_bits_count(&ctx->gb) & 0x18;
-        skip_bits_long(&ctx->gb, 64 - left);
-        if (get_bits_left(&ctx->gb) > 18 &&
-            show_bits_long(&ctx->gb, 21) == 0xBFFF8) { // syncheader + inter type
+        while (bitstream_read(&ctx->bc, 8)); // skip version string
+        left = bitstream_tell(&ctx->bc) & 0x18;
+        bitstream_skip(&ctx->bc, 64 - left);
+        if (bitstream_bits_left(&ctx->bc) > 18 &&
+            bitstream_peek(&ctx->bc, 21) == 0xBFFF8) { // syncheader + inter type
             AVPacket pkt;
-            pkt.data = avpkt->data + (get_bits_count(&ctx->gb) >> 3);
-            pkt.size = get_bits_left(&ctx->gb) >> 3;
+            pkt.data = avpkt->data + (bitstream_tell(&ctx->bc) >> 3);
+            pkt.size = bitstream_bits_left(&ctx->bc) >> 3;
             ff_ivi_decode_frame(avctx, ctx->p_frame, &ctx->got_p_frame, &pkt);
         }
     }
