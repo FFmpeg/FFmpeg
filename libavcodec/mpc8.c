@@ -27,8 +27,9 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 #include "mpegaudiodsp.h"
 
@@ -42,22 +43,22 @@ static VLC q1_vlc, q2_vlc[2], q3_vlc[2], quant_vlc[4][2], q9up_vlc;
 static const int q3_offsets[2] = { MPC8_Q3_OFFSET, MPC8_Q4_OFFSET };
 static const int quant_offsets[6] = { MPC8_Q5_OFFSET, MPC8_Q6_OFFSET, MPC8_Q7_OFFSET, MPC8_Q8_OFFSET };
 
-static inline int mpc8_dec_base(GetBitContext *gb, int k, int n)
+static inline int mpc8_dec_base(BitstreamContext *bc, int k, int n)
 {
     int len = mpc8_cnk_len[k-1][n-1] - 1;
-    int code = len ? get_bits_long(gb, len) : 0;
+    int code = len ? bitstream_read(bc, len) : 0;
 
     if (code >= mpc8_cnk_lost[k-1][n-1])
-        code = ((code << 1) | get_bits1(gb)) - mpc8_cnk_lost[k-1][n-1];
+        code = ((code << 1) | bitstream_read_bit(bc)) - mpc8_cnk_lost[k - 1][n - 1];
 
     return code;
 }
 
-static inline int mpc8_dec_enum(GetBitContext *gb, int k, int n)
+static inline int mpc8_dec_enum(BitstreamContext *bc, int k, int n)
 {
     int bits = 0;
     const uint32_t * C = mpc8_cnk[k-1];
-    int code = mpc8_dec_base(gb, k, n);
+    int code = mpc8_dec_base(bc, k, n);
 
     do {
         n--;
@@ -72,18 +73,18 @@ static inline int mpc8_dec_enum(GetBitContext *gb, int k, int n)
     return bits;
 }
 
-static inline int mpc8_get_mod_golomb(GetBitContext *gb, int m)
+static inline int mpc8_get_mod_golomb(BitstreamContext *bc, int m)
 {
     if(mpc8_cnk_len[0][m] < 1) return 0;
-    return mpc8_dec_base(gb, 1, m+1);
+    return mpc8_dec_base(bc, 1, m + 1);
 }
 
-static int mpc8_get_mask(GetBitContext *gb, int size, int t)
+static int mpc8_get_mask(BitstreamContext *bc, int size, int t)
 {
     int mask = 0;
 
     if(t && t != size)
-         mask = mpc8_dec_enum(gb, FFMIN(t, size - t), size);
+         mask = mpc8_dec_enum(bc, FFMIN(t, size - t), size);
     if((t << 1) > size) mask = ~mask;
 
     return mask;
@@ -97,7 +98,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
 {
     int i;
     MPCContext *c = avctx->priv_data;
-    GetBitContext gb;
+    BitstreamContext bc;
     static int vlc_initialized = 0;
     int channels;
 
@@ -122,17 +123,17 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
 
     ff_mpc_init();
 
-    init_get_bits(&gb, avctx->extradata, 16);
+    bitstream_init(&bc, avctx->extradata, 16);
 
-    skip_bits(&gb, 3);//sample rate
-    c->maxbands = get_bits(&gb, 5) + 1;
-    channels = get_bits(&gb, 4) + 1;
+    bitstream_skip(&bc, 3); // sample rate
+    c->maxbands = bitstream_read(&bc, 5) + 1;
+    channels    = bitstream_read(&bc, 4) + 1;
     if (channels > 2) {
         avpriv_request_sample(avctx, "Multichannel MPC SV8");
         return AVERROR_PATCHWELCOME;
     }
-    c->MSS = get_bits1(&gb);
-    c->frames = 1 << (get_bits(&gb, 3) * 2);
+    c->MSS    = bitstream_read_bit(&bc);
+    c->frames = 1 << (bitstream_read(&bc, 3) * 2);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
@@ -238,7 +239,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     MPCContext *c = avctx->priv_data;
-    GetBitContext gb2, *gb = &gb2;
+    BitstreamContext bc2, *bc = &bc2;
     int i, j, k, ch, cnt, res, t;
     Band *bands = c->bands;
     int off;
@@ -258,13 +259,13 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         memset(c->Q, 0, sizeof(c->Q));
         c->last_bits_used = 0;
     }
-    init_get_bits(gb, buf, buf_size * 8);
-    skip_bits(gb, c->last_bits_used & 7);
+    bitstream_init(bc, buf, buf_size * 8);
+    bitstream_skip(bc, c->last_bits_used & 7);
 
     if(keyframe)
-        maxband = mpc8_get_mod_golomb(gb, c->maxbands + 1);
+        maxband = mpc8_get_mod_golomb(bc, c->maxbands + 1);
     else{
-        maxband = c->last_max_band + get_vlc2(gb, band_vlc.table, MPC8_BANDS_BITS, 2);
+        maxband = c->last_max_band + bitstream_read_vlc(bc, band_vlc.table, MPC8_BANDS_BITS, 2);
         if(maxband > 32) maxband -= 33;
     }
     if(maxband > c->maxbands + 1)
@@ -276,7 +277,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         last[0] = last[1] = 0;
         for(i = maxband - 1; i >= 0; i--){
             for(ch = 0; ch < 2; ch++){
-                last[ch] = get_vlc2(gb, res_vlc[last[ch] > 2].table, MPC8_RES_BITS, 2) + last[ch];
+                last[ch] = bitstream_read_vlc(bc, res_vlc[last[ch] > 2].table, MPC8_RES_BITS, 2) + last[ch];
                 if(last[ch] > 15) last[ch] -= 17;
                 bands[i].res[ch] = last[ch];
             }
@@ -288,8 +289,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
             for(i = 0; i < maxband; i++)
                 if(bands[i].res[0] || bands[i].res[1])
                     cnt++;
-            t = mpc8_get_mod_golomb(gb, cnt);
-            mask = mpc8_get_mask(gb, cnt, t);
+            t = mpc8_get_mod_golomb(bc, cnt);
+            mask = mpc8_get_mask(bc, cnt, t);
             for(i = maxband - 1; i >= 0; i--)
                 if(bands[i].res[0] || bands[i].res[1]){
                     bands[i].msf = mask & 1;
@@ -309,7 +310,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         if(bands[i].res[0] || bands[i].res[1]){
             cnt = !!bands[i].res[0] + !!bands[i].res[1] - 1;
             if(cnt >= 0){
-                t = get_vlc2(gb, scfi_vlc[cnt].table, scfi_vlc[cnt].bits, 1);
+                t = bitstream_read_vlc(bc, scfi_vlc[cnt].table, scfi_vlc[cnt].bits, 1);
                 if(bands[i].res[0]) bands[i].scfi[0] = t >> (2 * cnt);
                 if(bands[i].res[1]) bands[i].scfi[1] = t & 3;
             }
@@ -321,21 +322,21 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
             if(!bands[i].res[ch]) continue;
 
             if(c->oldDSCF[ch][i]){
-                bands[i].scf_idx[ch][0] = get_bits(gb, 7) - 6;
+                bands[i].scf_idx[ch][0] = bitstream_read(bc, 7) - 6;
                 c->oldDSCF[ch][i] = 0;
             }else{
-                t = get_vlc2(gb, dscf_vlc[1].table, MPC8_DSCF1_BITS, 2);
+                t = bitstream_read_vlc(bc, dscf_vlc[1].table, MPC8_DSCF1_BITS, 2);
                 if(t == 64)
-                    t += get_bits(gb, 6);
+                    t += bitstream_read(bc, 6);
                 bands[i].scf_idx[ch][0] = ((bands[i].scf_idx[ch][2] + t - 25) & 0x7F) - 6;
             }
             for(j = 0; j < 2; j++){
                 if((bands[i].scfi[ch] << j) & 2)
                     bands[i].scf_idx[ch][j + 1] = bands[i].scf_idx[ch][j];
                 else{
-                    t = get_vlc2(gb, dscf_vlc[0].table, MPC8_DSCF0_BITS, 2);
+                    t = bitstream_read_vlc(bc, dscf_vlc[0].table, MPC8_DSCF0_BITS, 2);
                     if(t == 31)
-                        t = 64 + get_bits(gb, 6);
+                        t = 64 + bitstream_read(bc, 6);
                     bands[i].scf_idx[ch][j + 1] = ((bands[i].scf_idx[ch][j] + t - 25) & 0x7F) - 6;
                 }
             }
@@ -354,16 +355,16 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
                 break;
             case 1:
                 for(j = 0; j < SAMPLES_PER_BAND; j += SAMPLES_PER_BAND / 2){
-                    cnt = get_vlc2(gb, q1_vlc.table, MPC8_Q1_BITS, 2);
-                    t = mpc8_get_mask(gb, 18, cnt);
+                    cnt = bitstream_read_vlc(bc, q1_vlc.table, MPC8_Q1_BITS, 2);
+                    t = mpc8_get_mask(bc, 18, cnt);
                     for(k = 0; k < SAMPLES_PER_BAND / 2; k++, t <<= 1)
-                        c->Q[ch][off + j + k] = (t & 0x20000) ? (get_bits1(gb) << 1) - 1 : 0;
+                        c->Q[ch][off + j + k] = (t & 0x20000) ? (bitstream_read_bit(bc) << 1) - 1 : 0;
                 }
                 break;
             case 2:
                 cnt = 6;//2*mpc8_thres[res]
                 for(j = 0; j < SAMPLES_PER_BAND; j += 3){
-                    t = get_vlc2(gb, q2_vlc[cnt > 3].table, MPC8_Q2_BITS, 2);
+                    t = bitstream_read_vlc(bc, q2_vlc[cnt > 3].table, MPC8_Q2_BITS, 2);
                     c->Q[ch][off + j + 0] = mpc8_idx50[t];
                     c->Q[ch][off + j + 1] = mpc8_idx51[t];
                     c->Q[ch][off + j + 2] = mpc8_idx52[t];
@@ -373,7 +374,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
             case 3:
             case 4:
                 for(j = 0; j < SAMPLES_PER_BAND; j += 2){
-                    t = get_vlc2(gb, q3_vlc[res - 3].table, MPC8_Q3_BITS, 2) + q3_offsets[res - 3];
+                    t = bitstream_read_vlc(bc, q3_vlc[res - 3].table, MPC8_Q3_BITS, 2) + q3_offsets[res - 3];
                     c->Q[ch][off + j + 1] = t >> 4;
                     c->Q[ch][off + j + 0] = (t & 8) ? (t & 0xF) - 16 : (t & 0xF);
                 }
@@ -384,17 +385,17 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
             case 8:
                 cnt = 2 * mpc8_thres[res];
                 for(j = 0; j < SAMPLES_PER_BAND; j++){
-                    t = get_vlc2(gb, quant_vlc[res - 5][cnt > mpc8_thres[res]].table, quant_vlc[res - 5][cnt > mpc8_thres[res]].bits, 2) + quant_offsets[res - 5];
+                    t = bitstream_read_vlc(bc, quant_vlc[res - 5][cnt > mpc8_thres[res]].table, quant_vlc[res - 5][cnt > mpc8_thres[res]].bits, 2) + quant_offsets[res - 5];
                     c->Q[ch][off + j] = t;
                     cnt = (cnt >> 1) + FFABS(c->Q[ch][off + j]);
                 }
                 break;
             default:
                 for(j = 0; j < SAMPLES_PER_BAND; j++){
-                    c->Q[ch][off + j] = get_vlc2(gb, q9up_vlc.table, MPC8_Q9UP_BITS, 2);
+                    c->Q[ch][off + j] = bitstream_read_vlc(bc, q9up_vlc.table, MPC8_Q9UP_BITS, 2);
                     if(res != 9){
                         c->Q[ch][off + j] <<= res - 9;
-                        c->Q[ch][off + j] |= get_bits(gb, res - 9);
+                        c->Q[ch][off + j] |= bitstream_read(bc, res - 9);
                     }
                     c->Q[ch][off + j] -= (1 << (res - 2)) - 1;
                 }
@@ -408,8 +409,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
 
     c->cur_frame++;
 
-    c->last_bits_used = get_bits_count(gb);
-    if(get_bits_left(gb) < 8) // we have only padding left
+    c->last_bits_used = bitstream_tell(bc);
+    if (bitstream_bits_left(bc) < 8) // we have only padding left
         c->last_bits_used = buf_size << 3;
     if(c->cur_frame >= c->frames)
         c->cur_frame = 0;

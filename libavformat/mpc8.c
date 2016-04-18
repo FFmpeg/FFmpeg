@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
-#include "libavcodec/unary_legacy.h"
+#include "libavcodec/bitstream.h"
+#include "libavcodec/unary.h"
 
 #include "apetag.h"
 #include "avformat.h"
@@ -107,17 +107,17 @@ static int mpc8_probe(AVProbeData *p)
     return 0;
 }
 
-static inline int64_t gb_get_v(GetBitContext *gb)
+static inline int64_t gb_get_v(BitstreamContext *bc)
 {
     int64_t v = 0;
     int bits = 0;
-    while(get_bits1(gb) && bits < 64-7){
+    while (bitstream_read_bit(bc) && bits < 64 - 7) {
         v <<= 7;
-        v |= get_bits(gb, 7);
+        v |= bitstream_read(bc, 7);
         bits += 7;
     }
     v <<= 7;
-    v |= get_bits(gb, 7);
+    v |= bitstream_read(bc, 7);
 
     return v;
 }
@@ -138,7 +138,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int64_t size, pos, ppos[2];
     uint8_t *buf;
     int i, t, seekd;
-    GetBitContext gb;
+    BitstreamContext bc;
 
     if (s->nb_streams == 0) {
         av_log(s, AV_LOG_ERROR, "No stream added before parsing seek table\n");
@@ -158,21 +158,21 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     if(!(buf = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE)))
         return;
     avio_read(s->pb, buf, size);
-    init_get_bits(&gb, buf, size * 8);
-    size = gb_get_v(&gb);
+    bitstream_init8(&bc, buf, size);
+    size = gb_get_v(&bc);
     if(size > UINT_MAX/4 || size > c->samples/1152){
         av_log(s, AV_LOG_ERROR, "Seek table is too big\n");
         return;
     }
-    seekd = get_bits(&gb, 4);
+    seekd = bitstream_read(&bc, 4);
     for(i = 0; i < 2; i++){
-        pos = gb_get_v(&gb) + c->header_pos;
+        pos = gb_get_v(&bc) + c->header_pos;
         ppos[1 - i] = pos;
         av_add_index_entry(s->streams[0], pos, i, 0, 0, AVINDEX_KEYFRAME);
     }
     for(; i < size; i++){
-        t = get_unary(&gb, 1, 33) << 12;
-        t += get_bits(&gb, 12);
+        t = get_unary(&bc, 1, 33) << 12;
+        t += bitstream_read(&bc, 12);
         if(t & 1)
             t = -(t & ~1);
         pos = (t >> 1) + ppos[0]*2 - ppos[1];
