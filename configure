@@ -3002,6 +3002,7 @@ vidstabtransform_filter_deps="libvidstab"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
 zscale_filter_deps="libzimg"
+scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
 avcodec_example_deps="avcodec avutil"
@@ -5455,6 +5456,7 @@ check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "va/va.h" "VAPictureParameterBufferHEVC"
 check_type "va/va.h" "VADecPictureParameterBufferVP9"
+check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 

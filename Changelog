@@ -26,6 +26,7 @@ version <next>:
 - colorspace filter
 - hdcd filter
 - readvitc filter
+- VAAPI-accelerated format conversion and scaling
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support
