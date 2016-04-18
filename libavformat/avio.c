@@ -311,6 +311,9 @@ int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
     if (ret < 0)
         return ret;
+    if (options &&
+        (ret = av_opt_set_dict(*puc, options)) < 0)
+        goto fail;
     if (options && (*puc)->prot->priv_data_class &&
         (ret = av_opt_set_dict((*puc)->priv_data, options)) < 0)
         goto fail;
