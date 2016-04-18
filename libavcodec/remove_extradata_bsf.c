@@ -27,6 +27,7 @@
 enum RemoveFreq {
     REMOVE_FREQ_KEYFRAME,
     REMOVE_FREQ_ALL,
+    REMOVE_FREQ_NONKEYFRAME,
 };
 
 typedef struct RemoveExtradataContext {
@@ -50,6 +51,7 @@ static int remove_extradata(AVBSFContext *ctx, AVPacket *out)
 
     if (s->parser && s->parser->parser->split) {
         if (s->freq == REMOVE_FREQ_ALL ||
+            (s->freq == REMOVE_FREQ_NONKEYFRAME && !(in->flags & AV_PKT_FLAG_KEY)) ||
             (s->freq == REMOVE_FREQ_KEYFRAME && in->flags & AV_PKT_FLAG_KEY)) {
             int i = s->parser->parser->split(s->avctx, in->data, in->size);
             in->data += i;
@@ -94,7 +96,9 @@ static void remove_extradata_close(AVBSFContext *ctx)
 #define OFFSET(x) offsetof(RemoveExtradataContext, x)
 static const AVOption options[] = {
     { "freq", NULL, OFFSET(freq), AV_OPT_TYPE_INT, { .i64 = REMOVE_FREQ_KEYFRAME }, REMOVE_FREQ_KEYFRAME, REMOVE_FREQ_ALL, 0, "freq" },
+        { "k",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE_FREQ_NONKEYFRAME }, .unit = "freq" },
         { "keyframe", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE_FREQ_KEYFRAME }, .unit = "freq" },
+        { "e",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE_FREQ_ALL      }, .unit = "freq" },
         { "all",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE_FREQ_ALL      }, .unit = "freq" },
     { NULL },
 };
