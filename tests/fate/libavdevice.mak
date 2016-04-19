@@ -1,4 +1,4 @@
-FATE_LIBAVDEVICE-yes += fate-timefilter
+FATE_LIBAVDEVICE-$(CONFIG_JACK_INDEV) += fate-timefilter
 fate-timefilter: libavdevice/timefilter-test$(EXESUF)
 fate-timefilter: CMD = run libavdevice/timefilter-test
 

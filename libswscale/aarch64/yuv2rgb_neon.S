@@ -21,10 +21,18 @@
 
 #include "libavutil/aarch64/asm.S"
 
+.macro load_yoff_ycoeff yoff ycoeff
+#if defined(__APPLE__)
+    ldp                 w9, w10, [sp, #\yoff]
+#else
+    ldr                 w9,  [sp, #\yoff]
+    ldr                 w10, [sp, #\ycoeff]
+#endif
+.endm
+
 .macro load_args_nv12
     ldr                 x8,  [sp]                                       // table
-    ldr                 w9,  [sp, #8]                                   // y_offset
-    ldr                 w10, [sp, #16]                                  // y_coeff
+    load_yoff_ycoeff    8, 16                                           // y_offset, y_coeff
     ld1                 {v1.1D}, [x8]
     dup                 v0.8H, w10
     dup                 v3.8H, w9
@@ -42,8 +50,7 @@
     ldr                 x13, [sp]                                       // srcV
     ldr                 w14, [sp, #8]                                   // linesizeV
     ldr                 x8,  [sp, #16]                                  // table
-    ldr                 w9,  [sp, #24]                                  // y_offset
-    ldr                 w10, [sp, #32]                                  // y_coeff
+    load_yoff_ycoeff    24, 32                                          // y_offset, y_coeff
     ld1                 {v1.1D}, [x8]
     dup                 v0.8H, w10
     dup                 v3.8H, w9
@@ -59,8 +66,7 @@
     ldr                 x13, [sp]                                       // srcV
     ldr                 w14, [sp, #8]                                   // linesizeV
     ldr                 x8,  [sp, #16]                                  // table
-    ldr                 w9,  [sp, #24]                                  // y_offset
-    ldr                 w10, [sp, #32]                                  // y_coeff
+    load_yoff_ycoeff    24, 32                                          // y_offset, y_coeff
     ld1                 {v1.1D}, [x8]
     dup                 v0.8H, w10
     dup                 v3.8H, w9

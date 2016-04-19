@@ -173,22 +173,22 @@ static int aa_read_header(AVFormatContext *s)
         av_freep(&c->tea_ctx);
         return AVERROR(ENOMEM);
     }
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     if (!strcmp(codec_name, "mp332")) {
-        st->codec->codec_id = AV_CODEC_ID_MP3;
-        st->codec->sample_rate = 22050;
+        st->codecpar->codec_id = AV_CODEC_ID_MP3;
+        st->codecpar->sample_rate = 22050;
         st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
         st->start_time = 0;
     } else if (!strcmp(codec_name, "acelp85")) {
-        st->codec->codec_id = AV_CODEC_ID_SIPR;
-        st->codec->block_align = 19;
-        st->codec->channels = 1;
-        st->codec->sample_rate = 8500;
+        st->codecpar->codec_id = AV_CODEC_ID_SIPR;
+        st->codecpar->block_align = 19;
+        st->codecpar->channels = 1;
+        st->codecpar->sample_rate = 8500;
     } else if (!strcmp(codec_name, "acelp16")) {
-        st->codec->codec_id = AV_CODEC_ID_SIPR;
-        st->codec->block_align = 20;
-        st->codec->channels = 1;
-        st->codec->sample_rate = 16000;
+        st->codecpar->codec_id = AV_CODEC_ID_SIPR;
+        st->codecpar->block_align = 20;
+        st->codecpar->channels = 1;
+        st->codecpar->sample_rate = 16000;
     }
 
     /* determine, and jump to audio start offset */

@@ -45,21 +45,21 @@ static int v210_read_header(AVFormatContext *ctx)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 
-    st->codec->codec_id = ctx->iformat->raw_codec_id;
+    st->codecpar->codec_id = ctx->iformat->raw_codec_id;
 
     avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
     ret = av_image_check_size(s->width, s->height, 0, ctx);
     if (ret < 0)
         return ret;
-    st->codec->width    = s->width;
-    st->codec->height   = s->height;
-    st->codec->pix_fmt  = ctx->iformat->raw_codec_id == AV_CODEC_ID_V210 ?
-                          AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV422P16;
-    ctx->packet_size    = GET_PACKET_SIZE(s->width, s->height);
-    st->codec->bit_rate = av_rescale_q(ctx->packet_size,
+    st->codecpar->width    = s->width;
+    st->codecpar->height   = s->height;
+    st->codecpar->format   = ctx->iformat->raw_codec_id == AV_CODEC_ID_V210 ?
+                             AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV422P16;
+    ctx->packet_size       = GET_PACKET_SIZE(s->width, s->height);
+    st->codecpar->bit_rate = av_rescale_q(ctx->packet_size,
                                        (AVRational){8,1}, st->time_base);
 
     return 0;

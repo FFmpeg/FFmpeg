@@ -46,20 +46,23 @@
  *
  * where Y = cr * R + cg * G + cb * B and cr + cg + cb = 1.
  */
-const int32_t ff_yuv2rgb_coeffs[8][4] = {
-    { 117504, 138453, 13954, 34903 }, /* no sequence_display_extension */
-    { 117504, 138453, 13954, 34903 }, /* ITU-R Rec. 709 (1990) */
+const int32_t ff_yuv2rgb_coeffs[11][4] = {
+    { 117489, 138438, 13975, 34925 }, /* no sequence_display_extension */
+    { 117489, 138438, 13975, 34925 }, /* ITU-R Rec. 709 (1990) */
     { 104597, 132201, 25675, 53279 }, /* unspecified */
     { 104597, 132201, 25675, 53279 }, /* reserved */
     { 104448, 132798, 24759, 53109 }, /* FCC */
     { 104597, 132201, 25675, 53279 }, /* ITU-R Rec. 624-4 System B, G */
     { 104597, 132201, 25675, 53279 }, /* SMPTE 170M */
-    { 117579, 136230, 16907, 35559 }  /* SMPTE 240M (1987) */
+    { 117579, 136230, 16907, 35559 }, /* SMPTE 240M (1987) */
+    {      0                       }, /* YCgCo */
+    { 110013, 140363, 12277, 42626 }, /* Bt-2020-NCL */
+    { 110013, 140363, 12277, 42626 }, /* Bt-2020-CL */
 };
 
 const int *sws_getCoefficients(int colorspace)
 {
-    if (colorspace > 7 || colorspace < 0)
+    if (colorspace > 10 || colorspace < 0 || colorspace == 8)
         colorspace = SWS_CS_DEFAULT;
     return ff_yuv2rgb_coeffs[colorspace];
 }

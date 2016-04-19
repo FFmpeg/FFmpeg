@@ -19,21 +19,23 @@
  */
 
 #include "avcodec.h"
+#include "bsf.h"
 #include "bytestream.h"
 #include "dca_syncwords.h"
 #include "libavutil/mem.h"
 
-static int dca_core(AVBitStreamFilterContext *bsfc,
-                    AVCodecContext *avctx, const char *args,
-                    uint8_t **poutbuf, int *poutbuf_size,
-                    const uint8_t *buf, int buf_size,
-                    int keyframe)
+static int dca_core_filter(AVBSFContext *ctx, AVPacket *out)
 {
+    AVPacket *in;
     GetByteContext gb;
     uint32_t syncword;
-    int core_size = 0;
+    int core_size = 0, ret;
 
-    bytestream2_init(&gb, buf, buf_size);
+    ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
+
+    bytestream2_init(&gb, in->data, in->size);
     syncword = bytestream2_get_be32(&gb);
     bytestream2_skip(&gb, 1);
 
@@ -43,18 +45,22 @@ static int dca_core(AVBitStreamFilterContext *bsfc,
         break;
     }
 
-    *poutbuf = (uint8_t *)buf;
+    av_packet_move_ref(out, in);
+    av_packet_free(&in);
 
-    if (core_size > 0 && core_size <= buf_size) {
-        *poutbuf_size = core_size;
-    } else {
-        *poutbuf_size = buf_size;
+    if (core_size > 0 && core_size <= out->size) {
+        out->size = core_size;
     }
 
     return 0;
 }
 
-AVBitStreamFilter ff_dca_core_bsf = {
-    .name   = "dca_core",
-    .filter = dca_core,
+static const enum AVCodecID codec_ids[] = {
+    AV_CODEC_ID_DTS, AV_CODEC_ID_NONE,
+};
+
+const AVBitStreamFilter ff_dca_core_bsf = {
+    .name      = "dca_core",
+    .filter    = dca_core_filter,
+    .codec_ids = codec_ids,
 };

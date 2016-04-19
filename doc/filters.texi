@@ -3217,9 +3217,9 @@ HRTFs. Default is 1.
 
 @item type
 Set processing type. Can be @var{time} or @var{freq}. @var{time} is
-processing audio in time domain which is slow but gives high quality output.
-@var{freq} is processing audio in frequency domain which is fast but gives
-mediocre output. Default is @var{freq}.
+processing audio in time domain which is slow.
+@var{freq} is processing audio in frequency domain which is fast.
+Default is @var{freq}.
 
 @item speakers
 Set custom positions of virtual loudspeakers. Syntax for this option is:
@@ -3231,6 +3231,29 @@ For example to override front left and front right channel positions use:
 'speakers=FL 45 15|FR 345 15'.
 Descriptions with unrecognised channel names are ignored.
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Using ClubFritz6 sofa file:
+@example
+sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=1
+@end example
+
+@item
+Using ClubFritz12 sofa file and bigger radius with small rotation:
+@example
+sofalizer=sofa=/path/to/ClubFritz12.sofa:type=freq:radius=2:rotation=5
+@end example
+
+@item
+Similar as above but with custom speaker positions for front left, front right, rear left and rear right
+and also with custom gain:
+@example
+"sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=2:speakers=FL 45|FR 315|RL 135|RR 225:gain=28"
+@end example
+@end itemize
 
 @section stereotools
 
@@ -3329,6 +3352,22 @@ Set S/C level. Default is 1. Allowed range is from 1 to 100.
 Set the stereo phase in degrees. Default is 0. Allowed range is from 0 to 360.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Apply karaoke like effect:
+@example
+stereotools=mlev=0.015625
+@end example
+
+@item
+Convert M/S signal to L/R:
+@example
+"stereotools=mode=ms>lr"
+@end example
+@end itemize
+
 @section stereowiden
 
 This filter enhance the stereo effect by suppressing signal common to both
@@ -3355,6 +3394,47 @@ channels. Default is 0.3.
 @item drymix
 Set level of input signal of original channel. Default is 0.8.
 @end table
+
+@section scale_npp
+
+Use the NVIDIA Performance Primitives (libnpp) to perform scaling and/or pixel
+format conversion on CUDA video frames. Setting the output width and height
+works in the same way as for the @var{scale} filter.
+
+The following additional options are accepted:
+@table @option
+@item format
+The pixel format of the output CUDA frames. If set to the string "same" (the
+default), the input format will be kept. Note that automatic format negotiation
+and conversion is not yet supported for hardware frames
+
+@item interp_algo
+The interpolation algorithm used for resizing. One of the following:
+@table @option
+@item nn
+Nearest neighbour.
+
+@item linear
+@item cubic
+@item cubic2p_bspline
+2-parameter cubic (B=1, C=0)
+
+@item cubic2p_catmullrom
+2-parameter cubic (B=0, C=1/2)
+
+@item cubic2p_b05c03
+2-parameter cubic (B=1/2, C=3/10)
+
+@item super
+Supersampling
+
+@item lanczos
+@end table
+
+@end table
+
+@section select
+Select frames to pass in output.
 
 @section treble
 
@@ -4896,6 +4976,189 @@ FCC
 For example to convert from BT.601 to SMPTE-240M, use the command:
 @example
 colormatrix=bt601:smpte240m
+@end example
+
+@section colorspace
+
+Convert colorspace, transfer characteristics or color primaries.
+
+The filter accepts the following options:
+
+@table @option
+@item all
+Specify all color properties at once.
+
+The accepted values are:
+@table @samp
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG
+
+@item bt601-6-525
+BT.601-6 525
+
+@item bt601-6-625
+BT.601-6 625
+
+@item bt709
+BT.709
+
+@item smpte170m
+SMPTE-170M
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020
+BT.2020
+
+@end table
+
+@item space
+Specify output colorspace.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item fcc
+FCC
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020ncl
+BT.2020 with non-constant luminance
+
+@end table
+
+@item trc
+Specify output transfer characteristics.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item gamma22
+Constant gamma of 2.2
+
+@item gamma28
+Constant gamma of 2.8
+
+@item smpte170m
+SMPTE-170M, BT.601-6 625 or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020-10
+BT.2020 for 10-bits content
+
+@item bt2020-12
+BT.2020 for 12-bits content
+
+@end table
+
+@item prm
+Specify output color primaries.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020
+BT.2020
+
+@end table
+
+@item rng
+Specify output color range.
+
+The accepted values are:
+@table @samp
+@item mpeg
+MPEG (restricted) range
+
+@item jpeg
+JPEG (full) range
+
+@end table
+
+@item format
+Specify output color format.
+
+The accepted values are:
+@table @samp
+@item yuv420p
+YUV 4:2:0 planar 8-bits
+
+@item yuv420p10
+YUV 4:2:0 planar 10-bits
+
+@item yuv420p12
+YUV 4:2:0 planar 12-bits
+
+@item yuv422p
+YUV 4:2:2 planar 8-bits
+
+@item yuv422p10
+YUV 4:2:2 planar 10-bits
+
+@item yuv422p12
+YUV 4:2:2 planar 12-bits
+
+@item yuv444p
+YUV 4:4:4 planar 8-bits
+
+@item yuv444p10
+YUV 4:4:4 planar 10-bits
+
+@item yuv444p12
+YUV 4:4:4 planar 12-bits
+
+@end table
+
+@item fast
+Do a fast conversion, which skips gamma/primary correction. This will take
+significantly less CPU, but will be mathematically incorrect. To get output
+compatible with that produced by the colormatrix filter, use fast=1.
+@end table
+
+The filter converts the transfer characteristics, color space and color
+primaries to the specified user values. The output value, if not specified,
+is set to a default value based on the "all" property. If that property is
+also not specified, the filter will log an error. The output color range and
+format default to the same value as the input color range and format. The
+input transfer characteristics, color space, color primaries and color range
+should be set on the input data. If any of these are missing, the filter will
+log an error and no conversion will take place.
+
+For example to convert the input to SMPTE-240M, use the command:
+@example
+colorspace=smpte240m
 @end example
 
 @section convolution
@@ -6460,7 +6723,12 @@ The time at which the filter is running, expressed in the local time zone.
 It can accept an argument: a strftime() format string.
 
 @item metadata
-Frame metadata. It must take one argument specifying metadata key.
+Frame metadata. Takes one or two arguments.
+
+The first argument is mandatory and specifies the metadata key.
+
+The second argument is optional and specifies a default value, used when the
+metadata key is not found or empty.
 
 @item n, frame_num
 The frame number, starting from 0.
@@ -6515,6 +6783,12 @@ within the parameter list.
 Show the text at the center of the video frame:
 @example
 drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h)/2"
+@end example
+
+@item
+Show the text at a random position, switching to a new position every 30 seconds:
+@example
+drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=if(eq(mod(t\,30)\,0)\,rand(0\,(w-text_w))\,x):y=if(eq(mod(t\,30)\,0)\,rand(0\,(h-text_h))\,y)"
 @end example
 
 @item
@@ -8021,6 +8295,11 @@ Then, the effect of this Hald CLUT can be visualized with:
 @example
 ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
 @end example
+
+@section hdcd
+
+Decodes high definition audio cd data. 16-Bit PCM stream containing hdcd flags
+is converted to 20-bit PCM stream.
 
 @section hflip
 
@@ -9890,6 +10169,10 @@ The expressions can use the following variables:
 @item W
 @item H
 the width and height of video frame.
+@item in
+Input frame count.
+@item on
+Output frame count.
 @end table
 
 @item interpolation
@@ -9920,6 +10203,21 @@ by the given coordinates.
 
 Default value is @samp{source}.
 @end table
+
+@item eval
+Set when the expressions for coordinates @option{x0,y0,...x3,y3} are evaluated.
+
+It accepts the following values:
+@table @samp
+@item init
+only evaluate expressions once during the filter initialization or
+when a command is processed
+
+@item frame
+evaluate expressions for each incoming frame
+@end table
+
+Default value is @samp{init}.
 @end table
 
 @section phase
@@ -10379,6 +10677,55 @@ Set seed for random number generator, must be an integer included between
 less than @code{0}, the filter will try to use a good random seed on a
 best effort basis.
 @end table
+
+@section readvitc
+
+Read vertical interval timecode (VITC) information from the top lines of a
+video frame.
+
+The filter adds frame metadata key @code{lavfi.readvitc.tc_str} with the
+timecode value, if a valid timecode has been detected. Further metadata key
+@code{lavfi.readvitc.found} is set to 0/1 depending on whether
+timecode data has been found or not.
+
+This filter accepts the following options:
+
+@table @option
+@item scan_max
+Set the maximum number of lines to scan for VITC data. If the value is set to
+@code{-1} the full video frame is scanned. Default is @code{45}.
+
+@item thr_b
+Set the luma threshold for black. Accepts float numbers in the range [0.0,1.0],
+default value is @code{0.2}. The value must be equal or less than @code{thr_w}.
+
+@item thr_w
+Set the luma threshold for white. Accepts float numbers in the range [0.0,1.0],
+default value is @code{0.6}. The value must be equal or greater than @code{thr_b}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Detect and draw VITC data onto the video frame; if no valid VITC is detected,
+draw @code{--:--:--:--} as a placeholder:
+@example
+ffmpeg -i input.avi -filter:v 'readvitc,drawtext=fontfile=FreeMono.ttf:text=%@{metadata\\:lavfi.readvitc.tc_str\\:--\\\\\\:--\\\\\\:--\\\\\\:--@}:x=(w-tw)/2:y=400-ascent'
+@end example
+@end itemize
+
+@section remap
+
+Remap pixels using 2nd: Xmap and 3rd: Ymap input video stream.
+
+Destination pixel at position (X, Y) will be picked from source (x, y) position
+where x = Xmap(X, Y) and y = Ymap(X, Y). If mapping values are out of range, zero
+value for pixel will be used for destination pixel.
+
+Xmap and Ymap input video streams must be of same dimensions. Output video stream
+will have Xmap/Ymap video stream dimensions.
+Xmap and Ymap input video streams are 16bit depth, single channel.
 
 @section removegrain
 
@@ -14273,7 +14620,8 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{smptebars}
 @anchor{smptehdbars}
 @anchor{testsrc}
-@section allrgb, allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+@anchor{testsrc2}
+@section allrgb, allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc, testsrc2
 
 The @code{allrgb} source returns frames of size 4096x4096 of all rgb colors.
 
@@ -14301,6 +14649,10 @@ the SMPTE RP 219-2002.
 The @code{testsrc} source generates a test video pattern, showing a
 color pattern, a scrolling gradient and a timestamp. This is mainly
 intended for testing purposes.
+
+The @code{testsrc2} source is similar to testsrc, but supports more
+pixel formats instead of just @code{rgb24}. This allows using it as an
+input for other tests without requiring a format conversion.
 
 The sources accept the following parameters:
 

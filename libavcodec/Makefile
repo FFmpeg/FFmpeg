@@ -26,6 +26,8 @@ OBJS = allcodecs.o                                                      \
        avpicture.o                                                      \
        bitstream.o                                                      \
        bitstream_filter.o                                               \
+       bitstream_filters.o                                              \
+       bsf.o                                                            \
        codec_desc.o                                                     \
        d3d11va.o                                                        \
        dirac.o                                                          \
@@ -695,6 +697,7 @@ OBJS-$(CONFIG_ADPCM_G726_ENCODER)         += g726.o
 OBJS-$(CONFIG_ADPCM_G726LE_DECODER)       += g726.o
 OBJS-$(CONFIG_ADPCM_IMA_AMV_DECODER)      += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_APC_DECODER)      += adpcm.o adpcm_data.o
+OBJS-$(CONFIG_ADPCM_IMA_DAT4_DECODER)     += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_DK3_DECODER)      += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_DK4_DECODER)      += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_EA_EACS_DECODER)  += adpcm.o adpcm_data.o
@@ -806,11 +809,12 @@ OBJS-$(CONFIG_AC3_AT_DECODER)             += audiotoolboxdec.o
 OBJS-$(CONFIG_ADPCM_IMA_QT_AT_DECODER)    += audiotoolboxdec.o
 OBJS-$(CONFIG_ALAC_AT_DECODER)            += audiotoolboxdec.o
 OBJS-$(CONFIG_AMR_NB_AT_DECODER)          += audiotoolboxdec.o
+OBJS-$(CONFIG_EAC3_AT_DECODER)            += audiotoolboxdec.o
 OBJS-$(CONFIG_GSM_MS_AT_DECODER)          += audiotoolboxdec.o
 OBJS-$(CONFIG_ILBC_AT_DECODER)            += audiotoolboxdec.o
-OBJS-$(CONFIG_MP1_AT_DECODER)             += audiotoolboxdec.o
-OBJS-$(CONFIG_MP2_AT_DECODER)             += audiotoolboxdec.o
-OBJS-$(CONFIG_MP3_AT_DECODER)             += audiotoolboxdec.o
+OBJS-$(CONFIG_MP1_AT_DECODER)             += audiotoolboxdec.o mpegaudiodecheader.o
+OBJS-$(CONFIG_MP2_AT_DECODER)             += audiotoolboxdec.o mpegaudiodecheader.o
+OBJS-$(CONFIG_MP3_AT_DECODER)             += audiotoolboxdec.o mpegaudiodecheader.o
 OBJS-$(CONFIG_PCM_MULAW_AT_DECODER)       += audiotoolboxdec.o
 OBJS-$(CONFIG_PCM_ALAW_AT_DECODER)        += audiotoolboxdec.o
 OBJS-$(CONFIG_QDMC_AT_DECODER)            += audiotoolboxdec.o

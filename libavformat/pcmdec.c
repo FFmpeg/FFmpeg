@@ -42,20 +42,20 @@ static int pcm_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
 
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = s->iformat->raw_codec_id;
-    st->codec->sample_rate = s1->sample_rate;
-    st->codec->channels    = s1->channels;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id    = s->iformat->raw_codec_id;
+    st->codecpar->sample_rate = s1->sample_rate;
+    st->codecpar->channels    = s1->channels;
 
-    st->codec->bits_per_coded_sample =
-        av_get_bits_per_sample(st->codec->codec_id);
+    st->codecpar->bits_per_coded_sample =
+        av_get_bits_per_sample(st->codecpar->codec_id);
 
-    av_assert0(st->codec->bits_per_coded_sample > 0);
+    av_assert0(st->codecpar->bits_per_coded_sample > 0);
 
-    st->codec->block_align =
-        st->codec->bits_per_coded_sample * st->codec->channels / 8;
+    st->codecpar->block_align =
+        st->codecpar->bits_per_coded_sample * st->codecpar->channels / 8;
 
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     return 0;
 }
 

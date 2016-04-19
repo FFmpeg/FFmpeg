@@ -232,10 +232,10 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     AviSynthContext *avs = s->priv_data;
     int planar = 0; // 0: packed, 1: YUV, 2: Y8
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->width      = avs->vi->width;
-    st->codec->height     = avs->vi->height;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->width      = avs->vi->width;
+    st->codecpar->height     = avs->vi->height;
 
     st->avg_frame_rate    = (AVRational) { avs->vi->fps_numerator,
                                            avs->vi->fps_denominator };
@@ -247,38 +247,38 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     switch (avs->vi->pixel_type) {
 #ifdef USING_AVISYNTH
     case AVS_CS_YV24:
-        st->codec->pix_fmt = AV_PIX_FMT_YUV444P;
-        planar             = 1;
+        st->codecpar->format = AV_PIX_FMT_YUV444P;
+        planar               = 1;
         break;
     case AVS_CS_YV16:
-        st->codec->pix_fmt = AV_PIX_FMT_YUV422P;
-        planar             = 1;
+        st->codecpar->format = AV_PIX_FMT_YUV422P;
+        planar               = 1;
         break;
     case AVS_CS_YV411:
-        st->codec->pix_fmt = AV_PIX_FMT_YUV411P;
-        planar             = 1;
+        st->codecpar->format = AV_PIX_FMT_YUV411P;
+        planar               = 1;
         break;
     case AVS_CS_Y8:
-        st->codec->pix_fmt = AV_PIX_FMT_GRAY8;
-        planar             = 2;
+        st->codecpar->format = AV_PIX_FMT_GRAY8;
+        planar               = 2;
         break;
 #endif
     case AVS_CS_BGR24:
-        st->codec->pix_fmt = AV_PIX_FMT_BGR24;
+        st->codecpar->format = AV_PIX_FMT_BGR24;
         break;
     case AVS_CS_BGR32:
-        st->codec->pix_fmt = AV_PIX_FMT_RGB32;
+        st->codecpar->format = AV_PIX_FMT_RGB32;
         break;
     case AVS_CS_YUY2:
-        st->codec->pix_fmt = AV_PIX_FMT_YUYV422;
+        st->codecpar->format = AV_PIX_FMT_YUYV422;
         break;
     case AVS_CS_YV12:
-        st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
-        planar             = 1;
+        st->codecpar->format = AV_PIX_FMT_YUV420P;
+        planar               = 1;
         break;
     case AVS_CS_I420: // Is this even used anywhere?
-        st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
-        planar             = 1;
+        st->codecpar->format = AV_PIX_FMT_YUV420P;
+        planar               = 1;
         break;
     default:
         av_log(s, AV_LOG_ERROR,
@@ -307,27 +307,27 @@ static int avisynth_create_stream_audio(AVFormatContext *s, AVStream *st)
 {
     AviSynthContext *avs = s->priv_data;
 
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->sample_rate = avs->vi->audio_samples_per_second;
-    st->codec->channels    = avs->vi->nchannels;
-    st->duration           = avs->vi->num_audio_samples;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->sample_rate = avs->vi->audio_samples_per_second;
+    st->codecpar->channels    = avs->vi->nchannels;
+    st->duration              = avs->vi->num_audio_samples;
     avpriv_set_pts_info(st, 64, 1, avs->vi->audio_samples_per_second);
 
     switch (avs->vi->sample_type) {
     case AVS_SAMPLE_INT8:
-        st->codec->codec_id = AV_CODEC_ID_PCM_U8;
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
         break;
     case AVS_SAMPLE_INT16:
-        st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
         break;
     case AVS_SAMPLE_INT24:
-        st->codec->codec_id = AV_CODEC_ID_PCM_S24LE;
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_S24LE;
         break;
     case AVS_SAMPLE_INT32:
-        st->codec->codec_id = AV_CODEC_ID_PCM_S32LE;
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_S32LE;
         break;
     case AVS_SAMPLE_FLOAT:
-        st->codec->codec_id = AV_CODEC_ID_PCM_F32LE;
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_F32LE;
         break;
     default:
         av_log(s, AV_LOG_ERROR,
@@ -636,7 +636,7 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* If either stream reaches EOF, try to read the other one before
      * giving up. */
     avisynth_next_stream(s, &st, pkt, &discard);
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = avisynth_read_packet_video(s, pkt, discard);
         if (ret == AVERROR_EOF && avs_has_audio(avs->vi)) {
             avisynth_next_stream(s, &st, pkt, &discard);
@@ -678,7 +678,7 @@ static int avisynth_read_seek(AVFormatContext *s, int stream_index,
     samplerate = (AVRational) { avs->vi->audio_samples_per_second, 1 };
 
     st = s->streams[stream_index];
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         /* AviSynth frame counts are signed int. */
         if ((timestamp >= avs->vi->num_frames) ||
             (timestamp > INT_MAX)              ||

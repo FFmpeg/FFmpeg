@@ -1,4 +1,8 @@
 #tb 0: 1/10
+#media_type 0: video
+#codec_id 0: gif
+#dimensions 0: 217x217
+#sar 0: 0/1
 0,          0,          0,        1,      552, 0x271a2dd3
 0,          1,          1,        1,      297, 0x90168a95, S=1,     1024, 0xf351799f
 0,          2,          2,        1,      438, 0x91efce1b, S=1,     1024, 0xf351799f

@@ -119,17 +119,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-#if IVI4_STREAM_ANALYSER
     if (ctx->frame_type == IVI4_FRAMETYPE_BIDIR)
         ctx->has_b_frames = 1;
-#endif
 
-    ctx->transp_status = get_bits1(&ctx->gb);
-#if IVI4_STREAM_ANALYSER
-    if (ctx->transp_status) {
-        ctx->has_transp = 1;
-    }
-#endif
+    ctx->has_transp = get_bits1(&ctx->gb);
 
     /* unknown bit: Mac decoder ignores this bit, XANIM returns error */
     if (get_bits1(&ctx->gb)) {
@@ -163,12 +156,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     /* Decode tile dimensions. */
-    if (get_bits1(&ctx->gb)) {
+    ctx->uses_tiling = get_bits1(&ctx->gb);
+    if (ctx->uses_tiling) {
         pic_conf.tile_height = scale_tile_size(pic_conf.pic_height, get_bits(&ctx->gb, 4));
         pic_conf.tile_width  = scale_tile_size(pic_conf.pic_width,  get_bits(&ctx->gb, 4));
-#if IVI4_STREAM_ANALYSER
-        ctx->uses_tiling = 1;
-#endif
     } else {
         pic_conf.tile_height = pic_conf.pic_height;
         pic_conf.tile_width  = pic_conf.pic_width;
@@ -295,10 +286,8 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                    band->is_halfpel);
             return AVERROR_INVALIDDATA;
         }
-#if IVI4_STREAM_ANALYSER
         if (!band->is_halfpel)
             ctx->uses_fullpel = 1;
-#endif
 
         band->checksum_present = get_bits1(&ctx->gb);
         if (band->checksum_present)
@@ -334,10 +323,8 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 av_log(avctx, AV_LOG_ERROR, "wrong transform size!\n");
                 return AVERROR_INVALIDDATA;
             }
-#if IVI4_STREAM_ANALYSER
             if ((transform_id >= 0 && transform_id <= 2) || transform_id == 10)
                 ctx->uses_haar = 1;
-#endif
 
             band->inv_transform = transforms[transform_id].inv_trans;
             band->dc_transform  = transforms[transform_id].dc_trans;
@@ -683,6 +670,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->is_nonnull_frame = is_nonnull_frame;
 
     ctx->is_indeo4 = 1;
+    ctx->show_indeo4_info = 1;
 
     ctx->dst_buf   = 0;
     ctx->ref_buf   = 1;

@@ -548,13 +548,12 @@ static int create_stream(AVFormatContext *s)
                                   st->avg_frame_rate.num };
     c->time_frame = av_gettime();
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->width      = c->width;
-    st->codec->height     = c->height;
-    st->codec->time_base  = c->time_base;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->width      = c->width;
+    st->codecpar->height     = c->height;
 
-    ret = pixfmt_from_pixmap_format(s, geo->depth, &st->codec->pix_fmt);
+    ret = pixfmt_from_pixmap_format(s, geo->depth, &st->codecpar->format);
 
     free(geo);
 

@@ -50,7 +50,7 @@ static int write_header(AVFormatContext *s)
 {
     VideoMuxData *img = s->priv_data;
     AVStream *st = s->streams[0];
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
 
@@ -60,9 +60,9 @@ static int write_header(AVFormatContext *s)
     else
         img->is_pipe = 1;
 
-    if (st->codec->codec_id == AV_CODEC_ID_GIF) {
+    if (st->codecpar->codec_id == AV_CODEC_ID_GIF) {
         img->muxer = "gif";
-    } else if (st->codec->codec_id == AV_CODEC_ID_RAWVIDEO) {
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         const char *str = strrchr(img->path, '.');
         img->split_planes =     str
                              && !av_strcasecmp(str + 1, "y")
@@ -80,8 +80,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     VideoMuxData *img = s->priv_data;
     AVIOContext *pb[4];
     char filename[1024];
-    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(codec->pix_fmt);
+    AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
     int i;
     int nb_renames = 0;
 
@@ -123,8 +123,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (img->split_planes) {
-        int ysize = codec->width * codec->height;
-        int usize = AV_CEIL_RSHIFT(codec->width, desc->log2_chroma_w) * AV_CEIL_RSHIFT(codec->height, desc->log2_chroma_h);
+        int ysize = par->width * par->height;
+        int usize = AV_CEIL_RSHIFT(par->width, desc->log2_chroma_w) * AV_CEIL_RSHIFT(par->height, desc->log2_chroma_h);
         if (desc->comp[0].depth >= 9) {
             ysize *= 2;
             usize *= 2;
@@ -159,7 +159,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         fmt->pb = pb[0];
         if ((ret = av_copy_packet(&pkt2, pkt))                            < 0 ||
             (ret = av_dup_packet(&pkt2))                                  < 0 ||
-            (ret = avcodec_copy_context(st->codec, s->streams[0]->codec)) < 0 ||
+            (ret = avcodec_parameters_copy(st->codecpar, s->streams[0]->codecpar)) < 0 ||
             (ret = avformat_write_header(fmt, NULL))                      < 0 ||
             (ret = av_interleaved_write_frame(fmt, &pkt2))                < 0 ||
             (ret = av_write_trailer(fmt))                                 < 0) {

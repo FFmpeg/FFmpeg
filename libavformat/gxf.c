@@ -114,77 +114,77 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
     switch (format) {
         case 3:
         case 4:
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = AV_CODEC_ID_MJPEG;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id = AV_CODEC_ID_MJPEG;
             break;
         case 13:
         case 14:
         case 15:
         case 16:
         case 25:
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = AV_CODEC_ID_DVVIDEO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id = AV_CODEC_ID_DVVIDEO;
             break;
         case 11:
         case 12:
         case 20:
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = AV_CODEC_ID_MPEG2VIDEO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id = AV_CODEC_ID_MPEG2VIDEO;
             st->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 22:
         case 23:
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = AV_CODEC_ID_MPEG1VIDEO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id = AV_CODEC_ID_MPEG1VIDEO;
             st->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 9:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = AV_CODEC_ID_PCM_S24LE;
-            st->codec->channels = 1;
-            st->codec->channel_layout = AV_CH_LAYOUT_MONO;
-            st->codec->sample_rate = 48000;
-            st->codec->bit_rate = 3 * 1 * 48000 * 8;
-            st->codec->block_align = 3 * 1;
-            st->codec->bits_per_coded_sample = 24;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S24LE;
+            st->codecpar->channels = 1;
+            st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+            st->codecpar->sample_rate = 48000;
+            st->codecpar->bit_rate = 3 * 1 * 48000 * 8;
+            st->codecpar->block_align = 3 * 1;
+            st->codecpar->bits_per_coded_sample = 24;
             break;
         case 10:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
-            st->codec->channels = 1;
-            st->codec->channel_layout = AV_CH_LAYOUT_MONO;
-            st->codec->sample_rate = 48000;
-            st->codec->bit_rate = 2 * 1 * 48000 * 8;
-            st->codec->block_align = 2 * 1;
-            st->codec->bits_per_coded_sample = 16;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
+            st->codecpar->channels = 1;
+            st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+            st->codecpar->sample_rate = 48000;
+            st->codecpar->bit_rate = 2 * 1 * 48000 * 8;
+            st->codecpar->block_align = 2 * 1;
+            st->codecpar->bits_per_coded_sample = 16;
             break;
         case 17:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = AV_CODEC_ID_AC3;
-            st->codec->channels = 2;
-            st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-            st->codec->sample_rate = 48000;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_id = AV_CODEC_ID_AC3;
+            st->codecpar->channels = 2;
+            st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+            st->codecpar->sample_rate = 48000;
             break;
         case 26: /* AVCi50 / AVCi100 (AVC Intra) */
         case 29: /* AVCHD */
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = AV_CODEC_ID_H264;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id = AV_CODEC_ID_H264;
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             break;
         // timecode tracks:
         case 7:
         case 8:
         case 24:
-            st->codec->codec_type = AVMEDIA_TYPE_DATA;
-            st->codec->codec_id = AV_CODEC_ID_NONE;
+            st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+            st->codecpar->codec_id = AV_CODEC_ID_NONE;
             break;
         case 30:
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = AV_CODEC_ID_DNXHD;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id = AV_CODEC_ID_DNXHD;
             break;
         default:
-            st->codec->codec_type = AVMEDIA_TYPE_UNKNOWN;
-            st->codec->codec_id = AV_CODEC_ID_NONE;
+            st->codecpar->codec_type = AVMEDIA_TYPE_UNKNOWN;
+            st->codecpar->codec_id = AV_CODEC_ID_NONE;
             break;
     }
     return s->nb_streams - 1;
@@ -532,11 +532,11 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         avio_rb32(pb); // "timeline" field number
         avio_r8(pb); // flags
         avio_r8(pb); // reserved
-        if (st->codec->codec_id == AV_CODEC_ID_PCM_S24LE ||
-            st->codec->codec_id == AV_CODEC_ID_PCM_S16LE) {
+        if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE ||
+            st->codecpar->codec_id == AV_CODEC_ID_PCM_S16LE) {
             int first = field_info >> 16;
             int last  = field_info & 0xffff; // last is exclusive
-            int bps = av_get_bits_per_sample(st->codec->codec_id)>>3;
+            int bps = av_get_bits_per_sample(st->codecpar->codec_id)>>3;
             if (first <= last && last*bps <= pkt_len) {
                 avio_skip(pb, first*bps);
                 skip = pkt_len - last*bps;
@@ -551,7 +551,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         pkt->dts = field_nr;
 
         //set duration manually for DV or else lavf misdetects the frame rate
-        if (st->codec->codec_id == AV_CODEC_ID_DVVIDEO)
+        if (st->codecpar->codec_id == AV_CODEC_ID_DVVIDEO)
             pkt->duration = si->fields_per_frame;
 
         return ret;

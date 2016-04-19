@@ -72,7 +72,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     FFTComplex * tmpz_n2, * tmpz_n34, * tmpz_n4;
     FFTComplex * tmpz_n2_i, * tmpz_n34_i, * tmpz_n4_i, * tmpz_i;
 
-    num_transforms = (0x2aab >> (16 - s->nbits)) | 1;
+    num_transforms = (21845 >> (17 - s->nbits)) | 1;
 
     for (n=0; n<num_transforms; n++) {
         offset = ff_fft_offsets_lut[n] << 2;
@@ -251,8 +251,8 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
                 : "memory"
             );
 
-            w_re_ptr = (float*)(ff_cos_65536 + step);
-            w_im_ptr = (float*)(ff_cos_65536 + MAX_FFT_SIZE/4 - step);
+            w_re_ptr = (float*)(ff_cos_131072 + step);
+            w_im_ptr = (float*)(ff_cos_131072 + MAX_FFT_SIZE/4 - step);
 
             for (i=1; i<n4; i++) {
                 w_re = w_re_ptr[0];
@@ -502,11 +502,8 @@ av_cold void ff_fft_init_mips(FFTContext *s)
 {
     int n=0;
 
-    if (s->nbits > 16)
-        return;
-
     ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
-    ff_init_ff_cos_tabs(16);
+    ff_init_ff_cos_tabs(17);
 
 #if HAVE_INLINE_ASM
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6

@@ -888,6 +888,8 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         ctx->encode_config.encodeCodecConfig.h264Config.disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
         ctx->encode_config.encodeCodecConfig.h264Config.repeatSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
 
+        ctx->encode_config.encodeCodecConfig.h264Config.outputAUD = 1;
+
         if (!ctx->profile) {
             switch (avctx->profile) {
             case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
@@ -968,6 +970,8 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         ctx->encode_config.encodeCodecConfig.hevcConfig.disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
         ctx->encode_config.encodeCodecConfig.hevcConfig.repeatSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
+
+        ctx->encode_config.encodeCodecConfig.hevcConfig.outputAUD = 1;
 
         /* No other profile is supported in the current SDK version 5 */
         ctx->encode_config.profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;

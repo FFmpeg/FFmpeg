@@ -1,4 +1,8 @@
 #tb 0: 1001/30000
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 544x352
+#sar 0: 1/1
 0,          0,          0,        1,   287232, 0x17288ed1
 0,          1,          1,        1,   287232, 0x17288ed1
 0,          2,          2,        1,   287232, 0x232dfda4

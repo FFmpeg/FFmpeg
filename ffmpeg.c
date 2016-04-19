@@ -696,6 +696,15 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
     if (pkt->size == 0 && pkt->side_data_elems == 0)
         return;
+    if (!ost->st->codecpar->extradata && avctx->extradata) {
+        ost->st->codecpar->extradata = av_malloc(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!ost->st->codecpar->extradata) {
+            av_log(NULL, AV_LOG_ERROR, "Could not allocate extradata buffer to copy parser data.\n");
+            exit_program(1);
+        }
+        ost->st->codecpar->extradata_size = avctx->extradata_size;
+        memcpy(ost->st->codecpar->extradata, avctx->extradata, avctx->extradata_size);
+    }
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         if (pkt->dts != AV_NOPTS_VALUE &&

@@ -109,11 +109,12 @@ static int thp_read_header(AVFormatContext *s)
             /* The denominator and numerator are switched because 1/fps
                is required.  */
             avpriv_set_pts_info(st, 64, thp->fps.den, thp->fps.num);
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = AV_CODEC_ID_THP;
-            st->codec->codec_tag = 0;  /* no fourcc */
-            st->codec->width = avio_rb32(pb);
-            st->codec->height = avio_rb32(pb);
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id = AV_CODEC_ID_THP;
+            st->codecpar->codec_tag = 0;  /* no fourcc */
+            st->codecpar->width = avio_rb32(pb);
+            st->codecpar->height = avio_rb32(pb);
+            st->codecpar->sample_rate = av_q2d(thp->fps);
             st->nb_frames =
             st->duration = thp->framecnt;
             thp->vst = st;
@@ -130,14 +131,14 @@ static int thp_read_header(AVFormatContext *s)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = AV_CODEC_ID_ADPCM_THP;
-            st->codec->codec_tag = 0;  /* no fourcc */
-            st->codec->channels    = avio_rb32(pb); /* numChannels.  */
-            st->codec->sample_rate = avio_rb32(pb); /* Frequency.  */
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_id = AV_CODEC_ID_ADPCM_THP;
+            st->codecpar->codec_tag = 0;  /* no fourcc */
+            st->codecpar->channels    = avio_rb32(pb); /* numChannels.  */
+            st->codecpar->sample_rate = avio_rb32(pb); /* Frequency.  */
             st->duration           = avio_rb32(pb);
 
-            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
             thp->audio_stream_index = st->index;
             thp->has_audio = 1;

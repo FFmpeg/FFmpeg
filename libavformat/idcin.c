@@ -198,14 +198,14 @@ static int idcin_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 33, 1, IDCIN_FPS);
     st->start_time = 0;
     idcin->video_stream_index = st->index;
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_IDCIN;
-    st->codec->codec_tag = 0;  /* no fourcc */
-    st->codec->width = width;
-    st->codec->height = height;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_IDCIN;
+    st->codecpar->codec_tag = 0;  /* no fourcc */
+    st->codecpar->width = width;
+    st->codecpar->height = height;
 
     /* load up the Huffman tables into extradata */
-    if ((ret = ff_get_extradata(st->codec, pb, HUFFMAN_TABLE_SIZE)) < 0)
+    if ((ret = ff_get_extradata(s, st->codecpar, pb, HUFFMAN_TABLE_SIZE)) < 0)
         return ret;
 
     if (idcin->audio_present) {
@@ -216,19 +216,19 @@ static int idcin_read_header(AVFormatContext *s)
         avpriv_set_pts_info(st, 63, 1, sample_rate);
         st->start_time = 0;
         idcin->audio_stream_index = st->index;
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_tag = 1;
-        st->codec->channels = channels;
-        st->codec->channel_layout = channels > 1 ? AV_CH_LAYOUT_STEREO :
-                                                   AV_CH_LAYOUT_MONO;
-        st->codec->sample_rate = sample_rate;
-        st->codec->bits_per_coded_sample = bytes_per_sample * 8;
-        st->codec->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
-        st->codec->block_align = idcin->block_align = bytes_per_sample * channels;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_tag = 1;
+        st->codecpar->channels = channels;
+        st->codecpar->channel_layout = channels > 1 ? AV_CH_LAYOUT_STEREO :
+                                                      AV_CH_LAYOUT_MONO;
+        st->codecpar->sample_rate = sample_rate;
+        st->codecpar->bits_per_coded_sample = bytes_per_sample * 8;
+        st->codecpar->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
+        st->codecpar->block_align = idcin->block_align = bytes_per_sample * channels;
         if (bytes_per_sample == 1)
-            st->codec->codec_id = AV_CODEC_ID_PCM_U8;
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
         else
-            st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
 
         if (sample_rate % 14 != 0) {
             idcin->audio_chunk_size1 = (sample_rate / 14) *

@@ -1,4 +1,8 @@
 #tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: mp3
+#sample_rate 0: 44100
+#channel_layout 0: 3
 0,          0,          0,     1152,      417, 0xcb873fba
 0,       1152,       1152,     1152,      104, 0x6d521c5a
 0,       2304,       2304,     1152,      104, 0xb3af1d64

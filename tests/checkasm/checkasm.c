@@ -106,6 +106,9 @@ static const struct {
     #if CONFIG_BLEND_FILTER
         { "vf_blend", checkasm_check_blend },
     #endif
+    #if CONFIG_COLORSPACE_FILTER
+        { "vf_colorspace", checkasm_check_colorspace },
+    #endif
 #endif
     { NULL }
 };

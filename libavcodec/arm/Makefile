@@ -28,6 +28,7 @@ OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o
 OBJS-$(CONFIG_MPEGVIDEOENC)            += arm/mpegvideoencdsp_init_arm.o
 OBJS-$(CONFIG_NEON_CLOBBER_TEST)       += arm/neontest.o
 OBJS-$(CONFIG_PIXBLOCKDSP)             += arm/pixblockdsp_init_arm.o
+OBJS-$(CONFIG_RDFT)                    += arm/rdft_init_arm.o
 OBJS-$(CONFIG_RV34DSP)                 += arm/rv34dsp_init_arm.o
 OBJS-$(CONFIG_VC1DSP)                  += arm/vc1dsp_init_arm.o
 OBJS-$(CONFIG_VIDEODSP)                += arm/videodsp_init_arm.o

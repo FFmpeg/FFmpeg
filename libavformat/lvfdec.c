@@ -62,14 +62,14 @@ static int lvf_read_header(AVFormatContext *s)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
             avio_skip(s->pb, 4);
-            st->codec->width      = avio_rl32(s->pb);
-            st->codec->height     = avio_rl32(s->pb);
+            st->codecpar->width      = avio_rl32(s->pb);
+            st->codecpar->height     = avio_rl32(s->pb);
             avio_skip(s->pb, 4);
-            st->codec->codec_tag  = avio_rl32(s->pb);
-            st->codec->codec_id   = ff_codec_get_id(ff_codec_bmp_tags,
-                                                    st->codec->codec_tag);
+            st->codecpar->codec_tag  = avio_rl32(s->pb);
+            st->codecpar->codec_id   = ff_codec_get_id(ff_codec_bmp_tags,
+                                                       st->codecpar->codec_tag);
             avpriv_set_pts_info(st, 32, 1, 1000);
             break;
         case MKTAG('0', '1', 'f', 'm'):
@@ -77,14 +77,14 @@ static int lvf_read_header(AVFormatContext *s)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_tag   = avio_rl16(s->pb);
-            st->codec->channels    = avio_rl16(s->pb);
-            st->codec->sample_rate = avio_rl16(s->pb);
+            st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_tag   = avio_rl16(s->pb);
+            st->codecpar->channels    = avio_rl16(s->pb);
+            st->codecpar->sample_rate = avio_rl16(s->pb);
             avio_skip(s->pb, 8);
-            st->codec->bits_per_coded_sample = avio_r8(s->pb);
-            st->codec->codec_id    = ff_codec_get_id(ff_codec_wav_tags,
-                                                     st->codec->codec_tag);
+            st->codecpar->bits_per_coded_sample = avio_r8(s->pb);
+            st->codecpar->codec_id    = ff_codec_get_id(ff_codec_wav_tags,
+                                                        st->codecpar->codec_tag);
             avpriv_set_pts_info(st, 32, 1, 1000);
             break;
         case 0:

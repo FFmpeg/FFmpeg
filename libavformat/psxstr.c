@@ -104,13 +104,7 @@ static int str_probe(AVProbeData *p)
                      && sector_count*VIDEO_DATA_CHUNK_SIZE >=frame_size)){
                     return 0;
                 }
-
-                /*st->codec->width      = AV_RL16(&sector[0x28]);
-                st->codec->height     = AV_RL16(&sector[0x2A]);*/
-
-//                 if (current_sector == sector_count-1) {
-                    vid++;
-//                 }
+                vid++;
 
             }
             break;
@@ -205,11 +199,11 @@ static int str_read_packet(AVFormatContext *s,
 
                     str->channels[channel].video_stream_index = st->index;
 
-                    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-                    st->codec->codec_id   = AV_CODEC_ID_MDEC;
-                    st->codec->codec_tag  = 0;  /* no fourcc */
-                    st->codec->width      = AV_RL16(&sector[0x28]);
-                    st->codec->height     = AV_RL16(&sector[0x2A]);
+                    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+                    st->codecpar->codec_id   = AV_CODEC_ID_MDEC;
+                    st->codecpar->codec_tag  = 0;  /* no fourcc */
+                    st->codecpar->width      = AV_RL16(&sector[0x28]);
+                    st->codecpar->height     = AV_RL16(&sector[0x2A]);
                 }
 
                 /* if this is the first sector of the frame, allocate a pkt */
@@ -254,22 +248,22 @@ static int str_read_packet(AVFormatContext *s,
 
                 str->channels[channel].audio_stream_index = st->index;
 
-                st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id    = AV_CODEC_ID_ADPCM_XA;
-                st->codec->codec_tag   = 0;  /* no fourcc */
+                st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+                st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_XA;
+                st->codecpar->codec_tag   = 0;  /* no fourcc */
                 if (fmt & 1) {
-                    st->codec->channels       = 2;
-                    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                    st->codecpar->channels       = 2;
+                    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
                 } else {
-                    st->codec->channels       = 1;
-                    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                    st->codecpar->channels       = 1;
+                    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
                 }
-                st->codec->sample_rate = (fmt&4)?18900:37800;
-            //    st->codec->bit_rate = 0; //FIXME;
-                st->codec->block_align = 128;
+                st->codecpar->sample_rate = (fmt&4)?18900:37800;
+            //    st->codecpar->bit_rate = 0; //FIXME;
+                st->codecpar->block_align = 128;
 
-                avpriv_set_pts_info(st, 64, 18 * 224 / st->codec->channels,
-                                    st->codec->sample_rate);
+                avpriv_set_pts_info(st, 64, 18 * 224 / st->codecpar->channels,
+                                    st->codecpar->sample_rate);
                 st->start_time = 0;
             }
             pkt = ret_pkt;

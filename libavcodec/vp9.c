@@ -642,6 +642,8 @@ static int decode_frame_header(AVCodecContext *ctx,
     s->s.h.refreshctx   = s->s.h.errorres ? 0 : get_bits1(&s->gb);
     s->s.h.parallelmode = s->s.h.errorres ? 1 : get_bits1(&s->gb);
     s->s.h.framectxid   = c = get_bits(&s->gb, 2);
+    if (s->s.h.keyframe || s->s.h.intraonly)
+        s->s.h.framectxid = 0; // BUG: libvpx ignores this field in keyframes
 
     /* loopfilter header data */
     if (s->s.h.keyframe || s->s.h.errorres || s->s.h.intraonly) {

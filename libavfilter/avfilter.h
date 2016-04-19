@@ -344,6 +344,15 @@ struct AVFilterContext {
      */
     AVFilterInternal *internal;
 
+    /**
+     * For filters which will create hardware frames, sets the device the
+     * filter should create them in.  All other filters will ignore this field:
+     * in particular, a filter which consumes or processes hardware frames will
+     * instead use the hw_frames_ctx field in AVFilterLink to carry the
+     * hardware context information.
+     */
+    AVBufferRef *hw_device_ctx;
+
     struct AVFilterCommand *command_queue;
 
     char *enable_str;               ///< enable expression string

@@ -61,14 +61,14 @@ static int rgbx_to_nv12_neon_16_wrapper(SwsContext *context, const uint8_t *src[
     return 0;
 }
 
-#define YUV_TO_RGB_TABLE(precision)                                                         \
-        c->yuv2rgb_v2r_coeff / ((precision) == 16 ? 1 << 7 : 1),                            \
-        c->yuv2rgb_u2g_coeff / ((precision) == 16 ? 1 << 7 : 1),                            \
-        c->yuv2rgb_v2g_coeff / ((precision) == 16 ? 1 << 7 : 1),                            \
-        c->yuv2rgb_u2b_coeff / ((precision) == 16 ? 1 << 7 : 1),                            \
+#define YUV_TO_RGB_TABLE                                                                    \
+        c->yuv2rgb_v2r_coeff,                                                               \
+        c->yuv2rgb_u2g_coeff,                                                               \
+        c->yuv2rgb_v2g_coeff,                                                               \
+        c->yuv2rgb_u2b_coeff,                                                               \
 
-#define DECLARE_FF_YUVX_TO_RGBX_FUNCS(ifmt, ofmt, precision)                                \
-int ff_##ifmt##_to_##ofmt##_neon_##precision(int w, int h,                                  \
+#define DECLARE_FF_YUVX_TO_RGBX_FUNCS(ifmt, ofmt)                                           \
+int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                              \
                                  uint8_t *dst, int linesize,                                \
                                  const uint8_t *srcY, int linesizeY,                        \
                                  const uint8_t *srcU, int linesizeU,                        \
@@ -77,37 +77,34 @@ int ff_##ifmt##_to_##ofmt##_neon_##precision(int w, int h,                      
                                  int y_offset,                                              \
                                  int y_coeff);                                              \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper_##precision(SwsContext *c, const uint8_t *src[], \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
                                            int srcStride[], int srcSliceY, int srcSliceH,   \
                                            uint8_t *dst[], int dstStride[]) {               \
-    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE(precision) };                        \
+    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    ff_##ifmt##_to_##ofmt##_neon_##precision(c->srcW, srcSliceH,                            \
+    ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                        \
                                  dst[0] + srcSliceY * dstStride[0], dstStride[0],           \
                                  src[0], srcStride[0],                                      \
                                  src[1], srcStride[1],                                      \
                                  src[2], srcStride[2],                                      \
                                  yuv2rgb_table,                                             \
-                                 c->yuv2rgb_y_offset >> 9,                                  \
-                                 c->yuv2rgb_y_coeff / ((precision) == 16 ? 1 << 7 : 1));    \
+                                 c->yuv2rgb_y_offset >> 6,                                  \
+                                 c->yuv2rgb_y_coeff);                                       \
                                                                                             \
     return 0;                                                                               \
 }                                                                                           \
 
-#define DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuvx, precision)                                  \
-DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, argb, precision)                                        \
-DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, rgba, precision)                                        \
-DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, abgr, precision)                                        \
-DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, bgra, precision)                                        \
+#define DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuvx)                                             \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, argb)                                                   \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, rgba)                                                   \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, abgr)                                                   \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, bgra)                                                   \
 
-#define DECLARE_FF_YUVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(yuvx)                               \
-DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuvx, 16)                                                 \
+DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuv420p)
+DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuv422p)
 
-DECLARE_FF_YUVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(yuv420p)
-DECLARE_FF_YUVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(yuv422p)
-
-#define DECLARE_FF_NVX_TO_RGBX_FUNCS(ifmt, ofmt, precision)                                 \
-int ff_##ifmt##_to_##ofmt##_neon_##precision(int w, int h,                                  \
+#define DECLARE_FF_NVX_TO_RGBX_FUNCS(ifmt, ofmt)                                            \
+int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                              \
                                  uint8_t *dst, int linesize,                                \
                                  const uint8_t *srcY, int linesizeY,                        \
                                  const uint8_t *srcC, int linesizeC,                        \
@@ -115,32 +112,29 @@ int ff_##ifmt##_to_##ofmt##_neon_##precision(int w, int h,                      
                                  int y_offset,                                              \
                                  int y_coeff);                                              \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper_##precision(SwsContext *c, const uint8_t *src[], \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
                                            int srcStride[], int srcSliceY, int srcSliceH,   \
                                            uint8_t *dst[], int dstStride[]) {               \
-    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE(precision) };                        \
+    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    ff_##ifmt##_to_##ofmt##_neon_##precision(c->srcW, srcSliceH,                            \
+    ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                        \
                                  dst[0] + srcSliceY * dstStride[0], dstStride[0],           \
                                  src[0], srcStride[0], src[1], srcStride[1],                \
                                  yuv2rgb_table,                                             \
-                                 c->yuv2rgb_y_offset >> 9,                                  \
-                                 c->yuv2rgb_y_coeff / ((precision) == 16 ? 1 << 7 : 1));    \
+                                 c->yuv2rgb_y_offset >> 6,                                  \
+                                 c->yuv2rgb_y_coeff);                                       \
                                                                                             \
     return 0;                                                                               \
 }                                                                                           \
 
-#define DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nvx, precision)                                    \
-DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, argb, precision)                                          \
-DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, rgba, precision)                                          \
-DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, abgr, precision)                                          \
-DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, bgra, precision)                                          \
+#define DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nvx)                                               \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, argb)                                                     \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, rgba)                                                     \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, abgr)                                                     \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, bgra)                                                     \
 
-#define DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nvx)                                 \
-DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nvx, 16)                                                   \
-
-DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nv12)
-DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nv21)
+DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv12)
+DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
 
 /* We need a 16 pixel width alignment. This constraint can easily be removed
  * for input reading but for the output which is 4-bytes per pixel (RGBA) the
@@ -152,7 +146,7 @@ DECLARE_FF_NVX_TO_ALL_RGBX_ALL_PRECISION_FUNCS(nv21)
         && !(c->srcH & 1)                                                                   \
         && !(c->srcW & 15)                                                                  \
         && !accurate_rnd) {                                                                 \
-        c->swscale = ifmt##_to_##ofmt##_neon_wrapper_16;                                    \
+        c->swscale = ifmt##_to_##ofmt##_neon_wrapper;                                       \
     }                                                                                       \
 } while (0)
 

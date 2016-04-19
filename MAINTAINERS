@@ -385,6 +385,7 @@ Filters:
   vf_neighbor.c                         Paul B Mahol
   vf_psnr.c                             Paul B Mahol
   vf_random.c                           Paul B Mahol
+  vf_readvitc.c                         Tobias Rapp (CC t.rapp at noa-archive dot com)
   vf_scale.c                            Michael Niedermayer
   vf_separatefields.c                   Paul B Mahol
   vf_ssim.c                             Paul B Mahol

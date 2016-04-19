@@ -47,7 +47,6 @@ enum {
 };
 
 #define IVI_VLC_BITS 13 ///< max number of bits of the ivi's huffman codes
-#define IVI4_STREAM_ANALYSER    0
 #define IVI5_IS_PROTECTED       0x20
 
 /**
@@ -220,7 +219,6 @@ typedef struct IVI45DecContext {
     int             prev_frame_type; ///< frame type of the previous frame
     uint32_t        data_size;       ///< size of the frame data in bytes from picture header
     int             is_scalable;
-    int             transp_status;   ///< transparency mode status: 1 - enabled
     const uint8_t   *frame_data;     ///< input frame data pointer
     int             inter_scal;      ///< signals a sequence of scalable inter frames
     uint32_t        frame_size;      ///< frame size in bytes
@@ -250,13 +248,12 @@ typedef struct IVI45DecContext {
     uint8_t         gop_flags;
     uint32_t        lock_word;
 
-#if IVI4_STREAM_ANALYSER
+    int             show_indeo4_info;
     uint8_t         has_b_frames;
-    uint8_t         has_transp;
+    uint8_t         has_transp;      ///< transparency mode status: 1 - enabled
     uint8_t         uses_tiling;
     uint8_t         uses_haar;
     uint8_t         uses_fullpel;
-#endif
 
     int             (*decode_pic_hdr)  (struct IVI45DecContext *ctx, AVCodecContext *avctx);
     int             (*decode_band_hdr) (struct IVI45DecContext *ctx, IVIBandDesc *band, AVCodecContext *avctx);

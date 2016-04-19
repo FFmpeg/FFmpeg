@@ -54,18 +54,18 @@ static int read_header(AVFormatContext *s)
     if (!vst)
         return AVERROR(ENOMEM);
 
-    if (ff_alloc_extradata(vst->codec, 2))
+    if (ff_alloc_extradata(vst->codecpar, 2))
         return AVERROR(ENOMEM);
 
     version                  = avio_r8(pb);
-    vst->codec->extradata[0] = avio_r8(pb);
-    vst->codec->extradata[1] = avio_r8(pb);
+    vst->codecpar->extradata[0] = avio_r8(pb);
+    vst->codecpar->extradata[1] = avio_r8(pb);
     frames_count             = avio_rl32(pb);
     msecs_per_frame          = avio_rl32(pb);
-    vst->codec->width        = avio_rl16(pb);
-    vst->codec->height       = avio_rl16(pb);
+    vst->codecpar->width        = avio_rl16(pb);
+    vst->codecpar->height       = avio_rl16(pb);
     avio_r8(pb);
-    ast->codec->sample_rate  = avio_rl16(pb);
+    ast->codecpar->sample_rate  = avio_rl16(pb);
     mvi->audio_data_size     = avio_rl32(pb);
     avio_r8(pb);
     player_version           = avio_rl32(pb);
@@ -80,20 +80,20 @@ static int read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
-    ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id        = AV_CODEC_ID_PCM_U8;
-    ast->codec->channels        = 1;
-    ast->codec->channel_layout  = AV_CH_LAYOUT_MONO;
-    ast->codec->bits_per_coded_sample = 8;
-    ast->codec->bit_rate        = ast->codec->sample_rate * 8;
+    avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
+    ast->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
+    ast->codecpar->codec_id        = AV_CODEC_ID_PCM_U8;
+    ast->codecpar->channels        = 1;
+    ast->codecpar->channel_layout  = AV_CH_LAYOUT_MONO;
+    ast->codecpar->bits_per_coded_sample = 8;
+    ast->codecpar->bit_rate        = ast->codecpar->sample_rate * 8;
 
     avpriv_set_pts_info(vst, 64, msecs_per_frame, 1000000);
     vst->avg_frame_rate    = av_inv_q(vst->time_base);
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = AV_CODEC_ID_MOTIONPIXELS;
+    vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_id   = AV_CODEC_ID_MOTIONPIXELS;
 
-    mvi->get_int = (vst->codec->width * vst->codec->height < (1 << 16)) ? avio_rl16 : avio_rl24;
+    mvi->get_int = (vst->codecpar->width * vst->codecpar->height < (1 << 16)) ? avio_rl16 : avio_rl24;
 
     mvi->audio_frame_size   = ((uint64_t)mvi->audio_data_size << MVI_FRAC_BITS) / frames_count;
     if (mvi->audio_frame_size <= 1 << MVI_FRAC_BITS - 1) {
@@ -103,7 +103,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    mvi->audio_size_counter = (ast->codec->sample_rate * 830 / mvi->audio_frame_size - 1) * mvi->audio_frame_size;
+    mvi->audio_size_counter = (ast->codecpar->sample_rate * 830 / mvi->audio_frame_size - 1) * mvi->audio_frame_size;
     mvi->audio_size_left    = mvi->audio_data_size;
 
     return 0;

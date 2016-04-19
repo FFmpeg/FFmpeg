@@ -84,7 +84,7 @@ static int daala_header(AVFormatContext *s, int idx)
     struct ogg *ogg        = s->priv_data;
     struct ogg_stream *os  = ogg->streams + idx;
     AVStream *st           = s->streams[idx];
-    int cds                = st->codec->extradata_size + os->psize + 2;
+    int cds                = st->codecpar->extradata_size + os->psize + 2;
     DaalaInfoHeader *hdr   = os->private;
 
     if (!(os->buf[os->pstart] & 0x80))
@@ -106,8 +106,8 @@ static int daala_header(AVFormatContext *s, int idx)
         hdr->version_min = bytestream2_get_byte(&gb);
         hdr->version_sub = bytestream2_get_byte(&gb);
 
-        st->codec->width  = bytestream2_get_ne32(&gb);
-        st->codec->height = bytestream2_get_ne32(&gb);
+        st->codecpar->width  = bytestream2_get_ne32(&gb);
+        st->codecpar->height = bytestream2_get_ne32(&gb);
 
         st->sample_aspect_ratio.num = bytestream2_get_ne32(&gb);
         st->sample_aspect_ratio.den = bytestream2_get_ne32(&gb);
@@ -146,13 +146,13 @@ static int daala_header(AVFormatContext *s, int idx)
             hdr->format.ydec[i] = bytestream2_get_byte(&gb);
         }
 
-        if ((st->codec->pix_fmt = daala_match_pix_fmt(&hdr->format)) < 0)
+        if ((st->codecpar->format = daala_match_pix_fmt(&hdr->format)) < 0)
             av_log(s, AV_LOG_ERROR, "Unsupported pixel format - %i %i\n",
                    hdr->format.depth, hdr->format.planes);
 
-        st->codec->codec_id   = AV_CODEC_ID_DAALA;
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->need_parsing      = AVSTREAM_PARSE_HEADERS;
+        st->codecpar->codec_id   = AV_CODEC_ID_DAALA;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->need_parsing         = AVSTREAM_PARSE_HEADERS;
 
         hdr->init_d = 1;
         break;
@@ -173,18 +173,18 @@ static int daala_header(AVFormatContext *s, int idx)
         break;
     }
 
-    if ((err = av_reallocp(&st->codec->extradata,
+    if ((err = av_reallocp(&st->codecpar->extradata,
                            cds + AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
-        st->codec->extradata_size = 0;
+        st->codecpar->extradata_size = 0;
         return err;
     }
 
-    memset(st->codec->extradata + cds, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    cdp    = st->codec->extradata + st->codec->extradata_size;
+    memset(st->codecpar->extradata + cds, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    cdp    = st->codecpar->extradata + st->codecpar->extradata_size;
     *cdp++ = os->psize >> 8;
     *cdp++ = os->psize & 0xff;
     memcpy(cdp, os->buf + os->pstart, os->psize);
-    st->codec->extradata_size = cds;
+    st->codecpar->extradata_size = cds;
 
     return 1;
 }

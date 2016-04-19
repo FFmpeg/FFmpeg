@@ -22,6 +22,8 @@
 #define AVFORMAT_INTERNAL_H
 
 #include <stdint.h>
+
+#include "libavutil/bprint.h"
 #include "avformat.h"
 #include "os_support.h"
 
@@ -142,6 +144,22 @@ struct AVStreamInternal {
      * Whether or not check_bitstream should still be run on each packet
      */
     int bitstream_checked;
+
+    /**
+     * The codec context used by avformat_find_stream_info, the parser, etc.
+     */
+    AVCodecContext *avctx;
+    /**
+     * 1 if avctx has been initialized with the values from the codec parameters
+     */
+    int avctx_inited;
+
+    enum AVCodecID orig_codec_id;
+
+    /**
+     * Whether the internal avctx needs to be updated from codecpar (after a late change to codecpar)
+     */
+    int need_context_update;
 };
 
 #ifdef __GNUC__
@@ -495,7 +513,7 @@ static inline int ff_rename(const char *oldpath, const char *newpath, void *logc
  * @param size size of extradata
  * @return 0 if OK, AVERROR_xxx on error
  */
-int ff_alloc_extradata(AVCodecContext *avctx, int size);
+int ff_alloc_extradata(AVCodecParameters *par, int size);
 
 /**
  * Allocate extradata with additional AV_INPUT_BUFFER_PADDING_SIZE at end
@@ -504,7 +522,7 @@ int ff_alloc_extradata(AVCodecContext *avctx, int size);
  * @param size size of extradata
  * @return >= 0 if OK, AVERROR_xxx on error
  */
-int ff_get_extradata(AVCodecContext *avctx, AVIOContext *pb, int size);
+int ff_get_extradata(AVFormatContext *s, AVCodecParameters *par, AVIOContext *pb, int size);
 
 /**
  * add frame for rfps calculation.
@@ -579,7 +597,7 @@ int ff_standardize_creation_time(AVFormatContext *s);
  *         non-zero if a new packet was allocated and ppkt has to be freed
  *         CONTAINS_PAL if in addition to a new packet the old contained a palette
  */
-int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *enc, int expected_stride);
+int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecParameters *par, int expected_stride);
 
 /**
  * Retrieves the palette from a packet, either from side data, or
@@ -595,5 +613,10 @@ int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecContext *en
  *         1 if the packet has a palette, else 0
  */
 int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette);
+
+/**
+ * Finalize buf into extradata and set its size appropriately.
+ */
+int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf);
 
 #endif /* AVFORMAT_INTERNAL_H */

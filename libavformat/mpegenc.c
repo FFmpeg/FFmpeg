@@ -348,35 +348,35 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
 
         avpriv_set_pts_info(st, 64, 1, 90000);
 
-        switch (st->codec->codec_type) {
+        switch (st->codecpar->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             if (!s->is_mpeg2 &&
-                (st->codec->codec_id == AV_CODEC_ID_AC3 ||
-                 st->codec->codec_id == AV_CODEC_ID_DTS ||
-                 st->codec->codec_id == AV_CODEC_ID_PCM_S16BE))
+                (st->codecpar->codec_id == AV_CODEC_ID_AC3 ||
+                 st->codecpar->codec_id == AV_CODEC_ID_DTS ||
+                 st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE))
                  av_log(ctx, AV_LOG_WARNING,
                         "%s in MPEG-1 system streams is not widely supported, "
                         "consider using the vob or the dvd muxer "
                         "to force a MPEG-2 program stream.\n",
-                        avcodec_get_name(st->codec->codec_id));
-            if (st->codec->codec_id == AV_CODEC_ID_AC3) {
+                        avcodec_get_name(st->codecpar->codec_id));
+            if (st->codecpar->codec_id == AV_CODEC_ID_AC3) {
                 stream->id = ac3_id++;
-            } else if (st->codec->codec_id == AV_CODEC_ID_DTS) {
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_DTS) {
                 stream->id = dts_id++;
-            } else if (st->codec->codec_id == AV_CODEC_ID_PCM_S16BE) {
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE) {
                 stream->id = lpcm_id++;
                 for (j = 0; j < 4; j++) {
-                    if (lpcm_freq_tab[j] == st->codec->sample_rate)
+                    if (lpcm_freq_tab[j] == st->codecpar->sample_rate)
                         break;
                 }
                 if (j == 4)
                     goto fail;
-                if (st->codec->channels > 8)
+                if (st->codecpar->channels > 8)
                     return -1;
                 stream->lpcm_header[0] = 0x0c;
-                stream->lpcm_header[1] = (st->codec->channels - 1) | (j << 4);
+                stream->lpcm_header[1] = (st->codecpar->channels - 1) | (j << 4);
                 stream->lpcm_header[2] = 0x80;
-                stream->lpcm_align     = st->codec->channels * 2;
+                stream->lpcm_align     = st->codecpar->channels * 2;
             } else {
                 stream->id = mpa_id++;
             }
@@ -387,7 +387,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             s->audio_bound++;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            if (st->codec->codec_id == AV_CODEC_ID_H264)
+            if (st->codecpar->codec_id == AV_CODEC_ID_H264)
                 stream->id = h264_id++;
             else
                 stream->id = mpv_id++;
@@ -415,7 +415,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             break;
         default:
             av_log(ctx, AV_LOG_ERROR, "Invalid media type %s for output stream #%d\n",
-                   av_get_media_type_string(st->codec->codec_type), i);
+                   av_get_media_type_string(st->codecpar->codec_type), i);
             return AVERROR(EINVAL);
         }
         stream->fifo = av_fifo_alloc(16);
@@ -435,7 +435,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
         if (props)
             codec_rate = props->max_bitrate;
         else
-            codec_rate = st->codec->bit_rate;
+            codec_rate = st->codecpar->bit_rate;
 
         if (!codec_rate)
             codec_rate = (1 << 21) * 8 * 50 / ctx->nb_streams;
@@ -444,7 +444,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
 
         if ((stream->id & 0xe0) == AUDIO_ID)
             audio_bitrate += codec_rate;
-        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             video_bitrate += codec_rate;
     }
 
@@ -984,7 +984,7 @@ retry:
         /* for subtitle, a single PES packet must be generated,
          * so we flush after every single subtitle packet */
         if (s->packet_size > avail_data && !flush
-            && st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE)
+            && st->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
             return 0;
         if (avail_data == 0)
             continue;
@@ -1115,7 +1115,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int64_t pts, dts;
     PacketDesc *pkt_desc;
     int preload;
-    const int is_iframe = st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+    const int is_iframe = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                           (pkt->flags & AV_PKT_FLAG_KEY);
 
     preload = av_rescale(s->preload, 90000, AV_TIME_BASE);

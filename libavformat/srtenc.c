@@ -39,16 +39,16 @@ static int srt_write_header(AVFormatContext *avf)
     SRTContext *srt = avf->priv_data;
 
     if (avf->nb_streams != 1 ||
-        avf->streams[0]->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+        avf->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         av_log(avf, AV_LOG_ERROR,
                "SRT supports only a single subtitles stream.\n");
         return AVERROR(EINVAL);
     }
-    if (avf->streams[0]->codec->codec_id != AV_CODEC_ID_TEXT &&
-        avf->streams[0]->codec->codec_id != AV_CODEC_ID_SUBRIP) {
+    if (avf->streams[0]->codecpar->codec_id != AV_CODEC_ID_TEXT &&
+        avf->streams[0]->codecpar->codec_id != AV_CODEC_ID_SUBRIP) {
         av_log(avf, AV_LOG_ERROR,
                "Unsupported subtitles codec: %s\n",
-               avcodec_get_name(avf->streams[0]->codec->codec_id));
+               avcodec_get_name(avf->streams[0]->codecpar->codec_id));
         return AVERROR(EINVAL);
     }
     avpriv_set_pts_info(avf->streams[0], 64, 1, 1000);

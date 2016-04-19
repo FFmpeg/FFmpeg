@@ -85,17 +85,17 @@ static int write_header(AVFormatContext *s)
 
     st = s->streams[0];
 
-    if (st->codec->channels > 2) {
+    if (st->codecpar->channels > 2) {
         av_log(s, AV_LOG_ERROR, "Only up to 2 channels are supported\n");
         goto fail;
     }
 
-    if (st->codec->sample_rate < 1000) {
+    if (st->codecpar->sample_rate < 1000) {
         av_log(s, AV_LOG_ERROR, "Sampling rate must be at least 1000\n");
         goto fail;
     }
 
-    if (!chromaprint_start(cpr->ctx, st->codec->sample_rate, st->codec->channels)) {
+    if (!chromaprint_start(cpr->ctx, st->codecpar->sample_rate, st->codecpar->channels)) {
         av_log(s, AV_LOG_ERROR, "Failed to start chromaprint\n");
         goto fail;
     }

@@ -163,8 +163,17 @@ static int set_bps_params(AVCodecContext *avctx)
 static void set_sample_rate_params(AVCodecContext *avctx)
 {
     TAKDecContext *s  = avctx->priv_data;
-    int shift         = 3 - (avctx->sample_rate / 11025);
-    shift             = FFMAX(0, shift);
+    int shift;
+
+    if (avctx->sample_rate < 11025) {
+        shift = 3;
+    } else if (avctx->sample_rate < 22050) {
+        shift = 2;
+    } else if (avctx->sample_rate < 44100) {
+        shift = 1;
+    } else {
+        shift = 0;
+    }
     s->uval           = FFALIGN(avctx->sample_rate + 511 >> 9, 4) << shift;
     s->subframe_scale = FFALIGN(avctx->sample_rate + 511 >> 9, 4) << 1;
 }

@@ -279,7 +279,7 @@ int ff_init_filters(SwsContext * c)
     if (need_lum_conv) {
         res = ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
         if (res < 0) goto cleanup;
-        c->desc[index].alpha = c->alpPixBuf != 0;
+        c->desc[index].alpha = c->needAlpha;
         ++index;
         srcIdx = dstIdx;
     }
@@ -288,7 +288,7 @@ int ff_init_filters(SwsContext * c)
     dstIdx = FFMAX(num_ydesc, num_cdesc);
     res = ff_init_desc_hscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hLumFilter, c->hLumFilterPos, c->hLumFilterSize, c->lumXInc);
     if (res < 0) goto cleanup;
-    c->desc[index].alpha = c->alpPixBuf != 0;
+    c->desc[index].alpha = c->needAlpha;
 
 
     ++index;

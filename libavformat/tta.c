@@ -114,11 +114,11 @@ static int tta_read_header(AVFormatContext *s)
         return framepos;
     framepos += 4 * c->totalframes + 4;
 
-    if (ff_alloc_extradata(st->codec, avio_tell(s->pb) - start_offset))
+    if (ff_alloc_extradata(st->codecpar, avio_tell(s->pb) - start_offset))
         return AVERROR(ENOMEM);
 
     avio_seek(s->pb, start_offset, SEEK_SET);
-    avio_read(s->pb, st->codec->extradata, st->codec->extradata_size);
+    avio_read(s->pb, st->codecpar->extradata, st->codecpar->extradata_size);
 
     ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
     for (i = 0; i < c->totalframes; i++) {
@@ -135,11 +135,11 @@ static int tta_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_TTA;
-    st->codec->channels = channels;
-    st->codec->sample_rate = samplerate;
-    st->codec->bits_per_coded_sample = bps;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_TTA;
+    st->codecpar->channels = channels;
+    st->codecpar->sample_rate = samplerate;
+    st->codecpar->bits_per_coded_sample = bps;
 
     if (s->pb->seekable) {
         int64_t pos = avio_tell(s->pb);

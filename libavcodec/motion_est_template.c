@@ -413,7 +413,7 @@ if( (y)>(ymax<<(S)) ) av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d ymax" #v, ymax,
     const int shift= 1+qpel;\
 
 static av_always_inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags)
 {
     MotionEstContext * const c= &s->me;
@@ -454,7 +454,7 @@ static av_always_inline int small_diamond_search(MpegEncContext * s, int *best, 
 }
 
 static int funny_diamond_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags)
 {
     MotionEstContext * const c= &s->me;
@@ -496,7 +496,7 @@ static int funny_diamond_search(MpegEncContext * s, int *best, int dmin,
 }
 
 static int hex_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags, int dia_size)
 {
     MotionEstContext * const c= &s->me;
@@ -530,7 +530,7 @@ static int hex_search(MpegEncContext * s, int *best, int dmin,
 }
 
 static int l2s_dia_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags)
 {
     MotionEstContext * const c= &s->me;
@@ -568,7 +568,7 @@ static int l2s_dia_search(MpegEncContext * s, int *best, int dmin,
 }
 
 static int umh_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags)
 {
     MotionEstContext * const c= &s->me;
@@ -615,7 +615,7 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
 }
 
 static int full_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags)
 {
     MotionEstContext * const c= &s->me;
@@ -678,7 +678,7 @@ static int full_search(MpegEncContext * s, int *best, int dmin,
 
 #define MAX_SAB_SIZE ME_MAP_SIZE
 static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags)
 {
     MotionEstContext * const c= &s->me;
@@ -768,7 +768,7 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
 }
 
 static int var_diamond_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags)
 {
     MotionEstContext * const c= &s->me;
@@ -829,7 +829,7 @@ static int var_diamond_search(MpegEncContext * s, int *best, int dmin,
 }
 
 static av_always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
-                                       int src_index, int ref_index, int const penalty_factor,
+                                       int src_index, int ref_index, const int penalty_factor,
                                        int size, int h, int flags){
     MotionEstContext * const c= &s->me;
     if(c->dia_size==-1)

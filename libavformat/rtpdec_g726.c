@@ -27,10 +27,10 @@ static av_cold int g726_ ## bitrate ##_init(AVFormatContext *s, int st_index, \
                                             PayloadContext *data) \
 { \
     AVStream *stream = s->streams[st_index]; \
-    AVCodecContext *codec = stream->codec; \
+    AVCodecParameters *par = stream->codecpar; \
 \
-    codec->bits_per_coded_sample = bitrate/8; \
-    codec->bit_rate = codec->bits_per_coded_sample * codec->sample_rate; \
+    par->bits_per_coded_sample = bitrate/8; \
+    par->bit_rate = par->bits_per_coded_sample * par->sample_rate; \
 \
     return 0; \
 } \

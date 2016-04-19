@@ -85,18 +85,12 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
 {
     const int dstH= c->dstH;
     const int flags= c->flags;
-#ifdef NEW_FILTER
+
     SwsPlane *lumPlane = &c->slice[c->numSlice-2].plane[0];
     SwsPlane *chrUPlane = &c->slice[c->numSlice-2].plane[1];
     SwsPlane *alpPlane = &c->slice[c->numSlice-2].plane[3];
-#else
-    int16_t **lumPixBuf= c->lumPixBuf;
-    int16_t **chrUPixBuf= c->chrUPixBuf;
-    int16_t **alpPixBuf= c->alpPixBuf;
-    const int vLumBufSize= c->vLumBufSize;
-    const int vChrBufSize= c->vChrBufSize;
-#endif
-    int hasAlpha = c->alpPixBuf != NULL;
+
+    int hasAlpha = c->needAlpha;
     int32_t *vLumFilterPos= c->vLumFilterPos;
     int32_t *vChrFilterPos= c->vChrFilterPos;
     int16_t *vLumFilter= c->vLumFilter;
@@ -117,22 +111,14 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
         c->greenDither= ff_dither4[dstY&1];
     c->redDither= ff_dither8[(dstY+1)&1];
     if (dstY < dstH - 2) {
-#ifdef NEW_FILTER
         const int16_t **lumSrcPtr  = (const int16_t **)(void*) lumPlane->line + firstLumSrcY - lumPlane->sliceY;
         const int16_t **chrUSrcPtr = (const int16_t **)(void*) chrUPlane->line + firstChrSrcY - chrUPlane->sliceY;
-        const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) ? (const int16_t **)(void*) alpPlane->line + firstLumSrcY - alpPlane->sliceY : NULL;
-#else
-        const int16_t **lumSrcPtr= (const int16_t **)(void*) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
-        const int16_t **chrUSrcPtr= (const int16_t **)(void*) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-        const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **)(void*) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-#endif
+        const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && hasAlpha) ? (const int16_t **)(void*) alpPlane->line + firstLumSrcY - alpPlane->sliceY : NULL;
+
         int i;
         if (firstLumSrcY < 0 || firstLumSrcY + vLumFilterSize > c->srcH) {
-#ifdef NEW_FILTER
             const int16_t **tmpY = (const int16_t **) lumPlane->tmp;
-#else
-            const int16_t **tmpY = (const int16_t **) lumPixBuf + 2 * vLumBufSize;
-#endif
+
             int neg = -firstLumSrcY, i, end = FFMIN(c->srcH - firstLumSrcY, vLumFilterSize);
             for (i = 0; i < neg;            i++)
                 tmpY[i] = lumSrcPtr[neg];
@@ -143,11 +129,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
             lumSrcPtr = tmpY;
 
             if (alpSrcPtr) {
-#ifdef NEW_FILTER
                 const int16_t **tmpA = (const int16_t **) alpPlane->tmp;
-#else
-                const int16_t **tmpA = (const int16_t **) alpPixBuf + 2 * vLumBufSize;
-#endif
                 for (i = 0; i < neg;            i++)
                     tmpA[i] = alpSrcPtr[neg];
                 for (     ; i < end;            i++)
@@ -158,11 +140,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
             }
         }
         if (firstChrSrcY < 0 || firstChrSrcY + vChrFilterSize > c->chrSrcH) {
-#ifdef NEW_FILTER
             const int16_t **tmpU = (const int16_t **) chrUPlane->tmp;
-#else
-            const int16_t **tmpU = (const int16_t **) chrUPixBuf + 2 * vChrBufSize;
-#endif
             int neg = -firstChrSrcY, i, end = FFMIN(c->chrSrcH - firstChrSrcY, vChrFilterSize);
             for (i = 0; i < neg;            i++) {
                 tmpU[i] = chrUSrcPtr[neg];
@@ -479,7 +457,7 @@ switch(c->dstBpc){ \
         switch (c->srcFormat) {
         case AV_PIX_FMT_YA8:
             c->lumToYV12 = ff_yuyvToY_mmx;
-            if (c->alpPixBuf)
+            if (c->needAlpha)
                 c->alpToYV12 = ff_uyvyToY_mmx;
             break;
         case AV_PIX_FMT_YUYV422:
@@ -528,7 +506,7 @@ switch(c->dstBpc){ \
         switch (c->srcFormat) {
         case AV_PIX_FMT_YA8:
             c->lumToYV12 = ff_yuyvToY_sse2;
-            if (c->alpPixBuf)
+            if (c->needAlpha)
                 c->alpToYV12 = ff_uyvyToY_sse2;
             break;
         case AV_PIX_FMT_YUYV422:

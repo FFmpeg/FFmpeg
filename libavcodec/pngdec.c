@@ -1136,6 +1136,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             case MKTAG('p', 'H', 'Y', 's'):
             case MKTAG('t', 'E', 'X', 't'):
             case MKTAG('I', 'D', 'A', 'T'):
+            case MKTAG('t', 'R', 'N', 'S'):
                 break;
             default:
                 goto skip_tag;

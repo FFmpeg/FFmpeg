@@ -20,12 +20,12 @@
  */
 
 #include "avcodec.h"
+#include "bsf.h"
 #include "mpeg4video.h"
 
 typedef struct UnpackBFramesBSFContext {
     uint8_t *b_frame_buf;
     int      b_frame_buf_size;
-    int      updated_extradata;
 } UnpackBFramesBSFContext;
 
 /* search next start code */
@@ -83,112 +83,109 @@ static uint8_t *create_new_buffer(const uint8_t *src, int size) {
     return dst;
 }
 
-static int mpeg4_unpack_bframes_filter(AVBitStreamFilterContext *bsfc,
-                                       AVCodecContext *avctx, const char *args,
-                                       uint8_t  **poutbuf, int *poutbuf_size,
-                                       const uint8_t *buf, int      buf_size,
-                                       int keyframe)
+static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
 {
-    UnpackBFramesBSFContext *ctx = bsfc->priv_data;
+    UnpackBFramesBSFContext *s = ctx->priv_data;
     int pos_p = -1, nb_vop = 0, pos_vop2 = -1, ret = 0;
+    AVPacket *in;
 
-    if (avctx->codec_id != AV_CODEC_ID_MPEG4) {
-        av_log(avctx, AV_LOG_ERROR,
-               "The mpeg4_unpack_bframes bitstream filter is only useful for mpeg4.\n");
-        return AVERROR(EINVAL);
-    }
+    ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
 
-    if (!ctx->updated_extradata && avctx->extradata) {
-        int pos_p_ext = -1;
-        scan_buffer(avctx->extradata, avctx->extradata_size, &pos_p_ext, NULL, NULL);
-        if (pos_p_ext >= 0) {
-            av_log(avctx, AV_LOG_DEBUG,
-                   "Updating DivX userdata (remove trailing 'p') in extradata.\n");
-            avctx->extradata[pos_p_ext] = '\0';
-        }
-        ctx->updated_extradata = 1;
-    }
-
-    scan_buffer(buf, buf_size, &pos_p, &nb_vop, &pos_vop2);
-    av_log(avctx, AV_LOG_DEBUG, "Found %d VOP startcode(s) in this packet.\n", nb_vop);
+    scan_buffer(in->data, in->size, &pos_p, &nb_vop, &pos_vop2);
+    av_log(ctx, AV_LOG_DEBUG, "Found %d VOP startcode(s) in this packet.\n", nb_vop);
 
     if (pos_vop2 >= 0) {
-        if (ctx->b_frame_buf) {
-            av_log(avctx, AV_LOG_WARNING,
+        if (s->b_frame_buf) {
+            av_log(ctx, AV_LOG_WARNING,
                    "Missing one N-VOP packet, discarding one B-frame.\n");
-            av_freep(&ctx->b_frame_buf);
-            ctx->b_frame_buf_size = 0;
+            av_freep(&s->b_frame_buf);
+            s->b_frame_buf_size = 0;
         }
         /* store the packed B-frame in the BSFContext */
-        ctx->b_frame_buf_size = buf_size - pos_vop2;
-        ctx->b_frame_buf      = create_new_buffer(buf + pos_vop2, ctx->b_frame_buf_size);
-        if (!ctx->b_frame_buf) {
-            ctx->b_frame_buf_size = 0;
+        s->b_frame_buf_size = in->size - pos_vop2;
+        s->b_frame_buf      = create_new_buffer(in->data + pos_vop2, s->b_frame_buf_size);
+        if (!s->b_frame_buf) {
+            s->b_frame_buf_size = 0;
+            av_packet_free(&in);
             return AVERROR(ENOMEM);
         }
     }
 
     if (nb_vop > 2) {
-        av_log(avctx, AV_LOG_WARNING,
+        av_log(ctx, AV_LOG_WARNING,
        "Found %d VOP headers in one packet, only unpacking one.\n", nb_vop);
     }
 
-    if (nb_vop == 1 && ctx->b_frame_buf) {
+    if (nb_vop == 1 && s->b_frame_buf) {
         /* use frame from BSFContext */
-        *poutbuf      = ctx->b_frame_buf;
-        *poutbuf_size = ctx->b_frame_buf_size;
-        /* the output buffer is distinct from the input buffer */
-        ret = 1;
-        if (buf_size <= MAX_NVOP_SIZE) {
+        av_packet_from_data(out, s->b_frame_buf, s->b_frame_buf_size);
+        if (in->size <= MAX_NVOP_SIZE) {
             /* N-VOP */
-            av_log(avctx, AV_LOG_DEBUG, "Skipping N-VOP.\n");
-            ctx->b_frame_buf      = NULL;
-            ctx->b_frame_buf_size = 0;
+            av_log(ctx, AV_LOG_DEBUG, "Skipping N-VOP.\n");
+            s->b_frame_buf      = NULL;
+            s->b_frame_buf_size = 0;
         } else {
             /* copy packet into BSFContext */
-            ctx->b_frame_buf_size = buf_size;
-            ctx->b_frame_buf      = create_new_buffer(buf , buf_size);
-            if (!ctx->b_frame_buf) {
-                ctx->b_frame_buf_size = 0;
-                av_freep(poutbuf);
-                *poutbuf_size = 0;
+            s->b_frame_buf_size = in->size;
+            s->b_frame_buf      = create_new_buffer(in->data, in->size);
+            if (!s->b_frame_buf) {
+                s->b_frame_buf_size = 0;
+                av_packet_unref(out);
+                av_packet_free(&in);
                 return AVERROR(ENOMEM);
             }
         }
     } else if (nb_vop >= 2) {
         /* use first frame of the packet */
-        *poutbuf      = (uint8_t *) buf;
-        *poutbuf_size = pos_vop2;
+        av_packet_move_ref(out, in);
+        out->size = pos_vop2;
     } else if (pos_p >= 0) {
-        av_log(avctx, AV_LOG_DEBUG, "Updating DivX userdata (remove trailing 'p').\n");
-        *poutbuf_size = buf_size;
-        *poutbuf      = create_new_buffer(buf, buf_size);
-        if (!*poutbuf) {
-            *poutbuf_size = 0;
-            return AVERROR(ENOMEM);
-        }
+        av_log(ctx, AV_LOG_DEBUG, "Updating DivX userdata (remove trailing 'p').\n");
+        av_packet_move_ref(out, in);
         /* remove 'p' (packed) from the end of the (DivX) userdata string */
-        (*poutbuf)[pos_p] = '\0';
-        /* the output buffer is distinct from the input buffer */
-        ret = 1;
+        out->data[pos_p] = '\0';
     } else {
         /* copy packet */
-        *poutbuf      = (uint8_t *) buf;
-        *poutbuf_size = buf_size;
+        av_packet_move_ref(out, in);
     }
 
-    return ret;
+    av_packet_free(&in);
+
+    return 0;
 }
 
-static void mpeg4_unpack_bframes_close(AVBitStreamFilterContext *bsfc)
+static int mpeg4_unpack_bframes_init(AVBSFContext *ctx)
+{
+    if (ctx->par_in->extradata) {
+        int pos_p_ext = -1;
+        scan_buffer(ctx->par_in->extradata, ctx->par_in->extradata_size, &pos_p_ext, NULL, NULL);
+        if (pos_p_ext >= 0) {
+            av_log(ctx, AV_LOG_DEBUG,
+                   "Updating DivX userdata (remove trailing 'p') in extradata.\n");
+            ctx->par_out->extradata[pos_p_ext] = '\0';
+        }
+    }
+
+    return 0;
+}
+
+static void mpeg4_unpack_bframes_close(AVBSFContext *bsfc)
 {
     UnpackBFramesBSFContext *ctx = bsfc->priv_data;
     av_freep(&ctx->b_frame_buf);
 }
 
-AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf = {
+static const enum AVCodecID codec_ids[] = {
+    AV_CODEC_ID_MPEG4, AV_CODEC_ID_NONE,
+};
+
+const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf = {
     .name           = "mpeg4_unpack_bframes",
     .priv_data_size = sizeof(UnpackBFramesBSFContext),
+    .init           = mpeg4_unpack_bframes_init,
     .filter         = mpeg4_unpack_bframes_filter,
-    .close          = mpeg4_unpack_bframes_close
+    .close          = mpeg4_unpack_bframes_close,
+    .codec_ids      = codec_ids,
 };

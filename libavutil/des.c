@@ -389,9 +389,6 @@ static int run_test(int cbc, int decrypt) {
 int main(void) {
     AVDES d;
     int i;
-#ifdef GENTABLES
-    int j;
-#endif
     uint64_t key[3];
     uint64_t data;
     uint64_t ct;
@@ -429,6 +426,7 @@ int main(void) {
 #ifdef GENTABLES
     printf("static const uint32_t S_boxes_P_shuffle[8][64] = {\n");
     for (i = 0; i < 8; i++) {
+        int j;
         printf("    {");
         for (j = 0; j < 64; j++) {
             uint32_t v = S_boxes[i][j >> 1];

@@ -62,8 +62,8 @@ static int r3d_read_red1(AVFormatContext *s)
 
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_JPEG2000;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_JPEG2000;
 
     tmp  = avio_r8(s->pb); // major version
     tmp2 = avio_r8(s->pb); // minor version
@@ -80,8 +80,8 @@ static int r3d_read_red1(AVFormatContext *s)
 
     avio_skip(s->pb, 32); // unknown
 
-    st->codec->width  = avio_rb32(s->pb);
-    st->codec->height = avio_rb32(s->pb);
+    st->codecpar->width  = avio_rb32(s->pb);
+    st->codecpar->height = avio_rb32(s->pb);
 
     tmp = avio_rb16(s->pb); // unknown
     av_log(s, AV_LOG_TRACE, "unknown2 %d\n", tmp);
@@ -103,7 +103,7 @@ static int r3d_read_red1(AVFormatContext *s)
     av_dict_set(&st->metadata, "filename", filename, 0);
 
     av_log(s, AV_LOG_TRACE, "filename %s\n", filename);
-    av_log(s, AV_LOG_TRACE, "resolution %dx%d\n", st->codec->width, st->codec->height);
+    av_log(s, AV_LOG_TRACE, "resolution %dx%d\n", st->codecpar->width, st->codecpar->height);
     av_log(s, AV_LOG_TRACE, "timescale %d\n", st->time_base.den);
     av_log(s, AV_LOG_TRACE, "frame rate %d/%d\n",
             framerate.num, framerate.den);
@@ -284,9 +284,9 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
         st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = AV_CODEC_ID_PCM_S32BE;
-        st->codec->channels = r3d->audio_channels;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_S32BE;
+        st->codecpar->channels = r3d->audio_channels;
         avpriv_set_pts_info(st, 32, 1, s->streams[0]->time_base.den);
     } else {
         st = s->streams[1];
@@ -294,8 +294,8 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 
     dts = avio_rb32(s->pb);
 
-    st->codec->sample_rate = avio_rb32(s->pb);
-    if (st->codec->sample_rate <= 0) {
+    st->codecpar->sample_rate = avio_rb32(s->pb);
+    if (st->codecpar->sample_rate <= 0) {
         av_log(s, AV_LOG_ERROR, "Bad sample rate\n");
         return AVERROR_INVALIDDATA;
     }
@@ -326,10 +326,10 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 
     pkt->stream_index = 1;
     pkt->dts = dts;
-    if (st->codec->sample_rate)
-        pkt->duration = av_rescale(samples, st->time_base.den, st->codec->sample_rate);
+    if (st->codecpar->sample_rate)
+        pkt->duration = av_rescale(samples, st->time_base.den, st->codecpar->sample_rate);
     av_log(s, AV_LOG_TRACE, "pkt dts %"PRId64" duration %"PRId64" samples %d sample rate %d\n",
-            pkt->dts, pkt->duration, samples, st->codec->sample_rate);
+            pkt->dts, pkt->duration, samples, st->codecpar->sample_rate);
 
     return 0;
 }

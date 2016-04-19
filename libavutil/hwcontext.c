@@ -32,6 +32,9 @@ static const HWContextType *hw_table[] = {
 #if CONFIG_CUDA
     &ff_hwcontext_type_cuda,
 #endif
+#if CONFIG_VAAPI
+    &ff_hwcontext_type_vaapi,
+#endif
 #if CONFIG_VDPAU
     &ff_hwcontext_type_vdpau,
 #endif
@@ -399,4 +402,49 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
     }
 
     return 0;
+}
+
+void *av_hwdevice_hwconfig_alloc(AVBufferRef *ref)
+{
+    AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
+    const HWContextType  *hw_type = ctx->internal->hw_type;
+
+    if (hw_type->device_hwconfig_size == 0)
+        return NULL;
+
+    return av_mallocz(hw_type->device_hwconfig_size);
+}
+
+AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
+                                                           const void *hwconfig)
+{
+    AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
+    const HWContextType  *hw_type = ctx->internal->hw_type;
+    AVHWFramesConstraints *constraints;
+
+    if (!hw_type->frames_get_constraints)
+        return NULL;
+
+    constraints = av_mallocz(sizeof(*constraints));
+    if (!constraints)
+        return NULL;
+
+    constraints->min_width = constraints->min_height = 0;
+    constraints->max_width = constraints->max_height = INT_MAX;
+
+    if (hw_type->frames_get_constraints(ctx, hwconfig, constraints) >= 0) {
+        return constraints;
+    } else {
+        av_hwframe_constraints_free(&constraints);
+        return NULL;
+    }
+}
+
+void av_hwframe_constraints_free(AVHWFramesConstraints **constraints)
+{
+    if (*constraints) {
+        av_freep(&(*constraints)->valid_hw_formats);
+        av_freep(&(*constraints)->valid_sw_formats);
+    }
+    av_freep(constraints);
 }

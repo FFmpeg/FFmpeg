@@ -234,6 +234,7 @@ External library support:
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnut          enable NUT (de)muxing via libnut,
                            native (de)muxer exists [no]
+  --enable-libnpp          enable NVIDIA Performance Primitives-based code [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -1482,6 +1483,7 @@ EXTERNAL_LIBRARY_LIST="
     libmodplug
     libmp3lame
     libnut
+    libnpp
     libopencore_amrnb
     libopencore_amrwb
     libopencv
@@ -2066,6 +2068,7 @@ CONFIG_EXTRA="
     rv34dsp
     sinewin
     snappy
+    srtp
     startcode
     texturedsp
     texturedspenc
@@ -2258,7 +2261,6 @@ faandct_deps="faan fdctdsp"
 faanidct_deps="faan idctdsp"
 h264dsp_select="startcode"
 frame_thread_encoder_deps="encoders threads"
-intrax8_select="error_resilience"
 mdct_select="fft"
 me_cmp_select="fdctdsp idctdsp pixblockdsp"
 mpeg_er_select="error_resilience"
@@ -2494,7 +2496,7 @@ wmav2_encoder_select="mdct sinewin wma_freqs"
 wmavoice_decoder_select="lsp rdft dct mdct sinewin"
 wmv1_decoder_select="h263_decoder"
 wmv1_encoder_select="h263_encoder"
-wmv2_decoder_select="blockdsp h263_decoder idctdsp intrax8 videodsp wmv2dsp"
+wmv2_decoder_select="blockdsp error_resilience h263_decoder idctdsp intrax8 videodsp wmv2dsp"
 wmv2_encoder_select="h263_encoder wmv2dsp"
 wmv3_decoder_select="vc1_decoder"
 wmv3image_decoder_select="wmv3_decoder"
@@ -2647,9 +2649,12 @@ mjpeg2jpeg_bsf_select="jpegtables"
 # external libraries
 aac_at_decoder_deps="audiotoolbox"
 ac3_at_decoder_deps="audiotoolbox"
+ac3_at_decoder_select="ac3_parser"
 adpcm_ima_qt_at_decoder_deps="audiotoolbox"
 alac_at_decoder_deps="audiotoolbox"
 amr_nb_at_decoder_deps="audiotoolbox"
+eac3_at_decoder_deps="audiotoolbox"
+eac3_at_decoder_select="ac3_parser"
 gsm_ms_at_decoder_deps="audiotoolbox"
 ilbc_at_decoder_deps="audiotoolbox"
 mp1_at_decoder_deps="audiotoolbox"
@@ -2787,7 +2792,7 @@ ogg_demuxer_select="dirac_parse"
 opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"
-rtpdec_select="asf_demuxer jpegtables mov_demuxer mpegts_demuxer rm_demuxer rtp_protocol"
+rtpdec_select="asf_demuxer jpegtables mov_demuxer mpegts_demuxer rm_demuxer rtp_protocol srtp"
 rtsp_demuxer_select="http_protocol rtpdec"
 rtsp_muxer_select="rtp_muxer http_protocol rtp_protocol rtpenc_chain"
 sap_demuxer_select="sdp_demuxer"
@@ -2894,7 +2899,7 @@ rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtp_protocol_select="udp_protocol"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
-srtp_protocol_select="rtp_protocol"
+srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
 tls_gnutls_protocol_deps="gnutls !tls_schannel_protocol !tls_securetransport_protocol"
 tls_gnutls_protocol_select="tcp_protocol"
@@ -2999,6 +3004,8 @@ vidstabtransform_filter_deps="libvidstab"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
 zscale_filter_deps="libzimg"
+scale_npp_filter_deps="cuda libnpp"
+scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
 avcodec_example_deps="avcodec avutil"
@@ -3201,7 +3208,6 @@ ENCODER_LIST=$(find_things  encoder  ENC      libavcodec/allcodecs.c)
 DECODER_LIST=$(find_things  decoder  DEC      libavcodec/allcodecs.c)
 HWACCEL_LIST=$(find_things  hwaccel  HWACCEL  libavcodec/allcodecs.c)
 PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
-BSF_LIST=$(find_things      bsf      BSF      libavcodec/allcodecs.c)
 MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
 DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
 OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
@@ -3215,6 +3221,7 @@ find_things_extern(){
     sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$thing/p" "$file"
 }
 
+BSF_LIST=$(find_things_extern bsf AVBitStreamFilter libavcodec/bitstream_filters.c)
 PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
 
 ALL_COMPONENTS="
@@ -3392,6 +3399,11 @@ case "$toolchain" in
         add_cflags  -fsanitize=address
         add_ldflags -fsanitize=address
     ;;
+    *-msan)
+        cc_default="${toolchain%-msan}"
+        add_cflags  -fsanitize=memory -fsanitize-memory-track-origins
+        add_ldflags -fsanitize=memory
+    ;;
     *-tsan)
         cc_default="${toolchain%-tsan}"
         add_cflags  -fsanitize=thread -pie
@@ -3458,6 +3470,10 @@ case "$toolchain" in
     gcov)
         add_cflags  -fprofile-arcs -ftest-coverage
         add_ldflags -fprofile-arcs -ftest-coverage
+    ;;
+    llvm-cov)
+        add_cflags -fprofile-arcs -ftest-coverage
+        add_ldflags --coverage
     ;;
     hardened)
         add_cppflags -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
@@ -4634,9 +4650,9 @@ case $target_os in
         # however ld then forgets what the entry point should be (oops) so we
         # have to manually (re)set it.
         if enabled x86_32; then
-            add_ldexeflags -Wl,--pic-executable,-e,_mainCRTStartup
+            disabled debug && add_ldexeflags -Wl,--pic-executable,-e,_mainCRTStartup
         elif enabled x86_64; then
-            add_ldexeflags -Wl,--pic-executable,-e,mainCRTStartup
+            disabled debug && add_ldexeflags -Wl,--pic-executable,-e,mainCRTStartup
             check_ldflags -Wl,--high-entropy-va # binutils 2.25
             # Set image base >4GB for extra entropy with HEASLR
             add_ldexeflags -Wl,--image-base,0x140000000
@@ -4946,6 +4962,7 @@ die_license_disabled gpl x11grab
 
 die_license_disabled nonfree cuda
 die_license_disabled nonfree libfaac
+die_license_disabled nonfree libnpp
 die_license_disabled nonfree nvenc
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
 enabled gpl && die_license_disabled_gpl nonfree openssl
@@ -5443,6 +5460,7 @@ check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "va/va.h" "VAPictureParameterBufferHEVC"
 check_type "va/va.h" "VADecPictureParameterBufferVP9"
+check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
@@ -5553,6 +5571,7 @@ enabled libmfx            && require_pkg_config libmfx "mfx/mfxvideo.h" MFXInit
 enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libnut            && require libnut libnut.h nut_demuxer_init -lnut
+enabled libnpp            && require libnpp npp.h nppGetLibVersion -lnppi -lnppc
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_header opencv2/core/core_c.h &&
@@ -5838,6 +5857,10 @@ EOF
 
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
+    disable vaapi
+
+enabled vaapi &&
+    check_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
     disable vaapi
 
 enabled vaapi && enabled xlib &&

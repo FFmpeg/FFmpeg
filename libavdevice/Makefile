@@ -70,4 +70,4 @@ SKIPHEADERS-$(CONFIG_V4L2_OUTDEV)        += v4l2-common.h
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio.h
 
-TESTPROGS = timefilter
+TESTPROGS-$(CONFIG_JACK_INDEV)           += timefilter

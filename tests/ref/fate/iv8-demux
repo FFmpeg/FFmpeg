@@ -1,5 +1,9 @@
 #extradata 0:       19, 0x1f2604b9
 #tb 0: 1/90000
+#media_type 0: video
+#codec_id 0: mpeg4
+#dimensions 0: 704x576
+#sar 0: 1/1
 0,          0,          0,        0,    20883, 0x347191e2
 0,          0,       3600,        0,    20882, 0xe1573905
 0,       3600,       7200,        0,    20894, 0xd54f516a
