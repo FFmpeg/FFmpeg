@@ -37,6 +37,9 @@
     <YASM Include="..\libavfilter\x86\vf_bwdif.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
+    <YASM Include="..\libavfilter\x86\colorspacedsp.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
     <YASM Include="..\libavfilter\x86\vf_fspp.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
@@ -324,6 +327,9 @@
     <ClCompile Include="..\libavfilter\af_volumedetect.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_hdcd.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\asrc_anoisesrc.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -397,6 +403,12 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_colormatrix.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_colorspace.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\colorspacedsp.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_convolution.c">
@@ -531,6 +543,12 @@
     <ClCompile Include="..\libavfilter\vf_hqx.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_hwdownload.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_hwupload.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_stack.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -616,6 +634,12 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_random.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_readvitc.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_remap.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_removegrain.c">
@@ -790,6 +814,9 @@
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_bwdif_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\colorspacedsp_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_eq.c">

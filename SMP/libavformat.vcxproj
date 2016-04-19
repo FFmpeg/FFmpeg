@@ -115,11 +115,12 @@
     <ClCompile Include="..\libavformat\rtpdec_qdm2.c" />
     <ClCompile Include="..\libavformat\rtpdec_qt.c" />
     <ClCompile Include="..\libavformat\rtpdec_svq3.c" />
+    <ClCompile Include="..\libavformat\rtpdec_vc2hq.c" />
     <ClCompile Include="..\libavformat\rtpdec_vp8.c" />
     <ClCompile Include="..\libavformat\rtpdec_vp9.c" />
     <ClCompile Include="..\libavformat\rtpdec_xiph.c" />
-    <ClCompile Include="..\libavformat\srtp.c" />
     <ClCompile Include="..\libavformat\rtpenc_chain.c" />
+    <ClCompile Include="..\libavformat\srtp.c" />
     <ClCompile Include="..\libavformat\a64.c" />
     <ClCompile Include="..\libavformat\rawenc.c" />
     <ClCompile Include="..\libavformat\aadec.c" />
@@ -143,6 +144,7 @@
     <ClCompile Include="..\libavformat\aiffdec.c" />
     <ClCompile Include="..\libavformat\mov_chan.c" />
     <ClCompile Include="..\libavformat\aiffenc.c" />
+    <ClCompile Include="..\libavformat\aixdec.c" />
     <ClCompile Include="..\libavformat\amr.c" />
     <ClCompile Include="..\libavformat\anm.c" />
     <ClCompile Include="..\libavformat\apc.c" />
@@ -233,7 +235,7 @@
     <ClCompile Include="..\libavformat\4xm.c" />
     <ClCompile Include="..\libavformat\framecrcenc.c" />
     <ClCompile Include="..\libavformat\framehash.c" />
-    <ClCompile Include="..\libavformat\md5enc.c" />
+    <ClCompile Include="..\libavformat\hashenc.c" />
     <ClCompile Include="..\libavformat\frmdec.c" />
     <ClCompile Include="..\libavformat\fsb.c" />
     <ClCompile Include="..\libavformat\gif.c" />
@@ -319,6 +321,7 @@
     <ClCompile Include="..\libavformat\mpsubdec.c" />
     <ClCompile Include="..\libavformat\msnwc_tcp.c" />
     <ClCompile Include="..\libavformat\mtv.c" />
+    <ClCompile Include="..\libavformat\musx.c" />
     <ClCompile Include="..\libavformat\mvdec.c" />
     <ClCompile Include="..\libavformat\mvi.c" />
     <ClCompile Include="..\libavformat\mxfdec.c" />

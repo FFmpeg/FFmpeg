@@ -71,6 +71,7 @@
   <ItemGroup>
     <YASM Include="..\libavfilter\x86\vf_blend.asm" />
     <YASM Include="..\libavfilter\x86\vf_bwdif.asm" />
+    <YASM Include="..\libavfilter\x86\colorspacedsp.asm" />
     <YASM Include="..\libavfilter\x86\vf_fspp.asm" />
     <YASM Include="..\libavfilter\x86\vf_gradfun.asm" />
     <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm" />
@@ -170,6 +171,7 @@
       <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_volumedetect.c" />
+    <ClCompile Include="..\libavfilter\af_hdcd.c" />
     <ClCompile Include="..\libavfilter\asrc_anoisesrc.c" />
     <ClCompile Include="..\libavfilter\asrc_anullsrc.c" />
     <ClCompile Include="..\libavfilter\asrc_sine.c" />
@@ -199,6 +201,10 @@
     <ClCompile Include="..\libavfilter\vf_colorkey.c" />
     <ClCompile Include="..\libavfilter\vf_colorlevels.c" />
     <ClCompile Include="..\libavfilter\vf_colormatrix.c" />
+    <ClCompile Include="..\libavfilter\vf_colorspace.c" />
+    <ClCompile Include="..\libavfilter\colorspacedsp.c">
+      <ObjectFileName>$(IntDir)\libavfilter_colorspacedsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_convolution.c" />
     <ClCompile Include="..\libavfilter\vf_copy.c" />
     <ClCompile Include="..\libavfilter\vf_cover_rect.c" />
@@ -249,6 +255,8 @@
       <ObjectFileName>$(IntDir)\libavfilter_vf_hqdn3d.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_hqx.c" />
+    <ClCompile Include="..\libavfilter\vf_hwdownload.c" />
+    <ClCompile Include="..\libavfilter\vf_hwupload.c" />
     <ClCompile Include="..\libavfilter\vf_stack.c" />
     <ClCompile Include="..\libavfilter\vf_hue.c" />
     <ClCompile Include="..\libavfilter\vf_idet.c">
@@ -290,6 +298,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_qp.c" />
     <ClCompile Include="..\libavfilter\vf_random.c" />
+    <ClCompile Include="..\libavfilter\vf_readvitc.c" />
+    <ClCompile Include="..\libavfilter\vf_remap.c" />
     <ClCompile Include="..\libavfilter\vf_removegrain.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_removegrain.obj</ObjectFileName>
     </ClCompile>
@@ -358,6 +368,7 @@
     <ClCompile Include="..\libavfilter\pthread.c" />
     <ClCompile Include="..\libavfilter\x86\vf_blend_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_bwdif_init.c" />
+    <ClCompile Include="..\libavfilter\x86\colorspacedsp_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_eq.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_eq.obj</ObjectFileName>
     </ClCompile>

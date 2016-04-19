@@ -291,6 +291,12 @@
     <ClCompile Include="..\libavcodec\bitstream_filter.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\bitstream_filters.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\bsf.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\codec_desc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2455,6 +2461,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dump_extradata_bsf.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dca_core_bsf.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\h264_mp4toannexb_bsf.c">

@@ -166,6 +166,9 @@
     <ClCompile Include="..\libavformat\rtpdec_svq3.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_vc2hq.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_vp8.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -175,10 +178,10 @@
     <ClCompile Include="..\libavformat\rtpdec_xiph.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\srtp.c">
+    <ClCompile Include="..\libavformat\rtpenc_chain.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\rtpenc_chain.c">
+    <ClCompile Include="..\libavformat\srtp.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\a64.c">
@@ -248,6 +251,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\aiffenc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\aixdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\amr.c">
@@ -520,7 +526,7 @@
     <ClCompile Include="..\libavformat\framehash.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\md5enc.c">
+    <ClCompile Include="..\libavformat\hashenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\frmdec.c">
@@ -776,6 +782,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\mtv.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\musx.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\mvdec.c">

@@ -193,6 +193,7 @@
     <ClInclude Include="..\libavutil\hmac.h" />
     <ClInclude Include="..\libavutil\hwcontext.h" />
     <ClInclude Include="..\libavutil\hwcontext_cuda.h" />
+    <ClInclude Include="..\libavutil\hwcontext_vaapi.h" />
     <ClInclude Include="..\libavutil\hwcontext_vdpau.h" />
     <ClInclude Include="..\libavutil\imgutils.h" />
     <ClInclude Include="..\libavutil\intfloat.h" />
@@ -537,6 +538,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -675,6 +677,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -819,6 +822,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -967,6 +971,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -1116,6 +1121,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -1264,6 +1270,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -1413,6 +1420,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -1557,6 +1565,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -1707,6 +1716,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -1856,6 +1866,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -2006,6 +2017,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -2155,6 +2167,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -2299,6 +2312,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
@@ -2443,6 +2457,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil

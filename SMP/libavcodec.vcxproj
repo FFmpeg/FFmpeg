@@ -157,6 +157,8 @@
     <ClCompile Include="..\libavcodec\avpicture.c" />
     <ClCompile Include="..\libavcodec\bitstream.c" />
     <ClCompile Include="..\libavcodec\bitstream_filter.c" />
+    <ClCompile Include="..\libavcodec\bitstream_filters.c" />
+    <ClCompile Include="..\libavcodec\bsf.c" />
     <ClCompile Include="..\libavcodec\codec_desc.c" />
     <ClCompile Include="..\libavcodec\d3d11va.c" />
     <ClCompile Include="..\libavcodec\dirac.c" />
@@ -959,6 +961,7 @@
     <ClCompile Include="..\libavcodec\aac_adtstoasc_bsf.c" />
     <ClCompile Include="..\libavcodec\chomp_bsf.c" />
     <ClCompile Include="..\libavcodec\dump_extradata_bsf.c" />
+    <ClCompile Include="..\libavcodec\dca_core_bsf.c" />
     <ClCompile Include="..\libavcodec\h264_mp4toannexb_bsf.c" />
     <ClCompile Include="..\libavcodec\hevc_mp4toannexb_bsf.c" />
     <ClCompile Include="..\libavcodec\imx_dump_header_bsf.c" />
