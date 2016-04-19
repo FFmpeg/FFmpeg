@@ -1587,7 +1587,7 @@ static int opt_size(enum AVOptionType type)
     case AV_OPT_TYPE_SAMPLE_FMT:return sizeof(enum AVSampleFormat);
     case AV_OPT_TYPE_COLOR:     return 4;
     }
-    return 0;
+    return AVERROR(EINVAL);
 }
 
 int av_opt_copy(void *dst, const void *src)
@@ -1597,10 +1597,10 @@ int av_opt_copy(void *dst, const void *src)
     int ret = 0;
 
     if (!src)
-        return 0;
+        return AVERROR(EINVAL);
 
     c = *(AVClass**)src;
-    if (*(AVClass**)dst && c != *(AVClass**)dst)
+    if (!c || c != *(AVClass**)dst)
         return AVERROR(EINVAL);
 
     while ((o = av_opt_next(src, o))) {
@@ -1637,7 +1637,11 @@ int av_opt_copy(void *dst, const void *src)
             if (av_dict_count(*sdict) != av_dict_count(*ddict))
                 ret = AVERROR(ENOMEM);
         } else {
-            memcpy(field_dst, field_src, opt_size(o->type));
+            int size = opt_size(o->type);
+            if (size < 0)
+                ret = size;
+            else
+                memcpy(field_dst, field_src, size);
         }
     }
     return ret;
