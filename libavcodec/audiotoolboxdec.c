@@ -414,6 +414,7 @@ static OSStatus ffat_decode_callback(AudioConverterRef converter, UInt32 *nb_pac
         return 0;
     }
 
+    av_packet_unref(&at->in_pkt);
     av_packet_move_ref(&at->in_pkt, &at->new_in_pkt);
     at->new_in_pkt.data = 0;
     at->new_in_pkt.size = 0;
