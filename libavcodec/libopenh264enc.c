@@ -39,6 +39,7 @@ typedef struct SVCContext {
     int loopfilter;
     char *profile;
     int max_nal_size;
+    int slice_mbs;
     int skip_frames;
     int skipped;
     int cabac;
@@ -51,14 +52,14 @@ typedef struct SVCContext {
 #define OFFSET(x) offsetof(SVCContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "slice_mode", "set slice mode", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_AUTO_SLICE }, SM_SINGLE_SLICE, SM_RESERVED, VE, "slice_mode" },
-        { "fixed", "a fixed number of slices", 0, AV_OPT_TYPE_CONST, { .i64 = SM_FIXEDSLCNUM_SLICE }, 0, 0, VE, "slice_mode" },
-        { "rowmb", "one slice per row of macroblocks", 0, AV_OPT_TYPE_CONST, { .i64 = SM_ROWMB_SLICE }, 0, 0, VE, "slice_mode" },
-        { "auto", "automatic number of slices according to number of threads", 0, AV_OPT_TYPE_CONST, { .i64 = SM_AUTO_SLICE }, 0, 0, VE, "slice_mode" },
-        { "dyn", "Dynamic slicing", 0, AV_OPT_TYPE_CONST, { .i64 = SM_DYN_SLICE }, 0, 0, VE, "slice_mode" },
+    { "slice_mode", "set slice mode", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_FIXEDSLCNUM_SLICE }, SM_FIXEDSLCNUM_SLICE, SM_RESERVED, VE, "slice_mode" },
+        { "fixed", "set a fixed number of slices, depending on slices option", 0, AV_OPT_TYPE_CONST, { .i64 = SM_FIXEDSLCNUM_SLICE }, 0, 0, VE, "slice_mode" },
+        { "raster", "set a fixed number of MB per slice, depending on slice_mb option", 0, AV_OPT_TYPE_CONST, { .i64 = SM_RASTER_SLICE }, 0, 0, VE, "slice_mode" },
+        { "sizelimited", "set slice according to size", 0, AV_OPT_TYPE_CONST, { .i64 = SM_SIZELIMITED_SLICE }, 0, 0, VE, "slice_mode" },
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
-    { "max_nal_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "slice_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "slice_mbs", "set number of MBs per slice", OFFSET(slice_mbs), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "allow_skip_frames", "allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "cabac", "Enable cabac", OFFSET(cabac), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL }
@@ -184,29 +185,28 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.sSpatialLayers[0].iSpatialBitrate     = param.iTargetBitrate;
     param.sSpatialLayers[0].iMaxSpatialBitrate  = param.iMaxBitrate;
 
-    if ((avctx->slices > 1) && (s->max_nal_size)){
-        av_log(avctx,AV_LOG_ERROR,"Invalid combination -slices %d and -max_nal_size %d.\n",avctx->slices,s->max_nal_size);
-        goto fail;
-    }
+    param.sSpatialLayers[0].sSliceArgument.uiSliceMode = s->slice_mode;
 
-    if (avctx->slices > 1)
-        s->slice_mode = SM_FIXEDSLCNUM_SLICE;
-
-    if (s->max_nal_size)
-        s->slice_mode = SM_DYN_SLICE;
-
-    param.sSpatialLayers[0].sSliceCfg.uiSliceMode               = s->slice_mode;
-    param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceNum = avctx->slices;
-
-    if (s->slice_mode == SM_DYN_SLICE) {
-        if (s->max_nal_size){
-            param.uiMaxNalSize = s->max_nal_size;
-            param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
+    if (s->slice_mode == SM_FIXEDSLCNUM_SLICE) {
+        param.sSpatialLayers[0].sSliceArgument.uiSliceNum = avctx->slices;
+    } else if (s->slice_mode == SM_RASTER_SLICE) {
+        if (s->slice_mbs) {
+            param.sSpatialLayers[0].sSliceArgument.uiSliceMbNum[0] = s->slice_mbs;
         } else {
-            av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, "
-                   "specify a valid max_nal_size to use -slice_mode dyn\n");
+            av_log(avctx, AV_LOG_ERROR, "The value slice_mbs must be set to use slice_mode raster\n");
             goto fail;
         }
+    } else if (s->slice_mode == SM_SIZELIMITED_SLICE) {
+        if (s->max_nal_size) {
+            param.uiMaxNalSize = s->max_nal_size;
+            param.sSpatialLayers[0].sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "The value max_nal_size must be set to use slice_mode sizelimited\n");
+            goto fail;
+        }
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Unknown or invalid selected slice mode %d\n", s->slice_mode);
+        goto fail;
     }
 
     if ((*s->encoder)->InitializeExt(s->encoder, &param) != cmResultSuccess) {
