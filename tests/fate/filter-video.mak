@@ -160,7 +160,7 @@ fate-filter-pixfmts-scale: CMD = pixfmts "200:100"
 FATE_FILTER_PIXFMTS += fate-filter-pixfmts-vflip
 fate-filter-pixfmts-vflip: CMD = pixfmts
 
-$(FATE_FILTER_PIXFMTS): libavfilter/filtfmts-test$(EXESUF)
+$(FATE_FILTER_PIXFMTS): libavfilter/tests/filtfmts$(EXESUF)
 FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += $(FATE_FILTER_PIXFMTS)
 
 

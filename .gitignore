@@ -17,7 +17,6 @@
 *.so.*
 *.swp
 *.ver
-*-test
 /.config
 /.version
 /avconv

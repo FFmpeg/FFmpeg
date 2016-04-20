@@ -15,8 +15,8 @@ LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
 FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(EXTRALIBS)
 
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))
-TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)%) $(TESTPROGS:%=$(SUBDIR)%-test.o)
-TESTPROGS := $(TESTPROGS:%=$(SUBDIR)%-test$(EXESUF))
+TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)tests/%) $(TESTPROGS:%=$(SUBDIR)tests/%.o)
+TESTPROGS := $(TESTPROGS:%=$(SUBDIR)tests/%$(EXESUF))
 HOSTOBJS  := $(HOSTPROGS:%=$(SUBDIR)%.o)
 HOSTPROGS := $(HOSTPROGS:%=$(SUBDIR)%$(HOSTEXESUF))
 TOOLS     += $(TOOLS-yes)
@@ -58,8 +58,7 @@ LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
 clean::
-	$(RM) $(HOSTPROGS)
-	$(RM) $(TOOLS)
+	$(RM) $(HOSTPROGS) $(TESTPROGS) $(TOOLS)
 endef
 
 $(eval $(RULES))

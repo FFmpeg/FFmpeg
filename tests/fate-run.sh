@@ -167,7 +167,7 @@ pixfmts(){
     filter=${test#filter-pixfmts-}
     filter_args=$1
 
-    showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
+    showfiltfmts="$target_exec $target_path/libavfilter/tests/filtfmts"
     exclude_fmts=${outfile}${filter}_exclude_fmts
     out_fmts=${outfile}${filter}_out_fmts
 
