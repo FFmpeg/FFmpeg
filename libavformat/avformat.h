@@ -2873,8 +2873,11 @@ int avformat_queue_attached_pictures(AVFormatContext *s);
  * @return  >=0 on success;
  *          AVERROR code on failure
  */
+#if FF_API_OLD_BSF
+attribute_deprecated
 int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
                                AVBitStreamFilterContext *bsfc);
+#endif
 
 /**
  * @}

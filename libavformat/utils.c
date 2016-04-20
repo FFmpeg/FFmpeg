@@ -5006,6 +5006,8 @@ int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *a
     return 1;
 }
 
+#if FF_API_OLD_BSF
+FF_DISABLE_DEPRECATION_WARNINGS
 int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
                                AVBitStreamFilterContext *bsfc)
 {
@@ -5059,6 +5061,8 @@ int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
     }
     return ret;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
 {
