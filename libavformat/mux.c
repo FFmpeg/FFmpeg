@@ -614,6 +614,17 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     }
 }
 
+const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream)
+{
+    AVPacketList *pktl = s->internal->packet_buffer;
+    while (pktl) {
+        if (pktl->pkt.stream_index == stream)
+            return &pktl->pkt;
+        pktl = pktl->next;
+    }
+    return NULL;
+}
+
 /**
  * Interleave an AVPacket correctly so it can be muxed.
  * @param out the interleaved packet will be output here

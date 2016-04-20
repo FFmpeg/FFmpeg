@@ -3188,6 +3188,25 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         return 0;
 
+    // Try to fill in the duration of the last packet in each stream
+    // from queued packets in the interleave queues. If the flushing
+    // of fragments was triggered automatically by an AVPacket, we
+    // already have reliable info for the end of that track, but other
+    // tracks may need to be filled in.
+    for (i = 0; i < s->nb_streams; i++) {
+        MOVTrack *track = &mov->tracks[i];
+        if (!track->end_reliable) {
+            AVPacket *next = ff_interleaved_peek(s, i);
+            if (next) {
+                track->track_duration = next->dts - track->start_dts;
+                if (next->pts != AV_NOPTS_VALUE)
+                    track->end_pts = next->pts;
+                else
+                    track->end_pts = next->dts;
+            }
+        }
+    }
+
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
         if (track->entry <= 1)
@@ -3267,6 +3286,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
                                              mov->tracks[i].track_duration -
                                              mov->tracks[i].cluster[0].dts;
             mov->tracks[i].entry = 0;
+            mov->tracks[i].end_reliable = 0;
         }
         avio_flush(s->pb);
         return 0;
@@ -3346,6 +3366,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             track->frag_start += duration;
         track->entry = 0;
         track->entries_flushed = 0;
+        track->end_reliable = 0;
         if (!mov->frag_interleave) {
             if (!track->mdat_buf)
                 continue;
@@ -3650,6 +3671,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                     trk->end_pts = pkt->pts;
                 else
                     trk->end_pts = pkt->dts;
+                trk->end_reliable = 1;
                 mov_auto_flush_fragment(s, 0);
             }
         }

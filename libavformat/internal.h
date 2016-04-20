@@ -441,4 +441,14 @@ static inline int ff_rename(const char *oldpath, const char *newpath)
  */
 void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
 
+/**
+ * Find the next packet in the interleaving queue for the given stream.
+ * The packet is not removed from the interleaving queue, but only
+ * a pointer to it is returned.
+ *
+ * @return a pointer to the next packet, or NULL if no packet is queued
+ *         for this stream.
+ */
+const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream);
+
 #endif /* AVFORMAT_INTERNAL_H */
