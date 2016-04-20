@@ -1193,8 +1193,8 @@ INIT_XMM
 ; Non-destructive instructions are written without parameters
 AVX_INSTR addpd, sse2, 1, 0, 1
 AVX_INSTR addps, sse, 1, 0, 1
-AVX_INSTR addsd, sse2, 1, 0, 1
-AVX_INSTR addss, sse, 1, 0, 1
+AVX_INSTR addsd, sse2, 1, 0, 0
+AVX_INSTR addss, sse, 1, 0, 0
 AVX_INSTR addsubpd, sse3, 1, 0, 0
 AVX_INSTR addsubps, sse3, 1, 0, 0
 AVX_INSTR aesdec, fnord, 0, 0, 0
@@ -1224,10 +1224,10 @@ AVX_INSTR cvtpd2ps, sse2
 AVX_INSTR cvtps2dq, sse2
 AVX_INSTR cvtps2pd, sse2
 AVX_INSTR cvtsd2si, sse2
-AVX_INSTR cvtsd2ss, sse2
-AVX_INSTR cvtsi2sd, sse2
-AVX_INSTR cvtsi2ss, sse
-AVX_INSTR cvtss2sd, sse2
+AVX_INSTR cvtsd2ss, sse2, 1, 0, 0
+AVX_INSTR cvtsi2sd, sse2, 1, 0, 0
+AVX_INSTR cvtsi2ss, sse, 1, 0, 0
+AVX_INSTR cvtss2sd, sse2, 1, 0, 0
 AVX_INSTR cvtss2si, sse
 AVX_INSTR cvttpd2dq, sse2
 AVX_INSTR cvttps2dq, sse2
@@ -1250,12 +1250,12 @@ AVX_INSTR ldmxcsr, sse
 AVX_INSTR maskmovdqu, sse2
 AVX_INSTR maxpd, sse2, 1, 0, 1
 AVX_INSTR maxps, sse, 1, 0, 1
-AVX_INSTR maxsd, sse2, 1, 0, 1
-AVX_INSTR maxss, sse, 1, 0, 1
+AVX_INSTR maxsd, sse2, 1, 0, 0
+AVX_INSTR maxss, sse, 1, 0, 0
 AVX_INSTR minpd, sse2, 1, 0, 1
 AVX_INSTR minps, sse, 1, 0, 1
-AVX_INSTR minsd, sse2, 1, 0, 1
-AVX_INSTR minss, sse, 1, 0, 1
+AVX_INSTR minsd, sse2, 1, 0, 0
+AVX_INSTR minss, sse, 1, 0, 0
 AVX_INSTR movapd, sse2
 AVX_INSTR movaps, sse
 AVX_INSTR movd, mmx
@@ -1284,8 +1284,8 @@ AVX_INSTR movups, sse
 AVX_INSTR mpsadbw, sse4
 AVX_INSTR mulpd, sse2, 1, 0, 1
 AVX_INSTR mulps, sse, 1, 0, 1
-AVX_INSTR mulsd, sse2, 1, 0, 1
-AVX_INSTR mulss, sse, 1, 0, 1
+AVX_INSTR mulsd, sse2, 1, 0, 0
+AVX_INSTR mulss, sse, 1, 0, 0
 AVX_INSTR orpd, sse2, 1, 0, 1
 AVX_INSTR orps, sse, 1, 0, 1
 AVX_INSTR pabsb, ssse3
@@ -1413,8 +1413,8 @@ AVX_INSTR rcpps, sse, 1, 0, 0
 AVX_INSTR rcpss, sse, 1, 0, 0
 AVX_INSTR roundpd, sse4
 AVX_INSTR roundps, sse4
-AVX_INSTR roundsd, sse4
-AVX_INSTR roundss, sse4
+AVX_INSTR roundsd, sse4, 1, 1, 0
+AVX_INSTR roundss, sse4, 1, 1, 0
 AVX_INSTR rsqrtps, sse, 1, 0, 0
 AVX_INSTR rsqrtss, sse, 1, 0, 0
 AVX_INSTR shufpd, sse2, 1, 1, 0
