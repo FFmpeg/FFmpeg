@@ -293,6 +293,8 @@ const uint8_t *avpriv_find_start_code(const uint8_t *p,
                                       const uint8_t *end,
                                       uint32_t *state);
 
+int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);
+
 /**
  * Check that the provided frame dimensions are valid and set them on the codec
  * context.
