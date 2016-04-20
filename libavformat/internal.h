@@ -135,11 +135,12 @@ struct AVStreamInternal {
     int reorder;
 
     /**
-     * bitstream filter to run on stream
+     * bitstream filters to run on stream
      * - encoding: Set by muxer using ff_stream_add_bitstream_filter
      * - decoding: unused
      */
-    AVBitStreamFilterContext *bsfc;
+    AVBSFContext **bsfcs;
+    int nb_bsfcs;
 
     /**
      * Whether or not check_bitstream should still be run on each packet

@@ -3962,6 +3962,10 @@ static void free_stream(AVStream **pst)
 
     if (st->internal) {
         avcodec_free_context(&st->internal->avctx);
+        for (i = 0; i < st->internal->nb_bsfcs; i++) {
+            av_bsf_free(&st->internal->bsfcs[i]);
+            av_freep(&st->internal->bsfcs);
+        }
     }
     av_freep(&st->internal);
 
@@ -4986,23 +4990,58 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
 
 int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *args)
 {
-    AVBitStreamFilterContext *bsfc = NULL;
-    AVBitStreamFilterContext **dest = &st->internal->bsfc;
-    while (*dest && (*dest)->next)
-        dest = &(*dest)->next;
+    int ret;
+    const AVBitStreamFilter *bsf;
+    AVBSFContext *bsfc;
+    AVCodecParameters *in_par;
 
-    if (!(bsfc = av_bitstream_filter_init(name))) {
+    if (!(bsf = av_bsf_get_by_name(name))) {
         av_log(NULL, AV_LOG_ERROR, "Unknown bitstream filter '%s'\n", name);
-        return AVERROR(EINVAL);
+        return AVERROR_BSF_NOT_FOUND;
     }
-    if (args && !(bsfc->args = av_strdup(args))) {
-        av_bitstream_filter_close(bsfc);
-        return AVERROR(ENOMEM);
+
+    if ((ret = av_bsf_alloc(bsf, &bsfc)) < 0)
+        return ret;
+
+    if (st->internal->nb_bsfcs) {
+        in_par = st->internal->bsfcs[st->internal->nb_bsfcs - 1]->par_out;
+        bsfc->time_base_in = st->internal->bsfcs[st->internal->nb_bsfcs - 1]->time_base_out;
+    } else {
+        in_par = st->codecpar;
+        bsfc->time_base_in = st->time_base;
     }
+
+    if ((ret = avcodec_parameters_copy(bsfc->par_in, in_par)) < 0) {
+        av_bsf_free(&bsfc);
+        return ret;
+    }
+
+    if (args && bsfc->filter->priv_class) {
+        const AVOption *opt = av_opt_next(bsfc->priv_data, NULL);
+        const char * shorthand[2] = {NULL};
+
+        if (opt)
+            shorthand[0] = opt->name;
+
+        if ((ret = av_opt_set_from_string(bsfc->priv_data, args, shorthand, "=", ":")) < 0) {
+            av_bsf_free(&bsfc);
+            return ret;
+        }
+    }
+
+    if ((ret = av_bsf_init(bsfc)) < 0) {
+        av_bsf_free(&bsfc);
+        return ret;
+    }
+
+    if ((ret = av_dynarray_add_nofree(&st->internal->bsfcs, &st->internal->nb_bsfcs, bsfc))) {
+        av_bsf_free(&bsfc);
+        return ret;
+    }
+
     av_log(NULL, AV_LOG_VERBOSE,
            "Automatically inserted bitstream filter '%s'; args='%s'\n",
            name, args ? args : "");
-    *dest = bsfc;
     return 1;
 }
 
