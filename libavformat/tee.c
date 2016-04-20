@@ -36,6 +36,7 @@ typedef struct {
     /** map from input to output streams indexes,
      * disabled output streams are set to -1 */
     int *stream_map;
+    int header_written;
 } TeeSlave;
 
 typedef struct TeeContext {
@@ -135,18 +136,27 @@ end:
     return ret;
 }
 
-static void close_slave(TeeSlave *tee_slave)
+static int close_slave(TeeSlave *tee_slave)
 {
     AVFormatContext *avf;
     unsigned i;
+    int ret = 0;
 
     avf = tee_slave->avf;
-    for (i = 0; i < avf->nb_streams; ++i) {
-        AVBitStreamFilterContext *bsf_next, *bsf = tee_slave->bsfs[i];
-        while (bsf) {
-            bsf_next = bsf->next;
-            av_bitstream_filter_close(bsf);
-            bsf = bsf_next;
+    if (!avf)
+        return 0;
+
+    if (tee_slave->header_written)
+        ret = av_write_trailer(avf);
+
+    if (tee_slave->bsfs) {
+        for (i = 0; i < avf->nb_streams; ++i) {
+            AVBitStreamFilterContext *bsf_next, *bsf = tee_slave->bsfs[i];
+            while (bsf) {
+                bsf_next = bsf->next;
+                av_bitstream_filter_close(bsf);
+                bsf = bsf_next;
+            }
         }
     }
     av_freep(&tee_slave->stream_map);
@@ -155,6 +165,7 @@ static void close_slave(TeeSlave *tee_slave)
     ff_format_io_close(avf, &avf->pb);
     avformat_free_context(avf);
     tee_slave->avf = NULL;
+    return ret;
 }
 
 static void close_slaves(AVFormatContext *avf)
@@ -197,6 +208,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     ret = avformat_alloc_output_context2(&avf2, NULL, format, filename);
     if (ret < 0)
         goto end;
+    tee_slave->avf = avf2;
     av_dict_copy(&avf2->metadata, avf->metadata, 0);
     avf2->opaque   = avf->opaque;
     avf2->io_open  = avf->io_open;
@@ -275,8 +287,8 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
                slave, av_err2str(ret));
         goto end;
     }
+    tee_slave->header_written = 1;
 
-    tee_slave->avf = avf2;
     tee_slave->bsfs = av_calloc(avf2->nb_streams, sizeof(TeeSlave));
     if (!tee_slave->bsfs) {
         ret = AVERROR(ENOMEM);
@@ -291,7 +303,8 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
                 av_log(avf, AV_LOG_ERROR,
                        "Specifier separator in '%s' is '%c', but only characters '%s' "
                        "are allowed\n", entry->key, *spec, slave_bsfs_spec_sep);
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto end;
             }
             spec++; /* consume separator */
         }
@@ -390,14 +403,14 @@ static int tee_write_header(AVFormatContext *avf)
             filename++;
     }
 
+    tee->nb_slaves = nb_slaves;
+
     for (i = 0; i < nb_slaves; i++) {
         if ((ret = open_slave(avf, slaves[i], &tee->slaves[i])) < 0)
             goto fail;
         log_slave(&tee->slaves[i], avf, AV_LOG_VERBOSE);
         av_freep(&slaves[i]);
     }
-
-    tee->nb_slaves = nb_slaves;
 
     for (i = 0; i < avf->nb_streams; i++) {
         int j, mapped = 0;
@@ -419,19 +432,14 @@ fail:
 static int tee_write_trailer(AVFormatContext *avf)
 {
     TeeContext *tee = avf->priv_data;
-    AVFormatContext *avf2;
     int ret_all = 0, ret;
     unsigned i;
 
     for (i = 0; i < tee->nb_slaves; i++) {
-        avf2 = tee->slaves[i].avf;
-        if ((ret = av_write_trailer(avf2)) < 0)
+        if ((ret = close_slave(&tee->slaves[i])) < 0)
             if (!ret_all)
                 ret_all = ret;
-        if (!(avf2->oformat->flags & AVFMT_NOFILE))
-            ff_format_io_close(avf2, &avf2->pb);
     }
-    close_slaves(avf);
     return ret_all;
 }
 
