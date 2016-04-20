@@ -1096,7 +1096,7 @@ INIT_XMM
 ;%1 == instruction
 ;%2 == minimal instruction set
 ;%3 == 1 if float, 0 if int
-;%4 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
+;%4 == 1 if 4-operand emulation, 0 if 3-operand emulation, 255 otherwise (no emulation)
 ;%5 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
 ;%6+: operands
 %macro RUN_AVX_INSTR 6-9+
@@ -1171,9 +1171,9 @@ INIT_XMM
 ;%1 == instruction
 ;%2 == minimal instruction set
 ;%3 == 1 if float, 0 if int
-;%4 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
+;%4 == 1 if 4-operand emulation, 0 if 3-operand emulation, 255 otherwise (no emulation)
 ;%5 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
-%macro AVX_INSTR 1-5 fnord, 0, 1, 0
+%macro AVX_INSTR 1-5 fnord, 0, 255, 0
     %macro %1 1-10 fnord, fnord, fnord, fnord, %1, %2, %3, %4, %5
         %ifidn %2, fnord
             RUN_AVX_INSTR %6, %7, %8, %9, %10, %1
@@ -1207,10 +1207,10 @@ AVX_INSTR andnpd, sse2, 1, 0, 0
 AVX_INSTR andnps, sse, 1, 0, 0
 AVX_INSTR andpd, sse2, 1, 0, 1
 AVX_INSTR andps, sse, 1, 0, 1
-AVX_INSTR blendpd, sse4, 1, 0, 0
-AVX_INSTR blendps, sse4, 1, 0, 0
-AVX_INSTR blendvpd, sse4, 1, 0, 0
-AVX_INSTR blendvps, sse4, 1, 0, 0
+AVX_INSTR blendpd, sse4, 1, 1, 0
+AVX_INSTR blendps, sse4, 1, 1, 0
+AVX_INSTR blendvpd, sse4 ; can't be emulated
+AVX_INSTR blendvps, sse4 ; can't be emulated
 AVX_INSTR cmppd, sse2, 1, 1, 0
 AVX_INSTR cmpps, sse, 1, 1, 0
 AVX_INSTR cmpsd, sse2, 1, 1, 0
@@ -1281,7 +1281,7 @@ AVX_INSTR movsldup, sse3
 AVX_INSTR movss, sse, 1, 0, 0
 AVX_INSTR movupd, sse2
 AVX_INSTR movups, sse
-AVX_INSTR mpsadbw, sse4
+AVX_INSTR mpsadbw, sse4, 0, 1, 0
 AVX_INSTR mulpd, sse2, 1, 0, 1
 AVX_INSTR mulps, sse, 1, 0, 1
 AVX_INSTR mulsd, sse2, 1, 0, 0
@@ -1303,14 +1303,18 @@ AVX_INSTR paddsb, mmx, 0, 0, 1
 AVX_INSTR paddsw, mmx, 0, 0, 1
 AVX_INSTR paddusb, mmx, 0, 0, 1
 AVX_INSTR paddusw, mmx, 0, 0, 1
-AVX_INSTR palignr, ssse3
+AVX_INSTR palignr, ssse3, 0, 1, 0
 AVX_INSTR pand, mmx, 0, 0, 1
 AVX_INSTR pandn, mmx, 0, 0, 0
 AVX_INSTR pavgb, mmx2, 0, 0, 1
 AVX_INSTR pavgw, mmx2, 0, 0, 1
-AVX_INSTR pblendvb, sse4, 0, 0, 0
-AVX_INSTR pblendw, sse4
-AVX_INSTR pclmulqdq
+AVX_INSTR pblendvb, sse4 ; can't be emulated
+AVX_INSTR pblendw, sse4, 0, 1, 0
+AVX_INSTR pclmulqdq, fnord, 0, 1, 0
+AVX_INSTR pclmulhqhqdq, fnord, 0, 0, 0
+AVX_INSTR pclmulhqlqdq, fnord, 0, 0, 0
+AVX_INSTR pclmullqhqdq, fnord, 0, 0, 0
+AVX_INSTR pclmullqlqdq, fnord, 0, 0, 0
 AVX_INSTR pcmpestri, sse42
 AVX_INSTR pcmpestrm, sse42
 AVX_INSTR pcmpistri, sse42
@@ -1334,10 +1338,10 @@ AVX_INSTR phminposuw, sse4
 AVX_INSTR phsubw, ssse3, 0, 0, 0
 AVX_INSTR phsubd, ssse3, 0, 0, 0
 AVX_INSTR phsubsw, ssse3, 0, 0, 0
-AVX_INSTR pinsrb, sse4
-AVX_INSTR pinsrd, sse4
-AVX_INSTR pinsrq, sse4
-AVX_INSTR pinsrw, mmx2
+AVX_INSTR pinsrb, sse4, 0, 1, 0
+AVX_INSTR pinsrd, sse4, 0, 1, 0
+AVX_INSTR pinsrq, sse4, 0, 1, 0
+AVX_INSTR pinsrw, mmx2, 0, 1, 0
 AVX_INSTR pmaddwd, mmx, 0, 0, 1
 AVX_INSTR pmaddubsw, ssse3, 0, 0, 0
 AVX_INSTR pmaxsb, sse4, 0, 0, 1
@@ -1409,18 +1413,18 @@ AVX_INSTR punpcklwd, mmx, 0, 0, 0
 AVX_INSTR punpckldq, mmx, 0, 0, 0
 AVX_INSTR punpcklqdq, sse2, 0, 0, 0
 AVX_INSTR pxor, mmx, 0, 0, 1
-AVX_INSTR rcpps, sse, 1, 0, 0
+AVX_INSTR rcpps, sse
 AVX_INSTR rcpss, sse, 1, 0, 0
 AVX_INSTR roundpd, sse4
 AVX_INSTR roundps, sse4
 AVX_INSTR roundsd, sse4, 1, 1, 0
 AVX_INSTR roundss, sse4, 1, 1, 0
-AVX_INSTR rsqrtps, sse, 1, 0, 0
+AVX_INSTR rsqrtps, sse
 AVX_INSTR rsqrtss, sse, 1, 0, 0
 AVX_INSTR shufpd, sse2, 1, 1, 0
 AVX_INSTR shufps, sse, 1, 1, 0
-AVX_INSTR sqrtpd, sse2, 1, 0, 0
-AVX_INSTR sqrtps, sse, 1, 0, 0
+AVX_INSTR sqrtpd, sse2
+AVX_INSTR sqrtps, sse
 AVX_INSTR sqrtsd, sse2, 1, 0, 0
 AVX_INSTR sqrtss, sse, 1, 0, 0
 AVX_INSTR stmxcsr, sse
