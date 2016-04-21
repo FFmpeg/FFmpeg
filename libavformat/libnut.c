@@ -94,7 +94,7 @@ static int nut_write_header(AVFormatContext * avf) {
         s[i].fourcc = av_malloc(s[i].fourcc_len);
         for (j = 0; j < s[i].fourcc_len; j++) s[i].fourcc[j] = (fourcc >> (j*8)) & 0xFF;
 
-        ff_parse_specific_params(codec, &num, &ssize, &denom);
+        ff_parse_specific_params(avf->streams[i], &num, &ssize, &denom);
         avpriv_set_pts_info(avf->streams[i], 60, denom, num);
 
         s[i].time_base.num = denom;
