@@ -158,7 +158,6 @@ LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
 clean::
-	$(RM) $(OBJS) $(OBJS:.o=.d) $(OBJS:.o=$(DEFAULT_YASMD).d)
 	$(RM) $(HOSTPROGS)
 	$(RM) $(TOOLS)
 endef
