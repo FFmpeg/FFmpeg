@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.12.0 - opt.h
+  Add av_stereo3d_type_name() and av_stereo3d_from_name().
+
 2016-xx-xx - xxxxxxx - lavu 55.11.0 - hwcontext_dxva2.h
   Add new installed header with DXVA2-specific hwcontext definitions.
 
