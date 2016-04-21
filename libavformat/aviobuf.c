@@ -989,7 +989,7 @@ int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
     URLContext *h;
     int err;
 
-    err = ffurl_open_whitelist(&h, filename, flags, int_cb, options, whitelist, blacklist);
+    err = ffurl_open_whitelist(&h, filename, flags, int_cb, options, whitelist, blacklist, NULL);
     if (err < 0)
         return err;
     err = ffio_fdopen(s, h);

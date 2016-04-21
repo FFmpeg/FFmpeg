@@ -296,7 +296,7 @@ static int rtsp_read_setup(AVFormatContext *s, char* host, char *controlurl)
             av_log(s, AV_LOG_TRACE, "Opening: %s", url);
             ret = ffurl_open_whitelist(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
                                        &s->interrupt_callback, &opts,
-                                       s->protocol_whitelist, s->protocol_blacklist);
+                                       s->protocol_whitelist, s->protocol_blacklist, NULL);
             av_dict_free(&opts);
             if (ret)
                 localport += 2;
@@ -665,7 +665,7 @@ static int rtsp_listen(AVFormatContext *s)
 
     if (ret = ffurl_open_whitelist(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
                                    &s->interrupt_callback, NULL,
-                                   s->protocol_whitelist, s->protocol_blacklist)) {
+                                   s->protocol_whitelist, s->protocol_blacklist, NULL)) {
         av_log(s, AV_LOG_ERROR, "Unable to open RTSP for listening\n");
         return ret;
     }

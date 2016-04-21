@@ -151,7 +151,7 @@ static int sap_write_header(AVFormatContext *s)
             base_port += 2;
         ret = ffurl_open_whitelist(&fd, url, AVIO_FLAG_WRITE,
                                    &s->interrupt_callback, NULL,
-                                   s->protocol_whitelist, s->protocol_blacklist);
+                                   s->protocol_whitelist, s->protocol_blacklist, NULL);
         if (ret) {
             ret = AVERROR(EIO);
             goto fail;
@@ -171,7 +171,7 @@ static int sap_write_header(AVFormatContext *s)
                 "?ttl=%d&connect=1", ttl);
     ret = ffurl_open_whitelist(&sap->ann_fd, url, AVIO_FLAG_WRITE,
                                &s->interrupt_callback, NULL,
-                               s->protocol_whitelist, s->protocol_blacklist);
+                               s->protocol_whitelist, s->protocol_blacklist, NULL);
     if (ret) {
         ret = AVERROR(EIO);
         goto fail;

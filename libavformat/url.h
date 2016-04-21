@@ -136,12 +136,15 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  * @param options  A dictionary filled with protocol-private options. On return
  * this parameter will be destroyed and replaced with a dict containing options
  * that were not found. May be NULL.
+ * @param parent An enclosing URLContext, whose generic options should
+ *               be applied to this URLContext as well.
  * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options,
-               const char *whitelist, const char* blacklist);
+               const char *whitelist, const char* blacklist,
+               URLContext *parent);
 
 int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options);

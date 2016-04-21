@@ -221,7 +221,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     if (!s->hd) {
         err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
                                    &h->interrupt_callback, options,
-                                   h->protocol_whitelist, h->protocol_blacklist);
+                                   h->protocol_whitelist, h->protocol_blacklist, h);
         if (err < 0)
             return err;
     }
@@ -456,7 +456,7 @@ static int http_listen(URLContext *h, const char *uri, int flags,
         goto fail;
     if ((ret = ffurl_open_whitelist(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
                                     &h->interrupt_callback, options,
-                                    h->protocol_whitelist, h->protocol_blacklist
+                                    h->protocol_whitelist, h->protocol_blacklist, h
                                    )) < 0)
         goto fail;
     s->handshake_step = LOWER_PROTO;
@@ -1582,7 +1582,7 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
 redo:
     ret = ffurl_open_whitelist(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
                                &h->interrupt_callback, NULL,
-                               h->protocol_whitelist, h->protocol_blacklist);
+                               h->protocol_whitelist, h->protocol_blacklist, h);
     if (ret < 0)
         return ret;
 

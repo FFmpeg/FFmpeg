@@ -530,7 +530,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
     err = ffurl_open_whitelist(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE,
                                &h->interrupt_callback, NULL,
-                               h->protocol_whitelist, h->protocol_blacklist);
+                               h->protocol_whitelist, h->protocol_blacklist, h);
     if (err)
         goto fail;
 

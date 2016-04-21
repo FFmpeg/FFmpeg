@@ -87,7 +87,7 @@ static int sap_read_header(AVFormatContext *s)
                 port);
     ret = ffurl_open_whitelist(&sap->ann_fd, url, AVIO_FLAG_READ,
                                &s->interrupt_callback, NULL,
-                               s->protocol_whitelist, s->protocol_blacklist);
+                               s->protocol_whitelist, s->protocol_blacklist, NULL);
     if (ret)
         goto fail;
 
