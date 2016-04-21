@@ -10,7 +10,7 @@ FATE_LIBAVFORMAT-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += fate-rtmpdh
 fate-rtmpdh: libavformat/rtmpdh-test$(EXESUF)
 fate-rtmpdh: CMD = run libavformat/rtmpdh-test
 
-FATE_LIBAVFORMAT-yes += fate-srtp
+FATE_LIBAVFORMAT-$(CONFIG_SRTP) += fate-srtp
 fate-srtp: libavformat/srtp-test$(EXESUF)
 fate-srtp: CMD = run libavformat/srtp-test
 
