@@ -27,6 +27,7 @@
 #include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 #include "libavutil/dict.h"
 #include "libavutil/libm.h"
 #include "libavdevice/avdevice.h"
@@ -723,9 +724,12 @@ static void show_stream(InputFile *ifile, InputStream *ist)
 
     if (stream->nb_side_data) {
         int i, j;
+
         probe_object_header("sidedata");
         for (i = 0; i < stream->nb_side_data; i++) {
             const AVPacketSideData* sd = &stream->side_data[i];
+            AVStereo3D *stereo;
+
             switch (sd->type) {
             case AV_PKT_DATA_DISPLAYMATRIX:
                 probe_object_header("displaymatrix");
@@ -736,6 +740,14 @@ static void show_stream(InputFile *ifile, InputStream *ist)
                 probe_int("rotation",
                           av_display_rotation_get((int32_t *)sd->data));
                 probe_object_footer("displaymatrix");
+                break;
+            case AV_PKT_DATA_STEREO3D:
+                stereo = (AVStereo3D *)sd->data;
+                probe_object_header("stereo3d");
+                probe_str("type", av_stereo3d_type_name(stereo->type));
+                probe_int("inverted",
+                          !!(stereo->flags & AV_STEREO3D_FLAG_INVERT));
+                probe_object_footer("stereo3d");
                 break;
             }
         }
