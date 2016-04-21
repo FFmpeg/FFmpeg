@@ -22,7 +22,8 @@
 #ifndef AVFORMAT_RTMPDH_H
 #define AVFORMAT_RTMPDH_H
 
-#include "avformat.h"
+#include <stdint.h>
+
 #include "config.h"
 
 #if CONFIG_GMP || CONFIG_GCRYPT
