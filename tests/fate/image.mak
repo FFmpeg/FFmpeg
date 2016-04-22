@@ -65,6 +65,7 @@ DDS_FMT          = alpha8                                               \
                    dxt5-xrbg                                            \
                    dxt5-ycocg                                           \
                    dxt5-ycocg-scaled                                    \
+                   monob                                                \
                    pal                                                  \
                    pal-ati                                              \
                    rgb1555                                              \
