@@ -1670,6 +1670,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     if (avctx->internal) {
+        av_packet_free(&avctx->internal->buffer_pkt);
+        av_frame_free(&avctx->internal->buffer_frame);
         av_frame_free(&avctx->internal->to_free);
         av_freep(&avctx->internal->pool);
     }
