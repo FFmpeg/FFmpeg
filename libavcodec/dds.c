@@ -45,7 +45,6 @@ enum DDSPostProc {
     DDS_ALPHA_EXP,
     DDS_NORMAL_MAP,
     DDS_RAW_YCOCG,
-    DDS_SWAP_ALPHA,
     DDS_SWIZZLE_A2XY,
     DDS_SWIZZLE_RBXG,
     DDS_SWIZZLE_RGXB,
@@ -392,8 +391,6 @@ static int parse_pixel_format(AVCodecContext *avctx)
         ctx->postproc = DDS_NORMAL_MAP;
     else if (ycocg_classic && !ctx->compressed)
         ctx->postproc = DDS_RAW_YCOCG;
-    else if (avctx->pix_fmt == AV_PIX_FMT_YA8)
-        ctx->postproc = DDS_SWAP_ALPHA;
 
     /* ATI/NVidia variants sometimes add swizzling in bpp. */
     switch (bpp) {
@@ -538,15 +535,6 @@ static void run_postproc(AVCodecContext *avctx, AVFrame *frame)
             src[1] = av_clip_uint8(y + cg);
             src[2] = av_clip_uint8(y - co - cg);
             src[3] = a;
-        }
-        break;
-    case DDS_SWAP_ALPHA:
-        /* Alpha and Luma are stored swapped. */
-        av_log(avctx, AV_LOG_DEBUG, "Post-processing swapped Luma/Alpha.\n");
-
-        for (i = 0; i < frame->linesize[0] * frame->height; i += 2) {
-            uint8_t *src = frame->data[0] + i;
-            FFSWAP(uint8_t, src[0], src[1]);
         }
         break;
     case DDS_SWIZZLE_A2XY:
