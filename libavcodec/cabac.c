@@ -27,7 +27,7 @@
 #include <string.h>
 
 #include "libavutil/common.h"
-#include "get_bits.h"
+
 #include "cabac.h"
 #include "cabac_functions.h"
 

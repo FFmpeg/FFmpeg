@@ -31,9 +31,9 @@
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
+
 #include "avcodec.h"
 #include "internal.h"
-#include "get_bits.h"
 #include "put_bits.h"
 #include "rangecoder.h"
 #include "golomb.h"

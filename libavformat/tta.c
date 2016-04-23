@@ -19,11 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
+#include "libavutil/dict.h"
+#include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "id3v1.h"
-#include "libavutil/dict.h"
 
 typedef struct TTAContext {
     int totalframes, currentframe;

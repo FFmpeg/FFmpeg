@@ -28,9 +28,10 @@
 #include "libavutil/base64.h"
 #include "libavutil/bswap.h"
 #include "libavutil/dict.h"
+
 #include "libavcodec/bytestream.h"
-#include "libavcodec/get_bits.h"
 #include "libavcodec/vorbis_parser.h"
+
 #include "avformat.h"
 #include "flac_picture.h"
 #include "internal.h"
