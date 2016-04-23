@@ -296,6 +296,7 @@ const AVCodecTag ff_codec_movaudio_tags[] = {
     { AV_CODEC_ID_MP3,             MKTAG('.', 'm', 'p', '3') },
     { AV_CODEC_ID_MP3,             0x6D730055                },
     { AV_CODEC_ID_NELLYMOSER,      MKTAG('n', 'm', 'o', 's') }, /* Flash Media Server */
+    { AV_CODEC_ID_NELLYMOSER,      MKTAG('N', 'E', 'L', 'L') }, /* Perian */
     { AV_CODEC_ID_PCM_ALAW,        MKTAG('a', 'l', 'a', 'w') },
     { AV_CODEC_ID_PCM_F32BE,       MKTAG('f', 'l', '3', '2') },
     { AV_CODEC_ID_PCM_F32LE,       MKTAG('f', 'l', '3', '2') },
