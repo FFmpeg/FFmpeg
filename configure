@@ -4964,7 +4964,6 @@ die_license_disabled gpl x11grab
 die_license_disabled nonfree cuda
 die_license_disabled nonfree libfaac
 die_license_disabled nonfree libnpp
-die_license_disabled nonfree nvenc
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
 enabled gpl && die_license_disabled_gpl nonfree openssl
 
