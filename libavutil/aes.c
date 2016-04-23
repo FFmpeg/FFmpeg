@@ -25,7 +25,6 @@
 #include "aes_internal.h"
 #include "intreadwrite.h"
 #include "timer.h"
-#include "aes.h"
 
 const int av_aes_size= sizeof(AVAES);
 
