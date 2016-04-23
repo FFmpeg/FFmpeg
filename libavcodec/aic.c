@@ -23,13 +23,13 @@
 #include <inttypes.h>
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
+#include "golomb.h"
 #include "internal.h"
-#include "get_bits.h"
-#include "golomb_legacy.h"
 #include "idctdsp.h"
 #include "thread.h"
-#include "unary_legacy.h"
+#include "unary.h"
 
 #define AIC_HDR_SIZE    24
 #define AIC_BAND_COEFFS (64 + 32 + 192 + 96)
@@ -191,14 +191,14 @@ static int aic_decode_header(AICContext *ctx, const uint8_t *src, int size)
 #define GET_CODE(val, type, add_bits)                         \
     do {                                                      \
         if (type)                                             \
-            val = get_ue_golomb(gb);                          \
+            val = get_ue_golomb(bc);                          \
         else                                                  \
-            val = get_unary(gb, 1, 31);                       \
+            val = get_unary(bc, 1, 31);                       \
         if (add_bits)                                         \
-            val = (val << add_bits) + get_bits(gb, add_bits); \
+            val = (val << add_bits) + bitstream_read(bc, add_bits); \
     } while (0)
 
-static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
+static int aic_decode_coeffs(BitstreamContext *bc, int16_t *dst,
                              int band, int slice_width, int force_chroma)
 {
     int has_skips, coeff_type, coeff_bits, skip_type, skip_bits;
@@ -206,13 +206,13 @@ static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
     const uint8_t *scan = aic_scan[band | force_chroma];
     int mb, idx, val;
 
-    has_skips  = get_bits1(gb);
-    coeff_type = get_bits1(gb);
-    coeff_bits = get_bits(gb, 3);
+    has_skips  = bitstream_read_bit(bc);
+    coeff_type = bitstream_read_bit(bc);
+    coeff_bits = bitstream_read(bc, 3);
 
     if (has_skips) {
-        skip_type = get_bits1(gb);
-        skip_bits = get_bits(gb, 3);
+        skip_type = bitstream_read_bit(bc);
+        skip_bits = bitstream_read(bc, 3);
 
         for (mb = 0; mb < slice_width; mb++) {
             idx = -1;
@@ -303,7 +303,7 @@ static void unquant_block(int16_t *block, int q)
 static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
                             const uint8_t *src, int src_size)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     int ret, i, mb, blk;
     int slice_width = FFMIN(ctx->slice_width, ctx->mb_width - mb_x);
     uint8_t *Y, *C[2];
@@ -318,12 +318,12 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
     for (i = 0; i < 2; i++)
         C[i] = ctx->frame->data[i + 1] + mb_x * 8
                + mb_y * 8 * ctx->frame->linesize[i + 1];
-    init_get_bits(&gb, src, src_size * 8);
+    bitstream_init8(&bc, src, src_size);
 
     memset(ctx->slice_data, 0,
            sizeof(*ctx->slice_data) * slice_width * AIC_BAND_COEFFS);
     for (i = 0; i < NUM_BANDS; i++)
-        if ((ret = aic_decode_coeffs(&gb, ctx->data_ptr[i],
+        if ((ret = aic_decode_coeffs(&bc, ctx->data_ptr[i],
                                      i, slice_width,
                                      !ctx->interlaced)) < 0)
             return ret;
