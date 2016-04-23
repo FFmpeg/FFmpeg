@@ -4076,7 +4076,6 @@ die_license_disabled nonfree cuda
 die_license_disabled nonfree libfaac
 die_license_disabled nonfree libfdk_aac
 die_license_disabled nonfree libnpp
-die_license_disabled nonfree nvenc
 die_license_disabled nonfree openssl
 
 die_license_disabled version3 libopencore_amrnb
