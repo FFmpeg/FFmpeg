@@ -26,7 +26,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 
@@ -41,18 +41,18 @@ static const unsigned char *seq_unpack_rle_block(const unsigned char *src,
                                                  unsigned char *dst, int dst_size)
 {
     int i, len, sz;
-    GetBitContext gb;
+    BitstreamContext bc;
     int code_table[64];
 
     /* get the rle codes */
-    init_get_bits(&gb, src, (src_end - src) * 8);
+    bitstream_init(&bc, src, (src_end - src) * 8);
     for (i = 0, sz = 0; i < 64 && sz < dst_size; i++) {
-        if (get_bits_left(&gb) < 4)
+        if (bitstream_bits_left(&bc) < 4)
             return NULL;
-        code_table[i] = get_sbits(&gb, 4);
+        code_table[i] = bitstream_read_signed(&bc, 4);
         sz += FFABS(code_table[i]);
     }
-    src += (get_bits_count(&gb) + 7) / 8;
+    src += (bitstream_tell(&bc) + 7) / 8;
 
     /* do the rle unpacking */
     for (i = 0; i < 64 && dst_size > 0; i++) {
@@ -81,7 +81,7 @@ static const unsigned char *seq_decode_op1(SeqVideoContext *seq,
 {
     const unsigned char *color_table;
     int b, i, len, bits;
-    GetBitContext gb;
+    BitstreamContext bc;
     unsigned char block[8 * 8];
 
     if (src_end - src < 1)
@@ -113,10 +113,11 @@ static const unsigned char *seq_decode_op1(SeqVideoContext *seq,
             return NULL;
         color_table = src;
         src += len;
-        init_get_bits(&gb, src, bits * 8 * 8); src += bits * 8;
+        bitstream_init(&bc, src, bits * 8 * 8);
+        src += bits * 8;
         for (b = 0; b < 8; b++) {
             for (i = 0; i < 8; i++)
-                dst[i] = color_table[get_bits(&gb, bits)];
+                dst[i] = color_table[bitstream_read(&bc, bits)];
             dst += seq->frame->linesize[0];
         }
     }
@@ -164,7 +165,7 @@ static const unsigned char *seq_decode_op3(SeqVideoContext *seq,
 static int seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int data_size)
 {
     const unsigned char *data_end = data + data_size;
-    GetBitContext gb;
+    BitstreamContext bc;
     int flags, i, j, x, y, op;
     unsigned char c[3];
     unsigned char *dst;
@@ -187,11 +188,12 @@ static int seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int 
     if (flags & 2) {
         if (data_end - data < 128)
             return AVERROR_INVALIDDATA;
-        init_get_bits(&gb, data, 128 * 8); data += 128;
+        bitstream_init(&bc, data, 128 * 8);
+        data += 128;
         for (y = 0; y < 128; y += 8)
             for (x = 0; x < 256; x += 8) {
                 dst = &seq->frame->data[0][y * seq->frame->linesize[0] + x];
-                op = get_bits(&gb, 2);
+                op = bitstream_read(&bc, 2);
                 switch (op) {
                 case 1:
                     data = seq_decode_op1(seq, data, data_end, dst);
