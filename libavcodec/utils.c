@@ -2422,6 +2422,8 @@ fail:
             av_frame_unref(frame);
     }
 
+    av_assert0(ret <= avpkt->size);
+
     return ret;
 }
 
