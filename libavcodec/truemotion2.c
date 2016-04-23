@@ -27,9 +27,9 @@
 #include <inttypes.h>
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bswapdsp.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "internal.h"
 
 #define TM2_ESCAPE 0x80000000
@@ -62,7 +62,7 @@ typedef struct TM2Context {
     AVCodecContext *avctx;
     AVFrame *pic;
 
-    GetBitContext gb;
+    BitstreamContext bc;
     BswapDSPContext bdsp;
 
     /* TM2 streams */
@@ -117,7 +117,7 @@ static int tm2_read_tree(TM2Context *ctx, uint32_t prefix, int length, TM2Huff *
         return AVERROR_INVALIDDATA;
     }
 
-    if (!get_bits1(&ctx->gb)) { /* literal */
+    if (!bitstream_read_bit(&ctx->bc)) { /* literal */
         if (length == 0) {
             length = 1;
         }
@@ -125,7 +125,7 @@ static int tm2_read_tree(TM2Context *ctx, uint32_t prefix, int length, TM2Huff *
             av_log(ctx->avctx, AV_LOG_DEBUG, "Too many literals\n");
             return AVERROR_INVALIDDATA;
         }
-        huff->nums[huff->num] = get_bits_long(&ctx->gb, huff->val_bits);
+        huff->nums[huff->num] = bitstream_read(&ctx->bc, huff->val_bits);
         huff->bits[huff->num] = prefix;
         huff->lens[huff->num] = length;
         huff->num++;
@@ -144,10 +144,10 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
     TM2Huff huff;
     int res = 0;
 
-    huff.val_bits = get_bits(&ctx->gb, 5);
-    huff.max_bits = get_bits(&ctx->gb, 5);
-    huff.min_bits = get_bits(&ctx->gb, 5);
-    huff.nodes    = get_bits_long(&ctx->gb, 17);
+    huff.val_bits = bitstream_read(&ctx->bc, 5);
+    huff.max_bits = bitstream_read(&ctx->bc, 5);
+    huff.min_bits = bitstream_read(&ctx->bc, 5);
+    huff.nodes    = bitstream_read(&ctx->bc, 17);
     huff.num      = 0;
 
     /* check for correct codes parameters */
@@ -222,10 +222,10 @@ static void tm2_free_codes(TM2Codes *code)
         ff_free_vlc(&code->vlc);
 }
 
-static inline int tm2_get_token(GetBitContext *gb, TM2Codes *code)
+static inline int tm2_get_token(BitstreamContext *bc, TM2Codes *code)
 {
     int val;
-    val = get_vlc2(gb, code->vlc.table, code->bits, 1);
+    val = bitstream_read_vlc(bc, code->vlc.table, code->bits, 1);
     return code->recode[val];
 }
 
@@ -254,8 +254,8 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     int d, mb;
     int i, v;
 
-    d  = get_bits(&ctx->gb, 9);
-    mb = get_bits(&ctx->gb, 5);
+    d  = bitstream_read(&ctx->bc, 9);
+    mb = bitstream_read(&ctx->bc, 5);
 
     if ((d < 1) || (d > TM2_DELTAS) || (mb < 1) || (mb > 32)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect delta table: %i deltas x %i bits\n", d, mb);
@@ -263,7 +263,7 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     }
 
     for (i = 0; i < d; i++) {
-        v = get_bits_long(&ctx->gb, mb);
+        v = bitstream_read(&ctx->bc, mb);
         if (v & (1 << (mb - 1)))
             ctx->deltas[stream_id][i] = v - (1 << mb);
         else
@@ -306,10 +306,10 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             pos = bytestream2_tell(&gb);
             if (skip <= pos)
                 return AVERROR_INVALIDDATA;
-            init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
+            bitstream_init(&ctx->bc, buf + pos, (skip - pos) * 8);
             if ((ret = tm2_read_deltas(ctx, stream_id)) < 0)
                 return ret;
-            bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
+            bytestream2_skip(&gb, ((bitstream_tell(&ctx->bc) + 31) >> 5) << 2);
         }
     }
     /* skip unused fields */
@@ -323,10 +323,10 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     pos = bytestream2_tell(&gb);
     if (skip <= pos)
         return AVERROR_INVALIDDATA;
-    init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
+    bitstream_init(&ctx->bc, buf + pos, (skip - pos) * 8);
     if ((ret = tm2_build_huff_table(ctx, &codes)) < 0)
         return ret;
-    bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
+    bytestream2_skip(&gb, ((bitstream_tell(&ctx->bc) + 31) >> 5) << 2);
 
     toks >>= 1;
     /* check if we have sane number of tokens */
@@ -342,13 +342,13 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
         pos = bytestream2_tell(&gb);
         if (skip <= pos)
             return AVERROR_INVALIDDATA;
-        init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
+        bitstream_init(&ctx->bc, buf + pos, (skip - pos) * 8);
         for (i = 0; i < toks; i++) {
-            if (get_bits_left(&ctx->gb) <= 0) {
+            if (bitstream_bits_left(&ctx->bc) <= 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
                 return AVERROR_INVALIDDATA;
             }
-            ctx->tokens[stream_id][i] = tm2_get_token(&ctx->gb, &codes);
+            ctx->tokens[stream_id][i] = tm2_get_token(&ctx->bc, &codes);
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
                        ctx->tokens[stream_id][i], stream_id, i);
