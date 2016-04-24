@@ -48,6 +48,7 @@ typedef struct IntraX8Context {
     int quant_dc_chroma;
     int divide_quant_dc_luma;
     int divide_quant_dc_chroma;
+    uint8_t *dest[3];
 
     // changed per block
     int edges;

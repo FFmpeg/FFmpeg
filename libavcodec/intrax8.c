@@ -331,7 +331,7 @@ static int x8_setup_spatial_predictor(IntraX8Context *const w, const int chroma)
     int sum;
     int quant;
 
-    w->dsp.setup_spatial_compensation(s->dest[chroma], s->sc.edge_emu_buffer,
+    w->dsp.setup_spatial_compensation(w->dest[chroma], s->sc.edge_emu_buffer,
                                       s->current_picture.f->linesize[chroma > 0],
                                       &range, &sum, w->edges);
     if (chroma) {
@@ -667,7 +667,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
             dc_level += (w->predicted_dc * divide_quant + (1 << 12)) >> 13;
 
             dsp_x8_put_solidcolor(av_clip_uint8((dc_level * dc_quant + 4) >> 3),
-                                  s->dest[chroma],
+                                  w->dest[chroma],
                                   s->current_picture.f->linesize[!!chroma]);
 
             goto block_placed;
@@ -692,15 +692,15 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
     }
 
     if (w->flat_dc) {
-        dsp_x8_put_solidcolor(w->predicted_dc, s->dest[chroma],
+        dsp_x8_put_solidcolor(w->predicted_dc, w->dest[chroma],
                               s->current_picture.f->linesize[!!chroma]);
     } else {
         w->dsp.spatial_compensation[w->orient](s->sc.edge_emu_buffer,
-                                               s->dest[chroma],
+                                               w->dest[chroma],
                                                s->current_picture.f->linesize[!!chroma]);
     }
     if (!zeros_only)
-        w->wdsp.idct_add(s->dest[chroma],
+        w->wdsp.idct_add(w->dest[chroma],
                          s->current_picture.f->linesize[!!chroma],
                          s->block[0]);
 
@@ -709,7 +709,7 @@ block_placed:
         x8_update_predictions(w, w->orient, n);
 
     if (s->loop_filter) {
-        uint8_t *ptr = s->dest[chroma];
+        uint8_t *ptr = w->dest[chroma];
         int linesize = s->current_picture.f->linesize[!!chroma];
 
         if (!((w->edges & 2) || (zeros_only && (w->orient | 4) == 4)))
@@ -722,21 +722,22 @@ block_placed:
 }
 
 // FIXME maybe merge with ff_*
-static void x8_init_block_index(MpegEncContext *s)
+static void x8_init_block_index(IntraX8Context *w)
 {
+    MpegEncContext *const s = w->s;
     // not s->linesize as this would be wrong for field pics
     // not that IntraX8 has interlacing support ;)
     const int linesize   = s->current_picture.f->linesize[0];
     const int uvlinesize = s->current_picture.f->linesize[1];
 
-    s->dest[0] = s->current_picture.f->data[0];
-    s->dest[1] = s->current_picture.f->data[1];
-    s->dest[2] = s->current_picture.f->data[2];
+    w->dest[0] = s->current_picture.f->data[0];
+    w->dest[1] = s->current_picture.f->data[1];
+    w->dest[2] = s->current_picture.f->data[2];
 
-    s->dest[0] +=  s->mb_y         * linesize   << 3;
+    w->dest[0] +=  s->mb_y         * linesize   << 3;
     // chroma blocks are on add rows
-    s->dest[1] += (s->mb_y & (~1)) * uvlinesize << 2;
-    s->dest[2] += (s->mb_y & (~1)) * uvlinesize << 2;
+    w->dest[1] += (s->mb_y & (~1)) * uvlinesize << 2;
+    w->dest[2] += (s->mb_y & (~1)) * uvlinesize << 2;
 }
 
 av_cold int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
@@ -796,7 +797,7 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, int dquant,
     x8_reset_vlc_tables(w);
 
     for (s->mb_y = 0; s->mb_y < s->mb_height * 2; s->mb_y++) {
-        x8_init_block_index(s);
+        x8_init_block_index(w);
         mb_xy = (s->mb_y >> 1) * s->mb_stride;
 
         for (s->mb_x = 0; s->mb_x < s->mb_width * 2; s->mb_x++) {
@@ -819,8 +820,8 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, int dquant,
                 if (x8_decode_intra_mb(w, 2))
                     goto error;
 
-                s->dest[1] += 8;
-                s->dest[2] += 8;
+                w->dest[1] += 8;
+                w->dest[2] += 8;
 
                 /* emulate MB info in the relevant tables */
                 s->mbskip_table[mb_xy]                 = 0;
@@ -828,7 +829,7 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, int dquant,
                 s->current_picture.qscale_table[mb_xy] = w->quant;
                 mb_xy++;
             }
-            s->dest[0] += 8;
+            w->dest[0] += 8;
         }
         if (s->mb_y & 1)
             ff_mpeg_draw_horiz_band(s, (s->mb_y - 1) * 8, 16);
