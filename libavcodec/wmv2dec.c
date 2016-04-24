@@ -219,7 +219,7 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
     s->picture_number++; // FIXME ?
 
     if (w->j_type) {
-        ff_intrax8_decode_picture(&w->x8, &s->current_picture,
+        ff_intrax8_decode_picture(&w->x8, &s->current_picture, &s->gb,
                                   2 * s->qscale, (s->qscale - 1) | 1,
                                   s->loop_filter);
 
