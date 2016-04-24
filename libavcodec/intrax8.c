@@ -488,7 +488,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
 {
     MpegEncContext *const s = w->s;
     int t;
-#define B(x,y)  s->block[0][w->idct_permutation[(x)+(y)*8]]
+#define B(x,y)  s->block[0][w->idct_permutation[(x) + (y) * 8]]
 #define T(x)  ((x) * dc_level + 0x8000) >> 16;
     switch (direction) {
     case 0:
@@ -739,12 +739,14 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame, int mb_y)
     w->dest[2] += (mb_y & (~1)) * uvlinesize << 2;
 }
 
-av_cold int ff_intrax8_common_init(IntraX8Context *w, MpegEncContext *const s)
+av_cold int ff_intrax8_common_init(IntraX8Context *w, IDCTDSPContext *idsp,
+                                   MpegEncContext *const s)
 {
     int ret = x8_vlc_init();
     if (ret < 0)
         return ret;
 
+    w->idsp = *idsp;
     w->s = s;
 
     //two rows, 2 blocks per cannon mb
