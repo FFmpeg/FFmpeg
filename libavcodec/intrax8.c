@@ -708,7 +708,7 @@ block_placed:
     if (!chroma)
         x8_update_predictions(w, w->orient, n);
 
-    if (s->loop_filter) {
+    if (w->loopfilter) {
         uint8_t *ptr = w->dest[chroma];
         int linesize = s->current_picture.f->linesize[!!chroma];
 
@@ -777,7 +777,7 @@ av_cold void ff_intrax8_common_end(IntraX8Context *w)
 }
 
 int ff_intrax8_decode_picture(IntraX8Context *const w, int dquant,
-                              int quant_offset)
+                              int quant_offset, int loopfilter)
 {
     MpegEncContext *const s = w->s;
     int mb_xy;
@@ -786,6 +786,7 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, int dquant,
     w->dquant = dquant;
     w->quant  = dquant >> 1;
     w->qsum   = quant_offset;
+    w->loopfilter = loopfilter;
 
     w->divide_quant_dc_luma = ((1 << 16) + (w->quant >> 1)) / w->quant;
     if (w->quant < 5) {
