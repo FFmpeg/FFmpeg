@@ -583,7 +583,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
     int sign;
 
     av_assert2(w->orient < 12);
-    s->bdsp.clear_block(s->block[0]);
+    w->bdsp.clear_block(s->block[0]);
 
     if (chroma)
         dc_mode = 2;
@@ -763,6 +763,7 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
                       ff_wmv1_scantable[3]);
 
     ff_intrax8dsp_init(&w->dsp);
+    ff_blockdsp_init(&w->bdsp, avctx);
 
     return 0;
 }

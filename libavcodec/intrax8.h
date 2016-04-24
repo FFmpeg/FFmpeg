@@ -19,6 +19,7 @@
 #ifndef AVCODEC_INTRAX8_H
 #define AVCODEC_INTRAX8_H
 
+#include "blockdsp.h"
 #include "get_bits.h"
 #include "mpegvideo.h"
 #include "idctdsp.h"
@@ -44,6 +45,7 @@ typedef struct IntraX8Context {
     MpegEncContext * s;
     IntraX8DSPContext dsp;
     IDCTDSPContext idsp;
+    BlockDSPContext bdsp;
     int quant;
     int dquant;
     int qsum;
