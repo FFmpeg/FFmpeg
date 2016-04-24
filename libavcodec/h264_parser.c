@@ -27,12 +27,22 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
-#include "libavutil/attributes.h"
-#include "parser.h"
-#include "h264data.h"
+#include <assert.h>
+#include <stdint.h>
+
+#include "libavutil/avutil.h"
+#include "libavutil/error.h"
+#include "libavutil/log.h"
+#include "libavutil/mem.h"
+#include "libavutil/pixfmt.h"
+
+#include "get_bits.h"
 #include "golomb.h"
+#include "h264.h"
+#include "h264data.h"
 #include "internal.h"
 #include "mpegutils.h"
+#include "parser.h"
 
 typedef struct H264ParseContext {
     H264Context h;
