@@ -400,7 +400,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (s->oformat->init && (ret = s->oformat->init(s)) < 0) {
-        s->oformat->deinit(s);
+        if (s->oformat->deinit)
+            s->oformat->deinit(s);
         goto fail;
     }
 
