@@ -24,6 +24,7 @@
 #include "idctdsp.h"
 #include "intrax8dsp.h"
 #include "wmv2dsp.h"
+#include "mpegpicture.h"
 
 typedef struct IntraX8Context {
     VLC *j_ac_vlc[4]; // they point to the static j_mb_vlc
@@ -46,6 +47,7 @@ typedef struct IntraX8Context {
     int dquant;
     int qsum;
     int loopfilter;
+    AVFrame *frame;
 
     // calculated per frame
     int quant_dc_chroma;
@@ -88,11 +90,12 @@ void ff_intrax8_common_end(IntraX8Context *w);
  * This function does not use ff_mpv_decode_mb().
  * lowres decoding is theoretically impossible.
  * @param w pointer to IntraX8Context
+ * @param pict the output Picture containing an AVFrame
  * @param dquant doubled quantizer, it would be odd in case of VC-1 halfpq==1.
  * @param quant_offset offset away from zero
  * @param loopfilter enable filter after decoding a block
  */
-int ff_intrax8_decode_picture(IntraX8Context *w, int quant, int halfpq,
-                              int loopfilter);
+int ff_intrax8_decode_picture(IntraX8Context *w, Picture *pict,
+                              int quant, int halfpq, int loopfilter);
 
 #endif /* AVCODEC_INTRAX8_H */
