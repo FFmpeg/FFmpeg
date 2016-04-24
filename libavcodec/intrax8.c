@@ -733,13 +733,15 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame, int mb_y)
     w->dest[2] += (mb_y & (~1)) * uvlinesize << 2;
 }
 
-av_cold int ff_intrax8_common_init(IntraX8Context *w, IDCTDSPContext *idsp,
+av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
+                                   IntraX8Context *w, IDCTDSPContext *idsp,
                                    MpegEncContext *const s)
 {
     int ret = x8_vlc_init();
     if (ret < 0)
         return ret;
 
+    w->avctx = avctx;
     w->idsp = *idsp;
     w->s = s;
 
