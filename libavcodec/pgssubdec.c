@@ -354,8 +354,14 @@ static int parse_palette_segment(AVCodecContext *avctx,
         cb        = bytestream_get_byte(&buf);
         alpha     = bytestream_get_byte(&buf);
 
-        YUV_TO_RGB1(cb, cr);
-        YUV_TO_RGB2(r, g, b, y);
+        /* Default to BT.709 colorimetry. In case of <= 576 height use BT.601 */
+        if (avctx->height <= 0 || avctx->height > 576) {
+            YUV_TO_RGB1_CCIR_BT709(cb, cr);
+        } else {
+            YUV_TO_RGB1_CCIR(cb, cr);
+        }
+
+        YUV_TO_RGB2_CCIR(r, g, b, y);
 
         ff_dlog(avctx, "Color %d := (%d,%d,%d,%d)\n", color_id, r, g, b, alpha);
 
