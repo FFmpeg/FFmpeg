@@ -312,7 +312,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             init_get_bits(&sl->gb, ptr, 8 * dst_length);
             get_ue_golomb_long(&sl->gb);  // skip first_mb_in_slice
             slice_type   = get_ue_golomb_31(&sl->gb);
-            s->pict_type = golomb_to_pict_type[slice_type % 5];
+            s->pict_type = ff_h264_golomb_to_pict_type[slice_type % 5];
             if (h->sei_recovery_frame_cnt >= 0) {
                 /* key frame, since recovery_frame_cnt is set */
                 s->key_frame = 1;
