@@ -560,6 +560,7 @@
     <ClCompile Include="..\libavcodec\h264_refs.c" />
     <ClCompile Include="..\libavcodec\h264_sei.c" />
     <ClCompile Include="..\libavcodec\h264_slice.c" />
+    <ClCompile Include="..\libavcodec\h264data.c" />
     <ClCompile Include="..\libavcodec\qsvdec_h2645.c" />
     <ClCompile Include="..\libavcodec\qsvenc_h264.c" />
     <ClCompile Include="..\libavcodec\hapdec.c" />
@@ -781,6 +782,7 @@
     <ClCompile Include="..\libavcodec\tmv.c" />
     <ClCompile Include="..\libavcodec\truemotion1.c" />
     <ClCompile Include="..\libavcodec\truemotion2.c" />
+    <ClCompile Include="..\libavcodec\truemotion2rt.c" />
     <ClCompile Include="..\libavcodec\truespeech.c" />
     <ClCompile Include="..\libavcodec\tscc.c" />
     <ClCompile Include="..\libavcodec\tscc2.c" />

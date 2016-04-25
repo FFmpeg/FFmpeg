@@ -171,8 +171,12 @@ EXPORTS
     avcodec_parameters_to_context
     avcodec_pix_fmt_to_codec_tag
     avcodec_profile_name
+    avcodec_receive_frame
+    avcodec_receive_packet
     avcodec_register
     avcodec_register_all
+    avcodec_send_frame
+    avcodec_send_packet
     avcodec_set_dimensions
     avcodec_string
     avcodec_version
@@ -185,6 +189,7 @@ EXPORTS
     avpriv_ac3_parse_header
     avpriv_align_put_bits
     avpriv_bprint_to_extradata
+    avpriv_codec_get_cap_skip_frame_fill_param
     avpriv_copy_bits
     avpriv_copy_pce_data
     avpriv_dca_convert_bitstream
