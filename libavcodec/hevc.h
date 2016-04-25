@@ -1080,13 +1080,13 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 /**
  * Extract the raw (unescaped) HEVC bitstream.
  */
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
+int ff_hevc_extract_rbsp(const uint8_t *src, int length,
                          HEVCNAL *nal);
 
 /**
  * Split an input packet into NAL units.
  */
-int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, int length,
+int ff_hevc_split_packet(HEVCPacket *pkt, const uint8_t *buf, int length,
                          AVCodecContext *avctx, int is_nalff, int nal_length_size);
 
 int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,

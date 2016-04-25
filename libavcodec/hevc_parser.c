@@ -239,7 +239,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 src_length = 20;
         }
 
-        consumed = ff_hevc_extract_rbsp(NULL, buf, src_length, nal);
+        consumed = ff_hevc_extract_rbsp(buf, src_length, nal);
         if (consumed < 0)
             return consumed;
 

@@ -29,14 +29,13 @@
 
 /* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
  * between these functions would be nice. */
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
+int ff_hevc_extract_rbsp(const uint8_t *src, int length,
                          HEVCNAL *nal)
 {
     int i, si, di;
     uint8_t *dst;
 
-    if (s)
-        nal->skipped_bytes = 0;
+    nal->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
         if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
             if (src[i + 2] != 3) {                                      \
@@ -110,7 +109,7 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                 dst[di++] = 0;
                 si       += 3;
 
-                if (s && nal->skipped_bytes_pos) {
+                if (nal->skipped_bytes_pos) {
                     nal->skipped_bytes++;
                     if (nal->skipped_bytes_pos_size < nal->skipped_bytes) {
                         nal->skipped_bytes_pos_size *= 2;
@@ -205,7 +204,7 @@ static int hls_nal_unit(HEVCNAL *nal, AVCodecContext *avctx)
 }
 
 
-int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, int length,
+int ff_hevc_split_packet(HEVCPacket *pkt, const uint8_t *buf, int length,
                          AVCodecContext *avctx, int is_nalff, int nal_length_size)
 {
     int consumed, ret = 0;
@@ -269,7 +268,7 @@ int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, in
         }
         nal = &pkt->nals[pkt->nb_nals];
 
-        consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
+        consumed = ff_hevc_extract_rbsp(buf, extract_length, nal);
         if (consumed < 0)
             return consumed;
 
