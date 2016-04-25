@@ -214,6 +214,12 @@ static int detect_stream_specific(AVFormatContext *avf, int idx)
         if (!cs->avctx)
             return AVERROR(ENOMEM);
 
+        /* This really should be part of the bsf work.
+           Note: input bitstream filtering will not work with bsf that
+           create extradata from the first packet. */
+        av_freep(&st->codecpar->extradata);
+        st->codecpar->extradata_size = 0;
+
         ret = avcodec_parameters_to_context(cs->avctx, st->codecpar);
         if (ret < 0) {
             avcodec_free_context(&cs->avctx);
