@@ -895,11 +895,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                                   ff_eac3_default_spx_band_struct,
                                   &s->num_spx_bands,
                                   s->spx_band_sizes);
-        } else {
-            for (ch = 1; ch <= fbw_channels; ch++) {
-                s->channel_uses_spx[ch] = 0;
-                s->first_spx_coords[ch] = 1;
-            }
+        }
+    }
+    if (!s->eac3 || !s->spx_in_use) {
+        s->spx_in_use = 0;
+        for (ch = 1; ch <= fbw_channels; ch++) {
+            s->channel_uses_spx[ch] = 0;
+            s->first_spx_coords[ch] = 1;
         }
     }
 
