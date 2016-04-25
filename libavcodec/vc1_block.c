@@ -2931,7 +2931,9 @@ void ff_vc1_decode_blocks(VC1Context *v)
 
     v->s.esc3_level_length = 0;
     if (v->x8_type) {
-        ff_intrax8_decode_picture(&v->x8, 2*v->pq + v->halfpq, v->pq * !v->pquantizer);
+        ff_intrax8_decode_picture(&v->x8, &v->s.current_picture, &v->s.gb,
+                                  2 * v->pq + v->halfpq, v->pq * !v->pquantizer,
+                                  v->s.loop_filter);
 
         ff_er_add_slice(&v->s.er, 0, 0,
                         (v->s.mb_x >> 1) - 1, (v->s.mb_y >> 1) - 1,

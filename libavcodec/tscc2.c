@@ -31,6 +31,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "mathops.h"
 #include "tscc2data.h"
 
 typedef struct TSCC2Context {
@@ -179,7 +180,7 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
                 if (bpos >= 16)
                     return AVERROR_INVALIDDATA;
                 val = sign_extend(ac >> 4, 8);
-                c->block[tscc2_zigzag[bpos++]] = val;
+                c->block[ff_zigzag_scan[bpos++]] = val;
             }
             tscc2_idct4_put(c->block, q, dst + k * 4, stride);
         }

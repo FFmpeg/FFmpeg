@@ -1453,6 +1453,12 @@ Select the streams that should be mapped to the slave output,
 specified by a stream specifier. If not specified, this defaults to
 all the input streams. You may use multiple stream specifiers
 separated by commas (@code{,}) e.g.: @code{a:0,v}
+
+@item onfail
+Specify behaviour on output failure. This can be set to either @code{abort} (which is
+default) or @code{ignore}. @code{abort} will cause whole process to fail in case of failure
+on this slave output. @code{ignore} will ignore failure on this output, so other outputs
+will continue without being affected.
 @end table
 
 @subsection Examples
@@ -1464,6 +1470,14 @@ as MPEG-TS over UDP (the streams need to be explicitly mapped):
 @example
 ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
+@end example
+
+@item
+As above, but continue streaming even if output to local file fails
+(for example local drive fills up):
+@example
+ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
+  "[onfail=ignore]archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
 @end example
 
 @item

@@ -382,7 +382,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
                       hostname, rtp_port, s->local_rtpport,
                       sources, block);
         if (ffurl_open_whitelist(&s->rtp_hd, buf, flags, &h->interrupt_callback,
-                                 NULL, h->protocol_whitelist, h->protocol_blacklist) < 0)
+                                 NULL, h->protocol_whitelist, h->protocol_blacklist, h) < 0)
             goto fail;
         s->local_rtpport = ff_udp_get_local_port(s->rtp_hd);
         if(s->local_rtpport == 65535) {
@@ -397,7 +397,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
                           sources, block);
             if (ffurl_open_whitelist(&s->rtcp_hd, buf, rtcpflags,
                                      &h->interrupt_callback, NULL,
-                                     h->protocol_whitelist, h->protocol_blacklist) < 0) {
+                                     h->protocol_whitelist, h->protocol_blacklist, h) < 0) {
                 s->local_rtpport = s->local_rtcpport = -1;
                 continue;
             }
@@ -407,7 +407,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
                       hostname, s->rtcp_port, s->local_rtcpport,
                       sources, block);
         if (ffurl_open_whitelist(&s->rtcp_hd, buf, rtcpflags, &h->interrupt_callback,
-                                 NULL, h->protocol_whitelist, h->protocol_blacklist) < 0)
+                                 NULL, h->protocol_whitelist, h->protocol_blacklist, h) < 0)
             goto fail;
         break;
     }

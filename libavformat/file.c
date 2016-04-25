@@ -72,6 +72,7 @@ typedef struct FileContext {
     int fd;
     int trunc;
     int blocksize;
+    int follow;
 #if HAVE_DIRENT_H
     DIR *dir;
 #endif
@@ -80,6 +81,7 @@ typedef struct FileContext {
 static const AVOption file_options[] = {
     { "truncate", "truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "follow", "Follow a file as it is being written", offsetof(FileContext, follow), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL }
 };
 
@@ -108,6 +110,8 @@ static int file_read(URLContext *h, unsigned char *buf, int size)
     int ret;
     size = FFMIN(size, c->blocksize);
     ret = read(c->fd, buf, size);
+    if (ret == 0 && c->follow)
+        return AVERROR(EAGAIN);
     return (ret == -1) ? AVERROR(errno) : ret;
 }
 

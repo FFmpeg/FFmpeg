@@ -96,6 +96,10 @@ probeframes(){
     run ffprobe${PROGSUF} -show_frames -v 0 "$@"
 }
 
+probechapters(){
+    run ffprobe${PROGSUF} -show_chapters -v 0 "$@"
+}
+
 probegaplessinfo(){
     filename="$1"
     shift

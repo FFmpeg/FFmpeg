@@ -28,6 +28,7 @@ version <next>:
 - readvitc filter
 - VAAPI-accelerated format conversion and scaling
 - libnpp/CUDA-accelerated format conversion and scaling
+- Duck TrueMotion 2.0 Real Time decoder
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

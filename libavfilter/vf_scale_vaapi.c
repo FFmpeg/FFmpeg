@@ -410,7 +410,7 @@ static av_cold void scale_vaapi_uninit(AVFilterContext *avctx)
 
 
 #define OFFSET(x) offsetof(ScaleVAAPIContext, x)
-#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM)
+#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption scale_vaapi_options[] = {
     { "w", "Output video width",
       OFFSET(output_width),  AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },

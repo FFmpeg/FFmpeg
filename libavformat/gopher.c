@@ -94,7 +94,7 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
 
     s->hd = NULL;
     err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
-                               &h->interrupt_callback, NULL, h->protocol_whitelist, h->protocol_blacklist);
+                               &h->interrupt_callback, NULL, h->protocol_whitelist, h->protocol_blacklist, h);
     if (err < 0)
         goto fail;
 

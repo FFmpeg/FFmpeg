@@ -72,6 +72,9 @@ static int unix_open(URLContext *h, const char *filename, int flags)
     if ((fd = ff_socket(AF_UNIX, s->type, 0)) < 0)
         return ff_neterrno();
 
+    if (s->timeout < 0 && h->rw_timeout)
+        s->timeout = h->rw_timeout / 1000;
+
     if (s->listen) {
         ret = ff_listen_bind(fd, (struct sockaddr *)&s->addr,
                              sizeof(s->addr), s->timeout, h);

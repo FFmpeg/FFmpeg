@@ -29,7 +29,6 @@
 #include <string.h>
 
 #include "attributes.h"
-#include "config.h"
 #include "internal.h"
 #include "version.h"
 #include "lls.h"
@@ -142,7 +141,7 @@ int main(void)
         LOCAL_ALIGNED(32, double, var, [4]);
         double eval;
 
-        var[0] = (av_lfg_get(&lfg) / (double) UINT_MAX - 0.5) * 2;
+        var[0] =         (av_lfg_get(&lfg) / (double) UINT_MAX - 0.5) * 2;
         var[1] = var[0] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
         var[2] = var[1] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
         var[3] = var[2] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;

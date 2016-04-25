@@ -387,7 +387,7 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
                 return AVERROR(ENOMEM);
     }
 
-    ret = ff_intrax8_common_init(&v->x8, s);
+    ret = ff_intrax8_common_init(s->avctx, &v->x8, &s->idsp, s);
     if (ret < 0)
         goto error;
 

@@ -543,7 +543,7 @@ static int ftp_connect_control_connection(URLContext *h)
         } /* if option is not given, don't pass it and let tcp use its own default */
         err = ffurl_open_whitelist(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
                                    &h->interrupt_callback, &opts,
-                                   h->protocol_whitelist, h->protocol_blacklist);
+                                   h->protocol_whitelist, h->protocol_blacklist, h);
         av_dict_free(&opts);
         if (err < 0) {
             av_log(h, AV_LOG_ERROR, "Cannot open control connection\n");
@@ -597,7 +597,7 @@ static int ftp_connect_data_connection(URLContext *h)
         } /* if option is not given, don't pass it and let tcp use its own default */
         err = ffurl_open_whitelist(&s->conn_data, buf, h->flags,
                                    &h->interrupt_callback, &opts,
-                                   h->protocol_whitelist, h->protocol_blacklist);
+                                   h->protocol_whitelist, h->protocol_blacklist, h);
         av_dict_free(&opts);
         if (err < 0)
             return err;

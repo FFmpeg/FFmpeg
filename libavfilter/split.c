@@ -95,7 +95,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 }
 
 #define OFFSET(x) offsetof(SplitContext, x)
-#define FLAGS AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS (AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM)
 static const AVOption options[] = {
     { "outputs", "set number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, INT_MAX, FLAGS },
     { NULL }

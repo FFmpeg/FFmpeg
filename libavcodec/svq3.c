@@ -47,12 +47,11 @@
 #include "avcodec.h"
 #include "mpegutils.h"
 #include "h264.h"
-
-#include "h264data.h" // FIXME FIXME FIXME
-
 #include "h264_mvpred.h"
+#include "h264data.h"
 #include "golomb.h"
 #include "hpeldsp.h"
+#include "mathops.h"
 #include "rectangle.h"
 #include "tpeldsp.h"
 #include "vdpau_internal.h"
@@ -244,8 +243,9 @@ void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block,
 static inline int svq3_decode_block(GetBitContext *gb, int16_t *block,
                                     int index, const int type)
 {
-    static const uint8_t *const scan_patterns[4] =
-    { luma_dc_zigzag_scan, zigzag_scan, svq3_scan, chroma_dc_scan };
+    static const uint8_t *const scan_patterns[4] = {
+        luma_dc_zigzag_scan, ff_zigzag_scan, svq3_scan, ff_h264_chroma_dc_scan
+    };
 
     int run, level, sign, limit;
     unsigned vlc;
@@ -668,7 +668,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
         mb_type = MB_TYPE_INTRA4x4;
     } else {                      /* INTRA16x16 */
-        dir = i_mb_type_info[mb_type - 8].pred_mode;
+        dir = ff_h264_i_mb_type_info[mb_type - 8].pred_mode;
         dir = (dir >> 1) ^ 3 * (dir & 1) ^ 1;
 
         if ((sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl, dir, 0)) < 0) {
@@ -676,7 +676,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
             return sl->intra16x16_pred_mode;
         }
 
-        cbp     = i_mb_type_info[mb_type - 8].cbp;
+        cbp     = ff_h264_i_mb_type_info[mb_type - 8].cbp;
         mb_type = MB_TYPE_INTRA16x16;
     }
 
@@ -704,8 +704,8 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
             return -1;
         }
 
-        cbp = IS_INTRA(mb_type) ? golomb_to_intra4x4_cbp[vlc]
-                                : golomb_to_inter_cbp[vlc];
+        cbp = IS_INTRA(mb_type) ? ff_h264_golomb_to_intra4x4_cbp[vlc]
+                                : ff_h264_golomb_to_inter_cbp[vlc];
     }
     if (IS_INTRA16x16(mb_type) ||
         (h->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
@@ -833,7 +833,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         return -1;
     }
 
-    sl->slice_type = golomb_to_pict_type[slice_id];
+    sl->slice_type = ff_h264_golomb_to_pict_type[slice_id];
 
     if ((header & 0x9F) == 2) {
         i              = (h->mb_num < 64) ? 6 : (1 + av_log2(h->mb_num - 1));

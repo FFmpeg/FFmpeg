@@ -138,7 +138,7 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
 
     if ((ret = ffurl_open_whitelist(&c->hd, nested_url, flags,
                                     &h->interrupt_callback, options,
-                                    h->protocol_whitelist, h->protocol_blacklist)) < 0) {
+                                    h->protocol_whitelist, h->protocol_blacklist, h)) < 0) {
         av_log(h, AV_LOG_ERROR, "Unable to open resource: %s\n", nested_url);
         goto err;
     }

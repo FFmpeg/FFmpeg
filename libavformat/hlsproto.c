@@ -307,7 +307,7 @@ retry:
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
     ret = ffurl_open_whitelist(&s->seg_hd, url, AVIO_FLAG_READ,
                                &h->interrupt_callback, NULL,
-                               h->protocol_whitelist, h->protocol_blacklist);
+                               h->protocol_whitelist, h->protocol_blacklist, h);
     if (ret < 0) {
         if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
