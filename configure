@@ -314,6 +314,7 @@ Toolchain options:
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
+  --ln_s=LN_S              use symbolic link tool LN_S [$ln_s_default]
   --strip=STRIP            use strip tool STRIP [$strip_default]
   --windres=WINDRES        use windows resource compiler WINDRES [$windres_default]
   --yasmexe=EXE            use yasm-compatible assembler EXE [$yasmexe_default]
@@ -2137,6 +2138,7 @@ CMDLINE_SET="
     host_os
     install
     ld
+    ln_s
     logfile
     malloc_prefix
     nm
@@ -3078,7 +3080,7 @@ host_cc_default="gcc"
 cp_f="cp -f"
 doxygen_default="doxygen"
 install="install"
-ln_s="ln -s -f"
+ln_s_default="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
@@ -4001,7 +4003,7 @@ test -n "$cc_type" && enable $cc_type ||
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 : ${host_ld_default:=$host_cc}
-set_default ar as objcc dep_cc ld host_ld windres
+set_default ar as objcc dep_cc ld ln_s host_ld windres
 
 probe_cc as "$as"
 asflags_filter=$_flags_filter
