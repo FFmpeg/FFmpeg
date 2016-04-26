@@ -63,7 +63,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
  * Split an input packet into NAL units.
  */
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
-                          AVCodecContext *avctx, int is_nalff, int nal_length_size);
+                          void *logctx, int is_nalff, int nal_length_size);
 
 /**
  * Free all the allocated memory in the packet.

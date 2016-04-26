@@ -182,7 +182,7 @@ static const char *nal_unit_name(int nal_type)
  * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
  * 0 if the unit should be skipped, 1 otherwise
  */
-static int hevc_parse_nal_header(H2645NAL *nal, AVCodecContext *avctx)
+static int hevc_parse_nal_header(H2645NAL *nal, void *logctx)
 {
     GetBitContext *gb = &nal->gb;
     int nuh_layer_id;
@@ -197,7 +197,7 @@ static int hevc_parse_nal_header(H2645NAL *nal, AVCodecContext *avctx)
     if (nal->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
-    av_log(avctx, AV_LOG_DEBUG,
+    av_log(logctx, AV_LOG_DEBUG,
            "nal_unit_type: %d(%s), nuh_layer_id: %d, temporal_id: %d\n",
            nal->type, nal_unit_name(nal->type), nuh_layer_id, nal->temporal_id);
 
@@ -206,7 +206,7 @@ static int hevc_parse_nal_header(H2645NAL *nal, AVCodecContext *avctx)
 
 
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
-                          AVCodecContext *avctx, int is_nalff, int nal_length_size)
+                          void *logctx, int is_nalff, int nal_length_size)
 {
     int consumed, ret = 0;
 
@@ -223,7 +223,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             length -= nal_length_size;
 
             if (extract_length > length) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
+                av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
                 return AVERROR_INVALIDDATA;
             }
         } else {
@@ -237,7 +237,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                         // bytes at the end of the packet.
                         return 0;
                     } else {
-                        av_log(avctx, AV_LOG_ERROR, "No start code is found.\n");
+                        av_log(logctx, AV_LOG_ERROR, "No start code is found.\n");
                         return AVERROR_INVALIDDATA;
                     }
                 }
@@ -279,10 +279,10 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         if (ret < 0)
             return ret;
 
-        ret = hevc_parse_nal_header(nal, avctx);
+        ret = hevc_parse_nal_header(nal, logctx);
         if (ret <= 0) {
             if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
+                av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                        nal->type);
             }
             pkt->nb_nals--;
