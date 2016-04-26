@@ -1,5 +1,5 @@
 /*
- * HEVC common code
+ * H.264/HEVC common parsing code
  *
  * This file is part of FFmpeg.
  *
@@ -26,11 +26,12 @@
 #include "libavutil/mem.h"
 
 #include "hevc.h"
+#include "h2645_parse.h"
 
 /* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
  * between these functions would be nice. */
-int ff_hevc_extract_rbsp(const uint8_t *src, int length,
-                         HEVCNAL *nal)
+int ff_h2645_extract_rbsp(const uint8_t *src, int length,
+                          H2645NAL *nal)
 {
     int i, si, di;
     uint8_t *dst;
@@ -181,7 +182,7 @@ static const char *nal_unit_name(int nal_type)
  * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
  * 0 if the unit should be skipped, 1 otherwise
  */
-static int hls_nal_unit(HEVCNAL *nal, AVCodecContext *avctx)
+static int hevc_parse_nal_header(H2645NAL *nal, AVCodecContext *avctx)
 {
     GetBitContext *gb = &nal->gb;
     int nuh_layer_id;
@@ -204,14 +205,14 @@ static int hls_nal_unit(HEVCNAL *nal, AVCodecContext *avctx)
 }
 
 
-int ff_hevc_split_packet(HEVCPacket *pkt, const uint8_t *buf, int length,
-                         AVCodecContext *avctx, int is_nalff, int nal_length_size)
+int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
+                          AVCodecContext *avctx, int is_nalff, int nal_length_size)
 {
     int consumed, ret = 0;
 
     pkt->nb_nals = 0;
     while (length >= 4) {
-        HEVCNAL *nal;
+        H2645NAL *nal;
         int extract_length = 0;
 
         if (is_nalff) {
@@ -268,7 +269,7 @@ int ff_hevc_split_packet(HEVCPacket *pkt, const uint8_t *buf, int length,
         }
         nal = &pkt->nals[pkt->nb_nals];
 
-        consumed = ff_hevc_extract_rbsp(buf, extract_length, nal);
+        consumed = ff_h2645_extract_rbsp(buf, extract_length, nal);
         if (consumed < 0)
             return consumed;
 
@@ -278,7 +279,7 @@ int ff_hevc_split_packet(HEVCPacket *pkt, const uint8_t *buf, int length,
         if (ret < 0)
             return ret;
 
-        ret = hls_nal_unit(nal, avctx);
+        ret = hevc_parse_nal_header(nal, avctx);
         if (ret <= 0) {
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",

@@ -2448,7 +2448,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     return 0;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
+static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 {
     const uint8_t *data = nal->data;
     int length          = nal->size;
@@ -2714,7 +2714,7 @@ fail:
     return ret;
 }
 
-static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
+static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 {
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb    = &lc->gb;
@@ -2866,8 +2866,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
-    ret = ff_hevc_split_packet(&s->pkt, buf, length, s->avctx, s->is_nalff,
-                               s->nal_length_size);
+    ret = ff_h2645_packet_split(&s->pkt, buf, length, s->avctx, s->is_nalff,
+                                s->nal_length_size);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Error splitting the input into NAL units.\n");
