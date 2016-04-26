@@ -913,6 +913,25 @@ void foo(void){ __asm__ volatile($code); }
 EOF
 }
 
+check_inline_asm_flags(){
+    log check_inline_asm_flags "$@"
+    name="$1"
+    code="$2"
+    flags=''
+    shift 2
+    while [ "$1" != "" ]; do
+      append flags $1
+      shift
+    done;
+    disable $name
+    cat > $TMPC <<EOF
+void foo(void){ __asm__ volatile($code); }
+EOF
+    log_file $TMPC
+    check_cmd $cc $CPPFLAGS $CFLAGS $flags "$@" $CC_C $(cc_o $TMPO) $TMPC &&
+    enable $name && add_cflags $flags && add_asflags $flags && add_ldflags $flags
+}
+
 check_insn(){
     log check_insn "$@"
     check_inline_asm ${1}_inline "\"$2\""
@@ -1657,6 +1676,7 @@ ARCH_EXT_LIST_ARM="
 ARCH_EXT_LIST_MIPS="
     mipsfpu
     mips32r2
+    mips32r5
     mips64r2
     mips32r6
     mips64r6
@@ -2150,10 +2170,11 @@ mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 mips32r2_deps="mips"
+mips32r5_deps="mips"
 mips32r6_deps="mips"
 mips64r2_deps="mips"
 mips64r6_deps="mips"
-msa_deps="mips"
+msa_deps="mipsfpu"
 mmi_deps="mips"
 
 altivec_deps="ppc"
@@ -4153,118 +4174,90 @@ elif enabled mips; then
 
     cpuflags="-march=$cpu"
 
-    case $cpu in
-        24kc)
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsfpu
-            disable mipsdsp
-            disable mipsdspr2
-            disable msa
-        ;;
-        24kf*)
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsdsp
-            disable mipsdspr2
-            disable msa
-        ;;
-        24kec|34kc|1004kc)
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsfpu
-            disable mipsdspr2
-            disable msa
-        ;;
-        24kef*|34kf*|1004kf*)
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsdspr2
-            disable msa
-        ;;
-        74kc)
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsfpu
-            disable msa
-        ;;
-        74kf)
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable msa
-        ;;
-        p5600)
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsdsp
-            disable mipsdspr2
-            check_cflags "-mtune=p5600" &&
-            check_cflags "-mfp64 -msched-weight -mload-store-pairs -funroll-loops" &&
-            add_asflags "-mfp64"
-        ;;
-        i6400)
-            disable mips32r2
-            disable mips32r6
-            disable mips64r2
-            disable mipsdsp
-            disable mipsdspr2
-            check_cflags "-mtune=i6400 -mabi=64" &&
-            check_cflags "-mfp64 -msched-weight -mload-store-pairs -funroll-loops" &&
-            check_ldflags "-mabi=64" &&
-            add_asflags "-mfp64"
-        ;;
-        loongson*)
-            disable mips32r2
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsfpu
-            disable mipsdsp
-            disable mipsdspr2
-            disable msa
-            enable local_aligned_8 local_aligned_16 local_aligned_32
-            enable simd_align_16
-            enable fast_64bit
-            enable fast_clz
-            enable fast_cmov
-            enable fast_unaligned
-            disable aligned_stack
-            case $cpu in
-                loongson3*)
-                    cpuflags="-march=loongson3a -mhard-float -fno-expensive-optimizations"
-                ;;
-                loongson2e)
-                    cpuflags="-march=loongson2e -mhard-float -fno-expensive-optimizations"
-                ;;
-                loongson2f)
-                    cpuflags="-march=loongson2f -mhard-float -fno-expensive-optimizations"
-                ;;
-            esac
-        ;;
-        generic)
-            disable mips64r6
-            disable msa
-        ;;
-        *)
-            # Unknown CPU. Disable everything.
-            warn "unknown CPU. Disabling all MIPS optimizations."
-            disable mipsfpu
-            disable mips32r2
-            disable mips32r6
-            disable mips64r2
-            disable mips64r6
-            disable mipsdsp
-            disable mipsdspr2
-            disable msa
-        ;;
-    esac
+    if [ "$cpu" != "generic" ]; then
+        disable mips32r2
+        disable mips32r5
+        disable mips64r2
+        disable mips32r6
+        disable mips64r6
+        disable loongson2
+        disable loongson3
+
+        case $cpu in
+            24kc|24kf*|24kec|34kc|1004kc|24kef*|34kf*|1004kf*|74kc|74kf)
+                enable mips32r2
+                disable msa
+            ;;
+            p5600|i6400)
+                disable mipsdsp
+                disable mipsdspr2
+            ;;
+            loongson*)
+                enable loongson2
+                enable loongson3
+                enable local_aligned_8 local_aligned_16 local_aligned_32
+                enable simd_align_16
+                enable fast_64bit
+                enable fast_clz
+                enable fast_cmov
+                enable fast_unaligned
+                disable aligned_stack
+                case $cpu in
+                    loongson3*)
+                        cpuflags="-march=loongson3a -mhard-float -fno-expensive-optimizations"
+                    ;;
+                    loongson2e)
+                        cpuflags="-march=loongson2e -mhard-float -fno-expensive-optimizations"
+                    ;;
+                    loongson2f)
+                        cpuflags="-march=loongson2f -mhard-float -fno-expensive-optimizations"
+                    ;;
+                esac
+            ;;
+            *)
+                # Unknown CPU. Disable everything.
+                warn "unknown CPU. Disabling all MIPS optimizations."
+                disable mipsfpu
+                disable mipsdsp
+                disable mipsdspr2
+                disable msa
+                disable mmi
+            ;;
+        esac
+
+        case $cpu in
+            24kc)
+                disable mipsfpu
+                disable mipsdsp
+                disable mipsdspr2
+            ;;
+            24kf*)
+                disable mipsdsp
+                disable mipsdspr2
+            ;;
+            24kec|34kc|1004kc)
+                disable mipsfpu
+                disable mipsdspr2
+            ;;
+            24kef*|34kf*|1004kf*)
+                disable mipsdspr2
+            ;;
+            74kc)
+                disable mipsfpu
+            ;;
+            p5600)
+                enable mips32r5
+                check_cflags "-mtune=p5600" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops"
+            ;;
+            i6400)
+                enable mips64r6
+                check_cflags "-mtune=i6400 -mabi=64" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops" && check_ldflags "-mabi=64"
+            ;;
+        esac
+    else
+        # We do not disable anything. Is up to the user to disable the unwanted features.
+        warn 'generic cpu selected'
+    fi
 
 elif enabled ppc; then
 
@@ -5073,27 +5066,22 @@ elif enabled mips; then
     enabled mmi && check_inline_asm mmi '"punpcklhw $f0, $f0, $f0"'
 
     # Enable minimum ISA based on selected options
-    if enabled mips64 && (enabled mipsdsp || enabled mipsdspr2); then
-        add_cflags "-mips64r2"
-        add_asflags "-mips64r2"
-    elif enabled mips64 && enabled mipsfpu && disabled loongson2 && disabled loongson3; then
-        add_cflags "-mips64"
-        add_asflags "-mips64"
-    elif enabled mipsdsp || enabled mipsdspr2; then
-        add_cflags "-mips32r2 -mfp32"
-        add_asflags "-mips32r2 -mfp32"
+    if enabled mips64; then
+        enabled mips64r6 && check_inline_asm_flags mips64r6 '"dlsa $0, $0, $0, 1"' '-mips64r6'
+        enabled mips64r2 && check_inline_asm_flags mips64r2 '"dext $0, $0, 0, 1"' '-mips64r2'
+        disabled mips64r6 && disabled mips64r2 && check_inline_asm_flags mips64r1 '"daddi $0, $0, 0"' '-mips64'
+    else
+        enabled mips32r6 && check_inline_asm_flags mips32r6 '"aui $0, $0, 0"' '-mips32r6'
+        enabled mips32r5 && check_inline_asm_flags mips32r5 '"eretnc"' '-mips32r5'
+        enabled mips32r2 && check_inline_asm_flags mips32r2 '"ext $0, $0, 0, 1"' '-mips32r2'
+        disabled mips32r6 && disabled mips32r5 && disabled mips32r2 && check_inline_asm_flags mips32r1 '"addi $0, $0, 0"' '-mips32'
     fi
 
-    enabled mipsdsp && add_cflags "-mdsp" && add_asflags "-mdsp" &&
-     check_inline_asm mipsdsp '"addu.qb $t0, $t1, $t2"'
-    enabled mipsdspr2 && add_cflags "-mdspr2" && add_asflags "-mdspr2" &&
-     check_inline_asm mipsdspr2 '"absq_s.qb $t0, $t1"'
-    enabled mipsfpu   && add_cflags "-mhard-float" && add_asflags "-mhard-float" &&
-     check_inline_asm mipsfpu   '"madd.d $f0, $f2, $f4, $f6"'
-    enabled msa       && check_cflags "-mmsa" && check_ldflags "-mmsa" &&
-     check_inline_asm msa       '"addvi.b $w0, $w1, 1"'
-
-    enabled msa && add_asflags "-mmsa"
+    enabled mipsfpu && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f2"' '-mhard-float'
+    enabled mipsfpu && (enabled mips32r5 || enabled mips32r6 || enabled mips64r6) && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f1"' '-mfp64'
+    enabled mipsfpu && enabled msa && check_inline_asm_flags msa '"addvi.b $w0, $w1, 1"' '-mmsa' && check_header msa.h || disable msa
+    enabled mipsdsp && check_inline_asm_flags mipsdsp '"addu.qb $t0, $t1, $t2"' '-mdsp'
+    enabled mipsdspr2 && check_inline_asm_flags mipsdspr2 '"absq_s.qb $t0, $t1"' '-mdspr2'
 
 elif enabled parisc; then
 
