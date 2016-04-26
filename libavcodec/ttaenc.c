@@ -114,9 +114,12 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     TTAEncContext *s = avctx->priv_data;
     PutBitContext pb;
-    int ret, i, out_bytes, cur_chan = 0, res = 0, samples = 0;
+    int ret, i, out_bytes, cur_chan, res, samples;
+    int64_t pkt_size =  frame->nb_samples * 2LL * avctx->channels * s->bps;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame->nb_samples * 2 * avctx->channels * s->bps, 0)) < 0)
+pkt_alloc:
+    cur_chan = 0, res = 0, samples = 0;
+    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size, 0)) < 0)
         return ret;
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
@@ -174,6 +177,14 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 rice->k1++;
 
             unary = 1 + (outval >> k);
+            if (unary + 100LL > put_bits_left(&pb)) {
+                if (pkt_size < INT_MAX/2) {
+                    pkt_size *= 2;
+                    av_packet_unref(avpkt);
+                    goto pkt_alloc;
+                } else
+                    return AVERROR(ENOMEM);
+            }
             do {
                 if (unary > 31) {
                     put_bits(&pb, 31, 0x7FFFFFFF);
