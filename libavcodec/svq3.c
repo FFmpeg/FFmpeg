@@ -489,6 +489,118 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
     return 0;
 }
 
+static av_always_inline void hl_decode_mb_idct_luma(const H264Context *h, H264SliceContext *sl,
+                                                    int mb_type, const int *block_offset,
+                                                    int linesize, uint8_t *dest_y)
+{
+    int i;
+    if (!IS_INTRA4x4(mb_type)) {
+        for (i = 0; i < 16; i++)
+            if (sl->non_zero_count_cache[scan8[i]] || sl->mb[i * 16]) {
+                uint8_t *const ptr = dest_y + block_offset[i];
+                ff_svq3_add_idct_c(ptr, sl->mb + i * 16, linesize,
+                                   sl->qscale, IS_INTRA(mb_type) ? 1 : 0);
+            }
+    }
+}
+
+static av_always_inline int dctcoef_get(int16_t *mb, int index)
+{
+    return AV_RN16A(mb + index);
+}
+
+static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
+                                                       H264SliceContext *sl,
+                                                       int mb_type,
+                                                       const int *block_offset,
+                                                       int linesize,
+                                                       uint8_t *dest_y)
+{
+    int i;
+    int qscale = sl->qscale;
+
+    if (IS_INTRA4x4(mb_type)) {
+        for (i = 0; i < 16; i++) {
+            uint8_t *const ptr = dest_y + block_offset[i];
+            const int dir      = sl->intra4x4_pred_mode_cache[scan8[i]];
+
+            uint8_t *topright;
+            int nnz, tr;
+            if (dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED) {
+                const int topright_avail = (sl->topright_samples_available << i) & 0x8000;
+                assert(sl->mb_y || linesize <= block_offset[i]);
+                if (!topright_avail) {
+                    tr       = ptr[3 - linesize] * 0x01010101u;
+                    topright = (uint8_t *)&tr;
+                } else
+                    topright = ptr + 4 - linesize;
+            } else
+                topright = NULL;
+
+            h->hpc.pred4x4[dir](ptr, topright, linesize);
+            nnz = sl->non_zero_count_cache[scan8[i]];
+            if (nnz) {
+                ff_svq3_add_idct_c(ptr, sl->mb + i * 16, linesize, qscale, 0);
+            }
+        }
+    } else {
+        h->hpc.pred16x16[sl->intra16x16_pred_mode](dest_y, linesize);
+        ff_svq3_luma_dc_dequant_idct_c(sl->mb,
+                                       sl->mb_luma_dc[0], qscale);
+    }
+}
+
+static void hl_decode_mb(const H264Context *h, H264SliceContext *sl)
+{
+    const int mb_x    = sl->mb_x;
+    const int mb_y    = sl->mb_y;
+    const int mb_xy   = sl->mb_xy;
+    const int mb_type = h->cur_pic.mb_type[mb_xy];
+    uint8_t *dest_y, *dest_cb, *dest_cr;
+    int linesize, uvlinesize;
+    int i, j;
+    const int *block_offset = &h->block_offset[0];
+    const int block_h   = 16 >> h->chroma_y_shift;
+
+    dest_y  = h->cur_pic.f->data[0] + (mb_x     + mb_y * sl->linesize)  * 16;
+    dest_cb = h->cur_pic.f->data[1] +  mb_x * 8 + mb_y * sl->uvlinesize * block_h;
+    dest_cr = h->cur_pic.f->data[2] +  mb_x * 8 + mb_y * sl->uvlinesize * block_h;
+
+    h->vdsp.prefetch(dest_y  + (sl->mb_x & 3) * 4 * sl->linesize   + 64, sl->linesize,      4);
+    h->vdsp.prefetch(dest_cb + (sl->mb_x & 7)     * sl->uvlinesize + 64, dest_cr - dest_cb, 2);
+
+    h->list_counts[mb_xy] = sl->list_count;
+
+    linesize   = sl->mb_linesize   = sl->linesize;
+    uvlinesize = sl->mb_uvlinesize = sl->uvlinesize;
+
+    if (IS_INTRA(mb_type)) {
+        h->hpc.pred8x8[sl->chroma_pred_mode](dest_cb, uvlinesize);
+        h->hpc.pred8x8[sl->chroma_pred_mode](dest_cr, uvlinesize);
+
+        hl_decode_mb_predict_luma(h, sl, mb_type, block_offset, linesize, dest_y);
+    }
+
+    hl_decode_mb_idct_luma(h, sl, mb_type, block_offset, linesize, dest_y);
+
+    if (sl->cbp & 0x30) {
+        uint8_t *dest[2] = { dest_cb, dest_cr };
+        h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + 16 * 16 * 1,
+                                               h->dequant4_coeff[IS_INTRA(mb_type) ? 1 : 4][sl->chroma_qp[0]][0]);
+        h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + 16 * 16 * 2,
+                                               h->dequant4_coeff[IS_INTRA(mb_type) ? 2 : 5][sl->chroma_qp[1]][0]);
+        for (j = 1; j < 3; j++) {
+            for (i = j * 16; i < j * 16 + 4; i++)
+                if (sl->non_zero_count_cache[scan8[i]] || sl->mb[i * 16]) {
+                    uint8_t *const ptr = dest[j - 1] + block_offset[i];
+                    ff_svq3_add_idct_c(ptr, sl->mb + i * 16,
+                                       uvlinesize,
+                                       ff_h264_chroma_qp[0][sl->qscale + 12] - 12, 2);
+                }
+        }
+    }
+}
+
 static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 {
     H264Context *h = &s->h;
@@ -1343,7 +1455,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
             }
 
             if (mb_type != 0 || sl->cbp)
-                ff_h264_hl_decode_mb(h, &h->slice_ctx[0]);
+                hl_decode_mb(h, &h->slice_ctx[0]);
 
             if (h->pict_type != AV_PICTURE_TYPE_B && !h->low_delay)
                 h->cur_pic.mb_type[sl->mb_x + sl->mb_y * h->mb_stride] =
