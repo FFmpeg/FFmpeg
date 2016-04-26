@@ -295,3 +295,13 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
     return 0;
 }
 
+void ff_h2645_packet_uninit(H2645Packet *pkt)
+{
+    int i;
+    for (i = 0; i < pkt->nals_allocated; i++) {
+        av_freep(&pkt->nals[i].rbsp_buffer);
+        av_freep(&pkt->nals[i].skipped_bytes_pos);
+    }
+    av_freep(&pkt->nals);
+    pkt->nals_allocated = 0;
+}

@@ -472,12 +472,7 @@ static void hevc_parser_close(AVCodecParserContext *s)
 
     ctx->ps.sps = NULL;
 
-    for (i = 0; i < ctx->pkt.nals_allocated; i++) {
-        av_freep(&ctx->pkt.nals[i].rbsp_buffer);
-        av_freep(&ctx->pkt.nals[i].skipped_bytes_pos);
-    }
-    av_freep(&ctx->pkt.nals);
-    ctx->pkt.nals_allocated = 0;
+    ff_h2645_packet_uninit(&ctx->pkt);
 
     av_freep(&ctx->pc.buffer);
 }

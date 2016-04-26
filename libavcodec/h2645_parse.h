@@ -65,4 +65,9 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           AVCodecContext *avctx, int is_nalff, int nal_length_size);
 
+/**
+ * Free all the allocated memory in the packet.
+ */
+void ff_h2645_packet_uninit(H2645Packet *pkt);
+
 #endif /* AVCODEC_H2645_PARSE_H */

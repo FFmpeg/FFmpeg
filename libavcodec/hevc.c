@@ -3111,12 +3111,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         s->HEVClc = NULL;
     av_freep(&s->HEVClcList[0]);
 
-    for (i = 0; i < s->pkt.nals_allocated; i++) {
-        av_freep(&s->pkt.nals[i].rbsp_buffer);
-        av_freep(&s->pkt.nals[i].skipped_bytes_pos);
-    }
-    av_freep(&s->pkt.nals);
-    s->pkt.nals_allocated = 0;
+    ff_h2645_packet_uninit(&s->pkt);
 
     return 0;
 }
