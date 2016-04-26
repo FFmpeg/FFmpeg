@@ -1472,7 +1472,7 @@ again:
                     (h->nal_unit_type == NAL_IDR_SLICE);
 
                 if (h->nal_unit_type == NAL_IDR_SLICE ||
-                    h->recovery_frame == h->frame_num) {
+                    (h->recovery_frame == h->frame_num && h->nal_ref_idc)) {
                     h->recovery_frame         = -1;
                     h->cur_pic_ptr->recovered = 1;
                 }
