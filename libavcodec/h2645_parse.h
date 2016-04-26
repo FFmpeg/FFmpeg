@@ -38,12 +38,23 @@ typedef struct H2645NAL {
 
     GetBitContext gb;
 
+    /**
+     * NAL unit type
+     */
     int type;
+
+    /**
+     * HEVC only, nuh_temporal_id_plus_1 - 1
+     */
     int temporal_id;
 
     int skipped_bytes;
     int skipped_bytes_pos_size;
     int *skipped_bytes_pos;
+    /**
+     * H264 only, nal_ref_idc
+     */
+    int ref_idc;
 } H2645NAL;
 
 /* an input packet split into unescaped NAL units */
@@ -63,7 +74,8 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
  * Split an input packet into NAL units.
  */
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
-                          void *logctx, int is_nalff, int nal_length_size);
+                          void *logctx, int is_nalff, int nal_length_size,
+                          enum AVCodecID codec_id);
 
 /**
  * Free all the allocated memory in the packet.
