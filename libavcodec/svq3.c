@@ -528,7 +528,7 @@ static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
             int nnz, tr;
             if (dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED) {
                 const int topright_avail = (sl->topright_samples_available << i) & 0x8000;
-                assert(sl->mb_y || linesize <= block_offset[i]);
+                av_assert2(sl->mb_y || linesize <= block_offset[i]);
                 if (!topright_avail) {
                     tr       = ptr[3 - linesize] * 0x01010101u;
                     topright = (uint8_t *)&tr;
