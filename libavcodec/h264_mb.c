@@ -420,8 +420,8 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
                     x_offset, y_offset, qpix_put, chroma_put,
                     pixel_shift, chroma_idc);
 
-        if (sl->use_weight == 2) {
-            int weight0 = sl->implicit_weight[refn0][refn1][sl->mb_y & 1];
+        if (sl->pwt.use_weight == 2) {
+            int weight0 = sl->pwt.implicit_weight[refn0][refn1][sl->mb_y & 1];
             int weight1 = 64 - weight0;
             luma_weight_avg(dest_y, tmp_y, sl->mb_linesize,
                             height, 5, weight0, weight1, 0);
@@ -433,24 +433,24 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
             }
         } else {
             luma_weight_avg(dest_y, tmp_y, sl->mb_linesize, height,
-                            sl->luma_log2_weight_denom,
-                            sl->luma_weight[refn0][0][0],
-                            sl->luma_weight[refn1][1][0],
-                            sl->luma_weight[refn0][0][1] +
-                            sl->luma_weight[refn1][1][1]);
+                            sl->pwt.luma_log2_weight_denom,
+                            sl->pwt.luma_weight[refn0][0][0],
+                            sl->pwt.luma_weight[refn1][1][0],
+                            sl->pwt.luma_weight[refn0][0][1] +
+                            sl->pwt.luma_weight[refn1][1][1]);
             if (!CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
                 chroma_weight_avg(dest_cb, tmp_cb, sl->mb_uvlinesize, chroma_height,
-                                  sl->chroma_log2_weight_denom,
-                                  sl->chroma_weight[refn0][0][0][0],
-                                  sl->chroma_weight[refn1][1][0][0],
-                                  sl->chroma_weight[refn0][0][0][1] +
-                                  sl->chroma_weight[refn1][1][0][1]);
+                                  sl->pwt.chroma_log2_weight_denom,
+                                  sl->pwt.chroma_weight[refn0][0][0][0],
+                                  sl->pwt.chroma_weight[refn1][1][0][0],
+                                  sl->pwt.chroma_weight[refn0][0][0][1] +
+                                  sl->pwt.chroma_weight[refn1][1][0][1]);
                 chroma_weight_avg(dest_cr, tmp_cr, sl->mb_uvlinesize, chroma_height,
-                                  sl->chroma_log2_weight_denom,
-                                  sl->chroma_weight[refn0][0][1][0],
-                                  sl->chroma_weight[refn1][1][1][0],
-                                  sl->chroma_weight[refn0][0][1][1] +
-                                  sl->chroma_weight[refn1][1][1][1]);
+                                  sl->pwt.chroma_log2_weight_denom,
+                                  sl->pwt.chroma_weight[refn0][0][1][0],
+                                  sl->pwt.chroma_weight[refn1][1][1][0],
+                                  sl->pwt.chroma_weight[refn0][0][1][1] +
+                                  sl->pwt.chroma_weight[refn1][1][1][1]);
             }
         }
     } else {
@@ -462,19 +462,19 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
                     qpix_put, chroma_put, pixel_shift, chroma_idc);
 
         luma_weight_op(dest_y, sl->mb_linesize, height,
-                       sl->luma_log2_weight_denom,
-                       sl->luma_weight[refn][list][0],
-                       sl->luma_weight[refn][list][1]);
+                       sl->pwt.luma_log2_weight_denom,
+                       sl->pwt.luma_weight[refn][list][0],
+                       sl->pwt.luma_weight[refn][list][1]);
         if (!CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
-            if (sl->use_weight_chroma) {
+            if (sl->pwt.use_weight_chroma) {
                 chroma_weight_op(dest_cb, sl->mb_uvlinesize, chroma_height,
-                                 sl->chroma_log2_weight_denom,
-                                 sl->chroma_weight[refn][list][0][0],
-                                 sl->chroma_weight[refn][list][0][1]);
+                                 sl->pwt.chroma_log2_weight_denom,
+                                 sl->pwt.chroma_weight[refn][list][0][0],
+                                 sl->pwt.chroma_weight[refn][list][0][1]);
                 chroma_weight_op(dest_cr, sl->mb_uvlinesize, chroma_height,
-                                 sl->chroma_log2_weight_denom,
-                                 sl->chroma_weight[refn][list][1][0],
-                                 sl->chroma_weight[refn][list][1][1]);
+                                 sl->pwt.chroma_log2_weight_denom,
+                                 sl->pwt.chroma_weight[refn][list][1][0],
+                                 sl->pwt.chroma_weight[refn][list][1][1]);
             }
         }
     }
