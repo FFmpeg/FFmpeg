@@ -621,10 +621,14 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,  kCFBooleanTrue);
 #endif
 
-    status = create_cv_pixel_buffer_info(avctx, &pixel_buffer_info);
-    if (status) {
-        CFRelease(enc_info);
-        return status;
+    if (avctx->pix_fmt != AV_PIX_FMT_VIDEOTOOLBOX) {
+        status = create_cv_pixel_buffer_info(avctx, &pixel_buffer_info);
+        if (status) {
+            CFRelease(enc_info);
+            return status;
+        }
+    } else {
+        pixel_buffer_info = NULL;
     }
 
     status = VTCompressionSessionCreate(
@@ -659,7 +663,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     }
 #endif
 
-    CFRelease(pixel_buffer_info);
+    if (pixel_buffer_info) CFRelease(pixel_buffer_info);
     CFRelease(enc_info);
 
     if (status || !vtctx->session) {
@@ -1227,6 +1231,17 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
     CVPixelBufferPoolRef pix_buf_pool;
     VTEncContext* vtctx = avctx->priv_data;
 
+
+    if (avctx->pix_fmt == AV_PIX_FMT_VIDEOTOOLBOX) {
+        av_assert0(frame->format == AV_PIX_FMT_VIDEOTOOLBOX);
+
+        *cv_img = (CVPixelBufferRef)frame->data[3];
+        av_assert0(*cv_img);
+
+        CFRetain(*cv_img);
+        return 0;
+    }
+
     memset(widths,  0, sizeof(widths));
     memset(heights, 0, sizeof(heights));
     memset(strides, 0, sizeof(strides));
@@ -1423,6 +1438,7 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
 }
 
 static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_VIDEOTOOLBOX,
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NONE
