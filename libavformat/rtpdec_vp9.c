@@ -222,8 +222,64 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
      *   X: 1 if this layer index has an extended relative Picture ID.
      */
     if (has_ss_data) {
-        avpriv_report_missing_feature(ctx, "VP9 scalability structure data");
-        return AVERROR_PATCHWELCOME;
+        int n_s, y, g, i;
+        if (len < 1) {
+            av_log(ctx, AV_LOG_ERROR, "Too short RTP/VP9 packet\n");
+            return AVERROR_INVALIDDATA;
+        }
+        n_s = buf[0] >> 5;
+        y = !!(buf[0] & 0x10);
+        g = !!(buf[0] & 0x08);
+        buf++;
+        len--;
+        if (n_s > 0) {
+            avpriv_report_missing_feature(ctx, "VP9 scalability structure with multiple layers");
+            return AVERROR_PATCHWELCOME;
+        }
+        if (y) {
+            if (len < 4 * (n_s + 1)) {
+                av_log(ctx, AV_LOG_ERROR, "Too short RTP/VP9 packet\n");
+                return AVERROR_INVALIDDATA;
+            }
+            for (i = 0; i < n_s + 1; i++) {
+                av_unused int w, h;
+                w = AV_RB16(buf);
+                h = AV_RB16(buf + 2);
+                buf += 4;
+                len -= 4;
+            }
+        }
+        if (g) {
+            int n_g;
+            if (len < 1) {
+                av_log(ctx, AV_LOG_ERROR, "Too short RTP/VP9 packet\n");
+                return AVERROR_INVALIDDATA;
+            }
+            n_g = buf[0];
+            buf++;
+            len--;
+            for (i = 0; i < n_g; i++) {
+                av_unused int t, u, r, j;
+                if (len < 1) {
+                    av_log(ctx, AV_LOG_ERROR, "Too short RTP/VP9 packet\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                t = buf[0] >> 5;
+                u = !!(buf[0] & 0x10);
+                r = (buf[0] >> 2) & 0x03;
+                buf++;
+                len--;
+                if (len < r) {
+                    av_log(ctx, AV_LOG_ERROR, "Too short RTP/VP9 packet\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                for (j = 0; j < r; j++) {
+                    av_unused int p_diff = buf[0];
+                    buf++;
+                    len--;
+                }
+            }
+        }
     }
 
     /*
