@@ -33,6 +33,12 @@
 #include "internal.h"
 #include <pthread.h>
 
+#if !CONFIG_VT_BT2020
+# define kCVImageBufferColorPrimaries_ITU_R_2020   CFSTR("ITU_R_2020")
+# define kCVImageBufferTransferFunction_ITU_R_2020 CFSTR("ITU_R_2020")
+# define kCVImageBufferYCbCrMatrix_ITU_R_2020      CFSTR("ITU_R_2020")
+#endif
+
 typedef enum VT_H264Profile {
     H264_PROF_AUTO,
     H264_PROF_BASELINE,
@@ -58,6 +64,9 @@ typedef struct BufNode {
 typedef struct VTEncContext {
     AVClass *class;
     VTCompressionSessionRef session;
+    CFStringRef ycbcr_matrix;
+    CFStringRef color_primaries;
+    CFStringRef transfer_function;
 
     pthread_mutex_t lock;
     pthread_cond_t  cv_sample_sent;
@@ -527,6 +536,28 @@ static int get_cv_pixel_format(AVCodecContext* avctx,
     return 0;
 }
 
+static void add_color_attr(AVCodecContext *avctx, CFMutableDictionaryRef dict) {
+    VTEncContext *vtctx = avctx->priv_data;
+
+    if (vtctx->color_primaries) {
+        CFDictionarySetValue(dict,
+                             kCVImageBufferColorPrimariesKey,
+                             vtctx->color_primaries);
+    }
+
+    if (vtctx->transfer_function) {
+        CFDictionarySetValue(dict,
+                             kCVImageBufferTransferFunctionKey,
+                             vtctx->transfer_function);
+    }
+
+    if (vtctx->ycbcr_matrix) {
+        CFDictionarySetValue(dict,
+                             kCVImageBufferYCbCrMatrixKey,
+                             vtctx->ycbcr_matrix);
+    }
+}
+
 static int create_cv_pixel_buffer_info(AVCodecContext* avctx,
                                        CFMutableDictionaryRef* dict)
 {
@@ -580,6 +611,8 @@ static int create_cv_pixel_buffer_info(AVCodecContext* avctx,
                          height_num);
     vt_release_num(&height_num);
 
+    add_color_attr(avctx, pixel_buffer_info);
+
     *dict = pixel_buffer_info;
     return 0;
 
@@ -592,6 +625,110 @@ pbinfo_nomem:
     return AVERROR(ENOMEM);
 }
 
+static int get_cv_color_primaries(AVCodecContext *avctx,
+                                  CFStringRef *primaries)
+{
+    enum AVColorPrimaries pri = avctx->color_primaries;
+    switch (pri) {
+        case AVCOL_PRI_UNSPECIFIED:
+            *primaries = NULL;
+            break;
+
+        case AVCOL_PRI_BT709:
+            *primaries = kCVImageBufferColorPrimaries_ITU_R_709_2;
+            break;
+
+        case AVCOL_PRI_BT2020:
+            *primaries = kCVImageBufferColorPrimaries_ITU_R_2020;
+            break;
+
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Color primaries %s is not supported.\n", av_color_primaries_name(pri));
+            *primaries = NULL;
+            return -1;
+    }
+
+    return 0;
+}
+
+static int get_cv_transfer_function(AVCodecContext *avctx,
+                                    CFStringRef *transfer_fnc,
+                                    CFNumberRef *gamma_level)
+{
+    enum AVColorTransferCharacteristic trc = avctx->color_trc;
+    Float32 gamma;
+    *gamma_level = NULL;
+
+    switch (trc) {
+        case AVCOL_TRC_UNSPECIFIED:
+            *transfer_fnc = NULL;
+            break;
+
+        case AVCOL_TRC_BT709:
+            *transfer_fnc = kCVImageBufferTransferFunction_ITU_R_709_2;
+            break;
+
+        case AVCOL_TRC_SMPTE240M:
+            *transfer_fnc = kCVImageBufferTransferFunction_SMPTE_240M_1995;
+            break;
+
+        case AVCOL_TRC_GAMMA22:
+            gamma = 2.2;
+            *transfer_fnc = kCVImageBufferTransferFunction_UseGamma;
+            *gamma_level = CFNumberCreate(NULL, kCFNumberFloat32Type, &gamma);
+            break;
+
+        case AVCOL_TRC_GAMMA28:
+            gamma = 2.8;
+            *transfer_fnc = kCVImageBufferTransferFunction_UseGamma;
+            *gamma_level = CFNumberCreate(NULL, kCFNumberFloat32Type, &gamma);
+            break;
+
+        case AVCOL_TRC_BT2020_10:
+        case AVCOL_TRC_BT2020_12:
+            *transfer_fnc = kCVImageBufferTransferFunction_ITU_R_2020;
+            break;
+
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Transfer function %s is not supported.\n", av_color_transfer_name(trc));
+            return -1;
+    }
+
+    return 0;
+}
+
+static int get_cv_ycbcr_matrix(AVCodecContext *avctx, CFStringRef *matrix) {
+    switch(avctx->colorspace) {
+        case AVCOL_SPC_BT709:
+            *matrix = kCVImageBufferYCbCrMatrix_ITU_R_709_2;
+            break;
+
+        case AVCOL_SPC_UNSPECIFIED:
+            *matrix = NULL;
+            break;
+
+        case AVCOL_SPC_BT470BG:
+        case AVCOL_SPC_SMPTE170M:
+            *matrix = kCVImageBufferYCbCrMatrix_ITU_R_601_4;
+            break;
+
+        case AVCOL_SPC_SMPTE240M:
+            *matrix = kCVImageBufferYCbCrMatrix_SMPTE_240M_1995;
+            break;
+
+        case AVCOL_SPC_BT2020_NCL:
+            *matrix = kCVImageBufferYCbCrMatrix_ITU_R_2020;
+            break;
+
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Color space %s is not supported.\n", av_color_space_name(avctx->colorspace));
+            return -1;
+    }
+
+    return 0;
+}
+
+
 static av_cold int vtenc_init(AVCodecContext *avctx)
 {
     CFMutableDictionaryRef enc_info;
@@ -602,6 +739,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     SInt32                 bit_rate = avctx->bit_rate;
     CFNumberRef            bit_rate_num;
     CFBooleanRef           has_b_frames_cfbool;
+    CFNumberRef            gamma_level;
     int                    status;
 
     codec_type = get_cm_codec_type(avctx->codec_id);
@@ -808,6 +946,49 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
                    status);
 
             return AVERROR_EXTERNAL;
+        }
+    }
+
+    status = get_cv_transfer_function(avctx, &vtctx->transfer_function, &gamma_level);
+    if (!status && vtctx->transfer_function) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_TransferFunction,
+                                      vtctx->transfer_function);
+
+        if (status) {
+            av_log(avctx, AV_LOG_WARNING, "Could not set transfer function: %d\n", status);
+        }
+    }
+
+    status = get_cv_ycbcr_matrix(avctx, &vtctx->ycbcr_matrix);
+    if (!status && vtctx->ycbcr_matrix) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_YCbCrMatrix,
+                                      vtctx->ycbcr_matrix);
+
+        if (status) {
+            av_log(avctx, AV_LOG_WARNING, "Could not set ycbcr matrix: %d\n", status);
+        }
+    }
+
+    status = get_cv_color_primaries(avctx, &vtctx->color_primaries);
+    if (!status && vtctx->color_primaries) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_ColorPrimaries,
+                                      vtctx->color_primaries);
+
+        if (status) {
+            av_log(avctx, AV_LOG_WARNING, "Could not set color primaries: %d\n", status);
+        }
+    }
+
+    if (!status && gamma_level) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kCVImageBufferGammaLevelKey,
+                                      gamma_level);
+
+        if (status) {
+            av_log(avctx, AV_LOG_WARNING, "Could not set gamma level: %d\n", status);
         }
     }
 
@@ -1375,9 +1556,18 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
     size_t strides[AV_NUM_DATA_POINTERS];
     int status;
     size_t contiguous_buf_size;
+#if TARGET_OS_IPHONE
     CVPixelBufferPoolRef pix_buf_pool;
     VTEncContext* vtctx = avctx->priv_data;
+#else
+    CFMutableDictionaryRef pix_buf_attachments = CFDictionaryCreateMutable(
+                                                   kCFAllocatorDefault,
+                                                   10,
+                                                   &kCFCopyStringDictionaryKeyCallBacks,
+                                                   &kCFTypeDictionaryValueCallBacks);
 
+    if (!pix_buf_attachments) return AVERROR(ENOMEM);
+#endif
 
     if (avctx->pix_fmt == AV_PIX_FMT_VIDEOTOOLBOX) {
         av_assert0(frame->format == AV_PIX_FMT_VIDEOTOOLBOX);
@@ -1467,6 +1657,10 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
         NULL,
         cv_img
     );
+
+    add_color_attr(avctx, pix_buf_attachments);
+    CVBufferSetAttachments(*cv_img, pix_buf_attachments, kCVAttachmentMode_ShouldPropagate);
+    CFRelease(pix_buf_attachments);
 
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error: Could not create CVPixelBuffer: %d\n", status);
@@ -1604,6 +1798,21 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
     pthread_mutex_destroy(&vtctx->lock);
     CFRelease(vtctx->session);
     vtctx->session = NULL;
+
+    if (vtctx->color_primaries) {
+        CFRelease(vtctx->color_primaries);
+        vtctx->color_primaries = NULL;
+    }
+
+    if (vtctx->transfer_function) {
+        CFRelease(vtctx->transfer_function);
+        vtctx->transfer_function = NULL;
+    }
+
+    if (vtctx->ycbcr_matrix) {
+        CFRelease(vtctx->ycbcr_matrix);
+        vtctx->ycbcr_matrix = NULL;
+    }
 
     return 0;
 }

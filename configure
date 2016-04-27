@@ -2079,6 +2079,7 @@ CONFIG_EXTRA="
     vp3dsp
     vp56dsp
     vp8dsp
+    vt_bt2020
     wma_freqs
     wmv2dsp
 "
@@ -2742,7 +2743,8 @@ nvenc_hevc_encoder_deps="nvenc"
 videotoolbox_deps="VideoToolbox_VideoToolbox_h"
 videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework CoreVideo"
 videotoolbox_encoder_deps="videotoolbox VTCompressionSessionPrepareToEncodeFrames"
-videotoolbox_encoder_suggest="vda_framework"
+videotoolbox_encoder_suggest="vda_framework vt_bt2020"
+vt_bt2020_deps="kCVImageBufferColorPrimaries_ITU_R_2020"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
@@ -5445,6 +5447,7 @@ check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h
 check_header VideoToolbox/VideoToolbox.h
 check_func_headers VideoToolbox/VTCompressionSession.h VTCompressionSessionPrepareToEncodeFrames -framework VideoToolbox
+enabled videotoolbox && check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferColorPrimaries_ITU_R_2020 -framework CoreVideo
 check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h
