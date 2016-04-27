@@ -42,6 +42,7 @@ typedef struct LibRTMFPContext {
     int videoUnbuffered;
     int p2pPublishing;
     char* peerId;
+    char* netgroup;
     char* publication;
     /*RTMP rtmp;
     char *app;
@@ -133,6 +134,8 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
 
+    if (ctx->netgroup)
+        res = RTMFP_Connect2Group(ctx->id, ctx->netgroup, ctx->publication, flags & AVIO_FLAG_WRITE, 0.2, 8);
     if (ctx->peerId)
         res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication);
     else if (ctx->p2pPublishing)
@@ -218,6 +221,7 @@ static const AVOption options[] = {
     {"rtmfp_videoUnbuffered", "Unbuffered video mode (default to false)", OFFSET(videoUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"rtmfp_peerId", "Connect to a peer for playing", OFFSET(peerId), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmfp_p2pPublishing", "Publish the stream in p2p mode (default to false)", OFFSET(p2pPublishing), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
+    {"netgroup", "Publish/Play the stream into a NetGroup (default to false)", OFFSET(netgroup), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
 
