@@ -721,6 +721,9 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
         mb_type = MB_TYPE_16x16;
     } else if (mb_type == 8 || mb_type == 33) {   /* INTRA4x4 */
+        int8_t *i4x4       = sl->intra4x4_pred_mode + h->mb2br_xy[sl->mb_xy];
+        int8_t *i4x4_cache = sl->intra4x4_pred_mode_cache;
+
         memset(sl->intra4x4_pred_mode_cache, -1, 8 * 5 * sizeof(int8_t));
 
         if (mb_type == 8) {
@@ -766,7 +769,10 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                 memset(&sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i], DC_PRED, 4);
         }
 
-        write_back_intra_pred_mode(h, sl);
+        AV_COPY32(i4x4, i4x4_cache + 4 + 8 * 4);
+        i4x4[4] = i4x4_cache[7 + 8 * 3];
+        i4x4[5] = i4x4_cache[7 + 8 * 2];
+        i4x4[6] = i4x4_cache[7 + 8 * 1];
 
         if (mb_type == 8) {
             ff_h264_check_intra4x4_pred_mode(h, sl);
