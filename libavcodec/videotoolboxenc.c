@@ -706,9 +706,14 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         CFNumberRef interval = CFNumberCreate(kCFAllocatorDefault,
                                               kCFNumberIntType,
                                               &avctx->gop_size);
+        if (!interval) {
+            return AVERROR(ENOMEM);
+        }
+
         status = VTSessionSetProperty(vtctx->session,
                                       kVTCompressionPropertyKey_MaxKeyFrameInterval,
                                       interval);
+        CFRelease(interval);
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting 'max key-frame interval' property: %d\n", status);
