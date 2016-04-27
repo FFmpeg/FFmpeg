@@ -41,8 +41,8 @@
 #include "mpeg12vlc.h"
 
 #define EA_PREAMBLE_SIZE    8
-#define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
-#define MADm_TAG MKTAG('M', 'A', 'D', 'm')    /* MAD p-frame */
+#define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD I-frame */
+#define MADm_TAG MKTAG('M', 'A', 'D', 'm')    /* MAD P-frame */
 #define MADe_TAG MKTAG('M', 'A', 'D', 'e')    /* MAD lqp-frame */
 
 typedef struct MadContext {

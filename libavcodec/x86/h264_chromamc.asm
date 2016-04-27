@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* MMX/SSSE3-optimized functions for H264 chroma MC
+;* MMX/SSSE3-optimized functions for H.264 chroma MC
 ;* Copyright (c) 2005 Zoltan Hidvegi <hzoli -a- hzoli -d- com>,
 ;*               2005-2008 Loren Merritt
 ;*

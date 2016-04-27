@@ -19,7 +19,7 @@ are used to precisely specify which stream(s) does a given option belong to.
 
 A stream specifier is a string generally appended to the option name and
 separated from it by a colon. E.g. @code{-codec:a:1 ac3} option contains
-@code{a:1} stream specifer, which matches the second audio stream. Therefore it
+@code{a:1} stream specifier, which matches the second audio stream. Therefore it
 would select the ac3 codec for the second audio stream.
 
 A stream specifier can match several stream, the option is then applied to all

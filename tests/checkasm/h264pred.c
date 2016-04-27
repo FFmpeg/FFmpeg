@@ -29,7 +29,7 @@
 static const int codec_ids[4] = { AV_CODEC_ID_H264, AV_CODEC_ID_VP8, AV_CODEC_ID_RV40, AV_CODEC_ID_SVQ3 };
 
 static const char * const pred4x4_modes[4][15] = {
-    { /* H264 */
+    { /* H.264 */
         [VERT_PRED           ] = "vertical",
         [HOR_PRED            ] = "horizontal",
         [DC_PRED             ] = "dc",
@@ -65,7 +65,7 @@ static const char * const pred4x4_modes[4][15] = {
 };
 
 static const char * const pred8x8_modes[4][11] = {
-    { /* H264 */
+    { /* H.264 */
         [DC_PRED8x8              ] = "dc",
         [HOR_PRED8x8             ] = "horizontal",
         [VERT_PRED8x8            ] = "vertical",
@@ -92,7 +92,7 @@ static const char * const pred8x8_modes[4][11] = {
 };
 
 static const char * const pred16x16_modes[4][9] = {
-    { /* H264 */
+    { /* H.264 */
         [DC_PRED8x8     ] = "dc",
         [HOR_PRED8x8    ] = "horizontal",
         [VERT_PRED8x8   ] = "vertical",

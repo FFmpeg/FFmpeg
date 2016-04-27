@@ -23,7 +23,7 @@ player. See @file{doc/examples/output.c} to use it to generate
 audio or video streams.
 @end itemize
 
-@section Integrating libav in your program
+@section Integrating Libav in your program
 
 Shared libraries should be used whenever is possible in order to reduce
 the effort distributors have to pour to support programs and to ensure
@@ -617,7 +617,7 @@ least make sure that it does not break anything.
 If the code changed has already a test present in FATE you should run it,
 otherwise it is advised to add it.
 
-Improvements to codec or demuxer might change the FATE results. Make sure
+Improvements to a codec or demuxer might change the FATE results. Make sure
 to commit the update reference with the change and to explain in the comment
 why the expected result changed.
 

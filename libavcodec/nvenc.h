@@ -129,7 +129,7 @@ typedef struct NVENCContext {
     enum AVPixelFormat data_pix_fmt;
 
     /* timestamps of the first two frames, for computing the first dts
-     * when b-frames are present */
+     * when B-frames are present */
     int64_t initial_pts[2];
     int first_packet_output;
 

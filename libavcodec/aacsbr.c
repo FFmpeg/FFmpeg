@@ -130,7 +130,7 @@ av_cold void ff_aac_sbr_init(void)
 /** Places SBR in pure upsampling mode. */
 static void sbr_turnoff(SpectralBandReplication *sbr) {
     sbr->start = 0;
-    // Init defults used in pure upsampling mode
+    // Init defaults used in pure upsampling mode
     sbr->kx[1] = 32; //Typo in spec, kx' inits to 32
     sbr->m[1] = 0;
     // Reset values for first SBR header

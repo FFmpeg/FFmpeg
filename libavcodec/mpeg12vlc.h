@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 VLC
+ * MPEG-1/2 VLC
  * copyright (c) 2000,2001 Fabrice Bellard
  * copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * MPEG1/2 VLC.
+ * MPEG-1/2 VLC.
  */
 
 #ifndef AVCODEC_MPEG12VLC_H

@@ -641,7 +641,7 @@ For DXVA2, this option should contain the number of the display adapter to use.
 If this option is not specified, the default adapter is used.
 
 @item qsv
-For QSV, this option corresponds to the valus of MFX_IMPL_* . Allowed values
+For QSV, this option corresponds to the values of MFX_IMPL_* . Allowed values
 are:
 @table @option
 @item auto
@@ -886,7 +886,7 @@ avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
 @item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
-Set bitstream filters for matching streams. @var{bistream_filters} is
+Set bitstream filters for matching streams. @var{bitstream_filters} is
 a comma-separated list of bitstream filters. Use the @code{-bsfs} option
 to get the list of bitstream filters.
 @example

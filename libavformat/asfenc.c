@@ -209,7 +209,7 @@ typedef struct ASFContext {
     uint32_t seqno;
     int is_streamed;
     ASFStream streams[128];              ///< it's max number and it's not that big
-    /* non streamed additonnal info */
+    /* non-streamed additional info */
     uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     uint64_t duration;                   ///< in ms
     /* packet filling */
@@ -446,7 +446,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     avio_wl16(pb, 0);
     end_header(pb, hpos);
 
-    /* title and other infos */
+    /* title and other info */
     if (has_title) {
         int len;
         uint8_t *buf;

@@ -41,7 +41,7 @@
 // see Ref 2.2.1.8
 #define USERAGENT  "User-Agent: NSPlayer/4.1.0.3856\r\n"
 // see Ref 2.2.1.4.33
-// the guid value can be changed to any valid value.
+// the GUID value can be changed to any valid value.
 #define CLIENTGUID "Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}\r\n"
 
 // see Ref 2.2.3 for packet type define:

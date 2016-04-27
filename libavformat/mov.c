@@ -1141,7 +1141,7 @@ static int mov_read_fiel(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-/* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
+/* FIXME modify QDM2/SVQ3/H.264 decoders to take full atom as extradata */
 static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -1373,7 +1373,7 @@ static int mov_codec_id(AVStream *st, uint32_t format)
     if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO && id > 0) {
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     } else if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
-               /* skip old asf mpeg4 tag */
+               /* skip old ASF MPEG-4 tag */
                format && format != MKTAG('m','p','4','s')) {
         id = ff_codec_get_id(ff_codec_movvideo_tags, format);
         if (id <= 0)
@@ -1427,7 +1427,7 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     /* codec_tag YV12 triggers an UV swap in rawdec.c */
     if (!memcmp(codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25))
         st->codecpar->codec_tag = MKTAG('I', '4', '2', '0');
-    /* Flash Media Server uses tag H263 with Sorenson Spark */
+    /* Flash Media Server uses tag H.263 with Sorenson Spark */
     if (st->codecpar->codec_tag == MKTAG('H','2','6','3') &&
         !memcmp(codec_name, "Sorenson H263", 13))
         st->codecpar->codec_id = AV_CODEC_ID_FLV1;

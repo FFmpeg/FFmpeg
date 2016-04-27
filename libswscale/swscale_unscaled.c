@@ -943,7 +943,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                             COPY16TO9_OR_10(AV_RL16, AV_WL16);
                         }
                     }
-                } else /* 8bit */ {
+                } else /* 8 bits */ {
 #define COPY8TO9_OR_10(wfunc) \
                     if (shiftonly) { \
                         for (i = 0; i < height; i++) { \

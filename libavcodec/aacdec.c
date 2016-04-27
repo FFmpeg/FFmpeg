@@ -1916,8 +1916,8 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
             avpriv_request_sample(ac->avctx, "SSR");
             return AVERROR_PATCHWELCOME;
         }
-        // I see no textual basis in the spec for this occuring after SSR gain
-        // control, but this is what both reference and real implmentations do
+        // I see no textual basis in the spec for this occurring after SSR gain
+        // control, but this is what both reference and real implementations do
         if (tns->present && er_syntax)
             if (decode_tns(ac, tns, gb, ics) < 0)
                 return AVERROR_INVALIDDATA;
@@ -3047,7 +3047,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
 
 struct LATMContext {
     AACContext aac_ctx;     ///< containing AACContext
-    int initialized;        ///< initilized after a valid extradata was seen
+    int initialized;        ///< initialized after a valid extradata was seen
 
     // parser data
     int audio_mux_version_A; ///< LATM syntax version

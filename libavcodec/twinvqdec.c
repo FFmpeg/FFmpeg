@@ -149,7 +149,7 @@ static int very_broken_op(int a, int b)
 /**
  * Sum to data a periodic peak of a given period, width and shape.
  *
- * @param period the period of the peak divised by 400.0
+ * @param period the period of the peak divided by 400.0
  */
 static void add_peak(int period, int width, const float *shape,
                      float ppc_gain, float *speech, int len)

@@ -58,7 +58,7 @@ static const uint8_t rv30_itype_code[9*9*2] = {
  *
  * This is really a three-dimensional matrix with dimensions
  * [-1..9][-1..9][0..9]. The first and second coordinates are
- * detemined by the top and left neighbors (-1 if unavailable).
+ * determined by the top and left neighbors (-1 if unavailable).
  */
 static const uint8_t rv30_itype_from_context[900] = {
     0, 9, 9, 9, 9, 9, 9, 9, 9,

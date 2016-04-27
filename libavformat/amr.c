@@ -1,6 +1,6 @@
 /*
  * amr file format
- * Copyright (c) 2001 ffmpeg project
+ * Copyright (c) 2001 FFmpeg project
  *
  * This file is part of Libav.
  *
@@ -115,7 +115,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
     }
 
-    // FIXME this is wrong, this should rather be in a AVParset
+    // FIXME this is wrong, this should rather be in an AVParser
     toc  = avio_r8(s->pb);
     mode = (toc >> 3) & 0x0F;
 

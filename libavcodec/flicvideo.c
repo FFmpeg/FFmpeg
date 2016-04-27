@@ -1,6 +1,6 @@
 /*
  * FLI/FLC Animation Video Decoder
- * Copyright (C) 2003, 2004 the ffmpeg project
+ * Copyright (C) 2003, 2004 The FFmpeg project
  *
  * This file is part of Libav.
  *
@@ -115,7 +115,7 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         case 8  : avctx->pix_fmt = AV_PIX_FMT_PAL8; break;
         case 15 : avctx->pix_fmt = AV_PIX_FMT_RGB555; break;
         case 16 : avctx->pix_fmt = AV_PIX_FMT_RGB565; break;
-        case 24 : avctx->pix_fmt = AV_PIX_FMT_BGR24; /* Supposedly BGR, but havent any files to test with */
+        case 24 : avctx->pix_fmt = AV_PIX_FMT_BGR24; /* Supposedly BGR, but no files to test with */
                   av_log(avctx, AV_LOG_ERROR, "24Bpp FLC/FLX is unsupported due to no test files.\n");
                   return AVERROR_PATCHWELCOME;
         default :
@@ -725,7 +725,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
 
     /* Should not get  here, ever as the pix_fmt is processed */
     /* in flic_decode_init and the above if should deal with */
-    /* the finite set of possibilites allowable by here. */
+    /* the finite set of possibilities allowable by here. */
     /* But in case we do, just error out. */
     av_log(avctx, AV_LOG_ERROR, "Unknown FLC format, my science cannot explain how this happened.\n");
     return AVERROR_BUG;

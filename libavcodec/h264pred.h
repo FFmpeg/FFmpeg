@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 prediction functions.
+ * H.264 / AVC / MPEG-4 prediction functions.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -75,7 +75,7 @@
 #define TOP_DC_PRED8x8         5
 #define DC_128_PRED8x8         6
 
-// H264/SVQ3 (8x8) specific
+// H.264/SVQ3 (8x8) specific
 #define ALZHEIMER_DC_L0T_PRED8x8  7
 #define ALZHEIMER_DC_0LT_PRED8x8  8
 #define ALZHEIMER_DC_L00_PRED8x8  9

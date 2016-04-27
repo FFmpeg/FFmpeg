@@ -109,7 +109,7 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size,
         return z_scan_block_avail(s, x0, y0, xA1, yA1);
 }
 
-//check if the two luma locations belong to the same mostion estimation region
+//check if the two luma locations belong to the same motion estimation region
 static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->ps.pps->log2_parallel_merge_level;

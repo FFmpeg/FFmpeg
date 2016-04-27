@@ -79,7 +79,7 @@ static uint32_t get_generic_seed(void)
     if (!sha) {
         uint32_t seed = 0;
         int j;
-        // Unable to allocate an sha context, just xor the buffer together
+        // Unable to allocate an SHA context, just XOR the buffer together
         // to create something hopefully unique.
         for (j = 0; j < 512; j++)
             seed ^= buffer[j];

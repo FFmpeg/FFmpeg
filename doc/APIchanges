@@ -23,7 +23,7 @@ API changes, most recent first:
 
 2016-xx-xx - xxxxxxx - lavc 57.15.0 - avcodec.h
   Add a new bitstream filtering API working with AVPackets.
-  Deprecate the old bistream filtering API.
+  Deprecate the old bitstream filtering API.
 
 2016-xx-xx - xxxxxxx - lavfi 6.3.0 - avfilter.h
   Add AVFilterContext.hw_device_ctx.
@@ -501,7 +501,7 @@ API changes, most recent first:
 
 2013-08-05 - f824535 - lavc 55.13.0 - avcodec.h
   Deprecate the bitstream-related members from struct AVVDPAUContext.
-  The bistream buffers no longer need to be explicitly freed.
+  The bitstream buffers no longer need to be explicitly freed.
 
 2013-08-05 - 549294f - lavc 55.12.0 - avcodec.h
   Deprecate the CODEC_CAP_HWACCEL_VDPAU codec capability. Use CODEC_CAP_HWACCEL
@@ -591,7 +591,7 @@ lavd 54.0.0, lavfi 3.5.0
                 * base -- is now stored in AVBufferRef
                 * reference, type, buffer_hints -- are unnecessary in the new API
                 * hwaccel_picture_private, owner, thread_opaque -- should not
-                  have been acessed from outside of lavc
+                  have been accessed from outside of lavc
                 * qscale_table, qstride, qscale_type, mbskip_table, motion_val,
                   mb_type, dct_coeff, ref_index -- mpegvideo-specific tables,
                   which are not exported anymore.

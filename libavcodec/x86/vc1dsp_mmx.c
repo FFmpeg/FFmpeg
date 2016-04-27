@@ -81,7 +81,7 @@
     "movq      %%mm"#R1", "#OFF"(%1)   \n\t"    \
     "add       %2, %0                  \n\t"
 
-/** Sacrifying mm6 allows to pipeline loads from src */
+/** Sacrificing mm6 allows to pipeline loads from src */
 static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                        const uint8_t *src, x86_reg stride,
                                        int rnd, int64_t shift)
@@ -165,7 +165,7 @@ VC1_HOR_16b_SHIFT2(OP_AVG, avg_)
 
 /**
  * Purely vertical or horizontal 1/2 shift interpolation.
- * Sacrify mm6 for *9 factor.
+ * Sacrifice mm6 for *9 factor.
  */
 #define VC1_SHIFT2(OP, OPNAME)\
 static void OPNAME ## vc1_shift2_mmx(uint8_t *dst, const uint8_t *src,\
@@ -223,7 +223,7 @@ VC1_SHIFT2(OP_AVG, avg_)
 /**
  * Core of the 1/4 and 3/4 shift bicubic interpolation.
  *
- * @param UNPACK  Macro unpacking arguments from 8 to 16bits (can be empty).
+ * @param UNPACK  Macro unpacking arguments from 8 to 16 bits (can be empty).
  * @param MOVQ    "movd 1" or "movq 2", if data read is already unpacked.
  * @param A1      Address of 1st tap (beware of unpacked/packed).
  * @param A2      Address of 2nd tap
@@ -263,7 +263,7 @@ VC1_SHIFT2(OP_AVG, avg_)
      "paddw     %%mm2, %%mm4    \n\t" /* 4,53,18,-3 */
 
 /**
- * Macro to build the vertical 16bits version of vc1_put_shift[13].
+ * Macro to build the vertical 16 bits version of vc1_put_shift[13].
  * Here, offset=src_stride. Parameters passed A1 to A4 must use
  * %3 (src_stride) and %4 (3*src_stride).
  *
@@ -320,8 +320,8 @@ vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
 }
 
 /**
- * Macro to build the horizontal 16bits version of vc1_put_shift[13].
- * Here, offset=16bits, so parameters passed A1 to A4 should be simple.
+ * Macro to build the horizontal 16 bits version of vc1_put_shift[13].
+ * Here, offset=16 bits, so parameters passed A1 to A4 should be simple.
  *
  * @param  NAME   Either 1 or 3
  * @see MSPEL_FILTER13_CORE for information on A1->A4
@@ -357,7 +357,7 @@ OPNAME ## vc1_hor_16b_ ## NAME ## _mmx(uint8_t *dst, x86_reg stride,    \
 }
 
 /**
- * Macro to build the 8bits, any direction, version of vc1_put_shift[13].
+ * Macro to build the 8 bits, any direction, version of vc1_put_shift[13].
  * Here, offset=src_stride. Parameters passed A1 to A4 must use
  * %3 (offset) and %4 (3*offset).
  *

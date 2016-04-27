@@ -1080,7 +1080,7 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     enc->out_buf = pkt->data;
 
-    /* Check for I frame */
+    /* Check for I-frame */
     if (enc->framesSinceKeyframe == avctx->gop_size)
         enc->framesSinceKeyframe = 0;
 

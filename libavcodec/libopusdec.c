@@ -73,7 +73,7 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
         const uint8_t *vorbis_offset = ff_vorbis_channel_layout_offsets[avc->channels - 1];
         int ch;
 
-        /* Remap channels from vorbis order to libav order */
+        /* Remap channels from Vorbis order to libav order */
         for (ch = 0; ch < avc->channels; ch++)
             mapping_arr[ch] = mapping[vorbis_offset[ch]];
         mapping = mapping_arr;

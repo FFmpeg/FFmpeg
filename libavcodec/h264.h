@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 codec.
+ * H.264 / AVC / MPEG-4 part10 codec.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -418,7 +418,7 @@ typedef struct H264SliceContext {
 
     DECLARE_ALIGNED(8, uint16_t, sub_mb_type)[4];
 
-    ///< as a dct coeffecient is int32_t in high depth, we need to reserve twice the space.
+    ///< as a DCT coefficient is int32_t in high depth, we need to reserve twice the space.
     DECLARE_ALIGNED(16, int16_t, mb)[16 * 48 * 2];
     DECLARE_ALIGNED(16, int16_t, mb_luma_dc)[3][16 * 2];
     ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either
@@ -456,7 +456,7 @@ typedef struct H264Context {
 
     H2645Packet pkt;
 
-    int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
+    int pixel_shift;    ///< 0 for 8-bit H.264, 1 for high-bit-depth H.264
 
     /* coded dimensions -- 16 * mb w/h */
     int width, height;
@@ -534,7 +534,7 @@ typedef struct H264Context {
     int nal_unit_type;
 
     /**
-     * Used to parse AVC variant of h264
+     * Used to parse AVC variant of H.264
      */
     int is_avc;           ///< this flag is != 0 if codec is avc1
     int nal_length_size;  ///< Number of bytes used for nal length (1, 2 or 4)
@@ -580,7 +580,7 @@ typedef struct H264Context {
      * @{
      */
     /**
-     * current slice number, used to initalize slice_num of each thread/context
+     * current slice number, used to initialize slice_num of each thread/context
      */
     int current_slice;
 

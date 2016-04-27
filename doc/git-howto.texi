@@ -399,7 +399,7 @@ to ensure no local changes still need to be committed and that no local
 changes may have thrown off the results of your testing.
 @end itemize
 
-Next let the code pass through a full run of our testsuite. Before you do,
+Next let the code pass through a full run of our test suite. Before you do,
 the command @command{make fate-rsync} will update the test samples. Changes
 to the samples set are not very common and commits depending on samples
 changes are delayed for at least 24 hours to allow the new samples to

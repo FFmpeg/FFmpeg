@@ -419,7 +419,7 @@ static int send_startup_packet(MMSTContext *mmst)
     char data_string[256];
     MMSContext *mms = &mmst->mms;
     // SubscriberName is defined in MS specification linked below.
-    // The guid value can be any valid value.
+    // The GUID value can be any valid value.
     // http://download.microsoft.com/
     // download/9/5/E/95EF66AF-9026-4BB0-A41D-A4F81802D92C/%5BMS-WMSP%5D.pdf
     snprintf(data_string, sizeof(data_string),
@@ -515,7 +515,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
             sizeof(mmst->path), uri);
 
     if(port<0)
-        port = 1755; // defaut mms protocol port
+        port = 1755; // default MMS protocol port
 
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);

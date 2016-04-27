@@ -803,8 +803,8 @@ Use @var{0} to disable alpha plane coding.
 @subsection Speed considerations
 
 In the default mode of operation the encoder has to honor frame constraints
-(i.e. not produc frames with size bigger than requested) while still making
-output picture as good as possible.
+(i.e. not produce frames with a size larger than requested) while still making
+the output picture as good as possible.
 A frame containing a lot of small details is harder to compress and the encoder
 would spend more time searching for appropriate quantizers for each slice.
 

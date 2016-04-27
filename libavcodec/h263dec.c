@@ -117,7 +117,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     }
     s->codec_id    = avctx->codec->id;
 
-    /* for h263, we allocate the images after having read the header */
+    /* for H.263, we allocate the images after having read the header */
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
         avctx->codec->id != AV_CODEC_ID_MPEG4) {
         avctx->pix_fmt = h263_get_format(avctx);
@@ -422,7 +422,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return ret;
 
     if (!s->context_initialized)
-        // we need the idct permutaton for reading a custom matrix
+        // we need the idct permutation for reading a custom matrix
         ff_mpv_idct_init(s);
 
     /* let's go :-) */
@@ -494,9 +494,9 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_old_c)
     }
 
-    /* After H263 & mpeg4 header decode we have the height, width,
+    /* After H.263 & MPEG-4 header decode we have the height, width,
      * and other parameters. So then we could init the picture.
-     * FIXME: By the way H263 decoder is evolving it should have
+     * FIXME: By the way H.263 decoder is evolving it should have
      * an H263EncContext */
     if (s->width  != avctx->coded_width  ||
         s->height != avctx->coded_height ||

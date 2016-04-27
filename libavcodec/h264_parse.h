@@ -33,7 +33,7 @@ typedef struct H264PredWeightTable {
     int chroma_log2_weight_denom;
     int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
-    // The following 2 can be changed to int8_t but that causes 10cpu cycles speedloss
+    // The following 2 can be changed to int8_t but that causes a 10 CPU cycles speed loss
     int luma_weight[48][2][2];
     int chroma_weight[48][2][2][2];
     int implicit_weight[48][48][2];

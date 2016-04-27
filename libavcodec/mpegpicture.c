@@ -59,8 +59,8 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     int alloc_size = FFALIGN(FFABS(linesize) + 32, 32);
 
     // edge emu needs blocksize + filter length - 1
-    // (= 17x17 for  halfpel / 21x21 for  h264)
-    // VC1 computes luma and chroma simultaneously and needs 19X19 + 9x9
+    // (= 17x17 for  halfpel / 21x21 for H.264)
+    // VC-1 computes luma and chroma simultaneously and needs 19X19 + 9x9
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     FF_ALLOCZ_OR_GOTO(avctx, sc->edge_emu_buffer, alloc_size * 2 * 24,

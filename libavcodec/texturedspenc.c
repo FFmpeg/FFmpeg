@@ -213,7 +213,7 @@ static unsigned int match_colors(const uint8_t *block, ptrdiff_t stride,
      * the same inside that subinterval.
      *
      * Relying on this 1d approximation isn't always optimal in terms of
-     * euclidean distance, but it's very close and a lot faster.
+     * Euclidean distance, but it's very close and a lot faster.
      *
      * http://cbloomrants.blogspot.com/2008/12/12-08-08-dxtc-summary.html */
     c0_point   = (stops[1] + stops[3]) >> 1;
@@ -309,7 +309,7 @@ static void optimize_colors(const uint8_t *block, ptrdiff_t stride,
     if (fabs(vfb) > magn)
         magn = fabs(vfb);
 
-    /* if magnitudo is too small, default to luminance */
+    /* if magnitude is too small, default to luminance */
     if (magn < 4.0f) {
         /* JPEG YCbCr luma coefs, scaled by 1000 */
         v_r = 299;

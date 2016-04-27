@@ -140,9 +140,9 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
     len = get_bits(&s->gb, 16) - 2;
 
     while (len >= 65) {
-        /* only 8 bit precision handled */
+        /* only 8-bit precision handled */
         if (get_bits(&s->gb, 4) != 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "dqt: 16bit precision\n");
+            av_log(s->avctx, AV_LOG_ERROR, "dqt: 16-bit precision\n");
             return -1;
         }
         index = get_bits(&s->gb, 4);
@@ -155,7 +155,7 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
             s->quant_matrixes[index][j] = get_bits(&s->gb, 8);
         }
 
-        // XXX FIXME finetune, and perhaps add dc too
+        // XXX FIXME fine-tune, and perhaps add dc too
         s->qscale[index] = FFMAX(s->quant_matrixes[index][s->scantable.permutated[1]],
                                  s->quant_matrixes[index][s->scantable.permutated[8]]) >> 1;
         av_log(s->avctx, AV_LOG_DEBUG, "qscale[%d]: %d\n",
@@ -1271,9 +1271,9 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             av_log(s->avctx, AV_LOG_INFO,
                    "Pegasus lossless jpeg header found\n");
         skip_bits(&s->gb, 16); /* version ? */
-        skip_bits(&s->gb, 16); /* unknwon always 0? */
-        skip_bits(&s->gb, 16); /* unknwon always 0? */
-        skip_bits(&s->gb, 16); /* unknwon always 0? */
+        skip_bits(&s->gb, 16); /* unknown always 0? */
+        skip_bits(&s->gb, 16); /* unknown always 0? */
+        skip_bits(&s->gb, 16); /* unknown always 0? */
         switch (get_bits(&s->gb, 8)) {
         case 1:
             s->rgb         = 1;

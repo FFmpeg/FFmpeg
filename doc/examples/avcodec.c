@@ -23,9 +23,9 @@
  * libavcodec API use example.
  *
  * @example avcodec.c
- * Note that this library only handles codecs (mpeg, mpeg4, etc...),
- * not file formats (avi, vob, etc...). See library 'libavformat' for the
- * format handling
+ * Note that this library only handles codecs (MPEG, MPEG-4, etc...),
+ * not file formats (AVI, VOB, etc...). See library 'libavformat' for the
+ * format handling.
  */
 
 #include <stdlib.h>
@@ -234,7 +234,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     printf("Audio decoding\n");
 
-    /* find the mpeg audio decoder */
+    /* find the MPEG audio decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
@@ -325,7 +325,7 @@ static void video_encode_example(const char *filename)
 
     printf("Video encoding\n");
 
-    /* find the mpeg1 video encoder */
+    /* find the mpeg1video encoder */
     codec = avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
@@ -424,7 +424,7 @@ static void video_encode_example(const char *filename)
         }
     }
 
-    /* add sequence end code to have a real mpeg file */
+    /* add sequence end code to have a real MPEG file */
     fwrite(endcode, 1, sizeof(endcode), f);
     fclose(f);
 
@@ -465,12 +465,12 @@ static void video_decode_example(const char *outfilename, const char *filename)
 
     av_init_packet(&avpkt);
 
-    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
+    /* set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) */
     memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     printf("Video decoding\n");
 
-    /* find the mpeg1 video decoder */
+    /* find the MPEG-1 video decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
@@ -545,9 +545,9 @@ static void video_decode_example(const char *outfilename, const char *filename)
         }
     }
 
-    /* some codecs, such as MPEG, transmit the I and P frame with a
+    /* Some codecs, such as MPEG, transmit the I- and P-frame with a
        latency of one frame. You must do the following to have a
-       chance to get the last frame of the video */
+       chance to get the last frame of the video. */
     avpkt.data = NULL;
     avpkt.size = 0;
     len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);

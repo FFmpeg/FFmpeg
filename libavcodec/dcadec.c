@@ -1348,7 +1348,7 @@ static int set_channel_layout(AVCodecContext *avctx, int channels, int num_core_
             ff_dlog(s->avctx, "\n");
         }
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Non standard configuration %d !\n", s->amode);
+        av_log(avctx, AV_LOG_ERROR, "Nonstandard configuration %d !\n", s->amode);
         return AVERROR_INVALIDDATA;
     }
 

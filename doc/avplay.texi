@@ -20,7 +20,7 @@ avplay [options] @file{input_file}
 @chapter Description
 @c man begin DESCRIPTION
 
-AVplay is a very simple and portable media player using the Libav
+avplay is a very simple and portable media player using the Libav
 libraries and the SDL library. It is mostly used as a testbed for the
 various Libav APIs.
 @c man end
@@ -171,7 +171,7 @@ Seek to percentage in file corresponding to fraction of width.
 @ignore
 
 @setfilename avplay
-@settitle AVplay media player
+@settitle avplay media player
 
 @c man begin SEEALSO
 avconv(1), avprobe(1) and the Libav HTML documentation

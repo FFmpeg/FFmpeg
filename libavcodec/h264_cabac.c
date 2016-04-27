@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 cabac decoding.
+ * H.264 / AVC / MPEG-4 part10 cabac decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -56,7 +56,7 @@ static const int8_t cabac_context_init_I[1024][2] =
     {  2,  54 }, {  3, 74 },  { -28,127 }, { -23, 104 },
     { -6,  53 }, { -1, 54 },  {  7,  51 },
 
-    /* 11 - 23 unsused for I */
+    /* 11 - 23 unused for I */
     { 0, 0 },    { 0, 0 },    { 0, 0 },      { 0, 0 },
     { 0, 0 },    { 0, 0 },    { 0, 0 },      { 0, 0 },
     { 0, 0 },    { 0, 0 },    { 0, 0 },      { 0, 0 },

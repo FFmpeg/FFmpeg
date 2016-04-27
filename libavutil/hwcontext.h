@@ -169,7 +169,7 @@ typedef struct AVHWFramesContext {
      * A pool from which the frames are allocated by av_hwframe_get_buffer().
      * This field may be set by the caller before calling av_hwframe_ctx_init().
      * The buffers returned by calling av_buffer_pool_get() on this pool must
-     * have the properties described in the documentation in the correponding hw
+     * have the properties described in the documentation in the corresponding hw
      * type's header (hwcontext_*.h). The pool will be freed strictly before
      * this struct's free() callback is invoked.
      *
@@ -377,7 +377,7 @@ void *av_hwdevice_hwconfig_alloc(AVBufferRef *device_ctx);
 /**
  * Get the constraints on HW frames given a device and the HW-specific
  * configuration to be used with that device.  If no HW-specific
- * confgiuration is provided, returns the maximum possible capabilities
+ * configuration is provided, returns the maximum possible capabilities
  * of the device.
  *
  * @param device_ctx a reference to the associated AVHWDeviceContext.

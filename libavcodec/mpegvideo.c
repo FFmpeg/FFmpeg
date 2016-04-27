@@ -61,7 +61,7 @@ static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
         block[0] = block[0] * s->y_dc_scale;
     else
         block[0] = block[0] * s->c_dc_scale;
-    /* XXX: only mpeg1 */
+    /* XXX: only MPEG-1 */
     quant_matrix = s->intra_matrix;
     for(i=1;i<=nCoeffs;i++) {
         int j= s->intra_scantable.permutated[i];
@@ -529,7 +529,7 @@ do {\
     s->next_p_frame_damaged = s1->next_p_frame_damaged;
     s->workaround_bugs      = s1->workaround_bugs;
 
-    // MPEG4 timing info
+    // MPEG-4 timing info
     memcpy(&s->last_time_base, &s1->last_time_base,
            (char *) &s1->pb_field_time + sizeof(s1->pb_field_time) -
            (char *) &s1->last_time_base);
@@ -555,7 +555,7 @@ do {\
                AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
-    // linesize dependend scratch buffer allocation
+    // linesize-dependent scratch buffer allocation
     if (!s->sc.edge_emu_buffer)
         if (s1->linesize) {
             if (ff_mpeg_framesize_alloc(s->avctx, &s->me,
@@ -570,7 +570,7 @@ do {\
             return AVERROR_BUG;
         }
 
-    // MPEG2/interlacing info
+    // MPEG-2/interlacing info
     memcpy(&s->progressive_sequence, &s1->progressive_sequence,
            (char *) &s1->rtp_mode - (char *) &s1->progressive_sequence);
 
@@ -630,7 +630,7 @@ static int init_context_frame(MpegEncContext *s)
     mb_array_size = s->mb_height * s->mb_stride;
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
 
-    /* set default edge pos, will be overriden
+    /* set default edge pos, will be overridden
      * in decode_header if needed */
     s->h_edge_pos = s->mb_width * 16;
     s->v_edge_pos = s->mb_height * 16;
@@ -649,7 +649,7 @@ static int init_context_frame(MpegEncContext *s)
     yc_size = y_size + 2   * c_size;
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->mb_index2xy, (s->mb_num + 1) * sizeof(int),
-                      fail); // error ressilience code looks cleaner with this
+                      fail); // error resilience code looks cleaner with this
     for (y = 0; y < s->mb_height; y++)
         for (x = 0; x < s->mb_width; x++)
             s->mb_index2xy[x + y * s->mb_width] = x + y * s->mb_stride;
@@ -749,7 +749,7 @@ static int init_context_frame(MpegEncContext *s)
 
     /* init macroblock skip table */
     FF_ALLOCZ_OR_GOTO(s->avctx, s->mbskip_table, mb_array_size + 2, fail);
-    // Note the + 1 is for  a quicker mpeg4 slice_end detection
+    // Note the + 1 is for  a quicker MPEG-4 slice_end detection
 
     return ff_mpeg_er_init(s);
 fail:
@@ -1063,7 +1063,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     }
 
     /* release forgotten pictures */
-    /* if (mpeg124/h263) */
+    /* if (MPEG-124 / H.263) */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         if (&s->picture[i] != s->last_picture_ptr &&
             &s->picture[i] != s->next_picture_ptr &&
@@ -1236,8 +1236,8 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     }
 
     /* set dequantizer, we can't do it during init as
-     * it might change for mpeg4 and we can't do it in the header
-     * decode as init is not called for mpeg4 there yet */
+     * it might change for MPEG-4 and we can't do it in the header
+     * decode as init is not called for MPEG-4 there yet */
     if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;

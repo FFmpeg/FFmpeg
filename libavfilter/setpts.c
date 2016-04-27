@@ -45,7 +45,7 @@ static const char *const var_names[] = {
     "INTERLACED",  ///< tell if the current frame is interlaced
     "N",           ///< frame / sample number (starting at zero)
     "PHI",         ///< golden ratio
-    "PI",          ///< greek pi
+    "PI",          ///< Greek pi
     "PREV_INPTS",  ///< previous  input PTS
     "PREV_OUTPTS", ///< previous output PTS
     "PTS",         ///< original pts in the file of the frame

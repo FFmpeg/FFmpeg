@@ -1455,7 +1455,7 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
     int buflen;
 
     /** when the frame data does not need to be concatenated, the input buffer
-        is resetted and additional bits from the previous frame are copyed
+        is reset and additional bits from the previous frame are copied
         and skipped later so that a fast byte copy is possible */
 
     if (!append) {

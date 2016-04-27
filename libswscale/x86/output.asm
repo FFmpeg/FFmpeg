@@ -50,8 +50,8 @@ SECTION .text
 ;                                     const uint8_t *dither, int offset)
 ;
 ; Scale one or $filterSize lines of source data to generate one line of output
-; data. The input is 15-bit in int16_t if $output_size is [8,10] and 19-bit in
-; int32_t if $output_size is 16. $filter is 12-bits. $filterSize is a multiple
+; data. The input is 15 bits in int16_t if $output_size is [8,10] and 19 bits in
+; int32_t if $output_size is 16. $filter is 12 bits. $filterSize is a multiple
 ; of 2. $offset is either 0 or 3. $dither holds 8 values.
 ;-----------------------------------------------------------------------------
 
@@ -125,10 +125,10 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 
 .pixelloop:
 %assign %%i 0
-    ; the rep here is for the 8bit output mmx case, where dither covers
+    ; the rep here is for the 8-bit output MMX case, where dither covers
     ; 8 pixels but we can only handle 2 pixels per register, and thus 4
     ; pixels per iteration. In order to not have to keep track of where
-    ; we are w.r.t. dithering, we unroll the mmx/8bit loop x2.
+    ; we are w.r.t. dithering, we unroll the MMX/8-bit loop x2.
 %if %1 == 8
 %assign %%repcnt 16/mmsize
 %else

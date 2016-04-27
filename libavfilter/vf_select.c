@@ -35,7 +35,7 @@
 static const char *const var_names[] = {
     "E",                 ///< Euler number
     "PHI",               ///< golden ratio
-    "PI",                ///< greek pi
+    "PI",                ///< Greek pi
 
     "TB",                ///< timebase
 

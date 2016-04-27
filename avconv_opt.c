@@ -760,7 +760,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     ic->flags |= AVFMT_FLAG_NONBLOCK;
     ic->interrupt_callback = int_cb;
 
-    /* open the input file with generic libav function */
+    /* open the input file with generic Libav function */
     err = avformat_open_input(&ic, filename, file_iformat, &o->g->format_opts);
     if (err < 0) {
         print_error(filename, err);

@@ -42,7 +42,7 @@ typedef struct GXFStreamContext {
     int pframes;
     int bframes;
     int p_per_gop;
-    int b_per_i_or_p; ///< number of B frames per I frame or P frame
+    int b_per_i_or_p; ///< number of B-frames per I-frame or P-frame
     int first_gop_closed;
     unsigned order;   ///< interleaving order
 } GXFStreamContext;

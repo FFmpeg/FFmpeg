@@ -1,5 +1,5 @@
 /*
- * Intel MediaSDK QSV based MPEG2 decoder
+ * Intel MediaSDK QSV based MPEG-2 decoder
  *
  * copyright (c) 2015 Anton Khirnov
  *

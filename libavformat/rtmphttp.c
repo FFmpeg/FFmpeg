@@ -129,7 +129,7 @@ static int rtmp_http_read(URLContext *h, uint8_t *buf, int size)
             } else {
                 if (rt->nb_bytes_read == 0) {
                     /* Wait 50ms before retrying to read a server reply in
-                     * order to reduce the number of idle requets. */
+                     * order to reduce the number of idle requests. */
                     av_usleep(50000);
                 }
 

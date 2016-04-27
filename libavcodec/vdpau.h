@@ -138,7 +138,7 @@ typedef struct AVVDPAUContext {
  * display preemption).
  *
  * @note get_format() must return AV_PIX_FMT_VDPAU if this function completes
- * succesfully.
+ * successfully.
  *
  * @param avctx decoding context whose get_format() callback is invoked
  * @param device VDPAU device handle to use for hardware acceleration

@@ -11,7 +11,7 @@
 
 @chapter Introduction
 
-FATE provides a regression testsuite embedded within the Libav build system.
+FATE provides a regression test suite embedded within the Libav build system.
 It can be run locally and optionally configured to send reports to a web
 aggregator and viewer @url{http://fate.libav.org}.
 
@@ -24,7 +24,7 @@ and provide new tests when submitting patches to add additional features.
 In order to run, FATE needs a large amount of data (samples and references)
 that is provided separately from the actual source distribution.
 
-To inform the build system about the testsuite location, pass
+To inform the build system about the test suite location, pass
 @option{--samples=<path to the samples>} to @command{configure} or set the
 @var{SAMPLES} Make variable or the @var{LIBAV_SAMPLES} environment variable
 to a suitable value.
@@ -57,7 +57,7 @@ Specific Makefile targets and Makefile variables are available:
 List all fate/regression test targets.
 
 @item fate-rsync
-Shortcut to download the fate test samples to the specified testsuite location.
+Shortcut to download the fate test samples to the specified test suite location.
 
 @item fate
 Run the FATE test suite (requires the fate-suite dataset).

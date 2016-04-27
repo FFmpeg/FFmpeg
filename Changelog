@@ -377,7 +377,7 @@ version 0.7_beta2:
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
 - ffmpeg no longer quits after the 'q' key is pressed; use 'ctrl+c' instead
-- 9bit and 10bit per sample support in the H.264 decoder
+- 9 bits and 10 bits per sample support in the H.264 decoder
 
 
 version 0.7_beta1:
@@ -732,7 +732,7 @@ version 0.4.9-pre1:
 - rate distorted optimal lambda->qp support
 - AAC encoding with libfaac
 - Sunplus JPEG codec (SP5X) support
-- use Lagrange multipler instead of QP for ratecontrol
+- use Lagrange multiplier instead of QP for ratecontrol
 - Theora/VP3 decoding support
 - XA and ADX ADPCM codecs
 - export MPEG-2 active display area / pan scan

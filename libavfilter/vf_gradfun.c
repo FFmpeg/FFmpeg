@@ -26,9 +26,9 @@
  *
  * Apply a boxblur debanding algorithm (based on the gradfun2db
  * AviSynth filter by prunedtree).
- * Foreach pixel, if it's within threshold of the blurred value, make it closer.
- * So now we have a smoothed and higher bitdepth version of all the shallow
- * gradients, while leaving detailed areas untouched.
+ * For each pixel, if it is within the threshold of the blurred value, make it
+ * closer. So now we have a smoothed and higher bitdepth version of all the
+ * shallow gradients, while leaving detailed areas untouched.
  * Dither it back to 8bit.
  */
 

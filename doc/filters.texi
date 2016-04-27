@@ -1541,7 +1541,7 @@ For more information, see
 @section gradfun
 
 Fix the banding artifacts that are sometimes introduced into nearly flat
-regions by truncation to 8bit colordepth.
+regions by truncation to 8-bit colordepth.
 Interpolate the gradients that should go where the bands are, and
 dither them.
 
@@ -1900,7 +1900,7 @@ libopencv function @code{cvSmooth}.
 Overlay one video on top of another.
 
 It takes two inputs and has one output. The first input is the "main"
-video on which the second input is overlayed.
+video on which the second input is overlaid.
 
 It accepts the following parameters:
 
@@ -2327,7 +2327,7 @@ select='not(mod(n\,100))'
 # Select only frames contained in the 10-20 time interval
 select='gte(t\,10)*lte(t\,20)'
 
-# Select only I frames contained in the 10-20 time interval
+# Select only I-frames contained in the 10-20 time interval
 select='gte(t\,10)*lte(t\,20)*eq(pict_type\,I)'
 
 # Select frames with a minimum distance of 10 seconds
@@ -2957,7 +2957,7 @@ number or a valid video frame rate abbreviation. The default value is
 
 The following graph description will generate a red source
 with an opacity of 0.2, with size "qcif" and a frame rate of 10
-frames per second, which will be overlayed over the source connected
+frames per second, which will be overlaid over the source connected
 to the pad with identifier "in":
 
 @example
@@ -3070,7 +3070,7 @@ A '|'-separated list of parameters to pass to the frei0r source.
 An example:
 @example
 # Generate a frei0r partik0l source with size 200x200 and framerate 10
-# which is overlayed on the overlay filter main input
+# which is overlaid on the overlay filter's main input
 frei0r_src=size=200x200:framerate=10:filter_name=partik0l:filter_params=1234 [overlay]; [in][overlay] overlay
 @end example
 

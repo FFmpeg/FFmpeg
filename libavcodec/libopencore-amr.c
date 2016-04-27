@@ -1,6 +1,6 @@
 /*
  * AMR Audio decoder stub
- * Copyright (c) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of Libav.
  *
@@ -152,7 +152,7 @@ typedef struct AMR_bitrates {
 /* Match desired bitrate */
 static int get_bitrate_mode(int bitrate, void *log_ctx)
 {
-    /* make the correspondance between bitrate and mode */
+    /* make the correspondence between bitrate and mode */
     static const AMR_bitrates rates[] = {
         { 4750, MR475 }, { 5150, MR515 }, {  5900, MR59  }, {  6700, MR67  },
         { 7400, MR74 },  { 7950, MR795 }, { 10200, MR102 }, { 12200, MR122 }

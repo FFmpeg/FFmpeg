@@ -127,7 +127,7 @@ static int denoise_depth(HQDN3DContext *s,
                          int w, int h, int sstride, int dstride,
                          int16_t *spatial, int16_t *temporal, int depth)
 {
-    // FIXME: For 16bit depth, frame_ant could be a pointer to the previous
+    // FIXME: For 16-bit depth, frame_ant could be a pointer to the previous
     // filtered frame rather than a separate buffer.
     long x, y;
     uint16_t *frame_ant = *frame_ant_ptr;

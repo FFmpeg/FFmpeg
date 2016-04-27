@@ -4,8 +4,8 @@
  *
  * This demuxer will generate a 1 byte extradata for VP6F content.
  * It is composed of:
- *  - upper 4bits: difference between encoded width and visible width
- *  - lower 4bits: difference between encoded height and visible height
+ *  - upper 4 bits: difference between encoded width and visible width
+ *  - lower 4 bits: difference between encoded height and visible height
  *
  * This file is part of Libav.
  *

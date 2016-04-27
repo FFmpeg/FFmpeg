@@ -1,6 +1,6 @@
 /*
  * Westwood Studios VQA Format Demuxer
- * Copyright (c) 2003 The ffmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of Libav.
  *
@@ -136,7 +136,7 @@ static int wsvqa_read_header(AVFormatContext *s)
         chunk_tag = AV_RB32(&scratch[0]);
         chunk_size = AV_RB32(&scratch[4]);
 
-        /* catch any unknown header tags, for curiousity */
+        /* catch any unknown header tags, for curiosity */
         switch (chunk_tag) {
         case CINF_TAG:
         case CINH_TAG:

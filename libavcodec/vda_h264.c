@@ -158,7 +158,7 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFMutableDictionaryRef io_surface_properties;
     CFNumberRef cv_pix_fmt;
 
-    /* Each VCL NAL in the bistream sent to the decoder
+    /* Each VCL NAL in the bitstream sent to the decoder
      * is preceded by a 4 bytes length header.
      * Change the avcC atom header if needed, to signal headers of 4 bytes. */
     if (extradata_size >= 4 && (extradata[4] & 0x03) != 0x03) {
@@ -384,7 +384,7 @@ int ff_vda_default_init(AVCodecContext *avctx)
 
     // kCVPixelFormatType_420YpCbCr8Planar;
 
-    /* Each VCL NAL in the bistream sent to the decoder
+    /* Each VCL NAL in the bitstream sent to the decoder
      * is preceded by a 4 bytes length header.
      * Change the avcC atom header if needed, to signal headers of 4 bytes. */
     if (avctx->extradata_size >= 4 && (avctx->extradata[4] & 0x03) != 0x03) {

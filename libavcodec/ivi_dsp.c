@@ -22,7 +22,7 @@
 
 /**
  * @file
- * DSP functions (inverse transforms, motion compensation, wavelet recompostions)
+ * DSP functions (inverse transforms, motion compensation, wavelet recompositions)
  * for Indeo Video Interactive codecs.
  */
 

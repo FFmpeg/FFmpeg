@@ -639,7 +639,7 @@ skip_tag:
         }
     }
 exit_loop:
-    /* handle p-frames only if a predecessor frame is available */
+    /* handle P-frames only if a predecessor frame is available */
     if (s->prev->data[0]) {
         if (!(avpkt->flags & AV_PKT_FLAG_KEY)) {
             int i, j;

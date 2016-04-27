@@ -369,7 +369,7 @@ The syntax is:
 -grab_x @var{x_offset} -grab_y @var{y_offset}
 @end example
 
-Set the grabing region coordinates. The are expressed as offset from the top left
+Set the grabbing region coordinates. The are expressed as offset from the top left
 corner of the X11 window. The default value is 0.
 
 @c man end INPUT DEVICES

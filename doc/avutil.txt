@@ -15,7 +15,7 @@ md5.c                   MD5 Message-Digest Algorithm
 rational.c              code to perform exact calculations with rational numbers
 tree.c                  generic AVL tree
 crc.c                   generic CRC checksumming code
-integer.c               128bit integer math
+integer.c               128-bit integer math
 lls.c
 mathematics.c           greatest common divisor, integer sqrt, integer log2, ...
 mem.c                   memory allocation routines with guaranteed alignment

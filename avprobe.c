@@ -62,7 +62,7 @@ static int use_value_sexagesimal_format = 0;
 /* globals */
 static const OptionDef *options;
 
-/* AVprobe context */
+/* avprobe context */
 static const char *input_filename;
 static AVInputFormat *iformat = NULL;
 

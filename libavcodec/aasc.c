@@ -1,6 +1,6 @@
 /*
  * Autodesk RLE Decoder
- * Copyright (C) 2005 the ffmpeg project
+ * Copyright (C) 2005 The FFmpeg project
  *
  * This file is part of Libav.
  *

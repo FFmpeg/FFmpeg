@@ -398,7 +398,7 @@ static int poll_frame(AVFilterLink *link)
     if (val <= 0)
         return val;
 
-    //FIXME change API to not requre this red tape
+    //FIXME change API to not require this red tape
     if (val == 1 && !yadif->next) {
         if ((ret = ff_request_frame(link->src->inputs[0])) < 0)
             return ret;

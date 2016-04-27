@@ -44,7 +44,7 @@ typedef struct ThreadContext {
     pthread_t *workers;
     avfilter_action_func *func;
 
-    /* per-execute perameters */
+    /* per-execute parameters */
     AVFilterContext *ctx;
     void *arg;
     int   *rets;

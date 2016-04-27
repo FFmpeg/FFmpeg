@@ -50,7 +50,7 @@ typedef struct MqcState {
 /**
  * Initialize MQ-decoder.
  * @param mqc   MQ decoder state
- * @param bp    byte poiter
+ * @param bp    byte pointer
  */
 void ff_mqc_initdec(MqcState *mqc, uint8_t *bp);
 
@@ -58,7 +58,7 @@ void ff_mqc_initdec(MqcState *mqc, uint8_t *bp);
  * MQ decoder.
  * @param mqc       MQ decoder state
  * @param cxstate   Context
- * @return          Decision (0 ot 1)
+ * @return          Decision (0 to 1)
  */
 int ff_mqc_decode(MqcState *mqc, uint8_t *cxstate);
 

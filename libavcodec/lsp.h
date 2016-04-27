@@ -102,7 +102,7 @@ void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd
  * @param lp_half_order half the number of the amount of LPCs to be
  *        reconstructed, need to be smaller or equal to MAX_LP_HALF_ORDER
  *
- * @note buffers should have a minimux size of 2*lp_half_order elements.
+ * @note buffers should have a minimum size of 2*lp_half_order elements.
  *
  * TIA/EIA/IS-733 2.4.3.3.5
  */

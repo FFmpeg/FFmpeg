@@ -236,7 +236,7 @@ static void init_band_stepsize(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
         break;
     }
-    /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
+    /* FIXME: In OpenJPEG code stespize = stepsize * 0.5. Why?
      * If not set output of entropic decoder is not correct. */
     if (!av_codec_is_encoder(avctx->codec))
         band->f_stepsize *= 0.5;
@@ -487,7 +487,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         else
             reslevel->nbands = 3;
 
-        /* Number of precincts wich span the tile for resolution level reslevelno
+        /* Number of precincts which span the tile for resolution level reslevelno
          * see B.6 in ISO/IEC 15444-1:2002 eq. B-16
          * num_precincts_x = |- trx_1 / 2 ^ log2_prec_width) -| - (trx_0 / 2 ^ log2_prec_width)
          * num_precincts_y = |- try_1 / 2 ^ log2_prec_width) -| - (try_0 / 2 ^ log2_prec_width)

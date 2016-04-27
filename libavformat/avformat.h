@@ -1931,7 +1931,7 @@ void av_url_split(char *proto,         int proto_size,
  * @param ic        the context to analyze
  * @param index     the index to print, if you have multiple inputs or outputs
  * @param url       the URL to print, such as source or destination file
- * @param is_output whether the context is input or ouput
+ * @param is_output whether the context is input or output
  */
 void av_dump_format(AVFormatContext *ic,
                     int index,

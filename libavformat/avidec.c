@@ -548,7 +548,7 @@ static int avi_read_header(AVFormatContext *s)
             st->start_time = 0;
             avio_rl32(pb); /* buffer size */
             avio_rl32(pb); /* quality */
-            ast->sample_size = avio_rl32(pb); /* sample ssize */
+            ast->sample_size = avio_rl32(pb); /* sample size */
             ast->cum_len    *= FFMAX(1, ast->sample_size);
             av_log(s, AV_LOG_TRACE, "%"PRIu32" %"PRIu32" %d\n",
                     ast->rate, ast->scale, ast->sample_size);

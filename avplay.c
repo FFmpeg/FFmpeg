@@ -1362,7 +1362,7 @@ static int output_picture2(PlayerState *is, AVFrame *src_frame, double pts1, int
     }
     /* update video clock for next frame */
     frame_delay = av_q2d(is->video_dec->time_base);
-    /* for MPEG2, the frame can be repeated, so we update the
+    /* For MPEG-2, the frame can be repeated, so we update the
        clock accordingly */
     frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
     is->video_clock += frame_delay;
@@ -2123,7 +2123,7 @@ static int stream_component_open(PlayerState *is, int stream_index)
         /* init averaging filter */
         is->audio_diff_avg_coef  = exp(log(0.01) / AUDIO_DIFF_AVG_NB);
         is->audio_diff_avg_count = 0;
-        /* since we do not have a precise anough audio fifo fullness,
+        /* since we do not have a precise enough audio FIFO fullness,
            we correct audio sync only if larger than this threshold */
         is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / avctx->sample_rate;
 

@@ -690,7 +690,7 @@ static av_cold int omx_encode_init(AVCodecContext *avctx)
                 goto fail;
             }
             if (avctx->codec->id == AV_CODEC_ID_H264) {
-                // For H264, the extradata can be returned in two separate buffers
+                // For H.264, the extradata can be returned in two separate buffers
                 // (the videocore encoder on raspberry pi does this);
                 // therefore check that we have got both SPS and PPS before continuing.
                 int nals[32] = { 0 };
@@ -847,7 +847,7 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
                 ret = pkt->size;
                 pkt->pts = av_rescale_q(from_omx_ticks(buffer->nTimeStamp), AV_TIME_BASE_Q, avctx->time_base);
-                // We don't currently enable b-frames for the encoders, so set
+                // We don't currently enable B-frames for the encoders, so set
                 // pkt->dts = pkt->pts. (The calling code behaves worse if the encoder
                 // doesn't set the dts).
                 pkt->dts = pkt->pts;
@@ -897,7 +897,7 @@ static const AVClass omx_mpeg4enc_class = {
 };
 AVCodec ff_mpeg4_omx_encoder = {
     .name             = "mpeg4_omx",
-    .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL MPEG4 video encoder"),
+    .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL MPEG-4 video encoder"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_MPEG4,
     .priv_data_size   = sizeof(OMXCodecContext),
@@ -918,7 +918,7 @@ static const AVClass omx_h264enc_class = {
 };
 AVCodec ff_h264_omx_encoder = {
     .name             = "h264_omx",
-    .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL H264 video encoder"),
+    .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL H.264 video encoder"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_H264,
     .priv_data_size   = sizeof(OMXCodecContext),

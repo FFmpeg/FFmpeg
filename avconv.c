@@ -1,6 +1,6 @@
 /*
  * avconv main
- * Copyright (c) 2000-2011 The libav developers.
+ * Copyright (c) 2000-2011 The Libav developers
  *
  * This file is part of Libav.
  *
@@ -1154,7 +1154,7 @@ int guess_input_channel_layout(InputStream *ist)
             return 0;
         av_get_channel_layout_string(layout_name, sizeof(layout_name),
                                      dec->channels, dec->channel_layout);
-        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for  Input Stream "
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Input Stream "
                "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
     }
     return 1;
@@ -1630,7 +1630,7 @@ static int init_output_bsfs(OutputStream *ost)
     for (i = 0; i < ost->nb_bitstream_filters; i++) {
         ret = av_bsf_alloc(ost->bitstream_filters[i], &ctx);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error allocating a bistream filter context\n");
+            av_log(NULL, AV_LOG_ERROR, "Error allocating a bitstream filter context\n");
             return ret;
         }
         ost->bsf_ctx[i] = ctx;
@@ -1644,7 +1644,7 @@ static int init_output_bsfs(OutputStream *ost)
 
         ret = av_bsf_init(ctx);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error initializing bistream filter: %s\n",
+            av_log(NULL, AV_LOG_ERROR, "Error initializing bitstream filter: %s\n",
                    ost->bitstream_filters[i]->name);
             return ret;
         }

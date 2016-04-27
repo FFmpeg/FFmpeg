@@ -194,7 +194,7 @@ static int iff_read_header(AVFormatContext *s)
                 compression                  = avio_r8(pb);
             }
             if (data_size >= 16) {
-                avio_skip(pb, 3); // paddding, transparent
+                avio_skip(pb, 3); // padding, transparent
                 st->sample_aspect_ratio.num  = avio_r8(pb);
                 st->sample_aspect_ratio.den  = avio_r8(pb);
             }

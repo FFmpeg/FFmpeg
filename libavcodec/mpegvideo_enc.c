@@ -439,7 +439,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->codec_id != AV_CODEC_ID_MPEG4      &&
         s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
         s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
-        av_log(avctx, AV_LOG_ERROR, "b frames not supported by codec\n");
+        av_log(avctx, AV_LOG_ERROR, "B-frames not supported by codec\n");
         return -1;
     }
 
@@ -508,7 +508,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (s->max_b_frames != 0) {
             av_log(avctx, AV_LOG_ERROR,
-                   "b frames cannot be used with low delay\n");
+                   "B-frames cannot be used with low delay\n");
             return -1;
         }
     }
@@ -850,7 +850,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->intra_matrix[j] =
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         } else {
-            /* mpeg1/2 */
+            /* MPEG-1/2 */
             s->intra_matrix[j] = ff_mpeg1_default_intra_matrix[i];
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         }
@@ -1158,7 +1158,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             return ret;
 
         pic->f->display_picture_number = display_picture_number;
-        pic->f->pts = pts; // we set this here to avoid modifiying pic_arg
+        pic->f->pts = pts; // we set this here to avoid modifying pic_arg
     } else {
         /* Flushing: When we have not received enough input frames,
          * ensure s->input_picture[0] contains the first picture */
@@ -1370,7 +1370,7 @@ static int select_input_picture(MpegEncContext *s)
             if (s->frame_skip_threshold || s->frame_skip_factor) {
                 if (s->picture_in_gop_number < s->gop_size &&
                     skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
-                    // FIXME check that te gop check above is +-1 correct
+                    // FIXME check that the gop check above is +-1 correct
                     av_frame_unref(s->input_picture[0]->f);
 
                     emms_c();
@@ -1438,7 +1438,7 @@ static int select_input_picture(MpegEncContext *s)
             if (s->input_picture[b_frames]->f->pict_type == AV_PICTURE_TYPE_B &&
                 b_frames == s->max_b_frames) {
                 av_log(s->avctx, AV_LOG_ERROR,
-                       "warning, too many b frames in a row\n");
+                       "warning, too many B-frames in a row\n");
             }
 
             if (s->picture_in_gop_number + b_frames >= s->gop_size) {
@@ -1482,7 +1482,7 @@ no_output_pic:
             return ret;
 
         if (s->reordered_input_picture[0]->shared || s->avctx->rc_buffer_size) {
-            // input is a shared pix, so we can't modifiy it -> alloc a new
+            // input is a shared pix, so we can't modify it -> allocate a new
             // one & ensure that the shared one is reuseable
 
             Picture *pic;
@@ -1827,7 +1827,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->frame_bits  = put_bits_count(&s->pb);
         }
 
-        /* update mpeg1/2 vbv_delay for CBR */
+        /* update MPEG-1/2 vbv_delay for CBR */
         if (s->avctx->rc_max_rate                          &&
             s->avctx->rc_min_rate == s->avctx->rc_max_rate &&
             s->out_format == FMT_MPEG1                     &&
@@ -2396,7 +2396,7 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
 
     memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster than a loop?
 
-    /* mpeg1 */
+    /* MPEG-1 */
     d->mb_skip_run= s->mb_skip_run;
     for(i=0; i<3; i++)
         d->last_dc[i] = s->last_dc[i];
@@ -2425,7 +2425,7 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     memcpy(d->mv, s->mv, 2*4*2*sizeof(int));
     memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster than a loop?
 
-    /* mpeg1 */
+    /* MPEG-1 */
     d->mb_skip_run= s->mb_skip_run;
     for(i=0; i<3; i++)
         d->last_dc[i] = s->last_dc[i];
@@ -3264,7 +3264,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 ff_mpv_decode_mb(s, s->block);
             }
 
-            /* clean the MV table in IPS frames for direct mode in B frames */
+            /* clean the MV table in IPS frames for direct mode in B-frames */
             if(s->mb_intra /* && I,P,S_TYPE */){
                 s->p_mv_table[xy][0]=0;
                 s->p_mv_table[xy][1]=0;
@@ -3420,7 +3420,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     s->me.mb_var_sum_temp    =
     s->me.mc_mb_var_sum_temp = 0;
 
-    /* we need to initialize some time vars before we can encode b-frames */
+    /* we need to initialize some time vars before we can encode B-frames */
     // RAL: Condition added for MPEG1VIDEO
     if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO || s->codec_id == AV_CODEC_ID_MPEG2VIDEO || (s->h263_pred && !s->msmpeg4_version))
         set_frame_distances(s);
@@ -3795,7 +3795,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
             if(s->out_format == FMT_H263){
                 unquant_coeff= alevel*qmul + qadd;
-            }else{ //MPEG1
+            } else { // MPEG-1
                 j = s->idsp.idct_permutation[scantable[i]]; // FIXME: optimize
                 if(s->mb_intra){
                         unquant_coeff = (int)(  alevel  * qscale * s->intra_matrix[j]) >> 3;
@@ -3865,7 +3865,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
         score_tab[i+1]= best_score;
 
-        //Note: there is a vlc code in mpeg4 which is 1 bit shorter then another one with a shorter run and the same level
+        // Note: there is a vlc code in MPEG-4 which is 1 bit shorter then another one with a shorter run and the same level
         if(last_non_zero <= 27){
             for(; survivor_count; survivor_count--){
                 if(score_tab[ survivor[survivor_count-1] ] <= best_score)
@@ -3885,7 +3885,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         last_score= 256*256*256*120;
         for(i= survivor[0]; i<=last_non_zero + 1; i++){
             int score= score_tab[i];
-            if(i) score += lambda*2; //FIXME exacter?
+            if (i)
+                score += lambda * 2; // FIXME more exact?
 
             if(score < last_score){
                 last_score= score;
@@ -3916,7 +3917,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
             if(s->out_format == FMT_H263){
                     unquant_coeff= (alevel*qmul + qadd)>>3;
-            }else{ //MPEG1
+            } else { // MPEG-1
                     unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
                     unquant_coeff =   (unquant_coeff - 1) | 1;
             }
@@ -4039,7 +4040,7 @@ static int messed_sign=0;
 #endif
     dc += (1<<(RECON_SHIFT-1));
     for(i=0; i<64; i++){
-        rem[i]= dc - (orig[i]<<RECON_SHIFT); //FIXME  use orig dirrectly instead of copying to rem[]
+        rem[i] = dc - (orig[i] << RECON_SHIFT); // FIXME use orig directly instead of copying to rem[]
     }
 #ifdef REFINE_STATS
 STOP_TIMER("memset rem[]")}
@@ -4350,7 +4351,7 @@ STOP_TIMER("iterative search")
 }
 
 /**
- * Permute an 8x8 block according to permuatation.
+ * Permute an 8x8 block according to permutation.
  * @param block the block which will be permuted according to
  *              the given permutation vector
  * @param permutation the permutation vector

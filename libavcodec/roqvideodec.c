@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of Libav.
  *

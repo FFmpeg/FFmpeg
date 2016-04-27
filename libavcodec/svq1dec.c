@@ -4,7 +4,7 @@
  * ported to libavcodec by Nick Kurshev <nickols_k@mail.ru>
  *
  * Copyright (C) 2002 the xine project
- * Copyright (C) 2002 the ffmpeg project
+ * Copyright (C) 2002 The FFmpeg project
  *
  * SVQ1 Encoder (c) 2004 Mike Melanson <melanson@pcisys.net>
  *

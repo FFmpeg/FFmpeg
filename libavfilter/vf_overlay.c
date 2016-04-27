@@ -75,7 +75,7 @@ static const char *eof_action_str[] = {
 
 typedef struct OverlayContext {
     const AVClass *class;
-    int x, y;                   ///< position of overlayed picture
+    int x, y;                   ///< position of overlaid picture
 
     int max_plane_step[4];      ///< steps per pixel for each plane
     int hsub, vsub;             ///< chroma subsampling values

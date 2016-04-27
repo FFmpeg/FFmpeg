@@ -441,7 +441,7 @@ void avfilter_uninit(void);
  * is not registered.
  *
  * @param filter the filter to register
- * @return 0 if the registration was succesfull, a negative value
+ * @return 0 if the registration was successful, a negative value
  * otherwise
  */
 int avfilter_register(AVFilter *filter);

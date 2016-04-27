@@ -496,7 +496,7 @@ int ff_rtp_send_rtcp_feedback(RTPDemuxContext *s, URLContext *fd,
 
 /**
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
- * MPEG2-TS streams.
+ * MPEG-2 TS streams.
  */
 RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
                                    int payload_type, int queue_size)

@@ -121,8 +121,8 @@ typedef struct ASFContext {
 
     int stream_index; // from packet header, for the subpayload case
 
-    // packet parameteres
-    uint64_t sub_header_offset; // offset of subplayload header
+    // packet parameters
+    uint64_t sub_header_offset; // offset of subpayload header
     int64_t sub_dts;
     uint8_t dts_delta; // for subpayloads
     uint32_t packet_size_internal; // packet size stored inside ASFPacket, can be 0
@@ -1175,7 +1175,7 @@ static int asf_read_multiple_payload(AVFormatContext *s, AVPacket *pkt,
     int ret;
     int skip = 0;
 
-    // if replicated lenght is 1, subpayloads are present
+    // if replicated length is 1, subpayloads are present
     if (asf->rep_data_len == 1) {
         asf->sub_left = 1;
         asf->state = READ_MULTI_SUB;

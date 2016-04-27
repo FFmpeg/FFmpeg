@@ -1602,7 +1602,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
     int idx_mbmode = 0, mvbp;
     int stride_y, fieldtx;
 
-    mquant = v->pq; /* Loosy initialization */
+    mquant = v->pq; /* Lossy initialization */
 
     if (v->skip_is_raw)
         skipped = get_bits1(gb);
@@ -1814,7 +1814,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
     int block_cbp = 0, pat, block_tt = 0;
     int idx_mbmode = 0;
 
-    mquant = v->pq; /* Loosy initialization */
+    mquant = v->pq; /* Lossy initialization */
 
     idx_mbmode = get_vlc2(gb, v->mbmode_vlc->table, VC1_IF_MBMODE_VLC_BITS, 2);
     if (idx_mbmode <= 1) { // intra MB
@@ -2091,7 +2091,7 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
     int bmvtype = BMV_TYPE_BACKWARD;
     int idx_mbmode, interpmvp;
 
-    mquant      = v->pq; /* Loosy initialization */
+    mquant      = v->pq; /* Lossy initialization */
     s->mb_intra = 0;
 
     idx_mbmode = get_vlc2(gb, v->mbmode_vlc->table, VC1_IF_MBMODE_VLC_BITS, 2);
@@ -2583,7 +2583,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
     uint8_t *coded_val;
     int mb_pos;
 
-    /* select codingmode used for VLC tables selection */
+    /* select coding mode used for VLC tables selection */
     switch (v->y_ac_table_index) {
     case 0:
         v->codingset = (v->pqindex <= 8) ? CS_HIGH_RATE_INTRA : CS_LOW_MOT_INTRA;
@@ -2731,7 +2731,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
     int mqdiff;
     GetBitContext *gb = &s->gb;
 
-    /* select codingmode used for VLC tables selection */
+    /* select coding mode used for VLC tables selection */
     switch (v->y_ac_table_index) {
     case 0:
         v->codingset = (v->pqindex <= 8) ? CS_HIGH_RATE_INTRA : CS_LOW_MOT_INTRA;
@@ -2860,7 +2860,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
     MpegEncContext *s = &v->s;
     int apply_loop_filter;
 
-    /* select codingmode used for VLC tables selection */
+    /* select coding mode used for VLC tables selection */
     switch (v->c_ac_table_index) {
     case 0:
         v->codingset = (v->pqindex <= 8) ? CS_HIGH_RATE_INTRA : CS_LOW_MOT_INTRA;
@@ -2935,7 +2935,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
 
-    /* select codingmode used for VLC tables selection */
+    /* select coding mode used for VLC tables selection */
     switch (v->c_ac_table_index) {
     case 0:
         v->codingset = (v->pqindex <= 8) ? CS_HIGH_RATE_INTRA : CS_LOW_MOT_INTRA;

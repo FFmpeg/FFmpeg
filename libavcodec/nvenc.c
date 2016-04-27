@@ -295,7 +295,7 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_NUM_MAX_BFRAMES);
     if (ret < avctx->max_b_frames) {
-        av_log(avctx, AV_LOG_VERBOSE, "Max b-frames %d exceed %d\n",
+        av_log(avctx, AV_LOG_VERBOSE, "Max B-frames %d exceed %d\n",
                avctx->max_b_frames, ret);
 
         return AVERROR(ENOSYS);
@@ -715,8 +715,8 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
         if (avctx->max_b_frames > 0) {
             /* 0 is intra-only,
              * 1 is I/P only,
-             * 2 is one B Frame,
-             * 3 two B frames, and so on. */
+             * 2 is one B-Frame,
+             * 3 two B-frames, and so on. */
             ctx->config.frameIntervalP = avctx->max_b_frames + 1;
         } else if (avctx->max_b_frames == 0) {
             ctx->config.frameIntervalP = 1;
@@ -804,7 +804,7 @@ static int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 
     out_buffer.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER;
     /* 1MB is large enough to hold most output frames.
-     * NVENC increases this automaticaly if it's not enough. */
+     * NVENC increases this automatically if it is not enough. */
     out_buffer.size = BITSTREAM_BUFFER_SIZE;
 
     out_buffer.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_UNCACHED;
