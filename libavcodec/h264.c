@@ -48,7 +48,6 @@
 #include "mpegutils.h"
 #include "profiles.h"
 #include "rectangle.h"
-#include "svq3.h"
 #include "thread.h"
 #include "vdpau_compat.h"
 
