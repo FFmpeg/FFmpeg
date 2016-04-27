@@ -70,6 +70,8 @@ typedef struct VTEncContext {
     int64_t profile;
     int64_t level;
 
+    int64_t allow_sw;
+
     bool flushing;
     bool has_b_frames;
     bool warned_color_range;
@@ -617,8 +619,11 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     if (!enc_info) return AVERROR(ENOMEM);
 
 #if !TARGET_OS_IPHONE
-    CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
-    CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,  kCFBooleanTrue);
+    if (!vtctx->allow_sw) {
+        CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
+    } else {
+        CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,  kCFBooleanTrue);
+    }
 #endif
 
     if (avctx->pix_fmt != AV_PIX_FMT_VIDEOTOOLBOX) {
@@ -644,30 +649,18 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         &vtctx->session
     );
 
-#if !TARGET_OS_IPHONE
-    if (status != 0 || !vtctx->session) {
-        CFDictionaryRemoveValue(enc_info, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder);
-
-        status = VTCompressionSessionCreate(
-            kCFAllocatorDefault,
-            avctx->width,
-            avctx->height,
-            codec_type,
-            enc_info,
-            NULL,
-            kCFAllocatorDefault,
-            vtenc_output_callback,
-            avctx,
-            &vtctx->session
-        );
-    }
-#endif
-
     if (pixel_buffer_info) CFRelease(pixel_buffer_info);
     CFRelease(enc_info);
 
     if (status || !vtctx->session) {
         av_log(avctx, AV_LOG_ERROR, "Error: cannot create compression session: %d\n", status);
+
+#if !TARGET_OS_IPHONE
+        if (!vtctx->allow_sw) {
+            av_log(avctx, AV_LOG_ERROR, "Try -allow_sw 1. The hardware encoder may be busy, or not supported.\n");
+        }
+#endif
+
         return AVERROR_EXTERNAL;
     }
 
@@ -1463,6 +1456,9 @@ static const AVOption options[] = {
     { "5.0", "Level 5.0", 0, AV_OPT_TYPE_CONST, { .i64 = 50 }, INT_MIN, INT_MAX, VE, "level" },
     { "5.1", "Level 5.1", 0, AV_OPT_TYPE_CONST, { .i64 = 51 }, INT_MIN, INT_MAX, VE, "level" },
     { "5.2", "Level 5.2", 0, AV_OPT_TYPE_CONST, { .i64 = 52 }, INT_MIN, INT_MAX, VE, "level" },
+
+    { "allow_sw", "Allow software encoding", OFFSET(allow_sw), AV_OPT_TYPE_BOOL,
+        { .i64 = 0 }, 0, 1, VE },
 
     { NULL },
 };
