@@ -137,9 +137,9 @@ static int encode_init(AVCodecContext *avctx)
 
     if (c->lfe_channel) {
         c->fullband_channels--;
-        c->channel_order_tab = ff_dca_channel_reorder_lfe[c->channel_config];
+        c->channel_order_tab = channel_reorder_lfe[c->channel_config];
     } else {
-        c->channel_order_tab = ff_dca_channel_reorder_nolfe[c->channel_config];
+        c->channel_order_tab = channel_reorder_nolfe[c->channel_config];
     }
 
     for (i = 0; i < 9; i++) {
@@ -303,7 +303,7 @@ static void subband_transform(DCAEncContext *c, const int32_t *input)
 static void lfe_downsample(DCAEncContext *c, const int32_t *input)
 {
     /* FIXME: make 128x LFE downsampling possible */
-    const int lfech = ff_dca_lfe_index[c->channel_config];
+    const int lfech = lfe_index[c->channel_config];
     int i, j, lfes;
     int32_t hist[512];
     int32_t accum;
