@@ -1414,15 +1414,38 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
     return 0;
 }
 
+static int create_encoder_dict_h264(const AVFrame *frame,
+                                    CFDictionaryRef* dict_out)
+{
+    CFDictionaryRef dict = NULL;
+    if (frame->pict_type == AV_PICTURE_TYPE_I) {
+        const void *keys[] = { kVTEncodeFrameOptionKey_ForceKeyFrame };
+        const void *vals[] = { kCFBooleanTrue };
+
+        dict = CFDictionaryCreate(NULL, keys, vals, 1, NULL, NULL);
+        if(!dict) return AVERROR(ENOMEM);
+    }
+
+    *dict_out = dict;
+    return 0;
+}
+
 static int vtenc_send_frame(AVCodecContext *avctx,
                             VTEncContext   *vtctx,
                             const AVFrame  *frame)
 {
     CMTime time;
+    CFDictionaryRef frame_dict;
     CVPixelBufferRef cv_img = NULL;
     int status = create_cv_pixel_buffer(avctx, frame, &cv_img);
 
     if (status) return status;
+
+    status = create_encoder_dict_h264(frame, &frame_dict);
+    if (status) {
+        CFRelease(cv_img);
+        return status;
+    }
 
     time = CMTimeMake(frame->pts * avctx->time_base.num, avctx->time_base.den);
     status = VTCompressionSessionEncodeFrame(
@@ -1430,11 +1453,12 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         cv_img,
         time,
         kCMTimeInvalid,
-        NULL,
+        frame_dict,
         NULL,
         NULL
     );
 
+    if (frame_dict) CFRelease(frame_dict);
     CFRelease(cv_img);
 
     if (status) {
