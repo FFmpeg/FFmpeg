@@ -279,11 +279,17 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
     return 0;
 }
 
+static void vp9_close_context(PayloadContext *vp9)
+{
+    ffio_free_dyn_buf(&vp9->buf);
+}
+
 RTPDynamicProtocolHandler ff_vp9_dynamic_handler = {
     .enc_name         = "VP9",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_VP9,
     .priv_data_size   = sizeof(PayloadContext),
     .init             = vp9_init,
+    .close            = vp9_close_context,
     .parse_packet     = vp9_handle_packet
 };
