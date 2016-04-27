@@ -103,11 +103,4 @@ static const int bit_consumption[27] = {
     272, 288, 304, 320, 336, 352, 368,
 };
 
-/* Table B.5: Selection of quantization levels and codebooks */
-static const int quant_levels[27] = {
-    1, 3, 5, 7, 9, 13, 17, 25, 32, 64,
-    128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
-    131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608,
-};
-
 #endif /* AVCODEC_DCAENC_H */

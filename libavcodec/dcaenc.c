@@ -683,7 +683,7 @@ static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
             continue;
         our_quant.m = mul32(scalefactor_inv[our_nscale - try_remove].m, stepsize_inv[abits].m);
         our_quant.e = scalefactor_inv[our_nscale - try_remove].e + stepsize_inv[abits].e - 17;
-        if ((quant_levels[abits] - 1) / 2 < quantize_value(peak, our_quant))
+        if ((ff_dca_quant_levels[abits] - 1) / 2 < quantize_value(peak, our_quant))
             continue;
         our_nscale -= try_remove;
     }
@@ -693,7 +693,7 @@ static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
 
     quant->m = mul32(scalefactor_inv[our_nscale].m, stepsize_inv[abits].m);
     quant->e = scalefactor_inv[our_nscale].e + stepsize_inv[abits].e - 17;
-    av_assert0((quant_levels[abits] - 1) / 2 >= quantize_value(peak, *quant));
+    av_assert0((ff_dca_quant_levels[abits] - 1) / 2 >= quantize_value(peak, *quant));
 
     return our_nscale;
 }
@@ -858,9 +858,9 @@ static void put_subframe_samples(DCAEncContext *c, int ss, int band, int ch)
         for (i = 0; i < 8; i += 4) {
             sum = 0;
             for (j = 3; j >= 0; j--) {
-                sum *= quant_levels[c->abits[band][ch]];
+                sum *= ff_dca_quant_levels[c->abits[band][ch]];
                 sum += c->quantized[ss * 8 + i + j][band][ch];
-                sum += (quant_levels[c->abits[band][ch]] - 1) / 2;
+                sum += (ff_dca_quant_levels[c->abits[band][ch]] - 1) / 2;
             }
             put_bits(&c->pb, bit_consumption[c->abits[band][ch]] / 4, sum);
         }
