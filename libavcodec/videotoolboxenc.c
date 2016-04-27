@@ -77,6 +77,8 @@ typedef struct VTEncContext {
     int64_t level;
     int64_t entropy;
     int64_t realtime;
+    int64_t frames_before;
+    int64_t frames_after;
 
     int64_t allow_sw;
 
@@ -719,6 +721,30 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting 'max key-frame interval' property: %d\n", status);
             return AVERROR_EXTERNAL;
+        }
+    }
+
+    if (vtctx->frames_before) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_MoreFramesBeforeStart,
+                                      kCFBooleanTrue);
+
+        if (status == kVTPropertyNotSupportedErr) {
+            av_log(avctx, AV_LOG_WARNING, "frames_before property is not supported on this device. Ignoring.\n");
+        } else if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting frames_before property: %d\n", status);
+        }
+    }
+
+    if (vtctx->frames_after) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_MoreFramesAfterEnd,
+                                      kCFBooleanTrue);
+
+        if (status == kVTPropertyNotSupportedErr) {
+            av_log(avctx, AV_LOG_WARNING, "frames_after property is not supported on this device. Ignoring.\n");
+        } else if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting frames_after property: %d\n", status);
         }
     }
 
@@ -1533,6 +1559,11 @@ static const AVOption options[] = {
 
     { "realtime", "Hint that encoding should happen in real-time if not faster (e.g. capturing from camera).",
         OFFSET(realtime), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+
+    { "frames_before", "Other frames will come before the frames in this session. This helps smooth concatenation issues.",
+        OFFSET(frames_before), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "frames_after", "Other frames will come after the frames in this session. This helps smooth concatenation issues.",
+        OFFSET(frames_after), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
 
     { NULL },
 };
