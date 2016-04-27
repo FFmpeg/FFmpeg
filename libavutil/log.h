@@ -325,7 +325,7 @@ void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
  *                      be written to the buffer, plus one null terminator
  * @param print_prefix  used to store whether the prefix must be printed;
  *                      must point to a persistent integer initially set to 1
- * @return Returns a negative value if an error occured, otherwise returns
+ * @return Returns a negative value if an error occurred, otherwise returns
  *         the number of characters that would have been written for a
  *         sufficiently large buffer, not including the terminating null
  *         character. If the return value is not less than line_size, it means
