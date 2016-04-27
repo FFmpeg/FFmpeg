@@ -1034,6 +1034,15 @@ static int vtenc_cm_to_avpacket(
     pts = CMSampleBufferGetPresentationTimeStamp(sample_buffer);
     dts = CMSampleBufferGetDecodeTimeStamp      (sample_buffer);
 
+    if (CMTIME_IS_INVALID(dts)) {
+        if (!vtctx->has_b_frames) {
+            dts = pts;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "DTS is invalid.\n");
+            return AVERROR_EXTERNAL;
+        }
+    }
+
     dts_delta = vtctx->dts_delta >= 0 ? vtctx->dts_delta : 0;
     time_base_num = avctx->time_base.num;
     pkt->pts = pts.value / time_base_num;
