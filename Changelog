@@ -1,6 +1,25 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+
+version 3.0.2:
+- avcodec/ttaenc: Reallocate packet if its too small
+- configure: build fix for P5600 with mips code restructuring
+- mips: add support for R6
+- pgssubdec: fix subpicture output colorspace and range
+- avcodec/ac3dec: Reset SPX when switching from EAC3 to AC3
+- avfilter/vf_drawtext: Check return code of load_glyph()
+- avformat/mux: Check that deinit is set before calling it
+- avcodec/takdec: add code that got somehow lost in process of REing
+- avcodec/apedec: fix decoding of stereo files with one channel full of silence
+- avcodec/avpacket: Fix off by 5 error
+- avcodec/h264: Fix for H.264 configuration parsing
+- avcodec/bmp_parser: Ensure remaining_size is not too small in startcode packet crossing corner case
+- avcodec/pngdec: Fix alpha detection with skip_frame
+- Changelog: Make formating consistent
+- avfilter/src_movie: fix how we check for overflows with seek_point
+- avcodec/j2kenc: Add attribution to OpenJPEG project:
+
 version 3.0.1:
 - avcodec/libutvideodec: copy frame so it has reference counters when refcounted_frames is set
 - avformat/rtpdec_jpeg: fix low contrast image on low quality setting
