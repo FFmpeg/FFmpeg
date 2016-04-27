@@ -41,6 +41,12 @@ typedef enum VT_H264Profile {
     H264_PROF_COUNT
 } VT_H264Profile;
 
+typedef enum VTH264Entropy{
+    VT_ENTROPY_NOT_SET,
+    VT_CAVLC,
+    VT_CABAC
+} VTH264Entropy;
+
 static const uint8_t start_code[] = { 0, 0, 0, 1 };
 
 typedef struct BufNode {
@@ -69,6 +75,7 @@ typedef struct VTEncContext {
 
     int64_t profile;
     int64_t level;
+    int64_t entropy;
 
     int64_t allow_sw;
 
@@ -605,6 +612,11 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         vtctx->has_b_frames = false;
     }
 
+    if (vtctx->entropy == VT_CABAC && vtctx->profile == H264_PROF_BASELINE) {
+        av_log(avctx, AV_LOG_WARNING, "CABAC entropy requires 'main' or 'high' profile, but baseline was requested. Encode will not use CABAC entropy.\n");
+        vtctx->entropy = VT_ENTROPY_NOT_SET;
+    }
+
     if (!get_vt_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
 
     vtctx->session = NULL;
@@ -710,6 +722,21 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting 'allow frame reordering' property: %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
+    }
+
+    if (vtctx->entropy != VT_ENTROPY_NOT_SET) {
+        CFStringRef entropy = vtctx->entropy == VT_CABAC ?
+                                kVTH264EntropyMode_CABAC:
+                                kVTH264EntropyMode_CAVLC;
+
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_H264EntropyMode,
+                                      entropy);
+
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting entropy property: %d\n", status);
             return AVERROR_EXTERNAL;
         }
     }
@@ -1459,6 +1486,12 @@ static const AVOption options[] = {
 
     { "allow_sw", "Allow software encoding", OFFSET(allow_sw), AV_OPT_TYPE_BOOL,
         { .i64 = 0 }, 0, 1, VE },
+
+    { "coder", "Entropy coding", OFFSET(entropy), AV_OPT_TYPE_INT, { .i64 = VT_ENTROPY_NOT_SET }, VT_ENTROPY_NOT_SET, VT_CABAC, VE, "coder" },
+    { "cavlc", "CAVLC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CAVLC }, INT_MIN, INT_MAX, VE, "coder" },
+    { "vlc",   "CAVLC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CAVLC }, INT_MIN, INT_MAX, VE, "coder" },
+    { "cabac", "CABAC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CABAC }, INT_MIN, INT_MAX, VE, "coder" },
+    { "ac",    "CABAC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CABAC }, INT_MIN, INT_MAX, VE, "coder" },
 
     { NULL },
 };
