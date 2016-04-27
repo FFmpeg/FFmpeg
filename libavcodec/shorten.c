@@ -558,7 +558,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             int max_framesize;
             void *tmp_ptr;
 
-            max_framesize = FFMAX(s->max_framesize, s->blocksize * s->channels * 2);
+            max_framesize = FFMAX(s->max_framesize, s->blocksize * s->channels * 8);
             tmp_ptr = av_fast_realloc(s->bitstream, &s->allocated_bitstream_size,
                                       max_framesize + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!tmp_ptr) {
