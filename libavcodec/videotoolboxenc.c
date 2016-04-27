@@ -29,6 +29,7 @@
 #include "libavutil/atomic.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/avcodec.h"
+#include "libavutil/pixdesc.h"
 #include "internal.h"
 #include <pthread.h>
 
@@ -73,6 +74,18 @@ typedef struct VTEncContext {
     bool has_b_frames;
     bool warned_color_range;
 } VTEncContext;
+
+/**
+ * NULL-safe release of *refPtr, and sets value to NULL.
+ */
+static void vt_release_num(CFNumberRef* refPtr){
+    if (!*refPtr) {
+        return;
+    }
+
+    CFRelease(*refPtr);
+    *refPtr = NULL;
+}
 
 static void set_async_error(VTEncContext *vtctx, int err)
 {
@@ -477,9 +490,100 @@ static bool get_vt_profile_level(AVCodecContext *avctx,
     return true;
 }
 
+static int get_cv_pixel_format(AVCodecContext* avctx,
+                               enum AVPixelFormat fmt,
+                               enum AVColorRange range,
+                               int* av_pixel_format,
+                               int* range_guessed)
+{
+    if (range_guessed) *range_guessed = range != AVCOL_RANGE_MPEG &&
+                                        range != AVCOL_RANGE_JPEG;
+
+    //MPEG range is used when no range is set
+    if (fmt == AV_PIX_FMT_NV12) {
+        *av_pixel_format = range == AVCOL_RANGE_JPEG ?
+                                        kCVPixelFormatType_420YpCbCr8BiPlanarFullRange :
+                                        kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+    } else if (fmt == AV_PIX_FMT_YUV420P) {
+        *av_pixel_format = range == AVCOL_RANGE_JPEG ?
+                                        kCVPixelFormatType_420YpCbCr8PlanarFullRange :
+                                        kCVPixelFormatType_420YpCbCr8Planar;
+    } else {
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+static int create_cv_pixel_buffer_info(AVCodecContext* avctx,
+                                       CFMutableDictionaryRef* dict)
+{
+    CFNumberRef cv_color_format_num = NULL;
+    CFNumberRef width_num = NULL;
+    CFNumberRef height_num = NULL;
+    CFMutableDictionaryRef pixel_buffer_info = NULL;
+    int cv_color_format;
+    int status = get_cv_pixel_format(avctx,
+                                     avctx->pix_fmt,
+                                     avctx->color_range,
+                                     &cv_color_format,
+                                     NULL);
+    if (status) return status;
+
+    pixel_buffer_info = CFDictionaryCreateMutable(
+                            kCFAllocatorDefault,
+                            20,
+                            &kCFCopyStringDictionaryKeyCallBacks,
+                            &kCFTypeDictionaryValueCallBacks);
+
+    if (!pixel_buffer_info) goto pbinfo_nomem;
+
+    cv_color_format_num = CFNumberCreate(kCFAllocatorDefault,
+                                         kCFNumberSInt32Type,
+                                         &cv_color_format);
+    if (!cv_color_format_num) goto pbinfo_nomem;
+
+    CFDictionarySetValue(pixel_buffer_info,
+                         kCVPixelBufferPixelFormatTypeKey,
+                         cv_color_format_num);
+    vt_release_num(&cv_color_format_num);
+
+    width_num = CFNumberCreate(kCFAllocatorDefault,
+                               kCFNumberSInt32Type,
+                               &avctx->width);
+    if (!width_num) return AVERROR(ENOMEM);
+
+    CFDictionarySetValue(pixel_buffer_info,
+                         kCVPixelBufferWidthKey,
+                         width_num);
+    vt_release_num(&width_num);
+
+    height_num = CFNumberCreate(kCFAllocatorDefault,
+                                kCFNumberSInt32Type,
+                                &avctx->height);
+    if (!height_num) goto pbinfo_nomem;
+
+    CFDictionarySetValue(pixel_buffer_info,
+                         kCVPixelBufferHeightKey,
+                         height_num);
+    vt_release_num(&height_num);
+
+    *dict = pixel_buffer_info;
+    return 0;
+
+pbinfo_nomem:
+    vt_release_num(&cv_color_format_num);
+    vt_release_num(&width_num);
+    vt_release_num(&height_num);
+    if (pixel_buffer_info) CFRelease(pixel_buffer_info);
+
+    return AVERROR(ENOMEM);
+}
+
 static av_cold int vtenc_init(AVCodecContext *avctx)
 {
     CFMutableDictionaryRef enc_info;
+    CFMutableDictionaryRef pixel_buffer_info;
     CMVideoCodecType       codec_type;
     VTEncContext           *vtctx = avctx->priv_data;
     CFStringRef            profile_level;
@@ -517,13 +621,19 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,  kCFBooleanTrue);
 #endif
 
+    status = create_cv_pixel_buffer_info(avctx, &pixel_buffer_info);
+    if (status) {
+        CFRelease(enc_info);
+        return status;
+    }
+
     status = VTCompressionSessionCreate(
         kCFAllocatorDefault,
         avctx->width,
         avctx->height,
         codec_type,
         enc_info,
-        NULL,
+        pixel_buffer_info,
         kCFAllocatorDefault,
         vtenc_output_callback,
         avctx,
@@ -549,6 +659,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     }
 #endif
 
+    CFRelease(pixel_buffer_info);
     CFRelease(enc_info);
 
     if (status || !vtctx->session) {
@@ -912,26 +1023,37 @@ static int get_cv_pixel_info(
     int av_format       = frame->format;
     int av_color_range  = av_frame_get_color_range(frame);
     int i;
+    int range_guessed;
+    int status;
+
+    status = get_cv_pixel_format(avctx, av_format, av_color_range, color, &range_guessed);
+    if (status) {
+        av_log(avctx,
+            AV_LOG_ERROR,
+            "Could not get pixel format for color format '%s' range '%s'.\n",
+            av_get_pix_fmt_name(av_format),
+            av_color_range > AVCOL_RANGE_UNSPECIFIED &&
+            av_color_range < AVCOL_RANGE_NB ?
+               av_color_range_name(av_color_range) :
+               "Unknown");
+
+        return AVERROR(EINVAL);
+    }
+
+    if (range_guessed) {
+        if (!vtctx->warned_color_range) {
+            vtctx->warned_color_range = true;
+            av_log(avctx,
+                   AV_LOG_WARNING,
+                   "Color range not set for %s. Using MPEG range.\n",
+                   av_get_pix_fmt_name(av_format));
+        }
+
+        av_log(avctx, AV_LOG_WARNING, "");
+    }
 
     switch (av_format) {
     case AV_PIX_FMT_NV12:
-        switch (av_color_range) {
-        case AVCOL_RANGE_MPEG:
-            *color = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
-            break;
-
-        case AVCOL_RANGE_JPEG:
-            *color = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange;
-            break;
-
-        default:
-            if (!vtctx->warned_color_range) {
-                vtctx->warned_color_range = true;
-                av_log(avctx, AV_LOG_WARNING, "Color range not set for NV12. Using MPEG range.\n");
-            }
-            *color = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
-        }
-
         *plane_count = 2;
 
         widths [0] = avctx->width;
@@ -944,23 +1066,6 @@ static int get_cv_pixel_info(
         break;
 
     case AV_PIX_FMT_YUV420P:
-        switch (av_color_range) {
-        case AVCOL_RANGE_MPEG:
-            *color = kCVPixelFormatType_420YpCbCr8Planar;
-            break;
-
-        case AVCOL_RANGE_JPEG:
-            *color = kCVPixelFormatType_420YpCbCr8PlanarFullRange;
-            break;
-
-        default:
-            if (!vtctx->warned_color_range) {
-                vtctx->warned_color_range = true;
-                av_log(avctx, AV_LOG_WARNING, "Color range not set for YUV 4:2:0. Using MPEG range.\n");
-            }
-            *color = kCVPixelFormatType_420YpCbCr8Planar;
-        }
-
         *plane_count = 3;
 
         widths [0] = avctx->width;
@@ -976,7 +1081,15 @@ static int get_cv_pixel_info(
         strides[2] = frame ? frame->linesize[2] : (avctx->width + 1) / 2;
         break;
 
-    default: return AVERROR(EINVAL);
+    default:
+        av_log(
+               avctx,
+               AV_LOG_ERROR,
+               "Could not get frame format info for color %d range %d.\n",
+               av_format,
+               av_color_range);
+
+        return AVERROR(EINVAL);
     }
 
     *contiguous_buf_size = 0;
@@ -1111,6 +1224,8 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
     size_t strides[AV_NUM_DATA_POINTERS];
     int status;
     size_t contiguous_buf_size;
+    CVPixelBufferPoolRef pix_buf_pool;
+    VTEncContext* vtctx = avctx->priv_data;
 
     memset(widths,  0, sizeof(widths));
     memset(heights, 0, sizeof(heights));
@@ -1141,16 +1256,19 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
     }
 
 #if TARGET_OS_IPHONE
-    status = CVPixelBufferCreate(
-        kCFAllocatorDefault,
-        frame->width,
-        frame->height,
-        color,
-        NULL,
-        cv_img
-    );
+    pix_buf_pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
+    if (!pix_buf_pool) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get pixel buffer pool.\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    status = CVPixelBufferPoolCreatePixelBuffer(NULL,
+                                                pix_buf_pool,
+                                                cv_img);
+
 
     if (status) {
+        av_log(avctx, AV_LOG_ERROR, "Could not create pixel buffer from pool: %d.\n", status);
         return AVERROR_EXTERNAL;
     }
 
@@ -1306,9 +1424,7 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
 
 static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NV12,
-#if !TARGET_OS_IPHONE
     AV_PIX_FMT_YUV420P,
-#endif
     AV_PIX_FMT_NONE
 };
 
