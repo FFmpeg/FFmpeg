@@ -76,6 +76,7 @@ typedef struct VTEncContext {
     int64_t profile;
     int64_t level;
     int64_t entropy;
+    int64_t realtime;
 
     int64_t allow_sw;
 
@@ -744,6 +745,16 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting entropy property: %d\n", status);
             return AVERROR_EXTERNAL;
+        }
+    }
+
+    if (vtctx->realtime) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_RealTime,
+                                      kCFBooleanTrue);
+
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting realtime property: %d\n", status);
         }
     }
 
@@ -1519,6 +1530,9 @@ static const AVOption options[] = {
     { "vlc",   "CAVLC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CAVLC }, INT_MIN, INT_MAX, VE, "coder" },
     { "cabac", "CABAC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CABAC }, INT_MIN, INT_MAX, VE, "coder" },
     { "ac",    "CABAC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CABAC }, INT_MIN, INT_MAX, VE, "coder" },
+
+    { "realtime", "Hint that encoding should happen in real-time if not faster (e.g. capturing from camera).",
+        OFFSET(realtime), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
 
     { NULL },
 };
