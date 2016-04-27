@@ -598,6 +598,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     CFStringRef            profile_level;
     SInt32                 bit_rate = avctx->bit_rate;
     CFNumberRef            bit_rate_num;
+    CFBooleanRef           has_b_frames_cfbool;
     int                    status;
 
     codec_type = get_cm_codec_type(avctx->codec_id);
@@ -606,7 +607,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    vtctx->has_b_frames = avctx->has_b_frames || avctx->max_b_frames > 0;
+    vtctx->has_b_frames = avctx->max_b_frames > 0;
     if(vtctx->has_b_frames && vtctx->profile == H264_PROF_BASELINE){
         av_log(avctx, AV_LOG_WARNING, "Cannot use B-frames with baseline profile. Output will not contain B-frames.\n");
         vtctx->has_b_frames = false;
@@ -750,6 +751,18 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     pthread_mutex_init(&vtctx->lock, NULL);
     pthread_cond_init(&vtctx->cv_sample_sent, NULL);
     vtctx->dts_delta = vtctx->has_b_frames ? -1 : 0;
+
+    status = VTSessionCopyProperty(vtctx->session,
+                                   kVTCompressionPropertyKey_AllowFrameReordering,
+                                   kCFAllocatorDefault,
+                                   &has_b_frames_cfbool);
+
+    if (!status) {
+        //Some devices don't output B-frames for main profile, even if requested.
+        vtctx->has_b_frames = CFBooleanGetValue(has_b_frames_cfbool);
+        CFRelease(has_b_frames_cfbool);
+    }
+    avctx->has_b_frames = vtctx->has_b_frames;
 
     return 0;
 }
