@@ -318,6 +318,79 @@ static inline int svq3_decode_block(GetBitContext *gb, int16_t *block,
     return 0;
 }
 
+static av_always_inline int
+svq3_fetch_diagonal_mv(const H264Context *h, H264SliceContext *sl,
+                       const int16_t **C,
+                       int i, int list, int part_width)
+{
+    const int topright_ref = sl->ref_cache[list][i - 8 + part_width];
+
+    if (topright_ref != PART_NOT_AVAILABLE) {
+        *C = sl->mv_cache[list][i - 8 + part_width];
+        return topright_ref;
+    } else {
+        *C = sl->mv_cache[list][i - 8 - 1];
+        return sl->ref_cache[list][i - 8 - 1];
+    }
+}
+
+/**
+ * Get the predicted MV.
+ * @param n the block index
+ * @param part_width the width of the partition (4, 8,16) -> (1, 2, 4)
+ * @param mx the x component of the predicted motion vector
+ * @param my the y component of the predicted motion vector
+ */
+static av_always_inline void svq3_pred_motion(const H264Context *const h,
+                                              H264SliceContext *sl, int n,
+                                              int part_width, int list,
+                                              int ref, int *const mx, int *const my)
+{
+    const int index8       = scan8[n];
+    const int top_ref      = sl->ref_cache[list][index8 - 8];
+    const int left_ref     = sl->ref_cache[list][index8 - 1];
+    const int16_t *const A = sl->mv_cache[list][index8 - 1];
+    const int16_t *const B = sl->mv_cache[list][index8 - 8];
+    const int16_t *C;
+    int diagonal_ref, match_count;
+
+/* mv_cache
+ * B . . A T T T T
+ * U . . L . . , .
+ * U . . L . . . .
+ * U . . L . . , .
+ * . . . L . . . .
+ */
+
+    diagonal_ref = svq3_fetch_diagonal_mv(h, sl, &C, index8, list, part_width);
+    match_count  = (diagonal_ref == ref) + (top_ref == ref) + (left_ref == ref);
+    if (match_count > 1) { //most common
+        *mx = mid_pred(A[0], B[0], C[0]);
+        *my = mid_pred(A[1], B[1], C[1]);
+    } else if (match_count == 1) {
+        if (left_ref == ref) {
+            *mx = A[0];
+            *my = A[1];
+        } else if (top_ref == ref) {
+            *mx = B[0];
+            *my = B[1];
+        } else {
+            *mx = C[0];
+            *my = C[1];
+        }
+    } else {
+        if (top_ref      == PART_NOT_AVAILABLE &&
+            diagonal_ref == PART_NOT_AVAILABLE &&
+            left_ref     != PART_NOT_AVAILABLE) {
+            *mx = A[0];
+            *my = A[1];
+        } else {
+            *mx = mid_pred(A[0], B[0], C[0]);
+            *my = mid_pred(A[1], B[1], C[1]);
+        }
+    }
+}
+
 static inline void svq3_mc_dir_part(SVQ3Context *s,
                                     int x, int y, int width, int height,
                                     int mx, int my, int dxy,
@@ -416,7 +489,7 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 (j >> 1 & 4) + (i      & 8);
 
             if (mode != PREDICT_MODE) {
-                pred_motion(h, sl, k, part_width >> 2, dir, 1, &mx, &my);
+                svq3_pred_motion(h, sl, k, part_width >> 2, dir, 1, &mx, &my);
             } else {
                 mx = s->next_pic->motion_val[0][b_xy][0] << 1;
                 my = s->next_pic->motion_val[0][b_xy][1] << 1;
