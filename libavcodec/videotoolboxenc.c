@@ -748,6 +748,69 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         }
     }
 
+    if (avctx->sample_aspect_ratio.num != 0) {
+        CFNumberRef num;
+        CFNumberRef den;
+        CFMutableDictionaryRef par;
+        AVRational *avpar = &avctx->sample_aspect_ratio;
+
+        av_reduce(&avpar->num, &avpar->den,
+                   avpar->num,  avpar->den,
+                  0xFFFFFFFF);
+
+        num = CFNumberCreate(kCFAllocatorDefault,
+                             kCFNumberIntType,
+                             &avpar->num);
+
+        den = CFNumberCreate(kCFAllocatorDefault,
+                             kCFNumberIntType,
+                             &avpar->den);
+
+
+
+        par = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                        2,
+                                        &kCFCopyStringDictionaryKeyCallBacks,
+                                        &kCFTypeDictionaryValueCallBacks);
+
+        if (!par || !num || !den) {
+            if (par) CFRelease(par);
+            if (num) CFRelease(num);
+            if (den) CFRelease(den);
+
+            return AVERROR(ENOMEM);
+        }
+
+        CFDictionarySetValue(
+            par,
+            kCMFormatDescriptionKey_PixelAspectRatioHorizontalSpacing,
+            num);
+
+        CFDictionarySetValue(
+            par,
+            kCMFormatDescriptionKey_PixelAspectRatioVerticalSpacing,
+            den);
+
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_PixelAspectRatio,
+                                      par);
+
+        CFRelease(par);
+        CFRelease(num);
+        CFRelease(den);
+
+        if (status) {
+            av_log(avctx,
+                   AV_LOG_ERROR,
+                   "Error setting pixel aspect ratio to %d:%d: %d.\n",
+                   avctx->sample_aspect_ratio.num,
+                   avctx->sample_aspect_ratio.den,
+                   status);
+
+            return AVERROR_EXTERNAL;
+        }
+    }
+
     if (!vtctx->has_b_frames) {
         status = VTSessionSetProperty(vtctx->session,
                                       kVTCompressionPropertyKey_AllowFrameReordering,
