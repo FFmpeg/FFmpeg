@@ -45,4 +45,19 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const struct SPS *sps,
                               const int *ref_count, int slice_type_nos,
                               H264PredWeightTable *pwt);
 
+/**
+ * Check if the top & left blocks are available if needed & change the
+ * dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra4x4_pred_mode(int8_t *pred_mode_cache, void *logctx,
+                                     int top_samples_available, int left_samples_available);
+
+/**
+ * Check if the top & left blocks are available if needed & change the
+ * dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra_pred_mode(void *logctx, int top_samples_available,
+                                  int left_samples_available,
+                                  int mode, int is_chroma);
+
 #endif /* AVCODEC_H264_PARSE_H */

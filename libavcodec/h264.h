@@ -900,19 +900,6 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
 
 int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice);
 
-/**
- * Check if the top & left blocks are available if needed & change the
- * dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra4x4_pred_mode(const H264Context *h, H264SliceContext *sl);
-
-/**
- * Check if the top & left blocks are available if needed & change the
- * dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_pred_mode(const H264Context *h, H264SliceContext *sl,
-                                  int mode, int is_chroma);
-
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
 int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size);
 int ff_h264_decode_init(AVCodecContext *avctx);

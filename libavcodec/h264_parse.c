@@ -94,3 +94,95 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
     pwt->use_weight = pwt->use_weight || pwt->use_weight_chroma;
     return 0;
 }
+
+/**
+ * Check if the top & left blocks are available if needed and
+ * change the dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra4x4_pred_mode(int8_t *pred_mode_cache, void *logctx,
+                                     int top_samples_available, int left_samples_available)
+{
+    static const int8_t top[12] = {
+        -1, 0, LEFT_DC_PRED, -1, -1, -1, -1, -1, 0
+    };
+    static const int8_t left[12] = {
+        0, -1, TOP_DC_PRED, 0, -1, -1, -1, 0, -1, DC_128_PRED
+    };
+    int i;
+
+    if (!(top_samples_available & 0x8000)) {
+        for (i = 0; i < 4; i++) {
+            int status = top[pred_mode_cache[scan8[0] + i]];
+            if (status < 0) {
+                av_log(logctx, AV_LOG_ERROR,
+					   "top block unavailable for requested intra mode %d\n",
+                       status);
+                return AVERROR_INVALIDDATA;
+            } else if (status) {
+                pred_mode_cache[scan8[0] + i] = status;
+            }
+        }
+    }
+
+    if ((left_samples_available & 0x8888) != 0x8888) {
+        static const int mask[4] = { 0x8000, 0x2000, 0x80, 0x20 };
+        for (i = 0; i < 4; i++)
+            if (!(left_samples_available & mask[i])) {
+                int status = left[pred_mode_cache[scan8[0] + 8 * i]];
+                if (status < 0) {
+                    av_log(logctx, AV_LOG_ERROR,
+                           "left block unavailable for requested intra4x4 mode %d\n",
+                           status);
+                    return AVERROR_INVALIDDATA;
+                } else if (status) {
+                    pred_mode_cache[scan8[0] + 8 * i] = status;
+                }
+            }
+    }
+
+    return 0;
+}
+
+/**
+ * Check if the top & left blocks are available if needed and
+ * change the dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra_pred_mode(void *logctx, int top_samples_available,
+                                  int left_samples_available,
+                                  int mode, int is_chroma)
+{
+    static const int8_t top[4]  = { LEFT_DC_PRED8x8, 1, -1, -1 };
+    static const int8_t left[5] = { TOP_DC_PRED8x8, -1,  2, -1, DC_128_PRED8x8 };
+
+    if (mode > 3U) {
+        av_log(logctx, AV_LOG_ERROR,
+               "out of range intra chroma pred mode\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!(top_samples_available & 0x8000)) {
+        mode = top[mode];
+        if (mode < 0) {
+            av_log(logctx, AV_LOG_ERROR,
+                   "top block unavailable for requested intra mode\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    if ((left_samples_available & 0x8080) != 0x8080) {
+        mode = left[mode];
+        if (mode < 0) {
+            av_log(logctx, AV_LOG_ERROR,
+                   "left block unavailable for requested intra mode\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (is_chroma && (left_samples_available & 0x8080)) {
+            // mad cow disease mode, aka MBAFF + constrained_intra_pred
+            mode = ALZHEIMER_DC_L0T_PRED8x8 +
+                   (!(left_samples_available & 0x8000)) +
+                   2 * (mode == DC_128_PRED8x8);
+        }
+    }
+
+    return mode;
+}
