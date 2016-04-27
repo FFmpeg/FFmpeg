@@ -1,5 +1,5 @@
 /*
- * RTP parser for VP9 payload format (draft version 0) - experimental
+ * RTP parser for VP9 payload format (draft version 02) - experimental
  * Copyright (c) 2015 Thomas Volkert <thomas@homer-conferencing.com>
  *
  * This file is part of Libav.
@@ -45,8 +45,8 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
                              const uint8_t *buf, int len, uint16_t seq,
                              int flags)
 {
-    int has_pic_id, has_layer_idc, has_ref_idc, has_ss_data, has_su_data;
-    av_unused int pic_id = 0, non_key_frame = 0;
+    int has_pic_id, has_layer_idc, has_ref_idc, has_ss_data;
+    av_unused int pic_id = 0, non_key_frame = 0, inter_picture_layer_frame;
     av_unused int layer_temporal = -1, layer_spatial = -1, layer_quality = -1;
     int ref_fields = 0, has_ref_field_ext_pic_id = 0;
     int first_fragment, last_fragment;
@@ -68,24 +68,24 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
      *
      *      0 1 2 3 4 5 6 7
      *     +-+-+-+-+-+-+-+-+
-     *     |I|L|F|B|E|V|U|-| (REQUIRED)
+     *     |I|P|L|F|B|E|V|-| (REQUIRED)
      *     +-+-+-+-+-+-+-+-+
      *
      *     I: PictureID present
+     *     P: Inter-picture predicted layer frame
      *     L: Layer indices present
-     *     F: Reference indices present
+     *     F: Flexible mode
      *     B: Start of VP9 frame
      *     E: End of picture
      *     V: Scalability Structure (SS) present
-     *     U: Scalability Structure Update (SU) present
      */
     has_pic_id     = !!(buf[0] & 0x80);
-    has_layer_idc  = !!(buf[0] & 0x40);
-    has_ref_idc    = !!(buf[0] & 0x20);
-    first_fragment = !!(buf[0] & 0x10);
-    last_fragment  = !!(buf[0] & 0x08);
-    has_ss_data    = !!(buf[0] & 0x04);
-    has_su_data    = !!(buf[0] & 0x02);
+    inter_picture_layer_frame = !!(buf[0] & 0x40);
+    has_layer_idc  = !!(buf[0] & 0x20);
+    has_ref_idc    = !!(buf[0] & 0x10);
+    first_fragment = !!(buf[0] & 0x08);
+    last_fragment  = !!(buf[0] & 0x04);
+    has_ss_data    = !!(buf[0] & 0x02);
 
     rtp_m = !!(flags & RTP_FLAG_MARKER);
 
@@ -223,16 +223,6 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
      */
     if (has_ss_data) {
         avpriv_report_missing_feature(ctx, "VP9 scalability structure data");
-        return AVERROR(ENOSYS);
-    }
-
-    /*
-     * decode the scalability update structure (SU)
-     *
-     *  spec. is tbd
-     */
-    if (has_su_data) {
-        avpriv_report_missing_feature(ctx, "VP9 scalability update structure data");
         return AVERROR(ENOSYS);
     }
 
