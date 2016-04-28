@@ -276,6 +276,9 @@ static int output_frame(AVFilterLink *outlink, int nb_samples)
 
     calculate_scales(s, nb_samples);
 
+    if (nb_samples == 0)
+        return 0;
+
     out_buf = ff_get_audio_buffer(outlink, nb_samples);
     if (!out_buf)
         return AVERROR(ENOMEM);
