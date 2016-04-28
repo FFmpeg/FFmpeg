@@ -23,8 +23,8 @@
  * os2threads to pthreads wrapper
  */
 
-#ifndef AVCODEC_OS2PTHREADS_H
-#define AVCODEC_OS2PTHREADS_H
+#ifndef COMPAT_OS2THREADS_H
+#define COMPAT_OS2THREADS_H
 
 #define INCL_DOS
 #include <os2.h>
@@ -32,19 +32,27 @@
 #undef __STRICT_ANSI__          /* for _beginthread() */
 #include <stdlib.h>
 
+#include <sys/builtin.h>
 #include <sys/fmutex.h>
 
-#include "libavutil/mem.h"
+#include "libavutil/attributes.h"
 
-typedef TID  pthread_t;
+typedef struct {
+    TID tid;
+    void *(*start_routine)(void *);
+    void *arg;
+    void *result;
+} pthread_t;
+
 typedef void pthread_attr_t;
 
 typedef HMTX pthread_mutex_t;
 typedef void pthread_mutexattr_t;
 
 typedef struct {
-    HEV  event_sem;
-    int  wait_count;
+    HEV event_sem;
+    HEV ack_sem;
+    volatile unsigned  wait_count;
 } pthread_cond_t;
 
 typedef void pthread_condattr_t;
@@ -56,44 +64,39 @@ typedef struct {
 
 #define PTHREAD_ONCE_INIT {0, _FMUTEX_INITIALIZER}
 
-struct thread_arg {
-    void *(*start_routine)(void *);
-    void *arg;
-};
-
 static void thread_entry(void *arg)
 {
-    struct thread_arg *thread_arg = arg;
+    pthread_t *thread = arg;
 
-    thread_arg->start_routine(thread_arg->arg);
-
-    av_free(thread_arg);
+    thread->result = thread->start_routine(thread->arg);
 }
 
-static av_always_inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
+static av_always_inline int pthread_create(pthread_t *thread,
+                                           const pthread_attr_t *attr,
+                                           void *(*start_routine)(void*),
+                                           void *arg)
 {
-    struct thread_arg *thread_arg;
+    thread->start_routine = start_routine;
+    thread->arg = arg;
+    thread->result = NULL;
 
-    thread_arg = av_mallocz(sizeof(struct thread_arg));
-    if (!thread_arg)
-        return ENOMEM;
-
-    thread_arg->start_routine = start_routine;
-    thread_arg->arg = arg;
-
-    *thread = _beginthread(thread_entry, NULL, 256 * 1024, thread_arg);
+    thread->tid = _beginthread(thread_entry, NULL, 1024 * 1024, thread);
 
     return 0;
 }
 
 static av_always_inline int pthread_join(pthread_t thread, void **value_ptr)
 {
-    DosWaitThread((PTID)&thread, DCWW_WAIT);
+    DosWaitThread(&thread.tid, DCWW_WAIT);
+
+    if (value_ptr)
+        *value_ptr = thread.result;
 
     return 0;
 }
 
-static av_always_inline int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr)
+static av_always_inline int pthread_mutex_init(pthread_mutex_t *mutex,
+                                               const pthread_mutexattr_t *attr)
 {
     DosCreateMutexSem(NULL, (PHMTX)mutex, 0, FALSE);
 
@@ -121,9 +124,11 @@ static av_always_inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
     return 0;
 }
 
-static av_always_inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
+static av_always_inline int pthread_cond_init(pthread_cond_t *cond,
+                                              const pthread_condattr_t *attr)
 {
     DosCreateEventSem(NULL, &cond->event_sem, DCE_POSTONE, FALSE);
+    DosCreateEventSem(NULL, &cond->ack_sem, DCE_POSTONE, FALSE);
 
     cond->wait_count = 0;
 
@@ -133,16 +138,16 @@ static av_always_inline int pthread_cond_init(pthread_cond_t *cond, const pthrea
 static av_always_inline int pthread_cond_destroy(pthread_cond_t *cond)
 {
     DosCloseEventSem(cond->event_sem);
+    DosCloseEventSem(cond->ack_sem);
 
     return 0;
 }
 
 static av_always_inline int pthread_cond_signal(pthread_cond_t *cond)
 {
-    if (cond->wait_count > 0) {
+    if (!__atomic_cmpxchg32(&cond->wait_count, 0, 0)) {
         DosPostEventSem(cond->event_sem);
-
-        cond->wait_count--;
+        DosWaitEventSem(cond->ack_sem, SEM_INDEFINITE_WAIT);
     }
 
     return 0;
@@ -150,29 +155,32 @@ static av_always_inline int pthread_cond_signal(pthread_cond_t *cond)
 
 static av_always_inline int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-    while (cond->wait_count > 0) {
-        DosPostEventSem(cond->event_sem);
-
-        cond->wait_count--;
-    }
+    while (!__atomic_cmpxchg32(&cond->wait_count, 0, 0))
+        pthread_cond_signal(cond);
 
     return 0;
 }
 
-static av_always_inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+static av_always_inline int pthread_cond_wait(pthread_cond_t *cond,
+                                              pthread_mutex_t *mutex)
 {
-    cond->wait_count++;
+    __atomic_increment(&cond->wait_count);
 
     pthread_mutex_unlock(mutex);
 
     DosWaitEventSem(cond->event_sem, SEM_INDEFINITE_WAIT);
+
+    __atomic_decrement(&cond->wait_count);
+
+    DosPostEventSem(cond->ack_sem);
 
     pthread_mutex_lock(mutex);
 
     return 0;
 }
 
-static av_always_inline int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+static av_always_inline int pthread_once(pthread_once_t *once_control,
+                                         void (*init_routine)(void))
 {
     if (!once_control->done)
     {
@@ -190,4 +198,4 @@ static av_always_inline int pthread_once(pthread_once_t *once_control, void (*in
 
     return 0;
 }
-#endif /* AVCODEC_OS2PTHREADS_H */
+#endif /* COMPAT_OS2THREADS_H */

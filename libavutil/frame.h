@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -106,12 +105,22 @@ enum AVFrameSideDataType {
      * @endcode
      */
     AV_FRAME_DATA_SKIP_SAMPLES,
-
     /**
      * This side data must be associated with an audio frame and corresponds to
      * enum AVAudioServiceType defined in avcodec.h.
      */
     AV_FRAME_DATA_AUDIO_SERVICE_TYPE,
+    /**
+     * Mastering display metadata associated with a video frame. The payload is
+     * an AVMasteringDisplayMetadata type and contains information about the
+     * mastering display color volume.
+     */
+    AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
+    /**
+     * The GOP timecode in 25 bit timecode format. Data format is 64-bit integer.
+     * This is set on the first frame of a GOP that has a temporal reference of 0.
+     */
+    AV_FRAME_DATA_GOP_TIMECODE
 };
 
 enum AVActiveFormatDescription {
@@ -178,6 +187,9 @@ typedef struct AVFrame {
      * see avcodec_align_dimensions2(). Some filters and swscale can read
      * up to 16 bytes beyond the planes, if these filters are to be used,
      * then 16 extra bytes must be allocated.
+     *
+     * NOTE: Except for hwaccel formats, pointers not needed by the format
+     * MUST be set to NULL.
      */
     uint8_t *data[AV_NUM_DATA_POINTERS];
 
@@ -412,6 +424,12 @@ typedef struct AVFrame {
     enum AVChromaLocation chroma_location;
 
     /**
+     * For hwaccel-format frames, this should be a reference to the
+     * AVHWFramesContext describing the frame.
+     */
+    AVBufferRef *hw_frames_ctx;
+
+    /**
      * frame timestamp estimated using various heuristics, in stream time base
      * Code outside libavutil should access this field using:
      * av_frame_get_best_effort_timestamp(frame)
@@ -573,6 +591,10 @@ void av_frame_free(AVFrame **frame);
  * If src is not reference counted, new buffers are allocated and the data is
  * copied.
  *
+ * @warning: dst MUST have been either unreferenced with av_frame_unref(dst),
+ *           or newly allocated with av_frame_alloc() before calling this
+ *           function, or undefined behavior will occur.
+ *
  * @return 0 on success, a negative AVERROR on error
  */
 int av_frame_ref(AVFrame *dst, const AVFrame *src);
@@ -593,6 +615,10 @@ void av_frame_unref(AVFrame *frame);
 
 /**
  * Move everything contained in src to dst and reset src.
+ *
+ * @warning: dst is not unreferenced, but directly overwritten without reading
+ *           or deallocating its contents. Call av_frame_unref(dst) manually
+ *           before calling this function to ensure that no memory is leaked.
  */
 void av_frame_move_ref(AVFrame *dst, AVFrame *src);
 
@@ -607,6 +633,10 @@ void av_frame_move_ref(AVFrame *dst, AVFrame *src);
  * This function will fill AVFrame.data and AVFrame.buf arrays and, if
  * necessary, allocate and fill AVFrame.extended_data and AVFrame.extended_buf.
  * For planar formats, one buffer will be allocated for each plane.
+ *
+ * @warning: if frame already has been allocated, calling this function will
+ *           leak memory. In addition, undefined behavior can occur in certain
+ *           cases.
  *
  * @param frame frame in which to store the new buffers.
  * @param align required buffer size alignment

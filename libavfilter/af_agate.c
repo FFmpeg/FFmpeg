@@ -23,6 +23,7 @@
  * Audio (Sidechain) Gate filter
  */
 
+#include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
@@ -54,7 +55,8 @@ typedef struct AudioGateContext {
     double attack_coeff;
     double release_coeff;
 
-    AVFrame *input_frame[2];
+    AVAudioFifo *fifo[2];
+    int64_t pts;
 } AudioGateContext;
 
 #define OFFSET(x) offsetof(AudioGateContext, x)
@@ -263,58 +265,68 @@ AVFilter ff_af_agate = {
 #define sidechaingate_options options
 AVFILTER_DEFINE_CLASS(sidechaingate);
 
-static int scfilter_frame(AVFilterLink *link, AVFrame *in)
+static int scfilter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
     AudioGateContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    const double *scsrc;
-    double *sample;
+    AVFrame *out, *in[2] = { NULL };
+    double *dst;
     int nb_samples;
-    int ret, i;
+    int i;
 
     for (i = 0; i < 2; i++)
         if (link == ctx->inputs[i])
             break;
-    av_assert0(i < 2 && !s->input_frame[i]);
-    s->input_frame[i] = in;
+    av_assert0(i < 2);
+    av_audio_fifo_write(s->fifo[i], (void **)frame->extended_data,
+                        frame->nb_samples);
+    av_frame_free(&frame);
 
-    if (!s->input_frame[0] || !s->input_frame[1])
+    nb_samples = FFMIN(av_audio_fifo_size(s->fifo[0]), av_audio_fifo_size(s->fifo[1]));
+    if (!nb_samples)
         return 0;
 
-    nb_samples = FFMIN(s->input_frame[0]->nb_samples,
-                       s->input_frame[1]->nb_samples);
+    out = ff_get_audio_buffer(outlink, nb_samples);
+    if (!out)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < 2; i++) {
+        in[i] = ff_get_audio_buffer(ctx->inputs[i], nb_samples);
+        if (!in[i]) {
+            av_frame_free(&in[0]);
+            av_frame_free(&in[1]);
+            av_frame_free(&out);
+            return AVERROR(ENOMEM);
+        }
+        av_audio_fifo_read(s->fifo[i], (void **)in[i]->data, nb_samples);
+    }
 
-    sample = (double *)s->input_frame[0]->data[0];
-    scsrc = (const double *)s->input_frame[1]->data[0];
+    dst = (double *)out->data[0];
+    out->pts = s->pts;
+    s->pts += nb_samples;
 
-    gate(s, sample, sample, scsrc, nb_samples,
+    gate(s, (double *)in[0]->data[0], dst,
+         (double *)in[1]->data[0], nb_samples,
          s->level_in, s->level_sc,
          ctx->inputs[0], ctx->inputs[1]);
-    ret = ff_filter_frame(outlink, s->input_frame[0]);
 
-    s->input_frame[0] = NULL;
-    av_frame_free(&s->input_frame[1]);
+    av_frame_free(&in[0]);
+    av_frame_free(&in[1]);
 
-    return ret;
+    return ff_filter_frame(outlink, out);
 }
 
 static int screquest_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioGateContext *s = ctx->priv;
-    int i, ret;
+    int i;
 
     /* get a frame on each input */
     for (i = 0; i < 2; i++) {
         AVFilterLink *inlink = ctx->inputs[i];
-        if (!s->input_frame[i] &&
-            (ret = ff_request_frame(inlink)) < 0)
-            return ret;
-
-        /* request the same number of samples on all inputs */
-        if (i == 0)
-            ctx->inputs[1]->request_samples = s->input_frame[0]->nb_samples;
+        if (!av_audio_fifo_size(s->fifo[i]))
+            return ff_request_frame(inlink);
     }
 
     return 0;
@@ -358,6 +370,7 @@ static int scquery_formats(AVFilterContext *ctx)
 static int scconfig_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    AudioGateContext *s = ctx->priv;
 
     if (ctx->inputs[0]->sample_rate != ctx->inputs[1]->sample_rate) {
         av_log(ctx, AV_LOG_ERROR,
@@ -372,9 +385,23 @@ static int scconfig_output(AVFilterLink *outlink)
     outlink->channel_layout = ctx->inputs[0]->channel_layout;
     outlink->channels = ctx->inputs[0]->channels;
 
+    s->fifo[0] = av_audio_fifo_alloc(ctx->inputs[0]->format, ctx->inputs[0]->channels, 1024);
+    s->fifo[1] = av_audio_fifo_alloc(ctx->inputs[1]->format, ctx->inputs[1]->channels, 1024);
+    if (!s->fifo[0] || !s->fifo[1])
+        return AVERROR(ENOMEM);
+
+
     agate_config_input(ctx->inputs[0]);
 
     return 0;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    AudioGateContext *s = ctx->priv;
+
+    av_audio_fifo_free(s->fifo[0]);
+    av_audio_fifo_free(s->fifo[1]);
 }
 
 static const AVFilterPad sidechaingate_inputs[] = {
@@ -382,13 +409,10 @@ static const AVFilterPad sidechaingate_inputs[] = {
         .name           = "main",
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = scfilter_frame,
-        .needs_writable = 1,
-        .needs_fifo     = 1,
     },{
         .name           = "sidechain",
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = scfilter_frame,
-        .needs_fifo     = 1,
     },
     { NULL }
 };
@@ -409,6 +433,7 @@ AVFilter ff_af_sidechaingate = {
     .priv_size      = sizeof(AudioGateContext),
     .priv_class     = &sidechaingate_class,
     .query_formats  = scquery_formats,
+    .uninit         = uninit,
     .inputs         = sidechaingate_inputs,
     .outputs        = sidechaingate_outputs,
 };

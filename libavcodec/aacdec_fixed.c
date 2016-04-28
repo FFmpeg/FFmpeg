@@ -75,11 +75,12 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
-#include "cbrt_tablegen.h"
+#include "cbrt_data.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
 #include "aacadtsdec.h"
+#include "profiles.h"
 #include "libavutil/intfloat.h"
 
 #include <math.h>
@@ -154,9 +155,9 @@ static void vector_pow43(int *coefs, int len)
     for (i=0; i<len; i++) {
         coef = coefs[i];
         if (coef < 0)
-            coef = -(int)cbrt_tab[-coef];
+            coef = -(int)ff_cbrt_tab_fixed[-coef];
         else
-            coef = (int)cbrt_tab[coef];
+            coef = (int)ff_cbrt_tab_fixed[coef];
         coefs[i] = coef;
     }
 }
@@ -440,5 +441,6 @@ AVCodec ff_aac_fixed_decoder = {
     .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE,
     .channel_layouts = aac_channel_layout,
+    .profiles        = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     .flush = flush,
 };

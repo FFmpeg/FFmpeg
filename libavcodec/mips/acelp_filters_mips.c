@@ -57,6 +57,7 @@
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void ff_acelp_interpolatef_mips(float *out, const float *in,
                            const float *filter_coeffs, int precision,
                            int frac_pos, int filter_length, int length)
@@ -206,12 +207,15 @@ static void ff_acelp_apply_order_2_transfer_function_mips(float *out, const floa
            "$f12", "$f13", "$f14", "$f15", "$f16", "memory"
     );
 }
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_INLINE_ASM */
 
 void ff_acelp_filter_init_mips(ACELPFContext *c)
 {
 #if HAVE_INLINE_ASM
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     c->acelp_interpolatef                      = ff_acelp_interpolatef_mips;
     c->acelp_apply_order_2_transfer_function   = ff_acelp_apply_order_2_transfer_function_mips;
+#endif
 #endif
 }

@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
+
 #include "h264.h"
 #include "h264data.h"
 #include "mpegutils.h"
@@ -176,7 +178,7 @@ static void fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, 
     } else {
         for (i = 0; i < 6; i++)
             for (j = 0; j < 16; j++)
-                qm->bScalingLists4x4[i][j] = h->pps.scaling_matrix4[i][zigzag_scan[j]];
+                qm->bScalingLists4x4[i][j] = h->pps.scaling_matrix4[i][ff_zigzag_scan[j]];
 
         for (i = 0; i < 64; i++) {
             qm->bScalingLists8x8[0][i] = h->pps.scaling_matrix8[0][ff_zigzag_direct[i]];
@@ -230,8 +232,8 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->slice_type            = ff_h264_get_slice_type(sl);
     if (sl->slice_type_fixed)
         slice->slice_type += 5;
-    slice->luma_log2_weight_denom       = sl->luma_log2_weight_denom;
-    slice->chroma_log2_weight_denom     = sl->chroma_log2_weight_denom;
+    slice->luma_log2_weight_denom       = sl->pwt.luma_log2_weight_denom;
+    slice->chroma_log2_weight_denom     = sl->pwt.chroma_log2_weight_denom;
     if (sl->list_count > 0)
         slice->num_ref_idx_l0_active_minus1 = sl->ref_count[0] - 1;
     if (sl->list_count > 1)
@@ -252,18 +254,18 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                 else
                     index = get_refpic_index(pp, ff_dxva2_get_surface_index(avctx, ctx, r->f));
                 fill_picture_entry(&slice->RefPicList[list][i], index,
-                                   r->reference == PICT_BOTTOM_FIELD);
+                                   sl->ref_list[list][i].reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
-                    if (plane == 0 && sl->luma_weight_flag[list]) {
-                        w = sl->luma_weight[i][list][0];
-                        o = sl->luma_weight[i][list][1];
-                    } else if (plane >= 1 && sl->chroma_weight_flag[list]) {
-                        w = sl->chroma_weight[i][list][plane-1][0];
-                        o = sl->chroma_weight[i][list][plane-1][1];
+                    if (plane == 0 && sl->pwt.luma_weight_flag[list]) {
+                        w = sl->pwt.luma_weight[i][list][0];
+                        o = sl->pwt.luma_weight[i][list][1];
+                    } else if (plane >= 1 && sl->pwt.chroma_weight_flag[list]) {
+                        w = sl->pwt.chroma_weight[i][list][plane-1][0];
+                        o = sl->pwt.chroma_weight[i][list][plane-1][1];
                     } else {
-                        w = 1 << (plane == 0 ? sl->luma_log2_weight_denom :
-                                               sl->chroma_log2_weight_denom);
+                        w = 1 << (plane == 0 ? sl->pwt.luma_log2_weight_denom :
+                                               sl->pwt.chroma_log2_weight_denom);
                         o = 0;
                     }
                     slice->Weights[list][i][plane][0] = w;
@@ -405,6 +407,8 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         dsc11->NumMBsInBuffer       = mb_count;
 
         type = D3D11_VIDEO_DECODER_BUFFER_SLICE_CONTROL;
+
+        av_assert0((dsc11->DataSize & 127) == 0);
     }
 #endif
 #if CONFIG_DXVA2
@@ -416,6 +420,8 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         dsc2->NumMBsInBuffer       = mb_count;
 
         type = DXVA2_SliceControlBufferType;
+
+        av_assert0((dsc2->DataSize & 127) == 0);
     }
 #endif
 
@@ -426,7 +432,6 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         slice_data = ctx_pic->slice_long;
         slice_size = ctx_pic->slice_count * sizeof(*ctx_pic->slice_long);
     }
-    assert((bs->DataSize & 127) == 0);
     return ff_dxva2_commit_buffer(avctx, ctx, sc,
                                   type,
                                   slice_data, slice_size, mb_count);

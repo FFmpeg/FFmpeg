@@ -42,7 +42,7 @@ typedef struct {
     AVFrame *last;          ///< last frame from the previous queue
     AVFrame **clean_src;    ///< frame queue for the clean source
     int got_frame[2];       ///< frame request flag for each input stream
-    double ts_unit;         ///< timestamp units for the output frames
+    AVRational ts_unit;     ///< timestamp units for the output frames
     int64_t start_pts;      ///< base for output timestamps
     uint32_t eof;           ///< bitmask for end of stream
     int hsub, vsub;         ///< chroma subsampling values
@@ -93,8 +93,8 @@ static void calc_diffs(const DecimateContext *dm, struct qitem *q,
         const int linesize2 = f2->linesize[plane];
         const uint8_t *f1p = f1->data[plane];
         const uint8_t *f2p = f2->data[plane];
-        int width    = plane ? FF_CEIL_RSHIFT(f1->width,  dm->hsub) : f1->width;
-        int height   = plane ? FF_CEIL_RSHIFT(f1->height, dm->vsub) : f1->height;
+        int width    = plane ? AV_CEIL_RSHIFT(f1->width,  dm->hsub) : f1->width;
+        int height   = plane ? AV_CEIL_RSHIFT(f1->height, dm->vsub) : f1->height;
         int hblockx  = dm->blockx / 2;
         int hblocky  = dm->blocky / 2;
 
@@ -164,12 +164,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return 0;
     dm->got_frame[INPUT_MAIN] = dm->got_frame[INPUT_CLEANSRC] = 0;
 
+    if (dm->ppsrc)
+        in = dm->clean_src[dm->fid];
+
     if (in) {
         /* update frame metrics */
-        prv = dm->fid ? dm->queue[dm->fid - 1].frame : dm->last;
-        if (!prv)
-            prv = in;
-        calc_diffs(dm, &dm->queue[dm->fid], prv, in);
+        prv = dm->fid ? (dm->ppsrc ? dm->clean_src[dm->fid - 1] : dm->queue[dm->fid - 1].frame) : dm->last;
+        if (!prv) {
+            dm->queue[dm->fid].maxbdiff = INT64_MAX;
+            dm->queue[dm->fid].totdiff  = INT64_MAX;
+        } else {
+            calc_diffs(dm, &dm->queue[dm->fid], prv, in);
+        }
         if (++dm->fid != dm->cycle)
             return 0;
         av_frame_free(&dm->last);
@@ -217,7 +223,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 av_frame_free(&frame);
                 frame = dm->clean_src[i];
             }
-            frame->pts = outlink->frame_count * dm->ts_unit +
+            frame->pts = av_rescale_q(outlink->frame_count, dm->ts_unit, (AVRational){1,1}) +
                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
             ret = ff_filter_frame(outlink, frame);
             if (ret < 0)
@@ -377,7 +383,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->w = inlink->w;
     outlink->h = inlink->h;
-    dm->ts_unit = av_q2d(av_inv_q(av_mul_q(fps, outlink->time_base)));
+    dm->ts_unit = av_inv_q(av_mul_q(fps, outlink->time_base));
     return 0;
 }
 

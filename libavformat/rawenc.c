@@ -60,11 +60,11 @@ AVOutputFormat ff_ac3_muxer = {
 static int adx_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    AVCodecContext *avctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (pb->seekable) {
         int64_t file_size = avio_tell(pb);
-        uint64_t sample_count = (file_size - 36) / avctx->channels / 18 * 32;
+        uint64_t sample_count = (file_size - 36) / par->channels / 18 * 32;
         if (sample_count <= UINT32_MAX) {
             avio_seek(pb, 12, SEEK_SET);
             avio_wb32(pb, sample_count);
@@ -115,7 +115,7 @@ AVOutputFormat ff_data_muxer = {
 AVOutputFormat ff_dirac_muxer = {
     .name              = "dirac",
     .long_name         = NULL_IF_CONFIG_SMALL("raw Dirac"),
-    .extensions        = "drc",
+    .extensions        = "drc,vc2",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_DIRAC,
     .write_header      = force_one_stream,
@@ -186,6 +186,20 @@ AVOutputFormat ff_g723_1_muxer = {
     .mime_type         = "audio/g723",
     .extensions        = "tco,rco",
     .audio_codec       = AV_CODEC_ID_G723_1,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#if CONFIG_GSM_MUXER
+AVOutputFormat ff_gsm_muxer = {
+    .name              = "gsm",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw GSM"),
+    .mime_type         = "audio/x-gsm",
+    .extensions        = "gsm",
+    .audio_codec       = AV_CODEC_ID_GSM,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,

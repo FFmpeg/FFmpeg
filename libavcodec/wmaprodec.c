@@ -88,6 +88,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
@@ -1221,7 +1222,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
         int num_fill_bits;
         if (!(num_fill_bits = get_bits(&s->gb, 2))) {
             int len = get_bits(&s->gb, 4);
-            num_fill_bits = (len ? get_bits(&s->gb, len) : 0) + 1;
+            num_fill_bits = get_bitsz(&s->gb, len) + 1;
         }
 
         if (num_fill_bits >= 0) {
@@ -1350,7 +1351,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
                 const int exp = s->channel[c].quant_step -
                             (s->channel[c].max_scale_factor - *sf++) *
                             s->channel[c].scale_factor_step;
-                const float quant = pow(10.0, exp / 20.0);
+                const float quant = ff_exp10(exp / 20.0);
                 int start = s->cur_sfb_offsets[b];
                 s->fdsp->vector_fmul_scalar(s->tmp + start,
                                            s->channel[c].coeffs + start,

@@ -34,7 +34,7 @@ av_cold void ff_maskedmerge_init_x86(MaskedMergeContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64 && EXTERNAL_SSE2(cpu_flags) && s->depth == 8) {
+    if (EXTERNAL_SSE2(cpu_flags) && s->depth == 8) {
         s->maskedmerge = ff_maskedmerge8_sse2;
     }
 }

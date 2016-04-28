@@ -32,6 +32,10 @@ static const AVOption options[] = {
     { "list_devices", "list available devices"  , OFFSET(list_devices), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "bm_v210",      "v210 10 bit per channel" , OFFSET(v210),         AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
+    { "teletext_lines", "teletext lines bitmask", OFFSET(teletext_lines), AV_OPT_TYPE_INT64, { .i64 = 0   }, 0, 0x7ffffffffLL, DEC, "teletext_lines"},
+    { "standard",     NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7fff9fffeLL}, 0, 0,    DEC, "teletext_lines"},
+    { "all",          NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7ffffffffLL}, 0, 0,    DEC, "teletext_lines"},
+    { "channels",     "number of audio channels", OFFSET(audio_channels), AV_OPT_TYPE_INT , { .i64 = 2   }, 2, 16, DEC },
     { NULL },
 };
 

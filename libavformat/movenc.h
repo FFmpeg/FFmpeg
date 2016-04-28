@@ -25,6 +25,7 @@
 #define AVFORMAT_MOVENC_H
 
 #include "avformat.h"
+#include "movenccenc.h"
 
 #define MOV_FRAG_INFO_ALLOC_INCREMENT 64
 #define MOV_INDEX_CLUSTER_SIZE 1024
@@ -100,7 +101,7 @@ typedef struct MOVTrack {
     int         track_id;
     int         tag; ///< stsd fourcc
     AVStream        *st;
-    AVCodecContext *enc;
+    AVCodecParameters *par;
     int multichannel_as_mono;
 
     int         vos_len;
@@ -149,7 +150,19 @@ typedef struct MOVTrack {
     } vc1_info;
 
     void       *eac3_priv;
+
+    MOVMuxCencContext cenc;
+
+    uint32_t palette[AVPALETTE_COUNT];
+    int pal_done;
+
+    int is_unaligned_qt_rgb;
 } MOVTrack;
+
+typedef enum {
+    MOV_ENC_NONE = 0,
+    MOV_ENC_CENC_AES_CTR,
+} MOVEncryptionScheme;
 
 typedef struct MOVMuxContext {
     const AVClass *av_class;
@@ -193,6 +206,14 @@ typedef struct MOVMuxContext {
 
     int frag_interleave;
     int missing_duration_warned;
+
+    char *encryption_scheme_str;
+    MOVEncryptionScheme encryption_scheme;
+    uint8_t *encryption_key;
+    int encryption_key_len;
+    uint8_t *encryption_kid;
+    int encryption_kid_len;
+
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)

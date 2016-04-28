@@ -54,8 +54,8 @@ static void check_ipred(void)
     LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
     VP9DSPContext dsp;
     int tx, mode, bit_depth;
-    declare_func(void, uint8_t *dst, ptrdiff_t stride,
-                 const uint8_t *left, const uint8_t *top);
+    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t stride,
+                      const uint8_t *left, const uint8_t *top);
     static const char *const mode_names[N_INTRA_PRED_MODES] = {
         [VERT_PRED] = "vert",
         [HOR_PRED] = "hor",
@@ -315,7 +315,7 @@ static void check_itxfm(void)
     LOCAL_ALIGNED_32(int16_t, coef, [32 * 32 * 2]);
     LOCAL_ALIGNED_32(int16_t, subcoef0, [32 * 32 * 2]);
     LOCAL_ALIGNED_32(int16_t, subcoef1, [32 * 32 * 2]);
-    declare_func(void, uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
+    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
     VP9DSPContext dsp;
     int y, x, tx, txtp, bit_depth, sub;
     static const char *const txtp_types[N_TXFM_TYPES] = {
@@ -553,8 +553,8 @@ static void check_mc(void)
     LOCAL_ALIGNED_32(uint8_t, dst1, [64 * 64 * 2]);
     VP9DSPContext dsp;
     int op, hsize, bit_depth, filter, dx, dy;
-    declare_func(void, uint8_t *dst, ptrdiff_t dst_stride,
-                 const uint8_t *ref, ptrdiff_t ref_stride,
+    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dst_stride,
+                      const uint8_t *ref, ptrdiff_t ref_stride,
                  int h, int mx, int my);
     static const char *const filter_names[4] = {
         "8tap_smooth", "8tap_regular", "8tap_sharp", "bilin"

@@ -25,8 +25,8 @@
  * Determines the duration for each packet.
  */
 
-#ifndef AVCODEC_VORBIS_PARSER_H
-#define AVCODEC_VORBIS_PARSER_H
+#ifndef AVCODEC_VORBIS_PARSER_INTERNAL_H
+#define AVCODEC_VORBIS_PARSER_INTERNAL_H
 
 #include "avcodec.h"
 #include "vorbis_parser.h"
@@ -43,4 +43,4 @@ struct AVVorbisParseContext {
     int prev_mask;              ///< bitmask used to get the previous mode flag in each packet
 };
 
-#endif /* AVCODEC_VORBIS_PARSER_H */
+#endif /* AVCODEC_VORBIS_PARSER_INTERNAL_H */

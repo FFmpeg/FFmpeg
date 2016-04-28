@@ -80,6 +80,11 @@ FATE_VORBIS += fate-vorbis-20
 fate-vorbis-20: CMD = pcm -i $(TARGET_SAMPLES)/vorbis/6.ogg
 fate-vorbis-20: REF = $(SAMPLES)/vorbis/6.pcm
 
+FATE_VORBIS_FFPROBE-$(CONFIG_OGG_DEMUXER) += fate-vorbis-1833-chapters
+fate-vorbis-1833-chapters: CMD = probechapters $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg
+
+FATE_SAMPLES_FFPROBE += $(FATE_VORBIS_FFPROBE-yes)
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, OGG, VORBIS) += $(FATE_VORBIS)
-fate-vorbis: $(FATE_VORBIS)
+fate-vorbis: $(FATE_VORBIS) $(FATE_VORBIS_FFPROBE-yes)
 $(FATE_VORBIS): CMP = oneoff

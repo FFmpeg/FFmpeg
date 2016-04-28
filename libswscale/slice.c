@@ -39,7 +39,7 @@ static void free_lines(SwsSlice *s)
 }
 
 /*
- slice lines contains extra bytes for vetorial code thus @size
+ slice lines contains extra bytes for vectorial code thus @size
  is the allocated memory size and @width is the number of pixels
 */
 static int alloc_lines(SwsSlice *s, int size, int width)
@@ -149,9 +149,9 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int src
     int i = 0;
 
     const int start[4] = {lumY,
-                    chrY,
-                    chrY,
-                    lumY};
+                          chrY,
+                          chrY,
+                          lumY};
 
     const int end[4] = {lumY +lumH,
                         chrY + chrH,
@@ -159,9 +159,9 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int src
                         lumY + lumH};
 
     const uint8_t *src_[4] = {src[0] + (relative ? 0 : start[0]) * stride[0],
-                             src[1] + (relative ? 0 : start[1]) * stride[0],
-                             src[2] + (relative ? 0 : start[2]) * stride[0],
-                             src[3] + (relative ? 0 : start[3]) * stride[0]};
+                              src[1] + (relative ? 0 : start[1]) * stride[1],
+                              src[2] + (relative ? 0 : start[2]) * stride[2],
+                              src[3] + (relative ? 0 : start[3]) * stride[3]};
 
     s->width = srcW;
 
@@ -279,7 +279,7 @@ int ff_init_filters(SwsContext * c)
     if (need_lum_conv) {
         res = ff_init_desc_fmt_convert(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], pal);
         if (res < 0) goto cleanup;
-        c->desc[index].alpha = c->alpPixBuf != 0;
+        c->desc[index].alpha = c->needAlpha;
         ++index;
         srcIdx = dstIdx;
     }
@@ -288,7 +288,7 @@ int ff_init_filters(SwsContext * c)
     dstIdx = FFMAX(num_ydesc, num_cdesc);
     res = ff_init_desc_hscale(&c->desc[index], &c->slice[srcIdx], &c->slice[dstIdx], c->hLumFilter, c->hLumFilterPos, c->hLumFilterSize, c->lumXInc);
     if (res < 0) goto cleanup;
-    c->desc[index].alpha = c->alpPixBuf != 0;
+    c->desc[index].alpha = c->needAlpha;
 
 
     ++index;

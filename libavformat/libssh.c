@@ -489,7 +489,7 @@ static const AVClass libssh_context_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_libssh_protocol = {
+const URLProtocol ff_libssh_protocol = {
     .name                = "sftp",
     .url_open            = libssh_open,
     .url_read            = libssh_read,

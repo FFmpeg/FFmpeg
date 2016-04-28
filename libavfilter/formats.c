@@ -289,6 +289,17 @@ AVFilterFormats *ff_make_format_list(const int *fmts)
     return formats;
 }
 
+AVFilterChannelLayouts *ff_make_formatu64_list(const uint64_t *fmts)
+{
+    MAKE_FORMAT_LIST(AVFilterChannelLayouts,
+                     channel_layouts, nb_channel_layouts);
+    if (count)
+        memcpy(formats->channel_layouts, fmts,
+               sizeof(*formats->channel_layouts) * count);
+
+    return formats;
+}
+
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
 {
     MAKE_FORMAT_LIST(AVFilterChannelLayouts,
@@ -507,6 +518,8 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
             int ret = ref_fn(fmts, &ctx->inputs[i]->out_fmts);      \
             if (ret < 0) {                                          \
                 unref_fn(&fmts);                                    \
+                av_freep(&fmts->list);                              \
+                av_freep(&fmts);                                    \
                 return ret;                                         \
             }                                                       \
             count++;                                                \
@@ -517,6 +530,8 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
             int ret = ref_fn(fmts, &ctx->outputs[i]->in_fmts);      \
             if (ret < 0) {                                          \
                 unref_fn(&fmts);                                    \
+                av_freep(&fmts->list);                              \
+                av_freep(&fmts);                                    \
                 return ret;                                         \
             }                                                       \
             count++;                                                \

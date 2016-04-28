@@ -35,6 +35,16 @@
 #include "timefilter.h"
 #include "avdevice.h"
 
+#if HAVE_DISPATCH_DISPATCH_H
+#include <dispatch/dispatch.h>
+#define sem_t dispatch_semaphore_t
+#define sem_init(psem,x,val)  *psem = dispatch_semaphore_create(val)
+#define sem_post(psem)                dispatch_semaphore_signal(*psem)
+#define sem_wait(psem)                dispatch_semaphore_wait(*psem, DISPATCH_TIME_FOREVER)
+#define sem_timedwait(psem, val)      dispatch_semaphore_wait(*psem, dispatch_walltime(val, 0))
+#define sem_destroy(psem)             dispatch_release(*psem)
+#endif
+
 /**
  * Size of the internal FIFO buffers as a number of audio packets
  */
@@ -252,14 +262,14 @@ static int audio_read_header(AVFormatContext *context)
         return AVERROR(ENOMEM);
     }
 
-    stream->codec->codec_type   = AVMEDIA_TYPE_AUDIO;
+    stream->codecpar->codec_type   = AVMEDIA_TYPE_AUDIO;
 #if HAVE_BIGENDIAN
-    stream->codec->codec_id     = AV_CODEC_ID_PCM_F32BE;
+    stream->codecpar->codec_id     = AV_CODEC_ID_PCM_F32BE;
 #else
-    stream->codec->codec_id     = AV_CODEC_ID_PCM_F32LE;
+    stream->codecpar->codec_id     = AV_CODEC_ID_PCM_F32LE;
 #endif
-    stream->codec->sample_rate  = self->sample_rate;
-    stream->codec->channels     = self->nports;
+    stream->codecpar->sample_rate  = self->sample_rate;
+    stream->codecpar->channels     = self->nports;
 
     avpriv_set_pts_info(stream, 64, 1, 1000000);  /* 64 bits pts in us */
     return 0;

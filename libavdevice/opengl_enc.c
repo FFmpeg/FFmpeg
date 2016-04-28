@@ -678,11 +678,11 @@ static void opengl_compute_display_area(AVFormatContext *s)
     AVRational sar, dar; /* sample and display aspect ratios */
     OpenGLContext *opengl = s->priv_data;
     AVStream *st = s->streams[0];
-    AVCodecContext *encctx = st->codec;
+    AVCodecParameters *par = st->codecpar;
 
     /* compute overlay width and height from the codec context information */
     sar = st->sample_aspect_ratio.num ? st->sample_aspect_ratio : (AVRational){ 1, 1 };
-    dar = av_mul_q(sar, (AVRational){ encctx->width, encctx->height });
+    dar = av_mul_q(sar, (AVRational){ par->width, par->height });
 
     /* we suppose the screen has a 1/1 sample aspect ratio */
     /* fit in the window */
@@ -1032,8 +1032,8 @@ static av_cold int opengl_init_context(OpenGLContext *opengl)
         for (i = 1; i < num_planes; i++)
             if (opengl->non_pow_2_textures)
                 opengl_configure_texture(opengl, opengl->texture_name[i],
-                        FF_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w),
-                        FF_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h));
+                        AV_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w),
+                        AV_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h));
             else
                 opengl_configure_texture(opengl, opengl->texture_name[i], opengl->width, opengl->height);
         if (has_alpha)
@@ -1065,15 +1065,15 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     int ret;
 
     if (h->nb_streams != 1 ||
-        h->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
-        h->streams[0]->codec->codec_id != AV_CODEC_ID_RAWVIDEO) {
+        h->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
+        h->streams[0]->codecpar->codec_id != AV_CODEC_ID_RAWVIDEO) {
         av_log(opengl, AV_LOG_ERROR, "Only a single video stream is supported.\n");
         return AVERROR(EINVAL);
     }
     st = h->streams[0];
-    opengl->width = st->codec->width;
-    opengl->height = st->codec->height;
-    opengl->pix_fmt = st->codec->pix_fmt;
+    opengl->width = st->codecpar->width;
+    opengl->height = st->codecpar->height;
+    opengl->pix_fmt = st->codecpar->format;
     if (!opengl->window_width)
         opengl->window_width = opengl->width;
     if (!opengl->window_height)
@@ -1135,8 +1135,8 @@ static uint8_t* opengl_get_plane_pointer(OpenGLContext *opengl, AVPacket *pkt, i
 {
     uint8_t *data = pkt->data;
     int wordsize = opengl_type_size(opengl->type);
-    int width_chroma = FF_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w);
-    int height_chroma = FF_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h);
+    int width_chroma = AV_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w);
+    int height_chroma = AV_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h);
     int plane = desc->comp[comp_index].plane;
 
     switch(plane) {
@@ -1161,8 +1161,8 @@ static uint8_t* opengl_get_plane_pointer(OpenGLContext *opengl, AVPacket *pkt, i
 
 #define LOAD_TEXTURE_DATA(comp_index, sub)                                                  \
 {                                                                                           \
-    int width = sub ? FF_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w) : opengl->width;   \
-    int height = sub ? FF_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h): opengl->height; \
+    int width = sub ? AV_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w) : opengl->width;   \
+    int height = sub ? AV_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h): opengl->height; \
     uint8_t *data;                                                                          \
     int plane = desc->comp[comp_index].plane;                                               \
                                                                                             \
@@ -1200,7 +1200,7 @@ static uint8_t* opengl_get_plane_pointer(OpenGLContext *opengl, AVPacket *pkt, i
 static int opengl_draw(AVFormatContext *h, void *input, int repaint, int is_pkt)
 {
     OpenGLContext *opengl = h->priv_data;
-    enum AVPixelFormat pix_fmt = h->streams[0]->codec->pix_fmt;
+    enum AVPixelFormat pix_fmt = h->streams[0]->codecpar->format;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int ret;
 

@@ -18,9 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <math.h>
-#include <stdlib.h>
-
 #include "config.h"
 #include "libavcodec/avfft.h"
 #include "libavutil/avassert.h"
@@ -28,6 +25,7 @@
 #include "libavutil/xga_font_data.h"
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/time.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "lavfutils.h"
@@ -48,6 +46,8 @@
 #define FONTCOLOR       "st(0, (midi(f)-59.5)/12);" \
     "st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));" \
     "r(1-ld(1)) + b(ld(1))"
+#define PTS_STEP 10
+#define PTS_TOLERANCE 1
 
 #define OFFSET(x) offsetof(ShowCQTContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM)
@@ -91,7 +91,33 @@ AVFILTER_DEFINE_CLASS(showcqt);
 static void common_uninit(ShowCQTContext *s)
 {
     int k;
+    int level = AV_LOG_DEBUG;
+    int64_t plot_time;
 
+    if (s->fft_time)
+        av_log(s->ctx, level, "fft_time         = %16.3f s.\n", s->fft_time * 1e-6);
+    if (s->cqt_time)
+        av_log(s->ctx, level, "cqt_time         = %16.3f s.\n", s->cqt_time * 1e-6);
+    if (s->process_cqt_time)
+        av_log(s->ctx, level, "process_cqt_time = %16.3f s.\n", s->process_cqt_time * 1e-6);
+    if (s->update_sono_time)
+        av_log(s->ctx, level, "update_sono_time = %16.3f s.\n", s->update_sono_time * 1e-6);
+    if (s->alloc_time)
+        av_log(s->ctx, level, "alloc_time       = %16.3f s.\n", s->alloc_time * 1e-6);
+    if (s->bar_time)
+        av_log(s->ctx, level, "bar_time         = %16.3f s.\n", s->bar_time * 1e-6);
+    if (s->axis_time)
+        av_log(s->ctx, level, "axis_time        = %16.3f s.\n", s->axis_time * 1e-6);
+    if (s->sono_time)
+        av_log(s->ctx, level, "sono_time        = %16.3f s.\n", s->sono_time * 1e-6);
+
+    plot_time = s->fft_time + s->cqt_time + s->process_cqt_time + s->update_sono_time
+              + s->alloc_time + s->bar_time + s->axis_time + s->sono_time;
+    if (plot_time)
+        av_log(s->ctx, level, "plot_time        = %16.3f s.\n", plot_time * 1e-6);
+
+    s->fft_time = s->cqt_time = s->process_cqt_time = s->update_sono_time
+                = s->alloc_time = s->bar_time = s->axis_time = s->sono_time = 0;
     /* axis_frame may be non reference counted frame */
     if (s->axis_frame && !s->axis_frame->buf[0]) {
         av_freep(s->axis_frame->data);
@@ -104,7 +130,7 @@ static void common_uninit(ShowCQTContext *s)
     av_fft_end(s->fft_ctx);
     s->fft_ctx = NULL;
     if (s->coeffs)
-        for (k = 0; k < s->cqt_len * 2; k++)
+        for (k = 0; k < s->cqt_len; k++)
             av_freep(&s->coeffs[k].val);
     av_freep(&s->coeffs);
     av_freep(&s->fft_data);
@@ -250,61 +276,25 @@ static void cqt_calc(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeff
     }
 }
 
-#if 0
-static void cqt_calc_interleave(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeffs,
-                                int len, int fft_len)
-{
-    int k, x, i, m;
-
-    for (k = 0; k < len; k++) {
-        FFTComplex l, r, a = {0,0}, b = {0,0};
-
-        m = 2 * k;
-        for (x = 0; x < coeffs[m].len; x++) {
-            FFTSample u = coeffs[m].val[x];
-            i = coeffs[m].start + x;
-            a.re += u * src[i].re;
-            a.im += u * src[i].im;
-        }
-
-        m++;
-        for (x = 0; x < coeffs[m].len; x++) {
-            FFTSample u = coeffs[m].val[x];
-            i = coeffs[m].start + x;
-            b.re += u * src[i].re;
-            b.im += u * src[i].im;
-        }
-
-        /* separate left and right, (and multiply by 2.0) */
-        l.re = a.re + b.re;
-        l.im = a.im - b.im;
-        r.re = b.im + a.im;
-        r.im = b.re - a.re;
-        dst[k].re = l.re * l.re + l.im * l.im;
-        dst[k].im = r.re * r.re + r.im * r.im;
-    }
-}
-#endif
-
 static int init_cqt(ShowCQTContext *s)
 {
     const char *var_names[] = { "timeclamp", "tc", "frequency", "freq", "f", NULL };
     AVExpr *expr = NULL;
     int rate = s->ctx->inputs[0]->sample_rate;
-    int nb_cqt_coeffs = 0, nb_cqt_coeffs_r = 0;
+    int nb_cqt_coeffs = 0;
     int k, x, ret;
 
     if ((ret = av_expr_parse(&expr, s->tlength, var_names, NULL, NULL, NULL, NULL, 0, s->ctx)) < 0)
         goto error;
 
     ret = AVERROR(ENOMEM);
-    if (!(s->coeffs = av_calloc(s->cqt_len * 2, sizeof(*s->coeffs))))
+    if (!(s->coeffs = av_calloc(s->cqt_len, sizeof(*s->coeffs))))
         goto error;
 
     for (k = 0; k < s->cqt_len; k++) {
         double vars[] = { s->timeclamp, s->timeclamp, s->freq[k], s->freq[k], s->freq[k] };
         double flen, center, tlength;
-        int start, end, m = (s->cqt_coeffs_type == COEFFS_TYPE_INTERLEAVE) ? (2 * k) : k;
+        int start, end, m = k;
 
         if (s->freq[k] > 0.5 * rate)
             continue;
@@ -322,14 +312,6 @@ static int init_cqt(ShowCQTContext *s)
         if (!(s->coeffs[m].val = av_calloc(s->coeffs[m].len, sizeof(*s->coeffs[m].val))))
             goto error;
 
-        if (s->cqt_coeffs_type == COEFFS_TYPE_INTERLEAVE) {
-            s->coeffs[m+1].start = (s->fft_len - end) & ~(s->cqt_align - 1);
-            s->coeffs[m+1].len = ((s->fft_len - start) | (s->cqt_align - 1)) + 1 - s->coeffs[m+1].start;
-            nb_cqt_coeffs_r += s->coeffs[m+1].len;
-            if (!(s->coeffs[m+1].val = av_calloc(s->coeffs[m+1].len, sizeof(*s->coeffs[m+1].val))))
-                goto error;
-        }
-
         for (x = start; x <= end; x++) {
             int sign = (x & 1) ? (-1) : 1;
             double y = 2.0 * M_PI * (x - center) * (1.0 / flen);
@@ -337,22 +319,17 @@ static int init_cqt(ShowCQTContext *s)
             double w = 0.355768 + 0.487396 * cos(y) + 0.144232 * cos(2*y) + 0.012604 * cos(3*y);
             w *= sign * (1.0 / s->fft_len);
             s->coeffs[m].val[x - s->coeffs[m].start] = w;
-            if (s->cqt_coeffs_type == COEFFS_TYPE_INTERLEAVE)
-                s->coeffs[m+1].val[(s->fft_len - x) - s->coeffs[m+1].start] = w;
         }
     }
 
     av_expr_free(expr);
-    if (s->cqt_coeffs_type == COEFFS_TYPE_DEFAULT)
-        av_log(s->ctx, AV_LOG_INFO, "nb_cqt_coeffs = %d.\n", nb_cqt_coeffs);
-    else
-        av_log(s->ctx, AV_LOG_INFO, "nb_cqt_coeffs = {%d,%d}.\n", nb_cqt_coeffs, nb_cqt_coeffs_r);
+    av_log(s->ctx, AV_LOG_INFO, "nb_cqt_coeffs = %d.\n", nb_cqt_coeffs);
     return 0;
 
 error:
     av_expr_free(expr);
     if (s->coeffs)
-        for (k = 0; k < s->cqt_len * 2; k++)
+        for (k = 0; k < s->cqt_len; k++)
             av_freep(&s->coeffs[k].val);
     av_freep(&s->coeffs);
     return ret;
@@ -442,19 +419,19 @@ static double midi(void *p, double f)
 static double r_func(void *p, double x)
 {
     x = av_clipd(x, 0.0, 1.0);
-    return (int)(x*255.0+0.5) << 16;
+    return lrint(x*255.0) << 16;
 }
 
 static double g_func(void *p, double x)
 {
     x = av_clipd(x, 0.0, 1.0);
-    return (int)(x*255.0+0.5) << 8;
+    return lrint(x*255.0) << 8;
 }
 
 static double b_func(void *p, double x)
 {
     x = av_clipd(x, 0.0, 1.0);
-    return (int)(x*255.0+0.5);
+    return lrint(x*255.0);
 }
 
 static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
@@ -703,13 +680,37 @@ static void draw_bar_rgb(AVFrame *out, const float *h, const float *rcp_h,
                 *lp++ = 0;
             } else {
                 mul = (h[x] - ht) * rcp_h[x];
-                *lp++ = mul * c[x].rgb.r + 0.5f;
-                *lp++ = mul * c[x].rgb.g + 0.5f;
-                *lp++ = mul * c[x].rgb.b + 0.5f;
+                *lp++ = lrintf(mul * c[x].rgb.r);
+                *lp++ = lrintf(mul * c[x].rgb.g);
+                *lp++ = lrintf(mul * c[x].rgb.b);
             }
         }
     }
 }
+
+#define DRAW_BAR_WITH_CHROMA(x) \
+do { \
+    if (h[x] <= ht) { \
+        *lpy++ = 16; \
+        *lpu++ = 128; \
+        *lpv++ = 128; \
+    } else { \
+        mul = (h[x] - ht) * rcp_h[x]; \
+        *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
+        *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f); \
+        *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f); \
+    } \
+} while (0)
+
+#define DRAW_BAR_WITHOUT_CHROMA(x) \
+do { \
+    if (h[x] <= ht) { \
+        *lpy++ = 16; \
+    } else { \
+        mul = (h[x] - ht) * rcp_h[x]; \
+        *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
+    } \
+} while (0)
 
 static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
                          const ColorFloat *c, int bar_h)
@@ -727,36 +728,15 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
         lpy = vy + y * lsy;
         lpu = vu + yh * lsu;
         lpv = vv + yh * lsv;
-        for (x = 0; x < w; x += 2) {
-            if (h[x] <= ht) {
-                *lpy++ = 16;
-                *lpu++ = 128;
-                *lpv++ = 128;
-            } else {
-                mul = (h[x] - ht) * rcp_h[x];
-                *lpy++ = mul * c[x].yuv.y + 16.5f;
-                *lpu++ = mul * c[x].yuv.u + 128.5f;
-                *lpv++ = mul * c[x].yuv.v + 128.5f;
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITH_CHROMA(x+1);
             }
-            /* u and v are skipped on yuv422p and yuv420p */
-            if (fmt == AV_PIX_FMT_YUV444P) {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                    *lpu++ = 128;
-                    *lpv++ = 128;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
-                    *lpu++ = mul * c[x+1].yuv.u + 128.5f;
-                    *lpv++ = mul * c[x+1].yuv.v + 128.5f;
-                }
-            } else {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
-                }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITHOUT_CHROMA(x+1);
             }
         }
 
@@ -764,46 +744,20 @@ static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
         lpy = vy + (y+1) * lsy;
         lpu = vu + (y+1) * lsu;
         lpv = vv + (y+1) * lsv;
-        for (x = 0; x < w; x += 2) {
-            /* u and v are skipped on yuv420p */
-            if (fmt != AV_PIX_FMT_YUV420P) {
-                if (h[x] <= ht) {
-                    *lpy++ = 16;
-                    *lpu++ = 128;
-                    *lpv++ = 128;
-                } else {
-                    mul = (h[x] - ht) * rcp_h[x];
-                    *lpy++ = mul * c[x].yuv.y + 16.5f;
-                    *lpu++ = mul * c[x].yuv.u + 128.5f;
-                    *lpv++ = mul * c[x].yuv.v + 128.5f;
-                }
-            } else {
-                if (h[x] <= ht) {
-                    *lpy++ = 16;
-                } else {
-                    mul = (h[x] - ht) * rcp_h[x];
-                    *lpy++ = mul * c[x].yuv.y + 16.5f;
-                }
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITH_CHROMA(x+1);
             }
-            /* u and v are skipped on yuv422p and yuv420p */
-            if (out->format == AV_PIX_FMT_YUV444P) {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                    *lpu++ = 128;
-                    *lpv++ = 128;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
-                    *lpu++ = mul * c[x+1].yuv.u + 128.5f;
-                    *lpv++ = mul * c[x+1].yuv.v + 128.5f;
-                }
-            } else {
-                if (h[x+1] <= ht) {
-                    *lpy++ = 16;
-                } else {
-                    mul = (h[x+1] - ht) * rcp_h[x+1];
-                    *lpy++ = mul * c[x+1].yuv.y + 16.5f;
-                }
+        } else if (fmt == AV_PIX_FMT_YUV422P) {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITH_CHROMA(x);
+                DRAW_BAR_WITHOUT_CHROMA(x+1);
+            }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                DRAW_BAR_WITHOUT_CHROMA(x);
+                DRAW_BAR_WITHOUT_CHROMA(x+1);
             }
         }
     }
@@ -819,20 +773,63 @@ static void draw_axis_rgb(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lp = out->data[0] + (off + y) * out->linesize[0];
         lpa = axis->data[0] + y * axis->linesize[0];
         for (x = 0; x < w; x++) {
-            a = rcp_255 * lpa[3];
-            *lp++ = a * lpa[0] + (1.0f - a) * c[x].rgb.r + 0.5f;
-            *lp++ = a * lpa[1] + (1.0f - a) * c[x].rgb.g + 0.5f;
-            *lp++ = a * lpa[2] + (1.0f - a) * c[x].rgb.b + 0.5f;
+            if (!lpa[3]) {
+                *lp++ = lrintf(c[x].rgb.r);
+                *lp++ = lrintf(c[x].rgb.g);
+                *lp++ = lrintf(c[x].rgb.b);
+            } else if (lpa[3] == 255) {
+                *lp++ = lpa[0];
+                *lp++ = lpa[1];
+                *lp++ = lpa[2];
+            } else {
+                a = rcp_255 * lpa[3];
+                *lp++ = lrintf(a * lpa[0] + (1.0f - a) * c[x].rgb.r);
+                *lp++ = lrintf(a * lpa[1] + (1.0f - a) * c[x].rgb.g);
+                *lp++ = lrintf(a * lpa[2] + (1.0f - a) * c[x].rgb.b);
+            }
             lpa += 4;
         }
     }
 }
 
+#define BLEND_WITH_CHROMA(c) \
+do { \
+    if (!*lpaa) { \
+        *lpy = lrintf(c.yuv.y + 16.0f); \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == *lpaa) { \
+        *lpy = *lpay; \
+        *lpu = *lpau; \
+        *lpv = *lpav; \
+    } else { \
+        float a = (1.0f/255.0f) * (*lpaa); \
+        *lpy = lrintf(a * (*lpay) + (1.0f - a) * (c.yuv.y + 16.0f)); \
+        *lpu = lrintf(a * (*lpau) + (1.0f - a) * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a * (*lpav) + (1.0f - a) * (c.yuv.v + 128.0f)); \
+    } \
+    lpy++; lpu++; lpv++; \
+    lpay++; lpau++; lpav++; lpaa++; \
+} while (0)
+
+#define BLEND_WITHOUT_CHROMA(c) \
+do { \
+    if (!*lpaa) { \
+        *lpy = lrintf(c.yuv.y + 16.0f); \
+    } else if (255 == *lpaa) { \
+        *lpy = *lpay; \
+    } else { \
+        float a = (1.0f/255.0f) * (*lpaa); \
+        *lpy = lrintf(a * (*lpay) + (1.0f - a) * (c.yuv.y + 16.0f)); \
+    } \
+    lpy++; \
+    lpay++; lpaa++; \
+} while (0)
+
 static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off)
 {
     int fmt = out->format, x, y, yh, w = axis->width, h = axis->height;
     int offh = (fmt == AV_PIX_FMT_YUV420P) ? off / 2 : off;
-    float a, rcp_255 = 1.0f / 255.0f;
     uint8_t *vy = out->data[0], *vu = out->data[1], *vv = out->data[2];
     uint8_t *vay = axis->data[0], *vau = axis->data[1], *vav = axis->data[2], *vaa = axis->data[3];
     int lsy = out->linesize[0], lsu = out->linesize[1], lsv = out->linesize[2];
@@ -848,17 +845,15 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpau = vau + yh * lsau;
         lpav = vav + yh * lsav;
         lpaa = vaa + y * lsaa;
-        for (x = 0; x < w; x += 2) {
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f) + 0.5f;
-            *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f) + 0.5f;
-            *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f) + 0.5f;
-            /* u and v are skipped on yuv422p and yuv420p */
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f) + 0.5f;
-            if (fmt == AV_PIX_FMT_YUV444P) {
-                *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f) + 0.5f;
-                *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f) + 0.5f;
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITH_CHROMA(c[x+1]);
+            }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1]);
             }
         }
 
@@ -869,20 +864,20 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpau = vau + (y + 1) * lsau;
         lpav = vav + (y + 1) * lsav;
         lpaa = vaa + (y + 1) * lsaa;
-        for (x = 0; x < out->width; x += 2) {
-            /* u and v are skipped on yuv420p */
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x].yuv.y + 16.0f) + 0.5f;
-            if (fmt != AV_PIX_FMT_YUV420P) {
-                *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x].yuv.u + 128.0f) + 0.5f;
-                *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x].yuv.v + 128.0f) + 0.5f;
+        if (fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITH_CHROMA(c[x+1]);
             }
-            /* u and v are skipped on yuv422p and yuv420p */
-            a = rcp_255 * (*lpaa++);
-            *lpy++ = a * (*lpay++) + (1.0f - a) * (c[x+1].yuv.y + 16.0f) + 0.5f;
-            if (fmt == AV_PIX_FMT_YUV444P) {
-                *lpu++ = a * (*lpau++) + (1.0f - a) * (c[x+1].yuv.u + 128.0f) + 0.5f;
-                *lpv++ = a * (*lpav++) + (1.0f - a) * (c[x+1].yuv.v + 128.0f) + 0.5f;
+        } else if (fmt == AV_PIX_FMT_YUV422P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITH_CHROMA(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1]);
+            }
+        } else {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITHOUT_CHROMA(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1]);
             }
         }
     }
@@ -918,9 +913,9 @@ static void update_sono_rgb(AVFrame *sono, const ColorFloat *c, int idx)
     uint8_t *lp = sono->data[0] + idx * sono->linesize[0];
 
     for (x = 0; x < w; x++) {
-        *lp++ = c[x].rgb.r + 0.5f;
-        *lp++ = c[x].rgb.g + 0.5f;
-        *lp++ = c[x].rgb.b + 0.5f;
+        *lp++ = lrintf(c[x].rgb.r);
+        *lp++ = lrintf(c[x].rgb.g);
+        *lp++ = lrintf(c[x].rgb.b);
     }
 }
 
@@ -932,13 +927,13 @@ static void update_sono_yuv(AVFrame *sono, const ColorFloat *c, int idx)
     uint8_t *lpv = sono->data[2] + idx * sono->linesize[2];
 
     for (x = 0; x < w; x += 2) {
-        *lpy++ = c[x].yuv.y + 16.5f;
-        *lpu++ = c[x].yuv.u + 128.5f;
-        *lpv++ = c[x].yuv.v + 128.5f;
-        *lpy++ = c[x+1].yuv.y + 16.5f;
+        *lpy++ = lrintf(c[x].yuv.y + 16.0f);
+        *lpu++ = lrintf(c[x].yuv.u + 128.0f);
+        *lpv++ = lrintf(c[x].yuv.v + 128.0f);
+        *lpy++ = lrintf(c[x+1].yuv.y + 16.0f);
         if (fmt == AV_PIX_FMT_YUV444P) {
-            *lpu++ = c[x+1].yuv.u + 128.5f;
-            *lpv++ = c[x+1].yuv.v + 128.5f;
+            *lpu++ = lrintf(c[x+1].yuv.u + 128.0f);
+            *lpv++ = lrintf(c[x+1].yuv.v + 128.0f);
         }
     }
 }
@@ -989,38 +984,63 @@ static void process_cqt(ShowCQTContext *s)
         yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width);
 }
 
-static int plot_cqt(AVFilterContext *ctx)
+static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
 {
     AVFilterLink *outlink = ctx->outputs[0];
     ShowCQTContext *s = ctx->priv;
-    int ret = 0;
+    int64_t last_time, cur_time;
+
+#define UPDATE_TIME(t) \
+    cur_time = av_gettime(); \
+    t += cur_time - last_time; \
+    last_time = cur_time
+
+    last_time = av_gettime();
 
     memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
     av_fft_permute(s->fft_ctx, s->fft_result);
     av_fft_calc(s->fft_ctx, s->fft_result);
     s->fft_result[s->fft_len] = s->fft_result[0];
+    UPDATE_TIME(s->fft_time);
+
     s->cqt_calc(s->cqt_result, s->fft_result, s->coeffs, s->cqt_len, s->fft_len);
+    UPDATE_TIME(s->cqt_time);
+
     process_cqt(s);
-    if (s->sono_h)
+    UPDATE_TIME(s->process_cqt_time);
+
+    if (s->sono_h) {
         s->update_sono(s->sono_frame, s->c_buf, s->sono_idx);
+        UPDATE_TIME(s->update_sono_time);
+    }
+
     if (!s->sono_count) {
-        AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        AVFrame *out = *frameout = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
-        if (s->bar_h)
+        UPDATE_TIME(s->alloc_time);
+
+        if (s->bar_h) {
             s->draw_bar(out, s->h_buf, s->rcp_h_buf, s->c_buf, s->bar_h);
-        if (s->axis_h)
+            UPDATE_TIME(s->bar_time);
+        }
+
+        if (s->axis_h) {
             s->draw_axis(out, s->axis_frame, s->c_buf, s->bar_h);
-        if (s->sono_h)
+            UPDATE_TIME(s->axis_time);
+        }
+
+        if (s->sono_h) {
             s->draw_sono(out, s->sono_frame, s->bar_h + s->axis_h, s->sono_idx);
-        out->pts = s->frame_count;
-        ret = ff_filter_frame(outlink, out);
-        s->frame_count++;
+            UPDATE_TIME(s->sono_time);
+        }
+        out->pts = s->next_pts;
+        s->next_pts += PTS_STEP;
     }
     s->sono_count = (s->sono_count + 1) % s->count;
     if (s->sono_h)
         s->sono_idx = (s->sono_idx + s->sono_h - 1) % s->sono_h;
-    return ret;
+    return 0;
 }
 
 /* main filter control */
@@ -1133,7 +1153,7 @@ static int config_output(AVFilterLink *outlink)
     s->format = outlink->format;
     outlink->sample_aspect_ratio = av_make_q(1, 1);
     outlink->frame_rate = s->rate;
-    outlink->time_base = av_inv_q(s->rate);
+    outlink->time_base = av_mul_q(av_inv_q(s->rate), av_make_q(1, PTS_STEP));
     av_log(ctx, AV_LOG_INFO, "video: %dx%d %s %d/%d fps, bar_h = %d, axis_h = %d, sono_h = %d.\n",
            s->width, s->height, av_get_pix_fmt_name(s->format), s->rate.num, s->rate.den,
            s->bar_h, s->axis_h, s->sono_h);
@@ -1157,7 +1177,6 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     s->cqt_align = 1;
-    s->cqt_coeffs_type = COEFFS_TYPE_DEFAULT;
     s->cqt_calc = cqt_calc;
     s->draw_sono = draw_sono;
     if (s->format == AV_PIX_FMT_RGB24) {
@@ -1209,7 +1228,7 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     s->sono_count = 0;
-    s->frame_count = 0;
+    s->next_pts = 0;
     s->sono_idx = 0;
     s->remaining_fill = s->fft_len / 2;
     s->remaining_frac = 0;
@@ -1232,14 +1251,16 @@ static int config_output(AVFilterLink *outlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
     ShowCQTContext *s = ctx->priv;
     int remaining, step, ret, x, i, j, m;
     float *audio_data;
+    AVFrame *out = NULL;
 
     if (!insamples) {
         while (s->remaining_fill < s->fft_len / 2) {
             memset(&s->fft_data[s->fft_len - s->remaining_fill], 0, sizeof(*s->fft_data) * s->remaining_fill);
-            ret = plot_cqt(ctx);
+            ret = plot_cqt(ctx, &out);
             if (ret < 0)
                 return ret;
 
@@ -1248,6 +1269,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             for (x = 0; x < (s->fft_len-step); x++)
                 s->fft_data[x] = s->fft_data[x+step];
             s->remaining_fill += step;
+
+            if (out)
+                return ff_filter_frame(outlink, out);
         }
         return AVERROR_EOF;
     }
@@ -1263,12 +1287,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 s->fft_data[j+m].re = audio_data[2*(i+m)];
                 s->fft_data[j+m].im = audio_data[2*(i+m)+1];
             }
-            ret = plot_cqt(ctx);
+            ret = plot_cqt(ctx, &out);
             if (ret < 0) {
                 av_frame_free(&insamples);
                 return ret;
             }
             remaining -= s->remaining_fill;
+            if (out) {
+                int64_t pts = av_rescale_q(insamples->pts, inlink->time_base, av_make_q(1, inlink->sample_rate));
+                pts += insamples->nb_samples - remaining - s->fft_len/2;
+                pts = av_rescale_q(pts, av_make_q(1, inlink->sample_rate), outlink->time_base);
+                if (FFABS(pts - out->pts) > PTS_TOLERANCE) {
+                    av_log(ctx, AV_LOG_DEBUG, "changing pts from %"PRId64" (%.3f) to %"PRId64" (%.3f).\n",
+                           out->pts, out->pts * av_q2d(outlink->time_base),
+                           pts, pts * av_q2d(outlink->time_base));
+                    out->pts = pts;
+                    s->next_pts = pts + PTS_STEP;
+                }
+                ret = ff_filter_frame(outlink, out);
+                if (ret < 0) {
+                    av_frame_free(&insamples);
+                    return ret;
+                }
+                out = NULL;
+            }
             step = s->step + (s->step_frac.num + s->remaining_frac) / s->step_frac.den;
             s->remaining_frac = (s->step_frac.num + s->remaining_frac) % s->step_frac.den;
             for (m = 0; m < s->fft_len-step; m++)
@@ -1294,7 +1336,7 @@ static int request_frame(AVFilterLink *outlink)
 
     ret = ff_request_frame(inlink);
     if (ret == AVERROR_EOF)
-        filter_frame(inlink, NULL);
+        ret = filter_frame(inlink, NULL);
     return ret;
 }
 

@@ -183,7 +183,7 @@ static void fill_from_cache(AVFilterContext *ctx, uint32_t *color, int *in_cidx,
         int x;
         if(p->p[1] > py)
             break;
-        x= round((p->p[0] - s->start_x) / scale + s->w/2);
+        x= lrint((p->p[0] - s->start_x) / scale + s->w/2);
         if(x<0 || x >= s->w)
             continue;
         if(color) color[x] = p->val;

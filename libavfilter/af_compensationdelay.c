@@ -57,7 +57,7 @@ AVFILTER_DEFINE_CLASS(compensationdelay);
 // The maximum distance for options
 #define COMP_DELAY_MAX_DISTANCE            (100.0 * 100.0 + 100.0 * 1.0 + 1.0)
 // The actual speed of sound in normal conditions
-#define COMP_DELAY_SOUND_SPEED_KM_H(temp)  1.85325 * (643.95 * pow(((temp + 273.15) / 273.15), 0.5))
+#define COMP_DELAY_SOUND_SPEED_KM_H(temp)  1.85325 * (643.95 * sqrt(((temp + 273.15) / 273.15)))
 #define COMP_DELAY_SOUND_SPEED_CM_S(temp)  (COMP_DELAY_SOUND_SPEED_KM_H(temp) * (1000.0 * 100.0) /* cm/km */ / (60.0 * 60.0) /* s/h */)
 #define COMP_DELAY_SOUND_FRONT_DELAY(temp) (1.0 / COMP_DELAY_SOUND_SPEED_CM_S(temp))
 // The maximum delay may be reached by this filter

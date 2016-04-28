@@ -34,7 +34,7 @@ struct AVAES *av_aes_alloc(void)
 }
 
 static const uint8_t rcon[10] = {
-  0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
+    0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
 
 static uint8_t     sbox[256];
@@ -97,7 +97,8 @@ static void subshift(av_aes_block s0[2], int s, const uint8_t *box)
     s3[0].u8[ 5] = box[s3[1].u8[ 1]];
 }
 
-static inline int mix_core(uint32_t multbl[][256], int a, int b, int c, int d){
+static inline int mix_core(uint32_t multbl[][256], int a, int b, int c, int d)
+{
 #if CONFIG_SMALL
     return multbl[0][a] ^ ROT(multbl[0][b], 8) ^ ROT(multbl[0][c], 16) ^ ROT(multbl[0][d], 24);
 #else
@@ -105,12 +106,13 @@ static inline int mix_core(uint32_t multbl[][256], int a, int b, int c, int d){
 #endif
 }
 
-static inline void mix(av_aes_block state[2], uint32_t multbl[][256], int s1, int s3){
+static inline void mix(av_aes_block state[2], uint32_t multbl[][256], int s1, int s3)
+{
     uint8_t (*src)[4] = state[1].u8x4;
-    state[0].u32[0] = mix_core(multbl, src[0][0], src[s1  ][1], src[2][2], src[s3  ][3]);
-    state[0].u32[1] = mix_core(multbl, src[1][0], src[s3-1][1], src[3][2], src[s1-1][3]);
-    state[0].u32[2] = mix_core(multbl, src[2][0], src[s3  ][1], src[0][2], src[s1  ][3]);
-    state[0].u32[3] = mix_core(multbl, src[3][0], src[s1-1][1], src[1][2], src[s3-1][3]);
+    state[0].u32[0] = mix_core(multbl, src[0][0], src[s1    ][1], src[2][2], src[s3    ][3]);
+    state[0].u32[1] = mix_core(multbl, src[1][0], src[s3 - 1][1], src[3][2], src[s1 - 1][3]);
+    state[0].u32[2] = mix_core(multbl, src[2][0], src[s3    ][1], src[0][2], src[s1    ][3]);
+    state[0].u32[3] = mix_core(multbl, src[3][0], src[s1 - 1][1], src[1][2], src[s3 - 1][3]);
 }
 
 static inline void aes_crypt(AVAES *a, int s, const uint8_t *sbox,
@@ -179,7 +181,7 @@ static void init_multbl2(uint32_t tbl[][256], const int c[4],
             l = alog8[x + log8[c[1]]];
             m = alog8[x + log8[c[2]]];
             n = alog8[x + log8[c[3]]];
-            tbl[0][i] = AV_NE(MKBETAG(k,l,m,n), MKTAG(k,l,m,n));
+            tbl[0][i] = AV_NE(MKBETAG(k, l, m, n), MKTAG(k, l, m, n));
 #if !CONFIG_SMALL
             tbl[1][i] = ROT(tbl[0][i], 8);
             tbl[2][i] = ROT(tbl[0][i], 16);
@@ -201,7 +203,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
 
     a->crypt = decrypt ? aes_decrypt : aes_encrypt;
 
-    if (!enc_multbl[FF_ARRAY_ELEMS(enc_multbl)-1][FF_ARRAY_ELEMS(enc_multbl[0])-1]) {
+    if (!enc_multbl[FF_ARRAY_ELEMS(enc_multbl) - 1][FF_ARRAY_ELEMS(enc_multbl[0]) - 1]) {
         j = 1;
         for (i = 0; i < 255; i++) {
             alog8[i] = alog8[i + 255] = j;
@@ -215,7 +217,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
             j ^= (j << 1) ^ (j << 2) ^ (j << 3) ^ (j << 4);
             j = (j ^ (j >> 8) ^ 99) & 255;
             inv_sbox[j] = i;
-            sbox[i] = j;
+            sbox[i]     = j;
         }
         init_multbl2(dec_multbl, (const int[4]) { 0xe, 0x9, 0xd, 0xb },
                      log8, alog8, inv_sbox);
@@ -257,9 +259,8 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
             a->round_key[i] = tmp[0];
         }
     } else {
-        for (i = 0; i < (rounds + 1) >> 1; i++) {
-            FFSWAP(av_aes_block, a->round_key[i], a->round_key[rounds-i]);
-        }
+        for (i = 0; i < (rounds + 1) >> 1; i++)
+            FFSWAP(av_aes_block, a->round_key[i], a->round_key[rounds - i]);
     }
 
     return 0;
@@ -268,6 +269,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
 #ifdef TEST
 // LCOV_EXCL_START
 #include <string.h>
+
 #include "lfg.h"
 #include "log.h"
 
@@ -280,12 +282,12 @@ int main(int argc, char **argv)
         { 0x10, 0xa5, 0x88, 0x69, 0xd7, 0x4b, 0xe5, 0xa3,
           0x74, 0xcf, 0x86, 0x7c, 0xfb, 0x47, 0x38, 0x59 }
     };
-    uint8_t pt[32], rpt[2][16]= {
+    uint8_t pt[32], rpt[2][16] = {
         { 0x6a, 0x84, 0x86, 0x7c, 0xd7, 0x7e, 0x12, 0xad,
           0x07, 0xea, 0x1b, 0xe8, 0x95, 0xc5, 0x3f, 0xa3 },
         { 0 }
     };
-    uint8_t rct[2][16]= {
+    uint8_t rct[2][16] = {
         { 0x73, 0x22, 0x81, 0xc0, 0xa0, 0xaa, 0xb8, 0xf7,
           0xa5, 0x4a, 0x0c, 0x67, 0xa0, 0xc4, 0x5e, 0xcf },
         { 0x6d, 0x25, 0x1e, 0x69, 0x44, 0xb0, 0x51, 0xe0,
@@ -318,12 +320,10 @@ int main(int argc, char **argv)
         av_lfg_init(&prng, 1);
 
         for (i = 0; i < 10000; i++) {
-            for (j = 0; j < 32; j++) {
+            for (j = 0; j < 32; j++)
                 pt[j] = av_lfg_get(&prng);
-            }
-            for (j = 0; j < 16; j++) {
+            for (j = 0; j < 16; j++)
                 iv[0][j] = iv[1][j] = av_lfg_get(&prng);
-            }
             {
                 START_TIMER;
                 av_aes_crypt(&ae, temp, pt, 2, iv[0], 0);

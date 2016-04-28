@@ -174,7 +174,8 @@ static int trim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
             drop = 0;
 
         if (drop) {
-            s->eof = inlink->closed = 1;
+            s->eof = 1;
+            ff_avfilter_link_set_out_status(inlink, AVERROR_EOF, AV_NOPTS_VALUE);
             goto drop;
         }
     }
@@ -305,7 +306,8 @@ static int atrim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
 
         if (drop) {
-            s->eof = inlink->closed = 1;
+            s->eof = 1;
+            ff_avfilter_link_set_out_status(inlink, AVERROR_EOF, AV_NOPTS_VALUE);
             goto drop;
         }
     }
@@ -379,6 +381,7 @@ AVFilter ff_af_atrim = {
     .name        = "atrim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
     .init        = init,
+    .query_formats = ff_query_formats_all,
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &atrim_class,
     .inputs      = atrim_inputs,

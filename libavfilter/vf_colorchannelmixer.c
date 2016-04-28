@@ -115,25 +115,25 @@ static int config_output(AVFilterLink *outlink)
             s->lut[i][j] = buffer;
 
     for (i = 0; i < size; i++) {
-        s->lut[R][R][i] = round(i * s->rr);
-        s->lut[R][G][i] = round(i * s->rg);
-        s->lut[R][B][i] = round(i * s->rb);
-        s->lut[R][A][i] = round(i * s->ra);
+        s->lut[R][R][i] = lrint(i * s->rr);
+        s->lut[R][G][i] = lrint(i * s->rg);
+        s->lut[R][B][i] = lrint(i * s->rb);
+        s->lut[R][A][i] = lrint(i * s->ra);
 
-        s->lut[G][R][i] = round(i * s->gr);
-        s->lut[G][G][i] = round(i * s->gg);
-        s->lut[G][B][i] = round(i * s->gb);
-        s->lut[G][A][i] = round(i * s->ga);
+        s->lut[G][R][i] = lrint(i * s->gr);
+        s->lut[G][G][i] = lrint(i * s->gg);
+        s->lut[G][B][i] = lrint(i * s->gb);
+        s->lut[G][A][i] = lrint(i * s->ga);
 
-        s->lut[B][R][i] = round(i * s->br);
-        s->lut[B][G][i] = round(i * s->bg);
-        s->lut[B][B][i] = round(i * s->bb);
-        s->lut[B][A][i] = round(i * s->ba);
+        s->lut[B][R][i] = lrint(i * s->br);
+        s->lut[B][G][i] = lrint(i * s->bg);
+        s->lut[B][B][i] = lrint(i * s->bb);
+        s->lut[B][A][i] = lrint(i * s->ba);
 
-        s->lut[A][R][i] = round(i * s->ar);
-        s->lut[A][G][i] = round(i * s->ag);
-        s->lut[A][B][i] = round(i * s->ab);
-        s->lut[A][A][i] = round(i * s->aa);
+        s->lut[A][R][i] = lrint(i * s->ar);
+        s->lut[A][G][i] = lrint(i * s->ag);
+        s->lut[A][B][i] = lrint(i * s->ab);
+        s->lut[A][A][i] = lrint(i * s->aa);
     }
 
     return 0;

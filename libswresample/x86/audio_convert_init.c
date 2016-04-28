@@ -174,7 +174,7 @@ MULTI_CAPS_FUNC(SSE2, sse2)
                 ac->simd_f =  ff_pack_8ch_float_to_int32_a_avx;
         }
     }
-    if(EXTERNAL_AVX2(mm_flags)) {
+    if(EXTERNAL_AVX2_FAST(mm_flags)) {
         if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLT || out_fmt == AV_SAMPLE_FMT_S32P && in_fmt == AV_SAMPLE_FMT_FLTP)
             ac->simd_f =  ff_float_to_int32_a_avx2;
     }

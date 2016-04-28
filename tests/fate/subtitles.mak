@@ -4,6 +4,9 @@ fate-sub-aqtitle: CMD = fmtstdout ass -sub_charenc windows-1250 -i $(TARGET_SAMP
 FATE_SUBTITLES_ASS-$(call ALLYES, AVDEVICE LAVFI_INDEV CCAPTION_DECODER MOVIE_FILTER MPEGTS_DEMUXER) += fate-sub-cc
 fate-sub-cc: CMD = fmtstdout ass -f lavfi -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]"
 
+FATE_SUBTITLES_ASS-$(call ALLYES, AVDEVICE LAVFI_INDEV CCAPTION_DECODER MOVIE_FILTER MPEGTS_DEMUXER) += fate-sub-cc-realtime
+fate-sub-cc-realtime: CMD = fmtstdout ass -real_time 1 -f lavfi -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]"
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, ASS, ASS) += fate-sub-ass-to-ass-transcode
 fate-sub-ass-to-ass-transcode: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/1ededcbd7b.ass
 
@@ -52,6 +55,15 @@ fate-sub-sami2: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SAMI_multilang_twea
 FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt
 fate-sub-srt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
+FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER SRT_MUXER) += fate-sub-srt-rrn-remux
+fate-sub-srt-rrn-remux: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/ticket5032-rrn.srt -c:s copy
+
+FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER SRT_MUXER) += fate-sub-srt-madness-timeshift
+fate-sub-srt-madness-timeshift: CMD = fmtstdout srt -itsoffset 3.14 -i $(TARGET_SAMPLES)/sub/madness.srt -c:s copy
+
+FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER SRT_MUXER) += fate-sub-srt-empty-events
+fate-sub-srt-empty-events: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/empty-events-2167.srt -c:s copy
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, STL, STL) += fate-sub-stl
 fate-sub-stl: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/STL_capability_tester.stl
 
@@ -75,6 +87,9 @@ fate-sub-webvtt2: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/WebVTT_extended_t
 
 FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER WEBVTT_ENCODER WEBVTT_MUXER) += fate-sub-webvttenc
 fate-sub-webvttenc: CMD = fmtstdout webvtt -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
+
+FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER TEXT_ENCODER SRT_MUXER) += fate-sub-textenc
+fate-sub-textenc: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt -c:s text
 
 FATE_SUBTITLES_ASS-$(call ALLYES, MICRODVD_DEMUXER MICRODVD_DECODER ICONV) += fate-sub-charenc
 fate-sub-charenc: CMD = fmtstdout ass -sub_charenc cp1251 -i $(TARGET_SAMPLES)/sub/cp1251-subtitles.sub

@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/ffmath.h"
 #include "avcodec.h"
 #include "dca.h"
 #include "dcadata.h"
@@ -156,7 +157,6 @@ static int encode_init(AVCodecContext *avctx)
     for (i = 0; ff_dca_bit_rates[i] < avctx->bit_rate; i++)
         ;
     c->bitrate_index = i;
-    avctx->bit_rate = ff_dca_bit_rates[i];
     c->frame_bits = FFALIGN((avctx->bit_rate * 512 + avctx->sample_rate - 1) / avctx->sample_rate, 32);
     min_frame_bits = 132 + (493 + 28 * 32) * c->fullband_channels + c->lfe_channel * 72;
     if (c->frame_bits < min_frame_bits || c->frame_bits > (DCA_MAX_FRAME_SIZE << 3))
@@ -179,7 +179,7 @@ static int encode_init(AVCodecContext *avctx)
             cos_table[2048-i] = cos_table[i];
         }
         for (i = 0; i < 2048; i++) {
-            cb_to_level[i] = (int32_t)(0x7fffffff * pow(10, -0.005 * i));
+            cb_to_level[i] = (int32_t)(0x7fffffff * ff_exp10(-0.005 * i));
         }
 
         for (k = 0; k < 32; k++) {
@@ -205,7 +205,7 @@ static int encode_init(AVCodecContext *avctx)
         }
 
         for (i = 0; i < 256; i++) {
-            double add = 1 + pow(10, -0.01 * i);
+            double add = 1 + ff_exp10(-0.01 * i);
             cb_to_add[i] = (int32_t)(100 * log10(add));
         }
         for (j = 0; j < 8; j++) {
@@ -937,7 +937,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const int32_t *samples;
     int ret, i;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, c->frame_size , 0)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, c->frame_size, 0)) < 0)
         return ret;
 
     samples = (const int32_t *)frame->data[0];
@@ -967,7 +967,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     avpkt->pts      = frame->pts;
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
-    avpkt->size     = c->frame_size + 1;
+    avpkt->size     = put_bits_count(&c->pb) >> 3;
     *got_packet_ptr = 1;
     return 0;
 }

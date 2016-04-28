@@ -146,7 +146,7 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
                                       PayloadContext *h264_data,
                                       const char *attr, const char *value)
 {
-    AVCodecContext *codec = stream->codec;
+    AVCodecParameters *par = stream->codecpar;
 
     if (!strcmp(attr, "packetization-mode")) {
         av_log(s, AV_LOG_DEBUG, "RTP Packetization Mode: %d\n", atoi(value));
@@ -166,18 +166,22 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
             parse_profile_level_id(s, h264_data, value);
     } else if (!strcmp(attr, "sprop-parameter-sets")) {
         int ret;
-        codec->extradata_size = 0;
-        av_freep(&codec->extradata);
-        ret = ff_h264_parse_sprop_parameter_sets(s, &codec->extradata,
-                                                 &codec->extradata_size, value);
+        if (value[strlen(value) - 1] == ',') {
+            av_log(s, AV_LOG_WARNING, "Missing PPS in sprop-parameter-sets, ignoring\n");
+            return 0;
+        }
+        par->extradata_size = 0;
+        av_freep(&par->extradata);
+        ret = ff_h264_parse_sprop_parameter_sets(s, &par->extradata,
+                                                 &par->extradata_size, value);
         av_log(s, AV_LOG_DEBUG, "Extradata set to %p (size: %d)\n",
-               codec->extradata, codec->extradata_size);
+               par->extradata, par->extradata_size);
         return ret;
     }
     return 0;
 }
 
-void ff_h264_parse_framesize(AVCodecContext *codec, const char *p)
+void ff_h264_parse_framesize(AVCodecParameters *par, const char *p)
 {
     char buf1[50];
     char *dst = buf1;
@@ -195,8 +199,8 @@ void ff_h264_parse_framesize(AVCodecContext *codec, const char *p)
 
     // a='framesize:96 320-240'
     // set our parameters
-    codec->width   = atoi(buf1);
-    codec->height  = atoi(p + 1); // skip the -
+    par->width   = atoi(buf1);
+    par->height  = atoi(p + 1); // skip the -
 }
 
 int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
@@ -396,7 +400,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
     stream = s->streams[st_index];
 
     if (av_strstart(p, "framesize:", &p)) {
-        ff_h264_parse_framesize(stream->codec, p);
+        ff_h264_parse_framesize(stream->codecpar, p);
     } else if (av_strstart(p, "fmtp:", &p)) {
         return ff_parse_fmtp(s, stream, h264_data, p, sdp_parse_fmtp_config_h264);
     } else if (av_strstart(p, "cliprect:", &p)) {

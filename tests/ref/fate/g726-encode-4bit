@@ -1,7 +1,11 @@
 #format: frame checksums
-#version: 1
+#version: 2
 #hash: MD5
 #tb 0: 1/8000
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 8000
+#channel_layout 0: 4
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,     8192,    16384, a0cf3a0953adce1a1032a4fd2da00a52
 0,       8192,       8192,     8192,    16384, c750c1b76a203556dd60d73d261529e9

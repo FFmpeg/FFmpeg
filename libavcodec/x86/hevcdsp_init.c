@@ -753,6 +753,10 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->transform_add[3]    = ff_hevc_transform_add32_8_avx;
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
+            c->sao_band_filter[0] = ff_hevc_sao_band_filter_8_8_avx2;
+            c->sao_band_filter[1] = ff_hevc_sao_band_filter_16_8_avx2;
+        }
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_avx2;
             if (ARCH_X86_64) {
@@ -897,7 +901,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SAO_BAND_INIT(10, avx);
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
-
+            c->sao_band_filter[0] = ff_hevc_sao_band_filter_8_10_avx2;
+        }
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_10_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_avx2;
             if (ARCH_X86_64) {
@@ -1045,9 +1051,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_hevc_bi_qpel_hv64_10_avx2;
             }
             SAO_BAND_INIT(10, avx2);
-            c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_32_10_avx2;
-            c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_48_10_avx2;
-            c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_64_10_avx2;
+            SAO_EDGE_INIT(10, avx2);
 
             c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
             c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
@@ -1097,13 +1101,14 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SAO_BAND_INIT(12, avx);
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
+            c->sao_band_filter[0] = ff_hevc_sao_band_filter_8_12_avx2;
+        }
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_12_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_12_avx2;
 
             SAO_BAND_INIT(12, avx2);
-            c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_32_12_avx2;
-            c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_48_12_avx2;
-            c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_64_12_avx2;
+            SAO_EDGE_INIT(12, avx2);
         }
     }
 }

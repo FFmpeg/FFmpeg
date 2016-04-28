@@ -196,7 +196,6 @@ typedef struct WebPContext {
     uint8_t *alpha_data;                /* alpha chunk data */
     int alpha_data_size;                /* alpha chunk data size */
     int has_exif;                       /* set after an EXIF chunk has been processed */
-    AVDictionary *exif_metadata;        /* EXIF chunk data */
     int width;                          /* image width */
     int height;                         /* image height */
     int lossless;                       /* indicates lossless or lossy */
@@ -1386,7 +1385,6 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    av_dict_free(&s->exif_metadata);
     while (bytestream2_get_bytes_left(&gb) > 8) {
         char chunk_str[5] = { 0 };
 
@@ -1463,6 +1461,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
         case MKTAG('E', 'X', 'I', 'F'): {
             int le, ifd_offset, exif_offset = bytestream2_tell(&gb);
+            AVDictionary *exif_metadata = NULL;
             GetByteContext exif_gb;
 
             if (s->has_exif) {
@@ -1484,15 +1483,15 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
 
             bytestream2_seek(&exif_gb, ifd_offset, SEEK_SET);
-            if (avpriv_exif_decode_ifd(avctx, &exif_gb, le, 0, &s->exif_metadata) < 0) {
+            if (avpriv_exif_decode_ifd(avctx, &exif_gb, le, 0, &exif_metadata) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "error decoding Exif data\n");
                 goto exif_end;
             }
 
-            av_dict_copy(avpriv_frame_get_metadatap(data), s->exif_metadata, 0);
+            av_dict_copy(avpriv_frame_get_metadatap(data), exif_metadata, 0);
 
 exif_end:
-            av_dict_free(&s->exif_metadata);
+            av_dict_free(&exif_metadata);
             bytestream2_skip(&gb, chunk_size);
             break;
         }
@@ -1501,7 +1500,7 @@ exif_end:
         case MKTAG('A', 'N', 'M', 'F'):
         case MKTAG('X', 'M', 'P', ' '):
             AV_WL32(chunk_str, chunk_type);
-            av_log(avctx, AV_LOG_VERBOSE, "skipping unsupported chunk: %s\n",
+            av_log(avctx, AV_LOG_WARNING, "skipping unsupported chunk: %s\n",
                    chunk_str);
             bytestream2_skip(&gb, chunk_size);
             break;

@@ -44,7 +44,7 @@ Miscellaneous Areas
 
 documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Lou Logan
 build system (configure, makefiles)     Diego Biurrun, Mans Rullgard
-project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Lou Logan
+project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
@@ -71,6 +71,7 @@ Internal Interfaces:
   libavutil/common.h                    Michael Niedermayer
 
 Other:
+  aes_ctr.c, aes_ctr.h                  Eran Kornblau
   bprint                                Nicolas George
   bswap.h
   des                                   Reimar Doeffinger
@@ -164,6 +165,7 @@ Codecs:
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
   dca.c                                 Kostya Shishkov, Benjamin Larsson
+  dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
   dss_sp.c                              Oleksij Rempel, Michael Niedermayer
@@ -194,6 +196,7 @@ Codecs:
   interplayvideo.c                      Mike Melanson
   ivi*                                  Kostya Shishkov
   jacosub*                              Clément Bœsch
+  jni*, ffjni*                          Matthieu Bouron
   jpeg2000*                             Nicolas Bertrand
   jpeg_ls.c                             Kostya Shishkov
   jvdec.c                               Peter Ross
@@ -208,7 +211,7 @@ Codecs:
   libschroedinger*                      David Conrad
   libspeexdec.c                         Justin Ruggles
   libtheoraenc.c                        David Conrad
-  libutvideo*                           Derek Buitenhuis
+  libutvideo*                           Carl Eugen Hoyos
   libvorbis.c                           David Conrad
   libvpx*                               James Zern
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
@@ -274,8 +277,10 @@ Codecs:
   vb.c                                  Kostya Shishkov
   vble.c                                Derek Buitenhuis
   vc1*                                  Kostya Shishkov, Christophe Gisquet
+  vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
   vda_h264_dec.c                        Xidorn Quan
+  videotoolboxenc.c                     Rick Kern
   vima.c                                Paul B Mahol
   vmnc.c                                Kostya Shishkov
   vorbisdec.c                           Denes Balatoni, David Conrad
@@ -303,7 +308,7 @@ Codecs:
 Hardware acceleration:
   crystalhd.c                           Philip Langdale
   dxva2*                                Hendrik Leppkes, Laurent Aimar
-  libstagefright.cpp                    Mohamed Naufal
+  mediacodec*                           Matthieu Bouron
   vaapi*                                Gwenole Beauchesne
   vda*                                  Sebastien Zwickert
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
@@ -351,6 +356,7 @@ Filters:
   af_biquads.c                          Paul B Mahol
   af_chorus.c                           Paul B Mahol
   af_compand.c                          Paul B Mahol
+  af_firequalizer.c                     Muhammad Faiz
   af_ladspa.c                           Paul B Mahol
   af_pan.c                              Nicolas George
   af_sidechaincompress.c                Paul B Mahol
@@ -364,6 +370,7 @@ Filters:
   vf_colorbalance.c                     Paul B Mahol
   vf_colorkey.c                         Timo Rothenpieler
   vf_colorlevels.c                      Paul B Mahol
+  vf_coreimage.m                        Thilo Borgmann
   vf_deband.c                           Paul B Mahol
   vf_dejudder.c                         Nicholas Robbins
   vf_delogo.c                           Jean Delvare (CC <jdelvare@suse.com>)
@@ -378,6 +385,7 @@ Filters:
   vf_neighbor.c                         Paul B Mahol
   vf_psnr.c                             Paul B Mahol
   vf_random.c                           Paul B Mahol
+  vf_readvitc.c                         Tobias Rapp (CC t.rapp at noa-archive dot com)
   vf_scale.c                            Michael Niedermayer
   vf_separatefields.c                   Paul B Mahol
   vf_ssim.c                             Paul B Mahol
@@ -458,6 +466,7 @@ Muxers/Demuxers:
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Baptiste Coudurier, Matthieu Bouron
+  movenccenc.c                          Eran Kornblau
   mpc.c                                 Kostya Shishkov
   mpeg.c                                Michael Niedermayer
   mpegenc.c                             Michael Niedermayer
@@ -474,6 +483,7 @@ Muxers/Demuxers:
   oggdec.c, oggdec.h                    David Conrad
   oggenc.c                              Baptiste Coudurier
   oggparse*.c                           David Conrad
+  oggparsedaala*                        Rostislav Pehlivanov
   oma.c                                 Maxim Poliakovski
   paf.c                                 Paul B Mahol
   psxstr.c                              Mike Melanson
@@ -560,6 +570,7 @@ Windows ICL                             Matthew Oliver
 ADI/Blackfin DSP                        Marc Hoffman
 Sparc                                   Roman Shaposhnik
 x86                                     Michael Niedermayer
+OS/2                                    KO Myung-Hun
 
 
 Releases

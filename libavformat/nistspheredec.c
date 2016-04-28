@@ -34,7 +34,7 @@ static int nist_probe(AVProbeData *p)
 
 static int nist_read_header(AVFormatContext *s)
 {
-    char buffer[32], coding[32] = "pcm", format[32] = "01";
+    char buffer[256], coding[32] = "pcm", format[32] = "01";
     int bps = 0, be = 0;
     int32_t header_size = -1;
     AVStream *st;
@@ -43,7 +43,7 @@ static int nist_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
 
     ff_get_line(s->pb, buffer, sizeof(buffer));
     ff_get_line(s->pb, buffer, sizeof(buffer));
@@ -58,24 +58,29 @@ static int nist_read_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
 
         if (!memcmp(buffer, "end_head", 8)) {
-            if (!st->codec->bits_per_coded_sample)
-                st->codec->bits_per_coded_sample = bps << 3;
+            if (!st->codecpar->bits_per_coded_sample)
+                st->codecpar->bits_per_coded_sample = bps << 3;
 
             if (!av_strcasecmp(coding, "pcm")) {
-                st->codec->codec_id = ff_get_pcm_codec_id(st->codec->bits_per_coded_sample,
-                                                          0, be, 0xFFFF);
+                if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
+                    st->codecpar->codec_id = ff_get_pcm_codec_id(st->codecpar->bits_per_coded_sample,
+                                                              0, be, 0xFFFF);
             } else if (!av_strcasecmp(coding, "alaw")) {
-                st->codec->codec_id = AV_CODEC_ID_PCM_ALAW;
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_ALAW;
             } else if (!av_strcasecmp(coding, "ulaw") ||
                        !av_strcasecmp(coding, "mu-law")) {
-                st->codec->codec_id = AV_CODEC_ID_PCM_MULAW;
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_MULAW;
+            } else if (!av_strncasecmp(coding, "pcm,embedded-shorten", 20)) {
+                st->codecpar->codec_id = AV_CODEC_ID_SHORTEN;
+                if (ff_alloc_extradata(st->codecpar, 1))
+                    st->codecpar->extradata[0] = 1;
             } else {
                 avpriv_request_sample(s, "coding %s", coding);
             }
 
-            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
-            st->codec->block_align = st->codec->bits_per_coded_sample * st->codec->channels / 8;
+            st->codecpar->block_align = st->codecpar->bits_per_coded_sample * st->codecpar->channels / 8;
 
             if (avio_tell(s->pb) > header_size)
                 return AVERROR_INVALIDDATA;
@@ -84,7 +89,7 @@ static int nist_read_header(AVFormatContext *s)
 
             return 0;
         } else if (!memcmp(buffer, "channel_count", 13)) {
-            sscanf(buffer, "%*s %*s %"SCNd32, &st->codec->channels);
+            sscanf(buffer, "%*s %*s %"SCNd32, &st->codecpar->channels);
         } else if (!memcmp(buffer, "sample_byte_format", 18)) {
             sscanf(buffer, "%*s %*s %31s", format);
 
@@ -92,6 +97,8 @@ static int nist_read_header(AVFormatContext *s)
                 be = 0;
             } else if (!av_strcasecmp(format, "10")) {
                 be = 1;
+            } else if (!av_strcasecmp(format, "mu-law")) {
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_MULAW;
             } else if (av_strcasecmp(format, "1")) {
                 avpriv_request_sample(s, "sample byte format %s", format);
                 return AVERROR_PATCHWELCOME;
@@ -103,12 +110,12 @@ static int nist_read_header(AVFormatContext *s)
         } else if (!memcmp(buffer, "sample_n_bytes", 14)) {
             sscanf(buffer, "%*s %*s %"SCNd32, &bps);
         } else if (!memcmp(buffer, "sample_rate", 11)) {
-            sscanf(buffer, "%*s %*s %"SCNd32, &st->codec->sample_rate);
+            sscanf(buffer, "%*s %*s %"SCNd32, &st->codecpar->sample_rate);
         } else if (!memcmp(buffer, "sample_sig_bits", 15)) {
-            sscanf(buffer, "%*s %*s %"SCNd32, &st->codec->bits_per_coded_sample);
+            sscanf(buffer, "%*s %*s %"SCNd32, &st->codecpar->bits_per_coded_sample);
         } else {
             char key[32], value[32];
-            if (sscanf(buffer, "%31s %*s %31s", key, value) == 3) {
+            if (sscanf(buffer, "%31s %*s %31s", key, value) == 2) {
                 av_dict_set(&s->metadata, key, value, AV_DICT_APPEND);
             } else {
                 av_log(s, AV_LOG_ERROR, "Failed to parse '%s' as metadata\n", buffer);

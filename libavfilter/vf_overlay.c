@@ -520,10 +520,10 @@ static void blend_image(AVFilterContext *ctx,
         for (i = 0; i < 3; i++) {
             int hsub = i ? s->hsub : 0;
             int vsub = i ? s->vsub : 0;
-            int src_wp = FF_CEIL_RSHIFT(src_w, hsub);
-            int src_hp = FF_CEIL_RSHIFT(src_h, vsub);
-            int dst_wp = FF_CEIL_RSHIFT(dst_w, hsub);
-            int dst_hp = FF_CEIL_RSHIFT(dst_h, vsub);
+            int src_wp = AV_CEIL_RSHIFT(src_w, hsub);
+            int src_hp = AV_CEIL_RSHIFT(src_h, vsub);
+            int dst_wp = AV_CEIL_RSHIFT(dst_w, hsub);
+            int dst_hp = AV_CEIL_RSHIFT(dst_h, vsub);
             int yp = y>>vsub;
             int xp = x>>hsub;
             uint8_t *s, *sp, *d, *dp, *a, *ap;
@@ -598,6 +598,11 @@ static AVFrame *do_blend(AVFilterContext *ctx, AVFrame *mainpic,
         s->var_values[VAR_T] = mainpic->pts == AV_NOPTS_VALUE ?
             NAN : mainpic->pts * av_q2d(inlink->time_base);
         s->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+
+        s->var_values[VAR_OVERLAY_W] = s->var_values[VAR_OW] = second->width;
+        s->var_values[VAR_OVERLAY_H] = s->var_values[VAR_OH] = second->height;
+        s->var_values[VAR_MAIN_W   ] = s->var_values[VAR_MW] = mainpic->width;
+        s->var_values[VAR_MAIN_H   ] = s->var_values[VAR_MH] = mainpic->height;
 
         eval_expr(ctx);
         av_log(ctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d\n",

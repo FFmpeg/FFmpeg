@@ -128,8 +128,8 @@ static void filter(AVFilterContext *ctx)
         int refs = idet->cur->linesize[i];
 
         if (i && i<3) {
-            w = FF_CEIL_RSHIFT(w, idet->csp->log2_chroma_w);
-            h = FF_CEIL_RSHIFT(h, idet->csp->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, idet->csp->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, idet->csp->log2_chroma_h);
         }
 
         for (y = 2; y < h - 2; y++) {
@@ -409,7 +409,7 @@ static av_cold int init(AVFilterContext *ctx)
     memset(idet->history, UNDETERMINED, HIST_SIZE);
 
     if( idet->half_life > 0 )
-        idet->decay_coefficient = (uint64_t) round( PRECISION * exp2(-1.0 / idet->half_life) );
+        idet->decay_coefficient = lrint( PRECISION * exp2(-1.0 / idet->half_life) );
     else
         idet->decay_coefficient = PRECISION;
 

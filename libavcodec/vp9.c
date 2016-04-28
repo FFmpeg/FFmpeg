@@ -24,6 +24,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
+#include "profiles.h"
 #include "thread.h"
 #include "videodsp.h"
 #include "vp56.h"
@@ -69,7 +70,13 @@ typedef struct VP9Context {
     uint8_t ss_h, ss_v;
     uint8_t last_bpp, bpp, bpp_index, bytesperpixel;
     uint8_t last_keyframe;
-    enum AVPixelFormat pix_fmt, last_fmt;
+    // sb_cols/rows, rows/cols and last_fmt are used for allocating all internal
+    // arrays, and are thus per-thread. w/h and gf_fmt are synced between threads
+    // and are therefore per-stream. pix_fmt represents the value in the header
+    // of the currently processed frame.
+    int w, h;
+    enum AVPixelFormat pix_fmt, last_fmt, gf_fmt;
+    unsigned sb_cols, sb_rows, rows, cols;
     ThreadFrame next_refs[8];
 
     struct {
@@ -77,7 +84,6 @@ typedef struct VP9Context {
         uint8_t mblim_lut[64];
     } filter_lut;
     unsigned tile_row_start, tile_row_end, tile_col_start, tile_col_end;
-    unsigned sb_cols, sb_rows, rows, cols;
     struct {
         prob_context p;
         uint8_t coef[4][2][2][6][6][3];
@@ -240,37 +246,49 @@ fail:
 
 static int update_size(AVCodecContext *ctx, int w, int h)
 {
-#define HWACCEL_MAX (CONFIG_VP9_DXVA2_HWACCEL + CONFIG_VP9_D3D11VA_HWACCEL)
+#define HWACCEL_MAX (CONFIG_VP9_DXVA2_HWACCEL + CONFIG_VP9_D3D11VA_HWACCEL + CONFIG_VP9_VAAPI_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
     VP9Context *s = ctx->priv_data;
     uint8_t *p;
-    int bytesperpixel = s->bytesperpixel, res;
+    int bytesperpixel = s->bytesperpixel, res, cols, rows;
 
     av_assert0(w > 0 && h > 0);
 
-    if (s->intra_pred_data[0] && w == ctx->width && h == ctx->height && s->pix_fmt == s->last_fmt)
-        return 0;
+    if (!(s->pix_fmt == s->gf_fmt && w == s->w && h == s->h)) {
+        if ((res = ff_set_dimensions(ctx, w, h)) < 0)
+            return res;
 
-    if ((res = ff_set_dimensions(ctx, w, h)) < 0)
-        return res;
-
-    if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
+        if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
 #if CONFIG_VP9_DXVA2_HWACCEL
-        *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
+            *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
 #endif
 #if CONFIG_VP9_D3D11VA_HWACCEL
-        *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
+            *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
 #endif
+#if CONFIG_VP9_VAAPI_HWACCEL
+            *fmtp++ = AV_PIX_FMT_VAAPI;
+#endif
+        }
+
+        *fmtp++ = s->pix_fmt;
+        *fmtp = AV_PIX_FMT_NONE;
+
+        res = ff_thread_get_format(ctx, pix_fmts);
+        if (res < 0)
+            return res;
+
+        ctx->pix_fmt = res;
+        s->gf_fmt  = s->pix_fmt;
+        s->w = w;
+        s->h = h;
     }
 
-    *fmtp++ = s->pix_fmt;
-    *fmtp = AV_PIX_FMT_NONE;
+    cols = (w + 7) >> 3;
+    rows = (h + 7) >> 3;
 
-    res = ff_thread_get_format(ctx, pix_fmts);
-    if (res < 0)
-        return res;
+    if (s->intra_pred_data[0] && cols == s->cols && rows == s->rows && s->pix_fmt == s->last_fmt)
+        return 0;
 
-    ctx->pix_fmt = res;
     s->last_fmt  = s->pix_fmt;
     s->sb_cols   = (w + 63) >> 6;
     s->sb_rows   = (h + 63) >> 6;
@@ -624,6 +642,8 @@ static int decode_frame_header(AVCodecContext *ctx,
     s->s.h.refreshctx   = s->s.h.errorres ? 0 : get_bits1(&s->gb);
     s->s.h.parallelmode = s->s.h.errorres ? 1 : get_bits1(&s->gb);
     s->s.h.framectxid   = c = get_bits(&s->gb, 2);
+    if (s->s.h.keyframe || s->s.h.intraonly)
+        s->s.h.framectxid = 0; // BUG: libvpx ignores this field in keyframes
 
     /* loopfilter header data */
     if (s->s.h.keyframe || s->s.h.errorres || s->s.h.intraonly) {
@@ -725,7 +745,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         if (s->s.h.lf_delta.enabled) {
             s->s.h.segmentation.feat[i].lflvl[0][0] =
             s->s.h.segmentation.feat[i].lflvl[0][1] =
-                av_clip_uintp2(lflvl + (s->s.h.lf_delta.ref[0] << sh), 6);
+                av_clip_uintp2(lflvl + (s->s.h.lf_delta.ref[0] * (1 << sh)), 6);
             for (j = 1; j < 4; j++) {
                 s->s.h.segmentation.feat[i].lflvl[j][0] =
                     av_clip_uintp2(lflvl + ((s->s.h.lf_delta.ref[j] +
@@ -2751,7 +2771,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
                                                 ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
                                                 int bw, int bh, int w, int h, int bytesperpixel)
 {
-    int mx = mv->x << !s->ss_h, my = mv->y << !s->ss_v, th;
+    int mx = mv->x * (1 << !s->ss_h), my = mv->y * (1 << !s->ss_v), th;
 
     y += my >> 4;
     x += mx >> 4;
@@ -2831,8 +2851,8 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
     int th;
     VP56mv mv;
 
-    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
-    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
+    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) * 8, (s->cols * 8 - x + px + 3) * 8);
+    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) * 8, (s->rows * 8 - y + py + 3) * 8);
     // BUG libvpx seems to scale the two components separately. This introduces
     // rounding errors but we have to reproduce them to be exactly compatible
     // with the output from libvpx...
@@ -2889,19 +2909,19 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
 
     if (s->ss_h) {
         // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 4, (s->cols * 4 - x + px + 3) << 4);
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) * 16, (s->cols * 4 - x + px + 3) * 16);
         mx = scale_mv(mv.x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
     } else {
-        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
-        mx = scale_mv(mv.x << 1, 0) + scale_mv(x * 16, 0);
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) * 8, (s->cols * 8 - x + px + 3) * 8);
+        mx = scale_mv(mv.x * 2, 0) + scale_mv(x * 16, 0);
     }
     if (s->ss_v) {
         // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 4, (s->rows * 4 - y + py + 3) << 4);
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) * 16, (s->rows * 4 - y + py + 3) * 16);
         my = scale_mv(mv.y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
     } else {
-        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
-        my = scale_mv(mv.y << 1, 1) + scale_mv(y * 16, 1);
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) * 8, (s->rows * 8 - y + py + 3) * 8);
+        my = scale_mv(mv.y * 2, 1) + scale_mv(y * 16, 1);
     }
 #undef scale_mv
     y = my >> 4;
@@ -4288,13 +4308,6 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     int i, res;
     VP9Context *s = dst->priv_data, *ssrc = src->priv_data;
 
-    // detect size changes in other threads
-    if (s->intra_pred_data[0] &&
-        (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols ||
-         s->rows != ssrc->rows || s->bpp != ssrc->bpp || s->pix_fmt != ssrc->pix_fmt)) {
-        free_buffers(s);
-    }
-
     for (i = 0; i < 3; i++) {
         if (s->s.frames[i].tf.f->buf[0])
             vp9_unref_frame(dst, &s->s.frames[i]);
@@ -4321,6 +4334,9 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->s.h.segmentation.update_map = ssrc->s.h.segmentation.update_map;
     s->s.h.segmentation.absolute_vals = ssrc->s.h.segmentation.absolute_vals;
     s->bytesperpixel = ssrc->bytesperpixel;
+    s->gf_fmt = ssrc->gf_fmt;
+    s->w = ssrc->w;
+    s->h = ssrc->h;
     s->bpp = ssrc->bpp;
     s->bpp_index = ssrc->bpp_index;
     s->pix_fmt = ssrc->pix_fmt;
@@ -4332,14 +4348,6 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     return 0;
 }
 #endif
-
-static const AVProfile profiles[] = {
-    { FF_PROFILE_VP9_0, "Profile 0" },
-    { FF_PROFILE_VP9_1, "Profile 1" },
-    { FF_PROFILE_VP9_2, "Profile 2" },
-    { FF_PROFILE_VP9_3, "Profile 3" },
-    { FF_PROFILE_UNKNOWN },
-};
 
 AVCodec ff_vp9_decoder = {
     .name                  = "vp9",
@@ -4354,5 +4362,5 @@ AVCodec ff_vp9_decoder = {
     .flush                 = vp9_decode_flush,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp9_decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp9_decode_update_thread_context),
-    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles              = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
 };

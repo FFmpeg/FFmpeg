@@ -132,10 +132,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const uint8_t offset = s->rgba_map[i];
             const uint8_t *srcrow = in->data[0];
             uint8_t *dstrow = out->data[0];
-            int imin = round(r->in_min  * UINT8_MAX);
-            int imax = round(r->in_max  * UINT8_MAX);
-            int omin = round(r->out_min * UINT8_MAX);
-            int omax = round(r->out_max * UINT8_MAX);
+            int imin = lrint(r->in_min  * UINT8_MAX);
+            int imax = lrint(r->in_max  * UINT8_MAX);
+            int omin = lrint(r->out_min * UINT8_MAX);
+            int omax = lrint(r->out_max * UINT8_MAX);
             double coeff;
 
             if (imin < 0) {
@@ -179,10 +179,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const uint8_t offset = s->rgba_map[i];
             const uint8_t *srcrow = in->data[0];
             uint8_t *dstrow = out->data[0];
-            int imin = round(r->in_min  * UINT16_MAX);
-            int imax = round(r->in_max  * UINT16_MAX);
-            int omin = round(r->out_min * UINT16_MAX);
-            int omax = round(r->out_max * UINT16_MAX);
+            int imin = lrint(r->in_min  * UINT16_MAX);
+            int imax = lrint(r->in_max  * UINT16_MAX);
+            int omin = lrint(r->out_min * UINT16_MAX);
+            int omax = lrint(r->out_max * UINT16_MAX);
             double coeff;
 
             if (imin < 0) {

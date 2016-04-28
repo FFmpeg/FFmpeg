@@ -494,11 +494,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (plane = 0; plane < rot->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? rot->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? rot->vsub : 0;
-        const int outw = FF_CEIL_RSHIFT(outlink->w, hsub);
-        const int outh = FF_CEIL_RSHIFT(outlink->h, vsub);
+        const int outw = AV_CEIL_RSHIFT(outlink->w, hsub);
+        const int outh = AV_CEIL_RSHIFT(outlink->h, vsub);
         ThreadData td = { .in = in,   .out  = out,
-                          .inw  = FF_CEIL_RSHIFT(inlink->w, hsub),
-                          .inh  = FF_CEIL_RSHIFT(inlink->h, vsub),
+                          .inw  = AV_CEIL_RSHIFT(inlink->w, hsub),
+                          .inh  = AV_CEIL_RSHIFT(inlink->h, vsub),
                           .outh = outh, .outw = outw,
                           .xi = -(outw-1) * c / 2, .yi =  (outw-1) * s / 2,
                           .xprime = -(outh-1) * s / 2,

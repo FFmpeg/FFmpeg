@@ -145,6 +145,7 @@ stream=0, decode=0
     pkt_timebase=1/25
     sub_charenc=
     sub_charenc_mode=0x00000000
+    sub_text_format=1
     refcounted_frames=false
     side_data_only_packets=true
     skip_alpha=false
@@ -300,6 +301,7 @@ stream=0, decode=1
     pkt_timebase=1/25
     sub_charenc=
     sub_charenc_mode=0x00000000
+    sub_text_format=1
     refcounted_frames=false
     side_data_only_packets=true
     skip_alpha=false

@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/intmath.h"
+#include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -40,7 +41,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int plane_index, ret;
     int i;
 
-    if(avctx->prediction_method == DWT_97
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        s->pred = avctx->prediction_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if(s->pred == DWT_97
        && (avctx->flags & AV_CODEC_FLAG_QSCALE)
        && avctx->global_quality == 0){
         av_log(avctx, AV_LOG_ERROR, "The 9/7 wavelet is incompatible with lossless mode.\n");
@@ -53,7 +61,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
+    s->spatial_decomposition_type= s->pred; //FIXME add decorrelator type r transform_type
 
     s->mv_scale       = (avctx->flags & AV_CODEC_FLAG_QPEL) ? 2 : 4;
     s->block_max_depth= (avctx->flags & AV_CODEC_FLAG_4MV ) ? 1 : 0;
@@ -291,7 +299,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
     c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
-    c->current_mv_penalty= c->mv_penalty[s->m.f_code=1] + MAX_MV;
+    c->current_mv_penalty= c->mv_penalty[s->m.f_code=1] + MAX_DMV;
 
     c->xmin = - x*block_w - 16+3;
     c->ymin = - y*block_w - 16+3;
@@ -1470,7 +1478,7 @@ static void update_last_header_values(SnowContext *s){
 }
 
 static int qscale2qlog(int qscale){
-    return rint(QROOT*log2(qscale / (float)FF_QP2LAMBDA))
+    return lrint(QROOT*log2(qscale / (float)FF_QP2LAMBDA))
            + 61*QROOT/8; ///< 64 > 60
 }
 
@@ -1573,12 +1581,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for(i=0; i < s->nb_planes; i++){
         int hshift= i ? s->chroma_h_shift : 0;
         int vshift= i ? s->chroma_v_shift : 0;
-        for(y=0; y<FF_CEIL_RSHIFT(height, vshift); y++)
+        for(y=0; y<AV_CEIL_RSHIFT(height, vshift); y++)
             memcpy(&s->input_picture->data[i][y * s->input_picture->linesize[i]],
                    &pict->data[i][y * pict->linesize[i]],
-                   FF_CEIL_RSHIFT(width, hshift));
+                   AV_CEIL_RSHIFT(width, hshift));
         s->mpvencdsp.draw_edges(s->input_picture->data[i], s->input_picture->linesize[i],
-                                FF_CEIL_RSHIFT(width, hshift), FF_CEIL_RSHIFT(height, vshift),
+                                AV_CEIL_RSHIFT(width, hshift), AV_CEIL_RSHIFT(height, vshift),
                                 EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
                                 EDGE_TOP | EDGE_BOTTOM);
 
@@ -1738,10 +1746,17 @@ redo_frame:
                 }
             predict_plane(s, s->spatial_idwt_buffer, plane_index, 0);
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+            if(s->avctx->scenechange_threshold)
+                s->scenechange_threshold = s->avctx->scenechange_threshold;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
             if(   plane_index==0
                && pic->pict_type == AV_PICTURE_TYPE_P
                && !(avctx->flags&AV_CODEC_FLAG_PASS2)
-               && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
+               && s->m.me.scene_change_score > s->scenechange_threshold){
                 ff_init_range_encoder(c, pkt->data, pkt->size);
                 ff_build_rac_states(c, (1LL<<32)/20, 256-8);
                 pic->pict_type= AV_PICTURE_TYPE_I;
@@ -1908,6 +1923,10 @@ static const AVOption options[] = {
     { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "iterative_dia_size",  "Dia size for the iterative ME",          OFFSET(iterative_dia_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "sc_threshold",   "Scene change threshold",                   OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, VE },
+    { "pred",           "Spatial decomposition type",                                OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 0 }, DWT_97, DWT_53, VE, "pred" },
+        { "dwt97", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, VE, "pred" },
+        { "dwt53", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "pred" },
     { NULL },
 };
 

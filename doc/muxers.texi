@@ -37,6 +37,26 @@ ID3v2.3 and ID3v2.4) are supported. The default is version 4.
 
 @end table
 
+@anchor{asf}
+@section asf
+
+Advanced Systems Format muxer.
+
+Note that Windows Media Audio (wma) and Windows Media Video (wmv) use this
+muxer too.
+
+@subsection Options
+
+It accepts the following options:
+
+@table @option
+@item packet_size
+Set the muxer packet size. By tuning this setting you may reduce data
+fragmentation or muxer overhead depending on your source. Default value is
+3200, minimum is 100, maximum is 64k.
+
+@end table
+
 @anchor{chromaprint}
 @section chromaprint
 
@@ -154,30 +174,70 @@ ffmpeg -i INPUT -c:a pcm_u8 -c:v mpeg2video -f framecrc -
 
 See also the @ref{crc} muxer.
 
+@anchor{framehash}
+@section framehash
+
+Per-packet hash testing format.
+
+This muxer computes and prints a cryptographic hash for each audio
+and video packet. This can be used for packet-by-packet equality
+checks without having to individually do a binary comparison on each.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. It uses the
+SHA-256 cryptographic hash function by default, but supports several
+other algorithms.
+
+The output of the muxer consists of a line for each audio and video
+packet of the form:
+@example
+@var{stream_index}, @var{packet_dts}, @var{packet_pts}, @var{packet_duration}, @var{packet_size}, @var{hash}
+@end example
+
+@var{hash} is a hexadecimal number representing the computed hash
+for the packet.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the audio and video frames in @file{INPUT},
+converted to raw audio and video packets, and store it in the file
+@file{out.sha256}:
+@example
+ffmpeg -i INPUT -f framehash out.sha256
+@end example
+
+To print the information to stdout, using the MD5 hash function, use
+the command:
+@example
+ffmpeg -i INPUT -f framehash -hash md5 -
+@end example
+
+See also the @ref{hash} muxer.
+
 @anchor{framemd5}
 @section framemd5
 
 Per-packet MD5 testing format.
 
-This muxer computes and prints the MD5 hash for each audio
-and video packet. By default audio frames are converted to signed
-16-bit raw audio and video frames to raw video before computing the
-hash.
-
-The output of the muxer consists of a line for each audio and video
-packet of the form:
-@example
-@var{stream_index}, @var{packet_dts}, @var{packet_pts}, @var{packet_duration}, @var{packet_size}, @var{MD5}
-@end example
-
-@var{MD5} is a hexadecimal number representing the computed MD5 hash
-for the packet.
+This is a variant of the @ref{framehash} muxer. Unlike that muxer,
+it defaults to using the MD5 hash function.
 
 @subsection Examples
 
-For example to compute the MD5 of the audio and video frames in
-@file{INPUT}, converted to raw audio and video packets, and store it
-in the file @file{out.md5}:
+To compute the MD5 hash of the audio and video frames in @file{INPUT},
+converted to raw audio and video packets, and store it in the file
+@file{out.md5}:
 @example
 ffmpeg -i INPUT -f framemd5 out.md5
 @end example
@@ -187,7 +247,7 @@ To print the information to stdout, use the command:
 ffmpeg -i INPUT -f framemd5 -
 @end example
 
-See also the @ref{md5} muxer.
+See also the @ref{framehash} and @ref{md5} muxers.
 
 @anchor{gif}
 @section gif
@@ -222,6 +282,51 @@ ffmpeg -i INPUT -c:v gif -f image2 "out%d.gif"
 
 Note 2: the GIF format has a very small time base: the delay between two frames
 can not be smaller than one centi second.
+
+@anchor{hash}
+@section hash
+
+Hash testing format.
+
+This muxer computes and prints a cryptographic hash of all the input
+audio and video frames. This can be used for equality checks without
+having to do a complete binary comparison.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. Timestamps
+are ignored. It uses the SHA-256 cryptographic hash function by default,
+but supports several other algorithms.
+
+The output of the muxer consists of a single line of the form:
+@var{algo}=@var{hash}, where @var{algo} is a short string representing
+the hash function used, and @var{hash} is a hexadecimal number
+representing the computed hash.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the input converted to raw audio and
+video, and store it in the file @file{out.sha256}:
+@example
+ffmpeg -i INPUT -f hash out.sha256
+@end example
+
+To print an MD5 hash to stdout use the command:
+@example
+ffmpeg -i INPUT -f hash -hash md5 -
+@end example
+
+See also the @ref{framehash} muxer.
 
 @anchor{hls}
 @section hls
@@ -298,6 +403,26 @@ ffmpeg in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file000.ts}, @file{file001.ts}, @file{file002.ts}, etc.
 
+@item use_localtime
+Use strftime on @var{filename} to expand the segment filename with localtime.
+The segment number (%d) is not available in this mode.
+@example
+ffmpeg in.nut -use_localtime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
+@end example
+This example will produce the playlist, @file{out.m3u8}, and segment files:
+@file{file-20160215-1455569023.ts}, @file{file-20160215-1455569024.ts}, etc.
+
+@item use_localtime_mkdir
+Used together with -use_localtime, it will create up to one subdirectory which
+is expanded in @var{filename}.
+@example
+ffmpeg in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
+@end example
+This example will create a directory 201560215 (if it does not exist), and then
+produce the playlist, @file{out.m3u8}, and segment files:
+@file{201560215/file-20160215-1455569023.ts}, @file{201560215/file-20160215-1455569024.ts}, etc.
+
+
 @item hls_key_info_file @var{key_info_file}
 Use the information in @var{key_info_file} for segment encryption. The first
 line of @var{key_info_file} specifies the key URI written to the playlist. The
@@ -368,6 +493,14 @@ Will produce the playlist, @file{out.m3u8}, and a single segment file,
 @item hls_flags delete_segments
 Segment files removed from the playlist are deleted after a period of time
 equal to the duration of the segment plus the duration of the playlist.
+
+@item hls_playlist_type event
+Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces
+@option{hls_list_size} to 0; the playlist can only be appended to.
+
+@item hls_playlist_type vod
+Emit @code{#EXT-X-PLAYLIST-TYPE:VOD} in the m3u8 header. Forces
+@option{hls_list_size} to 0; the playlist must not change.
 @end table
 
 @anchor{ico}
@@ -581,16 +714,12 @@ have no effect if it is not.
 
 MD5 testing format.
 
-This muxer computes and prints the MD5 hash of all the input audio
-and video frames. By default audio frames are converted to signed
-16-bit raw audio and video frames to raw video before computing the
-hash. Timestamps are ignored.
+This is a variant of the @ref{hash} muxer. Unlike that muxer, it
+defaults to using the MD5 hash function.
 
-The output of the muxer consists of a single line of the form:
-MD5=@var{MD5}, where @var{MD5} is a hexadecimal number representing
-the computed MD5 hash.
+@subsection Examples
 
-For example to compute the MD5 hash of the input converted to raw
+To compute the MD5 hash of the input converted to raw
 audio and video, and store it in the file @file{out.md5}:
 @example
 ffmpeg -i INPUT -f md5 out.md5
@@ -601,7 +730,7 @@ You can print the MD5 to stdout with the command:
 ffmpeg -i INPUT -f md5 -
 @end example
 
-See also the @ref{framemd5} muxer.
+See also the @ref{hash} and @ref{framemd5} muxers.
 
 @section mov, mp4, ismv
 
@@ -858,6 +987,8 @@ Reemit PAT/PMT before writing the next packet.
 Use LATM packetization for AAC.
 @item pat_pmt_at_frames
 Reemit PAT and PMT at each video frame.
+@item system_b
+Conform to System B (DVB) instead of System A (ATSC).
 @end table
 
 @subsection Example
@@ -995,6 +1126,12 @@ implementation for HLS segmentation.
 The segment muxer supports the following options:
 
 @table @option
+@item increment_tc @var{1|0}
+if set to @code{1}, increment timecode between each segment
+If this is selected, the input need to have
+a timecode in the first video stream. Default value is
+@code{0}.
+
 @item reference_stream @var{specifier}
 Set the reference stream, as specified by the string @var{specifier}.
 If @var{specifier} is set to @code{auto}, the reference is chosen
@@ -1098,6 +1235,28 @@ to create files at 12:00 o'clock, 12:15, 12:30, etc.
 
 Default value is "0".
 
+@item segment_clocktime_offset @var{duration}
+Delay the segment splitting times with the specified duration when using
+@option{segment_atclocktime}.
+
+For example with @option{segment_time} set to "900" and
+@option{segment_clocktime_offset} set to "300" this makes it possible to
+create files at 12:05, 12:20, 12:35, etc.
+
+Default value is "0".
+
+@item segment_clocktime_wrap_duration @var{duration}
+Force the segmenter to only start a new segment if a packet reaches the muxer
+within the specified duration after the segmenting clock time. This way you
+can make the segmenter more resilient to backward local time jumps, such as
+leap seconds or transition to standard time from daylight savings time.
+
+Assuming that the delay between the packets of your source is less than 0.5
+second you can detect a leap second by specifying 0.5 as the duration.
+
+Default is the maximum possible duration which means starting a new segment
+regardless of the elapsed time since the last clock time.
+
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
 segment, expressed as a duration specification. Default value is "0".
@@ -1160,6 +1319,11 @@ muxers/codecs. It is set to @code{0} by default.
 @item initial_offset @var{offset}
 Specify timestamp offset to apply to the output packet timestamps. The
 argument must be a time duration specification, and defaults to 0.
+
+@item write_empty_segments @var{1|0}
+If enabled, write an empty segment if there are no packets during the period a
+segment would usually span. Otherwise, the segment will be filled with the next
+packet written. Defaults to @code{0}.
 @end table
 
 @subsection Examples
@@ -1289,6 +1453,12 @@ Select the streams that should be mapped to the slave output,
 specified by a stream specifier. If not specified, this defaults to
 all the input streams. You may use multiple stream specifiers
 separated by commas (@code{,}) e.g.: @code{a:0,v}
+
+@item onfail
+Specify behaviour on output failure. This can be set to either @code{abort} (which is
+default) or @code{ignore}. @code{abort} will cause whole process to fail in case of failure
+on this slave output. @code{ignore} will ignore failure on this output, so other outputs
+will continue without being affected.
 @end table
 
 @subsection Examples
@@ -1300,6 +1470,14 @@ as MPEG-TS over UDP (the streams need to be explicitly mapped):
 @example
 ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
+@end example
+
+@item
+As above, but continue streaming even if output to local file fails
+(for example local drive fills up):
+@example
+ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
+  "[onfail=ignore]archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
 @end example
 
 @item

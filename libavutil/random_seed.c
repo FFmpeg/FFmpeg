@@ -97,8 +97,13 @@ static uint32_t get_generic_seed(void)
         last_t = t;
     }
 
-    if(TEST)
+    if(TEST) {
         buffer[0] = buffer[1] = 0;
+    } else {
+#ifdef AV_READ_TIME
+        buffer[111] += AV_READ_TIME();
+#endif
+    }
 
     av_sha_init(sha, 160);
     av_sha_update(sha, (const uint8_t *)buffer, sizeof(buffer));
@@ -119,6 +124,10 @@ uint32_t av_get_random_seed(void)
         if (ret)
             return seed;
     }
+#endif
+
+#if HAVE_ARC4RANDOM
+    return arc4random();
 #endif
 
     if (read_random(&seed, "/dev/urandom") == sizeof(seed))

@@ -64,7 +64,7 @@ static void video_frame_cksum(AVBPrint *bp, AVFrame *frame)
         unsigned cksum = 0;
         int h = frame->height;
         if ((i == 1 || i == 2) && desc->nb_components >= 3)
-            h = -((-h) >> desc->log2_chroma_h);
+            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
         data = frame->data[i];
         for (y = 0; y < h; y++) {
             cksum = av_adler32_update(cksum, data, linesize[i]);
@@ -119,6 +119,11 @@ static void audio_frame_cksum(AVBPrint *bp, AVFrame *frame)
     }
 }
 
+static int write_header(struct AVFormatContext *s)
+{
+    return ff_framehash_write_header(s);
+}
+
 static int write_frame(struct AVFormatContext *s, int stream_index,
                        AVFrame **frame, unsigned flags)
 {
@@ -133,7 +138,7 @@ static int write_frame(struct AVFormatContext *s, int stream_index,
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprintf(&bp, "%d, %10"PRId64"",
                stream_index, (*frame)->pts);
-    type = s->streams[stream_index]->codec->codec_type;
+    type = s->streams[stream_index]->codecpar->codec_type;
     type_name = av_get_media_type_string(type);
     av_bprintf(&bp, ", %s", type_name ? type_name : "unknown");
     switch (type) {
@@ -164,7 +169,7 @@ AVOutputFormat ff_uncodedframecrc_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("uncoded framecrc testing"),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
-    .write_header      = ff_framehash_write_header,
+    .write_header      = write_header,
     .write_packet      = write_packet,
     .write_uncoded_frame = write_frame,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |

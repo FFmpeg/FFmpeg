@@ -31,11 +31,11 @@ gbrp9le             1654c79e38dc78fdf106239ed2a7bd4f
 gray                57fd8e6e00f6be8752726005974cce1b
 gray16be            e1700e056de9917744a7ff4ab2ca63fd
 gray16le            338de7ac5f7d36d5ad5ac2c8d5bbea68
-monob               599b938a6207de81bd96c902c2511676
-monow               8486b94cd7c498b0effd33cb7e8e63df
+monob               2129cc72a484d7e10a44de9117aa9f80
+monow               03d783611d265cae78293f88ea126ea1
 nv12                16f7a46708ef25ebd0b72e47920cc11e
 nv21                7294574037cc7f9373ef5695d8ebe809
-pal8                379b8c80f4422a353ad286f7120f2fb6
+pal8                0658c18dcd8d052d59dfbe23f5b368d9
 rgb0                ca3fa6e865b91b3511c7f2bf62830059
 rgb24               25ab271e26a5785be169578d99da5dd0
 rgb444be            a05fabc91e485ec02461be900cd72ef3
@@ -66,8 +66,8 @@ yuv420p14be         dda2c5c09b72b41a19943b3832ddd2d5
 yuv420p14le         e79f827393fb9344190bacacffe9978e
 yuv420p16be         62d08d547f857b254c1d31b5c40b20a6
 yuv420p16le         4ddc458e596c44dfe007ca0c8b211e38
-yuv420p9be          c4a6faaec240d7d11d25b75afd7a6183
-yuv420p9le          2ed3dfcf2e5db5de7076dd74dee5c433
+yuv420p9be          65f8350de025dc8e6608bc21bf50c88f
+yuv420p9le          e9d061aad8e0d07226d41421797e6cbf
 yuv422p             9bd12ab1efe6c3fe6d9f639b97b79c7e
 yuv422p10be         6dd930ff81b89b71f6cadf757e0e8b3e
 yuv422p10le         5e314f06833b5016cc5cd76c611f7a48
@@ -77,8 +77,8 @@ yuv422p14be         d3d1d29966b9737dc8bbc31c6d215c9e
 yuv422p14le         3ba9d5d2a32dc3e0ec025100621e20f9
 yuv422p16be         ed49651e67f96c34649762f4678091de
 yuv422p16le         c7a8ad6f7aded288ca2d16c6e5d73026
-yuv422p9be          6d3da72c1c56c330d23f1f232ac6bde6
-yuv422p9le          0b3df4939e52a9c47521b33ca76a8ea8
+yuv422p9be          cf48ab1346f7fef1b983b8f01b6888b3
+yuv422p9le          b1b7acc0afe050fff93141e2e3c8f040
 yuv440p             5100aaa0d8b30f0eea8825fe9ae20b42
 yuv440p10be         4456a712fbf663d3eb591dfec7c0556d
 yuv440p10le         a71cc3c1b47f6600717421bc88ba1c43
@@ -93,8 +93,8 @@ yuv444p14be         18a46dde1fafcc7bbc6ebb3fd6681e7c
 yuv444p14le         90058811cf9c35a4ddfab367bea40c51
 yuv444p16be         1ff6ee64bcc33be585712e86359430d5
 yuv444p16le         9fc18b0a156d20503e3bac4823277adb
-yuv444p9be          12e6232d0e0c809527f64452341761cc
-yuv444p9le          9af93703a9819f834bcfeeb86eb33fa8
+yuv444p9be          e83171709ee786a5859aeab22d8ea4ce
+yuv444p9le          cca7482f37778cfb440f22355e47e9b1
 yuva420p            ebd72004be42de4743ca46fd81947b56
 yuva420p10be        5e000937fce49360850bc10d8083f798
 yuva420p10le        f16bde9ed6d8bd015d59b2e8e248ab31

@@ -309,7 +309,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
         if (res < 0)
             return res;
         if (res > 0) {
-            if (st->codec->codec_id == AV_CODEC_ID_AAC) {
+            if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
                 memcpy (rdt->buffer, buf + pos, len - pos);
                 rdt->rmctx->pb = avio_alloc_context (rdt->buffer, len - pos, 0,
                                                     NULL, NULL, NULL, NULL);
@@ -322,7 +322,7 @@ get_cache:
             ff_rm_retrieve_cache (rdt->rmctx, rdt->rmctx->pb,
                                   st, rdt->rmst[st->index], pkt);
         if (rdt->audio_pkt_cnt == 0 &&
-            st->codec->codec_id == AV_CODEC_ID_AAC)
+            st->codecpar->codec_id == AV_CODEC_ID_AAC)
             av_freep(&rdt->rmctx->pb);
     }
     pkt->stream_index = st->index;
@@ -448,7 +448,7 @@ real_parse_asm_rule(AVStream *st, const char *p, const char *end)
 {
     do {
         /* can be either averagebandwidth= or AverageBandwidth= */
-        if (sscanf(p, " %*1[Aa]verage%*1[Bb]andwidth=%"SCNd64, &st->codec->bit_rate) == 1)
+        if (sscanf(p, " %*1[Aa]verage%*1[Bb]andwidth=%"SCNd64, &st->codecpar->bit_rate) == 1)
             break;
         if (!(p = strchr(p, ',')) || p > end)
             p = end;
@@ -464,7 +464,7 @@ add_dstream(AVFormatContext *s, AVStream *orig_st)
     if (!(st = avformat_new_stream(s, NULL)))
         return NULL;
     st->id = orig_st->id;
-    st->codec->codec_type = orig_st->codec->codec_type;
+    st->codecpar->codec_type = orig_st->codecpar->codec_type;
     st->first_dts         = orig_st->first_dts;
 
     return st;
@@ -531,7 +531,7 @@ static av_cold int rdt_init(AVFormatContext *s, int st_index, PayloadContext *rd
     if (!rdt->rmctx)
         return AVERROR(ENOMEM);
 
-    if ((ret = ff_copy_whitelists(rdt->rmctx, s)) < 0)
+    if ((ret = ff_copy_whiteblacklists(rdt->rmctx, s)) < 0)
         return ret;
 
     return avformat_open_input(&rdt->rmctx, "", &ff_rdt_demuxer, NULL);

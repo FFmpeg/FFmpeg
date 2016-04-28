@@ -344,31 +344,35 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     /* check if we have sane number of tokens */
     if ((toks < 0) || (toks > 0xFFFFFF)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
-        tm2_free_codes(&codes);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     ret = av_reallocp_array(&ctx->tokens[stream_id], toks, sizeof(int));
     if (ret < 0) {
         ctx->tok_lens[stream_id] = 0;
-        return ret;
+        goto end;
     }
     ctx->tok_lens[stream_id] = toks;
     len = bytestream2_get_be32(&gb);
     if (len > 0) {
         pos = bytestream2_tell(&gb);
-        if (skip <= pos)
-            return AVERROR_INVALIDDATA;
+        if (skip <= pos) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
         for (i = 0; i < toks; i++) {
             if (get_bits_left(&ctx->gb) <= 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
             ctx->tokens[stream_id][i] = tm2_get_token(&ctx->gb, &codes);
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS || ctx->tokens[stream_id][i]<0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
                        ctx->tokens[stream_id][i], stream_id, i);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
         }
     } else {
@@ -377,13 +381,17 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
                        ctx->tokens[stream_id][i], stream_id, i);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
         }
     }
-    tm2_free_codes(&codes);
 
-    return skip;
+    ret = skip;
+
+end:
+    tm2_free_codes(&codes);
+    return ret;
 }
 
 static inline int GET_TOK(TM2Context *ctx,int type)

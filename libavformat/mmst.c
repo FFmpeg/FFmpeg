@@ -528,8 +528,9 @@ static int mms_open(URLContext *h, const char *uri, int flags)
 
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
-    err = ffurl_open(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
+    err = ffurl_open_whitelist(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE,
+                               &h->interrupt_callback, NULL,
+                               h->protocol_whitelist, h->protocol_blacklist, h);
     if (err)
         goto fail;
 
@@ -628,7 +629,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
     return result;
 }
 
-URLProtocol ff_mmst_protocol = {
+const URLProtocol ff_mmst_protocol = {
     .name           = "mmst",
     .url_open       = mms_open,
     .url_read       = mms_read,

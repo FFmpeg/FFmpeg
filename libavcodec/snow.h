@@ -177,6 +177,7 @@ typedef struct SnowContext{
     int intra_penalty;
     int motion_est;
     int iterative_dia_size;
+    int scenechange_threshold;
 
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
@@ -186,6 +187,8 @@ typedef struct SnowContext{
     AVMotionVector *avmv;
     int avmv_index;
     uint64_t encoding_error[AV_NUM_DATA_POINTERS];
+
+    int pred;
 }SnowContext;
 
 /* Tables */

@@ -137,7 +137,7 @@ specifications.
 Long term prediction profile, is enabled by and will enable the aac_ltp option.
 Introduced in MPEG4.
 
-@item aac_pred
+@item aac_main
 Main-type prediction profile, is enabled by and will enable the aac_pred option.
 Introduced in MPEG2.
 
@@ -1075,31 +1075,6 @@ Set MPEG audio original flag when set to 1. The default value is 0
 
 @end table
 
-@anchor{libvo-aacenc}
-@section libvo-aacenc
-
-VisualOn AAC encoder.
-
-Requires the presence of the libvo-aacenc headers and library during
-configuration. You need to explicitly configure the build with
-@code{--enable-libvo-aacenc --enable-version3}.
-
-This encoder is considered to be worse than the
-@ref{aacenc,,native FFmpeg AAC encoder}, according to
-multiple sources.
-
-@subsection Options
-
-The VisualOn AAC encoder only support encoding AAC-LC and up to 2
-channels. It is also CBR-only.
-
-@table @option
-
-@item b
-Set bit rate in bits/s.
-
-@end table
-
 @section libvo-amrwbenc
 
 VisualOn Adaptive Multi-Rate Wideband encoder.
@@ -1423,7 +1398,9 @@ a fixed number of slices
 @item rowmb
 one slice per row of macroblocks
 @item auto
-automatic number of slices according to number of thread
+automatic number of slices according to number of threads
+@item dyn
+dynamic slicing
 @end table
 
 Default value is @samp{auto}.
@@ -1435,6 +1412,12 @@ set a value of 0.
 @item profile
 Set profile restrictions. If set to the value of @samp{main} enable
 CABAC (set the @code{SEncParamExt.iEntropyCodingModeFlag} flag to 1).
+
+@item max_nal_size
+Set maximum NAL size in bytes.
+
+@item allow_skip_frames
+Allow skipping frames to hit the target bitrate if set to 1.
 @end table
 
 @section jpeg2000
@@ -1600,6 +1583,12 @@ follows: @code{(minrate * 100 / bitrate)}.
 @code{(minrate == maxrate == bitrate)}.
 
 @item crf (@emph{end-usage=cq}, @emph{cq-level})
+
+@item tune (@emph{tune})
+@table @samp
+@item psnr (@emph{psnr})
+@item ssim (@emph{ssim})
+@end table
 
 @item quality, deadline (@emph{deadline})
 @table @samp
@@ -2457,7 +2446,7 @@ Specifically this means either
 @itemize @minus
 @item
 @var{CQP} - constant quantizer scale, when the @option{qscale} codec flag is
-also set (the @option{-qscale} avconv option).
+also set (the @option{-qscale} ffmpeg option).
 
 @item
 @var{LA_ICQ} - intelligent constant quality with lookahead, when the
@@ -2531,6 +2520,71 @@ Setting the @option{coder} option to the value @var{vlc} will make the H.264
 encoder use CAVLC instead of CABAC.
 
 @end itemize
+
+@section vc2
+
+SMPTE VC-2 (previously BBC Dirac Pro). This codec was primarily aimed at
+professional broadcasting but since it supports yuv420, yuv422 and yuv444 at
+8 (limited range or full range), 10 or 12 bits, this makes it suitable for
+other tasks which require low overhead and low compression (like screen
+recording).
+
+@subsection Options
+
+@table @option
+
+@item b
+Sets target video bitrate. Usually that's around 1:6 of the uncompressed
+video bitrate (e.g. for 1920x1080 50fps yuv422p10 that's around 400Mbps). Higher
+values (close to the uncompressed bitrate) turn on lossless compression mode.
+
+@item field_order
+Enables field coding when set (e.g. to tt - top field first) for interlaced
+inputs. Should increase compression with interlaced content as it splits the
+fields and encodes each separately.
+
+@item wavelet_depth
+Sets the total amount of wavelet transforms to apply, between 1 and 5 (default).
+Lower values reduce compression and quality. Less capable decoders may not be
+able to handle values of @option{wavelet_depth} over 3.
+
+@item wavelet_type
+Sets the transform type. Currently only @var{5_3} (LeGall) and @var{9_7}
+(Deslauriers-Dubuc)
+are implemented, with 9_7 being the one with better compression and thus
+is the default.
+
+@item slice_width
+@item slice_height
+Sets the slice size for each slice. Larger values result in better compression.
+For compatibility with other more limited decoders use @option{slice_width} of
+32 and @option{slice_height} of 8.
+
+@item tolerance
+Sets the undershoot tolerance of the rate control system in percent. This is
+to prevent an expensive search from being run.
+
+@item qm
+Sets the quantization matrix preset to use by default or when @option{wavelet_depth}
+is set to 5
+@itemize @minus
+@item
+@var{default}
+Uses the default quantization matrix from the specifications, extended with
+values for the fifth level. This provides a good balance between keeping detail
+and omitting artifacts.
+
+@item
+@var{flat}
+Use a completely zeroed out quantization matrix. This increases PSNR but might
+reduce perception. Use in bogus benchmarks.
+
+@item
+@var{color}
+Reduces detail but attempts to preserve color at extremely low bitrates.
+@end itemize
+
+@end table
 
 @c man end VIDEO ENCODERS
 

@@ -31,8 +31,8 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "h264.h"
-#include "h264data.h" // FIXME FIXME FIXME
 #include "h264_mvpred.h"
+#include "h264data.h"
 #include "golomb.h"
 #include "mpegutils.h"
 #include "libavutil/avassert.h"
@@ -413,9 +413,6 @@ av_cold void ff_h264_decode_init_vlc(void){
     }
 }
 
-/**
- *
- */
 static inline int get_level_prefix(GetBitContext *gb){
     unsigned int buf;
     int log;
@@ -743,16 +740,16 @@ int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
     mb_type= get_ue_golomb(&sl->gb);
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         if(mb_type < 23){
-            partition_count= b_mb_type_info[mb_type].partition_count;
-            mb_type=         b_mb_type_info[mb_type].type;
+            partition_count = ff_h264_b_mb_type_info[mb_type].partition_count;
+            mb_type         = ff_h264_b_mb_type_info[mb_type].type;
         }else{
             mb_type -= 23;
             goto decode_intra_mb;
         }
     } else if (sl->slice_type_nos == AV_PICTURE_TYPE_P) {
         if(mb_type < 5){
-            partition_count= p_mb_type_info[mb_type].partition_count;
-            mb_type=         p_mb_type_info[mb_type].type;
+            partition_count = ff_h264_p_mb_type_info[mb_type].partition_count;
+            mb_type         = ff_h264_p_mb_type_info[mb_type].type;
         }else{
             mb_type -= 5;
             goto decode_intra_mb;
@@ -767,9 +764,9 @@ decode_intra_mb:
             return -1;
         }
         partition_count=0;
-        cbp= i_mb_type_info[mb_type].cbp;
-        sl->intra16x16_pred_mode = i_mb_type_info[mb_type].pred_mode;
-        mb_type= i_mb_type_info[mb_type].type;
+        cbp                      = ff_h264_i_mb_type_info[mb_type].cbp;
+        sl->intra16x16_pred_mode = ff_h264_i_mb_type_info[mb_type].pred_mode;
+        mb_type                  = ff_h264_i_mb_type_info[mb_type].type;
     }
 
     if (MB_FIELD(sl))
@@ -828,15 +825,18 @@ decode_intra_mb:
                     sl->intra4x4_pred_mode_cache[scan8[i]] = mode;
             }
             write_back_intra_pred_mode(h, sl);
-            if (ff_h264_check_intra4x4_pred_mode(h, sl) < 0)
+            if (ff_h264_check_intra4x4_pred_mode(sl->intra4x4_pred_mode_cache, h->avctx,
+                                                 sl->top_samples_available, sl->left_samples_available) < 0)
                 return -1;
         }else{
-            sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl, sl->intra16x16_pred_mode, 0);
+            sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h->avctx, sl->top_samples_available,
+                                                                     sl->left_samples_available, sl->intra16x16_pred_mode, 0);
             if (sl->intra16x16_pred_mode < 0)
                 return -1;
         }
         if(decode_chroma){
-            pred_mode= ff_h264_check_intra_pred_mode(h, sl, get_ue_golomb_31(&sl->gb), 1);
+            pred_mode= ff_h264_check_intra_pred_mode(h->avctx, sl->top_samples_available,
+                                                     sl->left_samples_available, get_ue_golomb_31(&sl->gb), 1);
             if(pred_mode < 0)
                 return -1;
             sl->chroma_pred_mode = pred_mode;
@@ -853,8 +853,8 @@ decode_intra_mb:
                     av_log(h->avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], sl->mb_x, sl->mb_y);
                     return -1;
                 }
-                sub_partition_count[i]= b_sub_mb_type_info[ sl->sub_mb_type[i] ].partition_count;
-                sl->sub_mb_type[i]=      b_sub_mb_type_info[ sl->sub_mb_type[i] ].type;
+                sub_partition_count[i] = ff_h264_b_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
+                sl->sub_mb_type[i]     = ff_h264_b_sub_mb_type_info[sl->sub_mb_type[i]].type;
             }
             if( IS_DIRECT(sl->sub_mb_type[0]|sl->sub_mb_type[1]|sl->sub_mb_type[2]|sl->sub_mb_type[3])) {
                 ff_h264_pred_direct_motion(h, sl, &mb_type);
@@ -871,8 +871,8 @@ decode_intra_mb:
                     av_log(h->avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], sl->mb_x, sl->mb_y);
                     return -1;
                 }
-                sub_partition_count[i]= p_sub_mb_type_info[ sl->sub_mb_type[i] ].partition_count;
-                sl->sub_mb_type[i]=      p_sub_mb_type_info[ sl->sub_mb_type[i] ].type;
+                sub_partition_count[i] = ff_h264_p_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
+                sl->sub_mb_type[i]     = ff_h264_p_sub_mb_type_info[sl->sub_mb_type[i]].type;
             }
         }
 
@@ -1072,8 +1072,10 @@ decode_intra_mb:
                 av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, sl->mb_x, sl->mb_y);
                 return -1;
             }
-            if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp[cbp];
-            else                     cbp= golomb_to_inter_cbp   [cbp];
+            if (IS_INTRA4x4(mb_type))
+                cbp = ff_h264_golomb_to_intra4x4_cbp[cbp];
+            else
+                cbp = ff_h264_golomb_to_inter_cbp[cbp];
         }else{
             if(cbp > 15){
                 av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, sl->mb_x, sl->mb_y);
@@ -1145,9 +1147,9 @@ decode_intra_mb:
             if(cbp&0x30){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++)
                     if (decode_residual(h, sl, gb, sl->mb + ((256 + 16*16*chroma_idx) << pixel_shift),
-                                        CHROMA_DC_BLOCK_INDEX+chroma_idx,
-                                        CHROMA422(h) ? chroma422_dc_scan : chroma_dc_scan,
-                                        NULL, 4*num_c8x8) < 0) {
+                                        CHROMA_DC_BLOCK_INDEX + chroma_idx,
+                                        CHROMA422(h) ? ff_h264_chroma422_dc_scan : ff_h264_chroma_dc_scan,
+                                        NULL, 4 * num_c8x8) < 0) {
                         return -1;
                     }
             }

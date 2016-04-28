@@ -1,4 +1,4 @@
-FATE_FILTER-$(call ALLYES, PERMS_FILTER DELOGO_FILTER RM_DEMUXER RV30_DECODER) += fate-filter-delogo
+FATE_FILTER_SAMPLES-$(call ALLYES, PERMS_FILTER DELOGO_FILTER RM_DEMUXER RV30_DECODER) += fate-filter-delogo
 fate-filter-delogo: CMD = framecrc -i $(TARGET_SAMPLES)/real/rv30.rm -vf perms=random,delogo=show=0:x=290:y=25:w=26:h=16 -an
 
 FATE_YADIF += fate-filter-yadif-mode0
@@ -13,7 +13,7 @@ fate-filter-yadif10: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAM
 FATE_YADIF += fate-filter-yadif16
 fate-filter-yadif16: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p16le -vframes 30 -vf yadif=0
 
-FATE_FILTER-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
+FATE_FILTER_SAMPLES-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
 
 FATE_W3FDIF += fate-filter-w3fdif-simple
 fate-filter-w3fdif-simple: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf w3fdif=0
@@ -21,7 +21,7 @@ fate-filter-w3fdif-simple: CMD = framecrc -flags bitexact -idct simple -i $(TARG
 FATE_W3FDIF += fate-filter-w3fdif-complex
 fate-filter-w3fdif-complex: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf w3fdif=1
 
-FATE_FILTER-$(call FILTERDEMDEC, W3FDIF, MPEGTS, MPEG2VIDEO) += $(FATE_W3FDIF)
+FATE_FILTER_SAMPLES-$(call FILTERDEMDEC, W3FDIF, MPEGTS, MPEG2VIDEO) += $(FATE_W3FDIF)
 
 FATE_MCDEINT += fate-filter-mcdeint-fast
 fate-filter-mcdeint-fast: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf mcdeint=fast
@@ -29,12 +29,12 @@ fate-filter-mcdeint-fast: CMD = framecrc -flags bitexact -idct simple -i $(TARGE
 FATE_MCDEINT += fate-filter-mcdeint-medium
 fate-filter-mcdeint-medium: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf mcdeint=mode=medium
 
-FATE_FILTER-$(call ALLYES, MCDEINT_FILTER, MPEGTS_DEMUXER, MPEG2VIDEO_DECODER SNOW_ENCODER) += $(FATE_MCDEINT)
+FATE_FILTER_SAMPLES-$(call ALLYES, MCDEINT_FILTER, MPEGTS_DEMUXER, MPEG2VIDEO_DECODER SNOW_ENCODER) += $(FATE_MCDEINT)
 
-FATE_FILTER-$(call ALLYES, CODECVIEW_FILTER RM_DEMUXER RV40_DECODER) += fate-filter-codecview-mvs
+FATE_FILTER_SAMPLES-$(call ALLYES, CODECVIEW_FILTER RM_DEMUXER RV40_DECODER) += fate-filter-codecview-mvs
 fate-filter-codecview-mvs: CMD = framecrc -flags2 +export_mvs -i $(TARGET_SAMPLES)/real/spygames-2MB.rmvb -vf codecview=mv=pf+bf+bb -vframes 60 -an
 
-FATE_FILTER-$(call ALLYES, SHOWPALETTE_FILTER FLIC_DEMUXER FLIC_DECODER) += fate-filter-showpalette
+FATE_FILTER_SAMPLES-$(call ALLYES, SHOWPALETTE_FILTER FLIC_DEMUXER FLIC_DECODER) += fate-filter-showpalette
 fate-filter-showpalette: CMD = framecrc -i $(TARGET_SAMPLES)/fli/fli-engines.fli -vf showpalette=3 -pix_fmt bgra
 
 FATE_FILTER_PALETTEGEN += fate-filter-palettegen-1
@@ -44,7 +44,7 @@ FATE_FILTER_PALETTEGEN += fate-filter-palettegen-2
 fate-filter-palettegen-2: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -vf palettegen=max_colors=128:reserve_transparent=0:stats_mode=diff -pix_fmt bgra
 
 fate-filter-palettegen: $(FATE_FILTER_PALETTEGEN)
-FATE_FILTER-$(call ALLYES, PALETTEGEN_FILTER MATROSKA_DEMUXER H264_DECODER) += $(FATE_FILTER_PALETTEGEN)
+FATE_FILTER_SAMPLES-$(call ALLYES, PALETTEGEN_FILTER MATROSKA_DEMUXER H264_DECODER) += $(FATE_FILTER_PALETTEGEN)
 
 FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-nodither
 fate-filter-paletteuse-nodither: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=none -pix_fmt bgra
@@ -56,9 +56,7 @@ FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-sierra2_4a
 fate-filter-paletteuse-sierra2_4a: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=sierra2_4a:diff_mode=rectangle -pix_fmt bgra
 
 fate-filter-paletteuse: $(FATE_FILTER_PALETTEUSE)
-FATE_FILTER-$(call ALLYES, PALETTEUSE_FILTER MATROSKA_DEMUXER H264_DECODER IMAGE2_DEMUXER PNG_DECODER) += $(FATE_FILTER_PALETTEUSE)
-
-FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
+FATE_FILTER_SAMPLES-$(call ALLYES, PALETTEUSE_FILTER MATROSKA_DEMUXER H264_DECODER IMAGE2_DEMUXER PNG_DECODER) += $(FATE_FILTER_PALETTEUSE)
 
 FATE_FILTER-$(call ALLYES, AVDEVICE LIFE_FILTER) += fate-filter-lavd-life
 fate-filter-lavd-life: CMD = framecrc -f lavfi -i life=s=40x40:r=5:seed=42:mold=64:ratio=0.1:death_color=red:life_color=green -t 2
@@ -300,28 +298,32 @@ FATE_FILTER_VSYNTH-$(CONFIG_TRIM_FILTER) += $(FATE_TRIM)
 FATE_FILTER_VSYNTH-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp
 fate-filter-unsharp: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf unsharp=11:11:-1.5:11:11:-1.5
 
-FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILTER) += fate-filter-hqdn3d-sample
+FATE_FILTER_SAMPLES-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILTER) += fate-filter-hqdn3d-sample
 fate-filter-hqdn3d-sample: tests/data/filtergraphs/hqdn3d
 fate-filter-hqdn3d-sample: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/hqdn3d -an
 
+FATE_FILTER_SAMPLES-$(call ALLYES, MATROSKA_DEMUXER OVERLAY_FILTER H264_DECODER DVDSUB_DECODER) += fate-filter-overlay-dvdsub-2397
+fate-filter-overlay-dvdsub-2397: tests/data/filtergraphs/overlay-dvdsub-2397
+fate-filter-overlay-dvdsub-2397: CMD = framecrc -flags bitexact -i $(TARGET_SAMPLES)/filter/242_4.mkv -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay-dvdsub-2397 -c:a copy
+
 FATE_FILTER_HQX-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER HQX_FILTER) = fate-filter-hq2x fate-filter-hq3x fate-filter-hq4x
-FATE_FILTER-yes += $(FATE_FILTER_HQX-yes)
+FATE_FILTER_SAMPLES-yes += $(FATE_FILTER_HQX-yes)
 fate-filter-hq2x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf hqx=2 -pix_fmt bgra
 fate-filter-hq3x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf hqx=3 -pix_fmt bgra
 fate-filter-hq4x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf hqx=4 -pix_fmt bgra
 fate-filter-hqx: $(FATE_FILTER_HQX-yes)
 
 FATE_FILTER_XBR-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER XBR_FILTER) = fate-filter-2xbr fate-filter-3xbr fate-filter-4xbr
-FATE_FILTER-yes += $(FATE_FILTER_XBR-yes)
+FATE_FILTER_SAMPLES-yes += $(FATE_FILTER_XBR-yes)
 fate-filter-2xbr: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf xbr=2 -pix_fmt bgra
 fate-filter-3xbr: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf xbr=3 -pix_fmt bgra
 fate-filter-4xbr: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf xbr=4 -pix_fmt bgra
 fate-filter-xbr: $(FATE_FILTER_XBR-yes)
 
-FATE_FILTER-$(call ALLYES, UTVIDEO_DECODER AVI_DEMUXER PERMS_FILTER CURVES_FILTER) += fate-filter-curves
+FATE_FILTER_SAMPLES-$(call ALLYES, UTVIDEO_DECODER AVI_DEMUXER PERMS_FILTER CURVES_FILTER) += fate-filter-curves
 fate-filter-curves: CMD = framecrc -i $(TARGET_SAMPLES)/utvideo/utvideo_rgb_median.avi -vf perms=random,curves=vintage
 
-FATE_FILTER-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER FORMAT_FILTER PERMS_FILTER GRADFUN_FILTER) += fate-filter-gradfun-sample
+FATE_FILTER_SAMPLES-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER FORMAT_FILTER PERMS_FILTER GRADFUN_FILTER) += fate-filter-gradfun-sample
 fate-filter-gradfun-sample: tests/data/filtergraphs/gradfun
 fate-filter-gradfun-sample: CMD = framecrc -i $(TARGET_SAMPLES)/vmd/12.vmd -filter_script $(TARGET_PATH)/tests/data/filtergraphs/gradfun -an -frames:v 20
 
@@ -331,6 +333,11 @@ fate-filter-concat: CMD = framecrc -filter_complex_script $(TARGET_PATH)/tests/d
 
 FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER FPS_FILTER MPDECIMATE_FILTER) += fate-filter-mpdecimate
 fate-filter-mpdecimate: CMD = framecrc -lavfi testsrc2=r=2:d=10,fps=3,mpdecimate -r 3 -pix_fmt yuv420p
+
+FATE_FILTER_SAMPLES-$(call ALLYES, MOV_DEMUXER FPS_FILTER QTRLE_DECODER) += fate-filter-fps-cfr fate-filter-fps fate-filter-fps-r
+fate-filter-fps-cfr: CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -r 30 -vsync cfr -pix_fmt yuv420p
+fate-filter-fps-r:   CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -r 30 -vf fps -pix_fmt yuv420p
+fate-filter-fps:     CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -vf fps=30 -pix_fmt yuv420p
 
 FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER SPLIT_FILTER ALPHAEXTRACT_FILTER ALPHAMERGE_FILTER) += fate-filter-alphaextract_alphamerge_rgb
 fate-filter-alphaextract_alphamerge_rgb: tests/data/filtergraphs/alphamerge_alphaextract_rgb
@@ -599,6 +606,12 @@ FATE_METADATA_FILTER-$(call ALLYES, $(SCENEDETECT_DEPS)) += fate-filter-metadata
 fate-filter-metadata-scenedetect: SRC = $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
 fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie='$(SRC)',select=gt(scene\,.4)"
 
+CROPDETECT_DEPS = FFPROBE LAVFI_INDEV MOVIE_FILTER CROPDETECT_FILTER SCALE_FILTER \
+                  AVCODEC AVDEVICE MOV_DEMUXER H264_DECODER
+FATE_METADATA_FILTER-$(call ALLYES, $(CROPDETECT_DEPS)) += fate-filter-metadata-cropdetect
+fate-filter-metadata-cropdetect: SRC = $(TARGET_SAMPLES)/filter/cropdetect.mp4
+fate-filter-metadata-cropdetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie='$(SRC)',cropdetect=max_outliers=3"
+
 SILENCEDETECT_DEPS = FFPROBE AVDEVICE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER SILENCEDETECT_FILTER
 FATE_METADATA_FILTER-$(call ALLYES, $(SILENCEDETECT_DEPS)) += fate-filter-metadata-silencedetect
 fate-filter-metadata-silencedetect: SRC = $(TARGET_SAMPLES)/amrwb/seed-12k65.awb
@@ -609,8 +622,29 @@ FATE_METADATA_FILTER-$(call ALLYES, $(EBUR128_METADATA_DEPS)) += fate-filter-met
 fate-filter-metadata-ebur128: SRC = $(TARGET_SAMPLES)/filter/seq-3341-7_seq-3342-5-24bit.flac
 fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',ebur128=metadata=1"
 
-FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
+READVITC_METADATA_DEPS = FFPROBE LAVFI_INDEV MOVIE_FILTER AVCODEC AVDEVICE \
+                         AVI_DEMUXER FFVHUFF_DECODER READVITC_FILTER
+FATE_METADATA_FILTER-$(call ALLYES, $(READVITC_METADATA_DEPS)) += fate-filter-metadata-readvitc-def
+fate-filter-metadata-readvitc-def: SRC = $(TARGET_SAMPLES)/filter/sample-vitc.avi
+fate-filter-metadata-readvitc-def: CMD = run $(FILTER_METADATA_COMMAND) "movie='$(SRC)',readvitc"
 
-fate-vfilter: $(FATE_FILTER-yes) $(FATE_FILTER_VSYNTH-yes)
+FATE_METADATA_FILTER-$(call ALLYES, $(READVITC_METADATA_DEPS)) += fate-filter-metadata-readvitc-thr
+fate-filter-metadata-readvitc-thr: SRC = $(TARGET_SAMPLES)/filter/sample-vitc.avi
+fate-filter-metadata-readvitc-thr: CMD = run $(FILTER_METADATA_COMMAND) "movie='$(SRC)',readvitc=thr_b=0.3:thr_w=0.5"
+
+tests/data/file4560-override2rotate0.mov: TAG = GEN
+tests/data/file4560-override2rotate0.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	-i $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov -c copy -flags +bitexact -metadata:s:v:0 rotate=0 $(TARGET_PATH)/$@ -y 2>/dev/null
+
+FATE_FILTER_SAMPLES-$(call ALLYES, MOV_DEMUXER H264_DECODER AAC_FIXED_DECODER PCM_S16LE_ENCODER MOV_MUXER) += fate-filter-meta-4560-rotate0
+fate-filter-meta-4560-rotate0: tests/data/file4560-override2rotate0.mov
+fate-filter-meta-4560-rotate0: CMD = framecrc -flags +bitexact -c:a aac_fixed -i $(TARGET_PATH)/tests/data/file4560-override2rotate0.mov
+
+FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
+FATE_SAMPLES_FFMPEG += $(FATE_FILTER_SAMPLES-yes)
+FATE_FFMPEG += $(FATE_FILTER-yes)
+
+fate-vfilter: $(FATE_FILTER-yes) $(FATE_FILTER_SAMPLES-yes) $(FATE_FILTER_VSYNTH-yes)
 
 fate-filter: fate-afilter fate-vfilter $(FATE_METADATA_FILTER-yes)

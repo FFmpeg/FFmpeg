@@ -45,7 +45,7 @@ int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, PayloadContext *data,
 int ff_h264_handle_frag_packet(AVPacket *pkt, const uint8_t *buf, int len,
                                int start_bit, const uint8_t *nal_header,
                                int nal_header_len);
-void ff_h264_parse_framesize(AVCodecContext *codec, const char *p);
+void ff_h264_parse_framesize(AVCodecParameters *par, const char *p);
 
 extern RTPDynamicProtocolHandler ff_ac3_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
@@ -80,6 +80,7 @@ extern RTPDynamicProtocolHandler ff_quicktime_rtp_aud_handler;
 extern RTPDynamicProtocolHandler ff_quicktime_rtp_vid_handler;
 extern RTPDynamicProtocolHandler ff_svq3_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_theora_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_vc2hq_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_vorbis_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_vp8_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_vp9_dynamic_handler;

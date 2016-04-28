@@ -99,11 +99,32 @@ static const AVClass av_format_context_class = {
     .get_category   = get_category,
 };
 
+static int io_open_default(AVFormatContext *s, AVIOContext **pb,
+                           const char *url, int flags, AVDictionary **options)
+{
+#if FF_API_OLD_OPEN_CALLBACKS
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (s->open_cb)
+        return s->open_cb(s, pb, url, flags, &s->interrupt_callback, options);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    return ffio_open_whitelist(pb, url, flags, &s->interrupt_callback, options, s->protocol_whitelist, s->protocol_blacklist);
+}
+
+static void io_close_default(AVFormatContext *s, AVIOContext *pb)
+{
+    avio_close(pb);
+}
+
 static void avformat_get_context_defaults(AVFormatContext *s)
 {
     memset(s, 0, sizeof(AVFormatContext));
 
     s->av_class = &av_format_context_class;
+
+    s->io_open  = io_open_default;
+    s->io_close = io_close_default;
 
     av_opt_set_defaults(s);
 }

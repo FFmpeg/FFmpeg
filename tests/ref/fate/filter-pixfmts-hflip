@@ -33,7 +33,7 @@ gray16be            cf7294d9aa23e1b838692ec01ade587b
 gray16le            d91ce41e304419bcf32ac792f01bd64f
 nv12                801e58f1be5fd0b5bc4bf007c604b0b4
 nv21                9f10dfff8963dc327d3395af21f0554f
-pal8                cfe90d91bea5172babd97c3828270ea5
+pal8                5b7c77d99817b4f52339742a47de7797
 rgb0                0092452f37d73da20193265ace0b7d57
 rgb24               21571104e6091a689feabb7867e513dd
 rgb444be            38d6d0e9aa15ce95f3fffcde8437632d
@@ -63,8 +63,8 @@ yuv420p14be         c5758d8062c61248110485243a75b712
 yuv420p14le         e283871dec73c853421d3aa098f071a7
 yuv420p16be         da4f5b6e537edf9cdea48a60defe520e
 yuv420p16le         4173d444fea2ea27ad03b3f92e982bcd
-yuv420p9be          7dbcd8f9bc1602f0a85dd7ff43e4522c
-yuv420p9le          187355df9ce2d35df085bd900cfc0953
+yuv420p9be          be69519cbd3f3b9d02b165e6d675b4cf
+yuv420p9le          49eac58088b3e1cac170911382e2bb9d
 yuv422p             5aade4d118cd7243800a08d300033748
 yuv422p10be         a12d0957b703bd54cd569664b821ca3e
 yuv422p10le         8b6ac98276b10b7e540a5f689e5453fa
@@ -74,8 +74,8 @@ yuv422p14be         027a593f148a96ff9e37a35e55608818
 yuv422p14le         4c1de1ce4f199ab8e94a28bf79ecedb6
 yuv422p16be         3d4b525c8056b740a4afa5b86cd79cd3
 yuv422p16le         bb93ea91207d118811e2dfd5a48e223d
-yuv422p9be          33c54fa3595492c10dbb58de2f3ef05c
-yuv422p9le          296f934ce228f436a3733a05bae280ad
+yuv422p9be          5b41fff3b17c2934e1db61f0591fdfbc
+yuv422p9le          720ed60d583933c3fb8db6dbb2991dc6
 yuv440p             53fb331a853af01bed7f32504a1e5ff0
 yuv440p10be         38108067cdce71f3a8f51eee25e4ff5d
 yuv440p10le         a369c78eda4f46d71105c38ddc92b976
@@ -90,8 +90,8 @@ yuv444p14be         be4727c283bb3af3327f7b9dc57e51b8
 yuv444p14le         289f4d6a3d60ba654e8280683825ee9a
 yuv444p16be         acb6b001d445a628d1d0a2dfbeed078c
 yuv444p16le         cce4770e9e2c6d4104562490d6ffbbaa
-yuv444p9be          bd3d219c010098c25dcd5ad211fe5ec6
-yuv444p9le          3a68468fbe09c9b963d9f9ee9ce3e439
+yuv444p9be          e29d58f528e7b36e3d7321e50f6a69d9
+yuv444p9le          587f7bd803aa09109e278fb7aa3e3971
 yuva420p            e910f0f5ed439a17fc3e61b42dec88c2
 yuva420p10be        2c3b83450c3155793a142ecd5d525131
 yuva420p10le        c49ac6b0e89564fa8243e0400adc37de

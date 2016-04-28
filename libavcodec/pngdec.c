@@ -787,7 +787,7 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
 
         for (i = 0; i < length / 2; i++) {
             /* only use the least significant bits */
-            v = bytestream2_get_be16(&s->gb) & ((1 << s->bit_depth) - 1);
+            v = av_mod_uintp2(bytestream2_get_be16(&s->gb), s->bit_depth);
 
             if (s->bit_depth > 8)
                 AV_WB16(&s->transparent_color_be[2 * i], v);
@@ -1136,6 +1136,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             case MKTAG('p', 'H', 'Y', 's'):
             case MKTAG('t', 'E', 'X', 't'):
             case MKTAG('I', 'D', 'A', 'T'):
+            case MKTAG('t', 'R', 'N', 'S'):
                 break;
             default:
                 goto skip_tag;

@@ -2,6 +2,36 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- DXVA2-accelerated HEVC Main10 decoding
+- fieldhint filter
+- loop video filter and aloop audio filter
+- Bob Weaver deinterlacing filter
+- firequalizer filter
+- datascope filter
+- bench and abench filters
+- ciescope filter
+- protocol blacklisting API
+- MediaCodec H264 decoding
+- VC-2 HQ RTP payload format (draft v1) depacketizer
+- AudioToolbox audio decoders
+- AudioToolbox audio encoders
+- coreimage filter (GPU based image filtering on OSX)
+- libdcadec removed
+- bitstream filter for extracting DTS core
+- ADPCM IMA DAT4 decoder
+- musx demuxer
+- aix demuxer
+- remap filter
+- hash and framehash muxers
+- colorspace filter
+- hdcd filter
+- readvitc filter
+- VAAPI-accelerated format conversion and scaling
+- libnpp/CUDA-accelerated format conversion and scaling
+- Duck TrueMotion 2.0 Real Time decoder
+
+version 3.0:
+- Common Encryption (CENC) MP4 encoding and decoding support
 - DXV decoding
 - extrastereo filter
 - ocr filter
@@ -42,7 +72,32 @@ version <next>:
 - mipsdspr1 option has been renamed to mipsdsp
 - aemphasis filter
 - mips32r5 option has been removed
+- mips64r6 option has been removed
 - DXVA2-accelerated VP9 decoding
+- SOFAlizer: virtual binaural acoustics filter
+- VAAPI VP9 hwaccel
+- audio high-order multiband parametric equalizer
+- automatic bitstream filtering
+- showspectrumpic filter
+- libstagefright support removed
+- spectrumsynth filter
+- ahistogram filter
+- only seek with the right mouse button in ffplay
+- toggle full screen when double-clicking with the left mouse button in ffplay
+- afftfilt filter
+- convolution filter
+- libquvi support removed
+- support for dvaudio in wav and avi
+- libaacplus and libvo-aacenc support removed
+- Cineform HD decoder
+- new DCA decoder with full support for DTS-HD extensions
+- significant performance improvements in Windows Television (WTV) demuxer
+- nnedi deinterlacer
+- streamselect video and astreamselect audio filter
+- swaprect filter
+- metadata video and ametadata audio filter
+- SMPTE VC-2 HQ profile support for the Dirac decoder
+- SMPTE VC-2 native encoder supporting the HQ profile
 
 
 version 2.8:

@@ -24,6 +24,7 @@
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
+#include "profiles.h"
 #include "version.h"
 
 #define MT(...) (const char *const[]){ __VA_ARGS__, NULL }
@@ -43,6 +44,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "mpeg2video",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
     },
 #if FF_API_XVMC
     {
@@ -102,6 +104,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "mpeg4",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     },
     {
         .id        = AV_CODEC_ID_RAWVIDEO,
@@ -207,6 +210,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "h264",
         .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     },
     {
         .id        = AV_CODEC_ID_INDEO3,
@@ -473,6 +477,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "vc1",
         .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
     },
     {
         .id        = AV_CODEC_ID_WMV3,
@@ -480,6 +485,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "wmv3",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
     },
     {
         .id        = AV_CODEC_ID_LOCO,
@@ -602,6 +608,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
                      AV_CODEC_PROP_LOSSLESS,
         .mime_types= MT("image/jp2"),
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),
     },
     {
         .id        = AV_CODEC_ID_VMNC,
@@ -910,6 +917,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "vp9",
         .long_name = NULL_IF_CONFIG_SMALL("Google VP9"),
         .props     = AV_CODEC_PROP_LOSSY,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
     },
     {
         .id        = AV_CODEC_ID_PICTOR,
@@ -1202,6 +1210,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "hevc",
         .long_name = NULL_IF_CONFIG_SMALL("H.265 / HEVC (High Efficiency Video Coding)"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
     },
     {
         .id        = AV_CODEC_ID_FIC,
@@ -1511,6 +1520,20 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
         .props     = AV_CODEC_PROP_LOSSLESS,
         .mime_types= MT("image/png"),
+    },
+    {
+        .id        = AV_CODEC_ID_CFHD,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "cfhd",
+        .long_name = NULL_IF_CONFIG_SMALL("Cineform HD"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_TRUEMOTION2RT,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "truemotion2rt",
+        .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0 Real Time"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
 
     /* various PCM "codecs" */
@@ -2006,6 +2029,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Yamaha AICA"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_ADPCM_IMA_DAT4,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "adpcm_ima_dat4",
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Eurocom DAT4"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* AMR */
     {
@@ -2097,6 +2127,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "aac",
         .long_name = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
         .props     = AV_CODEC_PROP_LOSSY,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     },
     {
         .id        = AV_CODEC_ID_AC3,
@@ -2111,6 +2142,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "dts",
         .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
     },
     {
         .id        = AV_CODEC_ID_VORBIS,
@@ -2435,6 +2467,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "aac_latm",
         .long_name = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Coding LATM syntax)"),
         .props     = AV_CODEC_PROP_LOSSY,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     },
     {
         .id        = AV_CODEC_ID_QDMC,

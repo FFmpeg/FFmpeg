@@ -160,5 +160,8 @@ AVFixedDSPContext * avpriv_alloc_fixed_dsp(int bit_exact)
     fdsp->butterflies_fixed = butterflies_fixed_c;
     fdsp->scalarproduct_fixed = scalarproduct_fixed_c;
 
+    if (ARCH_X86)
+        ff_fixed_dsp_init_x86(fdsp);
+
     return fdsp;
 }

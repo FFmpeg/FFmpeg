@@ -203,7 +203,7 @@ static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 
     AVFrame *frame = ff_get_video_buffer(inlink->dst->outputs[0],
                                          w + (s->w - s->in_w),
-                                         h + (s->h - s->in_h));
+                                         h + (s->h - s->in_h) + (s->x > 0));
     int plane;
 
     if (!frame)

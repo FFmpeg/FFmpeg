@@ -326,13 +326,18 @@ int av_match_name(const char *name, const char *names)
         return 0;
 
     namelen = strlen(name);
-    while ((p = strchr(names, ','))) {
+    while (*names) {
+        int negate = '-' == *names;
+        p = strchr(names, ',');
+        if (!p)
+            p = names + strlen(names);
+        names += negate;
         len = FFMAX(p - names, namelen);
-        if (!av_strncasecmp(name, names, len))
-            return 1;
-        names = p + 1;
+        if (!av_strncasecmp(name, names, len) || !strncmp("ALL", names, FFMAX(3, p - names)))
+            return !negate;
+        names = p + (*p == ',');
     }
-    return !av_strcasecmp(name, names);
+    return 0;
 }
 
 int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,

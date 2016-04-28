@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -211,9 +212,16 @@ static inline int get_egolomb(GetBitContext *gb)
 {
     int v = 4;
 
-    while (get_bits1(gb)) v++;
+    while (get_bits1(gb)) {
+        v++;
+        if (v > 30) {
+            av_log(NULL, AV_LOG_WARNING, "Too large golomb code in get_egolomb.\n");
+            v = 30;
+            break;
+        }
+    }
 
-    return (1 << v) + get_bits(gb, v);
+    return (1 << v) + get_bits_long(gb, v);
 }
 
 static int on2avc_decode_pairs(On2AVCContext *c, GetBitContext *gb, float *dst,
@@ -926,10 +934,13 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_WARNING,
                "Stereo mode support is not good, patch is welcome\n");
 
+    // We add -0.01 before ceil() to avoid any values to fall at exactly the
+    // midpoint between different ceil values. The results are identical to
+    // using pow(10, i / 10.0) without such bias
     for (i = 0; i < 20; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 16) / 32;
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 16 - 0.01) / 32;
     for (; i < 128; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 0.5);
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 0.5 - 0.01);
 
     if (avctx->sample_rate < 32000 || avctx->channels == 1)
         memcpy(c->long_win, ff_on2avc_window_long_24000,

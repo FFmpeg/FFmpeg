@@ -247,18 +247,18 @@ static int yuv4_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->width  = width;
-    st->codec->height = height;
+    st->codecpar->width  = width;
+    st->codecpar->height = height;
     av_reduce(&raten, &rated, raten, rated, (1UL << 31) - 1);
     avpriv_set_pts_info(st, 64, rated, raten);
     st->avg_frame_rate                = av_inv_q(st->time_base);
-    st->codec->pix_fmt                = pix_fmt;
-    st->codec->codec_type             = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id               = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->format              = pix_fmt;
+    st->codecpar->codec_type          = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id            = AV_CODEC_ID_RAWVIDEO;
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
-    st->codec->chroma_sample_location = chroma_sample_location;
-    st->codec->field_order            = field_order;
-    s->packet_size = av_image_get_buffer_size(st->codec->pix_fmt, width, height, 1) + Y4M_FRAME_MAGIC_LEN;
+    st->codecpar->chroma_location     = chroma_sample_location;
+    st->codecpar->field_order         = field_order;
+    s->packet_size = av_image_get_buffer_size(st->codecpar->format, width, height, 1) + Y4M_FRAME_MAGIC_LEN;
     if ((int) s->packet_size < 0)
         return s->packet_size;
     s->internal->data_offset = avio_tell(pb);
@@ -307,7 +307,8 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int yuv4_read_seek(AVFormatContext *s, int stream_index,
                           int64_t pts, int flags)
 {
-    avio_seek(s->pb, pts * s->packet_size + s->internal->data_offset, SEEK_SET);
+    if (avio_seek(s->pb, pts * s->packet_size + s->internal->data_offset, SEEK_SET) < 0)
+        return -1;
     return 0;
 }
 

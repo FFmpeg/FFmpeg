@@ -28,6 +28,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/libm.h"
 
 #include "texturedsp.h"
 
@@ -528,7 +529,7 @@ static inline void rgtc2_block_internal(uint8_t *dst, ptrdiff_t stride,
 
             int d = (255 * 255 - r * r - g * g) / 2;
             if (d > 0)
-                b = rint(sqrtf(d));
+                b = lrint(sqrtf(d));
 
             p[0] = r;
             p[1] = g;

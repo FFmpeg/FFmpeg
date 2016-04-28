@@ -32,6 +32,7 @@
 #include "mpegvideodata.h"
 #include "mpeg4video.h"
 #include "h263.h"
+#include "profiles.h"
 #include "thread.h"
 #include "xvididct.h"
 
@@ -66,7 +67,7 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n, int dir)
     int8_t *const qscale_table = s->current_picture.qscale_table;
 
     /* find prediction */
-    ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val  = &s->ac_val[0][0][0] + s->block_index[n] * 16;
     ac_val1 = ac_val;
     if (s->ac_pred) {
         if (dir == 0) {
@@ -883,7 +884,7 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
     const int part_a_end   = s->pict_type == AV_PICTURE_TYPE_I ? (ER_DC_END   | ER_MV_END)   : ER_MV_END;
 
     mb_num = mpeg4_decode_partition_a(ctx);
-    if (mb_num < 0) {
+    if (mb_num <= 0) {
         ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                         s->mb_x, s->mb_y, part_a_error);
         return -1;
@@ -2745,26 +2746,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVProfile mpeg4_video_profiles[] = {
-    { FF_PROFILE_MPEG4_SIMPLE,                    "Simple Profile" },
-    { FF_PROFILE_MPEG4_SIMPLE_SCALABLE,           "Simple Scalable Profile" },
-    { FF_PROFILE_MPEG4_CORE,                      "Core Profile" },
-    { FF_PROFILE_MPEG4_MAIN,                      "Main Profile" },
-    { FF_PROFILE_MPEG4_N_BIT,                     "N-bit Profile" },
-    { FF_PROFILE_MPEG4_SCALABLE_TEXTURE,          "Scalable Texture Profile" },
-    { FF_PROFILE_MPEG4_SIMPLE_FACE_ANIMATION,     "Simple Face Animation Profile" },
-    { FF_PROFILE_MPEG4_BASIC_ANIMATED_TEXTURE,    "Basic Animated Texture Profile" },
-    { FF_PROFILE_MPEG4_HYBRID,                    "Hybrid Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_REAL_TIME,        "Advanced Real Time Simple Profile" },
-    { FF_PROFILE_MPEG4_CORE_SCALABLE,             "Code Scalable Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_CODING,           "Advanced Coding Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_CORE,             "Advanced Core Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE, "Advanced Scalable Texture Profile" },
-    { FF_PROFILE_MPEG4_SIMPLE_STUDIO,             "Simple Studio Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_SIMPLE,           "Advanced Simple Profile" },
-    { FF_PROFILE_UNKNOWN },
-};
-
 static const AVOption mpeg4_options[] = {
     {"quarter_sample", "1/4 subpel MC", offsetof(MpegEncContext, quarter_sample), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, 0},
     {"divx_packed", "divx style packed b frames", offsetof(MpegEncContext, divx_packed), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, 0},
@@ -2793,7 +2774,7 @@ AVCodec ff_mpeg4_decoder = {
     .flush                 = ff_mpeg_flush,
     .max_lowres            = 3,
     .pix_fmts              = ff_h263_hwaccel_pixfmt_list_420,
-    .profiles              = NULL_IF_CONFIG_SMALL(mpeg4_video_profiles),
+    .profiles              = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
     .priv_class = &mpeg4_class,
 };

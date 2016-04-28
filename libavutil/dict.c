@@ -70,9 +70,12 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
                 int flags)
 {
     AVDictionary *m = *pm;
-    AVDictionaryEntry *tag = av_dict_get(m, key, NULL, flags);
+    AVDictionaryEntry *tag = NULL;
     char *oldval = NULL, *copy_key = NULL, *copy_value = NULL;
 
+    if (!(flags & AV_DICT_MULTIKEY)) {
+        tag = av_dict_get(m, key, NULL, flags);
+    }
     if (flags & AV_DICT_DONT_STRDUP_KEY)
         copy_key = (void *)key;
     else
@@ -98,7 +101,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             av_free(tag->value);
         av_free(tag->key);
         *tag = m->elems[--m->count];
-    } else {
+    } else if (copy_value) {
         AVDictionaryEntry *tmp = av_realloc(m->elems,
                                             (m->count + 1) * sizeof(*m->elems));
         if (!tmp)

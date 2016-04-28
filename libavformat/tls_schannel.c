@@ -28,6 +28,7 @@
 #include "tls.h"
 
 #define SECURITY_WIN32
+#include <windows.h>
 #include <security.h>
 #include <schnlsp.h>
 
@@ -588,7 +589,7 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_tls_schannel_protocol = {
+const URLProtocol ff_tls_schannel_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,

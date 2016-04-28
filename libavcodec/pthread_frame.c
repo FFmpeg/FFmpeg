@@ -93,6 +93,8 @@ typedef struct PerThreadContext {
 
     const enum AVPixelFormat *available_formats; ///< Format array for get_format()
     enum AVPixelFormat result_format;            ///< get_format() result
+
+    int die;                        ///< Set when the thread should exit.
 } PerThreadContext;
 
 /**
@@ -111,8 +113,6 @@ typedef struct FrameThreadContext {
                                     * Set for the first N packets, where N is the number of threads.
                                     * While it is set, ff_thread_en/decode_frame won't return any results.
                                     */
-
-    int die;                       ///< Set when threads should exit.
 } FrameThreadContext;
 
 #define THREAD_SAFE_CALLBACKS(avctx) \
@@ -128,16 +128,15 @@ typedef struct FrameThreadContext {
 static attribute_align_arg void *frame_worker_thread(void *arg)
 {
     PerThreadContext *p = arg;
-    FrameThreadContext *fctx = p->parent;
     AVCodecContext *avctx = p->avctx;
     const AVCodec *codec = avctx->codec;
 
     pthread_mutex_lock(&p->mutex);
     while (1) {
-            while (p->state == STATE_INPUT_READY && !fctx->die)
+            while (p->state == STATE_INPUT_READY && !p->die)
                 pthread_cond_wait(&p->input_cond, &p->mutex);
 
-        if (fctx->die) break;
+        if (p->die) break;
 
         if (!codec->update_thread_context && THREAD_SAFE_CALLBACKS(avctx))
             ff_thread_finish_setup(avctx);
@@ -553,12 +552,11 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             fctx->threads->avctx->internal->is_copy = 1;
         }
 
-    fctx->die = 1;
-
     for (i = 0; i < thread_count; i++) {
         PerThreadContext *p = &fctx->threads[i];
 
         pthread_mutex_lock(&p->mutex);
+        p->die = 1;
         pthread_cond_signal(&p->input_cond);
         pthread_mutex_unlock(&p->mutex);
 

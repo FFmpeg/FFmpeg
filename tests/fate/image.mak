@@ -65,6 +65,30 @@ fate-exr-slice-zip16: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_slice_zip16.e
 FATE_EXR += fate-exr-slice-pxr24
 fate-exr-slice-pxr24: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_slice_pxr24.exr -pix_fmt rgb48le
 
+FATE_EXR += fate-exr-rgb-scanline-pxr24-float-12x8
+fate-exr-rgb-scanline-pxr24-float-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_float_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgba-multiscanline-half-b44
+fate-exr-rgba-multiscanline-half-b44: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_multiscanline_half_b44.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-float-b44
+fate-exr-rgb-scanline-float-b44: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_float_b44.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-half-b44-12x8
+fate-exr-rgb-scanline-half-b44-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_half_b44_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-half-b44-13x9
+fate-exr-rgb-scanline-half-b44-13x9: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_half_b44_13x9.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-float-raw-12x8
+fate-exr-rgb-tile-float-raw-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_float_raw_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-float-raw-150x130
+fate-exr-rgb-tile-float-raw-150x130: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_float_raw_150x130.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-half-raw-12x8
+fate-exr-rgb-tile-half-raw-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_half_raw_12x8.exr -pix_fmt rgb48le
+
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 
 FATE_IMAGE += $(FATE_EXR-yes)

@@ -104,7 +104,7 @@ All subsequent file-related directives apply to that file.
 
 @item @code{ffconcat version 1.0}
 Identify the script type and version. It also sets the @option{safe} option
-to 1 if it was to its default -1.
+to 1 if it was -1.
 
 To make FFmpeg recognize the format automatically, this directive must
 appears exactly as is (no extra space or byte-order-mark) on the very first
@@ -192,7 +192,9 @@ component.
 
 If set to 0, any file name is accepted.
 
-The default is -1, it is equivalent to 1 if the format was automatically
+The default is 1.
+
+-1 is equivalent to 1 if the format was automatically
 probed and 0 otherwise.
 
 @item auto_convert
@@ -213,6 +215,33 @@ based on the concat file.
 The default is 0.
 
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Use absolute filenames and include some comments:
+@example
+# my first filename
+file /mnt/share/file-1.wav
+# my second filename including whitespace
+file '/mnt/share/file 2.wav'
+# my third filename including whitespace plus single quote
+file '/mnt/share/file 3'\''.wav'
+@end example
+
+@item
+Allow for input format auto-probing, use safe filenames and set the duration of
+the first file:
+@example
+ffconcat version 1.0
+
+file file-1.wav
+duration 20.0
+
+file subdir/file-2.wav
+@end example
+@end itemize
 
 @section flv
 
@@ -237,18 +266,6 @@ track. Track indexes start at 0. The demuxer exports the number of tracks as
 @var{tracks} meta data entry.
 
 For very large files, the @option{max_size} option may have to be adjusted.
-
-@section libquvi
-
-Play media from Internet services using the quvi project.
-
-The demuxer accepts a @option{format} option to request a specific quality. It
-is by default set to @var{best}.
-
-See @url{http://quvi.sourceforge.net/} for more information.
-
-FFmpeg needs to be built with @code{--enable-libquvi} for this demuxer to be
-enabled.
 
 @section gif
 
@@ -423,6 +440,23 @@ terminating with the ".png" suffix:
 ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
+
+@section mov/mp4/3gp/QuickTime
+
+QuickTime / MP4 demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item enable_drefs
+Enable loading of external tracks, disabled by default.
+Enabling this can theoretically leak information in some use cases.
+
+@item use_absolute_path
+Allows loading of external tracks via absolute paths, disabled by default.
+Enabling this poses a security risk. It should only be enabled if the source
+is known to be non malicious.
+
+@end table
 
 @section mpegts
 

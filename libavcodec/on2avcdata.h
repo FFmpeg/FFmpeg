@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ON2AVC_DATA_H
-#define AVCODEC_ON2AVC_DATA_H
+#ifndef AVCODEC_ON2AVCDATA_H
+#define AVCODEC_ON2AVCDATA_H
 
 #include <stdint.h>
 
@@ -79,4 +79,4 @@ extern const float ff_on2avc_ctab_2[2048];
 extern const float ff_on2avc_ctab_3[2048];
 extern const float ff_on2avc_ctab_4[2048];
 
-#endif /* AVCODEC_ON2AVC_DATA_H */
+#endif /* AVCODEC_ON2AVCDATA_H */

@@ -212,8 +212,8 @@ static const AVOption drawtext_options[]= {
     {"fontsize",    "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.i64=0},     0,        INT_MAX , FLAGS},
     {"x",           "set x expression",     OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
     {"y",           "set y expression",     OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
-    {"shadowx",     "set x",                OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
-    {"shadowy",     "set y",                OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
+    {"shadowx",     "set shadow x offset",  OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
+    {"shadowy",     "set shadow y offset",  OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
     {"borderw",     "set border width",     OFFSET(borderw),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
     {"tabsize",     "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.i64=4},     0,        INT_MAX , FLAGS},
     {"basetime",    "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX , FLAGS},
@@ -372,8 +372,10 @@ static int load_font_file(AVFilterContext *ctx, const char *path, int index)
 
     err = FT_New_Face(s->library, path, index, &s->face);
     if (err) {
+#if !CONFIG_LIBFONTCONFIG
         av_log(ctx, AV_LOG_ERROR, "Could not load font \"%s\": %s\n",
                s->fontfile, FT_ERRMSG(err));
+#endif
         return AVERROR(EINVAL);
     }
     return 0;
@@ -610,12 +612,6 @@ static av_cold int init(AVFilterContext *ctx)
             return err;
     }
 
-#if CONFIG_LIBFRIBIDI
-    if (s->text_shaping)
-        if ((err = shape_text(ctx)) < 0)
-            return err;
-#endif
-
     if (s->reload && !s->textfile)
         av_log(ctx, AV_LOG_WARNING, "No file to reload\n");
 
@@ -635,6 +631,12 @@ static av_cold int init(AVFilterContext *ctx)
                "Either text, a valid file or a timecode must be provided\n");
         return AVERROR(EINVAL);
     }
+
+#if CONFIG_LIBFRIBIDI
+    if (s->text_shaping)
+        if ((err = shape_text(ctx)) < 0)
+            return err;
+#endif
 
     if ((err = FT_Init_FreeType(&(s->library)))) {
         av_log(ctx, AV_LOG_ERROR,
@@ -812,7 +814,7 @@ static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
         if (isnan(pts)) {
             av_bprintf(bp, " ??:??:??.???");
         } else {
-            int64_t ms = round(pts * 1000);
+            int64_t ms = llrint(pts * 1000);
             char sign = ' ';
             if (ms < 0) {
                 sign = '-';
@@ -822,7 +824,7 @@ static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
                        (int)(ms / (60 * 60 * 1000)),
                        (int)(ms / (60 * 1000)) % 60,
                        (int)(ms / 1000) % 60,
-                       (int)ms % 1000);
+                       (int)(ms % 1000));
         }
     } else if (!strcmp(fmt, "localtime") ||
                !strcmp(fmt, "gmtime")) {
@@ -858,6 +860,8 @@ static int func_metadata(AVFilterContext *ctx, AVBPrint *bp,
 
     if (e && e->value)
         av_bprintf(bp, "%s", e->value);
+    else if (argc >= 2)
+        av_bprintf(bp, "%s", argv[1]);
     return 0;
 }
 
@@ -973,7 +977,7 @@ static const struct drawtext_function {
     { "localtime", 0, 1, 'L', func_strftime },
     { "frame_num", 0, 0, 0,   func_frame_num },
     { "n",         0, 0, 0,   func_frame_num },
-    { "metadata",  1, 1, 0,   func_metadata },
+    { "metadata",  1, 2, 0,   func_metadata },
 };
 
 static int eval_function(AVFilterContext *ctx, AVBPrint *bp, char *fct,
@@ -1220,7 +1224,9 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
         dummy.code = code;
         glyph = av_tree_find(s->glyphs, &dummy, glyph_cmp, NULL);
         if (!glyph) {
-            load_glyph(ctx, &glyph, code);
+            ret = load_glyph(ctx, &glyph, code);
+            if (ret < 0)
+                return ret;
         }
 
         y_min = FFMIN(glyph->bbox.yMin, y_min);

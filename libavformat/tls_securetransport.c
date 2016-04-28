@@ -22,6 +22,7 @@
 
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -80,8 +81,9 @@ static int import_pem(URLContext *h, char *path, CFArrayRef *array)
         goto end;
     }
 
-    if ((ret = avio_open2(&s, path, AVIO_FLAG_READ,
-                          &h->interrupt_callback, NULL)) < 0)
+    if ((ret = ffio_open_whitelist(&s, path, AVIO_FLAG_READ,
+                                   &h->interrupt_callback, NULL,
+                                   h->protocol_whitelist, h->protocol_blacklist)) < 0)
         goto end;
 
     if ((ret = avio_size(s)) < 0)
@@ -385,7 +387,7 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_tls_securetransport_protocol = {
+const URLProtocol ff_tls_securetransport_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,

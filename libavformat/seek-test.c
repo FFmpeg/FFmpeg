@@ -80,6 +80,8 @@ int main(int argc, char **argv)
             if (atoi(argv[i+1])) {
                 ic->flags |= AVFMT_FLAG_FAST_SEEK;
             }
+        } else if(argv[i][0] == '-' && argv[i+1]) {
+            av_dict_set(&format_opts, argv[i] + 1, argv[i+1], 0);
         } else {
             argc = 1;
         }

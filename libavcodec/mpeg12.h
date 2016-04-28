@@ -50,7 +50,11 @@ static inline int decode_dc(GetBitContext *gb, int component)
     return diff;
 }
 
-int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n);
+int ff_mpeg1_decode_block_intra(GetBitContext *gb,
+                                const uint16_t *quant_matrix,
+                                uint8_t *const scantable, int last_dc[3],
+                                int16_t *block, int index, int qscale);
+
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s);
 

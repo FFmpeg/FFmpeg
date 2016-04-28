@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVDEVICE_DECKLINK_COMMON_C_H
+#define AVDEVICE_DECKLINK_COMMON_C_H
+
 struct decklink_cctx {
     const AVClass *cclass;
 
@@ -27,7 +30,10 @@ struct decklink_cctx {
     /* Options */
     int list_devices;
     int list_formats;
+    int64_t teletext_lines;
     double preroll;
     int v210;
+    int audio_channels;
 };
 
+#endif /* AVDEVICE_DECKLINK_COMMON_C_H */

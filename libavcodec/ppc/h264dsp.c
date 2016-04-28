@@ -19,13 +19,19 @@
  */
 
 #include "config.h"
+
+#include <stdint.h>
+#include <string.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/h264data.h"
+
+#include "libavcodec/h264.h"
 #include "libavcodec/h264dsp.h"
 
 #if HAVE_ALTIVEC
@@ -524,7 +530,7 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
 
     register vec_u8 average = vec_avg(p0, q0);
     register vec_u8 temp;
-    register vec_u8 uncliped;
+    register vec_u8 unclipped;
     register vec_u8 ones;
     register vec_u8 max;
     register vec_u8 min;
@@ -534,10 +540,10 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
     average = vec_avg(average, p2);     /*avg(p2, avg(p0, q0)) */
     ones = vec_splat_u8(1);
     temp = vec_and(temp, ones);         /*(p2^avg(p0, q0)) & 1 */
-    uncliped = vec_subs(average, temp); /*(p2+((p0+q0+1)>>1))>>1 */
+    unclipped = vec_subs(average, temp); /*(p2+((p0+q0+1)>>1))>>1 */
     max = vec_adds(p1, tc0);
     min = vec_subs(p1, tc0);
-    newp1 = vec_max(min, uncliped);
+    newp1 = vec_max(min, unclipped);
     newp1 = vec_min(max, newp1);
     return newp1;
 }

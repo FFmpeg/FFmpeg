@@ -48,7 +48,7 @@ extern const  int8_t ff_interleaved_se_golomb_vlc_code[256];
 extern const uint8_t ff_interleaved_dirac_golomb_vlc_code[256];
 
 /**
- * read unsigned exp golomb code.
+ * Read an unsigned Exp-Golomb code in the range 0 to 8190.
  */
 static inline int get_ue_golomb(GetBitContext *gb)
 {
@@ -68,7 +68,7 @@ static inline int get_ue_golomb(GetBitContext *gb)
         int log = 2 * av_log2(buf) - 31;
         LAST_SKIP_BITS(re, gb, 32 - log);
         CLOSE_READER(re, gb);
-        if (CONFIG_FTRAPV && log < 0) {
+        if (log < 7) {
             av_log(NULL, AV_LOG_ERROR, "Invalid UE golomb code\n");
             return AVERROR_INVALIDDATA;
         }

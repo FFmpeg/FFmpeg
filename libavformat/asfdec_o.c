@@ -167,7 +167,7 @@ static void swap_guid(ff_asf_guid guid)
 
 static void align_position(AVIOContext *pb,  int64_t offset, uint64_t size)
 {
-    if (avio_tell(pb) != offset + size)
+    if (size < INT64_MAX - offset && avio_tell(pb) != offset + size)
         avio_seek(pb, offset + size, SEEK_SET);
 }
 
@@ -178,6 +178,9 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t size   = avio_rl64(pb);
     int ret;
 
+    if (size > INT64_MAX)
+        return AVERROR_INVALIDDATA;
+
     if (asf->is_header)
         asf->unknown_size = size;
     asf->is_header = 0;
@@ -187,8 +190,13 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
         if ((ret = detect_unknown_subobject(s, asf->unknown_offset,
                                             asf->unknown_size)) < 0)
             return ret;
-    } else
+    } else {
+        if (size < 24) {
+            av_log(s, AV_LOG_ERROR, "Too small size %"PRIu64" (< 24).\n", size);
+            return AVERROR_INVALIDDATA;
+        }
         avio_skip(pb, size - 24);
+    }
 
     return 0;
 }
@@ -263,7 +271,7 @@ static int asf_read_metadata(AVFormatContext *s, const char *title, uint16_t len
     return 0;
 }
 
-static int asf_read_value(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
+static int asf_read_value(AVFormatContext *s, const uint8_t *name,
                           uint16_t val_len, int type, AVDictionary **met)
 {
     int ret;
@@ -328,7 +336,7 @@ static int asf_read_generic_value(AVIOContext *pb, int type, uint64_t *value)
 }
 
 static int asf_set_metadata(AVFormatContext *s, const uint8_t *name,
-                            uint16_t name_len, int type, AVDictionary **met)
+                            int type, AVDictionary **met)
 {
     AVIOContext *pb = s->pb;
     uint64_t value;
@@ -423,8 +431,8 @@ static int asf_read_picture(AVFormatContext *s, int len)
     }
 
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codec->codec_type         = asf_st->type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id           = id;
+    st->codecpar->codec_type      = asf_st->type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id        = id;
     st->attached_pic              = pkt;
     st->attached_pic.stream_index = asf_st->index = st->index;
     st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
@@ -467,7 +475,7 @@ static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t na
     if (val_len) {
         switch (type) {
         case ASF_UNICODE:
-            asf_read_value(s, name, name_len, val_len, type, met);
+            asf_read_value(s, name, val_len, type, met);
             break;
         case ASF_BYTE_ARRAY:
             if (!strcmp(name, "WM/Picture")) // handle cover art
@@ -475,13 +483,13 @@ static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t na
             else if (!strcmp(name, "ID3")) // handle ID3 tag
                 get_id3_tag(s, val_len);
             else
-                asf_read_value(s, name, name_len, val_len, type, met);
+                asf_read_value(s, name, val_len, type, met);
             break;
         case ASF_GUID:
             ff_get_guid(s->pb, &guid);
             break;
         default:
-            if ((ret = asf_set_metadata(s, name, name_len, type, met)) < 0)
+            if ((ret = asf_set_metadata(s, name, type, met)) < 0)
                 return ret;
             break;
         }
@@ -687,26 +695,26 @@ static int parse_video_info(AVIOContext *pb, AVStream *st)
     uint16_t size;
     unsigned int tag;
 
-    st->codec->width  = avio_rl32(pb);
-    st->codec->height = avio_rl32(pb);
+    st->codecpar->width  = avio_rl32(pb);
+    st->codecpar->height = avio_rl32(pb);
     avio_skip(pb, 1); // skip reserved flags
     size = avio_rl16(pb); // size of the Format Data
     tag  = ff_get_bmp_header(pb, st, NULL);
-    st->codec->codec_tag = tag;
-    st->codec->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag);
+    st->codecpar->codec_tag = tag;
+    st->codecpar->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag);
 
     if (size > BMP_HEADER_SIZE) {
         int ret;
-        st->codec->extradata_size  = size - BMP_HEADER_SIZE;
-        if (!(st->codec->extradata = av_malloc(st->codec->extradata_size +
+        st->codecpar->extradata_size  = size - BMP_HEADER_SIZE;
+        if (!(st->codecpar->extradata = av_malloc(st->codecpar->extradata_size +
                                                AV_INPUT_BUFFER_PADDING_SIZE))) {
-            st->codec->extradata_size = 0;
+            st->codecpar->extradata_size = 0;
             return AVERROR(ENOMEM);
         }
-        memset(st->codec->extradata + st->codec->extradata_size , 0,
+        memset(st->codecpar->extradata + st->codecpar->extradata_size , 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
-        if ((ret = avio_read(pb, st->codec->extradata,
-                             st->codec->extradata_size)) < 0)
+        if ((ret = avio_read(pb, st->codecpar->extradata,
+                             st->codecpar->extradata_size)) < 0)
             return ret;
     }
     return 0;
@@ -765,7 +773,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 32, 1, 1000); // pts should be dword, in milliseconds
-    st->codec->codec_type = type;
+    st->codecpar->codec_type = type;
     asf->asf_st[asf->nb_streams] = av_mallocz(sizeof(*asf_st));
     if (!asf->asf_st[asf->nb_streams])
         return AVERROR(ENOMEM);
@@ -782,7 +790,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
         asf_st->type = AVMEDIA_TYPE_AUDIO;
-        if ((ret = ff_get_wav_header(s, pb, st->codec, ts_data_len, 0)) < 0)
+        if ((ret = ff_get_wav_header(s, pb, st->codecpar, ts_data_len, 0)) < 0)
             return ret;
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -859,7 +867,7 @@ static int asf_read_ext_stream_properties(AVFormatContext *s, const GUIDParseTab
     if (st) {
         st->start_time           = start_time;
         st->duration             = end_time - start_time;
-        st->codec->bit_rate      = bitrate;
+        st->codecpar->bit_rate   = bitrate;
         st->avg_frame_rate.num   = 10000000;
         st->avg_frame_rate.den   = time_per_frame;
     }
@@ -967,7 +975,7 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t interval; // index entry time interval in 100 ns units, usually it's 1s
     uint32_t pkt_num, nb_entries;
     int32_t prev_pkt_num = -1;
-    int i;
+    int i, ret;
     uint64_t size = avio_rl64(pb);
 
     // simple index objects should be ordered by stream number, this loop tries to find
@@ -989,7 +997,11 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     nb_entries = avio_rl32(pb);
     for (i = 0; i < nb_entries; i++) {
         pkt_num = avio_rl32(pb);
-        avio_skip(pb, 2);
+        ret = avio_skip(pb, 2);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Skipping failed in asf_read_simple_index.\n");
+            return ret;
+        }
         if (prev_pkt_num != pkt_num) {
             av_add_index_entry(st, asf->first_packet_offset + asf->packet_size *
                                pkt_num, av_rescale(interval, i, 10000),
@@ -1136,14 +1148,15 @@ static int asf_read_replicated_data(AVFormatContext *s, ASFPacket *asf_pkt)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media object size
+        if (data_size <= 0)
             return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // reading of media object size is already done
     asf_pkt->dts = avio_rl32(pb); // read presentation time
@@ -1204,22 +1217,22 @@ static int asf_read_multiple_payload(AVFormatContext *s, AVPacket *pkt,
     return 0;
 }
 
-static int asf_read_single_payload(AVFormatContext *s, AVPacket *pkt,
-                               ASFPacket *asf_pkt)
+static int asf_read_single_payload(AVFormatContext *s, ASFPacket *asf_pkt)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t  offset;
     uint64_t size;
     unsigned char *p;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media object size
+        if (data_size <= 0)
             return AVERROR_EOF;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // skip media object size
     asf_pkt->dts = avio_rl32(pb); // read presentation time
@@ -1278,6 +1291,10 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
         }
         if (!asf_pkt) {
             if (asf->packet_offset + asf->packet_size <= asf->data_offset + asf->data_size) {
+                if (!asf->packet_size) {
+                    av_log(s, AV_LOG_ERROR, "Invalid packet size 0.\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 avio_seek(pb, asf->packet_offset + asf->packet_size, SEEK_SET);
                 av_log(s, AV_LOG_WARNING, "Skipping the stream with the invalid stream index %d.\n",
                        asf->stream_index);
@@ -1310,7 +1327,7 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
             if ((ret = asf_read_subpayload(s, pkt, 1)) < 0)
                 return ret;
         } else {
-            if ((ret = asf_read_single_payload(s, pkt, asf_pkt)) < 0)
+            if ((ret = asf_read_single_payload(s, asf_pkt)) < 0)
                 return ret;
         }
     } else {
@@ -1421,6 +1438,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     while (!pb->eof_reached) {
         if (asf->state == PARSE_PACKET_HEADER) {
             asf_read_packet_header(s);
+            if (pb->eof_reached)
+                break;
             if (!asf->nb_mult_left)
                 asf->state = READ_SINGLE;
             else

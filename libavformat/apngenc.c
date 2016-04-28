@@ -80,8 +80,8 @@ static int apng_write_header(AVFormatContext *format_context)
     APNGMuxContext *apng = format_context->priv_data;
 
     if (format_context->nb_streams != 1 ||
-        format_context->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
-        format_context->streams[0]->codec->codec_id   != AV_CODEC_ID_APNG) {
+        format_context->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
+        format_context->streams[0]->codecpar->codec_id   != AV_CODEC_ID_APNG) {
         av_log(format_context, AV_LOG_ERROR,
                "APNG muxer supports only a single video APNG stream.\n");
         return AVERROR(EINVAL);
@@ -106,7 +106,7 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
     APNGMuxContext *apng = format_context->priv_data;
     AVIOContext *io_context = format_context->pb;
     AVStream *codec_stream = format_context->streams[0];
-    AVCodecContext *codec_context = codec_stream->codec;
+    AVCodecParameters *codec_par = codec_stream->codecpar;
 
     av_assert0(apng->prev_packet);
 
@@ -117,13 +117,13 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
         av_log(format_context, AV_LOG_INFO, "Only a single frame so saving as a normal PNG.\n");
 
         // Write normal PNG headers without acTL chunk
-        existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), codec_context->extradata, codec_context->extradata_size);
+        existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), codec_par->extradata, codec_par->extradata_size);
         if (existing_acTL_chunk) {
             uint8_t *chunk_after_acTL = existing_acTL_chunk + AV_RB32(existing_acTL_chunk) + 12;
-            avio_write(io_context, codec_context->extradata, existing_acTL_chunk - codec_context->extradata);
-            avio_write(io_context, chunk_after_acTL, codec_context->extradata + codec_context->extradata_size - chunk_after_acTL);
+            avio_write(io_context, codec_par->extradata, existing_acTL_chunk - codec_par->extradata);
+            avio_write(io_context, chunk_after_acTL, codec_par->extradata + codec_par->extradata_size - chunk_after_acTL);
         } else {
-            avio_write(io_context, codec_context->extradata, codec_context->extradata_size);
+            avio_write(io_context, codec_par->extradata, codec_par->extradata_size);
         }
 
         // Write frame data without fcTL chunk
@@ -142,9 +142,9 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
             uint8_t *existing_acTL_chunk;
 
             // Write normal PNG headers
-            avio_write(io_context, codec_context->extradata, codec_context->extradata_size);
+            avio_write(io_context, codec_par->extradata, codec_par->extradata_size);
 
-            existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), codec_context->extradata, codec_context->extradata_size);
+            existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), codec_par->extradata, codec_par->extradata_size);
             if (!existing_acTL_chunk) {
                 uint8_t buf[8];
                 // Write animation control header

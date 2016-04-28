@@ -33,6 +33,7 @@
 #include "cabac.h"
 #include "error_resilience.h"
 #include "get_bits.h"
+#include "h264_parse.h"
 #include "h264chroma.h"
 #include "h264dsp.h"
 #include "h264pred.h"
@@ -384,17 +385,7 @@ typedef struct H264SliceContext {
     int slice_alpha_c0_offset;
     int slice_beta_offset;
 
-    // Weighted pred stuff
-    int use_weight;
-    int use_weight_chroma;
-    int luma_log2_weight_denom;
-    int chroma_log2_weight_denom;
-    int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
-    int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
-    // The following 2 can be changed to int8_t but that causes 10cpu cycles speedloss
-    int luma_weight[48][2][2];
-    int chroma_weight[48][2][2][2];
-    int implicit_weight[48][48][2];
+    H264PredWeightTable pwt;
 
     int prev_mb_skipped;
     int next_mb_skipped;
@@ -520,7 +511,7 @@ typedef struct H264SliceContext {
  * H264Context
  */
 typedef struct H264Context {
-    AVClass *av_class;
+    const AVClass *class;
     AVCodecContext *avctx;
     VideoDSPContext vdsp;
     H264DSPContext h264dsp;
@@ -669,7 +660,7 @@ typedef struct H264Context {
      */
     int max_pic_num;
 
-    H264Ref default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
+    H264Ref default_ref[2];
     H264Picture *short_ref[32];
     H264Picture *long_ref[32];
     H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
@@ -714,8 +705,6 @@ typedef struct H264Context {
 
     enum AVPictureType pict_type;
 
-    int last_slice_type;
-    unsigned int last_ref_count[2];
     /** @} */
 
     /**
@@ -897,11 +886,6 @@ int ff_h264_get_slice_type(const H264SliceContext *sl);
  */
 int ff_h264_alloc_tables(H264Context *h);
 
-/**
- * Fill the default_ref_list.
- */
-int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl);
-
 int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl);
 void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl);
 void ff_h264_remove_all_refs(H264Context *h);
@@ -915,19 +899,6 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
                                    int first_slice);
 
 int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice);
-
-/**
- * Check if the top & left blocks are available if needed & change the
- * dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra4x4_pred_mode(const H264Context *h, H264SliceContext *sl);
-
-/**
- * Check if the top & left blocks are available if needed & change the
- * dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_pred_mode(const H264Context *h, H264SliceContext *sl,
-                                  int mode, int is_chroma);
 
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
 int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size);
@@ -1220,7 +1191,6 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);
 
 void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
-int ff_pred_weight_table(H264Context *h, H264SliceContext *sl);
 int ff_set_ref_count(H264Context *h, H264SliceContext *sl);
 
 int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl);

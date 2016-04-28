@@ -269,6 +269,14 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
     return tmp;
 }
 
+/**
+ * Read 0-25 bits.
+ */
+static av_always_inline int get_bitsz(GetBitContext *s, int n)
+{
+    return n ? get_bits(s, n) : 0;
+}
+
 static inline unsigned int get_bits_le(GetBitContext *s, int n)
 {
     register int tmp;
@@ -539,6 +547,17 @@ void ff_free_vlc(VLC *vlc);
             index = SHOW_UBITS(name, gb, nb_bits) + level;      \
             level = table[index].level;                         \
             n     = table[index].len;                           \
+            if (max_depth > 2 && n < 0) {                       \
+                LAST_SKIP_BITS(name, gb, nb_bits);              \
+                if (need_update) {                              \
+                    UPDATE_CACHE(name, gb);                     \
+                }                                               \
+                nb_bits = -n;                                   \
+                                                                \
+                index = SHOW_UBITS(name, gb, nb_bits) + level;  \
+                level = table[index].level;                     \
+                n     = table[index].len;                       \
+            }                                                   \
         }                                                       \
         run = table[index].run;                                 \
         SKIP_BITS(name, gb, n);                                 \

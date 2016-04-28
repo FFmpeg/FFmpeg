@@ -60,6 +60,7 @@
 #define STREAM_TYPE_AUDIO_AC3       0x81
 #define STREAM_TYPE_AUDIO_DTS       0x82
 #define STREAM_TYPE_AUDIO_TRUEHD    0x83
+#define STREAM_TYPE_AUDIO_EAC3      0x87
 
 typedef struct MpegTSContext MpegTSContext;
 

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_COMPAT_AIX_MATH_H
-#define FFMPEG_COMPAT_AIX_MATH_H
+#ifndef COMPAT_AIX_MATH_H
+#define COMPAT_AIX_MATH_H
 
 #define class class_in_math_h_causes_problems
 
@@ -28,4 +28,4 @@
 
 #undef class
 
-#endif /* FFMPEG_COMPAT_AIX_MATH_H */
+#endif /* COMPAT_AIX_MATH_H */

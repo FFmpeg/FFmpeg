@@ -50,8 +50,7 @@ static int write_header(AVFormatContext *s)
 {
     VideoMuxData *img = s->priv_data;
     AVStream *st = s->streams[0];
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
-    const char *proto = avio_find_protocol_name(s->filename);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
 
@@ -61,9 +60,9 @@ static int write_header(AVFormatContext *s)
     else
         img->is_pipe = 1;
 
-    if (st->codec->codec_id == AV_CODEC_ID_GIF) {
+    if (st->codecpar->codec_id == AV_CODEC_ID_GIF) {
         img->muxer = "gif";
-    } else if (st->codec->codec_id == AV_CODEC_ID_RAWVIDEO) {
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         const char *str = strrchr(img->path, '.');
         img->split_planes =     str
                              && !av_strcasecmp(str + 1, "y")
@@ -73,8 +72,6 @@ static int write_header(AVFormatContext *s)
                              && desc->nb_components >= 3;
     }
 
-    img->use_rename = proto && !strcmp(proto, "file");
-
     return 0;
 }
 
@@ -83,8 +80,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     VideoMuxData *img = s->priv_data;
     AVIOContext *pb[4];
     char filename[1024];
-    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(codec->pix_fmt);
+    AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
     int i;
     int nb_renames = 0;
 
@@ -110,8 +107,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         for (i = 0; i < 4; i++) {
             snprintf(img->tmp[i], sizeof(img->tmp[i]), "%s.tmp", filename);
             av_strlcpy(img->target[i], filename, sizeof(img->target[i]));
-            if (avio_open2(&pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE,
-                           &s->interrupt_callback, NULL) < 0) {
+            if (s->io_open(s, &pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE, NULL) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->use_rename ? img->tmp[i] : filename);
                 return AVERROR(EIO);
             }
@@ -127,8 +123,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (img->split_planes) {
-        int ysize = codec->width * codec->height;
-        int usize = FF_CEIL_RSHIFT(codec->width, desc->log2_chroma_w) * FF_CEIL_RSHIFT(codec->height, desc->log2_chroma_h);
+        int ysize = par->width * par->height;
+        int usize = AV_CEIL_RSHIFT(par->width, desc->log2_chroma_w) * AV_CEIL_RSHIFT(par->height, desc->log2_chroma_h);
         if (desc->comp[0].depth >= 9) {
             ysize *= 2;
             usize *= 2;
@@ -136,11 +132,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[0], pkt->data                , ysize);
         avio_write(pb[1], pkt->data + ysize        , usize);
         avio_write(pb[2], pkt->data + ysize + usize, usize);
-        avio_closep(&pb[1]);
-        avio_closep(&pb[2]);
+        ff_format_io_close(s, &pb[1]);
+        ff_format_io_close(s, &pb[2]);
         if (desc->nb_components > 3) {
             avio_write(pb[3], pkt->data + ysize + 2*usize, ysize);
-            avio_closep(&pb[3]);
+            ff_format_io_close(s, &pb[3]);
         }
     } else if (img->muxer) {
         int ret;
@@ -163,7 +159,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         fmt->pb = pb[0];
         if ((ret = av_copy_packet(&pkt2, pkt))                            < 0 ||
             (ret = av_dup_packet(&pkt2))                                  < 0 ||
-            (ret = avcodec_copy_context(st->codec, s->streams[0]->codec)) < 0 ||
+            (ret = avcodec_parameters_copy(st->codecpar, s->streams[0]->codecpar)) < 0 ||
             (ret = avformat_write_header(fmt, NULL))                      < 0 ||
             (ret = av_interleaved_write_frame(fmt, &pkt2))                < 0 ||
             (ret = av_write_trailer(fmt))                                 < 0) {
@@ -178,9 +174,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     avio_flush(pb[0]);
     if (!img->is_pipe) {
-        avio_closep(&pb[0]);
+        ff_format_io_close(s, &pb[0]);
         for (i = 0; i < nb_renames; i++) {
-            ff_rename(img->tmp[i], img->target[i], s);
+            int ret = ff_rename(img->tmp[i], img->target[i], s);
+            if (ret < 0)
+                return ret;
         }
     }
 
@@ -206,6 +204,7 @@ static const AVOption muxoptions[] = {
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
+    { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { NULL },
 };
 

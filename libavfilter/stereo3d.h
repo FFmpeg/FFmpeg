@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBAVFILTER_STEREO3D_H
-#define LIBAVFILTER_STEREO3D_H
+#ifndef AVFILTER_STEREO3D_H
+#define AVFILTER_STEREO3D_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -33,4 +33,4 @@ typedef struct Stereo3DDSPContext {
 
 void ff_stereo3d_init_x86(Stereo3DDSPContext *dsp);
 
-#endif /* LIBAVFILTER_STEREO3D_H */
+#endif /* AVFILTER_STEREO3D_H */

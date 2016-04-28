@@ -58,6 +58,9 @@
 #include "libavutil/mips/asmdefs.h"
 #include "libavcodec/mpegaudiodsp.h"
 
+#if HAVE_INLINE_ASM && HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
+
 static void ff_mpadsp_apply_window_mips_float(float *synth_buf, float *window,
                                int *dither_state, float *samples, int incr)
 {
@@ -1243,9 +1246,16 @@ static void ff_imdct36_blocks_mips_float(float *out, float *buf, float *in,
     }
 }
 
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
+#endif /* HAVE_INLINE_ASM && HAVE_MIPSFPU */
+
 void ff_mpadsp_init_mipsfpu(MPADSPContext *s)
 {
+#if HAVE_INLINE_ASM && HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     s->apply_window_float   = ff_mpadsp_apply_window_mips_float;
     s->imdct36_blocks_float = ff_imdct36_blocks_mips_float;
     s->dct32_float          = ff_dct32_mips_float;
+#endif
+#endif
 }

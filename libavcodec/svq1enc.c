@@ -104,7 +104,9 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
     best_score = 0;
     // FIXME: Optimize, this does not need to be done multiple times.
     if (intra) {
-        codebook_sum   = svq1_intra_codebook_sum[level];
+        // level is 5 when encode_block is called from svq1_encode_plane
+        // and always < 4 when called recursively from this function.
+        codebook_sum   = level < 4 ? svq1_intra_codebook_sum[level] : NULL;
         codebook       = ff_svq1_intra_codebooks[level];
         mean_vlc       = ff_svq1_intra_mean_vlc;
         multistage_vlc = ff_svq1_intra_multistage_vlc[level];
@@ -117,7 +119,8 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
             }
         }
     } else {
-        codebook_sum   = svq1_inter_codebook_sum[level];
+        // level is 5 or < 4, see above for details.
+        codebook_sum   = level < 4 ? svq1_inter_codebook_sum[level] : NULL;
         codebook       = ff_svq1_inter_codebooks[level];
         mean_vlc       = ff_svq1_inter_mean_vlc + 256;
         multistage_vlc = ff_svq1_inter_multistage_vlc[level];

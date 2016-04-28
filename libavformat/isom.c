@@ -160,6 +160,9 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1') }, /* HEVC/H.265 which indicates parameter sets shall not be in ES */
 
     { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') }, /* AVC-1/H.264 */
+    { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '2') },
+    { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '3') },
+    { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '4') },
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '5', 'p') }, /* AVC-Intra  50M 720p24/30/60 */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '5', 'q') }, /* AVC-Intra  50M 720p25/50 */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '5', '2') }, /* AVC-Intra  50M 1080p25/50 */
@@ -293,6 +296,7 @@ const AVCodecTag ff_codec_movaudio_tags[] = {
     { AV_CODEC_ID_MP3,             MKTAG('.', 'm', 'p', '3') },
     { AV_CODEC_ID_MP3,             0x6D730055                },
     { AV_CODEC_ID_NELLYMOSER,      MKTAG('n', 'm', 'o', 's') }, /* Flash Media Server */
+    { AV_CODEC_ID_NELLYMOSER,      MKTAG('N', 'E', 'L', 'L') }, /* Perian */
     { AV_CODEC_ID_PCM_ALAW,        MKTAG('a', 'l', 'a', 'w') },
     { AV_CODEC_ID_PCM_F32BE,       MKTAG('f', 'l', '3', '2') },
     { AV_CODEC_ID_PCM_F32LE,       MKTAG('f', 'l', '3', '2') },
@@ -462,47 +466,43 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
     avio_r8(pb); /* stream type */
     avio_rb24(pb); /* buffer size db */
 
-    if(avcodec_is_open(st->codec)) {
-        av_log(fc, AV_LOG_DEBUG, "codec open in read_dec_config_descr\n");
-        return -1;
-    }
-
     v = avio_rb32(pb);
-    if (v < INT32_MAX)
-        st->codec->rc_max_rate = v;
+    // TODO: fix this
+    //if (v < INT32_MAX)
+    //    st->codecpar->rc_max_rate = v;
 
-    st->codec->bit_rate = avio_rb32(pb); /* avg bitrate */
+    st->codecpar->bit_rate = avio_rb32(pb); /* avg bitrate */
 
     codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
     if (codec_id)
-        st->codec->codec_id= codec_id;
+        st->codecpar->codec_id = codec_id;
     av_log(fc, AV_LOG_TRACE, "esds object type id 0x%02x\n", object_type_id);
     len = ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4DecSpecificDescrTag) {
         av_log(fc, AV_LOG_TRACE, "Specific MPEG4 header len=%d\n", len);
         if (!len || (uint64_t)len > (1<<30))
             return -1;
-        av_free(st->codec->extradata);
-        if ((ret = ff_get_extradata(st->codec, pb, len)) < 0)
+        av_free(st->codecpar->extradata);
+        if ((ret = ff_get_extradata(fc, st->codecpar, pb, len)) < 0)
             return ret;
-        if (st->codec->codec_id == AV_CODEC_ID_AAC) {
+        if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
             MPEG4AudioConfig cfg = {0};
-            avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
-                                         st->codec->extradata_size * 8, 1);
-            st->codec->channels = cfg.channels;
+            avpriv_mpeg4audio_get_config(&cfg, st->codecpar->extradata,
+                                         st->codecpar->extradata_size * 8, 1);
+            st->codecpar->channels = cfg.channels;
             if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
-                st->codec->sample_rate = avpriv_mpa_freq_tab[cfg.sampling_index];
+                st->codecpar->sample_rate = avpriv_mpa_freq_tab[cfg.sampling_index];
             else if (cfg.ext_sample_rate)
-                st->codec->sample_rate = cfg.ext_sample_rate;
+                st->codecpar->sample_rate = cfg.ext_sample_rate;
             else
-                st->codec->sample_rate = cfg.sample_rate;
+                st->codecpar->sample_rate = cfg.sample_rate;
             av_log(fc, AV_LOG_TRACE, "mp4a config channels %d obj %d ext obj %d "
-                    "sample rate %d ext sample rate %d\n", st->codec->channels,
+                    "sample rate %d ext sample rate %d\n", st->codecpar->channels,
                     cfg.object_type, cfg.ext_object_type,
                     cfg.sample_rate, cfg.ext_sample_rate);
-            if (!(st->codec->codec_id = ff_codec_get_id(mp4_audio_types,
+            if (!(st->codecpar->codec_id = ff_codec_get_id(mp4_audio_types,
                                                         cfg.object_type)))
-                st->codec->codec_id = AV_CODEC_ID_AAC;
+                st->codecpar->codec_id = AV_CODEC_ID_AAC;
         }
     }
     return 0;

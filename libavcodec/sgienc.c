@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -27,6 +29,12 @@
 
 #define SGI_SINGLE_CHAN 2
 #define SGI_MULTI_CHAN 3
+
+typedef struct SgiContext {
+    AVClass *class;
+
+    int rle;
+} SgiContext;
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
@@ -84,10 +92,11 @@ static int sgi_rle_encode(PutByteContext *pbc, const uint8_t *src,
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
+    SgiContext *s = avctx->priv_data;
     const AVFrame * const p = frame;
     PutByteContext pbc;
     uint8_t *in_buf, *encode_buf;
-    int x, y, z, length, tablesize, ret;
+    int x, y, z, length, tablesize, ret, i;
     unsigned int width, height, depth, dimension;
     unsigned int bytes_per_channel, pixmax, put_be;
 
@@ -95,6 +104,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->coder_type == FF_CODER_TYPE_RAW)
+        s->rle = 0;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -147,7 +163,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     tablesize = depth * height * 4;
     length = SGI_HEADER_SIZE;
-    if (avctx->coder_type == FF_CODER_TYPE_RAW)
+    if (!s->rle)
         length += depth * height * width;
     else // assume sgi_rle_encode() produces at most 2x size of input
         length += tablesize * 2 + depth * height * (2 * width + 1);
@@ -159,7 +175,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     /* Encode header. */
     bytestream2_put_be16(&pbc, SGI_MAGIC);
-    bytestream2_put_byte(&pbc, avctx->coder_type != FF_CODER_TYPE_RAW); /* RLE 1 - VERBATIM 0 */
+    bytestream2_put_byte(&pbc, s->rle); /* RLE 1 - VERBATIM 0 */
     bytestream2_put_byte(&pbc, bytes_per_channel);
     bytestream2_put_be16(&pbc, dimension);
     bytestream2_put_be16(&pbc, width);
@@ -171,15 +187,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream2_put_be32(&pbc, 0L); /* dummy */
 
     /* name */
-    bytestream2_skip_p(&pbc, 80);
+    for (i = 0; i < 80; i++)
+        bytestream2_put_byte(&pbc, 0L);
 
     /* colormap */
     bytestream2_put_be32(&pbc, 0L);
 
     /* The rest of the 512 byte header is unused. */
-    bytestream2_skip_p(&pbc, 404);
+    for (i = 0; i < 404; i++)
+        bytestream2_put_byte(&pbc, 0L);
 
-    if (avctx->coder_type != FF_CODER_TYPE_RAW) {
+    if (s->rle) {
         PutByteContext taboff_pcb, tablen_pcb;
 
         /* Skip RLE offset table. */
@@ -243,11 +261,28 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
+#define OFFSET(x) offsetof(SgiContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "rle", "Use run-length compression", OFFSET(rle), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+
+    { NULL },
+};
+
+static const AVClass sgi_class = {
+    .class_name = "sgi",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_sgi_encoder = {
     .name      = "sgi",
     .long_name = NULL_IF_CONFIG_SMALL("SGI image"),
     .type      = AVMEDIA_TYPE_VIDEO,
     .id        = AV_CODEC_ID_SGI,
+    .priv_data_size = sizeof(SgiContext),
+    .priv_class = &sgi_class,
     .init      = encode_init,
     .encode2   = encode_frame,
     .pix_fmts  = (const enum AVPixelFormat[]) {

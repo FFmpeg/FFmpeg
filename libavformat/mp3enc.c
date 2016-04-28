@@ -129,7 +129,7 @@ static const uint8_t xing_offtbl[2][2] = {{32, 17}, {17, 9}};
 static int mp3_write_xing(AVFormatContext *s)
 {
     MP3Context       *mp3 = s->priv_data;
-    AVCodecContext *codec = s->streams[mp3->audio_stream_idx]->codec;
+    AVCodecParameters *par = s->streams[mp3->audio_stream_idx]->codecpar;
     AVDictionaryEntry *enc = av_dict_get(s->streams[mp3->audio_stream_idx]->metadata, "encoder", NULL, 0);
     AVIOContext *dyn_ctx;
     int32_t        header;
@@ -148,9 +148,9 @@ static int mp3_write_xing(AVFormatContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {
         const uint16_t base_freq = avpriv_mpa_freq_tab[i];
 
-        if      (codec->sample_rate == base_freq)     ver = 0x3; // MPEG 1
-        else if (codec->sample_rate == base_freq / 2) ver = 0x2; // MPEG 2
-        else if (codec->sample_rate == base_freq / 4) ver = 0x0; // MPEG 2.5
+        if      (par->sample_rate == base_freq)     ver = 0x3; // MPEG 1
+        else if (par->sample_rate == base_freq / 2) ver = 0x2; // MPEG 2
+        else if (par->sample_rate == base_freq / 4) ver = 0x0; // MPEG 2.5
         else continue;
 
         srate_idx = i;
@@ -161,7 +161,7 @@ static int mp3_write_xing(AVFormatContext *s)
         return -1;
     }
 
-    switch (codec->channels) {
+    switch (par->channels) {
     case 1:  channels = MPA_MONO;                                          break;
     case 2:  channels = MPA_STEREO;                                        break;
     default: av_log(s, AV_LOG_WARNING, "Unsupported number of channels, "
@@ -177,7 +177,7 @@ static int mp3_write_xing(AVFormatContext *s)
 
     for (bitrate_idx = 1; bitrate_idx < 15; bitrate_idx++) {
         int bit_rate = 1000 * avpriv_mpa_bitrate_tab[ver != 3][3 - 1][bitrate_idx];
-        int error    = FFABS(bit_rate - codec->bit_rate);
+        int error    = FFABS(bit_rate - par->bit_rate);
 
         if (error < best_bitrate_error) {
             best_bitrate_error = error;
@@ -192,7 +192,8 @@ static int mp3_write_xing(AVFormatContext *s)
             return -1;
         header |= mask;
 
-        avpriv_mpegaudio_decode_header(&mpah, header);
+        ret = avpriv_mpegaudio_decode_header(&mpah, header);
+        av_assert0(ret >= 0);
         mp3->xing_offset = xing_offtbl[mpah.lsf == 1][mpah.nb_channels == 1] + 4;
         bytes_needed     = mp3->xing_offset + XING_SIZE;
 
@@ -248,10 +249,10 @@ static int mp3_write_xing(AVFormatContext *s)
     avio_w8(dyn_ctx, 0);      // unknown abr/minimal bitrate
 
     // encoder delay
-    if (codec->initial_padding - 528 - 1 >= 1 << 12) {
+    if (par->initial_padding - 528 - 1 >= 1 << 12) {
         av_log(s, AV_LOG_WARNING, "Too many samples of initial padding.\n");
     }
-    avio_wb24(dyn_ctx, FFMAX(codec->initial_padding - 528 - 1, 0)<<12);
+    avio_wb24(dyn_ctx, FFMAX(par->initial_padding - 528 - 1, 0)<<12);
 
     avio_w8(dyn_ctx,   0); // misc
     avio_w8(dyn_ctx,   0); // mp3gain
@@ -309,12 +310,13 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt->data && pkt->size >= 4) {
         MPADecodeHeader mpah;
+        int ret;
         int av_unused base;
         uint32_t h;
 
         h = AV_RB32(pkt->data);
-        if (ff_mpa_check_header(h) == 0) {
-            avpriv_mpegaudio_decode_header(&mpah, h);
+        ret = avpriv_mpegaudio_decode_header(&mpah, h);
+        if (ret >= 0) {
             if (!mp3->initial_bitrate)
                 mp3->initial_bitrate = mpah.bit_rate;
             if ((mpah.bit_rate == 0) || (mp3->initial_bitrate != mpah.bit_rate))
@@ -573,14 +575,14 @@ static int mp3_write_header(struct AVFormatContext *s)
     mp3->audio_stream_idx = -1;
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (mp3->audio_stream_idx >= 0 || st->codec->codec_id != AV_CODEC_ID_MP3) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (mp3->audio_stream_idx >= 0 || st->codecpar->codec_id != AV_CODEC_ID_MP3) {
                 av_log(s, AV_LOG_ERROR, "Invalid audio stream. Exactly one MP3 "
                        "audio stream is required.\n");
                 return AVERROR(EINVAL);
             }
             mp3->audio_stream_idx = i;
-        } else if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
+        } else if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             av_log(s, AV_LOG_ERROR, "Only audio streams and pictures are allowed in MP3.\n");
             return AVERROR(EINVAL);
         }

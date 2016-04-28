@@ -53,6 +53,7 @@ DEFINE_GUID(DXVADDI_Intel_ModeH264_E, 0x604F8E68, 0x4951,0x4C54,0x88,0xFE,0xAB,0
 DEFINE_GUID(DXVA2_ModeVC1_D,          0x1b81beA3, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(DXVA2_ModeVC1_D2010,      0x1b81beA4, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(DXVA2_ModeHEVC_VLD_Main,  0x5b11d51b, 0x2f4c,0x4452,0xbc,0xc3,0x09,0xf2,0xa1,0x16,0x0c,0xc0);
+DEFINE_GUID(DXVA2_ModeHEVC_VLD_Main10,0x107af0e0, 0xef1a,0x4d19,0xab,0xa8,0x67,0xa1,0x63,0x07,0x3d,0x13);
 DEFINE_GUID(DXVA2_ModeVP9_VLD_Profile0, 0x463707f8, 0xa1d0,0x4585,0x87,0x6d,0x83,0xaa,0x6d,0x60,0xb8,0x9e);
 DEFINE_GUID(DXVA2_NoEncrypt,          0x1b81beD0, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(GUID_NULL,                0x00000000, 0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
@@ -84,6 +85,7 @@ static const dxva2_mode dxva2_modes[] = {
 
     /* HEVC/H.265 */
     { &DXVA2_ModeHEVC_VLD_Main,  AV_CODEC_ID_HEVC },
+    { &DXVA2_ModeHEVC_VLD_Main10,AV_CODEC_ID_HEVC },
 
     /* VP8/9 */
     { &DXVA2_ModeVP9_VLD_Profile0, AV_CODEC_ID_VP9 },
@@ -115,6 +117,7 @@ typedef struct DXVA2Context {
     surface_info                *surface_infos;
     uint32_t                    num_surfaces;
     uint64_t                    surface_age;
+    D3DFORMAT                   surface_format;
 
     AVFrame                     *tmp_frame;
 } DXVA2Context;
@@ -261,13 +264,24 @@ static int dxva2_retrieve_data(AVCodecContext *s, AVFrame *frame)
     D3DSURFACE_DESC    surfaceDesc;
     D3DLOCKED_RECT     LockedRect;
     HRESULT            hr;
-    int                ret;
+    int                ret, nbytes;
 
     IDirect3DSurface9_GetDesc(surface, &surfaceDesc);
 
     ctx->tmp_frame->width  = frame->width;
     ctx->tmp_frame->height = frame->height;
-    ctx->tmp_frame->format = AV_PIX_FMT_NV12;
+    switch (ctx->surface_format){
+    case MKTAG('N','V','1','2'):
+        ctx->tmp_frame->format = AV_PIX_FMT_NV12;
+        nbytes = 1;
+        break;
+    case MKTAG('P','0','1','0'):
+        ctx->tmp_frame->format = AV_PIX_FMT_P010;
+        nbytes = 2;
+        break;
+    default:
+        av_assert0(0);
+    }
 
     ret = av_frame_get_buffer(ctx->tmp_frame, 32);
     if (ret < 0)
@@ -281,11 +295,11 @@ static int dxva2_retrieve_data(AVCodecContext *s, AVFrame *frame)
 
     av_image_copy_plane(ctx->tmp_frame->data[0], ctx->tmp_frame->linesize[0],
                         (uint8_t*)LockedRect.pBits,
-                        LockedRect.Pitch, frame->width, frame->height);
+                        LockedRect.Pitch, frame->width * nbytes, frame->height);
 
     av_image_copy_plane(ctx->tmp_frame->data[1], ctx->tmp_frame->linesize[1],
                         (uint8_t*)LockedRect.pBits + LockedRect.Pitch * surfaceDesc.Height,
-                        LockedRect.Pitch, frame->width, frame->height / 2);
+                        LockedRect.Pitch, frame->width * nbytes, frame->height / 2);
 
     IDirect3DSurface9_UnlockRect(surface);
 
@@ -470,6 +484,7 @@ static int dxva2_create_decoder(AVCodecContext *s)
     GUID *guid_list = NULL;
     unsigned guid_count = 0, i, j;
     GUID device_guid = GUID_NULL;
+    const D3DFORMAT surface_format = (s->sw_pix_fmt == AV_PIX_FMT_YUV420P10) ? MKTAG('P','0','1','0') : MKTAG('N','V','1','2');
     D3DFORMAT target_format = 0;
     DXVA2_VideoDesc desc = { 0 };
     DXVA2_ConfigPictureDecode config;
@@ -503,7 +518,7 @@ static int dxva2_create_decoder(AVCodecContext *s)
         }
         for (j = 0; j < target_count; j++) {
             const D3DFORMAT format = target_list[j];
-            if (format == MKTAG('N','V','1','2')) {
+            if (format == surface_format) {
                 target_format = format;
                 break;
             }
@@ -558,6 +573,7 @@ static int dxva2_create_decoder(AVCodecContext *s)
 
     ctx->surfaces      = av_mallocz(ctx->num_surfaces * sizeof(*ctx->surfaces));
     ctx->surface_infos = av_mallocz(ctx->num_surfaces * sizeof(*ctx->surface_infos));
+    ctx->surface_format = target_format;
 
     if (!ctx->surfaces || !ctx->surface_infos) {
         av_log(NULL, loglevel, "Unable to allocate surface arrays\n");
@@ -618,6 +634,12 @@ int dxva2_init(AVCodecContext *s)
     if (s->codec_id == AV_CODEC_ID_H264 &&
         (s->profile & ~FF_PROFILE_H264_CONSTRAINED) > FF_PROFILE_H264_HIGH) {
         av_log(NULL, loglevel, "Unsupported H.264 profile for DXVA2 HWAccel: %d\n", s->profile);
+        return AVERROR(EINVAL);
+    }
+
+    if (s->codec_id == AV_CODEC_ID_HEVC &&
+        s->profile != FF_PROFILE_HEVC_MAIN && s->profile != FF_PROFILE_HEVC_MAIN_10) {
+        av_log(NULL, loglevel, "Unsupported HEVC profile for DXVA2 HWAccel: %d\n", s->profile);
         return AVERROR(EINVAL);
     }
 

@@ -141,6 +141,15 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
     int index, i;
     uint8_t dummy_buf[AV_INPUT_BUFFER_PADDING_SIZE];
 
+    av_assert1(avctx->codec_id != AV_CODEC_ID_NONE);
+
+    /* Parsers only work for the specified codec ids. */
+    av_assert1(avctx->codec_id == s->parser->codec_ids[0] ||
+               avctx->codec_id == s->parser->codec_ids[1] ||
+               avctx->codec_id == s->parser->codec_ids[2] ||
+               avctx->codec_id == s->parser->codec_ids[3] ||
+               avctx->codec_id == s->parser->codec_ids[4]);
+
     if (!(s->flags & PARSER_FLAG_FETCHED_OFFSET)) {
         s->next_frame_offset =
         s->cur_offset        = pos;

@@ -51,6 +51,7 @@ COSTABLE(8192);
 COSTABLE(16384);
 COSTABLE(32768);
 COSTABLE(65536);
+COSTABLE(131072);
 #endif
 COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     NULL, NULL, NULL, NULL,
@@ -67,6 +68,7 @@ COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     FFT_NAME(ff_cos_16384),
     FFT_NAME(ff_cos_32768),
     FFT_NAME(ff_cos_65536),
+    FFT_NAME(ff_cos_131072),
 };
 
 #endif /* FFT_FIXED_32 */
@@ -141,14 +143,23 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, n;
 
-    if (nbits < 2 || nbits > 16)
+    s->revtab = NULL;
+    s->revtab32 = NULL;
+
+    if (nbits < 2 || nbits > 17)
         goto fail;
     s->nbits = nbits;
     n = 1 << nbits;
 
-    s->revtab = av_malloc(n * sizeof(uint16_t));
-    if (!s->revtab)
-        goto fail;
+    if (nbits <= 16) {
+        s->revtab = av_malloc(n * sizeof(uint16_t));
+        if (!s->revtab)
+            goto fail;
+    } else {
+        s->revtab32 = av_malloc(n * sizeof(uint32_t));
+        if (!s->revtab32)
+            goto fail;
+    }
     s->tmp_buf = av_malloc(n * sizeof(FFTComplex));
     if (!s->tmp_buf)
         goto fail;
@@ -166,7 +177,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 #if FFT_FIXED_32
     {
         int n=0;
-        ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 16, &n);
+        ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
     }
 #else /* FFT_FIXED_32 */
 #if FFT_FLOAT
@@ -190,16 +201,22 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
         fft_perm_avx(s);
     } else {
         for(i=0; i<n; i++) {
+            int k;
             j = i;
             if (s->fft_permutation == FF_FFT_PERM_SWAP_LSBS)
                 j = (j&~3) | ((j>>1)&1) | ((j<<1)&2);
-            s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = j;
+            k = -split_radix_permutation(i, n, s->inverse) & (n-1);
+            if (s->revtab)
+                s->revtab[k] = j;
+            if (s->revtab32)
+                s->revtab32[k] = j;
         }
     }
 
     return 0;
  fail:
     av_freep(&s->revtab);
+    av_freep(&s->revtab32);
     av_freep(&s->tmp_buf);
     return -1;
 }
@@ -208,15 +225,21 @@ static void fft_permute_c(FFTContext *s, FFTComplex *z)
 {
     int j, np;
     const uint16_t *revtab = s->revtab;
+    const uint32_t *revtab32 = s->revtab32;
     np = 1 << s->nbits;
     /* TODO: handle split-radix permute in a more optimal way, probably in-place */
-    for(j=0;j<np;j++) s->tmp_buf[revtab[j]] = z[j];
+    if (revtab) {
+        for(j=0;j<np;j++) s->tmp_buf[revtab[j]] = z[j];
+    } else
+        for(j=0;j<np;j++) s->tmp_buf[revtab32[j]] = z[j];
+
     memcpy(z, s->tmp_buf, np * sizeof(FFTComplex));
 }
 
 av_cold void ff_fft_end(FFTContext *s)
 {
     av_freep(&s->revtab);
+    av_freep(&s->revtab32);
     av_freep(&s->tmp_buf);
 }
 
@@ -515,10 +538,11 @@ DECL_FFT(8192,4096,2048)
 DECL_FFT(16384,8192,4096)
 DECL_FFT(32768,16384,8192)
 DECL_FFT(65536,32768,16384)
+DECL_FFT(131072,65536,32768)
 
 static void (* const fft_dispatch[])(FFTComplex*) = {
     fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512, fft1024,
-    fft2048, fft4096, fft8192, fft16384, fft32768, fft65536,
+    fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
 };
 
 static void fft_calc_c(FFTContext *s, FFTComplex *z)

@@ -28,6 +28,7 @@
 #ifndef AVCODEC_AACENC_UTILS_H
 #define AVCODEC_AACENC_UTILS_H
 
+#include "libavutil/ffmath.h"
 #include "aac.h"
 #include "aacenctab.h"
 #include "aactab.h"
@@ -43,6 +44,11 @@ static inline void abs_pow34_v(float *out, const float *in, const int size)
         float a = fabsf(in[i]);
         out[i] = sqrtf(a * sqrtf(a));
     }
+}
+
+static inline float pos_pow34(float a)
+{
+    return sqrtf(a * sqrtf(a));
 }
 
 /**
@@ -61,13 +67,13 @@ static inline void quantize_bands(int *out, const float *in, const float *scaled
                                   const float rounding)
 {
     int i;
-    double qc;
     for (i = 0; i < size; i++) {
-        qc = scaled[i] * Q34;
-        out[i] = (int)FFMIN(qc + rounding, (double)maxval);
+        float qc = scaled[i] * Q34;
+        int tmp = (int)FFMIN(qc + rounding, (float)maxval);
         if (is_signed && in[i] < 0.0f) {
-            out[i] = -out[i];
+            tmp = -tmp;
         }
+        out[i] = tmp;
     }
 }
 
@@ -85,8 +91,7 @@ static inline float find_max_val(int group_len, int swb_size, const float *scale
 
 static inline int find_min_book(float maxval, int sf)
 {
-    float Q = ff_aac_pow2sf_tab[POW_SF2_ZERO - sf + SCALE_ONE_POS - SCALE_DIV_512];
-    float Q34 = sqrtf(Q * sqrtf(Q));
+    float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - sf + SCALE_ONE_POS - SCALE_DIV_512];
     int qmaxval, cb;
     qmaxval = maxval * Q34 + C_QUANT;
     if (qmaxval >= (FF_ARRAY_ELEMS(aac_maxval_cb)))
@@ -118,7 +123,10 @@ static inline float find_form_factor(int group_len, int swb_size, float thresh,
             if (s >= ethresh) {
                 nzl += 1.0f;
             } else {
-                nzl += powf(s / ethresh, nzslope);
+                if (nzslope == 2.f)
+                    nzl += (s / ethresh) * (s / ethresh);
+                else
+                    nzl += ff_fast_powf(s / ethresh, nzslope);
             }
         }
         if (e2 > thresh) {
@@ -181,16 +189,6 @@ static av_always_inline float bval2bmax(float b)
 {
     return 0.001f + 0.0035f * (b*b*b) / (15.5f*15.5f*15.5f);
 }
-
-/*
- * linear congruential pseudorandom number generator, copied from the decoder
- */
-static inline int lcg_random(unsigned previous_val)
-{
-    union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
-    return v.s;
-}
-
 
 /*
  * Compute a nextband map to be used with SF delta constraint utilities.

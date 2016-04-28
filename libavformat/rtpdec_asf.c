@@ -131,7 +131,7 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         rt->asf_ctx->pb      = &pb;
         av_dict_set(&opts, "no_resync_search", "1", 0);
 
-        if ((ret = ff_copy_whitelists(rt->asf_ctx, s)) < 0) {
+        if ((ret = ff_copy_whiteblacklists(rt->asf_ctx, s)) < 0) {
             av_dict_free(&opts);
             return ret;
         }
@@ -165,12 +165,10 @@ static int asfrtp_parse_sdp_line(AVFormatContext *s, int stream_index,
 
             for (i = 0; i < rt->asf_ctx->nb_streams; i++) {
                 if (s->streams[stream_index]->id == rt->asf_ctx->streams[i]->id) {
-                    *s->streams[stream_index]->codec =
-                        *rt->asf_ctx->streams[i]->codec;
+                    avcodec_parameters_copy(s->streams[stream_index]->codecpar,
+                                            rt->asf_ctx->streams[i]->codecpar);
                     s->streams[stream_index]->need_parsing =
                         rt->asf_ctx->streams[i]->need_parsing;
-                    rt->asf_ctx->streams[i]->codec->extradata_size = 0;
-                    rt->asf_ctx->streams[i]->codec->extradata = NULL;
                     avpriv_set_pts_info(s->streams[stream_index], 32, 1, 1000);
                 }
            }

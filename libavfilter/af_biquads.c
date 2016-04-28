@@ -94,7 +94,7 @@ typedef struct ChanCache {
     double o1, o2;
 } ChanCache;
 
-typedef struct {
+typedef struct BiquadsContext {
     const AVClass *class;
 
     enum FilterType filter_type;
@@ -110,8 +110,9 @@ typedef struct {
     double b0, b1, b2;
 
     ChanCache *cache;
+    int clippings;
 
-    void (*filter)(AVFilterContext *ctx, const void *ibuf, void *obuf, int len,
+    void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
                    double b0, double b1, double b2, double a1, double a2);
 } BiquadsContext;
@@ -165,7 +166,7 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 #define BIQUAD_FILTER(name, type, min, max, need_clipping)                    \
-static void biquad_## name (AVFilterContext *ctx,                             \
+static void biquad_## name (BiquadsContext *s,                                \
                             const void *input, void *output, int len,         \
                             double *in1, double *in2,                         \
                             double *out1, double *out2,                       \
@@ -186,10 +187,10 @@ static void biquad_## name (AVFilterContext *ctx,                             \
         o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
         i2 = ibuf[i];                                                         \
         if (need_clipping && o2 < min) {                                      \
-            av_log(ctx, AV_LOG_WARNING, "clipping\n");                        \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o2 > max) {                               \
-            av_log(ctx, AV_LOG_WARNING, "clipping\n");                        \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o2;                                                     \
@@ -198,10 +199,10 @@ static void biquad_## name (AVFilterContext *ctx,                             \
         o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 + o1 * a2 + o2 * a1;            \
         i1 = ibuf[i];                                                         \
         if (need_clipping && o1 < min) {                                      \
-            av_log(ctx, AV_LOG_WARNING, "clipping\n");                        \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o1 > max) {                               \
-            av_log(ctx, AV_LOG_WARNING, "clipping\n");                        \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o1;                                                     \
@@ -214,10 +215,10 @@ static void biquad_## name (AVFilterContext *ctx,                             \
         o2 = o1;                                                              \
         o1 = o0;                                                              \
         if (need_clipping && o0 < min) {                                      \
-            av_log(ctx, AV_LOG_WARNING, "clipping\n");                        \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o0 > max) {                               \
-            av_log(ctx, AV_LOG_WARNING, "clipping\n");                        \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o0;                                                     \
@@ -411,11 +412,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
 
     for (ch = 0; ch < av_frame_get_channels(buf); ch++)
-        s->filter(ctx, buf->extended_data[ch],
+        s->filter(s, buf->extended_data[ch],
                   out_buf->extended_data[ch], nb_samples,
                   &s->cache[ch].i1, &s->cache[ch].i2,
                   &s->cache[ch].o1, &s->cache[ch].o2,
                   s->b0, s->b1, s->b2, s->a1, s->a2);
+
+    if (s->clippings > 0)
+        av_log(ctx, AV_LOG_WARNING, "clipping %d times. Please reduce gain.\n", s->clippings);
 
     if (buf != out_buf)
         av_frame_free(&buf);

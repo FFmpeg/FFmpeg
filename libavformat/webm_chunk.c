@@ -29,6 +29,7 @@
 
 #include "avformat.h"
 #include "avio.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 #include "libavutil/avassert.h"
@@ -125,8 +126,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     ret = get_chunk_filename(s, 1, oc->filename);
     if (ret < 0)
         return ret;
-    ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0)
         return ret;
 
@@ -134,7 +134,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     ret = oc->oformat->write_header(oc);
     if (ret < 0)
         return ret;
-    avio_close(oc->pb);
+    ff_format_io_close(s, &oc->pb);
     return 0;
 }
 
@@ -169,13 +169,11 @@ static int chunk_end(AVFormatContext *s)
     ret = get_chunk_filename(s, 0, filename);
     if (ret < 0)
         goto fail;
-    ret = avio_open2(&pb, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0)
         goto fail;
     avio_write(pb, buffer, buffer_size);
-    ret = avio_close(pb);
-    if (ret < 0)
-        goto fail;
+    ff_format_io_close(s, &pb);
     oc->pb = NULL;
 fail:
     av_free(buffer);
@@ -189,7 +187,7 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int ret;
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         wc->duration_written += av_rescale_q(pkt->pts - wc->prev_pts,
                                              st->time_base,
                                              (AVRational) {1, 1000});
@@ -198,9 +196,9 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // For video, a new chunk is started only on key frames. For audio, a new
     // chunk is started based on chunk_duration.
-    if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+    if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
          (pkt->flags & AV_PKT_FLAG_KEY)) ||
-        (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+        (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
          (pkt->pts == 0 || wc->duration_written >= wc->chunk_duration))) {
         wc->duration_written = 0;
         if ((ret = chunk_end(s)) < 0 || (ret = chunk_start(s)) < 0) {

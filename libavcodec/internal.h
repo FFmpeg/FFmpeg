@@ -62,7 +62,7 @@
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
 #else
-#   define ff_tlog(ctx, ...) do {} while(0)
+#   define ff_tlog(ctx, ...) do { } while(0)
 #endif
 
 
@@ -160,6 +160,19 @@ typedef struct AVCodecInternal {
      * hwaccel-specific private data
      */
     void *hwaccel_priv_data;
+
+    /**
+     * checks API usage: after codec draining, flush is required to resume operation
+     */
+    int draining;
+
+    /**
+     * buffers for using new encode/decode API through legacy API
+     */
+    AVPacket *buffer_pkt;
+    int buffer_pkt_valid; // encoding: packet without data can be valid
+    AVFrame *buffer_frame;
+    int draining_done;
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -242,6 +255,25 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
 }
 
 /**
+ * 2^(x) for integer x
+ * @return correctly rounded float
+ */
+static av_always_inline float ff_exp2fi(int x) {
+    /* Normal range */
+    if (-126 <= x && x <= 128)
+        return av_int2float(x+127 << 23);
+    /* Too large */
+    else if (x > 128)
+        return INFINITY;
+    /* Subnormal numbers */
+    else if (x > -150)
+        return av_int2float(1 << (x+149));
+    /* Negligibly small */
+    else
+        return 0;
+}
+
+/**
  * Get a buffer for a frame. This is a wrapper around
  * AVCodecContext.get_buffer() and should be used instead calling get_buffer()
  * directly.
@@ -274,6 +306,8 @@ const uint8_t *avpriv_find_start_code(const uint8_t *p,
                                       const uint8_t *end,
                                       uint32_t *state);
 
+int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);
+
 /**
  * Check that the provided frame dimensions are valid and set them on the codec
  * context.
@@ -303,6 +337,11 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
  * Set various frame properties from the codec context / packet data.
  */
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
+
+/**
+ * Add a CPB properties side data to an encoding context.
+ */
+AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
 
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
 

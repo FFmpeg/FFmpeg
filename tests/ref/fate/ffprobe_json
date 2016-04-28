@@ -11,7 +11,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "642",
+            "pos": "647",
             "flags": "K"
         },
         {
@@ -27,7 +27,7 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "642",
+            "pkt_pos": "647",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -44,7 +44,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "2717",
+            "pos": "2722",
             "flags": "K"
         },
         {
@@ -60,7 +60,7 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "2717",
+            "pkt_pos": "2722",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -84,7 +84,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "233138",
+            "pos": "233143",
             "flags": "K"
         },
         {
@@ -100,7 +100,7 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "233138",
+            "pkt_pos": "233143",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -124,7 +124,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "263143",
+            "pos": "263148",
             "flags": "K"
         },
         {
@@ -140,7 +140,7 @@
             "best_effort_timestamp_time": "0.023220",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "263143",
+            "pkt_pos": "263148",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -157,7 +157,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "265221",
+            "pos": "265226",
             "flags": "K"
         },
         {
@@ -173,7 +173,7 @@
             "best_effort_timestamp_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "265221",
+            "pkt_pos": "265226",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -197,7 +197,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "495645",
+            "pos": "495650",
             "flags": "K"
         },
         {
@@ -213,7 +213,7 @@
             "best_effort_timestamp_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "495645",
+            "pkt_pos": "495650",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -237,7 +237,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "525650",
+            "pos": "525655",
             "flags": "K"
         },
         {
@@ -253,7 +253,7 @@
             "best_effort_timestamp_time": "0.046440",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "525650",
+            "pkt_pos": "525655",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -270,7 +270,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "527721",
+            "pos": "527726",
             "flags": "K"
         },
         {
@@ -286,7 +286,7 @@
             "best_effort_timestamp_time": "0.069660",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "527721",
+            "pkt_pos": "527726",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -303,7 +303,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "529799",
+            "pos": "529804",
             "flags": "K"
         },
         {
@@ -319,7 +319,7 @@
             "best_effort_timestamp_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "529799",
+            "pkt_pos": "529804",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -343,7 +343,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "760223",
+            "pos": "760228",
             "flags": "K"
         },
         {
@@ -359,7 +359,7 @@
             "best_effort_timestamp_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "760223",
+            "pkt_pos": "760228",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -383,7 +383,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "790228",
+            "pos": "790233",
             "flags": "K"
         },
         {
@@ -399,7 +399,7 @@
             "best_effort_timestamp_time": "0.092880",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "790228",
+            "pkt_pos": "790233",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -416,7 +416,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "792299",
+            "pos": "792304",
             "flags": "K"
         },
         {
@@ -432,7 +432,7 @@
             "best_effort_timestamp_time": "0.116100",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "792299",
+            "pkt_pos": "792304",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -449,7 +449,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "794377",
+            "pos": "794382",
             "flags": "K"
         },
         {
@@ -465,7 +465,7 @@
             "best_effort_timestamp_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "794377",
+            "pkt_pos": "794382",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -489,7 +489,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "1024801",
+            "pos": "1024806",
             "flags": "K"
         },
         {
@@ -505,7 +505,7 @@
             "best_effort_timestamp_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "1024801",
+            "pkt_pos": "1024806",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -561,7 +561,7 @@
             "index": 1,
             "codec_name": "rawvideo",
             "codec_type": "video",
-            "codec_time_base": "1/51200",
+            "codec_time_base": "1/25",
             "codec_tag_string": "RGB[24]",
             "codec_tag": "0x18424752",
             "width": 320,
@@ -604,7 +604,7 @@
             "index": 2,
             "codec_name": "rawvideo",
             "codec_type": "video",
-            "codec_time_base": "1/51200",
+            "codec_time_base": "1/25",
             "codec_tag_string": "RGB[24]",
             "codec_tag": "0x18424752",
             "width": 100,
@@ -649,8 +649,8 @@
         "format_name": "nut",
         "start_time": "0.000000",
         "duration": "0.120000",
-        "size": "1054882",
-        "bit_rate": "70325466",
+        "size": "1054887",
+        "bit_rate": "70325800",
         "probe_score": 100,
         "tags": {
             "title": "ffprobe test file",

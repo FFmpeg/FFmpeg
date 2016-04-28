@@ -251,7 +251,7 @@ static int async_open(URLContext *h, const char *arg, int flags, AVDictionary **
 
     /* wrap interrupt callback */
     c->interrupt_callback = h->interrupt_callback;
-    ret = ffurl_open(&c->inner, arg, flags, &interrupt_callback, options);
+    ret = ffurl_open_whitelist(&c->inner, arg, flags, &interrupt_callback, options, h->protocol_whitelist, h->protocol_blacklist, h);
     if (ret != 0) {
         av_log(h, AV_LOG_ERROR, "ffurl_open failed : %s, %s\n", av_err2str(ret), arg);
         goto url_fail;
@@ -479,7 +479,7 @@ static const AVClass async_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_async_protocol = {
+const URLProtocol ff_async_protocol = {
     .name                = "async",
     .url_open2           = async_open,
     .url_read            = async_read,
@@ -489,7 +489,7 @@ URLProtocol ff_async_protocol = {
     .priv_data_class     = &async_context_class,
 };
 
-#ifdef TEST
+#if 0
 
 #define TEST_SEEK_POS    (1536)
 #define TEST_STREAM_SIZE (2048)
@@ -581,7 +581,7 @@ static const AVClass async_test_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_async_test_protocol = {
+const URLProtocol ff_async_test_protocol = {
     .name                = "async-test",
     .url_open2           = async_test_open,
     .url_read            = async_test_read,

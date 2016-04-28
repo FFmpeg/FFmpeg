@@ -57,8 +57,8 @@ int ff_raw_audio_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = s->iformat->raw_codec_id;
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     st->start_time = 0;
     /* the parameters will be extracted from the compressed bitstream */
@@ -80,12 +80,12 @@ int ff_raw_video_read_header(AVFormatContext *s)
         goto fail;
     }
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = s->iformat->raw_codec_id;
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
-    st->codec->framerate = s1->framerate;
-    st->codec->time_base = av_inv_q(s1->framerate);
+    st->avg_frame_rate = s1->framerate;
+    st->internal->avctx->framerate = s1->framerate;
     avpriv_set_pts_info(st, 64, 1, 1200000);
 
 fail:
@@ -97,8 +97,8 @@ int ff_raw_data_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_DATA;
-    st->codec->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+    st->codecpar->codec_id = s->iformat->raw_codec_id;
     st->start_time = 0;
     return 0;
 }

@@ -60,15 +60,15 @@ static int read_header(AVFormatContext *s)
     }
 
     avio_skip(pb, 2);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->pix_fmt    = AV_PIX_FMT_RGBA;
-    st->codec->codec_tag  = 0; /* no fourcc */
-    st->codec->width      = avio_rb16(pb);
-    st->codec->height     = avio_rb16(pb);
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->format     = AV_PIX_FMT_RGBA;
+    st->codecpar->codec_tag  = 0; /* no fourcc */
+    st->codecpar->width      = avio_rb16(pb);
+    st->codecpar->height     = avio_rb16(pb);
     film->leading         = avio_rb16(pb);
 
-    if (st->codec->width * 4LL * st->codec->height >= INT_MAX) {
+    if (st->codecpar->width * 4LL * st->codecpar->height >= INT_MAX) {
         av_log(s, AV_LOG_ERROR, "dimensions too large\n");
         return AVERROR_PATCHWELCOME;
     }
@@ -88,9 +88,9 @@ static int read_packet(AVFormatContext *s,
 
     if (avio_feof(s->pb))
         return AVERROR(EIO);
-    pkt->dts = avio_tell(s->pb) / (st->codec->width * (int64_t)(st->codec->height + film->leading) * 4);
-    pkt->size = av_get_packet(s->pb, pkt, st->codec->width * st->codec->height * 4);
-    avio_skip(s->pb, st->codec->width * (int64_t) film->leading * 4);
+    pkt->dts = avio_tell(s->pb) / (st->codecpar->width * (int64_t)(st->codecpar->height + film->leading) * 4);
+    pkt->size = av_get_packet(s->pb, pkt, st->codecpar->width * st->codecpar->height * 4);
+    avio_skip(s->pb, st->codecpar->width * (int64_t) film->leading * 4);
     if (pkt->size < 0)
         return pkt->size;
     pkt->flags |= AV_PKT_FLAG_KEY;
@@ -100,7 +100,7 @@ static int read_packet(AVFormatContext *s,
 static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st = s->streams[stream_index];
-    if (avio_seek(s->pb, FFMAX(timestamp, 0) * st->codec->width * st->codec->height * 4, SEEK_SET) < 0)
+    if (avio_seek(s->pb, FFMAX(timestamp, 0) * st->codecpar->width * st->codecpar->height * 4, SEEK_SET) < 0)
         return -1;
     return 0;
 }

@@ -25,6 +25,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 
@@ -40,6 +41,7 @@ typedef struct SVCContext {
     int max_nal_size;
     int skip_frames;
     int skipped;
+    int cabac;
 } SVCContext;
 
 #define OPENH264_VER_AT_LEAST(maj, min) \
@@ -56,8 +58,9 @@ static const AVOption options[] = {
         { "dyn", "Dynamic slicing", 0, AV_OPT_TYPE_CONST, { .i64 = SM_DYN_SLICE }, 0, 0, VE, "slice_mode" },
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
-    { "max_nal_size", "Set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
-    { "allow_skip_frames", "Allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "max_nal_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "allow_skip_frames", "allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "cabac", "Enable cabac", OFFSET(cabac), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 
@@ -82,7 +85,7 @@ static int libopenh264_to_ffmpeg_log_level(int libopenh264_log_level)
 //
 //        typedef void (*WelsTraceCallback) (void* ctx, int level, const char* string);
 
-static void libopenh264_trace_callback(void *ctx, int level, char const *msg)
+static void libopenh264_trace_callback(void *ctx, int level, const char *msg)
 {
     // The message will be logged only if the requested EQUIVALENT ffmpeg log level is
     // less than or equal to the current ffmpeg log level.
@@ -108,6 +111,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     int err = AVERROR_UNKNOWN;
     int log_level;
     WelsTraceCallback callback_function;
+    AVCPBProperties *props;
 
     // Mingw GCC < 4.7 on x86_32 uses an incorrect/buggy ABI for the WelsGetCodecVersion
     // function (for functions returning larger structs), thus skip the check in those
@@ -138,6 +142,13 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 
     (*s->encoder)->GetDefaultParams(s->encoder, &param);
 
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (!s->cabac)
+        s->cabac = avctx->coder_type == FF_CODER_TYPE_AC;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     param.fMaxFrameRate              = 1/av_q2d(avctx->time_base);
     param.iPicWidth                  = avctx->width;
     param.iPicHeight                 = avctx->height;
@@ -164,7 +175,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     param.iMultipleThreadIdc         = avctx->thread_count;
     if (s->profile && !strcmp(s->profile, "main"))
         param.iEntropyCodingModeFlag = 1;
-    else if (!s->profile && avctx->coder_type == FF_CODER_TYPE_AC)
+    else if (!s->profile && s->cabac)
         param.iEntropyCodingModeFlag = 1;
 
     param.sSpatialLayers[0].iVideoWidth         = param.iPicWidth;
@@ -192,14 +203,9 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
             param.uiMaxNalSize = s->max_nal_size;
             param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
         } else {
-            if (avctx->rtp_payload_size) {
-                av_log(avctx,AV_LOG_DEBUG,"Using RTP Payload size for uiMaxNalSize");
-                param.uiMaxNalSize = avctx->rtp_payload_size;
-                param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = avctx->rtp_payload_size;
-            } else {
-                av_log(avctx,AV_LOG_ERROR,"Invalid -max_nal_size, specify a valid max_nal_size to use -slice_mode dyn\n");
-                goto fail;
-            }
+            av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, "
+                   "specify a valid max_nal_size to use -slice_mode dyn\n");
+            goto fail;
         }
     }
 
@@ -222,6 +228,14 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         avctx->extradata_size = size;
         memcpy(avctx->extradata, fbi.sLayerInfo[0].pBsBuf, size);
     }
+
+    props = ff_add_cpb_side_data(avctx);
+    if (!props) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+    props->max_bitrate = param.iMaxBitrate;
+    props->avg_bitrate = param.iTargetBitrate;
 
     return 0;
 

@@ -56,6 +56,7 @@
 #define AC_GOLOMB_RICE          0
 #define AC_RANGE_DEFAULT_TAB    1
 #define AC_RANGE_CUSTOM_TAB     2
+#define AC_RANGE_DEFAULT_TAB_FORCE -2
 
 typedef struct VlcState {
     int16_t drift;
@@ -113,6 +114,7 @@ typedef struct FFV1Context {
     int intra;
     int slice_damaged;
     int key_frame_ok;
+    int context_model;
 
     int bits_per_raw_sample;
     int packed_at_lsb;

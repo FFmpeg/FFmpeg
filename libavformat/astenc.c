@@ -37,7 +37,7 @@ typedef struct ASTMuxContext {
 
 #define CHECK_LOOP(type) \
     if (ast->loop ## type > 0) { \
-        ast->loop ## type = av_rescale_rnd(ast->loop ## type, enc->sample_rate, 1000, AV_ROUND_DOWN); \
+        ast->loop ## type = av_rescale_rnd(ast->loop ## type, par->sample_rate, 1000, AV_ROUND_DOWN); \
         if (ast->loop ## type < 0 || ast->loop ## type > UINT_MAX) { \
             av_log(s, AV_LOG_ERROR, "Invalid loop" #type " value\n"); \
             return AVERROR(EINVAL);  \
@@ -48,22 +48,22 @@ static int ast_write_header(AVFormatContext *s)
 {
     ASTMuxContext *ast = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc;
+    AVCodecParameters *par;
     unsigned int codec_tag;
 
     if (s->nb_streams == 1) {
-        enc = s->streams[0]->codec;
+        par = s->streams[0]->codecpar;
     } else {
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
         return AVERROR(EINVAL);
     }
 
-    if (enc->codec_id == AV_CODEC_ID_ADPCM_AFC) {
+    if (par->codec_id == AV_CODEC_ID_ADPCM_AFC) {
         av_log(s, AV_LOG_ERROR, "muxing ADPCM AFC is not implemented\n");
         return AVERROR_PATCHWELCOME;
     }
 
-    codec_tag = ff_codec_get_tag(ff_codec_ast_tags, enc->codec_id);
+    codec_tag = ff_codec_get_tag(ff_codec_ast_tags, par->codec_id);
     if (!codec_tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR(EINVAL);
@@ -84,9 +84,9 @@ static int ast_write_header(AVFormatContext *s)
     avio_wb32(pb, 0); /* File size minus header */
     avio_wb16(pb, codec_tag);
     avio_wb16(pb, 16); /* Bit depth */
-    avio_wb16(pb, enc->channels);
+    avio_wb16(pb, par->channels);
     avio_wb16(pb, 0); /* Loop flag */
-    avio_wb32(pb, enc->sample_rate);
+    avio_wb32(pb, par->sample_rate);
 
     ast->samples = avio_tell(pb);
     avio_wb32(pb, 0); /* Number of samples */
@@ -110,8 +110,8 @@ static int ast_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     ASTMuxContext *ast = s->priv_data;
-    AVCodecContext *enc = s->streams[0]->codec;
-    int size = pkt->size / enc->channels;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    int size = pkt->size / par->channels;
 
     if (s->streams[0]->nb_frames == 0)
         ast->fbs = size;
@@ -133,9 +133,9 @@ static int ast_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     ASTMuxContext *ast = s->priv_data;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     int64_t file_size = avio_tell(pb);
-    int64_t samples = (file_size - 64 - (32 * s->streams[0]->nb_frames)) / enc->block_align; /* PCM_S16BE_PLANAR */
+    int64_t samples = (file_size - 64 - (32 * s->streams[0]->nb_frames)) / par->block_align; /* PCM_S16BE_PLANAR */
 
     av_log(s, AV_LOG_DEBUG, "total samples: %"PRId64"\n", samples);
 

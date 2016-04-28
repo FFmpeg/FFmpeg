@@ -26,7 +26,7 @@
 
 #include "libavutil/mathematics.h"
 
-#define BITS 16
+#define BITS 17
 #define FLOATFMT "%.18e"
 #define FIXEDFMT "%6d"
 

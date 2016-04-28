@@ -102,19 +102,19 @@ static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels, int bl
 static int caf_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     CAFContext *caf = s->priv_data;
     AVDictionaryEntry *t = NULL;
-    unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, enc->codec_id);
+    unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, par->codec_id);
     int64_t chunk_size = 0;
-    int frame_size = enc->frame_size;
+    int frame_size = par->frame_size;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "CAF files have exactly one stream\n");
         return AVERROR(EINVAL);
     }
 
-    switch (enc->codec_id) {
+    switch (par->codec_id) {
     case AV_CODEC_ID_AAC:
         av_log(s, AV_LOG_ERROR, "muxing codec currently unsupported\n");
         return AVERROR_PATCHWELCOME;
@@ -125,13 +125,13 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!enc->block_align && !pb->seekable) {
+    if (!par->block_align && !pb->seekable) {
         av_log(s, AV_LOG_ERROR, "Muxing variable packet size not supported on non seekable output\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (enc->codec_id != AV_CODEC_ID_MP3 || frame_size != 576)
-        frame_size = samples_per_packet(enc->codec_id, enc->channels, enc->block_align);
+    if (par->codec_id != AV_CODEC_ID_MP3 || frame_size != 576)
+        frame_size = samples_per_packet(par->codec_id, par->channels, par->block_align);
 
     ffio_wfourcc(pb, "caff"); //< mFileType
     avio_wb16(pb, 1);         //< mFileVersion
@@ -139,26 +139,26 @@ static int caf_write_header(AVFormatContext *s)
 
     ffio_wfourcc(pb, "desc");                         //< Audio Description chunk
     avio_wb64(pb, 32);                                //< mChunkSize
-    avio_wb64(pb, av_double2int(enc->sample_rate));   //< mSampleRate
+    avio_wb64(pb, av_double2int(par->sample_rate));   //< mSampleRate
     avio_wl32(pb, codec_tag);                         //< mFormatID
-    avio_wb32(pb, codec_flags(enc->codec_id));        //< mFormatFlags
-    avio_wb32(pb, enc->block_align);                  //< mBytesPerPacket
+    avio_wb32(pb, codec_flags(par->codec_id));        //< mFormatFlags
+    avio_wb32(pb, par->block_align);                  //< mBytesPerPacket
     avio_wb32(pb, frame_size);                        //< mFramesPerPacket
-    avio_wb32(pb, enc->channels);                     //< mChannelsPerFrame
-    avio_wb32(pb, av_get_bits_per_sample(enc->codec_id)); //< mBitsPerChannel
+    avio_wb32(pb, par->channels);                     //< mChannelsPerFrame
+    avio_wb32(pb, av_get_bits_per_sample(par->codec_id)); //< mBitsPerChannel
 
-    if (enc->channel_layout) {
+    if (par->channel_layout) {
         ffio_wfourcc(pb, "chan");
         avio_wb64(pb, 12);
-        ff_mov_write_chan(pb, enc->channel_layout);
+        ff_mov_write_chan(pb, par->channel_layout);
     }
 
-    if (enc->codec_id == AV_CODEC_ID_ALAC) {
+    if (par->codec_id == AV_CODEC_ID_ALAC) {
         ffio_wfourcc(pb, "kuki");
-        avio_wb64(pb, 12 + enc->extradata_size);
+        avio_wb64(pb, 12 + par->extradata_size);
         avio_write(pb, "\0\0\0\14frmaalac", 12);
-        avio_write(pb, enc->extradata, enc->extradata_size);
-    } else if (enc->codec_id == AV_CODEC_ID_AMR_NB) {
+        avio_write(pb, par->extradata, par->extradata_size);
+    } else if (par->codec_id == AV_CODEC_ID_AMR_NB) {
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, 29);
         avio_write(pb, "\0\0\0\14frmasamr", 12);
@@ -169,12 +169,13 @@ static int caf_write_header(AVFormatContext *s)
         avio_wb16(pb, 0x81FF); /* Mode set (all modes for AMR_NB) */
         avio_w8(pb, 0x00); /* Mode change period (no restriction) */
         avio_w8(pb, 0x01); /* Frames per sample */
-    } else if (enc->codec_id == AV_CODEC_ID_QDM2) {
+    } else if (par->codec_id == AV_CODEC_ID_QDM2) {
         ffio_wfourcc(pb, "kuki");
-        avio_wb64(pb, enc->extradata_size);
-        avio_write(pb, enc->extradata, enc->extradata_size);
+        avio_wb64(pb, par->extradata_size);
+        avio_write(pb, par->extradata, par->extradata_size);
     }
 
+    ff_standardize_creation_time(s);
     if (av_dict_count(s->metadata)) {
         ffio_wfourcc(pb, "info"); //< Information chunk
         while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
@@ -203,7 +204,7 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
     CAFContext *caf = s->priv_data;
 
     avio_write(s->pb, pkt->data, pkt->size);
-    if (!s->streams[0]->codec->block_align) {
+    if (!s->streams[0]->codecpar->block_align) {
         void *pkt_sizes = caf->pkt_sizes;
         int i, alloc_size = caf->size_entries_used + 5;
         if (alloc_size < 0) {
@@ -232,7 +233,7 @@ static int caf_write_trailer(AVFormatContext *s)
 {
     CAFContext *caf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (pb->seekable) {
         int64_t file_size = avio_tell(pb);
@@ -240,11 +241,11 @@ static int caf_write_trailer(AVFormatContext *s)
         avio_seek(pb, caf->data, SEEK_SET);
         avio_wb64(pb, file_size - caf->data - 8);
         avio_seek(pb, file_size, SEEK_SET);
-        if (!enc->block_align) {
+        if (!par->block_align) {
             ffio_wfourcc(pb, "pakt");
             avio_wb64(pb, caf->size_entries_used + 24);
             avio_wb64(pb, caf->packets); ///< mNumberPackets
-            avio_wb64(pb, caf->packets * samples_per_packet(enc->codec_id, enc->channels, enc->block_align)); ///< mNumberValidFrames
+            avio_wb64(pb, caf->packets * samples_per_packet(par->codec_id, par->channels, par->block_align)); ///< mNumberValidFrames
             avio_wb32(pb, 0); ///< mPrimingFrames
             avio_wb32(pb, 0); ///< mRemainderFrames
             avio_write(pb, caf->pkt_sizes, caf->size_entries_used);

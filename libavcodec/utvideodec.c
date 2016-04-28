@@ -356,12 +356,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         slice_end   = 0;
         for (j = 0; j < c->slices; j++) {
             slice_end   = bytestream2_get_le32u(&gb);
-            slice_size  = slice_end - slice_start;
-            if (slice_end < 0 || slice_size < 0 ||
+            if (slice_end < 0 || slice_end < slice_start ||
                 bytestream2_get_bytes_left(&gb) < slice_end) {
                 av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
                 return AVERROR_INVALIDDATA;
             }
+            slice_size  = slice_end - slice_start;
             slice_start = slice_end;
             max_slice_size = FFMAX(max_slice_size, slice_size);
         }

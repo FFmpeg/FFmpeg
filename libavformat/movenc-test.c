@@ -44,7 +44,7 @@ static const uint8_t aac_extradata[] = {
 };
 
 
-const char *format = "mp4";
+static const char *format = "mp4";
 AVFormatContext *ctx;
 uint8_t iobuf[32768];
 AVDictionary *opts;
@@ -159,35 +159,33 @@ static void init_fps(int bf, int audio_preroll, int fps)
     st = avformat_new_stream(ctx, NULL);
     if (!st)
         exit(1);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_H264;
-    st->codec->width = 640;
-    st->codec->height = 480;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_H264;
+    st->codecpar->width = 640;
+    st->codecpar->height = 480;
     st->time_base.num = 1;
     st->time_base.den = 30;
-    st->codec->extradata_size = sizeof(h264_extradata);
-    st->codec->extradata = av_mallocz(st->codec->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    st->codecpar->extradata_size = sizeof(h264_extradata);
+    st->codecpar->extradata = av_mallocz(st->codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codecpar->extradata)
         exit(1);
-    memcpy(st->codec->extradata, h264_extradata, sizeof(h264_extradata));
-    st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    memcpy(st->codecpar->extradata, h264_extradata, sizeof(h264_extradata));
     video_st = st;
 
     st = avformat_new_stream(ctx, NULL);
     if (!st)
         exit(1);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_AAC;
-    st->codec->sample_rate = 44100;
-    st->codec->channels = 2;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_AAC;
+    st->codecpar->sample_rate = 44100;
+    st->codecpar->channels = 2;
     st->time_base.num = 1;
     st->time_base.den = 44100;
-    st->codec->extradata_size = sizeof(aac_extradata);
-    st->codec->extradata = av_mallocz(st->codec->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    st->codecpar->extradata_size = sizeof(aac_extradata);
+    st->codecpar->extradata = av_mallocz(st->codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codecpar->extradata)
         exit(1);
-    memcpy(st->codec->extradata, aac_extradata, sizeof(aac_extradata));
-    st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    memcpy(st->codecpar->extradata, aac_extradata, sizeof(aac_extradata));
     audio_st = st;
 
     if (avformat_write_header(ctx, &opts) < 0)
@@ -197,9 +195,9 @@ static void init_fps(int bf, int audio_preroll, int fps)
     frames = 0;
     gop_size = 30;
     duration = video_st->time_base.den / fps;
-    audio_duration = 1024LL * audio_st->time_base.den / audio_st->codec->sample_rate;
+    audio_duration = 1024LL * audio_st->time_base.den / audio_st->codecpar->sample_rate;
     if (audio_preroll)
-        audio_preroll = 2048LL * audio_st->time_base.den / audio_st->codec->sample_rate;
+        audio_preroll = 2048LL * audio_st->time_base.den / audio_st->codecpar->sample_rate;
 
     bframes = bf;
     video_dts = bframes ? -duration : 0;

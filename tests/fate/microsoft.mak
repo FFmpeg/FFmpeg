@@ -1,6 +1,12 @@
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSMPEG4V1) += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/msmpeg4v1/mpg4.avi -an
 
+FATE_MSS1 += fate-mss1-pal
+fate-mss1-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss1/screen_codec.wmv
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MSS1) += $(FATE_MSS1)
+fate-mss1: $(FATE_MSS1)
+
 FATE_MSS2 += fate-mss2-pal
 fate-mss2-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rlepal.wmv
 
@@ -18,6 +24,12 @@ fate-mss2-wmv: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/msscreencodec.wmv -an -f
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MSS2) += $(FATE_MSS2)
 fate-mss2: $(FATE_MSS2)
+
+FATE_MTS2 += fate-mts2-xesc
+fate-mts2-xesc: CMD = framecrc -i $(TARGET_SAMPLES)/mts2/sample.xesc -pix_fmt yuv444p
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MTS2) += $(FATE_MTS2)
+fate-mts2: $(FATE_MTS2)
 
 FATE_MSVIDEO1 += fate-msvideo1-8bit
 fate-msvideo1-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/cram/skating.avi -t 1 -pix_fmt rgb24

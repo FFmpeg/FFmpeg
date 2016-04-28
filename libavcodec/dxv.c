@@ -105,9 +105,17 @@ static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
             break;                                                            \
         case 2:                                                               \
             idx = (bytestream2_get_byte(gbc) + 2) * x;                        \
+            if (idx > pos) {                                                  \
+                av_log(avctx, AV_LOG_ERROR, "idx %d > %d\n", idx, pos);       \
+                return AVERROR_INVALIDDATA;                                   \
+            }                                                                 \
             break;                                                            \
         case 3:                                                               \
             idx = (bytestream2_get_le16(gbc) + 0x102) * x;                    \
+            if (idx > pos) {                                                  \
+                av_log(avctx, AV_LOG_ERROR, "idx %d > %d\n", idx, pos);       \
+                return AVERROR_INVALIDDATA;                                   \
+            }                                                                 \
             break;                                                            \
         }                                                                     \
     } while(0)
@@ -252,6 +260,10 @@ static int dxv_decompress_dxt5(AVCodecContext *avctx)
             case 2:
                 /* Copy two dwords from a previous index */
                 idx = 8 + bytestream2_get_le16(gbc);
+                if (idx > pos) {
+                    av_log(avctx, AV_LOG_ERROR, "idx %d > %d\n", idx, pos);
+                    return AVERROR_INVALIDDATA;
+                }
                 prev = AV_RL32(ctx->tex_data + 4 * (pos - idx));
                 AV_WL32(ctx->tex_data + 4 * pos, prev);
                 pos++;

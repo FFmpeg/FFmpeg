@@ -434,12 +434,12 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_tag = vtag;
-            st->codec->codec_id = ff_codec_get_id(nsv_codec_video_tags, vtag);
-            st->codec->width = vwidth;
-            st->codec->height = vheight;
-            st->codec->bits_per_coded_sample = 24; /* depth XXX */
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_tag = vtag;
+            st->codecpar->codec_id = ff_codec_get_id(nsv_codec_video_tags, vtag);
+            st->codecpar->width = vwidth;
+            st->codecpar->height = vheight;
+            st->codecpar->bits_per_coded_sample = 24; /* depth XXX */
 
             avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
             st->start_time = 0;
@@ -465,9 +465,9 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_tag = atag;
-            st->codec->codec_id = ff_codec_get_id(nsv_codec_audio_tags, atag);
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_tag = atag;
+            st->codecpar->codec_id = ff_codec_get_id(nsv_codec_audio_tags, atag);
 
             st->need_parsing = AVSTREAM_PARSE_FULL; /* for PCM we will read a chunk later and put correct info */
 
@@ -614,7 +614,7 @@ null_chunk_retry:
         pkt = &nsv->ahead[NSV_ST_AUDIO];
         /* read raw audio specific header on the first audio chunk... */
         /* on ALL audio chunks ?? seems so! */
-        if (asize && st[NSV_ST_AUDIO]->codec->codec_tag == MKTAG('P', 'C', 'M', ' ')/* && fill_header*/) {
+        if (asize && st[NSV_ST_AUDIO]->codecpar->codec_tag == MKTAG('P', 'C', 'M', ' ')/* && fill_header*/) {
             uint8_t bps;
             uint8_t channels;
             uint16_t samplerate;
@@ -632,11 +632,11 @@ null_chunk_retry:
                 }
                 bps /= channels; // ???
                 if (bps == 8)
-                    st[NSV_ST_AUDIO]->codec->codec_id = AV_CODEC_ID_PCM_U8;
+                    st[NSV_ST_AUDIO]->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
                 samplerate /= 4;/* UGH ??? XXX */
                 channels = 1;
-                st[NSV_ST_AUDIO]->codec->channels = channels;
-                st[NSV_ST_AUDIO]->codec->sample_rate = samplerate;
+                st[NSV_ST_AUDIO]->codecpar->channels = channels;
+                st[NSV_ST_AUDIO]->codecpar->sample_rate = samplerate;
                 av_log(s, AV_LOG_TRACE, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             }
         }

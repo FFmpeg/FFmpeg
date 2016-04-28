@@ -167,7 +167,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     int table_size, table_index, index, code_prefix, symbol, subtable_bits;
     int i, j, k, n, nb, inc;
     uint32_t code;
-    volatile VLC_TYPE (* volatile table)[2]; // the double volatile is needed to prevent a internal compiler error in gcc 4.2
+    volatile VLC_TYPE (* volatile table)[2]; // the double volatile is needed to prevent an internal compiler error in gcc 4.2
 
     table_size = 1 << table_nb_bits;
     if (table_nb_bits > 30)
@@ -317,7 +317,7 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
         }                                                                   \
         GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);            \
         if (buf[j].code >= (1LL<<buf[j].bits)) {                            \
-            av_log(NULL, AV_LOG_ERROR, "Invalid code in init_vlc\n");       \
+            av_log(NULL, AV_LOG_ERROR, "Invalid code %x for %d in init_vlc\n", buf[j].code, i);\
             if (!(flags & INIT_VLC_USE_NEW_STATIC))                         \
                 av_free(buf);                                               \
             return -1;                                                      \

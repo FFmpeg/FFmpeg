@@ -71,6 +71,13 @@ enum var_name {
     VARS_NB
 };
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
+
 typedef struct ScaleContext {
     const AVClass *class;
     struct SwsContext *sws;     ///< software scaler context
@@ -110,6 +117,11 @@ typedef struct ScaleContext {
     int in_v_chr_pos;
 
     int force_original_aspect_ratio;
+
+    int nb_slices;
+
+    int eval_mode;              ///< expression evaluation mode
+
 } ScaleContext;
 
 AVFilter ff_vf_scale2ref;
@@ -225,9 +237,11 @@ static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
         colorspace = AVCOL_SPC_SMPTE240M;
     } else if (s && (strstr(s, "bt601") || strstr(s, "bt470") || strstr(s, "smpte170m"))) {
         colorspace = AVCOL_SPC_BT470BG;
+    } else if (s && strstr(s, "bt2020")) {
+        colorspace = AVCOL_SPC_BT2020_NCL;
     }
 
-    if (colorspace < 1 || colorspace > 7) {
+    if (colorspace < 1 || colorspace > 10 || colorspace == 8) {
         colorspace = AVCOL_SPC_BT470BG;
     }
 
@@ -492,16 +506,24 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     if(   in->width  != link->w
        || in->height != link->h
-       || in->format != link->format) {
+       || in->format != link->format
+       || in->sample_aspect_ratio.den != link->sample_aspect_ratio.den || in->sample_aspect_ratio.num != link->sample_aspect_ratio.num) {
         int ret;
-        snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
-        av_opt_set(scale, "w", buf, 0);
-        snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
-        av_opt_set(scale, "h", buf, 0);
+
+        if (scale->eval_mode == EVAL_MODE_INIT) {
+            snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
+            av_opt_set(scale, "w", buf, 0);
+            snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
+            av_opt_set(scale, "h", buf, 0);
+        }
 
         link->dst->inputs[0]->format = in->format;
         link->dst->inputs[0]->w      = in->width;
         link->dst->inputs[0]->h      = in->height;
+
+        link->dst->inputs[0]->sample_aspect_ratio.den = in->sample_aspect_ratio.den;
+        link->dst->inputs[0]->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
+
 
         if ((ret = config_props(outlink)) < 0)
             return ret;
@@ -565,6 +587,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             sws_setColorspaceDetails(scale->isws[1], inv_table, in_full,
                                      table, out_full,
                                      brightness, contrast, saturation);
+
+        av_frame_set_color_range(out, out_full ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG);
     }
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
@@ -575,6 +599,15 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if(scale->interlaced>0 || (scale->interlaced<0 && in->interlaced_frame)){
         scale_slice(link, out, in, scale->isws[0], 0, (link->h+1)/2, 2, 0);
         scale_slice(link, out, in, scale->isws[1], 0,  link->h   /2, 2, 1);
+    }else if (scale->nb_slices) {
+        int i, slice_h, slice_start, slice_end = 0;
+        const int nb_slices = FFMIN(scale->nb_slices, link->h);
+        for (i = 0; i < nb_slices; i++) {
+            slice_start = slice_end;
+            slice_end   = (link->h * (i+1)) / nb_slices;
+            slice_h     = slice_end - slice_start;
+            scale_slice(link, out, in, scale->sws, slice_start, slice_h, 1, 0);
+        }
     }else{
         scale_slice(link, out, in, scale->sws, 0, link->h, 1, 0);
     }
@@ -651,6 +684,10 @@ static const AVOption scale_options[] = {
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
     { "param0", "Scaler param 0",             OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { "param1", "Scaler param 1",             OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
+    { "nb_slices", "set the number of slices (debug purpose only)", OFFSET(nb_slices), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+         { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
+         { "frame", "eval expressions during initialization and per-frame", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     { NULL }
 };
 

@@ -26,6 +26,7 @@
 #include "libavutil/display.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
@@ -100,7 +101,7 @@ static void pkt_dump_internal(void *avcl, FILE *f, int level, const AVPacket *pk
     HEXDUMP_PRINT("\n");
     HEXDUMP_PRINT("  size=%d\n", pkt->size);
     if (dump_payload)
-        av_hex_dump(f, pkt->data, pkt->size);
+        hex_dump_internal(avcl, f, level, pkt->data, pkt->size);
 }
 
 void av_pkt_dump2(FILE *f, const AVPacket *pkt, int dump_payload, const AVStream *st)
@@ -336,6 +337,39 @@ static void dump_audioservicetype(void *ctx, AVPacketSideData *sd)
     }
 }
 
+static void dump_cpb(void *ctx, AVPacketSideData *sd)
+{
+    AVCPBProperties *cpb = (AVCPBProperties *)sd->data;
+
+    if (sd->size < sizeof(*cpb)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+
+    av_log(ctx, AV_LOG_INFO,
+           "bitrate max/min/avg: %d/%d/%d buffer size: %d vbv_delay: %"PRId64,
+           cpb->max_bitrate, cpb->min_bitrate, cpb->avg_bitrate,
+           cpb->buffer_size,
+           cpb->vbv_delay);
+}
+
+static void dump_mastering_display_metadata(void *ctx, AVPacketSideData* sd) {
+    AVMasteringDisplayMetadata* metadata = (AVMasteringDisplayMetadata*)sd->data;
+    av_log(ctx, AV_LOG_INFO, "Mastering Display Metadata, "
+           "has_primaries:%d has_luminance:%d "
+           "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f) "
+           "min_luminance=%f, max_luminance=%f\n",
+           metadata->has_primaries, metadata->has_luminance,
+           av_q2d(metadata->display_primaries[0][0]),
+           av_q2d(metadata->display_primaries[0][1]),
+           av_q2d(metadata->display_primaries[1][0]),
+           av_q2d(metadata->display_primaries[1][1]),
+           av_q2d(metadata->display_primaries[2][0]),
+           av_q2d(metadata->display_primaries[2][1]),
+           av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]),
+           av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+}
+
 static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
 {
     int i;
@@ -380,6 +414,13 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
         case AV_PKT_DATA_QUALITY_STATS:
             av_log(ctx, AV_LOG_INFO, "quality factor: %d, pict_type: %c", AV_RL32(sd.data), av_get_picture_type_char(sd.data[4]));
             break;
+        case AV_PKT_DATA_CPB_PROPERTIES:
+            av_log(ctx, AV_LOG_INFO, "cpb: ");
+            dump_cpb(ctx, &sd);
+            break;
+        case AV_PKT_DATA_MASTERING_DISPLAY_METADATA:
+            dump_mastering_display_metadata(ctx, &sd);
+            break;
         default:
             av_log(ctx, AV_LOG_WARNING,
                    "unknown side data type %d (%d bytes)", sd.type, sd.size);
@@ -399,14 +440,24 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     AVStream *st = ic->streams[i];
     AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
     char *separator = ic->dump_separator;
-    char **codec_separator = av_opt_ptr(st->codec->av_class, st->codec, "dump_separator");
-    int use_format_separator = !*codec_separator;
+    AVCodecContext *avctx;
+    int ret;
 
-    if (use_format_separator)
-        *codec_separator = av_strdup(separator);
-    avcodec_string(buf, sizeof(buf), st->codec, is_output);
-    if (use_format_separator)
-        av_freep(codec_separator);
+    avctx = avcodec_alloc_context3(NULL);
+    if (!avctx)
+        return;
+
+    ret = avcodec_parameters_to_context(avctx, st->codecpar);
+    if (ret < 0) {
+        avcodec_free_context(&avctx);
+        return;
+    }
+
+    if (separator)
+        av_opt_set(avctx, "dump_separator", separator, 0);
+    avcodec_string(buf, sizeof(buf), avctx, is_output);
+    avcodec_free_context(&avctx);
+
     av_log(NULL, AV_LOG_INFO, "    Stream #%d:%d", index, i);
 
     /* the pid is an important information, so we display it */
@@ -419,35 +470,32 @@ static void dump_stream_format(AVFormatContext *ic, int i,
            st->time_base.num, st->time_base.den);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
 
-    if (st->sample_aspect_ratio.num && // default
-        av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)) {
+    if (st->sample_aspect_ratio.num &&
+        av_cmp_q(st->sample_aspect_ratio, st->codecpar->sample_aspect_ratio)) {
         AVRational display_aspect_ratio;
         av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
-                  st->codec->width  * (int64_t)st->sample_aspect_ratio.num,
-                  st->codec->height * (int64_t)st->sample_aspect_ratio.den,
+                  st->codecpar->width  * (int64_t)st->sample_aspect_ratio.num,
+                  st->codecpar->height * (int64_t)st->sample_aspect_ratio.den,
                   1024 * 1024);
         av_log(NULL, AV_LOG_INFO, ", SAR %d:%d DAR %d:%d",
                st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                display_aspect_ratio.num, display_aspect_ratio.den);
     }
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
         int tbr = st->r_frame_rate.den && st->r_frame_rate.num;
         int tbn = st->time_base.den && st->time_base.num;
-        int tbc = st->codec->time_base.den && st->codec->time_base.num;
 
-        if (fps || tbr || tbn || tbc)
+        if (fps || tbr || tbn)
             av_log(NULL, AV_LOG_INFO, "%s", separator);
 
         if (fps)
-            print_fps(av_q2d(st->avg_frame_rate), tbr || tbn || tbc ? "fps, " : "fps");
+            print_fps(av_q2d(st->avg_frame_rate), tbr || tbn ? "fps, " : "fps");
         if (tbr)
-            print_fps(av_q2d(st->r_frame_rate), tbn || tbc ? "tbr, " : "tbr");
+            print_fps(av_q2d(st->r_frame_rate), tbn ? "tbr, " : "tbr");
         if (tbn)
-            print_fps(1 / av_q2d(st->time_base), tbc ? "tbn, " : "tbn");
-        if (tbc)
-            print_fps(1 / av_q2d(st->codec->time_base), "tbc");
+            print_fps(1 / av_q2d(st->time_base), "tbn");
     }
 
     if (st->disposition & AV_DISPOSITION_DEFAULT)
@@ -511,10 +559,12 @@ void av_dump_format(AVFormatContext *ic, int index,
         if (ic->start_time != AV_NOPTS_VALUE) {
             int secs, us;
             av_log(NULL, AV_LOG_INFO, ", start: ");
-            secs = ic->start_time / AV_TIME_BASE;
+            secs = llabs(ic->start_time / AV_TIME_BASE);
             us   = llabs(ic->start_time % AV_TIME_BASE);
-            av_log(NULL, AV_LOG_INFO, "%d.%06d",
-                   secs, (int) av_rescale(us, 1000000, AV_TIME_BASE));
+            av_log(NULL, AV_LOG_INFO, "%s%d.%06d",
+                   ic->start_time >= 0 ? "" : "-",
+                   secs,
+                   (int) av_rescale(us, 1000000, AV_TIME_BASE));
         }
         av_log(NULL, AV_LOG_INFO, ", bitrate: ");
         if (ic->bit_rate)

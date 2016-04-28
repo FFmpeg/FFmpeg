@@ -167,8 +167,8 @@ static int config_props(AVFilterLink *inlink)
 
     alloc_sws_context(&s->luma, inlink->w, inlink->h, s->sws_flags);
     alloc_sws_context(&s->chroma,
-                      FF_CEIL_RSHIFT(inlink->w, s->hsub),
-                      FF_CEIL_RSHIFT(inlink->h, s->vsub),
+                      AV_CEIL_RSHIFT(inlink->w, s->hsub),
+                      AV_CEIL_RSHIFT(inlink->h, s->vsub),
                       s->sws_flags);
 
     return 0;
@@ -243,8 +243,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     SmartblurContext  *s  = inlink->dst->priv;
     AVFilterLink *outlink     = inlink->dst->outputs[0];
     AVFrame *outpic;
-    int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub);
-    int ch = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+    int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+    int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
 
     outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpic) {

@@ -32,7 +32,7 @@ endif
 ALLFFLIBS = avcodec avdevice avfilter avformat avresample avutil postproc swscale swresample
 
 # NASM requires -I path terminated with /
-IFLAGS     := -I. -I$(SRC_PATH)/
+IFLAGS     := -I. -I$(SRC_LINK)/
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
@@ -47,7 +47,7 @@ LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)lib%) $(LDFLAGS)
 
 define COMPILE
        $(call $(1)DEP,$(1))
-       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) $($(1)_C) $($(1)_O) $<
+       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) $($(1)_C) $($(1)_O) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
 endef
 
 COMPILE_C = $(call COMPILE,CC)
@@ -66,7 +66,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(COMPILE_M)
 
 %.s: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -S -o $@ $<
+	$(CC) $(CCFLAGS) -S -o $@ $<
 
 %.o: %.S
 	$(COMPILE_S)
@@ -158,7 +158,6 @@ LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
 clean::
-	$(RM) $(OBJS) $(OBJS:.o=.d) $(OBJS:.o=$(DEFAULT_YASMD).d)
 	$(RM) $(HOSTPROGS)
 	$(RM) $(TOOLS)
 endef

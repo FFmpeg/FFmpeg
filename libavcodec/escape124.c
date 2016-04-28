@@ -155,7 +155,7 @@ static MacroBlock decode_macroblock(Escape124Context* s, GetBitContext* gb,
     // depth = 0 means that this shouldn't read any bits;
     // in theory, this is the same as get_bits(gb, 0), but
     // that doesn't actually work.
-    block_index = depth ? get_bits(gb, depth) : 0;
+    block_index = get_bitsz(gb, depth);
 
     if (*codebook_index == 1) {
         block_index += superblock_index << s->codebooks[1].depth;

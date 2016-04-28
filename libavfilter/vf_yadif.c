@@ -233,8 +233,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         int h = dstpic->height;
 
         if (i == 1 || i == 2) {
-            w = FF_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
-            h = FF_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
         }
 
 
@@ -389,7 +389,7 @@ static int request_frame(AVFilterLink *link)
     if (yadif->eof)
         return AVERROR_EOF;
 
-    ret  = ff_request_frame(link->src->inputs[0]);
+    ret  = ff_request_frame(ctx->inputs[0]);
 
     if (ret == AVERROR_EOF && yadif->cur) {
         AVFrame *next = av_frame_clone(yadif->next);
@@ -399,7 +399,7 @@ static int request_frame(AVFilterLink *link)
 
         next->pts = yadif->next->pts * 2 - yadif->cur->pts;
 
-        filter_frame(link->src->inputs[0], next);
+        filter_frame(ctx->inputs[0], next);
         yadif->eof = 1;
     } else if (ret < 0) {
         return ret;
@@ -469,15 +469,15 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
-    YADIFContext *s = link->src->priv;
+    YADIFContext *s = ctx->priv;
 
-    link->time_base.num = link->src->inputs[0]->time_base.num;
-    link->time_base.den = link->src->inputs[0]->time_base.den * 2;
-    link->w             = link->src->inputs[0]->w;
-    link->h             = link->src->inputs[0]->h;
+    link->time_base.num = ctx->inputs[0]->time_base.num;
+    link->time_base.den = ctx->inputs[0]->time_base.den * 2;
+    link->w             = ctx->inputs[0]->w;
+    link->h             = ctx->inputs[0]->h;
 
     if(s->mode & 1)
-        link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate,
+        link->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
                                     (AVRational){2, 1});
 
     if (link->w < 3 || link->h < 3) {

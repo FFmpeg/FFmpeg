@@ -973,7 +973,7 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
         int i;
         const int count= FFMAX(mbHeight * absQPStride, mbWidth);
         for(i=0; i<(count>>2); i++){
-            ((uint32_t*)c->stdQPTable)[i] = (((const uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
+            AV_WN32(c->stdQPTable + (i<<2), AV_RN32(QP_store + (i<<2)) >> 1 & 0x7F7F7F7F);
         }
         for(i<<=2; i<count; i++){
             c->stdQPTable[i] = QP_store[i]>>1;

@@ -23,8 +23,14 @@
  * libopencv wrapper functions
  */
 
+#include "config.h"
+#if HAVE_OPENCV2_CORE_CORE_C_H
+#include <opencv2/core/core_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#else
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
+#endif
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/file.h"

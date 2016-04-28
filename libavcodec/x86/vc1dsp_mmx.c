@@ -38,6 +38,10 @@
 void ff_vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                    const uint8_t *src, x86_reg stride,
                                    int rnd, int64_t shift);
+void ff_vc1_put_hor_16b_shift2_mmx(uint8_t *dst, x86_reg stride,
+                                   const int16_t *src, int rnd);
+void ff_vc1_avg_hor_16b_shift2_mmxext(uint8_t *dst, x86_reg stride,
+                                      const int16_t *src, int rnd);
 
 #define OP_PUT(S,D)
 #define OP_AVG(S,D) "pavgb " #S ", " #D " \n\t"
@@ -69,55 +73,6 @@ void ff_vc1_put_ver_16b_shift2_mmx(int16_t *dst,
      "movd      "ROUND", %%mm7         \n\t"    \
      "punpcklwd %%mm7, %%mm7           \n\t"    \
      "punpckldq %%mm7, %%mm7           \n\t"
-
-/**
- * Data is already unpacked, so some operations can directly be made from
- * memory.
- */
-#define VC1_HOR_16b_SHIFT2(OP, OPNAME)\
-static void OPNAME ## vc1_hor_16b_shift2_mmx(uint8_t *dst, x86_reg stride,\
-                                             const int16_t *src, int rnd)\
-{\
-    int h = 8;\
-\
-    src -= 1;\
-    rnd -= (-1+9+9-1)*1024; /* Add -1024 bias */\
-    __asm__ volatile(\
-        LOAD_ROUNDER_MMX("%4")\
-        "movq      "MANGLE(ff_pw_128)", %%mm6\n\t"\
-        "movq      "MANGLE(ff_pw_9)", %%mm5 \n\t"\
-        "1:                                \n\t"\
-        "movq      2*0+0(%1), %%mm1        \n\t"\
-        "movq      2*0+8(%1), %%mm2        \n\t"\
-        "movq      2*1+0(%1), %%mm3        \n\t"\
-        "movq      2*1+8(%1), %%mm4        \n\t"\
-        "paddw     2*3+0(%1), %%mm1        \n\t"\
-        "paddw     2*3+8(%1), %%mm2        \n\t"\
-        "paddw     2*2+0(%1), %%mm3        \n\t"\
-        "paddw     2*2+8(%1), %%mm4        \n\t"\
-        "pmullw    %%mm5, %%mm3            \n\t"\
-        "pmullw    %%mm5, %%mm4            \n\t"\
-        "psubw     %%mm1, %%mm3            \n\t"\
-        "psubw     %%mm2, %%mm4            \n\t"\
-        NORMALIZE_MMX("$7")\
-        /* Remove bias */\
-        "paddw     %%mm6, %%mm3            \n\t"\
-        "paddw     %%mm6, %%mm4            \n\t"\
-        TRANSFER_DO_PACK(OP)\
-        "add       $24, %1                 \n\t"\
-        "add       %3, %2                  \n\t"\
-        "decl      %0                      \n\t"\
-        "jnz 1b                            \n\t"\
-        : "+r"(h), "+r" (src),  "+r" (dst)\
-        : "r"(stride), "m"(rnd)\
-          NAMED_CONSTRAINTS_ADD(ff_pw_128,ff_pw_9)\
-        : "memory"\
-    );\
-}
-
-VC1_HOR_16b_SHIFT2(OP_PUT, put_)
-VC1_HOR_16b_SHIFT2(OP_AVG, avg_)
-
 
 /**
  * Purely vertical or horizontal 1/2 shift interpolation.
@@ -380,14 +335,14 @@ typedef void (*vc1_mspel_mc_filter_8bits)(uint8_t *dst, const uint8_t *src, x86_
  * @param  hmode   Vertical filter.
  * @param  rnd     Rounding bias.
  */
-#define VC1_MSPEL_MC(OP)\
+#define VC1_MSPEL_MC(OP, INSTR)\
 static void OP ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride,\
                                int hmode, int vmode, int rnd)\
 {\
     static const vc1_mspel_mc_filter_ver_16bits vc1_put_shift_ver_16bits[] =\
          { NULL, vc1_put_ver_16b_shift1_mmx, ff_vc1_put_ver_16b_shift2_mmx, vc1_put_ver_16b_shift3_mmx };\
     static const vc1_mspel_mc_filter_hor_16bits vc1_put_shift_hor_16bits[] =\
-         { NULL, OP ## vc1_hor_16b_shift1_mmx, OP ## vc1_hor_16b_shift2_mmx, OP ## vc1_hor_16b_shift3_mmx };\
+         { NULL, OP ## vc1_hor_16b_shift1_mmx, ff_vc1_ ## OP ## hor_16b_shift2_ ## INSTR, OP ## vc1_hor_16b_shift3_mmx };\
     static const vc1_mspel_mc_filter_8bits vc1_put_shift_8bits[] =\
          { NULL, OP ## vc1_shift1_mmx, OP ## vc1_shift2_mmx, OP ## vc1_shift3_mmx };\
 \
@@ -428,8 +383,8 @@ static void OP ## vc1_mspel_mc_16(uint8_t *dst, const uint8_t *src, \
     OP ## vc1_mspel_mc(dst + 8, src + 8, stride, hmode, vmode, rnd); \
 }
 
-VC1_MSPEL_MC(put_)
-VC1_MSPEL_MC(avg_)
+VC1_MSPEL_MC(put_, mmx)
+VC1_MSPEL_MC(avg_, mmxext)
 
 /** Macro to ease bicubic filter interpolation functions declarations */
 #define DECLARE_FUNCTION(a, b)                                          \
@@ -481,208 +436,6 @@ DECLARE_FUNCTION(3, 1)
 DECLARE_FUNCTION(3, 2)
 DECLARE_FUNCTION(3, 3)
 
-static void vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, int linesize,
-                                        int16_t *block)
-{
-    int dc = block[0];
-    dc = (17 * dc +  4) >> 3;
-    dc = (17 * dc + 64) >> 7;
-    __asm__ volatile(
-        "movd          %0, %%mm0 \n\t"
-        "pshufw $0, %%mm0, %%mm0 \n\t"
-        "pxor       %%mm1, %%mm1 \n\t"
-        "psubw      %%mm0, %%mm1 \n\t"
-        "packuswb   %%mm0, %%mm0 \n\t"
-        "packuswb   %%mm1, %%mm1 \n\t"
-        ::"r"(dc)
-    );
-    __asm__ volatile(
-        "movd          %0, %%mm2 \n\t"
-        "movd          %1, %%mm3 \n\t"
-        "movd          %2, %%mm4 \n\t"
-        "movd          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movd       %%mm2, %0    \n\t"
-        "movd       %%mm3, %1    \n\t"
-        "movd       %%mm4, %2    \n\t"
-        "movd       %%mm5, %3    \n\t"
-        :"+m"(*(uint32_t*)(dest+0*linesize)),
-         "+m"(*(uint32_t*)(dest+1*linesize)),
-         "+m"(*(uint32_t*)(dest+2*linesize)),
-         "+m"(*(uint32_t*)(dest+3*linesize))
-    );
-}
-
-static void vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, int linesize,
-                                        int16_t *block)
-{
-    int dc = block[0];
-    dc = (17 * dc +  4) >> 3;
-    dc = (12 * dc + 64) >> 7;
-    __asm__ volatile(
-        "movd          %0, %%mm0 \n\t"
-        "pshufw $0, %%mm0, %%mm0 \n\t"
-        "pxor       %%mm1, %%mm1 \n\t"
-        "psubw      %%mm0, %%mm1 \n\t"
-        "packuswb   %%mm0, %%mm0 \n\t"
-        "packuswb   %%mm1, %%mm1 \n\t"
-        ::"r"(dc)
-    );
-    __asm__ volatile(
-        "movd          %0, %%mm2 \n\t"
-        "movd          %1, %%mm3 \n\t"
-        "movd          %2, %%mm4 \n\t"
-        "movd          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movd       %%mm2, %0    \n\t"
-        "movd       %%mm3, %1    \n\t"
-        "movd       %%mm4, %2    \n\t"
-        "movd       %%mm5, %3    \n\t"
-        :"+m"(*(uint32_t*)(dest+0*linesize)),
-         "+m"(*(uint32_t*)(dest+1*linesize)),
-         "+m"(*(uint32_t*)(dest+2*linesize)),
-         "+m"(*(uint32_t*)(dest+3*linesize))
-    );
-    dest += 4*linesize;
-    __asm__ volatile(
-        "movd          %0, %%mm2 \n\t"
-        "movd          %1, %%mm3 \n\t"
-        "movd          %2, %%mm4 \n\t"
-        "movd          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movd       %%mm2, %0    \n\t"
-        "movd       %%mm3, %1    \n\t"
-        "movd       %%mm4, %2    \n\t"
-        "movd       %%mm5, %3    \n\t"
-        :"+m"(*(uint32_t*)(dest+0*linesize)),
-         "+m"(*(uint32_t*)(dest+1*linesize)),
-         "+m"(*(uint32_t*)(dest+2*linesize)),
-         "+m"(*(uint32_t*)(dest+3*linesize))
-    );
-}
-
-static void vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, int linesize,
-                                        int16_t *block)
-{
-    int dc = block[0];
-    dc = ( 3 * dc +  1) >> 1;
-    dc = (17 * dc + 64) >> 7;
-    __asm__ volatile(
-        "movd          %0, %%mm0 \n\t"
-        "pshufw $0, %%mm0, %%mm0 \n\t"
-        "pxor       %%mm1, %%mm1 \n\t"
-        "psubw      %%mm0, %%mm1 \n\t"
-        "packuswb   %%mm0, %%mm0 \n\t"
-        "packuswb   %%mm1, %%mm1 \n\t"
-        ::"r"(dc)
-    );
-    __asm__ volatile(
-        "movq          %0, %%mm2 \n\t"
-        "movq          %1, %%mm3 \n\t"
-        "movq          %2, %%mm4 \n\t"
-        "movq          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movq       %%mm2, %0    \n\t"
-        "movq       %%mm3, %1    \n\t"
-        "movq       %%mm4, %2    \n\t"
-        "movq       %%mm5, %3    \n\t"
-        :"+m"(*(uint32_t*)(dest+0*linesize)),
-         "+m"(*(uint32_t*)(dest+1*linesize)),
-         "+m"(*(uint32_t*)(dest+2*linesize)),
-         "+m"(*(uint32_t*)(dest+3*linesize))
-    );
-}
-
-static void vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, int linesize,
-                                        int16_t *block)
-{
-    int dc = block[0];
-    dc = (3 * dc +  1) >> 1;
-    dc = (3 * dc + 16) >> 5;
-    __asm__ volatile(
-        "movd          %0, %%mm0 \n\t"
-        "pshufw $0, %%mm0, %%mm0 \n\t"
-        "pxor       %%mm1, %%mm1 \n\t"
-        "psubw      %%mm0, %%mm1 \n\t"
-        "packuswb   %%mm0, %%mm0 \n\t"
-        "packuswb   %%mm1, %%mm1 \n\t"
-        ::"r"(dc)
-    );
-    __asm__ volatile(
-        "movq          %0, %%mm2 \n\t"
-        "movq          %1, %%mm3 \n\t"
-        "movq          %2, %%mm4 \n\t"
-        "movq          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movq       %%mm2, %0    \n\t"
-        "movq       %%mm3, %1    \n\t"
-        "movq       %%mm4, %2    \n\t"
-        "movq       %%mm5, %3    \n\t"
-        :"+m"(*(uint32_t*)(dest+0*linesize)),
-         "+m"(*(uint32_t*)(dest+1*linesize)),
-         "+m"(*(uint32_t*)(dest+2*linesize)),
-         "+m"(*(uint32_t*)(dest+3*linesize))
-    );
-    dest += 4*linesize;
-    __asm__ volatile(
-        "movq          %0, %%mm2 \n\t"
-        "movq          %1, %%mm3 \n\t"
-        "movq          %2, %%mm4 \n\t"
-        "movq          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movq       %%mm2, %0    \n\t"
-        "movq       %%mm3, %1    \n\t"
-        "movq       %%mm4, %2    \n\t"
-        "movq       %%mm5, %3    \n\t"
-        :"+m"(*(uint32_t*)(dest+0*linesize)),
-         "+m"(*(uint32_t*)(dest+1*linesize)),
-         "+m"(*(uint32_t*)(dest+2*linesize)),
-         "+m"(*(uint32_t*)(dest+3*linesize))
-    );
-}
-
 #define FN_ASSIGN(OP, X, Y, INSN) \
     dsp->OP##vc1_mspel_pixels_tab[1][X+4*Y] = OP##vc1_mspel_mc##X##Y##INSN; \
     dsp->OP##vc1_mspel_pixels_tab[0][X+4*Y] = OP##vc1_mspel_mc##X##Y##_16##INSN
@@ -729,10 +482,5 @@ av_cold void ff_vc1dsp_init_mmxext(VC1DSPContext *dsp)
     FN_ASSIGN(avg_, 3, 1, _mmxext);
     FN_ASSIGN(avg_, 3, 2, _mmxext);
     FN_ASSIGN(avg_, 3, 3, _mmxext);
-
-    dsp->vc1_inv_trans_8x8_dc = vc1_inv_trans_8x8_dc_mmxext;
-    dsp->vc1_inv_trans_4x8_dc = vc1_inv_trans_4x8_dc_mmxext;
-    dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmxext;
-    dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmxext;
 }
 #endif /* HAVE_6REGS && HAVE_INLINE_ASM && HAVE_MMX_EXTERNAL */

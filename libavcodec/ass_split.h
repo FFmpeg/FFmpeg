@@ -69,6 +69,7 @@ typedef struct {
  * fields extracted from the [Events] section
  */
 typedef struct {
+    int   readorder;
     int   layer;    /**< higher numbered layers are drawn over lower numbered */
     int   start;    /**< start time of the dialog in centiseconds */
     int   end;      /**< end time of the dialog in centiseconds */
@@ -110,7 +111,7 @@ ASSSplitContext *ff_ass_split(const char *buf);
 
 /**
  * Split one or several ASS "Dialogue" lines from a string buffer and store
- * them in a already initialized context.
+ * them in an already initialized context.
  *
  * @param ctx Context previously initialized by ff_ass_split().
  * @param buf String containing the ASS "Dialogue" lines.
@@ -123,6 +124,20 @@ ASSSplitContext *ff_ass_split(const char *buf);
  */
 ASSDialog *ff_ass_split_dialog(ASSSplitContext *ctx, const char *buf,
                                int cache, int *number);
+
+/**
+ * Free a dialogue obtained from ff_ass_split_dialog2().
+ */
+void ff_ass_free_dialog(ASSDialog **dialogp);
+
+/**
+ * Split one ASS Dialogue line from a string buffer.
+ *
+ * @param ctx Context previously initialized by ff_ass_split().
+ * @param buf String containing the ASS "Dialogue" line.
+ * @return Pointer to the split ASSDialog. Must be freed with ff_ass_free_dialog()
+ */
+ASSDialog *ff_ass_split_dialog2(ASSSplitContext *ctx, const char *buf);
 
 /**
  * Free all the memory allocated for an ASSSplitContext.

@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
@@ -355,6 +356,10 @@ static int parse_pixel_format(AVCodecContext *avctx)
         /* 16 bpp */
         else if (bpp == 16 && r == 0xff && g == 0 && b == 0 && a == 0xff00)
             avctx->pix_fmt = AV_PIX_FMT_YA8;
+        else if (bpp == 16 && r == 0xff00 && g == 0 && b == 0 && a == 0xff) {
+            avctx->pix_fmt = AV_PIX_FMT_YA8;
+            ctx->postproc = DDS_SWAP_ALPHA;
+        }
         else if (bpp == 16 && r == 0xffff && g == 0 && b == 0 && a == 0)
             avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
         else if (bpp == 16 && r == 0xf800 && g == 0x7e0 && b == 0x1f && a == 0)
@@ -386,8 +391,6 @@ static int parse_pixel_format(AVCodecContext *avctx)
         ctx->postproc = DDS_NORMAL_MAP;
     else if (ycocg_classic && !ctx->compressed)
         ctx->postproc = DDS_RAW_YCOCG;
-    else if (avctx->pix_fmt == AV_PIX_FMT_YA8)
-        ctx->postproc = DDS_SWAP_ALPHA;
 
     /* ATI/NVidia variants sometimes add swizzling in bpp. */
     switch (bpp) {
@@ -508,7 +511,7 @@ static void run_postproc(AVCodecContext *avctx, AVFrame *frame)
 
             int d = (255 * 255 - x * x - y * y) / 2;
             if (d > 0)
-                z = rint(sqrtf(d));
+                z = lrint(sqrtf(d));
 
             src[0] = x;
             src[1] = y;

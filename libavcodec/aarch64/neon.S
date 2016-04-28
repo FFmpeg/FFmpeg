@@ -107,12 +107,12 @@
 .macro  transpose_4x4H  r0, r1, r2, r3, r4, r5, r6, r7
         trn1            \r4\().4H,  \r0\().4H,  \r1\().4H
         trn2            \r5\().4H,  \r0\().4H,  \r1\().4H
-        trn1            \r7\().4H,  \r3\().4H,  \r2\().4H
-        trn2            \r6\().4H,  \r3\().4H,  \r2\().4H
-        trn1            \r0\().2S,  \r4\().2S,  \r7\().2S
-        trn2            \r3\().2S,  \r4\().2S,  \r7\().2S
-        trn1            \r1\().2S,  \r5\().2S,  \r6\().2S
-        trn2            \r2\().2S,  \r5\().2S,  \r6\().2S
+        trn1            \r6\().4H,  \r2\().4H,  \r3\().4H
+        trn2            \r7\().4H,  \r2\().4H,  \r3\().4H
+        trn1            \r0\().2S,  \r4\().2S,  \r6\().2S
+        trn2            \r2\().2S,  \r4\().2S,  \r6\().2S
+        trn1            \r1\().2S,  \r5\().2S,  \r7\().2S
+        trn2            \r3\().2S,  \r5\().2S,  \r7\().2S
 .endm
 
 .macro  transpose_8x8H  r0, r1, r2, r3, r4, r5, r6, r7, r8, r9

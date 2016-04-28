@@ -35,32 +35,32 @@
 #include "avio_internal.h"
 #include "riff.h"
 
-static int find_expected_header(AVCodecContext *c, int size, int key_frame,
+static int find_expected_header(AVCodecParameters *p, int size, int key_frame,
                                 uint8_t out[64])
 {
-    int sample_rate = c->sample_rate;
+    int sample_rate = p->sample_rate;
 
     if (size > 4096)
         return 0;
 
     AV_WB24(out, 1);
 
-    if (c->codec_id == AV_CODEC_ID_MPEG4) {
+    if (p->codec_id == AV_CODEC_ID_MPEG4) {
         if (key_frame) {
             return 3;
         } else {
             out[3] = 0xB6;
             return 4;
         }
-    } else if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
-               c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+    } else if (p->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
+               p->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         return 3;
-    } else if (c->codec_id == AV_CODEC_ID_H264) {
+    } else if (p->codec_id == AV_CODEC_ID_H264) {
         return 3;
-    } else if (c->codec_id == AV_CODEC_ID_MP3 ||
-               c->codec_id == AV_CODEC_ID_MP2) {
+    } else if (p->codec_id == AV_CODEC_ID_MP3 ||
+               p->codec_id == AV_CODEC_ID_MP2) {
         int lsf, mpeg25, sample_rate_index, bitrate_index, frame_size;
-        int layer           = c->codec_id == AV_CODEC_ID_MP3 ? 3 : 2;
+        int layer           = p->codec_id == AV_CODEC_ID_MP3 ? 3 : 2;
         unsigned int header = 0xFFF00000;
 
         lsf           = sample_rate < (24000 + 32000) / 2;
@@ -102,12 +102,13 @@ static int find_expected_header(AVCodecContext *c, int size, int key_frame,
     return 0;
 }
 
-static int find_header_idx(AVFormatContext *s, AVCodecContext *c, int size, int frame_type)
+static int find_header_idx(AVFormatContext *s, AVCodecParameters *p, int size,
+                           int frame_type)
 {
     NUTContext *nut = s->priv_data;
     uint8_t out[64];
     int i;
-    int len = find_expected_header(c, size, frame_type, out);
+    int len = find_expected_header(p, size, frame_type, out);
 
     for (i = 1; i < nut->header_count; i++) {
         if (len == nut->header_len[i] && !memcmp(out, nut->header[i], len)) {
@@ -167,18 +168,18 @@ static void build_frame_code(AVFormatContext *s)
     for (stream_id = 0; stream_id < s->nb_streams; stream_id++) {
         int start2 = start + (end - start) * stream_id       / s->nb_streams;
         int end2   = start + (end - start) * (stream_id + 1) / s->nb_streams;
-        AVCodecContext *codec = s->streams[stream_id]->codec;
-        int is_audio          = codec->codec_type == AVMEDIA_TYPE_AUDIO;
+        AVCodecParameters *par        = s->streams[stream_id]->codecpar;
+        int is_audio                  = par->codec_type == AVMEDIA_TYPE_AUDIO;
         int intra_only        = /*codec->intra_only || */ is_audio;
         int pred_count;
         int frame_size = 0;
 
-        if (codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            frame_size = av_get_audio_frame_duration(codec, 0);
-            if (codec->codec_id == AV_CODEC_ID_VORBIS && !frame_size)
+        if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
+            frame_size = av_get_audio_frame_duration2(par, 0);
+            if (par->codec_id == AV_CODEC_ID_VORBIS && !frame_size)
                 frame_size = 64;
         } else {
-            AVRational f = av_div_q(codec->time_base, *nut->stream[stream_id].time_base);
+            AVRational f = av_div_q(av_inv_q(s->streams[stream_id]->avg_frame_rate), *nut->stream[stream_id].time_base);
             if (f.den == 1 && f.num>0)
                 frame_size = f.num;
         }
@@ -193,7 +194,7 @@ static void build_frame_code(AVFormatContext *s)
                 ft->stream_id = stream_id;
                 ft->size_mul  = 1;
                 if (is_audio)
-                    ft->header_idx = find_header_idx(s, codec, -1, key_frame);
+                    ft->header_idx = find_header_idx(s, par, -1, key_frame);
                 start2++;
             }
         }
@@ -201,9 +202,16 @@ static void build_frame_code(AVFormatContext *s)
         key_frame = intra_only;
 #if 1
         if (is_audio) {
-            int frame_bytes = codec->frame_size * (int64_t)codec->bit_rate /
-                              (8 * codec->sample_rate);
+            int frame_bytes;
             int pts;
+
+            if (par->block_align > 0) {
+                frame_bytes = par->block_align;
+            } else {
+                int frame_size = av_get_audio_frame_duration2(par, 0);
+                frame_bytes = frame_size * (int64_t)par->bit_rate / (8 * par->sample_rate);
+            }
+
             for (pts = 0; pts < 2; pts++) {
                 for (pred = 0; pred < 2; pred++) {
                     FrameCode *ft  = &nut->frame_code[start2];
@@ -212,7 +220,7 @@ static void build_frame_code(AVFormatContext *s)
                     ft->size_mul   = frame_bytes + 2;
                     ft->size_lsb   = frame_bytes + pred;
                     ft->pts_delta  = pts * frame_size;
-                    ft->header_idx = find_header_idx(s, codec, frame_bytes + pred, key_frame);
+                    ft->header_idx = find_header_idx(s, par, frame_bytes + pred, key_frame);
                     start2++;
                 }
             }
@@ -226,14 +234,14 @@ static void build_frame_code(AVFormatContext *s)
         }
 #endif
 
-        if (codec->has_b_frames) {
+        if (par->video_delay) {
             pred_count    = 5;
             pred_table[0] = -2;
             pred_table[1] = -1;
             pred_table[2] = 1;
             pred_table[3] = 3;
             pred_table[4] = 4;
-        } else if (codec->codec_id == AV_CODEC_ID_VORBIS) {
+        } else if (par->codec_id == AV_CODEC_ID_VORBIS) {
             pred_count    = 3;
             pred_table[0] = 2;
             pred_table[1] = 9;
@@ -259,7 +267,7 @@ static void build_frame_code(AVFormatContext *s)
                 ft->size_lsb  = index - start3;
                 ft->pts_delta = pred_table[pred];
                 if (is_audio)
-                    ft->header_idx = find_header_idx(s, codec, -1, key_frame);
+                    ft->header_idx = find_header_idx(s, par, -1, key_frame);
             }
         }
     }
@@ -418,18 +426,19 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
                               AVStream *st, int i)
 {
     NUTContext *nut       = avctx->priv_data;
-    AVCodecContext *codec = st->codec;
+    AVCodecParameters *par = st->codecpar;
 
     ff_put_v(bc, i);
-    switch (codec->codec_type) {
+    switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:    ff_put_v(bc, 0); break;
     case AVMEDIA_TYPE_AUDIO:    ff_put_v(bc, 1); break;
     case AVMEDIA_TYPE_SUBTITLE: ff_put_v(bc, 2); break;
     default:                    ff_put_v(bc, 3); break;
     }
     ff_put_v(bc, 4);
-    if (codec->codec_tag) {
-        avio_wl32(bc, codec->codec_tag);
+
+    if (par->codec_tag) {
+        avio_wl32(bc, par->codec_tag);
     } else {
         av_log(avctx, AV_LOG_ERROR, "No codec tag defined for stream %d\n", i);
         return AVERROR(EINVAL);
@@ -438,21 +447,21 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
     ff_put_v(bc, nut->stream[i].time_base - nut->time_base);
     ff_put_v(bc, nut->stream[i].msb_pts_shift);
     ff_put_v(bc, nut->stream[i].max_pts_distance);
-    ff_put_v(bc, codec->has_b_frames);
+    ff_put_v(bc, par->video_delay);
     avio_w8(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
 
-    ff_put_v(bc, codec->extradata_size);
-    avio_write(bc, codec->extradata, codec->extradata_size);
+    ff_put_v(bc, par->extradata_size);
+    avio_write(bc, par->extradata, par->extradata_size);
 
-    switch (codec->codec_type) {
+    switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        ff_put_v(bc, codec->sample_rate);
+        ff_put_v(bc, par->sample_rate);
         ff_put_v(bc, 1);
-        ff_put_v(bc, codec->channels);
+        ff_put_v(bc, par->channels);
         break;
     case AVMEDIA_TYPE_VIDEO:
-        ff_put_v(bc, codec->width);
-        ff_put_v(bc, codec->height);
+        ff_put_v(bc, par->width);
+        ff_put_v(bc, par->height);
 
         if (st->sample_aspect_ratio.num <= 0 ||
             st->sample_aspect_ratio.den <= 0) {
@@ -489,6 +498,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc)
     if (ret < 0)
         return ret;
 
+    ff_standardize_creation_time(s);
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
         count += add_info(dyn_bc, t->key, t->value);
 
@@ -522,12 +532,12 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id) {
         if (st->disposition & ff_nut_dispositions[i].flag)
             count += add_info(dyn_bc, "Disposition", ff_nut_dispositions[i].str);
     }
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         uint8_t buf[256];
         if (st->r_frame_rate.num>0 && st->r_frame_rate.den>0)
             snprintf(buf, sizeof(buf), "%d/%d", st->r_frame_rate.num, st->r_frame_rate.den);
         else
-            snprintf(buf, sizeof(buf), "%d/%d", st->codec->time_base.den, st->codec->time_base.num);
+            snprintf(buf, sizeof(buf), "%d/%d", st->avg_frame_rate.num, st->avg_frame_rate.den);
         count += add_info(dyn_bc, "r_frame_rate", buf);
     }
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
@@ -722,8 +732,8 @@ static int nut_write_header(AVFormatContext *s)
         AVRational time_base;
         ff_parse_specific_params(st, &time_base.den, &ssize, &time_base.num);
 
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->sample_rate) {
-            time_base = (AVRational) {1, st->codec->sample_rate};
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && st->codecpar->sample_rate) {
+            time_base = (AVRational) {1, st->codecpar->sample_rate};
         } else {
             time_base = ff_choose_timebase(s, st, 48000);
         }
@@ -1174,7 +1184,7 @@ static int nut_write_trailer(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
     AVIOContext *bc = s->pb, *dyn_bc;
-    int i, ret;
+    int ret;
 
     while (nut->header_count < 3)
         write_headers(s, bc);
@@ -1186,15 +1196,22 @@ static int nut_write_trailer(AVFormatContext *s)
         put_packet(nut, bc, dyn_bc, 1, INDEX_STARTCODE);
     }
 
+    return 0;
+}
+
+static void nut_write_deinit(AVFormatContext *s)
+{
+    NUTContext *nut = s->priv_data;
+    int i;
+
     ff_nut_free_sp(nut);
-    for (i=0; i<s->nb_streams; i++)
-        av_freep(&nut->stream[i].keyframe_pts);
+    if (nut->stream)
+        for (i=0; i<s->nb_streams; i++)
+            av_freep(&nut->stream[i].keyframe_pts);
 
     av_freep(&nut->stream);
     av_freep(&nut->chapter);
     av_freep(&nut->time_base);
-
-    return 0;
 }
 
 #define OFFSET(x) offsetof(NUTContext, x)
@@ -1227,6 +1244,7 @@ AVOutputFormat ff_nut_muxer = {
     .write_header   = nut_write_header,
     .write_packet   = nut_write_packet,
     .write_trailer  = nut_write_trailer,
+    .deinit         = nut_write_deinit,
     .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag      = ff_nut_codec_tags,
     .priv_class     = &class,

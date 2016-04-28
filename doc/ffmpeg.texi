@@ -297,7 +297,9 @@ see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) 
 -to and -t are mutually exclusive and -t has priority.
 
 @item -fs @var{limit_size} (@emph{output})
-Set the file size limit, expressed in bytes.
+Set the file size limit, expressed in bytes. No further chunk of bytes is written
+after the limit is exceeded. The size of the output file is slightly more than the
+requested file size.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
@@ -339,8 +341,8 @@ see @ref{date syntax,,the Date section in the ffmpeg-utils(1) manual,ffmpeg-util
 Set a metadata key/value pair.
 
 An optional @var{metadata_specifier} may be given to set metadata
-on streams or chapters. See @code{-map_metadata} documentation for
-details.
+on streams, chapters or programs. See @code{-map_metadata}
+documentation for details.
 
 This option overrides metadata set with @code{-map_metadata}. It is
 also possible to delete metadata by using an empty value.
@@ -355,9 +357,9 @@ To set the language of the first audio stream:
 ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
 
-@item -program [title=@var{title}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
+@item -program [title=@var{title}:][program_num=@var{program_num}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
 
-Creates a program with the specified @var{title} and adds the specified
+Creates a program with the specified @var{title}, @var{program_num} and adds the specified
 @var{stream}(s) to it.
 
 @item -target @var{type} (@emph{output})

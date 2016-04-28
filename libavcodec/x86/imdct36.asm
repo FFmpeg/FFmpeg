@@ -143,6 +143,12 @@ SECTION .text
 %endmacro
 
 %macro STORE 4
+%if cpuflag(sse4)
+    movss     [%3       ], %1
+    extractps [%3 +   %4], %1, 1
+    extractps [%3 + 2*%4], %1, 2
+    extractps [%3 + 3*%4], %1, 3
+%else
     movhlps %2, %1
     movss   [%3       ], %1
     movss   [%3 + 2*%4], %2
@@ -150,6 +156,7 @@ SECTION .text
     movss   [%3 +   %4], %1
     movhlps %2, %1
     movss   [%3 + 3*%4], %2
+%endif
 %endmacro
 
 %macro LOAD 4

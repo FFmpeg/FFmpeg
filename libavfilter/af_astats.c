@@ -98,14 +98,27 @@ static void reset_stats(AudioStatsContext *s)
 {
     int c;
 
-    memset(s->chstats, 0, sizeof(*s->chstats));
-
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
 
         p->min = p->min_sigma_x2 = DBL_MAX;
         p->max = p->max_sigma_x2 = DBL_MIN;
-        p->min_diff = p->max_diff = -1;
+        p->min_diff = DBL_MAX;
+        p->max_diff = DBL_MIN;
+        p->sigma_x = 0;
+        p->sigma_x2 = 0;
+        p->avg_sigma_x2 = 0;
+        p->min_sigma_x2 = 0;
+        p->max_sigma_x2 = 0;
+        p->min_run = 0;
+        p->max_run = 0;
+        p->min_runs = 0;
+        p->max_runs = 0;
+        p->diff1_sum = 0;
+        p->mask = 0;
+        p->min_count = 0;
+        p->max_count = 0;
+        p->nb_samples = 0;
     }
 }
 
@@ -119,6 +132,7 @@ static int config_output(AVFilterLink *outlink)
     s->nb_channels = outlink->channels;
     s->mult = exp((-1 / s->time_constant / outlink->sample_rate));
     s->tc_samples = 5 * s->time_constant * outlink->sample_rate + .5;
+    s->nb_frames = 0;
 
     reset_stats(s);
 
@@ -163,8 +177,8 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
     p->sigma_x += d;
     p->sigma_x2 += d * d;
     p->avg_sigma_x2 = p->avg_sigma_x2 * s->mult + (1.0 - s->mult) * d * d;
-    p->min_diff = FFMIN(p->min_diff == -1 ? DBL_MAX : p->min_diff, fabs(d - (p->min_diff == -1 ? DBL_MAX : p->last)));
-    p->max_diff = FFMAX(p->max_diff, fabs(d - (p->max_diff == -1 ? d : p->last)));
+    p->min_diff = FFMIN(p->min_diff, fabs(d - p->last));
+    p->max_diff = FFMAX(p->max_diff, fabs(d - p->last));
     p->diff1_sum += fabs(d - p->last);
     p->last = d;
     p->mask |= llrint(d * (UINT64_C(1) << 63));
@@ -269,6 +283,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     const double *src;
     int i, c;
 
+    if (s->reset_count > 0) {
+        if (s->nb_frames >= s->reset_count) {
+            reset_stats(s);
+            s->nb_frames = 0;
+        }
+        s->nb_frames++;
+    }
+
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBLP:
         for (c = 0; c < channels; c++) {
@@ -291,14 +313,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     if (s->metadata)
         set_metadata(s, metadata);
-
-    if (s->reset_count > 0) {
-        s->nb_frames++;
-        if (s->nb_frames >= s->reset_count) {
-            reset_stats(s);
-            s->nb_frames = 0;
-        }
-    }
 
     return ff_filter_frame(inlink->dst->outputs[0], buf);
 }

@@ -42,7 +42,7 @@ static int webp_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
     st = s->streams[0];
-    if (st->codec->codec_id != AV_CODEC_ID_WEBP) {
+    if (st->codecpar->codec_id != AV_CODEC_ID_WEBP) {
         av_log(s, AV_LOG_ERROR, "Only WebP is supported\n");
         return AVERROR(EINVAL);
     }
@@ -115,8 +115,8 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
                 avio_wl32(s->pb, 10);
                 avio_w8(s->pb, flags);
                 avio_wl24(s->pb, 0);
-                avio_wl24(s->pb, st->codec->width - 1);
-                avio_wl24(s->pb, st->codec->height - 1);
+                avio_wl24(s->pb, st->codecpar->width - 1);
+                avio_wl24(s->pb, st->codecpar->height - 1);
             }
             if (!trailer) {
                 avio_write(s->pb, "ANIM", 4);
@@ -131,8 +131,8 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
             avio_wl32(s->pb, 16 + w->last_pkt.size - skip);
             avio_wl24(s->pb, 0);
             avio_wl24(s->pb, 0);
-            avio_wl24(s->pb, st->codec->width - 1);
-            avio_wl24(s->pb, st->codec->height - 1);
+            avio_wl24(s->pb, st->codecpar->width - 1);
+            avio_wl24(s->pb, st->codecpar->height - 1);
             if (w->last_pkt.pts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE) {
                 avio_wl24(s->pb, pts - w->last_pkt.pts);
             } else

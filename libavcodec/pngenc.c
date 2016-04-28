@@ -766,12 +766,15 @@ static int apng_encode_frame(AVCodecContext *avctx, const AVFrame *pict,
 
             // Do disposal
             if (last_fctl_chunk.dispose_op != APNG_DISPOSE_OP_PREVIOUS) {
-                memcpy(diffFrame->data[0], s->last_frame->data[0],
-                       s->last_frame->linesize[0] * s->last_frame->height);
+                diffFrame->width = pict->width;
+                diffFrame->height = pict->height;
+                ret = av_frame_copy(diffFrame, s->last_frame);
+                if (ret < 0)
+                    goto fail;
 
                 if (last_fctl_chunk.dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
                     for (y = last_fctl_chunk.y_offset; y < last_fctl_chunk.y_offset + last_fctl_chunk.height; ++y) {
-                        size_t row_start = s->last_frame->linesize[0] * y + bpp * last_fctl_chunk.x_offset;
+                        size_t row_start = diffFrame->linesize[0] * y + bpp * last_fctl_chunk.x_offset;
                         memset(diffFrame->data[0] + row_start, 0, bpp * last_fctl_chunk.width);
                     }
                 }
@@ -779,8 +782,11 @@ static int apng_encode_frame(AVCodecContext *avctx, const AVFrame *pict,
                 if (!s->prev_frame)
                     continue;
 
-                memcpy(diffFrame->data[0], s->prev_frame->data[0],
-                       s->prev_frame->linesize[0] * s->prev_frame->height);
+                diffFrame->width = pict->width;
+                diffFrame->height = pict->height;
+                ret = av_frame_copy(diffFrame, s->prev_frame);
+                if (ret < 0)
+                    goto fail;
             }
 
             // Do inverse blending
@@ -945,13 +951,12 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
             }
 
             // Do disposal, but not blending
-            memcpy(s->prev_frame->data[0], s->last_frame->data[0],
-                   s->last_frame->linesize[0] * s->last_frame->height);
+            av_frame_copy(s->prev_frame, s->last_frame);
             if (s->last_frame_fctl.dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
                 uint32_t y;
                 uint8_t bpp = (s->bits_per_pixel + 7) >> 3;
                 for (y = s->last_frame_fctl.y_offset; y < s->last_frame_fctl.y_offset + s->last_frame_fctl.height; ++y) {
-                    size_t row_start = s->last_frame->linesize[0] * y + bpp * s->last_frame_fctl.x_offset;
+                    size_t row_start = s->prev_frame->linesize[0] * y + bpp * s->last_frame_fctl.x_offset;
                     memset(s->prev_frame->data[0] + row_start, 0, bpp * s->last_frame_fctl.width);
                 }
             }
@@ -1002,9 +1007,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ff_huffyuvencdsp_init(&s->hdsp);
 
-    s->filter_type = av_clip(avctx->prediction_method,
-                             PNG_FILTER_VALUE_NONE,
-                             PNG_FILTER_VALUE_MIXED);
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        s->filter_type = av_clip(avctx->prediction_method,
+                                 PNG_FILTER_VALUE_NONE,
+                                 PNG_FILTER_VALUE_MIXED);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (avctx->pix_fmt == AV_PIX_FMT_MONOBLACK)
         s->filter_type = PNG_FILTER_VALUE_NONE;
 
@@ -1090,7 +1101,14 @@ static av_cold int png_enc_close(AVCodecContext *avctx)
 static const AVOption options[] = {
     {"dpi", "Set image resolution (in dots per inch)",  OFFSET(dpi), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 0x10000, VE},
     {"dpm", "Set image resolution (in dots per meter)", OFFSET(dpm), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 0x10000, VE},
-    { NULL }
+    { "pred", "Prediction method", OFFSET(filter_type), AV_OPT_TYPE_INT, { .i64 = PNG_FILTER_VALUE_NONE }, PNG_FILTER_VALUE_NONE, PNG_FILTER_VALUE_MIXED, VE, "pred" },
+        { "none",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_NONE },  INT_MIN, INT_MAX, VE, "pred" },
+        { "sub",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_SUB },   INT_MIN, INT_MAX, VE, "pred" },
+        { "up",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_UP },    INT_MIN, INT_MAX, VE, "pred" },
+        { "avg",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_AVG },   INT_MIN, INT_MAX, VE, "pred" },
+        { "paeth", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_PAETH }, INT_MIN, INT_MAX, VE, "pred" },
+        { "mixed", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PNG_FILTER_VALUE_MIXED }, INT_MIN, INT_MAX, VE, "pred" },
+    { NULL},
 };
 
 static const AVClass pngenc_class = {

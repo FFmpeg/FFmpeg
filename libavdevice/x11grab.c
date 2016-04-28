@@ -355,11 +355,11 @@ static int x11grab_read_header(AVFormatContext *s1)
     x11grab->image      = image;
     x11grab->use_shm    = use_shm;
 
-    ret = pixfmt_from_image(s1, image, &st->codec->pix_fmt);
+    ret = pixfmt_from_image(s1, image, &st->codecpar->format);
     if (ret < 0)
         goto out;
 
-    if (st->codec->pix_fmt == AV_PIX_FMT_PAL8) {
+    if (st->codecpar->format == AV_PIX_FMT_PAL8) {
         color_map = DefaultColormap(dpy, screen);
         for (i = 0; i < 256; ++i)
             color[i].pixel = i;
@@ -372,12 +372,13 @@ static int x11grab_read_header(AVFormatContext *s1)
     }
 
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->width      = x11grab->width;
-    st->codec->height     = x11grab->height;
-    st->codec->time_base  = x11grab->time_base;
-    st->codec->bit_rate   = x11grab->frame_size * 1 / av_q2d(x11grab->time_base) * 8;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->width      = x11grab->width;
+    st->codecpar->height     = x11grab->height;
+    st->codecpar->bit_rate   = x11grab->frame_size * 1 / av_q2d(x11grab->time_base) * 8;
+
+    st->avg_frame_rate       = av_inv_q(x11grab->time_base);
 
 out:
     av_free(dpyname);
@@ -526,22 +527,22 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int64_t curtime, delay;
     struct timespec ts;
 
-    /* Calculate the time of the next frame */
-    s->time_frame += INT64_C(1000000);
-
     /* wait based on the frame rate */
     for (;;) {
         curtime = av_gettime();
         delay   = s->time_frame * av_q2d(s->time_base) - curtime;
         if (delay <= 0) {
-            if (delay < INT64_C(-1000000) * av_q2d(s->time_base))
-                s->time_frame += INT64_C(1000000);
             break;
         }
         ts.tv_sec  = delay / 1000000;
         ts.tv_nsec = (delay % 1000000) * 1000;
         nanosleep(&ts, NULL);
     }
+
+    /* Calculate the time of the next frame */
+    do {
+      s->time_frame += INT64_C(1000000);
+    } while ((s->time_frame * av_q2d(s->time_base) - curtime) <= 0);
 
     av_init_packet(pkt);
     pkt->data = image->data;

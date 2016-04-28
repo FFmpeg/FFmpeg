@@ -1,3 +1,22 @@
+@chapter Protocol Options
+@c man begin PROTOCOL OPTIONS
+
+The libavformat library provides some generic global options, which
+can be set on all the protocols. In addition each protocol may support
+so-called private options, which are specific for that component.
+
+The list of supported options follows:
+
+@table @option
+@item protocol_whitelist @var{list} (@emph{input})
+Set a ","-separated list of allowed protocols. "ALL" matches all protocols. Protocols
+prefixed by "-" are disabled.
+All protocols are allowed by default but protocols used by an another
+protocol (nested protocols) are restricted to a per protocol subset.
+@end table
+
+@c man end PROTOCOL OPTIONS
+
 @chapter Protocols
 @c man begin PROTOCOLS
 
@@ -16,6 +35,14 @@ particular protocol using the option
 
 The option "-protocols" of the ff* tools will display the list of
 supported protocols.
+
+All protocols accept the following options:
+
+@table @option
+@item rw_timeout
+Maximum time to wait for (network) read/write operations to complete,
+in microseconds.
+@end table
 
 A description of the currently available protocols follows.
 
@@ -197,6 +224,17 @@ it, unless special care is taken (tests, customized server configuration
 etc.). Different FTP servers behave in different way during seek
 operation. ff* tools may produce incomplete content due to server limitations.
 
+This protocol accepts the following options:
+
+@table @option
+@item follow
+If set to 1, the protocol will retry reading at the end of the file, allowing
+reading files that still are being written. In order for this to terminate,
+you either need to use the rw_timeout option, or use the interrupt callback
+(for API users).
+
+@end table
+
 @section gopher
 
 Gopher protocol.
@@ -239,6 +277,9 @@ If set to 1 use chunked Transfer-Encoding for posts, default is 1.
 
 @item content_type
 Set a specific content type for the POST messages.
+
+@item http_proxy
+set HTTP proxy to tunnel through e.g. http://example.com:1234
 
 @item headers
 Set custom HTTP headers, can override built in default headers. The
@@ -1144,6 +1185,12 @@ than this time interval, raise error.
 
 @item listen_timeout=@var{milliseconds}
 Set listen timeout, expressed in milliseconds.
+
+@item recv_buffer_size=@var{bytes}
+Set receive buffer size, expressed bytes.
+
+@item send_buffer_size=@var{bytes}
+Set send buffer size, expressed bytes.
 @end table
 
 The following example shows how to setup a listening TCP connection

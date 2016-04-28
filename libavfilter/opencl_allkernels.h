@@ -18,12 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_OPENCL_ALLKERNEL_H
-#define AVFILTER_OPENCL_ALLKERNEL_H
+#ifndef AVFILTER_OPENCL_ALLKERNELS_H
+#define AVFILTER_OPENCL_ALLKERNELS_H
 
 #include "avfilter.h"
 #include "config.h"
 
 void ff_opencl_register_filter_kernel_code_all(void);
 
-#endif /* AVFILTER_OPENCL_ALLKERNEL_H */
+#endif /* AVFILTER_OPENCL_ALLKERNELS_H */

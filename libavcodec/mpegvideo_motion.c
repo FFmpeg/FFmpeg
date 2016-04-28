@@ -544,7 +544,7 @@ static inline void qpel_motion(MpegEncContext *s,
         s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr_y,
                                  s->linesize, s->linesize,
                                  17, 17 + field_based,
-                                 src_x, src_y << field_based,
+                                 src_x, src_y * (1 << field_based),
                                  s->h_edge_pos, s->v_edge_pos);
         ptr_y = s->sc.edge_emu_buffer;
         if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
@@ -553,12 +553,12 @@ static inline void qpel_motion(MpegEncContext *s,
             s->vdsp.emulated_edge_mc(ubuf, ptr_cb,
                                      s->uvlinesize, s->uvlinesize,
                                      9, 9 + field_based,
-                                     uvsrc_x, uvsrc_y << field_based,
+                                     uvsrc_x, uvsrc_y * (1 << field_based),
                                      s->h_edge_pos >> 1, s->v_edge_pos >> 1);
             s->vdsp.emulated_edge_mc(vbuf, ptr_cr,
                                      s->uvlinesize, s->uvlinesize,
                                      9, 9 + field_based,
-                                     uvsrc_x, uvsrc_y << field_based,
+                                     uvsrc_x, uvsrc_y * (1 << field_based),
                                      s->h_edge_pos >> 1, s->v_edge_pos >> 1);
             ptr_cb = ubuf;
             ptr_cr = vbuf;

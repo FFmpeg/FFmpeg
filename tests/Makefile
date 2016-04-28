@@ -115,6 +115,7 @@ include $(SRC_PATH)/tests/fate/cdxl.mak
 include $(SRC_PATH)/tests/fate/checkasm.mak
 include $(SRC_PATH)/tests/fate/concatdec.mak
 include $(SRC_PATH)/tests/fate/cover-art.mak
+include $(SRC_PATH)/tests/fate/dca.mak
 include $(SRC_PATH)/tests/fate/demux.mak
 include $(SRC_PATH)/tests/fate/dfa.mak
 include $(SRC_PATH)/tests/fate/dnxhd.mak
@@ -199,7 +200,7 @@ $(FATE_EXTERN):
 	@echo "$@ requires external samples and SAMPLES not specified"; false
 endif
 
-FATE_UTILS = base64 tiny_psnr tiny_ssim
+FATE_UTILS = base64 tiny_psnr tiny_ssim audiomatch
 
 TOOL = ffmpeg
 
@@ -215,9 +216,10 @@ fate-list:
 
 coverage.info: TAG = LCOV
 coverage.info:
-	$(M)lcov -q -d $(CURDIR) -b $(SRC_PATH) --capture | \
-	    sed "s,$(CURDIR)/\./,$(CURDIR)/," > $@
-	$(M)lcov -q --remove $@ "/usr*" -o $@
+	$(M)lcov -q -d $(CURDIR) -b $(patsubst src%,./,$(SRC_LINK)) --capture | \
+	    sed "s,$(CURDIR)/\./,$(CURDIR)/," > $@.in
+	$(M)lcov -q --remove $@.in "/usr*" > $@
+	$(Q)$(RM) $@.in
 
 lcov:  TAG = GENHTML
 lcov: coverage.info

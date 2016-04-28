@@ -75,8 +75,8 @@ static inline double getpix(void *priv, double x, double y, int plane)
     AVFrame *picref = geq->picref;
     const uint8_t *src = picref->data[plane];
     const int linesize = picref->linesize[plane];
-    const int w = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(picref->width,  geq->hsub) : picref->width;
-    const int h = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(picref->height, geq->vsub) : picref->height;
+    const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->width,  geq->hsub) : picref->width;
+    const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->height, geq->vsub) : picref->height;
 
     if (!src)
         return 0;
@@ -224,8 +224,8 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
         int x, y;
         uint8_t *dst = out->data[plane];
         const int linesize = out->linesize[plane];
-        const int w = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
-        const int h = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
+        const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
+        const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
 
         values[VAR_W]  = w;
         values[VAR_H]  = h;

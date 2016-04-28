@@ -23,6 +23,7 @@
 #include <opus_multistream.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -100,7 +101,7 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
                opus_strerror(ret));
 #else
     {
-        double gain_lin = pow(10, gain_db / (20.0 * 256));
+        double gain_lin = ff_exp10(gain_db / (20.0 * 256));
         if (avc->sample_fmt == AV_SAMPLE_FMT_FLT)
             opus->gain.d = gain_lin;
         else

@@ -71,7 +71,7 @@ void av_packet_free(AVPacket **pkt)
 static int packet_alloc(AVBufferRef **buf, int size)
 {
     int ret;
-    if ((unsigned)size >= (unsigned)size + AV_INPUT_BUFFER_PADDING_SIZE)
+    if (size < 0 || size >= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR(EINVAL);
 
     ret = av_buffer_realloc(buf, size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -274,29 +274,47 @@ void av_free_packet(AVPacket *pkt)
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-                                 int size)
+int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                            uint8_t *data, size_t size)
 {
     int elems = pkt->side_data_elems;
 
     if ((unsigned)elems + 1 > INT_MAX / sizeof(*pkt->side_data))
-        return NULL;
-    if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
-        return NULL;
+        return AVERROR(ERANGE);
 
     pkt->side_data = av_realloc(pkt->side_data,
                                 (elems + 1) * sizeof(*pkt->side_data));
     if (!pkt->side_data)
-        return NULL;
+        return AVERROR(ENOMEM);
 
-    pkt->side_data[elems].data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!pkt->side_data[elems].data)
-        return NULL;
+    pkt->side_data[elems].data = data;
     pkt->side_data[elems].size = size;
     pkt->side_data[elems].type = type;
     pkt->side_data_elems++;
 
-    return pkt->side_data[elems].data;
+    return 0;
+}
+
+
+uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                                 int size)
+{
+    int ret;
+    uint8_t *data;
+
+    if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+        return NULL;
+    data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!data)
+        return NULL;
+
+    ret = av_packet_add_side_data(pkt, type, data, size);
+    if (ret < 0) {
+        av_freep(&data);
+        return NULL;
+    }
+
+    return data;
 }
 
 uint8_t *av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
@@ -317,22 +335,24 @@ uint8_t *av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
 const char *av_packet_side_data_name(enum AVPacketSideDataType type)
 {
     switch(type) {
-    case AV_PKT_DATA_PALETTE:                   return "Palette";
-    case AV_PKT_DATA_NEW_EXTRADATA:             return "New Extradata";
-    case AV_PKT_DATA_PARAM_CHANGE:              return "Param Change";
-    case AV_PKT_DATA_H263_MB_INFO:              return "H263 MB Info";
-    case AV_PKT_DATA_REPLAYGAIN:                return "Replay Gain";
-    case AV_PKT_DATA_DISPLAYMATRIX:             return "Display Matrix";
-    case AV_PKT_DATA_STEREO3D:                  return "Stereo 3D";
-    case AV_PKT_DATA_AUDIO_SERVICE_TYPE:        return "Audio Service Type";
-    case AV_PKT_DATA_SKIP_SAMPLES:              return "Skip Samples";
-    case AV_PKT_DATA_JP_DUALMONO:               return "JP Dual Mono";
-    case AV_PKT_DATA_STRINGS_METADATA:          return "Strings Metadata";
-    case AV_PKT_DATA_SUBTITLE_POSITION:         return "Subtitle Position";
-    case AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL:  return "Matroska BlockAdditional";
-    case AV_PKT_DATA_WEBVTT_IDENTIFIER:         return "WebVTT ID";
-    case AV_PKT_DATA_WEBVTT_SETTINGS:           return "WebVTT Settings";
-    case AV_PKT_DATA_METADATA_UPDATE:           return "Metadata Update";
+    case AV_PKT_DATA_PALETTE:                    return "Palette";
+    case AV_PKT_DATA_NEW_EXTRADATA:              return "New Extradata";
+    case AV_PKT_DATA_PARAM_CHANGE:               return "Param Change";
+    case AV_PKT_DATA_H263_MB_INFO:               return "H263 MB Info";
+    case AV_PKT_DATA_REPLAYGAIN:                 return "Replay Gain";
+    case AV_PKT_DATA_DISPLAYMATRIX:              return "Display Matrix";
+    case AV_PKT_DATA_STEREO3D:                   return "Stereo 3D";
+    case AV_PKT_DATA_AUDIO_SERVICE_TYPE:         return "Audio Service Type";
+    case AV_PKT_DATA_SKIP_SAMPLES:               return "Skip Samples";
+    case AV_PKT_DATA_JP_DUALMONO:                return "JP Dual Mono";
+    case AV_PKT_DATA_STRINGS_METADATA:           return "Strings Metadata";
+    case AV_PKT_DATA_SUBTITLE_POSITION:          return "Subtitle Position";
+    case AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL:   return "Matroska BlockAdditional";
+    case AV_PKT_DATA_WEBVTT_IDENTIFIER:          return "WebVTT ID";
+    case AV_PKT_DATA_WEBVTT_SETTINGS:            return "WebVTT Settings";
+    case AV_PKT_DATA_METADATA_UPDATE:            return "Metadata Update";
+    case AV_PKT_DATA_MPEGTS_STREAM_ID:           return "MPEGTS Stream ID";
+    case AV_PKT_DATA_MASTERING_DISPLAY_METADATA: return "Mastering display metadata";
     }
     return NULL;
 }
@@ -383,10 +403,12 @@ int av_packet_split_side_data(AVPacket *pkt){
         p = pkt->data + pkt->size - 8 - 5;
         for (i=1; ; i++){
             size = AV_RB32(p);
-            if (size>INT_MAX || p - pkt->data < size)
+            if (size>INT_MAX - 5 || p - pkt->data < size)
                 return 0;
             if (p[4]&128)
                 break;
+            if (p - pkt->data < size + 5)
+                return 0;
             p-= size+5;
         }
 
@@ -397,7 +419,7 @@ int av_packet_split_side_data(AVPacket *pkt){
         p= pkt->data + pkt->size - 8 - 5;
         for (i=0; ; i++){
             size= AV_RB32(p);
-            av_assert0(size<=INT_MAX && p - pkt->data >= size);
+            av_assert0(size<=INT_MAX - 5 && p - pkt->data >= size);
             pkt->side_data[i].data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
             pkt->side_data[i].size = size;
             pkt->side_data[i].type = p[4]&127;
@@ -579,6 +601,8 @@ void av_packet_move_ref(AVPacket *dst, AVPacket *src)
 {
     *dst = *src;
     av_init_packet(src);
+    src->data = NULL;
+    src->size = 0;
 }
 
 void av_packet_rescale_ts(AVPacket *pkt, AVRational src_tb, AVRational dst_tb)

@@ -26,9 +26,17 @@
  * RTMP Diffie-Hellmann utilities
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include "config.h"
-#include "rtmpdh.h"
+
+#include "libavutil/attributes.h"
+#include "libavutil/error.h"
+#include "libavutil/mem.h"
 #include "libavutil/random_seed.h"
+
+#include "rtmpdh.h"
 
 #define P1024                                          \
     "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
@@ -97,7 +105,16 @@
         mpz_fdiv_r_2exp(bn, bn, num_bits);            \
     } while (0)
 #elif CONFIG_GCRYPT
-#define bn_new(bn)                  bn = gcry_mpi_new(1)
+#define bn_new(bn)                                              \
+    do {                                                        \
+        if (!gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P)) { \
+            if (!gcry_check_version("1.5.4"))                   \
+                return AVERROR(EINVAL);                         \
+            gcry_control(GCRYCTL_DISABLE_SECMEM, 0);            \
+            gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);   \
+        }                                                       \
+        bn = gcry_mpi_new(1);                                   \
+    } while (0)
 #define bn_free(bn)                 gcry_mpi_release(bn)
 #define bn_set_word(bn, w)          gcry_mpi_set_ui(bn, w)
 #define bn_cmp(a, b)                gcry_mpi_cmp(a, b)
@@ -354,6 +371,9 @@ fail:
 }
 
 #ifdef TEST
+
+#include <stdio.h>
+
 static int test_random_shared_secret(void)
 {
     FF_DH *peer1 = NULL, *peer2 = NULL;

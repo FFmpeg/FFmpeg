@@ -240,7 +240,7 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         int i;
 
         r = CoGetMalloc(1, &co_malloc);
-        if (r = S_OK)
+        if (r != S_OK)
             goto fail1;
         r = CreateBindCtx(0, &bind_ctx);
         if (r != S_OK)
@@ -918,7 +918,7 @@ dshow_add_device(AVFormatContext *avctx,
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     AM_MEDIA_TYPE type;
-    AVCodecContext *codec;
+    AVCodecParameters *par;
     AVStream *st;
     int ret = AVERROR(EIO);
 
@@ -933,7 +933,7 @@ dshow_add_device(AVFormatContext *avctx,
 
     libAVPin_ConnectionMediaType(ctx->capture_pin[devtype], &type);
 
-    codec = st->codec;
+    par = st->codecpar;
     if (devtype == VideoDevice) {
         BITMAPINFOHEADER *bih = NULL;
         AVRational time_base;
@@ -952,33 +952,34 @@ dshow_add_device(AVFormatContext *avctx,
             goto error;
         }
 
-        codec->time_base  = time_base;
-        codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        codec->width      = bih->biWidth;
-        codec->height     = bih->biHeight;
-        codec->codec_tag  = bih->biCompression;
-        codec->pix_fmt    = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+        st->avg_frame_rate = av_inv_q(time_base);
+
+        par->codec_type = AVMEDIA_TYPE_VIDEO;
+        par->width      = bih->biWidth;
+        par->height     = bih->biHeight;
+        par->codec_tag  = bih->biCompression;
+        par->format     = dshow_pixfmt(bih->biCompression, bih->biBitCount);
         if (bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
             av_log(avctx, AV_LOG_DEBUG, "attempt to use full range for HDYC...\n");
-            codec->color_range = AVCOL_RANGE_MPEG; // just in case it needs this...
+            par->color_range = AVCOL_RANGE_MPEG; // just in case it needs this...
         }
-        if (codec->pix_fmt == AV_PIX_FMT_NONE) {
+        if (par->format == AV_PIX_FMT_NONE) {
             const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
-            codec->codec_id = av_codec_get_id(tags, bih->biCompression);
-            if (codec->codec_id == AV_CODEC_ID_NONE) {
+            par->codec_id = av_codec_get_id(tags, bih->biCompression);
+            if (par->codec_id == AV_CODEC_ID_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
                                  "Please report type 0x%X.\n", (int) bih->biCompression);
                 return AVERROR_PATCHWELCOME;
             }
-            codec->bits_per_coded_sample = bih->biBitCount;
+            par->bits_per_coded_sample = bih->biBitCount;
         } else {
-            codec->codec_id = AV_CODEC_ID_RAWVIDEO;
+            par->codec_id = AV_CODEC_ID_RAWVIDEO;
             if (bih->biCompression == BI_RGB || bih->biCompression == BI_BITFIELDS) {
-                codec->bits_per_coded_sample = bih->biBitCount;
-                codec->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
-                if (codec->extradata) {
-                    codec->extradata_size = 9;
-                    memcpy(codec->extradata, "BottomUp", 9);
+                par->bits_per_coded_sample = bih->biBitCount;
+                par->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (par->extradata) {
+                    par->extradata_size = 9;
+                    memcpy(par->extradata, "BottomUp", 9);
                 }
             }
         }
@@ -993,11 +994,11 @@ dshow_add_device(AVFormatContext *avctx,
             goto error;
         }
 
-        codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        codec->sample_fmt  = sample_fmt_bits_per_sample(fx->wBitsPerSample);
-        codec->codec_id    = waveform_codec_id(codec->sample_fmt);
-        codec->sample_rate = fx->nSamplesPerSec;
-        codec->channels    = fx->nChannels;
+        par->codec_type  = AVMEDIA_TYPE_AUDIO;
+        par->format      = sample_fmt_bits_per_sample(fx->wBitsPerSample);
+        par->codec_id    = waveform_codec_id(par->format);
+        par->sample_rate = fx->nSamplesPerSec;
+        par->channels    = fx->nChannels;
     }
 
     avpriv_set_pts_info(st, 64, 1, 10000000);

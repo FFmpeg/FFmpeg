@@ -760,7 +760,7 @@ static void ogg_validate_keyframe(AVFormatContext *s, int idx, int pstart, int p
     struct ogg_stream *os = ogg->streams + idx;
     int invalid = 0;
     if (psize) {
-        switch (s->streams[idx]->codec->codec_id) {
+        switch (s->streams[idx]->codecpar->codec_id) {
         case AV_CODEC_ID_THEORA:
             invalid = !!(os->pflags & AV_PKT_FLAG_KEY) != !(os->buf[pstart] & 0x40);
         break;
@@ -864,7 +864,7 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
            && !ogg_packet(s, &i, &pstart, &psize, pos_arg)) {
         if (i == stream_index) {
             struct ogg_stream *os = ogg->streams + stream_index;
-            // Do not trust the last timestamps of a ogm video
+            // Do not trust the last timestamps of an ogm video
             if (    (os->flags & OGG_FLAG_EOS)
                 && !(os->flags & OGG_FLAG_BOS)
                 && os->codec == &ff_ogm_video_codec)
@@ -903,7 +903,7 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
 
     // Try seeking to a keyframe first. If this fails (very possible),
     // av_seek_frame will fall back to ignoring keyframes
-    if (s->streams[stream_index]->codec->codec_type == AVMEDIA_TYPE_VIDEO
+    if (s->streams[stream_index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO
         && !(flags & AVSEEK_FLAG_ANY))
         os->keyframe_seek = 1;
 

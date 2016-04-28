@@ -125,7 +125,6 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
         desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
-        size[0] = (size[0] + 3) & ~3;
         data[1] = ptr + size[0]; /* palette is stored here as 256 32 bits words */
         return size[0] + 256 * 4;
     }
@@ -216,8 +215,13 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
         av_free(buf);
         return ret;
     }
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
         avpriv_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
+        if (align < 4) {
+            av_log(NULL, AV_LOG_ERROR, "Formats with a palette require a minimum alignment of 4\n");
+            return AVERROR(EINVAL);
+        }
+    }
 
     if ((desc->flags & AV_PIX_FMT_FLAG_PAL ||
          desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) &&
@@ -325,7 +329,7 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                 return;
             }
             if (i == 1 || i == 2) {
-                h = FF_CEIL_RSHIFT(height, desc->log2_chroma_h);
+                h = AV_CEIL_RSHIFT(height, desc->log2_chroma_h);
             }
             av_image_copy_plane(dst_data[i], dst_linesizes[i],
                                 src_data[i], src_linesizes[i],
@@ -370,7 +374,7 @@ int av_image_get_buffer_size(enum AVPixelFormat pix_fmt,
 
     // do not include palette for these pseudo-paletted formats
     if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
-        return width * height;
+        return FFALIGN(width, align) * height;
 
     return av_image_fill_arrays(data, linesize, NULL, pix_fmt,
                                 width, height, align);
@@ -385,6 +389,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
     int i, j, nb_planes = 0, linesize[4];
     int size = av_image_get_buffer_size(pix_fmt, width, height, align);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    int ret;
 
     if (size > dst_size || size < 0 || !desc)
         return AVERROR(EINVAL);
@@ -394,7 +399,9 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
 
     nb_planes++;
 
-    av_image_fill_linesizes(linesize, pix_fmt, width);
+    ret = av_image_fill_linesizes(linesize, pix_fmt, width);
+    av_assert0(ret >= 0); // was checked previously
+
     for (i = 0; i < nb_planes; i++) {
         int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
         const uint8_t *src = src_data[i];
@@ -408,7 +415,8 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
     }
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
-        uint32_t *d32 = (uint32_t *)(((size_t)dst + 3) & ~3);
+        uint32_t *d32 = (uint32_t *)dst;
+
         for (i = 0; i<256; i++)
             AV_WL32(d32 + i, AV_RN32(src_data[1] + 4*i));
     }

@@ -132,16 +132,16 @@ static int au_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_tag   = id;
-    st->codec->codec_id    = codec;
-    st->codec->channels    = channels;
-    st->codec->sample_rate = rate;
-    st->codec->bits_per_coded_sample = bps;
-    st->codec->bit_rate    = channels * rate * bps;
-    st->codec->block_align = FFMAX(bps * st->codec->channels / 8, 1);
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_tag   = id;
+    st->codecpar->codec_id    = codec;
+    st->codecpar->channels    = channels;
+    st->codecpar->sample_rate = rate;
+    st->codecpar->bits_per_coded_sample = bps;
+    st->codecpar->bit_rate    = channels * rate * bps;
+    st->codecpar->block_align = FFMAX(bps * st->codecpar->channels / 8, 1);
     if (data_size != AU_UNKNOWN_SIZE)
-    st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * (int64_t)bps);
+        st->duration = (((int64_t)data_size)<<3) / (st->codecpar->channels * (int64_t)bps);
 
     st->start_time = 0;
     avpriv_set_pts_info(st, 64, 1, rate);
@@ -168,15 +168,15 @@ AVInputFormat ff_au_demuxer = {
 static int au_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
         return AVERROR(EINVAL);
     }
 
-    enc->codec_tag = ff_codec_get_tag(codec_au_tags, enc->codec_id);
-    if (!enc->codec_tag) {
+    par->codec_tag = ff_codec_get_tag(codec_au_tags, par->codec_id);
+    if (!par->codec_tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR(EINVAL);
     }
@@ -184,9 +184,9 @@ static int au_write_header(AVFormatContext *s)
     ffio_wfourcc(pb, ".snd");                   /* magic number */
     avio_wb32(pb, AU_HEADER_SIZE);              /* header size */
     avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
-    avio_wb32(pb, enc->codec_tag);              /* codec ID */
-    avio_wb32(pb, enc->sample_rate);
-    avio_wb32(pb, enc->channels);
+    avio_wb32(pb, par->codec_tag);              /* codec ID */
+    avio_wb32(pb, par->sample_rate);
+    avio_wb32(pb, par->channels);
     avio_wb64(pb, 0); /* annotation field */
     avio_flush(pb);
 

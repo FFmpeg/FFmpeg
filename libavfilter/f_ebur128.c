@@ -33,6 +33,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/xga_font_data.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
@@ -435,7 +436,7 @@ static int config_audio_output(AVFilterLink *outlink)
     return 0;
 }
 
-#define ENERGY(loudness) (pow(10, ((loudness) + 0.691) / 10.))
+#define ENERGY(loudness) (ff_exp10(((loudness) + 0.691) / 10.))
 #define LOUDNESS(energy) (-0.691 + 10 * log10(energy))
 #define DBFS(energy) (20 * log10(energy))
 
@@ -663,12 +664,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     nb_integrated  += nb_v;
                     integrated_sum += nb_v * ebur128->i400.histogram[i].energy;
                 }
-                if (nb_integrated)
+                if (nb_integrated) {
                     ebur128->integrated_loudness = LOUDNESS(integrated_sum / nb_integrated);
                     /* dual-mono correction */
                     if (nb_channels == 1 && ebur128->dual_mono) {
                         ebur128->integrated_loudness -= ebur128->pan_law;
                     }
+                }
             }
 
             /* LRA */

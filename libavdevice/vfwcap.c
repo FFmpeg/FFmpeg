@@ -245,7 +245,7 @@ static int vfw_read_close(AVFormatContext *s)
 static int vfw_read_header(AVFormatContext *s)
 {
     struct vfw_ctx *ctx = s->priv_data;
-    AVCodecContext *codec;
+    AVCodecParameters *par;
     AVStream *st;
     int devnum;
     int bisize;
@@ -377,29 +377,30 @@ static int vfw_read_header(AVFormatContext *s)
     if(!ret)
         goto fail;
 
-    codec = st->codec;
-    codec->time_base = av_inv_q(framerate_q);
-    codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    codec->width  = bi->bmiHeader.biWidth;
-    codec->height = bi->bmiHeader.biHeight;
-    codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);
-    if(codec->pix_fmt == AV_PIX_FMT_NONE) {
-        codec->codec_id = vfw_codecid(biCompression);
-        if(codec->codec_id == AV_CODEC_ID_NONE) {
+    st->avg_frame_rate = framerate_q;
+
+    par = st->codecpar;
+    par->codec_type = AVMEDIA_TYPE_VIDEO;
+    par->width  = bi->bmiHeader.biWidth;
+    par->height = bi->bmiHeader.biHeight;
+    par->format = vfw_pixfmt(biCompression, biBitCount);
+    if (par->format == AV_PIX_FMT_NONE) {
+        par->codec_id = vfw_codecid(biCompression);
+        if (par->codec_id == AV_CODEC_ID_NONE) {
             av_log(s, AV_LOG_ERROR, "Unknown compression type. "
                              "Please report verbose (-v 9) debug information.\n");
             vfw_read_close(s);
             return AVERROR_PATCHWELCOME;
         }
-        codec->bits_per_coded_sample = biBitCount;
+        par->bits_per_coded_sample = biBitCount;
     } else {
-        codec->codec_id = AV_CODEC_ID_RAWVIDEO;
+        par->codec_id = AV_CODEC_ID_RAWVIDEO;
         if(biCompression == BI_RGB) {
-            codec->bits_per_coded_sample = biBitCount;
-            codec->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (codec->extradata) {
-                codec->extradata_size = 9;
-                memcpy(codec->extradata, "BottomUp", 9);
+            par->bits_per_coded_sample = biBitCount;
+            par->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (par->extradata) {
+                par->extradata_size = 9;
+                memcpy(par->extradata, "BottomUp", 9);
             }
         }
     }

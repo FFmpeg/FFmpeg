@@ -46,10 +46,12 @@
 #include "mathops.h"
 #include "me_cmp.h"
 #include "mpegutils.h"
+#include "profiles.h"
 #include "rectangle.h"
-#include "svq3.h"
 #include "thread.h"
 #include "vdpau_compat.h"
+
+static int h264_decode_end(AVCodecContext *avctx);
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
@@ -128,99 +130,6 @@ void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl,
         avctx->draw_horiz_band(avctx, src, offset,
                                y, h->picture_structure, height);
     }
-}
-
-/**
- * Check if the top & left blocks are available if needed and
- * change the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra4x4_pred_mode(const H264Context *h, H264SliceContext *sl)
-{
-    static const int8_t top[12] = {
-        -1, 0, LEFT_DC_PRED, -1, -1, -1, -1, -1, 0
-    };
-    static const int8_t left[12] = {
-        0, -1, TOP_DC_PRED, 0, -1, -1, -1, 0, -1, DC_128_PRED
-    };
-    int i;
-
-    if (!(sl->top_samples_available & 0x8000)) {
-        for (i = 0; i < 4; i++) {
-            int status = top[sl->intra4x4_pred_mode_cache[scan8[0] + i]];
-            if (status < 0) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "top block unavailable for requested intra4x4 mode %d at %d %d\n",
-                       status, sl->mb_x, sl->mb_y);
-                return AVERROR_INVALIDDATA;
-            } else if (status) {
-                sl->intra4x4_pred_mode_cache[scan8[0] + i] = status;
-            }
-        }
-    }
-
-    if ((sl->left_samples_available & 0x8888) != 0x8888) {
-        static const int mask[4] = { 0x8000, 0x2000, 0x80, 0x20 };
-        for (i = 0; i < 4; i++)
-            if (!(sl->left_samples_available & mask[i])) {
-                int status = left[sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i]];
-                if (status < 0) {
-                    av_log(h->avctx, AV_LOG_ERROR,
-                           "left block unavailable for requested intra4x4 mode %d at %d %d\n",
-                           status, sl->mb_x, sl->mb_y);
-                    return AVERROR_INVALIDDATA;
-                } else if (status) {
-                    sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i] = status;
-                }
-            }
-    }
-
-    return 0;
-} // FIXME cleanup like ff_h264_check_intra_pred_mode
-
-/**
- * Check if the top & left blocks are available if needed and
- * change the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_pred_mode(const H264Context *h, H264SliceContext *sl,
-                                  int mode, int is_chroma)
-{
-    static const int8_t top[4]  = { LEFT_DC_PRED8x8, 1, -1, -1 };
-    static const int8_t left[5] = { TOP_DC_PRED8x8, -1,  2, -1, DC_128_PRED8x8 };
-
-    if (mode > 3U) {
-        av_log(h->avctx, AV_LOG_ERROR,
-               "out of range intra chroma pred mode at %d %d\n",
-               sl->mb_x, sl->mb_y);
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!(sl->top_samples_available & 0x8000)) {
-        mode = top[mode];
-        if (mode < 0) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "top block unavailable for requested intra mode at %d %d\n",
-                   sl->mb_x, sl->mb_y);
-            return AVERROR_INVALIDDATA;
-        }
-    }
-
-    if ((sl->left_samples_available & 0x8080) != 0x8080) {
-        mode = left[mode];
-        if (mode < 0) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "left block unavailable for requested intra mode at %d %d\n",
-                   sl->mb_x, sl->mb_y);
-            return AVERROR_INVALIDDATA;
-        }
-        if (is_chroma && (sl->left_samples_available & 0x8080)) {
-            // mad cow disease mode, aka MBAFF + constrained_intra_pred
-            mode = ALZHEIMER_DC_L0T_PRED8x8 +
-                   (!(sl->left_samples_available & 0x8000)) +
-                   2 * (mode == DC_128_PRED8x8);
-        }
-    }
-
-    return mode;
 }
 
 const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl,
@@ -678,7 +587,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size > 0 && avctx->extradata) {
         ret = ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size);
         if (ret < 0) {
-            ff_h264_free_context(h);
+            h264_decode_end(avctx);
             return ret;
         }
     }
@@ -906,18 +815,11 @@ static void decode_postinit(H264Context *h, int setup_finished)
     // FIXME do something with unavailable reference frames
 
     /* Sort B-frames into display order */
-
-    if (h->sps.bitstream_restriction_flag &&
-        h->avctx->has_b_frames < h->sps.num_reorder_frames) {
-        h->avctx->has_b_frames = h->sps.num_reorder_frames;
-        h->low_delay           = 0;
+    if (h->sps.bitstream_restriction_flag ||
+        h->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
+        h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, h->sps.num_reorder_frames);
     }
-
-    if (h->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT &&
-        !h->sps.bitstream_restriction_flag) {
-        h->avctx->has_b_frames = MAX_DELAYED_PIC_COUNT - 1;
-        h->low_delay           = 0;
-    }
+    h->low_delay = !h->avctx->has_b_frames;
 
     for (i = 0; 1; i++) {
         if(i == MAX_DELAYED_PIC_COUNT || cur->poc < h->last_pocs[i]){
@@ -939,7 +841,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
         h->last_pocs[0] = cur->poc;
         cur->mmco_reset = 1;
     } else if(h->avctx->has_b_frames < out_of_order && !h->sps.bitstream_restriction_flag){
-        av_log(h->avctx, AV_LOG_VERBOSE, "Increasing reorder buffer to %d\n", out_of_order);
+        av_log(h->avctx, AV_LOG_INFO, "Increasing reorder buffer to %d\n", out_of_order);
         h->avctx->has_b_frames = out_of_order;
         h->low_delay = 0;
     }
@@ -1001,78 +903,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
         if (h->avctx->active_thread_type & FF_THREAD_FRAME)
             h->setup_finished = 1;
     }
-}
-
-int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
-{
-    int list, i;
-    int luma_def, chroma_def;
-
-    sl->use_weight             = 0;
-    sl->use_weight_chroma      = 0;
-    sl->luma_log2_weight_denom = get_ue_golomb(&sl->gb);
-    if (h->sps.chroma_format_idc)
-        sl->chroma_log2_weight_denom = get_ue_golomb(&sl->gb);
-
-    if (sl->luma_log2_weight_denom > 7U) {
-        av_log(h->avctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", sl->luma_log2_weight_denom);
-        sl->luma_log2_weight_denom = 0;
-    }
-    if (sl->chroma_log2_weight_denom > 7U) {
-        av_log(h->avctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", sl->chroma_log2_weight_denom);
-        sl->chroma_log2_weight_denom = 0;
-    }
-
-    luma_def   = 1 << sl->luma_log2_weight_denom;
-    chroma_def = 1 << sl->chroma_log2_weight_denom;
-
-    for (list = 0; list < 2; list++) {
-        sl->luma_weight_flag[list]   = 0;
-        sl->chroma_weight_flag[list] = 0;
-        for (i = 0; i < sl->ref_count[list]; i++) {
-            int luma_weight_flag, chroma_weight_flag;
-
-            luma_weight_flag = get_bits1(&sl->gb);
-            if (luma_weight_flag) {
-                sl->luma_weight[i][list][0] = get_se_golomb(&sl->gb);
-                sl->luma_weight[i][list][1] = get_se_golomb(&sl->gb);
-                if (sl->luma_weight[i][list][0] != luma_def ||
-                    sl->luma_weight[i][list][1] != 0) {
-                    sl->use_weight             = 1;
-                    sl->luma_weight_flag[list] = 1;
-                }
-            } else {
-                sl->luma_weight[i][list][0] = luma_def;
-                sl->luma_weight[i][list][1] = 0;
-            }
-
-            if (h->sps.chroma_format_idc) {
-                chroma_weight_flag = get_bits1(&sl->gb);
-                if (chroma_weight_flag) {
-                    int j;
-                    for (j = 0; j < 2; j++) {
-                        sl->chroma_weight[i][list][j][0] = get_se_golomb(&sl->gb);
-                        sl->chroma_weight[i][list][j][1] = get_se_golomb(&sl->gb);
-                        if (sl->chroma_weight[i][list][j][0] != chroma_def ||
-                            sl->chroma_weight[i][list][j][1] != 0) {
-                            sl->use_weight_chroma        = 1;
-                            sl->chroma_weight_flag[list] = 1;
-                        }
-                    }
-                } else {
-                    int j;
-                    for (j = 0; j < 2; j++) {
-                        sl->chroma_weight[i][list][j][0] = chroma_def;
-                        sl->chroma_weight[i][list][j][1] = 0;
-                    }
-                }
-            }
-        }
-        if (sl->slice_type_nos != AV_PICTURE_TYPE_B)
-            break;
-    }
-    sl->use_weight = sl->use_weight || sl->use_weight_chroma;
-    return 0;
 }
 
 /**
@@ -1372,7 +1202,7 @@ static int get_last_needed_nal(H264Context *h, const uint8_t *buf, int buf_size)
         case NAL_IDR_SLICE:
         case NAL_SLICE:
             init_get_bits(&gb, ptr, bit_length);
-            if (!get_ue_golomb(&gb) ||
+            if (!get_ue_golomb_long(&gb) ||  // first_mb_in_slice
                 !first_slice ||
                 first_slice != h->nal_unit_type)
                 nals_needed = nal_index;
@@ -1548,7 +1378,7 @@ again:
                     (h->nal_unit_type == NAL_IDR_SLICE);
 
                 if (h->nal_unit_type == NAL_IDR_SLICE ||
-                    h->recovery_frame == h->frame_num) {
+                    (h->recovery_frame == h->frame_num && h->nal_ref_idc)) {
                     h->recovery_frame         = -1;
                     h->cur_pic_ptr->recovered = 1;
                 }
@@ -1682,6 +1512,47 @@ again:
 
     ret = 0;
 end:
+
+#if CONFIG_ERROR_RESILIENCE
+    sl = h->slice_ctx;
+    /*
+     * FIXME: Error handling code does not seem to support interlaced
+     * when slices span multiple rows
+     * The ff_er_add_slice calls don't work right for bottom
+     * fields; they cause massive erroneous error concealing
+     * Error marking covers both fields (top and bottom).
+     * This causes a mismatched s->error_count
+     * and a bad error table. Further, the error count goes to
+     * INT_MAX when called for bottom field, because mb_y is
+     * past end by one (callers fault) and resync_mb_y != 0
+     * causes problems for the first MB line, too.
+     */
+    if (!FIELD_PICTURE(h) && h->current_slice && !h->sps.new && h->enable_er) {
+        int use_last_pic = h->last_pic_for_ec.f->buf[0] && !sl->ref_count[0];
+
+        ff_h264_set_erpic(&sl->er.cur_pic, h->cur_pic_ptr);
+
+        if (use_last_pic) {
+            ff_h264_set_erpic(&sl->er.last_pic, &h->last_pic_for_ec);
+            sl->ref_list[0][0].parent = &h->last_pic_for_ec;
+            memcpy(sl->ref_list[0][0].data, h->last_pic_for_ec.f->data, sizeof(sl->ref_list[0][0].data));
+            memcpy(sl->ref_list[0][0].linesize, h->last_pic_for_ec.f->linesize, sizeof(sl->ref_list[0][0].linesize));
+            sl->ref_list[0][0].reference = h->last_pic_for_ec.reference;
+        } else if (sl->ref_count[0]) {
+            ff_h264_set_erpic(&sl->er.last_pic, sl->ref_list[0][0].parent);
+        } else
+            ff_h264_set_erpic(&sl->er.last_pic, NULL);
+
+        if (sl->ref_count[1])
+            ff_h264_set_erpic(&sl->er.next_pic, sl->ref_list[1][0].parent);
+
+        sl->er.ref_count = sl->ref_count[0];
+
+        ff_er_frame_end(&sl->er);
+        if (use_last_pic)
+            memset(&sl->ref_list[0][0], 0, sizeof(sl->ref_list[0][0]));
+    }
+#endif /* CONFIG_ERROR_RESILIENCE */
     /* clean up */
     if (h->cur_pic_ptr && !h->droppable) {
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
@@ -1744,7 +1615,7 @@ static int is_extra(const uint8_t *buf, int buf_size)
     const uint8_t *p= buf+6;
     while(cnt--){
         int nalsize= AV_RB16(p) + 2;
-        if(nalsize > buf_size - (p-buf) || p[2]!=0x67)
+        if(nalsize > buf_size - (p-buf) || (p[2] & 0x9F) != 7)
             return 0;
         p += nalsize;
     }
@@ -1753,7 +1624,7 @@ static int is_extra(const uint8_t *buf, int buf_size)
         return 0;
     while(cnt--){
         int nalsize= AV_RB16(p) + 2;
-        if(nalsize > buf_size - (p-buf) || p[2]!=0x68)
+        if(nalsize > buf_size - (p-buf) || (p[2] & 0x9F) != 8)
             return 0;
         p += nalsize;
     }
@@ -1931,6 +1802,9 @@ av_cold void ff_h264_free_context(H264Context *h)
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
 
+    h->a53_caption_size = 0;
+    av_freep(&h->a53_caption);
+
     for (i = 0; i < MAX_SPS_COUNT; i++)
         av_freep(h->sps_buffers + i);
 
@@ -1969,23 +1843,6 @@ static const AVClass h264_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_H264_BASELINE,             "Baseline"              },
-    { FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"  },
-    { FF_PROFILE_H264_MAIN,                 "Main"                  },
-    { FF_PROFILE_H264_EXTENDED,             "Extended"              },
-    { FF_PROFILE_H264_HIGH,                 "High"                  },
-    { FF_PROFILE_H264_HIGH_10,              "High 10"               },
-    { FF_PROFILE_H264_HIGH_10_INTRA,        "High 10 Intra"         },
-    { FF_PROFILE_H264_HIGH_422,             "High 4:2:2"            },
-    { FF_PROFILE_H264_HIGH_422_INTRA,       "High 4:2:2 Intra"      },
-    { FF_PROFILE_H264_HIGH_444,             "High 4:4:4"            },
-    { FF_PROFILE_H264_HIGH_444_PREDICTIVE,  "High 4:4:4 Predictive" },
-    { FF_PROFILE_H264_HIGH_444_INTRA,       "High 4:4:4 Intra"      },
-    { FF_PROFILE_H264_CAVLC_444,            "CAVLC 4:4:4"           },
-    { FF_PROFILE_UNKNOWN },
-};
-
 AVCodec ff_h264_decoder = {
     .name                  = "h264",
     .long_name             = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
@@ -2002,7 +1859,7 @@ AVCodec ff_h264_decoder = {
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
-    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles              = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .priv_class            = &h264_class,
 };
 
@@ -2027,7 +1884,7 @@ AVCodec ff_h264_vdpau_decoder = {
     .flush          = flush_dpb,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
                                                      AV_PIX_FMT_NONE},
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .priv_class     = &h264_vdpau_class,
 };
 #endif

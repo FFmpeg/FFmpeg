@@ -136,8 +136,9 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
             goto err;
     }
 
-    if ((ret = ffurl_open(&c->hd, nested_url, flags,
-                          &h->interrupt_callback, options)) < 0) {
+    if ((ret = ffurl_open_whitelist(&c->hd, nested_url, flags,
+                                    &h->interrupt_callback, options,
+                                    h->protocol_whitelist, h->protocol_blacklist, h)) < 0) {
         av_log(h, AV_LOG_ERROR, "Unable to open resource: %s\n", nested_url);
         goto err;
     }
@@ -283,7 +284,7 @@ static int crypto_close(URLContext *h)
     return 0;
 }
 
-URLProtocol ff_crypto_protocol = {
+const URLProtocol ff_crypto_protocol = {
     .name            = "crypto",
     .url_open2       = crypto_open2,
     .url_read        = crypto_read,

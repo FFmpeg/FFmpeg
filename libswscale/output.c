@@ -313,7 +313,7 @@ static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterS
 
 #define accumulate_bit(acc, val) \
     acc <<= 1; \
-    acc |= (val) >= (128 + 110)
+    acc |= (val) >= 234
 #define output_pixel(pos, acc) \
     if (target == AV_PIX_FMT_MONOBLACK) { \
         pos = acc; \
@@ -385,6 +385,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
     const uint8_t * const d128 = ff_dither_8x8_220[y & 7];
     int  yalpha1 = 4096 - yalpha;
     int i;
+    av_assert2(yalpha  <= 4096U);
 
     if (c->dither == SWS_DITHER_ED) {
         int err = 0;
@@ -590,6 +591,8 @@ yuv2422_2_c_template(SwsContext *c, const int16_t *buf[2],
     int  yalpha1 = 4096 - yalpha;
     int uvalpha1 = 4096 - uvalpha;
     int i;
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha)  >> 19;
@@ -776,6 +779,9 @@ yuv2rgba64_2_c_template(SwsContext *c, const int32_t *buf[2],
     int uvalpha1 = 4096 - uvalpha;
     int i;
     int A1 = 0xffff<<14, A2 = 0xffff<<14;
+
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha) >> 14;
@@ -1005,6 +1011,9 @@ yuv2rgba64_full_2_c_template(SwsContext *c, const int32_t *buf[2],
     int uvalpha1 = 4096 - uvalpha;
     int i;
     int A = 0xffff<<14;
+
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < dstW; i++) {
         int Y  = (buf0[i]     * yalpha1  + buf1[i]     * yalpha) >> 14;
@@ -1387,6 +1396,8 @@ yuv2rgb_2_c_template(SwsContext *c, const int16_t *buf[2],
     int  yalpha1 = 4096 - yalpha;
     int uvalpha1 = 4096 - uvalpha;
     int i;
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha)  >> 19;
@@ -1502,8 +1513,8 @@ static void name ## ext ## _1_c(SwsContext *c, const int16_t *buf0, \
 }
 
 #if CONFIG_SMALL
-YUV2RGBWRAPPER(yuv2rgb,,  32_1,  AV_PIX_FMT_RGB32_1,   CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
-YUV2RGBWRAPPER(yuv2rgb,,  32,    AV_PIX_FMT_RGB32,     CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
+YUV2RGBWRAPPER(yuv2rgb,,  32_1,  AV_PIX_FMT_RGB32_1,   CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2rgb,,  32,    AV_PIX_FMT_RGB32,     CONFIG_SWSCALE_ALPHA && c->needAlpha)
 #else
 #if CONFIG_SWSCALE_ALPHA
 YUV2RGBWRAPPER(yuv2rgb,, a32_1,  AV_PIX_FMT_RGB32_1,   1)
@@ -1729,6 +1740,9 @@ yuv2rgb_full_2_c_template(SwsContext *c, const int16_t *buf[2],
     int err[4] = {0};
     int A = 0; // init to silcene warning
 
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
+
     if(   target == AV_PIX_FMT_BGR4_BYTE || target == AV_PIX_FMT_RGB4_BYTE
        || target == AV_PIX_FMT_BGR8      || target == AV_PIX_FMT_RGB8)
         step = 1;
@@ -1809,10 +1823,10 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
 }
 
 #if CONFIG_SMALL
-YUV2RGBWRAPPER(yuv2, rgb_full, bgra32_full, AV_PIX_FMT_BGRA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
-YUV2RGBWRAPPER(yuv2, rgb_full, abgr32_full, AV_PIX_FMT_ABGR,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
-YUV2RGBWRAPPER(yuv2, rgb_full, rgba32_full, AV_PIX_FMT_RGBA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
-YUV2RGBWRAPPER(yuv2, rgb_full, argb32_full, AV_PIX_FMT_ARGB,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
+YUV2RGBWRAPPER(yuv2, rgb_full, bgra32_full, AV_PIX_FMT_BGRA,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2, rgb_full, abgr32_full, AV_PIX_FMT_ABGR,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2, rgb_full, rgba32_full, AV_PIX_FMT_RGBA,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2, rgb_full, argb32_full, AV_PIX_FMT_ARGB,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
 #else
 #if CONFIG_SWSCALE_ALPHA
 YUV2RGBWRAPPER(yuv2, rgb_full, bgra32_full, AV_PIX_FMT_BGRA,  1)
@@ -1955,6 +1969,8 @@ yuv2ya8_2_c(SwsContext *c, const int16_t *buf[2],
                   *abuf1 = hasAlpha ? abuf[1] : NULL;
     int  yalpha1 = 4096 - yalpha;
     int i;
+
+    av_assert2(yalpha  <= 4096U);
 
     for (i = 0; i < dstW; i++) {
         int Y = (buf0[i] * yalpha1 + buf1[i] * yalpha) >> 19;
@@ -2103,7 +2119,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                 *yuv2packed1 = yuv2rgba32_full_1_c;
 #else
 #if CONFIG_SWSCALE_ALPHA
-                if (c->alpPixBuf) {
+                if (c->needAlpha) {
                     *yuv2packedX = yuv2rgba32_full_X_c;
                     *yuv2packed2 = yuv2rgba32_full_2_c;
                     *yuv2packed1 = yuv2rgba32_full_1_c;
@@ -2123,7 +2139,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                 *yuv2packed1 = yuv2argb32_full_1_c;
 #else
 #if CONFIG_SWSCALE_ALPHA
-                if (c->alpPixBuf) {
+                if (c->needAlpha) {
                     *yuv2packedX = yuv2argb32_full_X_c;
                     *yuv2packed2 = yuv2argb32_full_2_c;
                     *yuv2packed1 = yuv2argb32_full_1_c;
@@ -2143,7 +2159,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                 *yuv2packed1 = yuv2bgra32_full_1_c;
 #else
 #if CONFIG_SWSCALE_ALPHA
-                if (c->alpPixBuf) {
+                if (c->needAlpha) {
                     *yuv2packedX = yuv2bgra32_full_X_c;
                     *yuv2packed2 = yuv2bgra32_full_2_c;
                     *yuv2packed1 = yuv2bgra32_full_1_c;
@@ -2163,7 +2179,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                 *yuv2packed1 = yuv2abgr32_full_1_c;
 #else
 #if CONFIG_SWSCALE_ALPHA
-                if (c->alpPixBuf) {
+                if (c->needAlpha) {
                     *yuv2packedX = yuv2abgr32_full_X_c;
                     *yuv2packed2 = yuv2abgr32_full_2_c;
                     *yuv2packed1 = yuv2abgr32_full_1_c;
@@ -2178,7 +2194,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                 break;
         case AV_PIX_FMT_RGBA64LE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packedX = yuv2rgba64le_full_X_c;
                 *yuv2packed2 = yuv2rgba64le_full_2_c;
                 *yuv2packed1 = yuv2rgba64le_full_1_c;
@@ -2192,7 +2208,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_RGBA64BE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packedX = yuv2rgba64be_full_X_c;
                 *yuv2packed2 = yuv2rgba64be_full_2_c;
                 *yuv2packed1 = yuv2rgba64be_full_1_c;
@@ -2206,7 +2222,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_BGRA64LE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packedX = yuv2bgra64le_full_X_c;
                 *yuv2packed2 = yuv2bgra64le_full_2_c;
                 *yuv2packed1 = yuv2bgra64le_full_1_c;
@@ -2220,7 +2236,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_BGRA64BE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packedX = yuv2bgra64be_full_X_c;
                 *yuv2packed2 = yuv2bgra64be_full_2_c;
                 *yuv2packed1 = yuv2bgra64be_full_1_c;
@@ -2305,7 +2321,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         switch (dstFormat) {
         case AV_PIX_FMT_RGBA64LE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packed1 = yuv2rgba64le_1_c;
                 *yuv2packed2 = yuv2rgba64le_2_c;
                 *yuv2packedX = yuv2rgba64le_X_c;
@@ -2319,7 +2335,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_RGBA64BE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packed1 = yuv2rgba64be_1_c;
                 *yuv2packed2 = yuv2rgba64be_2_c;
                 *yuv2packedX = yuv2rgba64be_X_c;
@@ -2333,7 +2349,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_BGRA64LE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packed1 = yuv2bgra64le_1_c;
                 *yuv2packed2 = yuv2bgra64le_2_c;
                 *yuv2packedX = yuv2bgra64le_X_c;
@@ -2347,7 +2363,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_BGRA64BE:
 #if CONFIG_SWSCALE_ALPHA
-            if (c->alpPixBuf) {
+            if (c->needAlpha) {
                 *yuv2packed1 = yuv2bgra64be_1_c;
                 *yuv2packed2 = yuv2bgra64be_2_c;
                 *yuv2packedX = yuv2bgra64be_X_c;
@@ -2387,7 +2403,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             *yuv2packedX = yuv2rgb32_X_c;
 #else
 #if CONFIG_SWSCALE_ALPHA
-                if (c->alpPixBuf) {
+                if (c->needAlpha) {
                     *yuv2packed1 = yuv2rgba32_1_c;
                     *yuv2packed2 = yuv2rgba32_2_c;
                     *yuv2packedX = yuv2rgba32_X_c;
@@ -2408,7 +2424,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                 *yuv2packedX = yuv2rgb32_1_X_c;
 #else
 #if CONFIG_SWSCALE_ALPHA
-                if (c->alpPixBuf) {
+                if (c->needAlpha) {
                     *yuv2packed1 = yuv2rgba32_1_1_c;
                     *yuv2packed2 = yuv2rgba32_1_2_c;
                     *yuv2packedX = yuv2rgba32_1_X_c;

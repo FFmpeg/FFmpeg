@@ -68,9 +68,9 @@ static int config_props(AVFilterLink *inlink)
 
     av_image_fill_max_pixsteps(s->max_step, NULL, pix_desc);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
-    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, hsub);
+    s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, vsub);
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, vsub);
 
     return 0;
 }

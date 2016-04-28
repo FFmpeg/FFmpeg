@@ -1138,6 +1138,8 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         av_dict_free(&config->audio_opts);
         avcodec_free_context(&config->dummy_vctx);
         avcodec_free_context(&config->dummy_actx);
+        config->no_video = 0;
+        config->no_audio = 0;
         *pstream = NULL;
     } else if (!av_strcasecmp(cmd, "File") ||
                !av_strcasecmp(cmd, "ReadOnlyFile")) {

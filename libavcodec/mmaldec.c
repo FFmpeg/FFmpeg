@@ -66,6 +66,7 @@ typedef struct FFBufferRef {
 typedef struct MMALDecodeContext {
     AVClass *av_class;
     int extra_buffers;
+    int extra_decoder_buffers;
 
     MMAL_COMPONENT_T *decoder;
     MMAL_QUEUE_T *queue_decoded_frames;
@@ -332,6 +333,7 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     MMAL_STATUS_T status;
     MMAL_ES_FORMAT_T *format_in;
     MMAL_COMPONENT_T *decoder;
+    char tmp[32];
     int ret = 0;
 
     bcm_host_init();
@@ -356,16 +358,16 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     switch (avctx->codec_id) {
         case AV_CODEC_ID_MPEG2VIDEO:
             format_in->encoding = MMAL_ENCODING_MP2V;
-            av_log(avctx, AV_LOG_DEBUG, "Use MMAL MP2V encoding\n");
+            break;
+        case AV_CODEC_ID_MPEG4:
+            format_in->encoding = MMAL_ENCODING_MP4V;
             break;
         case AV_CODEC_ID_VC1:
             format_in->encoding = MMAL_ENCODING_WVC1;
-            av_log(avctx, AV_LOG_DEBUG, "Use MMAL WVC1 encoding\n");
             break;
         case AV_CODEC_ID_H264:
         default:
             format_in->encoding = MMAL_ENCODING_H264;
-            av_log(avctx, AV_LOG_DEBUG, "Use MMAL H264 encoding\n");
             break;
     }
     format_in->es->video.width = FFALIGN(avctx->width, 32);
@@ -377,6 +379,14 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     format_in->es->video.par.num = avctx->sample_aspect_ratio.num;
     format_in->es->video.par.den = avctx->sample_aspect_ratio.den;
     format_in->flags = MMAL_ES_FORMAT_FLAG_FRAMED;
+
+    av_get_codec_tag_string(tmp, sizeof(tmp), format_in->encoding);
+    av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n", tmp);
+
+    if (mmal_port_parameter_set_uint32(decoder->input[0], MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS,
+                                       -1 - ctx->extra_decoder_buffers)) {
+        av_log(avctx, AV_LOG_WARNING, "Could not set input buffering limit.\n");
+    }
 
     if ((status = mmal_port_format_commit(decoder->input[0])))
         goto fail;
@@ -792,6 +802,13 @@ AVHWAccel ff_mpeg2_mmal_hwaccel = {
     .pix_fmt    = AV_PIX_FMT_MMAL,
 };
 
+AVHWAccel ff_mpeg4_mmal_hwaccel = {
+    .name       = "mpeg4_mmal",
+    .type       = AVMEDIA_TYPE_VIDEO,
+    .id         = AV_CODEC_ID_MPEG4,
+    .pix_fmt    = AV_PIX_FMT_MMAL,
+};
+
 AVHWAccel ff_vc1_mmal_hwaccel = {
     .name       = "vc1_mmal",
     .type       = AVMEDIA_TYPE_VIDEO,
@@ -801,6 +818,7 @@ AVHWAccel ff_vc1_mmal_hwaccel = {
 
 static const AVOption options[]={
     {"extra_buffers", "extra buffers", offsetof(MMALDecodeContext, extra_buffers), AV_OPT_TYPE_INT, {.i64 = 10}, 0, 256, 0},
+    {"extra_decoder_buffers", "extra MMAL internal buffered frames", offsetof(MMALDecodeContext, extra_decoder_buffers), AV_OPT_TYPE_INT, {.i64 = 10}, 0, 256, 0},
     {NULL}
 };
 
@@ -833,4 +851,5 @@ static const AVOption options[]={
 
 FFMMAL_DEC(h264, AV_CODEC_ID_H264)
 FFMMAL_DEC(mpeg2, AV_CODEC_ID_MPEG2VIDEO)
+FFMMAL_DEC(mpeg4, AV_CODEC_ID_MPEG4)
 FFMMAL_DEC(vc1, AV_CODEC_ID_VC1)

@@ -141,6 +141,9 @@ AVFilterChannelLayouts *ff_all_channel_counts(void);
 av_warn_unused_result
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
 
+av_warn_unused_result
+AVFilterChannelLayouts *ff_make_formatu64_list(const uint64_t *fmts);
+
 
 /**
  * A helper for query_formats() which sets all links to the same list of channel
@@ -270,7 +273,6 @@ int ff_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
 void ff_formats_unref(AVFilterFormats **ref);
 
 /**
- *
  *         Before                                 After
  *   ________                         ________
  *  |formats |<---------.            |formats |<---------.

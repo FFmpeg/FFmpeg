@@ -335,14 +335,14 @@ static int vorbis_header(AVFormatContext *s, int idx)
             return AVERROR_INVALIDDATA;
 
         channels = bytestream_get_byte(&p);
-        if (st->codec->channels && channels != st->codec->channels) {
+        if (st->codecpar->channels && channels != st->codecpar->channels) {
             av_log(s, AV_LOG_ERROR, "Channel change is not supported\n");
             return AVERROR_PATCHWELCOME;
         }
-        st->codec->channels = channels;
+        st->codecpar->channels = channels;
         srate               = bytestream_get_le32(&p);
         p += 4; // skip maximum bitrate
-        st->codec->bit_rate = bytestream_get_le32(&p); // nominal bitrate
+        st->codecpar->bit_rate = bytestream_get_le32(&p); // nominal bitrate
         p += 4; // skip minimum bitrate
 
         blocksize = bytestream_get_byte(&p);
@@ -357,11 +357,11 @@ static int vorbis_header(AVFormatContext *s, int idx)
         if (bytestream_get_byte(&p) != 1) /* framing_flag */
             return AVERROR_INVALIDDATA;
 
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id   = AV_CODEC_ID_VORBIS;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id   = AV_CODEC_ID_VORBIS;
 
         if (srate > 0) {
-            st->codec->sample_rate = srate;
+            st->codecpar->sample_rate = srate;
             avpriv_set_pts_info(st, 64, 1, srate);
         }
     } else if (os->buf[os->pstart] == 3) {
@@ -381,17 +381,17 @@ static int vorbis_header(AVFormatContext *s, int idx)
             }
         }
     } else {
-        int ret = fixup_vorbis_headers(s, priv, &st->codec->extradata);
+        int ret = fixup_vorbis_headers(s, priv, &st->codecpar->extradata);
         if (ret < 0) {
-            st->codec->extradata_size = 0;
+            st->codecpar->extradata_size = 0;
             return ret;
         }
-        st->codec->extradata_size = ret;
+        st->codecpar->extradata_size = ret;
 
-        priv->vp = av_vorbis_parse_init(st->codec->extradata, st->codec->extradata_size);
+        priv->vp = av_vorbis_parse_init(st->codecpar->extradata, st->codecpar->extradata_size);
         if (!priv->vp) {
-            av_freep(&st->codec->extradata);
-            st->codec->extradata_size = 0;
+            av_freep(&st->codecpar->extradata);
+            st->codecpar->extradata_size = 0;
             return AVERROR_UNKNOWN;
         }
     }

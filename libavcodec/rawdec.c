@@ -41,7 +41,11 @@ typedef struct RawVideoContext {
     AVBufferRef *palette;
     int frame_size;  /* size of the frame in bytes */
     int flip;
-    int is_2_4_bpp; // 2 or 4 bpp raw in avi/mov
+    int is_1_2_4_8_bpp; // 1, 2, 4 and 8 bpp in avi/mov, 1 and 8 bpp in nut
+    int is_mono;
+    int is_pal8;
+    int is_nut_mono;
+    int is_nut_pal8;
     int is_yuv2;
     int is_lt_16bpp; // 16bpp pixfmt and bits_per_coded_sample < 16
     int tff;
@@ -94,8 +98,11 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
         if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
             avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
-        else
+        else {
             memset(context->palette->data, 0, AVPALETTE_SIZE);
+            if (avctx->bits_per_coded_sample == 1)
+                memset(context->palette->data, 0xff, 4);
+        }
     }
 
     if ((avctx->extradata_size >= 9 &&
@@ -104,6 +111,18 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         avctx->codec_tag == MKTAG(3, 0, 0, 0) ||
         avctx->codec_tag == MKTAG('W','R','A','W'))
         context->flip = 1;
+
+    if (avctx->pix_fmt == AV_PIX_FMT_MONOWHITE ||
+        avctx->pix_fmt == AV_PIX_FMT_MONOBLACK)
+        context->is_mono = 1;
+    else if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
+        context->is_pal8 = 1;
+
+    if (avctx->codec_tag == MKTAG('B','1','W','0') ||
+        avctx->codec_tag == MKTAG('B','0','W','1'))
+        context->is_nut_mono = 1;
+    else if (avctx->codec_tag == MKTAG('P','A','L',8))
+        context->is_nut_pal8 = 1;
 
     if (avctx->codec_tag == AV_RL32("yuv2") &&
         avctx->pix_fmt   == AV_PIX_FMT_YUYV422)
@@ -149,23 +168,57 @@ MKSCALE16(scale16le, AV_RL16, AV_WL16)
 static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
                       AVPacket *avpkt)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    const AVPixFmtDescriptor *desc;
     RawVideoContext *context       = avctx->priv_data;
     const uint8_t *buf             = avpkt->data;
     int buf_size                   = avpkt->size;
     int linesize_align             = 4;
+    int stride;
     int res, len;
     int need_copy;
 
     AVFrame   *frame   = data;
 
-    if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
-        avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
-       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
-        context->is_2_4_bpp = 1;
-        context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
-                                                       FFALIGN(avctx->width, 16),
-                                                       avctx->height, 1);
+    if (avctx->width <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "width is not set\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (avctx->height <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "height is not set\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (context->is_nut_mono)
+        stride = avctx->width / 8 + (avctx->width & 7 ? 1 : 0);
+    else if (context->is_nut_pal8)
+        stride = avctx->width;
+    else
+        stride = avpkt->size / avctx->height;
+
+    av_log(avctx, AV_LOG_DEBUG, "PACKET SIZE: %d, STRIDE: %d\n", avpkt->size, stride);
+
+    if (stride == 0 || avpkt->size < stride * avctx->height) {
+        av_log(avctx, AV_LOG_ERROR, "Packet too small (%d)\n", avpkt->size);
+        return AVERROR_INVALIDDATA;
+    }
+
+    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+
+    if ((avctx->bits_per_coded_sample == 8 || avctx->bits_per_coded_sample == 4
+            || avctx->bits_per_coded_sample <= 2) &&
+        (context->is_mono || context->is_pal8) &&
+        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' ') ||
+                context->is_nut_mono || context->is_nut_pal8)) {
+        context->is_1_2_4_8_bpp = 1;
+        if (context->is_mono) {
+            int row_bytes = avctx->width / 8 + (avctx->width & 7 ? 1 : 0);
+            context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
+                                                           FFALIGN(row_bytes, 16) * 8,
+                                                           avctx->height, 1);
+        } else
+            context->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
+                                                           FFALIGN(avctx->width, 16),
+                                                           avctx->height, 1);
     } else {
         context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample && avctx->bits_per_coded_sample < 16;
         context->frame_size = av_image_get_buffer_size(avctx->pix_fmt, avctx->width,
@@ -174,7 +227,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (context->frame_size < 0)
         return context->frame_size;
 
-    need_copy = !avpkt->buf || context->is_2_4_bpp || context->is_yuv2 || context->is_lt_16bpp;
+    need_copy = !avpkt->buf || context->is_1_2_4_8_bpp || context->is_yuv2 || context->is_lt_16bpp;
 
     frame->pict_type        = AV_PICTURE_TYPE_I;
     frame->key_frame        = 1;
@@ -201,27 +254,66 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (!frame->buf[0])
         return AVERROR(ENOMEM);
 
-    //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
-    if (context->is_2_4_bpp) {
-        int i;
+    // 1, 2, 4 and 8 bpp in avi/mov, 1 and 8 bpp in nut
+    if (context->is_1_2_4_8_bpp) {
+        int i, j, row_pix = 0;
         uint8_t *dst = frame->buf[0]->data;
-        buf_size = context->frame_size - AVPALETTE_SIZE;
-        if (avctx->bits_per_coded_sample == 4) {
-            for (i = 0; 2 * i + 1 < buf_size && i<avpkt->size; i++) {
-                dst[2 * i + 0] = buf[i] >> 4;
-                dst[2 * i + 1] = buf[i] & 15;
+        buf_size = context->frame_size - (context->is_pal8 ? AVPALETTE_SIZE : 0);
+        if (avctx->bits_per_coded_sample == 8 || context->is_nut_pal8 || context->is_mono) {
+            int pix_per_byte = context->is_mono ? 8 : 1;
+            for (i = 0, j = 0; j < buf_size && i<avpkt->size; i++, j++) {
+                dst[j] = buf[i];
+                row_pix += pix_per_byte;
+                if (row_pix >= avctx->width) {
+                    i += stride - (i % stride) - 1;
+                    j += 16 - (j % 16) - 1;
+                    row_pix = 0;
+                }
             }
-            linesize_align = 8;
+        } else if (avctx->bits_per_coded_sample == 4) {
+            for (i = 0, j = 0; 2 * j + 1 < buf_size && i<avpkt->size; i++, j++) {
+                dst[2 * j + 0] = buf[i] >> 4;
+                dst[2 * j + 1] = buf[i] & 15;
+                row_pix += 2;
+                if (row_pix >= avctx->width) {
+                    i += stride - (i % stride) - 1;
+                    j += 8 - (j % 8) - 1;
+                    row_pix = 0;
+                }
+            }
+        } else if (avctx->bits_per_coded_sample == 2) {
+            for (i = 0, j = 0; 4 * j + 3 < buf_size && i<avpkt->size; i++, j++) {
+                dst[4 * j + 0] = buf[i] >> 6;
+                dst[4 * j + 1] = buf[i] >> 4 & 3;
+                dst[4 * j + 2] = buf[i] >> 2 & 3;
+                dst[4 * j + 3] = buf[i]      & 3;
+                row_pix += 4;
+                if (row_pix >= avctx->width) {
+                    i += stride - (i % stride) - 1;
+                    j += 4 - (j % 4) - 1;
+                    row_pix = 0;
+                }
+            }
         } else {
-            av_assert0(avctx->bits_per_coded_sample == 2);
-            for (i = 0; 4 * i + 3 < buf_size && i<avpkt->size; i++) {
-                dst[4 * i + 0] = buf[i] >> 6;
-                dst[4 * i + 1] = buf[i] >> 4 & 3;
-                dst[4 * i + 2] = buf[i] >> 2 & 3;
-                dst[4 * i + 3] = buf[i]      & 3;
+            av_assert0(avctx->bits_per_coded_sample == 1);
+            for (i = 0, j = 0; 8 * j + 7 < buf_size && i<avpkt->size; i++, j++) {
+                dst[8 * j + 0] = buf[i] >> 7;
+                dst[8 * j + 1] = buf[i] >> 6 & 1;
+                dst[8 * j + 2] = buf[i] >> 5 & 1;
+                dst[8 * j + 3] = buf[i] >> 4 & 1;
+                dst[8 * j + 4] = buf[i] >> 3 & 1;
+                dst[8 * j + 5] = buf[i] >> 2 & 1;
+                dst[8 * j + 6] = buf[i] >> 1 & 1;
+                dst[8 * j + 7] = buf[i]      & 1;
+                row_pix += 8;
+                if (row_pix >= avctx->width) {
+                    i += stride - (i % stride) - 1;
+                    j += 2 - (j % 2) - 1;
+                    row_pix = 0;
+                }
             }
-            linesize_align = 16;
         }
+        linesize_align = 16;
         buf = dst;
     } else if (context->is_lt_16bpp) {
         uint8_t *dst = frame->buf[0]->data;
@@ -257,7 +349,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         buf += buf_size - context->frame_size;
 
     len = context->frame_size - (avctx->pix_fmt==AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
-    if (buf_size < len && (avctx->codec_tag & 0xFFFFFF) != MKTAG('B','I','T', 0)) {
+    if (buf_size < len && ((avctx->codec_tag & 0xFFFFFF) != MKTAG('B','I','T', 0) || !need_copy)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected frame_size %d\n", buf_size, len);
         av_buffer_unref(&frame->buf[0]);
         return AVERROR(EINVAL);
@@ -273,7 +365,6 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE,
                                                      NULL);
-
         if (pal) {
             av_buffer_unref(&context->palette);
             context->palette = av_buffer_alloc(AVPALETTE_SIZE);
@@ -283,15 +374,24 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
             memcpy(context->palette->data, pal, AVPALETTE_SIZE);
             frame->palette_has_changed = 1;
+        } else if (context->is_nut_pal8) {
+            int vid_size = avctx->width * avctx->height;
+            if (avpkt->size - vid_size) {
+                pal = avpkt->data + vid_size;
+                memcpy(context->palette->data, pal, avpkt->size - vid_size);
+                frame->palette_has_changed = 1;
+            }
         }
     }
 
-    if ((avctx->pix_fmt==AV_PIX_FMT_BGR24    ||
-        avctx->pix_fmt==AV_PIX_FMT_GRAY8    ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB555LE ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB555BE ||
-        avctx->pix_fmt==AV_PIX_FMT_RGB565LE ||
+    if ((avctx->pix_fmt==AV_PIX_FMT_RGB24    ||
+        avctx->pix_fmt==AV_PIX_FMT_BGR24     ||
+        avctx->pix_fmt==AV_PIX_FMT_GRAY8     ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555LE  ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555BE  ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB565LE  ||
         avctx->pix_fmt==AV_PIX_FMT_MONOWHITE ||
+        avctx->pix_fmt==AV_PIX_FMT_MONOBLACK ||
         avctx->pix_fmt==AV_PIX_FMT_PAL8) &&
         FFALIGN(frame->linesize[0], linesize_align) * avctx->height <= buf_size)
         frame->linesize[0] = FFALIGN(frame->linesize[0], linesize_align);

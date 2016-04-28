@@ -403,10 +403,11 @@ gdigrab_read_header(AVFormatContext *s1)
         }
     }
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_BMP;
-    st->codec->time_base  = gdigrab->time_base;
-    st->codec->bit_rate   = (gdigrab->header_size + gdigrab->frame_size) * 1/av_q2d(gdigrab->time_base) * 8;
+    st->avg_frame_rate = av_inv_q(gdigrab->time_base);
+
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_BMP;
+    st->codecpar->bit_rate   = (gdigrab->header_size + gdigrab->frame_size) * 1/av_q2d(gdigrab->time_base) * 8;
 
     return 0;
 
@@ -446,6 +447,8 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
         POINT pos;
         RECT clip_rect = gdigrab->clip_rect;
         HWND hwnd = gdigrab->hwnd;
+        int vertres = GetDeviceCaps(gdigrab->source_hdc, VERTRES);
+        int desktopvertres = GetDeviceCaps(gdigrab->source_hdc, DESKTOPVERTRES);
         info.hbmMask = NULL;
         info.hbmColor = NULL;
 
@@ -478,6 +481,10 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
                 goto icon_error;
             }
         }
+
+        //that would keep the correct location of mouse with hidpi screens
+        pos.x = pos.x * desktopvertres / vertres;
+        pos.y = pos.y * desktopvertres / vertres;
 
         av_log(s1, AV_LOG_DEBUG, "Cursor pos (%li,%li) -> (%li,%li)\n",
                 ci.ptScreenPos.x, ci.ptScreenPos.y, pos.x, pos.y);

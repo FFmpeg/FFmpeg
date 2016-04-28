@@ -761,7 +761,7 @@ static int dnxhd_mb_var_thread(AVCodecContext *avctx, void *arg,
             ctx->mb_cmp[mb].mb    = mb;
         }
     } else { // 10-bit
-        int const linesize = ctx->m.linesize >> 1;
+        const int linesize = ctx->m.linesize >> 1;
         for (mb_x = 0; mb_x < ctx->m.mb_width; ++mb_x) {
             uint16_t *pix = (uint16_t *)ctx->thread[0]->src[0] +
                             ((mb_y << 4) * linesize) + (mb_x << 4);
@@ -776,7 +776,7 @@ static int dnxhd_mb_var_thread(AVCodecContext *avctx, void *arg,
             for (i = 0; i < bh; ++i) {
                 for (j = 0; j < bw; ++j) {
                     // Turn 16-bit pixels into 10-bit ones.
-                    int const sample = (unsigned) pix[j] >> 6;
+                    const int sample = (unsigned) pix[j] >> 6;
                     sum   += sample;
                     sqsum += sample * sample;
                     // 2^10 * 2^10 * 16 * 16 = 2^28, which is less than INT_MAX

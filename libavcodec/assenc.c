@@ -22,7 +22,6 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "ass_split.h"
 #include "ass.h"
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"
@@ -53,22 +52,16 @@ static int ass_encode_frame(AVCodecContext *avctx,
     for (i=0; i<sub->num_rects; i++) {
         char ass_line[2048];
         const char *ass = sub->rects[i]->ass;
+        long int layer;
+        char *p;
 
         if (sub->rects[i]->type != SUBTITLE_ASS) {
             av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
             return -1;
         }
 
-        if (strncmp(ass, "Dialogue: ", 10)) {
-            av_log(avctx, AV_LOG_ERROR, "AVSubtitle rectangle ass \"%s\""
-                   " does not look like a SSA markup\n", ass);
-            return AVERROR_INVALIDDATA;
-        }
-
-        if (avctx->codec->id == AV_CODEC_ID_ASS) {
-            long int layer;
-            char *p;
-
+#if FF_API_ASS_TIMING
+        if (!strncmp(ass, "Dialogue: ", 10)) {
             if (i > 0) {
                 av_log(avctx, AV_LOG_ERROR, "ASS encoder supports only one "
                        "ASS rectangle field.\n");
@@ -94,6 +87,8 @@ static int ass_encode_frame(AVCodecContext *avctx,
             ass_line[strcspn(ass_line, "\r\n")] = 0;
             ass = ass_line;
         }
+#endif
+
         len = av_strlcpy(buf+total_len, ass, bufsize-total_len);
 
         if (len > bufsize-total_len-1) {
@@ -110,9 +105,9 @@ static int ass_encode_frame(AVCodecContext *avctx,
 #if CONFIG_SSA_ENCODER
 AVCodec ff_ssa_encoder = {
     .name         = "ssa",
-    .long_name    = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
+    .long_name    = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = AV_CODEC_ID_SSA,
+    .id           = AV_CODEC_ID_ASS,
     .init         = ass_encode_init,
     .encode_sub   = ass_encode_frame,
     .priv_data_size = sizeof(ASSEncodeContext),

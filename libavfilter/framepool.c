@@ -1,0 +1,189 @@
+/*
+ * This file is part of FFmpeg.
+ *
+ * Copyright (c) 2015 Matthieu Bouron <matthieu.bouron stupeflix.com>
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "framepool.h"
+#include "libavutil/avassert.h"
+#include "libavutil/buffer.h"
+#include "libavutil/frame.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
+#include "libavutil/pixfmt.h"
+
+struct FFVideoFramePool {
+
+    int width;
+    int height;
+    int format;
+    int align;
+    int linesize[4];
+    AVBufferPool *pools[4];
+
+};
+
+FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
+                                           int width,
+                                           int height,
+                                           enum AVPixelFormat format,
+                                           int align)
+{
+    int i, ret;
+    FFVideoFramePool *pool;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+
+    if (!desc)
+        return NULL;
+
+    pool = av_mallocz(sizeof(FFVideoFramePool));
+    if (!pool)
+        return NULL;
+
+    pool->width = width;
+    pool->height = height;
+    pool->format = format;
+    pool->align = align;
+
+    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0) {
+        goto fail;
+    }
+
+    if (!pool->linesize[0]) {
+        for(i = 1; i <= align; i += i) {
+            ret = av_image_fill_linesizes(pool->linesize, pool->format,
+                                          FFALIGN(pool->width, i));
+            if (ret < 0) {
+                goto fail;
+            }
+            if (!(pool->linesize[0] & (pool->align - 1)))
+                break;
+        }
+
+        for (i = 0; i < 4 && pool->linesize[i]; i++) {
+            pool->linesize[i] = FFALIGN(pool->linesize[i], pool->align);
+        }
+    }
+
+    for (i = 0; i < 4 && pool->linesize[i]; i++) {
+        int h = FFALIGN(pool->height, 32);
+        if (i == 1 || i == 2)
+            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
+
+        pool->pools[i] = av_buffer_pool_init(pool->linesize[i] * h + 16 + 16 - 1,
+                                             alloc);
+        if (!pool->pools[i])
+            goto fail;
+    }
+
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+        pool->pools[1] = av_buffer_pool_init(AVPALETTE_SIZE, alloc);
+        if (!pool->pools[1])
+            goto fail;
+    }
+
+    return pool;
+
+fail:
+    ff_video_frame_pool_uninit(&pool);
+    return NULL;
+}
+
+int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
+                                   int *width,
+                                   int *height,
+                                   enum AVPixelFormat *format,
+                                   int *align)
+{
+    if (!pool)
+        return AVERROR(EINVAL);
+
+    *width = pool->width;
+    *height = pool->height;
+    *format = pool->format;
+    *align = pool->align;
+
+    return 0;
+}
+
+
+AVFrame *ff_video_frame_pool_get(FFVideoFramePool *pool)
+{
+    int i;
+    AVFrame *frame;
+    const AVPixFmtDescriptor *desc;
+
+    frame = av_frame_alloc();
+    if (!frame) {
+        return NULL;
+    }
+
+    desc = av_pix_fmt_desc_get(pool->format);
+    if (!desc) {
+        goto fail;
+    }
+
+    frame->width = pool->width;
+    frame->height = pool->height;
+    frame->format = pool->format;
+
+    for (i = 0; i < 4; i++) {
+        frame->linesize[i] = pool->linesize[i];
+        if (!pool->pools[i])
+            break;
+
+        frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
+        if (!frame->buf[i]) {
+            goto fail;
+        }
+
+        frame->data[i] = frame->buf[i]->data;
+    }
+
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+        enum AVPixelFormat format =
+            pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
+
+        av_assert0(frame->data[1] != NULL);
+        if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0) {
+            goto fail;
+        }
+    }
+
+    frame->extended_data = frame->data;
+
+    return frame;
+fail:
+    av_frame_free(&frame);
+    return NULL;
+}
+
+void ff_video_frame_pool_uninit(FFVideoFramePool **pool)
+{
+    int i;
+
+    if (!pool || !*pool)
+        return;
+
+    for (i = 0; i < 4; i++) {
+        av_buffer_pool_uninit(&(*pool)->pools[i]);
+    }
+
+    av_freep(pool);
+}

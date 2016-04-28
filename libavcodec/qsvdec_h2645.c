@@ -82,9 +82,11 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
         }
     }
 
-    if (avctx->codec_id == AV_CODEC_ID_H264)
+    if (avctx->codec_id == AV_CODEC_ID_H264) {
         s->bsf = av_bitstream_filter_init("h264_mp4toannexb");
-    else
+        //regarding ticks_per_frame description, should be 2 for h.264:
+        avctx->ticks_per_frame = 2;
+    } else
         s->bsf = av_bitstream_filter_init("hevc_mp4toannexb");
     if (!s->bsf) {
         ret = AVERROR(ENOMEM);

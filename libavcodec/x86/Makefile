@@ -6,6 +6,8 @@ OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
 OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_init.o
 OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
+OBJS-$(CONFIG_DIRAC_DECODER)           += x86/diracdsp_init.o           \
+                                          x86/dirac_dwt_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_FLACDSP)                 += x86/flacdsp_init.o
@@ -31,6 +33,7 @@ OBJS-$(CONFIG_MPEGVIDEOENC)            += x86/mpegvideoenc.o           \
 OBJS-$(CONFIG_PIXBLOCKDSP)             += x86/pixblockdsp_init.o
 OBJS-$(CONFIG_QPELDSP)                 += x86/qpeldsp_init.o
 OBJS-$(CONFIG_RV34DSP)                 += x86/rv34dsp_init.o
+OBJS-$(CONFIG_VC1DSP)                  += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VIDEODSP)                += x86/videodsp_init.o
 OBJS-$(CONFIG_VP3DSP)                  += x86/vp3dsp_init.o
 OBJS-$(CONFIG_VP8DSP)                  += x86/vp8dsp_init.o
@@ -44,7 +47,7 @@ OBJS-$(CONFIG_ADPCM_G722_ENCODER)      += x86/g722dsp_init.o
 OBJS-$(CONFIG_ALAC_DECODER)            += x86/alacdsp_init.o
 OBJS-$(CONFIG_APNG_DECODER)            += x86/pngdsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
-OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
+OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o x86/synth_filter_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_JPEG2000_DECODER)        += x86/jpeg2000dsp_init.o
@@ -60,7 +63,6 @@ OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp_init.o
 OBJS-$(CONFIG_TTA_DECODER)             += x86/ttadsp_init.o
 OBJS-$(CONFIG_V210_DECODER)            += x86/v210-init.o
 OBJS-$(CONFIG_V210_ENCODER)            += x86/v210enc_init.o
-OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o            \
@@ -72,14 +74,13 @@ OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 
 # GCC inline assembly optimizations
 # subsystems
-MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
 MMX-OBJS-$(CONFIG_FDCTDSP)             += x86/fdct.o
 MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/simple_idct.o
+MMX-OBJS-$(CONFIG_VC1DSP)              += x86/vc1dsp_mmx.o
 
 # decoders/encoders
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
-MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 
 # subsystems
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
@@ -119,6 +120,8 @@ YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
 YASM-OBJS-$(CONFIG_RV34DSP)            += x86/rv34dsp.o
+YASM-OBJS-$(CONFIG_VC1DSP)             += x86/vc1dsp_loopfilter.o       \
+                                          x86/vc1dsp_mc.o
 YASM-OBJS-$(CONFIG_IDCTDSP)            += x86/simple_idct10.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
@@ -132,9 +135,9 @@ YASM-OBJS-$(CONFIG_ADPCM_G722_DECODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ALAC_DECODER)       += x86/alacdsp.o
 YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
-YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
-YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o \
-                                          x86/dwt_yasm.o
+YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o x86/synth_filter.o
+YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp.o                \
+                                          x86/dirac_dwt.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o
 ifdef CONFIG_GPL
@@ -159,7 +162,6 @@ YASM-OBJS-$(CONFIG_TRUEHD_DECODER)     += x86/mlpdsp.o
 YASM-OBJS-$(CONFIG_TTA_DECODER)        += x86/ttadsp.o
 YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
 YASM-OBJS-$(CONFIG_V210_DECODER)       += x86/v210.o
-YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp.o
 YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o
 YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
 YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9intrapred.o            \

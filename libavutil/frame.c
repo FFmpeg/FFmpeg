@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -188,7 +187,7 @@ static int get_video_buffer(AVFrame *frame, int align)
     for (i = 0; i < 4 && frame->linesize[i]; i++) {
         int h = FFALIGN(frame->height, 32);
         if (i == 1 || i == 2)
-            h = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
 
         frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h + 16 + 16/*STRIDE_ALIGN*/ - 1);
         if (!frame->buf[i])
@@ -357,6 +356,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     dst->qscale_table = NULL;
     dst->qstride      = 0;
     dst->qscale_type  = 0;
+    av_buffer_unref(&dst->qp_table_buf);
     if (src->qp_table_buf) {
         dst->qp_table_buf = av_buffer_ref(src->qp_table_buf);
         if (dst->qp_table_buf) {
@@ -428,6 +428,14 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
         }
     }
 
+    if (src->hw_frames_ctx) {
+        dst->hw_frames_ctx = av_buffer_ref(src->hw_frames_ctx);
+        if (!dst->hw_frames_ctx) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     /* duplicate extended data */
     if (src->extended_data != src->data) {
         int ch = src->channels;
@@ -488,6 +496,8 @@ void av_frame_unref(AVFrame *frame)
 #if FF_API_FRAME_QP
     av_buffer_unref(&frame->qp_table_buf);
 #endif
+
+    av_buffer_unref(&frame->hw_frames_ctx);
 
     get_frame_defaults(frame);
 }
@@ -728,7 +738,12 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_DOWNMIX_INFO:    return "Metadata relevant to a downmix procedure";
     case AV_FRAME_DATA_REPLAYGAIN:      return "AVReplayGain";
     case AV_FRAME_DATA_DISPLAYMATRIX:   return "3x3 displaymatrix";
+    case AV_FRAME_DATA_AFD:             return "Active format description";
     case AV_FRAME_DATA_MOTION_VECTORS:  return "Motion vectors";
+    case AV_FRAME_DATA_SKIP_SAMPLES:    return "Skip samples";
+    case AV_FRAME_DATA_AUDIO_SERVICE_TYPE:          return "Audio service type";
+    case AV_FRAME_DATA_MASTERING_DISPLAY_METADATA:  return "Mastering display metadata";
+    case AV_FRAME_DATA_GOP_TIMECODE:                return "GOP timecode";
     }
     return NULL;
 }

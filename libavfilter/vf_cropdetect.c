@@ -165,7 +165,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int w, h, x, y, shrink_by;
     AVDictionary **metadata;
     int outliers, last_y;
-    int limit = round(s->limit);
+    int limit = lrint(s->limit);
 
     // ignore first 2 frames - they may be empty
     if (++s->frame_nb > 0) {

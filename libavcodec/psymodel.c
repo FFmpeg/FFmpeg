@@ -120,7 +120,12 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
                                                  FF_FILTER_MODE_LOWPASS, FILT_ORDER,
                                                  cutoff_coeff, 0.0, 0.0);
         if (ctx->fcoeffs) {
-            ctx->fstate = av_mallocz(sizeof(ctx->fstate[0]) * avctx->channels);
+            ctx->fstate = av_mallocz_array(sizeof(ctx->fstate[0]), avctx->channels);
+            if (!ctx->fstate) {
+                av_free(ctx->fcoeffs);
+                av_free(ctx);
+                return NULL;
+            }
             for (i = 0; i < avctx->channels; i++)
                 ctx->fstate[i] = ff_iir_filter_init_state(FILT_ORDER);
         }

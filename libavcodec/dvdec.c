@@ -347,7 +347,7 @@ retry:
                                     dct_mode                        * 22 * 64 +
                                     (quant + ff_dv_quant_offset[class1]) * 64];
             }
-            dc = dc << 2;
+            dc = dc * 4;
             /* convert to unsigned because 128 is not added in the
              * standard IDCT */
             dc                   += 1024;

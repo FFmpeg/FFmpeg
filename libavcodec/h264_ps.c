@@ -29,6 +29,7 @@
 
 #include "libavutil/imgutils.h"
 #include "internal.h"
+#include "mathops.h"
 #include "avcodec.h"
 #include "h264.h"
 #include "h264data.h"
@@ -105,6 +106,26 @@ static const uint8_t default_scaling8[2][64] = {
       21, 22, 24, 25, 27, 28, 30, 32,
       22, 24, 25, 27, 28, 30, 32, 33,
       24, 25, 27, 28, 30, 32, 33, 35 }
+};
+
+/* maximum number of MBs in the DPB for a given level */
+static const int level_max_dpb_mbs[][2] = {
+    { 10, 396       },
+    { 11, 900       },
+    { 12, 2376      },
+    { 13, 2376      },
+    { 20, 2376      },
+    { 21, 4752      },
+    { 22, 8100      },
+    { 30, 8100      },
+    { 31, 18000     },
+    { 32, 20480     },
+    { 40, 32768     },
+    { 41, 32768     },
+    { 42, 34816     },
+    { 50, 110400    },
+    { 51, 184320    },
+    { 52, 184320    },
 };
 
 static inline int decode_hrd_parameters(H264Context *h, SPS *sps)
@@ -252,7 +273,7 @@ static void decode_scaling_list(H264Context *h, uint8_t *factors, int size,
                                 const uint8_t *fallback_list)
 {
     int i, last = 8, next = 8;
-    const uint8_t *scan = size == 16 ? zigzag_scan : ff_zigzag_direct;
+    const uint8_t *scan = size == 16 ? ff_zigzag_scan : ff_zigzag_direct;
     if (!get_bits1(&h->gb)) /* matrix not written, we use the predicted one */
         memcpy(factors, fallback_list, size * sizeof(uint8_t));
     else
@@ -533,6 +554,19 @@ int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation)
                "Overread %s by %d bits\n", sps->vui_parameters_present_flag ? "VUI" : "SPS", -get_bits_left(&h->gb));
         if (!ignore_truncation)
             goto fail;
+    }
+
+    /* if the maximum delay is not stored in the SPS, derive it based on the
+     * level */
+    if (!sps->bitstream_restriction_flag) {
+        sps->num_reorder_frames = MAX_DELAYED_PIC_COUNT - 1;
+        for (i = 0; i < FF_ARRAY_ELEMS(level_max_dpb_mbs); i++) {
+            if (level_max_dpb_mbs[i][0] == sps->level_idc) {
+                sps->num_reorder_frames = FFMIN(level_max_dpb_mbs[i][1] / (sps->mb_width * sps->mb_height),
+                                                sps->num_reorder_frames);
+                break;
+            }
+        }
     }
 
     if (!sps->sar.den)

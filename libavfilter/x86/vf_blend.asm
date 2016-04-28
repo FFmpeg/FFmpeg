@@ -22,9 +22,10 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
 SECTION_RODATA
 
+ps_255: times 4 dd 255.0
+pw_1:   times 8 dw 1
 pw_128: times 8 dw 128
 pw_255: times 8 dw 255
 pb_127: times 16 db 127
@@ -33,400 +34,283 @@ pb_255: times 16 db 255
 
 SECTION .text
 
+%macro BLEND_INIT 2
+%if ARCH_X86_64
+cglobal blend_%1, 6, 9, %2, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, end, x
+    mov    widthd, dword widthm
+%else
+cglobal blend_%1, 5, 7, %2, top, top_linesize, bottom, bottom_linesize, dst, end, x
+%define dst_linesizeq r5mp
+%define widthq r6mp
+%endif
+    mov      endd, dword r7m
+    add      topq, widthq
+    add   bottomq, widthq
+    add      dstq, widthq
+    neg    widthq
+%endmacro
+
+%macro BLEND_END 0
+    add          topq, top_linesizeq
+    add       bottomq, bottom_linesizeq
+    add          dstq, dst_linesizeq
+    sub          endd, 1
+    jg .nextrow
+REP_RET
+%endmacro
+
+%macro BLEND_SIMPLE 2
+BLEND_INIT %1, 2
+.nextrow:
+    mov        xq, widthq
+
+    .loop:
+        movu            m0, [topq + xq]
+        movu            m1, [bottomq + xq]
+        p%2             m0, m1
+        mova   [dstq + xq], m0
+        add             xq, mmsize
+    jl .loop
+BLEND_END
+%endmacro
+
 INIT_XMM sse2
-cglobal blend_xor, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
-    neg    widthq
-.nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+BLEND_SIMPLE xor,      xor
+BLEND_SIMPLE or,       or
+BLEND_SIMPLE and,      and
+BLEND_SIMPLE addition, addusb
+BLEND_SIMPLE subtract, subusb
+BLEND_SIMPLE darken,   minub
+BLEND_SIMPLE lighten,  maxub
 
-    .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
-        pxor            m0, m1
-        mova    [dstq + x], m0
-        add           r10q, mmsize
-    jl .loop
-
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_or, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
-    neg    widthq
-.nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
-
-    .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
-        por             m0, m1
-        mova    [dstq + x], m0
-        add           r10q, mmsize
-    jl .loop
-
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_and, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
-    neg    widthq
-.nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
-
-    .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
-        pand            m0, m1
-        mova    [dstq + x], m0
-        add           r10q, mmsize
-    jl .loop
-
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_addition, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
-    neg    widthq
-.nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
-
-    .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
-        paddusb         m0, m1
-        mova    [dstq + x], m0
-        add           r10q, mmsize
-    jl .loop
-
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_subtract, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
-    neg    widthq
-.nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
-
-    .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
-        psubusb         m0, m1
-        mova    [dstq + x], m0
-        add           r10q, mmsize
-    jl .loop
-
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_difference128, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
+BLEND_INIT difference128, 4
     pxor       m2, m2
     mova       m3, [pw_128]
-    neg    widthq
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + x]
-        movh            m1, [bottomq + x]
+        movh            m0, [topq + xq]
+        movh            m1, [bottomq + xq]
         punpcklbw       m0, m2
         punpcklbw       m1, m2
         paddw           m0, m3
         psubw           m0, m1
         packuswb        m0, m0
-        movh    [dstq + x], m0
-        add           r10q, mmsize / 2
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
     jl .loop
+BLEND_END
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
+%macro MULTIPLY 3 ; a, b, pw_1
+    pmullw          %1, %2               ; xxxxxxxx  a * b
+    paddw           %1, %3
+    mova            %2, %1
+    psrlw           %2, 8
+    paddw           %1, %2
+    psrlw           %1, 8                ; 00xx00xx  a * b / 255
+%endmacro
 
-cglobal blend_average, 9, 11, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
+%macro SCREEN 4   ; a, b, pw_1, pw_255
+    pxor            %1, %4               ; 00xx00xx  255 - a
+    pxor            %2, %4
+    MULTIPLY        %1, %2, %3
+    pxor            %1, %4               ; 00xx00xx  255 - x / 255
+%endmacro
+
+BLEND_INIT multiply, 4
     pxor       m2, m2
-    neg    widthq
+    mova       m3, [pw_1]
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + x]
-        movh            m1, [bottomq + x]
+                                             ;     word
+                                             ;     |--|
+        movh            m0, [topq + xq]      ; 0000xxxx
+        movh            m1, [bottomq + xq]
+        punpcklbw       m0, m2               ; 00xx00xx
+        punpcklbw       m1, m2
+
+        MULTIPLY        m0, m1, m3
+
+        packuswb        m0, m0               ; 0000xxxx
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
+
+    jl .loop
+BLEND_END
+
+BLEND_INIT screen, 5
+    pxor       m2, m2
+    mova       m3, [pw_1]
+    mova       m4, [pw_255]
+.nextrow:
+    mov        xq, widthq
+
+    .loop:
+        movh            m0, [topq + xq]      ; 0000xxxx
+        movh            m1, [bottomq + xq]
+        punpcklbw       m0, m2               ; 00xx00xx
+        punpcklbw       m1, m2
+
+        SCREEN          m0, m1, m3, m4
+
+        packuswb        m0, m0               ; 0000xxxx
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
+
+    jl .loop
+BLEND_END
+
+BLEND_INIT average, 3
+    pxor       m2, m2
+.nextrow:
+    mov        xq, widthq
+
+    .loop:
+        movh            m0, [topq + xq]
+        movh            m1, [bottomq + xq]
         punpcklbw       m0, m2
         punpcklbw       m1, m2
         paddw           m0, m1
         psrlw           m0, 1
         packuswb        m0, m0
-        movh    [dstq + x], m0
-        add           r10q, mmsize / 2
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
     jl .loop
+BLEND_END
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_addition128, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
+BLEND_INIT addition128, 4
     pxor       m2, m2
     mova       m3, [pw_128]
-    neg    widthq
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + x]
-        movh            m1, [bottomq + x]
+        movh            m0, [topq + xq]
+        movh            m1, [bottomq + xq]
         punpcklbw       m0, m2
         punpcklbw       m1, m2
         paddw           m0, m1
         psubw           m0, m3
         packuswb        m0, m0
-        movh    [dstq + x], m0
-        add           r10q, mmsize / 2
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
     jl .loop
+BLEND_END
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_darken, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
-    neg    widthq
-.nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
-
-    .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
-        pminub          m0, m1
-        mova    [dstq + x], m0
-        add           r10q, mmsize
-    jl .loop
-
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_hardmix, 9, 11, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
+BLEND_INIT hardmix, 5
     mova       m2, [pb_255]
     mova       m3, [pb_128]
     mova       m4, [pb_127]
-    neg    widthq
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
+        movu            m0, [topq + xq]
+        movu            m1, [bottomq + xq]
         pxor            m1, m4
         pxor            m0, m3
         pcmpgtb         m1, m0
         pxor            m1, m2
-        mova    [dstq + x], m1
-        add           r10q, mmsize
+        mova   [dstq + xq], m1
+        add             xq, mmsize
     jl .loop
+BLEND_END
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_lighten, 9, 11, 2, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
-    neg    widthq
+BLEND_INIT divide, 4
+    pxor       m2, m2
+    mova       m3, [ps_255]
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
-        pmaxub          m0, m1
-        mova    [dstq + x], m0
-        add           r10q, mmsize
+        movd            m0, [topq + xq]      ; 000000xx
+        movd            m1, [bottomq + xq]
+        punpcklbw       m0, m2               ; 00000x0x
+        punpcklbw       m1, m2
+        punpcklwd       m0, m2               ; 000x000x
+        punpcklwd       m1, m2
+
+        cvtdq2ps        m0, m0
+        cvtdq2ps        m1, m1
+        divps           m0, m1               ; a / b
+        mulps           m0, m3               ; a / b * 255
+        minps           m0, m3
+        cvttps2dq       m0, m0
+
+        packssdw        m0, m0               ; 00000x0x
+        packuswb        m0, m0               ; 000000xx
+        movd   [dstq + xq], m0
+        add             xq, mmsize / 4
+
     jl .loop
+BLEND_END
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_phoenix, 9, 11, 4, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
+BLEND_INIT phoenix, 4
     mova       m3, [pb_255]
-    neg    widthq
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movu            m0, [topq + x]
-        movu            m1, [bottomq + x]
+        movu            m0, [topq + xq]
+        movu            m1, [bottomq + xq]
         mova            m2, m0
         pminub          m0, m1
         pmaxub          m1, m2
         mova            m2, m3
         psubusb         m2, m1
         paddusb         m2, m0
-        mova    [dstq + x], m2
-        add           r10q, mmsize
+        mova   [dstq + xq], m2
+        add             xq, mmsize
     jl .loop
+BLEND_END
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-INIT_XMM ssse3
-cglobal blend_difference, 9, 11, 3, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
+%macro BLEND_ABS 0
+BLEND_INIT difference, 3
     pxor       m2, m2
-    neg    widthq
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + x]
-        movh            m1, [bottomq + x]
+        movh            m0, [topq + xq]
+        movh            m1, [bottomq + xq]
         punpcklbw       m0, m2
         punpcklbw       m1, m2
         psubw           m0, m1
-        pabsw           m0, m0
+        ABS1            m0, m1
         packuswb        m0, m0
-        movh    [dstq + x], m0
-        add           r10q, mmsize / 2
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
     jl .loop
+BLEND_END
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-cglobal blend_negation, 9, 11, 5, 0, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, start, end
-    add      topq, widthq
-    add   bottomq, widthq
-    add      dstq, widthq
-    sub      endq, startq
+BLEND_INIT negation, 5
     pxor       m2, m2
     mova       m4, [pw_255]
-    neg    widthq
 .nextrow:
-    mov       r10q, widthq
-    %define      x  r10q
+    mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + x]
-        movh            m1, [bottomq + x]
+        movh            m0, [topq + xq]
+        movh            m1, [bottomq + xq]
         punpcklbw       m0, m2
         punpcklbw       m1, m2
         mova            m3, m4
         psubw           m3, m0
         psubw           m3, m1
-        pabsw           m3, m3
+        ABS1            m3, m1
         mova            m0, m4
         psubw           m0, m3
         packuswb        m0, m0
-        movh    [dstq + x], m0
-        add           r10q, mmsize / 2
+        movh   [dstq + xq], m0
+        add             xq, mmsize / 2
     jl .loop
+BLEND_END
+%endmacro
 
-    add          topq, top_linesizeq
-    add       bottomq, bottom_linesizeq
-    add          dstq, dst_linesizeq
-    sub          endd, 1
-    jg .nextrow
-REP_RET
-
-%endif
+INIT_XMM sse2
+BLEND_ABS
+INIT_XMM ssse3
+BLEND_ABS

@@ -140,7 +140,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s,
 void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
                       int dir);
 void ff_set_mpeg4_time(MpegEncContext *s);
-void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
+int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 
 int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
@@ -158,7 +158,6 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx);
 int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
 
 /**
- *
  * @return the mb_type
  */
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);

@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -29,7 +28,7 @@
 #include "libavutil/version.h"
 
 #define LIBAVCODEC_VERSION_MAJOR  57
-#define LIBAVCODEC_VERSION_MINOR  17
+#define LIBAVCODEC_VERSION_MINOR  38
 #define LIBAVCODEC_VERSION_MICRO 100
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -60,6 +59,9 @@
 #endif
 #ifndef FF_API_AVCODEC_RESAMPLE
 #define FF_API_AVCODEC_RESAMPLE  FF_API_AUDIO_CONVERT
+#endif
+#ifndef FF_API_GETCHROMA
+#define FF_API_GETCHROMA         (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_MISSING_SAMPLE
 #define FF_API_MISSING_SAMPLE    (LIBAVCODEC_VERSION_MAJOR < 58)
@@ -196,6 +198,24 @@
 #endif
 #ifndef FF_API_RTP_CALLBACK
 #define FF_API_RTP_CALLBACK      (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_VBV_DELAY
+#define FF_API_VBV_DELAY         (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_CODER_TYPE
+#define FF_API_CODER_TYPE        (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_STAT_BITS
+#define FF_API_STAT_BITS         (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_PRIVATE_OPT
+#define FF_API_PRIVATE_OPT      (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_ASS_TIMING
+#define FF_API_ASS_TIMING       (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_OLD_BSF
+#define FF_API_OLD_BSF          (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
 
 #endif /* AVCODEC_VERSION_H */

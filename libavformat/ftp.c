@@ -401,10 +401,12 @@ static int ftp_file_size(FTPContext *s)
 static int ftp_retrieve(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    static const int retr_codes[] = {150, 0};
+    static const int retr_codes[] = {150, 125, 0};
+    int resp_code;
 
     snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
-    if (ftp_send_command(s, command, retr_codes, NULL) != 150)
+    resp_code = ftp_send_command(s, command, retr_codes, NULL);
+    if (resp_code != 125 && resp_code != 150)
         return AVERROR(EIO);
 
     s->state = DOWNLOADING;
@@ -415,10 +417,12 @@ static int ftp_retrieve(FTPContext *s)
 static int ftp_store(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    static const int stor_codes[] = {150, 0};
+    static const int stor_codes[] = {150, 125, 0};
+    int resp_code;
 
     snprintf(command, sizeof(command), "STOR %s\r\n", s->path);
-    if (ftp_send_command(s, command, stor_codes, NULL) != 150)
+    resp_code = ftp_send_command(s, command, stor_codes, NULL);
+    if (resp_code != 125 && resp_code != 150)
         return AVERROR(EIO);
 
     s->state = UPLOADING;
@@ -537,8 +541,9 @@ static int ftp_connect_control_connection(URLContext *h)
         if (s->rw_timeout != -1) {
             av_dict_set_int(&opts, "timeout", s->rw_timeout, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
-                         &h->interrupt_callback, &opts);
+        err = ffurl_open_whitelist(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
+                                   &h->interrupt_callback, &opts,
+                                   h->protocol_whitelist, h->protocol_blacklist, h);
         av_dict_free(&opts);
         if (err < 0) {
             av_log(h, AV_LOG_ERROR, "Cannot open control connection\n");
@@ -590,8 +595,9 @@ static int ftp_connect_data_connection(URLContext *h)
         if (s->rw_timeout != -1) {
             av_dict_set_int(&opts, "timeout", s->rw_timeout, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_data, buf, h->flags,
-                         &h->interrupt_callback, &opts);
+        err = ffurl_open_whitelist(&s->conn_data, buf, h->flags,
+                                   &h->interrupt_callback, &opts,
+                                   h->protocol_whitelist, h->protocol_blacklist, h);
         av_dict_free(&opts);
         if (err < 0)
             return err;
@@ -1097,7 +1103,7 @@ cleanup:
     return ret;
 }
 
-URLProtocol ff_ftp_protocol = {
+const URLProtocol ff_ftp_protocol = {
     .name                = "ftp",
     .url_open            = ftp_open,
     .url_read            = ftp_read,
@@ -1114,4 +1120,5 @@ URLProtocol ff_ftp_protocol = {
     .url_delete          = ftp_delete,
     .url_move            = ftp_move,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist   = "tcp",
 };

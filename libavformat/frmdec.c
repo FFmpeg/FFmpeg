@@ -25,6 +25,7 @@
  */
 
 #include "libavcodec/raw.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
@@ -57,30 +58,30 @@ static int frm_read_header(AVFormatContext *avctx)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
     avio_skip(pb, 3);
 
-    st->codec->pix_fmt    = avpriv_find_pix_fmt(frm_pix_fmt_tags, avio_r8(pb));
-    if (!st->codec->pix_fmt)
+    st->codecpar->format    = avpriv_find_pix_fmt(frm_pix_fmt_tags, avio_r8(pb));
+    if (!st->codecpar->format)
         return AVERROR_INVALIDDATA;
 
-    st->codec->codec_tag  = 0;
-    st->codec->width      = avio_rl16(pb);
-    st->codec->height     = avio_rl16(pb);
+    st->codecpar->codec_tag  = 0;
+    st->codecpar->width      = avio_rl16(pb);
+    st->codecpar->height     = avio_rl16(pb);
     return 0;
 }
 
 static int frm_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     FrmContext *s = avctx->priv_data;
-    AVCodecContext *stc = avctx->streams[0]->codec;
+    AVCodecParameters *par = avctx->streams[0]->codecpar;
     int packet_size, ret;
 
     if (s->count)
         return AVERROR_EOF;
 
-    packet_size = avpicture_get_size(stc->pix_fmt, stc->width, stc->height);
+    packet_size = av_image_get_buffer_size(par->format, par->width, par->height, 1);
     if (packet_size < 0)
         return AVERROR_INVALIDDATA;
 
@@ -88,7 +89,7 @@ static int frm_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-    if (stc->pix_fmt == AV_PIX_FMT_BGRA) {
+    if (par->format == AV_PIX_FMT_BGRA) {
         int i;
         for (i = 3; i + 1 <= pkt->size; i += 4)
             pkt->data[i] = 0xFF - pkt->data[i];

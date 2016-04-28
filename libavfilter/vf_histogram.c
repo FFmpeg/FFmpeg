@@ -75,8 +75,10 @@ static const enum AVPixelFormat levels_in_pix_fmts[] = {
     AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
     AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP12,   AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
 };
@@ -96,6 +98,11 @@ static const enum AVPixelFormat levels_out_yuv10_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static const enum AVPixelFormat levels_out_yuv12_pix_fmts[] = {
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_NONE
+};
+
 static const enum AVPixelFormat levels_out_rgb8_pix_fmts[] = {
     AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_NONE
@@ -108,6 +115,11 @@ static const enum AVPixelFormat levels_out_rgb9_pix_fmts[] = {
 
 static const enum AVPixelFormat levels_out_rgb10_pix_fmts[] = {
     AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat levels_out_rgb12_pix_fmts[] = {
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_NONE
 };
 
@@ -144,12 +156,18 @@ static int query_formats(AVFilterContext *ctx)
         out_pix_fmts = levels_out_rgb9_pix_fmts;
     else if (rgb && bits == 10)
         out_pix_fmts = levels_out_rgb10_pix_fmts;
+    else if (rgb && bits == 12)
+        out_pix_fmts = levels_out_rgb12_pix_fmts;
     else if (bits == 8)
         out_pix_fmts = levels_out_yuv8_pix_fmts;
     else if (bits == 9)
         out_pix_fmts = levels_out_yuv9_pix_fmts;
-    else // if (bits == 10)
+    else if (bits == 10)
         out_pix_fmts = levels_out_yuv10_pix_fmts;
+    else if (bits == 12)
+        out_pix_fmts = levels_out_yuv12_pix_fmts;
+    else
+        return AVERROR(EAGAIN);
     if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
         return ret;
 
@@ -171,6 +189,7 @@ static int config_input(AVFilterLink *inlink)
     h->mult = h->histogram_size / 256;
 
     switch (inlink->format) {
+    case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:
@@ -183,9 +202,9 @@ static int config_input(AVFilterLink *inlink)
         h->fg_color = white_yuva_color;
     }
 
-    h->planeheight[1] = h->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, h->desc->log2_chroma_h);
+    h->planeheight[1] = h->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, h->desc->log2_chroma_h);
     h->planeheight[0] = h->planeheight[3] = inlink->h;
-    h->planewidth[1]  = h->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, h->desc->log2_chroma_w);
+    h->planewidth[1]  = h->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, h->desc->log2_chroma_w);
     h->planewidth[0]  = h->planewidth[3]  = inlink->w;
 
     return 0;
@@ -228,8 +247,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (k = 0; k < 4 && out->data[k]; k++) {
         const int is_chroma = (k == 1 || k == 2);
-        const int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? h->odesc->log2_chroma_h : 0));
-        const int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? h->odesc->log2_chroma_w : 0));
+        const int dst_h = AV_CEIL_RSHIFT(outlink->h, (is_chroma ? h->odesc->log2_chroma_h : 0));
+        const int dst_w = AV_CEIL_RSHIFT(outlink->w, (is_chroma ? h->odesc->log2_chroma_w : 0));
 
         if (h->histogram_size <= 256) {
             for (i = 0; i < dst_h ; i++)
@@ -281,7 +300,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             int col_height;
 
             if (h->levels_mode)
-                col_height = round(h->level_height * (1. - (log2(h->histogram[i] + 1) / max_hval_log)));
+                col_height = lrint(h->level_height * (1. - (log2(h->histogram[i] + 1) / max_hval_log)));
             else
                 col_height = h->level_height - (h->histogram[i] * (int64_t)h->level_height + max_hval - 1) / max_hval;
 

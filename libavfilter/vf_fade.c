@@ -244,10 +244,10 @@ static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
     FadeContext *s = ctx->priv;
     AVFrame *frame = arg;
     int i, j, plane;
-    const int width = FF_CEIL_RSHIFT(frame->width, s->hsub);
-    const int height= FF_CEIL_RSHIFT(frame->height, s->vsub);
+    const int width = AV_CEIL_RSHIFT(frame->width, s->hsub);
+    const int height= AV_CEIL_RSHIFT(frame->height, s->vsub);
     int slice_start = (height *  jobnr   ) / nb_jobs;
-    int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    int slice_end   = FFMIN(((height * (jobnr+1)) / nb_jobs), frame->height);
 
     for (plane = 1; plane < 3; plane++) {
         for (i = slice_start; i < slice_end; i++) {
