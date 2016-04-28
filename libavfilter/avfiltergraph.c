@@ -528,7 +528,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return AVERROR(EINVAL);
                     }
 
-                    snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
+                    snprintf(inst_name, sizeof(inst_name), "auto_scaler_%d",
                              scaler_count++);
 
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
@@ -543,7 +543,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return AVERROR(EINVAL);
                     }
 
-                    snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
+                    snprintf(inst_name, sizeof(inst_name), "auto_resampler_%d",
                              resampler_count++);
                     scale_args[0] = '\0';
                     if (graph->aresample_swr_opts)
@@ -1240,7 +1240,7 @@ static int graph_insert_fifos(AVFilterGraph *graph, AVClass *log_ctx)
                    avfilter_get_by_name("fifo") :
                    avfilter_get_by_name("afifo");
 
-            snprintf(name, sizeof(name), "auto-inserted fifo %d", fifo_count++);
+            snprintf(name, sizeof(name), "auto_fifo_%d", fifo_count++);
 
             ret = avfilter_graph_create_filter(&fifo_ctx, fifo, name, NULL,
                                                NULL, graph);
