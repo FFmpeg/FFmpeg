@@ -20,6 +20,7 @@ version 3.0.2:
 - avfilter/src_movie: fix how we check for overflows with seek_point
 - avcodec/j2kenc: Add attribution to OpenJPEG project:
 
+
 version 3.0.1:
 - avcodec/libutvideodec: copy frame so it has reference counters when refcounted_frames is set
 - avformat/rtpdec_jpeg: fix low contrast image on low quality setting
