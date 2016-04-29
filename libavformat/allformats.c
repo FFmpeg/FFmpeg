@@ -335,6 +335,7 @@ void av_register_all(void)
     REGISTER_MUXER   (WEBP,             webp);
     REGISTER_MUXDEMUX(WEBVTT,           webvtt);
     REGISTER_DEMUXER (WSAUD,            wsaud);
+    REGISTER_DEMUXER (WSD,              wsd);
     REGISTER_DEMUXER (WSVQA,            wsvqa);
     REGISTER_MUXDEMUX(WTV,              wtv);
     REGISTER_DEMUXER (WVE,              wve);
