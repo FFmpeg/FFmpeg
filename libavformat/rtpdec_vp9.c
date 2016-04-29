@@ -223,7 +223,7 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
      */
     if (has_ss_data) {
         avpriv_report_missing_feature(ctx, "VP9 scalability structure data");
-        return AVERROR(ENOSYS);
+        return AVERROR_PATCHWELCOME;
     }
 
     /*
