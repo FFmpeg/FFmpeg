@@ -4939,20 +4939,24 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     return 0;
 }
 
-static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, const char *tcstr)
+
+static int mov_check_timecode_track(AVFormatContext *s, AVTimecode *tc, int src_index, const char *tcstr)
+{
+    int ret;
+
+    /* compute the frame number */
+    ret = av_timecode_init_from_string(tc, find_fps(s,  s->streams[src_index]), tcstr, s);
+    return ret;
+}
+
+static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, AVTimecode tc)
 {
     int ret;
     MOVMuxContext *mov  = s->priv_data;
     MOVTrack *track     = &mov->tracks[index];
     AVStream *src_st    = s->streams[src_index];
-    AVTimecode tc;
     AVPacket pkt    = {.stream_index = index, .flags = AV_PKT_FLAG_KEY, .size = 4};
     AVRational rate = find_fps(s, src_st);
-
-    /* compute the frame number */
-    ret = av_timecode_init_from_string(&tc, rate, tcstr, s);
-    if (ret < 0)
-        return ret;
 
     /* tmcd track based on video stream */
     track->mode      = mov->mode;
@@ -5242,9 +5246,14 @@ static int mov_write_header(AVFormatContext *s)
         /* +1 tmcd track for each video stream with a timecode */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
+            t = global_tcr;
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                (global_tcr || av_dict_get(st->metadata, "timecode", NULL, 0)))
-                mov->nb_meta_tmcd++;
+                (t || (t=av_dict_get(st->metadata, "timecode", NULL, 0)))) {
+                AVTimecode tc;
+                ret = mov_check_timecode_track(s, &tc, i, t->value);
+                if (ret >= 0)
+                    mov->nb_meta_tmcd++;
+            }
         }
 
         /* check if there is already a tmcd track to remux */
@@ -5509,11 +5518,14 @@ static int mov_write_header(AVFormatContext *s)
             t = global_tcr;
 
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                AVTimecode tc;
                 if (!t)
                     t = av_dict_get(st->metadata, "timecode", NULL, 0);
                 if (!t)
                     continue;
-                if ((ret = mov_create_timecode_track(s, tmcd_track, i, t->value)) < 0)
+                if (mov_check_timecode_track(s, &tc, i, t->value) < 0)
+                    continue;
+                if ((ret = mov_create_timecode_track(s, tmcd_track, i, tc)) < 0)
                     goto error;
                 tmcd_track++;
             }
