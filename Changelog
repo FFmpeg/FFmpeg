@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.7
+- avcodec/motion_est: Attempt to fix "short data segment overflowed" on IA64
+- avformat/ffmdec: Check pix_fmt
 - avcodec/ttaenc: Reallocate packet if its too small
 - pgssubdec: fix subpicture output colorspace and range
 - avcodec/ac3dec: Reset SPX when switching from EAC3 to AC3
