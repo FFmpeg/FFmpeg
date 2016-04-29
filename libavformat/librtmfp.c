@@ -78,6 +78,10 @@ static void rtmfp_log(unsigned int threadID, int level, const char* fileName, lo
     av_log(NULL, level, "\n");
 }
 
+static void rtmfp_dump(const char* header, const void* data, unsigned int size) {
+    av_log(NULL, AV_LOG_DEBUG, "%s\n%s", header, (const char*)data);
+}
+
 static int rtmfp_close(URLContext *s)
 {
     LibRTMFPContext *ctx = s->priv_data;
@@ -125,6 +129,8 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     }
     RTMFP_LogSetLevel(level);
     RTMFP_LogSetCallback(rtmfp_log);
+    RTMFP_ActiveDump();
+    RTMFP_DumpSetCallback(rtmfp_dump);
     RTMFP_InterruptSetCallback(s->interrupt_callback.callback, s->interrupt_callback.opaque);
 
     RTMFP_GetPublicationAndUrlFromUri(url, &ctx->publication);
@@ -135,8 +141,8 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
 
     if (ctx->netgroup)
-        res = RTMFP_Connect2Group(ctx->id, ctx->netgroup, ctx->publication, flags & AVIO_FLAG_WRITE, 0.2, 8);
-    if (ctx->peerId)
+        res = RTMFP_Connect2Group(ctx->id, ctx->netgroup, ctx->publication, (flags & AVIO_FLAG_WRITE) > 1, 0.2, 8);
+    else if (ctx->peerId)
         res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication);
     else if (ctx->p2pPublishing)
         res = RTMFP_PublishP2P(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
