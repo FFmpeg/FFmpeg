@@ -177,6 +177,24 @@ typedef struct FrameQueue {
     PacketQueue *pktq;
 } FrameQueue;
 
+typedef struct PassthroughData {
+    uint8_t *data;
+    int data_size;
+} PassthroughData;
+
+typedef struct PassthroughDataQueue {
+    PassthroughData queue[FRAME_QUEUE_SIZE];
+    int rindex;
+    int windex;
+    int size;
+    int max_size;
+    int keep_last;
+    int rindex_shown;
+    SDL_mutex *mutex;
+    SDL_cond *cond;
+    PacketQueue *pktq;
+} PassthroughDataQueue;
+
 enum {
     AV_SYNC_AUDIO_MASTER, /* default choice */
     AV_SYNC_VIDEO_MASTER,
@@ -222,6 +240,7 @@ typedef struct VideoState {
     FrameQueue pictq;
     FrameQueue subpq;
     FrameQueue sampq;
+    PassthroughDataQueue passq;
 
     Decoder auddec;
     Decoder viddec;
@@ -351,6 +370,14 @@ static int nb_vfilters = 0;
 static char *afilters = NULL;
 #endif
 static int autorotate = 1;
+
+static int savefile = 0;
+static int enableAudioPassthrough = 0;
+static AVFormatContext *audioPassthroughOutput;
+static AVStream *audioPassthroughStream;
+static uint8_t outbuffer[32768];
+static AVIOContext *audioPassthroughOutputIOContext;
+static PassthroughData *pd_temp;
 
 /* current context */
 static int is_full_screen;
@@ -793,10 +820,137 @@ static int64_t frame_queue_last_pos(FrameQueue *f)
         return -1;
 }
 
+static int passthrough_data_queue_init(PassthroughDataQueue *p, PacketQueue *pktq, int max_size, int keep_last)
+{
+    memset(p, 0, sizeof(PassthroughDataQueue));
+    if(!(p->mutex = SDL_CreateMutex())) {
+        av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
+        return AVERROR(ENOMEM);
+    }
+    if(!(p->cond = SDL_CreateCond())) {
+        av_log(NULL, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
+        return AVERROR(ENOMEM);
+    }
+    p->max_size = FFMIN(max_size, FRAME_QUEUE_SIZE);
+    p->keep_last = !!keep_last;
+    p->pktq = pktq;
+    return 0;
+}
+
+static void passthrough_data_queue_destroy(PassthroughDataQueue *p)
+{
+    int i;
+    for (i = 0; i < p->max_size; i++) {
+        if(p->queue[i].data) {
+            av_free(p->queue[i].data);
+            p->queue[i].data = NULL;
+        }
+    }
+    SDL_DestroyMutex(p->mutex);
+    SDL_DestroyCond(p->cond);
+}
+
+static void passthrough_data_queue_signal(PassthroughDataQueue *p)
+{
+    SDL_LockMutex(p->mutex);
+    SDL_CondSignal(p->cond);
+    SDL_UnlockMutex(p->mutex);
+}
+
+/*static PassthroughData *passthrough_data_queue_peek(PassthroughDataQueue *p)
+{
+    return &p->queue[(p->rindex + p->rindex_shown) % p->max_size];
+}
+
+static PassthroughData *passthrough_data_queue_peek_next(PassthroughDataQueue *p)
+{
+    return &p->queue[(p->rindex + p->rindex_shown + 1) % p->max_size];
+}
+
+static PassthroughData *passthrough_data_queue_peek_last(PassthroughDataQueue *p)
+{
+    return &p->queue[p->rindex];
+}*/
+
+static PassthroughData *passthrough_data_queue_peek_writable(PassthroughDataQueue *p)
+{
+    SDL_LockMutex(p->mutex);
+    while(p->size >= p->max_size &&
+        !p->pktq->abort_request) {
+        SDL_CondWait(p->cond, p->mutex);
+    }
+    SDL_UnlockMutex(p->mutex);
+
+    if(p->pktq->abort_request)
+        return NULL;
+
+    return &p->queue[p->windex];
+}
+
+static PassthroughData *passthrough_data_queue_peek_readable(PassthroughDataQueue *p)
+{
+    SDL_LockMutex(p->mutex);
+    while(p->size - p->rindex_shown <= 0 &&
+        !p->pktq->abort_request) {
+        SDL_CondWait(p->cond, p->mutex);
+    }
+    SDL_UnlockMutex(p->mutex);
+
+    if(p->pktq->abort_request)
+        return NULL;
+
+    return &p->queue[(p->rindex + p->rindex_shown) % p->max_size];
+}
+
+static void passthrough_data_queue_push(PassthroughDataQueue *p)
+{
+    if (++p->windex == p->max_size)
+        p->windex = 0;
+    SDL_LockMutex(p->mutex);
+    p->size++;
+    SDL_CondSignal(p->cond);
+    SDL_UnlockMutex(p->mutex);
+}
+
+static void passthrough_data_queue_next(PassthroughDataQueue *p)
+{
+    if (p->keep_last && !p->rindex_shown) {
+        p->rindex_shown = 1;
+        return;
+    }
+    if (++p->rindex == p->max_size)
+        p->rindex = 0;
+    SDL_LockMutex(p->mutex);
+    p->size--;
+    SDL_CondSignal(p->cond);
+    SDL_UnlockMutex(p->mutex);
+}
+/*
+static int passthrough_data_queue_prev(PassthroughDataQueue *p)
+{
+    int ret = p->rindex_shown;
+    p->rindex_shown = 0;
+    return ret;
+}*/
+
+static int passthrough_data_queue_nb_remaining(PassthroughDataQueue *p)
+{
+    return p->size - p->rindex_shown;
+}
+
 static void decoder_abort(Decoder *d, FrameQueue *fq)
 {
     packet_queue_abort(d->queue);
     frame_queue_signal(fq);
+    SDL_WaitThread(d->decoder_tid, NULL);
+    d->decoder_tid = NULL;
+    packet_queue_flush(d->queue);
+}
+
+static void decoder_abort2(Decoder *d, PassthroughDataQueue *pq)
+{
+    packet_queue_abort(d->queue);
+    passthrough_data_queue_signal(pq);
     SDL_WaitThread(d->decoder_tid, NULL);
     d->decoder_tid = NULL;
     packet_queue_flush(d->queue);
@@ -1148,7 +1302,12 @@ static void stream_component_close(VideoState *is, int stream_index)
 
     switch (codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        decoder_abort(&is->auddec, &is->sampq);
+        if(enableAudioPassthrough) {
+            decoder_abort2(&is->auddec, &is->passq);
+        }
+        else {
+            decoder_abort(&is->auddec, &is->sampq);
+        }
         SDL_CloseAudio();
         decoder_destroy(&is->auddec);
         swr_free(&is->swr_ctx);
@@ -1210,12 +1369,25 @@ static void stream_close(VideoState *is)
 
     avformat_close_input(&is->ic);
 
+    if (enableAudioPassthrough) {
+        if (audioPassthroughOutput) {
+            av_write_trailer(audioPassthroughOutput);
+            avformat_free_context(audioPassthroughOutput);
+            audioPassthroughOutput = NULL;
+        }
+        if (audioPassthroughOutputIOContext) {
+            av_free(audioPassthroughOutputIOContext);
+            audioPassthroughOutputIOContext = NULL;
+        }
+    }
+
     packet_queue_destroy(&is->videoq);
     packet_queue_destroy(&is->audioq);
     packet_queue_destroy(&is->subtitleq);
 
     /* free all pictures */
     frame_queue_destory(&is->pictq);
+    passthrough_data_queue_destroy(&is->passq);
     frame_queue_destory(&is->sampq);
     frame_queue_destory(&is->subpq);
     SDL_DestroyCond(is->continue_read_thread);
@@ -2527,33 +2699,82 @@ static int audio_decode_frame(VideoState *is)
     return resampled_data_size;
 }
 
+static FILE *fp = NULL;
+static void write_to_file(uint8_t *data, int size)
+{
+    int ret;
+    if(fp == NULL) {
+        fp = fopen("out.spdif", "wb");
+        if(fp == NULL) {
+            return;
+        }
+    }
+    ret = fwrite(data, 1, size, fp);
+    if(ret != size) {
+        av_log(NULL, AV_LOG_DEBUG, "%d need to write but actually %d written\n", size, ret);
+    }
+    fflush(fp);
+}
+
 /* prepare a new audio buffer */
 static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 {
     VideoState *is = opaque;
     int audio_size, len1;
+    PassthroughData *pd = NULL;
 
     audio_callback_time = av_gettime_relative();
 
     while (len > 0) {
-        if (is->audio_buf_index >= is->audio_buf_size) {
-           audio_size = audio_decode_frame(is);
-           if (audio_size < 0) {
-                /* if error, just output silence */
-               is->audio_buf = NULL;
-               is->audio_buf_size = SDL_AUDIO_MIN_BUFFER_SIZE / is->audio_tgt.frame_size * is->audio_tgt.frame_size;
-           } else {
-               if (is->show_mode != SHOW_MODE_VIDEO)
-                   update_sample_display(is, (int16_t *)is->audio_buf, audio_size);
-               is->audio_buf_size = audio_size;
-           }
-           is->audio_buf_index = 0;
+        if(enableAudioPassthrough) {
+            audio_size = 0;
+            if(is->audio_buf_index >= is->audio_buf_size) {
+                if(pd_temp && pd_temp->data) {
+                    av_free(pd_temp->data);
+                    pd_temp->data = NULL;
+                }
+
+                if(!(pd = passthrough_data_queue_peek_readable(&is->passq)))
+                    audio_size = -1;
+            
+                if(audio_size < 0) {
+                    av_log(NULL, AV_LOG_DEBUG, "error read passthrough data queue\n");
+                    return;
+                }
+                else {
+                    passthrough_data_queue_next(&is->passq);
+                    is->audio_buf = pd->data;
+                    is->audio_buf_size = pd->data_size;
+                    is->audio_buf_index = 0;
+                    pd_temp = pd;
+                }
+            }
+            len1 = is->audio_buf_size - is->audio_buf_index;
         }
-        len1 = is->audio_buf_size - is->audio_buf_index;
+        else {
+            if (is->audio_buf_index >= is->audio_buf_size) {
+               audio_size = audio_decode_frame(is);
+               if (audio_size < 0) {
+                    /* if error, just output silence */
+                   is->audio_buf = NULL;
+                   is->audio_buf_size = SDL_AUDIO_MIN_BUFFER_SIZE / is->audio_tgt.frame_size * is->audio_tgt.frame_size;
+               } else {
+                   if (is->show_mode != SHOW_MODE_VIDEO)
+                       update_sample_display(is, (int16_t *)is->audio_buf, audio_size);
+                   is->audio_buf_size = audio_size;
+               }
+               is->audio_buf_index = 0;
+            }
+            len1 = is->audio_buf_size - is->audio_buf_index;
+        }
         if (len1 > len)
             len1 = len;
-        if (!is->muted && is->audio_buf && is->audio_volume == SDL_MIX_MAXVOLUME)
+        if (!is->muted && is->audio_buf && is->audio_volume == SDL_MIX_MAXVOLUME) {
             memcpy(stream, (uint8_t *)is->audio_buf + is->audio_buf_index, len1);
+            if(savefile) {
+                write_to_file((uint8_t *)is->audio_buf + is->audio_buf_index, len1);
+            }
+        }
         else {
             memset(stream, 0, len1);
             if (!is->muted && is->audio_buf)
@@ -2644,6 +2865,106 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
     return spec.size;
 }
 
+static int audio_write_passthrough_data(void *opaque, uint8_t *data, int size)
+{
+    VideoState *is = opaque;
+    PassthroughData *pd;
+    int ret;
+    ret = size;
+    /*int i = 0;
+    if (size >= 16) {
+        av_log(NULL, AV_LOG_DEBUG, "audio_write_passthrough_data data[%04d]: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+        i, data[i], data[i+1], data[i+2], data[i+3], data[i+4], data[i+5], data[i+6], data[i+7], data[i+8], data[i+9], data[i+10], data[i+11], data[i+12], data[i+13], data[i+14], data[i+15]);
+    }*/
+    // av_log(NULL, AV_LOG_DEBUG, "write %d bytes to passthrough_buf\n", size);
+    // if (is->passthrough_buf_size == 0) {
+        // if (size < sizeof(is->passthrough_buf)) {
+        //     memcpy(is->passthrough_buf, data, size);
+        //     is->passthrough_buf_size = size;
+        // }
+    // }
+    if(!(pd = passthrough_data_queue_peek_writable(&is->passq))) {
+        av_log(NULL, AV_LOG_DEBUG, "not enough queue to write passthrough data\n");
+        return -1;
+    }
+    pd->data = av_malloc(size);
+    memcpy(pd->data, data, size);
+    pd->data_size = size;
+    passthrough_data_queue_push(&is->passq);
+
+    // av_log(NULL, AV_LOG_DEBUG, "malloc %p\n", pd->data);
+
+    // if(savefile) {
+    //     write_to_file(data, size);
+    // }
+    return ret;
+}
+
+static int audio_passthrough_thread(void *arg)
+{
+    VideoState *is = arg;
+    Decoder *d = &is->auddec;
+
+    do {
+        int ret = -1;
+        AVPacket pkt;
+        AVPacket opkt;
+        if (d->queue->abort_request)
+            return -1;
+        do {
+            if (d->queue->nb_packets == 0)
+                SDL_CondSignal(d->empty_queue_cond);
+
+            if (packet_queue_get(d->queue, &pkt, 1, &d->pkt_serial) < 0) {
+                av_log(NULL, AV_LOG_DEBUG, "packet_queue_get_or_buffering failed, return -1\n");
+                return -1;
+            }
+            if (pkt.data == flush_pkt.data) {
+                avcodec_flush_buffers(d->avctx);
+                d->finished = 0;
+                d->next_pts = d->start_pts;
+                d->next_pts_tb = d->start_pts_tb;
+            }
+        } while (pkt.data == flush_pkt.data || d->queue->serial != d->pkt_serial);
+        av_packet_unref(&d->pkt);
+        d->pkt_temp = d->pkt = pkt;
+        d->packet_pending = 1;
+
+        if (d->pkt_temp.data) {
+            av_init_packet(&opkt);
+            opkt.stream_index = audioPassthroughStream->index;
+            opkt.flags = d->pkt_temp.flags;
+            if (d->pkt_temp.pts != AV_NOPTS_VALUE) {
+                opkt.pts = av_rescale_q(d->pkt_temp.pts, is->audio_st->time_base, audioPassthroughStream->time_base);
+            }
+            else {
+                opkt.pts = AV_NOPTS_VALUE;
+            }
+            if (d->pkt_temp.dts != AV_NOPTS_VALUE) {
+                opkt.dts = av_rescale_q(d->pkt_temp.dts, is->audio_st->time_base, audioPassthroughStream->time_base);
+            }
+            else {
+                opkt.dts = av_rescale_q(d->pkt_temp.dts, AV_TIME_BASE_Q, audioPassthroughStream->time_base);
+            }
+            opkt.duration = av_rescale_q(d->pkt_temp.duration, is->audio_st->time_base, audioPassthroughStream->time_base);
+            opkt.data = d->pkt_temp.data;
+            opkt.size = d->pkt_temp.size;
+            ret = av_write_frame(audioPassthroughOutput, &opkt);
+            if (ret != 0) {
+                av_log(NULL, AV_LOG_ERROR, "av_write_frame failed %d\n", ret);
+            }
+            avio_flush(audioPassthroughOutputIOContext);
+            av_packet_unref(&opkt);
+        }
+        else {
+            av_log(NULL, AV_LOG_DEBUG, "passthrough got eof packet\n");
+        }
+        // } while
+    } while(1);
+    
+    return 0;
+}
+
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(VideoState *is, int stream_index)
 {
@@ -2727,7 +3048,12 @@ static int stream_component_open(VideoState *is, int stream_index)
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
 #if CONFIG_AVFILTER
-        {
+        if (enableAudioPassthrough) {
+            sample_rate    = avctx->sample_rate;
+            nb_channels    = 2;
+            channel_layout = avctx->channel_layout;
+        }
+        else {
             AVFilterLink *link;
 
             is->audio_filter_src.freq           = avctx->sample_rate;
@@ -2765,13 +3091,46 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
 
+        if (enableAudioPassthrough) {
+            avformat_alloc_output_context2(&audioPassthroughOutput, NULL, "spdif", NULL);
+            audioPassthroughStream = avformat_new_stream(audioPassthroughOutput, NULL);
+            if (audioPassthroughStream == NULL) {
+                av_log(NULL, AV_LOG_DEBUG, "failed to open audio passthrough stream\n");
+                // todo release output context
+                avformat_free_context(audioPassthroughOutput);
+                audioPassthroughOutput = NULL;
+            }
+            else {
+                audioPassthroughStream->id = 0;
+                avcodec_parameters_copy(audioPassthroughStream->codecpar, is->audio_st->codecpar);
+                audioPassthroughStream->codec->time_base = is->audio_st->time_base;
+                audioPassthroughStream->first_dts = is->audio_st->first_dts;
+                audioPassthroughStream->r_frame_rate = is->audio_st->r_frame_rate;
+                audioPassthroughStream->time_base = is->audio_st->time_base;
+                audioPassthroughStream->start_time = is->audio_st->start_time;
+                audioPassthroughStream->duration = is->audio_st->duration;
+                av_reduce(&audioPassthroughStream->codec->time_base.num, &audioPassthroughStream->codec->time_base.den,
+                    audioPassthroughStream->codec->time_base.num, audioPassthroughStream->codec->time_base.den, INT_MAX);
+                audioPassthroughOutputIOContext = avio_alloc_context(outbuffer, 32768, 1, is, NULL, audio_write_passthrough_data, NULL);
+                audioPassthroughOutput->pb = audioPassthroughOutputIOContext;
+                ret = avformat_write_header(audioPassthroughOutput, NULL);
+                avio_flush(audioPassthroughOutputIOContext);
+                av_dump_format(audioPassthroughOutput, 0, "spdif", 1);
+            }
+        }
         decoder_init(&is->auddec, avctx, &is->audioq, is->continue_read_thread);
         if ((is->ic->iformat->flags & (AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK)) && !is->ic->iformat->read_seek) {
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
         }
-        if ((ret = decoder_start(&is->auddec, audio_thread, is)) < 0)
-            goto out;
+        if (enableAudioPassthrough) {
+            if ((ret = decoder_start(&is->auddec, audio_passthrough_thread, is)) < 0)
+                goto out;
+        }
+        else {
+            if ((ret = decoder_start(&is->auddec, audio_thread, is)) < 0)
+                goto out;
+        }
         SDL_PauseAudio(0);
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -3088,7 +3447,9 @@ static int read_thread(void *arg)
             continue;
         }
         if (!is->paused &&
-            (!is->audio_st || (is->auddec.finished == is->audioq.serial && frame_queue_nb_remaining(&is->sampq) == 0)) &&
+            (!is->audio_st || (enableAudioPassthrough ?
+                                (passthrough_data_queue_nb_remaining(&is->passq) == 0) :
+                                (is->auddec.finished == is->audioq.serial && frame_queue_nb_remaining(&is->sampq) == 0))) &&
             (!is->video_st || (is->viddec.finished == is->videoq.serial && frame_queue_nb_remaining(&is->pictq) == 0))) {
             if (loop != 1 && (!loop || --loop)) {
                 stream_seek(is, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
@@ -3174,6 +3535,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
         goto fail;
     if (frame_queue_init(&is->sampq, &is->audioq, SAMPLE_QUEUE_SIZE, 1) < 0)
         goto fail;
+    if (passthrough_data_queue_init(&is->passq, &is->audioq, SAMPLE_QUEUE_SIZE, 1) < 0)
+        goto fail;
 
     if (packet_queue_init(&is->videoq) < 0 ||
         packet_queue_init(&is->audioq) < 0 ||
@@ -3191,6 +3554,9 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->audio_clock_serial = -1;
     is->audio_volume = SDL_MIX_MAXVOLUME;
     is->muted = 0;
+    if (enableAudioPassthrough) {
+        av_sync_type = AV_SYNC_VIDEO_MASTER;
+    }
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, is);
     if (!is->read_tid) {
@@ -3452,8 +3818,10 @@ static void event_loop(VideoState *cur_stream)
                         pos = -1;
                         if (pos < 0 && cur_stream->video_stream >= 0)
                             pos = frame_queue_last_pos(&cur_stream->pictq);
-                        if (pos < 0 && cur_stream->audio_stream >= 0)
-                            pos = frame_queue_last_pos(&cur_stream->sampq);
+                        if(!enableAudioPassthrough) {
+                            if (pos < 0 && cur_stream->audio_stream >= 0)
+                                pos = frame_queue_last_pos(&cur_stream->sampq);
+                        }
                         if (pos < 0)
                             pos = avio_tell(cur_stream->ic->pb);
                         if (cur_stream->ic->bit_rate)
@@ -3709,6 +4077,8 @@ static const OptionDef options[] = {
     { "scodec", HAS_ARG | OPT_STRING | OPT_EXPERT, { &subtitle_codec_name }, "force subtitle decoder", "decoder_name" },
     { "vcodec", HAS_ARG | OPT_STRING | OPT_EXPERT, {    &video_codec_name }, "force video decoder",    "decoder_name" },
     { "autorotate", OPT_BOOL, { &autorotate }, "automatically rotate video", "" },
+    { "passthrough", OPT_BOOL, { &enableAudioPassthrough}, "enableAudioPassthrough" , ""},
+    { "savefile", OPT_BOOL, { &savefile}, "savefile" , ""},
     { NULL, },
 };
 
