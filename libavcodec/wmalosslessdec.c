@@ -172,8 +172,6 @@ typedef struct WmallDecodeCtx {
     int lpc_order;
     int lpc_scaling;
     int lpc_intbits;
-
-    int channel_coeffs[WMALL_MAX_CHANNELS][WMALL_BLOCK_MAX_SIZE];
 } WmallDecodeCtx;
 
 /** Get sign of integer (1 for positive, -1 for negative and 0 for zero) */
@@ -897,14 +895,17 @@ static int decode_subframe(WmallDecodeCtx *s)
         s->quant_stepsize = get_bits(&s->gb, 8) + 1;
 
         reset_codec(s);
-    } else if (!s->cdlms[0][0].order) {
+    }
+
+    rawpcm_tile = get_bits1(&s->gb);
+
+    if (!rawpcm_tile && !s->cdlms[0][0].order) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "Waiting for seekable tile\n");
         av_frame_unref(s->frame);
         return -1;
     }
 
-    rawpcm_tile = get_bits1(&s->gb);
 
     for (i = 0; i < s->num_channels; i++)
         s->is_channel_coded[i] = 1;
@@ -943,9 +944,9 @@ static int decode_subframe(WmallDecodeCtx *s)
                 bits * s->num_channels * subframe_len, get_bits_count(&s->gb));
         for (i = 0; i < s->num_channels; i++)
             for (j = 0; j < subframe_len; j++)
-                s->channel_coeffs[i][j] = get_sbits_long(&s->gb, bits);
+                s->channel_residues[i][j] = get_sbits_long(&s->gb, bits);
     } else {
-        for (i = 0; i < s->num_channels; i++)
+        for (i = 0; i < s->num_channels; i++) {
             if (s->is_channel_coded[i]) {
                 decode_channel_residues(s, i, subframe_len);
                 if (s->seekable_tile)
@@ -956,19 +957,21 @@ static int decode_subframe(WmallDecodeCtx *s)
             } else {
                 memset(s->channel_residues[i], 0, sizeof(**s->channel_residues) * subframe_len);
             }
-    }
-    if (s->do_mclms)
-        revert_mclms(s, subframe_len);
-    if (s->do_inter_ch_decorr)
-        revert_inter_ch_decorr(s, subframe_len);
-    if (s->do_ac_filter)
-        revert_acfilter(s, subframe_len);
+        }
 
-    /* Dequantize */
-    if (s->quant_stepsize != 1)
-        for (i = 0; i < s->num_channels; i++)
-            for (j = 0; j < subframe_len; j++)
-                s->channel_residues[i][j] *= s->quant_stepsize;
+        if (s->do_mclms)
+            revert_mclms(s, subframe_len);
+        if (s->do_inter_ch_decorr)
+            revert_inter_ch_decorr(s, subframe_len);
+        if (s->do_ac_filter)
+            revert_acfilter(s, subframe_len);
+
+        /* Dequantize */
+        if (s->quant_stepsize != 1)
+            for (i = 0; i < s->num_channels; i++)
+                for (j = 0; j < subframe_len; j++)
+                    s->channel_residues[i][j] *= s->quant_stepsize;
+    }
 
     /* Write to proper output buffer depending on bit-depth */
     for (i = 0; i < s->channels_for_cur_subframe; i++) {
