@@ -1896,6 +1896,10 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                         av_log(avctx, AV_LOG_DEBUG, "Invalid MXF data found in video stream\n");
                         is_d10 = 1;
                     }
+                    if (left > 32 && show_bits_long(&gb, 32) == 0x201) {
+                        av_log(avctx, AV_LOG_DEBUG, "skipping m704 alpha (unsupported)\n");
+                        goto eos;
+                    }
                 }
 
                 if (left < 0 ||
