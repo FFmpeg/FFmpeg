@@ -142,7 +142,7 @@ Hardware accelerators:
 Hardware-accelerated decoding/encoding:
   --enable-cuda            enable dynamically linked CUDA [no]
   --enable-libmfx          enable HW acceleration through libmfx
-  --enable-mmal            enable decoding via MMAL [auto]
+  --enable-mmal            enable decoding via MMAL [no]
   --enable-nvenc           enable encoding via NVENC [no]
   --enable-omx             enable encoding via OpenMAX IL [no]
   --enable-omx-rpi         enable encoding via OpenMAX IL for Raspberry Pi [no]
@@ -1252,7 +1252,6 @@ EXTERNAL_LIBRARY_LIST="
     libxcb_shm
     libxcb_xfixes
     libxvid
-    mmal
     openssl
     x11grab
     zlib
@@ -4623,13 +4622,13 @@ enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                                die "ERROR: libx265 version must be >= 57."; }
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
-disabled mmal             || enable mmal && { check_lib interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
+enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                 { ! enabled cross_compile && {
                                     add_cflags -isystem/opt/vc/include/ -isystem/opt/vc/include/interface/vmcs_host/linux -isystem/opt/vc/include/interface/vcos/pthreads -fgnu89-inline ;
                                     add_extralibs -L/opt/vc/lib/ -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ;
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
-                               disable mmal; }
+                               die "ERROR: mmal not found"; }
 enabled mmal && check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"
 enabled omx_rpi && enable omx
 enabled omx               && { check_header OMX_Core.h ||
