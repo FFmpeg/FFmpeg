@@ -1,6 +1,48 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.7.7
+- avformat/ffmdec: Check pix_fmt
+- avcodec/ttaenc: Reallocate packet if its too small
+- pgssubdec: fix subpicture output colorspace and range
+- avcodec/ac3dec: Reset SPX when switching from EAC3 to AC3
+- avfilter/vf_drawtext: Check return code of load_glyph()
+- avcodec/takdec: add code that got somehow lost in process of REing
+- avcodec/apedec: fix decoding of stereo files with one channel full of silence
+- avcodec/avpacket: Fix off by 5 error
+- avcodec/h264: Fix for H.264 configuration parsing
+- avcodec/bmp_parser: Ensure remaining_size is not too small in startcode packet crossing corner case
+- avfilter/src_movie: fix how we check for overflows with seek_point
+- avcodec/j2kenc: Add attribution to OpenJPEG project:
+- avcodec/libutvideodec: copy frame so it has reference counters when refcounted_frames is set
+- avformat/rtpdec_jpeg: fix low contrast image on low quality setting
+- avcodec/mjpegenc_common: Store approximate aspect if exact cannot be stored
+- avcodec/resample: Remove disabled and faulty code
+- indeo2: Fix banding artefacts
+- indeo2data: K&R formatting cosmetics
+- avcodec/imgconvert: Support non-planar colorspaces while padding
+- avutil/random_seed: Add the runtime in cycles of the main loop to the entropy pool
+- avutil/channel_layout: AV_CH_LAYOUT_6POINT1_BACK not reachable in parsing
+- avformat/concatdec: set safe mode to enabled instead of auto
+- avformat/utils: fix dts from pts code in compute_pkt_fields() during ascending delay
+- avformat/rtpenc: Fix integer overflow in NTP_TO_RTP_FORMAT
+- avformat/cache: Fix memleak of tree entries
+- lavf/mov: fix sidx with edit lists (cherry picked from commit 3617e69d50dd9dd07b5011dfb9477a9d1a630354)
+- avcodec/mjpegdec: Fix decoding slightly odd progressive jpeg
+- avcodec/avpacket: clear priv in av_init_packet()
+- swscale/utils: Fix chrSrcHSubSample for GBRAP16
+- swscale/input: Fix GBRAP16 input
+- postproc: fix unaligned access
+- avutil/pixdesc: Make get_color_type() aware of CIE XYZ formats
+- avcodec/h264: Execute error concealment before marking the frame as done.
+- swscale/x86/output: Fix yuv2planeX_16* with unaligned destination
+- swscale/x86/output: Move code into yuv2planeX_mainloop
+- avutil/frame: Free destination qp_table_buf in frame_copy_props()
+- libwebpenc_animencoder: print library messages in verbose log levels
+- libwebpenc_animencoder: zero initialize the WebPAnimEncoderOptions struct
+- doc/utils: fix typo for min() description
+
+
 version 2.7.6
 - avcodec/jpeg2000dec: More completely check cdef
 - avutil/opt: check for and handle errors in av_opt_set_dict2()
