@@ -107,6 +107,9 @@ static int dsf_read_header(AVFormatContext *s)
     st->codecpar->channels     = avio_rl32(pb);
     st->codecpar->sample_rate  = avio_rl32(pb) / 8;
 
+    if (st->codecpar->channels <= 0)
+        return AVERROR_INVALIDDATA;
+
     switch(avio_rl32(pb)) {
     case 1: st->codecpar->codec_id = AV_CODEC_ID_DSD_LSBF_PLANAR; break;
     case 8: st->codecpar->codec_id = AV_CODEC_ID_DSD_MSBF_PLANAR; break;
