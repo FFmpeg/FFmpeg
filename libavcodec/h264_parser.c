@@ -183,7 +183,8 @@ static int scan_mmco_reset(AVCodecParserContext *s)
 
     if ((h->pps.weighted_pred && sl->slice_type_nos == AV_PICTURE_TYPE_P) ||
         (h->pps.weighted_bipred_idc == 1 && sl->slice_type_nos == AV_PICTURE_TYPE_B))
-        ff_pred_weight_table(h, sl);
+        ff_h264_pred_weight_table(&sl->gb, &h->sps, sl->ref_count, sl->slice_type_nos,
+                                  &sl->pwt);
 
     if (get_bits1(&sl->gb)) { // adaptive_ref_pic_marking_mode_flag
         int i;

@@ -317,6 +317,23 @@ AVClassCategory av_default_get_category(void *ptr);
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix);
 
+/**
+ * Format a line of log the same way as the default callback.
+ * @param line          buffer to receive the formatted line;
+ *                      may be NULL if line_size is 0
+ * @param line_size     size of the buffer; at most line_size-1 characters will
+ *                      be written to the buffer, plus one null terminator
+ * @param print_prefix  used to store whether the prefix must be printed;
+ *                      must point to a persistent integer initially set to 1
+ * @return Returns a negative value if an error occurred, otherwise returns
+ *         the number of characters that would have been written for a
+ *         sufficiently large buffer, not including the terminating null
+ *         character. If the return value is not less than line_size, it means
+ *         that the log message was truncated to fit the buffer.
+ */
+int av_log_format_line2(void *ptr, int level, const char *fmt, va_list vl,
+                        char *line, int line_size, int *print_prefix);
+
 #if FF_API_DLOG
 /**
  * av_dlog macros

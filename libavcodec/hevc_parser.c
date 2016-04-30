@@ -24,6 +24,7 @@
 
 #include "golomb.h"
 #include "hevc.h"
+#include "h2645_parse.h"
 #include "parser.h"
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
@@ -35,7 +36,7 @@
 typedef struct HEVCParserContext {
     ParseContext pc;
 
-    HEVCPacket pkt;
+    H2645Packet pkt;
     HEVCParamSets ps;
 
     int parsed_extradata;
@@ -46,7 +47,7 @@ typedef struct HEVCParserContext {
 } HEVCParserContext;
 
 #if !ADVANCED_PARSER
-static int hevc_parse_slice_header(AVCodecParserContext *s, HEVCNAL *nal,
+static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
                                    AVCodecContext *avctx)
 {
     HEVCParserContext *ctx = s->priv_data;
@@ -88,12 +89,13 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     HEVCParserContext *ctx = s->priv_data;
     int ret, i;
 
-    ret = ff_hevc_split_packet(NULL, &ctx->pkt, buf, buf_size, avctx, 0, 0);
+    ret = ff_h2645_split_packet(&ctx->pkt, buf, buf_size, avctx, 0, 0,
+                                AV_CODEC_ID_HEVC);
     if (ret < 0)
         return ret;
 
     for (i = 0; i < ctx->pkt.nb_nals; i++) {
-        HEVCNAL *nal = &ctx->pkt.nals[i];
+        H2645NAL *nal = &ctx->pkt.nals[i];
 
         /* ignore everything except parameter sets and VCL NALUs */
         switch (nal->type) {
@@ -189,10 +191,10 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     GetBitContext      *gb;
     SliceHeader        *sh = &h->sh;
     HEVCParamSets *ps = &h->ps;
-    HEVCPacket   *pkt = &ctx->pkt;
+    H2645Packet   *pkt = &ctx->pkt;
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
-    HEVCNAL *nal;
+    H2645NAL *nal;
     int is_global = buf == avctx->extradata;
 
     if (!h->HEVClc)
@@ -213,7 +215,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         return 0;
 
     if (pkt->nals_allocated < 1) {
-        HEVCNAL *tmp = av_realloc_array(pkt->nals, 1, sizeof(*tmp));
+        H2645NAL *tmp = av_realloc_array(pkt->nals, 1, sizeof(*tmp));
         if (!tmp)
             return AVERROR(ENOMEM);
         pkt->nals = tmp;
@@ -239,7 +241,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 src_length = 20;
         }
 
-        consumed = ff_hevc_extract_rbsp(NULL, buf, src_length, nal);
+        consumed = ff_h2645_extract_rbsp(buf, src_length, nal);
         if (consumed < 0)
             return consumed;
 
@@ -471,12 +473,7 @@ static void hevc_parser_close(AVCodecParserContext *s)
 
     ctx->ps.sps = NULL;
 
-    for (i = 0; i < ctx->pkt.nals_allocated; i++) {
-        av_freep(&ctx->pkt.nals[i].rbsp_buffer);
-        av_freep(&ctx->pkt.nals[i].skipped_bytes_pos);
-    }
-    av_freep(&ctx->pkt.nals);
-    ctx->pkt.nals_allocated = 0;
+    ff_h2645_packet_uninit(&ctx->pkt);
 
     av_freep(&ctx->pc.buffer);
 }

@@ -31,6 +31,7 @@
 #include "cabac.h"
 #include "get_bits.h"
 #include "hevcpred.h"
+#include "h2645_parse.h"
 #include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
@@ -746,33 +747,6 @@ typedef struct HEVCFrame {
     uint8_t flags;
 } HEVCFrame;
 
-typedef struct HEVCNAL {
-    uint8_t *rbsp_buffer;
-    int rbsp_buffer_size;
-
-    int size;
-    const uint8_t *data;
-
-    int raw_size;
-    const uint8_t *raw_data;
-
-    GetBitContext gb;
-
-    enum NALUnitType type;
-    int temporal_id;
-
-    int skipped_bytes;
-    int skipped_bytes_pos_size;
-    int *skipped_bytes_pos;
-} HEVCNAL;
-
-/* an input packet split into unescaped NAL units */
-typedef struct HEVCPacket {
-    HEVCNAL *nals;
-    int nb_nals;
-    int nals_allocated;
-} HEVCPacket;
-
 typedef struct HEVCLocalContext {
     uint8_t cabac_state[HEVC_CONTEXTS];
 
@@ -906,7 +880,7 @@ typedef struct HEVCContext {
 
     const uint8_t *data;
 
-    HEVCPacket pkt;
+    H2645Packet pkt;
     // type of the first VCL NAL of the current frame
     enum NALUnitType first_nal_type;
 
@@ -1076,18 +1050,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
-
-/**
- * Extract the raw (unescaped) HEVC bitstream.
- */
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                         HEVCNAL *nal);
-
-/**
- * Split an input packet into NAL units.
- */
-int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, int length,
-                         AVCodecContext *avctx, int is_nalff, int nal_length_size);
 
 int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
                            uint8_t *buf, int buf_size);

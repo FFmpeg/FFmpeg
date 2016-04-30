@@ -103,6 +103,8 @@ typedef struct EXRThreadData {
 
     uint8_t *bitmap;
     uint16_t *lut;
+
+    int ysize, xsize;
 } EXRThreadData;
 
 typedef struct EXRContext {
@@ -119,7 +121,6 @@ typedef struct EXRContext {
     uint32_t xmax, xmin;
     uint32_t ymax, ymin;
     uint32_t xdelta, ydelta;
-    int ysize, xsize;
 
     uint64_t scan_line_size;
     int scan_lines_per_block;
@@ -783,19 +784,19 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
         int size = channel->pixel_type;
 
         for (j = 0; j < size; j++)
-            wav_decode(ptr + j, s->xsize, size, s->ysize,
-                       s->xsize * size, maxval);
-        ptr += s->xsize * s->ysize * size;
+            wav_decode(ptr + j, td->xsize, size, td->ysize,
+                       td->xsize * size, maxval);
+        ptr += td->xsize * td->ysize * size;
     }
 
     apply_lut(td->lut, tmp, dsize / sizeof(uint16_t));
 
     out = td->uncompressed_data;
-    for (i = 0; i < s->ysize; i++)
+    for (i = 0; i < td->ysize; i++)
         for (j = 0; j < s->nb_channels; j++) {
-            uint16_t *in = tmp + j * s->xsize * s->ysize + i * s->xsize;
-            memcpy(out, in, s->xsize * 2);
-            out += s->xsize * 2;
+            uint16_t *in = tmp + j * td->xsize * td->ysize + i * td->xsize;
+            memcpy(out, in, td->xsize * 2);
+            out += td->xsize * 2;
         }
 
     return 0;
@@ -824,7 +825,7 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
     }
 
     out = td->uncompressed_data;
-    for (i = 0; i < s->ysize; i++)
+    for (i = 0; i < td->ysize; i++)
         for (c = 0; c < s->nb_channels; c++) {
             EXRChannel *channel = &s->channels[c];
             const uint8_t *ptr[4];
@@ -833,11 +834,11 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
             switch (channel->pixel_type) {
             case EXR_FLOAT:
                 ptr[0] = in;
-                ptr[1] = ptr[0] + s->xsize;
-                ptr[2] = ptr[1] + s->xsize;
-                in     = ptr[2] + s->xsize;
+                ptr[1] = ptr[0] + td->xsize;
+                ptr[2] = ptr[1] + td->xsize;
+                in     = ptr[2] + td->xsize;
 
-                for (j = 0; j < s->xsize; ++j) {
+                for (j = 0; j < td->xsize; ++j) {
                     uint32_t diff = (*(ptr[0]++) << 24) |
                                     (*(ptr[1]++) << 16) |
                                     (*(ptr[2]++) << 8);
@@ -847,9 +848,9 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                 break;
             case EXR_HALF:
                 ptr[0] = in;
-                ptr[1] = ptr[0] + s->xsize;
-                in     = ptr[1] + s->xsize;
-                for (j = 0; j < s->xsize; j++) {
+                ptr[1] = ptr[0] + td->xsize;
+                in     = ptr[1] + td->xsize;
+                for (j = 0; j < td->xsize; j++) {
                     uint32_t diff = (*(ptr[0]++) << 8) | *(ptr[1]++);
 
                     pixel += diff;
@@ -925,12 +926,12 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     int c, iY, iX, y, x;
 
     /* calc B44 block count */
-    nbB44BlockW = s->xsize / 4;
-    if ((s->xsize % 4) != 0)
+    nbB44BlockW = td->xsize / 4;
+    if ((td->xsize % 4) != 0)
         nbB44BlockW++;
 
-    nbB44BlockH = s->ysize / 4;
-    if ((s->ysize % 4) != 0)
+    nbB44BlockH = td->ysize / 4;
+    if ((td->ysize % 4) != 0)
         nbB44BlockH++;
 
     for (c = 0; c < s->nb_channels; c++) {
@@ -959,9 +960,9 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
                 indexHgX = iX * 4;
                 indexHgY = iY * 4;
 
-                for (y = indexHgY; y < FFMIN(indexHgY + 4, s->ysize); y++) {
-                    for (x = indexHgX; x < FFMIN(indexHgX + 4, s->xsize); x++) {
-                        indexOut = (c * s->xsize + y * s->xsize * s->nb_channels + x) * 2;
+                for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
+                    for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
+                        indexOut = (c * td->xsize + y * td->xsize * s->nb_channels + x) * 2;
                         indexTmp = (y-indexHgY) * 4 + (x-indexHgX);
                         td->uncompressed_data[indexOut] = tmpBuffer[indexTmp] & 0xff;
                         td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
@@ -1022,15 +1023,15 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         line = s->tile_attr.ySize * tileY;
         col = s->tile_attr.xSize * tileX;
 
-        s->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tileY * s->tile_attr.ySize);
-        s->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tileX * s->tile_attr.xSize);
-        uncompressed_size = s->current_channel_offset * s->ysize * s->xsize;
+        td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tileY * s->tile_attr.ySize);
+        td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tileX * s->tile_attr.xSize);
+        uncompressed_size = s->current_channel_offset * td->ysize * td->xsize;
 
         if (col) { /* not the first tile of the line */
             bxmin = 0; axmax = 0; /* doesn't add pixel at the left of the datawindow */
         }
 
-        if ((col + s->xsize) != s->xdelta)/* not the last tile of the line */
+        if ((col + td->xsize) != s->xdelta)/* not the last tile of the line */
             axmax = 0; /* doesn't add pixel at the right of the datawindow */
     } else {
         if (line_offset > buf_size - 8)
@@ -1038,6 +1039,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
         src  = buf + line_offset + 8;
         line = AV_RL32(src - 8);
+
         if (line < s->ymin || line > s->ymax)
             return AVERROR_INVALIDDATA;
 
@@ -1045,9 +1047,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         if (data_size <= 0 || data_size > buf_size)
             return AVERROR_INVALIDDATA;
 
-        s->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1); /* s->ydelta - line ?? */
-        s->xsize          = s->xdelta;
-        uncompressed_size = s->scan_line_size * s->ysize;
+        td->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1); /* s->ydelta - line ?? */
+        td->xsize          = s->xdelta;
+        uncompressed_size = s->scan_line_size * td->ysize;
         if ((s->compression == EXR_RAW && (data_size != uncompressed_size ||
                                            line_offset > buf_size - uncompressed_size)) ||
             (s->compression != EXR_RAW && (data_size > uncompressed_size ||
@@ -1098,25 +1100,25 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
     if (s->is_tile) {
         indexSrc = 0;
-        channelLineSize = s->xsize * 2;
+        channelLineSize = td->xsize * 2;
         if (s->pixel_type == EXR_FLOAT)
             channelLineSize *= 2;
 
         /* reorganise tile data to have each channel one after the other instead of line by line */
-        for (tY = 0; tY < s->ysize; tY ++) {
+        for (tY = 0; tY < td->ysize; tY ++) {
             for (tCh = 0; tCh < s->nb_channels; tCh++) {
                 for (tX = 0; tX < channelLineSize; tX++) {
-                    td->tmp[tCh * channelLineSize * s->ysize + tY * channelLineSize + tX] = src[indexSrc];
+                    td->tmp[tCh * channelLineSize * td->ysize + tY * channelLineSize + tX] = src[indexSrc];
                     indexSrc++;
                 }
             }
         }
 
-        channel_buffer[0] = td->tmp + s->xsize * s->channel_offsets[0]  * s->ysize;
-        channel_buffer[1] = td->tmp + s->xsize * s->channel_offsets[1]  * s->ysize;
-        channel_buffer[2] = td->tmp + s->xsize * s->channel_offsets[2]  * s->ysize;
+        channel_buffer[0] = td->tmp + td->xsize * s->channel_offsets[0]  * td->ysize;
+        channel_buffer[1] = td->tmp + td->xsize * s->channel_offsets[1]  * td->ysize;
+        channel_buffer[2] = td->tmp + td->xsize * s->channel_offsets[2]  * td->ysize;
         if (s->channel_offsets[3] >= 0)
-            channel_buffer[3] = td->tmp + s->xsize * s->channel_offsets[3];
+            channel_buffer[3] = td->tmp + td->xsize * s->channel_offsets[3];
     } else {
         channel_buffer[0] = src + xdelta * s->channel_offsets[0];
         channel_buffer[1] = src + xdelta * s->channel_offsets[1];
@@ -1128,7 +1130,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     ptr = p->data[0] + line * p->linesize[0] + (col * s->desc->nb_components * 2);
 
     for (i = 0;
-         i < s->ysize; i++, ptr += p->linesize[0]) {
+         i < td->ysize; i++, ptr += p->linesize[0]) {
 
         const uint8_t *r, *g, *b, *a;
 
@@ -1147,7 +1149,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         if (s->pixel_type == EXR_FLOAT) {
             // 32-bit
             if (trc_func) {
-                for (x = 0; x < s->xsize; x++) {
+                for (x = 0; x < td->xsize; x++) {
                     union av_intfloat32 t;
                     t.i = bytestream_get_le32(&r);
                     t.f = trc_func(t.f);
@@ -1164,7 +1166,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&a));
                 }
             } else {
-                for (x = 0; x < s->xsize; x++) {
+                for (x = 0; x < td->xsize; x++) {
                     union av_intfloat32 t;
                     t.i = bytestream_get_le32(&r);
                     if (t.f > 0.0f)  /* avoid negative values */
@@ -1186,7 +1188,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             }
         } else {
             // 16-bit
-            for (x = 0; x < s->xsize; x++) {
+            for (x = 0; x < td->xsize; x++) {
                 *ptr_x++ = s->gamma_table[bytestream_get_le16(&r)];
                 *ptr_x++ = s->gamma_table[bytestream_get_le16(&g)];
                 *ptr_x++ = s->gamma_table[bytestream_get_le16(&b)];

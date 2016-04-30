@@ -48,7 +48,6 @@
 #include "mpegutils.h"
 #include "profiles.h"
 #include "rectangle.h"
-#include "svq3.h"
 #include "thread.h"
 #include "vdpau_compat.h"
 
@@ -131,99 +130,6 @@ void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl,
         avctx->draw_horiz_band(avctx, src, offset,
                                y, h->picture_structure, height);
     }
-}
-
-/**
- * Check if the top & left blocks are available if needed and
- * change the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra4x4_pred_mode(const H264Context *h, H264SliceContext *sl)
-{
-    static const int8_t top[12] = {
-        -1, 0, LEFT_DC_PRED, -1, -1, -1, -1, -1, 0
-    };
-    static const int8_t left[12] = {
-        0, -1, TOP_DC_PRED, 0, -1, -1, -1, 0, -1, DC_128_PRED
-    };
-    int i;
-
-    if (!(sl->top_samples_available & 0x8000)) {
-        for (i = 0; i < 4; i++) {
-            int status = top[sl->intra4x4_pred_mode_cache[scan8[0] + i]];
-            if (status < 0) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "top block unavailable for requested intra4x4 mode %d at %d %d\n",
-                       status, sl->mb_x, sl->mb_y);
-                return AVERROR_INVALIDDATA;
-            } else if (status) {
-                sl->intra4x4_pred_mode_cache[scan8[0] + i] = status;
-            }
-        }
-    }
-
-    if ((sl->left_samples_available & 0x8888) != 0x8888) {
-        static const int mask[4] = { 0x8000, 0x2000, 0x80, 0x20 };
-        for (i = 0; i < 4; i++)
-            if (!(sl->left_samples_available & mask[i])) {
-                int status = left[sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i]];
-                if (status < 0) {
-                    av_log(h->avctx, AV_LOG_ERROR,
-                           "left block unavailable for requested intra4x4 mode %d at %d %d\n",
-                           status, sl->mb_x, sl->mb_y);
-                    return AVERROR_INVALIDDATA;
-                } else if (status) {
-                    sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i] = status;
-                }
-            }
-    }
-
-    return 0;
-} // FIXME cleanup like ff_h264_check_intra_pred_mode
-
-/**
- * Check if the top & left blocks are available if needed and
- * change the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_pred_mode(const H264Context *h, H264SliceContext *sl,
-                                  int mode, int is_chroma)
-{
-    static const int8_t top[4]  = { LEFT_DC_PRED8x8, 1, -1, -1 };
-    static const int8_t left[5] = { TOP_DC_PRED8x8, -1,  2, -1, DC_128_PRED8x8 };
-
-    if (mode > 3U) {
-        av_log(h->avctx, AV_LOG_ERROR,
-               "out of range intra chroma pred mode at %d %d\n",
-               sl->mb_x, sl->mb_y);
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!(sl->top_samples_available & 0x8000)) {
-        mode = top[mode];
-        if (mode < 0) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "top block unavailable for requested intra mode at %d %d\n",
-                   sl->mb_x, sl->mb_y);
-            return AVERROR_INVALIDDATA;
-        }
-    }
-
-    if ((sl->left_samples_available & 0x8080) != 0x8080) {
-        mode = left[mode];
-        if (mode < 0) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "left block unavailable for requested intra mode at %d %d\n",
-                   sl->mb_x, sl->mb_y);
-            return AVERROR_INVALIDDATA;
-        }
-        if (is_chroma && (sl->left_samples_available & 0x8080)) {
-            // mad cow disease mode, aka MBAFF + constrained_intra_pred
-            mode = ALZHEIMER_DC_L0T_PRED8x8 +
-                   (!(sl->left_samples_available & 0x8000)) +
-                   2 * (mode == DC_128_PRED8x8);
-        }
-    }
-
-    return mode;
 }
 
 const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl,
@@ -999,78 +905,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
     }
 }
 
-int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
-{
-    int list, i;
-    int luma_def, chroma_def;
-
-    sl->use_weight             = 0;
-    sl->use_weight_chroma      = 0;
-    sl->luma_log2_weight_denom = get_ue_golomb(&sl->gb);
-    if (h->sps.chroma_format_idc)
-        sl->chroma_log2_weight_denom = get_ue_golomb(&sl->gb);
-
-    if (sl->luma_log2_weight_denom > 7U) {
-        av_log(h->avctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", sl->luma_log2_weight_denom);
-        sl->luma_log2_weight_denom = 0;
-    }
-    if (sl->chroma_log2_weight_denom > 7U) {
-        av_log(h->avctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", sl->chroma_log2_weight_denom);
-        sl->chroma_log2_weight_denom = 0;
-    }
-
-    luma_def   = 1 << sl->luma_log2_weight_denom;
-    chroma_def = 1 << sl->chroma_log2_weight_denom;
-
-    for (list = 0; list < 2; list++) {
-        sl->luma_weight_flag[list]   = 0;
-        sl->chroma_weight_flag[list] = 0;
-        for (i = 0; i < sl->ref_count[list]; i++) {
-            int luma_weight_flag, chroma_weight_flag;
-
-            luma_weight_flag = get_bits1(&sl->gb);
-            if (luma_weight_flag) {
-                sl->luma_weight[i][list][0] = get_se_golomb(&sl->gb);
-                sl->luma_weight[i][list][1] = get_se_golomb(&sl->gb);
-                if (sl->luma_weight[i][list][0] != luma_def ||
-                    sl->luma_weight[i][list][1] != 0) {
-                    sl->use_weight             = 1;
-                    sl->luma_weight_flag[list] = 1;
-                }
-            } else {
-                sl->luma_weight[i][list][0] = luma_def;
-                sl->luma_weight[i][list][1] = 0;
-            }
-
-            if (h->sps.chroma_format_idc) {
-                chroma_weight_flag = get_bits1(&sl->gb);
-                if (chroma_weight_flag) {
-                    int j;
-                    for (j = 0; j < 2; j++) {
-                        sl->chroma_weight[i][list][j][0] = get_se_golomb(&sl->gb);
-                        sl->chroma_weight[i][list][j][1] = get_se_golomb(&sl->gb);
-                        if (sl->chroma_weight[i][list][j][0] != chroma_def ||
-                            sl->chroma_weight[i][list][j][1] != 0) {
-                            sl->use_weight_chroma        = 1;
-                            sl->chroma_weight_flag[list] = 1;
-                        }
-                    }
-                } else {
-                    int j;
-                    for (j = 0; j < 2; j++) {
-                        sl->chroma_weight[i][list][j][0] = chroma_def;
-                        sl->chroma_weight[i][list][j][1] = 0;
-                    }
-                }
-            }
-        }
-        if (sl->slice_type_nos != AV_PICTURE_TYPE_B)
-            break;
-    }
-    sl->use_weight = sl->use_weight || sl->use_weight_chroma;
-    return 0;
-}
-
 /**
  * instantaneous decoder refresh.
  */
@@ -1544,7 +1378,7 @@ again:
                     (h->nal_unit_type == NAL_IDR_SLICE);
 
                 if (h->nal_unit_type == NAL_IDR_SLICE ||
-                    h->recovery_frame == h->frame_num) {
+                    (h->recovery_frame == h->frame_num && h->nal_ref_idc)) {
                     h->recovery_frame         = -1;
                     h->cur_pic_ptr->recovered = 1;
                 }

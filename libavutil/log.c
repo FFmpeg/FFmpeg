@@ -284,10 +284,19 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix)
 {
+    av_log_format_line2(ptr, level, fmt, vl, line, line_size, print_prefix);
+}
+
+int av_log_format_line2(void *ptr, int level, const char *fmt, va_list vl,
+                        char *line, int line_size, int *print_prefix)
+{
     AVBPrint part[4];
+    int ret;
+
     format_line(ptr, level, fmt, vl, part, print_prefix, NULL);
-    snprintf(line, line_size, "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
+    ret = snprintf(line, line_size, "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
     av_bprint_finalize(part+3, NULL);
+    return ret;
 }
 
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
@@ -435,6 +444,17 @@ void avpriv_report_missing_feature(void *avc, const char *msg, ...)
 // LCOV_EXCL_START
 #include <string.h>
 
+static int call_log_format_line2(const char *fmt, char *buffer, int buffer_size, ...)
+{
+    va_list args;
+    int ret;
+    int print_prefix=1;
+    va_start(args, buffer_size);
+    ret = av_log_format_line2(NULL, AV_LOG_INFO, fmt, args, buffer, buffer_size, &print_prefix);
+    va_end(args);
+    return ret;
+}
+
 int main(int argc, char **argv)
 {
     int i;
@@ -448,6 +468,25 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_INFO, "e");
         }
         av_log(NULL, AV_LOG_PANIC, "\n");
+    }
+    {
+        int result;
+        char buffer[4];
+        result = call_log_format_line2("foo", NULL, 0);
+        if(result != 3) {
+            printf("Test NULL buffer failed.\n");
+            return 1;
+        }
+        result = call_log_format_line2("foo", buffer, 2);
+        if(result != 3 || strncmp(buffer, "f", 2)) {
+            printf("Test buffer too small failed.\n");
+            return 1;
+        }
+        result = call_log_format_line2("foo", buffer, 4);
+        if(result != 3 || strncmp(buffer, "foo", 4)) {
+            printf("Test buffer sufficiently big failed.\n");
+            return 1;
+        }
     }
     return 0;
 }

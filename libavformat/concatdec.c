@@ -182,11 +182,6 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
     }
     if ((ret = avcodec_parameters_copy(st->codecpar, source_st->codecpar)) < 0)
         return ret;
-    /* We don't want to carry around MP4-style extradata, since we are usoign a bsf anyway. */
-    if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
-        av_freep(&st->codecpar->extradata);
-        st->codecpar->extradata_size = 0;
-    }
     st->r_frame_rate        = source_st->r_frame_rate;
     st->avg_frame_rate      = source_st->avg_frame_rate;
     st->time_base           = source_st->time_base;
@@ -218,6 +213,12 @@ static int detect_stream_specific(AVFormatContext *avf, int idx)
         cs->avctx = avcodec_alloc_context3(NULL);
         if (!cs->avctx)
             return AVERROR(ENOMEM);
+
+        /* This really should be part of the bsf work.
+           Note: input bitstream filtering will not work with bsf that
+           create extradata from the first packet. */
+        av_freep(&st->codecpar->extradata);
+        st->codecpar->extradata_size = 0;
 
         ret = avcodec_parameters_to_context(cs->avctx, st->codecpar);
         if (ret < 0) {
