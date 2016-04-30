@@ -561,6 +561,7 @@
     <ClCompile Include="..\libavcodec\h264_sei.c" />
     <ClCompile Include="..\libavcodec\h264_slice.c" />
     <ClCompile Include="..\libavcodec\h264data.c" />
+    <ClCompile Include="..\libavcodec\h264_parse.c" />
     <ClCompile Include="..\libavcodec\qsvdec_h2645.c" />
     <ClCompile Include="..\libavcodec\qsvenc_h264.c" />
     <ClCompile Include="..\libavcodec\hapdec.c" />
@@ -574,7 +575,7 @@
     <ClCompile Include="..\libavcodec\hevcpred.c" />
     <ClCompile Include="..\libavcodec\hevcdsp.c" />
     <ClCompile Include="..\libavcodec\hevc_filter.c" />
-    <ClCompile Include="..\libavcodec\hevc_parse.c" />
+    <ClCompile Include="..\libavcodec\h2645_parse.c" />
     <ClCompile Include="..\libavcodec\hevc_data.c" />
     <ClCompile Include="..\libavcodec\qsvenc_hevc.c" />
     <ClCompile Include="..\libavcodec\hevc_ps_enc.c" />

@@ -261,6 +261,7 @@ EXPORTS
     av_log2_i
     av_log_default_callback
     av_log_format_line
+    av_log_format_line2
     av_log_get_flags
     av_log_get_level
     av_log_set_callback
