@@ -250,7 +250,8 @@ static int encode_frame(AVCodecContext *avctx,
             dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
             for (; dialog && num--; dialog++) {
                 s->alignment_applied = 0;
-                srt_style_apply(s, dialog->style);
+                if (avctx->codec_id == AV_CODEC_ID_SUBRIP)
+                    srt_style_apply(s, dialog->style);
                 ff_ass_split_override_codes(cb, s, dialog->text);
             }
         } else {
@@ -259,7 +260,8 @@ static int encode_frame(AVCodecContext *avctx,
             if (!dialog)
                 return AVERROR(ENOMEM);
             s->alignment_applied = 0;
-            srt_style_apply(s, dialog->style);
+            if (avctx->codec_id == AV_CODEC_ID_SUBRIP)
+                srt_style_apply(s, dialog->style);
             ff_ass_split_override_codes(cb, s, dialog->text);
             ff_ass_free_dialog(&dialog);
 #if FF_API_ASS_TIMING
