@@ -125,6 +125,7 @@ static int dsf_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
     st->codecpar->block_align *= st->codecpar->channels;
+    st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate * 8LL;
     avio_skip(pb, 4);
 
     /* data chunk */
