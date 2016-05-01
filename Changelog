@@ -31,6 +31,7 @@ version <next>:
 - Duck TrueMotion 2.0 Real Time decoder
 - Wideband Single-bit Data (WSD) demuxer
 - VAAPI-accelerated H.264/HEVC/MJPEG encoding
+- DTS Express (LBR) decoder
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

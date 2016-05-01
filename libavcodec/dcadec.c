@@ -235,6 +235,16 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
 
+        // Parse LBR component in EXSS
+        if (asset && (asset->extension_mask & DCA_EXSS_LBR)) {
+            if ((ret = ff_dca_lbr_parse(&s->lbr, input, asset)) < 0) {
+                if (ret == AVERROR(ENOMEM) || (avctx->err_recognition & AV_EF_EXPLODE))
+                    return ret;
+            } else {
+                s->packet |= DCA_PACKET_LBR;
+            }
+        }
+
         // Parse core extensions in EXSS or backward compatible core sub-stream
         if ((s->packet & DCA_PACKET_CORE)
             && (ret = ff_dca_core_parse_exss(&s->core, input, asset)) < 0)
@@ -242,7 +252,10 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     // Filter the frame
-    if (s->packet & DCA_PACKET_XLL) {
+    if (s->packet & DCA_PACKET_LBR) {
+        if ((ret = ff_dca_lbr_filter_frame(&s->lbr, frame)) < 0)
+            return ret;
+    } else if (s->packet & DCA_PACKET_XLL) {
         if (s->packet & DCA_PACKET_CORE) {
             int x96_synth = -1;
 
@@ -297,6 +310,7 @@ static av_cold void dcadec_flush(AVCodecContext *avctx)
 
     ff_dca_core_flush(&s->core);
     ff_dca_xll_flush(&s->xll);
+    ff_dca_lbr_flush(&s->lbr);
 
     s->core_residual_valid = 0;
 }
@@ -307,6 +321,7 @@ static av_cold int dcadec_close(AVCodecContext *avctx)
 
     ff_dca_core_close(&s->core);
     ff_dca_xll_close(&s->xll);
+    ff_dca_lbr_close(&s->lbr);
 
     av_freep(&s->buffer);
     s->buffer_size = 0;
@@ -322,15 +337,20 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     s->core.avctx = avctx;
     s->exss.avctx = avctx;
     s->xll.avctx = avctx;
+    s->lbr.avctx = avctx;
 
     ff_dca_init_vlcs();
 
     if (ff_dca_core_init(&s->core) < 0)
         return AVERROR(ENOMEM);
 
+    if (ff_dca_lbr_init(&s->lbr) < 0)
+        return AVERROR(ENOMEM);
+
     ff_dcadsp_init(&s->dcadsp);
     s->core.dcadsp = &s->dcadsp;
     s->xll.dcadsp = &s->dcadsp;
+    s->lbr.dcadsp = &s->dcadsp;
 
     s->crctab = av_crc_get_table(AV_CRC_16_CCITT);
 

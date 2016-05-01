@@ -1038,13 +1038,209 @@ static const uint8_t *const bitalloc_bits[DCA_CODE_BOOKS][8] = {
       bitalloc_129_bits_e, bitalloc_129_bits_f, bitalloc_129_bits_g, NULL }
 };
 
-static const uint16_t vlc_offs[63] = {
+static const uint16_t tnl_grp_0_codes[37] = {
+    0x0000, 0x0003, 0x0004, 0x0007, 0x0001, 0x0009, 0x000a, 0x000d,
+    0x000e, 0x0006, 0x0012, 0x0005, 0x0015, 0x0016, 0x0022, 0x0025,
+    0x0035, 0x0076, 0x0002, 0x0042, 0x00b6, 0x0036, 0x00c2, 0x0136,
+    0x0182, 0x01c2, 0x03c2, 0x0482, 0x0682, 0x0082, 0x0882, 0x0a82,
+    0x0282, 0x2282, 0x3282, 0x1282, 0x5282,
+};
+
+static const uint16_t tnl_grp_1_codes[34] = {
+    0x0001, 0x0003, 0x0006, 0x0000, 0x0002, 0x0004, 0x0005, 0x0007,
+    0x0008, 0x000f, 0x001a, 0x001c, 0x001d, 0x000a, 0x002c, 0x002d,
+    0x000d, 0x002a, 0x004c, 0x004d, 0x006a, 0x008c, 0x00cd, 0x00ea,
+    0x000c, 0x010c, 0x01ea, 0x020c, 0x030c, 0x07ea, 0x0bea, 0x03ea,
+    0x13ea, 0x33ea,
+};
+
+static const uint16_t tnl_grp_2_codes[31] = {
+    0x0001, 0x0003, 0x0006, 0x0007, 0x0004, 0x0008, 0x000c, 0x0010,
+    0x0012, 0x001a, 0x0022, 0x0000, 0x000a, 0x0020, 0x0040, 0x004a,
+    0x006a, 0x0002, 0x002a, 0x0042, 0x0082, 0x00aa, 0x00e0, 0x0060,
+    0x00c2, 0x01c2, 0x0160, 0x0360, 0x0f60, 0x0760, 0x1760,
+};
+
+static const uint16_t tnl_grp_3_codes[28] = {
+    0x0001, 0x0006, 0x0008, 0x0014, 0x001c, 0x0000, 0x0002, 0x0004,
+    0x000a, 0x000c, 0x0010, 0x0012, 0x001a, 0x0020, 0x002a, 0x002c,
+    0x0032, 0x003a, 0x0022, 0x0030, 0x0062, 0x0064, 0x0070, 0x0024,
+    0x00a4, 0x01a4, 0x03a4, 0x07a4,
+};
+
+static const uint16_t tnl_grp_4_codes[23] = {
+    0x0001, 0x0000, 0x000a, 0x0006, 0x0012, 0x001e, 0x0022, 0x002e,
+    0x0036, 0x003e, 0x0002, 0x0016, 0x0032, 0x004e, 0x0056, 0x000e,
+    0x0042, 0x0072, 0x00c2, 0x00f2, 0x008e, 0x018e, 0x038e,
+};
+
+static const uint16_t tnl_scf_codes[20] = {
+    0x0000, 0x0001, 0x0002, 0x0005, 0x0006, 0x0007, 0x000b, 0x000c,
+    0x0013, 0x0014, 0x0003, 0x0004, 0x0023, 0x0064, 0x00a4, 0x0024,
+    0x0124, 0x0324, 0x0724, 0x0f24,
+};
+
+static const uint16_t damp_codes[7] = {
+    0x0001, 0x0000, 0x0002, 0x0006, 0x000e, 0x001e, 0x003e,
+};
+
+static const uint16_t dph_codes[9] = {
+    0x0000, 0x0002, 0x0003, 0x0001, 0x0009, 0x000d, 0x0005, 0x0015,
+    0x0035,
+};
+
+static const uint16_t fst_rsd_amp_codes[24] = {
+    0x0003, 0x0005, 0x0006, 0x0007, 0x0000, 0x0001, 0x0002, 0x0008,
+    0x0009, 0x000a, 0x0014, 0x0004, 0x001a, 0x001c, 0x0024, 0x002c,
+    0x003a, 0x000c, 0x003c, 0x004c, 0x00fc, 0x007c, 0x017c, 0x037c,
+};
+
+static const uint16_t rsd_apprx_codes[6] = {
+    0x0000, 0x0001, 0x0003, 0x0007, 0x000f, 0x001f,
+};
+
+static const uint16_t rsd_amp_codes[33] = {
+    0x0001, 0x0000, 0x0002, 0x0003, 0x0004, 0x000e, 0x000f, 0x0016,
+    0x0007, 0x0027, 0x0037, 0x0026, 0x0066, 0x0006, 0x0017, 0x0046,
+    0x0097, 0x00d7, 0x0086, 0x00c6, 0x01c6, 0x0157, 0x0186, 0x0257,
+    0x0357, 0x0057, 0x0786, 0x0386, 0x0b86, 0x0457, 0x0c57, 0x1457,
+    0x1c57,
+};
+
+static const uint16_t avg_g3_codes[18] = {
+    0x0001, 0x0002, 0x0003, 0x0000, 0x000c, 0x0014, 0x0018, 0x0004,
+    0x0008, 0x0028, 0x0068, 0x0024, 0x00a4, 0x00e4, 0x0164, 0x0064,
+    0x0264, 0x0664,
+};
+
+static const uint16_t st_grid_codes[22] = {
+    0x0001, 0x0002, 0x0000, 0x0004, 0x0008, 0x001c, 0x004c, 0x006c,
+    0x000c, 0x002c, 0x008c, 0x00ac, 0x012c, 0x018c, 0x01ac, 0x038c,
+    0x03ac, 0x032c, 0x072c, 0x0f2c, 0x172c, 0x1f2c,
+};
+
+static const uint16_t grid_2_codes[20] = {
+    0x0000, 0x0002, 0x0003, 0x0001, 0x0005, 0x000d, 0x003d, 0x005d,
+    0x009d, 0x011d, 0x001d, 0x061d, 0x041d, 0x0c1d, 0x0a1d, 0x121d,
+    0x021d, 0x1a1d, 0x221d, 0x3a1d,
+};
+
+static const uint16_t grid_3_codes[13] = {
+    0x0001, 0x0002, 0x0000, 0x0004, 0x000c, 0x001c, 0x007c, 0x003c,
+    0x01bc, 0x00bc, 0x06bc, 0x02bc, 0x0abc,
+};
+
+static const uint16_t rsd_codes[9] = {
+    0x0001, 0x0003, 0x0000, 0x0002, 0x0006, 0x0004, 0x000c, 0x001c,
+    0x003c,
+};
+
+static const uint8_t tnl_grp_0_bitvals[74] = {
+     3,  5,  3,  9,  3,  4,  3,  6,  4, 10,  4, 13,  4,  7,  4, 11,
+     4,  8,  5, 12,  5, 14,  6, 15,  6, 18,  6,  1,  6, 17,  6, 16,
+     6, 21,  7, 20,  8, 19,  8, 22,  8, 25,  9, 26,  9, 23,  9,  3,
+     9, 24, 10, 29, 10, 27, 11, 28, 11, 30, 12, 33, 12, 31, 12, 32,
+    14, 34, 14, 37, 14, 36, 15, 35, 15,  0,
+};
+
+static const uint8_t tnl_grp_1_bitvals[68] = {
+     3,  9,  3,  6,  3,  5,  4,  4,  4,  8,  4, 10,  4,  1,  4, 11,
+     4,  7,  4, 13,  5, 12,  5, 14,  5, 17,  6, 16,  6, 15,  6, 18,
+     7, 20,  7, 19,  7, 21,  8, 25,  8, 23,  8, 22,  8, 24,  9, 26,
+    10,  3, 10, 29, 10, 30, 10, 27, 10, 28, 11, 31, 12, 32, 13, 33,
+    14, 34, 14,  0,
+};
+
+static const uint8_t tnl_grp_2_bitvals[62] = {
+     2,  1,  3,  6,  3,  5,  3,  7,  4,  9,  4,  8,  4,  4,  5, 10,
+     5, 11,  5, 13,  6, 12,  7, 14,  7, 16,  7, 15,  7, 17,  7, 18,
+     7, 19,  8, 22,  8, 20,  8, 21,  8,  3,  8, 24,  8, 25,  9, 23,
+     9, 26,  9, 27, 10, 28, 11, 29, 12, 31, 13, 30, 13,  0,
+};
+
+static const uint8_t tnl_grp_3_bitvals[56] = {
+     1,  1,  3,  6,  4,  5,  5,  9,  5,  4,  6,  8,  6, 14,  6, 10,
+     6, 21,  6, 13,  6,  7,  6,  3,  6, 16,  6,  2,  6, 18,  6, 17,
+     6, 11,  6, 15,  7, 19,  7, 23,  7, 24,  7, 22,  7, 12,  8, 20,
+     9, 25, 10, 26, 11, 27, 11,  0,
+};
+
+static const uint8_t tnl_grp_4_bitvals[46] = {
+     1,  1,  2,  2,  4,  4,  5,  5,  6,  6,  6,  8,  6,  3,  6, 19,
+     6, 20,  6,  9,  7,  7,  7, 11,  7, 13,  7, 17,  7, 10,  8, 12,
+     8, 15,  8, 14,  8, 21,  8, 18,  9, 16, 10, 22, 10,  0,
+};
+
+static const uint8_t tnl_scf_bitvals[40] = {
+     3,  3,  3,  1,  3,  2,  3,  5,  3,  4,  3,  6,  4,  8,  4,  7,
+     5, 10,  5,  9,  6, 12,  6, 11,  6, 13,  7, 14,  8, 15,  9, 16,
+    10, 17, 11, 18, 12, 19, 12,  0,
+};
+
+static const uint8_t damp_bitvals[14] = {
+     1,  1,  2,  2,  3,  3,  4,  4,  5,  5,  6,  6,  6,  0,
+};
+
+static const uint8_t dph_bitvals[18] = {
+     2,  2,  2,  1,  2,  8,  4,  3,  4,  7,  4,  4,  5,  6,  6,  5,
+     6,  0,
+};
+
+static const uint8_t fst_rsd_amp_bitvals[48] = {
+     3, 13,  3, 15,  3, 16,  3, 14,  4, 12,  4, 10,  4, 11,  4, 17,
+     4, 18,  5, 19,  5,  9,  6,  1,  6,  7,  6,  6,  6,  8,  6,  5,
+     6,  4,  7, 20,  7,  2,  7,  3,  8, 21,  9, 22, 10, 23, 10,  0,
+};
+
+static const uint8_t rsd_apprx_bitvals[12] = {
+     1,  1,  2,  2,  3,  3,  4,  4,  5,  5,  5,  0,
+};
+
+static const uint8_t rsd_amp_bitvals[66] = {
+     2,  3,  3,  2,  3,  5,  3,  4,  3,  1,  4,  7,  4,  6,  5,  9,
+     6,  8,  6, 11,  6, 10,  7, 12,  7, 13,  8, 14,  8, 18,  8, 16,
+     8, 15,  8, 22,  9, 20,  9, 24,  9, 17, 10, 28, 10, 26, 10, 21,
+    10, 23, 11, 30, 11, 19, 12, 25, 12, 32, 13, 36, 13, 29, 13, 34,
+    13,  0,
+};
+
+static const uint8_t avg_g3_bitvals[36] = {
+     2, 15,  2, 16,  2, 17,  4, 14,  4, 18,  5, 12,  5, 13,  6, 10,
+     6, 11,  7, 19,  7,  9,  8, 20,  8,  8,  8,  7,  9, 21, 10,  6,
+    11, 23, 11,  0,
+};
+
+static const uint8_t st_grid_bitvals[44] = {
+     1,  6,  2,  1,  4,  4,  4,  8,  4,  3,  5, 10,  7, 12,  7,  5,
+     8, 14,  9, 16,  9,  7,  9, 18, 10, 11, 10,  9, 10, 20, 10, 22,
+    10,  2, 11, 13, 13, 17, 13, 24, 13, 15, 13,  0,
+};
+
+static const uint8_t grid_2_bitvals[40] = {
+     2,  3,  2,  2,  2,  1,  3,  4,  4,  5,  5,  6,  6,  7,  7,  8,
+     8,  9,  9, 10, 11, 11, 11, 12, 12, 13, 12, 17, 13, 15, 13, 18,
+    14, 19, 14, 16, 14, 14, 14,  0,
+};
+
+static const uint8_t grid_3_bitvals[26] = {
+     1, 17,  2, 16,  3, 18,  4, 15,  5, 19,  6, 14,  7, 20,  8, 13,
+     9, 21, 10, 12, 11, 22, 12, 11, 12,  0,
+};
+
+static const uint8_t rsd_bitvals[18] = {
+     2,  2,  2,  3,  3,  1,  3,  4,  3,  0,  4,  5,  5,  6,  6,  7,
+     6,  4,
+};
+
+static const uint16_t vlc_offs[80] = {
         0,   512,   640,   768,  1282,  1794,  2436,  3080,  3770,  4454,  5364,
      5372,  5380,  5388,  5392,  5396,  5412,  5420,  5428,  5460,  5492,  5508,
      5572,  5604,  5668,  5796,  5860,  5892,  6412,  6668,  6796,  7308,  7564,
      7820,  8076,  8620,  9132,  9388,  9910, 10166, 10680, 11196, 11726, 12240,
     12752, 13298, 13810, 14326, 14840, 15500, 16022, 16540, 17158, 17678, 18264,
-    18796, 19352, 19926, 20468, 21472, 22398, 23014, 23622,
+    18796, 19352, 19926, 20468, 21472, 22398, 23014, 23622, 24200, 24748, 25276,
+    25792, 26306, 26826, 26890, 26954, 27468, 27500, 28038, 28554, 29086, 29630,
+    30150, 30214
 };
 
 DCAVLC  ff_dca_vlc_bit_allocation;
@@ -1052,9 +1248,22 @@ DCAVLC  ff_dca_vlc_transition_mode;
 DCAVLC  ff_dca_vlc_scale_factor;
 DCAVLC  ff_dca_vlc_quant_index[DCA_CODE_BOOKS];
 
+VLC     ff_dca_vlc_tnl_grp[5];
+VLC     ff_dca_vlc_tnl_scf;
+VLC     ff_dca_vlc_damp;
+VLC     ff_dca_vlc_dph;
+VLC     ff_dca_vlc_fst_rsd_amp;
+VLC     ff_dca_vlc_rsd_apprx;
+VLC     ff_dca_vlc_rsd_amp;
+VLC     ff_dca_vlc_avg_g3;
+VLC     ff_dca_vlc_st_grid;
+VLC     ff_dca_vlc_grid_2;
+VLC     ff_dca_vlc_grid_3;
+VLC     ff_dca_vlc_rsd;
+
 av_cold void ff_dca_init_vlcs(void)
 {
-    static VLC_TYPE dca_table[23622][2];
+    static VLC_TYPE dca_table[30214][2];
     static int vlcs_initialized = 0;
     int i, j, k = 0;
 
@@ -1094,6 +1303,35 @@ av_cold void ff_dca_init_vlcs(void)
             DCA_INIT_VLC(ff_dca_vlc_quant_index[i].vlc[j], bitalloc_maxbits[i][j],
                          bitalloc_sizes[i], bitalloc_bits[i][j], bitalloc_codes[i][j]);
     }
+
+#define LBR_INIT_VLC(vlc, tab, nb_bits)                                 \
+    do {                                                                \
+        vlc.table           = &dca_table[vlc_offs[k]];                  \
+        vlc.table_allocated = vlc_offs[k + 1] - vlc_offs[k];            \
+        ff_init_vlc_sparse(&vlc, nb_bits, FF_ARRAY_ELEMS(tab##_codes),  \
+                           &tab##_bitvals[0], 2, 1,                     \
+                           tab##_codes, 2, 2,                           \
+                           &tab##_bitvals[1], 2, 1,                     \
+                           INIT_VLC_LE | INIT_VLC_USE_NEW_STATIC);      \
+        k++;                                                            \
+    } while (0)
+
+    LBR_INIT_VLC(ff_dca_vlc_tnl_grp[0],  tnl_grp_0,   9);
+    LBR_INIT_VLC(ff_dca_vlc_tnl_grp[1],  tnl_grp_1,   9);
+    LBR_INIT_VLC(ff_dca_vlc_tnl_grp[2],  tnl_grp_2,   9);
+    LBR_INIT_VLC(ff_dca_vlc_tnl_grp[3],  tnl_grp_3,   9);
+    LBR_INIT_VLC(ff_dca_vlc_tnl_grp[4],  tnl_grp_4,   9);
+    LBR_INIT_VLC(ff_dca_vlc_tnl_scf,     tnl_scf,     9);
+    LBR_INIT_VLC(ff_dca_vlc_damp,        damp,        6);
+    LBR_INIT_VLC(ff_dca_vlc_dph,         dph,         6);
+    LBR_INIT_VLC(ff_dca_vlc_fst_rsd_amp, fst_rsd_amp, 9);
+    LBR_INIT_VLC(ff_dca_vlc_rsd_apprx,   rsd_apprx,   5);
+    LBR_INIT_VLC(ff_dca_vlc_rsd_amp,     rsd_amp,     9);
+    LBR_INIT_VLC(ff_dca_vlc_avg_g3,      avg_g3,      9);
+    LBR_INIT_VLC(ff_dca_vlc_st_grid,     st_grid,     9);
+    LBR_INIT_VLC(ff_dca_vlc_grid_2,      grid_2,      9);
+    LBR_INIT_VLC(ff_dca_vlc_grid_3,      grid_3,      9);
+    LBR_INIT_VLC(ff_dca_vlc_rsd,         rsd,         6);
 
     vlcs_initialized = 1;
 }

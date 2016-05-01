@@ -84,6 +84,13 @@ typedef struct DCADSPContext {
 
     void (*assemble_freq_bands)(int32_t *dst, int32_t *src0, int32_t *src1,
                                 const int32_t *coeff, ptrdiff_t len);
+
+    void (*lbr_bank)(float output[32][4], float **input,
+                     const float *coeff, ptrdiff_t ofs, ptrdiff_t len);
+
+    void (*lfe_iir)(float *output, const float *input,
+                    const float iir[5][4], float hist[5][2],
+                    ptrdiff_t factor);
 } DCADSPContext;
 
 av_cold void ff_dcadsp_init(DCADSPContext *s);

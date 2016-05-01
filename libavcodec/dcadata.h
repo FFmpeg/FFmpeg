@@ -73,4 +73,51 @@ extern const int32_t ff_dca_xll_band_coeff[20];
 
 extern const int32_t ff_dca_sampling_freqs[16];
 
+extern const uint16_t ff_dca_avg_g3_freqs[3];
+
+extern const uint16_t ff_dca_fst_amp[44];
+
+extern const uint8_t ff_dca_freq_to_sb[32];
+
+extern const int8_t ff_dca_ph0_shift[8];
+
+extern const uint8_t ff_dca_grid_1_to_scf[11];
+extern const uint8_t ff_dca_grid_2_to_scf[3];
+
+extern const uint8_t ff_dca_scf_to_grid_1[32];
+extern const uint8_t ff_dca_scf_to_grid_2[32];
+
+extern const uint8_t ff_dca_grid_1_weights[12][32];
+
+extern const uint8_t ff_dca_sb_reorder[8][8];
+
+extern const int8_t ff_dca_lfe_delta_index_16[8];
+extern const int8_t ff_dca_lfe_delta_index_24[32];
+
+extern const uint16_t ff_dca_rsd_pack_5_in_8[256];
+extern const uint8_t ff_dca_rsd_pack_3_in_7[128][3];
+
+extern const float ff_dca_rsd_level_2a[2];
+extern const float ff_dca_rsd_level_2b[2];
+extern const float ff_dca_rsd_level_3[3];
+extern const float ff_dca_rsd_level_5[5];
+extern const float ff_dca_rsd_level_8[8];
+extern const float ff_dca_rsd_level_16[16];
+
+extern const float ff_dca_synth_env[32];
+
+extern const float ff_dca_corr_cf[32][11];
+
+extern const float ff_dca_quant_amp[57];
+
+extern const float ff_dca_st_coeff[34];
+
+extern const float ff_dca_long_window[128];
+
+extern const float ff_dca_lfe_step_size_16[101];
+extern const float ff_dca_lfe_step_size_24[144];
+
+extern const float ff_dca_bank_coeff[10];
+extern const float ff_dca_lfe_iir[5][4];
+
 #endif /* AVCODEC_DCADATA_H */
