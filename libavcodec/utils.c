@@ -2633,7 +2633,9 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 && *got_sub_ptr && sub->num_rects) {
                 const AVRational tb = avctx->pkt_timebase.num ? avctx->pkt_timebase
                                                               : avctx->time_base;
-                ret = convert_sub_to_old_ass_form(sub, avpkt, tb);
+                int err = convert_sub_to_old_ass_form(sub, avpkt, tb);
+                if (err < 0)
+                    ret = err;
             }
 #endif
 
