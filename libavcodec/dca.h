@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
@@ -89,6 +90,33 @@ enum DCASpeakerMask {
 
 #define DCA_HAS_STEREO(mask) \
     ((mask & DCA_SPEAKER_LAYOUT_STEREO) == DCA_SPEAKER_LAYOUT_STEREO)
+
+enum DCASpeakerPair {
+    DCA_SPEAKER_PAIR_C      = 0x0001,
+    DCA_SPEAKER_PAIR_LR     = 0x0002,
+    DCA_SPEAKER_PAIR_LsRs   = 0x0004,
+    DCA_SPEAKER_PAIR_LFE1   = 0x0008,
+    DCA_SPEAKER_PAIR_Cs     = 0x0010,
+    DCA_SPEAKER_PAIR_LhRh   = 0x0020,
+    DCA_SPEAKER_PAIR_LsrRsr = 0x0040,
+    DCA_SPEAKER_PAIR_Ch     = 0x0080,
+    DCA_SPEAKER_PAIR_Oh     = 0x0100,
+    DCA_SPEAKER_PAIR_LcRc   = 0x0200,
+    DCA_SPEAKER_PAIR_LwRw   = 0x0400,
+    DCA_SPEAKER_PAIR_LssRss = 0x0800,
+    DCA_SPEAKER_PAIR_LFE2   = 0x1000,
+    DCA_SPEAKER_PAIR_LhsRhs = 0x2000,
+    DCA_SPEAKER_PAIR_Chr    = 0x4000,
+    DCA_SPEAKER_PAIR_LhrRhr = 0x8000
+};
+
+/**
+ * Return number of individual channels in DCASpeakerPair mask
+ */
+static inline int ff_dca_count_chs_for_mask(unsigned int mask)
+{
+    return av_popcount((mask & 0xffff) | ((mask & 0xae66) << 16));
+}
 
 enum DCARepresentationType {
     DCA_REPR_TYPE_LtRt = 2,
