@@ -36,8 +36,8 @@ static int32_t scalarproduct_and_madd_int16_c(int16_t *v1, const int16_t *v2,
     return res;
 }
 
-static int32_t scalarproduct_and_madd_int32_c(int32_t *v1, const int32_t *v2,
-                                              const int32_t *v3,
+static int32_t scalarproduct_and_madd_int32_c(int16_t *v1, const int32_t *v2,
+                                              const int16_t *v3,
                                               int order, int mul)
 {
     int res = 0;
