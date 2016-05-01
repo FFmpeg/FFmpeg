@@ -322,7 +322,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     cur_x = AV_RL16(src + 33);
     cur_y = AV_RL16(src + 35);
     if (!skip_cursor && (cur_x > avctx->width || cur_y > avctx->height)) {
-        av_log(avctx, AV_LOG_WARNING,
+        av_log(avctx, AV_LOG_DEBUG,
                "Invalid cursor position: (%d,%d). Skipping cursor.\n",
                cur_x, cur_y);
         skip_cursor = 1;
