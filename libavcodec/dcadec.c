@@ -22,7 +22,7 @@
 #include "libavutil/channel_layout.h"
 
 #include "dcadec.h"
-#include "dcamath.h"
+#include "dcahuff.h"
 #include "dca_syncwords.h"
 #include "profiles.h"
 
@@ -349,6 +349,8 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     s->core.avctx = avctx;
     s->exss.avctx = avctx;
     s->xll.avctx = avctx;
+
+    ff_dca_init_vlcs();
 
     if (ff_dca_core_init(&s->core) < 0)
         return AVERROR(ENOMEM);

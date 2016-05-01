@@ -73,6 +73,4 @@ extern const int32_t ff_dca_xll_band_coeff[20];
 
 extern const int32_t ff_dca_sampling_freqs[16];
 
-extern const uint16_t ff_dca_vlc_offs[63];
-
 #endif /* AVCODEC_DCADATA_H */
