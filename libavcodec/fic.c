@@ -309,7 +309,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!tsize)
+    if (!tsize || !AV_RL16(src + 37) || !AV_RL16(src + 39))
         skip_cursor = 1;
 
     if (!skip_cursor && tsize < 32) {
