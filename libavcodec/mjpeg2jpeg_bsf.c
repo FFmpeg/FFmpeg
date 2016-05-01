@@ -86,6 +86,8 @@ static int mjpeg2jpeg_filter(AVBSFContext *ctx, AVPacket *out)
     uint8_t *output;
 
     ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
 
     if (in->size < 12) {
         av_log(ctx, AV_LOG_ERROR, "input is truncated\n");
