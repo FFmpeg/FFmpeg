@@ -468,7 +468,7 @@ static int decode_cdlms(WmallDecodeCtx *s)
                 s->cdlms[0][0].order = 0;
                 return AVERROR_INVALIDDATA;
             }
-            if(s->cdlms[c][i].order & 8) {
+            if(s->cdlms[c][i].order & 8 && s->bits_per_sample == 16) {
                 static int warned;
                 if(!warned)
                     avpriv_request_sample(s->avctx, "CDLMS of order %d",
