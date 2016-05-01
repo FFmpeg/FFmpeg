@@ -717,7 +717,7 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input)
     s->cdlms[ich][ilms].lms_updates[recent + (order >> 3)] >>= 1;
     s->cdlms[ich][ilms].recent = recent;
     memset(s->cdlms[ich][ilms].lms_updates + recent + order, 0,
-           sizeof(s->cdlms[ich][ilms].lms_updates) - 4*(recent+order));
+           sizeof(s->cdlms[ich][ilms].lms_updates) - sizeof(int16_t)*(recent+order));
 }
 
 static void use_high_update_speed(WmallDecodeCtx *s, int ich)
