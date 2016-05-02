@@ -196,6 +196,7 @@ External library support:
   --enable-libdcadec       enable DCA decoding via libdcadec [no]
   --enable-libfaac         enable AAC encoding via libfaac [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
+  --enable-libfontconfig   enable libfontconfig [no]
   --enable-libfreetype     enable libfreetype [no]
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
