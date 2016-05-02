@@ -1900,9 +1900,10 @@ static int parse_optional_info(DCACoreDecoder *s)
                 }
             }
 
-            if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+            if (!s->xch_pos) {
                 av_log(s->avctx, AV_LOG_ERROR, "XCH sync word not found\n");
-                return AVERROR_INVALIDDATA;
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
 
@@ -1922,9 +1923,10 @@ static int parse_optional_info(DCACoreDecoder *s)
                 }
             }
 
-            if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+            if (!s->x96_pos) {
                 av_log(s->avctx, AV_LOG_ERROR, "X96 sync word not found\n");
-                return AVERROR_INVALIDDATA;
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
 
@@ -1947,9 +1949,10 @@ static int parse_optional_info(DCACoreDecoder *s)
                 }
             }
 
-            if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+            if (!s->xxch_pos) {
                 av_log(s->avctx, AV_LOG_ERROR, "XXCH sync word not found\n");
-                return AVERROR_INVALIDDATA;
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
         }
