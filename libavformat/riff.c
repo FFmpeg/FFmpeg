@@ -169,6 +169,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('E', 'M', '2', 'V') },
     /* Matrox MPEG-2 intra-only */
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '1') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '2') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '3') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '4') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '5') },
