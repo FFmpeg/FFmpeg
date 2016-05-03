@@ -132,21 +132,6 @@ Component options:
   --disable-fft            disable FFT code
   --disable-faan           disable floating point AAN (I)DCT code
 
-Hardware accelerators:
-  --enable-d3d11va         enable D3D11VA code
-  --enable-dxva2           enable DXVA2 code
-  --enable-vaapi           enable VAAPI code
-  --enable-vda             enable VDA code
-  --enable-vdpau           enable VDPAU code
-
-Hardware-accelerated decoding/encoding:
-  --enable-cuda            enable dynamically linked CUDA [no]
-  --enable-libmfx          enable HW acceleration through libmfx
-  --enable-mmal            enable decoding via MMAL [no]
-  --enable-nvenc           enable encoding via NVENC [no]
-  --enable-omx             enable encoding via OpenMAX IL [no]
-  --enable-omx-rpi         enable encoding via OpenMAX IL for Raspberry Pi [no]
-
 Individual component options:
   --disable-everything     disable all components listed below
   --disable-encoder=NAME   disable encoder NAME
@@ -215,7 +200,6 @@ External library support:
   --enable-libilbc           ILBC audio encoding/decoding
   --enable-libkvazaar        HEVC video encoding
   --enable-libmp3lame        MP3 audio encoding
-  --enable-libnpp            CUDA processing
   --enable-libopencore-amrnb AMR-NB audio encoding/decoding
   --enable-libopencore-amrwb AMR-WB audio decoding
   --enable-libopencv         computer vision
@@ -245,6 +229,20 @@ External library support:
   --enable-openssl           crypto
   --enable-x11grab           X11 grabbing through xlib (legacy, use xcb instead)
   --enable-zlib              compression [autodetect]
+
+  The following libraries provide various hardware acceleration features:
+  --enable-cuda    Nvidia CUDA (dynamically linked)
+  --enable-d3d11va Microsoft Direct3D 11 video acceleration [auto]
+  --enable-dxva2   Microsoft DirectX 9 video acceleration [auto]
+  --enable-libmfx  Intel MediaSDK (AKA Quick Sync Video)
+  --enable-libnpp  Nvidia CUDA processing
+  --enable-mmal    Broadcom Multi-Media Abstraction Layer (Raspberry Pi)
+  --enable-nvenc   Nvidia video encoding
+  --enable-omx     OpenMAX IL
+  --enable-omx-rpi OpenMAX IL for Raspberry Pi
+  --enable-vaapi   Video Acceleration API (mainly Unix/Intel)
+  --enable-vda     Apple Video Decode Acceleration [auto]
+  --enable-vdpau   Nvidia Video Decode and Presentation API for Unix [auto]
 
 Toolchain options:
   --arch=ARCH              select architecture [$arch]
