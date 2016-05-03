@@ -1490,9 +1490,23 @@ again:
                 break;
             case NAL_SPS:
                 init_get_bits(&h->gb, ptr, bit_length);
-                ret = ff_h264_decode_seq_parameter_set(h, 0);
-                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
-                    goto end;
+                if (ff_h264_decode_seq_parameter_set(h, 0) >= 0)
+                    break;
+                if (h->is_avc ? nalsize : 1) {
+                    av_log(h->avctx, AV_LOG_DEBUG,
+                           "SPS decoding failure, trying again with the complete NAL\n");
+                    if (h->is_avc)
+                        av_assert0(next_avc - buf_index + consumed == nalsize);
+                    if ((next_avc - buf_index + consumed - 1) >= INT_MAX/8)
+                        break;
+                    init_get_bits(&h->gb, &buf[buf_index + 1 - consumed],
+                                  8*(next_avc - buf_index + consumed - 1));
+                    if (ff_h264_decode_seq_parameter_set(h, 0) >= 0)
+                        break;
+                }
+                init_get_bits(&h->gb, ptr, bit_length);
+                ff_h264_decode_seq_parameter_set(h, 1);
+
                 break;
             case NAL_PPS:
                 init_get_bits(&h->gb, ptr, bit_length);
