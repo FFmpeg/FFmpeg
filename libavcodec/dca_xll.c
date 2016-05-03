@@ -123,8 +123,7 @@ static int chs_parse_header(DCAXllDecoder *s, DCAXllChSet *c, DCAExssAsset *asse
     header_size = get_bits(&s->gb, 10) + 1;
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XLL sub-header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -784,8 +783,7 @@ static int parse_common_header(DCAXllDecoder *s)
     header_size = get_bits(&s->gb, 8) + 1;
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, 32, header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, 32, header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XLL common header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -993,8 +991,7 @@ static int parse_navi_table(DCAXllDecoder *s)
     skip_bits(&s->gb, 16);
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, navi_pos, get_bits_count(&s->gb))) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, navi_pos, get_bits_count(&s->gb))) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAVI checksum\n");
         return AVERROR_INVALIDDATA;
     }

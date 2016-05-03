@@ -269,8 +269,7 @@ static int parse_coding_header(DCACoreDecoder *s, enum HeaderType header, int xc
 
         // Check CRC
         if (s->xxch_crc_present
-            && (s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-            && ff_dca_check_crc(&s->gb, header_pos, header_pos + header_size * 8)) {
+            && ff_dca_check_crc(s->avctx, &s->gb, header_pos, header_pos + header_size * 8)) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid XXCH channel set header checksum\n");
             return AVERROR_INVALIDDATA;
         }
@@ -977,8 +976,7 @@ static int parse_xxch_frame(DCACoreDecoder *s)
     header_size = get_bits(&s->gb, 6) + 1;
 
     // Check XXCH frame header CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos + 32, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos + 32, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XXCH frame header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1193,8 +1191,7 @@ static int parse_xbr_frame(DCACoreDecoder *s)
     header_size = get_bits(&s->gb, 6) + 1;
 
     // Check XBR frame header CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos + 32, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos + 32, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XBR frame header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1509,8 +1506,7 @@ static int parse_x96_coding_header(DCACoreDecoder *s, int exss, int xch_base)
 
         // Check CRC
         if (s->x96_crc_present
-            && (s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-            && ff_dca_check_crc(&s->gb, header_pos, header_pos + header_size * 8)) {
+            && ff_dca_check_crc(s->avctx, &s->gb, header_pos, header_pos + header_size * 8)) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid X96 channel set header checksum\n");
             return AVERROR_INVALIDDATA;
         }
@@ -1665,8 +1661,7 @@ static int parse_x96_frame_exss(DCACoreDecoder *s)
     header_size = get_bits(&s->gb, 6) + 1;
 
     // Check X96 frame header CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos + 32, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos + 32, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid X96 frame header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1785,8 +1780,7 @@ static int parse_aux_data(DCACoreDecoder *s)
     skip_bits(&s->gb, 16);
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, aux_pos, get_bits_count(&s->gb))) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, aux_pos, get_bits_count(&s->gb))) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid auxiliary data checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1884,9 +1878,10 @@ static int parse_optional_info(DCACoreDecoder *s)
                 if (AV_RB32(s->gb.buffer + sync_pos * 4) == DCA_SYNCWORD_XXCH) {
                     s->gb.index = (sync_pos + 1) * 32;
                     size = get_bits(&s->gb, 6) + 1;
-                    if (size >= 11 &&
-                        !ff_dca_check_crc(&s->gb, (sync_pos + 1) * 32,
-                                          sync_pos * 32 + size * 8)) {
+                    dist = s->gb.size_in_bits / 8 - sync_pos * 4;
+                    if (size >= 11 && size <= dist &&
+                        !av_crc(dca->crctab, 0xffff, s->gb.buffer +
+                                (sync_pos + 1) * 4, size - 4)) {
                         s->xxch_pos = sync_pos * 32;
                         break;
                     }

@@ -398,8 +398,7 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
     header_size = get_bits(&s->gb, 8 + 4 * wide_hdr) + 1;
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, 32 + 8, header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, 32 + 8, header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid EXSS header checksum\n");
         return AVERROR_INVALIDDATA;
     }

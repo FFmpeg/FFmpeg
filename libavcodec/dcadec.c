@@ -76,33 +76,6 @@ int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask
     return nchannels;
 }
 
-static uint16_t crc16(const uint8_t *data, int size)
-{
-    static const uint16_t crctab[16] = {
-        0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
-        0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
-    };
-
-    uint16_t res = 0xffff;
-    int i;
-
-    for (i = 0; i < size; i++) {
-        res = (res << 4) ^ crctab[(data[i] >> 4) ^ (res >> 12)];
-        res = (res << 4) ^ crctab[(data[i] & 15) ^ (res >> 12)];
-    }
-
-    return res;
-}
-
-int ff_dca_check_crc(GetBitContext *s, int p1, int p2)
-{
-    if (((p1 | p2) & 7) || p1 < 0 || p2 > s->size_in_bits || p2 - p1 < 16)
-        return -1;
-    if (crc16(s->buffer + p1 / 8, (p2 - p1) / 8))
-        return -1;
-    return 0;
-}
-
 void ff_dca_downmix_to_stereo_fixed(DCADSPContext *dcadsp, int32_t **samples,
                                     int *coeff_l, int nsamples, int ch_mask)
 {
@@ -358,6 +331,8 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     ff_dcadsp_init(&s->dcadsp);
     s->core.dcadsp = &s->dcadsp;
     s->xll.dcadsp = &s->dcadsp;
+
+    s->crctab = av_crc_get_table(AV_CRC_16_CCITT);
 
     switch (avctx->request_channel_layout & ~AV_CH_LAYOUT_NATIVE) {
     case 0:
