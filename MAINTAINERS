@@ -502,6 +502,7 @@ Muxers/Demuxers:
   rtpdec_hevc.*, rtpenc_hevc.*          Thomas Volkert
   rtpdec_mpa_robust.*                   Gilles Chanteperdrix
   rtpdec_asf.*                          Ronald S. Bultje
+  rtpdec_vc2hq.*, rtpenc_vc2hq.*        Thomas Volkert
   rtpdec_vp9.c                          Thomas Volkert
   rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
   rtsp.c                                Luca Barbato

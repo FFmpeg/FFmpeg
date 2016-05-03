@@ -12,7 +12,7 @@ version <next>:
 - ciescope filter
 - protocol blacklisting API
 - MediaCodec H264 decoding
-- VC-2 HQ RTP payload format (draft v1) depacketizer
+- VC-2 HQ RTP payload format (draft v1) depacketizer and packetizer
 - AudioToolbox audio decoders
 - AudioToolbox audio encoders
 - coreimage filter (GPU based image filtering on OSX)
