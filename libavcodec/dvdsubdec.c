@@ -318,8 +318,6 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             if (h < 0)
                 h = 0;
             if (w > 0 && h > 0) {
-                int j;
-                AVSubtitleRect *rect;
                 if (sub_header->rects) {
                     for (i = 0; i < sub_header->num_rects; i++) {
                         av_freep(&sub_header->rects[i]->data[0]);
@@ -369,11 +367,15 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
+{
+                int j;
+                AVSubtitleRect *rect;
                 rect = sub_header->rects[0];
                 for (j = 0; j < 4; j++) {
                     rect->pict.data[j] = rect->data[j];
                     rect->pict.linesize[j] = rect->linesize[j];
                 }
+}
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
             }

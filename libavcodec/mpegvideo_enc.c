@@ -2683,7 +2683,7 @@ static void update_mb_info(MpegEncContext *s, int startcode)
 
 static int encode_thread(AVCodecContext *c, void *arg){
     MpegEncContext *s= *(void**)arg;
-    int mb_x, mb_y, pdif = 0;
+    int mb_x, mb_y;
     int chr_h= 16>>s->chroma_y_shift;
     int i, j;
     MpegEncContext best_s = { 0 }, backup_s;
@@ -3307,7 +3307,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     /* Send the last GOB if RTP */
     if (s->avctx->rtp_callback) {
         int number_mb = (mb_y - s->resync_mb_y)*s->mb_width - s->resync_mb_x;
-        pdif = put_bits_ptr(&s->pb) - s->ptr_lastgob;
+        int pdif = put_bits_ptr(&s->pb) - s->ptr_lastgob;
         /* Call the RTP callback to send the last GOB */
         emms_c();
         s->avctx->rtp_callback(s->avctx, s->ptr_lastgob, pdif, number_mb);

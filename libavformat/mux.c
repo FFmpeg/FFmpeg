@@ -639,11 +639,11 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
         goto fail;
 
     if (pkt) {
+#if FF_API_COMPUTE_PKT_FIELDS2
         AVStream *st = s->streams[pkt->stream_index];
 
         av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%" PRId64 " pts:%" PRId64 "\n",
                 pkt->size, pkt->dts, pkt->pts);
-#if FF_API_COMPUTE_PKT_FIELDS2
         if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             goto fail;
 #endif

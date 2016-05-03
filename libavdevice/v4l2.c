@@ -853,9 +853,9 @@ static int v4l2_read_header(AVFormatContext *s1)
 
 static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
-    struct video_data *s = s1->priv_data;
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
+    struct video_data *s = s1->priv_data;
     AVFrame *frame = s1->streams[0]->codec->coded_frame;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif

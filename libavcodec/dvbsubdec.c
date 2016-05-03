@@ -1350,7 +1350,6 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
     i = 0;
 
     for (display = ctx->display_list; display; display = display->next) {
-        int j;
         region = get_region(ctx, display->region_id);
         rect = sub->rects[i];
 
@@ -1400,10 +1399,13 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
+{
+        int j;
         for (j = 0; j < 4; j++) {
             rect->pict.data[j] = rect->data[j];
             rect->pict.linesize[j] = rect->linesize[j];
         }
+}
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
