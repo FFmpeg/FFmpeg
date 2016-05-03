@@ -297,7 +297,9 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *pict, int *got_packet)
 {
     QtrleEncContext * const s = avctx->priv_data;
+#if FF_API_CODED_FRAME
     enum AVPictureType pict_type;
+#endif
     int ret;
 
     if ((ret = ff_alloc_packet(pkt, s->max_buf_size)) < 0) {
@@ -308,11 +310,15 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (avctx->gop_size == 0 || (s->avctx->frame_number % avctx->gop_size) == 0) {
         /* I-Frame */
+#if FF_API_CODED_FRAME
         pict_type = AV_PICTURE_TYPE_I;
+#endif
         s->key_frame = 1;
     } else {
         /* P-Frame */
+#if FF_API_CODED_FRAME
         pict_type = AV_PICTURE_TYPE_P;
+#endif
         s->key_frame = 0;
     }
 

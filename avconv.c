@@ -569,10 +569,12 @@ error:
     exit_program(1);
 }
 
+#if FF_API_CODED_FRAME
 static double psnr(double d)
 {
     return -10.0 * log(d) / log(10.0);
 }
+#endif
 
 static void do_video_stats(OutputStream *ost, int frame_size)
 {

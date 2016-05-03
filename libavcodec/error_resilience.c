@@ -1199,7 +1199,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                        s->mb_height, linesize[2], 0);
     }
 
+#if FF_API_XVMC
 ec_clean:
+#endif
     /* clean a few tables */
     for (i = 0; i < s->mb_num; i++) {
         const int mb_xy = s->mb_index2xy[i];
