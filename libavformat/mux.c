@@ -99,7 +99,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
 
-#if FF_API_LAVF_BITEXACT
+#if FF_API_LAVF_BITEXACT && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
     if (s->nb_streams && s->streams[0]->codec->flags & AV_CODEC_FLAG_BITEXACT)
         s->flags |= AVFMT_FLAG_BITEXACT;
@@ -117,7 +117,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         st  = s->streams[i];
         par = st->codecpar;
 
-#if FF_API_LAVF_CODEC_TB
+#if FF_API_LAVF_CODEC_TB && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
         if (!st->time_base.num && st->codec->time_base.num) {
             av_log(s, AV_LOG_WARNING, "Using AVStream.codec.time_base as a "
@@ -272,7 +272,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     return 0;
 }
 
-#if FF_API_COMPUTE_PKT_FIELDS2
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
 //FIXME merge with compute_pkt_fields
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
@@ -417,7 +417,7 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-#if !FF_API_COMPUTE_PKT_FIELDS2
+#if !FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
     /* sanitize the timestamps */
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -475,7 +475,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         return 1;
     }
 
-#if FF_API_COMPUTE_PKT_FIELDS2
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
     ret = compute_pkt_fields2(s, s->streams[pkt->stream_index], pkt);
 
     if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
@@ -639,7 +639,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
         goto fail;
 
     if (pkt) {
-#if FF_API_COMPUTE_PKT_FIELDS2
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
         AVStream *st = s->streams[pkt->stream_index];
 
         av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%" PRId64 " pts:%" PRId64 "\n",
