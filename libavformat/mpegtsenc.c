@@ -67,7 +67,8 @@ enum {
     MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_RADIO = 0x0A,
     MPEGTS_SERVICE_TYPE_MPEG2_DIGITAL_HDTV           = 0x11,
     MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_SDTV  = 0x16,
-    MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_HDTV  = 0x19
+    MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_HDTV  = 0x19,
+    MPEGTS_SERVICE_TYPE_HEVC_DIGITAL_HDTV            = 0x1F,
 };
 typedef struct MpegTSWrite {
     const AVClass *av_class;
@@ -1818,6 +1819,9 @@ static const AVOption options[] = {
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_service_type" },
     { "advanced_codec_digital_hdtv", "Advanced Codec Digital HDTV.",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_HDTV }, 0x01, 0xff,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_service_type" },
+    { "hevc_digital_hdtv", "HEVC Digital Television Service.",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_SERVICE_TYPE_HEVC_DIGITAL_HDTV }, 0x01, 0xff,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_service_type" },
     { "mpegts_pmt_start_pid", "Set the first pid of the PMT.",
       offsetof(MpegTSWrite, pmt_start_pid), AV_OPT_TYPE_INT,
