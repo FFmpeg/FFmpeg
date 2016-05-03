@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.6.9:
+- avcodec/mjpegdec: Do not try to detect last scan but apply idct after all scans for progressive jpeg
+- avformat/options_table: Add missing identifier for very strict compliance
 - avformat/ffmdec: Check pix_fmt
 - avcodec/ttaenc: Reallocate packet if its too small
 - pgssubdec: fix subpicture output colorspace and range
