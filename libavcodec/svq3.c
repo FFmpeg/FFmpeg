@@ -80,6 +80,7 @@ typedef struct SVQ3Context {
     H264Picture *next_pic;
     H264Picture *last_pic;
     GetBitContext gb;
+    GetBitContext gb_slice;
     uint8_t *slice_buf;
     int slice_size;
     int halfpel_flag;
@@ -534,8 +535,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
             if (mode == PREDICT_MODE) {
                 dx = dy = 0;
             } else {
-                dy = svq3_get_se_golomb(&h->gb);
-                dx = svq3_get_se_golomb(&h->gb);
+                dy = svq3_get_se_golomb(&s->gb_slice);
+                dx = svq3_get_se_golomb(&s->gb_slice);
 
                 if (dx == INVALID_VLC || dy == INVALID_VLC) {
                     av_log(h->avctx, AV_LOG_ERROR, "invalid MV vlc\n");
@@ -743,10 +744,10 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
             mb_type = MB_TYPE_16x16;
         }
     } else if (mb_type < 8) {     /* INTER */
-        if (s->thirdpel_flag && s->halfpel_flag == !get_bits1(&h->gb))
+        if (s->thirdpel_flag && s->halfpel_flag == !get_bits1(&s->gb_slice))
             mode = THIRDPEL_MODE;
         else if (s->halfpel_flag &&
-                 s->thirdpel_flag == !get_bits1(&h->gb))
+                 s->thirdpel_flag == !get_bits1(&s->gb_slice))
             mode = HALFPEL_MODE;
         else
             mode = FULLPEL_MODE;
@@ -848,7 +849,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
             /* decode prediction codes for luma blocks */
             for (i = 0; i < 16; i += 2) {
-                vlc = svq3_get_ue_golomb(&h->gb);
+                vlc = svq3_get_ue_golomb(&s->gb_slice);
 
                 if (vlc >= 25U) {
                     av_log(h->avctx, AV_LOG_ERROR,
@@ -926,7 +927,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
     if (!IS_INTRA16x16(mb_type) &&
         (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B)) {
-        if ((vlc = svq3_get_ue_golomb(&h->gb)) >= 48U){
+        if ((vlc = svq3_get_ue_golomb(&s->gb_slice)) >= 48U){
             av_log(h->avctx, AV_LOG_ERROR, "cbp_vlc=%"PRIu32"\n", vlc);
             return -1;
         }
@@ -936,7 +937,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     }
     if (IS_INTRA16x16(mb_type) ||
         (s->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
-        s->qscale += svq3_get_se_golomb(&h->gb);
+        s->qscale += svq3_get_se_golomb(&s->gb_slice);
 
         if (s->qscale > 31u) {
             av_log(h->avctx, AV_LOG_ERROR, "qscale:%d\n", s->qscale);
@@ -946,7 +947,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     if (IS_INTRA16x16(mb_type)) {
         AV_ZERO128(s->mb_luma_dc[0] + 0);
         AV_ZERO128(s->mb_luma_dc[0] + 8);
-        if (svq3_decode_block(&h->gb, s->mb_luma_dc[0], 0, 1)) {
+        if (svq3_decode_block(&s->gb_slice, s->mb_luma_dc[0], 0, 1)) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "error while decoding intra luma dc\n");
             return -1;
@@ -965,7 +966,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                               : (4 * i + j);
                     s->non_zero_count_cache[scan8[k]] = 1;
 
-                    if (svq3_decode_block(&h->gb, &s->mb[16 * k], index, type)) {
+                    if (svq3_decode_block(&s->gb_slice, &s->mb[16 * k], index, type)) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "error while decoding block\n");
                         return -1;
@@ -975,7 +976,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
         if ((cbp & 0x30)) {
             for (i = 1; i < 3; ++i)
-                if (svq3_decode_block(&h->gb, &s->mb[16 * 16 * i], 0, 3)) {
+                if (svq3_decode_block(&s->gb_slice, &s->mb[16 * 16 * i], 0, 3)) {
                     av_log(h->avctx, AV_LOG_ERROR,
                            "error while decoding chroma dc block\n");
                     return -1;
@@ -987,7 +988,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                         k                                 = 16 * i + j;
                         s->non_zero_count_cache[scan8[k]] = 1;
 
-                        if (svq3_decode_block(&h->gb, &s->mb[16 * k], 1, 1)) {
+                        if (svq3_decode_block(&s->gb_slice, &s->mb[16 * k], 1, 1)) {
                             av_log(h->avctx, AV_LOG_ERROR,
                                    "error while decoding chroma ac block\n");
                             return -1;
@@ -1043,11 +1044,11 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
 
         memcpy(s->slice_buf, s->gb.buffer + s->gb.index / 8, slice_bytes);
 
-        init_get_bits(&h->gb, s->slice_buf, slice_bits);
+        init_get_bits(&s->gb_slice, s->slice_buf, slice_bits);
 
         if (s->watermark_key) {
-            uint32_t header = AV_RL32(&h->gb.buffer[1]);
-            AV_WL32(&h->gb.buffer[1], header ^ s->watermark_key);
+            uint32_t header = AV_RL32(&s->gb_slice.buffer[1]);
+            AV_WL32(&s->gb_slice.buffer[1], header ^ s->watermark_key);
         }
         if (length > 0) {
             memmove(s->slice_buf, &s->slice_buf[slice_length], length - 1);
@@ -1055,7 +1056,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         skip_bits_long(&s->gb, slice_bytes * 8);
     }
 
-    if ((slice_id = svq3_get_ue_golomb(&h->gb)) >= 3) {
+    if ((slice_id = svq3_get_ue_golomb(&s->gb_slice)) >= 3) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal slice type %u \n", slice_id);
         return -1;
     }
@@ -1064,25 +1065,25 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
 
     if ((header & 0x9F) == 2) {
         i = (s->mb_num < 64) ? 6 : (1 + av_log2(s->mb_num - 1));
-        get_bits(&h->gb, i);
+        get_bits(&s->gb_slice, i);
     } else {
-        skip_bits1(&h->gb);
+        skip_bits1(&s->gb_slice);
     }
 
-    s->slice_num      = get_bits(&h->gb, 8);
-    s->qscale         = get_bits(&h->gb, 5);
-    s->adaptive_quant = get_bits1(&h->gb);
+    s->slice_num      = get_bits(&s->gb_slice, 8);
+    s->qscale         = get_bits(&s->gb_slice, 5);
+    s->adaptive_quant = get_bits1(&s->gb_slice);
 
     /* unknown fields */
-    skip_bits1(&h->gb);
+    skip_bits1(&s->gb_slice);
 
     if (s->has_watermark)
-        skip_bits1(&h->gb);
+        skip_bits1(&s->gb_slice);
 
-    skip_bits1(&h->gb);
-    skip_bits(&h->gb, 2);
+    skip_bits1(&s->gb_slice);
+    skip_bits(&s->gb_slice, 2);
 
-    if (skip_1stop_8data_bits(&h->gb) < 0)
+    if (skip_1stop_8data_bits(&s->gb_slice) < 0)
         return AVERROR_INVALIDDATA;
 
     /* reset intra predictors and invalidate motion vector references */
@@ -1552,9 +1553,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
             unsigned mb_type;
             s->mb_xy = s->mb_x + s->mb_y * s->mb_stride;
 
-            if ((get_bits_left(&h->gb)) <= 7) {
-                if (((get_bits_count(&h->gb) & 7) == 0 ||
-                    show_bits(&h->gb, get_bits_left(&h->gb) & 7) == 0)) {
+            if ((get_bits_left(&s->gb_slice)) <= 7) {
+                if (((get_bits_count(&s->gb_slice) & 7) == 0 ||
+                    show_bits(&s->gb_slice, get_bits_left(&s->gb_slice) & 7) == 0)) {
 
                     if (svq3_decode_slice_header(avctx))
                         return -1;
@@ -1562,7 +1563,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                 /* TODO: support s->mb_skip_run */
             }
 
-            mb_type = svq3_get_ue_golomb(&h->gb);
+            mb_type = svq3_get_ue_golomb(&s->gb_slice);
 
             if (s->pict_type == AV_PICTURE_TYPE_I)
                 mb_type += 8;
@@ -1588,7 +1589,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                            h->low_delay);
     }
 
-    left = buf_size*8 - get_bits_count(&h->gb);
+    left = buf_size*8 - get_bits_count(&s->gb_slice);
 
     if (s->mb_y != h->mb_height || s->mb_x != h->mb_width) {
         av_log(avctx, AV_LOG_INFO, "frame num %d incomplete pic x %d y %d left %d\n", avctx->frame_number, s->mb_y, s->mb_x, left);
