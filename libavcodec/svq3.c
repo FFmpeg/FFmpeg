@@ -113,6 +113,7 @@ typedef struct SVQ3Context {
 
     DECLARE_ALIGNED(16, int16_t, mv_cache)[2][5 * 8][2];
     DECLARE_ALIGNED(8,  int8_t, ref_cache)[2][5 * 8];
+    uint32_t dequant4_coeff[QP_MAX_NUM + 1][16];
 } SVQ3Context;
 
 #define FULLPEL_MODE  1
@@ -663,8 +664,6 @@ static void hl_decode_mb(SVQ3Context *s, const H264Context *h, H264SliceContext 
     s->vdsp.prefetch(dest_y  + (s->mb_x & 3) * 4 * sl->linesize   + 64, sl->linesize,      4);
     s->vdsp.prefetch(dest_cb + (s->mb_x & 7)     * sl->uvlinesize + 64, dest_cr - dest_cb, 2);
 
-    h->list_counts[mb_xy] = sl->list_count;
-
     linesize   = sl->mb_linesize   = sl->linesize;
     uvlinesize = sl->mb_uvlinesize = sl->uvlinesize;
 
@@ -680,9 +679,9 @@ static void hl_decode_mb(SVQ3Context *s, const H264Context *h, H264SliceContext 
     if (sl->cbp & 0x30) {
         uint8_t *dest[2] = { dest_cb, dest_cr };
         s->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + 16 * 16 * 1,
-                                               h->dequant4_coeff[IS_INTRA(mb_type) ? 1 : 4][sl->chroma_qp[0]][0]);
+                                               s->dequant4_coeff[sl->chroma_qp[0]][0]);
         s->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + 16 * 16 * 2,
-                                               h->dequant4_coeff[IS_INTRA(mb_type) ? 2 : 5][sl->chroma_qp[1]][0]);
+                                               s->dequant4_coeff[sl->chroma_qp[1]][0]);
         for (j = 1; j < 3; j++) {
             for (i = j * 16; i < j * 16 + 4; i++)
                 if (sl->non_zero_count_cache[scan8[i]] || sl->mb[i * 16]) {
@@ -1093,6 +1092,20 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
     return 0;
 }
 
+static void init_dequant4_coeff_table(SVQ3Context *s)
+{
+    int q, x;
+    const int max_qp = 51;
+
+    for (q = 0; q < max_qp + 1; q++) {
+        int shift = ff_h264_quant_div6[q] + 2;
+        int idx   = ff_h264_quant_rem6[q];
+        for (x = 0; x < 16; x++)
+            s->dequant4_coeff[q][(x >> 2) | ((x << 2) & 0xF)] =
+                ((uint32_t)ff_h264_dequant4_coeff_init[idx][(x & 1) + ((x >> 2) & 1)] * 16) << shift;
+    }
+}
+
 static av_cold int svq3_decode_init(AVCodecContext *avctx)
 {
     SVQ3Context *s = avctx->priv_data;
@@ -1132,8 +1145,6 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     ff_h264_pred_init(&s->hpc, AV_CODEC_ID_SVQ3, 8, 1);
     ff_videodsp_init(&s->vdsp, 8);
 
-    memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
-    memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
 
     avctx->bits_per_raw_sample = 8;
     h->sps.bit_depth_luma = 8;
@@ -1322,10 +1333,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             s->mb2br_xy[mb_xy] = 8 * (mb_xy % (2 * h->mb_stride));
         }
 
-    if ((ret = ff_h264_alloc_tables(h)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "svq3 memory allocation failed\n");
-        goto fail;
-    }
+    init_dequant4_coeff_table(s);
 
     return 0;
 fail:
