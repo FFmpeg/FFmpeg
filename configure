@@ -185,54 +185,66 @@ Individual component options:
   --disable-filters        disable all filters
 
 External library support:
-  --enable-avisynth        enable reading of AviSynth script files [no]
-  --enable-bzlib           enable bzlib [autodetect]
-  --enable-frei0r          enable frei0r video filtering
-  --enable-gnutls          enable gnutls [no]
-  --enable-libbs2b         enable bs2b DSP library [no]
-  --enable-libcdio         enable audio CD grabbing with libcdio
-  --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
-                           and libraw1394 [no]
-  --enable-libdcadec       enable DCA decoding via libdcadec [no]
-  --enable-libfaac         enable AAC encoding via libfaac [no]
-  --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
-  --enable-libfontconfig   enable libfontconfig [no]
-  --enable-libfreetype     enable libfreetype [no]
-  --enable-libgsm          enable GSM de/encoding via libgsm [no]
-  --enable-libilbc         enable iLBC de/encoding via libilbc [no]
-  --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
-  --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
-  --enable-libnpp          enable NVIDIA Performance Primitives-based code [no]
-  --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
-  --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
-  --enable-libopencv       enable video filtering via libopencv [no]
-  --enable-libopenh264     enable H.264 encoding via OpenH264 [no]
-  --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
-  --enable-libopus         enable Opus de/encoding via libopus [no]
-  --enable-libpulse        enable Pulseaudio input via libpulse [no]
-  --enable-librtmp         enable RTMP[E] support via librtmp [no]
-  --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
-  --enable-libsnappy       enable Snappy compression [no]
-  --enable-libspeex        enable Speex de/encoding via libspeex [no]
-  --enable-libtheora       enable Theora encoding via libtheora [no]
-  --enable-libtwolame      enable MP2 encoding via libtwolame [no]
-  --enable-libvo-aacenc    enable AAC encoding via libvo-aacenc [no]
-  --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
-  --enable-libvorbis       enable Vorbis encoding via libvorbis [no]
-  --enable-libvpx          enable VP8 and VP9 de/encoding via libvpx [no]
-  --enable-libwavpack      enable wavpack encoding via libwavpack [no]
-  --enable-libwebp         enable WebP encoding via libwebp [no]
-  --enable-libx264         enable H.264 encoding via x264 [no]
-  --enable-libx265         enable HEVC encoding via x265 [no]
-  --enable-libxavs         enable AVS encoding via xavs [no]
-  --enable-libxcb          enable X11 grabbing using XCB [no]
-  --enable-libxcb-shm      enable X11 grabbing shm communication [auto]
-  --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [auto]
-  --enable-libxvid         enable Xvid encoding via xvidcore,
-                           native MPEG-4/Xvid encoder exists [no]
-  --enable-openssl         enable openssl [no]
-  --enable-x11grab         enable X11 grabbing (legacy) [no]
-  --enable-zlib            enable zlib [autodetect]
+
+  Using any of the following switches will allow Libav to link to the
+  corresponding external library. All the components depending on that library
+  will become enabled, if all their other dependencies are met and they are not
+  explicitly disabled. E.g. --enable-libwavpack will enable linking to
+  libwavpack and allow the libwavpack encoder to be built, unless it is
+  specifically disabled with --disable-encoder=libwavpack.
+
+  Note that only the system libraries are auto-detected. All the other external
+  libraries must be explicitly enabled.
+
+  Also note that the following help text describes the purpose of the libraries
+  themselves, not all their features will necessarily be usable by Libav.
+
+  --enable-avisynth          video frameserver
+  --enable-bzlib             bzip2 compression [autodetect]
+  --enable-frei0r            video filtering plugins
+  --enable-gnutls            crypto
+  --enable-libbs2b           Bauer stereophonic-to-binaural DSP
+  --enable-libcdio           audio CD input
+  --enable-libdc1394         IEEE 1394/Firewire camera input
+  --enable-libdcadec         DCA audio decoding
+  --enable-libfaac           AAC audio encoding
+  --enable-libfdk-aac        AAC audio encoding/decoding
+  --enable-libfontconfig     font configuration and management
+  --enable-libfreetype       font rendering
+  --enable-libgsm            GSM audio encoding/decoding
+  --enable-libilbc           ILBC audio encoding/decoding
+  --enable-libkvazaar        HEVC video encoding
+  --enable-libmp3lame        MP3 audio encoding
+  --enable-libnpp            CUDA processing
+  --enable-libopencore-amrnb AMR-NB audio encoding/decoding
+  --enable-libopencore-amrwb AMR-WB audio decoding
+  --enable-libopencv         computer vision
+  --enable-libopenh264       H.264 video encoding/decoding
+  --enable-libopenjpeg       JPEG 2000 image encoding/decoding
+  --enable-libopus           Opus audio encoding/decoding
+  --enable-libpulse          Pulseaudio sound server
+  --enable-librtmp           RTMP streaming
+  --enable-libschroedinger   Dirac video encoding/decoding
+  --enable-libsnappy         snappy compression
+  --enable-libspeex          Speex audio encoding/decoding
+  --enable-libtheora         Theora video encoding/decoding
+  --enable-libtwolame        MP2 audio encoding
+  --enable-libvo-aacenc      AAC audio encoding
+  --enable-libvo-amrwbenc    AMR-WB audio encoding
+  --enable-libvorbis         Vorbis audio encoding/decoding
+  --enable-libvpx            VP* video encoding/decoding
+  --enable-libwavpack        Wavpack audio encoding/decoding
+  --enable-libwebp           WebP image encoding/decoding
+  --enable-libx264           H.264 video encoding
+  --enable-libx265           HEVC video encoding
+  --enable-libxavs           Chinese AVS video encoding
+  --enable-libxcb            X window system protocol communication
+  --enable-libxcb-shm        X11 shm communication [auto]
+  --enable-libxcb-xfixes     X11 mouse rendering [auto]
+  --enable-libxvid           MPEG-4 ASP video encoding
+  --enable-openssl           crypto
+  --enable-x11grab           X11 grabbing through xlib (legacy, use xcb instead)
+  --enable-zlib              compression [autodetect]
 
 Toolchain options:
   --arch=ARCH              select architecture [$arch]
