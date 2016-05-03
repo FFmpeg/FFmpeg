@@ -20,6 +20,10 @@
 
 #include "colorspacedsp.h"
 
+/*
+ * SS_W/H stands for "subsampling_w/h"
+ * it's analogous to AVPixFmtDescriptor->log2_chroma_w/h.
+ */
 #define SS_W 0
 #define SS_H 0
 
@@ -113,6 +117,15 @@ void ff_colorspacedsp_init(ColorSpaceDSPContext *dsp)
     init_rgb2yuv_fn(0,  8);
     init_rgb2yuv_fn(1, 10);
     init_rgb2yuv_fn(2, 12);
+
+#define init_rgb2yuv_fsb_fn(idx, bit) \
+    dsp->rgb2yuv_fsb[idx][0] = rgb2yuv_fsb_444p##bit##_c; \
+    dsp->rgb2yuv_fsb[idx][1] = rgb2yuv_fsb_422p##bit##_c; \
+    dsp->rgb2yuv_fsb[idx][2] = rgb2yuv_fsb_420p##bit##_c
+
+    init_rgb2yuv_fsb_fn(0,  8);
+    init_rgb2yuv_fsb_fn(1, 10);
+    init_rgb2yuv_fsb_fn(2, 12);
 
 #define init_yuv2yuv_fn(idx1, idx2, bit1, bit2) \
     dsp->yuv2yuv[idx1][idx2][0] = yuv2yuv_444p##bit1##to##bit2##_c; \

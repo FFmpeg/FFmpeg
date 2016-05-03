@@ -34,6 +34,12 @@
 #include "internal.h"
 #include "video.h"
 
+enum DitherMode {
+    DITHER_NONE,
+    DITHER_FSB,
+    DITHER_NB,
+};
+
 enum Colorspace {
     CS_UNSPECIFIED,
     CS_BT470M,
@@ -121,10 +127,12 @@ typedef struct ColorSpaceContext {
     enum AVColorPrimaries in_prm, out_prm, user_prm;
     enum AVPixelFormat in_format, user_format;
     int fast_mode;
+    enum DitherMode dither;
 
     int16_t *rgb[3];
     ptrdiff_t rgb_stride;
     unsigned rgb_sz;
+    int *dither_scratch[3][2], *dither_scratch_base[3][2];
 
     const struct ColorPrimaries *in_primaries, *out_primaries;
     int lrgb2lrgb_passthrough;
@@ -142,6 +150,7 @@ typedef struct ColorSpaceContext {
     DECLARE_ALIGNED(16, int16_t, yuv_offset)[2 /* in, out */][8];
     yuv2rgb_fn yuv2rgb;
     rgb2yuv_fn rgb2yuv;
+    rgb2yuv_fsb_fn rgb2yuv_fsb;
     yuv2yuv_fn yuv2yuv;
     double yuv2rgb_dbl_coeffs[3][3], rgb2yuv_dbl_coeffs[3][3];
     int in_y_rng, in_uv_rng, out_y_rng, out_uv_rng;
@@ -481,8 +490,13 @@ static int convert(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
                 s->dsp.multiply3x3(rgb, s->rgb_stride, w, h, s->lrgb2lrgb_coeffs);
             apply_lut(rgb, s->rgb_stride, w, h, s->delin_lut);
         }
-        s->rgb2yuv(out_data, td->out_linesize, rgb, s->rgb_stride, w, h,
-                   s->rgb2yuv_coeffs, s->yuv_offset[1]);
+        if (s->dither == DITHER_FSB) {
+            s->rgb2yuv_fsb(out_data, td->out_linesize, rgb, s->rgb_stride, w, h,
+                           s->rgb2yuv_coeffs, s->yuv_offset[1], s->dither_scratch);
+        } else {
+            s->rgb2yuv(out_data, td->out_linesize, rgb, s->rgb_stride, w, h,
+                       s->rgb2yuv_coeffs, s->yuv_offset[1]);
+        }
     }
 
     return 0;
@@ -749,6 +763,8 @@ static int create_filtergraph(AVFilterContext *ctx,
             av_assert2(s->rgb2yuv_coeffs[1][2][0] == s->rgb2yuv_coeffs[2][0][0]);
             s->rgb2yuv = s->dsp.rgb2yuv[(out_desc->comp[0].depth - 8) >> 1]
                                        [out_desc->log2_chroma_h + out_desc->log2_chroma_w];
+            s->rgb2yuv_fsb = s->dsp.rgb2yuv_fsb[(out_desc->comp[0].depth - 8) >> 1]
+                                       [out_desc->log2_chroma_h + out_desc->log2_chroma_w];
             emms = 1;
         }
 
@@ -799,6 +815,12 @@ static void uninit(AVFilterContext *ctx)
     av_freep(&s->rgb[1]);
     av_freep(&s->rgb[2]);
     s->rgb_sz = 0;
+    av_freep(&s->dither_scratch_base[0][0]);
+    av_freep(&s->dither_scratch_base[0][1]);
+    av_freep(&s->dither_scratch_base[1][0]);
+    av_freep(&s->dither_scratch_base[1][1]);
+    av_freep(&s->dither_scratch_base[2][0]);
+    av_freep(&s->dither_scratch_base[2][1]);
 
     av_freep(&s->lin_lut);
 }
@@ -839,15 +861,45 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     out->color_range     = s->user_rng == AVCOL_RANGE_UNSPECIFIED ?
                            in->color_range : s->user_rng;
     if (rgb_sz != s->rgb_sz) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(out->format);
+        int uvw = in->width >> desc->log2_chroma_w;
+
         av_freep(&s->rgb[0]);
         av_freep(&s->rgb[1]);
         av_freep(&s->rgb[2]);
         s->rgb_sz = 0;
+        av_freep(&s->dither_scratch_base[0][0]);
+        av_freep(&s->dither_scratch_base[0][1]);
+        av_freep(&s->dither_scratch_base[1][0]);
+        av_freep(&s->dither_scratch_base[1][1]);
+        av_freep(&s->dither_scratch_base[2][0]);
+        av_freep(&s->dither_scratch_base[2][1]);
 
         s->rgb[0] = av_malloc(rgb_sz);
         s->rgb[1] = av_malloc(rgb_sz);
         s->rgb[2] = av_malloc(rgb_sz);
-        if (!s->rgb[0] || !s->rgb[1] || !s->rgb[2]) {
+        s->dither_scratch_base[0][0] =
+            av_malloc(sizeof(*s->dither_scratch_base[0][0]) * (in->width + 4));
+        s->dither_scratch_base[0][1] =
+            av_malloc(sizeof(*s->dither_scratch_base[0][1]) * (in->width + 4));
+        s->dither_scratch_base[1][0] =
+            av_malloc(sizeof(*s->dither_scratch_base[1][0]) * (uvw + 4));
+        s->dither_scratch_base[1][1] =
+            av_malloc(sizeof(*s->dither_scratch_base[1][1]) * (uvw + 4));
+        s->dither_scratch_base[2][0] =
+            av_malloc(sizeof(*s->dither_scratch_base[2][0]) * (uvw + 4));
+        s->dither_scratch_base[2][1] =
+            av_malloc(sizeof(*s->dither_scratch_base[2][1]) * (uvw + 4));
+        s->dither_scratch[0][0] = &s->dither_scratch_base[0][0][1];
+        s->dither_scratch[0][1] = &s->dither_scratch_base[0][1][1];
+        s->dither_scratch[1][0] = &s->dither_scratch_base[1][0][1];
+        s->dither_scratch[1][1] = &s->dither_scratch_base[1][1][1];
+        s->dither_scratch[2][0] = &s->dither_scratch_base[2][0][1];
+        s->dither_scratch[2][1] = &s->dither_scratch_base[2][1][1];
+        if (!s->rgb[0] || !s->rgb[1] || !s->rgb[2] ||
+            !s->dither_scratch_base[0][0] || !s->dither_scratch_base[0][1] ||
+            !s->dither_scratch_base[1][0] || !s->dither_scratch_base[1][1] ||
+            !s->dither_scratch_base[2][0] || !s->dither_scratch_base[2][1]) {
             uninit(ctx);
             return AVERROR(ENOMEM);
         }
@@ -987,6 +1039,12 @@ static const AVOption colorspace_options[] = {
     { "fast",     "Ignore primary chromaticity and gamma correction",
       OFFSET(fast_mode), AV_OPT_TYPE_BOOL,  { .i64 = 0    },
       0, 1, FLAGS },
+    { "dither",   "Dithering mode",
+      OFFSET(dither), AV_OPT_TYPE_INT, { .i64 = DITHER_NONE },
+      DITHER_NONE, DITHER_NB - 1, FLAGS, "dither" },
+    ENUM("none", DITHER_NONE, "dither"),
+    ENUM("fsb",  DITHER_FSB,  "dither"),
+
     { NULL }
 };
 
