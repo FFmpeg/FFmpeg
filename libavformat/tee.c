@@ -324,7 +324,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     }
     tee_slave->header_written = 1;
 
-    tee_slave->bsfs = av_calloc(avf2->nb_streams, sizeof(TeeSlave));
+    tee_slave->bsfs = av_calloc(avf2->nb_streams, sizeof(*tee_slave->bsfs));
     if (!tee_slave->bsfs) {
         ret = AVERROR(ENOMEM);
         goto end;
