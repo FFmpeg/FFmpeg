@@ -94,6 +94,8 @@ typedef struct SVQ3Context {
     int v_edge_pos;
     int last_frame_output;
 
+    enum AVPictureType pict_type;
+
     int mb_x, mb_y;
     int mb_xy;
     int mb_width, mb_height;
@@ -712,12 +714,12 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     s->topright_samples_available = 0xFFFF;
 
     if (mb_type == 0) {           /* SKIP */
-        if (h->pict_type == AV_PICTURE_TYPE_P ||
+        if (s->pict_type == AV_PICTURE_TYPE_P ||
             s->next_pic->mb_type[mb_xy] == -1) {
             svq3_mc_dir_part(s, 16 * s->mb_x, 16 * s->mb_y, 16, 16,
                              0, 0, 0, 0, 0, 0);
 
-            if (h->pict_type == AV_PICTURE_TYPE_B)
+            if (s->pict_type == AV_PICTURE_TYPE_B)
                 svq3_mc_dir_part(s, 16 * s->mb_x, 16 * s->mb_y, 16, 16,
                                  0, 0, 0, 0, 1, 1);
 
@@ -784,12 +786,12 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                 memset(&s->ref_cache[m][scan8[0] - 1 * 8 - 1],
                        PART_NOT_AVAILABLE, 8);
 
-            if (h->pict_type != AV_PICTURE_TYPE_B)
+            if (s->pict_type != AV_PICTURE_TYPE_B)
                 break;
         }
 
         /* decode motion vector(s) and form prediction(s) */
-        if (h->pict_type == AV_PICTURE_TYPE_P) {
+        if (s->pict_type == AV_PICTURE_TYPE_P) {
             if (svq3_mc_dir(s, mb_type - 1, mode, 0, 0) < 0)
                 return -1;
         } else {        /* AV_PICTURE_TYPE_B */
@@ -896,11 +898,11 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         mb_type = MB_TYPE_INTRA16x16;
     }
 
-    if (!IS_INTER(mb_type) && h->pict_type != AV_PICTURE_TYPE_I) {
+    if (!IS_INTER(mb_type) && s->pict_type != AV_PICTURE_TYPE_I) {
         for (i = 0; i < 4; i++)
             memset(h->cur_pic.motion_val[0][b_xy + i * s->b_stride],
                    0, 4 * 2 * sizeof(int16_t));
-        if (h->pict_type == AV_PICTURE_TYPE_B) {
+        if (s->pict_type == AV_PICTURE_TYPE_B) {
             for (i = 0; i < 4; i++)
                 memset(h->cur_pic.motion_val[1][b_xy + i * s->b_stride],
                        0, 4 * 2 * sizeof(int16_t));
@@ -909,12 +911,12 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     if (!IS_INTRA4x4(mb_type)) {
         memset(s->intra4x4_pred_mode + s->mb2br_xy[mb_xy], DC_PRED, 8);
     }
-    if (!IS_SKIP(mb_type) || h->pict_type == AV_PICTURE_TYPE_B) {
+    if (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B) {
         memset(sl->non_zero_count_cache + 8, 0, 14 * 8 * sizeof(uint8_t));
     }
 
     if (!IS_INTRA16x16(mb_type) &&
-        (!IS_SKIP(mb_type) || h->pict_type == AV_PICTURE_TYPE_B)) {
+        (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B)) {
         if ((vlc = svq3_get_ue_golomb(&h->gb)) >= 48U){
             av_log(h->avctx, AV_LOG_ERROR, "cbp_vlc=%"PRIu32"\n", vlc);
             return -1;
@@ -924,7 +926,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                                 : ff_h264_golomb_to_inter_cbp[vlc];
     }
     if (IS_INTRA16x16(mb_type) ||
-        (h->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
+        (s->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
         sl->qscale += svq3_get_se_golomb(&h->gb);
 
         if (sl->qscale > 31u) {
@@ -1050,7 +1052,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         return -1;
     }
 
-    sl->slice_type = ff_h264_golomb_to_pict_type[slice_id];
+    s->pict_type = ff_h264_golomb_to_pict_type[slice_id];
 
     if ((header & 0x9F) == 2) {
         i              = (s->mb_num < 64) ? 6 : (1 + av_log2(s->mb_num - 1));
@@ -1385,7 +1387,7 @@ static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
             pic->ref_index[i]  = pic->ref_index_buf[i]->data;
         }
     }
-    pic->reference = !(h->pict_type == AV_PICTURE_TYPE_B);
+    pic->reference = !(s->pict_type == AV_PICTURE_TYPE_B);
 
     ret = ff_get_buffer(avctx, pic->f,
                         pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
@@ -1449,16 +1451,14 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     if (svq3_decode_slice_header(avctx))
         return -1;
 
-    h->pict_type = sl->slice_type;
-
-    if (h->pict_type != AV_PICTURE_TYPE_B)
+    if (s->pict_type != AV_PICTURE_TYPE_B)
         FFSWAP(H264Picture*, s->next_pic, s->last_pic);
 
     av_frame_unref(s->cur_pic->f);
 
     /* for skipping the frame */
-    s->cur_pic->f->pict_type = h->pict_type;
-    s->cur_pic->f->key_frame = (h->pict_type == AV_PICTURE_TYPE_I);
+    s->cur_pic->f->pict_type = s->pict_type;
+    s->cur_pic->f->key_frame = (s->pict_type == AV_PICTURE_TYPE_I);
 
     ret = get_buffer(avctx, s->cur_pic);
     if (ret < 0)
@@ -1478,7 +1478,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * sl->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
     }
 
-    if (h->pict_type != AV_PICTURE_TYPE_I) {
+    if (s->pict_type != AV_PICTURE_TYPE_I) {
         if (!s->last_pic->f->data[0]) {
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
             av_frame_unref(s->last_pic->f);
@@ -1492,7 +1492,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                    s->last_pic->f->linesize[2]);
         }
 
-        if (h->pict_type == AV_PICTURE_TYPE_B && !s->next_pic->f->data[0]) {
+        if (s->pict_type == AV_PICTURE_TYPE_B && !s->next_pic->f->data[0]) {
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
             av_frame_unref(s->next_pic->f);
             ret = get_buffer(avctx, s->next_pic);
@@ -1509,23 +1509,23 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(h->avctx, AV_LOG_DEBUG,
                "%c hpel:%d, tpel:%d aqp:%d qp:%d, slice_num:%02X\n",
-               av_get_picture_type_char(h->pict_type),
+               av_get_picture_type_char(s->pict_type),
                s->halfpel_flag, s->thirdpel_flag,
                s->adaptive_quant, h->slice_ctx[0].qscale, sl->slice_num);
 
-    if (avctx->skip_frame >= AVDISCARD_NONREF && h->pict_type == AV_PICTURE_TYPE_B ||
-        avctx->skip_frame >= AVDISCARD_NONKEY && h->pict_type != AV_PICTURE_TYPE_I ||
+    if (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B ||
+        avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I ||
         avctx->skip_frame >= AVDISCARD_ALL)
         return 0;
 
     if (s->next_p_frame_damaged) {
-        if (h->pict_type == AV_PICTURE_TYPE_B)
+        if (s->pict_type == AV_PICTURE_TYPE_B)
             return 0;
         else
             s->next_p_frame_damaged = 0;
     }
 
-    if (h->pict_type == AV_PICTURE_TYPE_B) {
+    if (s->pict_type == AV_PICTURE_TYPE_B) {
         h->frame_num_offset = sl->slice_num - h->prev_frame_num;
 
         if (h->frame_num_offset < 0)
@@ -1572,9 +1572,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
 
             mb_type = svq3_get_ue_golomb(&h->gb);
 
-            if (h->pict_type == AV_PICTURE_TYPE_I)
+            if (s->pict_type == AV_PICTURE_TYPE_I)
                 mb_type += 8;
-            else if (h->pict_type == AV_PICTURE_TYPE_B && mb_type >= 4)
+            else if (s->pict_type == AV_PICTURE_TYPE_B && mb_type >= 4)
                 mb_type += 4;
             if (mb_type > 33 || svq3_decode_mb(s, mb_type)) {
                 av_log(h->avctx, AV_LOG_ERROR,
@@ -1585,9 +1585,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
             if (mb_type != 0 || sl->cbp)
                 hl_decode_mb(s, h, &h->slice_ctx[0]);
 
-            if (h->pict_type != AV_PICTURE_TYPE_B && !h->low_delay)
+            if (s->pict_type != AV_PICTURE_TYPE_B && !h->low_delay)
                 h->cur_pic.mb_type[s->mb_x + s->mb_y * s->mb_stride] =
-                    (h->pict_type == AV_PICTURE_TYPE_P && mb_type < 8) ? (mb_type - 1) : -1;
+                    (s->pict_type == AV_PICTURE_TYPE_P && mb_type < 8) ? (mb_type - 1) : -1;
         }
 
         ff_draw_horiz_band(avctx, s->cur_pic->f,
@@ -1608,7 +1608,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    if (h->pict_type == AV_PICTURE_TYPE_B || h->low_delay)
+    if (s->pict_type == AV_PICTURE_TYPE_B || h->low_delay)
         ret = av_frame_ref(data, s->cur_pic->f);
     else if (s->last_pic->f->data[0])
         ret = av_frame_ref(data, s->last_pic->f);
@@ -1619,7 +1619,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     if (s->last_pic->f->data[0] || h->low_delay)
         *got_frame = 1;
 
-    if (h->pict_type != AV_PICTURE_TYPE_B) {
+    if (s->pict_type != AV_PICTURE_TYPE_B) {
         FFSWAP(H264Picture*, s->cur_pic, s->next_pic);
     } else {
         av_frame_unref(s->cur_pic->f);
