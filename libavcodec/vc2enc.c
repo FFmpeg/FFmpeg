@@ -994,8 +994,9 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ret = 0;
     int sig_size = 256;
     VC2EncContext *s = avctx->priv_data;
-    const char aux_data[] = LIBAVCODEC_IDENT;
-    const int aux_data_size = sizeof(aux_data);
+    const int bitexact = avctx->flags & AV_CODEC_FLAG_BITEXACT;
+    const char *aux_data = bitexact ? "Lavc" : LIBAVCODEC_IDENT;
+    const int aux_data_size = bitexact ? sizeof("Lavc") : sizeof(LIBAVCODEC_IDENT);
     const int header_size = 100 + aux_data_size;
     int64_t max_frame_bytes, r_bitrate = avctx->bit_rate >> (s->interlaced);
 
