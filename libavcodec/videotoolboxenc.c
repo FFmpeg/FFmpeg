@@ -74,6 +74,20 @@ typedef struct VTEncContext {
     bool warned_color_range;
 } VTEncContext;
 
+static av_cold int teardownCompressionSession(AVCodecContext *avctx)
+{
+    VTEncContext *vtctx = avctx->priv_data;
+
+    if(!vtctx->session) return 0;
+
+    pthread_cond_destroy(&vtctx->cv_sample_sent);
+    pthread_mutex_destroy(&vtctx->lock);
+    CFRelease(vtctx->session);
+    vtctx->session = NULL;
+
+    return 0;
+}
+
 static void set_async_error(VTEncContext *vtctx, int err)
 {
     BufNode *info;
@@ -477,7 +491,7 @@ static bool get_vt_profile_level(AVCodecContext *avctx,
     return true;
 }
 
-static av_cold int vtenc_init(AVCodecContext *avctx)
+static av_cold int setupCompressionSession(AVCodecContext *avctx)
 {
     CFMutableDictionaryRef enc_info;
     CMVideoCodecType       codec_type;
@@ -617,6 +631,22 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     vtctx->dts_delta = vtctx->has_b_frames ? -1 : 0;
 
     return 0;
+}
+
+#if TARGET_OS_IPHONE
+static void foregroundNotificationCallback(CFNotificationCenterRef center, void * observer, CFStringRef name, const void * object, CFDictionaryRef userInfo) {
+    AVCodecContext *avctx = (AVCodecContext *)observer;
+    teardownCompressionSession(avctx);
+    setupCompressionSession(avctx);
+}
+#endif
+
+static av_cold int vtenc_init(AVCodecContext *avctx)
+{
+#if TARGET_OS_IPHONE
+    CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), avctx, foregroundNotificationCallback, CFSTR("UIApplicationWillEnterForegroundNotification"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+#endif
+    return setupCompressionSession(avctx);
 }
 
 static void vtenc_get_frame_info(CMSampleBufferRef buffer, bool *is_key_frame)
@@ -1292,16 +1322,10 @@ end_nopkt:
 
 static av_cold int vtenc_close(AVCodecContext *avctx)
 {
-    VTEncContext *vtctx = avctx->priv_data;
-
-    if(!vtctx->session) return 0;
-
-    pthread_cond_destroy(&vtctx->cv_sample_sent);
-    pthread_mutex_destroy(&vtctx->lock);
-    CFRelease(vtctx->session);
-    vtctx->session = NULL;
-
-    return 0;
+#if TARGET_OS_IPHONE
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetLocalCenter(), avctx, CFSTR("UIApplicationWillEnterForegroundNotification"), NULL);
+#endif
+    return teardownCompressionSession(avctx);
 }
 
 static const enum AVPixelFormat pix_fmts[] = {
