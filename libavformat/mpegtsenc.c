@@ -319,8 +319,8 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             break;
         case AV_CODEC_ID_MP2:
         case AV_CODEC_ID_MP3:
-            if (   st->codec->sample_rate > 0
-                && st->codec->sample_rate < 32000) {
+            if (   st->codecpar->sample_rate > 0
+                && st->codecpar->sample_rate < 32000) {
                 stream_type = STREAM_TYPE_AUDIO_MPEG2;
             } else {
                 stream_type = STREAM_TYPE_AUDIO_MPEG1;
