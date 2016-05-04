@@ -38,7 +38,6 @@ static int dts_probe(AVProbeData *p)
     int sum, max, pos, i;
     int64_t diff = 0;
     uint8_t hdr[12 + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
-    const AVCRC *crctab = av_crc_get_table(AV_CRC_16_CCITT);
 
     for (pos = FFMIN(4096, p->buf_size); pos < p->buf_size - 2; pos += 2) {
         int marker, sample_blocks, sample_rate, sr_code, framesize;
@@ -68,7 +67,7 @@ static int dts_probe(AVProbeData *p)
                 continue;
             if (pos - 2 + hdr_size > p->buf_size)
                 continue;
-            if (av_crc(crctab, 0xffff, buf + 3, hdr_size - 5))
+            if (av_crc(av_crc_get_table(AV_CRC_16_CCITT), 0xffff, buf + 3, hdr_size - 5))
                 continue;
 
             if (pos == exss_nextpos)
