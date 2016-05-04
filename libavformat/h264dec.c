@@ -70,7 +70,7 @@ static int h264_probe(AVProbeData *p)
             case 1:
             case 5:
                 get_ue_golomb_long(&gb);
-                if (get_ue_golomb_31(&gb) > 9U)
+                if (get_ue_golomb_long(&gb) > 9U)
                     return 0;
                 pps_id = get_ue_golomb_long(&gb);
                 if (pps_id > MAX_PPS_COUNT)
@@ -88,7 +88,7 @@ static int h264_probe(AVProbeData *p)
                 if (get_bits(&gb, 2))
                     return 0;
                 skip_bits(&gb, 8);
-                sps_id = get_ue_golomb_31(&gb);
+                sps_id = get_ue_golomb_long(&gb);
                 if (sps_id > MAX_SPS_COUNT)
                     return 0;
                 sps_ids[sps_id] = 1;
@@ -98,7 +98,7 @@ static int h264_probe(AVProbeData *p)
                 pps_id = get_ue_golomb_long(&gb);
                 if (pps_id > MAX_PPS_COUNT)
                     return 0;
-                sps_id = get_ue_golomb_31(&gb);
+                sps_id = get_ue_golomb_long(&gb);
                 if (sps_id > MAX_SPS_COUNT)
                     return 0;
                 if (!sps_ids[sps_id])
