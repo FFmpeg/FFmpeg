@@ -3183,6 +3183,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
     MOVMuxContext *mov = s->priv_data;
     int i, first_track = -1;
     int64_t mdat_size = 0;
+    int has_video = 0, starts_with_key = 0, first_video_track = 1;
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         return 0;
@@ -3235,6 +3236,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
         for (i = 0; i < mov->nb_streams; i++)
             mov->tracks[i].data_offset = pos + buf_size + 8;
 
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
         if (mov->flags & FF_MOV_FLAG_DELAY_MOOV)
             mov_write_identification(s->pb, s);
         mov_write_moov_tag(s->pb, mov, s);
@@ -3289,6 +3291,14 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             track->data_offset = 0;
         else
             track->data_offset = mdat_size;
+        if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
+            has_video = 1;
+            if (first_video_track) {
+                if (track->entry)
+                    starts_with_key = track->cluster[0].flags & MOV_SYNC_SAMPLE;
+                first_video_track = 0;
+            }
+        }
         if (!track->entry)
             continue;
         if (track->mdat_buf)
@@ -3299,6 +3309,10 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 
     if (!mdat_size)
         return 0;
+
+    avio_write_marker(s->pb,
+                      av_rescale(mov->tracks[first_track].cluster[0].dts, AV_TIME_BASE, mov->tracks[first_track].timescale),
+                      (has_video ? starts_with_key : mov->tracks[first_track].cluster[0].flags & MOV_SYNC_SAMPLE) ? AVIO_DATA_MARKER_SYNC_POINT : AVIO_DATA_MARKER_BOUNDARY_POINT);
 
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
@@ -4284,9 +4298,11 @@ static int mov_write_trailer(AVFormatContext *s)
                 avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
                 mov_write_sidx_tags(pb, mov, -1, 0);
                 avio_seek(pb, end, SEEK_SET);
+                avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
                 mov_write_mfra_tag(pb, mov);
             }
         } else {
+            avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
             mov_write_mfra_tag(pb, mov);
         }
     }
