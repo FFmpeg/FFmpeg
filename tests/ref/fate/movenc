@@ -1,28 +1,127 @@
+write_data len 36, time nopts, type header atom ftyp
+write_data len 1807, time nopts, type header atom -
+write_data len 496, time 1000000, type sync atom moof
+write_data len 110, time nopts, type trailer atom -
 07cee26b35b140ae50268c3083e2d880 2449 non-empty-moov
+write_data len 36, time nopts, type header atom ftyp
+write_data len 2135, time nopts, type header atom -
+write_data len 616, time 966667, type sync atom moof
+write_data len 110, time nopts, type trailer atom -
 c3c47c2c9566cb410e0832c37f4f8527 2897 non-empty-moov-elst
+write_data len 36, time nopts, type header atom ftyp
+write_data len 2055, time nopts, type header atom -
+write_data len 616, time 1000000, type sync atom moof
+write_data len 110, time nopts, type trailer atom -
 abc910edf1fc2a205658353dfdfc9a5f 2817 non-empty-moov-no-elst
+write_data len 20, time nopts, type header atom ftyp
+write_data len 1195, time nopts, type header atom -
+write_data len 608, time 0, type sync atom moof
+write_data len 652, time nopts, type unknown atom -
+write_data len 608, time 1013106, type sync atom moof
+write_data len 640, time nopts, type unknown atom -
+write_data len 148, time nopts, type trailer atom -
 e8e0346bf20bfcb448695bd905946f78 3871 ismv
+write_data len 36, time nopts, type header atom ftyp
+write_data len 1147, time nopts, type header atom -
+write_data len 500, time 0, type sync atom moof
+write_data len 496, time 1000000, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
 89ea214e1d1079556164664eea9a7884 2327 empty-moov
+write_data len 36, time nopts, type header atom ftyp
+write_data len 1147, time nopts, type header atom -
+write_data len 780, time 0, type sync atom moof
+write_data len 616, time 1000000, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
 cf9eec38fe557203a37a44c8adafb1fe 2727 empty-moov-no-elst
+write_data len 36, time nopts, type header atom ftyp
+write_data len 1147, time nopts, type header atom -
+write_data len 612, time -33333, type sync atom moof
+write_data len 616, time 966667, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
 42eca5843d98aa9a9b3275de201700b8 2559 empty-moov-no-elst-no-adjust
+write_data len 1183, time nopts, type header atom ftyp
+write_data len 500, time 0, type sync atom moof
+write_data len 496, time 1000000, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
 89ea214e1d1079556164664eea9a7884 2327 delay-moov
+write_data len 1255, time nopts, type header atom ftyp
+write_data len 620, time -33333, type sync atom moof
+write_data len 616, time 966667, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
 8fd78a5a91d73a735da53ac02f844177 2639 delay-moov-elst
+write_data len 1183, time nopts, type header atom ftyp
+write_data len 596, time 0, type sync atom moof
+write_data len 67, time nopts, type trailer atom -
 848d2fe2f27882960b8e10315460bc23 1846 delay-moov-empty-track
+write_data len 1183, time nopts, type header atom ftyp
+write_data len 240, time 0, type sync atom moof
+write_data len 240, time 1000000, type sync atom moof
+write_data len 86, time nopts, type trailer atom -
 cbf60ba66c47b8506c1a724d43f12cdc 1749 delay-moov-empty-track-flush
+write_data len 36, time nopts, type header atom ftyp
+write_data len 1147, time nopts, type header atom -
 c0b13fd47ca4c6de13c03155c38c231c 1183 empty-moov-header
+write_data len 500, time 0, type sync atom moof
+write_data len 496, time 1000000, type sync atom moof
 f12baf7c4269695817337192c7069328 996 empty-moov-content
+write_data len 148, time nopts, type trailer atom -
+write_data len 1183, time nopts, type header atom ftyp
 c0b13fd47ca4c6de13c03155c38c231c 1183 delay-moov-header
+write_data len 500, time 0, type sync atom moof
+write_data len 496, time 1000000, type sync atom moof
 f12baf7c4269695817337192c7069328 996 delay-moov-content
+write_data len 148, time nopts, type trailer atom -
+write_data len 24, time nopts, type header atom -
+write_data len 1147, time nopts, type header atom -
+write_data len 588, time 0, type sync atom sidx
+write_data len 584, time 1000000, type sync atom sidx
 76e1081bbab7541eadcaf4b19d37eff6 584 empty-moov-second-frag
+write_data len 148, time nopts, type trailer atom -
+write_data len 24, time nopts, type header atom -
+write_data len 1147, time nopts, type header atom -
+write_data len 584, time 1000000, type sync atom sidx
 76e1081bbab7541eadcaf4b19d37eff6 584 empty-moov-second-frag-discont
+write_data len 110, time nopts, type trailer atom -
+write_data len 1171, time nopts, type header atom -
+write_data len 584, time 1000000, type sync atom sidx
 76e1081bbab7541eadcaf4b19d37eff6 584 delay-moov-second-frag-discont
+write_data len 110, time nopts, type trailer atom -
+write_data len 1207, time nopts, type header atom ftyp
 fdc08ccfb9ca1a7a63a8e82a99e28e83 1207 delay-moov-elst-init
+write_data len 700, time -33333, type sync atom sidx
+write_data len 704, time 966667, type sync atom sidx
 41afdc44b0e376fae49a730afe0c53c2 704 delay-moov-elst-second-frag
+write_data len 148, time nopts, type trailer atom -
+write_data len 1207, time nopts, type header atom ftyp
 fdc08ccfb9ca1a7a63a8e82a99e28e83 1207 delay-moov-elst-init-discont
+write_data len 704, time 966667, type sync atom sidx
 41afdc44b0e376fae49a730afe0c53c2 704 delay-moov-elst-second-frag-discont
+write_data len 110, time nopts, type trailer atom -
+write_data len 1243, time nopts, type header atom ftyp
 57c113cd2baf7b231355eee6980fb6b5 1243 delay-moov-elst-signal-init
+write_data len 708, time -33333, type sync atom sidx
+write_data len 704, time 966667, type sync atom sidx
 13b8487a4f004ec9f1db543aee1e5e18 704 delay-moov-elst-signal-second-frag
+write_data len 148, time nopts, type trailer atom -
+write_data len 1243, time nopts, type header atom ftyp
 57c113cd2baf7b231355eee6980fb6b5 1243 delay-moov-elst-signal-init-discont
+write_data len 704, time 966667, type sync atom sidx
 13b8487a4f004ec9f1db543aee1e5e18 704 delay-moov-elst-signal-second-frag-discont
+write_data len 110, time nopts, type trailer atom -
+write_data len 1243, time nopts, type header atom ftyp
+write_data len 1552, time -333333, type sync atom sidx
+write_data len 704, time 5166667, type sync atom sidx
+write_data len 148, time nopts, type trailer atom -
 5e676152714f9478b5f74ce67cd7ed60 3647 vfr
+write_data len 1243, time nopts, type header atom ftyp
+write_data len 1552, time -333333, type sync atom sidx
+write_data len 704, time 5166667, type sync atom sidx
+write_data len 148, time nopts, type trailer atom -
 5e676152714f9478b5f74ce67cd7ed60 3647 vfr-noduration
+write_data len 1255, time nopts, type header atom ftyp
+write_data len 1500, time -333333, type sync atom moof
+write_data len 620, time nopts, type unknown atom -
+write_data len 1500, time 9666667, type sync atom moof
+write_data len 664, time nopts, type unknown atom -
+write_data len 148, time nopts, type trailer atom -
+03766894d839e5fcb1edb88498d812f7 5687 large_frag
