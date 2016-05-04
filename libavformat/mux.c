@@ -256,11 +256,15 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     if (ret = init_muxer(s, options))
         return ret;
 
+    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
     if (s->oformat->write_header) {
         ret = s->oformat->write_header(s);
         if (ret < 0)
             return ret;
     }
+    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_UNKNOWN);
 
     if (s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO) {
         if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
@@ -704,6 +708,8 @@ int av_write_trailer(AVFormatContext *s)
             goto fail;
     }
 
+    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
     if (s->oformat->write_trailer)
         ret = s->oformat->write_trailer(s);
 
