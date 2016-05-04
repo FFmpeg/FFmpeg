@@ -117,8 +117,6 @@ typedef struct AVIOContext {
     int seekable;
 } AVIOContext;
 
-/* unbuffered I/O */
-
 /**
  * Return AVIO_FLAG_* access flags corresponding to the access permissions
  * of the resource in url, or a negative value corresponding to an
