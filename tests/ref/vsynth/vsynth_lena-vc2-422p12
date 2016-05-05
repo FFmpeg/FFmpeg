@@ -1,0 +1,4 @@
+2cef57ce35f32642c829f24a0ca3e260 *tests/data/fate/vsynth_lena-vc2-422p12.mov
+1768027 tests/data/fate/vsynth_lena-vc2-422p12.mov
+bd374304997834410a69ee6c6e047d19 *tests/data/fate/vsynth_lena-vc2-422p12.out.rawvideo
+stddev:    0.29 PSNR: 58.76 MAXDIFF:    5 bytes:  7603200/   760320
