@@ -15627,6 +15627,28 @@ tools.
 
 Below is a description of the currently available multimedia filters.
 
+@section abitscope
+
+Convert input audio to a video output, displaying the audio bit scope.
+
+The filter accepts the following options:
+
+@table @option
+@item rate, r
+Set frame rate, expressed as number of frames per second. Default
+value is "25".
+
+@item size, s
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{1024x256}.
+
+@item colors
+Specify list of colors separated by space or by '|' which will be used to
+draw channels. Unrecognized or missing colors will be replaced
+by white color.
+@end table
+
 @section ahistogram
 
 Convert input audio to a video output, displaying the volume histogram.

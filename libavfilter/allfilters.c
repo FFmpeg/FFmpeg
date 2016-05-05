@@ -348,6 +348,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(NULLSINK,       nullsink,       vsink);
 
     /* multimedia filters */
+    REGISTER_FILTER(ABITSCOPE,      abitscope,      avf);
     REGISTER_FILTER(ADRAWGRAPH,     adrawgraph,     avf);
     REGISTER_FILTER(AHISTOGRAM,     ahistogram,     avf);
     REGISTER_FILTER(APHASEMETER,    aphasemeter,    avf);
