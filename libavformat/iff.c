@@ -59,6 +59,10 @@
 #define ID_RGB8       MKTAG('R','G','B','8')
 #define ID_RGBN       MKTAG('R','G','B','N')
 #define ID_DSD        MKTAG('D','S','D',' ')
+#define ID_DST        MKTAG('D','S','T',' ')
+#define ID_DSTC       MKTAG('D','S','T','C')
+#define ID_DSTF       MKTAG('D','S','T','F')
+#define ID_FRTE       MKTAG('F','R','T','E')
 #define ID_ANIM       MKTAG('A','N','I','M')
 #define ID_ANHD       MKTAG('A','N','H','D')
 #define ID_DLTA       MKTAG('D','L','T','A')
@@ -159,6 +163,7 @@ static int iff_probe(AVProbeData *p)
 
 static const AVCodecTag dsd_codec_tags[] = {
     { AV_CODEC_ID_DSD_MSBF, ID_DSD },
+    { AV_CODEC_ID_DST,      ID_DST },
     { AV_CODEC_ID_NONE, 0 },
 };
 
@@ -287,7 +292,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         case MKTAG('C','M','P','R'):
             if (size < 4)
                 return AVERROR_INVALIDDATA;
-            tag = avio_rl32(pb);
+            st->codecpar->codec_tag = tag = avio_rl32(pb);
             st->codecpar->codec_id = ff_codec_get_id(dsd_codec_tags, tag);
             if (!st->codecpar->codec_id) {
                 av_log(s, AV_LOG_ERROR, "'%c%c%c%c' compression is not supported\n",
@@ -336,6 +341,63 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
     }
 
     return 0;
+}
+
+static int read_dst_frame(AVFormatContext *s, AVPacket *pkt)
+{
+    IffDemuxContext *iff = s->priv_data;
+    AVIOContext *pb = s->pb;
+    uint32_t chunk_id;
+    uint64_t chunk_pos, data_pos, data_size;
+    int ret = AVERROR_EOF;
+
+    while (!avio_feof(pb)) {
+        chunk_pos = avio_tell(pb);
+        if (chunk_pos >= iff->body_end)
+            return AVERROR_EOF;
+
+        chunk_id = avio_rl32(pb);
+        data_size = iff->is_64bit ? avio_rb64(pb) : avio_rb32(pb);
+        data_pos = avio_tell(pb);
+
+        if (data_size < 1)
+            return AVERROR_INVALIDDATA;
+
+        switch (chunk_id) {
+        case ID_DSTF:
+            if (!pkt) {
+                iff->body_pos  = avio_tell(pb) - (iff->is_64bit ? 12 : 8);
+                iff->body_size = iff->body_end - iff->body_pos;
+                return 0;
+            }
+            ret = av_get_packet(pb, pkt, data_size);
+            if (ret < 0)
+                return ret;
+            if (data_size & 1)
+                avio_skip(pb, 1);
+            pkt->flags |= AV_PKT_FLAG_KEY;
+            pkt->stream_index = 0;
+            pkt->duration = 588 * s->streams[0]->codecpar->sample_rate / 44100;
+            pkt->pos = chunk_pos;
+
+            chunk_pos = avio_tell(pb);
+            if (chunk_pos >= iff->body_end)
+                return 0;
+
+            avio_seek(pb, chunk_pos, SEEK_SET);
+            return 0;
+
+        case ID_FRTE:
+            if (data_size < 4)
+                return AVERROR_INVALIDDATA;
+            s->streams[0]->duration = avio_rb32(pb) * 588LL * s->streams[0]->codecpar->sample_rate / 44100;
+            break;
+        }
+
+        avio_skip(pb, data_size - (avio_tell(pb) - data_pos) + (data_size & 1));
+    }
+
+    return ret;
 }
 
 static const uint8_t deep_rgb24[] = {0, 0, 0, 3, 0, 1, 0, 8, 0, 2, 0, 8, 0, 3, 0, 8};
@@ -425,10 +487,16 @@ static int iff_read_header(AVFormatContext *s)
         case ID_BODY:
         case ID_DBOD:
         case ID_DSD:
+        case ID_DST:
         case ID_MDAT:
             iff->body_pos = avio_tell(pb);
             iff->body_end = iff->body_pos + data_size;
             iff->body_size = data_size;
+            if (chunk_id == ID_DST) {
+                int ret = read_dst_frame(s, NULL);
+                if (ret < 0)
+                    return ret;
+            }
             break;
 
         case ID_CHAN:
@@ -654,7 +722,8 @@ static int iff_read_header(AVFormatContext *s)
                 avpriv_request_sample(s, "compression %d and bit depth %d", iff->maud_compression, iff->maud_bits);
                 return AVERROR_PATCHWELCOME;
             }
-        } else if (st->codecpar->codec_tag != ID_DSD) {
+        } else if (st->codecpar->codec_tag != ID_DSD &&
+                   st->codecpar->codec_tag != ID_DST) {
             switch (iff->svx8_compression) {
             case COMP_NONE:
                 st->codecpar->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
@@ -675,6 +744,8 @@ static int iff_read_header(AVFormatContext *s)
         st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
         st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate * st->codecpar->bits_per_coded_sample;
         st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
+        if (st->codecpar->codec_tag == ID_DSD && st->codecpar->block_align <= 0)
+            return AVERROR_INVALIDDATA;
         break;
 
     case AVMEDIA_TYPE_VIDEO:
@@ -745,16 +816,16 @@ static int iff_read_packet(AVFormatContext *s,
     int ret;
     int64_t pos = avio_tell(pb);
 
-    if (st->codecpar->codec_tag == ID_ANIM) {
-        if (avio_feof(pb))
-            return AVERROR_EOF;
-    } else if (pos >= iff->body_end) {
+    if (avio_feof(pb))
         return AVERROR_EOF;
-    }
+    if (st->codecpar->codec_tag != ID_ANIM && pos >= iff->body_end)
+        return AVERROR_EOF;
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         if (st->codecpar->codec_tag == ID_DSD || st->codecpar->codec_tag == ID_MAUD) {
             ret = av_get_packet(pb, pkt, FFMIN(iff->body_end - pos, 1024 * st->codecpar->block_align));
+        } else if (st->codecpar->codec_tag == ID_DST) {
+            return read_dst_frame(s, pkt);
         } else {
             if (iff->body_size > INT_MAX)
                 return AVERROR_INVALIDDATA;
