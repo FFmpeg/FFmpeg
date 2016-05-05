@@ -890,7 +890,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         ctx->encode_config.encodeCodecConfig.h264Config.outputAUD = 1;
 
-        if (!ctx->profile) {
+        if (!ctx->profile && !lossless) {
             switch (avctx->profile) {
             case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
@@ -910,7 +910,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
                 break;
             }
-        } else {
+        } else if(!lossless) {
             if (!strcmp(ctx->profile, "high")) {
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
                 avctx->profile = FF_PROFILE_H264_HIGH;
