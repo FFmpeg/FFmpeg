@@ -62,6 +62,7 @@ stream=0, decode=0
     bits_per_coded_sample=0
     pred=0
     aspect=180/180
+    sar=180/180
     debug=0x00000000
     vismv=0x00000000
     cmp=0
@@ -218,6 +219,7 @@ stream=0, decode=1
     bits_per_coded_sample=0
     pred=0
     aspect=180/180
+    sar=180/180
     debug=0x00000000
     vismv=0x00000000
     cmp=0
