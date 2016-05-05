@@ -834,7 +834,7 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 }
             } else {
                 // End of frame, and the caller provided a preallocated frame
-                if ((ret = ff_alloc_packet(pkt, s->output_buf_size + buffer->nFilledLen)) < 0) {
+                if ((ret = ff_alloc_packet2(avctx, pkt, s->output_buf_size + buffer->nFilledLen, 0)) < 0) {
                     av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n",
                            (int)(s->output_buf_size + buffer->nFilledLen));
                     goto end;
