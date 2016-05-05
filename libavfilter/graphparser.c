@@ -165,12 +165,12 @@ static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGr
                         int index, void *log_ctx)
 {
     char *opts = NULL;
-    char *name = av_get_token(buf, "=,;[\n");
+    char *name = av_get_token(buf, "=,;[");
     int ret;
 
     if (**buf == '=') {
         (*buf)++;
-        opts = av_get_token(buf, "[],;\n");
+        opts = av_get_token(buf, "[],;");
     }
 
     ret = create_filter(filt_ctx, graph, index, name, opts, log_ctx);
