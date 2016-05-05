@@ -351,6 +351,7 @@ OBJS-$(CONFIG_KMVC_DECODER)            += kmvc.o
 OBJS-$(CONFIG_LAGARITH_DECODER)        += lagarith.o lagarithrac.o
 OBJS-$(CONFIG_LJPEG_ENCODER)           += ljpegenc.o mjpegenc_common.o
 OBJS-$(CONFIG_LOCO_DECODER)            += loco.o
+OBJS-$(CONFIG_M101_DECODER)            += m101.o
 OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
 OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
 OBJS-$(CONFIG_MDEC_DECODER)            += mdec.o mpeg12.o mpeg12data.o
