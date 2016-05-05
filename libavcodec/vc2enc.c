@@ -777,7 +777,10 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
     uint8_t quants[MAX_DWT_LEVELS][4];
     int p, level, orientation;
 
+    /* The reference decoder ignores it, and its typical length is 0 */
+    memset(put_bits_ptr(pb), 0, s->prefix_bytes);
     skip_put_bytes(pb, s->prefix_bytes);
+
     put_bits(pb, 8, quant_idx);
 
     /* Slice quantization (slice_quantizers() in the specs) */
@@ -809,6 +812,8 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
         }
         pb->buf[bytes_start] = pad_s;
         flush_put_bits(pb);
+        /* vc2-reference uses that padding that decodes to '0' coeffs */
+        memset(put_bits_ptr(pb), 0xFF, pad_c);
         skip_put_bytes(pb, pad_c);
     }
 
