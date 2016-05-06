@@ -386,7 +386,6 @@ enum AVCodecID {
     AV_CODEC_ID_DXV,
     AV_CODEC_ID_SCREENPRESSO,
     AV_CODEC_ID_RSCC,
-    AV_CODEC_ID_M101,
 
     AV_CODEC_ID_Y41P = 0x8000,
     AV_CODEC_ID_AVRP,
@@ -406,6 +405,7 @@ enum AVCodecID {
     AV_CODEC_ID_DAALA,
     AV_CODEC_ID_CFHD,
     AV_CODEC_ID_TRUEMOTION2RT,
+    AV_CODEC_ID_M101,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
