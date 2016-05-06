@@ -325,7 +325,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
         nal->size_bits = get_bit_length(nal, skip_trailing_zeros);
 
-        ret = init_get_bits8(&nal->gb, nal->data, nal->size_bits);
+        ret = init_get_bits(&nal->gb, nal->data, nal->size_bits);
         if (ret < 0)
             return ret;
 
