@@ -62,20 +62,21 @@ typedef struct LibRTMFPContext {
 
 static void rtmfp_log(unsigned int threadID, int level, const char* fileName, long line, const char* message)
 {
+    const char* strLevel = "";
+
     switch (level) {
     default:
-    case 1: level = AV_LOG_FATAL;   break;
+    case 1: level = AV_LOG_FATAL; strLevel = "FATAL"; break;
     case 2:
-    case 3: level = AV_LOG_ERROR;   break;
-    case 4: level = AV_LOG_WARNING; break;
+    case 3: level = AV_LOG_ERROR; strLevel = "ERROR";  break;
+    case 4: level = AV_LOG_WARNING; strLevel = "WARN"; break;
     case 5:
-    case 6: level = AV_LOG_INFO;    break;
-    case 7: level = AV_LOG_DEBUG;   break;
-    case 8: level = AV_LOG_VERBOSE; break;
+    case 6: level = AV_LOG_INFO; strLevel = "INFO";   break;
+    case 7: level = AV_LOG_DEBUG; strLevel = "DEBUG";  break;
+    case 8: level = AV_LOG_VERBOSE; strLevel = "VERBOSE"; break;
     }
 
-    av_log(NULL, level, message);
-    av_log(NULL, level, "\n");
+    av_log(NULL, level, "[%s] %s\n", strLevel, message);
 }
 
 static void rtmfp_dump(const char* header, const void* data, unsigned int size) {
@@ -141,7 +142,7 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
 
     if (ctx->netgroup)
-        res = RTMFP_Connect2Group(ctx->id, ctx->netgroup, ctx->publication, (flags & AVIO_FLAG_WRITE) > 1, 0.2, 8);
+        res = RTMFP_Connect2Group(ctx->id, ctx->netgroup, ctx->publication, (flags & AVIO_FLAG_WRITE) > 1, 0.2, 10, 1);
     else if (ctx->peerId)
         res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication);
     else if (ctx->p2pPublishing)
