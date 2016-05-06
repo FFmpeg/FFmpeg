@@ -770,8 +770,8 @@ static int create_filtergraph(AVFilterContext *ctx,
                 s->yuv_offset[1][n] = off;
             fill_rgb2yuv_table(s->out_lumacoef, rgb2yuv);
             bits = 1 << (29 - out_desc->comp[0].depth);
-            for (n = 0; n < 3; n++) {
-                for (out_rng = s->out_y_rng, m = 0; m < 3; m++, out_rng = s->out_uv_rng) {
+            for (out_rng = s->out_y_rng, n = 0; n < 3; n++, out_rng = s->out_uv_rng) {
+                for (m = 0; m < 3; m++) {
                     s->rgb2yuv_coeffs[n][m][0] = lrint(bits * out_rng * rgb2yuv[n][m] / 28672);
                     for (o = 1; o < 8; o++)
                         s->rgb2yuv_coeffs[n][m][o] = s->rgb2yuv_coeffs[n][m][0];
