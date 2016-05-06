@@ -719,7 +719,8 @@ static int create_filtergraph(AVFilterContext *ctx,
     s->yuv2yuv_fastmode = s->rgb2rgb_passthrough && fmt_identical;
     s->yuv2yuv_passthrough = s->yuv2yuv_fastmode && s->in_rng == s->out_rng &&
                              !memcmp(s->in_lumacoef, s->out_lumacoef,
-                                     sizeof(*s->in_lumacoef));
+                                     sizeof(*s->in_lumacoef)) &&
+                             in_desc->comp[0].depth == out_desc->comp[0].depth;
     if (!s->yuv2yuv_passthrough) {
         if (redo_yuv2rgb) {
             double rgb2yuv[3][3], (*yuv2rgb)[3] = s->yuv2rgb_dbl_coeffs;
@@ -937,7 +938,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     td.in_ss_h = av_pix_fmt_desc_get(in->format)->log2_chroma_h;
     td.out_ss_h = av_pix_fmt_desc_get(out->format)->log2_chroma_h;
     if (s->yuv2yuv_passthrough) {
-        av_frame_copy(out, in);
+        res = av_frame_copy(out, in);
+        if (res < 0)
+            return res;
     } else {
         ctx->internal->execute(ctx, convert, &td, NULL,
                                FFMIN((in->height + 1) >> 1, ctx->graph->nb_threads));
