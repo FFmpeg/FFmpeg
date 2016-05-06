@@ -59,6 +59,14 @@ enum Whitepoint {
     WP_NB,
 };
 
+enum WhitepointAdaptation {
+    WP_ADAPT_BRADFORD,
+    WP_ADAPT_VON_KRIES,
+    NB_WP_ADAPT_NON_IDENTITY,
+    WP_ADAPT_IDENTITY = NB_WP_ADAPT_NON_IDENTITY,
+    NB_WP_ADAPT,
+};
+
 static const enum AVColorTransferCharacteristic default_trc[CS_NB + 1] = {
     [CS_UNSPECIFIED] = AVCOL_TRC_UNSPECIFIED,
     [CS_BT470M]      = AVCOL_TRC_GAMMA22,
@@ -128,6 +136,7 @@ typedef struct ColorSpaceContext {
     enum AVPixelFormat in_format, user_format;
     int fast_mode;
     enum DitherMode dither;
+    enum WhitepointAdaptation wp_adapt;
 
     int16_t *rgb[3];
     ptrdiff_t rgb_stride;
@@ -379,14 +388,21 @@ static void mul3x3(double dst[3][3], const double src1[3][3], const double src2[
  * See http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
  * This function uses the Bradford mechanism.
  */
-static void fill_whitepoint_conv_table(double out[3][3],
+static void fill_whitepoint_conv_table(double out[3][3], enum WhitepointAdaptation wp_adapt,
                                        enum Whitepoint src, enum Whitepoint dst)
 {
-    static const double ma[3][3] = {
-        {  0.8951,  0.2664, -0.1614 },
-        { -0.7502,  1.7135,  0.0367 },
-        {  0.0389, -0.0685,  1.0296 },
+    static const double ma_tbl[NB_WP_ADAPT_NON_IDENTITY][3][3] = {
+        [WP_ADAPT_BRADFORD] = {
+            {  0.8951,  0.2664, -0.1614 },
+            { -0.7502,  1.7135,  0.0367 },
+            {  0.0389, -0.0685,  1.0296 },
+        }, [WP_ADAPT_VON_KRIES] = {
+            {  0.40024,  0.70760, -0.08081 },
+            { -0.22630,  1.16532,  0.04570 },
+            {  0.00000,  0.00000,  0.91822 },
+        },
     };
+    const double (*ma)[3] = ma_tbl[wp_adapt];
     const struct WhitepointCoefficients *wp_src = &whitepoint_coefficients[src];
     double zw_src = 1.0 - wp_src->xw - wp_src->yw;
     const struct WhitepointCoefficients *wp_dst = &whitepoint_coefficients[dst];
@@ -597,10 +613,11 @@ static int create_filtergraph(AVFilterContext *ctx,
             fill_rgb2xyz_table(s->out_primaries, rgb2xyz);
             invert_matrix3x3(rgb2xyz, xyz2rgb);
             fill_rgb2xyz_table(s->in_primaries, rgb2xyz);
-            if (s->out_primaries->wp != s->in_primaries->wp) {
+            if (s->out_primaries->wp != s->in_primaries->wp &&
+                s->wp_adapt != WP_ADAPT_IDENTITY) {
                 double wpconv[3][3], tmp[3][3];
 
-                fill_whitepoint_conv_table(wpconv, s->in_primaries->wp,
+                fill_whitepoint_conv_table(wpconv, s->wp_adapt, s->in_primaries->wp,
                                            s->out_primaries->wp);
                 mul3x3(tmp, rgb2xyz, wpconv);
                 mul3x3(rgb2rgb, tmp, xyz2rgb);
@@ -1039,11 +1056,19 @@ static const AVOption colorspace_options[] = {
     { "fast",     "Ignore primary chromaticity and gamma correction",
       OFFSET(fast_mode), AV_OPT_TYPE_BOOL,  { .i64 = 0    },
       0, 1, FLAGS },
+
     { "dither",   "Dithering mode",
       OFFSET(dither), AV_OPT_TYPE_INT, { .i64 = DITHER_NONE },
       DITHER_NONE, DITHER_NB - 1, FLAGS, "dither" },
     ENUM("none", DITHER_NONE, "dither"),
     ENUM("fsb",  DITHER_FSB,  "dither"),
+
+    { "wpadapt", "Whitepoint adaptation method",
+      OFFSET(wp_adapt), AV_OPT_TYPE_INT, { .i64 = WP_ADAPT_BRADFORD },
+      WP_ADAPT_BRADFORD, NB_WP_ADAPT - 1, FLAGS, "wpadapt" },
+    ENUM("bradford", WP_ADAPT_BRADFORD, "wpadapt"),
+    ENUM("vonkries", WP_ADAPT_VON_KRIES, "wpadapt"),
+    ENUM("identity", WP_ADAPT_IDENTITY, "wpadapt"),
 
     { NULL }
 };
