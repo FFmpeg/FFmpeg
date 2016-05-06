@@ -122,7 +122,7 @@ static void sub_qmf32_float_c(SynthFilterContext *synth,
                               const float *filter_coeff, ptrdiff_t npcmblocks,
                               float scale)
 {
-    LOCAL_ALIGNED(32, float, input, [32]);
+    LOCAL_ALIGNED_32(float, input, [32]);
     int i, j;
 
     for (j = 0; j < npcmblocks; j++) {
@@ -151,7 +151,7 @@ static void sub_qmf64_float_c(SynthFilterContext *synth,
                               const float *filter_coeff, ptrdiff_t npcmblocks,
                               float scale)
 {
-    LOCAL_ALIGNED(32, float, input, [64]);
+    LOCAL_ALIGNED_32(float, input, [64]);
     int i, j;
 
     if (!subband_samples_hi)
@@ -243,7 +243,7 @@ static void sub_qmf32_fixed_c(SynthFilterContext *synth,
                               int32_t *hist1, int *offset, int32_t *hist2,
                               const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
-    LOCAL_ALIGNED(32, int32_t, input, [32]);
+    LOCAL_ALIGNED_32(int32_t, input, [32]);
     int i, j;
 
     for (j = 0; j < npcmblocks; j++) {
@@ -267,7 +267,7 @@ static void sub_qmf64_fixed_c(SynthFilterContext *synth,
                               int32_t *hist1, int *offset, int32_t *hist2,
                               const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
-    LOCAL_ALIGNED(32, int32_t, input, [64]);
+    LOCAL_ALIGNED_32(int32_t, input, [64]);
     int i, j;
 
     if (!subband_samples_hi)
