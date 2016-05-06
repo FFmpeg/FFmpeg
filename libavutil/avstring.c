@@ -144,7 +144,7 @@ char *av_d2str(double d)
     return str;
 }
 
-#define WHITESPACES " \n\t"
+#define WHITESPACES " \n\t\r"
 
 char *av_get_token(const char **buf, const char *term)
 {

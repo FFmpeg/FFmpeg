@@ -260,7 +260,7 @@ int av_bprint_finalize(AVBPrint *buf, char **ret_str)
     return ret;
 }
 
-#define WHITESPACES " \n\t"
+#define WHITESPACES " \n\t\r"
 
 void av_bprint_escape(AVBPrint *dstbuf, const char *src, const char *special_chars,
                       enum AVEscapeMode mode, int flags)
