@@ -81,38 +81,38 @@ void ff_colorspacedsp_x86_init(ColorSpaceDSPContext *dsp)
     int cpu_flags = av_get_cpu_flags();
 
     if (ARCH_X86_64 && EXTERNAL_SSE2(cpu_flags)) {
-#define assign_yuv2yuv_fns(idx, ss) \
-        dsp->yuv2yuv[0][0][idx] = ff_yuv2yuv_##ss##p8to8_sse2; \
-        dsp->yuv2yuv[0][1][idx] = ff_yuv2yuv_##ss##p8to10_sse2; \
-        dsp->yuv2yuv[0][2][idx] = ff_yuv2yuv_##ss##p8to12_sse2; \
-        dsp->yuv2yuv[1][0][idx] = ff_yuv2yuv_##ss##p10to8_sse2; \
-        dsp->yuv2yuv[1][1][idx] = ff_yuv2yuv_##ss##p10to10_sse2; \
-        dsp->yuv2yuv[1][2][idx] = ff_yuv2yuv_##ss##p10to12_sse2; \
-        dsp->yuv2yuv[2][0][idx] = ff_yuv2yuv_##ss##p12to8_sse2; \
-        dsp->yuv2yuv[2][1][idx] = ff_yuv2yuv_##ss##p12to10_sse2; \
-        dsp->yuv2yuv[2][2][idx] = ff_yuv2yuv_##ss##p12to12_sse2
+#define assign_yuv2yuv_fns(ss) \
+        dsp->yuv2yuv[BPP_8 ][BPP_8 ][SS_##ss] = ff_yuv2yuv_##ss##p8to8_sse2; \
+        dsp->yuv2yuv[BPP_8 ][BPP_10][SS_##ss] = ff_yuv2yuv_##ss##p8to10_sse2; \
+        dsp->yuv2yuv[BPP_8 ][BPP_12][SS_##ss] = ff_yuv2yuv_##ss##p8to12_sse2; \
+        dsp->yuv2yuv[BPP_10][BPP_8 ][SS_##ss] = ff_yuv2yuv_##ss##p10to8_sse2; \
+        dsp->yuv2yuv[BPP_10][BPP_10][SS_##ss] = ff_yuv2yuv_##ss##p10to10_sse2; \
+        dsp->yuv2yuv[BPP_10][BPP_12][SS_##ss] = ff_yuv2yuv_##ss##p10to12_sse2; \
+        dsp->yuv2yuv[BPP_12][BPP_8 ][SS_##ss] = ff_yuv2yuv_##ss##p12to8_sse2; \
+        dsp->yuv2yuv[BPP_12][BPP_10][SS_##ss] = ff_yuv2yuv_##ss##p12to10_sse2; \
+        dsp->yuv2yuv[BPP_12][BPP_12][SS_##ss] = ff_yuv2yuv_##ss##p12to12_sse2
 
-        assign_yuv2yuv_fns(2, 420);
-        assign_yuv2yuv_fns(1, 422);
-        assign_yuv2yuv_fns(0, 444);
+        assign_yuv2yuv_fns(420);
+        assign_yuv2yuv_fns(422);
+        assign_yuv2yuv_fns(444);
 
-#define assign_yuv2rgb_fns(idx, ss) \
-        dsp->yuv2rgb[0][idx] = ff_yuv2rgb_##ss##p8_sse2; \
-        dsp->yuv2rgb[1][idx] = ff_yuv2rgb_##ss##p10_sse2; \
-        dsp->yuv2rgb[2][idx] = ff_yuv2rgb_##ss##p12_sse2
+#define assign_yuv2rgb_fns(ss) \
+        dsp->yuv2rgb[BPP_8 ][SS_##ss] = ff_yuv2rgb_##ss##p8_sse2; \
+        dsp->yuv2rgb[BPP_10][SS_##ss] = ff_yuv2rgb_##ss##p10_sse2; \
+        dsp->yuv2rgb[BPP_12][SS_##ss] = ff_yuv2rgb_##ss##p12_sse2
 
-        assign_yuv2rgb_fns(2, 420);
-        assign_yuv2rgb_fns(1, 422);
-        assign_yuv2rgb_fns(0, 444);
+        assign_yuv2rgb_fns(420);
+        assign_yuv2rgb_fns(422);
+        assign_yuv2rgb_fns(444);
 
-#define assign_rgb2yuv_fns(idx, ss) \
-        dsp->rgb2yuv[0][idx] = ff_rgb2yuv_##ss##p8_sse2; \
-        dsp->rgb2yuv[1][idx] = ff_rgb2yuv_##ss##p10_sse2; \
-        dsp->rgb2yuv[2][idx] = ff_rgb2yuv_##ss##p12_sse2
+#define assign_rgb2yuv_fns(ss) \
+        dsp->rgb2yuv[BPP_8 ][SS_##ss] = ff_rgb2yuv_##ss##p8_sse2; \
+        dsp->rgb2yuv[BPP_10][SS_##ss] = ff_rgb2yuv_##ss##p10_sse2; \
+        dsp->rgb2yuv[BPP_12][SS_##ss] = ff_rgb2yuv_##ss##p12_sse2
 
-        assign_rgb2yuv_fns(2, 420);
-        assign_rgb2yuv_fns(1, 422);
-        assign_rgb2yuv_fns(0, 444);
+        assign_rgb2yuv_fns(420);
+        assign_rgb2yuv_fns(422);
+        assign_rgb2yuv_fns(444);
 
         dsp->multiply3x3 = ff_multiply3x3_sse2;
     }
