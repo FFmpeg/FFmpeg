@@ -52,7 +52,7 @@
 #endif
 
 static void fn(yuv2rgb)(int16_t *rgb[3], ptrdiff_t rgb_stride,
-                        uint8_t *_yuv[3], ptrdiff_t yuv_stride[3],
+                        uint8_t *_yuv[3], const ptrdiff_t yuv_stride[3],
                         int w, int h, const int16_t yuv2rgb_coeffs[3][3][8],
                         const int16_t yuv_offset[8])
 {
@@ -127,7 +127,7 @@ static void fn(yuv2rgb)(int16_t *rgb[3], ptrdiff_t rgb_stride,
     }
 }
 
-static void fn(rgb2yuv)(uint8_t *_yuv[3], ptrdiff_t yuv_stride[3],
+static void fn(rgb2yuv)(uint8_t *_yuv[3], const ptrdiff_t yuv_stride[3],
                         int16_t *rgb[3], ptrdiff_t s,
                         int w, int h, const int16_t rgb2yuv_coeffs[3][3][8],
                         const int16_t yuv_offset[8])
@@ -205,7 +205,7 @@ static void fn(rgb2yuv)(uint8_t *_yuv[3], ptrdiff_t yuv_stride[3],
  * the rounding error is distributed over the neighbouring pixels:
  *    2: 7/16th, 3: 3/16th, 4: 5/16th and 5: 1/16th
  */
-static void fn(rgb2yuv_fsb)(uint8_t *_yuv[3], ptrdiff_t yuv_stride[3],
+static void fn(rgb2yuv_fsb)(uint8_t *_yuv[3], const ptrdiff_t yuv_stride[3],
                             int16_t *rgb[3], ptrdiff_t s,
                             int w, int h, const int16_t rgb2yuv_coeffs[3][3][8],
                             const int16_t yuv_offset[8],
