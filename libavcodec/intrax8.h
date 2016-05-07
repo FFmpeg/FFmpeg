@@ -113,6 +113,7 @@ void ff_intrax8_common_end(IntraX8Context *w);
  */
 int ff_intrax8_decode_picture(IntraX8Context *w, Picture *pict,
                               GetBitContext *gb, int *mb_x, int *mb_y,
-                              int quant, int halfpq, int loopfilter);
+                              int quant, int halfpq,
+                              int loopfilter, int lowdelay);
 
 #endif /* AVCODEC_INTRAX8_H */

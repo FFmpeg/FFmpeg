@@ -30,6 +30,7 @@
 #include "intrax8huf.h"
 #include "intrax8.h"
 #include "intrax8dsp.h"
+#include "mpegutils.h"
 
 #define MAX_TABLE_DEPTH(table_bits, max_bits) \
     ((max_bits + table_bits - 1) / table_bits)
@@ -773,7 +774,8 @@ av_cold void ff_intrax8_common_end(IntraX8Context *w)
 
 int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
                               GetBitContext *gb, int *mb_x, int *mb_y,
-                              int dquant, int quant_offset, int loopfilter)
+                              int dquant, int quant_offset,
+                              int loopfilter, int lowdelay)
 {
     MpegEncContext *const s = w->s;
     int mb_xy;
@@ -834,7 +836,9 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
             w->dest[0] += 8;
         }
         if (w->mb_y & 1)
-            ff_mpeg_draw_horiz_band(s, (w->mb_y - 1) * 8, 16);
+            ff_draw_horiz_band(w->avctx, w->frame, w->frame,
+                               (w->mb_y - 1) * 8, 16,
+                               PICT_FRAME, 0, lowdelay);
     }
 
 error:
