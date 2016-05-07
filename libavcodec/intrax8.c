@@ -395,7 +395,7 @@ static void x8_get_prediction_chroma(IntraX8Context *const w)
 
     w->edges  = 1 * (!(s->mb_x >> 1));
     w->edges |= 2 * (!(s->mb_y >> 1));
-    w->edges |= 4 * (s->mb_x >= (2 * s->mb_width - 1)); // mb_x for chroma would always be odd
+    w->edges |= 4 * (s->mb_x >= (2 * w->mb_width - 1)); // mb_x for chroma would always be odd
 
     w->raw_orient = 0;
     // lut_co[8] = {inv,4,8,8, inv,4,8,8} <- => {1,1,0,0;1,1,0,0} => 0xCC
@@ -414,7 +414,7 @@ static void x8_get_prediction(IntraX8Context *const w)
 
     w->edges  = 1 * (!s->mb_x);
     w->edges |= 2 * (!s->mb_y);
-    w->edges |= 4 * (s->mb_x >= (2 * s->mb_width - 1));
+    w->edges |= 4 * (s->mb_x >= (2 * w->mb_width - 1));
 
     switch (w->edges & 3) {
     case 0:
@@ -735,6 +735,7 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame, int mb_y)
 
 av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
                                    IntraX8Context *w, IDCTDSPContext *idsp,
+                                   int mb_width, int mb_height,
                                    MpegEncContext *const s)
 {
     int ret = x8_vlc_init();
@@ -743,10 +744,14 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
 
     w->avctx = avctx;
     w->idsp = *idsp;
+    s->mb_x = 0;
+    s->mb_y = 0;
+    w->mb_width  = mb_width;
+    w->mb_height = mb_height;
     w->s = s;
 
-    //two rows, 2 blocks per cannon mb
-    w->prediction_table = av_mallocz(s->mb_width * 2 * 2);
+    // two rows, 2 blocks per cannon mb
+    w->prediction_table = av_mallocz(w->mb_width * 2 * 2);
     if (!w->prediction_table)
         return AVERROR(ENOMEM);
 
@@ -798,11 +803,10 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
     }
     x8_reset_vlc_tables(w);
 
-    for (s->mb_y = 0; s->mb_y < s->mb_height * 2; s->mb_y++) {
+    for (s->mb_y = 0; s->mb_y < w->mb_height * 2; s->mb_y++) {
         x8_init_block_index(w, w->frame, s->mb_y);
-        mb_xy = (s->mb_y >> 1) * s->mb_stride;
-
-        for (s->mb_x = 0; s->mb_x < s->mb_width * 2; s->mb_x++) {
+        mb_xy = (s->mb_y >> 1) * (w->mb_width + 1);
+        for (s->mb_x = 0; s->mb_x < w->mb_width * 2; s->mb_x++) {
             x8_get_prediction(w);
             if (x8_setup_spatial_predictor(w, 0))
                 goto error;
