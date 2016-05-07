@@ -443,6 +443,7 @@
     <ClCompile Include="..\libavcodec\dcadec.c" />
     <ClCompile Include="..\libavcodec\dca.c" />
     <ClCompile Include="..\libavcodec\dcadata.c" />
+    <ClCompile Include="..\libavcodec\dcahuff.c" />
     <ClCompile Include="..\libavcodec\dca_core.c" />
     <ClCompile Include="..\libavcodec\dca_exss.c" />
     <ClCompile Include="..\libavcodec\dca_xll.c" />
@@ -621,6 +622,7 @@
     <ClCompile Include="..\libavcodec\lagarithrac.c" />
     <ClCompile Include="..\libavcodec\ljpegenc.c" />
     <ClCompile Include="..\libavcodec\loco.c" />
+    <ClCompile Include="..\libavcodec\m101.c" />
     <ClCompile Include="..\libavcodec\mace.c" />
     <ClCompile Include="..\libavcodec\mdec.c" />
     <ClCompile Include="..\libavcodec\metasound.c" />

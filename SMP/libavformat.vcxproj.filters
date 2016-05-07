@@ -970,6 +970,9 @@
     <ClCompile Include="..\libavformat\rtpenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_vc2hq.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_vp8.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -1172,6 +1175,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\westwood_aud.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wsddec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\westwood_vqa.c">

@@ -383,6 +383,7 @@
     <ClCompile Include="..\libavformat\rtpenc_jpeg.c" />
     <ClCompile Include="..\libavformat\rtpenc_mpv.c" />
     <ClCompile Include="..\libavformat\rtpenc.c" />
+    <ClCompile Include="..\libavformat\rtpenc_vc2hq.c" />
     <ClCompile Include="..\libavformat\rtpenc_vp8.c" />
     <ClCompile Include="..\libavformat\rtpenc_xiph.c" />
     <ClCompile Include="..\libavformat\rtsp.c" />
@@ -451,6 +452,7 @@
     <ClCompile Include="..\libavformat\webvttdec.c" />
     <ClCompile Include="..\libavformat\webvttenc.c" />
     <ClCompile Include="..\libavformat\westwood_aud.c" />
+    <ClCompile Include="..\libavformat\wsddec.c" />
     <ClCompile Include="..\libavformat\westwood_vqa.c" />
     <ClCompile Include="..\libavformat\wtvdec.c" />
     <ClCompile Include="..\libavformat\wtv_common.c" />
