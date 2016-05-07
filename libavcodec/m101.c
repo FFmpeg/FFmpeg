@@ -88,12 +88,12 @@ static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 const uint8_t *buf_src = buf + src_y*stride + 40*block;
                 for (x = 0; x < 16 && x + 16*block < avctx->width; x++) {
                     int xd = x + 16*block;
-                    if (!(x&1)) {
+                    if (x&1) {
+                        luma [xd] = (4*buf_src[2*x + 0]) + ((buf_src[32 + (x>>1)]>>4)&3);
+                    } else {
                         luma [xd] = (4*buf_src[2*x + 0]) +  (buf_src[32 + (x>>1)]    &3);
                         cb[xd>>1] = (4*buf_src[2*x + 1]) + ((buf_src[32 + (x>>1)]>>2)&3);
                         cr[xd>>1] = (4*buf_src[2*x + 3]) +  (buf_src[32 + (x>>1)]>>6);
-                    } else {
-                        luma [xd] = (4*buf_src[2*x + 0]) + ((buf_src[32 + (x>>1)]>>4)&3);
                     }
                 }
             }
