@@ -54,6 +54,9 @@ fate-wmv8-x8intra: CMD = framecrc -flags +bitexact -idct 19 -i $(TARGET_SAMPLES)
 FATE_MICROSOFT-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV8_DRM)
 fate-wmv8_drm: $(FATE_WMV8_DRM)
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, WMV2) += fate-wmv8-intrax8
+fate-wmv8-intrax8: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/wmv8/wmv8_x8intra.wmv -an
+
 FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa00040
 fate-vc1_sa00040: CMD = framecrc -i $(TARGET_SAMPLES)/vc1/SA00040.vc1
 
