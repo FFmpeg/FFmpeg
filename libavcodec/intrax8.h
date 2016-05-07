@@ -105,12 +105,14 @@ void ff_intrax8_common_end(IntraX8Context *w);
  * @param w pointer to IntraX8Context
  * @param pict the output Picture containing an AVFrame
  * @param gb open bitstream reader
+ * @param mb_x pointer to the x coordinate of the current macroblock
+ * @param mb_y pointer to the y coordinate of the current macroblock
  * @param dquant doubled quantizer, it would be odd in case of VC-1 halfpq==1.
  * @param quant_offset offset away from zero
  * @param loopfilter enable filter after decoding a block
  */
 int ff_intrax8_decode_picture(IntraX8Context *w, Picture *pict,
-                              GetBitContext *gb,
+                              GetBitContext *gb, int *mb_x, int *mb_y,
                               int quant, int halfpq, int loopfilter);
 
 #endif /* AVCODEC_INTRAX8_H */

@@ -380,9 +380,7 @@ static int x8_setup_spatial_predictor(IntraX8Context *const w, const int chroma)
 static void x8_update_predictions(IntraX8Context *const w, const int orient,
                                   const int est_run)
 {
-    MpegEncContext *const s = w->s;
-
-    w->prediction_table[s->mb_x * 2 + (s->mb_y & 1)] = (est_run << 2) + 1 * (orient == 4) + 2 * (orient == 8);
+    w->prediction_table[w->mb_x * 2 + (w->mb_y & 1)] = (est_run << 2) + 1 * (orient == 4) + 2 * (orient == 8);
 /*
  * y = 2n + 0 -> // 0 2 4
  * y = 2n + 1 -> // 1 3 5
@@ -391,11 +389,9 @@ static void x8_update_predictions(IntraX8Context *const w, const int orient,
 
 static void x8_get_prediction_chroma(IntraX8Context *const w)
 {
-    MpegEncContext *const s = w->s;
-
-    w->edges  = 1 * (!(s->mb_x >> 1));
-    w->edges |= 2 * (!(s->mb_y >> 1));
-    w->edges |= 4 * (s->mb_x >= (2 * w->mb_width - 1)); // mb_x for chroma would always be odd
+    w->edges  = 1 * (!(w->mb_x >> 1));
+    w->edges |= 2 * (!(w->mb_y >> 1));
+    w->edges |= 4 * (w->mb_x >= (2 * w->mb_width - 1)); // mb_x for chroma would always be odd
 
     w->raw_orient = 0;
     // lut_co[8] = {inv,4,8,8, inv,4,8,8} <- => {1,1,0,0;1,1,0,0} => 0xCC
@@ -404,29 +400,28 @@ static void x8_get_prediction_chroma(IntraX8Context *const w)
         return;
     }
     // block[x - 1][y | 1 - 1)]
-    w->chroma_orient = (w->prediction_table[2 * s->mb_x - 2] & 0x03) << 2;
+    w->chroma_orient = (w->prediction_table[2 * w->mb_x - 2] & 0x03) << 2;
 }
 
 static void x8_get_prediction(IntraX8Context *const w)
 {
-    MpegEncContext *const s = w->s;
     int a, b, c, i;
 
-    w->edges  = 1 * (!s->mb_x);
-    w->edges |= 2 * (!s->mb_y);
-    w->edges |= 4 * (s->mb_x >= (2 * w->mb_width - 1));
+    w->edges  = 1 * (!w->mb_x);
+    w->edges |= 2 * (!w->mb_y);
+    w->edges |= 4 * (w->mb_x >= (2 * w->mb_width - 1));
 
     switch (w->edges & 3) {
     case 0:
         break;
     case 1:
         // take the one from the above block[0][y - 1]
-        w->est_run = w->prediction_table[!(s->mb_y & 1)] >> 2;
+        w->est_run = w->prediction_table[!(w->mb_y & 1)] >> 2;
         w->orient  = 1;
         return;
     case 2:
         // take the one from the previous block[x - 1][0]
-        w->est_run = w->prediction_table[2 * s->mb_x - 2] >> 2;
+        w->est_run = w->prediction_table[2 * w->mb_x - 2] >> 2;
         w->orient  = 2;
         return;
     case 3:
@@ -435,15 +430,15 @@ static void x8_get_prediction(IntraX8Context *const w)
         return;
     }
     // no edge cases
-    b = w->prediction_table[2 * s->mb_x     + !(s->mb_y & 1)]; // block[x    ][y - 1]
-    a = w->prediction_table[2 * s->mb_x - 2 +  (s->mb_y & 1)]; // block[x - 1][y    ]
-    c = w->prediction_table[2 * s->mb_x - 2 + !(s->mb_y & 1)]; // block[x - 1][y - 1]
+    b = w->prediction_table[2 * w->mb_x     + !(w->mb_y & 1)]; // block[x    ][y - 1]
+    a = w->prediction_table[2 * w->mb_x - 2 +  (w->mb_y & 1)]; // block[x - 1][y    ]
+    c = w->prediction_table[2 * w->mb_x - 2 + !(w->mb_y & 1)]; // block[x - 1][y - 1]
 
     w->est_run = FFMIN(b, a);
     /* This condition has nothing to do with w->edges, even if it looks
      * similar it would trigger if e.g. x = 3; y = 2;
      * I guess somebody wrote something wrong and it became standard. */
-    if ((s->mb_x & s->mb_y) != 0)
+    if ((w->mb_x & w->mb_y) != 0)
         w->est_run = FFMIN(c, w->est_run);
     w->est_run >>= 2;
 
@@ -716,7 +711,7 @@ block_placed:
 }
 
 // FIXME maybe merge with ff_*
-static void x8_init_block_index(IntraX8Context *w, AVFrame *frame, int mb_y)
+static void x8_init_block_index(IntraX8Context *w, AVFrame *frame)
 {
     // not parent codec linesize as this would be wrong for field pics
     // not that IntraX8 has interlacing support ;)
@@ -727,10 +722,10 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame, int mb_y)
     w->dest[1] = frame->data[1];
     w->dest[2] = frame->data[2];
 
-    w->dest[0] +=  mb_y         * linesize   << 3;
+    w->dest[0] +=  w->mb_y         * linesize   << 3;
     // chroma blocks are on add rows
-    w->dest[1] += (mb_y & (~1)) * uvlinesize << 2;
-    w->dest[2] += (mb_y & (~1)) * uvlinesize << 2;
+    w->dest[1] += (w->mb_y & (~1)) * uvlinesize << 2;
+    w->dest[2] += (w->mb_y & (~1)) * uvlinesize << 2;
 }
 
 av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
@@ -744,8 +739,6 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
 
     w->avctx = avctx;
     w->idsp = *idsp;
-    s->mb_x = 0;
-    s->mb_y = 0;
     w->mb_width  = mb_width;
     w->mb_height = mb_height;
     w->s = s;
@@ -779,7 +772,7 @@ av_cold void ff_intrax8_common_end(IntraX8Context *w)
 }
 
 int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
-                              GetBitContext *gb,
+                              GetBitContext *gb, int *mb_x, int *mb_y,
                               int dquant, int quant_offset, int loopfilter)
 {
     MpegEncContext *const s = w->s;
@@ -793,6 +786,9 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
     w->loopfilter = loopfilter;
     w->use_quant_matrix = get_bits1(w->gb);
 
+    w->mb_x = *mb_x;
+    w->mb_y = *mb_y;
+
     w->divide_quant_dc_luma = ((1 << 16) + (w->quant >> 1)) / w->quant;
     if (w->quant < 5) {
         w->quant_dc_chroma        = w->quant;
@@ -803,17 +799,17 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
     }
     x8_reset_vlc_tables(w);
 
-    for (s->mb_y = 0; s->mb_y < w->mb_height * 2; s->mb_y++) {
-        x8_init_block_index(w, w->frame, s->mb_y);
-        mb_xy = (s->mb_y >> 1) * (w->mb_width + 1);
-        for (s->mb_x = 0; s->mb_x < w->mb_width * 2; s->mb_x++) {
+    for (w->mb_y = 0; w->mb_y < w->mb_height * 2; w->mb_y++) {
+        x8_init_block_index(w, w->frame);
+        mb_xy = (w->mb_y >> 1) * (w->mb_width + 1);
+        for (w->mb_x = 0; w->mb_x < w->mb_width * 2; w->mb_x++) {
             x8_get_prediction(w);
             if (x8_setup_spatial_predictor(w, 0))
                 goto error;
             if (x8_decode_intra_mb(w, 0))
                 goto error;
 
-            if (s->mb_x & s->mb_y & 1) {
+            if (w->mb_x & w->mb_y & 1) {
                 x8_get_prediction_chroma(w);
 
                 /* when setting up chroma, no vlc is read,
@@ -837,10 +833,13 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
             }
             w->dest[0] += 8;
         }
-        if (s->mb_y & 1)
-            ff_mpeg_draw_horiz_band(s, (s->mb_y - 1) * 8, 16);
+        if (w->mb_y & 1)
+            ff_mpeg_draw_horiz_band(s, (w->mb_y - 1) * 8, 16);
     }
 
 error:
+    *mb_x = w->mb_x;
+    *mb_y = w->mb_y;
+
     return 0;
 }
