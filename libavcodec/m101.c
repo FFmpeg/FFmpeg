@@ -109,7 +109,6 @@ AVCodec ff_m101_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_M101,
-    .priv_data_size = 0,
     .init           = m101_decode_init,
     .decode         = m101_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
