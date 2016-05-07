@@ -476,9 +476,8 @@ static void x8_get_prediction(IntraX8Context *const w)
 static void x8_ac_compensation(IntraX8Context *const w, const int direction,
                                const int dc_level)
 {
-    MpegEncContext *const s = w->s;
     int t;
-#define B(x,y)  s->block[0][w->idct_permutation[(x) + (y) * 8]]
+#define B(x,y)  w->block[0][w->idct_permutation[(x) + (y) * 8]]
 #define T(x)  ((x) * dc_level + 0x8000) >> 16;
     switch (direction) {
     case 0:
@@ -522,7 +521,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
         t        = T(1084); // g
         B(1, 1) += t;
 
-        s->block_last_index[0] = FFMAX(s->block_last_index[0], 7 * 8);
+        w->block_last_index[0] = FFMAX(w->block_last_index[0], 7 * 8);
         break;
     case 1:
         B(0, 1) -= T(6269);
@@ -530,7 +529,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
         B(0, 5) -= T(172);
         B(0, 7) -= T(73);
 
-        s->block_last_index[0] = FFMAX(s->block_last_index[0], 7 * 8);
+        w->block_last_index[0] = FFMAX(w->block_last_index[0], 7 * 8);
         break;
     case 2:
         B(1, 0) -= T(6269);
@@ -538,7 +537,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
         B(5, 0) -= T(172);
         B(7, 0) -= T(73);
 
-        s->block_last_index[0] = FFMAX(s->block_last_index[0], 7);
+        w->block_last_index[0] = FFMAX(w->block_last_index[0], 7);
         break;
     }
 #undef B
@@ -568,8 +567,6 @@ static const int16_t quant_table[64] = {
 
 static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
 {
-    MpegEncContext *const s = w->s;
-
     uint8_t *scantable;
     int final, run, level;
     int ac_mode, dc_mode, est_run, dc_level;
@@ -579,7 +576,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
     int sign;
 
     av_assert2(w->orient < 12);
-    w->bdsp.clear_block(s->block[0]);
+    w->bdsp.clear_block(w->block[0]);
 
     if (chroma)
         dc_mode = 2;
@@ -640,12 +637,12 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
             if (use_quant_matrix)
                 level = (level * quant_table[pos]) >> 8;
 
-            s->block[0][scantable[pos]] = level;
+            w->block[0][scantable[pos]] = level;
         } while (!final);
 
-        s->block_last_index[0] = pos;
+        w->block_last_index[0] = pos;
     } else { // DC only
-        s->block_last_index[0] = 0;
+        w->block_last_index[0] = 0;
         if (w->flat_dc && ((unsigned) (dc_level + 1)) < 3) { // [-1; 1]
             int32_t divide_quant = !chroma ? w->divide_quant_dc_luma
                                            : w->divide_quant_dc_chroma;
@@ -665,9 +662,9 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
         zeros_only = (dc_level == 0);
     }
     if (!chroma)
-        s->block[0][0] = dc_level * w->quant;
+        w->block[0][0] = dc_level * w->quant;
     else
-        s->block[0][0] = dc_level * w->quant_dc_chroma;
+        w->block[0][0] = dc_level * w->quant_dc_chroma;
 
     // there is !zero_only check in the original, but dc_level check is enough
     if ((unsigned int) (dc_level + 1) >= 3 && (w->edges & 3) != 3) {
@@ -677,7 +674,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
         direction = (0x6A017C >> (w->orient * 2)) & 3;
         if (direction != 3) {
             // modify block_last[]
-            x8_ac_compensation(w, direction, s->block[0][0]);
+            x8_ac_compensation(w, direction, w->block[0][0]);
         }
     }
 
@@ -692,7 +689,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
     if (!zeros_only)
         w->wdsp.idct_add(w->dest[chroma],
                          w->frame->linesize[!!chroma],
-                         s->block[0]);
+                         w->block[0]);
 
 block_placed:
     if (!chroma)
@@ -731,6 +728,8 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame)
 
 av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
                                    IntraX8Context *w, IDCTDSPContext *idsp,
+                                   int16_t (*block)[64],
+                                   int block_last_index[12],
                                    int mb_width, int mb_height,
                                    MpegEncContext *const s)
 {
@@ -742,6 +741,8 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
     w->idsp = *idsp;
     w->mb_width  = mb_width;
     w->mb_height = mb_height;
+    w->block = block;
+    w->block_last_index = block_last_index;
     w->s = s;
 
     // two rows, 2 blocks per cannon mb

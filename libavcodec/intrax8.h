@@ -40,6 +40,8 @@ typedef struct IntraX8Context {
     WMV2DSPContext wdsp;
     uint8_t idct_permutation[64];
     AVCodecContext *avctx;
+    int *block_last_index;  ///< last nonzero coefficient in block
+    int16_t (*block)[64];
 
     //set by the caller codec
     MpegEncContext * s;
@@ -80,6 +82,8 @@ typedef struct IntraX8Context {
  * @param avctx pointer to AVCodecContext
  * @param w pointer to IntraX8Context
  * @param idsp pointer to IDCTDSPContext
+ * @param block pointer to block array
+ * @param block_last_index pointer to index array
  * @param mb_width macroblock width
  * @param mb_height macroblock height
  * @param s pointer to MpegEncContext of the parent codec
@@ -87,6 +91,8 @@ typedef struct IntraX8Context {
  */
 int ff_intrax8_common_init(AVCodecContext *avctx,
                            IntraX8Context *w, IDCTDSPContext *idsp,
+                           int16_t (*block)[64],
+                           int block_last_index[12],
                            int mb_width, int mb_height,
                            MpegEncContext *const s);
 
