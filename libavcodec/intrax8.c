@@ -25,7 +25,6 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "idctdsp.h"
-#include "mpegvideo.h"
 #include "msmpeg4data.h"
 #include "intrax8huf.h"
 #include "intrax8.h"
@@ -730,8 +729,7 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
                                    IntraX8Context *w, IDCTDSPContext *idsp,
                                    int16_t (*block)[64],
                                    int block_last_index[12],
-                                   int mb_width, int mb_height,
-                                   MpegEncContext *const s)
+                                   int mb_width, int mb_height)
 {
     int ret = x8_vlc_init();
     if (ret < 0)
@@ -743,7 +741,6 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
     w->mb_height = mb_height;
     w->block = block;
     w->block_last_index = block_last_index;
-    w->s = s;
 
     // two rows, 2 blocks per cannon mb
     w->prediction_table = av_mallocz(w->mb_width * 2 * 2);
@@ -778,7 +775,6 @@ int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
                               int dquant, int quant_offset,
                               int loopfilter, int lowdelay)
 {
-    MpegEncContext *const s = w->s;
     int mb_xy;
 
     w->gb     = gb;
