@@ -45,7 +45,6 @@ static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int stride, ret;
     int x, y;
     int min_stride = 2 * avctx->width;
-    uint8_t *line;
     int bits = avctx->extradata[2*4];
     AVFrame *frame = data;
 
@@ -65,7 +64,6 @@ static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    line = frame->data[0];
     frame->interlaced_frame = ((avctx->extradata[3*4] & 3) != 3);
     if (frame->interlaced_frame)
         frame->top_field_first = avctx->extradata[3*4] & 1;
@@ -75,10 +73,8 @@ static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         if (frame->interlaced_frame)
             src_y = ((y&1)^frame->top_field_first) ? y/2 : (y/2 + avctx->height/2);
         if (bits == 8) {
-            for (x = 0; x < avctx->width; x++) {
-                line[y*frame->linesize[0] + 2*x + 0] = buf[src_y*stride + 2*x + 0];
-                line[y*frame->linesize[0] + 2*x + 1] = buf[src_y*stride + 2*x + 1];
-            }
+            uint8_t *line = frame->data[0] + y*frame->linesize[0];
+            memcpy(line, buf + src_y*stride, 2*avctx->width);
         } else {
             int block;
             uint16_t *luma = (uint16_t*)&frame->data[0][y*frame->linesize[0]];
