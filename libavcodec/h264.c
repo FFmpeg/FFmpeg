@@ -1233,7 +1233,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "Error splitting the input into NAL units.\n");
-        return ret;
+        /* don't consider NAL parsing failure a fatal error when parsing extradata, as the stream may work without it */
+        return parse_extradata ? buf_size : ret;
     }
 
     if (avctx->active_thread_type & FF_THREAD_FRAME)
