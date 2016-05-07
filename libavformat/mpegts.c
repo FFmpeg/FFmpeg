@@ -735,6 +735,7 @@ static const StreamType REGD_types[] = {
     { MKTAG('D', 'T', 'S', '1'), AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_DTS   },
     { MKTAG('D', 'T', 'S', '2'), AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_DTS   },
     { MKTAG('D', 'T', 'S', '3'), AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_DTS   },
+    { MKTAG('E', 'A', 'C', '3'), AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_EAC3  },
     { MKTAG('H', 'E', 'V', 'C'), AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_HEVC  },
     { MKTAG('K', 'L', 'V', 'A'), AVMEDIA_TYPE_DATA,  AV_CODEC_ID_SMPTE_KLV },
     { MKTAG('V', 'C', '-', '1'), AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_VC1   },
@@ -2482,7 +2483,7 @@ static int mpegts_probe(AVProbeData *p)
 #define CHECK_COUNT 10
 #define CHECK_BLOCK 100
 
-    if (check_count < CHECK_COUNT)
+    if (!check_count)
         return 0;
 
     for (i = 0; i<check_count; i+=CHECK_BLOCK) {
@@ -2500,10 +2501,15 @@ static int mpegts_probe(AVProbeData *p)
 
     ff_dlog(0, "TS score: %d %d\n", sumscore, maxscore);
 
-    if      (sumscore > 6) return AVPROBE_SCORE_MAX   + sumscore - CHECK_COUNT;
-    else if (maxscore > 6) return AVPROBE_SCORE_MAX/2 + sumscore - CHECK_COUNT;
-    else
+    if        (check_count >= CHECK_COUNT && sumscore > 6) {
+        return AVPROBE_SCORE_MAX   + sumscore - CHECK_COUNT;
+    } else if (check_count >= CHECK_COUNT && maxscore > 6) {
+        return AVPROBE_SCORE_MAX/2 + sumscore - CHECK_COUNT;
+    } else if (sumscore > 6) {
+        return 2;
+    } else {
         return 0;
+    }
 }
 
 /* return the 90kHz PCR and the extension for the 27MHz PCR. return

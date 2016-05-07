@@ -1395,7 +1395,7 @@ int av_set_options_string(void *ctx, const char *opts,
     return count;
 }
 
-#define WHITESPACES " \n\t"
+#define WHITESPACES " \n\t\r"
 
 static int is_key_char(char c)
 {

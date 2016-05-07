@@ -92,7 +92,7 @@ static void smc_decode_stream(SmcContext *s)
     unsigned int color_flags_b;
     unsigned int flag_mask;
 
-    unsigned char *pixels = s->frame->data[0];
+    unsigned char * const pixels = s->frame->data[0];
 
     int image_size = height * s->frame->linesize[0];
     int row_ptr = 0;

@@ -408,6 +408,7 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_jpeg.o \
                                             rtpenc_mpv.o     \
                                             rtpenc.o      \
+                                            rtpenc_vc2hq.o              \
                                             rtpenc_vp8.o  \
                                             rtpenc_xiph.o \
                                             avc.o hevc.o
@@ -493,6 +494,7 @@ OBJS-$(CONFIG_WEBP_MUXER)                += webpenc.o
 OBJS-$(CONFIG_WEBVTT_DEMUXER)            += webvttdec.o subtitles.o
 OBJS-$(CONFIG_WEBVTT_MUXER)              += webvttenc.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood_aud.o
+OBJS-$(CONFIG_WSD_DEMUXER)               += wsddec.o rawdec.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood_vqa.o
 OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv_common.o asf.o \
                                             avlanguage.o

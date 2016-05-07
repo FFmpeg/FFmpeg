@@ -948,6 +948,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
+        .id        = AV_CODEC_ID_M101,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "m101",
+        .long_name = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_MVC1,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "mvc1",

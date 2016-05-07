@@ -22,6 +22,7 @@
 #define AVCODEC_DCADEC_H
 
 #include "libavutil/common.h"
+#include "libavutil/crc.h"
 #include "libavutil/float_dsp.h"
 
 #include "avcodec.h"
@@ -49,6 +50,8 @@ typedef struct DCAContext {
 
     DCADSPContext   dcadsp;
 
+    const AVCRC     *crctab;
+
     uint8_t         *buffer;    ///< Packet buffer
     unsigned int    buffer_size;
 
@@ -62,12 +65,24 @@ typedef struct DCAContext {
 
 int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask);
 
-int ff_dca_check_crc(GetBitContext *s, int p1, int p2);
-
 void ff_dca_downmix_to_stereo_fixed(DCADSPContext *dcadsp, int32_t **samples,
                                     int *coeff_l, int nsamples, int ch_mask);
 void ff_dca_downmix_to_stereo_float(AVFloatDSPContext *fdsp, float **samples,
                                     int *coeff_l, int nsamples, int ch_mask);
+
+static inline int ff_dca_check_crc(AVCodecContext *avctx, GetBitContext *s,
+                                   int p1, int p2)
+{
+    DCAContext *dca = avctx->priv_data;
+
+    if (!(avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL)))
+        return 0;
+    if (((p1 | p2) & 7) || p1 < 0 || p2 > s->size_in_bits || p2 - p1 < 16)
+        return -1;
+    if (av_crc(dca->crctab, 0xffff, s->buffer + p1 / 8, (p2 - p1) / 8))
+        return -1;
+    return 0;
+}
 
 static inline int ff_dca_seek_bits(GetBitContext *s, int p)
 {

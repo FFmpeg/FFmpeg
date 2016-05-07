@@ -37,9 +37,9 @@ typedef struct LLAudDSPContext {
                                             const int16_t *v3,
                                             int len, int mul);
 
-    int32_t (*scalarproduct_and_madd_int32)(int32_t *v1 /* align 16 */,
+    int32_t (*scalarproduct_and_madd_int32)(int16_t *v1 /* align 16 */,
                                             const int32_t *v2,
-                                            const int32_t *v3,
+                                            const int16_t *v3,
                                             int len, int mul);
 } LLAudDSPContext;
 

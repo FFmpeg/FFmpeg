@@ -884,7 +884,7 @@ void ff_er_frame_end(ERContext *s)
 
     if (   mb_x == s->mb_width
         && s->avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO
-        && (s->avctx->height&16)
+        && (FFALIGN(s->avctx->height, 16)&16)
         && s->error_count == 3 * s->mb_width * (s->avctx->skip_top + s->avctx->skip_bottom + 1)
     ) {
         av_log(s->avctx, AV_LOG_DEBUG, "ignoring last missing slice\n");

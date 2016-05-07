@@ -560,11 +560,11 @@ static int get_video_config(AVFormatContext *s)
     image_buffer      = CMSampleBufferGetImageBuffer(ctx->current_frame);
     image_buffer_size = CVImageBufferGetEncodedSize(image_buffer);
 
-    stream->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    stream->codec->width      = (int)image_buffer_size.width;
-    stream->codec->height     = (int)image_buffer_size.height;
-    stream->codec->pix_fmt    = ctx->pixel_format;
+    stream->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    stream->codecpar->width      = (int)image_buffer_size.width;
+    stream->codecpar->height     = (int)image_buffer_size.height;
+    stream->codecpar->format     = ctx->pixel_format;
 
     CFRelease(ctx->current_frame);
     ctx->current_frame = nil;
@@ -603,10 +603,10 @@ static int get_audio_config(AVFormatContext *s)
         return 1;
     }
 
-    stream->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-    stream->codec->sample_rate    = basic_desc->mSampleRate;
-    stream->codec->channels       = basic_desc->mChannelsPerFrame;
-    stream->codec->channel_layout = av_get_default_channel_layout(stream->codec->channels);
+    stream->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    stream->codecpar->sample_rate    = basic_desc->mSampleRate;
+    stream->codecpar->channels       = basic_desc->mChannelsPerFrame;
+    stream->codecpar->channel_layout = av_get_default_channel_layout(stream->codecpar->channels);
 
     ctx->audio_channels        = basic_desc->mChannelsPerFrame;
     ctx->audio_bits_per_sample = basic_desc->mBitsPerChannel;
@@ -620,22 +620,22 @@ static int get_audio_config(AVFormatContext *s)
         ctx->audio_float &&
         ctx->audio_bits_per_sample == 32 &&
         ctx->audio_packed) {
-        stream->codec->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_F32BE : AV_CODEC_ID_PCM_F32LE;
+        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_F32BE : AV_CODEC_ID_PCM_F32LE;
     } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
         ctx->audio_signed_integer &&
         ctx->audio_bits_per_sample == 16 &&
         ctx->audio_packed) {
-        stream->codec->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S16BE : AV_CODEC_ID_PCM_S16LE;
+        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S16BE : AV_CODEC_ID_PCM_S16LE;
     } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
         ctx->audio_signed_integer &&
         ctx->audio_bits_per_sample == 24 &&
         ctx->audio_packed) {
-        stream->codec->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
+        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
     } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
         ctx->audio_signed_integer &&
         ctx->audio_bits_per_sample == 32 &&
         ctx->audio_packed) {
-        stream->codec->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
+        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
     } else {
         av_log(s, AV_LOG_ERROR, "audio format is not supported\n");
         return 1;

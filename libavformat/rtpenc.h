@@ -91,6 +91,7 @@ void ff_rtp_send_latm(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size);
+void ff_rtp_send_vc2hq(AVFormatContext *s1, const uint8_t *buf, int size, int interlaced);
 void ff_rtp_send_vp8(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buff, int size);
 

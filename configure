@@ -2079,6 +2079,7 @@ CONFIG_EXTRA="
     vp3dsp
     vp56dsp
     vp8dsp
+    vt_bt2020
     wma_freqs
     wmv2dsp
 "
@@ -2458,7 +2459,7 @@ sonic_ls_encoder_select="golomb rangecoder"
 sp5x_decoder_select="mjpeg_decoder"
 svq1_decoder_select="hpeldsp"
 svq1_encoder_select="aandcttables hpeldsp me_cmp mpegvideoenc"
-svq3_decoder_select="h264_decoder hpeldsp tpeldsp"
+svq3_decoder_select="golomb h264dsp h264pred hpeldsp tpeldsp videodsp"
 svq3_decoder_suggest="zlib"
 tak_decoder_select="audiodsp"
 tdsc_decoder_select="zlib mjpeg_decoder"
@@ -2742,7 +2743,8 @@ nvenc_hevc_encoder_deps="nvenc"
 videotoolbox_deps="VideoToolbox_VideoToolbox_h"
 videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework CoreVideo"
 videotoolbox_encoder_deps="videotoolbox VTCompressionSessionPrepareToEncodeFrames"
-videotoolbox_encoder_suggest="vda_framework"
+videotoolbox_encoder_suggest="vda_framework vt_bt2020"
+vt_bt2020_deps="kCVImageBufferColorPrimaries_ITU_R_2020"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
@@ -2945,6 +2947,7 @@ find_rect_filter_deps="avcodec avformat gpl"
 firequalizer_filter_deps="avcodec"
 firequalizer_filter_select="rdft"
 flite_filter_deps="libflite"
+framerate_filter_select="pixelutils"
 frei0r_filter_deps="frei0r dlopen"
 frei0r_src_filter_deps="frei0r dlopen"
 fspp_filter_deps="gpl"
@@ -5444,6 +5447,7 @@ check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h
 check_header VideoToolbox/VideoToolbox.h
 check_func_headers VideoToolbox/VTCompressionSession.h VTCompressionSessionPrepareToEncodeFrames -framework VideoToolbox
+enabled videotoolbox && check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferColorPrimaries_ITU_R_2020 -framework CoreVideo
 check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h
@@ -5604,7 +5608,9 @@ enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
-enabled libutvideo        && require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++
+enabled libutvideo        && { require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++ &&
+                               check_cpp_condition utvideo/utvideo.h "!defined(UTVIDEO_VERSION_MAJOR) || UTVIDEO_VERSION_MAJOR < 15 || UTVIDEO_VERSION_MAJOR == 15 && UTVIDEO_VERSION_MINOR < 4" ||
+                               die "ERROR: libutvideo version must be <= 15.3.0."; }
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
 enabled libvidstab        && require_pkg_config "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc

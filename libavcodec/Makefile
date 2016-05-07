@@ -230,7 +230,7 @@ OBJS-$(CONFIG_COMFORTNOISE_ENCODER)    += cngenc.o
 OBJS-$(CONFIG_CPIA_DECODER)            += cpia.o
 OBJS-$(CONFIG_CSCD_DECODER)            += cscd.o
 OBJS-$(CONFIG_CYUV_DECODER)            += cyuv.o
-OBJS-$(CONFIG_DCA_DECODER)             += dcadec.o dca.o dcadata.o        \
+OBJS-$(CONFIG_DCA_DECODER)             += dcadec.o dca.o dcadata.o dcahuff.o \
                                           dca_core.o dca_exss.o dca_xll.o \
                                           dcadsp.o dcadct.o synth_filter.o
 OBJS-$(CONFIG_DCA_ENCODER)             += dcaenc.o dca.o dcadata.o
@@ -351,6 +351,7 @@ OBJS-$(CONFIG_KMVC_DECODER)            += kmvc.o
 OBJS-$(CONFIG_LAGARITH_DECODER)        += lagarith.o lagarithrac.o
 OBJS-$(CONFIG_LJPEG_ENCODER)           += ljpegenc.o mjpegenc_common.o
 OBJS-$(CONFIG_LOCO_DECODER)            += loco.o
+OBJS-$(CONFIG_M101_DECODER)            += m101.o
 OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
 OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
 OBJS-$(CONFIG_MDEC_DECODER)            += mdec.o mpeg12.o mpeg12data.o
@@ -509,7 +510,7 @@ OBJS-$(CONFIG_SUNRAST_ENCODER)         += sunrastenc.o
 OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o svq13.o h263data.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o  h263data.o  \
                                           h263.o ituh263enc.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o svq13.o mpegutils.o h264_parse.o
+OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o svq13.o mpegutils.o h264_parse.o h264data.o
 OBJS-$(CONFIG_TEXT_DECODER)            += textdec.o ass.o
 OBJS-$(CONFIG_TEXT_ENCODER)            += srtenc.o ass_split.o
 OBJS-$(CONFIG_TAK_DECODER)             += takdec.o tak.o takdsp.o
