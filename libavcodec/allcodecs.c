@@ -200,6 +200,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (HAP,               hap);
     REGISTER_DECODER(HEVC,              hevc);
     REGISTER_DECODER(HEVC_QSV,          hevc_qsv);
+    REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);
     REGISTER_DECODER(HNM4_VIDEO,        hnm4_video);
     REGISTER_DECODER(HQ_HQA,            hq_hqa);
     REGISTER_DECODER(HQX,               hqx);
