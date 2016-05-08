@@ -702,11 +702,7 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     }
 
     /* Run any post processing here if needed. */
-    if (avctx->pix_fmt == AV_PIX_FMT_BGRA ||
-        avctx->pix_fmt == AV_PIX_FMT_RGBA ||
-        avctx->pix_fmt == AV_PIX_FMT_RGB0 ||
-        avctx->pix_fmt == AV_PIX_FMT_BGR0 ||
-        avctx->pix_fmt == AV_PIX_FMT_YA8)
+    if (ctx->postproc != DDS_NONE)
         run_postproc(avctx, frame);
 
     /* Frame is ready to be output. */
