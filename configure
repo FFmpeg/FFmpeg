@@ -2075,6 +2075,7 @@ CONFIG_EXTRA="
     texturedsp
     texturedspenc
     tpeldsp
+    vaapi_encode
     vc1dsp
     videodsp
     vp3dsp
@@ -2275,6 +2276,7 @@ mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp mpeg_er videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
+vaapi_encode_deps="vaapi"
 vc1dsp_select="h264chroma qpeldsp startcode"
 rdft_select="fft"
 
