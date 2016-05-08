@@ -30,6 +30,7 @@ version <next>:
 - libnpp/CUDA-accelerated format conversion and scaling
 - Duck TrueMotion 2.0 Real Time decoder
 - Wideband Single-bit Data (WSD) demuxer
+- VAAPI-accelerate H.264 encoding
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support
