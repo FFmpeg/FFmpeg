@@ -769,7 +769,7 @@ print_enabled(){
     suf=$1
     shift
     for v; do
-        enabled $v && printf "%s\n" ${v%$suf};
+        enabled $v && printf "%s\n" ${v%$suf}
     done
 }
 
@@ -4190,26 +4190,26 @@ elif enabled arm; then
     }
 
     probe_arm_arch() {
-        if   check_arm_arch 4;        then echo armv4;
-        elif check_arm_arch 4T;       then echo armv4t;
-        elif check_arm_arch 5;        then echo armv5;
-        elif check_arm_arch 5E;       then echo armv5e;
-        elif check_arm_arch 5T;       then echo armv5t;
-        elif check_arm_arch 5TE;      then echo armv5te;
-        elif check_arm_arch 5TEJ;     then echo armv5te;
-        elif check_arm_arch 6;        then echo armv6;
-        elif check_arm_arch 6J;       then echo armv6j;
-        elif check_arm_arch 6K;       then echo armv6k;
-        elif check_arm_arch 6Z;       then echo armv6z;
-        elif check_arm_arch 6ZK;      then echo armv6zk;
-        elif check_arm_arch 6T2;      then echo armv6t2;
-        elif check_arm_arch 7;        then echo armv7;
-        elif check_arm_arch 7A  7_A;  then echo armv7-a;
-        elif check_arm_arch 7S;       then echo armv7-a;
-        elif check_arm_arch 7R  7_R;  then echo armv7-r;
-        elif check_arm_arch 7M  7_M;  then echo armv7-m;
-        elif check_arm_arch 7EM 7E_M; then echo armv7-m;
-        elif check_arm_arch 8A  8_A;  then echo armv8-a;
+        if   check_arm_arch 4;        then echo armv4
+        elif check_arm_arch 4T;       then echo armv4t
+        elif check_arm_arch 5;        then echo armv5
+        elif check_arm_arch 5E;       then echo armv5e
+        elif check_arm_arch 5T;       then echo armv5t
+        elif check_arm_arch 5TE;      then echo armv5te
+        elif check_arm_arch 5TEJ;     then echo armv5te
+        elif check_arm_arch 6;        then echo armv6
+        elif check_arm_arch 6J;       then echo armv6j
+        elif check_arm_arch 6K;       then echo armv6k
+        elif check_arm_arch 6Z;       then echo armv6z
+        elif check_arm_arch 6ZK;      then echo armv6zk
+        elif check_arm_arch 6T2;      then echo armv6t2
+        elif check_arm_arch 7;        then echo armv7
+        elif check_arm_arch 7A  7_A;  then echo armv7-a
+        elif check_arm_arch 7S;       then echo armv7-a
+        elif check_arm_arch 7R  7_R;  then echo armv7-r
+        elif check_arm_arch 7M  7_M;  then echo armv7-m
+        elif check_arm_arch 7EM 7E_M; then echo armv7-m
+        elif check_arm_arch 8A  8_A;  then echo armv8-a
         fi
     }
 
@@ -4619,7 +4619,7 @@ case $target_os in
             add_cppflags '-I\$(SRC_PATH)/compat/dispatch_semaphore'
         ;;
     msys*)
-        die "Native MSYS builds are discouraged, please use the MINGW environment.";
+        die "Native MSYS builds are discouraged, please use the MINGW environment."
         ;;
     mingw32*|mingw64*)
         if test $target_os = "mingw32ce"; then
@@ -4954,7 +4954,7 @@ Specify --enable-static to build the static libraries or --enable-shared to
 build the shared libraries as well. To only build the shared libraries specify
 --disable-static in addition to --enable-shared.
 EOF
-    exit 1;
+    exit 1
 fi
 
 die_license_disabled() {
