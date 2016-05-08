@@ -362,6 +362,10 @@ static int parse_pixel_format(AVCodecContext *avctx)
         }
         else if (bpp == 16 && r == 0xffff && g == 0 && b == 0 && a == 0)
             avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
+        else if (bpp == 16 && r == 0x7c00 && g == 0x3e0 && b == 0x1f && a == 0)
+            avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
+        else if (bpp == 16 && r == 0x7c00 && g == 0x3e0 && b == 0x1f && a == 0x8000)
+            avctx->pix_fmt = AV_PIX_FMT_RGB555LE; // alpha ignored
         else if (bpp == 16 && r == 0xf800 && g == 0x7e0 && b == 0x1f && a == 0)
             avctx->pix_fmt = AV_PIX_FMT_RGB565LE;
         /* 24 bpp */
