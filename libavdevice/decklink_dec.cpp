@@ -249,9 +249,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
     // Handle Video Frame
     if (videoFrame) {
         AVPacket pkt;
-        AVCodecContext *c;
         av_init_packet(&pkt);
-        c = ctx->video_st->codec;
         if (ctx->frameCount % 25 == 0) {
             unsigned long long qsize = avpacket_queue_size(&ctx->queue);
             av_log(avctx, AV_LOG_DEBUG,
@@ -354,7 +352,6 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         }
 #endif
 
-        c->frame_number++;
         if (avpacket_queue_put(&ctx->queue, &pkt) < 0) {
             ++ctx->dropped;
         }
@@ -362,14 +359,12 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
     // Handle Audio Frame
     if (audioFrame) {
-        AVCodecContext *c;
         AVPacket pkt;
         BMDTimeValue audio_pts;
         av_init_packet(&pkt);
 
-        c = ctx->audio_st->codec;
         //hack among hacks
-        pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codec->channels * (16 / 8);
+        pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codecpar->channels * (16 / 8);
         audioFrame->GetBytes(&audioFrameBytes);
         audioFrame->GetPacketTime(&audio_pts, ctx->audio_st->time_base.den);
         pkt.pts = audio_pts / ctx->audio_st->time_base.num;
@@ -386,7 +381,6 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         pkt.stream_index = ctx->audio_st->index;
         pkt.data         = (uint8_t *)audioFrameBytes;
 
-        c->frame_number++;
         if (avpacket_queue_put(&ctx->queue, &pkt) < 0) {
             ++ctx->dropped;
         }
@@ -551,10 +545,10 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
         goto error;
     }
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = AV_CODEC_ID_PCM_S16LE;
-    st->codec->sample_rate = bmdAudioSampleRate48kHz;
-    st->codec->channels    = cctx->audio_channels;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id    = AV_CODEC_ID_PCM_S16LE;
+    st->codecpar->sample_rate = bmdAudioSampleRate48kHz;
+    st->codecpar->channels    = cctx->audio_channels;
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
     ctx->audio_st=st;
 
@@ -563,21 +557,21 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
         goto error;
     }
-    st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    st->codec->width       = ctx->bmd_width;
-    st->codec->height      = ctx->bmd_height;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->width       = ctx->bmd_width;
+    st->codecpar->height      = ctx->bmd_height;
 
-    st->codec->time_base.den      = ctx->bmd_tb_den;
-    st->codec->time_base.num      = ctx->bmd_tb_num;
-    st->codec->bit_rate    = av_image_get_buffer_size(st->codec->pix_fmt, ctx->bmd_width, ctx->bmd_height, 1) * 1/av_q2d(st->codec->time_base) * 8;
+    st->time_base.den      = ctx->bmd_tb_den;
+    st->time_base.num      = ctx->bmd_tb_num;
+    st->codecpar->bit_rate    = av_image_get_buffer_size((AVPixelFormat)st->codecpar->format, ctx->bmd_width, ctx->bmd_height, 1) * 1/av_q2d(st->time_base) * 8;
 
     if (cctx->v210) {
-        st->codec->codec_id    = AV_CODEC_ID_V210;
-        st->codec->codec_tag   = MKTAG('V', '2', '1', '0');
+        st->codecpar->codec_id    = AV_CODEC_ID_V210;
+        st->codecpar->codec_tag   = MKTAG('V', '2', '1', '0');
     } else {
-        st->codec->codec_id    = AV_CODEC_ID_RAWVIDEO;
-        st->codec->pix_fmt     = AV_PIX_FMT_UYVY422;
-        st->codec->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
+        st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
+        st->codecpar->format      = AV_PIX_FMT_UYVY422;
+        st->codecpar->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
     }
 
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
@@ -590,16 +584,16 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
             goto error;
         }
-        st->codec->codec_type  = AVMEDIA_TYPE_SUBTITLE;
-        st->codec->time_base.den      = ctx->bmd_tb_den;
-        st->codec->time_base.num      = ctx->bmd_tb_num;
-        st->codec->codec_id    = AV_CODEC_ID_DVB_TELETEXT;
+        st->codecpar->codec_type  = AVMEDIA_TYPE_SUBTITLE;
+        st->time_base.den         = ctx->bmd_tb_den;
+        st->time_base.num         = ctx->bmd_tb_num;
+        st->codecpar->codec_id    = AV_CODEC_ID_DVB_TELETEXT;
         avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
         ctx->teletext_st = st;
     }
 
-    av_log(avctx, AV_LOG_VERBOSE, "Using %d input audio channels\n", ctx->audio_st->codec->channels);
-    result = ctx->dli->EnableAudioInput(bmdAudioSampleRate48kHz, bmdAudioSampleType16bitInteger, ctx->audio_st->codec->channels);
+    av_log(avctx, AV_LOG_VERBOSE, "Using %d input audio channels\n", ctx->audio_st->codecpar->channels);
+    result = ctx->dli->EnableAudioInput(bmdAudioSampleRate48kHz, bmdAudioSampleType16bitInteger, ctx->audio_st->codecpar->channels);
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable audio input\n");
