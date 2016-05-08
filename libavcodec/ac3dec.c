@@ -1445,8 +1445,9 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
             /* skip frame if CRC is ok. otherwise use error concealment. */
             /* TODO: add support for substreams and dependent frames */
             if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT || s->substreamid) {
-                av_log(avctx, AV_LOG_WARNING, "unsupported frame type : "
-                       "skipping frame\n");
+                av_log(avctx, AV_LOG_DEBUG,
+                       "unsupported frame type %d: skipping frame\n",
+                       s->frame_type);
                 *got_frame_ptr = 0;
                 return buf_size;
             } else {
