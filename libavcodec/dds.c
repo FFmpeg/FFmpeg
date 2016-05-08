@@ -353,6 +353,8 @@ static int parse_pixel_format(AVCodecContext *avctx)
         /*  8 bpp */
         if (bpp == 8 && r == 0xff && g == 0 && b == 0 && a == 0)
             avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+        else if (bpp == 8 && r == 0 && g == 0 && b == 0 && a == 0xff)
+            avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         /* 16 bpp */
         else if (bpp == 16 && r == 0xff && g == 0 && b == 0 && a == 0xff00)
             avctx->pix_fmt = AV_PIX_FMT_YA8;
