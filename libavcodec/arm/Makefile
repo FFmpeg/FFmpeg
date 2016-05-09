@@ -7,7 +7,10 @@ OBJS-$(CONFIG_AUDIODSP)                += arm/audiodsp_init_arm.o
 OBJS-$(CONFIG_BLOCKDSP)                += arm/blockdsp_init_arm.o
 OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o            \
                                           arm/fft_fixed_init_arm.o
+OBJS-$(CONFIG_FLACDSP)                 += arm/flacdsp_init_arm.o        \
+                                          arm/flacdsp_arm.o
 OBJS-$(CONFIG_FMTCONVERT)              += arm/fmtconvert_init_arm.o
+OBJS-$(CONFIG_G722DSP)                 += arm/g722dsp_init_arm.o
 OBJS-$(CONFIG_H264CHROMA)              += arm/h264chroma_init_arm.o
 OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o
 OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
@@ -18,9 +21,6 @@ OBJS-$(CONFIG_IDCTDSP)                 += arm/idctdsp_init_arm.o        \
                                           arm/idctdsp_arm.o             \
                                           arm/jrevdct_arm.o             \
                                           arm/simple_idct_arm.o
-OBJS-$(CONFIG_FLACDSP)                 += arm/flacdsp_init_arm.o        \
-                                          arm/flacdsp_arm.o
-OBJS-$(CONFIG_G722DSP)                 += arm/g722dsp_init_arm.o
 OBJS-$(CONFIG_LLAUDDSP)                += arm/lossless_audiodsp_init_arm.o
 OBJS-$(CONFIG_ME_CMP)                  += arm/me_cmp_init_arm.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
@@ -71,13 +71,13 @@ ARMV6-OBJS-$(CONFIG_ME_CMP)            += arm/me_cmp_armv6.o
 ARMV6-OBJS-$(CONFIG_MPEGAUDIODSP)      += arm/mpegaudiodsp_fixed_armv6.o
 ARMV6-OBJS-$(CONFIG_MPEGVIDEOENC)      += arm/mpegvideoencdsp_armv6.o
 ARMV6-OBJS-$(CONFIG_PIXBLOCKDSP)       += arm/pixblockdsp_armv6.o
+ARMV6-OBJS-$(CONFIG_STARTCODE)         += arm/startcode_armv6.o
 ARMV6-OBJS-$(CONFIG_VP8DSP)            += arm/vp8_armv6.o               \
                                           arm/vp8dsp_init_armv6.o       \
                                           arm/vp8dsp_armv6.o
 
 # decoders/encoders
 ARMV6-OBJS-$(CONFIG_MLP_DECODER)       += arm/mlpdsp_armv6.o
-ARMV6-OBJS-$(CONFIG_STARTCODE)         += arm/startcode_armv6.o
 
 
 # VFP optimizations

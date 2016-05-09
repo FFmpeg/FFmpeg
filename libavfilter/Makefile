@@ -24,6 +24,9 @@ OBJS = allfilters.o                                                     \
        transform.o                                                      \
        video.o                                                          \
 
+OBJS-$(HAVE_THREADS)                         += pthread.o
+
+# audio filters
 OBJS-$(CONFIG_ABENCH_FILTER)                 += f_bench.o
 OBJS-$(CONFIG_ACOMPRESSOR_FILTER)            += af_sidechaincompress.o
 OBJS-$(CONFIG_ACROSSFADE_FILTER)             += af_afade.o
@@ -107,11 +110,11 @@ OBJS-$(CONFIG_HDCD_FILTER)                   += af_hdcd.o
 
 OBJS-$(CONFIG_AEVALSRC_FILTER)               += aeval.o
 OBJS-$(CONFIG_ANOISESRC_FILTER)              += asrc_anoisesrc.o
-OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 OBJS-$(CONFIG_FLITE_FILTER)                  += asrc_flite.o
 OBJS-$(CONFIG_SINE_FILTER)                   += asrc_sine.o
 
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
+OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 
 OBJS-$(CONFIG_ASS_FILTER)                    += vf_subtitles.o
 OBJS-$(CONFIG_ALPHAEXTRACT_FILTER)           += vf_extractplanes.o
@@ -120,6 +123,8 @@ OBJS-$(CONFIG_ATADENOISE_FILTER)             += vf_atadenoise.o
 OBJS-$(CONFIG_BBOX_FILTER)                   += bbox.o vf_bbox.o
 OBJS-$(CONFIG_BENCH_FILTER)                  += f_bench.o
 OBJS-$(CONFIG_BLACKDETECT_FILTER)            += vf_blackdetect.o
+
+# video filters
 OBJS-$(CONFIG_BLACKFRAME_FILTER)             += vf_blackframe.o
 OBJS-$(CONFIG_BLEND_FILTER)                  += vf_blend.o dualinput.o framesync.o
 OBJS-$(CONFIG_BOXBLUR_FILTER)                += vf_boxblur.o
@@ -183,8 +188,8 @@ OBJS-$(CONFIG_HISTOGRAM_FILTER)              += vf_histogram.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += vf_hqdn3d.o
 OBJS-$(CONFIG_HQX_FILTER)                    += vf_hqx.o
 OBJS-$(CONFIG_HWDOWNLOAD_FILTER)             += vf_hwdownload.o
-OBJS-$(CONFIG_HWUPLOAD_FILTER)               += vf_hwupload.o
 OBJS-$(CONFIG_HWUPLOAD_CUDA_FILTER)          += vf_hwupload_cuda.o
+OBJS-$(CONFIG_HWUPLOAD_FILTER)               += vf_hwupload.o
 OBJS-$(CONFIG_HSTACK_FILTER)                 += vf_stack.o framesync.o
 OBJS-$(CONFIG_HUE_FILTER)                    += vf_hue.o
 OBJS-$(CONFIG_IDET_FILTER)                   += vf_idet.o
@@ -290,6 +295,7 @@ OBJS-$(CONFIG_ZSCALE_FILTER)                 += vf_zscale.o
 OBJS-$(CONFIG_ALLRGB_FILTER)                 += vsrc_testsrc.o
 OBJS-$(CONFIG_ALLYUV_FILTER)                 += vsrc_testsrc.o
 OBJS-$(CONFIG_CELLAUTO_FILTER)               += vsrc_cellauto.o
+OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_testsrc.o
 OBJS-$(CONFIG_COREIMAGESRC_FILTER)           += vf_coreimage.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
@@ -303,8 +309,6 @@ OBJS-$(CONFIG_SMPTEBARS_FILTER)              += vsrc_testsrc.o
 OBJS-$(CONFIG_SMPTEHDBARS_FILTER)            += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC2_FILTER)               += vsrc_testsrc.o
-
-OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
 # multimedia filters
 OBJS-$(CONFIG_ADRAWGRAPH_FILTER)             += f_drawgraph.o
@@ -331,7 +335,6 @@ SLIBOBJS-$(HAVE_GNU_WINDRES)                 += avfilterres.o
 SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl_internal.h deshake_opencl_kernel.h unsharp_opencl_kernel.h
 
-OBJS-$(HAVE_THREADS)                         += pthread.o
 OBJS-$(CONFIG_SHARED)                        += log2_tab.o
 
 TOOLS     = graph2dot
