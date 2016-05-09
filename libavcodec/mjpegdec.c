@@ -1327,30 +1327,31 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
 {
     int len = get_bits(&s->gb, 16);
     if (len >= 2 && 8 * len - 16 <= get_bits_left(&s->gb)) {
+        int i;
         char *cbuf = av_malloc(len - 1);
-        if (cbuf) {
-            int i;
-            for (i = 0; i < len - 2; i++)
-                cbuf[i] = get_bits(&s->gb, 8);
-            if (i > 0 && cbuf[i - 1] == '\n')
-                cbuf[i - 1] = 0;
-            else
-                cbuf[i] = 0;
+        if (!cbuf)
+            return AVERROR(ENOMEM);
 
-            if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-                av_log(s->avctx, AV_LOG_INFO, "mjpeg comment: '%s'\n", cbuf);
+        for (i = 0; i < len - 2; i++)
+            cbuf[i] = get_bits(&s->gb, 8);
+        if (i > 0 && cbuf[i - 1] == '\n')
+            cbuf[i - 1] = 0;
+        else
+            cbuf[i] = 0;
 
-            /* buggy avid, it puts EOI only at every 10th frame */
-            if (!strcmp(cbuf, "AVID")) {
-                s->buggy_avid = 1;
-            } else if (!strcmp(cbuf, "CS=ITU601"))
-                s->cs_itu601 = 1;
-            else if ((len > 20 && !strncmp(cbuf, "Intel(R) JPEG Library", 21)) ||
-                     (len > 19 && !strncmp(cbuf, "Metasoft MJPEG Codec", 20)))
-                s->flipped = 1;
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_INFO, "mjpeg comment: '%s'\n", cbuf);
 
-            av_free(cbuf);
-        }
+        /* buggy avid, it puts EOI only at every 10th frame */
+        if (!strcmp(cbuf, "AVID")) {
+            s->buggy_avid = 1;
+        } else if (!strcmp(cbuf, "CS=ITU601"))
+            s->cs_itu601 = 1;
+        else if ((len > 20 && !strncmp(cbuf, "Intel(R) JPEG Library", 21)) ||
+                 (len > 19 && !strncmp(cbuf, "Metasoft MJPEG Codec", 20)))
+            s->flipped = 1;
+
+        av_free(cbuf);
     }
 
     return 0;
@@ -1525,8 +1526,11 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         else if (start_code >= APP0 && start_code <= APP15)
             mjpeg_decode_app(s);
             /* Comment */
-        else if (start_code == COM)
-            mjpeg_decode_com(s);
+        else if (start_code == COM) {
+            ret = mjpeg_decode_com(s);
+            if (ret < 0)
+                return ret;
+        }
 
         if (!CONFIG_JPEGLS_DECODER &&
             (start_code == SOF48 || start_code == LSE)) {
