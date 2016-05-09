@@ -125,3 +125,11 @@ write_data len 1500, time 9666667, type sync atom moof
 write_data len 664, time nopts, type unknown atom -
 write_data len 148, time nopts, type trailer atom -
 03766894d839e5fcb1edb88498d812f7 5687 large_frag
+write_data len 1255, time nopts, type header atom ftyp
+write_data len 508, time -33333, type sync atom moof
+write_data len 372, time 800000, type boundary atom moof
+write_data len 328, time 1266667, type boundary atom moof
+write_data len 476, time 1566667, type sync atom moof
+write_data len 340, time 2233333, type boundary atom moof
+write_data len 262, time nopts, type trailer atom -
+a4280bdc23af2c4334ec2da3fa946d3a 3541 vfr-noduration-interleave
