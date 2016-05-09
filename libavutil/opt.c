@@ -136,6 +136,7 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
         *(double    *)dst = num * intnum / den;
         break;
     case AV_OPT_TYPE_RATIONAL:
+    case AV_OPT_TYPE_VIDEO_RATE:
         if ((int) num == num)
             *(AVRational *)dst = (AVRational) { num *intnum, den };
         else
