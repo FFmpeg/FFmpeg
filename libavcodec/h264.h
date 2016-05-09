@@ -439,6 +439,9 @@ typedef struct H264SliceContext {
     CABACContext cabac;
     uint8_t cabac_state[1024];
     int cabac_init_idc;
+
+    MMCO mmco[MAX_MMCO_COUNT];
+    int  nb_mmco;
 } H264SliceContext;
 
 /**
@@ -671,10 +674,10 @@ void ff_h264_remove_all_refs(H264Context *h);
  */
 int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count);
 
-int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
-                                   int first_slice);
+int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
+                                   GetBitContext *gb);
 
-int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice);
+int ff_generate_sliding_window_mmcos(const H264Context *h, H264SliceContext *sl);
 
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
 int ff_h264_decode_init(AVCodecContext *avctx);
