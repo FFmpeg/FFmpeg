@@ -442,6 +442,7 @@ typedef struct H264SliceContext {
 
     MMCO mmco[MAX_MMCO_COUNT];
     int  nb_mmco;
+    int explicit_ref_marking;
 } H264SliceContext;
 
 /**
@@ -579,6 +580,7 @@ typedef struct H264Context {
     MMCO mmco[MAX_MMCO_COUNT];
     int  nb_mmco;
     int mmco_reset;
+    int explicit_ref_marking;
 
     int long_ref_count;     ///< number of actual long term references
     int short_ref_count;    ///< number of actual short term references
@@ -672,12 +674,10 @@ void ff_h264_remove_all_refs(H264Context *h);
 /**
  * Execute the reference picture marking (memory management control operations).
  */
-int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count);
+int ff_h264_execute_ref_pic_marking(H264Context *h);
 
 int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
                                    GetBitContext *gb);
-
-int ff_generate_sliding_window_mmcos(const H264Context *h, H264SliceContext *sl);
 
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
 int ff_h264_decode_init(AVCodecContext *avctx);
