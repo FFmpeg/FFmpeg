@@ -226,6 +226,20 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static int config_input(AVFilterLink *inlink)
+{
+    DelogoContext *s = inlink->dst->priv;
+
+    /* Check whether the logo area fits in the frame */
+    if (s->x + (s->band - 1) < 0 || s->x + s->w - (s->band*2 - 2) > inlink->w ||
+        s->y + (s->band - 1) < 0 || s->y + s->h - (s->band*2 - 2) > inlink->h) {
+        av_log(s, AV_LOG_ERROR, "Logo area is outside of the frame.\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     DelogoContext *s = inlink->dst->priv;
@@ -284,6 +298,7 @@ static const AVFilterPad avfilter_vf_delogo_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
