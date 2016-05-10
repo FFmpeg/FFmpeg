@@ -117,6 +117,10 @@ static int opus_packet(AVFormatContext *avf, int idx)
 
     if (!os->psize)
         return AVERROR_INVALIDDATA;
+    if (os->granule > INT64_MAX - UINT32_MAX) {
+        av_log(avf, AV_LOG_ERROR, "Unsupported huge granule pos %"PRId64 "\n", os->granule);
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
         int seg, d;
