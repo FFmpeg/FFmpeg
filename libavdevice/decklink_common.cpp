@@ -37,6 +37,26 @@ extern "C" {
 
 #include "decklink_common.h"
 
+#define DECKLINK_VIDEO_CONNECTIONS_COUNT 6
+#define DECKLINK_AUDIO_CONNECTIONS_COUNT 5
+
+struct decklink_input_connection decklink_video_connections[] = {
+    {"SDI", bmdVideoConnectionSDI},
+    {"HDMI", bmdVideoConnectionHDMI},
+    {"Optical SDI", bmdVideoConnectionOpticalSDI},
+    {"Component", bmdVideoConnectionComponent},
+    {"Composite", bmdVideoConnectionComposite},
+    {"S-Video", bmdVideoConnectionSVideo}
+};
+
+struct decklink_input_connection decklink_audio_connections[] = {
+    {"Embedded (in video connection)", bmdAudioConnectionEmbedded},
+    {"AESEBU", bmdAudioConnectionAESEBU},
+    {"Analog", bmdAudioConnectionAnalog},
+    {"Analog XLR", bmdAudioConnectionAnalogXLR},
+    {"Analog RCA", bmdAudioConnectionAnalogRCA}
+};
+
 #ifdef _WIN32
 IDeckLinkIterator *CreateDeckLinkIteratorInstance(void)
 {
@@ -238,4 +258,122 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
     itermode->Release();
 
     return 0;
+}
+
+int ff_decklink_set_vinput(AVFormatContext *avctx, int connection)
+{
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
+    struct decklink_input_connection *conn;
+    IDeckLinkConfiguration *dlConfiguration;
+    HRESULT res;
+
+    if(connection > DECKLINK_VIDEO_CONNECTIONS_COUNT) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid video input connection\n");
+        return AVERROR(EIO);
+    }
+    
+    res = ctx->dl->QueryInterface(IID_IDeckLinkConfiguration, (void **)&dlConfiguration);
+    if(res != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not configure video input connection\n");
+        return AVERROR(EIO);
+    }
+    
+    conn = &decklink_video_connections[connection - 1];
+    dlConfiguration->SetInt(bmdDeckLinkConfigVideoInputConnection, conn->bitmask);
+    av_log(avctx, AV_LOG_INFO, "Video input connection: %s\n", conn->name);
+    
+    return 0;
+}
+
+int ff_decklink_set_ainput(AVFormatContext *avctx, int connection)
+{
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
+    struct decklink_input_connection *conn;
+    IDeckLinkConfiguration *dlConfiguration;
+    HRESULT res;
+
+    if(connection > DECKLINK_AUDIO_CONNECTIONS_COUNT) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid audio input connection\n");
+        return AVERROR(EIO);
+    }
+    
+    res = ctx->dl->QueryInterface(IID_IDeckLinkConfiguration, (void **)&dlConfiguration);
+    if(res != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not configure video input connection\n");
+        return AVERROR(EIO);
+    }
+    
+    conn = &decklink_audio_connections[connection - 1];
+    dlConfiguration->SetInt(bmdDeckLinkConfigAudioInputConnection, conn->bitmask);
+    av_log(avctx, AV_LOG_INFO, "Audio input connection: %s\n", conn->name);
+    
+    return 0;
+}
+
+int ff_decklink_list_vinputs(AVFormatContext *avctx)
+{
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
+    IDeckLinkAttributes *deckLinkAttributes = NULL;
+    int64_t ports;
+    HRESULT res;
+    int ret_code = 0;
+    int i;
+
+    res = ctx->dl->QueryInterface(IID_IDeckLinkAttributes, (void **)&deckLinkAttributes);
+    if(res != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get DeckLink attributes\n");
+        return AVERROR(EIO);
+    }
+
+    res = deckLinkAttributes->GetInt(BMDDeckLinkVideoInputConnections, &ports);
+    if(res != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get video input connections\n");
+        ret_code = AVERROR(EIO);
+    } else {
+        av_log(avctx, AV_LOG_INFO, "Supported video input connections for '%s':\n", avctx->filename);
+        for(i = 0; i < DECKLINK_VIDEO_CONNECTIONS_COUNT; i++) {
+            if (ports & decklink_video_connections[i].bitmask)
+                av_log(avctx, AV_LOG_INFO, "%d: %s\n", i+1, decklink_video_connections[i].name);
+        }
+    }
+
+    deckLinkAttributes->Release();
+    
+    return ret_code;
+}
+
+int ff_decklink_list_ainputs(AVFormatContext *avctx)
+{
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
+    IDeckLinkAttributes *deckLinkAttributes = NULL;
+    int64_t ports;
+    HRESULT res;
+    int ret_code = 0;
+    int i;
+
+    res = ctx->dl->QueryInterface(IID_IDeckLinkAttributes, (void **)&deckLinkAttributes);
+    if(res != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get DeckLink attributes\n");
+        return AVERROR(EIO);
+    }
+
+    res = deckLinkAttributes->GetInt(BMDDeckLinkAudioInputConnections, &ports);
+    if(res != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get audio input connections\n");
+        ret_code = AVERROR(EIO);
+    } else {
+        av_log(avctx, AV_LOG_INFO, "Supported audio input connections for '%s':\n", avctx->filename);
+        for(i = 0; i < DECKLINK_AUDIO_CONNECTIONS_COUNT; i++) {
+            if (ports & decklink_audio_connections[i].bitmask)
+                av_log(avctx, AV_LOG_INFO, "%d: %s\n", i+1, decklink_audio_connections[i].name);
+        }
+    }
+
+    deckLinkAttributes->Release();
+    
+    return ret_code;
 }

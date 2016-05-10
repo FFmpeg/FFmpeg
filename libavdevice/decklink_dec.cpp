@@ -449,12 +449,16 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     char fname[1024];
     char *tmp;
     int mode_num = 0;
+    int vinput_port = 0;
+    int ainput_port = 0;
 
     ctx = (struct decklink_ctx *) av_mallocz(sizeof(struct decklink_ctx));
     if (!ctx)
         return AVERROR(ENOMEM);
     ctx->list_devices = cctx->list_devices;
     ctx->list_formats = cctx->list_formats;
+    ctx->list_vinputs = cctx->list_vinputs;
+    ctx->list_ainputs = cctx->list_ainputs;
     ctx->teletext_lines = cctx->teletext_lines;
     ctx->preroll      = cctx->preroll;
     cctx->ctx = ctx;
@@ -489,12 +493,20 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         return AVERROR_EXIT;
     }
 
-    strcpy (fname, avctx->filename);
-    tmp=strchr (fname, '@');
-    if (tmp != NULL) {
-        mode_num = atoi (tmp+1);
-        *tmp = 0;
-    }
+    strcpy(fname, avctx->filename);
+    
+    strtok(fname, "@");
+    tmp = strtok(NULL, ":");
+    if (tmp != NULL)
+        mode_num = atoi(tmp);
+
+    tmp = strtok(NULL, ":");
+    if(tmp != NULL)
+        vinput_port = atoi(tmp);
+
+    tmp = strtok(NULL, ":");
+    if(tmp != NULL)
+        ainput_port = atoi(tmp);
 
     /* Open device. */
     while (iter->Next(&dl) == S_OK) {
@@ -530,6 +542,22 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         return AVERROR_EXIT;
     }
 
+    /* List supported video input connections. */
+    if (ctx->list_vinputs) {
+        ff_decklink_list_vinputs(avctx);
+        ctx->dli->Release();
+        ctx->dl->Release();
+        return AVERROR_EXIT;
+    }
+
+    /* List supported audio input connections. */
+    if (ctx->list_ainputs) {
+        ff_decklink_list_ainputs(avctx);
+        ctx->dli->Release();
+        ctx->dl->Release();
+        return AVERROR_EXIT;
+    }
+
     if (ctx->dli->GetDisplayModeIterator(&itermode) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not get Display Mode Iterator\n");
         ctx->dl->Release();
@@ -542,6 +570,12 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
             goto error;
         }
     }
+
+    if (vinput_port > 0 && ff_decklink_set_vinput(avctx, vinput_port) < 0)
+        goto error;
+
+    if (ainput_port > 0 && ff_decklink_set_ainput(avctx, ainput_port) < 0)
+        goto error;
 
     itermode->Release();
 
