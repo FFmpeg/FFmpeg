@@ -531,9 +531,9 @@ struct AVFilterLink {
     int64_t frame_count_in, frame_count_out;
 
     /**
-     * A pointer to a FFVideoFramePool struct.
+     * A pointer to a FFFramePool struct.
      */
-    void *video_frame_pool;
+    void *frame_pool;
 
     /**
      * True if a frame is currently wanted on the output of this filter.

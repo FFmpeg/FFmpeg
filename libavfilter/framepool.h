@@ -25,11 +25,11 @@
 #include "libavutil/frame.h"
 
 /**
- * Video frame pool. This structure is opaque and not meant to be accessed
- * directly. It is allocated with ff_video_frame_pool_init() and freed with
- * ff_video_frame_pool_uninit().
+ * Frame pool. This structure is opaque and not meant to be accessed
+ * directly. It is allocated with ff_frame_pool_init() and freed with
+ * ff_frame_pool_uninit().
  */
-typedef struct FFVideoFramePool FFVideoFramePool;
+typedef struct FFFramePool FFFramePool;
 
 /**
  * Allocate and initialize a video frame pool.
@@ -41,21 +41,21 @@ typedef struct FFVideoFramePool FFVideoFramePool;
  * @param height height of each frame in this pool
  * @param format format of each frame in this pool
  * @param align buffers alignement of each frame in this pool
- * @return newly created video frame pool on success, NULL on error.
+ * @return newly created frame pool on success, NULL on error.
  */
-FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
-                                           int width,
-                                           int height,
-                                           enum AVPixelFormat format,
-                                           int align);
+FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
+                                      int width,
+                                      int height,
+                                      enum AVPixelFormat format,
+                                      int align);
 
 /**
- * Deallocate the video frame pool. It is safe to call this function while
- * some of the allocated video frame are still in use.
+ * Deallocate the frame pool. It is safe to call this function while
+ * some of the allocated frame are still in use.
  *
- * @param pool pointer to the video frame pool to be freed. It will be set to NULL.
+ * @param pool pointer to the frame pool to be freed. It will be set to NULL.
  */
-void ff_video_frame_pool_uninit(FFVideoFramePool **pool);
+void ff_frame_pool_uninit(FFFramePool **pool);
 
 /**
  * Get the video frame pool configuration.
@@ -66,7 +66,7 @@ void ff_video_frame_pool_uninit(FFVideoFramePool **pool);
  * @param align buffers alignement of each frame in this pool
  * @return 0 on success, a negative AVERROR otherwise.
  */
-int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
+int ff_frame_pool_get_video_config(FFFramePool *pool,
                                    int *width,
                                    int *height,
                                    enum AVPixelFormat *format,
@@ -78,7 +78,7 @@ int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
  *
  * @return a new AVFrame on success, NULL on error.
  */
-AVFrame *ff_video_frame_pool_get(FFVideoFramePool *pool);
+AVFrame *ff_frame_pool_get(FFFramePool *pool);
 
 
 #endif /* AVFILTER_FRAMEPOOL_H */

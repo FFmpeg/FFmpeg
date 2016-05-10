@@ -26,7 +26,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixfmt.h"
 
-struct FFVideoFramePool {
+struct FFFramePool {
 
     int width;
     int height;
@@ -37,20 +37,20 @@ struct FFVideoFramePool {
 
 };
 
-FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
-                                           int width,
-                                           int height,
-                                           enum AVPixelFormat format,
-                                           int align)
+FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
+                                      int width,
+                                      int height,
+                                      enum AVPixelFormat format,
+                                      int align)
 {
     int i, ret;
-    FFVideoFramePool *pool;
+    FFFramePool *pool;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
 
     if (!desc)
         return NULL;
 
-    pool = av_mallocz(sizeof(FFVideoFramePool));
+    pool = av_mallocz(sizeof(FFFramePool));
     if (!pool)
         return NULL;
 
@@ -100,11 +100,11 @@ FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
     return pool;
 
 fail:
-    ff_video_frame_pool_uninit(&pool);
+    ff_frame_pool_uninit(&pool);
     return NULL;
 }
 
-int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
+int ff_frame_pool_get_video_config(FFFramePool *pool,
                                    int *width,
                                    int *height,
                                    enum AVPixelFormat *format,
@@ -122,7 +122,7 @@ int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
 }
 
 
-AVFrame *ff_video_frame_pool_get(FFVideoFramePool *pool)
+AVFrame *ff_frame_pool_get(FFFramePool *pool)
 {
     int i;
     AVFrame *frame;
@@ -174,7 +174,7 @@ fail:
     return NULL;
 }
 
-void ff_video_frame_pool_uninit(FFVideoFramePool **pool)
+void ff_frame_pool_uninit(FFFramePool **pool)
 {
     int i;
 
