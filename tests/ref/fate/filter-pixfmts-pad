@@ -13,6 +13,8 @@ gbrp14le            9ae804cf217bec0a737c36c20573cbe5
 gbrp9le             9a86dab5661c213ce2b7e00ae48b4d1f
 gray                ddc663a0491df3959d9c5795dceaa72e
 gray16le            468bda6155bdc7a7a20c34d6e599fd16
+nv12                381574979cb04be10c9168540310afad
+nv21                0fdeb2cdd56cf5a7147dc273456fa217
 rgb0                78d500c8361ab6423a4826a00268c908
 rgb24               17f9e2e0c609009acaf2175c42d4a2a5
 rgba                b157c90191463d34fb3ce77b36c96386
