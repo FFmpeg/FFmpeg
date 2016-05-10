@@ -33,6 +33,7 @@ version <next>:
 - VAAPI-accelerated H.264/HEVC/MJPEG encoding
 - DTS Express (LBR) decoder
 - Generic OpenMAX IL encoder with support for Raspberry Pi
+- IFF ANIM demuxer & decoder
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

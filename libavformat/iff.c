@@ -60,6 +60,8 @@
 #define ID_RGBN       MKTAG('R','G','B','N')
 #define ID_DSD        MKTAG('D','S','D',' ')
 #define ID_ANIM       MKTAG('A','N','I','M')
+#define ID_ANHD       MKTAG('A','N','H','D')
+#define ID_DLTA       MKTAG('D','L','T','A')
 
 #define ID_FORM       MKTAG('F','O','R','M')
 #define ID_FRM8       MKTAG('F','R','M','8')
@@ -113,6 +115,7 @@ typedef struct IffDemuxContext {
     unsigned  transparency; ///< transparency color index in palette
     unsigned  masking;      ///< masking method used
     uint8_t   tvdc[32];     ///< TVDC lookup table
+    int64_t   pts;
 } IffDemuxContext;
 
 /* Metadata string read */
@@ -146,7 +149,6 @@ static int iff_probe(AVProbeData *p)
           AV_RL32(d+8) == ID_ACBM ||
           AV_RL32(d+8) == ID_DEEP ||
           AV_RL32(d+8) == ID_ILBM ||
-          AV_RL32(d+8) == ID_RGB8 ||
           AV_RL32(d+8) == ID_RGB8 ||
           AV_RL32(d+8) == ID_ANIM ||
           AV_RL32(d+8) == ID_RGBN)) ||
@@ -367,8 +369,7 @@ static int iff_read_header(AVFormatContext *s)
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
     st->codecpar->codec_tag = avio_rl32(pb);
     if (st->codecpar->codec_tag == ID_ANIM) {
-        avio_skip(pb, 8);
-        st->codecpar->codec_tag = avio_rl32(pb);
+        avio_skip(pb, 12);
     }
     iff->bitmap_compression = -1;
     iff->svx8_compression = -1;
@@ -482,6 +483,9 @@ static int iff_read_header(AVFormatContext *s)
                 st->sample_aspect_ratio.num  = avio_r8(pb);
                 st->sample_aspect_ratio.den  = avio_r8(pb);
             }
+            break;
+
+        case ID_ANHD:
             break;
 
         case ID_DPEL:
@@ -626,7 +630,10 @@ static int iff_read_header(AVFormatContext *s)
         avio_skip(pb, data_size - (avio_tell(pb) - orig_pos) + (data_size & 1));
     }
 
-    avio_seek(pb, iff->body_pos, SEEK_SET);
+    if (st->codecpar->codec_tag == ID_ANIM)
+        avio_seek(pb, 12, SEEK_SET);
+    else
+        avio_seek(pb, iff->body_pos, SEEK_SET);
 
     switch(st->codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -672,6 +679,8 @@ static int iff_read_header(AVFormatContext *s)
 
     case AVMEDIA_TYPE_VIDEO:
         iff->bpp          = st->codecpar->bits_per_coded_sample;
+        if (st->codecpar->codec_tag == ID_ANIM)
+            avpriv_set_pts_info(st, 32, 1, 60);
         if ((screenmode & 0x800 /* Hold And Modify */) && iff->bpp <= 8) {
             iff->ham      = iff->bpp > 6 ? 6 : 4;
             st->codecpar->bits_per_coded_sample = 24;
@@ -705,6 +714,28 @@ static int iff_read_header(AVFormatContext *s)
     return 0;
 }
 
+static unsigned get_anim_duration(uint8_t *buf, int size)
+{
+    GetByteContext gb;
+
+    bytestream2_init(&gb, buf, size);
+    bytestream2_skip(&gb, 4);
+    while (bytestream2_get_bytes_left(&gb) > 8) {
+        unsigned chunk = bytestream2_get_le32(&gb);
+        unsigned size = bytestream2_get_be32(&gb);
+
+        if (chunk == ID_ANHD) {
+            if (size < 40)
+                break;
+            bytestream2_skip(&gb, 14);
+            return bytestream2_get_be32(&gb);
+        } else {
+            bytestream2_skip(&gb, size + size & 1);
+        }
+    }
+    return 10;
+}
+
 static int iff_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
@@ -714,8 +745,12 @@ static int iff_read_packet(AVFormatContext *s,
     int ret;
     int64_t pos = avio_tell(pb);
 
-    if (pos >= iff->body_end)
+    if (st->codecpar->codec_tag == ID_ANIM) {
+        if (avio_feof(pb))
+            return AVERROR_EOF;
+    } else if (pos >= iff->body_end) {
         return AVERROR_EOF;
+    }
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         if (st->codecpar->codec_tag == ID_DSD || st->codecpar->codec_tag == ID_MAUD) {
@@ -725,28 +760,39 @@ static int iff_read_packet(AVFormatContext *s,
                 return AVERROR_INVALIDDATA;
             ret = av_get_packet(pb, pkt, iff->body_size);
         }
-    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        uint8_t *buf;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+               st->codecpar->codec_tag  == ID_ANIM) {
+        uint64_t data_size, orig_pos;
+        uint32_t chunk_id = 0;
 
-        if (iff->body_size > INT_MAX - 2)
-            return AVERROR_INVALIDDATA;
-        if (av_new_packet(pkt, iff->body_size + 2) < 0) {
-            return AVERROR(ENOMEM);
+        while (!avio_feof(pb)) {
+            if (avio_feof(pb))
+                return AVERROR_EOF;
+
+            chunk_id  = avio_rl32(pb);
+            data_size = avio_rb32(pb);
+            orig_pos  = avio_tell(pb);
+
+            if (chunk_id == ID_FORM)
+                break;
+            else
+                avio_skip(pb, data_size);
         }
-
-        buf = pkt->data;
-        bytestream_put_be16(&buf, 2);
-        ret = avio_read(pb, buf, iff->body_size);
-        if (ret<0) {
-            av_packet_unref(pkt);
-        } else if (ret < iff->body_size)
-            av_shrink_packet(pkt, ret + 2);
+        ret = av_get_packet(pb, pkt, data_size);
+        pkt->pos = orig_pos;
+        pkt->duration = get_anim_duration(pkt->data, pkt->size);
+        if (pos == 12)
+            pkt->flags |= AV_PKT_FLAG_KEY;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+               st->codecpar->codec_tag  != ID_ANIM) {
+        ret = av_get_packet(pb, pkt, iff->body_size);
+        pkt->pos = pos;
+        if (pos == iff->body_pos)
+            pkt->flags |= AV_PKT_FLAG_KEY;
     } else {
         av_assert0(0);
     }
 
-    if (pos == iff->body_pos)
-        pkt->flags |= AV_PKT_FLAG_KEY;
     if (ret < 0)
         return ret;
     pkt->stream_index = 0;
