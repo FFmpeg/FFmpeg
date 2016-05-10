@@ -1201,7 +1201,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    if (h->context_initialized && needs_reinit) {
+    if (!h->context_initialized || needs_reinit) {
         h->context_initialized = 0;
         if (sl != h->slice_ctx) {
             av_log(h->avctx, AV_LOG_ERROR,
@@ -1219,25 +1219,8 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
             return ret;
         h->avctx->pix_fmt = ret;
 
-        av_log(h->avctx, AV_LOG_INFO, "Reinit context to %dx%d, "
+        av_log(h->avctx, AV_LOG_VERBOSE, "Reinit context to %dx%d, "
                "pix_fmt: %d\n", h->width, h->height, h->avctx->pix_fmt);
-
-        if ((ret = h264_slice_header_init(h)) < 0) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "h264_slice_header_init() failed\n");
-            return ret;
-        }
-    }
-    if (!h->context_initialized) {
-        if (sl != h->slice_ctx) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "Cannot (re-)initialize context during parallel decoding.\n");
-            return AVERROR_PATCHWELCOME;
-        }
-
-        if ((ret = get_pixel_format(h)) < 0)
-            return ret;
-        h->avctx->pix_fmt = ret;
 
         if ((ret = h264_slice_header_init(h)) < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
