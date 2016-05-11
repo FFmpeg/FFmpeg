@@ -19,11 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "cast5.c"
+#include "cast5.h"
 #include "log.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 int main(int argc, char** argv)
 {
@@ -48,7 +45,7 @@ int main(int argc, char** argv)
     int i, j, err = 0;
     static const int key_bits[3] = {128, 80, 40};
     uint8_t temp[8];
-    AVCAST5 *cs;
+    struct AVCAST5 *cs;
     cs = av_cast5_alloc();
     if (!cs)
         return 1;

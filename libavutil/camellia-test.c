@@ -19,11 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "camellia.c"
+#include "camellia.h"
 #include "log.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 int main(int argc, char *argv[])
 {
@@ -41,7 +38,7 @@ int main(int argc, char *argv[])
     const int kbits[3] = {128, 192, 256};
     int i, j, err = 0;
     uint8_t temp[32], iv[16];
-    AVCAMELLIA *cs;
+    struct AVCAMELLIA *cs;
     cs = av_camellia_alloc();
     if (!cs)
         return 1;

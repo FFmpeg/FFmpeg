@@ -22,9 +22,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tea.c"
-
 #include <stdio.h>
+
+#include "common.h"
+#include "tea.h"
 
 #define TEA_NUM_TESTS 4
 
@@ -58,7 +59,7 @@ static const uint8_t tea_test_ct[TEA_NUM_TESTS][8] = {
     { 0x12, 0x6C, 0x6B, 0x92, 0xC0, 0x65, 0x3A, 0x3E }
 };
 
-static void test_tea(AVTEA *ctx, uint8_t *dst, const uint8_t *src,
+static void test_tea(struct AVTEA *ctx, uint8_t *dst, const uint8_t *src,
                      const uint8_t *ref, int len, uint8_t *iv, int dir,
                      const char *test)
 {
@@ -78,7 +79,7 @@ static void test_tea(AVTEA *ctx, uint8_t *dst, const uint8_t *src,
 
 int main(void)
 {
-    AVTEA *ctx;
+    struct AVTEA *ctx;
     uint8_t buf[8], iv[8];
     int i;
     static const uint8_t src[32] = "HelloWorldHelloWorldHelloWorld";

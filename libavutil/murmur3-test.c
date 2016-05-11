@@ -18,13 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "murmur3.c"
+#include "intreadwrite.h"
+#include "mem.h"
+#include "murmur3.h"
 
 int main(void)
 {
     int i;
     uint8_t hash_result[16] = {0};
-    AVMurMur3 *ctx = av_murmur3_alloc();
+    struct AVMurMur3 *ctx = av_murmur3_alloc();
 #if 1
     uint8_t in[256] = {0};
     uint8_t *hashes = av_mallocz(256 * 16);

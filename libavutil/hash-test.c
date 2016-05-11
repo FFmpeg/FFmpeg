@@ -18,7 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "hash.c"
+#include <stdio.h>
+#include <string.h>
+
+#include "hash.h"
 
 #define SRC_BUF_SIZE 64
 #define DST_BUF_SIZE (AV_HASH_MAX_SIZE * 8)
@@ -26,10 +29,14 @@
 int main(void)
 {
    struct AVHashContext *ctx = NULL;
-   int i, j;
+   int i, j, numhashes = 0;
    static const uint8_t src[SRC_BUF_SIZE] = { 0 };
    uint8_t dst[DST_BUF_SIZE];
-   for (i = 0; i < NUM_HASHES; i++) {
+
+   while (av_hash_names(numhashes))
+       numhashes++;
+
+   for (i = 0; i < numhashes; i++) {
        if (av_hash_alloc(&ctx, av_hash_names(i)) < 0)
            return 1;
 

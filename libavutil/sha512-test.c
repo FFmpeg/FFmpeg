@@ -21,31 +21,35 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "sha512.c"
-
 #include <stdio.h>
+
+#include "sha512.h"
 
 int main(void)
 {
     int i, j, k;
-    AVSHA512 ctx;
+    struct AVSHA512 *ctx;
     unsigned char digest[64];
     static const int lengths[4] = { 224, 256, 384, 512 };
+
+    ctx = av_sha512_alloc();
+    if (!ctx)
+        return 1;
 
     for (j = 0; j < 4; j++) {
         if (j < 2) printf("Testing SHA-512/%d\n", lengths[j]);
         else       printf("Testing SHA-%d\n", lengths[j]);
         for (k = 0; k < 3; k++) {
-            av_sha512_init(&ctx, lengths[j]);
+            av_sha512_init(ctx, lengths[j]);
             if (k == 0)
-                av_sha512_update(&ctx, "abc", 3);
+                av_sha512_update(ctx, "abc", 3);
             else if (k == 1)
-                av_sha512_update(&ctx, "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmn"
+                av_sha512_update(ctx, "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmn"
                                        "hijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112);
             else
                 for (i = 0; i < 1000*1000; i++)
-                    av_sha512_update(&ctx, "a", 1);
-            av_sha512_final(&ctx, digest);
+                    av_sha512_update(ctx, "a", 1);
+            av_sha512_final(ctx, digest);
             for (i = 0; i < lengths[j] >> 3; i++)
                 printf("%02X", digest[i]);
             putchar('\n');

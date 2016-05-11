@@ -16,18 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "aes.c"
-
 // LCOV_EXCL_START
 #include <string.h>
 
+#include "aes.h"
 #include "lfg.h"
 #include "log.h"
 
 int main(int argc, char **argv)
 {
     int i, j;
-    AVAES b;
+    struct AVAES *b;
     uint8_t rkey[2][16] = {
         { 0 },
         { 0x10, 0xa5, 0x88, 0x69, 0xd7, 0x4b, 0xe5, 0xa3,
@@ -48,11 +47,15 @@ int main(int argc, char **argv)
     uint8_t iv[2][16];
     int err = 0;
 
+    b = av_aes_alloc();
+    if (!b)
+        return 1;
+
     av_log_set_level(AV_LOG_DEBUG);
 
     for (i = 0; i < 2; i++) {
-        av_aes_init(&b, rkey[i], 128, 1);
-        av_aes_crypt(&b, temp, rct[i], 1, NULL, 1);
+        av_aes_init(b, rkey[i], 128, 1);
+        av_aes_crypt(b, temp, rct[i], 1, NULL, 1);
         for (j = 0; j < 16; j++) {
             if (rpt[i][j] != temp[j]) {
                 av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n",
@@ -63,11 +66,20 @@ int main(int argc, char **argv)
     }
 
     if (argc > 1 && !strcmp(argv[1], "-t")) {
-        AVAES ae, ad;
+        struct AVAES *ae, *ad;
         AVLFG prng;
 
-        av_aes_init(&ae, (const uint8_t*)"PI=3.141592654..", 128, 0);
-        av_aes_init(&ad, (const uint8_t*)"PI=3.141592654..", 128, 1);
+        ae = av_aes_alloc();
+        ad = av_aes_alloc();
+
+        if (!ae || !ad) {
+            av_free(ae);
+            av_free(ad);
+            return 1;
+        }
+
+        av_aes_init(ae, (const uint8_t*)"PI=3.141592654..", 128, 0);
+        av_aes_init(ad, (const uint8_t*)"PI=3.141592654..", 128, 1);
         av_lfg_init(&prng, 1);
 
         for (i = 0; i < 10000; i++) {
@@ -77,16 +89,16 @@ int main(int argc, char **argv)
                 iv[0][j] = iv[1][j] = av_lfg_get(&prng);
             {
                 START_TIMER;
-                av_aes_crypt(&ae, temp, pt, 2, iv[0], 0);
+                av_aes_crypt(ae, temp, pt, 2, iv[0], 0);
                 if (!(i & (i - 1)))
                     av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n",
                            temp[0], temp[5], temp[10], temp[15]);
-                av_aes_crypt(&ad, temp, temp, 2, iv[1], 1);
-                av_aes_crypt(&ae, temp, pt, 2, NULL, 0);
+                av_aes_crypt(ad, temp, temp, 2, iv[1], 1);
+                av_aes_crypt(ae, temp, pt, 2, NULL, 0);
                 if (!(i & (i - 1)))
                     av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n",
                            temp[0], temp[5], temp[10], temp[15]);
-                av_aes_crypt(&ad, temp, temp, 2, NULL, 1);
+                av_aes_crypt(ad, temp, temp, 2, NULL, 1);
                 STOP_TIMER("aes");
             }
             for (j = 0; j < 16; j++) {

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "twofish.c"
 #include "log.h"
+#include "twofish.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     uint8_t temp[32], iv[16], rpt[32] = {0};
     const int kbits[3] = {128, 192, 256};
     int i, j, err = 0;
-    AVTWOFISH *cs;
+    struct AVTWOFISH *cs;
     cs = av_twofish_alloc();
     if (!cs)
         return 1;
