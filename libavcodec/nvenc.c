@@ -57,6 +57,9 @@
 
 #define NVENC_CAP 0x30
 #define BITSTREAM_BUFFER_SIZE 1024 * 1024
+#define IS_CBR(rc) (rc == NV_ENC_PARAMS_RC_CBR ||               \
+                    rc == NV_ENC_PARAMS_RC_2_PASS_QUALITY ||    \
+                    rc == NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP)
 
 #define LOAD_LIBRARY(l, path)                   \
     do {                                        \
@@ -604,6 +607,11 @@ static int nvenc_setup_h264_config(AVCodecContext *avctx)
     if (ctx->flags & NVENC_LOSSLESS)
         h264->qpPrimeYZeroTransformBypassFlag = 1;
 
+    if (IS_CBR(cc->rcParams.rateControlMode)) {
+        h264->outputBufferingPeriodSEI = 1;
+        h264->outputPictureTimingSEI   = 1;
+    }
+
     if (ctx->profile)
         avctx->profile = ctx->profile;
 
@@ -647,6 +655,11 @@ static int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     hevc->maxNumRefFramesInDPB = avctx->refs;
     hevc->idrPeriod            = cc->gopLength;
+
+    if (IS_CBR(cc->rcParams.rateControlMode)) {
+        hevc->outputBufferingPeriodSEI = 1;
+        hevc->outputPictureTimingSEI   = 1;
+    }
 
     /* No other profile is supported in the current SDK version 5 */
     cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
