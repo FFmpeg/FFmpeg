@@ -796,6 +796,11 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
             if (avctx->codec->id == AV_CODEC_ID_H264) {
                 ctx->encode_config.encodeCodecConfig.h264Config.adaptiveTransformMode = NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE;
                 ctx->encode_config.encodeCodecConfig.h264Config.fmoMode = NV_ENC_H264_FMO_DISABLE;
+                ctx->encode_config.encodeCodecConfig.h264Config.outputBufferingPeriodSEI = 1;
+                ctx->encode_config.encodeCodecConfig.h264Config.outputPictureTimingSEI = 1;
+            } else if(avctx->codec->id == AV_CODEC_ID_H265) {
+                ctx->encode_config.encodeCodecConfig.hevcConfig.outputBufferingPeriodSEI = 1;
+                ctx->encode_config.encodeCodecConfig.hevcConfig.outputPictureTimingSEI = 1;
             }
         }
     } else if (avctx->global_quality > 0) {
