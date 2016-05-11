@@ -224,6 +224,8 @@ typedef struct OMXCodecContext {
 
     uint8_t *output_buf;
     int output_buf_size;
+
+    int input_zerocopy;
 } OMXCodecContext;
 
 static void append_buffer(pthread_mutex_t *mutex, pthread_cond_t *cond,
@@ -303,6 +305,15 @@ static OMX_ERRORTYPE empty_buffer_done(OMX_HANDLETYPE component, OMX_PTR app_dat
                                        OMX_BUFFERHEADERTYPE *buffer)
 {
     OMXCodecContext *s = app_data;
+    if (s->input_zerocopy) {
+        if (buffer->pAppPrivate) {
+            if (buffer->pOutputPortPrivate)
+                av_free(buffer->pAppPrivate);
+            else
+                av_frame_free((AVFrame**)&buffer->pAppPrivate);
+            buffer->pAppPrivate = NULL;
+        }
+    }
     append_buffer(&s->input_mutex, &s->input_cond,
                   &s->num_free_in_buffers, s->free_in_buffers, buffer);
     return OMX_ErrorNone;
@@ -525,8 +536,14 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
     s->done_out_buffers   = av_mallocz(sizeof(OMX_BUFFERHEADERTYPE*) * s->num_out_buffers);
     if (!s->in_buffer_headers || !s->free_in_buffers || !s->out_buffer_headers || !s->done_out_buffers)
         return AVERROR(ENOMEM);
-    for (i = 0; i < s->num_in_buffers && err == OMX_ErrorNone; i++)
-        err = OMX_AllocateBuffer(s->handle, &s->in_buffer_headers[i],  s->in_port,  s, in_port_params.nBufferSize);
+    for (i = 0; i < s->num_in_buffers && err == OMX_ErrorNone; i++) {
+        if (s->input_zerocopy)
+            err = OMX_UseBuffer(s->handle, &s->in_buffer_headers[i], s->in_port, s, in_port_params.nBufferSize, NULL);
+        else
+            err = OMX_AllocateBuffer(s->handle, &s->in_buffer_headers[i],  s->in_port,  s, in_port_params.nBufferSize);
+        if (err == OMX_ErrorNone)
+            s->in_buffer_headers[i]->pAppPrivate = s->in_buffer_headers[i]->pOutputPortPrivate = NULL;
+    }
     CHECK(err);
     s->num_in_buffers = i;
     for (i = 0; i < s->num_out_buffers && err == OMX_ErrorNone; i++)
@@ -571,6 +588,8 @@ static av_cold void cleanup(OMXCodecContext *s)
         for (i = 0; i < s->num_in_buffers; i++) {
             OMX_BUFFERHEADERTYPE *buffer = get_buffer(&s->input_mutex, &s->input_cond,
                                                       &s->num_free_in_buffers, s->free_in_buffers, 1);
+            if (s->input_zerocopy)
+                buffer->pBuffer = NULL;
             OMX_FreeBuffer(s->handle, s->in_port, buffer);
         }
         for (i = 0; i < s->num_out_buffers; i++) {
@@ -610,6 +629,10 @@ static av_cold int omx_encode_init(AVCodecContext *avctx)
     const char *role;
     OMX_BUFFERHEADERTYPE *buffer;
     OMX_ERRORTYPE err;
+
+#if CONFIG_OMX_RPI
+    s->input_zerocopy = 1;
+#endif
 
     s->omx_context = omx_init(avctx, s->libname, s->libprefix);
     if (!s->omx_context)
@@ -706,11 +729,57 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (frame) {
         uint8_t *dst[4];
         int linesize[4];
+        int need_copy;
         buffer = get_buffer(&s->input_mutex, &s->input_cond,
                             &s->num_free_in_buffers, s->free_in_buffers, 1);
 
         buffer->nFilledLen = av_image_fill_arrays(dst, linesize, buffer->pBuffer, avctx->pix_fmt, s->stride, s->plane_size, 1);
-        av_image_copy(dst, linesize, (const uint8_t**) frame->data, frame->linesize, avctx->pix_fmt, avctx->width, avctx->height);
+
+        if (s->input_zerocopy) {
+            uint8_t *src[4] = { NULL };
+            int src_linesize[4];
+            av_image_fill_arrays(src, src_linesize, frame->data[0], avctx->pix_fmt, s->stride, s->plane_size, 1);
+            if (frame->linesize[0] == src_linesize[0] &&
+                frame->linesize[1] == src_linesize[1] &&
+                frame->linesize[2] == src_linesize[2] &&
+                frame->data[1] == src[1] &&
+                frame->data[2] == src[2]) {
+                // If the input frame happens to have all planes stored contiguously,
+                // with the right strides, just clone the frame and set the OMX
+                // buffer header to point to it
+                AVFrame *local = av_frame_clone(frame);
+                if (!local) {
+                    // Return the buffer to the queue so it's not lost
+                    append_buffer(&s->input_mutex, &s->input_cond, &s->num_free_in_buffers, s->free_in_buffers, buffer);
+                    return AVERROR(ENOMEM);
+                } else {
+                    buffer->pAppPrivate = local;
+                    buffer->pOutputPortPrivate = NULL;
+                    buffer->pBuffer = local->data[0];
+                    need_copy = 0;
+                }
+            } else {
+                // If not, we need to allocate a new buffer with the right
+                // size and copy the input frame into it.
+                uint8_t *buf = av_malloc(av_image_get_buffer_size(avctx->pix_fmt, s->stride, s->plane_size, 1));
+                if (!buf) {
+                    // Return the buffer to the queue so it's not lost
+                    append_buffer(&s->input_mutex, &s->input_cond, &s->num_free_in_buffers, s->free_in_buffers, buffer);
+                    return AVERROR(ENOMEM);
+                } else {
+                    buffer->pAppPrivate = buf;
+                    // Mark that pAppPrivate is an av_malloc'ed buffer, not an AVFrame
+                    buffer->pOutputPortPrivate = (void*) 1;
+                    buffer->pBuffer = buf;
+                    need_copy = 1;
+                    buffer->nFilledLen = av_image_fill_arrays(dst, linesize, buffer->pBuffer, avctx->pix_fmt, s->stride, s->plane_size, 1);
+                }
+            }
+        } else {
+            need_copy = 1;
+        }
+        if (need_copy)
+            av_image_copy(dst, linesize, (const uint8_t**) frame->data, frame->linesize, avctx->pix_fmt, avctx->width, avctx->height);
         buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
         buffer->nOffset = 0;
         // Convert the timestamps to microseconds; some encoders can ignore
@@ -808,9 +877,11 @@ static av_cold int omx_encode_end(AVCodecContext *avctx)
 
 #define OFFSET(x) offsetof(OMXCodecContext, x)
 #define VDE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+#define VE  AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "omx_libname", "OpenMAX library name", OFFSET(libname), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VDE },
     { "omx_libprefix", "OpenMAX library prefix", OFFSET(libprefix), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VDE },
+    { "zerocopy", "Try to avoid copying input frames if possible", OFFSET(input_zerocopy), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 
