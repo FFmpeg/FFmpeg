@@ -161,6 +161,7 @@ Hardware-accelerated decoding/encoding:
   --enable-libmfx          enable HW acceleration through libmfx
   --enable-mmal            enable decoding via MMAL [no]
   --enable-nvenc           enable NVIDIA NVENC support [no]
+  --enable-omx             enable encoding via OpenMAX IL [no]
 
 Individual component options:
   --disable-everything     disable all components listed below
@@ -1564,6 +1565,7 @@ HW_CODECS_LIST="
     libmfx
     mmal
     nvenc
+    omx
 "
 
 HWACCEL_LIST="
@@ -2540,6 +2542,7 @@ h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
 h264_mmal_decoder_deps="mmal"
 h264_mmal_decoder_select="mmal"
 h264_mmal_hwaccel_deps="mmal"
+h264_omx_encoder_deps="omx"
 h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
 h264_vaapi_hwaccel_select="h264_decoder"
@@ -2598,6 +2601,7 @@ mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_mmal_decoder_deps="mmal"
 mpeg4_mmal_decoder_select="mmal"
 mpeg4_mmal_hwaccel_deps="mmal"
+mpeg4_omx_encoder_deps="omx"
 mpeg4_vaapi_hwaccel_deps="vaapi"
 mpeg4_vaapi_hwaccel_select="mpeg4_decoder"
 mpeg4_vdpau_decoder_deps="vdpau"
@@ -2637,6 +2641,8 @@ wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # hardware-accelerated codecs
+omx_deps="dlopen pthreads"
+omx_extralibs='$ldl'
 qsvdec_select="qsv"
 qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
@@ -5729,6 +5735,7 @@ enabled openssl           && { use_pkg_config openssl openssl/ssl.h SSL_library_
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
+enabled omx               && { check_header OMX_Core.h || die "ERROR: OpenMAX IL headers not found"; }
 enabled qtkit_indev      && { check_header_objcc QTKit/QTKit.h || disable qtkit_indev; }
 
 # libdc1394 check

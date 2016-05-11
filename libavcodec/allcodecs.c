@@ -620,6 +620,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(H264_QSV,          h264_qsv);
     REGISTER_ENCODER(H264_VIDEOTOOLBOX, h264_videotoolbox);
     REGISTER_ENCODER(NVENC,             nvenc);
+    REGISTER_ENCODER(H264_OMX,          h264_omx);
     REGISTER_ENCODER(NVENC_H264,        nvenc_h264);
     REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);
     REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
