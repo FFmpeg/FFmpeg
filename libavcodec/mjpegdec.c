@@ -68,25 +68,42 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
                               huff_code, 2, 2, huff_sym, 2, 2, use_static);
 }
 
-static void build_basic_mjpeg_vlc(MJpegDecodeContext *s)
+static int build_basic_mjpeg_vlc(MJpegDecodeContext *s)
 {
-    build_vlc(&s->vlcs[0][0], avpriv_mjpeg_bits_dc_luminance,
-              avpriv_mjpeg_val_dc, 12, 0, 0);
-    build_vlc(&s->vlcs[0][1], avpriv_mjpeg_bits_dc_chrominance,
-              avpriv_mjpeg_val_dc, 12, 0, 0);
-    build_vlc(&s->vlcs[1][0], avpriv_mjpeg_bits_ac_luminance,
-              avpriv_mjpeg_val_ac_luminance, 251, 0, 1);
-    build_vlc(&s->vlcs[1][1], avpriv_mjpeg_bits_ac_chrominance,
-              avpriv_mjpeg_val_ac_chrominance, 251, 0, 1);
-    build_vlc(&s->vlcs[2][0], avpriv_mjpeg_bits_ac_luminance,
-              avpriv_mjpeg_val_ac_luminance, 251, 0, 0);
-    build_vlc(&s->vlcs[2][1], avpriv_mjpeg_bits_ac_chrominance,
-              avpriv_mjpeg_val_ac_chrominance, 251, 0, 0);
+    int ret;
+
+    if ((ret = build_vlc(&s->vlcs[0][0], avpriv_mjpeg_bits_dc_luminance,
+                         avpriv_mjpeg_val_dc, 12, 0, 0)) < 0)
+        return ret;
+
+    if ((ret = build_vlc(&s->vlcs[0][1], avpriv_mjpeg_bits_dc_chrominance,
+                         avpriv_mjpeg_val_dc, 12, 0, 0)) < 0)
+        return ret;
+
+    if ((ret = build_vlc(&s->vlcs[1][0], avpriv_mjpeg_bits_ac_luminance,
+                         avpriv_mjpeg_val_ac_luminance, 251, 0, 1)) < 0)
+        return ret;
+
+    if ((ret = build_vlc(&s->vlcs[1][1], avpriv_mjpeg_bits_ac_chrominance,
+                         avpriv_mjpeg_val_ac_chrominance, 251, 0, 1)) < 0)
+        return ret;
+
+    if ((ret = build_vlc(&s->vlcs[2][0], avpriv_mjpeg_bits_ac_luminance,
+                         avpriv_mjpeg_val_ac_luminance, 251, 0, 0)) < 0)
+        return ret;
+
+    if ((ret = build_vlc(&s->vlcs[2][1], avpriv_mjpeg_bits_ac_chrominance,
+                         avpriv_mjpeg_val_ac_chrominance, 251, 0, 0)) < 0)
+        return ret;
+
+
+    return 0;
 }
 
 av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
+    int ret;
 
     if (!s->picture_ptr) {
         s->picture = av_frame_alloc();
@@ -109,12 +126,13 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
     avctx->colorspace = AVCOL_SPC_BT470BG;
 
-    build_basic_mjpeg_vlc(s);
+    if ((ret = build_basic_mjpeg_vlc(s)) < 0)
+        return ret;
 
     if (s->extern_huff) {
-        int ret;
         av_log(avctx, AV_LOG_INFO, "mjpeg: using external huffman table\n");
-        init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8);
+        if ((ret = init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8)) < 0)
+            return ret;
         if ((ret = ff_mjpeg_decode_dht(s))) {
             av_log(avctx, AV_LOG_ERROR,
                    "mjpeg: error using external huffman table\n");
@@ -248,7 +266,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         height= s->height;
 
     av_log(s->avctx, AV_LOG_DEBUG, "sof0: picture: %dx%d\n", width, height);
-    if (av_image_check_size(width, height, 0, s->avctx))
+    if (av_image_check_size(width, height, 0, s->avctx) < 0)
         return AVERROR_INVALIDDATA;
 
     nb_components = get_bits(&s->gb, 8);
@@ -686,6 +704,9 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor,
 
     av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size,
                    (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
+    if (!s->ljpeg_buffer)
+        return AVERROR(ENOMEM);
+
     buffer = s->ljpeg_buffer;
 
     for (i = 0; i < 3; i++)
@@ -1502,14 +1523,15 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG, "startcode: %X\n", start_code);
 
         /* process markers */
-        if (start_code >= 0xd0 && start_code <= 0xd7)
+        if (start_code >= 0xd0 && start_code <= 0xd7) {
             av_log(avctx, AV_LOG_DEBUG,
                    "restart marker: %d\n", start_code & 0x0f);
             /* APP fields */
-        else if (start_code >= APP0 && start_code <= APP15)
-            mjpeg_decode_app(s);
+        } else if (start_code >= APP0 && start_code <= APP15) {
+            if ((ret = mjpeg_decode_app(s)) < 0)
+                return ret;
             /* Comment */
-        else if (start_code == COM) {
+        } else if (start_code == COM) {
             ret = mjpeg_decode_com(s);
             if (ret < 0)
                 return ret;
@@ -1528,7 +1550,8 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             /* nothing to do on SOI */
             break;
         case DQT:
-            ff_mjpeg_decode_dqt(s);
+            if ((ret = ff_mjpeg_decode_dqt(s)) < 0)
+                return ret;
             break;
         case DHT:
             if ((ret = ff_mjpeg_decode_dht(s)) < 0) {
@@ -1623,7 +1646,8 @@ eoi_parser:
                 goto eoi_parser;
             break;
         case DRI:
-            mjpeg_decode_dri(s);
+            if ((ret = mjpeg_decode_dri(s)) < 0)
+                return ret;
             break;
         case SOF5:
         case SOF6:
