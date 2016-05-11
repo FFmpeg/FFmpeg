@@ -494,6 +494,14 @@ static void set_vbr(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
     }
 }
 
+static void set_lossless(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
+{
+    rc->rateControlMode  = NV_ENC_PARAMS_RC_CONSTQP;
+    rc->constQP.qpInterB = 0;
+    rc->constQP.qpInterP = 0;
+    rc->constQP.qpIntra  = 0;
+}
+
 static void nvenc_override_rate_control(AVCodecContext *avctx,
                                         NV_ENC_RC_PARAMS *rc)
 {
@@ -554,6 +562,8 @@ static void nvenc_setup_rate_control(AVCodecContext *avctx)
 
     if (ctx->rc > 0) {
         nvenc_override_rate_control(avctx, rc);
+    } else if (ctx->flags & NVENC_LOSSLESS) {
+        set_lossless(avctx, rc);
     } else if (avctx->global_quality > 0) {
         set_constqp(avctx, rc);
     } else if (avctx->qmin >= 0 && avctx->qmax >= 0) {
@@ -590,6 +600,9 @@ static int nvenc_setup_h264_config(AVCodecContext *avctx)
 
     h264->maxNumRefFrames = avctx->refs;
     h264->idrPeriod       = cc->gopLength;
+
+    if (ctx->flags & NVENC_LOSSLESS)
+        h264->qpPrimeYZeroTransformBypassFlag = 1;
 
     if (ctx->profile)
         avctx->profile = ctx->profile;
