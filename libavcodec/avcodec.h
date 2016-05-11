@@ -3323,7 +3323,8 @@ typedef struct AVCodecContext {
      * - decoding: For codecs that store a framerate value in the compressed
      *             bitstream, the decoder may export it here. { 0, 1} when
      *             unknown.
-     * - encoding: unused
+     * - encoding: May be used to signal the framerate of CFR content to an
+     *             encoder.
      */
     AVRational framerate;
 
