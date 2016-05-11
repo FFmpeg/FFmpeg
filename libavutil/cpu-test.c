@@ -17,18 +17,17 @@
  */
 
 #include <stdio.h>
+
+#include "config.h"
+#include "cpu.h"
 #include "avstring.h"
 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #if !HAVE_GETOPT
 #include "compat/getopt.c"
 #endif
-
-#include <stdint.h>
-#include <stdio.h>
-
-#include "avstring.h"
-#include "common.h"
-#include "cpu.h"
 
 static const struct {
     int flag;
