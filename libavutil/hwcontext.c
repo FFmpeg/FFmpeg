@@ -209,6 +209,7 @@ AVBufferRef *av_hwframe_ctx_alloc(AVBufferRef *device_ref_in)
     ctx->device_ref = device_ref;
     ctx->device_ctx = device_ctx;
     ctx->format     = AV_PIX_FMT_NONE;
+    ctx->sw_format  = AV_PIX_FMT_NONE;
 
     ctx->internal->hw_type = hw_type;
 
