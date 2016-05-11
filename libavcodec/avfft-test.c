@@ -17,6 +17,7 @@
  */
 
 #include "config.h"
+#include "libavutil/mem.h"
 #include "avfft.h"
 
 int main(int argc, char **argv)
