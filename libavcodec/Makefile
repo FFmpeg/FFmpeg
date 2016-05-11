@@ -996,9 +996,9 @@ TESTPROGS = imgconvert                                                  \
             mathops                                                    \
             options                                                     \
             utils                                                       \
-            avfft                                                       \
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
+TESTPROGS-$(CONFIG_DCT)                   += avfft
 TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed fft-fixed32
 TESTPROGS-$(CONFIG_GOLOMB)                += golomb
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
