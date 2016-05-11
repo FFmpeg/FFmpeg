@@ -1161,7 +1161,7 @@ int ff_dca_lbr_parse(DCALbrDecoder *s, uint8_t *data, DCAExssAsset *asset)
         LBRChunk    hr_grid[DCA_LBR_CHANNELS / 2];
         LBRChunk    ts1[DCA_LBR_CHANNELS / 2];
         LBRChunk    ts2[DCA_LBR_CHANNELS / 2];
-    } chunk = { 0 };
+    } chunk = { {0} };
 
     GetByteContext gb;
 
