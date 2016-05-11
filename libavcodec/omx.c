@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
+#if CONFIG_OMX_RPI
+#define OMX_SKIP64BIT
+#endif
+
 #include <dlfcn.h>
 #include <OMX_Core.h>
 #include <OMX_Component.h>
@@ -69,6 +75,7 @@ static int64_t from_omx_ticks(OMX_TICKS value)
 
 typedef struct OMXContext {
     void *lib;
+    void *lib2;
     OMX_ERRORTYPE (*ptr_Init)(void);
     OMX_ERRORTYPE (*ptr_Deinit)(void);
     OMX_ERRORTYPE (*ptr_ComponentNameEnum)(OMX_STRING, OMX_U32, OMX_U32);
@@ -76,6 +83,7 @@ typedef struct OMXContext {
     OMX_ERRORTYPE (*ptr_FreeHandle)(OMX_HANDLETYPE);
     OMX_ERRORTYPE (*ptr_GetComponentsOfRole)(OMX_STRING, OMX_U32*, OMX_U8**);
     OMX_ERRORTYPE (*ptr_GetRolesOfComponent)(OMX_STRING, OMX_U32*, OMX_U8**);
+    void (*host_init)(void);
 } OMXContext;
 
 static av_cold void *dlsym_prefixed(void *handle, const char *symbol, const char *prefix)
@@ -86,8 +94,23 @@ static av_cold void *dlsym_prefixed(void *handle, const char *symbol, const char
 }
 
 static av_cold int omx_try_load(OMXContext *s, void *logctx,
-                                const char *libname, const char *prefix)
+                                const char *libname, const char *prefix,
+                                const char *libname2)
 {
+    if (libname2) {
+        s->lib2 = dlopen(libname2, RTLD_NOW | RTLD_GLOBAL);
+        if (!s->lib2) {
+            av_log(logctx, AV_LOG_WARNING, "%s not found\n", libname);
+            return AVERROR_ENCODER_NOT_FOUND;
+        }
+        s->host_init = dlsym(s->lib2, "bcm_host_init");
+        if (!s->host_init) {
+            av_log(logctx, AV_LOG_WARNING, "bcm_host_init not found\n");
+            dlclose(s->lib2);
+            s->lib2 = NULL;
+            return AVERROR_ENCODER_NOT_FOUND;
+        }
+    }
     s->lib = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
     if (!s->lib) {
         av_log(logctx, AV_LOG_WARNING, "%s not found\n", libname);
@@ -106,6 +129,9 @@ static av_cold int omx_try_load(OMXContext *s, void *logctx,
         av_log(logctx, AV_LOG_WARNING, "Not all functions found in %s\n", libname);
         dlclose(s->lib);
         s->lib = NULL;
+        if (s->lib2)
+            dlclose(s->lib2);
+        s->lib2 = NULL;
         return AVERROR_ENCODER_NOT_FOUND;
     }
     return 0;
@@ -114,8 +140,12 @@ static av_cold int omx_try_load(OMXContext *s, void *logctx,
 static av_cold OMXContext *omx_init(void *logctx, const char *libname, const char *prefix)
 {
     static const char * const libnames[] = {
-        "libOMX_Core.so",
-        "libOmxCore.so",
+#if CONFIG_OMX_RPI
+        "/opt/vc/lib/libopenmaxil.so", "/opt/vc/lib/libbcm_host.so",
+#else
+        "libOMX_Core.so", NULL,
+        "libOmxCore.so", NULL,
+#endif
         NULL
     };
     const char* const* nameptr;
@@ -126,14 +156,14 @@ static av_cold OMXContext *omx_init(void *logctx, const char *libname, const cha
     if (!omx_context)
         return NULL;
     if (libname) {
-        ret = omx_try_load(omx_context, logctx, libname, prefix);
+        ret = omx_try_load(omx_context, logctx, libname, prefix, NULL);
         if (ret < 0) {
             av_free(omx_context);
             return NULL;
         }
     } else {
-        for (nameptr = libnames; *nameptr; nameptr++)
-            if (!(ret = omx_try_load(omx_context, logctx, *nameptr, prefix)))
+        for (nameptr = libnames; *nameptr; nameptr += 2)
+            if (!(ret = omx_try_load(omx_context, logctx, nameptr[0], prefix, nameptr[1])))
                 break;
         if (!*nameptr) {
             av_free(omx_context);
@@ -141,6 +171,8 @@ static av_cold OMXContext *omx_init(void *logctx, const char *libname, const cha
         }
     }
 
+    if (omx_context->host_init)
+        omx_context->host_init();
     omx_context->ptr_Init();
     return omx_context;
 }
@@ -298,6 +330,12 @@ static av_cold int find_component(OMXContext *omx_context, void *logctx,
     char **components;
     int ret = 0;
 
+#if CONFIG_OMX_RPI
+    if (av_strstart(role, "video_encoder.", NULL)) {
+        av_strlcpy(str, "OMX.broadcom.video_encode", str_size);
+        return 0;
+    }
+#endif
     omx_context->ptr_GetComponentsOfRole((OMX_STRING) role, &num, NULL);
     if (!num) {
         av_log(logctx, AV_LOG_WARNING, "No component for role %s found\n", role);
