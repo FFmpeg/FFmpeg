@@ -108,12 +108,8 @@ OBJS-$(CONFIG_MPEGVIDEOENC)            += mpegvideo_enc.o mpeg12data.o  \
                                           motion_est.o ratecontrol.o    \
                                           mpegvideoencdsp.o
 OBJS-$(CONFIG_MSS34DSP)                += mss34dsp.o
-OBJS-$(CONFIG_NVENC)                   += nvenc.o
 OBJS-$(CONFIG_PIXBLOCKDSP)             += pixblockdsp.o
 OBJS-$(CONFIG_QPELDSP)                 += qpeldsp.o
-OBJS-$(CONFIG_QSV)                     += qsv.o
-OBJS-$(CONFIG_QSVDEC)                  += qsvdec.o
-OBJS-$(CONFIG_QSVENC)                  += qsvenc.o
 OBJS-$(CONFIG_RANGECODER)              += rangecoder.o
 RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
@@ -313,19 +309,11 @@ OBJS-$(CONFIG_H264_DECODER)            += h264.o h264_cabac.o h264_cavlc.o \
                                           h264_slice.o h264data.o h264_parse.o \
                                           h2645_parse.o
 OBJS-$(CONFIG_H264_MEDIACODEC_DECODER) += mediacodecdec_h264.o
-OBJS-$(CONFIG_H264_MMAL_DECODER)       += mmaldec.o
-OBJS-$(CONFIG_H264_VDA_DECODER)        += vda_h264_dec.o
-OBJS-$(CONFIG_H264_QSV_DECODER)        += qsvdec_h2645.o
-OBJS-$(CONFIG_H264_QSV_ENCODER)        += qsvenc_h264.o
-OBJS-$(CONFIG_H264_VAAPI_ENCODER)      += vaapi_encode_h264.o vaapi_encode_h26x.o
 OBJS-$(CONFIG_HAP_DECODER)             += hapdec.o hap.o
 OBJS-$(CONFIG_HAP_ENCODER)             += hapenc.o hap.o
 OBJS-$(CONFIG_HEVC_DECODER)            += hevc.o hevc_mvs.o hevc_ps.o hevc_sei.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o h2645_parse.o hevc_data.o
-OBJS-$(CONFIG_HEVC_QSV_DECODER)        += qsvdec_h2645.o
-OBJS-$(CONFIG_HEVC_QSV_ENCODER)        += qsvenc_hevc.o hevc_ps_enc.o h2645_parse.o
-OBJS-$(CONFIG_HEVC_VAAPI_ENCODER)      += vaapi_encode_h265.o vaapi_encode_h26x.o
 OBJS-$(CONFIG_HNM4_VIDEO_DECODER)      += hnm4video.o
 OBJS-$(CONFIG_HQ_HQA_DECODER)          += hq_hqa.o hq_hqadata.o hq_hqadsp.o \
                                           canopus.o
@@ -392,9 +380,6 @@ OBJS-$(CONFIG_MPC8_DECODER)            += mpc8.o mpc.o
 OBJS-$(CONFIG_MPEGVIDEO_DECODER)       += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
-OBJS-$(CONFIG_MPEG2_MMAL_DECODER)      += mmaldec.o
-OBJS-$(CONFIG_MPEG2_QSV_DECODER)       += qsvdec_mpeg2.o
-OBJS-$(CONFIG_MPEG2_QSV_ENCODER)       += qsvenc_mpeg2.o
 OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
 OBJS-$(CONFIG_MPEG4_DECODER)           += xvididct.o
@@ -772,6 +757,24 @@ OBJS-$(CONFIG_VC1_VDPAU_HWACCEL)          += vdpau_vc1.o
 OBJS-$(CONFIG_VP9_D3D11VA_HWACCEL)        += dxva2_vp9.o
 OBJS-$(CONFIG_VP9_DXVA2_HWACCEL)          += dxva2_vp9.o
 OBJS-$(CONFIG_VP9_VAAPI_HWACCEL)          += vaapi_vp9.o
+
+# hardware-accelerated decoding/encoding
+OBJS-$(CONFIG_NVENC)                      += nvenc.o
+OBJS-$(CONFIG_QSV)                        += qsv.o
+OBJS-$(CONFIG_QSVDEC)                     += qsvdec.o
+OBJS-$(CONFIG_QSVENC)                     += qsvenc.o
+
+OBJS-$(CONFIG_H264_MMAL_DECODER)          += mmaldec.o
+OBJS-$(CONFIG_H264_VDA_DECODER)           += vda_h264_dec.o
+OBJS-$(CONFIG_H264_QSV_DECODER)           += qsvdec_h2645.o
+OBJS-$(CONFIG_H264_QSV_ENCODER)           += qsvenc_h264.o
+OBJS-$(CONFIG_H264_VAAPI_ENCODER)         += vaapi_encode_h264.o vaapi_encode_h26x.o
+OBJS-$(CONFIG_HEVC_QSV_DECODER)           += qsvdec_h2645.o
+OBJS-$(CONFIG_HEVC_QSV_ENCODER)           += qsvenc_hevc.o hevc_ps_enc.o h2645_parse.o
+OBJS-$(CONFIG_HEVC_VAAPI_ENCODER)         += vaapi_encode_h265.o vaapi_encode_h26x.o
+OBJS-$(CONFIG_MPEG2_MMAL_DECODER)         += mmaldec.o
+OBJS-$(CONFIG_MPEG2_QSV_DECODER)          += qsvdec_mpeg2.o
+OBJS-$(CONFIG_MPEG2_QSV_ENCODER)          += qsvenc_mpeg2.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o
