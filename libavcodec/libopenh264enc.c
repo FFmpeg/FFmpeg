@@ -36,9 +36,11 @@ typedef struct SVCContext {
     const AVClass *av_class;
     ISVCEncoder *encoder;
     int slice_mode;
+    int rc_mode;
     int loopfilter;
     char *profile;
     int max_nal_size;
+    int slice_mbs;
     int skip_frames;
     int skipped;
     int cabac;
@@ -51,16 +53,25 @@ typedef struct SVCContext {
 #define OFFSET(x) offsetof(SVCContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "slice_mode", "set slice mode", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_AUTO_SLICE }, SM_SINGLE_SLICE, SM_RESERVED, VE, "slice_mode" },
+    { "slice_mode", "set slice mode", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_SINGLE_SLICE }, SM_SINGLE_SLICE, SM_RESERVED, VE, "slice_mode" },
+        { "single", "single slice per frame", 0, AV_OPT_TYPE_CONST, { .i64 = SM_SINGLE_SLICE }, 0, 0, VE, "slice_mode" },
         { "fixed", "a fixed number of slices", 0, AV_OPT_TYPE_CONST, { .i64 = SM_FIXEDSLCNUM_SLICE }, 0, 0, VE, "slice_mode" },
-        { "rowmb", "one slice per row of macroblocks", 0, AV_OPT_TYPE_CONST, { .i64 = SM_ROWMB_SLICE }, 0, 0, VE, "slice_mode" },
-        { "auto", "automatic number of slices according to number of threads", 0, AV_OPT_TYPE_CONST, { .i64 = SM_AUTO_SLICE }, 0, 0, VE, "slice_mode" },
-        { "dyn", "Dynamic slicing", 0, AV_OPT_TYPE_CONST, { .i64 = SM_DYN_SLICE }, 0, 0, VE, "slice_mode" },
+        { "raster", "slicing acording to macroblock numbers per each slice", 0, AV_OPT_TYPE_CONST, { .i64 = SM_RASTER_SLICE }, 0, 0, VE, "slice_mode" },
+        { "sizelimited", "slicing according to slice size", 0, AV_OPT_TYPE_CONST, { .i64 = SM_SIZELIMITED_SLICE }, 0, 0, VE, "slice_mode" },
+    { "rc_mode", "set rate controle mode", OFFSET(rc_mode), AV_OPT_TYPE_INT, { .i64 = RC_QUALITY_MODE }, RC_OFF_MODE, RC_BITRATE_MODE_POST_SKIP, VE, "rc_mode" },
+        { "quality", "quality-based mode", 0, AV_OPT_TYPE_CONST, { .i64 = RC_QUALITY_MODE }, 0, 0, VE, "rc_mode" },
+        { "bitrate", "bitrate-based mode", 0, AV_OPT_TYPE_CONST, { .i64 = RC_BITRATE_MODE }, 0, 0, VE, "rc_mode" },
+        { "bufferbased" , "using buffer status to adjust bitrate", 0, AV_OPT_TYPE_CONST, { .i64 = RC_BUFFERBASED_MODE }, 0, 0, VE, "rc_mode" },
+        { "timestamp", "using timestamp to adjust bitrate", 0, AV_OPT_TYPE_CONST, { .i64 = RC_TIMESTAMP_MODE }, 0, 0, VE, "rc_mode" },
+        { "off", "no bitrate control", 0, AV_OPT_TYPE_CONST, { .i64 = RC_OFF_MODE }, 0, 0, VE, "rc_mode" },
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
-    { "max_nal_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "max_nal_size", "set maximum slice size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "slice_mbs", "set number of macroblocks per size", OFFSET(slice_mbs), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "allow_skip_frames", "allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "cabac", "Enable cabac", OFFSET(cabac), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "entropy", "set entropy encoding mode", OFFSET(cabac), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE, "entropy_mode" },
+        { "cabac", "use CABAC", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, VE, "entropy_mode" },
+        { "cavlc", "use CAVLC", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, VE, "entropy_mode" },
     { NULL }
 };
 
@@ -154,7 +165,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.iPicHeight                 = avctx->height;
     param.iTargetBitrate             = avctx->bit_rate;
     param.iMaxBitrate                = FFMAX(avctx->rc_max_rate, avctx->bit_rate);
-    param.iRCMode                    = RC_QUALITY_MODE;
+    param.iRCMode                    = s->rc_mode;
     param.iTemporalLayerNum          = 1;
     param.iSpatialLayerNum           = 1;
     param.bEnableDenoise             = 0;
@@ -172,11 +183,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.bPrefixNalAddingCtrl       = 0;
     param.iLoopFilterDisableIdc      = !s->loopfilter;
     param.iEntropyCodingModeFlag     = 0;
-    param.iMultipleThreadIdc         = avctx->thread_count;
     if (s->profile && !strcmp(s->profile, "main"))
         param.iEntropyCodingModeFlag = 1;
     else if (!s->profile && s->cabac)
         param.iEntropyCodingModeFlag = 1;
+    param.iMultipleThreadIdc         = avctx->thread_count;
 
     param.sSpatialLayers[0].iVideoWidth         = param.iPicWidth;
     param.sSpatialLayers[0].iVideoHeight        = param.iPicHeight;
@@ -184,30 +195,27 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.sSpatialLayers[0].iSpatialBitrate     = param.iTargetBitrate;
     param.sSpatialLayers[0].iMaxSpatialBitrate  = param.iMaxBitrate;
 
-    if ((avctx->slices > 1) && (s->max_nal_size)){
-        av_log(avctx,AV_LOG_ERROR,"Invalid combination -slices %d and -max_nal_size %d.\n",avctx->slices,s->max_nal_size);
-        goto fail;
-    }
+    param.sSpatialLayers[0].sSliceArgument.uiSliceMode = s->slice_mode;
 
-    if (avctx->slices > 1)
-        s->slice_mode = SM_FIXEDSLCNUM_SLICE;
-
-    if (s->max_nal_size)
-        s->slice_mode = SM_DYN_SLICE;
-
-    param.sSpatialLayers[0].sSliceCfg.uiSliceMode               = s->slice_mode;
-    param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceNum = avctx->slices;
-
-    if (s->slice_mode == SM_DYN_SLICE) {
-        if (s->max_nal_size){
-            param.uiMaxNalSize = s->max_nal_size;
-            param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
+    if (s->slice_mode == SM_FIXEDSLCNUM_SLICE) {
+        param.sSpatialLayers[0].sSliceArgument.uiSliceNum = avctx->slices;
+    } else if (s->slice_mode == SM_RASTER_SLICE) {
+        if (s->slice_mbs) {
+            param.sSpatialLayers[0].sSliceArgument.uiSliceMbNum[0] = s->slice_mbs;
         } else {
-            av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, "
-                   "specify a valid max_nal_size to use -slice_mode dyn\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid -slice_mbs, specify a valid slice_mbs to use -slice_mode raster\n");
+            goto fail;
+        }
+    } else if (s->slice_mode == SM_SIZELIMITED_SLICE) {
+        if (s->max_nal_size) {
+            param.uiMaxNalSize = s->max_nal_size;
+            param.sSpatialLayers[0].sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, specify a valid max_nal_size to use -slice_mode sizelimited\n");
             goto fail;
         }
     }
+
 
     if ((*s->encoder)->InitializeExt(s->encoder, &param) != cmResultSuccess) {
         av_log(avctx, AV_LOG_ERROR, "Initialize failed\n");
