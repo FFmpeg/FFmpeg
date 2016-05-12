@@ -706,6 +706,59 @@ static void decode_deep_tvdc32(uint8_t *dst, const uint8_t *src, int src_size, i
     }
 }
 
+static void decode_short_horizontal_delta(uint8_t *dst,
+                                          const uint8_t *buf, const uint8_t *buf_end,
+                                          int w, int bpp, int dst_size)
+{
+    int planepitch = FFALIGN(w, 16) >> 3;
+    int pitch = planepitch * bpp;
+    GetByteContext ptrs, gb;
+    PutByteContext pb;
+    unsigned ofssrc, pos;
+    int i, k;
+
+    bytestream2_init(&ptrs, buf, buf_end - buf);
+    bytestream2_init_writer(&pb, dst, dst_size);
+
+    for (k = 0; k < bpp; k++) {
+        ofssrc = bytestream2_get_be32(&ptrs);
+        pos = 0;
+
+        if (!ofssrc)
+            continue;
+
+        if (ofssrc >= buf_end - buf)
+            continue;
+
+        bytestream2_init(&gb, buf + ofssrc, buf_end - (buf + ofssrc));
+        while (bytestream2_peek_be16(&gb) != 0xFFFF && bytestream2_get_bytes_left(&gb) > 3) {
+            int16_t offset = bytestream2_get_be16(&gb);
+            unsigned noffset;
+
+            if (offset >= 0) {
+                unsigned data = bytestream2_get_be16(&gb);
+
+                pos += offset * 2;
+                noffset = (pos / planepitch) * pitch + (pos % planepitch) + k * planepitch;
+                bytestream2_seek_p(&pb, noffset, SEEK_SET);
+                bytestream2_put_be16(&pb, data);
+            } else {
+                uint16_t count = bytestream2_get_be16(&gb);
+
+                pos += 2 * -(offset + 2);
+                for (i = 0; i < count; i++) {
+                    uint16_t data = bytestream2_get_be16(&gb);
+
+                    pos += 2;
+                    noffset = (pos / planepitch) * pitch + (pos % planepitch) + k * planepitch;
+                    bytestream2_seek_p(&pb, noffset, SEEK_SET);
+                    bytestream2_put_be16(&pb, data);
+                }
+            }
+        }
+    }
+}
+
 static void decode_byte_vertical_delta(uint8_t *dst,
                                        const uint8_t *buf, const uint8_t *buf_end,
                                        int w, int bpp, int dst_size)
@@ -1457,6 +1510,10 @@ static int decode_frame(AVCodecContext *avctx,
                 return unsupported(avctx);
         } else
             return unsupported(avctx);
+        break;
+    case 0x300:
+    case 0x301:
+        decode_short_horizontal_delta(s->video[0], buf, buf_end, avctx->width, s->bpp, s->video_size);
         break;
     case 0x500:
     case 0x501:
