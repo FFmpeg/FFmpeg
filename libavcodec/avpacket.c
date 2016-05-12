@@ -568,16 +568,18 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
         if (ret < 0)
             goto fail;
         memcpy(dst->buf->data, src->data, src->size);
+        dst->data = dst->buf->data;
     } else {
         dst->buf = av_buffer_ref(src->buf);
         if (!dst->buf) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        dst->data = src->data;
     }
 
     dst->size = src->size;
-    dst->data = dst->buf->data;
+
     return 0;
 fail:
     av_packet_free_side_data(dst);
