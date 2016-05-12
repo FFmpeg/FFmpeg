@@ -254,6 +254,13 @@ static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
             break;
         }
 
+        /* Inverted mode is not supported by x264 */
+        if (stereo->flags & AV_STEREO3D_FLAG_INVERT) {
+            av_log(ctx, AV_LOG_WARNING,
+                   "Ignoring unsupported inverted stereo value %d\n", fpa_type);
+            fpa_type = -1;
+        }
+
         if (fpa_type != x4->params.i_frame_packing) {
             x4->params.i_frame_packing = fpa_type;
             x264_encoder_reconfig(x4->enc, &x4->params);
