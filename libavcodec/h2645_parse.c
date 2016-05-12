@@ -250,6 +250,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           enum AVCodecID codec_id)
 {
     int consumed, ret = 0;
+    const uint8_t *next_avc = is_nalff ? buf : buf + length;
 
     pkt->nb_nals = 0;
     while (length >= 4) {
@@ -257,7 +258,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         int extract_length = 0;
         int skip_trailing_zeros = 1;
 
-        if (is_nalff) {
+        if (buf >= next_avc) {
             int i;
             for (i = 0; i < nal_length_size; i++)
                 extract_length = (extract_length << 8) | buf[i];
@@ -268,6 +269,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
                 return AVERROR_INVALIDDATA;
             }
+            next_avc = buf + extract_length;
         } else {
             /* search start code */
             while (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
@@ -282,12 +284,21 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                         av_log(logctx, AV_LOG_ERROR, "No start code is found.\n");
                         return AVERROR_INVALIDDATA;
                     }
-                }
+                } else if (buf >= (next_avc - 3))
+                    break;
             }
 
             buf           += 3;
             length        -= 3;
             extract_length = length;
+
+            if (buf >= next_avc) {
+                /* skip to the start of the next NAL */
+                int offset = next_avc - buf;
+                buf    += offset;
+                length -= offset;
+                continue;
+            }
         }
 
         if (pkt->nals_allocated < pkt->nb_nals + 1) {
@@ -314,6 +325,11 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         consumed = ff_h2645_extract_rbsp(buf, extract_length, nal);
         if (consumed < 0)
             return consumed;
+
+        if (is_nalff && (extract_length != consumed) && extract_length)
+            av_log(logctx, AV_LOG_DEBUG,
+                   "NALFF: Consumed only %d bytes instead of %d\n",
+                   consumed, extract_length);
 
         pkt->nb_nals++;
 
