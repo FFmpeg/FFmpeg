@@ -4581,7 +4581,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             /* We also may have written the pts and the corresponding duration
              * in sidx/tfrf/tfxd tags; make sure the sidx pts and duration match up with
              * the next fragment. This means the cts of the first sample must
-             * be the same in all fragments. */
+             * be the same in all fragments, unless end_pts was updated by
+             * the packet causing the fragment to be written. */
             if ((mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)) ||
                 mov->mode == MODE_ISM)
                 pkt->pts = pkt->dts + trk->end_pts - trk->cluster[trk->entry].dts;
