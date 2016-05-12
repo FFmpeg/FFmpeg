@@ -588,14 +588,18 @@ static int nvenc_setup_h264_config(AVCodecContext *avctx)
     NV_ENC_CONFIG_H264 *h264               = &cc->encodeCodecConfig.h264Config;
     NV_ENC_CONFIG_H264_VUI_PARAMETERS *vui = &h264->h264VUIParameters;
 
-    vui->colourDescriptionPresentFlag = 1;
-    vui->videoSignalTypePresentFlag   = 1;
+    vui->colourDescriptionPresentFlag = avctx->colorspace      != AVCOL_SPC_UNSPECIFIED ||
+                                        avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+                                        avctx->color_trc       != AVCOL_TRC_UNSPECIFIED;
 
     vui->colourMatrix            = avctx->colorspace;
     vui->colourPrimaries         = avctx->color_primaries;
     vui->transferCharacteristics = avctx->color_trc;
 
     vui->videoFullRangeFlag = avctx->color_range == AVCOL_RANGE_JPEG;
+
+    vui->videoSignalTypePresentFlag = vui->colourDescriptionPresentFlag ||
+                                      vui->videoFullRangeFlag;
 
     h264->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     h264->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
