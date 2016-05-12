@@ -652,6 +652,20 @@ static int nvenc_setup_hevc_config(AVCodecContext *avctx)
     NVENCContext *ctx                      = avctx->priv_data;
     NV_ENC_CONFIG *cc                      = &ctx->config;
     NV_ENC_CONFIG_HEVC *hevc               = &cc->encodeCodecConfig.hevcConfig;
+    NV_ENC_CONFIG_HEVC_VUI_PARAMETERS *vui = &hevc->hevcVUIParameters;
+
+    vui->colourDescriptionPresentFlag = avctx->colorspace      != AVCOL_SPC_UNSPECIFIED ||
+                                        avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+                                        avctx->color_trc       != AVCOL_TRC_UNSPECIFIED;
+
+    vui->colourMatrix            = avctx->colorspace;
+    vui->colourPrimaries         = avctx->color_primaries;
+    vui->transferCharacteristics = avctx->color_trc;
+
+    vui->videoFullRangeFlag = avctx->color_range == AVCOL_RANGE_JPEG;
+
+    vui->videoSignalTypePresentFlag = vui->colourDescriptionPresentFlag ||
+                                      vui->videoFullRangeFlag;
 
     hevc->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     hevc->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
