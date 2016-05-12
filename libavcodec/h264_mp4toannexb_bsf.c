@@ -140,10 +140,16 @@ pps:
 static int h264_mp4toannexb_init(AVBSFContext *ctx)
 {
     H264BSFContext *s = ctx->priv_data;
+    int extra_size = ctx->par_in->extradata_size;
     int ret;
 
     /* retrieve sps and pps NAL units from extradata */
-    if (ctx->par_in->extradata_size >= 6) {
+    if (!extra_size                                               ||
+        (extra_size >= 3 && AV_RB24(ctx->par_in->extradata) == 1) ||
+        (extra_size >= 4 && AV_RB32(ctx->par_in->extradata) == 1)) {
+        av_log(ctx, AV_LOG_VERBOSE,
+               "The input looks like it is Annex B already\n");
+    } else if (extra_size >= 6) {
         ret = h264_extradata_to_annexb(ctx, AV_INPUT_BUFFER_PADDING_SIZE);
         if (ret < 0)
             return ret;
@@ -153,6 +159,9 @@ static int h264_mp4toannexb_init(AVBSFContext *ctx)
         s->idr_sps_seen     = 0;
         s->idr_pps_seen     = 0;
         s->extradata_parsed = 1;
+    } else {
+        av_log(ctx, AV_LOG_ERROR, "Invalid extradata size: %d\n", extra_size);
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
