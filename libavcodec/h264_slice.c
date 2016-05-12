@@ -1361,8 +1361,8 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
         return AVERROR_INVALIDDATA;
     }
     sl->qscale       = tmp;
-    sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
-    sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
+    sl->chroma_qp[0] = get_chroma_qp(pps, 0, sl->qscale);
+    sl->chroma_qp[1] = get_chroma_qp(pps, 1, sl->qscale);
     // FIXME qscale / qp ... stuff
     if (sl->slice_type == AV_PICTURE_TYPE_SP)
         get_bits1(&sl->gb); /* sp_for_switch_flag */
@@ -1846,8 +1846,8 @@ static void loop_filter(const H264Context *h, H264SliceContext *sl, int start_x,
                                  uvlinesize, 0);
                 if (fill_filter_caches(h, sl, mb_type))
                     continue;
-                sl->chroma_qp[0] = get_chroma_qp(h, 0, h->cur_pic.qscale_table[mb_xy]);
-                sl->chroma_qp[1] = get_chroma_qp(h, 1, h->cur_pic.qscale_table[mb_xy]);
+                sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, h->cur_pic.qscale_table[mb_xy]);
+                sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, h->cur_pic.qscale_table[mb_xy]);
 
                 if (FRAME_MBAFF(h)) {
                     ff_h264_filter_mb(h, sl, mb_x, mb_y, dest_y, dest_cb, dest_cr,
@@ -1861,8 +1861,8 @@ static void loop_filter(const H264Context *h, H264SliceContext *sl, int start_x,
     sl->slice_type  = old_slice_type;
     sl->mb_x         = end_x;
     sl->mb_y         = end_mb_y - FRAME_MBAFF(h);
-    sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
-    sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
+    sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
+    sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
 }
 
 static void predict_field_decoding_flag(const H264Context *h, H264SliceContext *sl)

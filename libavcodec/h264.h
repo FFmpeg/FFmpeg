@@ -783,9 +783,9 @@ static av_always_inline uint16_t pack8to16(int a, int b)
 /**
  * Get the chroma qp.
  */
-static av_always_inline int get_chroma_qp(const H264Context *h, int t, int qscale)
+static av_always_inline int get_chroma_qp(const PPS *pps, int t, int qscale)
 {
-    return h->ps.pps->chroma_qp_table[t][qscale];
+    return pps->chroma_qp_table[t][qscale];
 }
 
 /**
