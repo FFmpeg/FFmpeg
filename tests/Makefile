@@ -229,7 +229,7 @@ lcov: coverage.info
 
 lcov-reset: TAG = LCOV
 lcov-reset:
-	$(M)lcov -d $(CURDIR) --zerocounters
+	$(M)lcov -q -d $(CURDIR) --zerocounters
 	$(Q)$(RM) -f coverage.info
 
 clean:: testclean
