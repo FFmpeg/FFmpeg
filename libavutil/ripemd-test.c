@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 
+#include "mem.h"
 #include "ripemd.h"
 
 int main(void)
@@ -73,6 +74,7 @@ int main(void)
             break;
         }
     }
+    av_free(ctx);
 
     return 0;
 }
