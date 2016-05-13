@@ -1921,10 +1921,8 @@ int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size)
         return ret;
 
     // Workaround for DTS in WAV
-    if (s->frame_size > size && s->frame_size < size + 4) {
-        av_log(s->avctx, AV_LOG_DEBUG, "Working around excessive core frame size (%d > %d)\n", s->frame_size, size);
+    if (s->frame_size > size && s->frame_size < size + 4)
         s->frame_size = size;
-    }
 
     if (ff_dca_seek_bits(&s->gb, s->frame_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Read past end of core frame\n");
