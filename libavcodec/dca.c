@@ -58,6 +58,7 @@ int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
     mrk = AV_RB32(src);
     switch (mrk) {
     case DCA_SYNCWORD_CORE_BE:
+    case DCA_SYNCWORD_SUBSTREAM:
         memcpy(dst, src, src_size);
         return src_size;
     case DCA_SYNCWORD_CORE_LE:
