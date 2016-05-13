@@ -1196,7 +1196,7 @@ static void decode_delta_l(uint8_t *dst,
         bytestream2_init(&ogb, buf + 2 * poff1, buf_end - (buf + 2 * poff1));
 
         while ((bytestream2_peek_be16(&ogb)) != 0xFFFF) {
-            uint16_t offset = bytestream2_get_be16(&ogb);
+            uint32_t offset = bytestream2_get_be16(&ogb);
             int16_t cnt = bytestream2_get_be16(&ogb);
             uint16_t data;
 
