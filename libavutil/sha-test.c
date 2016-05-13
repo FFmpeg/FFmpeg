@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 
+#include "mem.h"
 #include "sha.h"
 
 int main(void)
@@ -68,6 +69,7 @@ int main(void)
             break;
         }
     }
+    av_free(ctx);
 
     return 0;
 }
