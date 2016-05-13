@@ -193,10 +193,8 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     if (AV_RB32(input) == DCA_SYNCWORD_CORE_BE) {
         int frame_size;
 
-        if ((ret = ff_dca_core_parse(&s->core, input, input_size)) < 0) {
-            s->core_residual_valid = 0;
+        if ((ret = ff_dca_core_parse(&s->core, input, input_size)) < 0)
             return ret;
-        }
 
         s->packet |= DCA_PACKET_CORE;
 
@@ -265,19 +263,20 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
             if (s->xll.chset[0].freq == 96000 && s->core.sample_rate == 48000)
                 x96_synth = 1;
 
-            if ((ret = ff_dca_core_filter_fixed(&s->core, x96_synth)) < 0) {
-                s->core_residual_valid = 0;
+            if ((ret = ff_dca_core_filter_fixed(&s->core, x96_synth)) < 0)
                 return ret;
-            }
 
             // Force lossy downmixed output on the first core frame filtered.
             // This prevents audible clicks when seeking and is consistent with
             // what reference decoder does when there are multiple channel sets.
-            if (!s->core_residual_valid) {
-                if (s->xll.nreschsets > 0 && s->xll.nchsets > 1)
-                    s->packet |= DCA_PACKET_RECOVERY;
-                s->core_residual_valid = 1;
+            if (!(prev_packet & DCA_PACKET_RESIDUAL) && s->xll.nreschsets > 0
+                && s->xll.nchsets > 1) {
+                av_log(avctx, AV_LOG_VERBOSE, "Forcing XLL recovery mode\n");
+                s->packet |= DCA_PACKET_RECOVERY;
             }
+
+            // Set 'residual ok' flag for the next frame
+            s->packet |= DCA_PACKET_RESIDUAL;
         }
 
         if ((ret = ff_dca_xll_filter_frame(&s->xll, frame)) < 0) {
@@ -286,17 +285,14 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
                 return ret;
             if (ret != AVERROR_INVALIDDATA || (avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
-            if ((ret = ff_dca_core_filter_frame(&s->core, frame)) < 0) {
-                s->core_residual_valid = 0;
+            if ((ret = ff_dca_core_filter_frame(&s->core, frame)) < 0)
                 return ret;
-            }
         }
     } else if (s->packet & DCA_PACKET_CORE) {
-        if ((ret = ff_dca_core_filter_frame(&s->core, frame)) < 0) {
-            s->core_residual_valid = 0;
+        if ((ret = ff_dca_core_filter_frame(&s->core, frame)) < 0)
             return ret;
-        }
-        s->core_residual_valid = !!(s->core.filter_mode & DCA_FILTER_MODE_FIXED);
+        if (s->core.filter_mode & DCA_FILTER_MODE_FIXED)
+            s->packet |= DCA_PACKET_RESIDUAL;
     } else {
         av_log(avctx, AV_LOG_ERROR, "No valid DCA sub-stream found\n");
         if (s->core_only)
@@ -317,7 +313,7 @@ static av_cold void dcadec_flush(AVCodecContext *avctx)
     ff_dca_xll_flush(&s->xll);
     ff_dca_lbr_flush(&s->lbr);
 
-    s->core_residual_valid = 0;
+    s->packet &= DCA_PACKET_MASK;
 }
 
 static av_cold int dcadec_close(AVCodecContext *avctx)
