@@ -48,12 +48,15 @@
 
 #include "libavutil/common.h"
 #include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_cuda.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "nvenc.h"
+
+#if CONFIG_CUDA
+#include "libavutil/hwcontext_cuda.h"
+#endif
 
 #define NVENC_CAP 0x30
 #define BITSTREAM_BUFFER_SIZE 1024 * 1024
@@ -85,7 +88,9 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV444P,
+#if CONFIG_CUDA
     AV_PIX_FMT_CUDA,
+#endif
     AV_PIX_FMT_NONE
 };
 
@@ -395,6 +400,7 @@ static int nvenc_setup_device(AVCodecContext *avctx)
     }
 
     if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+#if CONFIG_CUDA
         AVHWFramesContext   *frames_ctx;
         AVCUDADeviceContext *device_hwctx;
         int ret;
@@ -414,6 +420,9 @@ static int nvenc_setup_device(AVCodecContext *avctx)
         ret = nvenc_check_capabilities(avctx);
         if (ret < 0)
             return ret;
+#else
+        return AVERROR_BUG;
+#endif
     } else {
         int i, nb_devices = 0;
 
