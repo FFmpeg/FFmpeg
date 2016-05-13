@@ -435,7 +435,7 @@ static int avi_write_header(AVFormatContext *s)
             }
             if (par->codec_id == AV_CODEC_ID_XSUB
             && (t = av_dict_get(s->streams[i]->metadata, "language", NULL, 0))) {
-                const char* langstr = av_convert_lang_to(t->value, AV_LANG_ISO639_1);
+                const char* langstr = ff_convert_lang_to(t->value, AV_LANG_ISO639_1);
                 t = NULL;
                 if (langstr) {
                     char* str = av_asprintf("Subtitle - %s-xx;02", langstr);
