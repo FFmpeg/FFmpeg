@@ -179,8 +179,10 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0, ret = AVERROR_INVALIDDATA; i < input_size - MIN_PACKET_SIZE + 1 && ret < 0; i++)
         ret = convert_bitstream(input + i, input_size - i, s->buffer, s->buffer_size);
 
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Not a valid DCA frame\n");
         return ret;
+    }
 
     input      = s->buffer;
     input_size = ret;
@@ -296,6 +298,9 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
         }
         s->core_residual_valid = !!(s->core.filter_mode & DCA_FILTER_MODE_FIXED);
     } else {
+        av_log(avctx, AV_LOG_ERROR, "No valid DCA sub-stream found\n");
+        if (s->core_only)
+            av_log(avctx, AV_LOG_WARNING, "Consider disabling 'core_only' option\n");
         return AVERROR_INVALIDDATA;
     }
 
