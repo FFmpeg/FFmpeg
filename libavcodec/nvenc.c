@@ -1,6 +1,8 @@
 /*
  * NVIDIA NVENC Support
  * Copyright (C) 2015 Luca Barbato
+ * Copyright (C) 2015 Philip Langdale <philipl@overt.org>
+ * Copyright (C) 2014 Timo Rothenpieler <timo@rothenpieler.org>
  *
  * This file is part of Libav.
  *
