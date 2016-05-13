@@ -378,9 +378,6 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
         break;
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
-    avctx->bits_per_raw_sample = 24;
-
     return 0;
 }
 
