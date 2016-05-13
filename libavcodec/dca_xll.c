@@ -32,7 +32,7 @@ static int get_linear(GetBitContext *gb, int n)
 
 static int get_rice_un(GetBitContext *gb, int k)
 {
-    unsigned int v = get_unary(gb, 1, 128);
+    unsigned int v = get_unary(gb, 1, get_bits_left(gb));
     return (v << k) | get_bits_long(gb, k);
 }
 
