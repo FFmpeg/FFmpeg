@@ -21,7 +21,6 @@
 
 #include "config.h"
 
-#include <cuda.h>
 #include <nvEncodeAPI.h>
 #include <string.h>
 

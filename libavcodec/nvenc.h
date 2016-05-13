@@ -19,7 +19,6 @@
 #ifndef AVCODEC_NVENC_H
 #define AVCODEC_NVENC_H
 
-#include <cuda.h>
 #include <nvEncodeAPI.h>
 
 #include "config.h"
@@ -28,6 +27,24 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+
+#if CONFIG_CUDA
+#include <cuda.h>
+#else
+
+#if defined(_WIN32)
+#define CUDAAPI __stdcall
+#else
+#define CUDAAPI
+#endif
+
+typedef enum cudaError_enum {
+    CUDA_SUCCESS = 0
+} CUresult;
+typedef int CUdevice;
+typedef void* CUcontext;
+typedef void* CUdeviceptr;
+#endif
 
 #define MAX_REGISTERED_FRAMES 64
 

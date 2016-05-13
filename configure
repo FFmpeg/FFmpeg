@@ -4665,7 +4665,6 @@ if enabled libdc1394; then
 fi
 
 if enabled nvenc; then
-    enabled cuda || check_header cuda.h || die "ERROR: cuda.h not found."
     check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."
     check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6" ||
         die "ERROR: NVENC API version 5 or older is not supported"
