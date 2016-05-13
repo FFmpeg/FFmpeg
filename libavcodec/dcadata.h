@@ -71,7 +71,8 @@ extern const uint16_t ff_dca_xll_refl_coeff[128];
 
 extern const int32_t ff_dca_xll_band_coeff[20];
 
-extern const int32_t ff_dca_sampling_freqs[16];
+extern const uint32_t ff_dca_sampling_freqs[16];
+extern const uint8_t ff_dca_freq_ranges[16];
 
 extern const uint16_t ff_dca_avg_g3_freqs[3];
 

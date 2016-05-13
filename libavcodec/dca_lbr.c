@@ -1000,15 +1000,15 @@ static int parse_decoder_init(DCALbrDecoder *s, GetByteContext *gb)
     int old_band_limit = s->band_limit;
     int old_nchannels = s->nchannels;
     int version, bit_rate_hi;
-    unsigned int code;
+    unsigned int sr_code;
 
     // Sample rate of LBR audio
-    code = bytestream2_get_byte(gb);
-    if (code >= FF_ARRAY_ELEMS(ff_dca_sampling_freqs)) {
+    sr_code = bytestream2_get_byte(gb);
+    if (sr_code >= FF_ARRAY_ELEMS(ff_dca_sampling_freqs)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid LBR sample rate\n");
         return AVERROR_INVALIDDATA;
     }
-    s->sample_rate = ff_dca_sampling_freqs[code];
+    s->sample_rate = ff_dca_sampling_freqs[sr_code];
     if (s->sample_rate > 48000) {
         avpriv_report_missing_feature(s->avctx, "%d Hz LBR sample rate", s->sample_rate);
         return AVERROR_PATCHWELCOME;
@@ -1076,12 +1076,7 @@ static int parse_decoder_init(DCALbrDecoder *s, GetByteContext *gb)
     }
 
     // Setup frequency range
-    if (s->sample_rate < 14000)
-        s->freq_range = 0;
-    else if (s->sample_rate < 28000)
-        s->freq_range = 1;
-    else
-        s->freq_range = 2;
+    s->freq_range = ff_dca_freq_ranges[sr_code];
 
     // Setup resolution profile
     if (s->bit_rate_orig >= 44000 * (s->nchannels_total + 2))
