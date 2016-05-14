@@ -618,6 +618,9 @@ static int nvenc_setup_h264_config(AVCodecContext *avctx)
     h264->maxNumRefFrames = avctx->refs;
     h264->idrPeriod       = cc->gopLength;
 
+    h264->sliceMode     = 3;
+    h264->sliceModeData = FFMAX(avctx->slices, 1);
+
     if (ctx->flags & NVENC_LOSSLESS)
         h264->qpPrimeYZeroTransformBypassFlag = 1;
 
@@ -692,6 +695,9 @@ static int nvenc_setup_hevc_config(AVCodecContext *avctx)
     /* No other profile is supported in the current SDK version 5 */
     cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
     avctx->profile  = FF_PROFILE_HEVC_MAIN;
+
+    hevc->sliceMode     = 3;
+    hevc->sliceModeData = FFMAX(avctx->slices, 1);
 
     if (ctx->level) {
         hevc->level = ctx->level;
