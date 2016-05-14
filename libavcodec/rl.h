@@ -28,7 +28,8 @@
 #define AVCODEC_RL_H
 
 #include <stdint.h>
-#include "get_bits.h"
+
+#include "vlc.h"
 
 /* run length table */
 #define MAX_RUN    64
