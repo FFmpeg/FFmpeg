@@ -51,6 +51,15 @@ static const int mb_type_b_map[4] = {
     MB_TYPE_L0      | MB_TYPE_16x16,
 };
 
+static inline int check_marker(GetBitContext *s, const char *msg)
+{
+    int bit = get_bits1(s);
+    if (!bit)
+        av_log(NULL, AV_LOG_INFO, "Marker bit missing %s\n", msg);
+
+    return bit;
+}
+
 /**
  * Predict the ac.
  * @param n block index (0-3 are luma, 4-5 are chroma)
