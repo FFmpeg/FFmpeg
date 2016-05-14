@@ -51,11 +51,11 @@ static const int mb_type_b_map[4] = {
     MB_TYPE_L0      | MB_TYPE_16x16,
 };
 
-static inline int check_marker(GetBitContext *s, const char *msg)
+static inline int check_marker(AVCodecContext *avctx, GetBitContext *s, const char *msg)
 {
     int bit = get_bits1(s);
     if (!bit)
-        av_log(NULL, AV_LOG_INFO, "Marker bit missing %s\n", msg);
+        av_log(avctx, AV_LOG_INFO, "Marker bit missing %s\n", msg);
 
     return bit;
 }
@@ -446,9 +446,9 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
         while (get_bits1(&s->gb) != 0)
             time_incr++;
 
-        check_marker(&s->gb, "before time_increment in video packed header");
+        check_marker(s->avctx, &s->gb, "before time_increment in video packed header");
         skip_bits(&s->gb, ctx->time_increment_bits);      /* time_increment */
-        check_marker(&s->gb, "before vop_coding_type in video packed header");
+        check_marker(s->avctx, &s->gb, "before vop_coding_type in video packed header");
 
         skip_bits(&s->gb, 2); /* vop coding type */
         // FIXME not rect stuff here
@@ -1731,7 +1731,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         skip_bits(gb, 4);  /* video_object_layer_shape_extension */
     }
 
-    check_marker(gb, "before time_increment_resolution");
+    check_marker(s->avctx, gb, "before time_increment_resolution");
 
     s->avctx->framerate.num = get_bits(gb, 16);
     if (!s->avctx->framerate.num) {
@@ -1743,7 +1743,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (ctx->time_increment_bits < 1)
         ctx->time_increment_bits = 1;
 
-    check_marker(gb, "before fixed_vop_rate");
+    check_marker(s->avctx, gb, "before fixed_vop_rate");
 
     if (get_bits1(gb) != 0)     /* fixed_vop_rate  */
         s->avctx->framerate.den = get_bits(gb, ctx->time_increment_bits);
@@ -1909,7 +1909,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                     ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* inter4v_blocks */
                     ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* not coded blocks */
                 }
-                if (!check_marker(gb, "in complexity estimation part 1")) {
+                if (!check_marker(s->avctx, gb, "in complexity estimation part 1")) {
                     skip_bits_long(gb, pos - get_bits_count(gb));
                     goto no_cplx_est;
                 }
@@ -1927,7 +1927,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                     ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel2 */
                     ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel4 */
                 }
-                if (!check_marker(gb, "in complexity estimation part 2")) {
+                if (!check_marker(s->avctx, gb, "in complexity estimation part 2")) {
                     skip_bits_long(gb, pos - get_bits_count(gb));
                     goto no_cplx_est;
                 }
@@ -2104,7 +2104,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     while (get_bits1(gb) != 0)
         time_incr++;
 
-    check_marker(gb, "before time_increment");
+    check_marker(s->avctx, gb, "before time_increment");
 
     if (ctx->time_increment_bits == 0 ||
         !(show_bits(gb, ctx->time_increment_bits + 1) & 1)) {
@@ -2166,7 +2166,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         }
     }
 
-    check_marker(gb, "before vop_coded");
+    check_marker(s->avctx, gb, "before vop_coded");
 
     /* vop coded */
     if (get_bits1(gb) != 1) {
