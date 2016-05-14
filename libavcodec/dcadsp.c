@@ -122,7 +122,7 @@ static void sub_qmf32_float_c(SynthFilterContext *synth,
                               const float *filter_coeff, ptrdiff_t npcmblocks,
                               float scale)
 {
-    LOCAL_ALIGNED(32, float, input, [32]);
+    LOCAL_ALIGNED_32(float, input, [32]);
     int i, j;
 
     for (j = 0; j < npcmblocks; j++) {
@@ -151,7 +151,7 @@ static void sub_qmf64_float_c(SynthFilterContext *synth,
                               const float *filter_coeff, ptrdiff_t npcmblocks,
                               float scale)
 {
-    LOCAL_ALIGNED(32, float, input, [64]);
+    LOCAL_ALIGNED_32(float, input, [64]);
     int i, j;
 
     if (!subband_samples_hi)
@@ -243,7 +243,7 @@ static void sub_qmf32_fixed_c(SynthFilterContext *synth,
                               int32_t *hist1, int *offset, int32_t *hist2,
                               const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
-    LOCAL_ALIGNED(32, int32_t, input, [32]);
+    LOCAL_ALIGNED_32(int32_t, input, [32]);
     int i, j;
 
     for (j = 0; j < npcmblocks; j++) {
@@ -267,7 +267,7 @@ static void sub_qmf64_fixed_c(SynthFilterContext *synth,
                               int32_t *hist1, int *offset, int32_t *hist2,
                               const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
-    LOCAL_ALIGNED(32, int32_t, input, [64]);
+    LOCAL_ALIGNED_32(int32_t, input, [64]);
     int i, j;
 
     if (!subband_samples_hi)
@@ -385,6 +385,77 @@ static void assemble_freq_bands_c(int32_t *dst, int32_t *src0, int32_t *src1,
     }
 }
 
+static void lbr_bank_c(float output[32][4], float **input,
+                       const float *coeff, ptrdiff_t ofs, ptrdiff_t len)
+{
+    float SW0 = coeff[0];
+    float SW1 = coeff[1];
+    float SW2 = coeff[2];
+    float SW3 = coeff[3];
+
+    float C1  = coeff[4];
+    float C2  = coeff[5];
+    float C3  = coeff[6];
+    float C4  = coeff[7];
+
+    float AL1 = coeff[8];
+    float AL2 = coeff[9];
+
+    int i;
+
+    // Short window and 8 point forward MDCT
+    for (i = 0; i < len; i++) {
+        float *src = input[i] + ofs;
+
+        float a = src[-4] * SW0 - src[-1] * SW3;
+        float b = src[-3] * SW1 - src[-2] * SW2;
+        float c = src[ 2] * SW1 + src[ 1] * SW2;
+        float d = src[ 3] * SW0 + src[ 0] * SW3;
+
+        output[i][0] = C1 * b - C2 * c + C4 * a - C3 * d;
+        output[i][1] = C1 * d - C2 * a - C4 * b - C3 * c;
+        output[i][2] = C3 * b + C2 * d - C4 * c + C1 * a;
+        output[i][3] = C3 * a - C2 * b + C4 * d - C1 * c;
+    }
+
+    // Aliasing cancellation for high frequencies
+    for (i = 12; i < len - 1; i++) {
+        float a = output[i  ][3] * AL1;
+        float b = output[i+1][0] * AL1;
+        output[i  ][3] += b - a;
+        output[i+1][0] -= b + a;
+        a = output[i  ][2] * AL2;
+        b = output[i+1][1] * AL2;
+        output[i  ][2] += b - a;
+        output[i+1][1] -= b + a;
+    }
+}
+
+static void lfe_iir_c(float *output, const float *input,
+                      const float iir[5][4], float hist[5][2],
+                      ptrdiff_t factor)
+{
+    float res, tmp;
+    int i, j, k;
+
+    for (i = 0; i < 64; i++) {
+        res = *input++;
+
+        for (j = 0; j < factor; j++) {
+            for (k = 0; k < 5; k++) {
+                tmp = hist[k][0] * iir[k][0] + hist[k][1] * iir[k][1] + res;
+                res = hist[k][0] * iir[k][2] + hist[k][1] * iir[k][3] + tmp;
+
+                hist[k][0] = hist[k][1];
+                hist[k][1] = tmp;
+            }
+
+            *output++ = res;
+            res = 0;
+        }
+    }
+}
+
 av_cold void ff_dcadsp_init(DCADSPContext *s)
 {
     s->decode_hf     = decode_hf_c;
@@ -410,6 +481,9 @@ av_cold void ff_dcadsp_init(DCADSPContext *s)
     s->dmix_scale_inv = dmix_scale_inv_c;
 
     s->assemble_freq_bands = assemble_freq_bands_c;
+
+    s->lbr_bank = lbr_bank_c;
+    s->lfe_iir = lfe_iir_c;
 
     if (ARCH_X86)
         ff_dcadsp_init_x86(s);

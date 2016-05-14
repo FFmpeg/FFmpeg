@@ -21,11 +21,6 @@
 #include "dcadec.h"
 #include "dcadata.h"
 
-static int count_chs_for_mask(int mask)
-{
-    return av_popcount(mask) + av_popcount(mask & 0xae66);
-}
-
 static void parse_xll_parameters(DCAExssParser *s, DCAExssAsset *asset)
 {
     // Size of XLL data in extension substream
@@ -141,7 +136,7 @@ static int parse_descriptor(DCAExssParser *s, DCAExssAsset *asset)
 
             // Standard loudspeaker layout mask
             for (i = 0; i < spkr_remap_nsets; i++)
-                nspeakers[i] = count_chs_for_mask(get_bits(&s->gb, spkr_mask_nbits));
+                nspeakers[i] = ff_dca_count_chs_for_mask(get_bits(&s->gb, spkr_mask_nbits));
 
             for (i = 0; i < spkr_remap_nsets; i++) {
                 // Number of channels to be decoded for speaker remapping
@@ -403,8 +398,7 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
     header_size = get_bits(&s->gb, 8 + 4 * wide_hdr) + 1;
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, 32 + 8, header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, 32 + 8, header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid EXSS header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -470,7 +464,7 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
 
             // Speaker layout mask for mixer output channels
             for (i = 0; i < s->nmixoutconfigs; i++)
-                s->nmixoutchs[i] = count_chs_for_mask(get_bits(&s->gb, spkr_mask_nbits));
+                s->nmixoutchs[i] = ff_dca_count_chs_for_mask(get_bits(&s->gb, spkr_mask_nbits));
         }
     } else {
         s->npresents = 1;

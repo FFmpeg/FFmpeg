@@ -422,7 +422,7 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             dump_mastering_display_metadata(ctx, &sd);
             break;
         default:
-            av_log(ctx, AV_LOG_WARNING,
+            av_log(ctx, AV_LOG_INFO,
                    "unknown side data type %d (%d bytes)", sd.type, sd.size);
             break;
         }

@@ -100,62 +100,6 @@ static const uint8_t quant_index_group_size[DCA_CODE_BOOKS] = {
     1, 3, 3, 3, 3, 7, 7, 7, 7, 7
 };
 
-typedef struct DCAVLC {
-    int offset;         ///< Code values offset
-    int max_depth;      ///< Parameter for get_vlc2()
-    VLC vlc[7];         ///< Actual codes
-} DCAVLC;
-
-static DCAVLC   vlc_bit_allocation;
-static DCAVLC   vlc_transition_mode;
-static DCAVLC   vlc_scale_factor;
-static DCAVLC   vlc_quant_index[DCA_CODE_BOOKS];
-
-static av_cold void dca_init_vlcs(void)
-{
-    static VLC_TYPE dca_table[23622][2];
-    static int vlcs_initialized = 0;
-    int i, j, k;
-
-    if (vlcs_initialized)
-        return;
-
-#define DCA_INIT_VLC(vlc, a, b, c, d)                                      \
-    do {                                                                   \
-        vlc.table           = &dca_table[ff_dca_vlc_offs[k]];              \
-        vlc.table_allocated = ff_dca_vlc_offs[k + 1] - ff_dca_vlc_offs[k]; \
-        init_vlc(&vlc, a, b, c, 1, 1, d, 2, 2, INIT_VLC_USE_NEW_STATIC);   \
-    } while (0)
-
-    vlc_bit_allocation.offset    = 1;
-    vlc_bit_allocation.max_depth = 2;
-    for (i = 0, k = 0; i < 5; i++, k++)
-        DCA_INIT_VLC(vlc_bit_allocation.vlc[i], bitalloc_12_vlc_bits[i], 12,
-                     bitalloc_12_bits[i], bitalloc_12_codes[i]);
-
-    vlc_scale_factor.offset    = -64;
-    vlc_scale_factor.max_depth = 2;
-    for (i = 0; i < 5; i++, k++)
-        DCA_INIT_VLC(vlc_scale_factor.vlc[i], SCALES_VLC_BITS, 129,
-                     scales_bits[i], scales_codes[i]);
-
-    vlc_transition_mode.offset    = 0;
-    vlc_transition_mode.max_depth = 1;
-    for (i = 0; i < 4; i++, k++)
-        DCA_INIT_VLC(vlc_transition_mode.vlc[i], tmode_vlc_bits[i], 4,
-                     tmode_bits[i], tmode_codes[i]);
-
-    for (i = 0; i < DCA_CODE_BOOKS; i++) {
-        vlc_quant_index[i].offset    = bitalloc_offsets[i];
-        vlc_quant_index[i].max_depth = 1 + (i > 4);
-        for (j = 0; j < quant_index_group_size[i]; j++, k++)
-            DCA_INIT_VLC(vlc_quant_index[i].vlc[j], bitalloc_maxbits[i][j],
-                         bitalloc_sizes[i], bitalloc_bits[i][j], bitalloc_codes[i][j]);
-    }
-
-    vlcs_initialized = 1;
-}
-
 static int dca_get_vlc(GetBitContext *s, DCAVLC *v, int i)
 {
     return get_vlc2(s, v->vlc[i].table, v->vlc[i].bits, v->max_depth) + v->offset;
@@ -325,8 +269,7 @@ static int parse_coding_header(DCACoreDecoder *s, enum HeaderType header, int xc
 
         // Check CRC
         if (s->xxch_crc_present
-            && (s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-            && ff_dca_check_crc(&s->gb, header_pos, header_pos + header_size * 8)) {
+            && ff_dca_check_crc(s->avctx, &s->gb, header_pos, header_pos + header_size * 8)) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid XXCH channel set header checksum\n");
             return AVERROR_INVALIDDATA;
         }
@@ -498,7 +441,7 @@ static inline int parse_scale(DCACoreDecoder *s, int *scale_index, int sel)
 
     // If Huffman code was used, the difference of scales was encoded
     if (sel < 5)
-        *scale_index += dca_get_vlc(&s->gb, &vlc_scale_factor, sel);
+        *scale_index += dca_get_vlc(&s->gb, &ff_dca_vlc_scale_factor, sel);
     else
         *scale_index = get_bits(&s->gb, sel + 1);
 
@@ -517,7 +460,7 @@ static inline int parse_joint_scale(DCACoreDecoder *s, int sel)
 
     // Absolute value was encoded even when Huffman code was used
     if (sel < 5)
-        scale_index = dca_get_vlc(&s->gb, &vlc_scale_factor, sel);
+        scale_index = dca_get_vlc(&s->gb, &ff_dca_vlc_scale_factor, sel);
     else
         scale_index = get_bits(&s->gb, sel + 1);
 
@@ -569,7 +512,7 @@ static int parse_subframe_header(DCACoreDecoder *s, int sf,
             int abits;
 
             if (sel < 5)
-                abits = dca_get_vlc(&s->gb, &vlc_bit_allocation, sel);
+                abits = dca_get_vlc(&s->gb, &ff_dca_vlc_bit_allocation, sel);
             else
                 abits = get_bits(&s->gb, sel - 1);
 
@@ -592,7 +535,7 @@ static int parse_subframe_header(DCACoreDecoder *s, int sf,
             int sel = s->transition_mode_sel[ch];
             for (band = 0; band < s->subband_vq_start[ch]; band++)
                 if (s->bit_allocation[ch][band])
-                    s->transition_mode[sf][ch][band] = dca_get_vlc(&s->gb, &vlc_transition_mode, sel);
+                    s->transition_mode[sf][ch][band] = dca_get_vlc(&s->gb, &ff_dca_vlc_transition_mode, sel);
         }
     }
 
@@ -703,7 +646,7 @@ static inline int parse_huffman_codes(DCACoreDecoder *s, int32_t *audio, int abi
 
     // Extract Huffman codes from the bit stream
     for (i = 0; i < DCA_SUBBAND_SAMPLES; i++)
-        audio[i] = dca_get_vlc(&s->gb, &vlc_quant_index[abits - 1], sel);
+        audio[i] = dca_get_vlc(&s->gb, &ff_dca_vlc_quant_index[abits - 1], sel);
 
     return 1;
 }
@@ -1033,8 +976,7 @@ static int parse_xxch_frame(DCACoreDecoder *s)
     header_size = get_bits(&s->gb, 6) + 1;
 
     // Check XXCH frame header CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos + 32, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos + 32, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XXCH frame header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1249,8 +1191,7 @@ static int parse_xbr_frame(DCACoreDecoder *s)
     header_size = get_bits(&s->gb, 6) + 1;
 
     // Check XBR frame header CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos + 32, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos + 32, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XBR frame header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1494,7 +1435,7 @@ static int parse_x96_subframe_header(DCACoreDecoder *s, int xch_base)
         for (band = s->x96_subband_start; band < s->nsubbands[ch]; band++) {
             // If Huffman code was used, the difference of abits was encoded
             if (sel < 7)
-                abits += dca_get_vlc(&s->gb, &vlc_quant_index[5 + 2 * s->x96_high_res], sel);
+                abits += dca_get_vlc(&s->gb, &ff_dca_vlc_quant_index[5 + 2 * s->x96_high_res], sel);
             else
                 abits = get_bits(&s->gb, 3 + s->x96_high_res);
 
@@ -1565,8 +1506,7 @@ static int parse_x96_coding_header(DCACoreDecoder *s, int exss, int xch_base)
 
         // Check CRC
         if (s->x96_crc_present
-            && (s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-            && ff_dca_check_crc(&s->gb, header_pos, header_pos + header_size * 8)) {
+            && ff_dca_check_crc(s->avctx, &s->gb, header_pos, header_pos + header_size * 8)) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid X96 channel set header checksum\n");
             return AVERROR_INVALIDDATA;
         }
@@ -1721,8 +1661,7 @@ static int parse_x96_frame_exss(DCACoreDecoder *s)
     header_size = get_bits(&s->gb, 6) + 1;
 
     // Check X96 frame header CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos + 32, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos + 32, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid X96 frame header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1841,8 +1780,7 @@ static int parse_aux_data(DCACoreDecoder *s)
     skip_bits(&s->gb, 16);
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, aux_pos, get_bits_count(&s->gb))) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, aux_pos, get_bits_count(&s->gb))) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid auxiliary data checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1900,9 +1838,10 @@ static int parse_optional_info(DCACoreDecoder *s)
                 }
             }
 
-            if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+            if (!s->xch_pos) {
                 av_log(s->avctx, AV_LOG_ERROR, "XCH sync word not found\n");
-                return AVERROR_INVALIDDATA;
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
 
@@ -1922,9 +1861,10 @@ static int parse_optional_info(DCACoreDecoder *s)
                 }
             }
 
-            if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+            if (!s->x96_pos) {
                 av_log(s->avctx, AV_LOG_ERROR, "X96 sync word not found\n");
-                return AVERROR_INVALIDDATA;
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
 
@@ -1938,18 +1878,20 @@ static int parse_optional_info(DCACoreDecoder *s)
                 if (AV_RB32(s->gb.buffer + sync_pos * 4) == DCA_SYNCWORD_XXCH) {
                     s->gb.index = (sync_pos + 1) * 32;
                     size = get_bits(&s->gb, 6) + 1;
-                    if (size >= 11 &&
-                        !ff_dca_check_crc(&s->gb, (sync_pos + 1) * 32,
-                                          sync_pos * 32 + size * 8)) {
+                    dist = s->gb.size_in_bits / 8 - sync_pos * 4;
+                    if (size >= 11 && size <= dist &&
+                        !av_crc(dca->crctab, 0xffff, s->gb.buffer +
+                                (sync_pos + 1) * 4, size - 4)) {
                         s->xxch_pos = sync_pos * 32;
                         break;
                     }
                 }
             }
 
-            if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+            if (!s->xxch_pos) {
                 av_log(s->avctx, AV_LOG_ERROR, "XXCH sync word not found\n");
-                return AVERROR_INVALIDDATA;
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
         }
@@ -2575,8 +2517,6 @@ av_cold void ff_dca_core_flush(DCACoreDecoder *s)
 
 av_cold int ff_dca_core_init(DCACoreDecoder *s)
 {
-    dca_init_vlcs();
-
     if (!(s->float_dsp = avpriv_float_dsp_alloc(0)))
         return -1;
     if (!(s->fixed_dsp = avpriv_alloc_fixed_dsp(0)))

@@ -38,6 +38,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 
@@ -618,24 +619,17 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
     } else {
         int w = FFALIGN(avctx->width, 32);
         int h = FFALIGN(avctx->height, 16);
-        char *ptr;
-        int plane;
-        int i;
+        uint8_t *src[4];
+        int linesize[4];
 
         if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             goto done;
 
-        ptr = buffer->data + buffer->type->video.offset[0];
-        for (i = 0; i < avctx->height; i++)
-            memcpy(frame->data[0] + frame->linesize[0] * i, ptr + w * i, avctx->width);
-
-        ptr += w * h;
-
-        for (plane = 1; plane < 3; plane++) {
-            for (i = 0; i < avctx->height / 2; i++)
-                memcpy(frame->data[plane] + frame->linesize[plane] * i, ptr + w / 2 * i, (avctx->width + 1) / 2);
-            ptr += w / 2 * h / 2;
-        }
+        av_image_fill_arrays(src, linesize,
+                             buffer->data + buffer->type->video.offset[0],
+                             avctx->pix_fmt, w, h, 1);
+        av_image_copy(frame->data, frame->linesize, src, linesize,
+                      avctx->pix_fmt, avctx->width, avctx->height);
     }
 
     frame->pkt_pts = buffer->pts == MMAL_TIME_UNKNOWN ? AV_NOPTS_VALUE : buffer->pts;

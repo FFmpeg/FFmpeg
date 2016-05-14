@@ -22,7 +22,7 @@
 #include "libavutil/channel_layout.h"
 
 #include "dcadec.h"
-#include "dcamath.h"
+#include "dcahuff.h"
 #include "dca_syncwords.h"
 #include "profiles.h"
 
@@ -74,33 +74,6 @@ int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask
 
     avctx->channels = nchannels;
     return nchannels;
-}
-
-static uint16_t crc16(const uint8_t *data, int size)
-{
-    static const uint16_t crctab[16] = {
-        0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
-        0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
-    };
-
-    uint16_t res = 0xffff;
-    int i;
-
-    for (i = 0; i < size; i++) {
-        res = (res << 4) ^ crctab[(data[i] >> 4) ^ (res >> 12)];
-        res = (res << 4) ^ crctab[(data[i] & 15) ^ (res >> 12)];
-    }
-
-    return res;
-}
-
-int ff_dca_check_crc(GetBitContext *s, int p1, int p2)
-{
-    if (((p1 | p2) & 7) || p1 < 0 || p2 > s->size_in_bits || p2 - p1 < 16)
-        return -1;
-    if (crc16(s->buffer + p1 / 8, (p2 - p1) / 8))
-        return -1;
-    return 0;
 }
 
 void ff_dca_downmix_to_stereo_fixed(DCADSPContext *dcadsp, int32_t **samples,
@@ -262,6 +235,16 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
 
+        // Parse LBR component in EXSS
+        if (asset && (asset->extension_mask & DCA_EXSS_LBR)) {
+            if ((ret = ff_dca_lbr_parse(&s->lbr, input, asset)) < 0) {
+                if (ret == AVERROR(ENOMEM) || (avctx->err_recognition & AV_EF_EXPLODE))
+                    return ret;
+            } else {
+                s->packet |= DCA_PACKET_LBR;
+            }
+        }
+
         // Parse core extensions in EXSS or backward compatible core sub-stream
         if ((s->packet & DCA_PACKET_CORE)
             && (ret = ff_dca_core_parse_exss(&s->core, input, asset)) < 0)
@@ -269,7 +252,10 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     // Filter the frame
-    if (s->packet & DCA_PACKET_XLL) {
+    if (s->packet & DCA_PACKET_LBR) {
+        if ((ret = ff_dca_lbr_filter_frame(&s->lbr, frame)) < 0)
+            return ret;
+    } else if (s->packet & DCA_PACKET_XLL) {
         if (s->packet & DCA_PACKET_CORE) {
             int x96_synth = -1;
 
@@ -324,6 +310,7 @@ static av_cold void dcadec_flush(AVCodecContext *avctx)
 
     ff_dca_core_flush(&s->core);
     ff_dca_xll_flush(&s->xll);
+    ff_dca_lbr_flush(&s->lbr);
 
     s->core_residual_valid = 0;
 }
@@ -334,6 +321,7 @@ static av_cold int dcadec_close(AVCodecContext *avctx)
 
     ff_dca_core_close(&s->core);
     ff_dca_xll_close(&s->xll);
+    ff_dca_lbr_close(&s->lbr);
 
     av_freep(&s->buffer);
     s->buffer_size = 0;
@@ -349,13 +337,22 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     s->core.avctx = avctx;
     s->exss.avctx = avctx;
     s->xll.avctx = avctx;
+    s->lbr.avctx = avctx;
+
+    ff_dca_init_vlcs();
 
     if (ff_dca_core_init(&s->core) < 0)
+        return AVERROR(ENOMEM);
+
+    if (ff_dca_lbr_init(&s->lbr) < 0)
         return AVERROR(ENOMEM);
 
     ff_dcadsp_init(&s->dcadsp);
     s->core.dcadsp = &s->dcadsp;
     s->xll.dcadsp = &s->dcadsp;
+    s->lbr.dcadsp = &s->dcadsp;
+
+    s->crctab = av_crc_get_table(AV_CRC_16_CCITT);
 
     switch (avctx->request_channel_layout & ~AV_CH_LAYOUT_NATIVE) {
     case 0:

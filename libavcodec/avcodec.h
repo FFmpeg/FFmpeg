@@ -405,6 +405,7 @@ enum AVCodecID {
     AV_CODEC_ID_DAALA,
     AV_CODEC_ID_CFHD,
     AV_CODEC_ID_TRUEMOTION2RT,
+    AV_CODEC_ID_M101,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -3322,7 +3323,8 @@ typedef struct AVCodecContext {
      * - decoding: For codecs that store a framerate value in the compressed
      *             bitstream, the decoder may export it here. { 0, 1} when
      *             unknown.
-     * - encoding: unused
+     * - encoding: May be used to signal the framerate of CFR content to an
+     *             encoder.
      */
     AVRational framerate;
 

@@ -777,7 +777,10 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
     uint8_t quants[MAX_DWT_LEVELS][4];
     int p, level, orientation;
 
+    /* The reference decoder ignores it, and its typical length is 0 */
+    memset(put_bits_ptr(pb), 0, s->prefix_bytes);
     skip_put_bytes(pb, s->prefix_bytes);
+
     put_bits(pb, 8, quant_idx);
 
     /* Slice quantization (slice_quantizers() in the specs) */
@@ -809,6 +812,8 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
         }
         pb->buf[bytes_start] = pad_s;
         flush_put_bits(pb);
+        /* vc2-reference uses that padding that decodes to '0' coeffs */
+        memset(put_bits_ptr(pb), 0xFF, pad_c);
         skip_put_bytes(pb, pad_c);
     }
 
@@ -994,8 +999,9 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ret = 0;
     int sig_size = 256;
     VC2EncContext *s = avctx->priv_data;
-    const char aux_data[] = LIBAVCODEC_IDENT;
-    const int aux_data_size = sizeof(aux_data);
+    const int bitexact = avctx->flags & AV_CODEC_FLAG_BITEXACT;
+    const char *aux_data = bitexact ? "Lavc" : LIBAVCODEC_IDENT;
+    const int aux_data_size = bitexact ? sizeof("Lavc") : sizeof(LIBAVCODEC_IDENT);
     const int header_size = 100 + aux_data_size;
     int64_t max_frame_bytes, r_bitrate = avctx->bit_rate >> (s->interlaced);
 

@@ -219,9 +219,10 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
     s->picture_number++; // FIXME ?
 
     if (w->j_type) {
-        ff_intrax8_decode_picture(&w->x8, &s->current_picture, &s->gb,
+        ff_intrax8_decode_picture(&w->x8, &s->current_picture,
+                                  &s->gb, &s->mb_x, &s->mb_y,
                                   2 * s->qscale, (s->qscale - 1) | 1,
-                                  s->loop_filter);
+                                  s->loop_filter, s->low_delay);
 
         ff_er_add_slice(&w->s.er, 0, 0,
                         (w->s.mb_x >> 1) - 1, (w->s.mb_y >> 1) - 1,
@@ -468,7 +469,9 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
 
     ff_wmv2_common_init(w);
 
-    return ff_intrax8_common_init(avctx, &w->x8, &w->s.idsp, &w->s);
+    return ff_intrax8_common_init(avctx, &w->x8, &w->s.idsp,
+                                  w->s.block, w->s.block_last_index,
+                                  w->s.mb_width, w->s.mb_height);
 }
 
 static av_cold int wmv2_decode_end(AVCodecContext *avctx)

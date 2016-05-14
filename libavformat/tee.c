@@ -324,7 +324,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     }
     tee_slave->header_written = 1;
 
-    tee_slave->bsfs = av_calloc(avf2->nb_streams, sizeof(TeeSlave));
+    tee_slave->bsfs = av_calloc(avf2->nb_streams, sizeof(*tee_slave->bsfs));
     if (!tee_slave->bsfs) {
         ret = AVERROR(ENOMEM);
         goto end;
@@ -527,8 +527,8 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
         if (s2 < 0)
             continue;
 
-        if ((ret = av_copy_packet(&pkt2, pkt)) < 0 ||
-            (ret = av_dup_packet(&pkt2))< 0)
+        memset(&pkt2, 0, sizeof(AVPacket));
+        if ((ret = av_packet_ref(&pkt2, pkt)) < 0)
             if (!ret_all) {
                 ret_all = ret;
                 continue;

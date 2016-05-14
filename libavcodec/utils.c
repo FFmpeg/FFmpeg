@@ -2633,7 +2633,9 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 && *got_sub_ptr && sub->num_rects) {
                 const AVRational tb = avctx->pkt_timebase.num ? avctx->pkt_timebase
                                                               : avctx->time_base;
-                ret = convert_sub_to_old_ass_form(sub, avpkt, tb);
+                int err = convert_sub_to_old_ass_form(sub, avpkt, tb);
+                if (err < 0)
+                    ret = err;
             }
 #endif
 
@@ -4170,23 +4172,3 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
 
     return 0;
 }
-
-#ifdef TEST
-int main(void){
-    AVCodec *codec = NULL;
-    int ret = 0;
-    avcodec_register_all();
-
-    while (codec = av_codec_next(codec)) {
-        if (av_codec_is_encoder(codec)) {
-            if (codec->type == AVMEDIA_TYPE_AUDIO) {
-                if (!codec->sample_fmts) {
-                    av_log(NULL, AV_LOG_FATAL, "Encoder %s is missing the sample_fmts field\n", codec->name);
-                    ret = 1;
-                }
-            }
-        }
-    }
-    return ret;
-}
-#endif /* TEST */

@@ -38,7 +38,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
     nal->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
         if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
-            if (src[i + 2] != 3) {                                      \
+            if (src[i + 2] != 3 && src[i + 2] != 0) {                   \
                 /* startcode, so we must be past the end */             \
                 length = i;                                             \
             }                                                           \
@@ -103,7 +103,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
         if (src[si + 2] > 3) {
             dst[di++] = src[si++];
             dst[di++] = src[si++];
-        } else if (src[si] == 0 && src[si + 1] == 0) {
+        } else if (src[si] == 0 && src[si + 1] == 0 && src[si + 2] != 0) {
             if (src[si + 2] == 3) { // escape
                 dst[di++] = 0;
                 dst[di++] = 0;
@@ -325,7 +325,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
         nal->size_bits = get_bit_length(nal, skip_trailing_zeros);
 
-        ret = init_get_bits8(&nal->gb, nal->data, nal->size_bits);
+        ret = init_get_bits(&nal->gb, nal->data, nal->size_bits);
         if (ret < 0)
             return ret;
 
@@ -333,7 +333,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             ret = hevc_parse_nal_header(nal, logctx);
         else
             ret = h264_parse_nal_header(nal, logctx);
-        if (ret <= 0) {
+        if (ret <= 0 || nal->size <= 0) {
             if (ret < 0) {
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                        nal->type);

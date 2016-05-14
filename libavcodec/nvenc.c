@@ -798,6 +798,14 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
                 ctx->encode_config.encodeCodecConfig.h264Config.fmoMode = NV_ENC_H264_FMO_DISABLE;
             }
         }
+
+        if (avctx->codec->id == AV_CODEC_ID_H264) {
+            ctx->encode_config.encodeCodecConfig.h264Config.outputBufferingPeriodSEI = 1;
+            ctx->encode_config.encodeCodecConfig.h264Config.outputPictureTimingSEI = 1;
+        } else if(avctx->codec->id == AV_CODEC_ID_H265) {
+            ctx->encode_config.encodeCodecConfig.hevcConfig.outputBufferingPeriodSEI = 1;
+            ctx->encode_config.encodeCodecConfig.hevcConfig.outputPictureTimingSEI = 1;
+        }
     } else if (avctx->global_quality > 0) {
         ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
         ctx->encode_config.rcParams.constQP.qpInterB = avctx->global_quality;
@@ -890,7 +898,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         ctx->encode_config.encodeCodecConfig.h264Config.outputAUD = 1;
 
-        if (!ctx->profile) {
+        if (!ctx->profile && !lossless) {
             switch (avctx->profile) {
             case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
@@ -910,7 +918,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
                 break;
             }
-        } else {
+        } else if(!lossless) {
             if (!strcmp(ctx->profile, "high")) {
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
                 avctx->profile = FF_PROFILE_H264_HIGH;

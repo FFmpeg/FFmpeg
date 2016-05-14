@@ -330,7 +330,7 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
     slice_param = (VASliceParameterBufferH264 *)ff_vaapi_alloc_slice(vactx, buffer, size);
     if (!slice_param)
         return -1;
-    slice_param->slice_data_bit_offset          = get_bits_count(&sl->gb) + 8; /* bit buffer started beyond nal_unit_type */
+    slice_param->slice_data_bit_offset          = get_bits_count(&sl->gb);
     slice_param->first_mb_in_slice              = (sl->mb_y >> FIELD_OR_MBAFF_PICTURE(h)) * h->mb_width + sl->mb_x;
     slice_param->slice_type                     = ff_h264_get_slice_type(sl);
     slice_param->direct_spatial_mv_pred_flag    = sl->slice_type == AV_PICTURE_TYPE_B ? sl->direct_spatial_mv_pred : 0;

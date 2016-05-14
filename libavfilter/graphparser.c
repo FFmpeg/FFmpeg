@@ -27,7 +27,7 @@
 #include "libavutil/mem.h"
 #include "avfilter.h"
 
-#define WHITESPACES " \n\t"
+#define WHITESPACES " \n\t\r"
 
 /**
  * Link two filters together.

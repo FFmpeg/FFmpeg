@@ -456,6 +456,9 @@ Possible values:
 @item aspect @var{rational number} (@emph{encoding,video})
 Set sample aspect ratio.
 
+@item sar @var{rational number} (@emph{encoding,video})
+Set sample aspect ratio. Alias to @var{aspect}.
+
 @item debug @var{flags} (@emph{decoding/encoding,audio,video,subtitles})
 Print specific debug info.
 

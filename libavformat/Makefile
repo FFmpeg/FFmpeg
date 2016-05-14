@@ -25,6 +25,8 @@ OBJS = allformats.o         \
        url.o                \
        utils.o              \
 
+OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
+
 # subsystems
 OBJS-$(CONFIG_ISO_MEDIA)                 += isom.o
 OBJS-$(CONFIG_NETWORK)                   += network.o
@@ -73,10 +75,10 @@ OBJS-$(CONFIG_ACT_DEMUXER)               += act.o
 OBJS-$(CONFIG_ADF_DEMUXER)               += bintext.o sauce.o
 OBJS-$(CONFIG_ADP_DEMUXER)               += adp.o
 OBJS-$(CONFIG_ADS_DEMUXER)               += ads.o
-OBJS-$(CONFIG_ADX_DEMUXER)               += adxdec.o
-OBJS-$(CONFIG_ADX_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o apetag.o img2.o \
                                             id3v2enc.o
+OBJS-$(CONFIG_ADX_DEMUXER)               += adxdec.o
+OBJS-$(CONFIG_ADX_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_AEA_DEMUXER)               += aea.o pcm.o
 OBJS-$(CONFIG_AFC_DEMUXER)               += afc.o
 OBJS-$(CONFIG_AIFF_DEMUXER)              += aiffdec.o pcm.o isom.o \
@@ -95,7 +97,7 @@ OBJS-$(CONFIG_ASF_DEMUXER)               += asfdec_f.o asf.o asfcrypt.o \
                                             avlanguage.o
 OBJS-$(CONFIG_ASF_O_DEMUXER)             += asfdec_o.o asf.o asfcrypt.o \
                                             avlanguage.o
-OBJS-$(CONFIG_ASF_MUXER)                 += asfenc.o asf.o
+OBJS-$(CONFIG_ASF_MUXER)                 += asfenc.o asf.o avlanguage.o
 OBJS-$(CONFIG_ASS_DEMUXER)               += assdec.o subtitles.o
 OBJS-$(CONFIG_ASS_MUXER)                 += assenc.o
 OBJS-$(CONFIG_AST_DEMUXER)               += ast.o astdec.o
@@ -284,11 +286,11 @@ OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o apetag.o img2.o
 OBJS-$(CONFIG_MPC8_DEMUXER)              += mpc8.o apetag.o img2.o
 OBJS-$(CONFIG_MPEG1SYSTEM_MUXER)         += mpegenc.o
 OBJS-$(CONFIG_MPEG1VCD_MUXER)            += mpegenc.o
-OBJS-$(CONFIG_MPEG2DVD_MUXER)            += mpegenc.o
-OBJS-$(CONFIG_MPEG2VOB_MUXER)            += mpegenc.o
-OBJS-$(CONFIG_MPEG2SVCD_MUXER)           += mpegenc.o
 OBJS-$(CONFIG_MPEG1VIDEO_MUXER)          += rawenc.o
+OBJS-$(CONFIG_MPEG2DVD_MUXER)            += mpegenc.o
+OBJS-$(CONFIG_MPEG2SVCD_MUXER)           += mpegenc.o
 OBJS-$(CONFIG_MPEG2VIDEO_MUXER)          += rawenc.o
+OBJS-$(CONFIG_MPEG2VOB_MUXER)            += mpegenc.o
 OBJS-$(CONFIG_MPEGPS_DEMUXER)            += mpeg.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)            += mpegts.o
 OBJS-$(CONFIG_MPEGTS_MUXER)              += mpegtsenc.o
@@ -393,9 +395,9 @@ OBJS-$(CONFIG_RM_MUXER)                  += rmenc.o rm.o
 OBJS-$(CONFIG_ROQ_DEMUXER)               += idroqdec.o
 OBJS-$(CONFIG_ROQ_MUXER)                 += idroqenc.o rawenc.o
 OBJS-$(CONFIG_RSD_DEMUXER)               += rsd.o
+OBJS-$(CONFIG_RPL_DEMUXER)               += rpl.o
 OBJS-$(CONFIG_RSO_DEMUXER)               += rsodec.o rso.o pcm.o
 OBJS-$(CONFIG_RSO_MUXER)                 += rsoenc.o rso.o
-OBJS-$(CONFIG_RPL_DEMUXER)               += rpl.o
 OBJS-$(CONFIG_RTP_MPEGTS_MUXER)          += rtpenc_mpegts.o
 OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_aac.o     \
@@ -408,6 +410,7 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_jpeg.o \
                                             rtpenc_mpv.o     \
                                             rtpenc.o      \
+                                            rtpenc_vc2hq.o              \
                                             rtpenc_vp8.o  \
                                             rtpenc_xiph.o \
                                             avc.o hevc.o
@@ -493,9 +496,10 @@ OBJS-$(CONFIG_WEBP_MUXER)                += webpenc.o
 OBJS-$(CONFIG_WEBVTT_DEMUXER)            += webvttdec.o subtitles.o
 OBJS-$(CONFIG_WEBVTT_MUXER)              += webvttenc.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood_aud.o
+OBJS-$(CONFIG_WSD_DEMUXER)               += wsddec.o rawdec.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood_vqa.o
-OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv_common.o asf.o \
-                                            avlanguage.o
+OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv_common.o \
+                                            asf.o
 OBJS-$(CONFIG_WTV_MUXER)                 += wtvenc.o wtv_common.o \
                                             asf.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wvdec.o wv.o apetag.o img2.o
@@ -507,8 +511,8 @@ OBJS-$(CONFIG_XMV_DEMUXER)               += xmv.o
 OBJS-$(CONFIG_XVAG_DEMUXER)              += xvag.o
 OBJS-$(CONFIG_XWMA_DEMUXER)              += xwma.o
 OBJS-$(CONFIG_YOP_DEMUXER)               += yop.o
-OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpegenc.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpegdec.o
+OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpegenc.o
 
 # external libraries
 OBJS-$(CONFIG_CHROMAPRINT_MUXER)         += chromaprint.o
@@ -538,9 +542,9 @@ OBJS-$(CONFIG_HTTP_PROTOCOL)             += http.o httpauth.o urldecode.o
 OBJS-$(CONFIG_HTTPPROXY_PROTOCOL)        += http.o httpauth.o urldecode.o
 OBJS-$(CONFIG_HTTPS_PROTOCOL)            += http.o httpauth.o urldecode.o
 OBJS-$(CONFIG_ICECAST_PROTOCOL)          += icecast.o
+OBJS-$(CONFIG_MD5_PROTOCOL)              += md5proto.o
 OBJS-$(CONFIG_MMSH_PROTOCOL)             += mmsh.o mms.o asf.o
 OBJS-$(CONFIG_MMST_PROTOCOL)             += mmst.o mms.o asf.o
-OBJS-$(CONFIG_MD5_PROTOCOL)              += md5proto.o
 OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_RTMP_PROTOCOL)             += rtmpproto.o rtmppkt.o
 OBJS-$(CONFIG_RTMPE_PROTOCOL)            += rtmpproto.o rtmppkt.o
@@ -561,8 +565,6 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 OBJS-$(CONFIG_UDPLITE_PROTOCOL)          += udp.o
 OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
 
-OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
-
 # libavdevice dependencies
 OBJS-$(CONFIG_IEC61883_INDEV)            += dv.o
 
@@ -576,9 +578,9 @@ TESTPROGS = seek                                                        \
             url                                                         \
 #           async                                                       \
 
+TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
 TESTPROGS-$(CONFIG_MOV_MUXER)            += movenc
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy
-TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
 TESTPROGS-$(CONFIG_SRTP)                 += srtp
 
 TOOLS     = aviocat                                                     \

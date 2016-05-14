@@ -33,6 +33,7 @@
 #include "dca_exss.h"
 #include "dcadsp.h"
 #include "dcadct.h"
+#include "dcahuff.h"
 #include "fft.h"
 #include "synth_filter.h"
 
@@ -44,7 +45,6 @@
 #define DCA_PCMBLOCK_SAMPLES    32
 #define DCA_ADPCM_COEFFS        4
 #define DCA_LFE_HISTORY         8
-#define DCA_CODE_BOOKS          10
 #define DCA_ABITS_MAX           26
 
 #define DCA_CORE_CHANNELS_MAX       6

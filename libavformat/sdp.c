@@ -485,6 +485,9 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
     AVCodecParameters *p = st->codecpar;
 
     switch (p->codec_id) {
+        case AV_CODEC_ID_DIRAC:
+            av_strlcatf(buff, size, "a=rtpmap:%d VC2/90000\r\n", payload_type);
+            break;
         case AV_CODEC_ID_H264: {
             int mode = 1;
             if (fmt && fmt->oformat && fmt->oformat->priv_class &&

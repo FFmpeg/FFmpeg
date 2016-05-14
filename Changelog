@@ -12,7 +12,7 @@ version <next>:
 - ciescope filter
 - protocol blacklisting API
 - MediaCodec H264 decoding
-- VC-2 HQ RTP payload format (draft v1) depacketizer
+- VC-2 HQ RTP payload format (draft v1) depacketizer and packetizer
 - AudioToolbox audio decoders
 - AudioToolbox audio encoders
 - coreimage filter (GPU based image filtering on OSX)
@@ -29,6 +29,11 @@ version <next>:
 - VAAPI-accelerated format conversion and scaling
 - libnpp/CUDA-accelerated format conversion and scaling
 - Duck TrueMotion 2.0 Real Time decoder
+- Wideband Single-bit Data (WSD) demuxer
+- VAAPI-accelerated H.264/HEVC/MJPEG encoding
+- DTS Express (LBR) decoder
+- Generic OpenMAX IL encoder with support for Raspberry Pi
+- IFF ANIM demuxer & decoder
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

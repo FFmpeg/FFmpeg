@@ -887,7 +887,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_IFF_ILBM,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "iff_ilbm",
-        .long_name = NULL_IF_CONFIG_SMALL("IFF ILBM"),
+        .long_name = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
@@ -945,6 +945,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "r10k",
         .long_name = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_M101,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "m101",
+        .long_name = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {

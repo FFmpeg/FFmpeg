@@ -5145,6 +5145,34 @@ YUV 4:4:4 planar 12-bits
 Do a fast conversion, which skips gamma/primary correction. This will take
 significantly less CPU, but will be mathematically incorrect. To get output
 compatible with that produced by the colormatrix filter, use fast=1.
+
+@item dither
+Specify dithering mode.
+
+The accepted values are:
+@table @samp
+@item none
+No dithering
+
+@item fsb
+Floyd-Steinberg dithering
+@end table
+
+@item wpadapt
+Whitepoint adaptation mode.
+
+The accepted values are:
+@table @samp
+@item bradford
+Bradford whitepoint adaptation
+
+@item vonkries
+von Kries whitepoint adaptation
+
+@item identity
+identity whitepoint adaptation (i.e. no whitepoint adaptation)
+@end table
+
 @end table
 
 The filter converts the transfer characteristics, color space and color

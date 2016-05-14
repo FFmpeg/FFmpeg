@@ -34,6 +34,7 @@
 #include "error_resilience.h"
 #include "get_bits.h"
 #include "h264_parse.h"
+#include "h2645_parse.h"
 #include "h264chroma.h"
 #include "h264dsp.h"
 #include "h264pred.h"
@@ -527,6 +528,8 @@ typedef struct H264Context {
     H264SliceContext *slice_ctx;
     int            nb_slice_ctx;
 
+    H2645Packet pkt;
+
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
 
     /* coded dimensions -- 16 * mb w/h */
@@ -835,7 +838,6 @@ typedef struct H264Context {
 
 } H264Context;
 
-extern const uint8_t ff_h264_chroma_qp[7][QP_MAX_NUM + 1]; ///< One chroma qp table for each possible bit depth (8-14).
 extern const uint16_t ff_h264_mb_sizes[4];
 
 /**

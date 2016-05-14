@@ -49,6 +49,7 @@ static const AVClass rtp_muxer_class = {
 static int is_supported(enum AVCodecID id)
 {
     switch(id) {
+    case AV_CODEC_ID_DIRAC:
     case AV_CODEC_ID_H261:
     case AV_CODEC_ID_H263:
     case AV_CODEC_ID_H263P:
@@ -172,6 +173,17 @@ static int rtp_write_header(AVFormatContext *s1)
         if (n < 1)
             n = 1;
         s->max_payload_size = n * TS_PACKET_SIZE;
+        break;
+    case AV_CODEC_ID_DIRAC:
+        if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(s, AV_LOG_ERROR,
+                   "Packetizing VC-2 is experimental and does not use all values "
+                   "of the specification "
+                   "(even though most receivers may handle it just fine). "
+                   "Please set -strict experimental in order to enable it.\n");
+            ret = AVERROR_EXPERIMENTAL;
+            goto fail;
+        }
         break;
     case AV_CODEC_ID_H261:
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
@@ -549,6 +561,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case AV_CODEC_ID_MPEG2TS:
         rtp_send_mpegts_raw(s1, pkt->data, size);
+        break;
+    case AV_CODEC_ID_DIRAC:
+        ff_rtp_send_vc2hq(s1, pkt->data, size, st->codecpar->field_order != AV_FIELD_PROGRESSIVE ? 1 : 0);
         break;
     case AV_CODEC_ID_H264:
         ff_rtp_send_h264_hevc(s1, pkt->data, size);

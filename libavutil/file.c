@@ -140,22 +140,3 @@ void av_file_unmap(uint8_t *bufptr, size_t size)
 int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx) {
     return avpriv_tempfile(prefix, filename, log_offset, log_ctx);
 }
-
-#ifdef TEST
-
-#undef printf
-
-int main(void)
-{
-    uint8_t *buf;
-    size_t size;
-    if (av_file_map("file.c", &buf, &size, 0, NULL) < 0)
-        return 1;
-
-    buf[0] = 's';
-    printf("%s", buf);
-    av_file_unmap(buf, size);
-    return 0;
-}
-#endif
-

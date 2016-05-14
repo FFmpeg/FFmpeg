@@ -85,7 +85,7 @@ static const AVClass noise_class = {
 
 const AVBitStreamFilter ff_noise_bsf = {
     .name           = "noise",
-    .priv_data_size = sizeof(int),
+    .priv_data_size = sizeof(NoiseContext),
     .priv_class     = &noise_class,
     .filter         = noise,
 };

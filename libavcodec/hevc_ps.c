@@ -280,7 +280,7 @@ static int parse_ptl(GetBitContext *gb, AVCodecContext *avctx,
 {
     int i;
     if (decode_profile_tier_level(gb, avctx, &ptl->general_ptl) < 0 ||
-        get_bits_left(gb) < 8 + 8*2) {
+        get_bits_left(gb) < 8 + (8*2 * (max_num_sub_layers - 1 > 0))) {
         av_log(avctx, AV_LOG_ERROR, "PTL information too short\n");
         return -1;
     }

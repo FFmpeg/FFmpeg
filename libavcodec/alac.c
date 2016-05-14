@@ -391,6 +391,12 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
                 *outbuffer++ = alac->output_samples_buffer[ch][i];
         }}
         break;
+    case 20: {
+        for (ch = 0; ch < channels; ch++) {
+            for (i = 0; i < alac->nb_samples; i++)
+                alac->output_samples_buffer[ch][i] <<= 12;
+        }}
+        break;
     case 24: {
         for (ch = 0; ch < channels; ch++) {
             for (i = 0; i < alac->nb_samples; i++)
@@ -556,6 +562,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     switch (alac->sample_size) {
     case 16: avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
              break;
+    case 20:
     case 24:
     case 32: avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
              break;
