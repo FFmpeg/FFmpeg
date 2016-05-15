@@ -823,7 +823,7 @@ static void decode_delta_j(uint8_t *dst,
                            int w, int h, int bpp, int dst_size)
 {
     int32_t pitch;
-    uint8_t *end = dst + dst_size, *ptr;
+    uint8_t *ptr;
     uint32_t type, flag, cols, groups, rows, bytes;
     uint32_t offset;
     int planepitch_byte = (w + 7) / 8;
@@ -855,22 +855,20 @@ static void decode_delta_j(uint8_t *dst,
                 else
                     offset = ((offset / planepitch_byte) * pitch) + (offset % planepitch_byte);
 
-                ptr = dst + offset;
-                if (ptr >= end)
-                    return;
-
                 for (b = 0; b < cols; b++) {
                     for (d = 0; d < bpp; d++) {
                         uint8_t value = bytestream2_get_byte(&gb);
+
+                        if (offset >= dst_size)
+                            return;
+                        ptr = dst + offset;
 
                         if (flag)
                             ptr[0] ^= value;
                         else
                             ptr[0]  = value;
 
-                        ptr += planepitch;
-                        if (ptr >= end)
-                            return;
+                        offset += planepitch;
                     }
                 }
                 if ((cols * bpp) & 1)
@@ -893,21 +891,21 @@ static void decode_delta_j(uint8_t *dst,
 
                 for (r = 0; r < rows; r++) {
                     for (d = 0; d < bpp; d++) {
-                        ptr = dst + offset + (r * pitch) + d * planepitch;
-                        if (ptr >= end)
-                            return;
+                        unsigned noffset = offset + (r * pitch) + d * planepitch;
 
                         for (b = 0; b < bytes; b++) {
                             uint8_t value = bytestream2_get_byte(&gb);
+
+                            if (noffset >= dst_size)
+                                return;
+                            ptr = dst + noffset;
 
                             if (flag)
                                 ptr[0] ^= value;
                             else
                                 ptr[0]  = value;
 
-                            ptr++;
-                            if (ptr >= end)
-                                return;
+                            noffset++;
                         }
                     }
                 }
