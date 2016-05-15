@@ -320,7 +320,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0; i < samples_per_frame; i++) {
         for (ch = 0; ch < channels; ch++) {
             const unsigned felem = map_ch_to_felem[ch];
-            const int16_t (*filter)[256] = s->filter[felem];
+            int16_t (*filter)[256] = s->filter[felem];
             uint8_t *status = s->status[ch];
             int prob, residual, v;
 
