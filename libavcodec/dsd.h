@@ -27,7 +27,6 @@
 #include "libavcodec/internal.h"
 #include "libavcodec/mathops.h"
 #include "avcodec.h"
-#include "dsd_tablegen.h"
 
 #define HTAPS   48               /** number of FIR constants */
 #define FIFOSIZE 16              /** must be a power of two */
