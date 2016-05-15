@@ -950,7 +950,7 @@ following image formats are supported:
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
-    @tab supported extensions: XCh, XLL (partially)
+    @tab supported extensions: XCh, XXCH, X96, XBR, XLL
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
