@@ -366,9 +366,15 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->native_one    = av_mallocz(sizeof(int));
         if (!s->native_matrix || !s->native_one)
             return AVERROR(ENOMEM);
-        for (i = 0; i < nb_out; i++)
-            for (j = 0; j < nb_in; j++)
-                ((int*)s->native_matrix)[i * nb_in + j] = lrintf(s->matrix[i][j] * 32768);
+        for (i = 0; i < nb_out; i++) {
+            double rem = 0;
+
+            for (j = 0; j < nb_in; j++) {
+                double target = s->matrix[i][j] * 32768 + rem;
+                ((int*)s->native_matrix)[i * nb_in + j] = lrintf(target);
+                rem += target - ((int*)s->native_matrix)[i * nb_in + j];
+            }
+        }
         *((int*)s->native_one) = 32768;
         s->mix_1_1_f = (mix_1_1_func_type*)copy_s16;
         s->mix_2_1_f = (mix_2_1_func_type*)sum2_s16;
