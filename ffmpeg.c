@@ -2893,7 +2893,8 @@ static int transcode_init(void)
              * overhead
              */
             if(!strcmp(oc->oformat->name, "avi")) {
-                if ( copy_tb<0 && av_q2d(ist->st->r_frame_rate) >= av_q2d(ist->st->avg_frame_rate)
+                if ( copy_tb<0 && ist->st->r_frame_rate.num
+                               && av_q2d(ist->st->r_frame_rate) >= av_q2d(ist->st->avg_frame_rate)
                                && 0.5/av_q2d(ist->st->r_frame_rate) > av_q2d(ist->st->time_base)
                                && 0.5/av_q2d(ist->st->r_frame_rate) > av_q2d(dec_ctx->time_base)
                                && av_q2d(ist->st->time_base) < 1.0/500 && av_q2d(dec_ctx->time_base) < 1.0/500
