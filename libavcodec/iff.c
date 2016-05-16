@@ -850,6 +850,9 @@ static void decode_delta_j(uint8_t *dst,
             for (g = 0; g < groups; g++) {
                 offset = bytestream2_get_be16(&gb);
 
+                if (bytestream2_get_bytes_left(&gb) < 1)
+                    return;
+
                 if (kludge_j)
                     offset = ((offset / (320 / 8)) * pitch) + (offset % (320 / 8)) - kludge_j;
                 else
@@ -892,6 +895,9 @@ static void decode_delta_j(uint8_t *dst,
                 for (r = 0; r < rows; r++) {
                     for (d = 0; d < bpp; d++) {
                         unsigned noffset = offset + (r * pitch) + d * planepitch;
+
+                        if (bytestream2_get_bytes_left(&gb) < 1)
+                            return;
 
                         for (b = 0; b < bytes; b++) {
                             uint8_t value = bytestream2_get_byte(&gb);
