@@ -38,6 +38,7 @@
 #define TIMECODE 0x54494D45434F4445
 
 typedef struct DTSHDDemuxContext {
+    uint64_t    data_start;
     uint64_t    data_end;
 } DTSHDDemuxContext;
 
@@ -64,9 +65,12 @@ static int dtshd_read_header(AVFormatContext *s)
     st->codecpar->codec_id   = AV_CODEC_ID_DTS;
     st->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
 
-    while (!avio_feof(pb)) {
+    for (;;) {
         chunk_type = avio_rb64(pb);
         chunk_size = avio_rb64(pb);
+
+        if (avio_feof(pb))
+            break;
 
         if (chunk_size < 4) {
             av_log(s, AV_LOG_ERROR, "chunk size too small\n");
@@ -79,10 +83,13 @@ static int dtshd_read_header(AVFormatContext *s)
 
         switch (chunk_type) {
         case STRMDATA:
-            dtshd->data_end = chunk_size + avio_tell(pb);
+            dtshd->data_start = avio_tell(pb);
+            dtshd->data_end = dtshd->data_start + chunk_size;
             if (dtshd->data_end <= chunk_size)
                 return AVERROR_INVALIDDATA;
-            return 0;
+            if (!pb->seekable)
+                return 0;
+            goto skip;
             break;
         case FILEINFO:
             if (chunk_size > INT_MAX)
@@ -103,7 +110,12 @@ skip:
         };
     }
 
-    return AVERROR_EOF;
+    if (!dtshd->data_end)
+        return AVERROR_EOF;
+
+    avio_seek(pb, dtshd->data_start, SEEK_SET);
+
+    return 0;
 }
 
 static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
