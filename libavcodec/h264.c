@@ -851,7 +851,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
         case NAL_SLICE:
             sl->gb = nal->gb;
 
-            if ((err = ff_h264_decode_slice_header(h, sl)))
+            if ((err = ff_h264_decode_slice_header(h, sl, nal)))
                 break;
 
             if (h->sei.recovery_point.recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
