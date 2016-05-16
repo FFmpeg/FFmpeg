@@ -63,7 +63,6 @@ typedef struct IffContext {
     uint8_t *video[2];
     unsigned video_size;
     uint32_t *pal[2];
-    int first;
 } IffContext;
 
 #define LUT8_PART(plane, v)                             \
@@ -422,7 +421,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->pal[1] = av_calloc(256, sizeof(*s->pal[1]));
         if (!s->video[0] || !s->video[1] || !s->pal[0] || !s->pal[1])
             return AVERROR(ENOMEM);
-        s->first = 1;
     }
 
     if ((err = extract_header(avctx, NULL)) < 0)
@@ -1322,15 +1320,9 @@ static int decode_frame(AVCodecContext *avctx,
     }
     s->init = 1;
 
-    if (s->compression <= 0xff && avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
+    if (s->compression <= 0xff && (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))) {
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
             memcpy(s->pal[0], s->frame->data[1], 256 * 4);
-    }
-
-    if (s->compression > 0xff && s->first) {
-        memcpy(s->video[1], s->video[0], s->video_size);
-        memcpy(s->pal[1], s->pal[0], 256 * 4);
-        s->first = 0;
     }
 
     switch (s->compression) {
@@ -1547,6 +1539,11 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     default:
         return unsupported(avctx);
+    }
+
+    if (s->compression <= 0xff && (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))) {
+        memcpy(s->pal[1], s->pal[0], 256 * 4);
+        memcpy(s->video[1], s->video[0], s->video_size);
     }
 
     if (s->compression > 0xff) {

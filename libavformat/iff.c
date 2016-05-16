@@ -834,20 +834,27 @@ static int iff_read_packet(AVFormatContext *s,
     } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                st->codecpar->codec_tag  == ID_ANIM) {
         uint64_t data_size, orig_pos;
-        uint32_t chunk_id = 0;
+        uint32_t chunk_id, chunk_id2;
 
         while (!avio_feof(pb)) {
             if (avio_feof(pb))
                 return AVERROR_EOF;
 
+            orig_pos  = avio_tell(pb);
             chunk_id  = avio_rl32(pb);
             data_size = avio_rb32(pb);
-            orig_pos  = avio_tell(pb);
+            chunk_id2 = avio_rl32(pb);
 
-            if (chunk_id == ID_FORM)
+            if (chunk_id  == ID_FORM &&
+                chunk_id2 == ID_ILBM) {
+                avio_skip(pb, -4);
                 break;
-            else
+            } else if (chunk_id == ID_FORM &&
+                       chunk_id2 == ID_ANIM) {
+                continue;
+            } else {
                 avio_skip(pb, data_size);
+            }
         }
         ret = av_get_packet(pb, pkt, data_size);
         pkt->pos = orig_pos;
