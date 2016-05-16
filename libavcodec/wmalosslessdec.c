@@ -674,10 +674,10 @@ static void mclms_predict(WmallDecodeCtx *s, int icoef, int *pred)
         if (!s->is_channel_coded[ich])
             continue;
         for (i = 0; i < order * num_channels; i++)
-            pred[ich] += s->mclms_prevvalues[i + s->mclms_recent] *
+            pred[ich] += (uint32_t)s->mclms_prevvalues[i + s->mclms_recent] *
                          s->mclms_coeffs[i + order * num_channels * ich];
         for (i = 0; i < ich; i++)
-            pred[ich] += s->channel_residues[i][icoef] *
+            pred[ich] += (uint32_t)s->channel_residues[i][icoef] *
                          s->mclms_coeffs_cur[i + num_channels * ich];
         pred[ich] += 1 << s->mclms_scaling - 1;
         pred[ich] >>= s->mclms_scaling;
@@ -822,7 +822,7 @@ static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
         for (i = order; i < tile_size; i++) {
             pred = 0;
             for (j = 0; j < order; j++)
-                pred += s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
+                pred += (uint32_t)s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
             pred >>= scaling;
             s->channel_residues[ich][i] += pred;
         }
