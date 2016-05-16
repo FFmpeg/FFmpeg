@@ -1,48 +1,31 @@
 Release Notes
 =============
 
-* 11 "One Louder"
+* 12 "Not Enough Trocadero"
 
 General notes
 -------------
 
-With this release we are trying to answer the numerous calls from our users for
-shorter development cycles. From now on we will aim for approximately two major
-releases per year.
+This release once again bumps the major versions of all the libraries, removing
+some long-deprecated APIs. This means that it is neither API nor ABI-compatible
+with the previous release. The users who still did not update their code are
+advised to look at the next section of these release notes, the doc/APIchanges
+file and the API migration guide on our wiki.  If those are not sufficient, do
+not hesitate to contact us on IRC or through the user mailing list.
 
-Libav 11 is API-, but not ABI-compatible with the previous major release. This
-means that the code using our libraries needs to be rebuilt, but no source
-changes should be required. Note however, that a number of old APIs remain
-deprecated and will be dropped in the near future. All users are strongly
-encouraged to update their code as soon as possible. The doc/APIchanges file in
-the Libav source tree and the migration guide on the wiki should help with
-migration to the new APIs. If those are not sufficient, do not hesitate to
-contact us on IRC or through the user mailing list.
+Among the main highlights of this release are several additions related to
+hardware acceleration. There is a new API for managing hardware devices and
+frame pools, which allows to add new features such as zero-copy
+hardware-accelerated filtering with libavfilter and should reduce the
+boilerplate code required for existing hardware-accelerated decoders. We have
+added QuickSync decoding and encoding, NVENC encoding and CUDA image scaling,
+VAAPI encoding and image scaling, OpenMAX encoding, MMAL decoding and Direct3D11
+decoding.
 
-One specific API issue in libavformat deserves mentioning here. When using
-libavcodec for decoding or encoding and libavformat for demuxing or muxing,
-the standard practice was to use the stream codec context (AVStream.codec) for
-actual decoding or encoding. There are multiple problems with this pattern
-(the main one is that the decoder/demuxer or encoder/muxer are not necessarily
-synchronized and may overwrite each other's state), so it is now strongly
-discouraged and will likely be deprecated in the future. Users should instead
-allocate a separate decoding or encoding context and populate it from the
-demuxing codec context (or the reverse for encoding) with the
-avcodec_copy_context() function.
-
-The main highlights of this release include native Opus, VP7, OpenEXR, and On2
-AVC decoders, HEVC encoding through libx265, new APIs for exporting ReplayGain
-and display transformation metadata and countless bug fixes. A large effort was
-also expended on internal cleanups which are not very visible to our users,
-but should make the codebase cleaner, safer and easier to maintain and extend.
-One point worth mentioning is refactoring the large monolithic framework for
-architecture-specific codec optimizations into small blocks, which reduces the
-size of configurations that selectively enable or disable certain codecs.
-
-The avserver streaming tool, which has not been maintained for many years and
-was mostly broken, was removed from the tree. It was decided that it is a
-significant maintenance burden and that we do our users no service by pretending
-to support it, while we in fact do not.
+Other significant additions not related to hardware acceleration include
+decoders for Canopus HQ/HQA and HQX, Go2Meeting, AAC ELD, TDSC, Hap, DXV, SPV1,
+and a new ASF demuxer written according to the specification. There were also
+countless smaller changes and bug fixes.
 
 See the Changelog file for a more extensive list of significant changes.
 
@@ -54,22 +37,38 @@ have been deprecated and are scheduled for removal in the next release.
 Significant API changes include:
 
 [libavcodec]
-+  Added the avcodec_copy_context() function that must from now on be used for
-   freeing codec contexts.
-+- Added a new VDA hardware acceleration API, since the old one was broken and
-   not fixable in a compatible way. Deprecated the old VDA API.
++  Added an object for storing codec parameters (AVCodecParameters) and its
+   related API. It will now replace AVCodecContext everywhere except the actual
+   encoders/decoders.
++- Added a new API for handling refcounted AVPackets, mirroring the AVFrame API.
+   Deprecated certain old ill-defined AVPacket functions.
++- Added a new API for audio/video encoding and decoding, with decoupled input
+   and output. This will e.g. allow a decoder to produce multiple output frames
+   for a single input packet, which was not possible with the previous API. All
+   users are strongly encouraged to switch to this new API as soon as possible,
+   since certain decoders and encoders might start requiring the new API to be
+   used.
++- Added a new API for bitstream filtering, which works with refcounted
+   AVPackets and is more clearly defined and documented. The old bitstream
+   filtering API is now deprecated.
 
 [libavformat]
-+  Added support for exporting stream-global (as opposed to per-packet) side
-   data. This feature is now used by some demuxers to export ReplayGain or
-   display transformation matrix (aka rotation) or stereoscopic 3D mode.
-+  Added an API for live metadata updates through event flags.
-+- Changed the way to provide a hint about the desired timebase to muxers.
-   Previously it was done by setting AVStream.codec.time_base. Now callers
-   should set AVStream.time_base.
++  Added new IO callbacks to AVFormatContext, allowing the caller to provide
+   custom IO for certain special muxers and demuxers.
++- Replaced AVStream.codec (AVCodecContext) with AVStream.codecpar
+   (AVCodecParameters) as the means of signalling codec parameters between the
+   muxers/demuxers and the caller.
 
-[libavresample]
-+ Added an API for working with AVFrames.
+[libavutil]
++  Added a new API (hwcontext.h) for handling hardware acceleration devices and
+   hardware frame pools.
+
+[libavfilter]
++  Added a new struct, AVBufferSrcParameters, for passing the stream parameters
+   to the buffer source. It is now the recommended way of configuring the buffer
+   source.
++  Added AVFilterContext.hw_device_ctx and AVFilterLink.hw_frames_ctx that allow
+   hardware frames to be used in filter graphs.
 
 Please see the file doc/APIchanges for details along with similar
 programmer-centric information.
