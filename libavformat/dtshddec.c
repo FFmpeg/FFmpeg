@@ -21,7 +21,9 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
+#include "libavcodec/dca.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define AUPR_HDR 0x415550522D484452
 #define AUPRINFO 0x41555052494E464F
@@ -54,6 +56,7 @@ static int dtshd_read_header(AVFormatContext *s)
     DTSHDDemuxContext *dtshd = s->priv_data;
     AVIOContext *pb = s->pb;
     uint64_t chunk_type, chunk_size;
+    int64_t duration;
     AVStream *st;
     int ret;
     char *value;
@@ -88,8 +91,23 @@ static int dtshd_read_header(AVFormatContext *s)
             if (dtshd->data_end <= chunk_size)
                 return AVERROR_INVALIDDATA;
             if (!pb->seekable)
-                return 0;
+                goto break_loop;
             goto skip;
+            break;
+        case AUPR_HDR:
+            if (chunk_size < 21)
+                return AVERROR_INVALIDDATA;
+            avio_skip(pb, 3);
+            st->codecpar->sample_rate = avio_rb24(pb);
+            if (!st->codecpar->sample_rate)
+                return AVERROR_INVALIDDATA;
+            duration  = avio_rb32(pb); // num_frames
+            duration *= avio_rb16(pb); // samples_per_frames
+            st->duration = duration;
+            avio_skip(pb, 5);
+            st->codecpar->channels = ff_dca_count_chs_for_mask(avio_rb16(pb));
+            st->codecpar->initial_padding = avio_rb16(pb);
+            avio_skip(pb, chunk_size - 21);
             break;
         case FILEINFO:
             if (chunk_size > INT_MAX)
@@ -114,6 +132,10 @@ skip:
         return AVERROR_EOF;
 
     avio_seek(pb, dtshd->data_start, SEEK_SET);
+
+break_loop:
+    if (st->codecpar->sample_rate)
+        avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
