@@ -2529,7 +2529,7 @@ static void update_stream_timings(AVFormatContext *ic)
     if (duration != INT64_MIN && duration > 0 && ic->duration == AV_NOPTS_VALUE) {
         ic->duration = duration;
     }
-    if (ic->pb && (filesize = avio_size(ic->pb)) > 0 && ic->duration != AV_NOPTS_VALUE) {
+    if (ic->pb && (filesize = avio_size(ic->pb)) > 0 && ic->duration > 0) {
         /* compute the bitrate */
         double bitrate = (double) filesize * 8.0 * AV_TIME_BASE /
                          (double) ic->duration;
