@@ -101,8 +101,8 @@ typedef struct VAAPIEncodeH264Context {
     int fixed_qp_p;
     int fixed_qp_b;
 
+    int next_frame_num;
     int64_t idr_pic_count;
-    int64_t last_idr_frame;
 
     // Rate control configuration.
     struct {
@@ -592,12 +592,17 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
 
     if (pic->type == PICTURE_TYPE_IDR) {
         av_assert0(pic->display_order == pic->encode_order);
-        priv->last_idr_frame = pic->display_order;
+        vpic->frame_num = 0;
+        priv->next_frame_num = 1;
     } else {
-        av_assert0(pic->display_order > priv->last_idr_frame);
+        vpic->frame_num = priv->next_frame_num;
+        if (pic->type != PICTURE_TYPE_B) {
+            // nal_ref_idc != 0
+            ++priv->next_frame_num;
+        }
     }
 
-    vpic->frame_num = (pic->encode_order - priv->last_idr_frame) &
+    vpic->frame_num = vpic->frame_num &
         ((1 << (4 + vseq->seq_fields.bits.log2_max_frame_num_minus4)) - 1);
 
     vpic->CurrPic.picture_id          = pic->recon_surface;
@@ -608,10 +613,9 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
 
     for (i = 0; i < pic->nb_refs; i++) {
         VAAPIEncodePicture *ref = pic->refs[i];
-        av_assert0(ref && ref->encode_order >= priv->last_idr_frame);
+        av_assert0(ref && ref->encode_order < pic->encode_order);
         vpic->ReferenceFrames[i].picture_id = ref->recon_surface;
-        vpic->ReferenceFrames[i].frame_idx =
-            ref->encode_order - priv->last_idr_frame;
+        vpic->ReferenceFrames[i].frame_idx  = ref->encode_order;
         vpic->ReferenceFrames[i].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
         vpic->ReferenceFrames[i].TopFieldOrderCnt    = ref->display_order;
         vpic->ReferenceFrames[i].BottomFieldOrderCnt = ref->display_order;
