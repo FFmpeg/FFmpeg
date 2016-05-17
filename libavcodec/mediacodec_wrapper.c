@@ -1056,6 +1056,10 @@ FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name)
         goto fail;
     }
 
+    if (codec->jfields.get_input_buffer_id && codec->jfields.get_output_buffer_id) {
+        codec->has_get_i_o_buffer = 1;
+    }
+
     JNI_DETACH_ENV(attached, codec);
 
     return codec;
@@ -1176,6 +1180,10 @@ FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime)
 
     if (codec_init_static_fields(codec) < 0) {
         goto fail;
+    }
+
+    if (codec->jfields.get_input_buffer_id && codec->jfields.get_output_buffer_id) {
+        codec->has_get_i_o_buffer = 1;
     }
 
     JNI_DETACH_ENV(attached, NULL);
