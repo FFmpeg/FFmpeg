@@ -282,7 +282,7 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
             return up;
         }
     }
-
+    av_freep(&protocols);
     return NULL;
 }
 
