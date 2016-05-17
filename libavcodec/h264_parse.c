@@ -218,7 +218,7 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
                    ref_count[0] - 1, max[0], ref_count[1] - 1, max[1]);
             ref_count[0] = ref_count[1] = 0;
             *plist_count = 0;
-            return AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         if (slice_type_nos == AV_PICTURE_TYPE_B)
@@ -233,4 +233,9 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
     *plist_count = list_count;
 
     return 0;
+fail:
+    *plist_count = 0;
+    ref_count[0] = 0;
+    ref_count[1] = 0;
+    return AVERROR_INVALIDDATA;
 }
