@@ -1177,21 +1177,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
 
     sl->first_mb_addr = get_ue_golomb(&sl->gb);
 
-    if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
-        if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
-            ff_h264_field_end(h, sl, 1);
-        }
-
-        h->current_slice = 0;
-        if (!h->first_field) {
-            if (h->cur_pic_ptr && !h->droppable) {
-                ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
-                                          h->picture_structure == PICT_BOTTOM_FIELD);
-            }
-            h->cur_pic_ptr = NULL;
-        }
-    }
-
     slice_type = get_ue_golomb_31(&sl->gb);
     if (slice_type > 9) {
         av_log(h->avctx, AV_LOG_ERROR,
@@ -1224,11 +1209,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
         av_log(h->avctx, AV_LOG_ERROR,
                "non-existing PPS %u referenced\n",
                sl->pps_id);
-        return AVERROR_INVALIDDATA;
-    }
-    if (h->current_slice > 0 &&
-        h->ps.pps != (const PPS*)h->ps.pps_list[sl->pps_id]->data) {
-        av_log(h->avctx, AV_LOG_ERROR, "PPS changed between slices\n");
         return AVERROR_INVALIDDATA;
     }
     pps = (const PPS*)h->ps.pps_list[sl->pps_id]->data;
@@ -1264,21 +1244,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
     }
     sl->picture_structure      = picture_structure;
     sl->mb_field_decoding_flag = picture_structure != PICT_FRAME;
-
-    if (h->current_slice != 0) {
-        if (h->picture_structure != picture_structure ||
-            h->droppable         != droppable) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "Changing field mode (%d -> %d) between slices is not allowed\n",
-                   h->picture_structure, picture_structure);
-            return AVERROR_INVALIDDATA;
-        } else if (!h->cur_pic_ptr) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "unset cur_pic_ptr on slice %d\n",
-                   h->current_slice + 1);
-            return AVERROR_INVALIDDATA;
-        }
-    }
 
     if (picture_structure == PICT_FRAME) {
         h->curr_pic_num = h->poc.frame_num;
@@ -1430,10 +1395,43 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
     if (ret < 0)
         return ret;
 
+    if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
+        if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
+            ff_h264_field_end(h, sl, 1);
+        }
+
+        h->current_slice = 0;
+        if (!h->first_field) {
+            if (h->cur_pic_ptr && !h->droppable) {
+                ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
+                                          h->picture_structure == PICT_BOTTOM_FIELD);
+            }
+            h->cur_pic_ptr = NULL;
+        }
+    }
+
     if (h->current_slice == 0) {
         ret = h264_field_start(h, sl, nal);
         if (ret < 0)
             return ret;
+    } else {
+        if (h->ps.pps != (const PPS*)h->ps.pps_list[sl->pps_id]->data) {
+            av_log(h->avctx, AV_LOG_ERROR, "PPS changed between slices\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (h->picture_structure != sl->picture_structure ||
+            h->droppable         != (nal->ref_idc == 0)) {
+            av_log(h->avctx, AV_LOG_ERROR,
+                   "Changing field mode (%d -> %d) between slices is not allowed\n",
+                   h->picture_structure, sl->picture_structure);
+            return AVERROR_INVALIDDATA;
+        } else if (!h->cur_pic_ptr) {
+            av_log(h->avctx, AV_LOG_ERROR,
+                   "unset cur_pic_ptr on slice %d\n",
+                   h->current_slice + 1);
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     assert(h->mb_num == h->mb_width * h->mb_height);
