@@ -861,17 +861,6 @@ int ff_h264_get_profile(SPS *sps);
 int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length);
 
 /**
- * Decode a network abstraction layer unit.
- * @param consumed is the number of bytes used as input
- * @param length is the length of the array
- * @param dst_length is the number of decoded bytes FIXME here
- *                   or a decode rbsp tailing?
- * @return decoded bytes, might be src+1 if no escapes
- */
-const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl, const uint8_t *src,
-                                  int *dst_length, int *consumed, int length);
-
-/**
  * Free any data that may have been allocated in the H264 context
  * like SPS, PPS etc.
  */
