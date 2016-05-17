@@ -3490,6 +3490,8 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
         /* calc from sample rate */
         if (id == AV_CODEC_ID_TTA)
             return 256 * sr / 245;
+        else if (id == AV_CODEC_ID_DST)
+            return 588 * sr / 44100;
 
         if (ch > 0) {
             /* calc from sample rate and channels */
@@ -4172,23 +4174,3 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
 
     return 0;
 }
-
-#ifdef TEST
-int main(void){
-    AVCodec *codec = NULL;
-    int ret = 0;
-    avcodec_register_all();
-
-    while (codec = av_codec_next(codec)) {
-        if (av_codec_is_encoder(codec)) {
-            if (codec->type == AVMEDIA_TYPE_AUDIO) {
-                if (!codec->sample_fmts) {
-                    av_log(NULL, AV_LOG_FATAL, "Encoder %s is missing the sample_fmts field\n", codec->name);
-                    ret = 1;
-                }
-            }
-        }
-    }
-    return ret;
-}
-#endif /* TEST */

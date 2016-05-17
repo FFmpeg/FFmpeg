@@ -79,16 +79,16 @@ FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, JPEGLS,        AVI)     += jpegls
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, LJPEG MJPEG,   AVI)     += ljpeg
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MJPEG,         AVI)     += mjpeg
 
-FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) +=          \
-                                                    mpeg1                      \
+FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) +=    \
+                                                    mpeg1                    \
                                                     mpeg1b
 
-FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG2VIDEO, MPEG2VIDEO MPEGVIDEO) +=          \
-                                                    mpeg2-422                  \
-                                                    mpeg2-idct-int             \
-                                                    mpeg2-ilace                \
-                                                    mpeg2-ivlc-qprd            \
-                                                    mpeg2-thread               \
+FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG2VIDEO, MPEG2VIDEO MPEGVIDEO) +=    \
+                                                    mpeg2-422                \
+                                                    mpeg2-idct-int           \
+                                                    mpeg2-ilace              \
+                                                    mpeg2-ivlc-qprd          \
+                                                    mpeg2-thread             \
                                                     mpeg2-thread-ivlc
 
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG4,         MP4 MOV) += mpeg4

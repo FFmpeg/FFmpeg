@@ -111,6 +111,7 @@ static int adx_read_header(AVFormatContext *s)
 
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = s->iformat->raw_codec_id;
+    par->bit_rate    = par->sample_rate * par->channels * BLOCK_SIZE * 8LL / BLOCK_SAMPLES;
 
     avpriv_set_pts_info(st, 64, BLOCK_SAMPLES, par->sample_rate);
 

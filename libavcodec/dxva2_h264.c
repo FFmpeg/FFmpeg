@@ -228,7 +228,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
 
     slice->first_mb_in_slice     = (sl->mb_y >> FIELD_OR_MBAFF_PICTURE(h)) * h->mb_width + sl->mb_x;
     slice->NumMbsForSlice        = 0; /* XXX it is set once we have all slices */
-    slice->BitOffsetToSliceData  = get_bits_count(&sl->gb);
+    slice->BitOffsetToSliceData  = get_bits_count(&sl->gb) - 8;
     slice->slice_type            = ff_h264_get_slice_type(sl);
     if (sl->slice_type_fixed)
         slice->slice_type += 5;

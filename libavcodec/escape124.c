@@ -145,7 +145,7 @@ static MacroBlock decode_macroblock(Escape124Context* s, GetBitContext* gb,
     unsigned block_index, depth;
     int value = get_bits1(gb);
     if (value) {
-        static const char transitions[3][2] = { {2, 1}, {0, 2}, {1, 0} };
+        static const int8_t transitions[3][2] = { {2, 1}, {0, 2}, {1, 0} };
         value = get_bits1(gb);
         *codebook_index = transitions[*codebook_index][value];
     }

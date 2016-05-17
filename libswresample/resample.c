@@ -203,7 +203,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_S16P:
             for(i=0;i<tap_count;i++)
                 ((int16_t*)filter)[ph * alloc + i] = av_clip_int16(lrintf(tab[i] * scale / norm));
-            if (tap_count % 2 == 0) {
+            if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((int16_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int16_t*)filter)[ph * alloc + i];
             }
@@ -216,7 +216,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_S32P:
             for(i=0;i<tap_count;i++)
                 ((int32_t*)filter)[ph * alloc + i] = av_clipl_int32(llrint(tab[i] * scale / norm));
-            if (tap_count % 2 == 0) {
+            if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((int32_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int32_t*)filter)[ph * alloc + i];
             }
@@ -229,7 +229,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_FLTP:
             for(i=0;i<tap_count;i++)
                 ((float*)filter)[ph * alloc + i] = tab[i] * scale / norm;
-            if (tap_count % 2 == 0) {
+            if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((float*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((float*)filter)[ph * alloc + i];
             }
@@ -241,7 +241,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_DBLP:
             for(i=0;i<tap_count;i++)
                 ((double*)filter)[ph * alloc + i] = tab[i] * scale / norm;
-            if (tap_count % 2 == 0) {
+            if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((double*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((double*)filter)[ph * alloc + i];
             }

@@ -5,7 +5,6 @@ compat/avisynth/windowsPorts/windows2linux.h
 libavcodec/file_open.c
 libavcodec/interplayacm.c
 libavcodec/log2_tab.c
-libavcodec/mathops.c
 libavcodec/reverse.c
 libavdevice/file_open.c
 libavfilter/log2_tab.c

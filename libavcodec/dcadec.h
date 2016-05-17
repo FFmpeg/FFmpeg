@@ -32,13 +32,15 @@
 #include "dca_core.h"
 #include "dca_exss.h"
 #include "dca_xll.h"
+#include "dca_lbr.h"
 
 #define DCA_BUFFER_PADDING_SIZE     1024
 
 #define DCA_PACKET_CORE         0x01
 #define DCA_PACKET_EXSS         0x02
 #define DCA_PACKET_XLL          0x04
-#define DCA_PACKET_RECOVERY     0x08
+#define DCA_PACKET_LBR          0x08
+#define DCA_PACKET_RECOVERY     0x10
 
 typedef struct DCAContext {
     const AVClass   *class;       ///< class for AVOptions
@@ -47,6 +49,7 @@ typedef struct DCAContext {
     DCACoreDecoder core;  ///< Core decoder context
     DCAExssParser  exss;  ///< EXSS parser context
     DCAXllDecoder  xll;   ///< XLL decoder context
+    DCALbrDecoder  lbr;   ///< LBR decoder context
 
     DCADSPContext   dcadsp;
 

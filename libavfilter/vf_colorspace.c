@@ -34,6 +34,12 @@
 #include "internal.h"
 #include "video.h"
 
+enum DitherMode {
+    DITHER_NONE,
+    DITHER_FSB,
+    DITHER_NB,
+};
+
 enum Colorspace {
     CS_UNSPECIFIED,
     CS_BT470M,
@@ -51,6 +57,14 @@ enum Whitepoint {
     WP_D65,
     WP_C,
     WP_NB,
+};
+
+enum WhitepointAdaptation {
+    WP_ADAPT_BRADFORD,
+    WP_ADAPT_VON_KRIES,
+    NB_WP_ADAPT_NON_IDENTITY,
+    WP_ADAPT_IDENTITY = NB_WP_ADAPT_NON_IDENTITY,
+    NB_WP_ADAPT,
 };
 
 static const enum AVColorTransferCharacteristic default_trc[CS_NB + 1] = {
@@ -121,10 +135,13 @@ typedef struct ColorSpaceContext {
     enum AVColorPrimaries in_prm, out_prm, user_prm;
     enum AVPixelFormat in_format, user_format;
     int fast_mode;
+    enum DitherMode dither;
+    enum WhitepointAdaptation wp_adapt;
 
     int16_t *rgb[3];
     ptrdiff_t rgb_stride;
     unsigned rgb_sz;
+    int *dither_scratch[3][2], *dither_scratch_base[3][2];
 
     const struct ColorPrimaries *in_primaries, *out_primaries;
     int lrgb2lrgb_passthrough;
@@ -142,6 +159,7 @@ typedef struct ColorSpaceContext {
     DECLARE_ALIGNED(16, int16_t, yuv_offset)[2 /* in, out */][8];
     yuv2rgb_fn yuv2rgb;
     rgb2yuv_fn rgb2yuv;
+    rgb2yuv_fsb_fn rgb2yuv_fsb;
     yuv2yuv_fn yuv2yuv;
     double yuv2rgb_dbl_coeffs[3][3], rgb2yuv_dbl_coeffs[3][3];
     int in_y_rng, in_uv_rng, out_y_rng, out_uv_rng;
@@ -370,14 +388,21 @@ static void mul3x3(double dst[3][3], const double src1[3][3], const double src2[
  * See http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
  * This function uses the Bradford mechanism.
  */
-static void fill_whitepoint_conv_table(double out[3][3],
+static void fill_whitepoint_conv_table(double out[3][3], enum WhitepointAdaptation wp_adapt,
                                        enum Whitepoint src, enum Whitepoint dst)
 {
-    static const double ma[3][3] = {
-        {  0.8951,  0.2664, -0.1614 },
-        { -0.7502,  1.7135,  0.0367 },
-        {  0.0389, -0.0685,  1.0296 },
+    static const double ma_tbl[NB_WP_ADAPT_NON_IDENTITY][3][3] = {
+        [WP_ADAPT_BRADFORD] = {
+            {  0.8951,  0.2664, -0.1614 },
+            { -0.7502,  1.7135,  0.0367 },
+            {  0.0389, -0.0685,  1.0296 },
+        }, [WP_ADAPT_VON_KRIES] = {
+            {  0.40024,  0.70760, -0.08081 },
+            { -0.22630,  1.16532,  0.04570 },
+            {  0.00000,  0.00000,  0.91822 },
+        },
     };
+    const double (*ma)[3] = ma_tbl[wp_adapt];
     const struct WhitepointCoefficients *wp_src = &whitepoint_coefficients[src];
     double zw_src = 1.0 - wp_src->xw - wp_src->yw;
     const struct WhitepointCoefficients *wp_dst = &whitepoint_coefficients[dst];
@@ -481,8 +506,13 @@ static int convert(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
                 s->dsp.multiply3x3(rgb, s->rgb_stride, w, h, s->lrgb2lrgb_coeffs);
             apply_lut(rgb, s->rgb_stride, w, h, s->delin_lut);
         }
-        s->rgb2yuv(out_data, td->out_linesize, rgb, s->rgb_stride, w, h,
-                   s->rgb2yuv_coeffs, s->yuv_offset[1]);
+        if (s->dither == DITHER_FSB) {
+            s->rgb2yuv_fsb(out_data, td->out_linesize, rgb, s->rgb_stride, w, h,
+                           s->rgb2yuv_coeffs, s->yuv_offset[1], s->dither_scratch);
+        } else {
+            s->rgb2yuv(out_data, td->out_linesize, rgb, s->rgb_stride, w, h,
+                       s->rgb2yuv_coeffs, s->yuv_offset[1]);
+        }
     }
 
     return 0;
@@ -583,10 +613,11 @@ static int create_filtergraph(AVFilterContext *ctx,
             fill_rgb2xyz_table(s->out_primaries, rgb2xyz);
             invert_matrix3x3(rgb2xyz, xyz2rgb);
             fill_rgb2xyz_table(s->in_primaries, rgb2xyz);
-            if (s->out_primaries->wp != s->in_primaries->wp) {
+            if (s->out_primaries->wp != s->in_primaries->wp &&
+                s->wp_adapt != WP_ADAPT_IDENTITY) {
                 double wpconv[3][3], tmp[3][3];
 
-                fill_whitepoint_conv_table(wpconv, s->in_primaries->wp,
+                fill_whitepoint_conv_table(wpconv, s->wp_adapt, s->in_primaries->wp,
                                            s->out_primaries->wp);
                 mul3x3(tmp, rgb2xyz, wpconv);
                 mul3x3(rgb2rgb, tmp, xyz2rgb);
@@ -688,7 +719,8 @@ static int create_filtergraph(AVFilterContext *ctx,
     s->yuv2yuv_fastmode = s->rgb2rgb_passthrough && fmt_identical;
     s->yuv2yuv_passthrough = s->yuv2yuv_fastmode && s->in_rng == s->out_rng &&
                              !memcmp(s->in_lumacoef, s->out_lumacoef,
-                                     sizeof(*s->in_lumacoef));
+                                     sizeof(*s->in_lumacoef)) &&
+                             in_desc->comp[0].depth == out_desc->comp[0].depth;
     if (!s->yuv2yuv_passthrough) {
         if (redo_yuv2rgb) {
             double rgb2yuv[3][3], (*yuv2rgb)[3] = s->yuv2rgb_dbl_coeffs;
@@ -739,8 +771,8 @@ static int create_filtergraph(AVFilterContext *ctx,
                 s->yuv_offset[1][n] = off;
             fill_rgb2yuv_table(s->out_lumacoef, rgb2yuv);
             bits = 1 << (29 - out_desc->comp[0].depth);
-            for (n = 0; n < 3; n++) {
-                for (out_rng = s->out_y_rng, m = 0; m < 3; m++, out_rng = s->out_uv_rng) {
+            for (out_rng = s->out_y_rng, n = 0; n < 3; n++, out_rng = s->out_uv_rng) {
+                for (m = 0; m < 3; m++) {
                     s->rgb2yuv_coeffs[n][m][0] = lrint(bits * out_rng * rgb2yuv[n][m] / 28672);
                     for (o = 1; o < 8; o++)
                         s->rgb2yuv_coeffs[n][m][o] = s->rgb2yuv_coeffs[n][m][0];
@@ -748,6 +780,8 @@ static int create_filtergraph(AVFilterContext *ctx,
             }
             av_assert2(s->rgb2yuv_coeffs[1][2][0] == s->rgb2yuv_coeffs[2][0][0]);
             s->rgb2yuv = s->dsp.rgb2yuv[(out_desc->comp[0].depth - 8) >> 1]
+                                       [out_desc->log2_chroma_h + out_desc->log2_chroma_w];
+            s->rgb2yuv_fsb = s->dsp.rgb2yuv_fsb[(out_desc->comp[0].depth - 8) >> 1]
                                        [out_desc->log2_chroma_h + out_desc->log2_chroma_w];
             emms = 1;
         }
@@ -799,6 +833,12 @@ static void uninit(AVFilterContext *ctx)
     av_freep(&s->rgb[1]);
     av_freep(&s->rgb[2]);
     s->rgb_sz = 0;
+    av_freep(&s->dither_scratch_base[0][0]);
+    av_freep(&s->dither_scratch_base[0][1]);
+    av_freep(&s->dither_scratch_base[1][0]);
+    av_freep(&s->dither_scratch_base[1][1]);
+    av_freep(&s->dither_scratch_base[2][0]);
+    av_freep(&s->dither_scratch_base[2][1]);
 
     av_freep(&s->lin_lut);
 }
@@ -839,15 +879,45 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     out->color_range     = s->user_rng == AVCOL_RANGE_UNSPECIFIED ?
                            in->color_range : s->user_rng;
     if (rgb_sz != s->rgb_sz) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(out->format);
+        int uvw = in->width >> desc->log2_chroma_w;
+
         av_freep(&s->rgb[0]);
         av_freep(&s->rgb[1]);
         av_freep(&s->rgb[2]);
         s->rgb_sz = 0;
+        av_freep(&s->dither_scratch_base[0][0]);
+        av_freep(&s->dither_scratch_base[0][1]);
+        av_freep(&s->dither_scratch_base[1][0]);
+        av_freep(&s->dither_scratch_base[1][1]);
+        av_freep(&s->dither_scratch_base[2][0]);
+        av_freep(&s->dither_scratch_base[2][1]);
 
         s->rgb[0] = av_malloc(rgb_sz);
         s->rgb[1] = av_malloc(rgb_sz);
         s->rgb[2] = av_malloc(rgb_sz);
-        if (!s->rgb[0] || !s->rgb[1] || !s->rgb[2]) {
+        s->dither_scratch_base[0][0] =
+            av_malloc(sizeof(*s->dither_scratch_base[0][0]) * (in->width + 4));
+        s->dither_scratch_base[0][1] =
+            av_malloc(sizeof(*s->dither_scratch_base[0][1]) * (in->width + 4));
+        s->dither_scratch_base[1][0] =
+            av_malloc(sizeof(*s->dither_scratch_base[1][0]) * (uvw + 4));
+        s->dither_scratch_base[1][1] =
+            av_malloc(sizeof(*s->dither_scratch_base[1][1]) * (uvw + 4));
+        s->dither_scratch_base[2][0] =
+            av_malloc(sizeof(*s->dither_scratch_base[2][0]) * (uvw + 4));
+        s->dither_scratch_base[2][1] =
+            av_malloc(sizeof(*s->dither_scratch_base[2][1]) * (uvw + 4));
+        s->dither_scratch[0][0] = &s->dither_scratch_base[0][0][1];
+        s->dither_scratch[0][1] = &s->dither_scratch_base[0][1][1];
+        s->dither_scratch[1][0] = &s->dither_scratch_base[1][0][1];
+        s->dither_scratch[1][1] = &s->dither_scratch_base[1][1][1];
+        s->dither_scratch[2][0] = &s->dither_scratch_base[2][0][1];
+        s->dither_scratch[2][1] = &s->dither_scratch_base[2][1][1];
+        if (!s->rgb[0] || !s->rgb[1] || !s->rgb[2] ||
+            !s->dither_scratch_base[0][0] || !s->dither_scratch_base[0][1] ||
+            !s->dither_scratch_base[1][0] || !s->dither_scratch_base[1][1] ||
+            !s->dither_scratch_base[2][0] || !s->dither_scratch_base[2][1]) {
             uninit(ctx);
             return AVERROR(ENOMEM);
         }
@@ -868,7 +938,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     td.in_ss_h = av_pix_fmt_desc_get(in->format)->log2_chroma_h;
     td.out_ss_h = av_pix_fmt_desc_get(out->format)->log2_chroma_h;
     if (s->yuv2yuv_passthrough) {
-        av_frame_copy(out, in);
+        res = av_frame_copy(out, in);
+        if (res < 0)
+            return res;
     } else {
         ctx->internal->execute(ctx, convert, &td, NULL,
                                FFMIN((in->height + 1) >> 1, ctx->graph->nb_threads));
@@ -987,6 +1059,20 @@ static const AVOption colorspace_options[] = {
     { "fast",     "Ignore primary chromaticity and gamma correction",
       OFFSET(fast_mode), AV_OPT_TYPE_BOOL,  { .i64 = 0    },
       0, 1, FLAGS },
+
+    { "dither",   "Dithering mode",
+      OFFSET(dither), AV_OPT_TYPE_INT, { .i64 = DITHER_NONE },
+      DITHER_NONE, DITHER_NB - 1, FLAGS, "dither" },
+    ENUM("none", DITHER_NONE, "dither"),
+    ENUM("fsb",  DITHER_FSB,  "dither"),
+
+    { "wpadapt", "Whitepoint adaptation method",
+      OFFSET(wp_adapt), AV_OPT_TYPE_INT, { .i64 = WP_ADAPT_BRADFORD },
+      WP_ADAPT_BRADFORD, NB_WP_ADAPT - 1, FLAGS, "wpadapt" },
+    ENUM("bradford", WP_ADAPT_BRADFORD, "wpadapt"),
+    ENUM("vonkries", WP_ADAPT_VON_KRIES, "wpadapt"),
+    ENUM("identity", WP_ADAPT_IDENTITY, "wpadapt"),
+
     { NULL }
 };
 

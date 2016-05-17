@@ -38,7 +38,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
     nal->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
         if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
-            if (src[i + 2] != 3) {                                      \
+            if (src[i + 2] != 3 && src[i + 2] != 0) {                   \
                 /* startcode, so we must be past the end */             \
                 length = i;                                             \
             }                                                           \
@@ -103,7 +103,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
         if (src[si + 2] > 3) {
             dst[di++] = src[si++];
             dst[di++] = src[si++];
-        } else if (src[si] == 0 && src[si + 1] == 0) {
+        } else if (src[si] == 0 && src[si + 1] == 0 && src[si + 2] != 0) {
             if (src[si + 2] == 3) { // escape
                 dst[di++] = 0;
                 dst[di++] = 0;
@@ -250,6 +250,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           enum AVCodecID codec_id)
 {
     int consumed, ret = 0;
+    const uint8_t *next_avc = is_nalff ? buf : buf + length;
 
     pkt->nb_nals = 0;
     while (length >= 4) {
@@ -257,7 +258,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         int extract_length = 0;
         int skip_trailing_zeros = 1;
 
-        if (is_nalff) {
+        if (buf >= next_avc) {
             int i;
             for (i = 0; i < nal_length_size; i++)
                 extract_length = (extract_length << 8) | buf[i];
@@ -268,6 +269,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
                 return AVERROR_INVALIDDATA;
             }
+            next_avc = buf + extract_length;
         } else {
             /* search start code */
             while (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
@@ -282,12 +284,21 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                         av_log(logctx, AV_LOG_ERROR, "No start code is found.\n");
                         return AVERROR_INVALIDDATA;
                     }
-                }
+                } else if (buf >= (next_avc - 3))
+                    break;
             }
 
             buf           += 3;
             length        -= 3;
             extract_length = length;
+
+            if (buf >= next_avc) {
+                /* skip to the start of the next NAL */
+                int offset = next_avc - buf;
+                buf    += offset;
+                length -= offset;
+                continue;
+            }
         }
 
         if (pkt->nals_allocated < pkt->nb_nals + 1) {
@@ -315,6 +326,11 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         if (consumed < 0)
             return consumed;
 
+        if (is_nalff && (extract_length != consumed) && extract_length)
+            av_log(logctx, AV_LOG_DEBUG,
+                   "NALFF: Consumed only %d bytes instead of %d\n",
+                   consumed, extract_length);
+
         pkt->nb_nals++;
 
         /* see commit 3566042a0 */
@@ -325,7 +341,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
         nal->size_bits = get_bit_length(nal, skip_trailing_zeros);
 
-        ret = init_get_bits8(&nal->gb, nal->data, nal->size_bits);
+        ret = init_get_bits(&nal->gb, nal->data, nal->size_bits);
         if (ret < 0)
             return ret;
 
@@ -333,7 +349,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             ret = hevc_parse_nal_header(nal, logctx);
         else
             ret = h264_parse_nal_header(nal, logctx);
-        if (ret <= 0) {
+        if (ret <= 0 || nal->size <= 0) {
             if (ret < 0) {
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                        nal->type);

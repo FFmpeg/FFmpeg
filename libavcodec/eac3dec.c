@@ -305,7 +305,10 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
        application can select from. each independent stream can also contain
        dependent streams which are used to add or replace channels. */
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
-        avpriv_request_sample(s->avctx, "Dependent substream decoding");
+        if (!s->eac3_frame_dependent_found) {
+            s->eac3_frame_dependent_found = 1;
+            avpriv_request_sample(s->avctx, "Dependent substream decoding");
+        }
         return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     } else if (s->frame_type == EAC3_FRAME_TYPE_RESERVED) {
         av_log(s->avctx, AV_LOG_ERROR, "Reserved frame type\n");
@@ -317,7 +320,10 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
        associated to an independent stream have matching substream id's. */
     if (s->substreamid) {
         /* only decode substream with id=0. skip any additional substreams. */
-        avpriv_request_sample(s->avctx, "Additional substreams");
+        if (!s->eac3_subsbtreamid_found) {
+            s->eac3_subsbtreamid_found = 1;
+            avpriv_request_sample(s->avctx, "Additional substreams");
+        }
         return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     }
 

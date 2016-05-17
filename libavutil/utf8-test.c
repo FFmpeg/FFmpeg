@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifdef TEST
 #include <stdio.h>
 
 #include "libavutil/avstring.h"
@@ -70,4 +69,3 @@ int main(int argc, char **argv)
     av_file_unmap(file_buf, file_buf_size);
     return 0;
 }
-#endif

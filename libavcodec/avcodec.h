@@ -591,6 +591,7 @@ enum AVCodecID {
     AV_CODEC_ID_INTERPLAY_ACM,
     AV_CODEC_ID_XMA1,
     AV_CODEC_ID_XMA2,
+    AV_CODEC_ID_DST,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
@@ -3323,7 +3324,8 @@ typedef struct AVCodecContext {
      * - decoding: For codecs that store a framerate value in the compressed
      *             bitstream, the decoder may export it here. { 0, 1} when
      *             unknown.
-     * - encoding: unused
+     * - encoding: May be used to signal the framerate of CFR content to an
+     *             encoder.
      */
     AVRational framerate;
 

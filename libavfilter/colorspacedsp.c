@@ -20,6 +20,10 @@
 
 #include "colorspacedsp.h"
 
+/*
+ * SS_W/H stands for "subsampling_w/h"
+ * it's analogous to AVPixFmtDescriptor->log2_chroma_w/h.
+ */
 #define SS_W 0
 #define SS_H 0
 
@@ -96,36 +100,45 @@ static void multiply3x3_c(int16_t *buf[3], ptrdiff_t stride,
 
 void ff_colorspacedsp_init(ColorSpaceDSPContext *dsp)
 {
-#define init_yuv2rgb_fn(idx, bit) \
-    dsp->yuv2rgb[idx][0] = yuv2rgb_444p##bit##_c; \
-    dsp->yuv2rgb[idx][1] = yuv2rgb_422p##bit##_c; \
-    dsp->yuv2rgb[idx][2] = yuv2rgb_420p##bit##_c
+#define init_yuv2rgb_fn(bit) \
+    dsp->yuv2rgb[BPP_##bit][SS_444] = yuv2rgb_444p##bit##_c; \
+    dsp->yuv2rgb[BPP_##bit][SS_422] = yuv2rgb_422p##bit##_c; \
+    dsp->yuv2rgb[BPP_##bit][SS_420] = yuv2rgb_420p##bit##_c
 
-    init_yuv2rgb_fn(0,  8);
-    init_yuv2rgb_fn(1, 10);
-    init_yuv2rgb_fn(2, 12);
+    init_yuv2rgb_fn( 8);
+    init_yuv2rgb_fn(10);
+    init_yuv2rgb_fn(12);
 
-#define init_rgb2yuv_fn(idx, bit) \
-    dsp->rgb2yuv[idx][0] = rgb2yuv_444p##bit##_c; \
-    dsp->rgb2yuv[idx][1] = rgb2yuv_422p##bit##_c; \
-    dsp->rgb2yuv[idx][2] = rgb2yuv_420p##bit##_c
+#define init_rgb2yuv_fn(bit) \
+    dsp->rgb2yuv[BPP_##bit][SS_444] = rgb2yuv_444p##bit##_c; \
+    dsp->rgb2yuv[BPP_##bit][SS_422] = rgb2yuv_422p##bit##_c; \
+    dsp->rgb2yuv[BPP_##bit][SS_420] = rgb2yuv_420p##bit##_c
 
-    init_rgb2yuv_fn(0,  8);
-    init_rgb2yuv_fn(1, 10);
-    init_rgb2yuv_fn(2, 12);
+    init_rgb2yuv_fn( 8);
+    init_rgb2yuv_fn(10);
+    init_rgb2yuv_fn(12);
 
-#define init_yuv2yuv_fn(idx1, idx2, bit1, bit2) \
-    dsp->yuv2yuv[idx1][idx2][0] = yuv2yuv_444p##bit1##to##bit2##_c; \
-    dsp->yuv2yuv[idx1][idx2][1] = yuv2yuv_422p##bit1##to##bit2##_c; \
-    dsp->yuv2yuv[idx1][idx2][2] = yuv2yuv_420p##bit1##to##bit2##_c
-#define init_yuv2yuv_fns(idx1, bit1) \
-    init_yuv2yuv_fn(idx1, 0, bit1,  8); \
-    init_yuv2yuv_fn(idx1, 1, bit1, 10); \
-    init_yuv2yuv_fn(idx1, 2, bit1, 12)
+#define init_rgb2yuv_fsb_fn(bit) \
+    dsp->rgb2yuv_fsb[BPP_##bit][SS_444] = rgb2yuv_fsb_444p##bit##_c; \
+    dsp->rgb2yuv_fsb[BPP_##bit][SS_422] = rgb2yuv_fsb_422p##bit##_c; \
+    dsp->rgb2yuv_fsb[BPP_##bit][SS_420] = rgb2yuv_fsb_420p##bit##_c
 
-    init_yuv2yuv_fns(0,  8);
-    init_yuv2yuv_fns(1, 10);
-    init_yuv2yuv_fns(2, 12);
+    init_rgb2yuv_fsb_fn( 8);
+    init_rgb2yuv_fsb_fn(10);
+    init_rgb2yuv_fsb_fn(12);
+
+#define init_yuv2yuv_fn(idx1, bit1, bit2) \
+    dsp->yuv2yuv[idx1][BPP_##bit2][SS_444] = yuv2yuv_444p##bit1##to##bit2##_c; \
+    dsp->yuv2yuv[idx1][BPP_##bit2][SS_422] = yuv2yuv_422p##bit1##to##bit2##_c; \
+    dsp->yuv2yuv[idx1][BPP_##bit2][SS_420] = yuv2yuv_420p##bit1##to##bit2##_c
+#define init_yuv2yuv_fns(bit1) \
+    init_yuv2yuv_fn(BPP_##bit1, bit1,  8); \
+    init_yuv2yuv_fn(BPP_##bit1, bit1, 10); \
+    init_yuv2yuv_fn(BPP_##bit1, bit1, 12)
+
+    init_yuv2yuv_fns( 8);
+    init_yuv2yuv_fns(10);
+    init_yuv2yuv_fns(12);
 
     dsp->multiply3x3 = multiply3x3_c;
 

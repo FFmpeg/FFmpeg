@@ -373,3 +373,9 @@ int ff_hevc_decode_nal_sei(HEVCContext *s)
     } while (more_rbsp_data(&s->HEVClc->gb));
     return 1;
 }
+
+void ff_hevc_reset_sei(HEVCContext *s)
+{
+    s->a53_caption_size = 0;
+    av_freep(&s->a53_caption);
+}
