@@ -150,6 +150,9 @@ static int scan_mmco_reset(AVCodecParserContext *s)
     if (h->pps.redundant_pic_cnt_present)
         get_ue_golomb(&sl->gb); // redundant_pic_count
 
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
+        get_bits1(&sl->gb); // direct_spatial_mv_pred
+
     if (ff_set_ref_count(h, sl) < 0)
         return AVERROR_INVALIDDATA;
 
