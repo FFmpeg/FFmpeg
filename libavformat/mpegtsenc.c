@@ -37,6 +37,8 @@
 
 /* write DVB SI sections */
 
+#define DVB_PRIVATE_NETWORK_START 0xff01
+
 /*********************************************/
 /* mpegts section writer */
 
@@ -1234,7 +1236,7 @@ static const AVOption options[] = {
       { .i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_original_network_id", "Set original_network_id field.",
       offsetof(MpegTSWrite, original_network_id), AV_OPT_TYPE_INT,
-      { .i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
+      { .i64 = DVB_PRIVATE_NETWORK_START }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_service_id", "Set service_id field.",
       offsetof(MpegTSWrite, service_id), AV_OPT_TYPE_INT,
       { .i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
