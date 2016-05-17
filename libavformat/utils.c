@@ -2785,7 +2785,7 @@ enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag)
 
 enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags)
 {
-    if (bps > 64U)
+    if (bps <= 0 || bps > 64)
         return AV_CODEC_ID_NONE;
 
     if (flt) {
