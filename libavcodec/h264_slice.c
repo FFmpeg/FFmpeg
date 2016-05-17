@@ -1381,26 +1381,30 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
     if (ret < 0)
         return ret;
 
-    if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
-        if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
-            ff_h264_field_end(h, sl, 1);
+    if (!h->setup_finished) {
+        if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
+            if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
+                ff_h264_field_end(h, sl, 1);
+            }
+
+            h->current_slice = 0;
+            if (!h->first_field) {
+                if (h->cur_pic_ptr && !h->droppable) {
+                    ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
+                                              h->picture_structure == PICT_BOTTOM_FIELD);
+                }
+                h->cur_pic_ptr = NULL;
+            }
         }
 
-        h->current_slice = 0;
-        if (!h->first_field) {
-            if (h->cur_pic_ptr && !h->droppable) {
-                ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
-                                          h->picture_structure == PICT_BOTTOM_FIELD);
-            }
-            h->cur_pic_ptr = NULL;
+        if (h->current_slice == 0) {
+            ret = h264_field_start(h, sl, nal);
+            if (ret < 0)
+                return ret;
         }
     }
 
-    if (h->current_slice == 0) {
-        ret = h264_field_start(h, sl, nal);
-        if (ret < 0)
-            return ret;
-    } else {
+    if (h->current_slice > 0) {
         if (h->ps.pps != (const PPS*)h->ps.pps_list[sl->pps_id]->data) {
             av_log(h->avctx, AV_LOG_ERROR, "PPS changed between slices\n");
             return AVERROR_INVALIDDATA;
